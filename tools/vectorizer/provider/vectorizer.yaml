@@ -4,8 +4,8 @@ credentials_for_provider:
       en_US: Get your Vectorizer.AI API Key from Vectorizer.AI.
       zh_Hans: 从 Vectorizer.AI 获取您的 Vectorizer.AI API Key。
     label:
-      en_US: Vectorizer.AI API Key name
-      zh_Hans: Vectorizer.AI API Key name
+      en_US: Vectorizer.AI API Key ID
+      zh_Hans: Vectorizer.AI API Key ID
     placeholder:
       en_US: Please input your Vectorizer.AI ApiKey name
       zh_Hans: 请输入你的 Vectorizer.AI ApiKey name
@@ -17,8 +17,8 @@ credentials_for_provider:
       en_US: Get your Vectorizer.AI API Key from Vectorizer.AI.
       zh_Hans: 从 Vectorizer.AI 获取您的 Vectorizer.AI API Key。
     label:
-      en_US: Vectorizer.AI API Key
-      zh_Hans: Vectorizer.AI API Key
+      en_US: Vectorizer.AI API Key Secret
+      zh_Hans: Vectorizer.AI API Key Secret
     placeholder:
       en_US: Please input your Vectorizer.AI ApiKey
       zh_Hans: 请输入你的 Vectorizer.AI ApiKey
