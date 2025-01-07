@@ -1,27 +1,31 @@
 from typing import Optional
-from dify_plugin import OAICompatEmbeddingModel
-from dify_plugin.entities.model import EmbeddingInputType
-from dify_plugin.entities.model.text_embedding import TextEmbeddingResult
-from yarl import URL
+
+from dify_plugin import OAICompatSpeechToTextModel
+from dify_plugin.entities.model.speech2text import SpeechToTextResult
 
 
-class GPUStackTextEmbeddingModel(OAICompatEmbeddingModel):
+class GPUStackSpeechToTextModel(OAICompatSpeechToTextModel):
     """
-    Model class for GPUStack text embedding model.
+    Model class for GPUStack Speech to text model.
     """
 
     def _invoke(
         self,
         model: str,
         credentials: dict,
-        texts: list[str],
+        audio: bytes,
         user: Optional[str] = None,
-        input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT,
-    ) -> TextEmbeddingResult:
+    ) -> SpeechToTextResult:
         compatible_credentials = self._get_compatible_credentials(credentials)
-        return super()._invoke(model, compatible_credentials, texts, user, input_type)
+        return super()._invoke(model, compatible_credentials, audio, user)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
+        """
+        Validate model credentials
+
+        :param model: model name
+        :param credentials: model credentials
+        """
         compatible_credentials = self._get_compatible_credentials(credentials)
         super().validate_credentials(model, compatible_credentials)
 

@@ -2,7 +2,6 @@ from collections.abc import Generator
 from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model.llm import LLMResult
 from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
-from yarl import URL
 
 
 class GPUStackLanguageModel(OAICompatLargeLanguageModel):
@@ -17,10 +16,10 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
         stream: bool = True,
         user: str | None = None,
     ) -> LLMResult | Generator:
-        self._add_custom_parameters(credentials)
+        compatible_credentials = self._get_compatible_credentials(credentials)
         return super()._invoke(
             model,
-            credentials,
+            compatible_credentials,
             prompt_messages,
             model_parameters,
             tools,
@@ -30,11 +29,14 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
         )
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
-        self._add_custom_parameters(credentials)
-        super().validate_credentials(model, credentials)
+        compatible_credentials = self._get_compatible_credentials(credentials)
+        super().validate_credentials(model, compatible_credentials)
 
     def _add_custom_parameters(self, credentials: dict) -> None:
-        credentials["endpoint_url"] = str(
-            URL(credentials["endpoint_url"]) / "v1-openai"
-        )
         credentials["mode"] = "chat"
+
+    def _get_compatible_credentials(self, credentials: dict) -> dict:
+        credentials = credentials.copy()
+        base_url = credentials["endpoint_url"].rstrip("/").removesuffix("/v1-openai")
+        credentials["endpoint_url"] = f"{base_url}/v1-openai"
+        return credentials
