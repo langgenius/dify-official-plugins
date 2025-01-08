@@ -16,7 +16,7 @@ on:
 
 env:
   REPO_NAME: langgenius/dify-official-plugins
-  MARKETPLACE_BASE_URL: https://marketplace-plugin.dify.dev
+  MARKETPLACE_BASE_URL: https://marketplace.dify.ai
   MARKETPLACE_TOKEN: placeholder
   GH_TOKEN: ${{ github.token }}
 
