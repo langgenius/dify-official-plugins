@@ -25,6 +25,12 @@ jobs:
         with:
           persist-credentials: false
           fetch-depth: 0
+
+      - name: Clone Marketplace Toolkit
+        env:
+          GH_TOKEN: ${{ secrets.ORG_SCOPE_GITHUB_TOKEN }}
+        run: |
+          gh repo clone langgenius/dify-marketplace-toolkit -- .scripts/
       
       - name: Download Plugin Daemon
         env:
@@ -54,7 +60,7 @@ jobs:
         env:
           PR_FILES: ${{ env.CHANGED_FILES }}
         run: |
-          if PLUGIN_PATH=$(python3 .scripts/check-prefix.py); then
+          if PLUGIN_PATH=$(python3 .scripts/validator/check-prefix.py); then
               echo $PLUGIN_PATH
               echo "PLUGIN_PATH=$PLUGIN_PATH" >> $GITHUB_ENV
           else
@@ -65,4 +71,4 @@ jobs:
       - name: Upload Plugin
         if: env.PLUGIN_PATH != ''
         run: |
-          python3 .scripts/upload-package.py -d ${{ env.PLUGIN_PATH }} -t ${{ secrets.MARKETPLACE_TOKEN }} --plugin-daemon-path .scripts/dify-plugin-linux-amd64 -u ${{ secrets.MARKETPLACE_BASE_URL }} -f
+          python3 .scripts/uploader/upload-package.py -d ${{ env.PLUGIN_PATH }} -t ${{ secrets.MARKETPLACE_TOKEN }} --plugin-daemon-path .scripts/dify-plugin-linux-amd64 -u ${{ secrets.MARKETPLACE_BASE_URL }} -f
