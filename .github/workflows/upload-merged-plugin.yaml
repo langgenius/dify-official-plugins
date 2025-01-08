@@ -1,8 +1,7 @@
 name: Upload Merged Plugin
 
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches: 
       - main
       - dev
@@ -19,11 +18,13 @@ env:
 
 jobs:
   upload-merged-plugin:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
       
       - name: Download Plugin Daemon
         env:
@@ -40,19 +41,24 @@ jobs:
       - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests
+          pip install requests jq
 
-      - name: Get PR Path
-        env:
-          GH_TOKEN: ${{ secrets.ORG_SCOPE_GITHUB_TOKEN }}
+      - name: Get Changed Files from Push
+        id: get_changed_files
         run: |
-          export PR_FILES=$(gh pr view -R ${{ env.REPO_NAME }} ${{ github.event.pull_request.number }} --json files --jq .files)
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | jq -R -s -c 'split("\n")[:-1] | map({path: .})')
+          echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
+          echo "CHANGED_FILES=$CHANGED_FILES"
 
+      - name: Validate Plugin Path
+        env:
+          PR_FILES: ${{ env.CHANGED_FILES }}
+        run: |
           if PLUGIN_PATH=$(python3 .scripts/check-prefix.py); then
               echo $PLUGIN_PATH
               echo "PLUGIN_PATH=$PLUGIN_PATH" >> $GITHUB_ENV
           else
-            echo "PR files cross different plugin directories, skip upload."
+            echo "Push files cross different plugin directories, skip upload."
             exit 1
           fi
 
