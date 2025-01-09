@@ -14,7 +14,7 @@ The Stability tools could be found at the Plugin Marketplace, please install it 
 
 ### 3. On the Dify navigation page, click `Tools > Stability > Authorize` and fill in the API key.
 
-![](./_assets/stability_1.png)
+![](./_assets/stability_1.PNG)
 
 ### 4. You can use the Stability tool in the following application types.
 
