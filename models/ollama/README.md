@@ -1,28 +1,36 @@
 ## Overview
 
-[Ollama](https://github.com/jmorganca/ollama) is a local inference framework client that allows one-click deployment of LLMs such as Llama 2, Mistral, Llava, etc. Dify supports integrating LLM and Text Embedding capabilities of large language models deployed with Ollama.
+Ollama is a cross-platform inference framework client (MacOS, Windows, Linux) designed for seamless deployment of large language models (LLMs) such as Llama 2, Mistral, Llava, and more. With its one-click setup, Ollama enables local execution of LLMs, providing enhanced data privacy and security by keeping your data on your own machine.
+
+Dify supports integrating LLM and Text Embedding capabilities of large language models deployed with Ollama.
 
 ## Configure
 
 #### 1. Download Ollama
-Visit [Ollama download page](https://ollama.ai/download) to download the Ollama client for your system.
+Visit [Ollama download page](https://ollama.com/download) to download the Ollama client for your system.
 
 #### 2. Run Ollama and Chat with Llava
 
 ````
-ollama run llava
+ollama run llama3.2
 ````
 
 After successful launch, Ollama starts an API service on local port 11434, which can be accessed at `http://localhost:11434`.
-For other models, visit [Ollama Models](https://ollama.ai/library) for more details.
 
-#### 3. Integrate Ollama in Dify
+For other models, visit [Ollama Models](https://ollama.com/library) for more details.
+
+#### 3. Install Ollama Plugin
+Go to the Dify marketplace and search the Ollama to download it.
+
+![](./_assets/ollama-01.png)
+
+#### 4. Integrate Ollama in Dify
 
 In `Settings > Model Providers > Ollama`, fill in:
 
-![](./_assets/ollama_config.PNG)
+![](./_assets/ollama-02.png)
 
-- Model Name：`llava`
+- Model Name：`llama3.2`
 - Base URL: `http://<your-ollama-endpoint-domain>:11434`
 - Enter the base URL where the Ollama service is accessible.
 - If Dify is deployed using Docker, consider using the local network IP address, e.g., `http://192.168.1.100:11434` or `http://host.docker.internal:11434` to access the service.
