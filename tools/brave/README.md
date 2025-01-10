@@ -1,84 +1,62 @@
 ## Overview
 
-**D-ID** is an innovative tool that enables the creation of high-quality, custom videos of Digital Humans from a single image.
+**Brave** is a privacy-focused tool powered by the BraveSearch engine, offering unbiased, independent, and fast search results through its own index. 
 
-In **Dify**, D-ID allows you to bring your visuals to life by animating facial movements and creating realistic talking head videos, making it an excellent choice for storytelling, presentations, and interactive content.
-
----
+In **Dify** , Brave provides secure and accurate search functionality with optional JSON output, which allows structured data exchange. This is particularly useful for LLM applications, as JSON enables clear hierarchical organization of search results, making it easier for models to process, extract key information, and deliver more accurate, contextually relevant responses—all while ensuring user privacy and data security.
 
 ## Configuration
 
-To start using **D-ID**, follow these steps:
+To start using **Brave**, follow these steps:
 
-1. **Install the D-ID Tool** Open the Plugin Marketplace, search for the D-ID tool, and install it to integrate it with your application.
+1. **Install the Brave Tool** Open the Plugin Marketplace, search for the Brave tool, and install it to integrate it with your application.
 
-2. **Get a D-ID API Key** Visit the D-ID platform, create a new API Key, and ensure your account has the necessary permissions to access its features.
+2. **Get a Brave API Key** Visit the Brave platform, create a new API Key, and ensure your account has the necessary permissions to access its features.
 
-3. **Authorize D-ID** In Dify, go to **Plugins > D-ID > Authorize**. Enter your API Key to activate the tool.
+3. **Authorize Brave** In Dify, go to **Plugins > Brave > Authorize**. Enter your API Key to activate the tool.
 
-![](./_assets/vectorizer-01.png)
+![](./_assets/brave-01.png)
 
 ## Tool Features
 
-The **D-ID** plugin provides two robust actions with various configurable options:
+The **Brave** plugin includes the following action:
 
-### Animations
+### BraveSearch
 
-Generate videos matching head movements, expressions, and emotions by using a video or an image.
-
-**Input Variables:**
-
-* **Source URL (Required):** The URL of the source image to animate.
-* **Driver URL:** The URL of the driver video to guide the animation.
-* **Mute:** Choose whether to mute the audio in the output (`True` or `False`).
-* **Stitch:** Enable or disable stitching for smoother transitions (`True` or `False`).
-* **Logo URL:** Add a custom logo overlay on the video.
-* **Logo Position (X, Y):** Specify the coordinates for the logo placement.
-* **Result Format:** Choose the desired output format (e.g., `mp4`).
-
-<img src="./_assets/vectorizer-02.png" width="400"/>
-
-### Talks
-
-Create realistic talking head videos from text or audio inputs.
+Perform a secure and privacy-focused search using the BraveSearch engine.
 
 **Input Variables:**
 
-* **Source URL (Required):** The URL of the source image to animate.
-* **Script Type:** Define the input type (`text` or `audio`).
-* **Text Input (Required for text script):** Enter the text to be spoken.
-* **Audio URL:** Provide the URL of the audio file for synchronization.
-* **Audio Reduce Noise:** Enable noise reduction for clearer audio (`True` or `False`).
-* **Stitch:** Enable or disable stitching for smoother transitions (`True` or `False`).
-* **Sharpen:** Apply sharpening for a crisper image (`True` or `False`).
-* **Fluent:** Ensure fluent lip-syncing (`True` or `False`).
-* **Pad Audio:** Specify additional audio padding.
-* **Driver Expressions:** Adjust the driver video's expressions.
-* **Result Format:** Choose the desired output format (e.g., `mp4`).
+* **Query String (Required):** Provide the text input for the search query. This determines the focus of the search results.
+* **Result Count:** Specify the number of search results to return. Adjust this value to control the breadth of the output.
+* **Ensure ASCII:** Select whether to ensure ASCII encoding for the search query (`True` or `False`).
 
-<img src="./_assets/vectorizer-03.png" width="400"/>
+![](./_assets/brave-02.png)
 
 ## Usage
 
-**D-ID can seamlessly integrate Chatflow / Workflow Apps and Agent Apps.**
+Brave can seamlessly integrate Chatflow / Workflow Apps and Agent Apps.
 
 ### Chatflow / Workflow Apps
 
-1. Add the D-ID node to your Chatflow or Workflow pipeline.
-2. Configure the action (e.g., Animations or Talks) by providing the required source URL and other inputs.
-3. Run the pipeline to generate animations or talking head videos as part of your workflow.
+1. Add the Brave node to your Chatflow or Workflow pipeline.
+2. Configure the "BraveSearch" action by specifying the query string and optional parameters (e.g., result count, ASCII encoding).
+3. Run the pipeline to retrieve secure and accurate search results.
+
+![](./_assets/brave-03.png)
 
 ### Agent Apps
 
-1. Add the D-ID tool to your Agent application.
-2. Send the source URL along with the required input (e.g., text, audio) via the chat interface.
-3. The tool processes your input and returns the generated video.
+1. Add the Brave tool to your Agent application.
+2. Input the search query via the chatbox.
+3. The tool processes your query and returns the corresponding search results.
+
+![](./_assets/brave-04.png)
 
 ## Use Cases
 
-* **Storytelling:** Create animated or talking videos to enhance narratives or interactive experiences.
-* **Marketing and Presentations:** Generate engaging videos for campaigns or professional presentations.
-* **Education and Training:** Produce realistic videos for e-learning content or tutorials.
-* **Virtual Assistants:** Build lifelike digital avatars for customer interactions or AI-driven services.
+* **Privacy-First Web Search:** Perform web searches without compromising privacy or sharing personal data.
+* **Content Discovery:** Quickly retrieve unbiased and relevant information on specific topics.
+* **Research Assistance:** Gather accurate and fast results for academic or professional projects.
+* **Independent Results:** Access search results free from algorithmic bias or external influence.
 
-With **D-ID**, you can transform static images into dynamic, engaging videos, enhancing your content's impact and accessibility.
+With **Brave**, you can ensure secure, unbiased, and efficient search functionality integrated directly into your workflows and applications.
