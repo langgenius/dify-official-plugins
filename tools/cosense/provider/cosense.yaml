@@ -1,0 +1,49 @@
+identity:
+  name: cosense
+  author: teramotodaiki
+  label:
+    en_US: Cosense Search
+    ja_JP: Cosense 検索
+  description:
+    en_US: Search knowledge in Cosense projects
+    ja_JP: Cosenseプロジェクト内の知識を検索
+  icon: icon.svg
+
+tool:
+  name: cosense_search
+  label:
+    en_US: Search Cosense
+    ja_JP: Cosense検索
+  description:
+    en_US: Search knowledge in a Cosense project
+    ja_JP: Cosenseプロジェクト内の知識を検索します
+  parameters:
+    - name: project_name
+      label:
+        en_US: Project Name
+        ja_JP: プロジェクト名
+      type: string
+      required: true
+      description:
+        en_US: The name of the Cosense project to search in
+        ja_JP: 検索対象のCosenseプロジェクト名
+    - name: query
+      label:
+        en_US: Search Query
+        ja_JP: 検索クエリ
+      type: string
+      required: true
+      description:
+        en_US: The search query to find knowledge
+        ja_JP: 知識を検索するためのクエリ
+
+credentials_schema:
+  - name: connect_sid
+    type: secret-input
+    required: false
+    label:
+      en_US: Connect.sid Cookie
+      ja_JP: Connect.sidクッキー
+    help:
+      en_US: Required only for private projects. Find this in your browser cookies after logging into Cosense.
+      ja_JP: プライベートプロジェクトの場合のみ必要です。Cosenseにログイン後、ブラウザのクッキーから取得できます。
