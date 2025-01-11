@@ -61,6 +61,20 @@ Example response:
 
 ## About Cosense
 
-Cosense is a powerful knowledge management and collaboration platform that helps teams create, organize, and share information effectively. Visit [Cosense](https://scrapbox.io) to learn more.
+[Cosense](https://cosen.se/product) is a cutting-edge knowledge management and collaboration platform designed for modern teams. Built on top of Scrapbox.io, it offers:
+
+- **Real-time Collaboration**: Multiple team members can edit and contribute simultaneously
+- **Flexible Organization**: Free-form linking and tagging for organic knowledge structure
+- **Smart Search**: Advanced search capabilities with context-aware results
+- **API Integration**: Rich API support for seamless integration with other tools
+- **Enterprise Features**: SSO, access controls, and security features for business use
+
+Cosense transforms how teams:
+- Share and discover knowledge
+- Document processes and decisions
+- Collaborate on projects and research
+- Build internal wikis and documentation
+
+Visit [Cosense Product Page](https://cosen.se/product) to learn more about its features and capabilities.
 
 Built with ❤️ for the Cosense community
