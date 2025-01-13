@@ -1,0 +1,95 @@
+identity:
+  name: telegraph_advanced
+  author: langgenius
+  label:
+    en_US: Telegraph Advanced
+    ja_JP: Telegraph アドバンスド
+    zh_Hans: Telegraph 高级版
+    pt_BR: Telegraph Avançado
+description:
+  human:
+    en_US: A Telegraph plugin that allows you to publish your content with custom settings
+    ja_JP: カスタム設定でコンテンツを公開できるTelegraphプラグイン
+    zh_Hans: 一个允许您使用自定义设置发布内容的Telegraph插件
+    pt_BR: Um plugin do Telegraph que permite publicar seu conteúdo com configurações personalizadas
+  llm: A telegraph plugin that allows you to publish content as posts. Your content will be published to Telegraph, and the content you provide should be in markdown format.
+parameters:
+  - name: p_title
+    type: string
+    required: true
+    label:
+      en_US: Post Title
+      ja_JP: 投稿タイトル
+      zh_Hans: 文章标题
+      pt_BR: Título da Publicação
+    human_description:
+      en_US: The title of the post
+      ja_JP: 投稿のタイトル
+      zh_Hans: 文章的标题
+      pt_BR: O título da publicação
+    llm_description: The title of the post, should be pure plain text, short and meaningful.
+    form: llm
+  - name: p_content
+    type: string
+    required: true
+    label:
+      en_US: Post Content
+      ja_JP: 投稿内容
+      zh_Hans: 文章内容
+      pt_BR: Conteúdo da Publicação
+    human_description:
+      en_US: The content of the post
+      ja_JP: 投稿の内容
+      zh_Hans: 文章的内容
+      pt_BR: O conteúdo da publicação
+    llm_description: The content of the post, should be in markdown format.
+    form: llm
+  - name: a_telegraph_access_token
+    type: string
+    required: false
+    label:
+      en_US: Alternative Telegraph Access Token
+      ja_JP: 代替のTelegraphアクセストークン
+      zh_Hans: 替代Telegraph访问令牌
+      pt_BR: Token de Acesso Alternativo do Telegraph
+    human_description:
+      en_US: The Telegraph Access Token for temporary replacement. This article will use this account (Token) instead of the default account for publication.
+      ja_JP: 一時的な代替用のTelegraphアクセストークン。この記事は、デフォルトアカウントの代わりにこのアカウント（トークン）を使用して公開されます。
+      zh_Hans: 临时替代的Telegraph访问令牌。本文将使用此账号（令牌）而不是默认账号来发布。
+      pt_BR: O Token de Acesso do Telegraph para substituição temporária. Este artigo usará esta conta (Token) em vez da conta padrão para publicação.
+    form: form
+  - name: a_author_name
+    type: string
+    required: false
+    label:
+      en_US: Author Name
+      ja_JP: 著者名
+      zh_Hans: 作者姓名
+      pt_BR: Nome do Autor
+    human_description:
+      en_US: Optional. Author name displayed below the article's title. This will replace the default name associated with the account.
+      ja_JP: オプション。記事のタイトルの下に表示される著者名。アカウントに関連付けられているデフォルトの名前を置き換えます。
+      zh_Hans: 可选。显示在文章标题下方的作者姓名。这将替换与账号关联的默认名称。
+      pt_BR: Opcional. Nome do autor exibido abaixo do título do artigo. Isso substituirá o nome padrão associado à conta.
+    llm_description: Author name, 0-128 characters in length. If not provided, the default name associated with the account will be used.
+    form: llm
+    max_length: 128
+  - name: a_author_url
+    type: string
+    required: false
+    label:
+      en_US: Author URL
+      ja_JP: 著者URL
+      zh_Hans: 作者链接
+      pt_BR: URL do Autor
+    human_description:
+      en_US: Optional. Profile link for the author, opened when users click on the author's name below the title. This will replace the default link associated with the account. Please provide a valid URL, usually start with http:// or https://.
+      ja_JP: オプション。タイトルの下の著者名をクリックした時に開くプロフィールリンク。アカウントに関連付けられているデフォルトのリンクを置き換えます。有効なURL（通常はhttp://またはhttps://で始まる）を入力してください。
+      zh_Hans: 可选。作者的个人资料链接，用户点击标题下方的作者姓名时打开。这将替换与账号关联的默认链接。请提供有效的URL，通常以http://或https://开头。
+      pt_BR: Link do perfil do autor, aberto quando os usuários clicam no nome do autor abaixo do título. Isso substituirá o link padrão associado à conta. Forneça um URL válido, geralmente começando com http:// ou https://.
+    llm_description: Profile link for the author, 0-512 characters in length. Can be any link, not necessarily a Telegram profile or channel link. If not provided, the default link associated with the account will be used. Please provide a valid URL, usually start with http:// or https://.
+    form: llm
+    max_length: 512
+extra:
+  python:
+    source: tools/telegraph_advanced.py

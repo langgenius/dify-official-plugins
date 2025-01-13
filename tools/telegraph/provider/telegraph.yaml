@@ -1,0 +1,42 @@
+identity:
+  author: langgenius
+  name: telegraph
+  label:
+    en_US: Telegraph
+    zh_Hans: Telegraph
+    pt_BR: Telegraph
+  tags:
+    - productivity
+    - utilities
+  description:
+    en_US: A Telegraph plugin that allows you to publish your content easily
+    ja_JP: コンテンツを簡単に公開できるTelegraphプラグイン
+    zh_Hans: 一个让您轻松发布内容的Telegraph插件
+    pt_BR: Um plugin do Telegraph que permite publicar seu conteúdo facilmente
+  icon: icon.jpg
+credentials_for_provider:
+  telegraph_access_token:
+    type: secret-input
+    required: true
+    label:
+      en_US: Telegraph Access Token
+      ja_JP: Telegraph Access Token
+      zh_Hans: Telegraph Access Token
+      pt_BR: Telegraph Access Token
+    placeholder:
+      en_US: Please input your Telegraph Access Token
+      ja_JP: Telegraphアクセストークンを入力してください
+      zh_Hans: 请输入您的Telegraph访问令牌
+      pt_BR: Por favor, insira seu Token de Acesso do Telegraph
+    help:
+    en_US: Get your Access Token from Telegraph
+    ja_JP: Telegraphからアクセストークンを取得
+    zh_Hans: 从Telegraph获取访问令牌
+    pt_BR: Obtenha seu Token de Acesso do Telegraph
+    url: https://telegra.ph/api#createAccount
+tools:
+  - tools/telegraph.yaml
+  - tools/telegraph_advanced.yaml
+extra:
+  python:
+    source: provider/telegraph.py
