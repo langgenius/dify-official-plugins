@@ -35,7 +35,7 @@ parameters:
     llm_description: Describe what you don't want included in the image.
     name: negative_prompt
     type: string
-  - default: sd_3
+  - default: sd_3.5_large
     form: form
     human_description:
       en_US: "Description in English"
@@ -43,17 +43,14 @@ parameters:
     label:
       en_US: Choose Image Model
       zh_Hans: 选择生成图片的模型
-    name: model
+    name: sd_model
     options:
-      - label:
-          en_US: Stable Diffusion 3
-        value: sd_3
-      - label:
-          en_US: Stable Diffusion XL
-        value: sd_xl
       - label:
           en_US: Stable Diffusion 3.5 Large
         value: sd_3.5_large
+      - label:
+          en_US: Stable Diffusion 3.5 Large Turbo
+        value: sd_3.5_large_turbo
     required: true
     type: select
   - default: 1024x1024
@@ -70,20 +67,20 @@ parameters:
           en_US: 1024x1024
         value: 1024x1024
       - label:
-          en_US: 1024x2048
-        value: 1024x2048
+          en_US: 1024x512
+        value: 1024x512
       - label:
-          en_US: 1152x2048
-        value: 1152x2048
+          en_US: 768x512
+        value: 768x512
       - label:
-          en_US: 1536x1024
-        value: 1536x1024
+          en_US: 768x1024
+        value: 768x1024
       - label:
-          en_US: 1536x2048
-        value: 1536x2048
+          en_US: 1024x576
+        value: 1024x576
       - label:
-          en_US: 2048x1152
-        value: 2048x1152
+          en_US: 576x1024
+        value: 576x1024
     required: true
     type: select
   - default: 1
@@ -114,13 +111,13 @@ parameters:
     name: guidance_scale
     required: true
     type: number
-  - default: 20
+  - default: 4
     form: form
     human_description:
       en_US:
         The number of inference steps to perform. More steps produce higher quality
         but take longer.
-      zh_Hans: 执行的推理步骤数量。更多的步骤可以产生更高质量的结果，但需要更长的时间。
+      zh_Hans: 执行的推理步骤数量。更多的步骤可以产生更高质量的结果，但需要更长的时间。stable-diffusion-3-5-large-turbo 模型仅支持 4 步生成。
     label:
       en_US: Num Inference Steps
       zh_Hans: 生成图片的步数

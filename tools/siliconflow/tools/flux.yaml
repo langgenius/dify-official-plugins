@@ -23,7 +23,7 @@ parameters:
     name: prompt
     required: true
     type: string
-  - default: schnell
+  - default: FLUX.1-schnell
     form: form
     human_description:
       en_US: Choose the model version for image generation
@@ -34,11 +34,14 @@ parameters:
     name: model
     options:
       - label:
-          en_US: Flux.1-schnell
-        value: schnell
+          en_US: FLUX.1-schnell
+        value: FLUX.1-schnell
       - label:
           en_US: Flux.1-dev
-        value: dev
+        value: Flux.1-dev
+      - label:
+          en_US: FLUX.1-pro
+        value: FLUX.1-pro
     required: true
     type: select
   - default: 1024x1024

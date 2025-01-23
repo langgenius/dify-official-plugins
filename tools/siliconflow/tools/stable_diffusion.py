@@ -5,9 +5,8 @@ from dify_plugin import Tool
 
 SILICONFLOW_API_URL = "https://api.siliconflow.cn/v1/image/generations"
 SD_MODELS = {
-    "sd_3": "stabilityai/stable-diffusion-3-medium",
-    "sd_xl": "stabilityai/stable-diffusion-xl-base-1.0",
     "sd_3.5_large": "stabilityai/stable-diffusion-3-5-large",
+    "sd_3.5_large_turbo": "stabilityai/stable-diffusion-3-5-large-turbo",
 }
 
 
@@ -20,7 +19,7 @@ class StableDiffusionTool(Tool):
             "content-type": "application/json",
             "authorization": f"Bearer {self.runtime.credentials['siliconFlow_api_key']}",
         }
-        model = tool_parameters.get("model", "sd_3")
+        model = tool_parameters.get("model", "sd_3.5_large_turbo")
         sd_model = SD_MODELS.get(model)
         payload = {
             "model": sd_model,
@@ -30,7 +29,7 @@ class StableDiffusionTool(Tool):
             "batch_size": tool_parameters.get("batch_size", 1),
             "seed": tool_parameters.get("seed"),
             "guidance_scale": tool_parameters.get("guidance_scale", 7.5),
-            "num_inference_steps": tool_parameters.get("num_inference_steps", 20),
+            "num_inference_steps": tool_parameters.get("num_inference_steps", 4),
         }
         response = requests.post(SILICONFLOW_API_URL, json=payload, headers=headers)
         if response.status_code != 200:
