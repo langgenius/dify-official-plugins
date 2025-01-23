@@ -1,25 +1,15 @@
-model: deepseek-coder-33B-instruct-chat
+model: Qwen2.5-14B-Instruct
 label:
-  zh_Hans: deepseek-coder-33B-instruct-chat
-  en_US: deepseek-coder-33B-instruct-chat
+  zh_Hans: Qwen2.5-14B-Instruct
+  en_US: Qwen2.5-14B-Instruct
 model_type: llm
 features:
-  - agent-thought
+  - tool-call
+  - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 9000
+  context_size: 24576
 parameter_rules:
-  - name: stream
-    label:
-      en_US: "Stream"
-      zh_Hans: "流式"
-    type: boolean
-    default: true
-    required: true
-    help:
-      en_US: "Whether to return the results in batches through streaming. If set to true, the generated text will be pushed to the user in real time during the generation process."
-      zh_Hans: "是否通过流式分批返回结果。如果设置为 true，生成过程中实时地向用户推送每一部分生成的文本。"
-
   - name: max_tokens
     use_template: max_tokens
     label:

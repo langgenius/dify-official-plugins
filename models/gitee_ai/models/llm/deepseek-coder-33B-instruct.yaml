@@ -1,13 +1,13 @@
-model: Yi-1.5-34B-Chat
+model: deepseek-coder-33B-instruct
 label:
-  zh_Hans: Yi-1.5-34B-Chat
-  en_US: Yi-1.5-34B-Chat
+  zh_Hans: deepseek-coder-33B-instruct
+  en_US: deepseek-coder-33B-instruct
 model_type: llm
 features:
-  - agent-thought
+  - tool-call
 model_properties:
   mode: chat
-  context_size: 4096
+  context_size: 8192
 parameter_rules:
   - name: stream
     label:

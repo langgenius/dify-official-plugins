@@ -4,5 +4,5 @@ label:
   en_US: bge-small-zh-v1.5
 model_type: text-embedding
 model_properties:
-  context_size: 200000
+  context_size: 512
   max_chunks: 20

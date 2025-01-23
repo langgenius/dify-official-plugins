@@ -1,14 +1,13 @@
-model: Qwen2-7B-Instruct
+model: Yi-34B-Chat
 label:
-  zh_Hans: Qwen2-7B-Instruct
-  en_US: Qwen2-7B-Instruct
+  zh_Hans: Yi-34B-Chat
+  en_US: Yi-34B-Chat
 model_type: llm
 features:
   - tool-call
-  - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 24576
+  context_size: 4096
 parameter_rules:
   - name: stream
     label:

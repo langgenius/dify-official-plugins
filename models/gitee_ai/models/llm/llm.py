@@ -1,5 +1,6 @@
 from collections.abc import Generator
 from typing import Optional, Union
+
 from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model import ModelFeature
 from dify_plugin.entities.model.llm import LLMMode, LLMResult
@@ -7,11 +8,6 @@ from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
 
 
 class GiteeAILargeLanguageModel(OAICompatLargeLanguageModel):
-    MODEL_TO_IDENTITY: dict[str, str] = {
-        "Yi-1.5-34B-Chat": "Yi-34B-Chat",
-        "deepseek-coder-33B-instruct-completions": "deepseek-coder-33B-instruct",
-        "deepseek-coder-33B-instruct-chat": "deepseek-coder-33B-instruct",
-    }
 
     def _invoke(
         self,
@@ -32,14 +28,11 @@ class GiteeAILargeLanguageModel(OAICompatLargeLanguageModel):
         super().validate_credentials(model, credentials)
 
     def _add_custom_parameters(self, credentials: dict, model: str, model_parameters: dict) -> None:
-        if model is None:
-            model = "bge-large-zh-v1.5"
-        model_identity = GiteeAILargeLanguageModel.MODEL_TO_IDENTITY.get(model, model)
-        credentials["endpoint_url"] = f"https://ai.gitee.com/api/serverless/{model_identity}/"
-        if model.endswith("completions"):
-            credentials["mode"] = LLMMode.COMPLETION.value
-        else:
-            credentials["mode"] = LLMMode.CHAT.value
+        credentials["endpoint_url"] = "https://ai.gitee.com/v1"
+        credentials["mode"] = LLMMode.COMPLETION.value
+
         schema = self.get_model_schema(model, credentials)
-        if ModelFeature.TOOL_CALL in schema.features or ModelFeature.MULTI_TOOL_CALL in schema.features:
+        assert schema is not None, f"Model schema not found for model {model}"
+        assert schema.features is not None, f"Model features not found for model {model}"
+        if ModelFeature.TOOL_CALL in schema.features or ModelFeature.MULTI_TOOL_CALL in schema.features or ModelFeature.STREAM_TOOL_CALL in schema.features:
             credentials["function_calling_type"] = "tool_call"

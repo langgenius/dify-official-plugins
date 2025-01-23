@@ -1,26 +1,14 @@
-model: Qwen2-7B-Instruct
+model: QwQ-32B-Preview
 label:
-  zh_Hans: Qwen2-7B-Instruct
-  en_US: Qwen2-7B-Instruct
+  zh_Hans: QwQ-32B-Preview
+  en_US: QwQ-32B-Preview
 model_type: llm
 features:
-  - tool-call
-  - stream-tool-call
+  - agent-thought
 model_properties:
   mode: chat
-  context_size: 24576
+  context_size: 32768
 parameter_rules:
-  - name: stream
-    label:
-      en_US: "Stream"
-      zh_Hans: "流式"
-    type: boolean
-    default: true
-    required: true
-    help:
-      en_US: "Whether to return the results in batches through streaming. If set to true, the generated text will be pushed to the user in real time during the generation process."
-      zh_Hans: "是否通过流式分批返回结果。如果设置为 true，生成过程中实时地向用户推送每一部分生成的文本。"
-
   - name: max_tokens
     use_template: max_tokens
     label:

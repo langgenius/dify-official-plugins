@@ -1,25 +1,14 @@
-model: deepseek-coder-33B-instruct-completions
+model: InternVL2-8B
 label:
-  zh_Hans: deepseek-coder-33B-instruct-completions
-  en_US: deepseek-coder-33B-instruct-completions
+  zh_Hans: InternVL2-8B
+  en_US: InternVL2-8B
 model_type: llm
 features:
-  - agent-thought
+  - vision
 model_properties:
-  mode: completion
-  context_size: 9000
+  mode: chat
+  context_size: 32768
 parameter_rules:
-  - name: stream
-    label:
-      en_US: "Stream"
-      zh_Hans: "流式"
-    type: boolean
-    default: true
-    required: true
-    help:
-      en_US: "Whether to return the results in batches through streaming. If set to true, the generated text will be pushed to the user in real time during the generation process."
-      zh_Hans: "是否通过流式分批返回结果。如果设置为 true，生成过程中实时地向用户推送每一部分生成的文本。"
-
   - name: max_tokens
     use_template: max_tokens
     label:
@@ -62,6 +51,19 @@ parameter_rules:
     help:
       en_US: "The value range of the sampling method is [0.0, 1.0]. The top_p value determines that the model selects tokens from the top p% of candidate words with the highest probability; when top_p is 0, this parameter is invalid. It is recommended to adjust either top_p or temperature parameters according to your needs to avoid adjusting both at the same time."
       zh_Hans: "采样方法的取值范围为 [0.0,1.0]。top_p 值确定模型从概率最高的前p%的候选词中选取 tokens；当 top_p 为 0 时，此参数无效。建议根据需求调整 top_p 或 temperature 参数，避免同时调整两者。"
+
+  - name: top_k
+    label:
+      en_US: "Top K"
+      zh_Hans: "Top K"
+    type: int
+    default: 50
+    min: 0
+    max: 100
+    required: true
+    help:
+      en_US: "The value range is [0,100], which limits the model to only select from the top k words with the highest probability when choosing the next word at each step. The larger the value, the more diverse text generation will be."
+      zh_Hans: "取值范围为 [0,100]，限制模型在每一步选择下一个词时，只从概率最高的前 k 个词中选取。数值越大，文本生成越多样。"
 
   - name: frequency_penalty
     use_template: frequency_penalty
