@@ -43,7 +43,7 @@ parameters:
     label:
       en_US: Choose Image Model
       zh_Hans: 选择生成图片的模型
-    name: sd_model
+    name: model
     options:
       - label:
           en_US: Stable Diffusion 3.5 Large

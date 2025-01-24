@@ -27,3 +27,4 @@ identity:
 tools:
   - tools/flux.yaml
   - tools/stable_diffusion.yaml
+  - tools/video.yaml
