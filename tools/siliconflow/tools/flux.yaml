@@ -37,8 +37,8 @@ parameters:
           en_US: FLUX.1-schnell
         value: FLUX.1-schnell
       - label:
-          en_US: Flux.1-dev
-        value: Flux.1-dev
+          en_US: FLUX.1-dev
+        value: FLUX.1-dev
       - label:
           en_US: FLUX.1-pro
         value: FLUX.1-pro

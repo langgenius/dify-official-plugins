@@ -11,7 +11,7 @@ extra:
   python:
     source: provider/siliconflow.py
 identity:
-  author: hjlarry
+  author: hjlarry, SiliconFlow
   description:
     en_US:
       The image generation API provided by SiliconFlow includes Flux and Stable
