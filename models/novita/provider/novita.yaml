@@ -1,4 +1,4 @@
-background: "#eadeff"
+background: "#c7fce2"
 configurate_methods:
   - predefined-model
 description:
@@ -11,16 +11,16 @@ extra:
     provider_source: provider/novita.py
 help:
   title:
-    en_US: Get your API key from novita.ai
-    zh_Hans: 从 novita.ai 获取 API Key
+    en_US: Get your API key from Novita AI
+    zh_Hans: 从 Novita AI 获取 API Key
   url:
-    en_US: https://novita.ai/settings#key-management?utm_source=dify&utm_medium=ch&utm_campaign=api
+    en_US: https://novita.ai/settings/key-management?utm_source=dify&utm_medium=ch&utm_campaign=api
 icon_large:
   en_US: icon_l_en.svg
 icon_small:
   en_US: icon_s_en.svg
 label:
-  en_US: novita.ai
+  en_US: Novita AI
 models:
   llm:
     predefined:

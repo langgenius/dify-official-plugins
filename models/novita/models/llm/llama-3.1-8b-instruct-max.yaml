@@ -1,13 +1,13 @@
-model: microsoft/wizardlm-2-8x22b
+model: meta-llama/llama-3.1-8b-instruct-max
 label:
-  zh_Hans: Wizardlm 2 8x22B
-  en_US: Wizardlm 2 8x22B
+  zh_Hans: "Llama3.1 8B Instruct Max\t"
+  en_US: "Llama3.1 8B Instruct Max\t"
 model_type: llm
 features:
   - agent-thought
 model_properties:
   mode: chat
-  context_size: 65535
+  context_size: 16384
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -35,7 +35,7 @@ parameter_rules:
     max: 2
     default: 0
 pricing:
-  input: '0.0062'
-  output: '0.0062'
+  input: '0.0005'
+  output: '0.0005'
   unit: '0.0001'
   currency: USD

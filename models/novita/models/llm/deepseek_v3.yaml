@@ -1,13 +1,13 @@
-model: microsoft/wizardlm-2-8x22b
+model: deepseek/deepseek_v3
 label:
-  zh_Hans: Wizardlm 2 8x22B
-  en_US: Wizardlm 2 8x22B
+  zh_Hans: DeepSeek V3
+  en_US: DeepSeek V3
 model_type: llm
 features:
   - agent-thought
 model_properties:
   mode: chat
-  context_size: 65535
+  context_size: 64000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -35,7 +35,7 @@ parameter_rules:
     max: 2
     default: 0
 pricing:
-  input: '0.0062'
-  output: '0.0062'
+  input: '0.0089'
+  output: '0.0089'
   unit: '0.0001'
   currency: USD
