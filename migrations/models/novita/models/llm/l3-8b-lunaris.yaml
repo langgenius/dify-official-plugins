@@ -1,13 +1,13 @@
-model: microsoft/wizardlm-2-8x22b
+model: sao10k/l3-8b-lunaris
 label:
-  zh_Hans: Wizardlm 2 8x22B
-  en_US: Wizardlm 2 8x22B
+  zh_Hans: "Sao10k L3 8B Lunaris"
+  en_US: "Sao10k L3 8B Lunaris"
 model_type: llm
 features:
   - agent-thought
 model_properties:
   mode: chat
-  context_size: 65535
+  context_size: 8192
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -35,7 +35,7 @@ parameter_rules:
     max: 2
     default: 0
 pricing:
-  input: '0.0062'
-  output: '0.0062'
+  input: '0.0005'
+  output: '0.0005'
   unit: '0.0001'
   currency: USD
