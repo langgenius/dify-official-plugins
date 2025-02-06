@@ -1,0 +1,51 @@
+description:
+  human:
+    en_US: Generate image via SiliconFlow's deepseek-ai/Janus-Pro-7B model.
+  llm: This tool is used to generate image from prompt via SiliconFlow's Janus-Pro-7B model.
+extra:
+  python:
+    source: tools/janus-pro.py
+identity:
+  author: SiliconFlow, Inc.
+  icon: icon.svg
+  label:
+    en_US: Janus-Pro-7B
+  name: Janus-Pro-7B
+parameters:
+  - form: llm
+    human_description:
+      en_US: The text prompt used to generate the image.
+      zh_Hans: 建议用英文的生成图片提示词以获得更好的生成效果。
+    label:
+      en_US: prompt
+      zh_Hans: 提示词
+    llm_description: this prompt text will be used to generate image.
+    name: prompt
+    required: true
+    type: string
+  - default: Janus-Pro-7B
+    form: form
+    human_description:
+      en_US: Choose the model version for image generation
+      zh_Hans: 选择用于图像生成的模型版本
+    label:
+      en_US: Choose Image Model
+      zh_Hans: 选择生成图片的模型
+    name: model
+    options:
+      - label:
+          en_US: Janus-Pro-7B
+        value: Janus-Pro-7B
+    required: true
+    type: select
+  - form: form
+    human_description:
+      en_US: The same seed and prompt can produce similar images.
+      zh_Hans: 相同的种子和提示可以产生相似的图像。
+    label:
+      en_US: Seed
+      zh_Hans: 种子
+    max: 9999999999
+    min: 0
+    name: seed
+    type: number

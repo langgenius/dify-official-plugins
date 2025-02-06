@@ -1,9 +1,11 @@
-model: Qwen/Qwen2.5-72B-Instruct
+model: meta-llama/Llama-3.3-70B-Instruct
 label:
-  en_US: Qwen/Qwen2.5-72B-Instruct
+  en_US: meta-llama/Llama-3.3-70B-Instruct
 model_type: llm
 features:
   - agent-thought
+  - tool-call
+  - stream-tool-call
 model_properties:
   mode: chat
   context_size: 32768
