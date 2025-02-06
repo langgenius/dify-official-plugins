@@ -29,7 +29,7 @@ class GiteeAILargeLanguageModel(OAICompatLargeLanguageModel):
 
     def _add_custom_parameters(self, credentials: dict, model: str, model_parameters: dict) -> None:
         credentials["endpoint_url"] = "https://ai.gitee.com/v1"
-        credentials["mode"] = LLMMode.COMPLETION.value
+        credentials["mode"] = LLMMode.CHAT.value
 
         schema = self.get_model_schema(model, credentials)
         assert schema is not None, f"Model schema not found for model {model}"
