@@ -64,9 +64,9 @@ class SiliconflowLargeLanguageModel(OAICompatLargeLanguageModel):
                 ParameterRule(
                     name="max_tokens",
                     use_template="max_tokens",
-                    default=512,
+                    default=4096,
                     min=1,
-                    max=int(credentials.get("max_tokens", 1024)),
+                    max=int(credentials.get("max_tokens", 16384)),
                     label=I18nObject(en_US="Max Tokens", zh_Hans="最大标记"),
                     type=ParameterType.INT,
                 ),

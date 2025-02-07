@@ -1,37 +1,38 @@
-model: fishaudio/fish-speech-1.4
+model: RVC-Boss/GPT-SoVITS
 model_type: tts
 model_properties:
-  default_voice: 'fishaudio/fish-speech-1.4:alex'
+  default_voice: 'RVC-Boss/GPT-SoVITS:alex'
   voices:
-    - mode: "fishaudio/fish-speech-1.4:alex"
+    - mode: "RVC-Boss/GPT-SoVITS:alex"
       name: "Alex（男声）"
       language: [ "zh-Hans", "en-US" ]
-    - mode: "fishaudio/fish-speech-1.4:benjamin"
+    - mode: "RVC-Boss/GPT-SoVITS:benjamin"
       name: "Benjamin（男声）"
       language: [ "zh-Hans", "en-US" ]
-    - mode: "fishaudio/fish-speech-1.4:charles"
+    - mode: "RVC-Boss/GPT-SoVITS:charles"
       name: "Charles（男声）"
       language: [ "zh-Hans", "en-US" ]
-    - mode: "fishaudio/fish-speech-1.4:david"
+    - mode: "RVC-Boss/GPT-SoVITS:david"
       name: "David（男声）"
       language: [ "zh-Hans", "en-US" ]
-    - mode: "fishaudio/fish-speech-1.4:anna"
+    - mode: "RVC-Boss/GPT-SoVITS:anna"
       name: "Anna（女声）"
       language: [ "zh-Hans", "en-US" ]
-    - mode: "fishaudio/fish-speech-1.4:bella"
+    - mode: "RVC-Boss/GPT-SoVITS:bella"
       name: "Bella（女声）"
       language: [ "zh-Hans", "en-US" ]
-    - mode: "fishaudio/fish-speech-1.4:claire"
+    - mode: "RVC-Boss/GPT-SoVITS:claire"
       name: "Claire（女声）"
       language: [ "zh-Hans", "en-US" ]
-    - mode: "fishaudio/fish-speech-1.4:diana"
+    - mode: "RVC-Boss/GPT-SoVITS:diana"
       name: "Diana（女声）"
       language: [ "zh-Hans", "en-US" ]
   audio_type: 'mp3'
   max_workers: 5
   # stream: false
 pricing:
-  input: '105'
+  input: '50'
   output: '0'
   unit: '0.000001'
   currency: RMB
+
