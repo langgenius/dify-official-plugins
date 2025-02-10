@@ -1,0 +1,33 @@
+identity:
+  author: langgenius
+  name: e2b
+  label:
+    en_US: E2B
+    zh_Hans: E2B
+    pt_BR: E2B
+  description:
+    en_US: Tool for integrate with e2b.dev.
+    zh_Hans: Tool for integrate with e2b.dev.
+    pt_BR: Tool for integrate with e2b.dev.
+  icon: icon.svg
+credentials_for_provider:
+  api_key:
+    description:
+      en_US: API Key for E2B
+      zh_Hans: E2B 的 API 密钥
+    help:
+      en_US: You can get the API key from the E2B dashboard
+      zh_Hans: 你可以从 E2B 仪表板获取 API 密钥
+    label:
+      en_US: API Key
+      zh_Hans: API 密钥
+    required: true
+    type: secret-input
+tools:
+  - tools/run_code.yaml
+  - tools/run_command.yaml
+  # - tools/upload_file.yaml
+  - tools/download_file.yaml
+extra:
+  python:
+    source: provider/e2b.py

@@ -1,0 +1,43 @@
+identity:
+  name: download_file
+  author: langgenius
+  label:
+    en_US: Download File
+    zh_Hans: 下载文件
+    pt_BR: Baixar Arquivo
+description:
+  human:
+    en_US: Download a file from a sandboxed environment.
+    zh_Hans: 从沙盒环境中下载一个文件。
+    pt_BR: Baixar um arquivo de um ambiente sandboxed.
+  llm: Download a file from a sandboxed environment.
+parameters:
+  - name: file_path
+    type: string
+    required: true
+    label:
+      en_US: File Path
+      zh_Hans: 文件路径
+      pt_BR: Caminho do Arquivo
+    human_description:
+      en_US: The path of the file to download
+      zh_Hans: 要下载的文件路径
+      pt_BR: O caminho do arquivo a ser baixado
+    llm_description: The path of the file to download
+    form: llm
+  - name: sandbox_id
+    type: string
+    required: true
+    label:
+      en_US: Sandbox ID
+      zh_Hans: 沙盒 ID
+      pt_BR: ID do Sandbox
+    human_description:
+      en_US: The ID of an existing sandbox.
+      zh_Hans: 一个现有沙盒的 ID。
+      pt_BR: O ID de um sandbox existente.
+    llm_description: The ID of an existing sandbox.
+    form: llm
+extra:
+  python:
+    source: tools/download_file.py

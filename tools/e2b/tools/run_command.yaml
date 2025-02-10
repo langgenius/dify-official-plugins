@@ -1,0 +1,58 @@
+identity:
+  name: run_command
+  author: langgenius
+  label:
+    en_US: Run Command
+    zh_Hans: 运行命令
+    pt_BR: Executar comando
+description:
+  human:
+    en_US: Run a command in a sandboxed environment.
+    zh_Hans: 在沙盒环境中运行一个命令。
+    pt_BR: Executar um comando em um ambiente sandboxed.
+  llm: Run a command in a sandboxed environment.
+parameters:
+  - name: command
+    type: string
+    required: true
+    label:
+      en_US: Command
+      zh_Hans: 命令
+      pt_BR: Comando
+    human_description:
+      en_US: The command to execute in the sandbox environment.
+      zh_Hans: 要在沙盒环境中执行的命令。
+      pt_BR: O comando a ser executado no ambiente sandbox.
+    llm_description: The command to execute in the sandbox environment.
+    form: llm
+  - name: sandbox_id
+    type: string
+    required: false
+    label:
+      en_US: Sandbox ID
+      zh_Hans: 沙盒 ID
+      pt_BR: ID do Sandbox
+    human_description:
+      en_US: The ID of an existing sandbox, if not provided, a new sandbox will be created.
+      zh_Hans: 一个现有沙盒的 ID, 如果未提供, 将创建一个新的沙盒。
+      pt_BR: O ID de um sandbox existente, se não fornecido, um novo sandbox será criado.
+    llm_description: The ID of an existing sandbox, if not provided, a new sandbox will be created.
+    form: llm
+    default: ""
+  - name: timeout
+    type: number
+    required: false
+    label:
+      en_US: Timeout
+      zh_Hans: 超时
+      pt_BR: Tempo limite
+    human_description:
+      en_US: The lifetime of the sandbox in seconds, 120 seconds by default.
+      zh_Hans: 沙盒的生命周期（秒），默认 120 秒。
+      pt_BR: O tempo de vida do sandbox em segundos, 120 segundos por padrão.
+    llm_description: The lifetime of the sandbox in seconds.
+    form: llm
+    default: 120
+extra:
+  python:
+    source: tools/run_command.py
