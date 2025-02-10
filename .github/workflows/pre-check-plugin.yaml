@@ -84,7 +84,7 @@ jobs:
           if [ -f ${{ env.PLUGIN_PATH }}/requirements.txt ]; then
             source .venv/bin/activate
           fi
-          export INSTALL_METHOD=aws_lambda
+          export INSTALL_METHOD=serverless
           python3 .scripts/validator/test-plugin-install.py -d ${{ env.PLUGIN_PATH }}
 
       - name: Check Packaging
