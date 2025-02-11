@@ -1227,7 +1227,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             raise NotImplementedError(
                 f"get_num_tokens_from_messages() is not presently implemented "
                 f"for model {model}."
-                "See https://github.com/openai/openai-python/blob/main/chatml.md for "
+                "See https://platform.openai.com/docs/advanced-usage/managing-tokens for for "
                 "information on how messages are converted to tokens."
             )
         num_tokens = 0
