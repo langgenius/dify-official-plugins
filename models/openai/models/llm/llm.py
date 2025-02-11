@@ -702,6 +702,17 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         # clear illegal prompt messages
         prompt_messages = self._clear_illegal_prompt_messages(model, prompt_messages)
 
+        # o1, o3 compatibility
+        if model.startswith(("o1", "o3")):
+            if "max_tokens" in model_parameters:
+                model_parameters["max_completion_tokens"] = model_parameters[
+                    "max_tokens"
+                ]
+                del model_parameters["max_tokens"]
+
+            if "stop" in extra_model_kwargs:
+                del extra_model_kwargs["stop"]
+
         # chat model
         response = client.chat.completions.create(
             messages=[self._convert_prompt_message_to_dict(m) for m in prompt_messages],  # type: ignore
@@ -939,7 +950,10 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         tool_calls = []
         if response_tool_calls:
             for response_tool_call in response_tool_calls:
-                assert isinstance(response_tool_call, (ChatCompletionMessageToolCall, ChoiceDeltaToolCall))
+                assert isinstance(
+                    response_tool_call,
+                    (ChatCompletionMessageToolCall, ChoiceDeltaToolCall),
+                )
                 if response_tool_call.function:
                     function = AssistantPromptMessage.ToolCall.ToolCallFunction(
                         name=response_tool_call.function.name or "",
@@ -966,7 +980,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         """
         tool_call = None
         if response_function_call:
-            assert isinstance(response_function_call, (FunctionCall, ChoiceDeltaFunctionCall))
+            assert isinstance(
+                response_function_call, (FunctionCall, ChoiceDeltaFunctionCall)
+            )
 
             function = AssistantPromptMessage.ToolCall.ToolCallFunction(
                 name=response_function_call.name or "",
@@ -1010,6 +1026,23 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                                     for item in prompt_message.content
                                 ]
                             )
+
+        # o1, o3 compatibility
+        if model.startswith(("o1", "o3")):
+            system_message_count = len(
+                [m for m in prompt_messages if isinstance(m, SystemPromptMessage)]
+            )
+            if system_message_count > 0:
+                new_prompt_messages = []
+                for prompt_message in prompt_messages:
+                    if isinstance(prompt_message, SystemPromptMessage):
+                        prompt_message = UserPromptMessage(
+                            content=prompt_message.content,
+                            name=prompt_message.name,
+                        )
+
+                    new_prompt_messages.append(prompt_message)
+                prompt_messages = new_prompt_messages
 
         return prompt_messages
 
@@ -1118,6 +1151,10 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         if model.startswith("ft:"):
             model = model.split(":")[1]
 
+        # Currently, we can use gpt4o to calculate chatgpt-4o-latest's token.
+        if model == "chatgpt-4o-latest" or model.startswith(("o1", "o3")):
+            model = "gpt-4o"
+
         try:
             encoding = tiktoken.encoding_for_model(model)
         except KeyError:
@@ -1130,7 +1167,11 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             tokens_per_message = 4
             # if there's a name, the role is omitted
             tokens_per_name = -1
-        elif model.startswith("gpt-3.5-turbo") or model.startswith("gpt-4"):
+        elif (
+            model.startswith("gpt-3.5-turbo")
+            or model.startswith("gpt-4")
+            or model.startswith(("o1", "o3"))
+        ):
             tokens_per_message = 3
             tokens_per_name = 1
         else:
