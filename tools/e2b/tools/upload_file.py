@@ -14,10 +14,6 @@ class UploadFileTool(Tool):
         file_path = tool_parameters.get("file_path", "")
         file = tool_parameters.get("file", "")
 
-        print(file_path)
-        print(file)
-        print(type(file))
-
         if not sandbox_id:
             raise ValueError("Sandbox ID is required")
 
