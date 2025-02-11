@@ -26,7 +26,7 @@ credentials_for_provider:
 tools:
   - tools/run_code.yaml
   - tools/run_command.yaml
-  # - tools/upload_file.yaml
+  - tools/upload_file.yaml
   - tools/download_file.yaml
 extra:
   python:
