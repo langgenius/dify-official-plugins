@@ -1,7 +1,7 @@
 model: meta-llama/llama-3.1-8b-instruct-max
 label:
-  zh_Hans: "Llama3.1 8B Instruct Max"
-  en_US: "Llama3.1 8B Instruct Max"
+  zh_Hans: Llama3.1 8B Instruct Max
+  en_US: Llama3.1 8B Instruct Max
 model_type: llm
 features:
   - agent-thought
