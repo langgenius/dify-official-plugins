@@ -19,9 +19,15 @@ class RunCodeTool(Tool):
         if sandbox_id:
             args["sandbox_id"] = sandbox_id
 
+        language = tool_parameters.get("language", "python")
+        language = language.lower()
+
+        if language not in ["python", "javascript"]:
+            raise ValueError(f"Invalid language: {language}")
+
         sandbox = Sandbox(**args)
 
-        execution = sandbox.run_code(tool_parameters["python_code"])
+        execution = sandbox.run_code(tool_parameters["code"], language)
 
         yield self.create_json_message({
             "results": execution.results,
