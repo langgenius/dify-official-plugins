@@ -1,0 +1,37 @@
+author: langgenius
+created_at: 2024-02-13 14:45:00.000000-04:00
+description:
+  en_US: PPIO is a cloud infrastructure provider offering a wide range of AI model services.
+  zh_Hans: PPIO 提供满血版 DeepSeek R1/V3 模型，以及 Qwen、Llama、Yi 等一系列模型。
+icon: icon_s_en.svg
+label:
+  en_US: PPIO
+  zh_Hans: PPIO 派欧云
+meta:
+  arch:
+  - amd64
+  - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: '3.10'
+  version: 0.0.1
+name: ppio
+plugins:
+  models:
+  - provider/ppio.yaml
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true
+      moderation: false
+      rerank: false
+      speech2text: false
+      text_embedding: false
+      tts: false
+    tool:
+      enabled: true
+type: plugin
+version: 0.0.1 
