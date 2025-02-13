@@ -29,7 +29,7 @@ class PerplexityAITool(Tool):
             "Content-Type": "application/json",
         }
         payload = {
-            "model": tool_parameters.get("model", "llama-3.1-sonar-small-128k-online"),
+            "model": tool_parameters.get("model", "sonar"),
             "messages": [
                 {"role": "system", "content": "Be precise and concise."},
                 {"role": "user", "content": tool_parameters["query"]},
