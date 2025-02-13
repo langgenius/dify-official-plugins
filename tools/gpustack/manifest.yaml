@@ -1,0 +1,37 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: gpustack_tools
+label:
+  en_US: gpustack
+  zh_Hans: gpustack
+description:
+  en_US: The GPUStack tools enables seamless interaction with local large models for rapid development of personalized AI applications.
+  zh_Hans: GPUStack 工具集与本地大模型的无缝交互，用于快速构建个性化 AI 应用。
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+    storage:
+      enabled: true
+      size: 1048576
+plugins:
+  tools:
+    - provider/gpustack.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+created_at: 2025-02-11T15:26:51.990437689+08:00
+tags:
+- image
