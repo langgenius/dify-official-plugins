@@ -1,0 +1,2 @@
+dify_plugin~=0.0.1b66
+e2b-code-interpreter==1.0.5

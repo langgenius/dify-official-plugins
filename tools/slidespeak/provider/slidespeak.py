@@ -17,5 +17,5 @@ class SlideSpeakProvider(ToolProvider):
         test_task_id = "xxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
         url = f"{base_url or 'https://api.slidespeak.co/api/v1'}/task_status/{test_task_id}"
         response = requests.get(url, headers=headers)
-        if response.status_code != 200:
+        if response.status_code not in [200, 404]:
             raise ToolProviderCredentialValidationError("Invalid SlideSpeak API key")

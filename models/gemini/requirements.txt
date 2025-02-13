@@ -1,4 +1,4 @@
-dify_plugin~=0.0.1b61
+dify_plugin~=0.0.1b64
 google-ai-generativelanguage~=0.6.9
 google-api-python-client~=2.90.0
 google-api-core~=2.18.0

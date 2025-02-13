@@ -1,0 +1,8 @@
+model: bce-embedding-base_v1
+label:
+  zh_Hans: bce-embedding-base_v1
+  en_US: bce-embedding-base_v1
+model_type: text-embedding
+model_properties:
+  context_size: 512
+  max_chunks: 20

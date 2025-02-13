@@ -4,6 +4,6 @@ Gitee AI is a suite of AI-powered tools integrated within the Gitee platform, de
 
 ## Configuration
 
-After installing the plugin, configure the API key and API base within the Model Provider settings. Obtain your API key from [here](https://open.bigmodel.cn/). Once saved, you can begin using Gitee AI to build your AI agents and agentic workflows.
+After installing the plugin, configure the API key and API base within the Model Provider settings. Obtain your API key from [here](https://ai.gitee.com/dashboard/settings/tokens). Once saved, you can begin using Gitee AI to build your AI agents and agentic workflows.
 
 ![](./_assets/giteeai_config.PNG)

@@ -1,1 +1,1 @@
-dify_plugin~=0.0.1b36
+dify_plugin~=0.0.1b64

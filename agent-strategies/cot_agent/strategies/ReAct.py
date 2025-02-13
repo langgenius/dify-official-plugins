@@ -1,4 +1,3 @@
-import contextlib
 import json
 import time
 from collections.abc import Generator, Mapping
@@ -13,7 +12,12 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
 )
-from dify_plugin.entities.tool import ToolInvokeMessage, ToolProviderType
+from dify_plugin.entities.tool import (
+    LogMetadata,
+    ToolInvokeMessage,
+    ToolParameter,
+    ToolProviderType,
+)
 from dify_plugin.interfaces.agent import (
     AgentModelConfig,
     AgentScratchpadUnit,
@@ -112,7 +116,7 @@ class ReActAgentStrategy(AgentStrategy):
         )
 
         iteration_step = 1
-        max_iteration_steps = react_params.maximum_iterations + 1
+        max_iteration_steps = react_params.maximum_iterations
 
         # convert tools into ModelRuntime Tool format
         prompt_messages_tools = self._init_prompt_tools(tools)
@@ -130,7 +134,7 @@ class ReActAgentStrategy(AgentStrategy):
                 label=f"ROUND {iteration_step}",
                 data={},
                 metadata={
-                    "started_at": round_started_at,
+                    LogMetadata.STARTED_AT: round_started_at,
                 },
                 status=ToolInvokeMessage.LogMessage.LogStatus.START,
             )
@@ -171,7 +175,10 @@ class ReActAgentStrategy(AgentStrategy):
             model_log = self.create_log_message(
                 label=f"{model.model} Thought",
                 data={},
-                metadata={"start_at": model_started_at, "provider": model.provider},
+                metadata={
+                    LogMetadata.STARTED_AT: model_started_at,
+                    LogMetadata.PROVIDER: model.provider,
+                },
                 parent=round_log,
                 status=ToolInvokeMessage.LogMessage.LogStatus.START,
             )
@@ -183,6 +190,7 @@ class ReActAgentStrategy(AgentStrategy):
                     # detect action
                     assert scratchpad.agent_response is not None
                     scratchpad.agent_response += json.dumps(chunk.model_dump())
+
                     scratchpad.action_str = json.dumps(chunk.model_dump())
                     scratchpad.action = action
                 else:
@@ -190,13 +198,11 @@ class ReActAgentStrategy(AgentStrategy):
                     scratchpad.thought = scratchpad.thought or ""
                     scratchpad.agent_response += chunk
                     scratchpad.thought += chunk
-
             scratchpad.thought = (
                 scratchpad.thought.strip()
                 if scratchpad.thought
                 else "I am thinking about how to help you"
             )
-
             agent_scratchpad.append(scratchpad)
 
             # get llm usage
@@ -206,31 +212,33 @@ class ReActAgentStrategy(AgentStrategy):
             else:
                 usage_dict["usage"] = LLMUsage.empty_usage()
 
-            if not scratchpad.is_final():
-                pass
+            action = (
+                scratchpad.action.to_dict()
+                if scratchpad.action
+                else {"action": scratchpad.agent_response}
+            )
+
             yield self.finish_log_message(
                 log=model_log,
-                data={
-                    "output": scratchpad.agent_response,
-                },
+                data={"thought": scratchpad.thought, **action},
                 metadata={
-                    "started_at": model_started_at,
-                    "finished_at": time.perf_counter(),
-                    "elapsed_time": time.perf_counter() - model_started_at,
-                    "provider": model.provider,
-                    "total_price": usage_dict["usage"].total_price
+                    LogMetadata.STARTED_AT: model_started_at,
+                    LogMetadata.FINISHED_AT: time.perf_counter(),
+                    LogMetadata.ELAPSED_TIME: time.perf_counter() - model_started_at,
+                    LogMetadata.PROVIDER: model.provider,
+                    LogMetadata.TOTAL_PRICE: usage_dict["usage"].total_price
                     if usage_dict["usage"]
                     else 0,
-                    "currency": usage_dict["usage"].currency
+                    LogMetadata.CURRENCY: usage_dict["usage"].currency
                     if usage_dict["usage"]
                     else "",
-                    "total_tokens": usage_dict["usage"].total_tokens
+                    LogMetadata.TOTAL_TOKENS: usage_dict["usage"].total_tokens
                     if usage_dict["usage"]
                     else 0,
                 },
             )
             if not scratchpad.action:
-                final_answer = ""
+                final_answer = scratchpad.thought
             else:
                 if scratchpad.action.action_name.lower() == "final answer":
                     # action is final answer, return final answer directly
@@ -252,8 +260,10 @@ class ReActAgentStrategy(AgentStrategy):
                         label=f"CALL {tool_name}",
                         data={},
                         metadata={
-                            "started_at": time.perf_counter(),
-                            "provider": tool_instances[tool_name].identity.provider
+                            LogMetadata.STARTED_AT: time.perf_counter(),
+                            LogMetadata.PROVIDER: tool_instances[
+                                tool_name
+                            ].identity.provider
                             if tool_instances.get(tool_name)
                             else "",
                         },
@@ -261,26 +271,32 @@ class ReActAgentStrategy(AgentStrategy):
                         status=ToolInvokeMessage.LogMessage.LogStatus.START,
                     )
                     yield tool_call_log
-                    tool_invoke_response, tool_invoke_meta = self._handle_invoke_action(
-                        action=scratchpad.action,
-                        tool_instances=tool_instances,
-                        message_file_ids=message_file_ids,
+                    tool_invoke_response, tool_invoke_parameters = (
+                        self._handle_invoke_action(
+                            action=scratchpad.action,
+                            tool_instances=tool_instances,
+                            message_file_ids=message_file_ids,
+                        )
                     )
                     scratchpad.observation = tool_invoke_response
                     scratchpad.agent_response = tool_invoke_response
                     yield self.finish_log_message(
                         log=tool_call_log,
                         data={
+                            "tool_name": tool_name,
+                            "tool_call_args": tool_invoke_parameters,
                             "output": tool_invoke_response,
-                            "meta": tool_invoke_meta.to_dict(),
                         },
                         metadata={
-                            "started_at": tool_call_started_at,
-                            "provider": tool_instances[tool_name].identity.provider
+                            LogMetadata.STARTED_AT: tool_call_started_at,
+                            LogMetadata.PROVIDER: tool_instances[
+                                tool_name
+                            ].identity.provider
                             if tool_instances.get(tool_name)
                             else "",
-                            "finished_at": time.perf_counter(),
-                            "elapsed_time": time.perf_counter() - tool_call_started_at,
+                            LogMetadata.FINISHED_AT: time.perf_counter(),
+                            LogMetadata.ELAPSED_TIME: time.perf_counter()
+                            - tool_call_started_at,
                         },
                     )
 
@@ -292,21 +308,26 @@ class ReActAgentStrategy(AgentStrategy):
             yield self.finish_log_message(
                 log=round_log,
                 data={
-                    "output": {
-                        "llm_response": scratchpad.agent_response,
-                    },
+                    "action_name": scratchpad.action.action_name
+                    if scratchpad.action
+                    else "",
+                    "action_input": scratchpad.action.action_input
+                    if scratchpad.action
+                    else "",
+                    "thought": scratchpad.thought,
+                    "observation": scratchpad.observation,
                 },
                 metadata={
-                    "started_at": round_started_at,
-                    "finished_at": time.perf_counter(),
-                    "elapsed_time": time.perf_counter() - round_started_at,
-                    "total_price": usage_dict["usage"].total_price
+                    LogMetadata.STARTED_AT: round_started_at,
+                    LogMetadata.FINISHED_AT: time.perf_counter(),
+                    LogMetadata.ELAPSED_TIME: time.perf_counter() - round_started_at,
+                    LogMetadata.TOTAL_PRICE: usage_dict["usage"].total_price
                     if usage_dict["usage"]
                     else 0,
-                    "currency": usage_dict["usage"].currency
+                    LogMetadata.CURRENCY: usage_dict["usage"].currency
                     if usage_dict["usage"]
                     else "",
-                    "total_tokens": usage_dict["usage"].total_tokens
+                    LogMetadata.TOTAL_TOKENS: usage_dict["usage"].total_tokens
                     if usage_dict["usage"]
                     else 0,
                 },
@@ -317,13 +338,13 @@ class ReActAgentStrategy(AgentStrategy):
         yield self.create_json_message(
             {
                 "execution_metadata": {
-                    "total_price": llm_usage["usage"].total_price
+                    LogMetadata.TOTAL_PRICE: llm_usage["usage"].total_price
                     if llm_usage["usage"] is not None
                     else 0,
-                    "currency": llm_usage["usage"].currency
+                    LogMetadata.CURRENCY: llm_usage["usage"].currency
                     if llm_usage["usage"] is not None
                     else "",
-                    "total_tokens": llm_usage["usage"].total_tokens
+                    LogMetadata.TOTAL_TOKENS: llm_usage["usage"].total_tokens
                     if llm_usage["usage"] is not None
                     else 0,
                 }
@@ -443,7 +464,7 @@ class ReActAgentStrategy(AgentStrategy):
         action: AgentScratchpadUnit.Action,
         tool_instances: Mapping[str, ToolEntity],
         message_file_ids: list[str],
-    ) -> tuple[str, ToolInvokeMeta]:
+    ) -> tuple[str, dict[str, Any] | str]:
         """
         handle invoke action
         :param action: action
@@ -459,46 +480,60 @@ class ReActAgentStrategy(AgentStrategy):
 
         if not tool_instance:
             answer = f"there is not a tool named {tool_call_name}"
-            return answer, ToolInvokeMeta.error_instance(answer)
+            return answer, tool_call_args
 
         if isinstance(tool_call_args, str):
-            with contextlib.suppress(json.JSONDecodeError):
+            try:
                 tool_call_args = json.loads(tool_call_args)
-        tool_call_args = cast(dict, tool_call_args)
-        tool_invoke_responses = self.session.tool.invoke(
-            provider_type=ToolProviderType(tool_instance.provider_type),
-            provider=tool_instance.identity.provider,
-            tool_name=tool_instance.identity.name,
-            parameters={**tool_instance.runtime_parameters, **tool_call_args},
-        )
-        result = ""
-        for response in tool_invoke_responses:
-            if response.type == ToolInvokeMessage.MessageType.TEXT:
-                result += cast(ToolInvokeMessage.TextMessage, response.message).text
-            elif response.type == ToolInvokeMessage.MessageType.LINK:
-                result += (
-                    f"result link: {cast(ToolInvokeMessage.TextMessage, response.message).text}."
-                    + " please tell user to check it."
-                )
-            elif response.type in {
-                ToolInvokeMessage.MessageType.IMAGE_LINK,
-                ToolInvokeMessage.MessageType.IMAGE,
-            }:
-                result += (
-                    "image has been created and sent to user already, "
-                    + "you do not need to create it, just tell the user to check it now."
-                )
-            elif response.type == ToolInvokeMessage.MessageType.JSON:
-                text = json.dumps(
-                    cast(ToolInvokeMessage.JsonMessage, response.message).json_object,
-                    ensure_ascii=False,
-                )
-                result += f"tool response: {text}."
-            else:
-                result += f"tool response: {response.message!r}."
-        tool_invoke_meta = ToolInvokeMeta.error_instance("")
+            except json.JSONDecodeError as e:
+                params = [
+                    param.name
+                    for param in tool_instance.parameters
+                    if param.form == ToolParameter.ToolParameterForm.LLM
+                ]
+                if len(params) > 1:
+                    raise ValueError("tool call args is not a valid json string") from e
+                tool_call_args = {params[0]: tool_call_args} if len(params) == 1 else {}
 
-        return result, tool_invoke_meta
+        tool_invoke_parameters = {**tool_instance.runtime_parameters, **tool_call_args}
+        try:
+            tool_invoke_responses = self.session.tool.invoke(
+                provider_type=ToolProviderType(tool_instance.provider_type),
+                provider=tool_instance.identity.provider,
+                tool_name=tool_instance.identity.name,
+                parameters=tool_invoke_parameters,
+            )
+            result = ""
+            for response in tool_invoke_responses:
+                if response.type == ToolInvokeMessage.MessageType.TEXT:
+                    result += cast(ToolInvokeMessage.TextMessage, response.message).text
+                elif response.type == ToolInvokeMessage.MessageType.LINK:
+                    result += (
+                        f"result link: {cast(ToolInvokeMessage.TextMessage, response.message).text}."
+                        + " please tell user to check it."
+                    )
+                elif response.type in {
+                    ToolInvokeMessage.MessageType.IMAGE_LINK,
+                    ToolInvokeMessage.MessageType.IMAGE,
+                }:
+                    result += (
+                        "image has been created and sent to user already, "
+                        + "you do not need to create it, just tell the user to check it now."
+                    )
+                elif response.type == ToolInvokeMessage.MessageType.JSON:
+                    text = json.dumps(
+                        cast(
+                            ToolInvokeMessage.JsonMessage, response.message
+                        ).json_object,
+                        ensure_ascii=False,
+                    )
+                    result += f"tool response: {text}."
+                else:
+                    result += f"tool response: {response.message!r}."
+        except Exception as e:
+            result = f"tool invoke error: {str(e)}"
+
+        return result, tool_invoke_parameters
 
     def _convert_dict_to_action(self, action: dict) -> AgentScratchpadUnit.Action:
         """

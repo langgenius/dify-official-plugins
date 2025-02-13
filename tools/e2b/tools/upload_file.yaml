@@ -1,0 +1,56 @@
+identity:
+  name: upload_file
+  author: langgenius
+  label:
+    en_US: Upload File
+    zh_Hans: 上传文件
+    pt_BR: Carregar Arquivo
+description:
+  human:
+    en_US: Upload a file to a sandboxed environment.
+    zh_Hans: 上传一个文件到沙盒环境中。
+    pt_BR: Carregar um arquivo para um ambiente sandboxed.
+  llm: Upload a file to a sandboxed environment.
+parameters:
+  - name: file
+    type: file
+    required: true
+    label:
+      en_US: File
+      zh_Hans: 文件
+      pt_BR: Arquivo
+    human_description:
+      en_US: The file to upload
+      zh_Hans: 要上传的文件
+      pt_BR: O arquivo a ser carregado
+    llm_description: The file to upload
+    form: llm
+  - name: file_path
+    type: string
+    required: true
+    label:
+      en_US: File Path
+      zh_Hans: 文件路径
+      pt_BR: Caminho do Arquivo
+    human_description:
+      en_US: The path of the file to upload
+      zh_Hans: 要上传的文件路径
+      pt_BR: O caminho do arquivo a ser carregado
+    llm_description: The path of the file to upload
+    form: llm
+  - name: sandbox_id
+    type: string
+    required: true
+    label:
+      en_US: Sandbox ID
+      zh_Hans: 沙盒 ID
+      pt_BR: ID do Sandbox
+    human_description:
+      en_US: The ID of an existing sandbox.
+      zh_Hans: 一个现有沙盒的 ID。
+      pt_BR: O ID de um sandbox existente.
+    llm_description: The ID of an existing sandbox.
+    form: llm
+extra:
+  python:
+    source: tools/upload_file.py

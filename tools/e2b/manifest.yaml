@@ -1,0 +1,33 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: e2b
+label:
+  en_US: E2B
+  ja_JP: E2B
+  zh_Hans: E2B
+  pt_BR: E2B
+description:
+  en_US: Tool for integrate with e2b.dev.
+  ja_JP: Tool for integrate with e2b.dev.
+  zh_Hans: Tool for integrate with e2b.dev.
+  pt_BR: Tool for integrate with e2b.dev.
+icon: icon.png
+resource:
+  memory: 268435456
+  permission: {}
+plugins:
+  tools:
+    - provider/e2b.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+created_at: 2025-02-10T16:17:18.683538+08:00
+privacy: 
+verified: false

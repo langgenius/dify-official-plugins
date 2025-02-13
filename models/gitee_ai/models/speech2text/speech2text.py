@@ -1,47 +1,20 @@
-import os
 from typing import IO, Optional
-import requests
-from .._common import _CommonGiteeAI
-from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeBadRequestError
-from dify_plugin.interfaces.model.speech2text_model import Speech2TextModel
+
+from dify_plugin import OAICompatSpeech2TextModel
 
 
-class GiteeAISpeech2TextModel(_CommonGiteeAI, Speech2TextModel):
+class GiteeAISpeech2TextModel(OAICompatSpeech2TextModel):
     """
-    Model class for OpenAI Compatible Speech to text model.
+    Model class for GiteeAI Speech to text model.
     """
-
     def _invoke(self, model: str, credentials: dict, file: IO[bytes], user: Optional[str] = None) -> str:
-        """
-        Invoke speech2text model
-
-        :param model: model name
-        :param credentials: model credentials
-        :param file: audio file
-        :param user: unique user id
-        :return: text for given audio file
-        """
-        endpoint_url = f"https://ai.gitee.com/api/serverless/{model}/speech-to-text"
-        files = [("file", file)]
-        (_, file_ext) = os.path.splitext(file.name)
-        headers = {"Content-Type": f"audio/{file_ext}", "Authorization": f"Bearer {credentials.get('api_key')}"}
-        response = requests.post(endpoint_url, headers=headers, files=files)
-        if response.status_code != 200:
-            raise InvokeBadRequestError(response.text)
-        response_data = response.json()
-        return response_data["text"]
+        self._add_custom_parameters(credentials)
+        return super()._invoke(model, credentials, file)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
-        """
-        Validate model credentials
+        self._add_custom_parameters(credentials)
+        return super().validate_credentials(model, credentials)
 
-        :param model: model name
-        :param credentials: model credentials
-        :return:
-        """
-        try:
-            audio_file_path = self._get_demo_file_path()
-            with open(audio_file_path, "rb") as audio_file:
-                self._invoke(model, credentials, audio_file)
-        except Exception as ex:
-            raise CredentialsValidateFailedError(str(ex))
+    @classmethod
+    def _add_custom_parameters(cls, credentials: dict) -> None:
+        credentials["endpoint_url"] = "https://ai.gitee.com/v1"

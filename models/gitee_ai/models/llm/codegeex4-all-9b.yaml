@@ -4,10 +4,10 @@ label:
   en_US: codegeex4-all-9b
 model_type: llm
 features:
-  - agent-thought
+  - tool-call
 model_properties:
   mode: chat
-  context_size: 40960
+  context_size: 32768
 parameter_rules:
   - name: stream
     label:

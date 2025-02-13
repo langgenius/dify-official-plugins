@@ -2,8 +2,8 @@ background: '#c0cdff'
 configurate_methods:
 - predefined-model
 description:
-  en_US: Models provided by deepseek, such as deepseek-chat、deepseek-coder.
-  zh_Hans: 深度求索提供的模型，例如 deepseek-chat、deepseek-coder 。
+  en_US: Models provided by deepseek, such as deepseek-reasoner、deepseek-chat、deepseek-coder.
+  zh_Hans: 深度求索提供的模型，例如 deepseek-reasoner、deepseek-chat、deepseek-coder 。
 extra:
   python:
     model_sources:
