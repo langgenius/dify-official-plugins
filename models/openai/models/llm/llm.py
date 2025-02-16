@@ -1290,34 +1290,37 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
             # calculate num tokens for function object
             num_tokens += len(encoding.encode("name"))
-            num_tokens += len(encoding.encode(tool.name))
+            if hasattr(tool, "name"):
+                num_tokens += len(encoding.encode(tool.name))
             num_tokens += len(encoding.encode("description"))
-            num_tokens += len(encoding.encode(tool.description))
-            parameters = tool.parameters
-            num_tokens += len(encoding.encode("parameters"))
-            if "title" in parameters:
-                num_tokens += len(encoding.encode("title"))
-                num_tokens += len(encoding.encode(parameters.get("title")))  # type: ignore
-            num_tokens += len(encoding.encode("type"))
-            num_tokens += len(encoding.encode(parameters.get("type")))  # type: ignore
-            if "properties" in parameters:
-                num_tokens += len(encoding.encode("properties"))
-                for key, value in parameters.get("properties").items():  # type: ignore
-                    num_tokens += len(encoding.encode(key))
-                    for field_key, field_value in value.items():
-                        num_tokens += len(encoding.encode(field_key))
-                        if field_key == "enum":
-                            for enum_field in field_value:
-                                num_tokens += 3
-                                num_tokens += len(encoding.encode(enum_field))
-                        else:
+            if hasattr(tool, "description"):
+                num_tokens += len(encoding.encode(tool.description))
+            if hasattr(tool, "parameters"):
+                parameters = tool.parameters
+                num_tokens += len(encoding.encode("parameters"))
+                if "title" in parameters:
+                    num_tokens += len(encoding.encode("title"))
+                    num_tokens += len(encoding.encode(parameters.get("title")))  # type: ignore
+                num_tokens += len(encoding.encode("type"))
+                num_tokens += len(encoding.encode(parameters.get("type")))  # type: ignore
+                if "properties" in parameters:
+                    num_tokens += len(encoding.encode("properties"))
+                    for key, value in parameters.get("properties").items():  # type: ignore
+                        num_tokens += len(encoding.encode(key))
+                        for field_key, field_value in value.items():
                             num_tokens += len(encoding.encode(field_key))
-                            num_tokens += len(encoding.encode(str(field_value)))
-            if "required" in parameters:
-                num_tokens += len(encoding.encode("required"))
-                for required_field in parameters["required"]:
-                    num_tokens += 3
-                    num_tokens += len(encoding.encode(required_field))
+                            if field_key == "enum":
+                                for enum_field in field_value:
+                                    num_tokens += 3
+                                    num_tokens += len(encoding.encode(enum_field))
+                            else:
+                                num_tokens += len(encoding.encode(field_key))
+                                num_tokens += len(encoding.encode(str(field_value)))
+                if "required" in parameters:
+                    num_tokens += len(encoding.encode("required"))
+                    for required_field in parameters["required"]:
+                        num_tokens += 3
+                        num_tokens += len(encoding.encode(required_field))
 
         return num_tokens
 
