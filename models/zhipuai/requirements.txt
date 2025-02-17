@@ -1,3 +1,3 @@
-dify_plugin~=0.0.1b40
+dify_plugin~=0.0.1b61
 zhipuai==2.1.5.20230904
 pydantic==2.8.2

@@ -2,14 +2,14 @@ identity:
   author: langgenius
   name: fishaudio
   label:
-    en_US: Fish Audio
-    zh_Hans: Fish Audio 
-    pt_BR: Fish Audio
+    en_US: Fish Audio Tool
+    zh_Hans: Fish Audio Tool
+    pt_BR: Fish Audio Tool
   description:
-    en_US: Fish Audio
-    zh_Hans: Fish Audio
-    pt_BR: Fish Audio
-  icon: fishaudio_l_en.svg
+    en_US: TTS tools provided by Fish Audio.
+    zh_Hans: Fish Audio 提供的 TTS 工具。
+    pt_BR: TTS tools provided by Fish Audio.
+  icon: fishaudio.jpeg
   tags:
     - utilities
 credentials_for_provider:

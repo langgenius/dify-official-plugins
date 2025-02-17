@@ -1,2 +1,2 @@
-dify_plugin~=0.0.1b8
-duckduckgo-search==6.3.7
+dify_plugin~=0.0.1b61
+duckduckgo-search~=7.2.1

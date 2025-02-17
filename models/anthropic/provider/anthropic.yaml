@@ -16,7 +16,7 @@ help:
   url:
     en_US: https://console.anthropic.com/account/keys
 icon_large:
-  en_US: icon_l_en.svg
+  en_US: icon_l_en.png
 icon_small:
   en_US: icon_s_en.svg
 label:

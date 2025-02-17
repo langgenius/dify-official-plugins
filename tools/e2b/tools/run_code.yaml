@@ -1,0 +1,72 @@
+identity:
+  name: run_code
+  author: langgenius
+  label:
+    en_US: Run Code
+    zh_Hans: 运行代码
+    pt_BR: Executar código
+description:
+  human:
+    en_US: Run a snippet of Python code in a sandboxed environment.
+    zh_Hans: 在沙盒环境中运行一段 Python 代码。
+    pt_BR: Executar um trecho de Python código em um ambiente sandboxed.
+  llm: Run a snippet of Python code in a sandboxed environment.
+parameters:
+  - name: code
+    type: string
+    required: true
+    label:
+      en_US: Code
+      zh_Hans: 代码
+      pt_BR: Código
+    human_description:
+      en_US: The code to execute in the sandbox environment, it can be Python or JavaScript.
+      zh_Hans: 要在沙盒环境中执行的代码，可以是 Python 或 JavaScript。
+      pt_BR: O código a ser executado no ambiente sandbox, pode ser Python ou JavaScript.
+    llm_description: The code to execute in the sandbox environment
+    form: llm
+  - name: language
+    type: string
+    required: true
+    label:
+      en_US: Language
+      zh_Hans: 语言
+      pt_BR: Idioma
+    human_description:
+      en_US: The language of the code, Python or JavaScript.
+      zh_Hans: 代码的语言，Python 或 JavaScript。
+      pt_BR: O idioma do código, Python ou JavaScript.
+    llm_description: The language of the code, Python or JavaScript.
+    form: llm
+    default: python
+  - name: sandbox_id
+    type: string
+    required: false
+    label:
+      en_US: Sandbox ID
+      zh_Hans: 沙盒 ID
+      pt_BR: ID do Sandbox
+    human_description:
+      en_US: The ID of an existing sandbox, if not provided, a new sandbox will be created.
+      zh_Hans: 一个现有沙盒的 ID, 如果未提供, 将创建一个新的沙盒。
+      pt_BR: O ID de um sandbox existente, se não fornecido, um novo sandbox será criado.
+    llm_description: The ID of an existing sandbox, if not provided, a new sandbox will be created.
+    form: llm
+    default: ""
+  - name: timeout
+    type: number
+    required: false
+    label:
+      en_US: Timeout
+      zh_Hans: 超时
+      pt_BR: Tempo limite
+    human_description:
+      en_US: The lifetime of the sandbox in seconds, 120 seconds by default.
+      zh_Hans: 沙盒的生命周期（秒），默认 120 秒。
+      pt_BR: O tempo de vida do sandbox em segundos, 120 segundos por padrão.
+    llm_description: The lifetime of the sandbox in seconds.
+    form: llm
+    default: 120
+extra:
+  python:
+    source: tools/run_code.py

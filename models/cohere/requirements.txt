@@ -1,3 +1,3 @@
-dify_plugin~=0.0.1b49
+dify_plugin~=0.0.1b61
 cohere~=5.2.4
 numpy~=2.2.0

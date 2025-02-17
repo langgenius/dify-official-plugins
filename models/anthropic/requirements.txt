@@ -1,4 +1,4 @@
-dify_plugin~=0.0.1b40
+dify_plugin~=0.0.1b61
 anthropic~=0.23.1
 httpx~=0.27.2
 pillow~=11.0.0

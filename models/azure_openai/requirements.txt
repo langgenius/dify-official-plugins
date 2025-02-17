@@ -1,4 +1,4 @@
-dify_plugin~=0.0.1b48
+dify_plugin~=0.0.1b61
 openai~=1.57.2
 tiktoken~=0.8.0
 numpy~=2.2.0

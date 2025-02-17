@@ -1,0 +1,38 @@
+version: 0.0.2
+type: plugin
+author: langgenius
+name: telegraph
+label:
+  en_US: Telegraph
+  ja_JP: Telegraph
+  zh_Hans: Telegraph
+  pt_BR: Telegraph
+description:
+  en_US: A Telegraph plugin that allow you publish your content easily
+  ja_JP: コンテンツを簡単に公開できるTelegraphプラグイン
+  zh_Hans: 一个让您轻松发布内容的Telegraph插件
+  pt_BR: Um plugin do Telegraph que permite publicar seu conteúdo facilmente
+icon: icon.jpg
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+    storage:
+      enabled: true
+      size: 1048576
+plugins:
+  tools:
+    - provider/telegraph.yaml
+meta:
+  version: 0.0.2
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+created_at: 2025-01-10T18:15:57.414556+08:00
+privacy: PRIVACY.md
+verified: false

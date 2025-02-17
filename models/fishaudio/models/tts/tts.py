@@ -1,12 +1,15 @@
-from typing import Generator, Optional
+from typing import Generator, Mapping, Optional
+from dify_plugin.entities.model import AIModelEntity
 import httpx
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
     InvokeBadRequestError,
     InvokeError
 )
-
+from dify_plugin.entities import I18nObject
 from dify_plugin import TTSModel
+from dify_plugin.entities.model import ModelType, ModelPropertyKey
+
 from ..common_fishaudio import FishAudio
 
 class FishAudioText2SpeechModel(TTSModel):
@@ -15,6 +18,9 @@ class FishAudioText2SpeechModel(TTSModel):
     """
 
     def get_tts_model_voices(self, model: str, credentials: dict, language: Optional[str] = None) -> Optional[list]:
+        if "voices" in credentials and credentials["voices"]:
+            return credentials["voices"]
+
         api_base = credentials.get("api_base", "https://api.fish.audio")
         api_key = credentials.get("api_key")
         use_public_models = credentials.get("use_public_models", "false") == "true"
@@ -79,7 +85,7 @@ class FishAudioText2SpeechModel(TTSModel):
         """
 
         try:
-            self.get_tts_model_voices(
+            voices = self.get_tts_model_voices(
                 model=model,
                 credentials={
                     "api_key": credentials["api_key"],
@@ -88,8 +94,38 @@ class FishAudioText2SpeechModel(TTSModel):
                     "use_public_models": "false",
                 },
             )
+            # save voices to credentials
+            if voices:
+                credentials["voices"] = voices
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
+
+    def get_customizable_model_schema(self, model: str, credentials: Mapping) -> AIModelEntity | None:
+        # get tts model voices
+        voices = self.get_tts_model_voices(model, dict(credentials))
+        if not voices:
+            return None
+        
+        # use model to get model name
+        model_name = ""
+        for voice in voices:
+            if voice["value"] == model:
+                model_name = voice["name"]
+                break
+        
+        if not model_name:
+            return None
+
+        return AIModelEntity(
+            model=model,
+            label=I18nObject(
+                zh_Hans=voices[0]["name"],
+                en_US=voices[0]["name"]
+            ),
+            model_type=ModelType.TTS,
+            model_properties={ModelPropertyKey.VOICES: voices}
+        )
+
 
     def _tts_invoke_streaming(self, model: str, credentials: dict, content_text: str, voice: str) -> Generator[bytes, None, None]:
         """
@@ -129,7 +165,7 @@ class FishAudioText2SpeechModel(TTSModel):
         api_base = credentials.get("api_base", "https://api.fish.audio")
         latency = credentials.get("latency", "normal")
         client = FishAudio(api_key=api_key, url_base=api_base)
-        return client.tts(content=content_text, voice=voice, latency=latency)
+        return client.tts(content=content_text, voice=voice, latency=latency, format=credentials.get("output_format", "mp3"))
 
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:

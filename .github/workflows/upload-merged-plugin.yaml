@@ -1,8 +1,7 @@
 name: Upload Merged Plugin
 
 on:
-  pull_request:
-    types: [closed]
+  push:
     branches: 
       - main
       - dev
@@ -19,11 +18,19 @@ env:
 
 jobs:
   upload-merged-plugin:
-    if: github.event.pull_request.merged == true
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Clone Marketplace Toolkit
+        env:
+          GH_TOKEN: ${{ secrets.ORG_SCOPE_GITHUB_TOKEN }}
+        run: |
+          gh repo clone langgenius/dify-marketplace-toolkit -- .scripts/
       
       - name: Download Plugin Daemon
         env:
@@ -40,33 +47,28 @@ jobs:
       - name: Install Python Dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install requests
+          pip install requests jq
 
-      - name: Get PR Path
-        env:
-          GH_TOKEN: ${{ secrets.ORG_SCOPE_GITHUB_TOKEN }}
+      - name: Get Changed Files from Push
+        id: get_changed_files
         run: |
-          export PR_FILES=$(gh pr view -R ${{ env.REPO_NAME }} ${{ github.event.pull_request.number }} --json files --jq .files)
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | jq -R -s -c 'split("\n")[:-1] | map({path: .})')
+          echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
+          echo "CHANGED_FILES=$CHANGED_FILES"
 
-          if PLUGIN_PATH=$(python3 .scripts/check-prefix.py); then
+      - name: Validate Plugin Path
+        env:
+          PR_FILES: ${{ env.CHANGED_FILES }}
+        run: |
+          if PLUGIN_PATH=$(python3 .scripts/validator/check-prefix.py); then
               echo $PLUGIN_PATH
               echo "PLUGIN_PATH=$PLUGIN_PATH" >> $GITHUB_ENV
           else
-            echo "PR files cross different plugin directories, skip upload."
+            echo "Push files cross different plugin directories, skip upload."
             exit 1
-          fi
-
-      - name: Check Plugin Deps
-        run: |
-          if [ -f ${{ env.PLUGIN_PATH }}/requirements.txt ]; then
-            echo "Trying to install plugin dependencies..."
-            python3 -m venv .venv
-            source .venv/bin/activate
-            python3 -m pip install -r ${{ env.PLUGIN_PATH }}/requirements.txt
-            deactivate
           fi
 
       - name: Upload Plugin
         if: env.PLUGIN_PATH != ''
         run: |
-          python3 .scripts/upload-package.py -d ${{ env.PLUGIN_PATH }} -t ${{ secrets.MARKETPLACE_TOKEN }} --plugin-daemon-path .scripts/dify-plugin-linux-amd64 -u ${{ secrets.MARKETPLACE_BASE_URL }} -f
+          python3 .scripts/uploader/upload-package.py -d ${{ env.PLUGIN_PATH }} -t ${{ secrets.MARKETPLACE_TOKEN }} --plugin-daemon-path .scripts/dify-plugin-linux-amd64 -u ${{ secrets.MARKETPLACE_BASE_URL }} -f

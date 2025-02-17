@@ -1,11 +1,11 @@
 author: langgenius
 created_at: '2024-09-29T08:03:44.658609186Z'
 description:
-  en_US: Models provided by Fish Audio, currently support TTS.
-  zh_Hans: Fish Audio 提供的模型，目前支持 TTS。
-icon: fishaudio_s_en.svg
+  en_US: TTS tools provided by Fish Audio.
+  zh_Hans: Fish Audio 提供的 TTS 工具。
+icon: fishaudio.jpeg
 label:
-  en_US: "fishaudio"
+  en_US: "Fish Audio Tool"
 meta:
   arch:
     - amd64
@@ -15,7 +15,7 @@ meta:
     language: python
     version: '3.12'
   version: 0.0.1
-name: fishaudio_tool
+name: fish_audio_tool
 plugins:
   tools:
     - provider/fishaudio.yaml
@@ -27,4 +27,4 @@ resource:
 tags:
   - utilities
 type: plugin
-version: 0.0.2
+version: 0.0.5

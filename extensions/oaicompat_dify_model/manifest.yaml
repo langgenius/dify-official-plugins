@@ -1,17 +1,17 @@
-version: 0.0.1
+version: 0.0.3
 type: plugin
 author: langgenius
 name: oaicompat_dify_model
 label:
-  en_US: oaicompat_dify_model
-  ja_JP: oaicompat_dify_model
-  zh_Hans: oaicompat_dify_model
-  pt_BR: oaicompat_dify_model
+  en_US: OpenAI Compatible Dify Models
+  ja_JP: OpenAI Compatible Dify Models
+  zh_Hans: OpenAI Compatible Dify Models
+  pt_BR: OpenAI Compatible Dify Models
 description:
   en_US: Convert your Dify Models into OpenAI compatible API
-  ja_JP: Convert your Dify Models into OpenAI compatible API
-  zh_Hans: Convert your Dify Models into OpenAI compatible API
-  pt_BR: Convert your Dify Models into OpenAI compatible API
+  ja_JP: DifyモデルをOpenAI互換APIに変換
+  zh_Hans: 将您的Dify模型转换为OpenAI兼容API
+  pt_BR: Converter seus modelos Dify em uma API compatível com OpenAI
 icon: icon.svg
 resource:
   memory: 268435456

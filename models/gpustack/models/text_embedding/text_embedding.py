@@ -18,15 +18,15 @@ class GPUStackTextEmbeddingModel(OAICompatEmbeddingModel):
         user: Optional[str] = None,
         input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT,
     ) -> TextEmbeddingResult:
-        self._add_custom_parameters(credentials)
-        return super()._invoke(model, credentials, texts, user, input_type)
+        compatible_credentials = self._get_compatible_credentials(credentials)
+        return super()._invoke(model, compatible_credentials, texts, user, input_type)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
-        self._add_custom_parameters(credentials)
-        super().validate_credentials(model, credentials)
+        compatible_credentials = self._get_compatible_credentials(credentials)
+        super().validate_credentials(model, compatible_credentials)
 
-    @staticmethod
-    def _add_custom_parameters(credentials: dict) -> None:
-        credentials["endpoint_url"] = str(
-            URL(credentials["endpoint_url"]) / "v1-openai"
-        )
+    def _get_compatible_credentials(self, credentials: dict) -> dict:
+        credentials = credentials.copy()
+        base_url = credentials["endpoint_url"].rstrip("/").removesuffix("/v1-openai")
+        credentials["endpoint_url"] = f"{base_url}/v1-openai"
+        return credentials

@@ -4,6 +4,7 @@ import httpx
 import ormsgpack
 from pydantic import AfterValidator, BaseModel, conint
 from dify_plugin.errors.model import InvokeBadRequestError
+import requests
 
 class ServeReferenceAudio(BaseModel):
     audio: bytes
@@ -39,25 +40,29 @@ class FishAudio():
             "content-type": "application/msgpack",
         }
 
-    def tts(self, content, voice, latency) -> Generator[bytes, None, None]:
+    def tts(self, content, voice, latency, format="mp3") -> Generator[bytes, None, None]:
         request = TTSRequest(
             text=content,
         )
-        with httpx.stream(
-                "POST",
+        
+        with httpx.Client() as client:
+            response = client.post(
                 self.url_base + "/v1/tts",
-                content=ormsgpack.packb(request, option=ormsgpack.OPT_SERIALIZE_PYDANTIC),
+                headers=self.headers(),
                 json={
                     "text":content,
                     "reference_id": voice,
                     "latency": latency,
+                    "format": format,
                 },
-                headers=self.headers(),
                 timeout=None,
-        ) as response:
+                content=ormsgpack.packb(request, option=ormsgpack.OPT_SERIALIZE_PYDANTIC),
+            )
             if response.status_code != 200:
                 raise InvokeBadRequestError(f"Error: {response.status_code} - {response.text}")
-            yield from response.iter_bytes()
+            for chunk in response.iter_bytes():
+                yield chunk
+        
 
     def asr(self, audio_data) -> str:
         request_data = {

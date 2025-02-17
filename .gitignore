@@ -8,3 +8,4 @@ logs
 .env
 .idea
 .venv/
+.scripts/
