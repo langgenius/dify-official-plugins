@@ -1,0 +1,109 @@
+identity:
+  name: okx_create_order
+  author: joe
+  label:
+    en_US: okx_create_order
+    zh_Hans: OKX下单
+description:
+  human:
+    en_US: Create order on OKX
+    zh_Hans: 在OKX交易所下单
+  llm: Create a new order on OKX exchange for spot or futures trading
+parameters:
+  - name: market_type
+    type: select
+    required: true
+    label:
+      en_US: Market Type
+      zh_Hans: 市场类型
+    human_description:
+      en_US: The type of market to trade in
+      zh_Hans: 交易市场类型
+    llm_description: The type of market to trade in, can be spot or futures
+    form: llm
+    options:
+      - label:
+          en_US: spot
+          zh_Hans: spot
+        value: spot
+      - label:
+          en_US: futures
+          zh_Hans: futures
+        value: futures
+  - name: symbol
+    type: string
+    required: true
+    label:
+      en_US: Symbol
+      zh_Hans: 交易对
+    human_description:
+      en_US: Trading pair symbol
+      zh_Hans: 交易对符号
+    llm_description: Trading pair symbol, e.g., BTC-USDT
+    form: llm
+  - name: side
+    type: select
+    required: true
+    label:
+      en_US: Side
+      zh_Hans: 交易方向
+    human_description:
+      en_US: Buy or sell
+      zh_Hans: 买入或卖出
+    llm_description: Trading side, buy or sell
+    form: llm
+    options:
+      - label:
+          en_US: buy
+          zh_Hans: buy
+        value: buy
+      - label:
+          en_US: sell
+          zh_Hans: sell
+        value: sell
+  - name: order_type
+    type: select
+    required: true
+    label:
+      en_US: Order Type
+      zh_Hans: 订单类型
+    human_description:
+      en_US: Type of order to create
+      zh_Hans: 订单类型
+    llm_description: Type of order to create, market or limit
+    form: llm
+    options:
+      - label:
+          en_US: market
+          zh_Hans: market
+        value: market
+      - label:
+          en_US: limit
+          zh_Hans: limit
+        value: limit
+  - name: amount
+    type: string
+    required: true
+    label:
+      en_US: Amount
+      zh_Hans: 数量
+    human_description:
+      en_US: Amount to trade
+      zh_Hans: 交易数量
+    llm_description: Amount of base currency to trade
+    form: llm
+  - name: price
+    type: string
+    required: false
+    label:
+      en_US: Price
+      zh_Hans: 价格
+    human_description:
+      en_US: Price for limit orders
+      zh_Hans: 限价单的价格
+    llm_description: Price for limit orders, not required for market orders
+    form: llm
+
+extra:
+  python:
+    source: tools/okx_create_order.py 

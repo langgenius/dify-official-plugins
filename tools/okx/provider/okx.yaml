@@ -1,0 +1,62 @@
+identity:
+  author: joe
+  name: okx
+  label:
+    en_US: okx
+    zh_Hans: okx
+    pt_BR: okx
+  description:
+    en_US: OKX tools for querying coin prices, placing orders, and other trading operations
+    zh_Hans: OKX 工具，用于查询币价、下单及其他交易操作
+    pt_BR: Ferramentas OKX para consultar preços de moedas, fazer pedidos e outras operações de negociação
+  icon: icon.svg
+  tags:
+    - finance
+credentials_for_provider:
+  api_key:
+    type: secret-input
+    required: true
+    label:
+      en_US: API Key
+      zh_Hans: API 密钥
+    placeholder:
+      en_US: Enter your API key
+      zh_Hans: 输入你的 API 密钥
+    help:
+      en_US: The API key for OKX
+      zh_Hans: OKX 的 API 密钥
+    url: https://www.okx.com/
+  secret_key:
+    type: secret-input
+    required: true
+    label:
+      en_US: Secret Key
+      zh_Hans: 密钥
+    placeholder:
+      en_US: Enter your Secret Key
+      zh_Hans: 输入你的 Secret Key
+    help:
+      en_US: The secret key for OKX
+      zh_Hans: OKX 的 Secret Key
+    url: https://www.okx.com/
+  passphrase:
+    type: secret-input
+    required: true
+    label:
+      en_US: Passphrase
+      zh_Hans: 密码
+    placeholder:
+      en_US: Enter your Passphrase
+      zh_Hans: 输入你的 Passphrase
+    help:
+      en_US: The passphrase for OKX
+      zh_Hans: OKX 的 Passphrase
+    url: https://www.okx.com/
+tools:
+  - tools/okx_get_price.yaml
+  - tools/okx_get_all_symbol.yaml
+  - tools/okx_get_balance.yaml
+  - tools/okx_create_order.yaml
+extra:
+  python:
+    source: provider/okx.py

@@ -1,0 +1,40 @@
+identity:
+  name: okx_get_balance
+  author: joe
+  label:
+    en_US: okx_get_balance
+    zh_Hans: 获取OKX账户余额
+description:
+  human:
+    en_US: Get account balance from OKX
+    zh_Hans: 获取OKX账户余额
+  llm: Get account balance information from OKX
+parameters:
+  - name: account_type
+    type: select
+    required: true
+    label:
+      en_US: Account Type
+      zh_Hans: 账户类型
+    human_description:
+      en_US: The type of account to get balance for
+      zh_Hans: 获取指定账户类型的余额
+    llm_description: The type of account to get balance for, can be spot, funding, trading, etc.
+    form: llm
+    options:
+      - label:
+          en_US: spot
+          zh_Hans: spot
+        value: spot
+      - label:
+          en_US: funding
+          zh_Hans: funding
+        value: funding
+      - label:
+          en_US: trading
+          zh_Hans: trading
+        value: trading
+
+extra:
+  python:
+    source: tools/okx_get_balance.py 

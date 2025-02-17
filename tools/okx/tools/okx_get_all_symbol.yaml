@@ -1,0 +1,36 @@
+identity:
+  name: okx_get_all_symbol
+  author: joe
+  label:
+    en_US: okx_get_all_symbol
+    zh_Hans: 获取OKX所有币种
+description:
+  human:
+    en_US: Get all symbols on OKX
+    zh_Hans: 获取OKX所有币种
+  llm: Get all symbols on OKX
+parameters:
+  - name: market_type
+    type: select
+    required: true
+    label:
+      en_US: Market Type
+      zh_Hans: 市场类型
+    human_description:
+      en_US: The market type to get symbols for
+      zh_Hans: 获取指定市场类型的交易对
+    llm_description: The market type to get symbols for, can be spot, futures, etc.
+    form: llm
+    options:
+      - label:
+          en_US: spot
+          zh_Hans: spot
+        value: spot
+      - label:
+          en_US: futures
+          zh_Hans: futures
+        value: futures
+
+extra:
+  python:
+    source: tools/okx_get_all_symbol.py

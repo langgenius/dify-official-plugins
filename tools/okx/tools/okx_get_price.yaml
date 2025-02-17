@@ -1,0 +1,81 @@
+identity:
+  name: okx_get_price
+  author: joe
+  label:
+    en_US: okx_get_price
+    zh_Hans: 获取OKX指定币种价格
+description:
+  human:
+    en_US: Get the price of a specified coin on OKX
+    zh_Hans: 获取OKX指定币种价格
+  llm: Get the price of a specified coin on OKX
+parameters:
+  - name: symbol
+    type: string
+    required: true
+    label:
+      en_US: Symbol
+      zh_Hans: 币种
+    human_description:
+      en_US: Symbol of the coin
+      zh_Hans: 币种
+    llm_description: Symbol of the coin
+    form: llm
+  - name: bar
+    type: select
+    required: true
+    label:
+      en_US: Bar
+      zh_Hans: 时间戳
+    human_description:
+      en_US: Time interval for the candlestick data
+      zh_Hans: K线图的时间间隔
+    llm_description: Time interval for the candlestick data, can be 1m, 3m, 5m, 15m, 30m, 1H, 2H, 4H
+    form: llm
+    options:
+      - label:
+          en_US: 1m
+          zh_Hans: 1分钟
+        value: 1m
+      - label:
+          en_US: 3m
+          zh_Hans: 3分钟
+        value: 3m
+      - label:
+          en_US: 5m
+          zh_Hans: 5分钟
+        value: 5m
+      - label:
+          en_US: 15m
+          zh_Hans: 15分钟
+        value: 15m
+      - label:
+          en_US: 30m
+          zh_Hans: 30分钟
+        value: 30m
+      - label:
+          en_US: 1H
+          zh_Hans: 1小时
+        value: 1H
+      - label:
+          en_US: 2H
+          zh_Hans: 2小时
+        value: 2H
+      - label:
+          en_US: 4H
+          zh_Hans: 4小时
+        value: 4H
+  - name: limit
+    type: number
+    required: true
+    label:
+      en_US: Limit
+      zh_Hans: 返回最近多少个数据，最大为 300
+    human_description:
+      en_US: Number of data points to return (max 300)
+      zh_Hans: 返回数据点的数量（最大300个）
+    llm_description: Number of data points to return (maximum 300)
+    form: llm
+extra:
+  python:
+    source: tools/okx_get_price.py
