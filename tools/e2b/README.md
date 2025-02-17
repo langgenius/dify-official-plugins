@@ -51,4 +51,4 @@ Download a file from a sandboxed environment.
 
 ![image](./_assets/e2b_09.png)
 
-Note that these two file operations require a existing sandbox.
+Note that these two file operations require an existing sandbox.
