@@ -1,6 +1,6 @@
-model: gemini-1.5-flash-8b-exp-0924
+model: gemini-2.0-pro-exp-0205
 label:
-  en_US: Gemini 1.5 Flash 8B 0924
+  en_US: Gemini 2.0 pro exp 02-05
 model_type: llm
 features:
   - agent-thought

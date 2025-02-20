@@ -1,17 +1,21 @@
 import base64
-import io
+import tempfile
 import json
+import os
 from collections.abc import Generator
-from typing import Optional, Union, cast
+from typing import Optional, Union
+
+import requests
 import google.ai.generativelanguage as glm
 import google.generativeai as genai
-import requests
+from google.api_core import exceptions
+from google.generativeai.types import ContentType, File, GenerateContentResponse
+from google.generativeai.types.content_types import to_part
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
-    DocumentPromptMessageContent,
-    ImagePromptMessageContent,
     PromptMessage,
+    PromptMessageContent,
     PromptMessageContentType,
     PromptMessageTool,
     SystemPromptMessage,
@@ -28,27 +32,10 @@ from dify_plugin.errors.model import (
     InvokeServerUnavailableError,
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
-from google.api_core import exceptions
-from google.generativeai.client import _ClientManager
-from google.generativeai.types import ContentType, GenerateContentResponse
-from google.generativeai.types.content_types import to_part
-from PIL import Image
 
-GOOGLE_AVAILABLE_MIMETYPE = [
-    "application/pdf",
-    "application/x-javascript",
-    "text/javascript",
-    "application/x-python",
-    "text/x-python",
-    "text/plain",
-    "text/html",
-    "text/css",
-    "text/md",
-    "text/csv",
-    "text/xml",
-    "text/rtf",
-]
+from .utils import FileCache
 
+file_cache = FileCache()
 
 class GoogleLargeLanguageModel(LargeLanguageModel):
     def _invoke(
@@ -144,7 +131,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return:
         """
         try:
-            ping_message = SystemPromptMessage(content="ping")
+            ping_message = UserPromptMessage(content="ping")
             self._generate(model, credentials, [ping_message], stream=False, model_parameters={"max_output_tokens": 5})
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
@@ -184,23 +171,25 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             config_kwargs["response_mime_type"] = "application/json"
         if stop:
             config_kwargs["stop_sequences"] = stop
-        google_model = genai.GenerativeModel(model_name=model)
+
+        genai.configure(api_key=credentials["google_api_key"])
+
         history = []
-        if model == "gemini-pro-vision":
-            last_msg = prompt_messages[-1]
-            content = self._format_message_to_glm_content(last_msg)
-            history.append(content)
-        else:
-            for msg in prompt_messages:
-                content = self._format_message_to_glm_content(msg)
-                if history and history[-1]["role"] == content["role"]:
-                    history[-1]["parts"].extend(content["parts"])
-                else:
-                    history.append(content)
-        new_client_manager = _ClientManager()
-        new_client_manager.configure(api_key=credentials["google_api_key"])
-        new_custom_client = new_client_manager.make_client("generative")
-        google_model._client = new_custom_client
+        system_instruction = None
+
+        for msg in prompt_messages:
+            content = self._format_message_to_glm_content(msg)
+            if history and history[-1]["role"] == content["role"]:
+                history[-1]["parts"].extend(content["parts"])
+            elif content["role"] == "system":
+                system_instruction = content["parts"][0]
+            else:
+                history.append(content)
+        
+        if not history:
+            raise InvokeError("The user prompt message is required. You only add a system prompt message.")
+
+        google_model = genai.GenerativeModel(model_name=model, system_instruction=system_instruction)
         response = google_model.generate_content(
             contents=history,
             generation_config=genai.types.GenerationConfig(**config_kwargs),
@@ -225,8 +214,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: llm response
         """
         assistant_prompt_message = AssistantPromptMessage(content=response.text)
-        prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
-        completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
+        if response.usage_metadata:
+            prompt_tokens = response.usage_metadata.prompt_token_count
+            completion_tokens = response.usage_metadata.candidates_token_count
+        else:
+            prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
+            completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
         usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
         result = LLMResult(model=model, prompt_messages=prompt_messages, message=assistant_prompt_message, usage=usage)
         return result
@@ -268,8 +261,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                         delta=LLMResultChunkDelta(index=index, message=assistant_prompt_message),
                     )
                 else:
-                    prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
-                    completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
+                    if hasattr(response, "usage_metadata") and response.usage_metadata:
+                        prompt_tokens = response.usage_metadata.prompt_token_count
+                        completion_tokens = response.usage_metadata.candidates_token_count
+                    else:
+                        prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
+                        completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
                     usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
                     yield LLMResultChunk(
                         model=model,
@@ -303,6 +300,40 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         else:
             raise ValueError(f"Got unknown type {message}")
         return message_text
+    
+    def _upload_file_content_to_google(self, message_content: PromptMessageContent) -> File:
+        key = f"{message_content.type.value}:{hash(message_content.data)}"
+        if file_cache.exists(key):
+            try:
+                return genai.get_file(file_cache.get(key))
+            except:
+                pass
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            if message_content.base64_data:
+                file_content = base64.b64decode(message_content.base64_data)
+                temp_file.write(file_content)
+            else:
+                try:
+                    response = requests.get(message_content.url)
+                    response.raise_for_status()
+                    temp_file.write(response.content)
+                except Exception as ex:
+                    raise ValueError(f"Failed to fetch data from url {message_content.url}, {ex}")
+            temp_file.flush()
+
+        file = genai.upload_file(path=temp_file.name, mime_type=message_content.mime_type)
+        while file.state.name == "PROCESSING":
+            time.sleep(5)
+            file = genai.get_file(file.name)
+        # google will delete your upload files in 2 days.
+        file_cache.setex(key, 47 * 60 * 60, file.name)
+
+        try:
+            os.unlink(temp_file.name)
+        except PermissionError:
+            # windows may raise permission error
+            pass
+        return file
 
     def _format_message_to_glm_content(self, message: PromptMessage) -> ContentType:
         """
@@ -319,27 +350,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 for c in message.content:
                     if c.type == PromptMessageContentType.TEXT:
                         glm_content["parts"].append(to_part(c.data))
-                    elif c.type == PromptMessageContentType.IMAGE:
-                        message_content = cast(ImagePromptMessageContent, c)
-                        if message_content.data.startswith("data:"):
-                            (metadata, base64_data) = c.data.split(",", 1)
-                            mime_type = metadata.split(";", 1)[0].split(":")[1]
-                        else:
-                            try:
-                                image_content = requests.get(message_content.data).content
-                                with Image.open(io.BytesIO(image_content)) as img:
-                                    mime_type = f"image/{img.format.lower()}"
-                                base64_data = base64.b64encode(image_content).decode("utf-8")
-                            except Exception as ex:
-                                raise ValueError(f"Failed to fetch image data from url {message_content.data}, {ex}")
-                        blob = {"inline_data": {"mime_type": mime_type, "data": base64_data}}
-                        glm_content["parts"].append(blob)
-                    elif c.type == PromptMessageContentType.DOCUMENT:
-                        message_content = cast(DocumentPromptMessageContent, c)
-                        if message_content.mime_type not in GOOGLE_AVAILABLE_MIMETYPE:
-                            raise ValueError(f"Unsupported mime type {message_content.mime_type}")
-                        blob = {"inline_data": {"mime_type": message_content.mime_type, "data": message_content.data}}
-                        glm_content["parts"].append(blob)
+                    else:
+                        glm_content["parts"].append(self._upload_file_content_to_google(c))
+
             return glm_content
         elif isinstance(message, AssistantPromptMessage):
             glm_content = {"role": "model", "parts": []}
@@ -356,7 +369,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 )
             return glm_content
         elif isinstance(message, SystemPromptMessage):
-            return {"role": "user", "parts": [to_part(message.content)]}
+            if isinstance(message.content, list):
+                text_contents = filter(lambda c: isinstance(c, TextPromptMessageContent), message.content)
+                message.content = "".join(c.data for c in text_contents)
+            return {"role": "system", "parts": [to_part(message.content)]}
         elif isinstance(message, ToolPromptMessage):
             return {
                 "role": "function",

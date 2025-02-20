@@ -1,18 +1,16 @@
-model: gemini-2.0-pro-exp-02-05
+model: gemini-2.0-flash-thinking-exp-0121
 label:
-  en_US: Gemini 2.0 pro exp 02-05
+  en_US: Gemini 2.0 Flash Thinking Exp 01-21
 model_type: llm
 features:
   - agent-thought
   - vision
-  - tool-call
-  - stream-tool-call
   - document
   - video
   - audio
 model_properties:
   mode: chat
-  context_size: 1048576
+  context_size: 32767
 parameter_rules:
   - name: temperature
     use_template: temperature
