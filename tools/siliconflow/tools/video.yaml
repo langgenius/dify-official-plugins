@@ -1,0 +1,57 @@
+description:
+  human:
+    en_US: Generate video via SiliconFlow's tencent/HunyuanVideo model.
+  llm: This tool is used to generate video from prompt via SiliconFlow's tencent/HunyuanVideo model.
+extra:
+  python:
+    source: tools/video.py
+identity:
+  author: siliconflow
+  icon: icon.svg
+  label:
+    en_US: SiliconFlowVideo
+  name: SiliconFlowVideo
+parameters:
+  - form: llm
+    human_description:
+      en_US: The text prompt used to generate the video, see https://docs.siliconflow.cn/capabilities/video#2 for more suggestions.
+      zh_Hans: 建议用英文的生成图片提示词以获得更好的生成效果，参考 https://docs.siliconflow.cn/capabilities/video#2 获得更多 prompt 书写建议。
+    label:
+      en_US: prompt
+      zh_Hans: 提示词
+    llm_description: this prompt text will be used to generate video.
+    name: prompt
+    required: true
+    type: string
+  - default: LTX-Video
+    form: form
+    human_description:
+      en_US: "Description in English"
+      zh_Hans: "描述用中文"
+    label:
+      en_US: Choose Video Model
+      zh_Hans: 选择生成视频的模型
+    name: model
+    options:
+      - label:
+          en_US: LTX-Video
+        value: LTX-Video
+      - label:
+          en_US: HunyuanVideo
+        value: HunyuanVideo
+      - label:
+          en_US: mochi-1-preview
+        value: mochi-1-preview
+    required: true
+    type: select
+  - form: form
+    human_description:
+      en_US: The same seed and prompt can produce similar images.
+      zh_Hans: 相同的种子和提示可以产生相似的视频。
+    label:
+      en_US: Seed
+      zh_Hans: 种子
+    max: 1000000
+    min: 0
+    name: seed
+    type: number
