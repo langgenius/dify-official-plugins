@@ -1,7 +1,7 @@
-model: deepseek-ai/DeepSeek-R1
+model: Pro/deepseek-ai/DeepSeek-R1
 label:
-  zh_Hans: deepseek-ai/DeepSeek-R1
-  en_US: deepseek-ai/DeepSeek-R1
+  zh_Hans: Pro/deepseek-ai/DeepSeek-R1
+  en_US: Pro/deepseek-ai/DeepSeek-R1
 model_type: llm
 features:
   - agent-thought
