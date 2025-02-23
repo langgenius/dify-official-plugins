@@ -98,7 +98,13 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :param stream: is stream response
         :return: full response or stream response chunk generator result
         """
-        service_account_info = json.loads(base64.b64decode(credentials["vertex_service_account_key"]))
+        service_account_info = (
+            json.loads(base64.b64decode(service_account_key))
+            if (
+                service_account_key := credentials.get("vertex_service_account_key", "")
+            )
+            else None
+        )
         project_id = credentials["vertex_project_id"]
         SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
         token = ""
@@ -407,7 +413,13 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         config_kwargs["max_output_tokens"] = config_kwargs.pop("max_tokens_to_sample", None)
         if stop:
             config_kwargs["stop_sequences"] = stop
-        service_account_info = json.loads(base64.b64decode(credentials["vertex_service_account_key"]))
+        service_account_info = (
+            json.loads(base64.b64decode(service_account_key))
+            if (
+                service_account_key := credentials.get("vertex_service_account_key", "")
+            )
+            else None
+        )
         project_id = credentials["vertex_project_id"]
         location = credentials["vertex_location"]
         if service_account_info:
