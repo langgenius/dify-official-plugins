@@ -8,7 +8,7 @@ extra:
   python:
     source: tools/stable_diffusion.py
 identity:
-  author: hjlarry
+  author: hjlarry, SiliconFlow, Inc.
   icon: icon.svg
   label:
     en_US: Stable Diffusion
