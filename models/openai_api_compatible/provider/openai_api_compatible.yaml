@@ -40,6 +40,15 @@ model_credential_schema:
       placeholder:
         zh_Hans: Base URL, e.g. https://api.openai.com/v1
         en_US: Base URL, e.g. https://api.openai.com/v1
+    - variable: endpoint_model_name
+      label:
+        zh_Hans: API endpoint中的模型名称
+        en_US: model name for API endpoint
+      type: text-input
+      required: false
+      placeholder:
+        zh_Hans: endpoint model name, e.g. chatgpt4.0
+        en_US: endpoint model name, e.g. chatgpt4.0
     - variable: mode
       show_on:
         - variable: __model_type
