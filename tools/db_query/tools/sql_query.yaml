@@ -1,0 +1,111 @@
+identity:
+  name: sql_query
+  author: JunjieM
+  label:
+    en_US: SQL Query
+    zh_Hans: SQL查询
+description:
+  human:
+    en_US: A tool for Database SQL query.
+    zh_Hans: 数据库SQL查询工具。
+  llm: A tool for executing SQL query. Input should be a search query.
+extra:
+  python:
+    source: tools/sql_query.py
+parameters:
+  - name: db_type
+    type: select
+    required: true
+    options:
+      - value: mysql
+        label:
+          en_US: MySQL
+          zh_Hans: MySQL
+      - value: oracle
+        label:
+          en_US: Oracle
+          zh_Hans: Oracle
+      - value: postgresql
+        label:
+          en_US: PostgreSQL
+          zh_Hans: PostgreSQL
+    default: mysql
+    label:
+      en_US: Database type
+      zh_Hans: 数据库类型
+    human_description:
+      en_US: Used for selecting the database type, mysql, oracle or postgresql.
+      zh_Hans: 用于选择数据库类型，mysql、oracle或postgresql。
+    form: form
+  - name: db_host
+    type: string
+    required: true
+    default: localhost
+    label:
+      en_US: Database Host
+      zh_Hans: 数据库地址
+    human_description:
+      en_US: database hostname or IP address.
+      zh_Hans: 数据库的主机名或IP地址。
+    form: form
+  - name: db_port
+    type: number
+    required: false
+    label:
+      en_US: Port
+      zh_Hans: 端口
+    human_description:
+      en_US: database port.
+      zh_Hans: 数据库的端口。
+    form: form
+  - name: db_username
+    type: string
+    required: true
+    label:
+      en_US: Username
+      zh_Hans: 用户名
+    human_description:
+      en_US: database username.
+      zh_Hans: 数据库的用户名。
+    form: form
+  - name: db_password
+    type: secret-input
+    required: true
+    label:
+      en_US: Password
+      zh_Hans: 密码
+    human_description:
+      en_US: database password.
+      zh_Hans: 数据库的密码。
+    form: form
+  - name: db_name
+    type: string
+    required: false
+    label:
+      en_US: Database name
+      zh_Hans: 库名
+    human_description:
+      en_US: database name.
+      zh_Hans: 数据库的名称。
+    form: form
+  - name: db_properties
+    type: string
+    required: false
+    label:
+      en_US: Database properties
+      zh_Hans: 数据库属性
+    human_description:
+      en_US: 'Database properties, for example: alt_host=host1&alt_host=host2&ssl_cipher=/path/to/crt'
+      zh_Hans: 数据库属性，例如：alt_host=host1&alt_host=host2&ssl_cipher=/path/to/crt
+    form: form
+  - name: query_sql
+    type: string
+    required: true
+    label:
+      en_US: Query SQL
+      zh_Hans: SQL查询语句
+    human_description:
+      en_US: 'SQL query statement, for example: select * from tbl_name'
+      zh_Hans: SQL查询语句，例如：select * from tbl_name
+    llm_description: 'SQL query statement, for example: select * from tbl_name'
+    form: llm

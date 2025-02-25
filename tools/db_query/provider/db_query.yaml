@@ -1,0 +1,18 @@
+extra:
+  python:
+    source: provider/db_query.py
+identity:
+  name: db_query
+  author: JunjieM
+  label:
+    en_US: Database Query
+    zh_Hans: 数据库查询
+  description:
+    en_US: Database Query Utils.
+    zh_Hans: 数据库查询工具。
+  icon: icon.svg
+  tags:
+    - search
+    - utilities
+tools:
+  - tools/sql_query.yaml
