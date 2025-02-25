@@ -8,10 +8,8 @@ label:
   zh_Hans: E2B
   pt_BR: E2B
 description:
-  en_US: Tool for integrate with e2b.dev.
-  ja_JP: Tool for integrate with e2b.dev.
-  zh_Hans: Tool for integrate with e2b.dev.
-  pt_BR: Tool for integrate with e2b.dev.
+  en_US: Tool for integration with e2b.dev.
+  zh_Hans: 用于集成 e2b.dev 的工具插件。
 icon: icon.png
 resource:
   memory: 268435456
