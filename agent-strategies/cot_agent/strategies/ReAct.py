@@ -4,6 +4,7 @@ from collections.abc import Generator, Mapping
 from typing import Any, Optional, cast
 
 from dify_plugin.entities.agent import AgentInvokeMessage
+from dify_plugin.entities.model import AIModelEntity
 from dify_plugin.entities.model.llm import LLMModelConfig, LLMUsage
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
@@ -30,13 +31,14 @@ from pydantic import BaseModel, Field
 
 ignore_observation_providers = ["wenxin"]
 
+class AgentModelConfigCompat(LLMModelConfig):
+    entity: AIModelEntity | None
 
 class ReActParams(BaseModel):
     query: str
     instruction: str | None
-    model: AgentModelConfig
+    model: AgentModelConfigCompat
     tools: list[ToolEntity] | None
-    inputs: dict[str, Any] = {}
     maximum_iterations: int = 3
 
 
@@ -109,11 +111,7 @@ class ReActAgentStrategy(AgentStrategy):
         ):
             stop.append("Observation")
         # init instruction
-        inputs = react_params.inputs
-        instruction = ""
-        self._instruction = self._fill_in_inputs_from_external_data_tools(
-            instruction, inputs
-        )
+        self._instruction = react_params.instruction
 
         iteration_step = 1
         max_iteration_steps = react_params.maximum_iterations
@@ -542,20 +540,6 @@ class ReActAgentStrategy(AgentStrategy):
         return AgentScratchpadUnit.Action(
             action_name=action["action"], action_input=action["action_input"]
         )
-
-    def _fill_in_inputs_from_external_data_tools(
-        self, instruction: str, inputs: Mapping[str, Any]
-    ) -> str:
-        """
-        fill in inputs from external data tools
-        """
-        for key, value in inputs.items():
-            try:
-                instruction = instruction.replace(f"{{{{{key}}}}}", str(value))
-            except Exception:
-                continue
-
-        return instruction
 
     def _format_assistant_message(
         self, agent_scratchpad: list[AgentScratchpadUnit]
