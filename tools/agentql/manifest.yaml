@@ -1,0 +1,26 @@
+version: 1.0.0
+type: plugin
+author: TinyFish
+name: agentql
+label:
+  en_US: AgentQL
+  zh_Hans: AgentQL
+description:
+  en_US: AgentQL API integration for web data extraction.
+  zh_Hans: AgentQL API 集成，用于网页数据提取。
+icon: icon.svg
+resource:
+  memory: 1048576
+plugins:
+  tools:
+    - provider/agentql.yaml
+meta:
+  version: 1.0.0
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+created_at: 2025-01-24T13:37:54.826722-08:00

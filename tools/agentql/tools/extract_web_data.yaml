@@ -1,0 +1,124 @@
+identity:
+  name: extract_web_data
+  author: TinyFish
+  label:
+    en_US: Extract Web Data
+    zh_Hans: 网页数据提取
+
+description:
+  human:
+    en_US: Extracts structured data from a web page using an AgentQL query or a Natural Language description.
+    zh_Hans: 从给定的 URL 中提取结构化数据。
+  llm: Extracts structured data as JSON from a web page given a URL using either an AgentQL query or a Natural Language description of the data.
+
+extra:
+  python:
+    source: tools/extract_web_data.py
+
+parameters:
+  - name: url
+    type: string
+    required: true
+    label:
+      en_US: URL
+      zh_Hans: URL
+    human_description:
+      en_US: The URL of the public web page you want to extract data from.
+      zh_Hans: 要从中提取数据的网页的公共 URL。
+    llm_description: Accepts the URL of the public webpage to extract data from.
+    form: llm
+  - name: query
+    type: string
+    required: false
+    label:
+      en_US: AgentQL Query
+      zh_Hans: AgentQL 查询语言
+    human_description:
+      en_US: The AgentQL query to execute. Learn more at https://docs.agentql.com/agentql-query or use a prompt.
+      zh_Hans: 要执行的 AgentQL 查询。更多信息请参阅 https://docs.agentql.com/agentql-query。如果您想要精确提取结构化数据, 使用 AgentQL 查询。请指定 query 或 prompt 字段。
+    llm_description: Accepts AgentQL query used to extract the data. The query must be enclosed with curly braces `{}`. Either this field or `prompt` field must be provided.
+    form: llm
+  - name: prompt
+    type: string
+    required: false
+    label:
+      en_US: Prompt
+      zh_Hans: 提示
+    human_description:
+      en_US: A Natural Language description of the data to extract from the page. Alternative to AgentQL query.
+      zh_Hans: 对要提取的数据的自然语言描述。如果您想要提取非结构化数据, 使用 prompt。请指定 prompt 或 query 字段。
+    llm_description: Accepts Natural Language description of the data to extract from the page. If AgentQL query is not specified, always use the `prompt` field. Either this field or `query` field must be provided.
+    form: llm
+  ############## Advanced Options #######################
+  - name: stealth_mode
+    type: boolean
+    default: false
+    label:
+      en_US: Enable Stealth Mode (Beta)
+      zh_Hans: 隐身模式
+    human_description:
+      en_US: Enable experimental anti-bot evasion strategies. May not work for all websites at all times.
+      zh_Hans: 启用隐身模式以绕过一些网站的反机器人检测。此功能是实验性的，可能不适用于所有网站。数据提取可能比非隐身模式花费更多时间。
+    form: form
+  - name: timeout
+    type: number
+    min: 0
+    default: 900
+    label:
+      en_US: Timeout
+      zh_Hans: 超时
+    human_description:
+      en_US: Seconds to wait for a request.
+      zh_Hans: 请求的超时时间（秒）。如果数据提取时间过长，请增加此值。
+    form: form
+  - name: mode
+    type: select
+    options:
+      - value: fast
+        label:
+          en_US: Fast
+          zh_Hans: 快速
+      - value: standard
+        label:
+          en_US: Standard
+          zh_Hans: 标准
+    default: fast
+    label:
+      en_US: Request Mode
+      zh_Hans: 请求模式
+    human_description:
+      en_US: "'standard' uses deep data analysis, while 'fast' trades some depth of analysis for speed."
+      zh_Hans: "'standard' 使用深度数据分析，而 'fast' 则牺牲了一些深度分析以换取速度。"
+    form: form
+  - name: wait_for
+    type: number
+    min: 0
+    max: 10
+    default: 0
+    label:
+      en_US: Wait For
+      zh_Hans: 等待
+    human_description:
+      en_US: Seconds to wait for the page to load before extracting data.
+      zh_Hans: 在数据提取之前等待页面加载的时间（秒）。
+    form: form
+  - name: scroll_to_bottom
+    type: boolean
+    default: false
+    label:
+      en_US: Enable scroll to bottom
+      zh_Hans: 是否滚动到底部
+    human_description:
+      en_US: Scroll to bottom of the page before extracting data. 
+      zh_Hans: 在数据提取之前滚动到页面底部。
+    form: form
+  - name: enable_screenshot
+    type: boolean
+    default: false
+    label:
+      en_US: Enable screenshot
+      zh_Hans: 是否启用截图
+    human_description:
+      en_US: Take a screenshot before extracting data. Returned in 'metadata' as a Base64 string.
+      zh_Hans: 启用截图捕获。
+    form: form
