@@ -11,7 +11,8 @@ name: openrouter
 author: langgenius
 icon: openrouter_square.svg
 description:
-  en_US: OpenRouter
+  en_US: OpenRouter is a powerful platform that provides access to a diverse set of language models, including both commercial and open-source options.
+  zh_Hans: OpenRouter 是一个强大的平台，提供对多种语言模型的访问，包括商业和开源选项。
 label:
   en_US: OpenRouter
 resource:
