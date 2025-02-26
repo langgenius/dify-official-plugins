@@ -17,7 +17,7 @@ class ZhipuaiProvider(ModelProvider):
         """
         try:
             model_instance = self.get_model_instance(ModelType.LLM)
-            model_instance.validate_credentials(model="glm-4", credentials=credentials)
+            model_instance.validate_credentials(model="glm-4-flash", credentials=credentials)
         except CredentialsValidateFailedError as ex:
             raise ex
         except Exception as ex:
