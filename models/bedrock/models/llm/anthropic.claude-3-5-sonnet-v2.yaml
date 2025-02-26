@@ -1,4 +1,4 @@
-model: anthropic.claude-3-5-sonnet-20241022-v2:0
+model: us.anthropic.claude-3-5-sonnet-20241022-v2:0
 label:
   en_US: Claude 3.5 Sonnet V2
 model_type: llm
