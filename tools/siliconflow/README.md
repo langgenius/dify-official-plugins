@@ -18,7 +18,7 @@ The SiliconFlow tools could be found at the Plugin Marketplace, please install i
 
 On the Dify navigation page, click `Tools > SiliconFlow > To Authorize` and fill in the API Key.
 
-![](./_assets/siliconflow_2.png)
+![](./_assets/siliconflow_2.PNG)
 
 ### 4. Using the tool
 
