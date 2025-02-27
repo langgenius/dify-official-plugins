@@ -23,6 +23,7 @@ credentials_for_provider:
       zh_Hans: API 密钥
     required: true
     type: secret-input
+    url: https://e2b.dev/dashboard?tab=keys
 tools:
   - tools/run_code.yaml
   - tools/run_command.yaml
