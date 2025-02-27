@@ -1,2 +1,2 @@
-dify_plugin~=0.0.1b61
+dify_plugin==0.0.1b65
 transformers~=4.42.4

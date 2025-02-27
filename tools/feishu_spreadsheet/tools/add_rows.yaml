@@ -1,0 +1,74 @@
+description:
+  human:
+    en_US: Add Rows
+    zh_Hans: 新增多行至工作表最后
+  llm: A tool for adding multiple rows to the end of a spreadsheet. (新增多行至工作表最后)
+extra:
+  python:
+    source: tools/add_rows.py
+identity:
+  author: Doug Lea
+  label:
+    en_US: Add Rows
+    zh_Hans: 新增多行至工作表最后
+  name: add_rows
+parameters:
+- form: llm
+  human_description:
+    en_US: Spreadsheet token, supports input of spreadsheet URL.
+    zh_Hans: 电子表格 token，支持输入电子表格 url。
+  label:
+    en_US: spreadsheet_token
+    zh_Hans: 电子表格 token
+  llm_description: 电子表格 token，支持输入电子表格 url。
+  name: spreadsheet_token
+  required: true
+  type: string
+- form: llm
+  human_description:
+    en_US: Sheet ID, either sheet_id or sheet_name must be filled.
+    zh_Hans: 工作表 ID，与 sheet_name 二者其一必填。
+  label:
+    en_US: sheet_id
+    zh_Hans: 工作表 ID
+  llm_description: 工作表 ID，与 sheet_name 二者其一必填。
+  name: sheet_id
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: Sheet name, either sheet_id or sheet_name must be filled.
+    zh_Hans: 工作表名称，与 sheet_id 二者其一必填。
+  label:
+    en_US: sheet_name
+    zh_Hans: 工作表名称
+  llm_description: 工作表名称，与 sheet_id 二者其一必填。
+  name: sheet_name
+  required: false
+  type: string
+- form: form
+  human_description:
+    en_US: Number of rows to add, range (0-5000].
+    zh_Hans: 要增加行数，范围(0-5000]。
+  label:
+    en_US: length
+    zh_Hans: 要增加行数
+  llm_description: 要增加行数，范围(0-5000]。
+  name: length
+  required: true
+  type: number
+- form: llm
+  human_description:
+    en_US: 'Content of the new rows, array of objects in string format, each array
+      represents a row of table data, format like: [ [ "ID","Name","Age" ],[ 1,"Zhang
+      San",10 ],[ 2,"Li Si",11 ] ].
+
+      '
+    zh_Hans: 新增行的表格内容，数组对象字符串，每个数组一行表格数据，格式,如：[["编号","姓名","年龄"],[1,"张三",10],[2,"李四",11]]。
+  label:
+    en_US: values
+    zh_Hans: 新增行的表格内容
+  llm_description: 新增行的表格内容，数组对象字符串，每个数组一行表格数据，格式,如：[["编号","姓名","年龄"],[1,"张三",10],[2,"李四",11]]。
+  name: values
+  required: false
+  type: string

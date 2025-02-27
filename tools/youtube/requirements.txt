@@ -1,2 +1,2 @@
-dify_plugin~=0.0.1b40
+dify_plugin==0.0.1b65
 google-api-python-client==2.154.0

@@ -5,7 +5,9 @@ description:
   zh_Hans: 适配多种海外应用场景的高性价比 LLM API
 icon: icon_s_en.svg
 label:
-  en_US: novita
+  en_US: Novita
+description:
+  en_US: Novita
 meta:
   arch:
   - amd64
@@ -33,4 +35,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.1
+version: 0.0.2

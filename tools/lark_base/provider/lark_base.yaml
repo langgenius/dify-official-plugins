@@ -1,0 +1,52 @@
+credentials_for_provider:
+  app_id:
+    help:
+      en_US: Get your app_id and app_secret from Lark
+      zh_Hans: 从 Lark 获取您的 app_id 和 app_secret
+    label:
+      en_US: APP ID
+    placeholder:
+      en_US: Please input your Lark app id
+      zh_Hans: 请输入你的 Lark app id
+    required: true
+    type: text-input
+    url: https://open.larksuite.com/app
+  app_secret:
+    label:
+      en_US: APP Secret
+    placeholder:
+      en_US: Please input your app secret
+      zh_Hans: 请输入你的 Lark app secret
+    required: true
+    type: secret-input
+extra:
+  python:
+    source: provider/lark_base.py
+identity:
+  author: Doug Lea
+  description:
+    en_US: 'Lark base, requires the following permissions: bitable:app.
+
+      '
+    zh_Hans: 'Lark 多维表格，需要开通以下权限: bitable:app。
+
+      '
+  icon: icon.png
+  label:
+    en_US: Lark Base
+    zh_Hans: Lark 多维表格
+  name: lark_base
+  tags:
+  - social
+  - productivity
+tools:
+- tools/delete_tables.yaml
+- tools/list_tables.yaml
+- tools/create_base.yaml
+- tools/add_records.yaml
+- tools/search_records.yaml
+- tools/delete_records.yaml
+- tools/create_table.yaml
+- tools/read_records.yaml
+- tools/get_base_info.yaml
+- tools/update_records.yaml

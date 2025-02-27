@@ -21,7 +21,7 @@ parameters:
   name: query
   required: true
   type: string
-- default: llama-3.1-sonar-small-128k-online
+- default: sonar
   form: form
   human_description:
     en_US: The Perplexity AI model to use for generating the response.
@@ -31,6 +31,22 @@ parameters:
     zh_Hans: 模型名称
   name: model
   options:
+  - label:
+      en_US: sonar
+      zh_Hans: sonar
+    value: sonar
+  - label:
+      en_US: sonar-pro
+      zh_Hans: sonar-pro
+    value: sonar-pro
+  - label:
+      en_US: sonar-reasoning
+      zh_Hans: sonar-reasoning
+    value: sonar-reasoning
+  - label:
+      en_US: sonar-reasoning-pro
+      zh_Hans: sonar-reasoning-pro
+    value: sonar-reasoning-pro
   - label:
       en_US: llama-3.1-sonar-small-128k-online
       zh_Hans: llama-3.1-sonar-small-128k-online

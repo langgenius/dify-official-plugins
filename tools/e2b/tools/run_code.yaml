@@ -12,19 +12,33 @@ description:
     pt_BR: Executar um trecho de Python código em um ambiente sandboxed.
   llm: Run a snippet of Python code in a sandboxed environment.
 parameters:
-  - name: python_code
+  - name: code
     type: string
     required: true
     label:
-      en_US: Python Code
-      zh_Hans: Python 代码
-      pt_BR: Python Code
+      en_US: Code
+      zh_Hans: 代码
+      pt_BR: Código
     human_description:
-      en_US: The Python code to execute in the sandbox environment.
-      zh_Hans: 要在沙盒环境中执行的 Python 代码。
-      pt_BR: O código Python a ser executado no ambiente sandbox.
-    llm_description: The Python code to execute in the sandbox environment.
+      en_US: The code to execute in the sandbox environment, it can be Python or JavaScript.
+      zh_Hans: 要在沙盒环境中执行的代码，可以是 Python 或 JavaScript。
+      pt_BR: O código a ser executado no ambiente sandbox, pode ser Python ou JavaScript.
+    llm_description: The code to execute in the sandbox environment
     form: llm
+  - name: language
+    type: string
+    required: true
+    label:
+      en_US: Language
+      zh_Hans: 语言
+      pt_BR: Idioma
+    human_description:
+      en_US: The language of the code, Python or JavaScript.
+      zh_Hans: 代码的语言，Python 或 JavaScript。
+      pt_BR: O idioma do código, Python ou JavaScript.
+    llm_description: The language of the code, Python or JavaScript.
+    form: llm
+    default: python
   - name: sandbox_id
     type: string
     required: false
