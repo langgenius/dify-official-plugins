@@ -42,6 +42,9 @@ parameter_rules:
   - name: temperature
     use_template: temperature
   - name: top_p
+    show_on:
+      - variable: reasoning_type
+        value: disabled
     use_template: top_p
   - name: top_k
     label:
