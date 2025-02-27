@@ -6,7 +6,7 @@ extra:
   python:
     source: tools/flux.py
 identity:
-  author: hjlarry
+  author: hjlarry, SiliconFlow, Inc.
   icon: icon.svg
   label:
     en_US: Flux

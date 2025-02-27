@@ -9,6 +9,10 @@ extra:
     model_sources:
     - models/llm/llm.py
     provider_source: provider/x.py
+models:
+  llm:
+    predefined:
+    - models/llm/*.yaml
 help:
   title:
     en_US: Get your token from xAI

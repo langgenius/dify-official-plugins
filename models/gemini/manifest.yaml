@@ -1,5 +1,5 @@
 author: langgenius
-created_at: '2024-09-20T00:13:50.29298939-04:00'
+created_at: "2024-09-20T00:13:50.29298939-04:00"
 description:
   en_US: Google's Gemini model.
   zh_Hans: 谷歌提供的 Gemini 模型.
@@ -8,17 +8,17 @@ label:
   en_US: Gemini
 meta:
   arch:
-  - amd64
-  - arm64
+    - amd64
+    - arm64
   runner:
     entrypoint: main
     language: python
-    version: '3.12'
+    version: "3.12"
   version: 0.0.1
 name: gemini
 plugins:
   models:
-  - provider/google.yaml
+    - provider/google.yaml
 resource:
   memory: 268435456
   permission:
@@ -33,4 +33,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.4
+version: 0.0.5

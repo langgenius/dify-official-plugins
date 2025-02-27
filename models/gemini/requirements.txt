@@ -11,4 +11,3 @@ grpcio-status~=1.62.3
 httplib2~=0.22.0
 proto-plus~=1.25.0
 protobuf~=4.25.5
-pillow~=11.0.0

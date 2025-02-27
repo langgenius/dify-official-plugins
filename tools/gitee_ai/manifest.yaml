@@ -16,7 +16,7 @@ meta:
     language: python
     version: '3.12'
   version: 0.0.1
-name: gitee_ai
+name: gitee_ai_tool
 plugins:
   tools:
   - provider/gitee_ai.yaml
@@ -31,4 +31,4 @@ resource:
 tags:
 - image
 type: plugin
-version: 0.0.2
+version: 0.0.1

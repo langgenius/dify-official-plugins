@@ -1,0 +1,96 @@
+description:
+  human:
+    en_US: Read Cols
+    zh_Hans: 读取工作表列数据
+  llm: A tool for reading column data from a spreadsheet. (读取工作表列数据)
+extra:
+  python:
+    source: tools/read_cols.py
+identity:
+  author: Doug Lea
+  label:
+    en_US: Read Cols
+    zh_Hans: 读取工作表列数据
+  name: read_cols
+parameters:
+- form: llm
+  human_description:
+    en_US: Spreadsheet token, supports input of spreadsheet URL.
+    zh_Hans: 电子表格 token，支持输入电子表格 url。
+  label:
+    en_US: spreadsheet_token
+    zh_Hans: 电子表格 token
+  llm_description: 电子表格 token，支持输入电子表格 url。
+  name: spreadsheet_token
+  required: true
+  type: string
+- form: llm
+  human_description:
+    en_US: Sheet ID, either sheet_id or sheet_name must be filled.
+    zh_Hans: 工作表 ID，与 sheet_name 二者其一必填。
+  label:
+    en_US: sheet_id
+    zh_Hans: 工作表 ID
+  llm_description: 工作表 ID，与 sheet_name 二者其一必填。
+  name: sheet_id
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: Sheet name, either sheet_id or sheet_name must be filled.
+    zh_Hans: 工作表名称，与 sheet_id 二者其一必填。
+  label:
+    en_US: sheet_name
+    zh_Hans: 工作表名称
+  llm_description: 工作表名称，与 sheet_id 二者其一必填。
+  name: sheet_name
+  required: false
+  type: string
+- default: open_id
+  form: form
+  human_description:
+    en_US: User ID type, optional values are open_id, union_id, user_id, with a default
+      value of open_id.
+    zh_Hans: 用户 ID 类型，可选值有 open_id、union_id、user_id，默认值为 open_id。
+  label:
+    en_US: user_id_type
+    zh_Hans: 用户 ID 类型
+  llm_description: 用户 ID 类型，可选值有 open_id、union_id、user_id，默认值为 open_id。
+  name: user_id_type
+  options:
+  - label:
+      en_US: open_id
+      zh_Hans: open_id
+    value: open_id
+  - label:
+      en_US: union_id
+      zh_Hans: union_id
+    value: union_id
+  - label:
+      en_US: user_id
+      zh_Hans: user_id
+    value: user_id
+  required: false
+  type: select
+- form: form
+  human_description:
+    en_US: Starting column number, starting from 1.
+    zh_Hans: 起始列号，从 1 开始。
+  label:
+    en_US: start_col
+    zh_Hans: 起始列号
+  llm_description: 起始列号，从 1 开始。
+  name: start_col
+  required: false
+  type: number
+- form: form
+  human_description:
+    en_US: Number of columns to read.
+    zh_Hans: 读取列数
+  label:
+    en_US: num_cols
+    zh_Hans: 读取列数
+  llm_description: 读取列数
+  name: num_cols
+  required: true
+  type: number
