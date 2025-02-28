@@ -87,7 +87,7 @@ class CohereTextEmbeddingModel(TextEmbeddingModel):
         )
         return TextEmbeddingResult(embeddings=embeddings, usage=usage, model=model)
 
-    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> int:
+    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
         """
         Get number of tokens for given prompt messages
 
@@ -97,15 +97,17 @@ class CohereTextEmbeddingModel(TextEmbeddingModel):
         :return:
         """
         if len(texts) == 0:
-            return 0
-        full_text = " ".join(texts)
-        try:
-            response = self._tokenize(
-                model=model, credentials=credentials, text=full_text
-            )
-        except Exception as e:
-            raise self._transform_invoke_error(e)
-        return len(response)
+            return [0]
+        tokens = []
+        for text in texts:
+            try:
+                response = self._tokenize(
+                    model=model, credentials=credentials, text=text
+                )
+            except Exception as e:
+                raise self._transform_invoke_error(e)
+            tokens.append(len(response))
+        return tokens
 
     def _tokenize(self, model: str, credentials: dict, text: str) -> list[str]:
         """

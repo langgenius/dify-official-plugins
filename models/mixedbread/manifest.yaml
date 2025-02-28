@@ -1,8 +1,10 @@
 author: langgenius
-created_at: 2024-10-08 15:50:01.848598-04:00
+created_at: 2024-10-08T15:50:01.848598-04:00
 icon: icon_s_en.png
 label:
   en_US: mixedbread
+description:
+  en_US: MixedBread
 meta:
   arch:
   - amd64
@@ -30,4 +32,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.1
+version: 0.0.2

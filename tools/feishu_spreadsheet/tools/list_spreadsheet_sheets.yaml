@@ -1,0 +1,26 @@
+description:
+  human:
+    en_US: List Spreadsheet Sheets
+    zh_Hans: 列出电子表格所有工作表
+  llm: A tool for listing all sheets in a spreadsheet. (列出电子表格所有工作表)
+extra:
+  python:
+    source: tools/list_spreadsheet_sheets.py
+identity:
+  author: Doug Lea
+  label:
+    en_US: List Spreadsheet Sheets
+    zh_Hans: 列出电子表格所有工作表
+  name: list_spreadsheet_sheets
+parameters:
+- form: llm
+  human_description:
+    en_US: Spreadsheet token, supports input of spreadsheet URL.
+    zh_Hans: 电子表格 token，支持输入电子表格 URL。
+  label:
+    en_US: Spreadsheet Token
+    zh_Hans: 电子表格 token
+  llm_description: 电子表格 token，支持输入电子表格 URL。
+  name: spreadsheet_token
+  required: true
+  type: string

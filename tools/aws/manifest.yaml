@@ -1,9 +1,11 @@
-version: 0.0.1
+version: 0.0.2
 type: plugin
 author: "aws"
-name: "aws"
+name: "aws_tools"
 label:
-  en_US: "Bing"
+  en_US: "AWS"
+description:
+  en_US: "AWS Tools"
 created_at: "2024-09-25T08:03:44.658609186Z"
 icon: icon.svg
 resource:

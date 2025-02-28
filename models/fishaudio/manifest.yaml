@@ -5,7 +5,7 @@ name: "fishaudio"
 description:
   en_US: Models provided by Fish Audio, currently support TTS and ASR.
   zh_Hans: Fish Audio 提供的模型，目前支持 TTS 和 ASR。
-icon: fishaudio.svg
+icon: fishaudio.jpeg
 label:
   en_US: "Fish Audio"
 created_at: "2024-09-29T15:24:33.625407551-04:00"

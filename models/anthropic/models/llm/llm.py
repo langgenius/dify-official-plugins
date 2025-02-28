@@ -487,7 +487,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         prompt_message_dicts.append(message_dict)
                     else:
                         sub_messages = []
-                        for message_content in message.content:
+                        for message_content in message.content or []:
                             if message_content.type == PromptMessageContentType.TEXT:
                                 message_content = cast(
                                     TextPromptMessageContent, message_content
@@ -549,9 +549,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                                 sub_message_dict = {
                                     "type": "document",
                                     "source": {
-                                        "type": message_content.encode_format,
+                                        "type": "base64",
                                         "media_type": message_content.mime_type,
-                                        "data": message_content.data,
+                                        "data": message_content.base64_data,
                                     },
                                 }
                                 sub_messages.append(sub_message_dict)

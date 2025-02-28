@@ -57,7 +57,7 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         usage = self._calc_response_usage(model=model, credentials=credentials, tokens=used_tokens)
         return TextEmbeddingResult(embeddings=batched_embeddings, usage=usage, model=model)
 
-    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> int:
+    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
         """
         Get number of tokens for given prompt messages
 
@@ -67,11 +67,11 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         :return:
         """
         if len(texts) == 0:
-            return 0
-        total_num_tokens = 0
+            return []
+        tokens = []
         for text in texts:
-            total_num_tokens += self._get_num_tokens_by_gpt2(text)
-        return total_num_tokens
+            tokens.append(self._get_num_tokens_by_gpt2(text))
+        return tokens
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """

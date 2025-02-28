@@ -30,7 +30,7 @@ from oci.generative_ai_inference.models.base_chat_response import BaseChatRespon
 logger = logging.getLogger(__name__)
 request_template = {
     "compartmentId": "",
-    "servingMode": {"modelId": "cohere.command-r-plus", "servingType": "ON_DEMAND"},
+    "servingMode": {"modelId": "cohere.command-r-plus-08-2024", "servingType": "ON_DEMAND"},
     "chatRequest": {
         "apiFormat": "COHERE",
         "maxTokens": 600,
@@ -53,14 +53,36 @@ oci_config_template = {
 
 class OCILargeLanguageModel(LargeLanguageModel):
     _supported_models = {
-        "meta.llama-3-70b-instruct": {
+        "meta.llama-3.1-405b-instruct": {
             "system": True,
             "multimodal": False,
             "tool_call": False,
             "stream_tool_call": False,
         },
-        "cohere.command-r-16k": {"system": True, "multimodal": False, "tool_call": True, "stream_tool_call": False},
-        "cohere.command-r-plus": {"system": True, "multimodal": False, "tool_call": True, "stream_tool_call": False},
+        "meta.llama-3.2-90b-vision-instruct": {
+            "system": True,
+            "multimodal": False,
+            "tool_call": False,
+            "stream_tool_call": False,
+        },
+        "meta.llama-3.3-70b-instruct": {
+            "system": True,
+            "multimodal": False,
+            "tool_call": False,
+            "stream_tool_call": False,
+        },
+        "cohere.command-r-08-2024": {
+            "system": True,
+            "multimodal": False,
+            "tool_call": True,
+            "stream_tool_call": False,
+        },
+        "cohere.command-r-plus-08-2024": {
+            "system": True,
+            "multimodal": False,
+            "tool_call": True,
+            "stream_tool_call": False,
+        },
     }
 
     def _is_tool_call_supported(self, model_id: str, stream: bool = False) -> bool:

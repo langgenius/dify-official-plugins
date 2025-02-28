@@ -1,1 +1,3 @@
-dify_plugin~=0.0.1b10
+dify_plugin==0.0.1b65
+openai~=1.52.2
+numpy~=2.2.3

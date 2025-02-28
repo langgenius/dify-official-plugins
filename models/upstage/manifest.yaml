@@ -1,8 +1,10 @@
 author: langgenius
-created_at: 2024-10-10 17:40:27.659686-04:00
+created_at: 2024-10-10T17:40:27.659686-04:00
 icon: icon_s_en.svg
 label:
   en_US: upstage
+description:
+  en_US: Upstage
 meta:
   arch:
   - amd64
@@ -30,4 +32,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.1
+version: 0.0.4

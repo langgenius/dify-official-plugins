@@ -31,7 +31,7 @@ model_properties:
   max_workers: 5
   # stream: false
 pricing:
-  input: '0.015'
+  input: '105'
   output: '0'
-  unit: '0.001'
+  unit: '0.000001'
   currency: RMB

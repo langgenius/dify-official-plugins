@@ -60,11 +60,11 @@ class HuggingfaceHubTextEmbeddingModel(_CommonHuggingfaceHub, TextEmbeddingModel
             embeddings=self._mean_pooling(embeddings), usage=usage, model=model
         )
 
-    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> int:
-        num_tokens = 0
+    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
+        tokens = []
         for text in texts:
-            num_tokens += self._get_num_tokens_by_gpt2(text)
-        return num_tokens
+            tokens.append(self._get_num_tokens_by_gpt2(text))
+        return tokens
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         try:

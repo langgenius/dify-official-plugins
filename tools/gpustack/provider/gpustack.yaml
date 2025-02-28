@@ -1,0 +1,49 @@
+credentials_for_provider:
+  base_url:
+    label:
+      en_US: GPUStack URL
+      zh_Hans: GPUStack URL
+    placeholder:
+      en_US: GPUStack URL
+      zh_Hans: GPUStack 服务器 URL
+    help:
+      en_US: Enter your GPUStack server URL
+      zh_Hans: 在此输入您的 GPUStack 服务器 URL
+    required: true
+    type: text-input
+  api_key:
+    label:
+      en_US: API Key
+    placeholder:
+      en_US: GPUStack API Key
+      zh_Hans: GPUStack API Key
+    help:
+      en_US: Enter your GPUStack API Key
+      zh_Hans: 在此输入您的 GPUStack API Key
+    required: true
+    type: secret-input
+    url: https://docs.gpustack.ai/latest/user-guide/api-key-management/
+  tls_verify:
+    label:
+      en_US: Verify TLS
+      zh_Hans: 验证证书
+    type: boolean
+    default: true
+extra:
+  python:
+    source: provider/gpustack.py
+identity:
+  author: GPUStack
+  description:
+    en_US: GPUStack is an open-source GPU cluster manager for running AI models, providing efficient resource management and model deployment capabilities.
+    zh_Hans: GPUStack 是一款开源的 GPU 集群管理工具，专为 AI 模型部署和运行而设计。
+  icon: icon.svg
+  label:
+    en_US: GPUStack
+    zh_Hans: GPUStack
+  name: gpustack
+  tags:
+  - image
+tools:
+- tools/text2image.yaml
+- tools/image_edit.yaml

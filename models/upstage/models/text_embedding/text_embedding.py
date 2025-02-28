@@ -107,7 +107,7 @@ class UpstageTextEmbeddingModel(_CommonUpstage, TextEmbeddingModel):
 
         return TextEmbeddingResult(embeddings=embeddings, usage=usage, model=model)
 
-    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> int:
+    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
         tokenizer = self._get_tokenizer()
         """
         Get number of tokens for given prompt messages
@@ -118,17 +118,17 @@ class UpstageTextEmbeddingModel(_CommonUpstage, TextEmbeddingModel):
         :return:
         """
         if len(texts) == 0:
-            return 0
+            return []
 
         tokenizer = self._get_tokenizer()
 
-        total_num_tokens = 0
+        tokens = []
         for text in texts:
             # calculate the number of tokens in the encoded text
             tokenized_text = tokenizer.encode(text)
-            total_num_tokens += len(tokenized_text)
+            tokens.append(len(tokenized_text))
 
-        return total_num_tokens
+        return tokens
 
     def validate_credentials(self, model: str, credentials: Mapping) -> None:
         """
