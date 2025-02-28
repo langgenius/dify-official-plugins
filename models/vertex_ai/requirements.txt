@@ -1,4 +1,4 @@
 dify_plugin==0.0.1b65
 anthropic==0.42.0
-vertexai==1.74.0
+vertexai==1.71.1
 Pillow==11.0.0
