@@ -15,10 +15,17 @@ identity:
 credentials_for_provider: {}
 tools:
   - tools/apply_guardrail.yaml
+  - tools/bedrock_retrieve.yaml
+  - tools/bedrock_retrieve_and_generate.yaml
   - tools/lambda_translate_utils.yaml
   - tools/lambda_yaml_to_json.yaml
+  - tools/nova_canvas.yaml
+  - tools/nova_reel.yaml
+  - tools/s3_operator.yaml
+  - tools/sagemaker_chinese_toxicity_detector.yaml
   - tools/sagemaker_text_rerank.yaml
   - tools/sagemaker_tts.yaml
+  - tools/transcribe_asr.yaml
 extra:
   python:
     source: provider/aws.py

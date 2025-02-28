@@ -1,13 +1,12 @@
 import json
 import logging
-from typing import Any, Union
+from typing import Any, Generator
 
-import boto3
-from botocore.exceptions import BotoCoreError
-from pydantic import BaseModel, Field
-
+import boto3  # type: ignore
+from botocore.exceptions import BotoCoreError  # type: ignore
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from pydantic import BaseModel, Field
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -23,8 +22,8 @@ class GuardrailParameters(BaseModel):
 
 class ApplyGuardrailTool(Tool):
     def _invoke(
-        self, user_id: str, tool_parameters: dict[str, Any]
-    ) -> Union[ToolInvokeMessage, list[ToolInvokeMessage]]:
+        self, tool_parameters: dict[str, Any]
+    ) -> Generator[ToolInvokeMessage, None, None]:
         """
         Invoke the ApplyGuardrail tool
         """
@@ -49,7 +48,7 @@ class ApplyGuardrailTool(Tool):
 
             # Check for empty response
             if not response:
-                return self.create_text_message(
+                yield self.create_text_message(
                     text="Received empty response from AWS Bedrock."
                 )
 
@@ -84,17 +83,19 @@ class ApplyGuardrailTool(Tool):
                 result += "Assessments:\n " + "\n ".join(formatted_assessments) + "\n "
             #           result += f"Full response: {json.dumps(response, indent=2, ensure_ascii=False)}"
 
-            return self.create_text_message(text=result)
+            yield self.create_text_message(text=result)
 
         except BotoCoreError as e:
             error_message = f"AWS service error: {str(e)}"
             logger.error(error_message, exc_info=True)
-            return self.create_text_message(text=error_message)
+            yield self.create_text_message(text=error_message)
+            return
         except json.JSONDecodeError as e:
             error_message = f"JSON parsing error: {str(e)}"
             logger.error(error_message, exc_info=True)
-            return self.create_text_message(text=error_message)
+            yield self.create_text_message(text=error_message)
+            return
         except Exception as e:
             error_message = f"An unexpected error occurred: {str(e)}"
             logger.error(error_message, exc_info=True)
-            return self.create_text_message(text=error_message)
+            yield self.create_text_message(text=error_message)

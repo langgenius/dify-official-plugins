@@ -123,7 +123,7 @@ class HunyuanTextEmbeddingModel(TextEmbeddingModel):
         """
         return {InvokeError: [TencentCloudSDKException]}
 
-    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> int:
+    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
         """
         Get number of tokens for given prompt messages
 
@@ -132,7 +132,7 @@ class HunyuanTextEmbeddingModel(TextEmbeddingModel):
         :param texts: texts to embed
         :return:
         """
-        num_tokens = 0
+        tokens = []
         for text in texts:
-            num_tokens += self._get_num_tokens_by_gpt2(text)
-        return num_tokens
+            tokens.append(self._get_num_tokens_by_gpt2(text))
+        return tokens

@@ -1,9 +1,8 @@
 import json
 from enum import Enum
-from typing import Any, Union
+from typing import Any, Generator, Optional
 
-import boto3
-
+import boto3  # type: ignore
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
@@ -17,11 +16,11 @@ class TTSModelType(Enum):
 
 class SageMakerTTSTool(Tool):
     sagemaker_client: Any = None
-    sagemaker_endpoint: str = None
+    sagemaker_endpoint: str = ""
     s3_client: Any = None
     comprehend_client: Any = None
 
-    def _detect_lang_code(self, content: str, map_dict: dict = None):
+    def _detect_lang_code(self, content: str, map_dict: Optional[dict] = None):
         map_dict = {
             "zh": "<|zh|>",
             "en": "<|en|>",
@@ -83,9 +82,8 @@ class SageMakerTTSTool(Tool):
 
     def _invoke(
         self,
-        user_id: str,
         tool_parameters: dict[str, Any],
-    ) -> Union[ToolInvokeMessage, list[ToolInvokeMessage]]:
+    ) -> Generator[ToolInvokeMessage, None, None]:
         """
         invoke tools
         """
@@ -106,15 +104,15 @@ class SageMakerTTSTool(Tool):
                     self.comprehend_client = boto3.client("comprehend")
 
             if not self.sagemaker_endpoint:
-                self.sagemaker_endpoint = tool_parameters.get("sagemaker_endpoint")
+                self.sagemaker_endpoint = tool_parameters.get("sagemaker_endpoint", "")
 
-            tts_text = tool_parameters.get("tts_text")
-            tts_infer_type = tool_parameters.get("tts_infer_type")
+            tts_text = tool_parameters.get("tts_text", "")
+            tts_infer_type = tool_parameters.get("tts_infer_type", "")
 
-            voice = tool_parameters.get("voice")
-            mock_voice_audio = tool_parameters.get("mock_voice_audio")
-            mock_voice_text = tool_parameters.get("mock_voice_text")
-            voice_instruct_prompt = tool_parameters.get("voice_instruct_prompt")
+            voice = tool_parameters.get("voice", "")
+            mock_voice_audio = tool_parameters.get("mock_voice_audio", "")
+            mock_voice_text = tool_parameters.get("mock_voice_text", "")
+            voice_instruct_prompt = tool_parameters.get("voice_instruct_prompt", "")
             payload = self._build_tts_payload(
                 tts_infer_type,
                 tts_text,
@@ -126,7 +124,7 @@ class SageMakerTTSTool(Tool):
 
             result = self._invoke_sagemaker(payload, self.sagemaker_endpoint)
 
-            return self.create_text_message(text=result["s3_presign_url"])
+            yield self.create_text_message(text=result["s3_presign_url"])
 
         except Exception as e:
-            return self.create_text_message(f"Exception {str(e)}")
+            yield self.create_text_message(f"Exception {str(e)}")
