@@ -95,7 +95,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 "max_tokens_to_sample"
             )
 
-        # Handle thinking parameters for Claude 3.7 Sonnet
         thinking = model_parameters.pop("thinking", False)
         thinking_budget = model_parameters.pop("thinking_budget", 1024)
         
@@ -107,14 +106,11 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             for key in ("temperature", "top_p", "top_k"):
                 model_parameters.pop(key, None)
 
-        # Handle extended output beta feature
         if model_parameters.get("extended_output", False):
             model_parameters.pop("extended_output", None)
             extra_headers["anthropic-beta"] = "output-128k-2025-02-19"
 
-        # Handle token-efficient tools beta for Claude 3.7 Sonnet
         if model == "claude-3-7-sonnet-20250219" and tools:
-            # If there's already a beta header, maintain it (comma-separated)
             if "anthropic-beta" in extra_headers:
                 extra_headers["anthropic-beta"] += ",token-efficient-tools-2025-02-19"
             else:
@@ -283,23 +279,19 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         credentials_kwargs = self._to_credential_kwargs(credentials)
         client = Anthropic(**credentials_kwargs)
         
-        # Convert prompt messages to the format expected by the API
         (system, prompt_message_dicts) = self._convert_prompt_messages(prompt_messages)
         
         if not prompt_message_dicts:
             prompt_message_dicts.append({"role": "user", "content": "Hello"})
         
-        # Prepare arguments for token counting
         count_tokens_args = {
             "model": model,
             "messages": prompt_message_dicts
         }
         
-        # Add system prompt if present
         if system:
             count_tokens_args["system"] = system
         
-        # Add tools if present
         if tools:
             count_tokens_args["tools"] = [
                 self._transform_tool_prompt(tool) for tool in tools
@@ -410,11 +402,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         finish_reason = None
         index = 0
         tool_calls: list[AssistantPromptMessage.ToolCall] = []
-        # Track the current content block type to know when thinking starts/ends
         current_block_type = None
         current_block_index = None
         
-        # Track tool use information
         current_tool_name = None
         current_tool_id = None
         current_tool_params = ""
@@ -428,13 +418,11 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 if hasattr(chunk, "content_block"):
                     content_block = chunk.content_block
                     
-                    # Check if this is a tool use block
                     if getattr(content_block, 'type', None) == "tool_use":
                         current_tool_name = getattr(content_block, 'name', None)
                         current_tool_id = getattr(content_block, 'id', None)
                         
                         if current_tool_name and current_tool_id:
-                            # Create a tool call object
                             tool_call = AssistantPromptMessage.ToolCall(
                                 id=current_tool_id,
                                 type="function",
@@ -443,26 +431,20 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                                 ),
                             )
                             
-                            # Add it to our list of tool calls
                             tool_calls.append(tool_call)
             elif isinstance(chunk, ContentBlockDeltaEvent):
-                # Handle tool parameter chunks
                 if hasattr(chunk.delta, "type") and chunk.delta.type == "input_json_delta":
-                    # Accumulate tool parameters
                     if hasattr(chunk.delta, "partial_json"):
                         partial_json = chunk.delta.partial_json
                         if partial_json:
                             current_tool_params += partial_json
                             
-                            # Find the matching tool call and update it
                             for tc in tool_calls:
                                 if tc.id == current_tool_id:
                                     tc.function.arguments = current_tool_params
                                     break
                 
-                # Check for block type transitions
                 if chunk.index != current_block_index:
-                    # If we're leaving a thinking block, close the tag
                     if current_block_type == "thinking" and current_block_index is not None:
                         assistant_prompt_message = AssistantPromptMessage(content="\n</think>")
                         yield LLMResultChunk(
@@ -473,11 +455,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                             ),
                         )
                     
-                    # Update current block information
                     current_block_index = chunk.index
                     if hasattr(chunk.delta, "thinking"):
                         current_block_type = "thinking"
-                        # Send opening tag for thinking block
                         assistant_prompt_message = AssistantPromptMessage(content="<think>\n")
                         yield LLMResultChunk(
                             model=return_model,
@@ -490,7 +470,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         current_block_type = "text"
                     elif hasattr(chunk.delta, "type") and chunk.delta.type == "redacted_thinking":
                         current_block_type = "redacted_thinking"
-                        # Send opening tag for thinking block (redacted)
                         assistant_prompt_message = AssistantPromptMessage(content="<think>\n")
                         yield LLMResultChunk(
                             model=return_model,
@@ -500,9 +479,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                             ),
                         )
                 
-                # Process the delta content based on its type
                 if hasattr(chunk.delta, "thinking"):
-                    # Handle thinking delta - output as normal text (without adding tags again)
                     thinking_text = chunk.delta.thinking or ""
                     full_assistant_content += thinking_text
                     assistant_prompt_message = AssistantPromptMessage(content=thinking_text)
@@ -515,7 +492,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         ),
                     )
                 elif hasattr(chunk.delta, "type") and chunk.delta.type == "redacted_thinking":
-                    # For redacted thinking, we can output a message indicating it was redacted
                     redacted_msg = "[Some of Claude's thinking was automatically encrypted for safety reasons]"
                     full_assistant_content += redacted_msg
                     assistant_prompt_message = AssistantPromptMessage(content=redacted_msg)
@@ -528,7 +504,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         ),
                     )
                 elif hasattr(chunk.delta, "text"):
-                    # Handle text delta as before
                     chunk_text = chunk.delta.text or ""
                     full_assistant_content += chunk_text
                     assistant_prompt_message = AssistantPromptMessage(content=chunk_text)
@@ -544,7 +519,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 output_tokens = chunk.usage.output_tokens
                 finish_reason = chunk.delta.stop_reason
             elif isinstance(chunk, MessageStopEvent):
-                # If we were in thinking mode, close the thinking tag
                 if current_block_type == "thinking" and current_block_index is not None:
                     assistant_prompt_message = AssistantPromptMessage(content="\n</think>")
                     yield LLMResultChunk(
@@ -555,7 +529,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         ),
                     )
                 
-                # Create a fallback tool call if necessary
                 if current_tool_name and current_tool_id and current_tool_params and not tool_calls:
                     fallback_tool_call = AssistantPromptMessage.ToolCall(
                         id=current_tool_id,
