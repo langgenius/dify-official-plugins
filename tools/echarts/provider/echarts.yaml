@@ -3,7 +3,7 @@ extra:
     source: provider/echarts.py
 identity:
   name: echarts
-  author: JunjieM
+  author: langgenius
   label:
     en_US: ECharts Chart Generator
     zh_Hans: ECharts图表生成
