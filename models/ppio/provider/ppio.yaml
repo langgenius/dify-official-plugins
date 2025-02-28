@@ -26,6 +26,11 @@ extra:
     model_sources:
       - models/llm/llm.py
     provider_source: provider/ppio.py
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+      - models/llm/*.yaml
 provider_credential_schema:
   credential_form_schemas:
     - variable: api_key
