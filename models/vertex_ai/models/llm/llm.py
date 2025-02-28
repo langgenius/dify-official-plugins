@@ -376,7 +376,6 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         return [
             glm.Tool.from_google_search_retrieval(
                 glm.grounding.GoogleSearchRetrieval(
-                    # Optional: For Dynamic Retrieval
                     dynamic_retrieval_config=glm.grounding.DynamicRetrievalConfig(
                         mode=glm.grounding.DynamicRetrievalConfig.Mode.MODE_DYNAMIC,
                         dynamic_threshold=dynamic_threshold,
@@ -425,14 +424,12 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         config_kwargs = model_parameters.copy()
         config_kwargs["max_output_tokens"] = config_kwargs.pop("max_tokens_to_sample", None)
         
-        # Handle schema conversion and special parameters
         response_schema = None
         if "json_schema" in config_kwargs:
             response_schema = self._convert_schema_for_vertex(config_kwargs.pop("json_schema"))
         elif "response_schema" in config_kwargs:
             response_schema = self._convert_schema_for_vertex(config_kwargs.pop("response_schema"))
             
-        # Remove schema from kwargs as we'll pass it separately
         if "response_schema" in config_kwargs:
             config_kwargs.pop("response_schema")
             
@@ -470,13 +467,10 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         else:
             tools = self._convert_tools_to_glm_tool(tools) if tools else None
 
-        # Get MIME type if explicitly provided
         mime_type = config_kwargs.pop("response_mime_type", None)
         
-        # Create generation config
         generation_config_params = config_kwargs.copy()
         
-        # If using a schema, we MUST set response_mime_type to application/json
         if response_schema:
             generation_config_params["response_schema"] = response_schema
             generation_config_params["response_mime_type"] = "application/json"
@@ -556,7 +550,6 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                     completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
                     usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
 
-                    # extract title and uri from grounding chunks
                     reference_lines = []
                     grounding_chunks = None
                     try:
@@ -733,7 +726,6 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :return: Converted schema for Vertex AI
         """
         import json
-        # Handle string input (in case schema is serialized)
         if isinstance(schema, str):
             try:
                 schema = json.loads(schema)
@@ -743,29 +735,23 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         if isinstance(schema, dict):
             converted_schema = {}
             
-            # Process each key in the schema
             for key, value in schema.items():
-                # Handle special keys that need different processing
                 if key == "type" and isinstance(value, str):
                     converted_schema[key] = value.upper()
                     
                 elif key == "properties" and isinstance(value, dict):
-                    # Convert property definitions
                     converted_props = {}
                     for prop_name, prop_def in value.items():
                         converted_props[prop_name] = self._convert_schema_for_vertex(prop_def)
                     converted_schema[key] = converted_props
                     
                 elif key == "items" and isinstance(value, dict):
-                    # Convert array item definition
                     converted_schema[key] = self._convert_schema_for_vertex(value)
                     
                 elif key == "enum" and isinstance(value, list):
-                    # Keep enum values as-is
                     converted_schema[key] = value
                     
                 else:
-                    # For other properties, recursive conversion if needed
                     if isinstance(value, (dict, list)):
                         converted_schema[key] = self._convert_schema_for_vertex(value)
                     else:
@@ -777,5 +763,4 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             return [self._convert_schema_for_vertex(item) for item in schema]
             
         else:
-            # For non-dict non-list values, return as-is
             return schema
