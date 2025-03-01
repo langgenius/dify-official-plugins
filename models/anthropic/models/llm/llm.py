@@ -49,6 +49,11 @@ ANTHROPIC_BLOCK_MODE_PROMPT = 'You should always follow the instructions and out
 
 
 class AnthropicLargeLanguageModel(LargeLanguageModel):
+    def __init__(self, models=None):
+        super().__init__(models)
+        self.previous_thinking_blocks = []
+        self.previous_redacted_thinking_blocks = []
+
     def _invoke(
         self,
         model: str,
@@ -108,7 +113,10 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
 
         if model_parameters.get("extended_output", False):
             model_parameters.pop("extended_output", None)
-            extra_headers["anthropic-beta"] = "output-128k-2025-02-19"
+            if "anthropic-beta" in extra_headers:
+                extra_headers["anthropic-beta"] += ",output-128k-2025-02-19"
+            else:
+                extra_headers["anthropic-beta"] = "output-128k-2025-02-19"
 
         if model == "claude-3-7-sonnet-20250219" and tools:
             if "anthropic-beta" in extra_headers:
@@ -137,7 +145,14 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 for content in prompt_message.content
             )
         ):
-            extra_headers["anthropic-beta"] = "pdfs-2024-09-25"
+            if "anthropic-beta" in extra_headers:
+                extra_headers["anthropic-beta"] += ",pdfs-2024-09-25"
+            else:
+                extra_headers["anthropic-beta"] = "pdfs-2024-09-25"
+
+        if not any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
+            self.previous_thinking_blocks = []
+            self.previous_redacted_thinking_blocks = []
 
         if tools:
             extra_model_kwargs["tools"] = [
@@ -289,6 +304,22 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             "messages": prompt_message_dicts
         }
         
+        has_thinking_blocks = False
+        for msg in prompt_message_dicts:
+            if msg.get("role") == "assistant" and isinstance(msg.get("content"), list):
+                for content_item in msg.get("content", []):
+                    if isinstance(content_item, dict) and content_item.get("type") in ["thinking", "redacted_thinking"]:
+                        has_thinking_blocks = True
+                        break
+            if has_thinking_blocks:
+                break
+        
+        if has_thinking_blocks:
+            count_tokens_args["thinking"] = {
+                "type": "enabled",
+                "budget_tokens": 4096
+            }
+        
         if system:
             count_tokens_args["system"] = system
         
@@ -335,9 +366,17 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         :param prompt_messages: prompt messages
         :return: llm response
         """
+        self.previous_thinking_blocks = []
+        self.previous_redacted_thinking_blocks = []
+        
         assistant_prompt_message = AssistantPromptMessage(content="", tool_calls=[])
+        
         for content in response.content:
-            if content.type == "text" and isinstance(
+            if content.type == "thinking":
+                self.previous_thinking_blocks.append(content)
+            elif content.type == "redacted_thinking":
+                self.previous_redacted_thinking_blocks.append(content)
+            elif content.type == "text" and isinstance(
                 assistant_prompt_message.content, str
             ):
                 assistant_prompt_message.content += content.text
@@ -409,6 +448,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         current_tool_id = None
         current_tool_params = ""
         
+        if not any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
+            self.previous_thinking_blocks = []
+            self.previous_redacted_thinking_blocks = []
+            
+        current_thinking_blocks = []
+        current_redacted_thinking_blocks = []
+        
         for chunk in response:
             if isinstance(chunk, MessageStartEvent):
                 if chunk.message:
@@ -432,6 +478,16 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                             )
                             
                             tool_calls.append(tool_call)
+                    elif getattr(content_block, 'type', None) == "thinking":
+                        current_thinking_blocks.append({
+                            "type": "thinking",
+                            "thinking": "",
+                            "signature": ""
+                        })
+                    elif getattr(content_block, 'type', None) == "redacted_thinking":
+                        current_redacted_thinking_blocks.append({
+                            "type": "redacted_thinking"
+                        })
             elif isinstance(chunk, ContentBlockDeltaEvent):
                 if hasattr(chunk.delta, "type") and chunk.delta.type == "input_json_delta":
                     if hasattr(chunk.delta, "partial_json"):
@@ -482,6 +538,10 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 if hasattr(chunk.delta, "thinking"):
                     thinking_text = chunk.delta.thinking or ""
                     full_assistant_content += thinking_text
+                    
+                    if current_thinking_blocks:
+                        current_thinking_blocks[-1]["thinking"] += thinking_text
+                    
                     assistant_prompt_message = AssistantPromptMessage(content=thinking_text)
                     index = chunk.index
                     yield LLMResultChunk(
@@ -491,6 +551,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                             index=chunk.index, message=assistant_prompt_message
                         ),
                     )
+                elif hasattr(chunk.delta, "signature"):
+                    if current_thinking_blocks:
+                        current_thinking_blocks[-1]["signature"] = chunk.delta.signature
                 elif hasattr(chunk.delta, "type") and chunk.delta.type == "redacted_thinking":
                     redacted_msg = "[Some of Claude's thinking was automatically encrypted for safety reasons]"
                     full_assistant_content += redacted_msg
@@ -538,6 +601,11 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         ),
                     )
                     tool_calls.append(fallback_tool_call)
+                
+                if tool_calls and current_thinking_blocks:
+                    self.previous_thinking_blocks = current_thinking_blocks
+                if tool_calls and current_redacted_thinking_blocks:
+                    self.previous_redacted_thinking_blocks = current_redacted_thinking_blocks
                 
                 usage = self._calc_response_usage(
                     model, credentials, input_tokens, output_tokens
@@ -691,6 +759,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 elif isinstance(message, AssistantPromptMessage):
                     message = cast(AssistantPromptMessage, message)
                     content = []
+                    
+                    if self.previous_thinking_blocks and any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
+                        content.extend(self.previous_thinking_blocks)
+                    
+                    if self.previous_redacted_thinking_blocks and any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
+                        content.extend(self.previous_redacted_thinking_blocks)
+                    
                     if message.tool_calls:
                         for tool_call in message.tool_calls:
                             content.append(
@@ -703,7 +778,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                             )
                     if message.content:
                         content.append({"type": "text", "text": message.content})
-                    if prompt_message_dicts[-1]["role"] == "assistant":
+                    if prompt_message_dicts and prompt_message_dicts[-1]["role"] == "assistant":
                         prompt_message_dicts[-1]["content"].extend(content)
                     else:
                         prompt_message_dicts.append(
