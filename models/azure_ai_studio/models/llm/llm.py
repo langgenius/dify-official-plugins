@@ -25,11 +25,13 @@ from dify_plugin.entities.model import (
     AIModelEntity,
     FetchFrom,
     I18nObject,
+    ModelPropertyKey,
     ModelType,
     ParameterRule,
     ParameterType,
 )
 from dify_plugin.entities.model.llm import (
+    LLMMode,
     LLMResult,
     LLMResultChunk,
     LLMResultChunkDelta,
@@ -262,7 +264,10 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.LLM,
             features=[],
-            model_properties={},
+            model_properties={
+                ModelPropertyKey.CONTEXT_SIZE: int(credentials.get("context_size", "4096")),
+                ModelPropertyKey.MODE: credentials.get("mode", LLMMode.CHAT),
+            },
             parameter_rules=rules,
         )
         return entity

@@ -47,6 +47,39 @@ model_credential_schema:
     type: secret-input
     variable: api_key
   - label:
+      en_US: Select completion mode
+      zh_Hans: 选择对话类型
+    placeholder:
+      en_US: 'Select completion model'
+      zh_Hans: 选择对话类型
+    required: true
+    show_on:
+    - value: llm
+      variable: __model_type
+    type: select
+    variable: mode
+    options:
+    - value: chat
+      label:
+        en_US: Chat
+        zh_Hans: 对话
+    - value: completion
+      label:
+        en_US: Completion
+        zh_Hans: 补全
+  - label:
+      en_US: Model context size
+      zh_Hans: 模型上下文长度
+    placeholder:
+      en_US: Enter your Model context size
+      zh_Hans: 在此输入您的模型上下文长度
+    show_on:
+    - value: llm
+      variable: __model_type
+    required: true
+    type: text-input
+    variable: context_size
+  - label:
       en_US: JWT Token
       zh_Hans: JWT令牌
     placeholder:
