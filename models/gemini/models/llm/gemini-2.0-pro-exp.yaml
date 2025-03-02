@@ -1,6 +1,6 @@
-model: gemini-2.0-flash-lite-preview-0205
+model: gemini-2.0-pro-exp
 label:
-  en_US: Gemini 2.0 Flash Lite Preview 0205
+  en_US: Gemini 2.0 Pro Experimental
 model_type: llm
 features:
   - agent-thought
@@ -12,7 +12,7 @@ features:
   - audio
 model_properties:
   mode: chat
-  context_size: 1048576
+  context_size: 2097152
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -39,4 +39,3 @@ pricing:
   output: '0.00'
   unit: '0.000001'
   currency: USD
-

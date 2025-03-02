@@ -1,16 +1,18 @@
-model: gemini-2.0-flash-thinking-exp-0121
+model: gemini-2.0-flash-lite-preview-02-05
 label:
-  en_US: Gemini 2.0 Flash Thinking Exp 01-21
+  en_US: Gemini 2.0 Flash-Lite Preview 02-05
 model_type: llm
 features:
   - agent-thought
   - vision
+  - tool-call
+  - stream-tool-call
   - document
   - video
   - audio
 model_properties:
   mode: chat
-  context_size: 1048575
+  context_size: 1048576
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -27,9 +29,9 @@ parameter_rules:
     required: false
   - name: max_output_tokens
     use_template: max_tokens
-    default: 65535
+    default: 8192
     min: 1
-    max: 65535
+    max: 8192
   - name: json_schema
     use_template: json_schema
 pricing:
@@ -37,3 +39,4 @@ pricing:
   output: '0.00'
   unit: '0.000001'
   currency: USD
+
