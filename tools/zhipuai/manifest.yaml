@@ -31,6 +31,6 @@ resource:
       enabled: true
 tags:
   - image
-  - video
+  - videos
 type: plugin
 version: 0.0.1
