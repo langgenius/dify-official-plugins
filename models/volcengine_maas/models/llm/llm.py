@@ -1,4 +1,5 @@
 import logging
+import re
 from collections.abc import Generator
 from typing import Optional
 from dify_plugin.entities.model import (
@@ -265,21 +266,35 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         if tools:
             req_params["tools"] = tools
 
-        def _handle_stream_chat_response(
-            chunks: Generator[ChatCompletionChunk],
-        ) -> Generator:
+        def _handle_stream_chat_response(chunks: Generator[ChatCompletionChunk]) -> Generator:
+            is_reasoning_started = False
             for chunk in chunks:
+                content = ""
+                if chunk.choices:
+                    delta = chunk.choices[0].delta
+                    if is_reasoning_started and not hasattr(delta, "reasoning_content") and not delta.content:
+                        content = ""
+                    elif hasattr(delta, "reasoning_content"):
+                        if not is_reasoning_started:
+                            is_reasoning_started = True
+                            content = "> 💭 " + delta.reasoning_content
+                        else:
+                            content = delta.reasoning_content
+
+                        if "\n" in content:
+                            content = re.sub(r"\n(?!(>|\n))", "\n> ", content)
+                    elif is_reasoning_started:
+                        content = "\n\n" + delta.content
+                        is_reasoning_started = False
+                    else:
+                        content = delta.content
+
                 yield LLMResultChunk(
                     model=model,
                     prompt_messages=prompt_messages,
                     delta=LLMResultChunkDelta(
                         index=0,
-                        message=AssistantPromptMessage(
-                            content=chunk.choices[0].delta.content
-                            if chunk.choices
-                            else "",
-                            tool_calls=[],
-                        ),
+                        message=AssistantPromptMessage(content=content, tool_calls=[]),
                         usage=self._calc_response_usage(
                             model=model,
                             credentials=credentials,
@@ -288,15 +303,14 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                         )
                         if chunk.usage
                         else None,
-                        finish_reason=chunk.choices[0].finish_reason
-                        if chunk.choices
-                        else None,
+                        finish_reason=chunk.choices[0].finish_reason if chunk.choices else None,
                     ),
                 )
 
         def _handle_chat_response(resp: ChatCompletion) -> LLMResult:
             choice = resp.choices[0]
             message = choice.message
+            # parse tool calls
             tool_calls = []
             if message.tool_calls:
                 for call in message.tool_calls:
@@ -308,12 +322,14 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                         ),
                     )
                     tool_calls.append(tool_call)
+
             usage = resp.usage
             return LLMResult(
                 model=model,
                 prompt_messages=prompt_messages,
                 message=AssistantPromptMessage(
-                    content=message.content or "", tool_calls=tool_calls
+                    content=message.content or "",
+                    tool_calls=tool_calls,
                 ),
                 usage=self._calc_response_usage(
                     model=model,
@@ -326,6 +342,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         if not stream:
             resp = client.chat(prompt_messages, **req_params)
             return _handle_chat_response(resp)
+
         chunks = client.stream_chat(prompt_messages, **req_params)
         return _handle_stream_chat_response(chunks)
 
