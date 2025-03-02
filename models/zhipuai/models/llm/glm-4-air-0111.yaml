@@ -1,6 +1,6 @@
-model: glm-4
+model: glm-4-air-0111
 label:
-  en_US: glm-4
+  en_US: glm-4-air-0111
 model_type: llm
 features:
   - multi-tool-call
@@ -60,7 +60,7 @@ parameter_rules:
       - text
       - json_object
 pricing:
-  input: '0.1'
-  output: '0.1'
+  input: '0.0005'
+  output: '0.0005'
   unit: '0.001'
   currency: RMB
