@@ -10,7 +10,11 @@ from dify_plugin.entities.model import (
     ParameterRule,
     ParameterType,
 )
-from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
+from dify_plugin.entities.model.llm import (
+    LLMResult,
+    LLMResultChunk,
+    LLMResultChunkDelta,
+)
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
@@ -60,8 +64,26 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         user: str | None = None,
     ) -> LLMResult | Generator:
         if ArkClientV3.is_legacy(credentials):
-            return self._generate_v2(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
-        return self._generate_v3(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
+            return self._generate_v2(
+                model,
+                credentials,
+                prompt_messages,
+                model_parameters,
+                tools,
+                stop,
+                stream,
+                user,
+            )
+        return self._generate_v3(
+            model,
+            credentials,
+            prompt_messages,
+            model_parameters,
+            tools,
+            stop,
+            stream,
+            user,
+        )
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -87,7 +109,10 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         client = ArkClientV3.from_credentials(credentials)
         try:
             client.chat(
-                max_tokens=16, temperature=0.7, top_p=0.9, messages=[UserPromptMessage(content="ping\nAnswer: ")]
+                max_tokens=16,
+                temperature=0.7,
+                top_p=0.9,
+                messages=[UserPromptMessage(content="ping\nAnswer: ")],
             )
         except Exception as e:
             raise CredentialsValidateFailedError(e)
@@ -107,7 +132,9 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         if len(messages) == 0:
             return 0
         num_tokens = 0
-        messages_dict = [MaaSClient.convert_prompt_message_to_maas_message(m) for m in messages]
+        messages_dict = [
+            MaaSClient.convert_prompt_message_to_maas_message(m) for m in messages
+        ]
         for message in messages_dict:
             for key, value in message.items():
                 num_tokens += self._get_num_tokens_by_gpt2(str(key))
@@ -121,6 +148,14 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         messages_dict = [ArkClientV3.convert_prompt_message(m) for m in messages]
         for message in messages_dict:
             for key, value in message.items():
+                # Ignore tokens for image type
+                if isinstance(value, list):
+                    text = ""
+                    for item in value:
+                        if isinstance(item, dict) and item["type"] == "text":
+                            text += item["text"]
+
+                    value = text
                 num_tokens += self._get_num_tokens_by_gpt2(str(key))
                 num_tokens += self._get_num_tokens_by_gpt2(str(value))
         return num_tokens
@@ -140,8 +175,14 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         req_params = get_v2_req_params(credentials, model_parameters, stop)
         extra_model_kwargs = {}
         if tools:
-            extra_model_kwargs["tools"] = [MaaSClient.transform_tool_prompt_to_maas_config(tool) for tool in tools]
-        resp = MaaSClient.wrap_exception(lambda: client.chat(req_params, prompt_messages, stream, **extra_model_kwargs))
+            extra_model_kwargs["tools"] = [
+                MaaSClient.transform_tool_prompt_to_maas_config(tool) for tool in tools
+            ]
+        resp = MaaSClient.wrap_exception(
+            lambda: client.chat(
+                req_params, prompt_messages, stream, **extra_model_kwargs
+            )
+        )
 
         def _handle_stream_chat_response() -> Generator:
             for index, r in enumerate(resp):
@@ -163,7 +204,9 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     prompt_messages=prompt_messages,
                     delta=LLMResultChunkDelta(
                         index=index,
-                        message=AssistantPromptMessage(content=message["content"] or "", tool_calls=[]),
+                        message=AssistantPromptMessage(
+                            content=message["content"] or "", tool_calls=[]
+                        ),
                         usage=usage,
                         finish_reason=choice.get("finish_reason"),
                     ),
@@ -182,7 +225,8 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                         id=call["function"]["name"],
                         type=call["type"],
                         function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                            name=call["function"]["name"], arguments=call["function"]["arguments"]
+                            name=call["function"]["name"],
+                            arguments=call["function"]["arguments"],
                         ),
                     )
                     tool_calls.append(tool_call)
@@ -190,7 +234,9 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             return LLMResult(
                 model=model,
                 prompt_messages=prompt_messages,
-                message=AssistantPromptMessage(content=message["content"] or "", tool_calls=tool_calls),
+                message=AssistantPromptMessage(
+                    content=message["content"] or "", tool_calls=tool_calls
+                ),
                 usage=self._calc_response_usage(
                     model=model,
                     credentials=credentials,
@@ -219,7 +265,9 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         if tools:
             req_params["tools"] = tools
 
-        def _handle_stream_chat_response(chunks: Generator[ChatCompletionChunk]) -> Generator:
+        def _handle_stream_chat_response(
+            chunks: Generator[ChatCompletionChunk],
+        ) -> Generator:
             for chunk in chunks:
                 yield LLMResultChunk(
                     model=model,
@@ -227,7 +275,10 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     delta=LLMResultChunkDelta(
                         index=0,
                         message=AssistantPromptMessage(
-                            content=chunk.choices[0].delta.content if chunk.choices else "", tool_calls=[]
+                            content=chunk.choices[0].delta.content
+                            if chunk.choices
+                            else "",
+                            tool_calls=[],
                         ),
                         usage=self._calc_response_usage(
                             model=model,
@@ -237,7 +288,9 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                         )
                         if chunk.usage
                         else None,
-                        finish_reason=chunk.choices[0].finish_reason if chunk.choices else None,
+                        finish_reason=chunk.choices[0].finish_reason
+                        if chunk.choices
+                        else None,
                     ),
                 )
 
@@ -259,7 +312,9 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             return LLMResult(
                 model=model,
                 prompt_messages=prompt_messages,
-                message=AssistantPromptMessage(content=message.content or "", tool_calls=tool_calls),
+                message=AssistantPromptMessage(
+                    content=message.content or "", tool_calls=tool_calls
+                ),
                 usage=self._calc_response_usage(
                     model=model,
                     credentials=credentials,
@@ -274,55 +329,77 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         chunks = client.stream_chat(prompt_messages, **req_params)
         return _handle_stream_chat_response(chunks)
 
-    def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:
+    def get_customizable_model_schema(
+        self, model: str, credentials: dict
+    ) -> Optional[AIModelEntity]:
         """
         used to define customizable model schema
         """
         model_config = get_model_config(credentials)
-        rules = [
-            ParameterRule(
-                name="temperature",
-                type=ParameterType.FLOAT,
-                use_template="temperature",
-                label=I18nObject(zh_Hans="温度", en_US="Temperature"),
-            ),
-            ParameterRule(
-                name="top_p",
-                type=ParameterType.FLOAT,
-                use_template="top_p",
-                label=I18nObject(zh_Hans="Top P", en_US="Top P"),
-            ),
-            ParameterRule(
-                name="top_k", type=ParameterType.INT, min=1, default=1, label=I18nObject(zh_Hans="Top K", en_US="Top K")
-            ),
-            ParameterRule(
-                name="presence_penalty",
-                type=ParameterType.FLOAT,
-                use_template="presence_penalty",
-                label=I18nObject(en_US="Presence Penalty", zh_Hans="存在惩罚"),
-                min=-2.0,
-                max=2.0,
-            ),
-            ParameterRule(
-                name="frequency_penalty",
-                type=ParameterType.FLOAT,
-                use_template="frequency_penalty",
-                label=I18nObject(en_US="Frequency Penalty", zh_Hans="频率惩罚"),
-                min=-2.0,
-                max=2.0,
-            ),
-            ParameterRule(
-                name="max_tokens",
-                type=ParameterType.INT,
-                use_template="max_tokens",
-                min=1,
-                max=model_config.properties.max_tokens,
-                default=512,
-                label=I18nObject(zh_Hans="最大生成长度", en_US="Max Tokens"),
-            ),
-        ]
+        if model.startswith("DeepSeek-R1"):
+            rules = [
+                ParameterRule(
+                    name="max_tokens",
+                    type=ParameterType.INT,
+                    use_template="max_tokens",
+                    min=1,
+                    max=model_config.properties.max_tokens,
+                    default=512,
+                    label=I18nObject(zh_Hans="最大生成长度", en_US="Max Tokens"),
+                ),
+            ]
+        else:
+            rules = [
+                ParameterRule(
+                    name="temperature",
+                    type=ParameterType.FLOAT,
+                    use_template="temperature",
+                    label=I18nObject(zh_Hans="温度", en_US="Temperature"),
+                ),
+                ParameterRule(
+                    name="top_p",
+                    type=ParameterType.FLOAT,
+                    use_template="top_p",
+                    label=I18nObject(zh_Hans="Top P", en_US="Top P"),
+                ),
+                ParameterRule(
+                    name="top_k",
+                    type=ParameterType.INT,
+                    min=1,
+                    default=1,
+                    label=I18nObject(zh_Hans="Top K", en_US="Top K"),
+                ),
+                ParameterRule(
+                    name="presence_penalty",
+                    type=ParameterType.FLOAT,
+                    use_template="presence_penalty",
+                    label=I18nObject(en_US="Presence Penalty", zh_Hans="存在惩罚"),
+                    min=-2.0,
+                    max=2.0,
+                ),
+                ParameterRule(
+                    name="frequency_penalty",
+                    type=ParameterType.FLOAT,
+                    use_template="frequency_penalty",
+                    label=I18nObject(en_US="Frequency Penalty", zh_Hans="频率惩罚"),
+                    min=-2.0,
+                    max=2.0,
+                ),
+                ParameterRule(
+                    name="max_tokens",
+                    type=ParameterType.INT,
+                    use_template="max_tokens",
+                    min=1,
+                    max=model_config.properties.max_tokens,
+                    default=512,
+                    label=I18nObject(zh_Hans="最大生成长度", en_US="Max Tokens"),
+                ),
+            ]
+
         model_properties = {}
-        model_properties[ModelPropertyKey.CONTEXT_SIZE] = model_config.properties.context_size
+        model_properties[ModelPropertyKey.CONTEXT_SIZE] = (
+            model_config.properties.context_size
+        )
         model_properties[ModelPropertyKey.MODE] = model_config.properties.mode.value
         entity = AIModelEntity(
             model=model,

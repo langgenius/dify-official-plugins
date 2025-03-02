@@ -7,17 +7,17 @@ description:
   en_US: Upstage
 meta:
   arch:
-  - amd64
-  - arm64
+    - amd64
+    - arm64
   runner:
     entrypoint: main
     language: python
-    version: '3.10'
+    version: "3.10"
   version: 0.0.1
 name: upstage
 plugins:
   models:
-  - provider/upstage.yaml
+    - provider/upstage.yaml
 resource:
   memory: 268435456
   permission:
@@ -32,4 +32,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.4
+version: 0.0.5

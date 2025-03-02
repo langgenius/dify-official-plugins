@@ -45,7 +45,7 @@ class HunyuanLargeLanguageModel(LargeLanguageModel):
             "TopP": model_parameters.get("top_p", 1.0),
             "EnableEnhancement": model_parameters.get("enable_enhance", True),
         }
-        params = {"Model": model, "Messages": messages_dict, "Stream": stream, **custom_parameters}
+        params = {"Model": model, "Messages": messages_dict, "Stop": stop, "Stream": stream, **custom_parameters}
         if tools and len(tools) > 0:
             params["ToolChoice"] = "auto"
             params["Tools"] = [

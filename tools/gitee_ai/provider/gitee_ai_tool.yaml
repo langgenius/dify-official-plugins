@@ -10,7 +10,7 @@ credentials_for_provider:
     url: https://ai.gitee.com/dashboard/settings/tokens
 extra:
   python:
-    source: provider/gitee_ai.py
+    source: provider/gitee_ai_tool.py
 identity:
   author: Gitee AI
   description:
