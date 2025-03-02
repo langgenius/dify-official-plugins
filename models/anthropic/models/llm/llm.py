@@ -2,10 +2,11 @@ import base64
 import io
 import json
 from collections.abc import Generator, Sequence
+import os
 from typing import Any, Mapping, Optional, Union, cast
 import anthropic
 import requests
-from anthropic import Anthropic, Stream
+from anthropic import Anthropic, DefaultHttpxClient, Stream
 from anthropic.types import (
     ContentBlockDeltaEvent,
     Message,
@@ -15,7 +16,15 @@ from anthropic.types import (
     MessageStreamEvent,
     completion_create_params,
 )
-from anthropic.types.beta.tools import ToolsBetaMessage
+from anthropic.types.beta import (
+    BetaTextDelta,
+    BetaThinkingDelta,
+    BetaRawContentBlockDeltaEvent,
+    BetaRawContentBlockStartEvent,
+    BetaRawMessageDeltaEvent,
+    BetaRawMessageStopEvent,
+    BetaRawMessageStartEvent,
+)
 from dify_plugin.entities.model.llm import (
     LLMResult,
     LLMResultChunk,
@@ -119,11 +128,28 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         ):
             extra_headers["anthropic-beta"] = "pdfs-2024-09-25"
 
+        if "reasoning_type" in model_parameters or "budget_tokens" in model_parameters:
+            extra_model_kwargs["betas"] = ["output-128k-2025-02-19"]
+            extra_model_kwargs["thinking"] = {}
+
+            if "reasoning_type" in model_parameters:
+                extra_model_kwargs["thinking"]["type"] = "enabled"
+                model_parameters.pop("reasoning_type")
+
+            if "reasoning_budget" in model_parameters:
+                extra_model_kwargs["thinking"]["budget_tokens"] = model_parameters.pop(
+                    "reasoning_budget"
+                )
+
+            model_parameters["temperature"] = 1
+
         if tools:
             extra_model_kwargs["tools"] = [
                 self._transform_tool_prompt(tool) for tool in tools
             ]
-            response = client.beta.tools.messages.create(
+
+        if "thinking" in extra_model_kwargs:
+            response = client.beta.messages.create(
                 model=model,
                 messages=prompt_message_dicts,
                 stream=stream,
@@ -177,6 +203,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 response_format=model_parameters["response_format"],
             )
             model_parameters.pop("response_format")
+
         return self._invoke(
             model,
             credentials,
@@ -255,9 +282,11 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         :param tools: tools for tool calling
         :return:
         """
-        prompt = self._convert_messages_to_prompt_anthropic(prompt_messages)
-        client = Anthropic(api_key="")
-        tokens = client.count_tokens(prompt)
+        # FIXME: count tokens for anthropic is not accurate
+        # (system, prompt_message_dicts) = self._convert_prompt_messages(prompt_messages)
+        # client = Anthropic(**self._to_credential_kwargs(credentials))
+        # tokens = client.messages.count_tokens(model=model, system=system, messages=prompt_message_dicts)
+        tokens = self._get_num_tokens_by_gpt2(self._convert_messages_to_prompt_anthropic(prompt_messages))
         tool_call_inner_prompts_tokens_map = {
             "claude-3-opus-20240229": 395,
             "claude-3-haiku-20240307": 264,
@@ -290,7 +319,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         self,
         model: str,
         credentials: Mapping[str, Any],
-        response: Union[Message, ToolsBetaMessage],
+        response: Message,
         prompt_messages: Sequence[PromptMessage],
     ) -> LLMResult:
         """
@@ -363,14 +392,108 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         :return: llm response chunk generator
         """
         full_assistant_content = ""
-        return_model = ""
         input_tokens = 0
         output_tokens = 0
         finish_reason = None
         index = 0
         tool_calls: list[AssistantPromptMessage.ToolCall] = []
+        thinking_started = False
         for chunk in response:
-            if isinstance(chunk, MessageStartEvent):
+            if isinstance(chunk, BetaRawMessageStartEvent):
+                if hasattr(chunk, "message"):
+                    input_tokens = chunk.message.usage.input_tokens
+            elif isinstance(chunk, BetaRawContentBlockStartEvent):
+                if hasattr(chunk, "content_block"):
+                    content_block = chunk.content_block
+                    if content_block.type == "tool_use":
+                        tool_call = AssistantPromptMessage.ToolCall(
+                            id=content_block.id,
+                            type="function",
+                            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                name=content_block.name, arguments=""
+                            ),
+                        )
+                        tool_calls.append(tool_call)
+                elif hasattr(chunk, "delta"):
+                    delta = chunk.delta
+                    if len(tool_calls) > 0:
+                        if delta.type == "input_json_delta":
+                            tool_calls[-1].function.arguments += delta.partial_json
+                elif hasattr(chunk, "message"):
+                    input_tokens = chunk.message.usage.input_tokens
+            elif isinstance(chunk, BetaRawContentBlockDeltaEvent):
+                delta = chunk.delta
+                if isinstance(delta, BetaTextDelta):
+                    if thinking_started:
+                        thinking_started = False
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=list(prompt_messages),
+                            delta=LLMResultChunkDelta(
+                                index=index + 1,
+                                message=AssistantPromptMessage(
+                                    content="\n</think>",
+                                ),
+                            ),
+                        )
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=list(prompt_messages),
+                        delta=LLMResultChunkDelta(
+                            index=index + 1,
+                            message=AssistantPromptMessage(
+                                content=delta.text or "",
+                            ),
+                            finish_reason=finish_reason,
+                        ),
+                    )
+                elif isinstance(delta, BetaThinkingDelta):
+                    if not thinking_started:
+                        thinking_started = True
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=list(prompt_messages),
+                            delta=LLMResultChunkDelta(
+                                index=index + 1,
+                                message=AssistantPromptMessage(
+                                    content="<think>\n",
+                                ),
+                            ),
+                        )
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=list(prompt_messages),
+                        delta=LLMResultChunkDelta(
+                            index=index + 1,
+                            message=AssistantPromptMessage(
+                                content=delta.thinking or "",
+                            ),
+                            finish_reason=finish_reason,
+                        ),
+                    )
+            elif isinstance(chunk, BetaRawMessageDeltaEvent):
+                output_tokens = chunk.usage.output_tokens
+                finish_reason = chunk.delta.stop_reason
+            elif isinstance(chunk, BetaRawMessageStopEvent):
+                usage = self._calc_response_usage(
+                    model, credentials, input_tokens, output_tokens
+                )
+                for tool_call in tool_calls:
+                    if not tool_call.function.arguments:
+                        tool_call.function.arguments = "{}"
+                yield LLMResultChunk(
+                    model=model,
+                    prompt_messages=list(prompt_messages),
+                    delta=LLMResultChunkDelta(
+                        index=index + 1,
+                        message=AssistantPromptMessage(
+                            content="", tool_calls=tool_calls
+                        ),
+                        finish_reason=finish_reason,
+                        usage=usage,
+                    ),
+                )
+            elif isinstance(chunk, MessageStartEvent):
                 if hasattr(chunk, "content_block"):
                     content_block = chunk.content_block
                     if isinstance(content_block, dict):
@@ -391,7 +514,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                                 "partial_json", ""
                             )
                 elif chunk.message:
-                    return_model = chunk.message.model
                     input_tokens = chunk.message.usage.input_tokens
             elif isinstance(chunk, MessageDeltaEvent):
                 output_tokens = chunk.usage.output_tokens
@@ -403,8 +525,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 for tool_call in tool_calls:
                     if not tool_call.function.arguments:
                         tool_call.function.arguments = "{}"
+
                 yield LLMResultChunk(
-                    model=return_model,
+                    model=model,
                     prompt_messages=prompt_messages,
                     delta=LLMResultChunkDelta(
                         index=index + 1,
@@ -421,7 +544,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 assistant_prompt_message = AssistantPromptMessage(content=chunk_text)
                 index = chunk.index
                 yield LLMResultChunk(
-                    model=return_model,
+                    model=model,
                     prompt_messages=prompt_messages,
                     delta=LLMResultChunkDelta(
                         index=chunk.index, message=assistant_prompt_message
@@ -441,6 +564,14 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             "api_key": credentials["anthropic_api_key"],
             "timeout": Timeout(315.0, read=300.0, write=10.0, connect=5.0),
             "max_retries": 1,
+            "http_client": DefaultHttpxClient(
+                proxies={
+                    "http://": os.getenv("HTTP_PROXY") or os.getenv("http_proxy"),
+                    "https://": os.getenv("HTTPS_PROXY") or os.getenv("https_proxy"),
+                }
+                if os.getenv("HTTP_PROXY") or os.getenv("http_proxy")
+                else None
+            ),
         }
         api_url = credentials.get("anthropic_api_url")
         if api_url:
