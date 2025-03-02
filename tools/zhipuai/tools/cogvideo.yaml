@@ -1,0 +1,151 @@
+description:
+  human:
+    en_US: Use the CogVideo model provided by ZhipuAI to generate videos based on
+      user prompts and images.
+    zh_Hans: 使用智谱cogvideo模型，根据用户输入的提示词和图片，生成视频。
+  llm: A tool for generating videos. The input is user's prompt or image url or both
+    of them, the output is a task id. You can use another tool with this task id to
+    check the status and get the video.
+extra:
+  python:
+    source: tools/cogvideo.py
+identity:
+  author: langgenius
+  label:
+    en_US: CogVideo
+    zh_Hans: CogVideo 视频生成
+  name: cogvideo
+parameters:
+- form: llm
+  human_description:
+    en_US: The prompt text used to generate video.
+    zh_Hans: 用于生成视频的提示词。
+  label:
+    en_US: prompt
+    zh_Hans: 提示词
+  llm_description: The prompt text used to generate video. Optional.
+  name: prompt
+  type: string
+- form: llm
+  human_description:
+    en_US: The image url used to generate video.
+    zh_Hans: 输入一个图片链接，生成的视频将基于该图片和提示词。
+  label:
+    en_US: image url
+    zh_Hans: 图片链接
+  llm_description: The image url used to generate video. Optional.
+  name: image_url
+  type: string
+- form: form
+  default: "cogvideox-flash"
+  human_description:
+    en_US: Model code, Support：cogvideox-2, cogvideox-flash
+    pt_BR: Model code, Support：cogvideox-2, cogvideox-flash
+    zh_Hans: 模型编码，支持：cogvideox-2, cogvideox-flash
+  label:
+    en_US: model
+    pt_BR: model
+    zh_Hans: 模型
+  name: model
+  required: true
+  type: string
+- form: form
+  default: "speed"
+  human_description:
+    en_US: Output mode, default is "speed". cogvideox-flash does not support.
+    pt_BR: Output mode, default is "speed". cogvideox-flash does not support.
+    zh_Hans: 输出模式，默认为 "speed"。 cogvideox-flash 不支持
+  label:
+    en_US: quality
+    pt_BR: quality
+    zh_Hans: 输出模式
+  name: quality
+  type: select
+  options:
+  - label:
+      en_US: Prioritizes quality, higher generation quality.
+      zh_Hans: 质量优先，生成质量高
+    value: quality
+  - label:
+      en_US: Prioritizes speed, faster generation time, relatively lower quality.
+      zh_Hans: 速度优先，生成时间更快。
+    value: speed
+- form: form
+  human_description:
+    en_US: Whether to generate AI sound effects. Default False.
+    pt_BR: Whether to generate AI sound effects. Default False.
+    zh_Hans: 是否生成AI音效，默认 False
+  label:
+    en_US: with_audio
+    pt_BR: with_audio
+    zh_Hans: 是否生成AI音效
+  name: with_audio
+  type: boolean
+- form: form
+  human_description:
+    en_US: If not specified, the short side of the generated video defaults to 1080, with the long side scaled according to the original image ratio. cogvideox-flash does not support.
+    pt_BR: If not specified, the short side of the generated video defaults to 1080, with the long side scaled according to the original image ratio. cogvideox-flash does not support.
+    zh_Hans: 若不指定，默认生成视频的短边为 1080，长边根据原图片比例缩放，cogvideox-flash 不支持
+  label:
+    en_US: size
+    pt_BR: size
+    zh_Hans: 尺寸
+  name: size
+  type: select
+  options:
+  - label:
+      en_US: 720x480
+    value: 720x480
+  - label:
+      en_US: 1024x1024
+    value: 1024x1024
+  - label:
+      en_US: 1280x960
+    value: 1280x960
+  - label:
+      en_US: 960x1280
+    value: 960x1280
+  - label:
+      en_US: 1920x1080
+    value: 1920x1080
+  - label:
+      en_US: 1080x1920
+    value: 1080x1920
+  - label:
+      en_US: 2048x1080
+    value: 2048x1080
+  - label:
+      en_US: 3840x2160
+    value: 3840x2160
+
+- form: form
+  human_description:
+    en_US: FPS, 30 or 60. default 30. cogvideox-flash does not support.
+    pt_BR: FPS, 30 or 60. default 30. cogvideox-flash does not support.
+    zh_Hans: 视频帧率（FPS）,30或60，默认值 30，cogvideox-flash 不支持
+  label:
+    en_US: fps
+    pt_BR: fps
+    zh_Hans: 视频帧率
+  name: fps
+  type: number
+- form: form
+  default: "10"
+  human_description:
+    en_US: Number of retries to obtain the generated video
+    zh_Hans: 获取生成后的视频的重试次数
+  label:
+    en_US: retry count
+    zh_Hans: 重试次数
+  name: retry_count
+  type: number
+- form: form
+  default: "10"
+  human_description:
+    en_US: Waiting duration for retries to obtain the generated video, in seconds(s)
+    zh_Hans: 获取生成后的视频的重试的等待时长，单位(秒)
+  label:
+    en_US: wait time
+    zh_Hans: 等待时长
+  name: wait_time
+  type: number
