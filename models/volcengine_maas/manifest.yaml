@@ -6,6 +6,7 @@ description:
 icon: icon_s_en.svg
 label:
   en_US: Volcengine
+  zh_Hans: 火山方舟
 meta:
   arch:
   - amd64
