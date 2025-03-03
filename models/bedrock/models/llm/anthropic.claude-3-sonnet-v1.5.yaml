@@ -1,6 +1,6 @@
-model: eu.anthropic.claude-3-5-sonnet-20241022-v2:0
+model: anthropic.claude-3-5-sonnet-20240620-v1:0
 label:
-  en_US: Claude 3.5 Sonnet V2(EU.Cross Region Inference)
+  en_US: Claude 3.5 Sonnet
 icon: icon_s_en.svg
 model_type: llm
 features:

@@ -1,6 +1,7 @@
 model: cohere.command-r-plus-v1:0
 label:
   en_US: Command R+
+icon: icon_s_en.svg
 model_type: llm
 features:
   - tool-call
