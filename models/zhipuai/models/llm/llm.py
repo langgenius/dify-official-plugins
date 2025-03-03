@@ -127,7 +127,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
             copy_prompt_message = prompt_message.model_copy()
             if copy_prompt_message.role in {PromptMessageRole.USER, PromptMessageRole.SYSTEM, PromptMessageRole.TOOL}:
                 if isinstance(copy_prompt_message.content, list):
-                    if model not in {"glm-4v", "glm-4v-plus"}:
+                    if model not in {"glm-4v", "glm-4v-plus","glm-4v-flash"}:
                         continue
                     if not isinstance(copy_prompt_message, UserPromptMessage):
                         continue
@@ -178,7 +178,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
         elif "json_schema" in model_parameters:
             del model_parameters["json_schema"]
 
-        if model in {"glm-4v", "glm-4v-plus"}:
+        if model in {"glm-4v", "glm-4v-plus", "glm-4v-flash"}:
             params = self._construct_glm_4v_parameter(model, new_prompt_messages, model_parameters)
         else:
             params = {"model": model, "messages": [], **model_parameters}
