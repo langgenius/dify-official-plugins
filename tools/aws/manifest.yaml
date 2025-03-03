@@ -1,6 +1,6 @@
 version: 0.0.2
 type: plugin
-author: "aws"
+author: langgenius
 name: "aws_tools"
 label:
   en_US: "AWS"
@@ -20,7 +20,7 @@ plugins:
   tools:
     - "provider/aws.yaml"
 meta:
-  version: 0.0.1
+  version: 0.0.2
   arch:
     - "amd64"
     - "arm64"

@@ -1,0 +1,43 @@
+description:
+  human:
+    en_US: Delete Event
+    zh_Hans: 删除日程
+  llm: A tool for deleting events in Lark.(在 Lark 中删除日程)
+extra:
+  python:
+    source: tools/delete_event.py
+identity:
+  author: Doug Lea
+  label:
+    en_US: Delete Event
+    zh_Hans: 删除日程
+  name: delete_event
+parameters:
+- form: llm
+  human_description:
+    en_US: 'The ID of the event, for example: e8b9791c-39ae-4908-8ad8-66b13159b9fb_0.
+
+      '
+    zh_Hans: 日程 ID，例如：e8b9791c-39ae-4908-8ad8-66b13159b9fb_0。
+  label:
+    en_US: Event ID
+    zh_Hans: 日程 ID
+  llm_description: 日程 ID，例如：e8b9791c-39ae-4908-8ad8-66b13159b9fb_0。
+  name: event_id
+  required: true
+  type: string
+- default: true
+  form: form
+  human_description:
+    en_US: 'Indicates whether to send bot notifications to event participants upon
+      deletion. true: send, false: do not send.
+
+      '
+    zh_Hans: 删除日程是否给日程参与人发送 bot 通知，true：发送，false：不发送。
+  label:
+    en_US: Need Notification
+    zh_Hans: 是否需要通知
+  llm_description: 删除日程是否给日程参与人发送 bot 通知，true：发送，false：不发送。
+  name: need_notification
+  required: false
+  type: boolean

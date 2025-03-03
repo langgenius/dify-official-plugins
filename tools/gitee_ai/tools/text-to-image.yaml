@@ -10,7 +10,7 @@ identity:
   icon: icon.svg
   label:
     en_US: text to image
-  name: text to image
+  name: text-to-image
 parameters:
 - default: Kolors
   form: form
