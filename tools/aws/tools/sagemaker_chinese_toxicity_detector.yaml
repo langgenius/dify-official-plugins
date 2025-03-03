@@ -1,6 +1,6 @@
 identity:
   name: chinese_toxicity_detector
-  author: aws
+  author: AWS
   label:
     en_US: Chinese Toxicity Detector
     zh_Hans: 中文有害内容检测

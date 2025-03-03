@@ -1,6 +1,6 @@
 identity:
   name: nova_reel
-  author: aws
+  author: AWS
   label:
     en_US: AWS Bedrock Nova Reel
     zh_Hans: AWS Bedrock Nova Reel

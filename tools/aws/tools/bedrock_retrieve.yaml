@@ -1,6 +1,6 @@
 identity:
   name: bedrock_retrieve
-  author: aws
+  author: AWS
   label:
     en_US: Bedrock Retrieve
     zh_Hans: Bedrock检索
@@ -165,9 +165,9 @@ parameters:
           zh_Hans: amazon.rerank-v1:0
     form: form
 
-  - name: metadata_filter # Additional parameter for metadata filtering
-    type: string # String type, expects JSON-formatted filter conditions
-    required: false # Optional field - can be omitted
+  - name: metadata_filter   # Additional parameter for metadata filtering
+    type: string            # String type, expects JSON-formatted filter conditions
+    required: false         # Optional field - can be omitted
     label:
       en_US: Metadata Filter
       zh_Hans: 元数据过滤器

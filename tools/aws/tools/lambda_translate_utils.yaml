@@ -1,6 +1,6 @@
 identity:
   name: lambda_translate_utils
-  author: aws
+  author: AWS
   label:
     en_US: TranslateTool
     zh_Hans: 翻译工具

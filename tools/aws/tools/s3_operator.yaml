@@ -1,11 +1,10 @@
 identity:
   name: s3_operator
-  author: aws
+  author: AWS
   label:
     en_US: AWS S3 Operator
     zh_Hans: AWS S3 读写器
     pt_BR: AWS S3 Operator
-  icon: icon.svg
 description:
   human:
     en_US: AWS S3 Writer and Reader

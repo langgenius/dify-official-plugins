@@ -1,6 +1,6 @@
 identity:
   name: bedrock_retrieve_and_generate
-  author: aws
+  author: AWS
   label:
     en_US: Bedrock Retrieve and Generate
     zh_Hans: Bedrock检索和生成

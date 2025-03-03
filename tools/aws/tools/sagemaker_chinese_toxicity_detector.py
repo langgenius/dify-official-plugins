@@ -1,16 +1,20 @@
 import json
-from typing import Any, Generator
+from typing import Any, Union
+from collections.abc import Generator
 
 import boto3
-from dify_plugin import Tool  # Define label mappings
+
+from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
+
+# Define label mappings
 LABEL_MAPPING = {0: "SAFE", 1: "NO_SAFE"}
 
 
 class ContentModerationTool(Tool):
     sagemaker_client: Any = None
-    sagemaker_endpoint: str = ""
+    sagemaker_endpoint: str = None
 
     def _invoke_sagemaker(self, payload: dict, endpoint: str):
         response = self.sagemaker_client.invoke_endpoint(
@@ -31,15 +35,13 @@ class ContentModerationTool(Tool):
             prediction_result = json_obj.get("prediction")
 
         # Map labels and return
-        result = LABEL_MAPPING.get(
-            int(prediction_result) if prediction_result is not None else -1, "NO_SAFE"
-        )  # If not found in mapping, default to NO_SAFE
+        result = LABEL_MAPPING.get(prediction_result, "NO_SAFE")  # If not found in mapping, default to NO_SAFE
         return result
 
     def _invoke(
         self,
         tool_parameters: dict[str, Any],
-    ) -> Generator[ToolInvokeMessage, None, None]:
+    ) -> Generator[ToolInvokeMessage]:
         """
         invoke tools
         """
@@ -47,14 +49,12 @@ class ContentModerationTool(Tool):
             if not self.sagemaker_client:
                 aws_region = tool_parameters.get("aws_region")
                 if aws_region:
-                    self.sagemaker_client = boto3.client(
-                        "sagemaker-runtime", region_name=aws_region
-                    )
+                    self.sagemaker_client = boto3.client("sagemaker-runtime", region_name=aws_region)
                 else:
                     self.sagemaker_client = boto3.client("sagemaker-runtime")
 
             if not self.sagemaker_endpoint:
-                self.sagemaker_endpoint = tool_parameters.get("sagemaker_endpoint", "")
+                self.sagemaker_endpoint = tool_parameters.get("sagemaker_endpoint")
 
             content_text = tool_parameters.get("content_text")
 
