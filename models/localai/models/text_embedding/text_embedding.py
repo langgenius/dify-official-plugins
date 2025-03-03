@@ -121,7 +121,7 @@ class LocalAITextEmbeddingModel(TextEmbeddingModel):
         """
         return [self._get_num_tokens_by_gpt2(text) for text in texts]
 
-    def _get_customizable_model_schema(
+    def get_customizable_model_schema(
         self, model: str, credentials: dict
     ) -> Optional[AIModelEntity]:
         """

@@ -1,12 +1,10 @@
 import json
 import logging
-from typing import Any, Union
+from typing import Any, Generator
 
-import boto3
-
+import boto3  # type: ignore
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -40,9 +38,8 @@ class LambdaYamlToJsonTool(Tool):
 
     def _invoke(
         self,
-        user_id: str,
         tool_parameters: dict[str, Any],
-    ) -> Union[ToolInvokeMessage, list[ToolInvokeMessage]]:
+    ) -> Generator[ToolInvokeMessage, None, None]:
         """
         invoke tools
         """
@@ -58,18 +55,19 @@ class LambdaYamlToJsonTool(Tool):
 
             yaml_content = tool_parameters.get("yaml_content", "")
             if not yaml_content:
-                return self.create_text_message("Please input yaml_content")
-
+                yield self.create_text_message("Please input yaml_content")
+                return
             lambda_name = tool_parameters.get("lambda_name", "")
             if not lambda_name:
-                return self.create_text_message("Please input lambda_name")
+                yield self.create_text_message("Please input lambda_name")
+                return
             logger.debug(f"{json.dumps(tool_parameters, indent=2, ensure_ascii=False)}")
 
             result = self._invoke_lambda(lambda_name, yaml_content)
             logger.debug(result)
 
-            return self.create_text_message(result)
+            yield self.create_text_message(result)
         except Exception as e:
-            return self.create_text_message(f"Exception: {str(e)}")
-
+            yield self.create_text_message(f"Exception: {str(e)}")
+            return
         console_handler.flush()

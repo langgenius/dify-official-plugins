@@ -82,10 +82,22 @@ jobs:
       - name: Check Plugin Install
         run: |
           if [ -f ${{ env.PLUGIN_PATH }}/requirements.txt ]; then
-            source .venv/bin/activate
+              source .venv/bin/activate
+              pip install packaging
+              dify_version=$(pip list | grep 'dify_plugin' | awk '{print $2}')
+              target_version="0.0.1b64"
+              result=$(python -c "from packaging.version import Version; print(0 if Version('$dify_version') > Version('$target_version') else 1)")
+              if [ $result == 0 ]; then
+                  export INSTALL_METHOD=serverless
+                  export SERVERLESS_PORT=8080
+                  export SERVERLESS_HOST=0.0.0.0
+              else
+                  export INSTALL_METHOD=aws_lambda
+                  export AWS_LAMBDA_PORT=8080
+                  export AWS_LAMBDA_HOST=0.0.0.0
+              fi
+              python3 .scripts/validator/test-plugin-install.py -d ${{ env.PLUGIN_PATH }}
           fi
-          export INSTALL_METHOD=serverless
-          python3 .scripts/validator/test-plugin-install.py -d ${{ env.PLUGIN_PATH }}
 
       - name: Check Packaging
         run: |

@@ -254,15 +254,60 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     )
                 elif "contentBlockDelta" in chunk:
                     delta = chunk["contentBlockDelta"]["delta"]
-                    if "text" in delta:
-                        chunk_text = delta["text"] or ""
-                        full_assistant_content += chunk_text
-                        assistant_prompt_message = AssistantPromptMessage(content=chunk_text or "")
+                    if "reasoningContent" in delta and "text" in delta["reasoningContent"]:
+                        # Get reasoning content text
+                        reasoning_text = delta["reasoningContent"]["text"] or ""
+                        
+                        # Use class variable to track if header has been added, 
+                        # instead of relying on full_assistant_content which may not be updated
+                        if not hasattr(self, '_reasoning_header_added'):
+                            self._reasoning_header_added = False
+                        
+                        # Format reasoning content
+                        if not self._reasoning_header_added:
+                            # Only add the marker once for the first block
+                            formatted_reasoning = "> **Think:**\n> " + reasoning_text.replace("\n", "\n> ")
+                            # Record that the marker has been added
+                            self._reasoning_header_added = True
+                        else:
+                            # For subsequent blocks, only add indentation without new markers
+                            formatted_reasoning = reasoning_text.replace("\n", "\n> ")
+                        
+                        # Update complete content, although it may not be needed here, but maintains code consistency
+                        full_assistant_content += formatted_reasoning
+                        
+                        assistant_prompt_message = AssistantPromptMessage(
+                            content=formatted_reasoning
+                        )
                         index = chunk["contentBlockDelta"]["contentBlockIndex"]
                         yield LLMResultChunk(
                             model=model,
                             prompt_messages=prompt_messages,
                             delta=LLMResultChunkDelta(index=index + 1, message=assistant_prompt_message),
+                        )
+                    elif "text" in delta and delta["text"]:
+                        text = delta["text"]
+                        
+                        # Check if separator and line breaks need to be added
+                        # If there was reasoning content before and this is the first regular text
+                        if hasattr(self, '_reasoning_header_added') and self._reasoning_header_added:
+                            # Remove _reasoning_header_added
+                            delattr(self, '_reasoning_header_added')
+                            text = "\n\n" + text
+
+                        full_assistant_content += text
+                        
+                        assistant_prompt_message = AssistantPromptMessage(
+                            content=text or "",
+                        )
+                        index = chunk["contentBlockDelta"]["contentBlockIndex"]
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=index + 1,
+                                message=assistant_prompt_message,
+                            ),
                         )
                     elif "toolUse" in delta:
                         if "input" not in tool_use:
@@ -297,6 +342,25 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             inference_config["stopSequences"] = stop
         if "top_k" in model_parameters:
             additional_model_fields["top_k"] = model_parameters["top_k"]
+        # process reasoning related parameters, construct nested reasoning_config structure
+        if "reasoning_type" in model_parameters:
+            reasoning_type = model_parameters["reasoning_type"]
+            if reasoning_type:
+                reasoning_config = {
+                    "type": "enabled"
+                }
+                # set budget_tokens, ensure at least 1024
+                budget_tokens = 1024
+                if "reasoning_budget" in model_parameters:
+                    budget_tokens = max(1024, model_parameters["reasoning_budget"])
+                # make sure budget_tokens is less than max_tokens
+                if "max_tokens" in model_parameters:
+                    budget_tokens = min(budget_tokens, model_parameters["max_tokens"] - 1)
+                    reasoning_config["budget_tokens"] = budget_tokens
+                additional_model_fields["reasoning_config"] = reasoning_config
+                inference_config["temperature"] = 1
+                if "topP" in inference_config:
+                    del inference_config["topP"]
         return (inference_config, additional_model_fields)
 
     def _convert_converse_prompt_messages(self, prompt_messages: list[PromptMessage]) -> tuple[str, list[dict]]:

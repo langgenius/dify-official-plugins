@@ -1,0 +1,63 @@
+description:
+  human:
+    en_US: Add Event Attendees
+    zh_Hans: 添加日程参会人
+  llm: A tool for adding attendees to events in Lark. (在 Lark 中添加日程参会人)
+extra:
+  python:
+    source: tools/add_event_attendees.py
+identity:
+  author: Doug Lea
+  label:
+    en_US: Add Event Attendees
+    zh_Hans: 添加日程参会人
+  name: add_event_attendees
+parameters:
+- form: llm
+  human_description:
+    en_US: 'The ID of the event, which will be returned when the event is created.
+      For example: fb2a6406-26d6-4c8d-a487-6f0246c94d2f_0.
+
+      '
+    zh_Hans: '创建日程时会返回日程 ID。例如: fb2a6406-26d6-4c8d-a487-6f0246c94d2f_0。
+
+      '
+  label:
+    en_US: Event ID
+    zh_Hans: 日程 ID
+  llm_description: '日程 ID，创建日程时会返回日程 ID。例如: fb2a6406-26d6-4c8d-a487-6f0246c94d2f_0。
+
+    '
+  name: event_id
+  required: true
+  type: string
+- default: true
+  form: form
+  human_description:
+    en_US: 'Whether to send a Bot notification to attendees. true: send, false: do
+      not send.
+
+      '
+    zh_Hans: '是否给参与人发送 Bot 通知，true: 发送，false: 不发送。
+
+      '
+  label:
+    en_US: Need Notification
+    zh_Hans: 是否需要通知
+  llm_description: '是否给参与人发送 Bot 通知，true: 发送，false: 不发送。
+
+    '
+  name: need_notification
+  required: false
+  type: boolean
+- form: llm
+  human_description:
+    en_US: The list of attendee emails or phone numbers, separated by commas.
+    zh_Hans: 日程参会人邮箱或者手机号列表，使用逗号分隔。
+  label:
+    en_US: Attendee Phone or Email
+    zh_Hans: 参会人电话或邮箱
+  llm_description: 日程参会人邮箱或者手机号列表，使用逗号分隔。
+  name: attendee_phone_or_email
+  required: true
+  type: string

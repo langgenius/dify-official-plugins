@@ -1,4 +1,4 @@
-dify_plugin~=0.0.1b47
+dify_plugin==0.0.1b65
 python-pptx>=0.6.21
 python-docx>=0.8.11
 PyPDF2>=3.0.0

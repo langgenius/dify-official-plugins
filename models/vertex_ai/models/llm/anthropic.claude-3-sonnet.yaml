@@ -30,6 +30,7 @@ parameter_rules:
       zh_Hans: 生成内容的随机性。
       en_US: The amount of randomness injected into the response.
   - name: top_p
+    use_template: top_p
     required: false
     type: float
     default: 0.999
@@ -39,6 +40,7 @@ parameter_rules:
       zh_Hans: 在核采样中，Anthropic Claude 按概率递减顺序计算每个后续标记的所有选项的累积分布，并在达到 top_p 指定的特定概率时将其切断。您应该更改温度或top_p，但不能同时更改两者。
       en_US: In nucleus sampling, Anthropic Claude computes the cumulative distribution over all the options for each subsequent token in decreasing probability order and cuts it off once it reaches a particular probability specified by top_p. You should alter either temperature or top_p, but not both.
   - name: top_k
+    use_template: top_k
     required: false
     type: int
     default: 0

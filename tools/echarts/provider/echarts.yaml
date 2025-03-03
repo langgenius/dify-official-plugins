@@ -1,0 +1,21 @@
+extra:
+  python:
+    source: provider/echarts.py
+identity:
+  name: echarts
+  author: langgenius
+  label:
+    en_US: ECharts Chart Generator
+    zh_Hans: ECharts图表生成
+  description:
+    en_US: ECharts Chart Generator is a tool for generating statistical ECharts charts like bar chart, line chart, pie chart, etc.
+    zh_Hans: ECharts图表生成是一个用于生成可视化ECharts图表的工具，你可以通过它来生成柱状图、折线图、饼图等各类图表
+  icon: icon.svg
+  tags:
+    - design
+    - productivity
+    - utilities
+tools:
+  - tools/line.yaml
+  - tools/bar.yaml
+  - tools/pie.yaml

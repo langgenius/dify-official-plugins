@@ -1,8 +1,10 @@
 author: langgenius
-created_at: 2024-10-09 15:14:37.903898-04:00
+created_at: 2024-10-09T15:14:37.903898-04:00
 icon: icon_s_en.svg
 label:
   en_US: perfxcloud
+description:
+  en_US: PerfXCloud
 meta:
   arch:
   - amd64
@@ -30,4 +32,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.1
+version: 0.0.4

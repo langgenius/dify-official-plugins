@@ -1,9 +1,9 @@
 author: langgenius
 created_at: "2024-09-20T08:03:44.658609186Z"
 description:
-  en_US: Brave
-  pt_BR: Brave
-  zh_Hans: Brave
+  en_US: Brave Search offers programmatic web search capabilities, providing private, high-quality search results in various formats with comprehensive sources and an intuitive structure.
+  pt_BR: Brave Search offers programmatic web search capabilities, providing private, high-quality search results in various formats with comprehensive sources and an intuitive structure.
+  zh_Hans: Brave Search 提供程序化的网络搜索功能，以各种格式提供私密、高质量的搜索结果，具有全面的来源和直观的结构。
 icon: icon.svg
 label:
   en_US: Brave
@@ -33,4 +33,4 @@ resource:
 tags:
   - search
 type: plugin
-version: 0.0.1
+version: 0.0.2
