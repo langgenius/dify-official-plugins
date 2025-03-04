@@ -49,8 +49,8 @@ ANTHROPIC_BLOCK_MODE_PROMPT = 'You should always follow the instructions and out
 
 
 class AnthropicLargeLanguageModel(LargeLanguageModel):
-    def __init__(self, models=None):
-        super().__init__(models)
+    def __init__(self, model_schemas=None):
+        super().__init__(model_schemas or [])
         self.previous_thinking_blocks = []
         self.previous_redacted_thinking_blocks = []
 
