@@ -6,16 +6,6 @@ from dify_plugin.entities.model.message import SystemPromptMessage
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
 
-SUMMARY_PROMPT = """
-User's query: 
-{query}
-
-Here is the search engine result:
-{content}
-
-Please summarize the result in a few sentences.
-"""
-
 
 class DuckDuckGoSearchTool(Tool):
     """
@@ -37,11 +27,8 @@ class DuckDuckGoSearchTool(Tool):
             yield self.create_json_message(res)
 
     def summary_results(self, content: str, query: str) -> str:
-        prompt = SUMMARY_PROMPT.format(query=query, content=content)
-        summary = self.session.model.llm.invoke(
-            prompt_messages=[
-                SystemPromptMessage(content=prompt),
-            ],
-            stop=[],
+        summary = self.session.model.summary.invoke(
+            text =content,
+            instruction=query,
         )
-        return summary.message.content
+        return summary
