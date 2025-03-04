@@ -169,7 +169,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             response = MultiModalConversation.call(**params, stream=stream)
         else:
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(prompt_messages)
-            response = Generation.call(**params, result_format="message", stream=stream, incremental_output=True)
+            response = Generation.call(**params, result_format="message", stream=stream, incremental_output=stream)
         if stream:
             return self._handle_generate_stream_response(model, credentials, response, prompt_messages)
         return self._handle_generate_response(model, credentials, response, prompt_messages)
@@ -213,6 +213,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param prompt_messages: prompt messages
         :return: llm response chunk generator result
         """
+        is_reasoning = False
         full_text = ""
         tool_calls = []
         for index, response in enumerate(responses):
@@ -255,8 +256,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             else:
                 message = response.output.choices[0].message
 
-                resp_content, is_reasoning_started = self._wrap_thinking_by_reasoning_content(
-                    message, is_reasoning_started
+                resp_content, is_reasoning = self._wrap_thinking_by_reasoning_content(
+                    message, is_reasoning
                 )
                 if not resp_content:
                     if "tool_calls" in response.output.choices[0].message:
