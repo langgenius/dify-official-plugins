@@ -1,0 +1,37 @@
+description:
+  human:
+    en_US: A tool for extracting PDF content
+    zh_Hans: 一个提取 PDF 内容的工具
+  llm: A tool for extracting text from a specific page of a PDF document
+extra:
+  python:
+    source: tools/pdf_extractor.py
+identity:
+  author: kalo_chin
+  label:
+    en_US: PDF Extractor
+    zh_Hans: PDF 提取器
+  name: pdf_extractor
+parameters:
+- form: llm
+  human_description:
+    en_US: PDF file content (base64 encoded)
+    zh_Hans: PDF 文件内容（base64 编码）
+  label:
+    en_US: PDF Content
+    zh_Hans: PDF 内容
+  llm_description: PDF file content in base64 encoded format
+  name: pdf_content
+  required: true
+  type: file
+- form: llm
+  human_description:
+    en_US: Page number to extract (starting from 1)
+    zh_Hans: 要提取的页码（从1开始）
+  label:
+    en_US: Page Number
+    zh_Hans: 页码
+  llm_description: Specific page number to extract from the PDF. If not provided, all pages will be extracted.
+  name: page_number
+  required: true
+  type: number

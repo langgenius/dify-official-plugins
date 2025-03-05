@@ -1,0 +1,26 @@
+description:
+  human:
+    en_US: A tool for counting pages in a PDF
+    zh_Hans: 一个计算 PDF 页数并直接返回数字的工具
+  llm: A tool for counting the total number of pages in a PDF document
+extra:
+  python:
+    source: tools/pdf_page_counter.py
+identity:
+  author: kalo_chin
+  label:
+    en_US: PDF Page Counter
+    zh_Hans: PDF 页数计算器
+  name: pdf_page_counter
+parameters:
+- form: llm
+  human_description:
+    en_US: PDF file content (base64 encoded)
+    zh_Hans: PDF 文件内容（base64 编码）
+  label:
+    en_US: PDF Content
+    zh_Hans: PDF 内容
+  llm_description: PDF file content in base64 encoded format
+  name: pdf_content
+  required: true
+  type: file
