@@ -37,7 +37,7 @@ class GPUStackTextToSpeechModel(OAICompatTextToSpeechModel):
         :return: compatible credentials
         """
         compatible_credentials = credentials.copy()
-        base_url = credentials["endpoint_url"].rstrip("/").removesuffix("/v1-openai")
-        compatible_credentials["endpoint_url"] = f"{base_url}/v1-openai"
+        base_url = credentials["endpoint_url"].rstrip("/").removesuffix("/v1")
+        compatible_credentials["endpoint_url"] = f"{base_url}/v1"
 
         return compatible_credentials
