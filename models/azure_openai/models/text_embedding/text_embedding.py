@@ -100,17 +100,17 @@ class AzureOpenAITextEmbeddingModel(_CommonAzureOpenAI, TextEmbeddingModel):
             embeddings=embeddings, usage=usage, model=base_model_name
         )
 
-    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> int:
+    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
         if len(texts) == 0:
-            return 0
+            return []
         try:
             enc = tiktoken.encoding_for_model(credentials["base_model_name"])
         except KeyError:
             enc = tiktoken.get_encoding("cl100k_base")
-        total_num_tokens = 0
+        total_num_tokens: list[int] = []
         for text in texts:
             tokenized_text = enc.encode(text)
-            total_num_tokens += len(tokenized_text)
+            total_num_tokens.append(len(tokenized_text))
         return total_num_tokens
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
