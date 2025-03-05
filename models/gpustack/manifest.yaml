@@ -1,7 +1,8 @@
 author: langgenius
 created_at: "2024-09-20T00:13:50.29298939-04:00"
 description:
-  en_US: GPUStack
+  en_US: GPUStack is an open-source GPU cluster manager for running AI models.
+  zh_Hans: GPUStack 是一个专为运行 AI 模型而设计的开源 GPU 集群管理器，致力于支持基于任何品牌的异构 GPU 构建统一管理的算力集群
 icon: icon_s_en.png
 label:
   en_US: GPUStack
@@ -32,4 +33,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.2
+version: 0.0.3
