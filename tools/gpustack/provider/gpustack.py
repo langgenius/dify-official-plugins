@@ -6,9 +6,9 @@ from dify_plugin import ToolProvider
 
 class GPUStackProvider(ToolProvider):
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
-        base_url = credentials.get("base_url", "").removesuffix("/").removesuffix("/v1-openai")
+        base_url = credentials.get("base_url", "").removesuffix("/").removesuffix("/v1")
         api_key = credentials.get("api_key", "")
-        tls_verify = credentials.get("tls_verify", True)
+        tls_verify = bool(credentials.get("tls_verify", True))
 
         if not base_url:
             raise ToolProviderCredentialValidationError("GPUStack base_url is required")
