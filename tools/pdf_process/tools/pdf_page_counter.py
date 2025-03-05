@@ -37,37 +37,41 @@ class PDFPageCounterTool(Tool):
 
         Returns:
             Generator[ToolInvokeMessage, None, None]: Generator yielding just the page count number
+            
+        Raises:
+            ValueError: If the PDF content format is invalid or required parameters are missing
+            Exception: For any other errors during PDF processing
         """
         try:
-            # Get parameters
             pdf_content = tool_parameters.get("pdf_content")
+            if pdf_content is None:
+                raise ValueError("Missing required parameter: pdf_content")
             
-            # Handle different types of pdf_content
             if isinstance(pdf_content, File):
-                # If it's a Dify File object, get the blob directly
                 pdf_bytes = pdf_content.blob
             elif isinstance(pdf_content, str):
-                # If it's a base64 encoded string, decode it
-                pdf_bytes = base64.b64decode(pdf_content)
+                try:
+                    pdf_bytes = base64.b64decode(pdf_content)
+                except Exception:
+                    raise ValueError("Invalid base64 encoding for PDF content")
             else:
-                error_message = "Invalid PDF content format. Expected base64 encoded string or File object."
-                yield self.create_text_message(error_message)
-                return
+                raise ValueError("Invalid PDF content format. Expected base64 encoded string or File object.")
                 
             pdf_file = io.BytesIO(pdf_bytes)
             
-            # Open the PDF file
-            pdf_reader = PyPDF2.PdfReader(pdf_file)
+            try:
+                pdf_reader = PyPDF2.PdfReader(pdf_file)
+            except Exception as e:
+                raise ValueError(f"Invalid PDF file: {str(e)}")
             
-            # Get the total number of pages
             total_pages = len(pdf_reader.pages)
             
-            # Return just the page count number
             yield self.create_text_message(str(total_pages))
             
+        except ValueError as e:
+            raise
         except Exception as e:
-            error_message = f"Error counting pages in PDF: {str(e)}"
-            yield self.create_text_message(error_message)
+            raise Exception(f"Error counting pages in PDF: {str(e)}")
             
     def get_runtime_parameters(
         self,

@@ -38,51 +38,58 @@ class PDFExtractorTool(Tool):
 
         Returns:
             Generator[ToolInvokeMessage, None, None]: Generator yielding the PDF page blob
+            
+        Raises:
+            ValueError: If the PDF content format is invalid, required parameters are missing, or the page number is out of range
+            Exception: For any other errors during PDF processing
         """
         try:
-            # Get parameters
             pdf_content = tool_parameters.get("pdf_content")
-            # Convert from 1-indexed (user-friendly) to 0-indexed (code-friendly)
-            user_page_number = int(tool_parameters.get("page_number", 1))
-            page_number = user_page_number - 1  # Convert to 0-indexed
+            if pdf_content is None:
+                raise ValueError("Missing required parameter: pdf_content")
+                
+            page_number_param = tool_parameters.get("page_number")
+            if page_number_param is None:
+                raise ValueError("Missing required parameter: page_number")
+                
+            try:
+                user_page_number = int(page_number_param)
+                if user_page_number < 1:
+                    raise ValueError(f"Page number must be at least 1. You entered: {user_page_number}")
+                page_number = user_page_number - 1
+            except (ValueError, TypeError):
+                raise ValueError(f"Invalid page number format: {page_number_param}. Must be an integer.")
             
-            # Handle different types of pdf_content
             if isinstance(pdf_content, File):
-                # If it's a Dify File object, get the blob directly
                 pdf_bytes = pdf_content.blob
                 original_filename = pdf_content.filename or "document"
             elif isinstance(pdf_content, str):
-                # If it's a base64 encoded string, decode it
-                pdf_bytes = base64.b64decode(pdf_content)
+                try:
+                    pdf_bytes = base64.b64decode(pdf_content)
+                except Exception:
+                    raise ValueError("Invalid base64 encoding for PDF content")
                 original_filename = "document"
             else:
-                error_message = "Invalid PDF content format. Expected base64 encoded string or File object."
-                yield self.create_text_message(error_message)
-                return
+                raise ValueError("Invalid PDF content format. Expected base64 encoded string or File object.")
                 
             pdf_file = io.BytesIO(pdf_bytes)
             
-            # Open the PDF file
-            pdf_reader = PyPDF2.PdfReader(pdf_file)
+            try:
+                pdf_reader = PyPDF2.PdfReader(pdf_file)
+            except Exception as e:
+                raise ValueError(f"Invalid PDF file: {str(e)}")
             
-            # Check if the page number is valid
             total_pages = len(pdf_reader.pages)
             if page_number < 0 or page_number >= total_pages:
-                error_message = f"Invalid page number. The PDF has {total_pages} pages (1-{total_pages}). You entered: {user_page_number}."
-                yield self.create_text_message(error_message)
-                return
+                raise ValueError(f"Invalid page number. The PDF has {total_pages} pages (1-{total_pages}). You entered: {user_page_number}.")
             
-            # Create a new PDF with just the extracted page
             output = PyPDF2.PdfWriter()
             output.add_page(pdf_reader.pages[page_number])
             
-            # Save the page to a bytes buffer
             page_buffer = io.BytesIO()
             output.write(page_buffer)
             page_buffer.seek(0)
             
-            # Create output filename - use the user-friendly page number in the filename
-            # Remove .pdf extension if present
             if original_filename.lower().endswith('.pdf'):
                 base_filename = original_filename[:-4]
             else:
@@ -90,10 +97,8 @@ class PDFExtractorTool(Tool):
                 
             output_filename = f"{base_filename}_page{user_page_number}.pdf"
             
-            # Return success message
             yield self.create_text_message(f"Successfully extracted page {user_page_number} from PDF")
             
-            # Return the PDF page as a blob
             yield self.create_blob_message(
                 blob=page_buffer.getvalue(),
                 meta={
@@ -102,9 +107,10 @@ class PDFExtractorTool(Tool):
                 },
             )
             
+        except ValueError as e:
+            raise
         except Exception as e:
-            error_message = f"Error extracting page from PDF: {str(e)}"
-            yield self.create_text_message(error_message)
+            raise Exception(f"Error extracting page from PDF: {str(e)}")
             
     def get_runtime_parameters(
         self,
