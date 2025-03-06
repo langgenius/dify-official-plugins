@@ -1,10 +1,11 @@
 import json
-from typing import Any, Generator
+from typing import Any
+from collections.abc import Generator
 
 import boto3
+
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-
 
 class BedrockRetrieveAndGenerateTool(Tool):
     bedrock_client: Any = None
@@ -12,7 +13,7 @@ class BedrockRetrieveAndGenerateTool(Tool):
     def _invoke(
         self,
         tool_parameters: dict[str, Any],
-    ) -> Generator[ToolInvokeMessage, None, None]:
+    ) -> Generator[ToolInvokeMessage]:
         try:
             # Initialize Bedrock client if not already initialized
             if not self.bedrock_client:
@@ -20,26 +21,18 @@ class BedrockRetrieveAndGenerateTool(Tool):
                 aws_access_key_id = tool_parameters.get("aws_access_key_id")
                 aws_secret_access_key = tool_parameters.get("aws_secret_access_key")
 
-                client_kwargs = {
-                    "service_name": "bedrock-agent-runtime",
-                    "region_name": aws_region or None,
-                }
+                client_kwargs = {"service_name": "bedrock-agent-runtime", "region_name": aws_region or None}
 
                 # Only add credentials if both access key and secret key are provided
                 if aws_access_key_id and aws_secret_access_key:
                     client_kwargs.update(
-                        {
-                            "aws_access_key_id": aws_access_key_id,
-                            "aws_secret_access_key": aws_secret_access_key,
-                        }
+                        {"aws_access_key_id": aws_access_key_id, "aws_secret_access_key": aws_secret_access_key}
                     )
 
                 self.bedrock_client = boto3.client(**client_kwargs)
         except Exception as e:
-            yield self.create_text_message(
-                f"Failed to initialize Bedrock client: {str(e)}"
-            )
-            return
+            yield self.create_text_message(f"Failed to initialize Bedrock client: {str(e)}")
+
         try:
             request_config = {}
 
@@ -62,15 +55,11 @@ class BedrockRetrieveAndGenerateTool(Tool):
                 es_config = json.loads(kb_config_str) if es_config_str else None
                 retrieve_generate_config["externalSourcesConfiguration"] = es_config
 
-            request_config["retrieveAndGenerateConfiguration"] = (
-                retrieve_generate_config
-            )
+            request_config["retrieveAndGenerateConfiguration"] = retrieve_generate_config
 
             # Parse session configuration
             session_config_str = tool_parameters.get("session_configuration")
-            session_config = (
-                json.loads(session_config_str) if session_config_str else None
-            )
+            session_config = json.loads(session_config_str) if session_config_str else None
             if session_config:
                 request_config["sessionConfiguration"] = session_config
 
@@ -83,17 +72,12 @@ class BedrockRetrieveAndGenerateTool(Tool):
             response = self.bedrock_client.retrieve_and_generate(**request_config)
 
             # Process response
-            result = {
-                "output": response.get("output", {}).get("text", ""),
-                "citations": [],
-            }
+            result = {"output": response.get("output", {}).get("text", ""), "citations": []}
 
             # Process citations
             for citation in response.get("citations", []):
                 citation_info = {
-                    "text": citation.get("generatedResponsePart", {})
-                    .get("textResponsePart", {})
-                    .get("text", ""),
+                    "text": citation.get("generatedResponsePart", {}).get("textResponsePart", {}).get("text", ""),
                     "references": [],
                 }
 
@@ -106,9 +90,7 @@ class BedrockRetrieveAndGenerateTool(Tool):
 
                     location = ref.get("location", {})
                     if location.get("type") == "S3":
-                        reference["location"] = location.get("s3Location", {}).get(
-                            "uri"
-                        )
+                        reference["location"] = location.get("s3Location", {}).get("uri")
 
                     citation_info["references"].append(reference)
 
@@ -122,7 +104,6 @@ class BedrockRetrieveAndGenerateTool(Tool):
                 yield self.create_text_message(result.get("output"))
         except json.JSONDecodeError as e:
             yield self.create_text_message(f"Invalid JSON format: {str(e)}")
-            return
         except Exception as e:
             yield self.create_text_message(f"Tool invocation error: {str(e)}")
 
@@ -135,11 +116,7 @@ class BedrockRetrieveAndGenerateTool(Tool):
             raise ValueError("type is required")
 
         # Validate JSON configurations
-        json_configs = [
-            "knowledge_base_configuration",
-            "external_sources_configuration",
-            "session_configuration",
-        ]
+        json_configs = ["knowledge_base_configuration", "external_sources_configuration", "session_configuration"]
         for config in json_configs:
             if config_value := parameters.get(config):
                 try:
@@ -153,15 +130,7 @@ class BedrockRetrieveAndGenerateTool(Tool):
             raise ValueError("type must be either KNOWLEDGE_BASE or EXTERNAL_SOURCES")
 
         # Validate type-specific configuration
-        if config_type == "KNOWLEDGE_BASE" and not parameters.get(
-            "knowledge_base_configuration"
-        ):
-            raise ValueError(
-                "knowledge_base_configuration is required when type is KNOWLEDGE_BASE"
-            )
-        elif config_type == "EXTERNAL_SOURCES" and not parameters.get(
-            "external_sources_configuration"
-        ):
-            raise ValueError(
-                "external_sources_configuration is required when type is EXTERNAL_SOURCES"
-            )
+        if config_type == "KNOWLEDGE_BASE" and not parameters.get("knowledge_base_configuration"):
+            raise ValueError("knowledge_base_configuration is required when type is KNOWLEDGE_BASE")
+        elif config_type == "EXTERNAL_SOURCES" and not parameters.get("external_sources_configuration"):
+            raise ValueError("external_sources_configuration is required when type is EXTERNAL_SOURCES")

@@ -1,16 +1,17 @@
 import json
 import logging
-from typing import Any, Generator
+from typing import Any, Union
+from collections.abc import Generator
+from pydantic import BaseModel, Field
 
-import boto3  # type: ignore
 from botocore.exceptions import BotoCoreError  # type: ignore
+import boto3  # type: ignore
+
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from pydantic import BaseModel, Field
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 
 class GuardrailParameters(BaseModel):
     guardrail_id: str = Field(..., description="The identifier of the guardrail")
@@ -23,7 +24,7 @@ class GuardrailParameters(BaseModel):
 class ApplyGuardrailTool(Tool):
     def _invoke(
         self, tool_parameters: dict[str, Any]
-    ) -> Generator[ToolInvokeMessage, None, None]:
+    ) -> Generator[ToolInvokeMessage]:
         """
         Invoke the ApplyGuardrail tool
         """
@@ -32,9 +33,7 @@ class ApplyGuardrailTool(Tool):
             params = GuardrailParameters(**tool_parameters)
 
             # Initialize AWS client
-            bedrock_client = boto3.client(
-                "bedrock-runtime", region_name=params.aws_region
-            )
+            bedrock_client = boto3.client("bedrock-runtime", region_name=params.aws_region)
 
             # Apply guardrail
             response = bedrock_client.apply_guardrail(
@@ -48,18 +47,12 @@ class ApplyGuardrailTool(Tool):
 
             # Check for empty response
             if not response:
-                yield self.create_text_message(
-                    text="Received empty response from AWS Bedrock."
-                )
+                yield self.create_text_message(text="Received empty response from AWS Bedrock.")
 
             # Process the result
             action = response.get("action", "No action specified")
             outputs = response.get("outputs", [])
-            output = (
-                outputs[0].get("text", "No output received")
-                if outputs
-                else "No output received"
-            )
+            output = outputs[0].get("text", "No output received") if outputs else "No output received"
             assessments = response.get("assessments", [])
 
             # Format assessments
@@ -73,9 +66,7 @@ class ApplyGuardrailTool(Tool):
                                 f" Action: {topic['action']}"
                             )
                     else:
-                        formatted_assessments.append(
-                            f"Policy: {policy_type}, Data: {policy_data}"
-                        )
+                        formatted_assessments.append(f"Policy: {policy_type}, Data: {policy_data}")
 
             result = f"Action: {action}\n "
             result += f"Output: {output}\n "
@@ -89,12 +80,10 @@ class ApplyGuardrailTool(Tool):
             error_message = f"AWS service error: {str(e)}"
             logger.error(error_message, exc_info=True)
             yield self.create_text_message(text=error_message)
-            return
         except json.JSONDecodeError as e:
             error_message = f"JSON parsing error: {str(e)}"
             logger.error(error_message, exc_info=True)
             yield self.create_text_message(text=error_message)
-            return
         except Exception as e:
             error_message = f"An unexpected error occurred: {str(e)}"
             logger.error(error_message, exc_info=True)

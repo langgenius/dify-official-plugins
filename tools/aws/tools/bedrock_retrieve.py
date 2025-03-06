@@ -1,16 +1,17 @@
 import json
 import operator
-from typing import Any, Generator, Optional
+from typing import Any, Optional, Union
+from collections.abc import Generator
 
 import boto3
+
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-
 class BedrockRetrieveTool(Tool):
     bedrock_client: Any = None
-    knowledge_base_id: str = ""
-    topk: int = 0
+    knowledge_base_id: str = None
+    topk: int = None
 
     def _bedrock_retrieve(
         self,
@@ -25,19 +26,14 @@ class BedrockRetrieveTool(Tool):
             retrieval_query = {"text": query_input}
 
             if search_type not in ["HYBRID", "SEMANTIC"]:
-                raise ValueError("search_type should be HYBRID or SEMANTIC")
+                raise RuntimeException("search_type should be HYBRID or SEMANTIC")
 
             retrieval_configuration = {
-                "vectorSearchConfiguration": {
-                    "numberOfResults": num_results,
-                    "overrideSearchType": search_type,
-                }
+                "vectorSearchConfiguration": {"numberOfResults": num_results, "overrideSearchType": search_type}
             }
 
             if rerank_model_id != "default":
-                model_for_rerank_arn = (
-                    f"arn:aws:bedrock:us-west-2::foundation-model/{rerank_model_id}"
-                )
+                model_for_rerank_arn = f"arn:aws:bedrock:us-west-2::foundation-model/{rerank_model_id}"
                 rerankingConfiguration = {
                     "bedrockRerankingConfiguration": {
                         "numberOfRerankedResults": num_results,
@@ -46,18 +42,12 @@ class BedrockRetrieveTool(Tool):
                     "type": "BEDROCK_RERANKING_MODEL",
                 }
 
-                retrieval_configuration["vectorSearchConfiguration"][
-                    "rerankingConfiguration"
-                ] = rerankingConfiguration
-                retrieval_configuration["vectorSearchConfiguration"][
-                    "numberOfResults"
-                ] = num_results * 5
+                retrieval_configuration["vectorSearchConfiguration"]["rerankingConfiguration"] = rerankingConfiguration
+                retrieval_configuration["vectorSearchConfiguration"]["numberOfResults"] = num_results * 5
 
             # 如果有元数据过滤条件，则添加到检索配置中
             if metadata_filter:
-                retrieval_configuration["vectorSearchConfiguration"]["filter"] = (
-                    metadata_filter
-                )
+                retrieval_configuration["vectorSearchConfiguration"]["filter"] = metadata_filter
 
             response = self.bedrock_client.retrieve(
                 knowledgeBaseId=knowledge_base_id,
@@ -82,7 +72,7 @@ class BedrockRetrieveTool(Tool):
     def _invoke(
         self,
         tool_parameters: dict[str, Any],
-    ) -> Generator[ToolInvokeMessage, None, None]:
+    ) -> Generator[ToolInvokeMessage]:
         """
         invoke tools
         """
@@ -94,31 +84,22 @@ class BedrockRetrieveTool(Tool):
                 aws_access_key_id = tool_parameters.get("aws_access_key_id")
                 aws_secret_access_key = tool_parameters.get("aws_secret_access_key")
 
-                client_kwargs = {
-                    "service_name": "bedrock-agent-runtime",
-                    "region_name": aws_region or None,
-                }
+                client_kwargs = {"service_name": "bedrock-agent-runtime", "region_name": aws_region or None}
 
                 # Only add credentials if both access key and secret key are provided
                 if aws_access_key_id and aws_secret_access_key:
                     client_kwargs.update(
-                        {
-                            "aws_access_key_id": aws_access_key_id,
-                            "aws_secret_access_key": aws_secret_access_key,
-                        }
+                        {"aws_access_key_id": aws_access_key_id, "aws_secret_access_key": aws_secret_access_key}
                     )
 
                 self.bedrock_client = boto3.client(**client_kwargs)
         except Exception as e:
-            yield self.create_text_message(
-                f"Failed to initialize Bedrock client: {str(e)}"
-            )
-            return
-        line = 0
+            yield self.create_text_message(f"Failed to initialize Bedrock client: {str(e)}")
+
         try:
             line = 1
             if not self.knowledge_base_id:
-                self.knowledge_base_id = tool_parameters.get("knowledge_base_id", "")
+                self.knowledge_base_id = tool_parameters.get("knowledge_base_id")
                 if not self.knowledge_base_id:
                     yield self.create_text_message("Please provide knowledge_base_id")
 
@@ -133,12 +114,10 @@ class BedrockRetrieveTool(Tool):
 
             # 获取元数据过滤条件（如果存在）
             metadata_filter_str = tool_parameters.get("metadata_filter")
-            metadata_filter = (
-                json.loads(metadata_filter_str) if metadata_filter_str else None
-            )
+            metadata_filter = json.loads(metadata_filter_str) if metadata_filter_str else None
 
-            search_type = tool_parameters.get("search_type", "")
-            rerank_model_id = tool_parameters.get("rerank_model_id", "")
+            search_type = tool_parameters.get("search_type")
+            rerank_model_id = tool_parameters.get("rerank_model_id")
 
             line = 4
             retrieved_docs = self._bedrock_retrieve(
@@ -152,15 +131,12 @@ class BedrockRetrieveTool(Tool):
 
             line = 5
             # Sort results by score in descending order
-            sorted_docs = sorted(
-                retrieved_docs, key=operator.itemgetter("score"), reverse=True
-            )
+            sorted_docs = sorted(retrieved_docs, key=operator.itemgetter("score"), reverse=True)
 
             line = 6
             result_type = tool_parameters.get("result_type")
             if result_type == "json":
-                for res in sorted_docs:
-                    yield self.create_json_message(res)
+                yield [self.create_json_message(res) for res in sorted_docs]
             else:
                 text = ""
                 for i, res in enumerate(sorted_docs):
@@ -181,7 +157,5 @@ class BedrockRetrieveTool(Tool):
             raise ValueError("query is required")
 
         metadata_filter_str = parameters.get("metadata_filter")
-        if metadata_filter_str and not isinstance(
-            json.loads(metadata_filter_str), dict
-        ):
+        if metadata_filter_str and not isinstance(json.loads(metadata_filter_str), dict):
             raise ValueError("metadata_filter must be a valid JSON object")

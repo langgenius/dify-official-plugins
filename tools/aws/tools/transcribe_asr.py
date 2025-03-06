@@ -4,15 +4,17 @@ import os
 import re
 import time
 import uuid
-from typing import Any, Generator
+import requests
+from requests.exceptions import RequestException
+from typing import Any, Union
 from urllib.parse import urlparse
+from collections.abc import Generator
 
 import boto3
-import requests
 from botocore.exceptions import ClientError
+
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from requests.exceptions import RequestException
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -189,18 +191,12 @@ def upload_file_from_url_to_s3(s3_client, url, bucket_name, s3_key=None, max_ret
                 },
             )
 
-            return (
-                f"s3://{bucket_name}/{s3_key}",
-                f"Successfully uploaded file to s3://{bucket_name}/{s3_key}",
-            )
+            return f"s3://{bucket_name}/{s3_key}", f"Successfully uploaded file to s3://{bucket_name}/{s3_key}"
 
         except RequestException as e:
             retry_count += 1
             if retry_count == max_retries:
-                return (
-                    None,
-                    f"Failed to download file from URL after {max_retries} attempts: {str(e)}",
-                )
+                return None, f"Failed to download file from URL after {max_retries} attempts: {str(e)}"
             continue
 
         except ClientError as e:
@@ -228,39 +224,25 @@ class TranscribeTool(Tool):
         try:
             # Start transcription job
             response = self.transcribe_client.start_transcription_job(
-                TranscriptionJobName=job_name,
-                Media={"MediaFileUri": audio_file_uri},
-                **extra_args,
+                TranscriptionJobName=job_name, Media={"MediaFileUri": audio_file_uri}, **extra_args
             )
 
             # Wait for the job to complete
             while True:
-                status = self.transcribe_client.get_transcription_job(
-                    TranscriptionJobName=job_name
-                )
-                if status["TranscriptionJob"]["TranscriptionJobStatus"] in [
-                    "COMPLETED",
-                    "FAILED",
-                ]:
+                status = self.transcribe_client.get_transcription_job(TranscriptionJobName=job_name)
+                if status["TranscriptionJob"]["TranscriptionJobStatus"] in ["COMPLETED", "FAILED"]:
                     break
                 time.sleep(5)
 
             if status["TranscriptionJob"]["TranscriptionJobStatus"] == "COMPLETED":
-                return status["TranscriptionJob"]["Transcript"][
-                    "TranscriptFileUri"
-                ], None
+                return status["TranscriptionJob"]["Transcript"]["TranscriptFileUri"], None
             else:
-                return (
-                    None,
-                    f"Error: TranscriptionJobStatus:{status['TranscriptionJob']['TranscriptionJobStatus']} ",
-                )
+                return None, f"Error: TranscriptionJobStatus:{status['TranscriptionJob']['TranscriptionJobStatus']} "
 
         except Exception as e:
             return None, f"Error: {str(e)}"
 
-    def _download_and_read_transcript(
-        self, transcript_file_uri: str, max_retries: int = 3
-    ) -> tuple[str, str]:
+    def _download_and_read_transcript(self, transcript_file_uri: str, max_retries: int = 3) -> tuple[str, str]:
         """
         Download and read the transcript file from the given URI.
 
@@ -323,16 +305,11 @@ class TranscribeTool(Tool):
                 else:
                     # Extract the transcription text
                     # The transcript text is typically in the 'results' -> 'transcripts' array
-                    if (
-                        "results" in transcript_data
-                        and "transcripts" in transcript_data["results"]
-                    ):
+                    if "results" in transcript_data and "transcripts" in transcript_data["results"]:
                         transcripts = transcript_data["results"]["transcripts"]
                         if transcripts:
                             # Combine all transcript segments
-                            full_text = " ".join(
-                                t.get("transcript", "") for t in transcripts
-                            )
+                            full_text = " ".join(t.get("transcript", "") for t in transcripts)
                             return full_text, None
 
                 return None, "No transcripts found in the response"
@@ -340,10 +317,7 @@ class TranscribeTool(Tool):
             except requests.exceptions.RequestException as e:
                 retry_count += 1
                 if retry_count == max_retries:
-                    return (
-                        None,
-                        f"Failed to download transcript file after {max_retries} attempts: {str(e)}",
-                    )
+                    return None, f"Failed to download transcript file after {max_retries} attempts: {str(e)}"
                 continue
 
             except json.JSONDecodeError as e:
@@ -357,7 +331,7 @@ class TranscribeTool(Tool):
     def _invoke(
         self,
         tool_parameters: dict[str, Any],
-    ) -> Generator[ToolInvokeMessage, None, None]:
+    ) -> Generator[ToolInvokeMessage]:
         """
         invoke tools
         """
@@ -365,9 +339,7 @@ class TranscribeTool(Tool):
             if not self.transcribe_client:
                 aws_region = tool_parameters.get("aws_region")
                 if aws_region:
-                    self.transcribe_client = boto3.client(
-                        "transcribe", region_name=aws_region
-                    )
+                    self.transcribe_client = boto3.client("transcribe", region_name=aws_region)
                     self.s3_client = boto3.client("s3", region_name=aws_region)
                 else:
                     self.transcribe_client = boto3.client("transcribe")
@@ -377,9 +349,7 @@ class TranscribeTool(Tool):
             file_type = tool_parameters.get("file_type")
             language_code = tool_parameters.get("language_code")
             identify_language = tool_parameters.get("identify_language", True)
-            identify_multiple_languages = tool_parameters.get(
-                "identify_multiple_languages", False
-            )
+            identify_multiple_languages = tool_parameters.get("identify_multiple_languages", False)
             language_options_str = tool_parameters.get("language_options")
             s3_bucket_name = tool_parameters.get("s3_bucket_name")
             ShowSpeakerLabels = tool_parameters.get("ShowSpeakerLabels", True)
@@ -388,7 +358,6 @@ class TranscribeTool(Tool):
             # Check the input params
             if not s3_bucket_name:
                 yield self.create_text_message(text="s3_bucket_name is required")
-                return
             language_options = None
             if language_options_str:
                 language_options = language_options_str.split("|")
@@ -397,11 +366,10 @@ class TranscribeTool(Tool):
                         yield self.create_text_message(
                             text=f"{lang} is not supported, should be one of {LanguageCodeOptions}"
                         )
-                        return
             if language_code and language_code not in LanguageCodeOptions:
                 err_msg = f"language_code:{language_code} is not supported, should be one of {LanguageCodeOptions}"
                 yield self.create_text_message(text=err_msg)
-                return
+
             err_msg = f"identify_language:{identify_language}, \
                 identify_multiple_languages:{identify_multiple_languages}, \
                 Note that you must include one of LanguageCode, IdentifyLanguage, \
@@ -411,11 +379,10 @@ class TranscribeTool(Tool):
             if not language_code:
                 if identify_language and identify_multiple_languages:
                     yield self.create_text_message(text=err_msg)
-                    return
             else:
                 if identify_language or identify_multiple_languages:
                     yield self.create_text_message(text=err_msg)
-                    return
+
             extra_args = {
                 "IdentifyLanguage": identify_language,
                 "IdentifyMultipleLanguages": identify_multiple_languages,
@@ -425,18 +392,13 @@ class TranscribeTool(Tool):
             if language_options:
                 extra_args["LanguageOptions"] = language_options
             if ShowSpeakerLabels:
-                extra_args["Settings"] = {
-                    "ShowSpeakerLabels": ShowSpeakerLabels,
-                    "MaxSpeakerLabels": MaxSpeakerLabels,
-                }
+                extra_args["Settings"] = {"ShowSpeakerLabels": ShowSpeakerLabels, "MaxSpeakerLabels": MaxSpeakerLabels}
 
             # upload to s3 bucket
-            s3_path_result, error = upload_file_from_url_to_s3(
-                self.s3_client, url=file_url, bucket_name=s3_bucket_name
-            )
+            s3_path_result, error = upload_file_from_url_to_s3(self.s3_client, url=file_url, bucket_name=s3_bucket_name)
             if not s3_path_result:
                 yield self.create_text_message(text=error)
-                return
+
             transcript_file_uri, error = self._transcribe_audio(
                 audio_file_uri=s3_path_result,
                 file_type=file_type,
@@ -444,14 +406,12 @@ class TranscribeTool(Tool):
             )
             if not transcript_file_uri:
                 yield self.create_text_message(text=error)
-                return
+
             # Download and read the transcript
-            transcript_text, error = self._download_and_read_transcript(
-                transcript_file_uri
-            )
+            transcript_text, error = self._download_and_read_transcript(transcript_file_uri)
             if not transcript_text:
                 yield self.create_text_message(text=error)
-                return
+
             yield self.create_text_message(text=transcript_text)
 
         except Exception as e:

@@ -1,6 +1,6 @@
 identity:
   name: apply_guardrail
-  author: aws
+  author: AWS
   label:
     en_US: Content Moderation Guardrails
     zh_Hans: 内容审查护栏

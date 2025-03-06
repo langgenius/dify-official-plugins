@@ -1,6 +1,6 @@
 identity:
   name: nova_canvas
-  author: aws
+  author: AWS
   label:
     en_US: AWS Bedrock Nova Canvas
     zh_Hans: AWS Bedrock Nova Canvas

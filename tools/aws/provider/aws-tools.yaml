@@ -1,18 +1,17 @@
 identity:
   author: aws
-  name: aws
+  name: aws-tools
   label:
-    en_US: AWS
-    zh_Hans: 亚马逊云科技
-    pt_BR: AWS
+    en_US: aws-tools
+    zh_Hans: 亚马逊云科技工具集
+    pt_BR: aws-tools
   description:
-    en_US: Services on AWS.
-    zh_Hans: 亚马逊云科技的各类服务
-    pt_BR: Services on AWS.
+    en_US: the tools based on the aws services
+    zh_Hans: the tools based on the aws services
+    pt_BR: the tools based on the aws services
   icon: icon.svg
   tags:
-    - search
-credentials_for_provider: {}
+    - productivity
 tools:
   - tools/apply_guardrail.yaml
   - tools/bedrock_retrieve.yaml
@@ -28,4 +27,4 @@ tools:
   - tools/transcribe_asr.yaml
 extra:
   python:
-    source: provider/aws.py
+    source: provider/aws-tools.py

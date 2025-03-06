@@ -1,10 +1,15 @@
-from typing import Any, Generator
+from typing import Any, Union
 from urllib.parse import urlparse
 
 import boto3
+
+# from core.tools.entities.tool_entities import ToolInvokeMessage
+# from core.tools.tool.builtin_tool import BuiltinTool
+from collections.abc import Generator
+from typing import Any
+
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-
 
 class S3Operator(Tool):
     s3_client: Any = None
@@ -12,12 +17,10 @@ class S3Operator(Tool):
     def _invoke(
         self,
         tool_parameters: dict[str, Any],
-    ) -> Generator[ToolInvokeMessage, None, None]:
+    ) -> Generator[ToolInvokeMessage]:
         """
         invoke tools
         """
-        bucket = ""
-        key = ""
         try:
             # Initialize S3 client if not already done
             if not self.s3_client:
@@ -31,42 +34,32 @@ class S3Operator(Tool):
             s3_uri = tool_parameters.get("s3_uri")
             if not s3_uri:
                 yield self.create_text_message("s3_uri parameter is required")
-                return
+
             parsed_uri = urlparse(s3_uri)
             if parsed_uri.scheme != "s3":
-                yield self.create_text_message(
-                    "Invalid S3 URI format. Must start with 's3://'"
-                )
-                return
+                yield self.create_text_message("Invalid S3 URI format. Must start with 's3://'")
+
             bucket = parsed_uri.netloc
             # Remove leading slash from key
             key = parsed_uri.path.lstrip("/")
 
             operation_type = tool_parameters.get("operation_type", "read")
             generate_presign_url = tool_parameters.get("generate_presign_url", False)
-            presign_expiry = int(
-                tool_parameters.get("presign_expiry", 3600)
-            )  # default 1 hour
+            presign_expiry = int(tool_parameters.get("presign_expiry", 3600))  # default 1 hour
 
             if operation_type == "write":
-                text_content = tool_parameters.get("text_content", "")
+                text_content = tool_parameters.get("text_content")
                 if not text_content:
-                    yield self.create_text_message(
-                        "text_content parameter is required for write operation"
-                    )
+                    yield self.create_text_message("text_content parameter is required for write operation")
 
                 # Write content to S3
-                self.s3_client.put_object(
-                    Bucket=bucket, Key=key, Body=text_content.encode("utf-8")
-                )
+                self.s3_client.put_object(Bucket=bucket, Key=key, Body=text_content.encode("utf-8"))
                 result = f"s3://{bucket}/{key}"
 
                 # Generate presigned URL for the written object if requested
                 if generate_presign_url:
                     result = self.s3_client.generate_presigned_url(
-                        "get_object",
-                        Params={"Bucket": bucket, "Key": key},
-                        ExpiresIn=presign_expiry,
+                        "get_object", Params={"Bucket": bucket, "Key": key}, ExpiresIn=presign_expiry
                     )
 
             else:  # read operation
@@ -77,20 +70,14 @@ class S3Operator(Tool):
                 # Generate presigned URL if requested
                 if generate_presign_url:
                     result = self.s3_client.generate_presigned_url(
-                        "get_object",
-                        Params={"Bucket": bucket, "Key": key},
-                        ExpiresIn=presign_expiry,
+                        "get_object", Params={"Bucket": bucket, "Key": key}, ExpiresIn=presign_expiry
                     )
 
             yield self.create_text_message(text=result)
 
         except self.s3_client.exceptions.NoSuchBucket:
             yield self.create_text_message(f"Bucket '{bucket}' does not exist")
-            return
         except self.s3_client.exceptions.NoSuchKey:
-            yield self.create_text_message(
-                f"Object '{key}' does not exist in bucket '{bucket}'"
-            )
-            return
+            yield self.create_text_message(f"Object '{key}' does not exist in bucket '{bucket}'")
         except Exception as e:
             yield self.create_text_message(f"Exception: {str(e)}")

@@ -1,6 +1,6 @@
 identity:
   name: transcribe_asr
-  author: aws
+  author: AWS
   label:
     en_US: TranscribeASR
     zh_Hans: Transcribe语音识别转录

@@ -1,3 +1,2 @@
-dify_plugin==0.0.1b68
-boto3==1.36.12
-pillow==11.0.0
+dify_plugin
+boto3~=1.37.4
