@@ -1,6 +1,6 @@
 version: 0.0.6
 type: plugin
-author: aws
+author: langgenius
 name: amazon-bedrock
 label:
   en_US: Amazon Bedrock
