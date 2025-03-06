@@ -1,6 +1,6 @@
 version: 0.0.3
 type: plugin
-author: aws
+author: langgenius
 name: aws-tools
 label:
   en_US: AWS Tools
