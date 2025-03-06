@@ -1,6 +1,6 @@
 model: us.meta.llama3-1-70b-instruct-v1:0
 label:
-  en_US: US Llama 3.1 Instruct 70B
+  en_US: US Meta Llama 3.1 Instruct 70B
 icon: icon_s_en.svg
 model_type: llm
 model_properties:
