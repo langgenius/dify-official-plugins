@@ -1,7 +1,7 @@
 ## aws-tools
 
-**Author:** aws
-**Version:** 0.0.1
+**Author:** langgenius
+**Version:** 0.0.3
 **Type:** extension
 
 ### Description
