@@ -1,4 +1,4 @@
-version: 0.0.5
+version: 0.0.6
 type: plugin
 author: aws
 name: amazon-bedrock
@@ -28,7 +28,7 @@ plugins:
   models:
     - provider/amazon-bedrock.yaml
 meta:
-  version: 0.0.5
+  version: 0.0.6
   arch:
     - amd64
     - arm64
