@@ -1,7 +1,6 @@
 model: meta.llama2-13b-chat-v1
 label:
   en_US: Llama 2 Chat 13B
-icon: icon_s_en.svg
 model_type: llm
 model_properties:
   mode: chat

@@ -1,7 +1,6 @@
 model: ai21.jamba-1-5-mini-v1:0
 label:
   en_US: Jamba 1.5 Mini
-icon: icon_s_en.svg
 model_type: llm
 model_properties:
   mode: completion

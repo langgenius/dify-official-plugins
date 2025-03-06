@@ -1,41 +1,35 @@
-version: 0.0.5
-type: plugin
-author: aws
-name: amazon-bedrock
-label:
-  en_US: Amazon Bedrock
-  ja_JP: Amazon Bedrock
-  zh_Hans: Amazon Bedrock
-  pt_BR: Amazon Bedrock
+author: langgenius
+created_at: '2024-09-20T00:13:50.29298939-04:00'
 description:
-  en_US: The models of Amazon Bedrock
-  ja_JP: The models of Amazon Bedrock
-  zh_Hans: The models of Amazon Bedrock
-  pt_BR: The models of Amazon Bedrock
-icon: icon_l_en.svg
+  en_US: AWS Bedrock's models.
+icon: icon_s_en.svg
+label:
+  en_US: AWS
+meta:
+  arch:
+  - amd64
+  - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: '3.12'
+  version: 0.0.1
+name: bedrock
+plugins:
+  models:
+  - provider/bedrock.yaml
 resource:
   memory: 268435456
   permission:
     model:
       enabled: true
       llm: true
-      text_embedding: true
-      rerank: true
-      tts: false
-      speech2text: false
       moderation: false
-plugins:
-  models:
-    - provider/amazon-bedrock.yaml
-meta:
-  version: 0.0.5
-  arch:
-    - amd64
-    - arm64
-  runner:
-    language: python
-    version: "3.12"
-    entrypoint: main
-created_at: 2025-02-27T17:55:38.29411+08:00
-privacy: PRIVACY.md
-verified: false
+      rerank: true
+      speech2text: false
+      text_embedding: true
+      tts: false
+    tool:
+      enabled: true
+type: plugin
+version: 0.0.5

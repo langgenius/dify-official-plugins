@@ -1,7 +1,6 @@
 model: ai21.j2-mid-v1
 label:
   en_US: J2 Mid V1
-icon: icon_s_en.svg
 model_type: llm
 model_properties:
   mode: completion

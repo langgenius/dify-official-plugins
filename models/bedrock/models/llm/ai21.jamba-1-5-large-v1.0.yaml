@@ -1,7 +1,6 @@
 model: ai21.jamba-1-5-large-v1:0
 label:
   en_US: Jamba 1.5 Large
-icon: icon_s_en.svg
 model_type: llm
 model_properties:
   mode: completion

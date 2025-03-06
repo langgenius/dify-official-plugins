@@ -1,7 +1,6 @@
 model: mistral.mistral-large-2407-v1:0
 label:
   en_US: Mistral Large 2 (24.07)
-icon: icon_s_en.svg
 model_type: llm
 features:
   - tool-call

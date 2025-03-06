@@ -1,3 +1,3 @@
-dify_plugin
-boto3~=1.37.4
-tiktoken~=0.8.0
+dify_plugin~=0.0.1b66
+botocore~=1.37.1
+boto3~=1.37.1

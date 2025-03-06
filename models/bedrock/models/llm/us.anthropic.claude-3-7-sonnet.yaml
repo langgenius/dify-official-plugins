@@ -1,6 +1,6 @@
-model: eu.anthropic.claude-3-haiku-20240307-v1:0
+model: us.anthropic.claude-3-7-sonnet-20250219-v1:0
 label:
-  en_US: Claude 3 Haiku(EU.Cross Region Inference)
+  en_US: Claude 3.7 Sonnet(US.Cross Region Inference)
 model_type: llm
 features:
   - agent-thought
@@ -12,17 +12,44 @@ model_properties:
   context_size: 200000
 # docs: https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages.html
 parameter_rules:
+  - name: reasoning_type
+    label:
+      zh_Hans: 推理配置
+      en_US: Reasoning Type
+    type: boolean
+    required: false
+    default: false
+    placeholder:
+      zh_Hans: 设置推理配置
+      en_US: Set reasoning configuration
+    help:
+      zh_Hans: 控制模型的推理能力。启用时，temperature将固定为1且top_p将被禁用。
+      en_US: Controls the model's reasoning capability. When enabled, temperature will be fixed to 1 and top_p will be disabled.
+  - name: reasoning_budget
+    show_on:
+      - variable: reasoning_type
+        value: true
+    label:
+      zh_Hans: 推理预算
+      en_US: Reasoning Budget
+    type: int
+    default: 1024
+    min: 0
+    max: 128000
+    help:
+      zh_Hans: 推理的预算限制（最小1024），必须小于max_tokens。仅在推理类型为enabled时可用。
+      en_US: Budget limit for reasoning (minimum 1024), must be less than max_tokens. Only available when reasoning type is enabled.
+
   - name: max_tokens
     use_template: max_tokens
     required: true
     type: int
-    default: 4096
+    default: 8192
     min: 1
-    max: 4096
+    max: 128000
     help:
       zh_Hans: 停止前生成的最大令牌数。请注意，Anthropic Claude 模型可能会在达到 max_tokens 的值之前停止生成令牌。不同的 Anthropic Claude 模型对此参数具有不同的最大值。
       en_US: The maximum number of tokens to generate before stopping. Note that Anthropic Claude models might stop generating tokens before reaching the value of max_tokens. Different Anthropic Claude models have different maximum values for this parameter.
-  # docs: https://docs.anthropic.com/claude/docs/system-prompts
   - name: temperature
     use_template: temperature
     required: false
@@ -31,9 +58,12 @@ parameter_rules:
     min: 0.0
     max: 1.0
     help:
-      zh_Hans: 生成内容的随机性。
-      en_US: The amount of randomness injected into the response.
+      zh_Hans: 生成内容的随机性。当推理功能启用时，该值将被固定为1。
+      en_US: The amount of randomness injected into the response. When reasoning is enabled, this value will be fixed to 1.
   - name: top_p
+    show_on:
+      - variable: reasoning_type
+        value: disabled
     use_template: top_p
     required: false
     type: float
@@ -41,8 +71,8 @@ parameter_rules:
     min: 0.000
     max: 1.000
     help:
-      zh_Hans: 在核采样中，Anthropic Claude 按概率递减顺序计算每个后续标记的所有选项的累积分布，并在达到 top_p 指定的特定概率时将其切断。您应该更改温度或top_p，但不能同时更改两者。
-      en_US: In nucleus sampling, Anthropic Claude computes the cumulative distribution over all the options for each subsequent token in decreasing probability order and cuts it off once it reaches a particular probability specified by top_p. You should alter either temperature or top_p, but not both.
+      zh_Hans: 在核采样中的概率阈值。当推理功能启用时，该参数将被禁用。
+      en_US: The probability threshold in nucleus sampling. When reasoning is enabled, this parameter will be disabled.
   - name: top_k
     label:
       zh_Hans: 取样数量
@@ -59,7 +89,7 @@ parameter_rules:
   - name: response_format
     use_template: response_format
 pricing:
-  input: '0.00025'
-  output: '0.00125'
+  input: '0.003'
+  output: '0.015'
   unit: '0.001'
   currency: USD

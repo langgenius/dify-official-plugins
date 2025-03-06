@@ -1,7 +1,6 @@
 model: us.meta.llama3-2-90b-instruct-v1:0
 label:
   en_US: US Meta Llama 3.2 90B Instruct
-icon: icon_s_en.svg
 model_type: llm
 features:
   - tool-call

@@ -1,7 +1,6 @@
 model: amazon.titan-text-express-v1
 label:
   en_US: Titan Text G1 - Express
-icon: icon_s_en.svg
 model_type: llm
 model_properties:
   mode: chat

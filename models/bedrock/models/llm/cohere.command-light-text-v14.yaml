@@ -1,7 +1,6 @@
 model: cohere.command-light-text-v14
 label:
   en_US: Command Light Text V14
-icon: icon_s_en.svg
 model_type: llm
 model_properties:
   mode: completion

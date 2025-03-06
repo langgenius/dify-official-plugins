@@ -1,9 +1,9 @@
 import json
 import logging
 import time
-import tiktoken
 from typing import Optional
-
+import boto3
+from botocore.config import Config
 from botocore.exceptions import (
     ClientError,
     EndpointConnectionError,
@@ -11,10 +11,9 @@ from botocore.exceptions import (
     ServiceNotInRegionError,
     UnknownServiceError,
 )
-
+from dify_plugin import TextEmbeddingModel
 from dify_plugin.entities.model import EmbeddingInputType, PriceType
 from dify_plugin.entities.model.text_embedding import EmbeddingUsage, TextEmbeddingResult
-
 from dify_plugin.errors.model import (
     InvokeAuthorizationError,
     InvokeBadRequestError,
@@ -23,8 +22,6 @@ from dify_plugin.errors.model import (
     InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
-from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
-from provider.get_bedrock_client import get_bedrock_client
 
 logger = logging.getLogger(__name__)
 
@@ -48,18 +45,19 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
         :param input_type: input type
         :return: embeddings result
         """
-        bedrock_runtime = get_bedrock_client("bedrock-runtime", credentials)
-
+        client_config = Config(region_name=credentials["aws_region"])
+        bedrock_runtime = boto3.client(
+            service_name="bedrock-runtime",
+            config=client_config,
+            aws_access_key_id=credentials.get("aws_access_key_id"),
+            aws_secret_access_key=credentials.get("aws_secret_access_key"),
+        )
         embeddings = []
         token_usage = 0
-
         model_prefix = model.split(".")[0]
-
         if model_prefix == "amazon":
             for text in texts:
-                body = {
-                    "inputText": text,
-                }
+                body = {"inputText": text}
                 response_body = self._invoke_bedrock_embedding(model, bedrock_runtime, body)
                 embeddings.extend([response_body.get("embedding")])
                 token_usage += response_body.get("inputTextTokenCount")
@@ -70,14 +68,10 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
                 usage=self._calc_response_usage(model=model, credentials=credentials, tokens=token_usage),
             )
             return result
-
         if model_prefix == "cohere":
             input_type = "search_document" if len(texts) > 1 else "search_query"
             for text in texts:
-                body = {
-                    "texts": [text],
-                    "input_type": input_type,
-                }
+                body = {"texts": [text], "input_type": input_type}
                 response_body = self._invoke_bedrock_embedding(model, bedrock_runtime, body)
                 embeddings.extend(response_body.get("embeddings"))
                 token_usage += len(text)
@@ -87,8 +81,6 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
                 usage=self._calc_response_usage(model=model, credentials=credentials, tokens=token_usage),
             )
             return result
-
-        # others
         raise ValueError(f"Got unknown model prefix {model_prefix} when handling block response")
 
     def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
@@ -100,21 +92,10 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
         :param texts: texts to embed
         :return:
         """
-        if len(texts) == 0:
-            return []
-
-        try:
-            enc = tiktoken.encoding_for_model(model)
-        except KeyError:
-            enc = tiktoken.get_encoding("cl100k_base")
-
-        total_num_tokens = []
+        tokens = []
         for text in texts:
-            # calculate the number of tokens in the encoded text
-            tokenized_text = enc.encode(text)
-            total_num_tokens.append(len(tokenized_text))
-
-        return total_num_tokens
+            tokens.append(self._get_num_tokens_by_gpt2(text))
+        return tokens
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -155,7 +136,6 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
         Create payload for bedrock api call depending on model provider
         """
         payload = {}
-
         if model_prefix == "amazon":
             payload["inputText"] = texts
 
@@ -168,12 +148,9 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
         :param tokens: input tokens
         :return: usage
         """
-        # get input price info
         input_price_info = self.get_price(
             model=model, credentials=credentials, price_type=PriceType.INPUT, tokens=tokens
         )
-
-        # transform usage
         usage = EmbeddingUsage(
             tokens=tokens,
             total_tokens=tokens,
@@ -183,10 +160,9 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
             currency=input_price_info.currency,
             latency=time.perf_counter() - self.started_at,
         )
-
         return usage
 
-    def _map_client_to_invoke_error(self, error_code: str, error_msg: str) -> type[InvokeError]:
+    def _map_client_to_invoke_error(self, error_code: str, error_msg: str) -> InvokeError:
         """
         Map client error to invoke error
 
@@ -194,7 +170,6 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
         :param error_msg: error message
         :return: invoke error
         """
-
         if error_code == "AccessDeniedException":
             return InvokeAuthorizationError(error_msg)
         elif error_code in {"ResourceNotFoundException", "ValidationException"}:
@@ -210,15 +185,9 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
             return InvokeServerUnavailableError(error_msg)
         elif error_code == "ModelStreamErrorException":
             return InvokeConnectionError(error_msg)
-
         return InvokeError(error_msg)
 
-    def _invoke_bedrock_embedding(
-        self,
-        model: str,
-        bedrock_runtime,
-        body: dict,
-    ):
+    def _invoke_bedrock_embedding(self, model: str, bedrock_runtime, body: dict):
         accept = "application/json"
         content_type = "application/json"
         try:
@@ -231,12 +200,9 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
             error_code = ex.response["Error"]["Code"]
             full_error_msg = f"{error_code}: {ex.response['Error']['Message']}"
             raise self._map_client_to_invoke_error(error_code, full_error_msg)
-
         except (EndpointConnectionError, NoRegionError, ServiceNotInRegionError) as ex:
             raise InvokeConnectionError(str(ex))
-
         except UnknownServiceError as ex:
             raise InvokeServerUnavailableError(str(ex))
-
         except Exception as ex:
             raise InvokeError(str(ex))

@@ -1,7 +1,6 @@
 model: us.meta.llama3-2-11b-instruct-v1:0
 label:
   en_US: US Meta Llama 3.2 11B Instruct
-icon: icon_s_en.svg
 model_type: llm
 features:
   - vision
