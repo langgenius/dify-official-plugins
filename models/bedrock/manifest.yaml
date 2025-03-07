@@ -28,7 +28,7 @@ plugins:
   models:
     - provider/amazon-bedrock.yaml
 meta:
-  version: 0.0.7
+  version: 0.0.
   arch:
     - amd64
     - arm64
