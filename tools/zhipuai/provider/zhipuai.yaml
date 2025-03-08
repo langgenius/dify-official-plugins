@@ -1,0 +1,52 @@
+credentials_for_provider:
+  zhipuai_api_key:
+    help:
+      en_US: Please input your ZhipuAI API key
+      pt_BR: Please input your ZhipuAI API key
+      zh_Hans: 请输入你的 ZhipuAI API key
+    label:
+      en_US: ZhipuAI API key
+      pt_BR: ZhipuAI API key
+      zh_Hans: ZhipuAI API key
+    placeholder:
+      en_US: Please input your ZhipuAI API key
+      pt_BR: Please input your ZhipuAI API key
+      zh_Hans: 请输入你的 ZhipuAI API key
+    required: true
+    type: secret-input
+  zhipuai_base_url:
+    help:
+      en_US: Please input your ZhipuAI base URL
+      pt_BR: Please input your ZhipuAI base URL
+      zh_Hans: 请输入你的 ZhipuAI base URL
+    label:
+      en_US: ZhipuAI base URL
+      pt_BR: ZhipuAI base URL
+      zh_Hans: ZhipuAI base URL
+    placeholder:
+      en_US: Please input your ZhipuAI base URL
+      pt_BR: Please input your ZhipuAI base URL
+      zh_Hans: 请输入你的 ZhipuAI base URL
+    required: false
+    type: text-input
+extra:
+  python:
+    source: provider/zhipuai.py
+identity:
+  author: langgenius
+  description:
+    en_US: ZhipuAI
+    pt_BR: ZhipuAI
+    zh_Hans: ZhipuAI
+  icon: icon_s_en.svg
+  label:
+    en_US: ZhipuAI
+    pt_BR: ZhipuAI
+    zh_Hans: 智谱AI
+  name: zhipuai
+  tags:
+  - image
+  - videos
+tools:
+- tools/cogview.yaml
+- tools/cogvideo.yaml
