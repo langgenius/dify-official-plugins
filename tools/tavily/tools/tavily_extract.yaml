@@ -1,9 +1,8 @@
 description:
   human:
-    en_US: A web extraction tool built specifically for AI agents (LLMs), delivering
-      raw content from web pages.
-    zh_Hans: 专为人工智能代理 (LLM) 构建的网页提取工具，提供网页的原始内容。
-  llm: A tool for extracting raw content from web pages, designed for AI agents (LLMs).
+    en_US: Extract web page content from one or more specified URLs using Tavily Extract.
+    zh_Hans: 使用 Tavily Extract 从一个或多个指定的 URL 提取网页内容。
+  llm: Extract raw content from web pages with basic or advanced extraction modes.
 extra:
   python:
     source: tools/tavily_extract.py
@@ -16,39 +15,45 @@ identity:
 parameters:
 - form: llm
   human_description:
-    en_US: A comma-separated list of URLs to extract content from.
-    zh_Hans: 要从中提取内容的 URL 的逗号分隔列表。
+    en_US: One or more URLs to extract content from (comma-separated if multiple).
+    zh_Hans: 要从中提取内容的一个或多个 URL（如果有多个，请用逗号分隔）。
   label:
     en_US: URLs
     zh_Hans: URLs
-  llm_description: A comma-separated list of URLs to extract content from.
+  llm_description: One or more URLs to extract content from (comma-separated if multiple).
   name: urls
   required: true
   type: string
-- form: llm
+- form: form
   human_description:
     en_US: Include a list of images extracted from the URLs in the response.
     zh_Hans: 在响应中包含从 URL 提取的图像列表。
   label:
     en_US: Include Images
     zh_Hans: 包含图像
-  llm_description: Include a list of images extracted from the URLs in the response. Default is false.
+  llm_description: Include images from the URLs in the response. Default is false.
   name: include_images
   required: false
   type: boolean
   default: false
 - form: llm
   human_description:
-    en_US: The depth of the extraction process. 'advanced' retrieves more data but may increase latency.
-    zh_Hans: 提取过程的深度。"advanced"检索更多数据，但可能增加延迟。
+    en_US: The depth of the extraction process. 'advanced' retrieves more data but may increase latency and costs more credits.
+    zh_Hans: 提取过程的深度。"advanced"检索更多数据，但可能增加延迟和消耗更多积分。
   label:
     en_US: Extract Depth
     zh_Hans: 提取深度
-  llm_description: The depth of the extraction process. 'advanced' retrieves more data, including tables and embedded content, with higher success but may increase latency. Options are 'basic' or 'advanced'.
+  llm_description: Extraction depth - 'basic' (default, faster) or 'advanced' (more data, higher cost).
   name: extract_depth
   required: false
-  type: string
-  enum:
-    - basic
-    - advanced
+  type: select
+  options:
+  - label:
+      en_US: Basic
+      zh_Hans: 基本
+    value: basic
+  - label:
+      en_US: Advanced
+      zh_Hans: 高级
+    value: advanced
   default: basic

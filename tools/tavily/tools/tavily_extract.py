@@ -27,11 +27,12 @@ class TavilyExtract:
         Args:
             params (Dict[str, Any]): The extraction parameters, which may include:
                 - urls: Required. A string or list of URLs to extract content from.
-                - include_images: Optional boolean. Whether to include images in the response.
-                - extract_depth: Optional string. The depth of extraction ('basic' or 'advanced').
+                - include_images: Optional boolean. Whether to include images in the response. Default is False.
+                - extract_depth: Optional string. The depth of extraction ('basic' or 'advanced'). Default is 'basic'.
+                  Advanced extraction retrieves more data but costs more credits and may increase latency.
 
         Returns:
-            dict: The extracted content.
+            dict: The extracted content with results.
         """
         processed_params = self._process_params(params)
         
@@ -63,13 +64,15 @@ class TavilyExtract:
         if "urls" in params:
             urls = params["urls"]
             if isinstance(urls, str):
-                processed_params["urls"] = [
-                    url.strip() for url in urls.replace(",", " ").split()
-                ]
+                url_list = [url.strip() for url in urls.split(',') if url.strip()]
+                processed_params["urls"] = url_list
             elif isinstance(urls, list):
                 processed_params["urls"] = urls
         else:
             raise ValueError("The 'urls' parameter is required.")
+        
+        if not processed_params.get("urls"):
+            raise ValueError("At least one valid URL must be provided.")
         
         if "include_images" in params:
             processed_params["include_images"] = params["include_images"]
@@ -86,6 +89,10 @@ class TavilyExtract:
 class TavilyExtractTool(Tool):
     """
     A tool for extracting content from web pages using Tavily Extract.
+    
+    This tool extracts raw content from specified URLs, with options to include images
+    and control the depth of extraction. Advanced extraction retrieves more data but
+    costs more credits and may increase latency.
     """
 
     def _invoke(
@@ -96,6 +103,9 @@ class TavilyExtractTool(Tool):
 
         Args:
             tool_parameters (Dict[str, Any]): The parameters for the Tavily Extract tool.
+                - urls: Required. A comma-separated list of URLs to extract content from.
+                - include_images: Optional. Whether to include images in the response.
+                - extract_depth: Optional. The depth of extraction ('basic' or 'advanced').
 
         Yields:
             ToolInvokeMessage: The result of the Tavily Extract tool invocation.
