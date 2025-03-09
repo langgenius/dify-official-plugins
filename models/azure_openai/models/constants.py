@@ -1292,7 +1292,7 @@ LLM_BASE_MODELS = [
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
                 ModelPropertyKey.MODE: LLMMode.CHAT.value,
-                ModelPropertyKey.CONTEXT_SIZE: 128000,
+                ModelPropertyKey.CONTEXT_SIZE: 200000,
             },
             parameter_rules=[
                 ParameterRule(
@@ -1316,7 +1316,7 @@ LLM_BASE_MODELS = [
                     ),
                     required=False,
                 ),
-                _get_o1_max_tokens(default=512, min_val=1, max_val=65536),
+                _get_o1_max_tokens(default=512, min_val=1, max_val=100000),
             ],
             pricing=PriceConfig(
                 input=1.10,
