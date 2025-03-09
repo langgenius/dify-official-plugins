@@ -31,13 +31,11 @@ class TavilySearch:
             dict: The raw search results.
 
         """
-        # Remove API key from params as it will be sent in the header
         if "api_key" in params:
             del params["api_key"]
             
         processed_params = self._process_params(params)
         
-        # Use Bearer token authentication in the header
         headers = {
             "Authorization": f"Bearer {self.api_key}"
         }

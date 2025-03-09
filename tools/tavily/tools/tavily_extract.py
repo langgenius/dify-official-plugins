@@ -35,7 +35,6 @@ class TavilyExtract:
         """
         processed_params = self._process_params(params)
         
-        # Set up headers with Bearer token authentication
         headers = {
             "Authorization": f"Bearer {self.api_key}",
             "Content-Type": "application/json"
@@ -61,7 +60,6 @@ class TavilyExtract:
         """
         processed_params = {}
         
-        # Process URLs parameter
         if "urls" in params:
             urls = params["urls"]
             if isinstance(urls, str):
@@ -73,7 +71,6 @@ class TavilyExtract:
         else:
             raise ValueError("The 'urls' parameter is required.")
         
-        # Add optional parameters if provided
         if "include_images" in params:
             processed_params["include_images"] = params["include_images"]
             
@@ -152,11 +149,9 @@ class TavilyExtractTool(Tool):
             output_lines.append(f"## Extracted Content {idx}: {url}\n")
             output_lines.append(f"**Raw Content:**\n{raw_content}\n")
             
-            # Include images if available as proper markdown image links
             if "images" in result and result["images"]:
                 output_lines.append("**Images:**\n")
                 for i, image_url in enumerate(result["images"], 1):
-                    # Format as markdown image with alt text
                     output_lines.append(f"![Image {i} from {url}]({image_url})\n")
                     
             output_lines.append("---\n")
