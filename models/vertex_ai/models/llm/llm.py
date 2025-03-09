@@ -642,12 +642,12 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                         PromptMessageContentType.AUDIO,
                         PromptMessageContentType.VIDEO
                     ]:
-                        parts.append(self._create_media_part(c))
+                        data = c.base64_data
+                        mime_type = getattr(c, 'mime_type', None)
+                        parts.append(glm.Part.from_data(data=data, mime_type=mime_type))
                     else:
                         raise ValueError(f"Unsupported content type: {c.type}")
-                
             glm_content = glm.Content(role="user", parts=parts)
-
             return glm_content
         elif isinstance(message, AssistantPromptMessage):
             if message.content:
@@ -680,24 +680,6 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         else:
             raise ValueError(f"Got unknown type {message}")
             
-    def _create_media_part(self, content) -> glm.Part:
-        """
-        Create a media part for Google API from various content types
-        
-        :param content: Content object (Image, Document, Audio, or Video)
-        :return: glm.Part object
-        """
-        
-        data = content.base64_data
-
-        mime_type = getattr(content, 'mime_type', None)
-        if not mime_type and hasattr(content, 'type') and hasattr(content, 'format'):
-            content_type = content.type.lower() if hasattr(content, 'type') else ''
-            content_format = content.format.lower() if hasattr(content, 'format') else ''
-            mime_type = f"{content_type}/{content_format}"
-
-        return glm.Part.from_data(data=data, mime_type=mime_type)
-
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
         """
