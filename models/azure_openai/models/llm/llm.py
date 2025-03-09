@@ -661,7 +661,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb"""
         model = credentials["base_model_name"]
         try:
-            if "o3" in model:
+            if "o1" in model or "o3" in model:
                 model = "gpt-4o"
             encoding = tiktoken.encoding_for_model(model)
         except KeyError:
