@@ -679,7 +679,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             return glm_content
         else:
             raise ValueError(f"Got unknown type {message}")
-            
+
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
         """
