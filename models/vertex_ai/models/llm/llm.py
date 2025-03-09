@@ -1,7 +1,6 @@
 import base64
 import io
 import json
-import logging
 import time
 from collections.abc import Generator
 from typing import Optional, Union, cast
@@ -44,8 +43,6 @@ from google.api_core import exceptions
 from google.cloud import aiplatform
 from google.oauth2 import service_account
 from PIL import Image
-
-logger = logging.getLogger(__name__)
 
 
 class VertexAiLargeLanguageModel(LargeLanguageModel):
@@ -444,22 +441,30 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             aiplatform.init(credentials=service_accountSA, project=project_id, location=location)
         else:
             aiplatform.init(project=project_id, location=location)
+            
         history = []
         system_instruction = ""
-        if model == "gemini-1.0-pro-vision-001":
-            last_msg = prompt_messages[-1]
-            content = self._format_message_to_glm_content(last_msg)
-            history.append(content)
-        else:
-            for msg in prompt_messages:
-                if isinstance(msg, SystemPromptMessage):
-                    system_instruction = msg.content
+        
+        for msg in prompt_messages:
+
+            if isinstance(msg, SystemPromptMessage):
+                system_instruction = msg.content
+            else:
+                content = self._format_message_to_glm_content(msg)
+
+                if history and history[-1].role == content.role:
+                    
+                    all_parts = list(history[-1].parts)
+                    all_parts.extend(content.parts)
+                    
+                    history[-1] = glm.Content(
+                        role=history[-1].role,
+                        parts=all_parts
+                    )
+
                 else:
-                    content = self._format_message_to_glm_content(msg)
-                    if history and history[-1].role == content.role:
-                        history[-1].parts.extend(content.parts)
-                    else:
-                        history.append(content)
+                    history.append(content)
+
         google_model = glm.GenerativeModel(model_name=model, system_instruction=system_instruction)
 
         if dynamic_threshold is not None:
@@ -624,25 +629,25 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :return: glm Content representation of message
         """
         if isinstance(message, UserPromptMessage):
-            glm_content = glm.Content(role="user", parts=[])
+            parts = []
             if isinstance(message.content, str):
-                glm_content = glm.Content(role="user", parts=[glm.Part.from_text(message.content)])
-            else:
-                parts = []
+                parts.append(glm.Part.from_text(message.content))
+            elif isinstance(message.content, list):
                 for c in message.content:
                     if c.type == PromptMessageContentType.TEXT:
                         parts.append(glm.Part.from_text(c.data))
+                    elif c.type in [
+                        PromptMessageContentType.IMAGE,
+                        PromptMessageContentType.DOCUMENT,
+                        PromptMessageContentType.AUDIO,
+                        PromptMessageContentType.VIDEO
+                    ]:
+                        data = c.base64_data
+                        mime_type = getattr(c, 'mime_type', None)
+                        parts.append(glm.Part.from_data(data=data, mime_type=mime_type))
                     else:
-                        message_content = cast(ImagePromptMessageContent, c)
-                        if not message_content.data.startswith("data:"):
-                            url_arr = message_content.data.split(".")
-                            mime_type = f"image/{url_arr[-1]}"
-                            parts.append(glm.Part.from_uri(mime_type=mime_type, uri=message_content.data))
-                        else:
-                            (metadata, data) = c.data.split(",", 1)
-                            mime_type = metadata.split(";", 1)[0].split(":")[1]
-                            parts.append(glm.Part.from_data(mime_type=mime_type, data=data))
-                glm_content = glm.Content(role="user", parts=parts)
+                        raise ValueError(f"Unsupported content type: {c.type}")
+            glm_content = glm.Content(role="user", parts=parts)
             return glm_content
         elif isinstance(message, AssistantPromptMessage):
             if message.content:
