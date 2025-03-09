@@ -25,16 +25,27 @@ class TavilyExtract:
         Retrieves extracted content from the Tavily Extract API.
 
         Args:
-            params (Dict[str, Any]): The extraction parameters.
+            params (Dict[str, Any]): The extraction parameters, which may include:
+                - urls: Required. A string or list of URLs to extract content from.
+                - include_images: Optional boolean. Whether to include images in the response.
+                - extract_depth: Optional string. The depth of extraction ('basic' or 'advanced').
 
         Returns:
             dict: The extracted content.
-
         """
-        if "api_key" not in params:
-            params["api_key"] = self.api_key
         processed_params = self._process_params(params)
-        response = requests.post(f"{TAVILY_API_URL}/extract", json=processed_params)
+        
+        # Set up headers with Bearer token authentication
+        headers = {
+            "Authorization": f"Bearer {self.api_key}",
+            "Content-Type": "application/json"
+        }
+        
+        response = requests.post(
+            f"{TAVILY_API_URL}/extract", 
+            json=processed_params,
+            headers=headers
+        )
         response.raise_for_status()
         return response.json()
 
@@ -49,6 +60,8 @@ class TavilyExtract:
             dict: The processed parameters.
         """
         processed_params = {}
+        
+        # Process URLs parameter
         if "urls" in params:
             urls = params["urls"]
             if isinstance(urls, str):
@@ -59,7 +72,17 @@ class TavilyExtract:
                 processed_params["urls"] = urls
         else:
             raise ValueError("The 'urls' parameter is required.")
-        processed_params["api_key"] = params.get("api_key", self.api_key)
+        
+        # Add optional parameters if provided
+        if "include_images" in params:
+            processed_params["include_images"] = params["include_images"]
+            
+        if "extract_depth" in params:
+            extract_depth = params["extract_depth"]
+            if extract_depth not in ["basic", "advanced"]:
+                raise ValueError("extract_depth must be either 'basic' or 'advanced'")
+            processed_params["extract_depth"] = extract_depth
+            
         return processed_params
 
 
@@ -72,30 +95,37 @@ class TavilyExtractTool(Tool):
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
         """
-        Invokes the Tavily Extract tool with the given user ID and tool parameters.
+        Invokes the Tavily Extract tool with the given tool parameters.
 
         Args:
-            user_id (str): The ID of the user invoking the tool.
             tool_parameters (Dict[str, Any]): The parameters for the Tavily Extract tool.
 
-        Returns:
-            ToolInvokeMessage | list[ToolInvokeMessage]: The result of the Tavily Extract tool invocation.
+        Yields:
+            ToolInvokeMessage: The result of the Tavily Extract tool invocation.
         """
         urls = tool_parameters.get("urls", "")
         api_key = self.runtime.credentials.get("tavily_api_key")
+        
         if not api_key:
             yield self.create_text_message(
                 "Tavily API key is missing. Please set the 'tavily_api_key' in credentials."
             )
+            return
+            
         if not urls:
             yield self.create_text_message("Please input at least one URL to extract.")
+            return
+            
         tavily_extract = TavilyExtract(api_key)
+        
         try:
             raw_results = tavily_extract.extract_content(tool_parameters)
         except requests.HTTPError as e:
             yield self.create_text_message(
                 f"Error occurred while extracting content: {str(e)}"
             )
+            return
+            
         if not raw_results.get("results"):
             yield self.create_text_message(
                 "No content could be extracted from the provided URLs."
@@ -107,7 +137,7 @@ class TavilyExtractTool(Tool):
 
     def _format_results_as_text(self, raw_results: dict) -> str:
         """
-        Formats the raw extraction results into a markdown text based on user-selected parameters.
+        Formats the raw extraction results into a markdown text.
 
         Args:
             raw_results (dict): The raw extraction results.
@@ -121,11 +151,21 @@ class TavilyExtractTool(Tool):
             raw_content = result.get("raw_content", "")
             output_lines.append(f"## Extracted Content {idx}: {url}\n")
             output_lines.append(f"**Raw Content:**\n{raw_content}\n")
+            
+            # Include images if available as proper markdown image links
+            if "images" in result and result["images"]:
+                output_lines.append("**Images:**\n")
+                for i, image_url in enumerate(result["images"], 1):
+                    # Format as markdown image with alt text
+                    output_lines.append(f"![Image {i} from {url}]({image_url})\n")
+                    
             output_lines.append("---\n")
+            
         if raw_results.get("failed_results"):
             output_lines.append("## Failed URLs:\n")
             for failed in raw_results["failed_results"]:
                 url = failed.get("url", "")
                 error = failed.get("error", "Unknown error")
                 output_lines.append(f"- {url}: {error}\n")
+ 
         return "\n".join(output_lines)

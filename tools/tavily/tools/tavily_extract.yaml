@@ -25,3 +25,30 @@ parameters:
   name: urls
   required: true
   type: string
+- form: llm
+  human_description:
+    en_US: Include a list of images extracted from the URLs in the response.
+    zh_Hans: 在响应中包含从 URL 提取的图像列表。
+  label:
+    en_US: Include Images
+    zh_Hans: 包含图像
+  llm_description: Include a list of images extracted from the URLs in the response. Default is false.
+  name: include_images
+  required: false
+  type: boolean
+  default: false
+- form: llm
+  human_description:
+    en_US: The depth of the extraction process. 'advanced' retrieves more data but may increase latency.
+    zh_Hans: 提取过程的深度。"advanced"检索更多数据，但可能增加延迟。
+  label:
+    en_US: Extract Depth
+    zh_Hans: 提取深度
+  llm_description: The depth of the extraction process. 'advanced' retrieves more data, including tables and embedded content, with higher success but may increase latency. Options are 'basic' or 'advanced'.
+  name: extract_depth
+  required: false
+  type: string
+  enum:
+    - basic
+    - advanced
+  default: basic
