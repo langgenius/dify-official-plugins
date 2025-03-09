@@ -1319,6 +1319,17 @@ LLM_BASE_MODELS = [
                     ),
                     required=False,
                 ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制推理模型的推理工作",
+                        en_US="constrains effort on reasoning for reasoning models",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                ),
                 _get_o1_max_tokens(default=512, min_val=1, max_val=100000),
             ],
             pricing=PriceConfig(
@@ -1368,6 +1379,17 @@ LLM_BASE_MODELS = [
                         en_US="Set a response json schema will ensure LLM to adhere it.",
                     ),
                     required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制推理模型的推理工作",
+                        en_US="constrains effort on reasoning for reasoning models",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
                 ),
                 _get_o1_max_tokens(default=512, min_val=1, max_val=100000),
             ],
