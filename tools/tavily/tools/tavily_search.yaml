@@ -27,13 +27,14 @@ parameters:
   required: true
   type: string
 - default: basic
-  form: form
+  form: llm
   human_description:
     en_US: The depth of the search.
     zh_Hans: 搜索的深度。
   label:
     en_US: Search Depth
     zh_Hans: 搜索深度
+  llm_description: The depth of the search. 'basic' for standard search, 'advanced' for more comprehensive results.
   name: search_depth
   options:
   - label:
@@ -47,13 +48,14 @@ parameters:
   required: false
   type: select
 - default: general
-  form: form
+  form: llm
   human_description:
     en_US: The category of the search.
     zh_Hans: 搜索的类别。
   label:
     en_US: Topic
     zh_Hans: 主题
+  llm_description: The category of the search. Options include 'general', 'news', or 'finance'.
   name: topic
   options:
   - label:
@@ -64,21 +66,59 @@ parameters:
       en_US: News
       zh_Hans: 新闻
     value: news
+  - label:
+      en_US: Finance
+      zh_Hans: 金融
+    value: finance
   required: false
   type: select
 - default: 3
-  form: form
+  form: llm
   human_description:
     en_US: The number of days back from the current date to include in the search
       results (only applicable when "topic" is "news").
-    zh_Hans: 从当前日期起向前追溯的天数，以包含在搜索结果中（仅当“topic”为“news”时适用）。
+    zh_Hans: 从当前日期起向前追溯的天数，以包含在搜索结果中（仅当"topic"为"news"时适用）。
   label:
     en_US: Days
     zh_Hans: 天数
+  llm_description: The number of days back from the current date to include in the search results. Only applicable when "topic" is "news".
   min: 1
   name: days
   required: false
   type: number
+- form: llm
+  human_description:
+    en_US: The time range back from the current date to filter results.
+    zh_Hans: 从当前日期起向后筛选结果的时间范围。
+  label:
+    en_US: Time Range
+    zh_Hans: 时间范围
+  llm_description: The time range back from the current date to filter results. Options include 'not_specified', 'day', 'week', 'month', or 'year'.
+  name: time_range
+  options:
+  - label:
+      en_US: Not Specified
+      zh_Hans: 不指定
+    value: not_specified
+  - label:
+      en_US: Day
+      zh_Hans: 天
+    value: day
+  - label:
+      en_US: Week
+      zh_Hans: 周
+    value: week
+  - label:
+      en_US: Month
+      zh_Hans: 月
+    value: month
+  - label:
+      en_US: Year
+      zh_Hans: 年
+    value: year
+  required: false
+  default: not_specified
+  type: select
 - default: 5
   form: form
   human_description:
@@ -87,6 +127,7 @@ parameters:
   label:
     en_US: Max Results
     zh_Hans: 最大结果数
+  llm_description: The maximum number of search results to return. Range is 1-20.
   max: 20
   min: 1
   name: max_results
@@ -100,6 +141,7 @@ parameters:
   label:
     en_US: Include Images
     zh_Hans: 包含图片
+  llm_description: When set to true, includes a list of query-related images in the response.
   name: include_images
   required: false
   type: boolean
@@ -111,6 +153,7 @@ parameters:
   label:
     en_US: Include Image Descriptions
     zh_Hans: 包含图片描述
+  llm_description: When include_images is True and this is set to true, adds descriptive text for each image.
   name: include_image_descriptions
   required: false
   type: boolean
@@ -122,6 +165,7 @@ parameters:
   label:
     en_US: Include Answer
     zh_Hans: 包含答案
+  llm_description: When set to true, includes a short answer to the original query in the response.
   name: include_answer
   required: false
   type: boolean
@@ -133,6 +177,7 @@ parameters:
   label:
     en_US: Include Raw Content
     zh_Hans: 包含原始内容
+  llm_description: When set to true, includes the cleaned and parsed HTML content of each search result.
   name: include_raw_content
   required: false
   type: boolean
@@ -144,6 +189,7 @@ parameters:
   label:
     en_US: Include Domains
     zh_Hans: 包含域
+  llm_description: A comma-separated list of domains to specifically include in the search results.
   name: include_domains
   required: false
   type: string
@@ -155,6 +201,7 @@ parameters:
   label:
     en_US: Exclude Domains
     zh_Hans: 排除域
+  llm_description: A comma-separated list of domains to specifically exclude from the search results.
   name: exclude_domains
   required: false
   type: string

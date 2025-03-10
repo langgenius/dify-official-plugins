@@ -31,9 +31,16 @@ class TavilySearch:
             dict: The raw search results.
 
         """
-        params["api_key"] = self.api_key
+        if "api_key" in params:
+            del params["api_key"]
+            
         processed_params = self._process_params(params)
-        response = requests.post(f"{TAVILY_API_URL}/search", json=processed_params)
+        
+        headers = {
+            "Authorization": f"Bearer {self.api_key}"
+        }
+        
+        response = requests.post(f"{TAVILY_API_URL}/search", json=processed_params, headers=headers)
         response.raise_for_status()
         return response.json()
 
@@ -49,7 +56,7 @@ class TavilySearch:
         """
         processed_params = {}
         for key, value in params.items():
-            if value is None or value == "None":
+            if value is None or value == "None" or value == "not_specified":
                 continue
             if key in ["include_domains", "exclude_domains"]:
                 if isinstance(value, str):
@@ -71,7 +78,7 @@ class TavilySearch:
                     processed_params[key] = int(value)
                 else:
                     processed_params[key] = value
-            elif key in ["search_depth", "topic", "query", "api_key"]:
+            elif key in ["search_depth", "topic", "query", "time_range"]:
                 processed_params[key] = value
             else:
                 pass
