@@ -1,7 +1,7 @@
-version: 0.0.6
+version: 0.0.7
 type: plugin
 author: langgenius
-name: amazon-bedrock
+name: bedrock
 label:
   en_US: Amazon Bedrock
   ja_JP: Amazon Bedrock
@@ -12,7 +12,7 @@ description:
   ja_JP: The models of Amazon Bedrock
   zh_Hans: The models of Amazon Bedrock
   pt_BR: The models of Amazon Bedrock
-icon: icon_l_en.svg
+icon: icon_s_en.svg
 resource:
   memory: 268435456
   permission:
@@ -28,7 +28,7 @@ plugins:
   models:
     - provider/amazon-bedrock.yaml
 meta:
-  version: 0.0.6
+  version: 0.0.1
   arch:
     - amd64
     - arm64
