@@ -1,0 +1,74 @@
+description:
+  human:
+    en_US: CogView is a text to image tool
+    zh_Hans: CogView 是一个文本到图像的工具
+  llm: CogView is a tool used to generate images from text
+extra:
+  python:
+    source: tools/cogview.py
+identity:
+  author: langgenius
+  description:
+    en_US: CogView is a powerful drawing tool that can draw the image you want based
+      on your prompt
+    zh_Hans: CogView 是一个强大的绘画工具，它可以根据您的提示词绘制出您想要的图像
+  label:
+    en_US: CogView Series
+    zh_Hans: CogView系列绘画
+  name: cogview
+parameters:
+- form: form
+  default: cogview-3-flash
+  human_description:
+    en_US: Model code, Support "cogview-3-flash", "cogview-4"
+    zh_Hans: 模型编码，支持：cogview-3-flash，cogview-4
+  label:
+    en_US: model
+    zh_Hans: 模型
+  name: model
+  required: true
+  type: string
+- form: llm
+  human_description:
+    en_US: Text description of the desired image
+    zh_Hans: 所需图像的文本描述
+  label:
+    en_US: Prompt
+    zh_Hans: 提示词
+  llm_description: Image prompt of CogView, you should describe the image you want
+    to generate as a list of words as possible as detailed
+  name: prompt
+  required: true
+  type: string
+- form: form
+  default: 1024x1024
+  human_description:
+    en_US: selecting the image size
+    zh_Hans: 选择图像大小
+  label:
+    en_US: Image size
+    zh_Hans: 图像大小
+  name: size
+  options:
+  - label:
+      en_US: 1024x1024
+    value: 1024x1024
+  - label:
+      en_US: 768x1344
+    value: 768x1344
+  - label:
+      en_US: 864x1152
+    value: 864x1152
+  - label:
+      en_US: 1344x768
+    value: 1344x768
+  - label:
+      en_US: 1152x864
+    value: 1152x864
+  - label:
+      en_US: 1440x720
+    value: 1440x720
+  - label:
+      en_US: 720x1440
+    value: 720x1440
+  type: select
