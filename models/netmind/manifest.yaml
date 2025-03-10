@@ -1,0 +1,32 @@
+version: 0.0.1
+type: plugin
+author: "netmind"
+name: "netmind"
+description:
+  en_US: netmind.ai
+  zh_Hans: netmind.ai
+label:
+  en_US: "Netmind"
+  zh_Hans: "Netmind"
+created_at: "2025-03-10T08:03:44.658609186Z"
+icon: netmind.svg
+resource:
+  memory: 1048576
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+plugins:
+  models:
+    - "provider/netmind.yaml"
+meta:
+  version: 0.0.1
+  arch:
+    - "amd64"
+    - "arm64"
+  runner:
+    language: "python"
+    version: "3.12"
+    entrypoint: "main"
