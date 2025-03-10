@@ -16,7 +16,7 @@ help:
     en_US: Get your API Key from GroqCloud
     zh_Hans: 从 GroqCloud 获取 API Key
   url:
-    en_US: https://console.groq.com/
+    en_US: https://console.groq.com/keys
 icon_large:
   en_US: icon_l_en.svg
 icon_small:
