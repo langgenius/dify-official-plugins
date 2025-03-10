@@ -1,7 +1,7 @@
 # for more details, please refer to https://help.aliyun.com/zh/model-studio/getting-started/models
-model: qwen2.5-vl-72b-instruct
+model: qwen2.5-vl-3b-instruct
 label:
-  en_US: qwen2.5-vl-72b-instruct
+  en_US: qwen2.5-vl-3b-instruct
 model_type: llm
 features:
   - vision
