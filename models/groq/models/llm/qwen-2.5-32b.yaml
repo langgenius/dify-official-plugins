@@ -1,3 +1,4 @@
+# https://console.groq.com/docs/model/qwen-2.5-32b
 model: qwen-2.5-32b
 label:
   zh_Hans: Qwen 2.5 32B Instruct 128k

@@ -1,12 +1,13 @@
+# https://console.groq.com/docs/model/deepseek-r1-distill-llama-70b
 model: deepseek-r1-distill-llama-70b
 label:
-  en_US: DeepSeek R1 Distill Llama 70b
+  en_US: DeepSeek R1 Distill Llama 70B
 model_type: llm
 features:
   - agent-thought
 model_properties:
   mode: chat
-  context_size: 128000
+  context_size: 131072
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -16,7 +17,7 @@ parameter_rules:
     use_template: max_tokens
     default: 512
     min: 1
-    max: 8192
+    max: 16000
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -30,7 +31,7 @@ parameter_rules:
       - text
       - json_object
 pricing:
-  input: "3.00"
-  output: "3.00"
+  input: "0.75"
+  output: "0.99"
   unit: "0.000001"
   currency: USD

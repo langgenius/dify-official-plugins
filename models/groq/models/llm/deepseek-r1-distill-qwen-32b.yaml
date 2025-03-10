@@ -1,3 +1,4 @@
+# https://console.groq.com/docs/model/deepseek-r1-distill-qwen-32b
 model: deepseek-r1-distill-qwen-32b
 label:
   zh_Hans: DeepSeek R1 Distill Qwen 32B 128k
@@ -17,7 +18,7 @@ parameter_rules:
     use_template: max_tokens
     default: 512
     min: 1
-    max: 8192
+    max: 16000
 pricing:
   input: "0.69"
   output: "0.69"
