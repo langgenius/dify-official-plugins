@@ -48,7 +48,13 @@ class VertexAiTextEmbeddingModel(CommonVertexAi, TextEmbeddingModel):
         :param input_type: input type
         :return: embeddings result
         """
-        service_account_info = json.loads(base64.b64decode(credentials["vertex_service_account_key"]))
+        service_account_info = (
+            json.loads(base64.b64decode(service_account_key))
+            if (
+                service_account_key := credentials.get("vertex_service_account_key", "")
+            )
+            else None
+        )
         project_id = credentials["vertex_project_id"]
         location = credentials["vertex_location"]
         if service_account_info:
@@ -91,7 +97,13 @@ class VertexAiTextEmbeddingModel(CommonVertexAi, TextEmbeddingModel):
         :return:
         """
         try:
-            service_account_info = json.loads(base64.b64decode(credentials["vertex_service_account_key"]))
+            service_account_info = (
+                json.loads(base64.b64decode(service_account_key))
+                if (
+                    service_account_key := credentials.get("vertex_service_account_key", "")
+                )
+                else None
+            )
             project_id = credentials["vertex_project_id"]
             location = credentials["vertex_location"]
             if service_account_info:
