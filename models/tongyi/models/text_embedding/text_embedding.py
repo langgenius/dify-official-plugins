@@ -101,22 +101,47 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         """
         embeddings = []
         embedding_used_tokens = 0
+        
+        def call_embedding_api(text):
+            try:
+                return dashscope.TextEmbedding.call(
+                    api_key=credentials_kwargs["dashscope_api_key"], 
+                    model=model, 
+                    input=text, 
+                    text_type="document"
+                )
+            except Exception as e:
+                # Return the exception to be handled by the caller
+                return e
+            
         for text in texts:
-            response = dashscope.TextEmbedding.call(
-                api_key=credentials_kwargs["dashscope_api_key"], model=model, input=text, text_type="document"
-            )
-            if response.output and "embeddings" in response.output and response.output["embeddings"]:
+            # First attempt
+            response = call_embedding_api(text)
+            
+            # Handle rate limit error (429)
+            # Check if response is an exception with rate limit info
+            if hasattr(response, 'status_code') and response.status_code == 429:
+                print(f"Rate limit exceeded (429). Response: {response}")
+                import time
+                time.sleep(10)
+                # Retry once after sleeping
+                response = call_embedding_api(text)
+            
+            # Process response
+            if hasattr(response, 'output') and response.output and "embeddings" in response.output and response.output["embeddings"]:
                 data = response.output["embeddings"][0]
                 if "embedding" in data:
                     embeddings.append(data["embedding"])
                 else:
-                    raise ValueError("Embedding data is missing in the response.")
+                    raise ValueError(f"Embedding data is missing in the response: {response}")
             else:
-                raise ValueError("Response output is missing or does not contain embeddings.")
-            if response.usage and "total_tokens" in response.usage:
+                raise ValueError(f"Response output is missing or does not contain embeddings: {response}")
+                
+            if hasattr(response, 'usage') and response.usage and "total_tokens" in response.usage:
                 embedding_used_tokens += response.usage["total_tokens"]
             else:
-                raise ValueError("Response usage is missing or does not contain total tokens.")
+                raise ValueError(f"Response usage is missing or does not contain total tokens: {response}")
+                
         return ([list(map(float, e)) for e in embeddings], embedding_used_tokens)
 
     def _calc_response_usage(self, model: str, credentials: dict, tokens: int) -> EmbeddingUsage:
