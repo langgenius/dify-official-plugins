@@ -1,52 +1,97 @@
 import json
 import re
-from typing import Any, Union
+from typing import Any, Generator
 from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.send import SendEmailToolParameters, send_mail
 from dify_plugin import Tool
+from dify_plugin.file.file import File
+from tools.markdown_utils import convert_markdown_to_html
 
 
 class SendMailTool(Tool):
     def _invoke(
         self, tool_parameters: dict[str, Any]
-    ) -> Union[ToolInvokeMessage, list[ToolInvokeMessage]]:
+    ) -> Generator[ToolInvokeMessage, None, None]:
         """
         invoke tools
         """
         sender = self.runtime.credentials.get("email_account", "")
-        email_rgx = re.compile("^[a-zA-Z0-9._-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$")
+        email_rgx = re.compile("^[a-zA-Z0-9._-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$")
         password = self.runtime.credentials.get("email_password", "")
         smtp_server = self.runtime.credentials.get("smtp_server", "")
         if not smtp_server:
-            return self.create_text_message("please input smtp server")
+            yield self.create_text_message("please input smtp server")
+            return
+            
         smtp_port = self.runtime.credentials.get("smtp_port", "")
         try:
             smtp_port = int(smtp_port)
         except ValueError:
-            return self.create_text_message("Invalid parameter smtp_port(should be int)")
+            yield self.create_text_message("Invalid parameter smtp_port(should be int)")
+            return
+            
         if not sender:
-            return self.create_text_message("please input sender")
+            yield self.create_text_message("please input sender")
+            return
+            
         if not email_rgx.match(sender):
-            return self.create_text_message("Invalid parameter userid, the sender is not a mailbox")
+            yield self.create_text_message("Invalid parameter userid, the sender is not a mailbox")
+            return
+            
         receivers_email = tool_parameters["send_to"]
         if not receivers_email:
-            return self.create_text_message("please input receiver email")
-        receivers_email = json.loads(receivers_email)
+            yield self.create_text_message("please input receiver email")
+            return
+            
+        try:
+            receivers_email = json.loads(receivers_email)
+        except json.JSONDecodeError:
+            yield self.create_text_message("Invalid JSON format for receivers list")
+            return
+            
         for receiver in receivers_email:
             if not email_rgx.match(receiver):
-                return self.create_text_message(
+                yield self.create_text_message(
                     f"Invalid parameter receiver email, the receiver email({receiver}) is not a mailbox"
                 )
+                return
+                
         email_content = tool_parameters.get("email_content", "")
         if not email_content:
-            return self.create_text_message("please input email content")
+            yield self.create_text_message("please input email content")
+            return
+            
         subject = tool_parameters.get("subject", "")
         if not subject:
-            return self.create_text_message("please input email subject")
+            yield self.create_text_message("please input email subject")
+            return
+            
         encrypt_method = self.runtime.credentials.get("encrypt_method", "")
         if not encrypt_method:
-            return self.create_text_message("please input encrypt method")
+            yield self.create_text_message("please input encrypt method")
+            return
+            
+        # Check if markdown to HTML conversion is requested
+        convert_to_html = tool_parameters.get("convert_to_html", False)
+        
+        # Store original plain text content before any conversion
+        plain_text_content = email_content
+        
+        if convert_to_html:
+            # Convert content to HTML using shared utility
+            email_content, plain_text_content = convert_markdown_to_html(email_content)
+        
+        # Get attachments from parameters (if any)
+        attachments = tool_parameters.get("attachments", None)
+        
+        # Convert single attachment to list if needed
+        if attachments is not None and not isinstance(attachments, list):
+            attachments = [attachments]
+            
+        # Dictionary to store results for each recipient
         msg = {}
+        
+        # Send email to each recipient
         for receiver in receivers_email:
             send_email_params = SendEmailToolParameters(
                 smtp_server=smtp_server,
@@ -56,10 +101,19 @@ class SendMailTool(Tool):
                 sender_to=receiver,
                 subject=subject,
                 email_content=email_content,
+                plain_text_content=plain_text_content if convert_to_html else None,
                 encrypt_method=encrypt_method,
+                is_html=convert_to_html,
+                attachments=attachments
             )
+            
             if send_mail(send_email_params):
-                msg[receiver] = "send email success"
+                if attachments:
+                    msg[receiver] = f"Email sent successfully with {len(attachments)} attachment(s)"
+                else:
+                    msg[receiver] = "Email sent successfully"
             else:
-                msg[receiver] = "send email failed"
-        return self.create_text_message(json.dumps(msg))
+                msg[receiver] = "Email sending failed"
+                
+        # Return the results
+        yield self.create_text_message(json.dumps(msg, indent=2))

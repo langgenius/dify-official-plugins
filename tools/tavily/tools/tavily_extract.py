@@ -138,9 +138,42 @@ class TavilyExtractTool(Tool):
                 "No content could be extracted from the provided URLs."
             )
         else:
+            # Return JSON result
             yield self.create_json_message(raw_results)
+            
+            # Return text message with formatted results
             text_message_content = self._format_results_as_text(raw_results)
             yield self.create_text_message(text=text_message_content)
+            
+            # Process images and return as file blobs
+            # This will automatically add them to the 'files' variable
+            for result in raw_results.get("results", []):
+                if "images" in result and result["images"]:
+                    for image_url in result["images"]:
+                        try:
+                            # Download image content
+                            image_response = requests.get(image_url, timeout=10)
+                            image_response.raise_for_status()
+                            
+                            # Get mime type from response headers
+                            content_type = image_response.headers.get('Content-Type', 'image/jpeg')
+                            
+                            # Extract filename from URL or generate one
+                            filename = image_url.split('/')[-1]
+                            if '?' in filename:
+                                filename = filename.split('?')[0]
+                            
+                            # Return as blob message - this automatically adds to 'files' variable
+                            yield self.create_blob_message(
+                                blob=image_response.content,
+                                meta={
+                                    "mime_type": content_type,
+                                    "filename": filename
+                                }
+                            )
+                        except Exception as e:
+                            # Log error but continue with other images
+                            print(f"Failed to download image {image_url}: {str(e)}")
 
     def _format_results_as_text(self, raw_results: dict) -> str:
         """
