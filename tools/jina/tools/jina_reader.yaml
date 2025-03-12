@@ -75,6 +75,17 @@ parameters:
   name: wait_for_selector
   required: false
   type: string
+- form: form
+  human_description:
+    en_US: Remove all images from the response.
+    zh_Hans: 从响应中删除所有图片。
+  label:
+    en_US: Remove images
+    zh_Hans: 删除图片
+  llm_description: Remove all images from the response
+  name: remove_images
+  required: false
+  type: boolean
 - default: false
   form: form
   human_description:
@@ -151,6 +162,18 @@ parameters:
     zh_Hans: 绕过缓存
   llm_description: bypass the cache
   name: no_cache
+  required: false
+  type: boolean
+- default: false
+  form: form
+  human_description:
+    en_US: When enabled, request results won't be cached on jina servers.
+    zh_Hans: 启用后，请求结果将不会被缓存在 jina 服务器上。
+  label:
+    en_US: Do Not Cache/Track
+    zh_Hans: 请勿缓存/追踪
+  llm_description: Do Not Cache/Track
+  name: no_cache_track
   required: false
   type: boolean
 - default: false
