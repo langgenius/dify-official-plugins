@@ -5,6 +5,8 @@ extra:
     model_sources:
       - models/llm/llm.py
       - models/rerank/rerank.py
+      - models/speech2text/speech2text.py
+      - models/tts/tts.py
       - models/text_embedding/text_embedding.py
     provider_source: provider/gpustack.py
 icon_large:

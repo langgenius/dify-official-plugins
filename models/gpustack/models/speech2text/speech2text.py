@@ -1,10 +1,8 @@
-from typing import Optional
-
-from dify_plugin import OAICompatSpeechToTextModel
-from dify_plugin.entities.model.speech2text import SpeechToTextResult
+from typing import Optional, IO
+from dify_plugin import OAICompatSpeech2TextModel
 
 
-class GPUStackSpeechToTextModel(OAICompatSpeechToTextModel):
+class GPUStackSpeechToTextModel(OAICompatSpeech2TextModel):
     """
     Model class for GPUStack Speech to text model.
     """
@@ -13,11 +11,12 @@ class GPUStackSpeechToTextModel(OAICompatSpeechToTextModel):
         self,
         model: str,
         credentials: dict,
-        audio: bytes,
+        file: IO[bytes],
         user: Optional[str] = None,
-    ) -> SpeechToTextResult:
+    ) -> str:
+        model = model.strip()
         compatible_credentials = self._get_compatible_credentials(credentials)
-        return super()._invoke(model, compatible_credentials, audio, user)
+        return super()._invoke(model, compatible_credentials,  file)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
