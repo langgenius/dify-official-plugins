@@ -30,7 +30,7 @@ plugins:
   endpoints:
     - group/oaicompat_dify_model.yaml
 meta:
-  version: 0.0.1
+  version: 0.0.5
   arch:
     - amd64
     - arm64
