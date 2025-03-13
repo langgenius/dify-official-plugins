@@ -128,11 +128,48 @@ class TavilySearchTool(Tool):
             yield self.create_text_message(f"No results found for '{query}' in Tavily.")
             return
         else:
+            # Return JSON result
             yield self.create_json_message(raw_results)
+            
+            # Return text message with formatted results
             text_message_content = self._format_results_as_text(
                 raw_results, tool_parameters
             )
             yield self.create_text_message(text=text_message_content)
+            
+            # Process images from search results if include_images is enabled
+            if tool_parameters.get("include_images", False) and raw_results.get("images"):
+                for image in raw_results["images"]:
+                    image_url = image.get("url")
+                    if image_url:
+                        try:
+                            # Download image content
+                            image_response = requests.get(image_url, timeout=10)
+                            image_response.raise_for_status()
+                            
+                            # Get mime type from response headers
+                            content_type = image_response.headers.get('Content-Type', 'image/jpeg')
+                            
+                            # Extract filename from URL or generate one
+                            filename = image_url.split('/')[-1]
+                            if '?' in filename:
+                                filename = filename.split('?')[0]
+                            
+                            # Use description as alt text if available
+                            alt_text = image.get('description', 'Tavily search result image')
+                            
+                            # Return as blob message - this automatically adds to 'files' variable
+                            yield self.create_blob_message(
+                                blob=image_response.content,
+                                meta={
+                                    "mime_type": content_type,
+                                    "filename": filename,
+                                    "alt_text": alt_text
+                                }
+                            )
+                        except Exception as e:
+                            # Log error but continue with other images
+                            print(f"Failed to download image {image_url}: {str(e)}")
 
     def _format_results_as_text(
         self, raw_results: dict, tool_parameters: dict[str, Any]
