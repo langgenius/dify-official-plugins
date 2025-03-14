@@ -14,11 +14,13 @@ class SlackEndpoint(Endpoint):
     def _invoke(self, r: Request, values: Mapping, settings: Mapping) -> Response:
         """
         Invokes the endpoint with the given request.
+        Always responds to Slack messages for debugging purposes.
         """
         retry_num = r.headers.get("X-Slack-Retry-Num")
         if (not settings.get("allow_retry") and (r.headers.get("X-Slack-Retry-Reason") == "http_timeout" or ((retry_num is not None and int(retry_num) > 0)))):
             return Response(status=200, response="ok")
         data = r.get_json()
+        print("[DEBUG] Received data:", data)
 
         # Handle Slack URL verification challenge
         if data.get("type") == "url_verification":
@@ -28,85 +30,54 @@ class SlackEndpoint(Endpoint):
                 content_type="application/json"
             )
         
-        # {'token': 'jIDUFKShP05GibZ4Sc8tUGcJ', 'team_id': 'TH2T1KEVA', 'api_app_id': 'A08GD4FKDQ9', 'event': {'user': 'UH38CV9B7', 'type': 'app_mention', 'ts': '1741787401.760719', 'client_msg_id': 'f53852e2-c240-41cc-8bcf-af7b6bda0776', 'text': '<@U08G02H6HFX> a', 'team': 'TH2T1KEVA', 'blocks': [{'type': 'rich_text', 'block_id': 'ctvPN', 'elements': [{'type': 'rich_text_section', 'elements': [{'type': 'user', 'user_id': 'U08G02H6HFX'}, {'type': 'text', 'text': ' a'}]}]}], 'channel': 'C08G5NR3KTN', 'event_ts': '1741787401.760719'}, 'type': 'event_callback', 'event_id': 'Ev08H6JS6MJS', 'event_time': 1741787401, 'authorizations': [{'enterprise_id': None, 'team_id': 'TH2T1KEVA', 'user_id': 'U08G02H6HFX', 'is_bot': True, 'is_enterprise_install': False}], 'is_ext_shared_channel': False, 'event_context': '4-eyJldCI6ImFwcF9tZW50aW9uIiwidGlkIjoiVEgyVDFLRVZBIiwiYWlkIjoiQTA4R0Q0RktEUTkiLCJjaWQiOiJDMDhHNU5SM0tUTiJ9'}
         if (data.get("type") == "event_callback"):
-            print(f"data: {data}")
             event = data.get("event")
             event_type = event.get("type")
-            
-            print(f"event: {event}")
-            print(f"event_type: {event_type}")
-
-            # Get configured event types and channel
-            configured_event_types = settings.get("event_types", "app_mention")
-            configured_channel_name = settings.get("channel_name", "")
             
             # Get the bot token for API calls
             token = settings.get("bot_token")
             client = WebClient(token=token)
             
-            # Check if the event is from the configured channel (if specified)
+            # Get channel ID from the event
             channel_id = event.get("channel", "")
-            print(f"channel_id: {channel_id}")
-            print(f"configured_channel_name: {configured_channel_name}")
-            # If a channel name is configured, check if this event is from that channel
-            # if configured_channel_name:
-            #     try:
-            #         # Get channel info to check if it matches the configured name
-            #         channel_info = client.conversations_info(channel=channel_id)
-            #         print(f"channel_info: {channel_info}")
-
-            #         channel_name = channel_info["channel"]["name"]
-            #         print(f"channel_name: {channel_name}")
-            #         if channel_name != configured_channel_name:
-            #             return Response(status=200, response="ok")  # Not the configured channel
-            #     except SlackApiError as e:
-            #         print(f"Error getting channel info: {e}")
-            #         # If we can't get channel info, continue processing
-            #         pass
             
-            # Process based on event type
+            # DEBUG: Always process for debugging
             should_process = True
-            message = "hi"
+            message = ""
             blocks = []
-            print(f"should_process: {should_process}")
             
-            if event_type == "app_mention" and (configured_event_types == "app_mention" or configured_event_types == "both"):
-                should_process = True
+            if event_type == "app_mention":
                 message = event.get("text", "")
-                print(f"message: {message}")
                 if message.startswith("<@"):
                     message = message.split("> ", 1)[1] if "> " in message else message
-                    blocks = event.get("blocks", [])
-                    if blocks and blocks[0].get("elements") and blocks[0].get("elements")[0].get("elements"):
-                        blocks[0]["elements"][0]["elements"] = blocks[0].get("elements")[0].get("elements")[1:]
+                blocks = event.get("blocks", [])
+                if blocks and blocks[0].get("elements") and blocks[0].get("elements")[0].get("elements"):
+                    blocks[0]["elements"][0]["elements"] = blocks[0].get("elements")[0].get("elements")[1:]
             
-            elif event_type == "message" and (configured_event_types == "message" or configured_event_types == "both"):
-                # Only process messages not from bots and not from app mentions (those are handled separately)
-                if not event.get("bot_id") and not event.get("subtype") == "bot_message" and not event.get("text", "").startswith("<@"):
-                    should_process = True
-                    message = event.get("text", "")
-                    blocks = event.get("blocks", [])
+            elif event_type == "message":
+                # DEBUG: Process all messages, even from bots
+                message = event.get("text", "")
+                blocks = event.get("blocks", [])
             
-            if should_process and message:
+            # Add debug prefix to message
+            message = f"[DEBUG] {message}" if message else "[DEBUG] Empty message"
+            
+            if should_process:
                 try: 
                     # Process files from Slack if enabled
                     files = event.get("files", [])
                     file_info = ""
-                    uploaded_files: List[Dict[str, Any]] = []
+                    uploaded_files: List[UploadFileResponse] = []
 
                     if settings.get("process_slack_files", False) and files:
                         uploaded_files = self._process_slack_files(client, files)
-                        print(f"uploaded_files: {uploaded_files}")  
                         if uploaded_files:
                             file_info = "\n\nFiles processed: " + ", ".join([f['filename'] for f in uploaded_files])
 
                     # Invoke Dify app with the message and any uploaded files
                     inputs = {}
                     if uploaded_files:
-                        inputs = {
-                            "files": uploaded_files
-                        }
+                        inputs["files"] = uploaded_files
                     
                     response = self.session.app.chat.invoke(
                         app_id=settings["app"]["app_id"],
@@ -125,23 +96,12 @@ class SlackEndpoint(Endpoint):
                     if settings.get("process_dify_files", False) and response.get("files"):
                         dify_files = self._upload_files_to_slack(client, response.get("files", []), channel_id)
                     
-                    # For regular messages without blocks, create a simple response
-                    if event_type == "message" and (not event.get("blocks") or len(event.get("blocks", [])) == 0):
-                        result = client.chat_postMessage(
-                            channel=channel_id,
-                            text=answer,
-                            thread_ts=event.get("thread_ts") or event.get("ts")  # Reply in thread if it's a thread
-                        )
-                    # For app mentions with blocks
-                    else:
-                        if blocks and blocks[0].get("elements") and blocks[0].get("elements")[0].get("elements"):
-                            blocks[0]["elements"][0]["elements"][0]["text"] = answer
-                        result = client.chat_postMessage(
-                            channel=channel_id,
-                            text=answer,
-                            blocks=blocks,
-                            thread_ts=event.get("thread_ts") or event.get("ts")  # Reply in thread if it's a thread
-                        )
+                    # Send response to Slack
+                    result = client.chat_postMessage(
+                        channel=channel_id,
+                        text=answer,
+                        thread_ts=event.get("thread_ts") or event.get("ts")
+                    )
                     
                     return Response(
                         status=200,
@@ -149,30 +109,60 @@ class SlackEndpoint(Endpoint):
                         content_type="application/json"
                     )
                 except SlackApiError as slack_error:
-                    # Log the error and re-raise
-                    print(f"Slack API Error: {slack_error}")
-                    raise slack_error
-                except Exception as e:
-                    err = traceback.format_exc()
-                    print(f"Error processing request: {e}")
+                    # Log the error and send debug info
+                    error_message = f"[DEBUG] Slack API Error: {slack_error}"
+                    print(error_message)
+                    
+                    try:
+                        # Try to send error message to Slack
+                        client.chat_postMessage(
+                            channel=channel_id,
+                            text=error_message,
+                            thread_ts=event.get("thread_ts") or event.get("ts")
+                        )
+                    except:
+                        pass
+                    
                     return Response(
                         status=200,
-                        response="Sorry, I'm having trouble processing your request. Please try again later." + str(err),
+                        response=error_message,
                         content_type="text/plain",
                     )
-            else:
-                return Response(status=200, response="ok")
-        else:
-            return Response(status=200, response="ok")
+                except Exception as e:
+                    err = traceback.format_exc()
+                    error_message = f"[DEBUG] Error processing request: {e}\n{err}"
+                    print(error_message)
+                    
+                    try:
+                        # Try to send error message to Slack
+                        client.chat_postMessage(
+                            channel=channel_id,
+                            text=error_message,
+                            thread_ts=event.get("thread_ts") or event.get("ts")
+                        )
+                    except:
+                        pass
+                    
+                    return Response(
+                        status=200,
+                        response=error_message,
+                        content_type="text/plain",
+                    )
+        
+        # For any other type of request, return a debug response
+        return Response(
+            status=200, 
+            response="[DEBUG] Received non-event request"
+        )
     
-    def _process_slack_files(self, client: WebClient, files: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _process_slack_files(self, client: WebClient, files: List[Dict[str, Any]]) -> List[UploadFileResponse]:
         """
         Process files from Slack:
         1. Download the files using the bot token
         2. Upload them to Dify storage
         3. Return the uploaded file information
         """
-        uploaded_files: List[Dict[str, Any]] = []
+        uploaded_files: List[UploadFileResponse] = []
         
         for file in files:
             try:
@@ -205,12 +195,7 @@ class SlackEndpoint(Endpoint):
                 
                 # Add to uploaded files list
                 if storage_file:
-                        # "filename": file_name,
-                        # "mime_type": file_type,
-                        # "size": file.get("size"),
-                        # "extension": file_name.split(".")[-1],
-                        # "url": file_url,
-                    uploaded_files.append({ **storage_file.to_app_parameter() })
+                    uploaded_files.append(storage_file)
             except Exception as e:
                 print(f"Error processing file {file.get('name')}: {e}")
         

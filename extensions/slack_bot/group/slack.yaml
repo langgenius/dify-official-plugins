@@ -12,6 +12,65 @@ settings:
       zh_Hans: 请输入你的 Bot Token
       pt_BR: Por favor, insira seu Token do Bot
       ja_JP: ボットトークンを入力してください
+  - name: channel_name
+    type: text-input
+    required: false
+    label:
+      en_US: Channel Name
+      zh_Hans: 频道名称
+      pt_BR: Nome do Canal
+      ja_JP: チャンネル名
+    placeholder:
+      en_US: Enter the Slack channel name (leave empty to respond to all channels)
+      zh_Hans: 输入 Slack 频道名称 (留空以响应所有频道)
+      pt_BR: Insira o nome do canal do Slack (deixe em branco para responder a todos os canais)
+      ja_JP: Slack チャンネル名を入力してください（すべてのチャンネルに応答する場合は空白のままにしてください）
+  - name: process_slack_files
+    type: boolean
+    required: false
+    label:
+      en_US: Process Files from Slack
+      zh_Hans: 处理来自 Slack 的文件
+      pt_BR: Processar Arquivos do Slack
+      ja_JP: Slackからのファイルを処理する
+    default: false
+  - name: process_dify_files
+    type: boolean
+    required: false
+    label:
+      en_US: Process Files from Dify
+      zh_Hans: 处理来自 Dify 的文件
+      pt_BR: Processar Arquivos do Dify
+      ja_JP: Difyからのファイルを処理する
+    default: false
+  - name: event_types
+    type: select
+    required: true
+    label:
+      en_US: Event Types
+      zh_Hans: 事件类型
+      pt_BR: Tipos de Eventos
+      ja_JP: イベントタイプ
+    options:
+      - value: app_mention
+        label:
+          en_US: App Mentions Only
+          zh_Hans: 仅应用提及
+          pt_BR: Apenas Menções ao App
+          ja_JP: アプリのメンションのみ
+      - value: message
+        label:
+          en_US: Channel Messages
+          zh_Hans: 频道消息
+          pt_BR: Mensagens de Canal
+          ja_JP: チャンネルメッセージ
+      - value: both
+        label:
+          en_US: Both Mentions and Messages
+          zh_Hans: 提及和消息
+          pt_BR: Menções e Mensagens
+          ja_JP: メンションとメッセージの両方
+    default: app_mention
   - name: allow_retry
     type: boolean
     required: false
