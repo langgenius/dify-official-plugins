@@ -356,13 +356,13 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
                         # Format reasoning content
                         if not self._reasoning_header_added:
-                            # Only add the marker once for the first block
-                            formatted_reasoning = "> **Think:**\n> " + reasoning_text.replace("\n", "\n> ")
+                            # Only add the opening tag once for the first block
+                            formatted_reasoning = "<think>\n" + reasoning_text
                             # Record that the marker has been added
                             self._reasoning_header_added = True
                         else:
-                            # For subsequent blocks, only add indentation without new markers
-                            formatted_reasoning = reasoning_text.replace("\n", "\n> ")
+                            # For subsequent blocks, just add the content without tags
+                            formatted_reasoning = reasoning_text
 
                         # Update complete content, although it may not be needed here, but maintains code consistency
                         full_assistant_content += formatted_reasoning
@@ -385,9 +385,10 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                         # Check if separator and line breaks need to be added
                         # If there was reasoning content before and this is the first regular text
                         if hasattr(self, '_reasoning_header_added') and self._reasoning_header_added:
+                            # Add closing tag for reasoning content
+                            text = "\n</think>\n\n" + text
                             # Remove _reasoning_header_added
                             delattr(self, '_reasoning_header_added')
-                            text = "\n\n" + text
 
                         full_assistant_content += text
 
@@ -408,6 +409,23 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                             tool_use["input"] = ""
                         tool_use["input"] += delta["toolUse"]["input"]
                 elif "contentBlockStop" in chunk:
+                    # If reasoning was started but never completed (no text content followed)
+                    # we need to close the thinking tag
+                    if hasattr(self, '_reasoning_header_added') and self._reasoning_header_added:
+                        assistant_prompt_message = AssistantPromptMessage(
+                            content="\n</think>"
+                        )
+                        index += 1
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=index + 1,
+                                message=assistant_prompt_message,
+                            ),
+                        )
+                        delattr(self, '_reasoning_header_added')
+                        
                     if "input" in tool_use:
                         tool_call = AssistantPromptMessage.ToolCall(
                             id=tool_use["toolUseId"],
