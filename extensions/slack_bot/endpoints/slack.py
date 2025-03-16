@@ -2,7 +2,7 @@ import json
 import os
 import traceback
 import requests
-from typing import Mapping, List, Dict, Any
+from typing import Mapping, List, Dict, Any, Optional
 from werkzeug import Request, Response
 from dify_plugin import Endpoint
 from slack_sdk import WebClient
@@ -28,13 +28,14 @@ class SlackEndpoint(Endpoint):
                 content_type="application/json"
             )
         
-        # {'token': 'jIDUFKShP05GibZ4Sc8tUGcJ', 'team_id': 'TH2T1KEVA', 'api_app_id': 'A08GD4FKDQ9', 'event': {'user': 'UH38CV9B7', 'type': 'app_mention', 'ts': '1741787401.760719', 'client_msg_id': 'f53852e2-c240-41cc-8bcf-af7b6bda0776', 'text': '<@U08G02H6HFX> a', 'team': 'TH2T1KEVA', 'blocks': [{'type': 'rich_text', 'block_id': 'ctvPN', 'elements': [{'type': 'rich_text_section', 'elements': [{'type': 'user', 'user_id': 'U08G02H6HFX'}, {'type': 'text', 'text': ' a'}]}]}], 'channel': 'C08G5NR3KTN', 'event_ts': '1741787401.760719'}, 'type': 'event_callback', 'event_id': 'Ev08H6JS6MJS', 'event_time': 1741787401, 'authorizations': [{'enterprise_id': None, 'team_id': 'TH2T1KEVA', 'user_id': 'U08G02H6HFX', 'is_bot': True, 'is_enterprise_install': False}], 'is_ext_shared_channel': False, 'event_context': '4-eyJldCI6ImFwcF9tZW50aW9uIiwidGlkIjoiVEgyVDFLRVZBIiwiYWlkIjoiQTA4R0Q0RktEUTkiLCJjaWQiOiJDMDhHNU5SM0tUTiJ9'}
         if (data.get("type") == "event_callback"):
             print(f"data: {data}")
             event = data.get("event")
             event_type = event.get("type")
+            user = event.get("user")
+            if (user == ""):
+                return Response(status=200, response="ok")
             
-            print(f"event: {event}")
             print(f"event_type: {event_type}")
 
             # Get configured event types and channel
@@ -50,24 +51,22 @@ class SlackEndpoint(Endpoint):
             print(f"channel_id: {channel_id}")
             print(f"configured_channel_name: {configured_channel_name}")
             # If a channel name is configured, check if this event is from that channel
-            # if configured_channel_name:
-            #     try:
-            #         # Get channel info to check if it matches the configured name
-            #         channel_info = client.conversations_info(channel=channel_id)
-            #         print(f"channel_info: {channel_info}")
-
-            #         channel_name = channel_info["channel"]["name"]
-            #         print(f"channel_name: {channel_name}")
-            #         if channel_name != configured_channel_name:
-            #             return Response(status=200, response="ok")  # Not the configured channel
-            #     except SlackApiError as e:
-            #         print(f"Error getting channel info: {e}")
-            #         # If we can't get channel info, continue processing
-            #         pass
+            if configured_channel_name:
+                try:
+                    # Get channel info to check if it matches the configured name
+                    channel_info = client.conversations_info(channel=channel_id)
+                    print(f"channel_info: {channel_info}")
+                    if channel_info["channel"]["name"] != configured_channel_name:
+                        print(f"Not the configured channel: {channel_info["channel"]["name"]}")
+                        return Response(status=200, response="ok")  # Not the configured channel
+                except SlackApiError as e:
+                    print(f"Error getting channel info: {e}")
+                    # If we can't get channel info, continue processing
+                    pass
             
             # Process based on event type
-            should_process = True
-            message = "hi"
+            should_process = False
+            message = ""
             blocks = []
             print(f"should_process: {should_process}")
             
@@ -78,6 +77,10 @@ class SlackEndpoint(Endpoint):
                 if message.startswith("<@"):
                     message = message.split("> ", 1)[1] if "> " in message else message
                     blocks = event.get("blocks", [])
+                    # If exist files, add file names
+                    if len(event.get("files", [])) > 0:
+                        message += "\n\nFiles attached: " + ", ".join([f['name'] for f in event.get("files", [])])
+
                     if blocks and blocks[0].get("elements") and blocks[0].get("elements")[0].get("elements"):
                         blocks[0]["elements"][0]["elements"] = blocks[0].get("elements")[0].get("elements")[1:]
             
@@ -86,28 +89,45 @@ class SlackEndpoint(Endpoint):
                 if not event.get("bot_id") and not event.get("subtype") == "bot_message" and not event.get("text", "").startswith("<@"):
                     should_process = True
                     message = event.get("text", "")
+                    # If exist files, add file names
+                    if len(event.get("files", [])) > 0:
+                        message += "\n\nFiles attached: " + ", ".join([f['name'] for f in event.get("files", [])])
                     blocks = event.get("blocks", [])
             
-            if should_process and message:
-                try: 
+            if should_process and len(message) > 0:
+                try:
                     # Process files from Slack if enabled
                     files = event.get("files", [])
                     file_info = ""
                     uploaded_files: List[Dict[str, Any]] = []
 
                     if settings.get("process_slack_files", False) and files:
-                        uploaded_files = self._process_slack_files(client, files)
-                        print(f"uploaded_files: {uploaded_files}")  
+                        print("_process_slack_files: start")    
+                        uploader = FileUploader()
+                        uploaded_files = uploader.process_slack_files(client=client, files=files)
+                        print("_process_slack_files: end")
+                        print(f"uploaded_files: {uploaded_files}")
+
                         if uploaded_files:
-                            file_info = "\n\nFiles processed: " + ", ".join([f['filename'] for f in uploaded_files])
+                            file_info = "\n\nFiles processed: " + ", ".join([f['name'] for f in uploaded_files])
 
                     # Invoke Dify app with the message and any uploaded files
                     inputs = {}
                     if uploaded_files:
                         inputs = {
-                            "files": uploaded_files
+                            "files": [
+                                {
+                                    "upload_file_id": f["id"],
+                                    "type": f["type"],
+                                    "transfer_method": "local_file"
+                                }
+                                for f in uploaded_files
+                            ]
                         }
+
+                    print(f"inputs: {inputs}")
                     
+                    # Invoke Dify app workflow
                     response = self.session.app.chat.invoke(
                         app_id=settings["app"]["app_id"],
                         query=message,
@@ -121,9 +141,9 @@ class SlackEndpoint(Endpoint):
                         answer += file_info
                     
                     # Check if Dify response contains files and process_dify_files is enabled
-                    dify_files = []
-                    if settings.get("process_dify_files", False) and response.get("files"):
-                        dify_files = self._upload_files_to_slack(client, response.get("files", []), channel_id)
+                    # dify_files = []
+                    # if settings.get("process_dify_files", False) and response.get("files"):
+                    #     dify_files = self._upload_files_to_slack(client, response.get("files", []), channel_id)
                     
                     # For regular messages without blocks, create a simple response
                     if event_type == "message" and (not event.get("blocks") or len(event.get("blocks", [])) == 0):
@@ -143,9 +163,17 @@ class SlackEndpoint(Endpoint):
                             thread_ts=event.get("thread_ts") or event.get("ts")  # Reply in thread if it's a thread
                         )
                     
+                    # Convert SlackResponse to a serializable dictionary
+                    result_dict = {
+                        "ok": result.get("ok", False),
+                        "channel": result.get("channel", ""),
+                        "ts": result.get("ts", ""),
+                        "message": result.get("message", {})
+                    }
+                    
                     return Response(
                         status=200,
-                        response=json.dumps(result),
+                        response=json.dumps(result_dict),
                         content_type="application/json"
                     )
                 except SlackApiError as slack_error:
@@ -154,6 +182,11 @@ class SlackEndpoint(Endpoint):
                     raise slack_error
                 except Exception as e:
                     err = traceback.format_exc()
+                    client.chat_postMessage(
+                        channel=channel_id,
+                        text="Sorry, I'm having trouble processing your request. Please try again later." + str(err),
+                        thread_ts=event.get("thread_ts") or event.get("ts")  # Reply in thread if it's a thread
+                    )
                     print(f"Error processing request: {e}")
                     return Response(
                         status=200,
@@ -164,15 +197,154 @@ class SlackEndpoint(Endpoint):
                 return Response(status=200, response="ok")
         else:
             return Response(status=200, response="ok")
+   
+
+class FileUploader:
+    """
+    A utility class to handle file uploads to Dify API
+    """
     
-    def _process_slack_files(self, client: WebClient, files: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def __init__(self, session=None, dify_base_url="http://api:5001/v1", dify_api_key=""):
+        """
+        Initialize the FileUploader
+        
+        Args:
+            session: The Dify plugin session object (if available)
+            dify_base_url: The base URL for Dify API (if session not available)
+            dify_api_key: The API key for Dify API (if session not available)
+        """
+        self.session = session
+        self.dify_base_url = dify_base_url
+        self.dify_api_key = dify_api_key
+        
+    def upload_file_via_session(self, filename: str, content: bytes, mimetype: str) -> Optional[Dict[str, Any]]:
+        """
+        Upload a file using the Dify plugin session
+        
+        Args:
+            filename: The name of the file
+            content: The content of the file as bytes
+            mimetype: The MIME type of the file
+            
+        Returns:
+            Dictionary with file information or None if upload fails
+        """
+        try:
+            print(f"Uploading file via session: {filename}, mimetype: {mimetype}, content size: {len(content)} bytes")
+            
+            # Use a simple test file first to verify the API is working
+            test_result = self.session.file.upload(
+                filename="test.txt", 
+                content=b"test content", 
+                mimetype="text/plain"
+            )
+            print(f"Test upload result: {test_result}")
+            
+            # Now try the actual file
+            storage_file = self.session.file.upload(
+                filename=filename,
+                content=content,
+                mimetype=mimetype
+            )
+            
+            print(f"Uploaded file to Dify storage: {storage_file}")
+            
+            if storage_file:
+                # Convert to app parameter format
+                return storage_file.to_app_parameter()
+            return None
+        except Exception as e:
+            print(f"Error uploading file via session: {e}")
+            traceback.print_exc()
+            return None
+    
+    def upload_file_via_api(self, filename: str, content: bytes, mimetype: str) -> Optional[Dict[str, Any]]:
+        """
+        Upload a file using direct API calls to Dify
+        
+        Args:
+            filename: The name of the file
+            content: The content of the file as bytes
+            mimetype: The MIME type of the file
+            
+        Returns:
+            Dictionary with file information or None if upload fails
+        """
+        if not self.dify_base_url or not self.dify_api_key:
+            print("Error: dify_base_url and dify_api_key must be provided for direct API upload")
+            return None
+        
+        try:
+            print(f"Uploading file via API: {filename}, mimetype: {mimetype}, content size: {len(content)} bytes")
+            
+            # Prepare the file upload endpoint
+            upload_url = f"{self.dify_base_url}/files/upload"
+            headers = {
+                "Authorization": f"Bearer {self.dify_api_key}"
+            }
+            
+            # Create a temporary file to upload
+            temp_file_path = f"/tmp/{filename}"
+            with open(temp_file_path, "wb") as f:
+                f.write(content)
+            
+            # Upload the file
+            files = {
+                'file': (filename, open(temp_file_path, 'rb'), mimetype)
+            }
+            
+            response = requests.post(upload_url, headers=headers, files=files)
+            
+            # Clean up the temporary file
+            os.remove(temp_file_path)
+            
+            if response.status_code == 201 or response.status_code == 200:
+                result = response.json()
+                print(f"File upload API response: {result}")
+                
+                # Format the response to match Dify plugin format
+                if 'id' in result:
+                    return {
+                        'id': result['id'],
+                        'name': result.get('name', filename),
+                        'size': result.get('size', len(content)),
+                        'extension': result.get('extension', ''),
+                        'mime_type': result.get('mime_type', mimetype),
+                        'type': UploadFileResponse.Type.from_mime_type(mimetype).value,
+                        'url': result.get('url', '')
+                    }
+            else:
+                print(f"File upload API error: {response.status_code}, {response.text}")
+            
+            return None
+        except Exception as e:
+            print(f"Error uploading file via API: {e}")
+            traceback.print_exc()
+            return None
+    
+    def process_slack_files(self, client, files: List[Dict[str, Any]], dify_base_url=None, dify_api_key=None) -> List[Dict[str, Any]]:
         """
         Process files from Slack:
         1. Download the files using the bot token
         2. Upload them to Dify storage
         3. Return the uploaded file information
+        
+        Args:
+            client: The Slack WebClient
+            files: List of file information from Slack
+            dify_base_url: Optional Dify base URL for direct API upload
+            dify_api_key: Optional Dify API key for direct API upload
+            
+        Returns:
+            List of uploaded file information
         """
-        uploaded_files: List[Dict[str, Any]] = []
+        uploaded_files = []
+        
+        # Set API parameters if provided
+        if dify_base_url:
+            self.dify_base_url = dify_base_url
+        if dify_api_key:
+            self.dify_api_key = dify_api_key
         
         for file in files:
             try:
@@ -182,6 +354,7 @@ class SlackEndpoint(Endpoint):
                 file_url = file.get("url_private_download")
                 
                 if not file_url or not file_name:
+                    print(f"Missing file URL or name: {file}")
                     continue
                 
                 # Download the file content
@@ -192,77 +365,23 @@ class SlackEndpoint(Endpoint):
                     print(f"Failed to download file {file_name}: {file_response.status_code}")
                     continue
                 
-                # Upload to Dify storage
-                file_content = file_response.content
-
-                storage_file = self.session.file.upload(
-                    filename=file_name,
-                    content=file_content,
-                    mimetype=file_type
-                )
-
-                print(f"Uploaded file {file_name} to Dify storage: {storage_file}")
+                print(f"Downloaded file from Slack: {file_name}, {file_type}, size: {len(file_response.content)} bytes")
                 
-                # Add to uploaded files list
-                if storage_file:
-                        # "filename": file_name,
-                        # "mime_type": file_type,
-                        # "size": file.get("size"),
-                        # "extension": file_name.split(".")[-1],
-                        # "url": file_url,
-                    uploaded_files.append({ **storage_file.to_app_parameter() })
+                # Try uploading via session first
+                if self.session:
+                    storage_file = self.upload_file_via_session(file_name, file_response.content, file_type)
+                    if storage_file:
+                        uploaded_files.append(storage_file)
+                        continue
+                
+                # If session upload fails or session not available, try direct API upload
+                if self.dify_base_url and self.dify_api_key:
+                    storage_file = self.upload_file_via_api(file_name, file_response.content, file_type)
+                    if storage_file:
+                        uploaded_files.append(storage_file)
+
             except Exception as e:
                 print(f"Error processing file {file.get('name')}: {e}")
-        
-        return uploaded_files
-    
-    def _upload_files_to_slack(self, client: WebClient, files: List[Dict[str, Any]], channel_id: str) -> List[Dict[str, Any]]:
-        """
-        Upload files from Dify response to Slack:
-        1. Download the files from Dify storage
-        2. Upload them to Slack
-        3. Return the uploaded file information
-        """
-        uploaded_files = []
-        
-        for file in files:
-            try:
-                file_id = file.get("file_id")
-                file_name = file.get("filename", "file")
-                
-                if not file_id:
-                    continue
-                
-                # Download file from Dify storage
-                file_content = self.session.storage.download_file(file_id)
-                
-                if not file_content:
-                    print(f"Failed to download file {file_name} from Dify storage")
-                    continue
-                
-                # Create a temporary file
-                temp_file_path = f"/tmp/{file_name}"
-                with open(temp_file_path, "wb") as f:
-                    f.write(file_content)
-                
-                # Upload to Slack
-                result = client.files_upload_v2(
-                    channel=channel_id,
-                    file=temp_file_path,
-                    filename=file_name
-                )
-                
-                # Clean up temporary file
-                os.remove(temp_file_path)
-                
-                # Add to uploaded files list
-                if result and result.get("file"):
-                    uploaded_files.append({
-                        "id": result["file"]["id"],
-                        "name": file_name,
-                        "url": result["file"].get("permalink", "")
-                    })
-            except Exception as e:
-                print(f"Error uploading file {file.get('filename')} to Slack: {e}")
+                traceback.print_exc()
         
         return uploaded_files
