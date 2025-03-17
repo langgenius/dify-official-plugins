@@ -1,12 +1,12 @@
 version: 0.0.3
 type: plugin
 author: langgenius
-name: Aws Bedrock Knowledge Base
+name: aws_bedrock_knowledge_base
 label:
-  en_US: aws_bedrock_knowledge_base
-  ja_JP: aws_bedrock_knowledge_base
-  zh_Hans: aws_bedrock_knowledge_base
-  pt_BR: aws_bedrock_knowledge_base
+  en_US:  Aws Bedrock Knowledge Base
+  ja_JP:  Aws Bedrock Knowledge Base
+  zh_Hans:  Aws Bedrock Knowledge Base
+  pt_BR:  Aws Bedrock Knowledge Base
 description:
   en_US: AWS Bedrock Knowledge Base API Endpoint for Dify External Knowledge Base
   ja_JP: AWS Bedrock Knowledge Base API Endpoint for Dify External Knowledge Base
