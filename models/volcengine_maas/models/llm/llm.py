@@ -4,6 +4,7 @@ from collections.abc import Generator
 from typing import Optional
 from dify_plugin.entities.model import (
     AIModelEntity,
+    DefaultParameterName,
     FetchFrom,
     I18nObject,
     ModelPropertyKey,
@@ -339,6 +340,12 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                 ),
             )
 
+        encouraged_response_prefix = req_params.get(DefaultParameterName.ENCOURAGED_RESPONSE_PREFIX.value, "")
+        if encouraged_response_prefix is not None and encouraged_response_prefix != "":
+            if len(prompt_messages) > 0 and not isinstance(prompt_messages[-1], AssistantPromptMessage):
+                prompt_messages.append(AssistantPromptMessage(content=encouraged_response_prefix))
+        req_params.pop(DefaultParameterName.ENCOURAGED_RESPONSE_PREFIX.value)
+
         if not stream:
             resp = client.chat(prompt_messages, **req_params)
             return _handle_chat_response(resp)
@@ -363,6 +370,13 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     max=model_config.properties.max_tokens,
                     default=512,
                     label=I18nObject(zh_Hans="最大生成长度", en_US="Max Tokens"),
+                ),
+                ParameterRule(
+                    name="encouraged_response_prefix",
+                    type=ParameterType.TEXT,
+                    use_template="encouraged_response_prefix",
+                    default="",
+                    label=I18nObject(zh_Hans="引导回复前缀", en_US="Encouraged response prefix"),
                 ),
             ]
         else:

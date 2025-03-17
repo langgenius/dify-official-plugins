@@ -71,6 +71,16 @@ model_credential_schema:
       variable: __model_type
     type: select
     variable: function_calling_type
+  - variable: encouraged_response_prefix
+    label:
+      zh_Hans: 引导回复前缀
+      en_US: Encouraged response prefix
+    default: ''
+    type: text-input
+    required: false
+    show_on:
+      - variable: __model_type
+        value: llm
   model:
     label:
       en_US: Model Name

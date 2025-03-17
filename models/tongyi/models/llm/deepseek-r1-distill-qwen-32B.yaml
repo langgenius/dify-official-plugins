@@ -14,6 +14,9 @@ parameter_rules:
     min: 1
     max: 8192
     default: 4096
+  - name: encouraged_response_prefix
+    use_template: encouraged_response_prefix
+    default: "" # "<think>\n" is acceptable
 pricing:
   input: "0.002"
   output: "0.006"

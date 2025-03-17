@@ -16,15 +16,24 @@ class ModelConfig(BaseModel):
 
 configs: dict[str, ModelConfig] = {
     "DeepSeek-R1-Distill-Qwen-32B": ModelConfig(
-        properties=ModelProperties(context_size=64000, max_tokens=8192, mode=LLMMode.CHAT),
+        properties=ModelProperties(context_size=64000,
+                                   max_tokens=8192,
+                                   mode=LLMMode.CHAT,
+                                   encouraged_response_prefix=""),
         features=[ModelFeature.AGENT_THOUGHT],
     ),
     "DeepSeek-R1-Distill-Qwen-7B": ModelConfig(
-        properties=ModelProperties(context_size=64000, max_tokens=8192, mode=LLMMode.CHAT),
+        properties=ModelProperties(context_size=64000,
+                                   max_tokens=8192,
+                                   mode=LLMMode.CHAT,
+                                   encouraged_response_prefix=""),
         features=[ModelFeature.AGENT_THOUGHT],
     ),
     "DeepSeek-R1": ModelConfig(
-        properties=ModelProperties(context_size=64000, max_tokens=8192, mode=LLMMode.CHAT),
+        properties=ModelProperties(context_size=64000,
+                                   max_tokens=8192,
+                                   mode=LLMMode.CHAT,
+                                   encouraged_response_prefix=""),
         features=[ModelFeature.AGENT_THOUGHT],
     ),
     "DeepSeek-V3": ModelConfig(
@@ -135,6 +144,7 @@ def get_model_config(credentials: dict) -> ModelConfig:
                 context_size=int(credentials.get("context_size", 0)),
                 max_tokens=int(credentials.get("max_tokens", 0)),
                 mode=LLMMode.value_of(credentials.get("mode", "chat")),
+                encouraged_response_prefix=LLMMode.value_of(credentials.get("encouraged_response_prefix", "chat")),
             ),
             features=[],
         )
@@ -179,6 +189,8 @@ def get_v3_req_params(credentials: dict, model_parameters: dict, stop: list[str]
         req_params["presence_penalty"] = model_parameters.get("presence_penalty")
     if model_parameters.get("frequency_penalty"):
         req_params["frequency_penalty"] = model_parameters.get("frequency_penalty")
+    if model_parameters.get("encouraged_response_prefix"):
+        req_params["encouraged_response_prefix"] = model_parameters.get("encouraged_response_prefix")
     if stop:
         req_params["stop"] = stop
     return req_params
