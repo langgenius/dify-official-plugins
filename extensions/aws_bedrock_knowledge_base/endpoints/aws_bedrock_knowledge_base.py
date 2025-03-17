@@ -8,15 +8,11 @@ from typing import Mapping
 
 class Knowledgebaseretrieval(Endpoint):
     def _invoke(self, r: Request, values: Mapping, settings: Mapping) -> Response:
-        # 从请求中获取JSON数据
         body = r.get_json()
 
-        # 获取请求体中的参数
         retrieval_setting = body.get('retrieval_setting')
         query = body.get('query')
         knowledge_id = body.get('knowledge_id')
-
-        # 校验参数是否缺失
 
         client = boto3.client(
             "bedrock-agent-runtime",
