@@ -1,7 +1,7 @@
-version: 0.0.3
+version: 0.0.5
 type: plugin
 author: langgenius
-name: aws-tools
+name: aws_tools
 label:
   en_US: AWS Tools
   ja_JP: AWS Tools
@@ -27,9 +27,9 @@ resource:
       size: 1048576
 plugins:
   tools:
-    - provider/aws-tools.yaml
+    - provider/aws_tools.yaml
 meta:
-  version: 0.0.3
+  version: 0.0.1
   arch:
     - amd64
     - arm64
