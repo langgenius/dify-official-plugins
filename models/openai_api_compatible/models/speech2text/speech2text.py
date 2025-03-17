@@ -1,12 +1,5 @@
-from typing import Mapping,Optional
-
-from dify_plugin.entities.model import (
-    AIModelEntity,
-    I18nObject,
-    FetchFrom,
-    ModelType
-)
-
+from typing import Optional
+from dify_plugin.entities.model import AIModelEntity, FetchFrom, I18nObject, ModelType
 from dify_plugin.interfaces.model.openai_compatible.speech2text import (
     OAICompatSpeech2TextModel,
 )
