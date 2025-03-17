@@ -1,10 +1,12 @@
 import logging
-import uuid
+from collections.abc import Mapping
 from typing import IO, Any
+
 from dify_plugin import ModelProvider
+from dify_plugin.entities.model import ModelType
+from dify_plugin.errors.model import CredentialsValidateFailedError
 
 logger = logging.getLogger(__name__)
-
 
 class SageMakerProvider(ModelProvider):
     def validate_provider_credentials(self, credentials: dict) -> None:
@@ -16,7 +18,6 @@ class SageMakerProvider(ModelProvider):
         :param credentials: provider credentials, credentials form defined in `provider_credential_schema`.
         """
         pass
-
 
 def buffer_to_s3(s3_client: Any, file: IO[bytes], bucket: str, s3_prefix: str) -> str:
     """
