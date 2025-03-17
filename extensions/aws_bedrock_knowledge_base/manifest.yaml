@@ -1,7 +1,7 @@
 version: 0.0.3
 type: plugin
 author: langgenius
-name: aws bedrock knowledge base
+name: Aws Bedrock Knowledge Base
 label:
   en_US: aws_bedrock_knowledge_base
   ja_JP: aws_bedrock_knowledge_base
