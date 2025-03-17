@@ -1,0 +1,213 @@
+identity:
+  name: opensearch_retrieve
+  author: aws
+  label:
+    en_US: OpenSearch Retrieve
+    zh_Hans: OpenSearch检索
+    pt_BR: OpenSearch Retrieve
+  icon: _assets/icon.svg
+description:
+  human:
+    en_US: A tool for retrieving relevant information from Amazon OpenSearch.
+    zh_Hans: Amazon OpenSearch 检索工具
+    pt_BR: A tool for retrieving relevant information from Amazon OpenSearch.
+  llm: A tool for retrieving relevant information from Amazon OpenSearch.
+parameters:
+  - name: opensearch_endpoint
+    type: string
+    required: true
+    label:
+      en_US: OpenSearch Endpoint
+      zh_Hans: OpenSearch 端点
+      pt_BR: OpenSearch Endpoint
+    human_description:
+      en_US: OpenSearch Endpoint
+      zh_Hans: OpenSearch 端点
+      pt_BR: OpenSearch Endpoint
+    llm_description: OpenSearch Endpoint to retrieve from
+    form: form
+  - name: index_name
+    type: string
+    required: true
+    label:
+      en_US: Target Index Name
+      zh_Hans: 目标索引名称
+      pt_BR: Target Index Name
+    human_description:
+      en_US: Target Index Name
+      zh_Hans: 目标索引名称
+      pt_BR: Target Index Name
+    llm_description: The target of index name
+    form: form
+  - name: image_s3_path
+    type: string
+    required: false
+    label:
+      en_US: Image S3 Path
+      zh_Hans: 图像s3路径
+      pt_BR: Image S3 Path
+    human_description:
+      en_US: Image S3 Path
+      zh_Hans: 图像s3路径
+      pt_BR: Image S3 Path
+    llm_description: s3 path of image
+    form: llm
+  - name: query_text
+    type: string
+    required: false
+    label:
+      en_US: Query Text
+      zh_Hans: 查询文本
+      pt_BR: Query Text
+    human_description:
+      en_US: Query Text
+      zh_Hans: 查询文本
+      pt_BR: Query Text
+    llm_description: query text
+    form: llm
+  - name: embedding_field
+    type: string
+    required: true
+    default: pic_emb
+    label:
+      en_US: Embedding Field Name
+      zh_Hans: 向量字段名称
+      pt_BR: Embedding Field Name
+    human_description:
+      en_US: Embedding Field Name
+      zh_Hans: 向量字段名称
+      pt_BR: Embedding Field Name
+    llm_description: embedding field name
+    form: llm
+  - name: metadata_fields
+    type: string
+    required: true
+    default: s3_uri,pic_name
+    label:
+      en_US: Metadata Fields
+      zh_Hans: 元信息字段列表
+      pt_BR: Metadata Fields
+    human_description:
+      en_US: metadata fields
+      zh_Hans: 元信息字段列表
+      pt_BR: metadata fields
+    llm_description: metadata fields
+    form: llm
+  - name: topk
+    type: number
+    required: false
+    form: form
+    label:
+      en_US: Results Count
+      zh_Hans: 结果数量
+      pt_BR: Results Count
+    human_description:
+      en_US: Results Count
+      zh_Hans: 结果数量
+      pt_BR: Results Count
+    min: 1
+    max: 10
+    default: 5
+  - name: vector_size
+    type: select
+    required: true
+    label:
+      en_US: embedding size
+      zh_Hans: 纬度 
+      pt_BR: embedding size
+    human_description:
+      en_US: embedding size
+      zh_Hans: 纬度
+      pt_BR: embedding size
+    llm_description: embedding size
+    options:
+      - value: '1024'
+        label:
+          en_US: '1024'
+          zh_Hans: '1024'
+      - value: '512'
+        label:
+          en_US: '512'
+          zh_Hans: '512'
+      - value: '384'
+        label:
+          en_US: '384'
+          zh_Hans: '384'
+      - value: '256'
+        label:
+          en_US: '256'
+          zh_Hans: '256'
+    form: form
+  - name: search_type
+    type: select
+    required: false
+    label:
+      en_US: search type
+      zh_Hans: 搜索类型
+      pt_BR: search type
+    human_description:
+      en_US: search type
+      zh_Hans: 搜索类型
+      pt_BR: search type
+    llm_description: search type
+    default: SEMANTIC
+    options:
+      - value: SEMANTIC
+        label:
+          en_US: SEMANTIC
+          zh_Hans: 语义搜索
+    form: form
+  - name: embedding_model_id
+    type: select
+    required: true
+    label:
+      en_US: Model Id
+      zh_Hans: 向量模型ID
+      pt_BR: Model Id
+    human_description:
+      en_US: Model Id
+      zh_Hans: 向量模型ID
+      pt_BR: Model Id
+    llm_description: embedding model id
+    options:
+      - value: amazon.titan-embed-image-v1
+        label:
+          en_US: amazon.titan-embed-image-v1
+          zh_Hans: amazon.titan-embed-image-v1
+      - value: amazon.titan-embed-text-v1
+        label:
+          en_US: amazon.titan-embed-text-v1
+          zh_Hans: amazon.titan-embed-text-v1
+      - value: amazon.titan-embed-text-v2:0
+        label:
+          en_US: amazon.titan-embed-text-v2:0
+          zh_Hans: amazon.titan-embed-text-v2:0
+      - value: amazon.titan-embed-text-v2:0
+        label:
+          en_US: amazon.titan-embed-text-v2:0
+          zh_Hans: amazon.titan-embed-text-v2:0
+      - value: cohere.embed-english-v3
+        label:
+          en_US: cohere.embed-english-v3
+          zh_Hans: cohere.embed-english-v3
+      - value: cohere.embed-multilingual-v3
+        label:
+          en_US: cohere.embed-multilingual-v3
+          zh_Hans: cohere.embed-multilingual-v3
+    form: form
+  - name: aws_region
+    type: string
+    required: false
+    label:
+      en_US: AWS Region
+      zh_Hans: AWS 区域
+      pt_BR: AWS Region
+    human_description:
+      en_US: AWS region where the Bedrock Knowledge Base is located
+      zh_Hans: Bedrock知识库所在的AWS区域
+      pt_BR: AWS region where the Bedrock Knowledge Base is located
+    llm_description: AWS region where the Bedrock Knowledge Base is located
+    form: form
+extra:
+  python:
+    source: tools/opensearch_knn_search.py

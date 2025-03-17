@@ -52,6 +52,9 @@ class GPUStackRerankModel(RerankModel):
         """
         if len(docs) == 0:
             return RerankResult(model=model, docs=[])
+        if top_n is None:
+            top_n = 3
+        model = model.strip()
         endpoint_url = credentials["endpoint_url"]
         headers = {
             "Authorization": f"Bearer {credentials.get('api_key')}",
