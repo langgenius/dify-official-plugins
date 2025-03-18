@@ -72,7 +72,10 @@ class SageMakerReRankTool(Tool):
             sorted_candidate_docs = sorted(candidate_docs, key=operator.itemgetter("score"), reverse=True)
 
             line = 9
-            yield [self.create_json_message(res) for res in sorted_candidate_docs[:topk]]
+            json_result = {
+                "results" : sorted_candidate_docs[:topk]
+            }
+            yield self.create_json_message(json_result)
 
         except Exception as e:
             yield self.create_text_message(f"Exception {str(e)}, line : {line}")

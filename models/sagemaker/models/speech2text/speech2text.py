@@ -1,7 +1,11 @@
 import json
 import logging
 from typing import IO, Any, Optional
-import boto3
+
+import boto3  # type: ignore
+
+from provider.sagemaker import generate_presigned_url
+
 from dify_plugin.entities.model import AIModelEntity, FetchFrom, I18nObject, ModelType
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -12,8 +16,7 @@ from dify_plugin.errors.model import (
     InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
-from dify_plugin.interfaces.model.speech2text_model import Speech2TextModel
-from provider.sagemaker import generate_presigned_url
+from dify_plugin import Speech2TextModel
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +29,7 @@ class SageMakerSpeech2TextModel(Speech2TextModel):
     sagemaker_client: Any = None
     s3_client: Any = None
 
-    def _invoke(
-        self, model: str, credentials: dict, file: IO[bytes], user: Optional[str] = None
-    ) -> str:
+    def _invoke(self, model: str, credentials: dict, file: IO[bytes], user: Optional[str] = None) -> str:
         """
         Invoke speech2text model
 
@@ -39,6 +40,7 @@ class SageMakerSpeech2TextModel(Speech2TextModel):
         :return: text for given audio file
         """
         asr_text = None
+
         try:
             if not self.sagemaker_client:
                 access_key = credentials.get("aws_access_key_id")
@@ -53,30 +55,25 @@ class SageMakerSpeech2TextModel(Speech2TextModel):
                             region_name=aws_region,
                         )
                         self.s3_client = boto3.client(
-                            "s3",
-                            aws_access_key_id=access_key,
-                            aws_secret_access_key=secret_key,
-                            region_name=aws_region,
+                            "s3", aws_access_key_id=access_key, aws_secret_access_key=secret_key, region_name=aws_region
                         )
                     else:
-                        self.sagemaker_client = boto3.client(
-                            "sagemaker-runtime", region_name=aws_region
-                        )
+                        self.sagemaker_client = boto3.client("sagemaker-runtime", region_name=aws_region)
                         self.s3_client = boto3.client("s3", region_name=aws_region)
                 else:
                     self.sagemaker_client = boto3.client("sagemaker-runtime")
                     self.s3_client = boto3.client("s3")
+
             s3_prefix = "dify/speech2text/"
             sagemaker_endpoint = credentials.get("sagemaker_endpoint")
             bucket = credentials.get("audio_s3_cache_bucket")
-            s3_presign_url = generate_presigned_url(
-                self.s3_client, file, bucket, s3_prefix
-            )
+            assert bucket is not None, "audio_s3_cache_bucket is required in credentials"
+
+            s3_presign_url = generate_presigned_url(self.s3_client, file, bucket, s3_prefix)
             payload = {"audio_s3_presign_uri": s3_presign_url}
+
             response_model = self.sagemaker_client.invoke_endpoint(
-                EndpointName=sagemaker_endpoint,
-                Body=json.dumps(payload),
-                ContentType="application/json",
+                EndpointName=sagemaker_endpoint, Body=json.dumps(payload), ContentType="application/json"
             )
             json_str = response_model["Body"].read().decode("utf8")
             json_obj = json.loads(json_str)
@@ -84,6 +81,7 @@ class SageMakerSpeech2TextModel(Speech2TextModel):
         except Exception as e:
             logger.exception(f"failed to invoke speech2text model, model: {model}")
             raise CredentialsValidateFailedError(str(e))
+
         return asr_text
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
@@ -114,9 +112,7 @@ class SageMakerSpeech2TextModel(Speech2TextModel):
             InvokeBadRequestError: [InvokeBadRequestError, KeyError, ValueError],
         }
 
-    def get_customizable_model_schema(
-        self, model: str, credentials: dict
-    ) -> Optional[AIModelEntity]:
+    def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:
         """
         used to define customizable model schema
         """
@@ -128,4 +124,5 @@ class SageMakerSpeech2TextModel(Speech2TextModel):
             model_properties={},
             parameter_rules=[],
         )
+
         return entity

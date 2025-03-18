@@ -136,7 +136,8 @@ class BedrockRetrieveTool(Tool):
             line = 6
             result_type = tool_parameters.get("result_type")
             if result_type == "json":
-                yield [self.create_json_message(res) for res in sorted_docs]
+                json_result = { "results" : sorted_docs }
+                yield self.create_json_message(json_result)
             else:
                 text = ""
                 for i, res in enumerate(sorted_docs):

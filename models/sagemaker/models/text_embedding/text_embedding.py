@@ -3,7 +3,8 @@ import json
 import logging
 import time
 from typing import Any, Optional
-import boto3
+
+import boto3  # type: ignore
 from dify_plugin.entities.model import (
     AIModelEntity,
     EmbeddingInputType,
@@ -27,6 +28,7 @@ from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 
 BATCH_SIZE = 20
 CONTEXT_SIZE = 8192
+
 logger = logging.getLogger(__name__)
 
 
@@ -74,6 +76,7 @@ class SageMakerEmbeddingModel(TextEmbeddingModel):
         :param input_type: input type
         :return: embeddings result
         """
+        # get model properties
         try:
             line = 1
             if not self.sagemaker_client:
@@ -92,22 +95,35 @@ class SageMakerEmbeddingModel(TextEmbeddingModel):
                         self.sagemaker_client = boto3.client("sagemaker-runtime", region_name=aws_region)
                 else:
                     self.sagemaker_client = boto3.client("sagemaker-runtime")
+
             line = 2
             sagemaker_endpoint = credentials.get("sagemaker_endpoint")
+
             line = 3
             truncated_texts = [item[:CONTEXT_SIZE] for item in texts]
+
             batches = batch_generator((text for text in truncated_texts), batch_size=BATCH_SIZE)
             all_embeddings = []
+
             line = 4
             for batch in batches:
                 embeddings = self._sagemaker_embedding(self.sagemaker_client, sagemaker_endpoint, batch)
                 all_embeddings.extend(embeddings)
+
             line = 5
-            usage = self._calc_response_usage(model=model, credentials=credentials, tokens=0)
+            # calc usage
+            usage = self._calc_response_usage(
+                model=model,
+                credentials=credentials,
+                tokens=0,  # It's not SAAS API, usage is meaningless
+            )
             line = 6
+
             return TextEmbeddingResult(embeddings=all_embeddings, usage=usage, model=model)
+
         except Exception as e:
             logger.exception(f"Failed to invoke text embedding model, model: {model}, line: {line}")
+            raise InvokeError(str(e))
 
     def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
         """
@@ -118,10 +134,7 @@ class SageMakerEmbeddingModel(TextEmbeddingModel):
         :param texts: texts to embed
         :return:
         """
-        tokens = []
-        for text in texts:
-            tokens.append(self._get_num_tokens_by_gpt2(text))
-        return tokens
+        return [0] * len(texts)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -145,9 +158,12 @@ class SageMakerEmbeddingModel(TextEmbeddingModel):
         :param tokens: input tokens
         :return: usage
         """
+        # get input price info
         input_price_info = self.get_price(
             model=model, credentials=credentials, price_type=PriceType.INPUT, tokens=tokens
         )
+
+        # transform usage
         usage = EmbeddingUsage(
             tokens=tokens,
             total_tokens=tokens,
@@ -157,6 +173,7 @@ class SageMakerEmbeddingModel(TextEmbeddingModel):
             currency=input_price_info.currency,
             latency=time.perf_counter() - self.started_at,
         )
+
         return usage
 
     @property
@@ -173,12 +190,17 @@ class SageMakerEmbeddingModel(TextEmbeddingModel):
         """
         used to define customizable model schema
         """
+
         entity = AIModelEntity(
             model=model,
             label=I18nObject(en_US=model),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.TEXT_EMBEDDING,
-            model_properties={ModelPropertyKey.CONTEXT_SIZE: CONTEXT_SIZE, ModelPropertyKey.MAX_CHUNKS: BATCH_SIZE},
+            model_properties={
+                ModelPropertyKey.CONTEXT_SIZE: CONTEXT_SIZE,
+                ModelPropertyKey.MAX_CHUNKS: BATCH_SIZE,
+            },
             parameter_rules=[],
         )
+
         return entity

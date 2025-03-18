@@ -247,6 +247,22 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         )
         return result
 
+    def _handle_tool_call_stream(self, response, tool_calls):
+        tool_calls_stream = response.output.choices[0].message["tool_calls"]
+        for tool_call_stream in tool_calls_stream:
+            idx = tool_call_stream.get('index')
+            if idx >= len(tool_calls):
+                tool_calls.append(tool_call_stream)
+            else:
+                if tool_call_stream.get('function'):
+                    func_name = tool_call_stream.get('function').get('name')
+                    tool_call_obj = tool_calls[idx]
+                    if func_name:
+                        tool_call_obj['function']['name'] += func_name
+                    args = tool_call_stream.get('function').get('arguments')
+                    if args:
+                        tool_call_obj['function']['arguments'] += args
+
     def _handle_generate_stream_response(
         self,
         model: str,
@@ -276,7 +292,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 resp_content = response.output.choices[0].message.content
                 assistant_prompt_message = AssistantPromptMessage(content="")
                 if "tool_calls" in response.output.choices[0].message:
-                    tool_calls = response.output.choices[0].message["tool_calls"]
+                    self._handle_tool_call_stream(response, tool_calls)
                 elif resp_content:
                     if isinstance(resp_content, list):
                         resp_content = resp_content[0]["text"]
@@ -319,7 +335,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 )
                 if not resp_content:
                     if "tool_calls" in response.output.choices[0].message:
-                        tool_calls = response.output.choices[0].message["tool_calls"]
+                        self._handle_tool_call_stream(response, tool_calls)
                     continue
                 if isinstance(resp_content, list):
                     resp_content = resp_content[0]["text"]
