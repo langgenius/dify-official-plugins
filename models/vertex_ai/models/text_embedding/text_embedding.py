@@ -48,7 +48,13 @@ class VertexAiTextEmbeddingModel(CommonVertexAi, TextEmbeddingModel):
         :param input_type: input type
         :return: embeddings result
         """
-        service_account_info = json.loads(base64.b64decode(credentials["vertex_service_account_key"]))
+        service_account_info = (
+            json.loads(base64.b64decode(service_account_key))
+            if (
+                service_account_key := credentials.get("vertex_service_account_key", "")
+            )
+            else None
+        )
         project_id = credentials["vertex_project_id"]
         location = credentials["vertex_location"]
         if service_account_info:
@@ -61,7 +67,7 @@ class VertexAiTextEmbeddingModel(CommonVertexAi, TextEmbeddingModel):
         usage = self._calc_response_usage(model=model, credentials=credentials, tokens=embedding_used_tokens)
         return TextEmbeddingResult(embeddings=embeddings_batch, usage=usage, model=model)
 
-    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> int:
+    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
         """
         Get number of tokens for given prompt messages
 
@@ -71,16 +77,16 @@ class VertexAiTextEmbeddingModel(CommonVertexAi, TextEmbeddingModel):
         :return:
         """
         if len(texts) == 0:
-            return 0
+            return []
         try:
             enc = tiktoken.encoding_for_model(model)
         except KeyError:
             enc = tiktoken.get_encoding("cl100k_base")
-        total_num_tokens = 0
+        tokens = []
         for text in texts:
             tokenized_text = enc.encode(text)
-            total_num_tokens += len(tokenized_text)
-        return total_num_tokens
+            tokens.append(len(tokenized_text))
+        return tokens
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -91,7 +97,13 @@ class VertexAiTextEmbeddingModel(CommonVertexAi, TextEmbeddingModel):
         :return:
         """
         try:
-            service_account_info = json.loads(base64.b64decode(credentials["vertex_service_account_key"]))
+            service_account_info = (
+                json.loads(base64.b64decode(service_account_key))
+                if (
+                    service_account_key := credentials.get("vertex_service_account_key", "")
+                )
+                else None
+            )
             project_id = credentials["vertex_project_id"]
             location = credentials["vertex_location"]
             if service_account_info:

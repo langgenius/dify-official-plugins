@@ -1,9 +1,8 @@
-from collections.abc import Generator
-from dify_plugin import OAICompatTextToSpeechModel
-from dify_plugin.entities.model.tts import TTSResult
+from typing import Any, Optional
+from dify_plugin.interfaces.model.openai_compatible.tts import OAICompatText2SpeechModel
 
 
-class GPUStackTextToSpeechModel(OAICompatTextToSpeechModel):
+class GPUStackTextToSpeechModel(OAICompatText2SpeechModel):
     """
     Model class for GPUStack Text to Speech model.
     """
@@ -11,12 +10,15 @@ class GPUStackTextToSpeechModel(OAICompatTextToSpeechModel):
     def _invoke(
         self,
         model: str,
+        tenant_id: str,
         credentials: dict,
-        text: str,
+        content_text: str,
+        voice: str,
         user: str | None = None,
-    ) -> TTSResult | Generator:
+    ) -> Any:  
+        model = model.strip()
         compatible_credentials = self._get_compatible_credentials(credentials)
-        return super()._invoke(model, compatible_credentials, text, user)
+        return super()._invoke(model, tenant_id, compatible_credentials, content_text, voice, user)
 
     def validate_credentials(self, model: str, credentials: dict, user: Optional[str] = None) -> None:
         """
@@ -37,7 +39,7 @@ class GPUStackTextToSpeechModel(OAICompatTextToSpeechModel):
         :return: compatible credentials
         """
         compatible_credentials = credentials.copy()
-        base_url = credentials["endpoint_url"].rstrip("/").removesuffix("/v1-openai")
-        compatible_credentials["endpoint_url"] = f"{base_url}/v1-openai"
+        base_url = credentials["endpoint_url"].rstrip("/").removesuffix("/v1")
+        compatible_credentials["endpoint_url"] = f"{base_url}/v1"
 
         return compatible_credentials

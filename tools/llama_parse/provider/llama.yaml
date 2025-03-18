@@ -1,0 +1,31 @@
+identity:
+  author: langgenius
+  name: llama_cloud
+  label:
+    en_US: Llama Cloud
+    zh_Hans: Llama Cloud
+  description:
+    en_US: Llama Cloud provides image extraction and data cleaning tools
+    zh_Hans: Llama Cloud提供的图片提取和数据清洗工具
+  icon: icon.svg
+  tags:
+    - utilities
+credentials_for_provider:
+  llama_cloud_api_key:
+    help:
+      en_US: Get your Llama Cloud API key from Llama Cloud
+      zh_Hans: 从 Llama Cloud 获取您的 Llama Cloud API key
+    label:
+      en_US: Llama Cloud API key
+      zh_Hans: Llama Cloud API key
+    placeholder:
+      en_US: Please input your  Llama Cloud API key
+      zh_Hans: 请输入你的 Llama Cloud API key
+    required: true
+    type: secret-input
+    url: https://cloud.llamaindex.ai/
+tools:
+  - tools/llama_parse.yaml
+extra:
+  python:
+    source: provider/llama.py

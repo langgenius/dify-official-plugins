@@ -1,0 +1,46 @@
+credentials_for_provider:
+  app_id:
+    help:
+      en_US: Get your app_id and app_secret from Lark
+      zh_Hans: 从 Lark 获取您的 app_id 和 app_secret
+    label:
+      en_US: APP ID
+    placeholder:
+      en_US: Please input your Lark app id
+      zh_Hans: 请输入你的 Lark app id
+    required: true
+    type: text-input
+    url: https://open.larksuite.com/app
+  app_secret:
+    label:
+      en_US: APP Secret
+    placeholder:
+      en_US: Please input your app secret
+      zh_Hans: 请输入你的 Lark app secret
+    required: true
+    type: secret-input
+extra:
+  python:
+    source: provider/lark_message_and_group.py
+identity:
+  author: langgenius
+  description:
+    en_US: 'Lark message and group, requires the following permissions: im:message、im:message.group_msg.
+
+      '
+    zh_Hans: 'Lark 消息和群组，需要开通以下权限: im:message、im:message.group_msg。
+
+      '
+  icon: icon.png
+  label:
+    en_US: Lark Message And Group
+    zh_Hans: Lark 消息和群组
+  name: lark_message_and_group
+  tags:
+  - social
+  - productivity
+tools:
+- tools/send_bot_message.yaml
+- tools/get_chat_messages.yaml
+- tools/send_webhook_message.yaml
+- tools/get_thread_messages.yaml

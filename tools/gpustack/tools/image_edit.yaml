@@ -188,3 +188,14 @@ parameters:
     human_description:
       en_US: Random seed for image generation. Using the same seed will produce similar results.
       zh_Hans: 图像生成的随机种子。使用相同的种子会产生相似的结果。
+  - name: timeout
+    type: number
+    required: false
+    default: 600
+    label:
+      en_US: Timeout(seconds)
+      zh_Hans: 超时时间(秒)
+    human_description:
+      en_US: The maximum time to wait for the image generation to complete(seconds).
+      zh_Hans: 等待图像生成完成的最大时间(秒)。
+    form: form

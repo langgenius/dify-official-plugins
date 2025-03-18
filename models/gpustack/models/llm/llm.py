@@ -16,6 +16,7 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
         stream: bool = True,
         user: str | None = None,
     ) -> LLMResult | Generator:
+        model = model.strip()
         compatible_credentials = self._get_compatible_credentials(credentials)
         return super()._invoke(
             model,
@@ -37,6 +38,6 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
 
     def _get_compatible_credentials(self, credentials: dict) -> dict:
         credentials = credentials.copy()
-        base_url = credentials["endpoint_url"].rstrip("/").removesuffix("/v1-openai")
-        credentials["endpoint_url"] = f"{base_url}/v1-openai"
+        base_url = credentials["endpoint_url"].rstrip("/").removesuffix("/v1")
+        credentials["endpoint_url"] = f"{base_url}/v1"
         return credentials

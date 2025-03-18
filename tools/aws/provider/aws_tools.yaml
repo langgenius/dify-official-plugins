@@ -1,0 +1,30 @@
+identity:
+  author: aws
+  name: aws_tools
+  label:
+    en_US: AWS Tools
+    zh_Hans: 亚马逊云科技工具集
+    pt_BR: AWS Tools
+  description:
+    en_US: the tools based on the aws services
+    zh_Hans: the tools based on the aws services
+    pt_BR: the tools based on the aws services
+  icon: icon.svg
+  tags:
+    - productivity
+tools:
+  - tools/apply_guardrail.yaml
+  - tools/bedrock_retrieve.yaml
+  - tools/bedrock_retrieve_and_generate.yaml
+  - tools/lambda_translate_utils.yaml
+  - tools/lambda_yaml_to_json.yaml
+  - tools/nova_canvas.yaml
+  - tools/s3_operator.yaml
+  - tools/sagemaker_chinese_toxicity_detector.yaml
+  - tools/sagemaker_text_rerank.yaml
+  - tools/sagemaker_tts.yaml
+  - tools/transcribe_asr.yaml
+  - tools/opensearch_knn_search.yaml
+extra:
+  python:
+    source: provider/aws_tools.py

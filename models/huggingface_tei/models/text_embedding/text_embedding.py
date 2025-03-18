@@ -111,7 +111,7 @@ class HuggingfaceTeiTextEmbeddingModel(TextEmbeddingModel):
         )
         return result
 
-    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> int:
+    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
         """
         Get number of tokens for given prompt messages
 
@@ -120,13 +120,14 @@ class HuggingfaceTeiTextEmbeddingModel(TextEmbeddingModel):
         :param texts: texts to embed
         :return:
         """
-        num_tokens = 0
+        tokens = []
         server_url = credentials["server_url"]
         server_url = server_url.removesuffix("/")
         headers = {"Authorization": f"Bearer {credentials.get('api_key')}"}
         batch_tokens = TeiHelper.invoke_tokenize(server_url, texts, headers)
-        num_tokens = sum((len(tokens) for tokens in batch_tokens))
-        return num_tokens
+        for token in batch_tokens:
+            tokens.append(len(token))
+        return tokens
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """

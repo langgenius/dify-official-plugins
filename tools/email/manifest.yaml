@@ -19,7 +19,7 @@ meta:
 name: email
 plugins:
   tools:
-  - provider/email.yaml
+    - provider/email.yaml
 resource:
   memory: 1048576
   permission:
@@ -31,4 +31,4 @@ resource:
 tags:
   - utilities
 type: plugin
-version: 0.0.2
+version: 0.0.3

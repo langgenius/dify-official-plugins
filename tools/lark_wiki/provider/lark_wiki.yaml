@@ -1,0 +1,43 @@
+credentials_for_provider:
+  app_id:
+    help:
+      en_US: Get your app_id and app_secret from Lark
+      zh_Hans: 从 Lark 获取您的 app_id 和 app_secret
+    label:
+      en_US: APP ID
+    placeholder:
+      en_US: Please input your Lark app id
+      zh_Hans: 请输入你的 Lark app id
+    required: true
+    type: text-input
+    url: https://open.larksuite.com/app
+  app_secret:
+    label:
+      en_US: APP Secret
+    placeholder:
+      en_US: Please input your app secret
+      zh_Hans: 请输入你的 Lark app secret
+    required: true
+    type: secret-input
+extra:
+  python:
+    source: provider/lark_wiki.py
+identity:
+  author: langgenius
+  description:
+    en_US: 'Lark Wiki, requires the following permissions: wiki:wiki:readonly.
+
+      '
+    zh_Hans: 'Lark 知识库，需要开通以下权限: wiki:wiki:readonly。
+
+      '
+  icon: icon.png
+  label:
+    en_US: Lark Wiki
+    zh_Hans: Lark 知识库
+  name: lark_wiki
+  tags:
+  - social
+  - productivity
+tools:
+- tools/get_wiki_nodes.yaml

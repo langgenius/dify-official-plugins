@@ -1,0 +1,37 @@
+author: langgenius
+created_at: "2024-09-20T08:03:44.658609186Z"
+description:
+  en_US:
+    "Feishu cloud document, requires the following permissions: docx:document、drive:drive、docs:document.content:read."
+  zh_Hans:
+    "飞书云文档，需要开通以下权限: docx:document、drive:drive、docs:document.content:read。"
+icon: icon.svg
+label:
+  en_US: Feishu Cloud Document
+  zh_Hans: 飞书云文档
+meta:
+  arch:
+    - amd64
+    - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: "3.12"
+  version: 0.0.1
+name: feishu_document
+plugins:
+  tools:
+    - provider/feishu_document.yaml
+resource:
+  memory: 1048576
+  permission:
+    model:
+      enabled: true
+      llm: true
+    tool:
+      enabled: true
+tags:
+  - social
+  - productivity
+type: plugin
+version: 0.0.1

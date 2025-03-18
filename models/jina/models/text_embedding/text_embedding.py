@@ -51,7 +51,7 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
         }
 
         def transform_jina_input_text(model, text):
-            if model == "jina-clip-v1":
+            if model == "jina-clip-v1" or model == "jina-clip-v2":
                 return {"text": text}
             return text
 
@@ -59,6 +59,11 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
             "model": model,
             "input": [transform_jina_input_text(model, text) for text in texts],
         }
+
+        # model specific parameters
+        if model == "jina-embeddings-v3" or model == "jina-clip-v2":
+            # set `task` type according to input type for the best performance
+            data["task"] = "retrieval.query" if input_type == EmbeddingInputType.QUERY else "retrieval.passage"
 
         try:
             response = post(url, headers=headers, data=dumps(data))

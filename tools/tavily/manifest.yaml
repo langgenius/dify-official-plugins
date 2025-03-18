@@ -6,8 +6,8 @@ description:
   zh_Hans: 一个强大的原生AI搜索引擎和网页内容提取工具，提供高度相关的搜索结果和网页原始内容提取。
 icon: icon.png
 label:
-  en_US: Tavily Search & Extract
-  zh_Hans: Tavily 搜索和提取
+  en_US: Tavily
+  zh_Hans: Tavily
 meta:
   arch:
   - amd64
@@ -32,4 +32,4 @@ resource:
 tags:
 - search
 type: plugin
-version: 0.0.2
+version: 0.0.5

@@ -28,8 +28,6 @@ class SiliconflowLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._add_custom_parameters(credentials)
-        if "response_format" in model_parameters:
-            model_parameters["response_format"] = {"type": model_parameters.get("response_format")}
         return super()._invoke(model, credentials, prompt_messages, model_parameters, tools, stop, stream)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
@@ -64,9 +62,9 @@ class SiliconflowLargeLanguageModel(OAICompatLargeLanguageModel):
                 ParameterRule(
                     name="max_tokens",
                     use_template="max_tokens",
-                    default=512,
+                    default=4096,
                     min=1,
-                    max=int(credentials.get("max_tokens", 1024)),
+                    max=int(credentials.get("max_tokens", 16384)),
                     label=I18nObject(en_US="Max Tokens", zh_Hans="最大标记"),
                     type=ParameterType.INT,
                 ),

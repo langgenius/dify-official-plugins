@@ -2,13 +2,19 @@ import json
 from typing import Any, Generator, Mapping
 from werkzeug import Request, Response
 from dify_plugin import Endpoint
+from endpoints.auth import BaseAuth
 
-
-class OpenaiCompatible(Endpoint):
+class OpenaiCompatible(Endpoint, BaseAuth):
     def _invoke(self, r: Request, values: Mapping, settings: Mapping) -> Response:
         """
         Invokes the endpoint with the given request.
         """
+        if not self.verify(r, settings):
+            return Response(
+                json.dumps({"message": "Unauthorized"}),
+                status=401,
+                content_type="application/json",
+            )
         app_id: str = settings.get("app_id", {}).get("app_id", "")
         if not app_id:
             raise ValueError("App ID is required")

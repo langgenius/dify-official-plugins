@@ -55,11 +55,11 @@ class ReplicateEmbeddingModel(_CommonReplicate, TextEmbeddingModel):
         usage = self._calc_response_usage(model, credentials, tokens)
         return TextEmbeddingResult(model=model, embeddings=embeddings, usage=usage)
 
-    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> int:
-        num_tokens = 0
+    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
+        tokens = []
         for text in texts:
-            num_tokens += self._get_num_tokens_by_gpt2(text)
-        return num_tokens
+            tokens.append(self._get_num_tokens_by_gpt2(text))
+        return tokens
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         if "replicate_api_token" not in credentials:

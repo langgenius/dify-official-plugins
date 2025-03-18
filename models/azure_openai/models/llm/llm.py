@@ -121,7 +121,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             )
         try:
             client = AzureOpenAI(**self._to_credential_kwargs(credentials))
-            if "o1" in model:
+            if "o1" in model or "o3" in model:
                 client.chat.completions.create(
                     messages=[{"role": "user", "content": "ping"}],
                     model=model,
@@ -317,7 +317,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             extra_model_kwargs["user"] = user
         prompt_messages = self._clear_illegal_prompt_messages(model, prompt_messages)
         block_as_stream = False
-        if "o1" in model:
+        if "o1" in model or "o3" in model:
             if stream:
                 block_as_stream = True
                 stream = False
@@ -407,7 +407,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                                     for item in prompt_message.content
                                 ]
                             )
-        if "o1" in model:
+        if "o1" in model or "o3" in model:
             system_message_count = len(
                 [m for m in prompt_messages if isinstance(m, SystemPromptMessage)]
             )
@@ -661,6 +661,8 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb"""
         model = credentials["base_model_name"]
         try:
+            if "o1" in model or "o3" in model:
+                model = "gpt-4o"
             encoding = tiktoken.encoding_for_model(model)
         except KeyError:
             logger.warning("Warning: model not found. Using cl100k_base encoding.")
@@ -673,6 +675,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             model.startswith("gpt-35-turbo")
             or model.startswith("gpt-4")
             or "o1" in model
+            or "o3" in model
         ):
             tokens_per_message = 3
             tokens_per_name = 1

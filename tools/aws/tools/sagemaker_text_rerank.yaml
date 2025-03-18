@@ -1,6 +1,6 @@
 identity:
   name: sagemaker_text_rerank
-  author: aws
+  author: AWS
   label:
     en_US: SagemakerRerank
     zh_Hans: Sagemaker重排序

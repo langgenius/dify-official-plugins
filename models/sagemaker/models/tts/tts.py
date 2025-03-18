@@ -4,8 +4,10 @@ import json
 import logging
 from enum import Enum
 from typing import Any, Optional
-import boto3
+
+import boto3  # type: ignore
 import requests
+
 from dify_plugin.entities.model import AIModelEntity, FetchFrom, I18nObject, ModelType
 from dify_plugin.errors.model import (
     InvokeAuthorizationError,
@@ -18,7 +20,6 @@ from dify_plugin.errors.model import (
 from dify_plugin.interfaces.model.tts_model import TTSModel
 
 logger = logging.getLogger(__name__)
-
 
 class TTSModelType(Enum):
     PresetVoice = "PresetVoice"
@@ -65,8 +66,10 @@ class SageMakerText2SpeechModel(TTSModel):
 
     def _detect_lang_code(self, content: str, map_dict: Optional[dict] = None):
         map_dict = {"zh": "<|zh|>", "en": "<|en|>", "ja": "<|jp|>", "zh-TW": "<|yue|>", "ko": "<|ko|>"}
+
         response = self.comprehend_client.detect_dominant_language(Text=content)
         language_code = response["Languages"][0]["LanguageCode"]
+
         return map_dict.get(language_code, "<|zh|>")
 
     def _build_tts_payload(
@@ -87,6 +90,7 @@ class SageMakerText2SpeechModel(TTSModel):
             return {"tts_text": f"{content_text}", "prompt_audio": prompt_audio, "lang_tag": lang_tag}
         if model_type == TTSModelType.InstructVoice.value and instruct_text and model_role:
             return {"tts_text": content_text, "role": model_role, "instruct_text": instruct_text}
+
         raise RuntimeError(f"Invalid params for {model_type}")
 
     def _invoke(
@@ -132,12 +136,14 @@ class SageMakerText2SpeechModel(TTSModel):
                 self.sagemaker_client = boto3.client("sagemaker-runtime")
                 self.s3_client = boto3.client("s3")
                 self.comprehend_client = boto3.client("comprehend")
+
         model_type = credentials.get("audio_model_type", "PresetVoice")
         prompt_text = credentials.get("prompt_text")
         prompt_audio = credentials.get("prompt_audio")
         instruct_text = credentials.get("instruct_text")
         sagemaker_endpoint = credentials.get("sagemaker_endpoint")
         payload = self._build_tts_payload(model_type, content_text, voice, prompt_text, prompt_audio, instruct_text)
+
         return self._tts_invoke_streaming(model_type, payload, sagemaker_endpoint)
 
     def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:
@@ -152,6 +158,7 @@ class SageMakerText2SpeechModel(TTSModel):
             model_properties={},
             parameter_rules=[],
         )
+
         return entity
 
     @property
@@ -192,11 +199,14 @@ class SageMakerText2SpeechModel(TTSModel):
                     return voices[language]
                 elif "all" in voices:
                     return voices["all"]
+
         return self.model_voices["__default"]["all"]
 
     def _invoke_sagemaker(self, payload: dict, endpoint: str):
         response_model = self.sagemaker_client.invoke_endpoint(
-            EndpointName=endpoint, Body=json.dumps(payload), ContentType="application/json"
+            EndpointName=endpoint,
+            Body=json.dumps(payload),
+            ContentType="application/json",
         )
         json_str = response_model["Body"].read().decode("utf8")
         json_obj = json.loads(json_str)
@@ -216,6 +226,7 @@ class SageMakerText2SpeechModel(TTSModel):
             lang_tag = ""
             if model_type == TTSModelType.CloneVoice_CrossLingual.value:
                 lang_tag = payload.pop("lang_tag")
+
             word_limit = self._get_model_word_limit(model="", credentials={})
             content_text = payload.get("tts_text")
             if len(content_text) > word_limit:
@@ -226,10 +237,16 @@ class SageMakerText2SpeechModel(TTSModel):
                 payloads = [copy.deepcopy(payload) for i in range(len_sent)]
                 for idx in range(len_sent):
                     payloads[idx]["tts_text"] = sentences[idx]
+
                 futures = [
-                    executor.submit(self._invoke_sagemaker, payload=payload, endpoint=sagemaker_endpoint)
+                    executor.submit(
+                        self._invoke_sagemaker,
+                        payload=payload,
+                        endpoint=sagemaker_endpoint,
+                    )
                     for payload in payloads
                 ]
+
                 for future in futures:
                     resp = future.result()
                     audio_bytes = requests.get(resp.get("s3_presign_url")).content
@@ -238,6 +255,7 @@ class SageMakerText2SpeechModel(TTSModel):
             else:
                 resp = self._invoke_sagemaker(payload, sagemaker_endpoint)
                 audio_bytes = requests.get(resp.get("s3_presign_url")).content
+
                 for i in range(0, len(audio_bytes), 1024):
                     yield audio_bytes[i : i + 1024]
         except Exception as ex:

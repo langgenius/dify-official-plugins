@@ -1,4 +1,5 @@
 from decimal import Decimal
+import json
 import re
 import logging
 from collections.abc import Generator
@@ -671,12 +672,20 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         response_format = model_parameters.get("response_format")
         if response_format:
-            if response_format == "json_object":
-                response_format = {"type": "json_object"}
+            if response_format == "json_schema":
+                json_schema = model_parameters.get("json_schema")
+                if not json_schema:
+                    raise ValueError("Must define JSON Schema when the response format is json_schema")
+                try:
+                    schema = json.loads(json_schema)
+                except Exception:
+                    raise ValueError(f"not correct json_schema format: {json_schema}")
+                model_parameters.pop("json_schema")
+                model_parameters["response_format"] = {"type": "json_schema", "json_schema": schema}
             else:
-                response_format = {"type": "text"}
-
-            model_parameters["response_format"] = response_format
+                model_parameters["response_format"] = {"type": response_format}
+        elif "json_schema" in model_parameters:
+            del model_parameters["json_schema"]
 
         extra_model_kwargs = {}
 
@@ -885,6 +894,12 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
             delta = chunk.choices[0]
             has_finish_reason = delta.finish_reason is not None
+            # to fix issue #12215 yi model has special case for ligthing
+            # FIXME drop the case when yi model is updated
+            if model.startswith("yi-"):
+                if isinstance(delta.finish_reason, str):
+                    # doc: https://platform.lingyiwanwu.com/docs/api-reference
+                    has_finish_reason = delta.finish_reason.startswith(("length", "stop", "content_filter"))
 
             if (
                 not has_finish_reason

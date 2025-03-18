@@ -1,5 +1,5 @@
 import re
-from typing import Any, Union, Generator
+from typing import Any, Generator
 from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.send import SendEmailToolParameters, send_mail
 from dify_plugin import Tool

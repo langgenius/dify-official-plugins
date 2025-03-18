@@ -4,15 +4,15 @@ from typing import Optional, Union
 
 import numpy as np
 import tiktoken
-from openai import OpenAI
-
 from dify_plugin import TextEmbeddingModel
 from dify_plugin.entities.model import EmbeddingInputType, PriceType
-from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.entities.model.text_embedding import (
     EmbeddingUsage,
     TextEmbeddingResult,
 )
+from dify_plugin.errors.model import CredentialsValidateFailedError
+from openai import OpenAI
+
 from ..common_openai import _CommonOpenAI
 
 
@@ -104,7 +104,10 @@ class OpenAITextEmbeddingModel(_CommonOpenAI, TextEmbeddingModel):
                 average = embeddings_batch[0]
             else:
                 average = np.average(_result, axis=0, weights=num_tokens_in_batch[i])
-            embeddings[i] = (average / np.linalg.norm(average)).tolist()  # type: ignore
+            embedding = (average / np.linalg.norm(average)).tolist()  # type: ignore
+            if np.isnan(embedding).any():
+                raise ValueError("Normalized embedding is nan please try again")
+            embeddings[i] = embedding
 
         # calc usage
         usage = self._calc_response_usage(
@@ -113,7 +116,9 @@ class OpenAITextEmbeddingModel(_CommonOpenAI, TextEmbeddingModel):
 
         return TextEmbeddingResult(embeddings=embeddings, usage=usage, model=model)
 
-    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
+    def get_num_tokens(
+        self, model: str, credentials: dict, texts: list[str]
+    ) -> list[int]:
         """
         Get number of tokens for given prompt messages
 
