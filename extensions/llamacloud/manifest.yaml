@@ -3,10 +3,10 @@ type: plugin
 author: langgenius
 name: llamacloud
 label:
-  en_US: llamacloud
-  ja_JP: llamacloud
-  zh_Hans: llamacloud
-  pt_BR: llamacloud
+  en_US: Llamacloud
+  ja_JP: Llamacloud
+  zh_Hans: Llamacloud
+  pt_BR: Llamacloud
 description:
   en_US: LlamaCloud client as API Endpoint to connect Dify External Knowledge Base
   ja_JP: LlamaCloud client as API Endpoint to connect Dify External Knowledge Base
