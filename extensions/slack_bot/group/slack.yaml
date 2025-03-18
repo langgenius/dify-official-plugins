@@ -60,15 +60,16 @@ settings:
       pt_BR: Processar Arquivos do Slack
       ja_JP: Slackからのファイルを処理する
     default: false
-  - name: process_dify_files
-    type: boolean
-    required: false
-    label:
-      en_US: Process Files from Dify
-      zh_Hans: 处理来自 Dify 的文件
-      pt_BR: Processar Arquivos do Dify
-      ja_JP: Difyからのファイルを処理する
-    default: false
+  # TODO: Add support for processing files from Dify
+  # - name: process_dify_files
+  #   type: boolean
+  #   required: false
+  #   label:
+  #     en_US: Process Files from Dify
+  #     zh_Hans: 处理来自 Dify 的文件
+  #     pt_BR: Processar Arquivos do Dify
+  #     ja_JP: Difyからのファイルを処理する
+  #   default: false
   - name: event_types
     type: select
     required: true
