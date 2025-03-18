@@ -12,6 +12,32 @@ settings:
       zh_Hans: 请输入你的 Bot Token
       pt_BR: Por favor, insira seu Token do Bot
       ja_JP: ボットトークンを入力してください
+  - name: ignore_user_ids
+    type: text-input
+    required: false
+    label:
+      en_US: Ignore User IDs
+      zh_Hans: 忽略用户 ID
+      pt_BR: IDs de Usuários para Ignorar
+      ja_JP: 無視するユーザーID
+    placeholder:
+      en_US: Comma-separated list of user IDs to ignore (e.g., U12345,U67890)
+      zh_Hans: 要忽略的用户 ID 列表，用逗号分隔 (例如, U12345,U67890)
+      pt_BR: Lista de IDs de usuários para ignorar, separados por vírgula (ex U12345,U67890)
+      ja_JP: "無視するユーザーIDのカンマ区切りリスト（例：U12345,U67890）"
+  - name: dify_api_token
+    type: secret-input
+    required: false
+    label:
+      en_US: Dify API Token
+      zh_Hans: Dify API 令牌
+      pt_BR: Token da API Dify
+      ja_JP: Dify APIトークン
+    placeholder:
+      en_US: Optional API token for Dify file operations
+      zh_Hans: 用于 Dify 文件操作的可选 API 令牌
+      pt_BR: Token de API opcional para operações de arquivo Dify
+      ja_JP: Difyファイル操作用のオプションAPIトークン
   - name: channel_name
     type: text-input
     required: false
