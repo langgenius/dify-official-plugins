@@ -1,0 +1,14 @@
+settings:
+  - name: llama_cloud_api_key
+    type: secret-input
+    required: true
+    label:
+      en_US: API key
+      zh_Hans: API key
+      pt_BR: API key
+    placeholder:
+      en_US: Please input your API key
+      zh_Hans: 请输入你的 API key
+      pt_BR: Please input your API key
+endpoints:
+  - endpoints/llamacloud.yaml
