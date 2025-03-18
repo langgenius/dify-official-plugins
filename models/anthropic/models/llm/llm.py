@@ -225,10 +225,50 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         )
 
     def _transform_tool_prompt(self, tool: PromptMessageTool) -> dict:
+        """
+        Transform tool prompt to Anthropic-compatible format, ensuring it matches JSON Schema draft 2020-12
+        
+        This method handles:
+        1. Converting custom types to JSON Schema standard types
+        2. Mapping options arrays to enum arrays
+        3. Ensuring schema validity for Anthropic API requirements
+        
+        Args:
+            tool: The tool prompt message with parameters to transform
+            
+        Returns:
+            dict: A tool definition compatible with Anthropic API
+        """
+        # Make a deep copy to avoid modifying the original
+        input_schema = json.loads(json.dumps(tool.parameters))
+        
+        # Fix any non-standard types in properties
+        if 'properties' in input_schema:
+            for _, prop_config in input_schema['properties'].items():
+                # Handle 'select' type conversion
+                if prop_config.get('type') == 'select':
+                    prop_config['type'] = 'string'
+                    
+                    # Convert 'options' to 'enum' if needed
+                    if 'options' in prop_config and 'enum' not in prop_config:
+                        enum_values = [option.get('value') for option in prop_config['options'] 
+                                      if 'value' in option]
+                        prop_config['enum'] = enum_values
+                    
+                    # Handle case with neither options nor enum
+                    if 'enum' not in prop_config:
+                        if 'default' in prop_config:
+                            default_value = prop_config['default']
+                            prop_config['enum'] = [default_value]
+                        else:
+                            # Rather than creating an empty enum that will fail validation,
+                            # set a more appropriate default
+                            prop_config['enum'] = [""]
+        
         return {
             "name": tool.name,
             "description": tool.description,
-            "input_schema": tool.parameters,
+            "input_schema": input_schema,
         }
 
     def _transform_chat_json_prompts(
