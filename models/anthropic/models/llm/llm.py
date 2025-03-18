@@ -776,7 +776,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                                     "input": json.loads(tool_call.function.arguments),
                                 }
                             )
-                    if message.content:
+                    elif message.content:
                         content.append({"type": "text", "text": message.content})
                     if prompt_message_dicts and prompt_message_dicts[-1]["role"] == "assistant":
                         prompt_message_dicts[-1]["content"].extend(content)
