@@ -1,6 +1,0 @@
-dify_plugin==0.0.1b65
-google-api-python-client>=2.100.0
-google-auth>=2.22.0
-google-auth-oauthlib>=1.0.0
-google-api-core>=2.0.0
-googleapis-common-protos>=1.56.0
