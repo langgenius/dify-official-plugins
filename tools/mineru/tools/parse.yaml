@@ -1,0 +1,62 @@
+identity:
+  name: parse-pdf
+  author: langgenius
+  label:
+    en_US: Parse PDF
+    zh_Hans: Parse PDF
+    pt_BR: Parse PDF
+description:
+  human:
+    en_US: a tool for parsing text, tables, and images, supporting multiple formats such as pdf, pptx, docx, etc. supporting multiple languages such as English, Chinese, etc.
+    zh_Hans: 一个用于解析文本，表格和图片的工具，支持pdf,pptx,docx等多种格式。支持英语，中文等多种语言
+  llm: a tool for parsing text, tables, and images, supporting multiple formats such as pdf, pptx, docx, etc. supporting multiple languages such as English, Chinese, etc.
+parameters:
+  - name: files
+    type: files
+    required: true
+    label:
+      en_US: files
+      zh_Hans: files
+    human_description:
+      en_US:  the file to be parsed
+      zh_Hans: 用于解析的文件
+    llm_description: the file to be parsed
+    form: llm
+  - name: parse_method
+    type: select
+    required: false
+    default: auto
+    label:
+      en_US: parse method
+      zh_Hans: 解析方法
+    human_description:
+        en_US: Parsing method, can be auto, ocr, or txt. Default is auto. If results are not satisfactory, try ocr
+        zh_Hans: 解析方法，可以是auto, ocr, 或 txt。默认是auto。如果结果不理想，请尝试ocr
+    llm_description: Parsing method, can be auto, ocr, or txt. Default is auto. If results are not satisfactory, try ocr
+    form: form
+    options:
+      - value: auto
+        label:
+          en_US: auto
+          zh_Hans: auto
+      - value: ocr
+        label:
+          en_US: ocr
+          zh_Hans: ocr
+      - value: txt
+        label:
+          en_US: txt
+          zh_Hans: txt
+    placeholder:
+      en_US: Please select a parse method
+      zh_Hans: 请选择解析方法
+output_schema:
+    type: object
+    properties:
+      url_list:
+        type: array
+        items:
+          type: string
+extra:
+  python:
+    source: tools/parse.py
