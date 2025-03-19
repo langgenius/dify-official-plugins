@@ -1,5 +1,7 @@
 ## Overview
 
+> Please make sure the dify_plugin ≥ 0.0.1b73.
+
 **Vectorizer.AI** is a powerful tool that converts PNG and JPG images into scalable SVG vector graphics quickly and easily. Powered by AI, the conversion process is fully automated, allowing you to transform raster images into high-quality vector formats with minimal effort.
 
 This tool is ideal for graphic designers, developers, and anyone who needs vectorized images for their projects.
