@@ -319,11 +319,14 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         prompt_messages = self._clear_illegal_prompt_messages(base_model_name, prompt_messages)
         block_as_stream = False
         if base_model_name.startswith(("o1", "o3")):
-            if stream:
-                block_as_stream = True
-                stream = False
-                if "stream_options" in extra_model_kwargs:
-                    del extra_model_kwargs["stream_options"]
+            # o1 and o1-* do not support streaming
+            # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/reasoning#api--feature-support
+            if base_model_name.startswith("o1"):
+                if stream:
+                    block_as_stream = True
+                    stream = False
+                    if "stream_options" in extra_model_kwargs:
+                        del extra_model_kwargs["stream_options"]
             if "stop" in extra_model_kwargs:
                 del extra_model_kwargs["stop"]
         response = client.chat.completions.create(
