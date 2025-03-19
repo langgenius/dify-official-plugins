@@ -121,7 +121,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             )
         try:
             client = AzureOpenAI(**self._to_credential_kwargs(credentials))
-            if "o1" in model or "o3" in model:
+            if base_model_name.startswith(("o1", "o3")):
                 client.chat.completions.create(
                     messages=[{"role": "user", "content": "ping"}],
                     model=model,
@@ -285,6 +285,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
+        base_model_name = self._get_base_model_name(credentials)
         client = AzureOpenAI(**self._to_credential_kwargs(credentials))
         response_format = model_parameters.get("response_format")
         if response_format:
@@ -315,9 +316,9 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             extra_model_kwargs["stop"] = stop
         if user:
             extra_model_kwargs["user"] = user
-        prompt_messages = self._clear_illegal_prompt_messages(model, prompt_messages)
+        prompt_messages = self._clear_illegal_prompt_messages(base_model_name, prompt_messages)
         block_as_stream = False
-        if "o1" in model or "o3" in model:
+        if base_model_name.startswith(("o1", "o3")):
             if stream:
                 block_as_stream = True
                 stream = False
@@ -407,7 +408,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                                     for item in prompt_message.content
                                 ]
                             )
-        if "o1" in model or "o3" in model:
+        if model.startswith(("o1", "o3")):
             system_message_count = len(
                 [m for m in prompt_messages if isinstance(m, SystemPromptMessage)]
             )
@@ -660,9 +661,9 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         Official documentation: https://github.com/openai/openai-cookbook/blob/
         main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb"""
         model = credentials["base_model_name"]
+        if model.startswith(("o1", "o3")):
+            model = "gpt-4o"
         try:
-            if "o1" in model or "o3" in model:
-                model = "gpt-4o"
             encoding = tiktoken.encoding_for_model(model)
         except KeyError:
             logger.warning("Warning: model not found. Using cl100k_base encoding.")
@@ -674,8 +675,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         elif (
             model.startswith("gpt-35-turbo")
             or model.startswith("gpt-4")
-            or "o1" in model
-            or "o3" in model
+            or model.startswith(("o1", "o3"))
         ):
             tokens_per_message = 3
             tokens_per_name = 1
