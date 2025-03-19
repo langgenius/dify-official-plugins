@@ -373,7 +373,11 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             system_fingerprint=block_result.system_fingerprint,
             delta=LLMResultChunkDelta(
                 index=0,
-                message=AssistantPromptMessage(content=text),
+                message=AssistantPromptMessage(
+                    content=text or "",
+                    name=block_result.message.name,
+                    tool_calls=block_result.message.tool_calls,
+                ),
                 finish_reason="stop",
                 usage=block_result.usage,
             ),
