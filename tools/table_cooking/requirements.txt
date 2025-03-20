@@ -1,0 +1,8 @@
+dify_plugin==0.0.1b74
+
+# Core Data Processing
+openpyxl
+xlsxwriter
+tabulate
+pandas>=2.0.0
+numpy>=1.24.0,<2.0.0

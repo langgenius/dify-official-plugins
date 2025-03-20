@@ -1,0 +1,17 @@
+identity:
+  author: qin2dim
+  name: table_cooking
+  label:
+    en_US: table_cooking
+    zh_Hans: table_cooking
+    pt_BR: table_cooking
+  description:
+    en_US: Cooking on tabular data, smooth Q&amp;A
+    zh_Hans: Cooking on tabular data, smooth Q&amp;A
+    pt_BR: Cooking on tabular data, smooth Q&amp;A
+  icon: icon.svg
+tools:
+  - tools/table_cooking.yaml
+extra:
+  python:
+    source: provider/table_cooking.py

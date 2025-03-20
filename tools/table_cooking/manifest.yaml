@@ -1,0 +1,48 @@
+version: 0.0.1
+type: plugin
+author: qin2dim
+name: table_cooking
+label:
+  en_US: table_cooking
+  ja_JP: table_cooking
+  zh_Hans: table_cooking
+  pt_BR: table_cooking
+description:
+  en_US: Cooking on tabular data, smooth Q&A
+  ja_JP: Cooking on tabular data, smooth Q&A
+  zh_Hans: Cooking on tabular data, smooth Q&A
+  pt_BR: Cooking on tabular data, smooth Q&A
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+      text_embedding: true
+      rerank: true
+      tts: false
+      speech2text: false
+      moderation: false
+    endpoint:
+      enabled: true
+    storage:
+      enabled: true
+      size: 2048576
+plugins:
+  tools:
+    - provider/table_cooking.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+created_at: 2025-03-19T22:56:15.9693229+08:00
+privacy: PRIVACY.md
+verified: false

@@ -1,0 +1,42 @@
+identity:
+  name: table_cooking
+  author: qin2dim
+  label:
+    en_US: table_cooking
+    zh_Hans: table_cooking
+    pt_BR: table_cooking
+description:
+  human:
+    en_US: Cooking on tabular data, smooth Q&amp;A
+    zh_Hans: Cooking on tabular data, smooth Q&amp;A
+    pt_BR: Cooking on tabular data, smooth Q&amp;A
+  llm: Cooking on tabular data, smooth Q&amp;A
+parameters:
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: Query string
+      zh_Hans: 查询语句
+      pt_BR: Query string
+    human_description:
+      en_US: Cooking on tabular data, smooth Q&amp;A
+      zh_Hans: Cooking on tabular data, smooth Q&amp;A
+      pt_BR: Cooking on tabular data, smooth Q&amp;A
+    llm_description: Cooking on tabular data, smooth Q&amp;A
+    form: llm
+  - name: table
+    type: file
+    required: true
+    label:
+      en_US: Table file
+      zh_Hans: 表格文件
+    human_description:
+      en_US:  Document form for Q&A (CSV / XLSX / XLS)
+      zh_Hans: 用于问答的文件表格（CSV / XLSX / XLS）
+    llm_description: Document form for Q&amp;A
+    form: llm
+
+extra:
+  python:
+    source: tools/table_cooking.py
