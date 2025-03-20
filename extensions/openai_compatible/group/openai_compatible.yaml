@@ -46,5 +46,11 @@ settings:
           pt_BR: Última Mensagem do Usuário
           ja_JP: 最後のユーザーメッセージ
         value: last_user_message
+      - label:
+          en_US: All Messages
+          zh_Hans: 使用所有消息
+          pt_BR: Todas as Mensagens
+          ja_JP: 全てのメッセージ
+        value: all_messages
 endpoints:
   - endpoints/openai_compatible.yaml
