@@ -1,8 +1,26 @@
 dify_plugin==0.0.1b74
 
 # Core Data Processing
+loguru
+tenacity
+bs4~=0.0.2
+beautifulsoup4~=4.12.3
+tiktoken
+
 openpyxl
 xlsxwriter
 tabulate
 pandas>=2.0.0
 numpy>=1.24.0,<2.0.0
+chardet
+sympy
+
+# Statistical Analysis
+statsmodels>=0.14.0
+scipy>=1.11.0
+pingouin>=0.5.3
+
+# DrawIO
+matplotlib
+seaborn
+joblib>=1.3.0

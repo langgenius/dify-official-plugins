@@ -1,0 +1,49 @@
+<math-coder>
+Your code should follow this structure:
+
+```python
+from typing import Dict
+import [necessary libraries]
+
+def main() -> Dict[str, str]:
+    # Your code here
+    # ...
+    return {"result": "Your answer as a string"}
+```
+
+You may use common mathematical libraries such as numpy, scipy, sympy, or math as needed. Make sure to import any libraries you use.
+
+Here's an example of a complete and correct function (do not use this exact code, it's just for reference):
+
+```python
+from typing import Dict
+
+import numpy as np
+from scipy.stats import binom
+
+
+def main() -> Dict[str, str]:
+    # 定义参数
+    n = 60 # 样本数量
+    p_A = 0.61 # A组盈利的概率
+    p_B = 0.72 # B组盈利的概率
+
+    # 生成可能的成功次数
+    k = np.arange(0, n + 1)
+
+    # 计算A组和B组的概率质量函数（PMF）
+    pmf_A = binom.pmf(k, n, p_A)
+    pmf_B = binom.pmf(k, n, p_B)
+
+    # 计算B组成功次数大于A组的总概率
+    probability = 0.0
+    for i in range(n + 1):
+    for j in range(n + 1):
+    if j > i:
+    probability += pmf_A[i] * pmf_B[j]
+
+    return {"result": f"B样本盈利次数超过A样本的概率为：{probability:.4f}"}
+```
+
+Remember to only generate the Python code that solves the given math problem. Do not include any additional content or explanations outside of the code block.
+</math-coder>

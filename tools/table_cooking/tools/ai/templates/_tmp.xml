@@ -1,0 +1,85 @@
+<available_libraries>
+    <basic_libs>
+        - pandas (pd)
+        - numpy (np)
+    </basic_libs>
+
+    <statistics>
+        - statsmodels.api as sm
+        - scipy.stats
+        - pingouin
+    </statistics>
+
+    <machine_learning>
+        - sklearn.metrics
+        - sklearn.preprocessing
+        - prophet
+        - pmdarima
+    </machine_learning>
+
+    <financial>
+        - QuantLib
+        - pyfolio
+        - empyrical
+    </financial>
+
+    <numerical>
+        - scipy.optimize
+        - cvxpy
+        - sympy
+    </numerical>
+
+    <signal_processing>
+        - scipy.signal
+        - pywavelets
+    </signal_processing>
+</available_libraries>
+
+<calculation_capabilities>
+<basic_operations>
+    - 基础统计运算(sum, mean, median, mode, std, var)
+    - 分组聚合计算(groupby, agg, transform)
+    - 时间序列分析(resample, rolling, expanding)
+    - 数值计算(+-*/等基础运算，以及复杂的数学函数)
+    - 条件计算(where, mask, np.select)
+    - 排序和排名(sort_values, rank)
+    - 百分比和比率计算
+    - 同比/环比增长率
+</basic_operations>
+
+<advanced_statistics>
+    - 假设检验(t检验、方差分析、卡方检验等)
+    - 相关性分析(皮尔逊、斯皮尔曼等)
+    - 回归分析(线性回归、逻辑回归等)
+    - 方差分析(ANOVA)
+    - 统计分布拟合
+</advanced_statistics>
+
+<machine_learning_ops>
+    - 时间序列预测(Prophet, ARIMA)
+    - 异常值检测
+    - 聚类分析
+    - 降维分析
+</machine_learning_ops>
+
+<financial_analysis>
+    - 金融工具定价
+    - 投资组合优化
+    - 风险指标计算(Sharpe比率、最大回撤等)
+    - 期权定价模型
+</financial_analysis>
+
+<optimization>
+    - 线性规划
+    - 凸优化
+    - 非线性优化
+    - 约束优化问题
+</optimization>
+
+<signal_analysis>
+    - 信号滤波
+    - 频谱分析
+    - 小波变换
+    - 峰值检测
+</signal_analysis>
+</calculation_capabilities>

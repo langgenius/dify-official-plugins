@@ -2,27 +2,31 @@ identity:
   name: table_cooking
   author: qin2dim
   label:
-    en_US: table_cooking
-    zh_Hans: table_cooking
-    pt_BR: table_cooking
+    en_US: Table Data Analysis
+    zh_Hans: 表格数据分析
+    pt_BR: Análise de Dados Tabulares
+    ja_JP: 表データ分析
 description:
   human:
-    en_US: Cooking on tabular data, smooth Q&amp;A
-    zh_Hans: Cooking on tabular data, smooth Q&amp;A
-    pt_BR: Cooking on tabular data, smooth Q&amp;A
-  llm: Cooking on tabular data, smooth Q&amp;A
+    en_US: Cook your tabular data to perfection! Smooth Q&A with just a few clicks
+    zh_Hans: 完美烹饪您的表格数据！轻松点击，流畅问答
+    pt_BR: Cozinhe seus dados tabulares à perfeição! Q&A suave com apenas alguns cliques
+    ja_JP: 表データを完璧に調理！クリック数回で滑らかなQ&A体験
+  llm: Cook your tabular data to perfection! Smooth Q&A with just a few clicks
 parameters:
   - name: query
     type: string
     required: true
     label:
-      en_US: Query string
+      en_US: Natural language query
       zh_Hans: 查询语句
-      pt_BR: Query string
+      pt_BR: Consulta em linguagem natural
+      ja_JP: 自然言語クエリ
     human_description:
-      en_US: Cooking on tabular data, smooth Q&amp;A
-      zh_Hans: Cooking on tabular data, smooth Q&amp;A
-      pt_BR: Cooking on tabular data, smooth Q&amp;A
+      en_US: The information you want to get from the table data
+      zh_Hans: 想从表格数据中获取的信息
+      pt_BR: A informação que você deseja obter dos dados da tabela
+      ja_JP: 表データから取得したい情報
     llm_description: Cooking on tabular data, smooth Q&amp;A
     form: llm
   - name: table
@@ -31,11 +35,32 @@ parameters:
     label:
       en_US: Table file
       zh_Hans: 表格文件
+      pt_BR: Arquivo de tabela
+      ja_JP: 表ファイル
     human_description:
-      en_US:  Document form for Q&A (CSV / XLSX / XLS)
-      zh_Hans: 用于问答的文件表格（CSV / XLSX / XLS）
+      en_US:  Document form for Q&A (.csv/.xlsx/.xls)
+      zh_Hans: 提供数据支持的的表格文件（.csv/.xlsx/.xls）
+      pt_BR: Formulário de documento para Q&A (.csv/.xlsx/.xls)
+      ja_JP: Q&A用のドキュメントフォーム（.csv/.xlsx/.xls）
     llm_description: Document form for Q&amp;A
     form: llm
+  # https://docs.dify.ai/zh-hans/plugins/schema-definition/reverse-invocation-of-the-dify-service/model#zui-jia-shi-jian
+  - name: chef
+    type: model-selector
+    scope: llm
+    required: true
+    label:
+      en_US: Model
+      zh_Hans: 使用的模型
+      pt_BR: Modelo
+      ja_JP: モデル
+    human_description:
+      en_US: Model
+      zh_Hans: 使用的模型
+      pt_BR: Modelo a ser usado
+      ja_JP: 使用するモデル
+    llm_description: which Model to invoke
+    form: form
 
 extra:
   python:
