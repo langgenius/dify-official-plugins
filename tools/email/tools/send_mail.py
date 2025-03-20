@@ -53,4 +53,5 @@ class SendMailTool(Tool):
         )
         if send_mail(send_email_params):
             yield self.create_text_message("send email success")
-        yield self.create_text_message("send email failed")
+        else:
+            yield self.create_text_message("send email failed")
