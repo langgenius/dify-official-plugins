@@ -1,7 +1,7 @@
-import hashlib
+import shutil
 from pathlib import Path
-from typing import Dict, Any, NoReturn
-from typing import Optional, List, Tuple
+from typing import Any, NoReturn
+from typing import Optional
 from urllib.parse import urlparse
 from uuid import uuid4
 
@@ -12,7 +12,7 @@ from dify_plugin.entities.model.llm import LLMModelConfig
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin.file.file import File
 from loguru import logger
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, UUID4
 
 from tools.ai.table_self_query import TableQueryEngine, QueryResult
 from tools.pipeline.constant import ARTIFACT_FILES_DIR
@@ -20,7 +20,6 @@ from tools.pipeline.constant import ARTIFACT_FILES_DIR
 PREVIEW_CODE_WRAPPER = """
 <segment table="{table_name}">
 <question>{question}</question>
-<question_type>{question_type}</question_type>
 <code>
 {query_code}
 </code>
@@ -34,6 +33,8 @@ encoding = tiktoken.get_encoding("o200k_base")
 
 
 class ArtifactPayload(BaseModel):
+    task_id: UUID4
+
     natural_query: str
     """
     Natural language query description.
@@ -60,7 +61,7 @@ class ArtifactPayload(BaseModel):
     table extension (.csv / .xlsx / .xls)
     """
 
-    filepath: Path
+    input_table_path: Path
     """
     Temporary address of table files in plug-in, deleted after QA and not retained
     """
@@ -77,6 +78,10 @@ class ArtifactPayload(BaseModel):
 
     # local_url: Optional[str] = Field(default="", description="artifact filepath in the Dify")
     # public_url: AnyUrl = Field(..., description="URL to download the artifact")
+
+    @property
+    def cache_dir(self) -> Path:
+        return ARTIFACT_FILES_DIR.joinpath(str(self.task_id))
 
     @staticmethod
     def validation(tool_parameters: dict[str, Any]) -> NoReturn | None:
@@ -136,92 +141,79 @@ class ArtifactPayload(BaseModel):
 
         ArtifactPayload.validation(tool_parameters)
 
+        task_id = uuid4()
         content = table.blob
 
         if isinstance(dify_model_config, dict):
             dify_model_config = LLMModelConfig(**dify_model_config)
 
         # Generate filename based on content hash
-        content_hash = hashlib.sha256(content).hexdigest()
-        cache_dir = ARTIFACT_FILES_DIR
+        cache_dir = ARTIFACT_FILES_DIR.joinpath(str(task_id))
         cache_dir.mkdir(exist_ok=True, parents=True)
 
-        filepath = cache_dir.joinpath(f"{content_hash}{table.extension}")
+        filepath = cache_dir.joinpath(f"{str(uuid4())}{table.extension}")
         filepath.write_bytes(content)
 
         return cls(
+            task_id=task_id,
             natural_query=query,
             name=table.filename,
             mime_type=table.mime_type,
             type=str(table.type),
             extension=table.extension,
-            filepath=filepath,
+            input_table_path=filepath,
             dify_model_config=dify_model_config,
         )
 
     def release_cache(self):
-        if isinstance(self.filepath, Path) and self.filepath.is_file():
+        """Delete the cache directory for this task"""
+        if isinstance(self.input_table_path, Path) and self.input_table_path.is_file():
+            cache_dir = self.input_table_path.parent
+
+            # Anti-dust operation
+            if not cache_dir.is_dir() or cache_dir.parent.name != "artifact_files":
+                return
+
             try:
-                self.filepath.unlink(missing_ok=True)
+                shutil.rmtree(cache_dir, ignore_errors=True)
             except Exception as e:
-                logger.warning(f"Failed to delete cache file {self.filepath}: {e}")
+                logger.warning(f"Failed to delete cache file {cache_dir}: {e}")
 
 
-class Segment(BaseModel):
-    natural_query: str
-    input_table_name: str
-    code: str
-    output_content: str
-    result_data: List[Dict[str, Any]]
-    question_type: str = Field(default="")
-    recommend_filename: Optional[str] = Field(default="output.xlsx")
-    artifact_extension: str
+def transform_friendly_prompt_template(
+    question: str, table_name: str, query_code: str, recommend_filename: str, result_data: Any
+):
+    preview_df = pd.DataFrame.from_records(result_data)
+    result_markdown = preview_df.to_markdown(index=False)
+    wrapper_ = PREVIEW_CODE_WRAPPER.format(
+        question=question,
+        table_name=table_name,
+        query_code=query_code,
+        recommend_filename=recommend_filename,
+        result_markdown=result_markdown,
+    ).strip()
 
-    def to_llm_friendlly_xml_segment(self, head_n: int | None = None) -> Tuple[str, str]:
-        if isinstance(head_n, int):
-            preview_df = pd.DataFrame.from_records(self.result_data).head(head_n)
-        else:
-            preview_df = pd.DataFrame.from_records(self.result_data)
+    return wrapper_, result_markdown
 
-        preview_markdown = preview_df.to_markdown(index=False)
 
-        wrapper_ = PREVIEW_CODE_WRAPPER.format(
-            question=self.natural_query,
-            table_name=self.input_table_name,
-            question_type=self.question_type,
-            query_code=self.code,
-            recommend_filename=self.recommend_filename,
-            result_markdown=preview_markdown,
-        ).strip()
+def transform_to_dify_file(
+    recommend_filename: str,
+    artifact_extension: str,
+    result_data: Any,
+    *,
+    storage_dir: Optional[Path],
+):
+    flag = Path(recommend_filename).stem
+    flag2 = str(uuid4())
 
-        return wrapper_, preview_markdown
+    data_path = storage_dir.joinpath(f"{flag}/{flag2}{artifact_extension}")
+    df = pd.DataFrame.from_records(result_data)
+    if artifact_extension in [".csv"]:
+        df.to_csv(str(data_path), index=False)
+    elif artifact_extension in [".xlsx", ".xls"]:
+        df.to_excel(str(data_path), index=False, sheet_name=flag)
 
-    def storage_to_local(self, *, storage_dir: Optional[Path]):
-        wrapper_ = PREVIEW_CODE_WRAPPER.format(
-            question=self.natural_query,
-            table_name=self.input_table_name,
-            question_type=self.question_type,
-            query_code=self.code,
-            recommend_filename=self.recommend_filename,
-            result_markdown=self.output_content,
-        ).strip()
-
-        flag = Path(self.recommend_filename).stem
-        flag2 = str(uuid4())
-
-        xml_path = storage_dir.joinpath(f"{flag}/{flag2}.xml")
-        xml_path.parent.mkdir(exist_ok=True, parents=True)
-        xml_path.write_text(wrapper_, encoding="utf8")
-
-        data_path = storage_dir.joinpath(f"{flag}/{flag2}{self.artifact_extension}")
-        if self.artifact_extension in [".csv"]:
-            pd.DataFrame.from_records(self.result_data).to_csv(str(data_path), index=False)
-        elif self.artifact_extension in [".xlsx", ".xls"]:
-            pd.DataFrame.from_records(self.result_data).to_excel(
-                str(data_path), index=False, sheet_name=flag
-            )
-
-        return xml_path, data_path
+    return data_path
 
 
 class CodeInterpreter(BaseModel):
@@ -231,7 +223,6 @@ class CodeInterpreter(BaseModel):
 class CookingResultParams(BaseModel):
     code: str
     natural_query: str
-    question_type: str
     recommend_filename: str
     input_tokens: int
     input_table_name: str
@@ -246,47 +237,43 @@ class CookingResult(BaseModel):
 @logger.catch
 def table_self_query(artifact: ArtifactPayload, session: Session) -> CookingResult:
     engine = TableQueryEngine(session=session, dify_model_config=artifact.dify_model_config)
-    engine.load_table(artifact.filepath)
+    engine.load_table(artifact.input_table_path)
 
     result: QueryResult = engine.query(artifact.natural_query)
     if result.error:
         logger.error(result.error)
 
-    segment = Segment(
-        natural_query=artifact.natural_query,
-        code=result.query_code,
-        input_table_name=artifact.name,
-        output_content=pd.DataFrame.from_records(result.data).to_markdown(index=False),
-        result_data=result.data,
-        question_type=result.query_type,
-        recommend_filename=result.get_recommend_filename(suffix=".md"),
-        artifact_extension=artifact.extension,
-    )
+    recommend_filename = result.get_recommend_filename(suffix=".md")
 
     # 将 segment 压缩成 LLM_READY 的 XML_CONTENT
     # 但由于查询结果数据量可能非常大，不宜将完整内容插入会话污染上下文
     # 也许最佳实践的方式是插入 preview lines 以及资源预览链接
-    __xml_context__, __preview_context__ = segment.to_llm_friendlly_xml_segment(head_n=5)
+    __xml_context__, __preview_context__ = transform_friendly_prompt_template(
+        question=artifact.natural_query,
+        table_name=artifact.name,
+        query_code=result.query_code,
+        recommend_filename=recommend_filename,
+        result_data=result.data,
+    )
 
     # Excessively long text should be printed directly instead of output by LLM
     input_tokens = len(encoding.encode(__xml_context__))
 
-    # 将 segment 上传至 minio
-    # 便于将查询结果作为 runtime_artifact 插入到会话变量中
-    # xml_path, data_path = segment.storage_to_local(storage_dir=segments_dir)
-    # data_download_link = get_attachment_remote_url(str(data_path), is_public=True)
-    # data_preview_markdown = (
-    #     f"[{result.get_recommend_filename(suffix=artifact.extension)}]({data_download_link})"
+    # Return to the table preview file after operation
+    # transform_to_dify_file(
+    #     recommend_filename=recommend_filename,
+    #     artifact_extension=artifact.extension,
+    #     result_data=result.data,
+    #     storage_dir=artifact.cache_dir,
     # )
 
     return CookingResult(
         llm_ready=__xml_context__,
         human_ready=__preview_context__,
         params=CookingResultParams(
-            code=segment.code,
-            natural_query=segment.natural_query,
-            question_type=segment.question_type,
-            recommend_filename=segment.recommend_filename,
+            code=result.query_code,
+            natural_query=artifact.natural_query,
+            recommend_filename=recommend_filename,
             input_tokens=input_tokens,
             input_table_name=artifact.name,
         ),
