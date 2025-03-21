@@ -170,3 +170,5 @@ cython_debug/
 # Vscode
 .vscode/
 *.exe
+
+tmp/

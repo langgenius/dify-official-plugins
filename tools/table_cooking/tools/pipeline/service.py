@@ -4,9 +4,10 @@ from typing import Dict, Any
 from typing import Optional, List, Tuple
 from uuid import uuid4
 
-import httpx
 import pandas as pd
 import tiktoken
+from dify_plugin.core.runtime import Session
+from dify_plugin.entities.model.llm import LLMModelConfig
 from dify_plugin.file.file import File
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -28,30 +29,59 @@ PREVIEW_CODE_WRAPPER = """
 """
 
 
-def get_dify_file_blob(uri_path: str):
-    remote_host = "http://192.168.1.53/"
-    url = f"{remote_host}{uri_path.rstrip('/')}"
-
-    response = httpx.get(url)
-    response.raise_for_status()
-    return response.content
-
-
 class ArtifactPayload(BaseModel):
     natural_query: str
+    """
+    Natural language query description.
+    Todo: In multiple rounds of dialogue, this should be a semantic complete query after being spliced by the memory model.
+    """
+
     name: str
+    """
+    filename
+    """
+
     mime_type: str
+    """
+    table mime_type
+    """
+
     type: str
+    """
+    dify file type
+    """
+
     extension: str
+    """
+    table extension (.csv / .xlsx / .xls)
+    """
+
     filepath: Path
+    """
+    Temporary address of table files in plug-in, deleted after QA and not retained
+    """
+
+    model_config: LLMModelConfig
+    """
+    Dify LLM model configuration
+    """
+
+    enable_classifier: bool = True
+    """
+    Start the problem classifier and let the query flow to `simple query` or `complex calculation`
+    """
 
     # local_url: Optional[str] = Field(default="", description="artifact filepath in the Dify")
     # public_url: AnyUrl = Field(..., description="URL to download the artifact")
 
     @classmethod
-    def from_dify_file(cls, query: str, table: File):
-        content = get_dify_file_blob(uri_path=table.url)
-        table._blob = content
+    def from_dify_tool_parameters(
+        cls, query: str, table: File, model_config: LLMModelConfig | dict
+    ):
+        content = table.blob
+
+        if isinstance(model_config, dict):
+            model_config = LLMModelConfig(**model_config)
 
         # Generate filename based on content hash
         content_hash = hashlib.sha256(content).hexdigest()
@@ -68,6 +98,7 @@ class ArtifactPayload(BaseModel):
             type=str(table.type),
             extension=table.extension,
             filepath=filepath,
+            model_config=model_config,
         )
 
     def release_cache(self):
@@ -144,15 +175,13 @@ encoding = tiktoken.get_encoding("o200k_base")
 
 
 @logger.catch
-def table_self_query(artifact: ArtifactPayload, **kwargs) -> Dict[str, Any]:
-    engine = TableQueryEngine(select_model="gemini", coder_model="gemini")
+def table_self_query(artifact: ArtifactPayload, session: Session, **kwargs) -> Dict[str, Any]:
+    engine = TableQueryEngine(session=session, dify_model_config=artifact.model_config)
     engine.load_table(artifact.filepath)
 
     logger.info(f"Input question: {artifact.natural_query}")
 
-    result: QueryResult = engine.query(
-        artifact.natural_query, enable_classifier=True, enable_pre_classify=False
-    )
+    result: QueryResult = engine.query(artifact.natural_query)
     if result.error:
         logger.error(result.error)
 

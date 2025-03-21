@@ -17,10 +17,13 @@ import pingouin
 import scipy.stats
 import statsmodels.api as sm
 from bs4 import BeautifulSoup
+from dify_plugin.core.runtime import Session
+from dify_plugin.entities.model.llm import LLMModelConfig, LLMResult
+from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
 from loguru import logger
 from pydantic import BaseModel, Field, field_validator
 
-from tools.ai.invoke_llm import invoke_qwen, invoke_gemini, invoke_claude_debugger
+from tools.ai.invoke_llm import invoke_claude_debugger
 
 AI_DIR = Path(__file__).parent
 
@@ -410,7 +413,7 @@ class TableLoader:
         ]
 
     def load_table(self, file_path: Union[str, Path]) -> None:
-        """加载表格文件，处理头尾注释，并自动检测表头行"""
+        """Load the table file, process the head and tail comments, and automatically detect the head rows of the table"""
         file_path = Path(file_path)
 
         if file_path.suffix.lower() == ".csv":
@@ -418,7 +421,7 @@ class TableLoader:
         elif file_path.suffix.lower() in [".xlsx", ".xls"]:
             valid_df = pd.read_excel(file_path, header=None)
         else:
-            raise ValueError("不支持的文件格式。请使用.csv或.xlsx文件")
+            raise ValueError("Unsupported file formats. Please use table file")
 
         # 检测表头行
         header_row = self._detect_header_row(valid_df)
@@ -435,29 +438,31 @@ class TableLoader:
 
 
 class TableQueryEngine:
-    def __init__(
-        self, select_model: AVAILABLE_MODELS = "gemini", coder_model: AVAILABLE_MODELS | None = None
-    ):
-        """初始化查询引擎
-
-        Args:
-            select_model: 选择代码生成模型
-        """
-        model_name_to_invoker = {
-            "qwen": invoke_qwen,
-            "gemini": invoke_gemini,
-            "coder": invoke_gemini,
-        }
-
-        self.model_invoker = model_name_to_invoker[select_model]
-        if coder_model in model_name_to_invoker:
-            self.coder_model_invoker = model_name_to_invoker[coder_model]
-        else:
-            self.coder_model_invoker = self.model_invoker
+    def __init__(self, session: Session, dify_model_config: LLMModelConfig):
+        self.session = session
+        self.dify_model_config = dify_model_config
 
         self.df = None
         self.schema_info = {}
         self.sample_data = []
+
+    def _invoke_dify_llm(
+        self,
+        user_content: str,
+        system_prompt: str = None,
+        temperature: float = 0,
+        max_tokens: int = 4096,
+    ) -> LLMResult:
+        model_config = self.dify_model_config.model_dump().copy()
+        model_config["completion_params"] = {"max_tokens": max_tokens, "temperature": temperature}
+        return self.session.model.llm.invoke(
+            model_config=model_config,
+            prompt_messages=[
+                SystemPromptMessage(content=system_prompt),
+                UserPromptMessage(content=user_content),
+            ],
+            stream=False,
+        )
 
     def load_table(self, file_path: Union[str, Path]) -> None:
         tl = TableLoader()
@@ -475,20 +480,21 @@ class TableQueryEngine:
             "sample_data": json.dumps(self.sample_data[0], indent=2, ensure_ascii=False),
         }
         system_prompt = f"""
-        <task>你是一个相关性判断器，判断用户查询是否可借助已有知识库回答。输出 "YES" 表示相关。<task>
-        
+        <task>
+        You are a relevance judge, determining whether a user query can be answered using the existing knowledge base. Output "YES" if it is relevant.
+        </task>
         <COT>
-        判断：1. 场景是否相关；2. 是否可借助如下信息回答问题
-        例如<不相关>的情况：表是一份与招聘数据相关的岗位信息，但 query 是查询股价
-        例如<相关>的情况：表是一份考试成绩单，query 是查询科目成绩或计算某个地区的平均分
+        Judgment: 1. Is the scenario relevant? 2. Can the question be answered using the following information?
+        For example, <not relevant> case: The table is job information related to recruitment data, but the query is to query stock prices.
+        For example, <relevant> case: The table is an exam grade sheet, and the query is to query the scores of a subject or calculate the average score of a certain region.
         </COT>
-        
         <schemas>
-        如下是知识库表的表头，抽样数据，形状以及描述信息。
+        Below are the headers, sample data, shape, and description information of the knowledge base tables.
         {schemas}
         </schemas>
-        
-        <limitations>你只能输出 "YES" 或 "NO" 不能输出除此之外的任何信息</limitations>
+        <limitations>
+        You can only output "YES" or "NO" and cannot output any other information.
+        </limitations>
         """
         runtime_params = {
             "system_prompt": system_prompt,
@@ -496,7 +502,7 @@ class TableQueryEngine:
             "temperature": 0,
             "max_tokens": 512,
         }
-        return self.model_invoker(**runtime_params)
+        return self._invoke_dify_llm(**runtime_params)
 
     def second_level_classify(self, natural_query: str):
         schemas = {
@@ -506,20 +512,21 @@ class TableQueryEngine:
             "sample_data": json.dumps(self.sample_data[0], indent=2, ensure_ascii=False),
         }
         system_prompt = f"""
-        <task>你是一个问题分类器，判断用户查询是否为<基础数据查询>类任务。输出 "YES" 表示属于。<task>
-
+        <task>
+        You are a question classifier, determining whether a user query is a <basic data query> task. Output "YES" if it is.
+        </task>
         <COT>
-        判断：1. 是否明确要求查询；2. 是否要求列出数据；
-        例如<不属于>的情况：表是一份考试成绩单，query 要求计算某个地区考生成绩的中位数（也即，成绩单中没有明确给出的数据）
-        例如<属于>的情况：表是一份考试成绩单，query 是查询科目成绩或某个地区考生的成绩
+        Judgment: 1. Does the query explicitly request a query? 2. Does the query request a listing of data?
+        For example, <not belonging> case: The table is an exam grade sheet, and the query requires calculating the median score of students in a certain region (i.e., data not explicitly given in the grade sheet).
+        For example, <belonging> case: The table is an exam grade sheet, and the query is to query the scores of a subject or the scores of students in a certain region.
         </COT>
-
         <schemas>
-        如下是知识库表的表头，抽样数据，形状以及描述信息。
+        Below are the headers, sample data, shape, and description information of the knowledge base tables.
         {schemas}
         </schemas>
-
-        <limitations>你只能输出 "YES" 或 "NO" 不能输出除此之外的任何信息</limitations>
+        <limitations>
+        You can only output "YES" or "NO" and cannot output any other information.
+        </limitations>
         """
         runtime_params = {
             "system_prompt": system_prompt,
@@ -527,7 +534,7 @@ class TableQueryEngine:
             "temperature": 0,
             "max_tokens": 512,
         }
-        return self.model_invoker(**runtime_params)
+        return self._invoke_dify_llm(**runtime_params)
 
     def get_query_classification(self, natural_query: str) -> str:
         system_prompt = get_prompt_template("classify")
@@ -540,7 +547,7 @@ class TableQueryEngine:
             "max_tokens": 512,
         }
 
-        return self.model_invoker(**runtime_params)
+        return self._invoke_dify_llm(**runtime_params)
 
     def gen_related_question(self, question_type: str = "") -> str:
         limitations = ""
@@ -570,7 +577,7 @@ class TableQueryEngine:
             "max_tokens": 4096,
         }
 
-        return self.model_invoker(**runtime_params)
+        return self._invoke_dify_llm(**runtime_params)
 
     def _generate_query_code(
         self, natural_query: str, agent: Literal["table_filter", "table_interpreter"]
@@ -599,7 +606,7 @@ class TableQueryEngine:
             "max_tokens": 4096,
         }
 
-        code = self.coder_model_invoker(**runtime_params)
+        code = self._invoke_dify_llm(**runtime_params)
         if "```python" in code:
             code = code.split("```python")[1].split("```")[0].strip()
 
@@ -626,7 +633,7 @@ class TableQueryEngine:
             "max_tokens": 512,
         }
 
-        return self.model_invoker(**runtime_params)
+        return self._invoke_dify_llm(**runtime_params)
 
     def _safe_execute_code(self, code: str) -> Any:
         """安全地执行动态生成的代码
@@ -675,35 +682,28 @@ class TableQueryEngine:
 
             return str(traceback.format_exc())
 
-    def query(
-        self, natural_query: str, enable_classifier: bool = True, enable_pre_classify: bool = False
-    ) -> QueryResult:
+    def query(self, natural_query: str, enable_classifier: bool = True) -> QueryResult:
         """执行自然语言查询并返回标准化的结果
 
         Args:
-            enable_pre_classify:
-            natural_query: 自然语言查询描述，在多轮对话中，这应该是被记忆模型拼接之后的语义完整的查询。
-            enable_classifier: 启动问题分类器，让查询流向`简单查询`或`复杂计算`
+            natural_query: todo Natural language query description.
+                In multiple rounds of dialogue, this should be a semantic complete query after being spliced by the memory model.
+            enable_classifier: Start the problem classifier and let the query flow to `simple query` or `complex calculation`
         Returns:
-            QueryResult: 标准化的查询结果模型
+            QueryResult: Standardized query result model
         """
         if self.df is None:
             return QueryOutputParser.parse(None, natural_query, error="未加载表格数据")
 
         try:
-            # 前置判断 - 问题是否与数据集相关
-            if enable_pre_classify:
-                is_related = self.pre_classify(natural_query)
-                if is_related == "NO":
-                    return QueryOutputParser.parse(
-                        pd.DataFrame(), natural_query, error="查询与表信息无关"
-                    )
-            # 后置判断 - 问题场景分类，进而使用不同的分支生成代码
+
+            # Post-Judgement - Problem Scenario Classification, and then use different branches to generate code
             if enable_classifier:
                 # query_type = self.get_query_classification(natural_query)
                 is_search = self.second_level_classify(natural_query)
                 query_type = "基础数据查询" if "YES" in is_search else "数据统计"
-            # 忽略判断 - 至查询为`基础数据查询`类，引导后续工作流打印结果而非重新投入到memory
+            # Ignore judgment - To the query is the `Basic Data Query` class,
+            # guide subsequent workflows to print the results instead of re-investment into memory
             else:
                 query_type = "基础数据查询"
 
@@ -767,4 +767,4 @@ class TableQueryEngine:
             "max_tokens": 4096,
         }
 
-        return self.model_invoker(**runtime_params)
+        return self._invoke_dify_llm(**runtime_params)
