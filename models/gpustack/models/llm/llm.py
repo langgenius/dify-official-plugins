@@ -16,6 +16,7 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
         stream: bool = True,
         user: str | None = None,
     ) -> LLMResult | Generator:
+        model = model.strip()
         compatible_credentials = self._get_compatible_credentials(credentials)
         return super()._invoke(
             model,

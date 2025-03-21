@@ -1,0 +1,5 @@
+path: "/retrieval"
+method: "POST"
+extra:
+  python:
+    source: "endpoints/aws_bedrock_knowledge_base.py"

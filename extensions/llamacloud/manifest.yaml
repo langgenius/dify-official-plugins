@@ -1,0 +1,35 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: llamacloud
+label:
+  en_US: Llamacloud
+  ja_JP: Llamacloud
+  zh_Hans: Llamacloud
+  pt_BR: Llamacloud
+description:
+  en_US: LlamaCloud client as API Endpoint to connect Dify External Knowledge Base
+  ja_JP: LlamaCloud client as API Endpoint to connect Dify External Knowledge Base
+  zh_Hans: LlamaCloud client as API Endpoint to connect Dify External Knowledge Base
+  pt_BR: LlamaCloud client as API Endpoint to connect Dify External Knowledge Base
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission:
+    endpoint:
+      enabled: true
+plugins:
+  endpoints:
+    - group/llamacloud.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+created_at: 2025-03-17T22:56:00.320025+08:00
+privacy: PRIVACY.md
+verified: false

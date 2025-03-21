@@ -91,8 +91,7 @@ class SendMailTool(Tool):
             encrypt_method=encrypt_method,
             is_html=convert_to_html,
             attachments=attachments
-        )
-        
+        )        
         # Send the email and get result
         success = send_mail(send_email_params)
         
