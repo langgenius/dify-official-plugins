@@ -7,7 +7,6 @@ from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin.file.file import File
-from loguru import logger
 
 from tools.pipeline.service import ArtifactPayload, table_self_query
 
@@ -18,12 +17,11 @@ class TableCookingTool(Tool):
     https://docs.dify.ai/zh-hans/plugins/schema-definition/reverse-invocation-of-the-dify-service/model#zui-jia-shi-jian
     """
 
-    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
-        query = tool_parameters.get("query", "")
+    @staticmethod
+    def _validation(tool_parameters: dict[str, Any]):
+        query = tool_parameters.get("query")
         table = tool_parameters.get("table")
         chef = tool_parameters.get("chef")
-
-        logger.debug(json.dumps(chef, indent=2, ensure_ascii=False))
 
         # !!<LLM edit>
         if not query or not isinstance(query, str):
@@ -47,14 +45,41 @@ class TableCookingTool(Tool):
             )
         # !!</LLM edit>
 
+        # Prevent stupidity
+        not_available_models = [
+            "gpt-4.5-preview",
+            "gpt-4.5-preview-2025-02-27",
+            "o1",
+            "o1-2024-12-17",
+            "o1-pro",
+            "o1-pro-2025-03-19",
+        ]
+        if (
+            isinstance(chef, dict)
+            and chef.get("model_type", "") == "llm"
+            and chef.get("provider", "") == "langgenius/openai/openai"
+            and chef.get("mode", "") == "chat"
+        ):
+            if use_model := chef.get("model"):
+                if use_model in not_available_models:
+                    raise ToolProviderCredentialValidationError(
+                        f"Model `{use_model}` is not available for this tool. "
+                        f"Please replace other cheaper models."
+                    )
+
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
+        query = tool_parameters.get("query", "")
+        table = tool_parameters.get("table")
+        chef = tool_parameters.get("chef")
+
+        self._validation(tool_parameters)
+
         # Build artifact for QA
         artifact = ArtifactPayload.from_dify_tool_parameters(query, table, chef)
-        logger.debug(artifact)
 
         try:
             result = table_self_query(artifact, self.session)
-            print(result)
         finally:
             artifact.release_cache()
 
-        yield self.create_json_message({"result": "Hello, world!"})
+        yield self.create_json_message(result)

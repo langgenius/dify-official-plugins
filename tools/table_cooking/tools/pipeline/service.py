@@ -61,7 +61,7 @@ class ArtifactPayload(BaseModel):
     Temporary address of table files in plug-in, deleted after QA and not retained
     """
 
-    model_config: LLMModelConfig
+    dify_model_config: LLMModelConfig
     """
     Dify LLM model configuration
     """
@@ -76,12 +76,12 @@ class ArtifactPayload(BaseModel):
 
     @classmethod
     def from_dify_tool_parameters(
-        cls, query: str, table: File, model_config: LLMModelConfig | dict
+        cls, query: str, table: File, dify_model_config: LLMModelConfig | dict
     ):
         content = table.blob
 
-        if isinstance(model_config, dict):
-            model_config = LLMModelConfig(**model_config)
+        if isinstance(dify_model_config, dict):
+            dify_model_config = LLMModelConfig(**dify_model_config)
 
         # Generate filename based on content hash
         content_hash = hashlib.sha256(content).hexdigest()
@@ -98,7 +98,7 @@ class ArtifactPayload(BaseModel):
             type=str(table.type),
             extension=table.extension,
             filepath=filepath,
-            model_config=model_config,
+            dify_model_config=dify_model_config,
         )
 
     def release_cache(self):
@@ -171,12 +171,21 @@ class CodeInterpreter(BaseModel):
     code: str
 
 
+class CookingResult(BaseModel):
+    xml_content: str
+    preview_content: str
+    segment: dict
+    input_tokens: int
+    data_download_link: str | None = ""
+    data_preview_markdown: str | None = ""
+
+
 encoding = tiktoken.get_encoding("o200k_base")
 
 
 @logger.catch
 def table_self_query(artifact: ArtifactPayload, session: Session, **kwargs) -> Dict[str, Any]:
-    engine = TableQueryEngine(session=session, dify_model_config=artifact.model_config)
+    engine = TableQueryEngine(session=session, dify_model_config=artifact.dify_model_config)
     engine.load_table(artifact.filepath)
 
     logger.info(f"Input question: {artifact.natural_query}")

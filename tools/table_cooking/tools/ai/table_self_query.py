@@ -449,10 +449,10 @@ class TableQueryEngine:
         system_prompt: str = None,
         temperature: float = 0,
         max_tokens: int = 4096,
-    ) -> LLMResult:
+    ) -> str:
         model_config = self.dify_model_config.model_dump().copy()
         model_config["completion_params"] = {"max_tokens": max_tokens, "temperature": temperature}
-        return self.session.model.llm.invoke(
+        llm_result = self.session.model.llm.invoke(
             model_config=model_config,
             prompt_messages=[
                 SystemPromptMessage(content=system_prompt),
@@ -460,6 +460,8 @@ class TableQueryEngine:
             ],
             stream=False,
         )
+
+        return llm_result.message.content
 
     def load_table(self, file_path: Union[str, Path]) -> None:
         tl = TableLoader()
@@ -711,7 +713,7 @@ class TableQueryEngine:
             # ====================
             df_result = None
             for _ in range(3):
-                logger.debug(f"[{query_type}]Generate code: \n{query_code}")
+                # logger.debug(f"[{query_type}]Generate code: \n{query_code}")
                 df_result = self._safe_execute_code(query_code)
                 # What is returned is not an error message
                 if not isinstance(df_result, str):
