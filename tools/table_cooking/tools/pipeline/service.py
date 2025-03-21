@@ -1,13 +1,15 @@
 import hashlib
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, NoReturn
 from typing import Optional, List, Tuple
+from urllib.parse import urlparse
 from uuid import uuid4
 
 import pandas as pd
 import tiktoken
 from dify_plugin.core.runtime import Session
 from dify_plugin.entities.model.llm import LLMModelConfig
+from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin.file.file import File
 from loguru import logger
 from pydantic import BaseModel, Field
@@ -74,10 +76,64 @@ class ArtifactPayload(BaseModel):
     # local_url: Optional[str] = Field(default="", description="artifact filepath in the Dify")
     # public_url: AnyUrl = Field(..., description="URL to download the artifact")
 
+    @staticmethod
+    def validation(tool_parameters: dict[str, Any]) -> NoReturn | None:
+        query = tool_parameters.get("query")
+        table = tool_parameters.get("table")
+        chef = tool_parameters.get("chef")
+
+        # !!<LLM edit>
+        if not query or not isinstance(query, str):
+            raise ToolProviderCredentialValidationError("Query is required and must be a string.")
+        if not table or not isinstance(table, File):
+            raise ToolProviderCredentialValidationError("Table is required and must be a file.")
+        if table.extension not in [".csv", ".xls", ".xlsx"]:
+            raise ToolProviderCredentialValidationError("Table must be a csv, xls, or xlsx file.")
+
+        # Check if the URL is of string type
+        if not isinstance(table.url, str):
+            raise ToolProviderCredentialValidationError("URL must be a string.")
+
+        # Parses URL and verify scheme
+        parsed_url = urlparse(table.url)
+        if parsed_url.scheme not in ["http", "https"]:
+            scheme = parsed_url.scheme or "missing"
+            raise ToolProviderCredentialValidationError(
+                f"Invalid URL scheme '{scheme}'. FILES_URL must start with 'http://' or 'https://'."
+                f"Please check more details https://github.com/langgenius/dify/blob/72191f5b13c55b44bcd3b25f7480804259e53495/docker/.env.example#L42"
+            )
+        # !!</LLM edit>
+
+        # Prevent stupidity
+        not_available_models = [
+            "gpt-4.5-preview",
+            "gpt-4.5-preview-2025-02-27",
+            "o1",
+            "o1-2024-12-17",
+            "o1-pro",
+            "o1-pro-2025-03-19",
+        ]
+        if (
+            isinstance(chef, dict)
+            and chef.get("model_type", "") == "llm"
+            and chef.get("provider", "") == "langgenius/openai/openai"
+            and chef.get("mode", "") == "chat"
+        ):
+            if use_model := chef.get("model"):
+                if use_model in not_available_models:
+                    raise ToolProviderCredentialValidationError(
+                        f"Model `{use_model}` is not available for this tool. "
+                        f"Please replace other cheaper models."
+                    )
+
     @classmethod
-    def from_dify_tool_parameters(
-        cls, query: str, table: File, dify_model_config: LLMModelConfig | dict
-    ):
+    def from_dify(cls, tool_parameters: dict[str, Any]):
+        query = tool_parameters.get("query")
+        table = tool_parameters.get("table")
+        dify_model_config = tool_parameters.get("chef")
+
+        ArtifactPayload.validation(tool_parameters)
+
         content = table.blob
 
         if isinstance(dify_model_config, dict):
