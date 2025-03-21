@@ -23,8 +23,9 @@ class TableCookingTool(Tool):
 
         # Invoke tool-strategy
         try:
-            result = table_self_query(artifact, self.session)
-            print(json.dumps(result, ensure_ascii=False, indent=2))
-            yield self.create_json_message(result)
+            cooking_result = table_self_query(artifact, self.session)
+            cooking_result_json = cooking_result.model_dump(mode="json")
+            print(cooking_result.llm_ready)
+            yield self.create_json_message(cooking_result_json)
         finally:
             artifact.release_cache()

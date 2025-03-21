@@ -230,6 +230,7 @@ class CookingResultParams(BaseModel):
     question_type: str
     recommend_filename: str
     input_tokens: int
+    input_table_name: str
 
 
 class CookingResult(BaseModel):
@@ -239,7 +240,7 @@ class CookingResult(BaseModel):
 
 
 @logger.catch
-def table_self_query(artifact: ArtifactPayload, session: Session) -> Dict[str, Any]:
+def table_self_query(artifact: ArtifactPayload, session: Session) -> CookingResult:
     engine = TableQueryEngine(session=session, dify_model_config=artifact.dify_model_config)
     engine.load_table(artifact.filepath)
 
@@ -274,14 +275,15 @@ def table_self_query(artifact: ArtifactPayload, session: Session) -> Dict[str, A
     #     f"[{result.get_recommend_filename(suffix=artifact.extension)}]({data_download_link})"
     # )
 
-    return {
-        "llm_ready": __xml_context__,
-        "human_ready": __preview_context__,
-        "params": {
-            "code": segment.code,
-            "natural_query": segment.natural_query,
-            "question_type": segment.question_type,
-            "recommend_filename": segment.recommend_filename,
-            "input_tokens": input_tokens,
-        },
-    }
+    return CookingResult(
+        llm_ready=__xml_context__,
+        human_ready=__preview_context__,
+        params=CookingResultParams(
+            code=segment.code,
+            natural_query=segment.natural_query,
+            question_type=segment.question_type,
+            recommend_filename=segment.recommend_filename,
+            input_tokens=input_tokens,
+            input_table_name=artifact.name,
+        ),
+    )
