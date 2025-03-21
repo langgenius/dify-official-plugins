@@ -56,7 +56,7 @@ parameters:
       ja_JP: モデル
     human_description:
       en_US: Model
-      zh_Hans: 使用的模型
+      zh_Hans: 使用的模型 test
       pt_BR: Modelo a ser usado
       ja_JP: 使用するモデル
     llm_description: which Model to invoke

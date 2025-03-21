@@ -52,7 +52,6 @@ class TableCookingTool(Tool):
         logger.debug(artifact)
 
         try:
-            print("1")
             result = table_self_query(artifact, self.session)
             print(result)
         finally:

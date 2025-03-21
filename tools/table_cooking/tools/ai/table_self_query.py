@@ -1,7 +1,6 @@
 import ast
 import csv
 import json
-import re
 import traceback
 from datetime import datetime
 from enum import Enum
@@ -22,8 +21,6 @@ from dify_plugin.entities.model.llm import LLMModelConfig, LLMResult
 from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
 from loguru import logger
 from pydantic import BaseModel, Field, field_validator
-
-from tools.ai.invoke_llm import invoke_claude_debugger
 
 AI_DIR = Path(__file__).parent
 
@@ -645,27 +642,27 @@ class TableQueryEngine:
             查询结果
         """
         try:
-            # 解析代码确保语法正确
+            # Parse the code to ensure the syntax is correct
             ast.parse(code)
 
             # 创建一个隔离的命名空间
             namespace = {
-                # 基础库
+                # Basic library
                 "pd": pd,
                 "np": np,
                 "df": self.df,
-                # 统计相关
+                # Statistical related
                 "sm": sm,
                 "stats": scipy.stats,
                 "pingouin": pingouin,
             }
 
-            # 使用exec执行函数定义
+            # Execute function definitions using exec
             exec(code, namespace)
 
-            # 调用生成的函数
+            # Call the generated function
             if "execute_query" not in namespace:
-                raise ValueError("生成的代码中没有找到execute_query函数")
+                raise ValueError("The executed_query function was not found in the generated code")
 
             result = namespace["execute_query"](self.df)
             return result
@@ -678,25 +675,19 @@ class TableQueryEngine:
                 "traceback": traceback.format_exc(),
             }
 
-            logger.error("代码执行失败", extra={"error_context": error_context})
+            logger.error("Code execution failed", extra={"error_context": error_context})
 
             return str(traceback.format_exc())
 
     def query(self, natural_query: str, enable_classifier: bool = True) -> QueryResult:
-        """执行自然语言查询并返回标准化的结果
-
-        Args:
-            natural_query: todo Natural language query description.
-                In multiple rounds of dialogue, this should be a semantic complete query after being spliced by the memory model.
-            enable_classifier: Start the problem classifier and let the query flow to `simple query` or `complex calculation`
-        Returns:
-            QueryResult: Standardized query result model
-        """
         if self.df is None:
-            return QueryOutputParser.parse(None, natural_query, error="未加载表格数据")
+            return QueryOutputParser.parse(None, natural_query, error="Tabular data not loaded")
 
         try:
 
+            # ====================
+            # Task Classifier
+            # ====================
             # Post-Judgement - Problem Scenario Classification, and then use different branches to generate code
             if enable_classifier:
                 # query_type = self.get_query_classification(natural_query)
@@ -707,39 +698,50 @@ class TableQueryEngine:
             else:
                 query_type = "基础数据查询"
 
-            # 生成代码
+            # ====================
+            # Generate code
+            # ====================
             if "查询" in query_type:
                 query_code = self._generate_query_code(natural_query, "table_filter")
             else:
                 query_code = self._generate_query_code(natural_query, "table_interpreter")
 
-            # 安全执行代码
+            # ====================
+            # Safe code execution
+            # ====================
             df_result = None
             for _ in range(3):
                 logger.debug(f"[{query_type}]Generate code: \n{query_code}")
                 df_result = self._safe_execute_code(query_code)
+                # What is returned is not an error message
                 if not isinstance(df_result, str):
                     break
-                schemas = {
-                    "columns": self.schema_info["columns"],
-                    "dtypes_dict": self.schema_info["dtypes"],
-                    "shape": self.schema_info["shape"],
-                    "sample_data": json.dumps(self.sample_data[0], indent=2, ensure_ascii=False),
-                }
-                question = f"<query>{natural_query}<query>\n<schemas>\n{schemas}\n</schemas>"
-                query_code = invoke_claude_debugger(question, query_code, df_result)
-                # 检查是否是 markdown 代码块
-                if query_code.strip().startswith("```python"):
-                    # 使用正则提取代码块内容
-                    pattern = r"```python\s*(.*?)\s*```"
-                    match = re.search(pattern, query_code, re.DOTALL)
-                    if match:
-                        query_code = match.group(1).strip()
 
-            # 生成推荐文件名
+                # TODO: pending debugger strategy
+                # schemas = {
+                #     "columns": self.schema_info["columns"],
+                #     "dtypes_dict": self.schema_info["dtypes"],
+                #     "shape": self.schema_info["shape"],
+                #     "sample_data": json.dumps(self.sample_data[0], indent=2, ensure_ascii=False),
+                # }
+                # question = f"<query>{natural_query}<query>\n<schemas>\n{schemas}\n</schemas>"
+                # query_code = invoke_claude_debugger(question, query_code, df_result)
+                # # 检查是否是 markdown 代码块
+                # if query_code.strip().startswith("```python"):
+                #     # 使用正则提取代码块内容
+                #     pattern = r"```python\s*(.*?)\s*```"
+                #     match = re.search(pattern, query_code, re.DOTALL)
+                #     if match:
+                #         query_code = match.group(1).strip()
+
+            # ====================
+            # Generate recommended file names
+            # ====================
             recommend_filename = self._generate_filename(natural_query, query_code)
 
-            # 解析并返回结果
+            # ====================
+            # Parses and returns the result
+            # ====================
             result = QueryOutputParser.parse(
                 df_result,
                 natural_query,
