@@ -177,8 +177,12 @@ class Segment(BaseModel):
     recommend_filename: Optional[str] = Field(default="output.xlsx")
     artifact_extension: str
 
-    def to_llm_friendlly_xml_segment(self, head_n: int = 5) -> Tuple[str, str]:
-        preview_df = pd.DataFrame.from_records(self.result_data).head(head_n)
+    def to_llm_friendlly_xml_segment(self, head_n: int | None = None) -> Tuple[str, str]:
+        if isinstance(head_n, int):
+            preview_df = pd.DataFrame.from_records(self.result_data).head(head_n)
+        else:
+            preview_df = pd.DataFrame.from_records(self.result_data)
+
         preview_markdown = preview_df.to_markdown(index=False)
 
         wrapper_ = PREVIEW_CODE_WRAPPER.format(
