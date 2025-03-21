@@ -4,6 +4,7 @@ from typing import Any, Generator
 import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from dify_plugin.errors.model import InvokeError
 
 
 class GithubRepositoryReadmeTool(Tool):
@@ -48,23 +49,17 @@ class GithubRepositoryReadmeTool(Tool):
             response_data = response.json()
             if response.status_code == 200:
                 if "base64" != response_data.get("encoding"):
-                    yield self.create_json_message({
-                        "status": False,
-                        "content": None,
-                        "message": f"Can not get base64 encoded readme, response encoding is {response_data.get('encoding')}"
-                    })
-                    return
+                    raise InvokeError(
+                        f"Can not get base64 encoded readme, response encoding is {response_data.get('encoding')}")
                 content = response_data.get("content")
+                if not content:
+                    raise InvokeError("README content is empty")
                 decoded_bytes = base64.b64decode(content)
                 decoded_str = decoded_bytes.decode('utf-8')
-                yield self.create_json_message({"status": True, "message": "success", "content": decoded_str})
+                yield self.create_text_message(decoded_str)
             else:
-                yield self.create_json_message({"status": False,
-                                                "message": f"Request failed: {response.status_code} {response_data.get("message")}",
-                                                "content": None})
+                raise InvokeError(f"Request failed: {response.status_code} {response_data.get('message')}")
+        except InvokeError as e:
+            raise e
         except Exception as e:
-            yield self.create_json_message({
-                "status": False,
-                "message": f"Request failed: {e}",
-                "content": None
-            })
+            raise InvokeError(f"Request failed: {e}")
