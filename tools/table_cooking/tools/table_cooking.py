@@ -1,3 +1,4 @@
+import json
 from collections.abc import Generator
 from typing import Any
 
@@ -23,6 +24,7 @@ class TableCookingTool(Tool):
         # Invoke tool-strategy
         try:
             result = table_self_query(artifact, self.session)
+            print(json.dumps(result, ensure_ascii=False, indent=2))
             yield self.create_json_message(result)
         finally:
             artifact.release_cache()

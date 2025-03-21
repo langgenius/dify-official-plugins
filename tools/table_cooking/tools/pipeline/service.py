@@ -18,7 +18,7 @@ from tools.ai.table_self_query import TableQueryEngine, QueryResult
 from tools.pipeline.constant import ARTIFACT_FILES_DIR
 
 PREVIEW_CODE_WRAPPER = """
-<segment>
+<segment table="{table_name}">
 <question>{question}</question>
 <question_type>{question_type}</question_type>
 <code>
@@ -29,6 +29,8 @@ PREVIEW_CODE_WRAPPER = """
 </output>
 </segment>
 """
+
+encoding = tiktoken.get_encoding("o200k_base")
 
 
 class ArtifactPayload(BaseModel):
@@ -167,6 +169,7 @@ class ArtifactPayload(BaseModel):
 
 class Segment(BaseModel):
     natural_query: str
+    input_table_name: str
     code: str
     output_content: str
     result_data: List[Dict[str, Any]]
@@ -180,14 +183,7 @@ class Segment(BaseModel):
 
         wrapper_ = PREVIEW_CODE_WRAPPER.format(
             question=self.natural_query,
-            question_type=self.question_type,
-            query_code=self.code,
-            recommend_filename=self.recommend_filename,
-            result_markdown=preview_markdown,
-        ).strip()
-
-        wrapper_log = PREVIEW_CODE_WRAPPER.format(
-            question=self.natural_query,
+            table_name=self.input_table_name,
             question_type=self.question_type,
             query_code=self.code,
             recommend_filename=self.recommend_filename,
@@ -199,6 +195,7 @@ class Segment(BaseModel):
     def storage_to_local(self, *, storage_dir: Optional[Path]):
         wrapper_ = PREVIEW_CODE_WRAPPER.format(
             question=self.natural_query,
+            table_name=self.input_table_name,
             question_type=self.question_type,
             query_code=self.code,
             recommend_filename=self.recommend_filename,
@@ -227,24 +224,24 @@ class CodeInterpreter(BaseModel):
     code: str
 
 
-class CookingResult(BaseModel):
-    xml_content: str
-    preview_content: str
-    segment: dict
+class CookingResultParams(BaseModel):
+    code: str
+    natural_query: str
+    question_type: str
+    recommend_filename: str
     input_tokens: int
-    data_download_link: str | None = ""
-    data_preview_markdown: str | None = ""
 
 
-encoding = tiktoken.get_encoding("o200k_base")
+class CookingResult(BaseModel):
+    llm_ready: str
+    human_ready: str
+    params: CookingResultParams
 
 
 @logger.catch
-def table_self_query(artifact: ArtifactPayload, session: Session, **kwargs) -> Dict[str, Any]:
+def table_self_query(artifact: ArtifactPayload, session: Session) -> Dict[str, Any]:
     engine = TableQueryEngine(session=session, dify_model_config=artifact.dify_model_config)
     engine.load_table(artifact.filepath)
-
-    logger.info(f"Input question: {artifact.natural_query}")
 
     result: QueryResult = engine.query(artifact.natural_query)
     if result.error:
@@ -253,6 +250,7 @@ def table_self_query(artifact: ArtifactPayload, session: Session, **kwargs) -> D
     segment = Segment(
         natural_query=artifact.natural_query,
         code=result.query_code,
+        input_table_name=artifact.name,
         output_content=pd.DataFrame.from_records(result.data).to_markdown(index=False),
         result_data=result.data,
         question_type=result.query_type,
@@ -265,7 +263,7 @@ def table_self_query(artifact: ArtifactPayload, session: Session, **kwargs) -> D
     # 也许最佳实践的方式是插入 preview lines 以及资源预览链接
     __xml_context__, __preview_context__ = segment.to_llm_friendlly_xml_segment(head_n=5)
 
-    # 计算tokens，过长的文本应直接打印而不是通由 LLM 输出
+    # Excessively long text should be printed directly instead of output by LLM
     input_tokens = len(encoding.encode(__xml_context__))
 
     # 将 segment 上传至 minio
@@ -277,15 +275,13 @@ def table_self_query(artifact: ArtifactPayload, session: Session, **kwargs) -> D
     # )
 
     return {
-        "__xml_context__": __xml_context__,
-        "__preview_context__": __preview_context__,
-        "segment": {
+        "llm_ready": __xml_context__,
+        "human_ready": __preview_context__,
+        "params": {
             "code": segment.code,
             "natural_query": segment.natural_query,
             "question_type": segment.question_type,
             "recommend_filename": segment.recommend_filename,
+            "input_tokens": input_tokens,
         },
-        # "data_download_link": data_download_link,
-        # "data_preview_markdown": data_preview_markdown,
-        "input_tokens": input_tokens,
     }
