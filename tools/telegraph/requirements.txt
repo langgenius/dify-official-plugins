@@ -1,2 +1,2 @@
 dify_plugin==0.0.1b65
-your-telegraph==0.2.0
+your-telegraph==0.2.1
