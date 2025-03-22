@@ -32,12 +32,15 @@ class DingTalkGroupBotTool(Tool):
             yield self.create_text_message(
                 "Invalid parameter sign_secret. Regarding information about security details,please refer to the DingTalk docs:https://open.dingtalk.com/document/robots/customize-robot-security-settings"
             )
-        msgtype = "text"
+        message_type = tool_parameters.get("message_type", "text")
         api_url = "https://oapi.dingtalk.com/robot/send"
         headers = {"Content-Type": "application/json"}
         params = {"access_token": access_token}
         self._apply_security_mechanism(params, sign_secret)
-        payload = {"msgtype": msgtype, "text": {"content": content}}
+        if message_type == "markdown":
+            payload = {"msgtype": "markdown", "markdown": {"content": content}}
+        else:
+            payload = {"msgtype": "text", "text": {"content": content}}
         try:
             res = httpx.post(api_url, headers=headers, params=params, json=payload)
             if res.is_success:

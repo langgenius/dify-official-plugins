@@ -2,7 +2,7 @@ extra:
   python:
     source: provider/dingtalk.py
 identity:
-  author: Bowen Liang
+  author: Bowen Liang & LiuHao
   description:
     en_US: DingTalk group robot
     pt_BR: DingTalk group robot
