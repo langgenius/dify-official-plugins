@@ -37,11 +37,11 @@ configs: dict[str, ModelConfig] = {
     ),
     "Doubao-1.5-pro-32k": ModelConfig(
         properties=ModelProperties(context_size=32768, max_tokens=12288, mode=LLMMode.CHAT),
-        features=[ModelFeature.AGENT_THOUGHT],
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
     ),
     "Doubao-1.5-lite-32k": ModelConfig(
         properties=ModelProperties(context_size=32768, max_tokens=12288, mode=LLMMode.CHAT),
-        features=[ModelFeature.AGENT_THOUGHT],
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
     ),
     "Doubao-1.5-pro-256k": ModelConfig(
         properties=ModelProperties(context_size=262144, max_tokens=12288, mode=LLMMode.CHAT),
@@ -69,7 +69,7 @@ configs: dict[str, ModelConfig] = {
     ),
     "Doubao-pro-32k": ModelConfig(
         properties=ModelProperties(context_size=32768, max_tokens=4096, mode=LLMMode.CHAT),
-        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL],
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
     ),
     "Doubao-lite-32k": ModelConfig(
         properties=ModelProperties(context_size=32768, max_tokens=4096, mode=LLMMode.CHAT),
