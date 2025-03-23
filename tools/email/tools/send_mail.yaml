@@ -14,36 +14,58 @@ identity:
     zh_Hans: 发送邮件
   name: send_mail
 parameters:
-- form: llm
-  human_description:
-    en_US: Recipient email account
-    zh_Hans: 收件人邮箱账号
-  label:
-    en_US: Recipient email account
-    zh_Hans: 收件人邮箱账号
-  llm_description: Recipient email account
-  name: send_to
-  required: true
-  type: string
-- form: llm
-  human_description:
-    en_US: email subject
-    zh_Hans: 邮件主题
-  label:
-    en_US: email subject
-    zh_Hans: 邮件主题
-  llm_description: email subject
-  name: subject
-  required: true
-  type: string
-- form: llm
-  human_description:
-    en_US: email content
-    zh_Hans: 邮件内容
-  label:
-    en_US: email content
-    zh_Hans: 邮件内容
-  llm_description: email content
-  name: email_content
-  required: true
-  type: string
+  - form: llm
+    human_description:
+      en_US: Recipient email account
+      zh_Hans: 收件人邮箱账号
+    label:
+      en_US: Recipient email account
+      zh_Hans: 收件人邮箱账号
+    llm_description: Recipient email account
+    name: send_to
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: Carbon copy email account
+      zh_Hans: 抄送邮箱账号
+    label:
+      en_US: Carbon copy email account(json list)
+      zh_Hans: 抄送邮箱账号(json list)
+    llm_description: Carbon copy email account(json list)
+    name: cc
+    required: false
+    type: string
+  - form: llm
+    human_description:
+      en_US: Blind carbon copy email account
+      zh_Hans: 密送邮箱账号
+    label:
+      en_US: Blind carbon copy email account(json list)
+      zh_Hans: 密送邮箱账号(json list)
+    llm_description: Blind carbon copy email account(json list)
+    name: bcc
+    required: false
+    type: string
+  - form: llm
+    human_description:
+      en_US: email subject
+      zh_Hans: 邮件主题
+    label:
+      en_US: email subject
+      zh_Hans: 邮件主题
+    llm_description: email subject
+    name: subject
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: email content
+      zh_Hans: 邮件内容
+    label:
+      en_US: email content
+      zh_Hans: 邮件内容
+    llm_description: email content
+    name: email_content
+    required: true
+    type: string

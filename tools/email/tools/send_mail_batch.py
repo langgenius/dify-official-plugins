@@ -57,20 +57,43 @@ class SendMailTool(Tool):
         if not encrypt_method:
             yield self.create_text_message("please input encrypt method")
             return
+        cc_email = tool_parameters.get('cc', '')
+        cc_email_list = []
+        if cc_email:
+            cc_email_list = json.loads(cc_email)
+            for cc_email_item in cc_email_list:
+                if not email_rgx.match(cc_email_item):
+                    yield self.create_text_message(
+                        f"Invalid parameter cc email, the cc email({cc_email_item}) is not a mailbox"
+                    )
+                    return
+        bcc_email = tool_parameters.get('bcc', '')
+        bcc_email_list = []
+        if bcc_email:
+            bcc_email_list = json.loads(bcc_email)
+            for bcc_email_item in bcc_email_list:
+                if not email_rgx.match(bcc_email_item):
+                    yield self.create_text_message(
+                        f"Invalid parameter bcc email, the bcc email({bcc_email_item}) is not a mailbox"
+                    )
+                    return
+        send_email_params = SendEmailToolParameters(
+            smtp_server=smtp_server,
+            smtp_port=smtp_port,
+            email_account=sender,
+            email_password=password,
+            sender_to=receivers_email,
+            subject=subject,
+            email_content=email_content,
+            encrypt_method=encrypt_method,
+            cc_recipients=cc_email_list,
+            bcc_recipients=bcc_email_list
+        )
         msg = {}
-        for receiver in receivers_email:
-            send_email_params = SendEmailToolParameters(
-                smtp_server=smtp_server,
-                smtp_port=smtp_port,
-                email_account=sender,
-                email_password=password,
-                sender_to=receiver,
-                subject=subject,
-                email_content=email_content,
-                encrypt_method=encrypt_method,
-            )
-            if send_mail(send_email_params):
-                msg[receiver] = "send email success"
-            else:
-                msg[receiver] = "send email failed"
+        for receiver in receivers_email + cc_email_list + bcc_email_list:
+            msg[receiver] = "send email success"
+        result = send_mail(send_email_params)
+        if result:
+            for key, (integer_value, bytes_value) in result.items():
+                msg[key] = f"send email failed: {integer_value} {bytes_value.decode('utf-8')}"
         yield self.create_text_message(json.dumps(msg))
