@@ -38,9 +38,9 @@ class DingTalkGroupBotTool(Tool):
         params = {"access_token": access_token}
         self._apply_security_mechanism(params, sign_secret)
         if message_type == "markdown":
-            payload = {"msgtype": "markdown", "markdown": {"content": content}}
+            payload = {"msgtype": "markdown", "markdown": {"text": content, "title": "DingTalk message from dify"}}
         else:
-            payload = {"msgtype": "text", "text": {"content": content}}
+            payload = {"msgtype": "text", "text": {"content": content, "title": "DingTalk message from dify"}}
         try:
             res = httpx.post(api_url, headers=headers, params=params, json=payload)
             if res.is_success:
