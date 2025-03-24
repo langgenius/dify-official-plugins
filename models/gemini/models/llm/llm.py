@@ -4,7 +4,7 @@ import json
 import time
 import os
 from collections.abc import Generator
-from typing import Iterator, Optional, Union
+from typing import Optional, Union
 
 import requests
 import google.ai.generativelanguage as glm
