@@ -200,7 +200,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 **params,
                 result_format="message",
                 stream=stream,
-                incremental_output=stream,
+                incremental_output=False if tools else stream,
             )
         if stream:
             return self._handle_generate_stream_response(
