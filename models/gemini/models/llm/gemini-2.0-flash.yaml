@@ -41,7 +41,7 @@ parameter_rules:
     type: boolean
     help:
       en_US: ensures responses are based on Google Search.
-      ja_JP: Google検索情報源に基づいた応答を確認します。
+      ja_JP: Google検索に基づいた応答をします。
     required: true
     default: false
 pricing:
