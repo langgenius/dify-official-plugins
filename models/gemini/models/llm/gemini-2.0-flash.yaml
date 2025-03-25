@@ -37,12 +37,13 @@ parameter_rules:
   - name: grounding
     label:
       en_US: Grounding
-    type: float
+      ja_JP: Grounding
+    type: boolean
     help:
-      en_US: ensures responses are based on reliable sources.
-    required: false
-    min: 0
-    max: 1
+      en_US: ensures responses are based on Google Search.
+      ja_JP: Google検索情報源に基づいた応答を確認します。
+    required: true
+    default: false
 pricing:
   input: '0.00'
   output: '0.00'

@@ -9,20 +9,20 @@ from typing import Optional, Union
 import requests
 import google.ai.generativelanguage as glm
 import google.genai as genai
-
 from google.api_core import exceptions
-from google.genai.types import File, GenerateContentResponse, GenerateContentConfig,Tool, GoogleSearch, Part, Content
-from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta, LLMUsage
+from google.genai.types import File, GenerateContentConfig,Tool, GoogleSearch, Part, Content,FunctionDeclaration
+from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    PromptMessageRole,
     PromptMessage,
-    PromptMessageContent,
+    MultiModalPromptMessageContent,
     PromptMessageContentType,
     PromptMessageTool,
+    PromptMessageContent,
     SystemPromptMessage,
     ToolPromptMessage,
     UserPromptMessage,
-    TextPromptMessageContent
 )
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -67,7 +67,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: full response or stream response chunk generator result
         """
         return self._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
-
     def get_num_tokens(
         self,
         model: str,
@@ -97,7 +96,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         messages = messages.copy()
         text = "".join((self._convert_one_message_to_text(message) for message in messages))
         return text.rstrip()
-
     def _convert_tools_to_glm_tool(self, tools: list[PromptMessageTool]) -> glm.Tool:
         """
         Convert tool messages to glm tools
@@ -163,10 +161,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
-        print("model_parameters", model_parameters,"prompt_messages",prompt_messages,"tools",tools,"stop",stop,"stream",stream,"user",user)
         config = GenerateContentConfig()
-        params = model_parameters.copy()
-        if schema := params.pop("json_schema", None):
+        if schema := model_parameters.get("schema"):
             try:
                 schema = json.loads(schema)
             except:
@@ -177,33 +173,45 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             config.response_mime_type = "application/json"
         if stop:
             config.stop_sequences = stop
-        if params.pop("grounding",None):
+        if model_parameters.get("grounding"):
             config.tools = [Tool(google_search=GoogleSearch())]
         config.top_p = model_parameters.get("top_p", None)
         config.top_k = model_parameters.get("top_k", None)
         config.temperature = model_parameters.get("temperature", None)
         config.max_output_tokens = model_parameters.get("max_output_tokens", None)
         config.system_instruction = model_parameters.get("system_instruction", None)
-        print("config",config)
-        history = []
-        system_instruction = None
-
+        functions: list[FunctionDeclaration] = [Tool(google_search=GoogleSearch())] if model_parameters.get("grounding") else []
+        for tool in tools or []:
+            functions.append(FunctionDeclaration(name=tool.name, description=tool.description,parameters=tool.parameters))
+            pass
+        contents: list[Content] = []
         for msg in prompt_messages:
-            content = self._format_message_to_glm_content(msg)
-            if history and history[-1]["role"] == content["role"]:
-                history[-1]["parts"].extend(content["parts"])
-            elif content["role"] == "system":
-                system_instruction = content["parts"][0]
+            if msg.role == PromptMessageRole.SYSTEM:
+                config.system_instruction = msg.content
+            elif msg.role == PromptMessageRole.ASSISTANT:
+                contents.append({"role": PromptMessageRole.ASSISTANT, "parts": [Part.from_text(text=msg.content)]})
+            elif msg.role == PromptMessageRole.USER:
+                if isinstance(msg.content, list) and all(isinstance(item, PromptMessageContent) for item in msg.content):
+                    for c in msg.content:
+                        if c.type == PromptMessageContentType.TEXT:
+                            contents.append(Part.from_text(text=c.data))
+                        if c.type in [PromptMessageContentType.IMAGE, PromptMessageContentType.VIDEO, PromptMessageContentType.AUDIO, PromptMessageContentType.DOCUMENT]:
+                            file = self._upload_file_content_to_google(c, credentials)
+                            contents.append(file)
+                elif isinstance(msg.content, str):
+                    contents.append(Part.from_text(text=msg.content))
+                else:
+                    raise ValueError(f"Got unknown type {msg}")
             else:
-                history.append(content)
-        config.system_instruction = system_instruction
+                raise ValueError(f"Got unknown type {msg}")
+
         client = genai.Client(api_key=credentials["google_api_key"])
-        if not history:
+        if not contents:
             raise InvokeError("The user prompt message is required. You only add a system prompt message.")
         index = 0
         for chunk in client.models.generate_content_stream(
             model=model,
-            contents=history,
+            contents=contents,
             config=config,
         ):
             index += 1
@@ -233,6 +241,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     prompt_messages=prompt_messages,
                     delta=LLMResultChunkDelta(index=index, message=assistant_prompt_message,finish_reason=chunk.candidates[0].finish_reason,usage=self._calc_response_usage(model,credentials,prompt_tokens,completion_tokens)),
                 )
+                return
             yield LLMResultChunk(
                 model=model,
                 prompt_messages=prompt_messages,
@@ -261,7 +270,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             raise ValueError(f"Got unknown type {message}")
         return message_text
 
-    def _upload_file_content_to_google(self, message_content: PromptMessageContent) -> File:
+    def _upload_file_content_to_google(self, message_content: MultiModalPromptMessageContent,credentials:dict) -> File:
+        client = genai.Client(api_key=credentials["google_api_key"])
+
         key = f"{message_content.type.value}:{hash(message_content.data)}"
         if file_cache.exists(key):
             try:
@@ -280,11 +291,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 except Exception as ex:
                     raise ValueError(f"Failed to fetch data from url {message_content.url}, {ex}")
             temp_file.flush()
-
-        file = genai.upload_file(path=temp_file.name, mime_type=message_content.mime_type)
+        file = client.files.upload(file=temp_file.name, config={"mime_type": message_content.mime_type})
         while file.state.name == "PROCESSING":
             time.sleep(5)
-            file = genai.get_file(file.name)
+            file = client.files.get(file.name)
         # google will delete your upload files in 2 days.
         file_cache.setex(key, 47 * 60 * 60, file.name)
 
@@ -293,60 +303,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         except PermissionError:
             # windows may raise permission error
             pass
+        print("file uploaded", file.download_uri,file.mime_type,file.state.name)
         return file
-
-    def _format_message_to_glm_content(self, message: PromptMessage) -> Content:
-        """
-        Format a single message into glm.Content for Google API
-
-        :param message: one PromptMessage
-        :return: glm Content representation of message
-        """
-        if isinstance(message, UserPromptMessage):
-            glm_content = {"role": "user", "parts": []}
-            if isinstance(message.content, str):
-                glm_content["parts"].append(Part.from_text(text=message.content))
-            else:
-                for c in message.content:
-                    if c.type == PromptMessageContentType.TEXT:
-                        glm_content["parts"].append(Part.from_text(text=c.data))
-                    else:
-                        glm_content["parts"].append(self._upload_file_content_to_google(c))
-
-            return glm_content
-        elif isinstance(message, AssistantPromptMessage):
-            glm_content = {"role": "model", "parts": []}
-            if message.content:
-                glm_content["parts"].append(Part.from_text(text=message.content))
-            if message.tool_calls:
-                glm_content["parts"].append(
-                    Part.from_function_call(
-                        glm.FunctionCall(
-                            name=message.tool_calls[0].function.name,
-                            args=json.loads(message.tool_calls[0].function.arguments),
-                        )
-                    )
-                )
-            return glm_content
-        elif isinstance(message, SystemPromptMessage):
-            print("message.content",message.content)
-            if isinstance(message.content, list):
-                text_contents = filter(lambda c: isinstance(c, TextPromptMessageContent), message.content)
-                message.content = "".join(c.data for c in text_contents)
-            return {"role": "system", "parts": [Part.from_text(text=message.content)]}
-        elif isinstance(message, ToolPromptMessage):
-            return {
-                "role": "function",
-                "parts": [
-                    Part(
-                        function_response=glm.FunctionResponse(
-                            name=message.name, response={"response": message.content}
-                        )
-                    )
-                ],
-            }
-        else:
-            raise ValueError(f"Got unknown type {message}")
 
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
