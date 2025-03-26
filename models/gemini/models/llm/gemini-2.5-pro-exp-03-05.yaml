@@ -1,7 +1,7 @@
 # https://ai.google.dev/gemini-api/docs/models?hl=zh-cn#gemini-2.5-pro-exp-03-25
-model: gemini-2.0-pro-exp-03-05
+model: gemini-2.5-pro-exp-03-05
 label:
-  en_US: Gemini 2.0 Pro Experimental 03-05
+  en_US: Gemini 2.5 Pro Experimental 03-05
 model_type: llm
 features:
   - agent-thought
