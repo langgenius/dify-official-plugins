@@ -1,0 +1,52 @@
+description:
+  human:
+    en_US: Get Spreadsheet
+    zh_Hans: 获取电子表格信息
+  llm: A tool for getting information from spreadsheets. (获取电子表格信息)
+extra:
+  python:
+    source: tools/get_spreadsheet.py
+identity:
+  author: Doug Lea
+  label:
+    en_US: Get Spreadsheet
+    zh_Hans: 获取电子表格信息
+  name: get_spreadsheet
+parameters:
+- form: llm
+  human_description:
+    en_US: Spreadsheet token, supports input of spreadsheet URL.
+    zh_Hans: 电子表格 token，支持输入电子表格 URL。
+  label:
+    en_US: Spreadsheet Token
+    zh_Hans: 电子表格 token
+  llm_description: 电子表格 token，支持输入电子表格 URL。
+  name: spreadsheet_token
+  required: true
+  type: string
+- default: open_id
+  form: form
+  human_description:
+    en_US: User ID type, optional values are open_id, union_id, user_id, with a default
+      value of open_id.
+    zh_Hans: 用户 ID 类型，可选值有 open_id、union_id、user_id，默认值为 open_id。
+  label:
+    en_US: user_id_type
+    zh_Hans: 用户 ID 类型
+  llm_description: 用户 ID 类型，可选值有 open_id、union_id、user_id，默认值为 open_id。
+  name: user_id_type
+  options:
+  - label:
+      en_US: open_id
+      zh_Hans: open_id
+    value: open_id
+  - label:
+      en_US: union_id
+      zh_Hans: union_id
+    value: union_id
+  - label:
+      en_US: user_id
+      zh_Hans: user_id
+    value: user_id
+  required: false
+  type: select

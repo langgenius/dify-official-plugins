@@ -1,6 +1,6 @@
 identity:
   name: lambda_yaml_to_json
-  author: aws
+  author: AWS
   label:
     en_US: LambdaYamlToJson
     zh_Hans: LambdaYamlToJson

@@ -59,16 +59,8 @@ Extensions facilitate external integrations through HTTP webhooks. Build custom 
 
 ### Update
 
-In the future, all new official plugins developed by Dify will be updated and maintained in this repository. Additionally, Dify will collaborate with partners to co-create plugins, actively expanding partner projects to provide more mature plugin solutions to Dify users. Moreover, plugins created by Dify's partners will also be stored in this repository.
+In the future, all new official plugins developed by Dify will be updated and maintained in this repository.
 
 ### Security disclosure
 
 To protect your privacy, please avoid posting security issues on GitHub. Instead, send your questions to [security@dify.ai](mailto:security@dify.ai) and we will provide you with a more detailed answer.
-
-### License
-
-This repository is available under the [Dify Open Source License](https://github.com/langgenius/dify/blob/main/LICENSE), which is essentially Apache 2.0 with a few additional restrictions.
-
-
-
-

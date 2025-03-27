@@ -1,5 +1,6 @@
 import time
 from typing import Optional
+
 import cohere
 import numpy as np
 from cohere.core import RequestOptions
@@ -81,13 +82,18 @@ class CohereTextEmbeddingModel(TextEmbeddingModel):
                 average = embeddings_batch[0]
             else:
                 average = np.average(_result, axis=0, weights=num_tokens_in_batch[i])
-            embeddings[i] = (average / np.linalg.norm(average)).tolist()
+            embedding = (average / np.linalg.norm(average)).tolist()
+            if np.isnan(embedding).any():
+                raise ValueError("Normalized embedding is nan please try again")
+            embeddings[i] = embedding
         usage = self._calc_response_usage(
             model=model, credentials=credentials, tokens=used_tokens
         )
         return TextEmbeddingResult(embeddings=embeddings, usage=usage, model=model)
 
-    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> int:
+    def get_num_tokens(
+        self, model: str, credentials: dict, texts: list[str]
+    ) -> list[int]:
         """
         Get number of tokens for given prompt messages
 
@@ -97,15 +103,17 @@ class CohereTextEmbeddingModel(TextEmbeddingModel):
         :return:
         """
         if len(texts) == 0:
-            return 0
-        full_text = " ".join(texts)
-        try:
-            response = self._tokenize(
-                model=model, credentials=credentials, text=full_text
-            )
-        except Exception as e:
-            raise self._transform_invoke_error(e)
-        return len(response)
+            return [0]
+        tokens = []
+        for text in texts:
+            try:
+                response = self._tokenize(
+                    model=model, credentials=credentials, text=text
+                )
+            except Exception as e:
+                raise self._transform_invoke_error(e)
+            tokens.append(len(response))
+        return tokens
 
     def _tokenize(self, model: str, credentials: dict, text: str) -> list[str]:
         """

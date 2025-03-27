@@ -9,14 +9,7 @@ class TavilyProvider(ToolProvider):
         try:
             TavilySearchTool.from_credentials(credentials, user_id="").invoke(
                 tool_parameters={
-                    "query": "Sachin Tendulkar",
-                    "search_depth": "basic",
-                    "include_answer": True,
-                    "include_images": False,
-                    "include_raw_content": False,
-                    "max_results": 5,
-                    "include_domains": "",
-                    "exclude_domains": "",
+                    "query": "Dify AI",
                 }
             )
         except Exception as e:

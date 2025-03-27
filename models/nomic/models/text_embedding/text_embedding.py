@@ -67,7 +67,7 @@ class NomicTextEmbeddingModel(_CommonNomic, TextEmbeddingModel):
         )
         return TextEmbeddingResult(embeddings=embeddings, usage=usage, model=model)
 
-    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> int:
+    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
         """
         Get number of tokens for given prompt messages
 
@@ -76,7 +76,10 @@ class NomicTextEmbeddingModel(_CommonNomic, TextEmbeddingModel):
         :param texts: texts to embed
         :return:
         """
-        return sum(self._get_num_tokens_by_gpt2(text) for text in texts)
+        tokens = []
+        for text in texts:
+            tokens.append(self._get_num_tokens_by_gpt2(text))
+        return tokens
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """

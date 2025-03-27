@@ -1,13 +1,12 @@
 import base64
 import io
 import json
-import logging
 import time
 from collections.abc import Generator
 from typing import Optional, Union, cast
 import google.auth.transport.requests
 import requests
-import vertexai.generative_models as glm
+import google.cloud.aiplatform_v1 as glm
 from anthropic import AnthropicVertex, Stream
 from anthropic.types import (
     ContentBlockDeltaEvent,
@@ -44,8 +43,6 @@ from google.api_core import exceptions
 from google.cloud import aiplatform
 from google.oauth2 import service_account
 from PIL import Image
-
-logger = logging.getLogger(__name__)
 
 
 class VertexAiLargeLanguageModel(LargeLanguageModel):
@@ -98,7 +95,13 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :param stream: is stream response
         :return: full response or stream response chunk generator result
         """
-        service_account_info = json.loads(base64.b64decode(credentials["vertex_service_account_key"]))
+        service_account_info = (
+            json.loads(base64.b64decode(service_account_key))
+            if (
+                service_account_key := credentials.get("vertex_service_account_key", "")
+            )
+            else None
+        )
         project_id = credentials["vertex_project_id"]
         SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
         token = ""
@@ -338,7 +341,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         text = "".join((self._convert_one_message_to_text(message) for message in messages))
         return text.rstrip()
 
-    def _convert_tools_to_glm_tool(self, tools: list[PromptMessageTool]) -> glm.Tool:
+    def _convert_tools_to_glm_tool(self, tools: list[PromptMessageTool]) -> "glm.Tool":
         """
         Convert tool messages to glm tools
 
@@ -365,6 +368,24 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 for tool in tools
             ]
         )
+
+    def _convert_grounding_to_glm_tool(self, dynamic_threshold: Optional[float]) -> list["glm.Tool"]:
+        """
+        Convert grounding messages to glm tools
+
+        :param dynamic_threshold: grounding messages
+        :return: glm tools
+        """
+        return [
+            glm.Tool.from_google_search_retrieval(
+                glm.grounding.GoogleSearchRetrieval(
+                    dynamic_retrieval_config=glm.grounding.DynamicRetrievalConfig(
+                        mode=glm.grounding.DynamicRetrievalConfig.Mode.MODE_DYNAMIC,
+                        dynamic_threshold=dynamic_threshold,
+                    )
+                )
+            )
+        ]
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -405,9 +426,26 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         """
         config_kwargs = model_parameters.copy()
         config_kwargs["max_output_tokens"] = config_kwargs.pop("max_tokens_to_sample", None)
+        
+        response_schema = None
+        if "json_schema" in config_kwargs:
+            response_schema = self._convert_schema_for_vertex(config_kwargs.pop("json_schema"))
+        elif "response_schema" in config_kwargs:
+            response_schema = self._convert_schema_for_vertex(config_kwargs.pop("response_schema"))
+            
+        if "response_schema" in config_kwargs:
+            config_kwargs.pop("response_schema")
+            
+        dynamic_threshold = config_kwargs.pop("grounding", None)
         if stop:
             config_kwargs["stop_sequences"] = stop
-        service_account_info = json.loads(base64.b64decode(credentials["vertex_service_account_key"]))
+        service_account_info = (
+            json.loads(base64.b64decode(service_account_key))
+            if (
+                service_account_key := credentials.get("vertex_service_account_key", "")
+            )
+            else None
+        )
         project_id = credentials["vertex_project_id"]
         location = credentials["vertex_location"]
         if service_account_info:
@@ -415,35 +453,62 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             aiplatform.init(credentials=service_accountSA, project=project_id, location=location)
         else:
             aiplatform.init(project=project_id, location=location)
+            
         history = []
         system_instruction = ""
-        if model == "gemini-1.0-pro-vision-001":
-            last_msg = prompt_messages[-1]
-            content = self._format_message_to_glm_content(last_msg)
-            history.append(content)
-        else:
-            for msg in prompt_messages:
-                if isinstance(msg, SystemPromptMessage):
-                    system_instruction = msg.content
+        
+        for msg in prompt_messages:
+
+            if isinstance(msg, SystemPromptMessage):
+                system_instruction = msg.content
+            else:
+                content = self._format_message_to_glm_content(msg)
+
+                if history and history[-1].role == content.role:
+                    
+                    all_parts = list(history[-1].parts)
+                    all_parts.extend(content.parts)
+                    
+                    history[-1] = glm.Content(
+                        role=history[-1].role,
+                        parts=all_parts
+                    )
+
                 else:
-                    content = self._format_message_to_glm_content(msg)
-                    if history and history[-1].role == content.role:
-                        history[-1].parts.extend(content.parts)
-                    else:
-                        history.append(content)
+                    history.append(content)
+
         google_model = glm.GenerativeModel(model_name=model, system_instruction=system_instruction)
+
+        if dynamic_threshold is not None:
+            tools = self._convert_grounding_to_glm_tool(dynamic_threshold=dynamic_threshold)
+        else:
+            tools = self._convert_tools_to_glm_tool(tools) if tools else None
+
+        mime_type = config_kwargs.pop("response_mime_type", None)
+        
+        generation_config_params = config_kwargs.copy()
+        
+        if response_schema:
+            generation_config_params["response_schema"] = response_schema
+            generation_config_params["response_mime_type"] = "application/json"
+        elif mime_type:
+            generation_config_params["response_mime_type"] = mime_type
+
+        generation_config = glm.GenerationConfig(**generation_config_params)
+        
         response = google_model.generate_content(
             contents=history,
-            generation_config=glm.GenerationConfig(**config_kwargs),
+            generation_config=generation_config,
             stream=stream,
-            tools=self._convert_tools_to_glm_tool(tools) if tools else None,
+            tools=tools,
         )
         if stream:
             return self._handle_generate_stream_response(model, credentials, response, prompt_messages)
         return self._handle_generate_response(model, credentials, response, prompt_messages)
 
+
     def _handle_generate_response(
-        self, model: str, credentials: dict, response: glm.GenerationResponse, prompt_messages: list[PromptMessage]
+        self, model: str, credentials: dict, response: glm.GenerateContentResponse, prompt_messages: list[PromptMessage]
     ) -> LLMResult:
         """
         Handle llm response
@@ -454,6 +519,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :param prompt_messages: prompt messages
         :return: llm response
         """
+
         assistant_prompt_message = AssistantPromptMessage(content=response.candidates[0].content.parts[0].text)
         prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
         completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
@@ -462,7 +528,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         return result
 
     def _handle_generate_stream_response(
-        self, model: str, credentials: dict, response: glm.GenerationResponse, prompt_messages: list[PromptMessage]
+        self, model: str, credentials: dict, response: glm.GenerateContentResponse, prompt_messages: list[PromptMessage]
     ) -> Generator:
         """
         Handle llm stream response
@@ -475,7 +541,8 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         """
         index = -1
         for chunk in response:
-            for part in chunk.candidates[0].content.parts:
+            candidate = chunk.candidates[0]
+            for part in candidate.content.parts:
                 assistant_prompt_message = AssistantPromptMessage(content="")
                 if part.text:
                     assistant_prompt_message.content += part.text
@@ -491,7 +558,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                         )
                     ]
                 index += 1
-                if not hasattr(chunk, "finish_reason") or not chunk.finish_reason:
+                if not hasattr(candidate, "finish_reason") or not candidate.finish_reason:
                     yield LLMResultChunk(
                         model=model,
                         prompt_messages=prompt_messages,
@@ -501,13 +568,47 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                     prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
                     completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
                     usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+
+                    reference_lines = []
+                    grounding_chunks = None
+                    try:
+                        grounding_chunks = chunk.candidates[0].grounding_metadata.grounding_chunks
+                    except AttributeError:
+                        try:
+                            candidate_dict = chunk.candidates[0].to_dict()
+                            grounding_chunks = candidate_dict.get("grounding_metadata", {}).get("grounding_chunks", [])
+                        except Exception:
+                            grounding_chunks = []
+
+                    if grounding_chunks:
+                        for gc in grounding_chunks:
+                            try:
+                                title = gc.web.title
+                                uri = gc.web.uri
+                            except AttributeError:
+                                web_info = gc.get("web", {})
+                                title = web_info.get("title")
+                                uri = web_info.get("uri")
+                            if title and uri:
+                                reference_lines.append(f"<li><a href='{uri}'>{title}</a></li>")
+
+                    if reference_lines:
+                        reference_lines.insert(0, "<ol>")
+                        reference_lines.append("</ol>")
+                        reference_section = "\n\nGrounding Sources\n" + "\n".join(reference_lines)
+                    else:
+                        reference_section = ""
+
+                    integrated_text = f"{assistant_prompt_message.content}{reference_section}"
+                    assistant_message_with_refs = AssistantPromptMessage(content=integrated_text)
+
                     yield LLMResultChunk(
                         model=model,
                         prompt_messages=prompt_messages,
                         delta=LLMResultChunkDelta(
                             index=index,
-                            message=assistant_prompt_message,
-                            finish_reason=chunk.candidates[0].finish_reason,
+                            message=assistant_message_with_refs,
+                            finish_reason=str(candidate.finish_reason),
                             usage=usage,
                         ),
                     )
@@ -542,25 +643,25 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :return: glm Content representation of message
         """
         if isinstance(message, UserPromptMessage):
-            glm_content = glm.Content(role="user", parts=[])
+            parts = []
             if isinstance(message.content, str):
-                glm_content = glm.Content(role="user", parts=[glm.Part.from_text(message.content)])
-            else:
-                parts = []
+                parts.append(glm.Part.from_text(message.content))
+            elif isinstance(message.content, list):
                 for c in message.content:
                     if c.type == PromptMessageContentType.TEXT:
                         parts.append(glm.Part.from_text(c.data))
+                    elif c.type in [
+                        PromptMessageContentType.IMAGE,
+                        PromptMessageContentType.DOCUMENT,
+                        PromptMessageContentType.AUDIO,
+                        PromptMessageContentType.VIDEO
+                    ]:
+                        data = c.base64_data
+                        mime_type = getattr(c, 'mime_type', None)
+                        parts.append(glm.Part.from_data(data=data, mime_type=mime_type))
                     else:
-                        message_content = cast(ImagePromptMessageContent, c)
-                        if not message_content.data.startswith("data:"):
-                            url_arr = message_content.data.split(".")
-                            mime_type = f"image/{url_arr[-1]}"
-                            parts.append(glm.Part.from_uri(mime_type=mime_type, uri=message_content.data))
-                        else:
-                            (metadata, data) = c.data.split(",", 1)
-                            mime_type = metadata.split(";", 1)[0].split(":")[1]
-                            parts.append(glm.Part.from_data(mime_type=mime_type, data=data))
-                glm_content = glm.Content(role="user", parts=parts)
+                        raise ValueError(f"Unsupported content type: {c.type}")
+            glm_content = glm.Content(role="user", parts=parts)
             return glm_content
         elif isinstance(message, AssistantPromptMessage):
             if message.content:
@@ -635,3 +736,51 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 exceptions.Cancelled,
             ],
         }
+
+
+    def _convert_schema_for_vertex(self, schema):
+        """
+        Convert JSON schema to Vertex AI's expected format
+        
+        :param schema: The original JSON schema
+        :return: Converted schema for Vertex AI
+        """
+        import json
+        if isinstance(schema, str):
+            try:
+                schema = json.loads(schema)
+            except json.JSONDecodeError:
+                pass
+        
+        if isinstance(schema, dict):
+            converted_schema = {}
+            
+            for key, value in schema.items():
+                if key == "type" and isinstance(value, str):
+                    converted_schema[key] = value.upper()
+                    
+                elif key == "properties" and isinstance(value, dict):
+                    converted_props = {}
+                    for prop_name, prop_def in value.items():
+                        converted_props[prop_name] = self._convert_schema_for_vertex(prop_def)
+                    converted_schema[key] = converted_props
+                    
+                elif key == "items" and isinstance(value, dict):
+                    converted_schema[key] = self._convert_schema_for_vertex(value)
+                    
+                elif key == "enum" and isinstance(value, list):
+                    converted_schema[key] = value
+                    
+                else:
+                    if isinstance(value, (dict, list)):
+                        converted_schema[key] = self._convert_schema_for_vertex(value)
+                    else:
+                        converted_schema[key] = value
+                        
+            return converted_schema
+            
+        elif isinstance(schema, list):
+            return [self._convert_schema_for_vertex(item) for item in schema]
+            
+        else:
+            return schema

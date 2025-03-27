@@ -17,10 +17,11 @@ class TextToImageTool(Tool):
             params = get_common_params(tool_parameters)
             base_url = get_base_url(self.runtime.credentials["base_url"])
             response = requests.post(
-                f"{base_url}/v1-openai/images/generations",
+                f"{base_url}/v1/images/generations",
                 headers={"Authorization": f"Bearer {self.runtime.credentials['api_key']}"},
                 json=params,
-                verify=self.runtime.credentials.get("tls_verify", True),
+                verify=bool(self.runtime.credentials.get("tls_verify", True)),
+                timeout=float(tool_parameters.get("timeout")),
             )
 
             if not response.ok:

@@ -6,7 +6,7 @@ extra:
   python:
     source: tools/video.py
 identity:
-  author: siliconflow
+  author: SiliconFlow, Inc.
   icon: icon.svg
   label:
     en_US: SiliconFlowVideo

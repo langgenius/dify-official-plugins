@@ -1,2 +1,4 @@
-dify_plugin==0.0.1b65
-boto3==1.35.26
+dify_plugin~=0.0.1b72
+boto3~=1.37.4
+botocore~=1.37.4
+opensearch-py~=2.8.0

@@ -1,6 +1,6 @@
 identity:
   name: sagemaker_tts
-  author: aws
+  author: AWS
   label:
     en_US: SagemakerTTS
     zh_Hans: Sagemaker语音合成

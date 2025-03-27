@@ -1,8 +1,8 @@
-import logging
 import smtplib
 import ssl
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+from typing import List
 
 from pydantic import BaseModel
 
@@ -14,40 +14,39 @@ class SendEmailToolParameters(BaseModel):
     email_account: str
     email_password: str
 
-    sender_to: str
+    sender_to: List[str]
     subject: str
     email_content: str
     encrypt_method: str
 
+    cc_recipients: List[str] = []
+    bcc_recipients: List[str] = []
 
-def send_mail(parmas: SendEmailToolParameters):
+
+def send_mail(params: SendEmailToolParameters) -> dict[str, tuple[int, bytes]]:
     timeout = 60
     msg = MIMEMultipart("alternative")
-    msg["From"] = parmas.email_account
-    msg["To"] = parmas.sender_to
-    msg["Subject"] = parmas.subject
-    msg.attach(MIMEText(parmas.email_content, "plain"))
-    msg.attach(MIMEText(parmas.email_content, "html"))
+    msg["From"] = params.email_account
+    recipients_to = params.sender_to
+    cc = params.cc_recipients
+    bcc = params.bcc_recipients
+    msg["To"] = ", ".join(recipients_to)
+    if cc:
+        msg["CC"] = ", ".join(cc)
+    msg["Subject"] = params.subject
+    msg.attach(MIMEText(params.email_content, "plain"))
+    msg.attach(MIMEText(params.email_content, "html"))
+    all_recipients = recipients_to + cc + bcc
 
     ctx = ssl.create_default_context()
 
-    if parmas.encrypt_method.upper() == "SSL":
-        try:
-            with smtplib.SMTP_SSL(parmas.smtp_server, parmas.smtp_port, context=ctx, timeout=timeout) as server:
-                server.login(parmas.email_account, parmas.email_password)
-                server.sendmail(parmas.email_account, parmas.sender_to, msg.as_string())
-                return True
-        except Exception as e:
-            logging.exception("send email failed")
-            return False
+    if params.encrypt_method.upper() == "SSL":
+        with smtplib.SMTP_SSL(params.smtp_server, params.smtp_port, context=ctx, timeout=timeout) as server:
+            server.login(params.email_account, params.email_password)
+            return server.sendmail(params.email_account, all_recipients, msg.as_string())
     else:  # NONE or TLS
-        try:
-            with smtplib.SMTP(parmas.smtp_server, parmas.smtp_port, timeout=timeout) as server:
-                if parmas.encrypt_method.upper() == "TLS":
-                    server.starttls(context=ctx)
-                server.login(parmas.email_account, parmas.email_password)
-                server.sendmail(parmas.email_account, parmas.sender_to, msg.as_string())
-                return True
-        except Exception as e:
-            logging.exception("send email failed")
-            return False
+        with smtplib.SMTP(params.smtp_server, params.smtp_port, timeout=timeout) as server:
+            if params.encrypt_method.upper() == "TLS":
+                server.starttls(context=ctx)
+            server.login(params.email_account, params.email_password)
+            return server.sendmail(params.email_account, all_recipients, msg.as_string())

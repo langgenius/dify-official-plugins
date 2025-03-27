@@ -3,7 +3,7 @@ identity:
   name: llama_cloud
   label:
     en_US: Llama Cloud
-    zh_Hans: lLlama Cloud
+    zh_Hans: Llama Cloud
   description:
     en_US: Llama Cloud provides image extraction and data cleaning tools
     zh_Hans: Llama Cloud提供的图片提取和数据清洗工具

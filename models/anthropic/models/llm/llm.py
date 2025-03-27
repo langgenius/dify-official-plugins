@@ -15,7 +15,6 @@ from anthropic.types import (
     MessageStreamEvent,
     completion_create_params,
 )
-from anthropic.types.beta.tools import ToolsBetaMessage
 from dify_plugin.entities.model.llm import (
     LLMResult,
     LLMResultChunk,
@@ -50,6 +49,11 @@ ANTHROPIC_BLOCK_MODE_PROMPT = 'You should always follow the instructions and out
 
 
 class AnthropicLargeLanguageModel(LargeLanguageModel):
+    def __init__(self, model_schemas=None):
+        super().__init__(model_schemas or [])
+        self.previous_thinking_blocks = []
+        self.previous_redacted_thinking_blocks = []
+
     def _invoke(
         self,
         model: str,
@@ -96,6 +100,30 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 "max_tokens_to_sample"
             )
 
+        thinking = model_parameters.pop("thinking", False)
+        thinking_budget = model_parameters.pop("thinking_budget", 1024)
+        
+        if thinking:
+            extra_model_kwargs["thinking"] = {
+                "type": "enabled",
+                "budget_tokens": thinking_budget
+            }
+            for key in ("temperature", "top_p", "top_k"):
+                model_parameters.pop(key, None)
+
+        if model_parameters.get("extended_output", False):
+            model_parameters.pop("extended_output", None)
+            if "anthropic-beta" in extra_headers:
+                extra_headers["anthropic-beta"] += ",output-128k-2025-02-19"
+            else:
+                extra_headers["anthropic-beta"] = "output-128k-2025-02-19"
+
+        if model == "claude-3-7-sonnet-20250219" and tools:
+            if "anthropic-beta" in extra_headers:
+                extra_headers["anthropic-beta"] += ",token-efficient-tools-2025-02-19"
+            else:
+                extra_headers["anthropic-beta"] = "token-efficient-tools-2025-02-19"
+
         if stop:
             extra_model_kwargs["stop_sequences"] = stop
         if user:
@@ -117,19 +145,27 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 for content in prompt_message.content
             )
         ):
-            extra_headers["anthropic-beta"] = "pdfs-2024-09-25"
+            if "anthropic-beta" in extra_headers:
+                extra_headers["anthropic-beta"] += ",pdfs-2024-09-25"
+            else:
+                extra_headers["anthropic-beta"] = "pdfs-2024-09-25"
+
+        if not any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
+            self.previous_thinking_blocks = []
+            self.previous_redacted_thinking_blocks = []
 
         if tools:
             extra_model_kwargs["tools"] = [
                 self._transform_tool_prompt(tool) for tool in tools
             ]
-            response = client.beta.tools.messages.create(
+            response = client.messages.create(
                 model=model,
                 messages=prompt_message_dicts,
                 stream=stream,
                 extra_headers=extra_headers,
+                tools=extra_model_kwargs["tools"],
                 **model_parameters,
-                **extra_model_kwargs,
+                **{k: v for k, v in extra_model_kwargs.items() if k != "tools"},
             )
         else:
             response = client.messages.create(
@@ -189,10 +225,50 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         )
 
     def _transform_tool_prompt(self, tool: PromptMessageTool) -> dict:
+        """
+        Transform tool prompt to Anthropic-compatible format, ensuring it matches JSON Schema draft 2020-12
+        
+        This method handles:
+        1. Converting custom types to JSON Schema standard types
+        2. Mapping options arrays to enum arrays
+        3. Ensuring schema validity for Anthropic API requirements
+        
+        Args:
+            tool: The tool prompt message with parameters to transform
+            
+        Returns:
+            dict: A tool definition compatible with Anthropic API
+        """
+        # Make a deep copy to avoid modifying the original
+        input_schema = json.loads(json.dumps(tool.parameters))
+        
+        # Fix any non-standard types in properties
+        if 'properties' in input_schema:
+            for _, prop_config in input_schema['properties'].items():
+                # Handle 'select' type conversion
+                if prop_config.get('type') == 'select':
+                    prop_config['type'] = 'string'
+                    
+                    # Convert 'options' to 'enum' if needed
+                    if 'options' in prop_config and 'enum' not in prop_config:
+                        enum_values = [option.get('value') for option in prop_config['options'] 
+                                      if 'value' in option]
+                        prop_config['enum'] = enum_values
+                    
+                    # Handle case with neither options nor enum
+                    if 'enum' not in prop_config:
+                        if 'default' in prop_config:
+                            default_value = prop_config['default']
+                            prop_config['enum'] = [default_value]
+                        else:
+                            # Rather than creating an empty enum that will fail validation,
+                            # set a more appropriate default
+                            prop_config['enum'] = [""]
+        
         return {
             "name": tool.name,
             "description": tool.description,
-            "input_schema": tool.parameters,
+            "input_schema": input_schema,
         }
 
     def _transform_chat_json_prompts(
@@ -255,17 +331,45 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         :param tools: tools for tool calling
         :return:
         """
-        prompt = self._convert_messages_to_prompt_anthropic(prompt_messages)
-        client = Anthropic(api_key="")
-        tokens = client.count_tokens(prompt)
-        tool_call_inner_prompts_tokens_map = {
-            "claude-3-opus-20240229": 395,
-            "claude-3-haiku-20240307": 264,
-            "claude-3-sonnet-20240229": 159,
+        credentials_kwargs = self._to_credential_kwargs(credentials)
+        client = Anthropic(**credentials_kwargs)
+        
+        (system, prompt_message_dicts) = self._convert_prompt_messages(prompt_messages)
+        
+        if not prompt_message_dicts:
+            prompt_message_dicts.append({"role": "user", "content": "Hello"})
+        
+        count_tokens_args = {
+            "model": model,
+            "messages": prompt_message_dicts
         }
-        if model in tool_call_inner_prompts_tokens_map and tools:
-            tokens += tool_call_inner_prompts_tokens_map[model]
-        return tokens
+        
+        has_thinking_blocks = False
+        for msg in prompt_message_dicts:
+            if msg.get("role") == "assistant" and isinstance(msg.get("content"), list):
+                for content_item in msg.get("content", []):
+                    if isinstance(content_item, dict) and content_item.get("type") in ["thinking", "redacted_thinking"]:
+                        has_thinking_blocks = True
+                        break
+            if has_thinking_blocks:
+                break
+        
+        if has_thinking_blocks:
+            count_tokens_args["thinking"] = {
+                "type": "enabled",
+                "budget_tokens": 4096
+            }
+        
+        if system:
+            count_tokens_args["system"] = system
+        
+        if tools:
+            count_tokens_args["tools"] = [
+                self._transform_tool_prompt(tool) for tool in tools
+            ]
+            
+        response = client.messages.count_tokens(**count_tokens_args)
+        return response.input_tokens
 
     def validate_credentials(self, model: str, credentials: Mapping) -> None:
         """
@@ -290,7 +394,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         self,
         model: str,
         credentials: Mapping[str, Any],
-        response: Union[Message, ToolsBetaMessage],
+        response: Message,
         prompt_messages: Sequence[PromptMessage],
     ) -> LLMResult:
         """
@@ -302,9 +406,17 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         :param prompt_messages: prompt messages
         :return: llm response
         """
+        self.previous_thinking_blocks = []
+        self.previous_redacted_thinking_blocks = []
+        
         assistant_prompt_message = AssistantPromptMessage(content="", tool_calls=[])
+        
         for content in response.content:
-            if content.type == "text" and isinstance(
+            if content.type == "thinking":
+                self.previous_thinking_blocks.append(content)
+            elif content.type == "redacted_thinking":
+                self.previous_redacted_thinking_blocks.append(content)
+            elif content.type == "text" and isinstance(
                 assistant_prompt_message.content, str
             ):
                 assistant_prompt_message.content += content.text
@@ -369,34 +481,172 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         finish_reason = None
         index = 0
         tool_calls: list[AssistantPromptMessage.ToolCall] = []
+        current_block_type = None
+        current_block_index = None
+        
+        current_tool_name = None
+        current_tool_id = None
+        current_tool_params = ""
+        
+        if not any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
+            self.previous_thinking_blocks = []
+            self.previous_redacted_thinking_blocks = []
+            
+        current_thinking_blocks = []
+        current_redacted_thinking_blocks = []
+        
         for chunk in response:
             if isinstance(chunk, MessageStartEvent):
-                if hasattr(chunk, "content_block"):
-                    content_block = chunk.content_block
-                    if isinstance(content_block, dict):
-                        if content_block.get("type") == "tool_use":
-                            tool_call = AssistantPromptMessage.ToolCall(
-                                id=content_block.get("id"),
-                                type="function",
-                                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                    name=content_block.get("name"), arguments=""
-                                ),
-                            )
-                            tool_calls.append(tool_call)
-                elif hasattr(chunk, "delta"):
-                    delta = chunk.delta
-                    if isinstance(delta, dict) and len(tool_calls) > 0:
-                        if delta.get("type") == "input_json_delta":
-                            tool_calls[-1].function.arguments += delta.get(
-                                "partial_json", ""
-                            )
-                elif chunk.message:
+                if chunk.message:
                     return_model = chunk.message.model
                     input_tokens = chunk.message.usage.input_tokens
+            elif hasattr(chunk, "type") and chunk.type == "content_block_start":
+                if hasattr(chunk, "content_block"):
+                    content_block = chunk.content_block
+                    
+                    if getattr(content_block, 'type', None) == "tool_use":
+                        current_tool_name = getattr(content_block, 'name', None)
+                        current_tool_id = getattr(content_block, 'id', None)
+                        
+                        if current_tool_name and current_tool_id:
+                            tool_call = AssistantPromptMessage.ToolCall(
+                                id=current_tool_id,
+                                type="function",
+                                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                    name=current_tool_name, arguments=""
+                                ),
+                            )
+                            
+                            tool_calls.append(tool_call)
+                    elif getattr(content_block, 'type', None) == "thinking":
+                        current_thinking_blocks.append({
+                            "type": "thinking",
+                            "thinking": "",
+                            "signature": ""
+                        })
+                    elif getattr(content_block, 'type', None) == "redacted_thinking":
+                        current_redacted_thinking_blocks.append({
+                            "type": "redacted_thinking"
+                        })
+            elif isinstance(chunk, ContentBlockDeltaEvent):
+                if hasattr(chunk.delta, "type") and chunk.delta.type == "input_json_delta":
+                    if hasattr(chunk.delta, "partial_json"):
+                        partial_json = chunk.delta.partial_json
+                        if partial_json:
+                            current_tool_params += partial_json
+                            
+                            for tc in tool_calls:
+                                if tc.id == current_tool_id:
+                                    tc.function.arguments = current_tool_params
+                                    break
+                
+                if chunk.index != current_block_index:
+                    if current_block_type == "thinking" and current_block_index is not None:
+                        assistant_prompt_message = AssistantPromptMessage(content="\n</think>")
+                        yield LLMResultChunk(
+                            model=return_model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=current_block_index, message=assistant_prompt_message
+                            ),
+                        )
+                    
+                    current_block_index = chunk.index
+                    if hasattr(chunk.delta, "thinking"):
+                        current_block_type = "thinking"
+                        assistant_prompt_message = AssistantPromptMessage(content="<think>\n")
+                        yield LLMResultChunk(
+                            model=return_model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=chunk.index, message=assistant_prompt_message
+                            ),
+                        )
+                    elif hasattr(chunk.delta, "text"):
+                        current_block_type = "text"
+                    elif hasattr(chunk.delta, "type") and chunk.delta.type == "redacted_thinking":
+                        current_block_type = "redacted_thinking"
+                        assistant_prompt_message = AssistantPromptMessage(content="<think>\n")
+                        yield LLMResultChunk(
+                            model=return_model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=chunk.index, message=assistant_prompt_message
+                            ),
+                        )
+                
+                if hasattr(chunk.delta, "thinking"):
+                    thinking_text = chunk.delta.thinking or ""
+                    full_assistant_content += thinking_text
+                    
+                    if current_thinking_blocks:
+                        current_thinking_blocks[-1]["thinking"] += thinking_text
+                    
+                    assistant_prompt_message = AssistantPromptMessage(content=thinking_text)
+                    index = chunk.index
+                    yield LLMResultChunk(
+                        model=return_model,
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(
+                            index=chunk.index, message=assistant_prompt_message
+                        ),
+                    )
+                elif hasattr(chunk.delta, "signature"):
+                    if current_thinking_blocks:
+                        current_thinking_blocks[-1]["signature"] = chunk.delta.signature
+                elif hasattr(chunk.delta, "type") and chunk.delta.type == "redacted_thinking":
+                    redacted_msg = "[Some of Claude's thinking was automatically encrypted for safety reasons]"
+                    full_assistant_content += redacted_msg
+                    assistant_prompt_message = AssistantPromptMessage(content=redacted_msg)
+                    index = chunk.index
+                    yield LLMResultChunk(
+                        model=return_model,
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(
+                            index=chunk.index, message=assistant_prompt_message
+                        ),
+                    )
+                elif hasattr(chunk.delta, "text"):
+                    chunk_text = chunk.delta.text or ""
+                    full_assistant_content += chunk_text
+                    assistant_prompt_message = AssistantPromptMessage(content=chunk_text)
+                    index = chunk.index
+                    yield LLMResultChunk(
+                        model=return_model,
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(
+                            index=chunk.index, message=assistant_prompt_message
+                        ),
+                    )
             elif isinstance(chunk, MessageDeltaEvent):
                 output_tokens = chunk.usage.output_tokens
                 finish_reason = chunk.delta.stop_reason
             elif isinstance(chunk, MessageStopEvent):
+                if current_block_type == "thinking" and current_block_index is not None:
+                    assistant_prompt_message = AssistantPromptMessage(content="\n</think>")
+                    yield LLMResultChunk(
+                        model=return_model,
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(
+                            index=current_block_index, message=assistant_prompt_message
+                        ),
+                    )
+                
+                if current_tool_name and current_tool_id and current_tool_params and not tool_calls:
+                    fallback_tool_call = AssistantPromptMessage.ToolCall(
+                        id=current_tool_id,
+                        type="function",
+                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                            name=current_tool_name, arguments=current_tool_params
+                        ),
+                    )
+                    tool_calls.append(fallback_tool_call)
+                
+                if tool_calls and current_thinking_blocks:
+                    self.previous_thinking_blocks = current_thinking_blocks
+                if tool_calls and current_redacted_thinking_blocks:
+                    self.previous_redacted_thinking_blocks = current_redacted_thinking_blocks
+                
                 usage = self._calc_response_usage(
                     model, credentials, input_tokens, output_tokens
                 )
@@ -413,18 +663,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         ),
                         finish_reason=finish_reason,
                         usage=usage,
-                    ),
-                )
-            elif isinstance(chunk, ContentBlockDeltaEvent):
-                chunk_text = chunk.delta.text or ""
-                full_assistant_content += chunk_text
-                assistant_prompt_message = AssistantPromptMessage(content=chunk_text)
-                index = chunk.index
-                yield LLMResultChunk(
-                    model=return_model,
-                    prompt_messages=prompt_messages,
-                    delta=LLMResultChunkDelta(
-                        index=chunk.index, message=assistant_prompt_message
                     ),
                 )
 
@@ -487,7 +725,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         prompt_message_dicts.append(message_dict)
                     else:
                         sub_messages = []
-                        for message_content in message.content:
+                        for message_content in message.content or []:
                             if message_content.type == PromptMessageContentType.TEXT:
                                 message_content = cast(
                                     TextPromptMessageContent, message_content
@@ -549,9 +787,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                                 sub_message_dict = {
                                     "type": "document",
                                     "source": {
-                                        "type": message_content.encode_format,
+                                        "type": "base64",
                                         "media_type": message_content.mime_type,
-                                        "data": message_content.data,
+                                        "data": message_content.base64_data,
                                     },
                                 }
                                 sub_messages.append(sub_message_dict)
@@ -561,6 +799,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 elif isinstance(message, AssistantPromptMessage):
                     message = cast(AssistantPromptMessage, message)
                     content = []
+                    
+                    if self.previous_thinking_blocks and any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
+                        content.extend(self.previous_thinking_blocks)
+                    
+                    if self.previous_redacted_thinking_blocks and any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
+                        content.extend(self.previous_redacted_thinking_blocks)
+                    
                     if message.tool_calls:
                         for tool_call in message.tool_calls:
                             content.append(
@@ -571,9 +816,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                                     "input": json.loads(tool_call.function.arguments),
                                 }
                             )
-                    if message.content:
+                    elif message.content:
                         content.append({"type": "text", "text": message.content})
-                    if prompt_message_dicts[-1]["role"] == "assistant":
+                    if prompt_message_dicts and prompt_message_dicts[-1]["role"] == "assistant":
                         prompt_message_dicts[-1]["content"].extend(content)
                     else:
                         prompt_message_dicts.append(

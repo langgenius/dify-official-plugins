@@ -1,4 +1,4 @@
-dify_plugin==0.0.1b65
+dify_plugin==0.0.1b73
 anthropic==0.42.0
-vertexai==1.71.1
+google-cloud-aiplatform==1.85.0
 Pillow==11.0.0

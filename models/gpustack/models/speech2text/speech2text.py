@@ -1,10 +1,8 @@
-from typing import Optional
+from typing import Optional, IO
+from dify_plugin import OAICompatSpeech2TextModel
+from dify_plugin.entities.model import AIModelEntity, FetchFrom, I18nObject, ModelType
 
-from dify_plugin import OAICompatSpeechToTextModel
-from dify_plugin.entities.model.speech2text import SpeechToTextResult
-
-
-class GPUStackSpeechToTextModel(OAICompatSpeechToTextModel):
+class GPUStackSpeechToTextModel(OAICompatSpeech2TextModel):
     """
     Model class for GPUStack Speech to text model.
     """
@@ -13,11 +11,12 @@ class GPUStackSpeechToTextModel(OAICompatSpeechToTextModel):
         self,
         model: str,
         credentials: dict,
-        audio: bytes,
+        file: IO[bytes],
         user: Optional[str] = None,
-    ) -> SpeechToTextResult:
+    ) -> str:
+        model = model.strip()
         compatible_credentials = self._get_compatible_credentials(credentials)
-        return super()._invoke(model, compatible_credentials, audio, user)
+        return super()._invoke(model, compatible_credentials,  file)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -31,6 +30,20 @@ class GPUStackSpeechToTextModel(OAICompatSpeechToTextModel):
 
     def _get_compatible_credentials(self, credentials: dict) -> dict:
         credentials = credentials.copy()
-        base_url = credentials["endpoint_url"].rstrip("/").removesuffix("/v1-openai")
-        credentials["endpoint_url"] = f"{base_url}/v1-openai"
+        base_url = credentials["endpoint_url"].rstrip("/").removesuffix("/v1")
+        credentials["endpoint_url"] = f"{base_url}/v1"
         return credentials
+
+    def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:
+        """
+        Used to define customizable model schema
+        """
+        entity = AIModelEntity(
+            model=model,
+            label=I18nObject(en_US=model),
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_type=ModelType.SPEECH2TEXT,
+            model_properties={},
+            parameter_rules=[],
+        )
+        return entity

@@ -52,6 +52,9 @@ class GPUStackRerankModel(RerankModel):
         """
         if len(docs) == 0:
             return RerankResult(model=model, docs=[])
+        if top_n is None:
+            top_n = 3
+        model = model.strip()
         endpoint_url = credentials["endpoint_url"]
         headers = {
             "Authorization": f"Bearer {credentials.get('api_key')}",
@@ -59,11 +62,12 @@ class GPUStackRerankModel(RerankModel):
         }
         data = {"model": model, "query": query, "documents": docs, "top_n": top_n}
         try:
+            timeout = float(credentials.get("timeout", 10))
             response = post(
                 str(URL(endpoint_url) / "v1" / "rerank"),
                 headers=headers,
                 data=dumps(data),
-                timeout=10,
+                timeout=timeout,
             )
             response.raise_for_status()
             results = response.json()

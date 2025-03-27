@@ -27,11 +27,12 @@ class ImageEditTool(Tool):
 
             base_url = get_base_url(self.runtime.credentials["base_url"])
             response = requests.post(
-                f"{base_url}/v1-openai/images/edits",
+                f"{base_url}/v1/images/edits",
                 headers={"Authorization": f"Bearer {self.runtime.credentials['api_key']}"},
                 data=params,
                 files=files,
-                verify=self.runtime.credentials.get("tls_verify", True),
+                verify=bool(self.runtime.credentials.get("tls_verify", True)),
+                timeout=float(tool_parameters.get("timeout")),
             )
 
             if not response.ok:

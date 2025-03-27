@@ -5,6 +5,8 @@ extra:
     model_sources:
       - models/llm/llm.py
       - models/rerank/rerank.py
+      - models/speech2text/speech2text.py
+      - models/tts/tts.py
       - models/text_embedding/text_embedding.py
     provider_source: provider/gpustack.py
 icon_large:
@@ -124,11 +126,27 @@ model_credential_schema:
       required: false
       default: "Chinese Female"
       placeholder:
-        en_US: "Chinese Female, Chinese Male, Japanese Male, Cantonese Female, English Female, English Male, Korean Female"
-        zh_Hans: "Chinese Female, Chinese Male, Japanese Male, Cantonese Female, English Female, English Male, Korean Female"
+        en_US: "Chinese Female,Chinese Male, Japanese Male, Cantonese Female, English Female, English Male, Korean Female"
+        zh_Hans: "Chinese Female,Chinese Male, Japanese Male, Cantonese Female, English Female, English Male, Korean Female"
       help:
         en_US: "List voice names separated by commas. First voice will be used as default."
         zh_Hans: "用英文逗号分隔的声音列表。第一个声音将作为默认值。"
+    - variable: timeout
+      label:
+        en_US: Timeout(s)
+        zh_Hans: 超时时间(秒)
+      type: text-input
+      required: false
+      default: "600"
+      placeholder:
+        en_US: "600"
+        zh_Hans: "600"
+      help:
+        en_US: "The maximum time to wait for the model to complete the task(seconds)."
+        zh_Hans: "等待模型完成任务的最大时间(秒)。"
+      show_on:
+        - value: rerank
+          variable: __model_type
   model:
     label:
       en_US: Model Name
