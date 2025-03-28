@@ -26,6 +26,7 @@
 > Visual Proof is required for Bug Fixes, New Features, and Breaking Changes:
 
 ### Screenshots or Video/GIF:
+<!-- Provide your evidence here -->
 
 > [!NOTE]
 > For Non-LLM Plugin Changes:
@@ -37,26 +38,23 @@
 >   - [ ] Show both Old and New Behavior
 >
 > For LLM Plugin Changes:
+> [LLM Plugin Test Example](https://github.com/langgenius/dify-official-plugins/blob/main/.assets/test-examples/llm-plugin-tests/llm_test_example.md)
 > - **Bug Fixes**:
 >   - [ ] Show the Fix working with Example Inputs/Outputs
 > - **New Features**:
 >   - [ ] Demonstrate the Functionality with Example Inputs/Outputs
 > - **Breaking Changes** (requires comprehensive Testing):
 >   - **Conversation & Interaction**:
->     - Conversation Sequence Correctness:
->       - [ ] System Message Handling
->       - [ ] Proper Turn-taking (User→Assistant Messages)
->     - Tool Usage Demonstrations (if applicable):
->       - [ ] Multi-round Tool Interactions
->       - [ ] Appropriate Handling of Tool Outputs
+>       - [ ] Message Flow Handling (System Messages and User→Assistant Turn-taking)
+>       - [ ] Tool Interaction Flow (Multi-round Usage and Output Handling if applicable)
 >   - **Input/Output Handling**:
 >     - [ ] Multimodal Input Handling (Images, PDFs, Audio, Video if applicable)
->     - [ ] Multimodal Output Generation (Images, PDFs, Audio, Video if applicable)
+>     - [ ] Multimodal Output Generation (Images, Audio, Video if applicable)
 >     - [ ] Structured Output Format (if applicable)
 >   - **Metrics**:
 >     - [ ] Token Consumption Metrics
 >   - **Others**:
->     - [ ] Reasoning Process (if applicable, e.g. tool use)
+>     - [ ] e.g., Reasoning Process for  Claude 3.7 Sonnet, Grounding for Gemini (if applicable)
 
 ### Environment Verification
 > [!IMPORTANT]
