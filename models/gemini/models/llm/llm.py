@@ -285,16 +285,19 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 temp_file.write(file_content)
             else:
                 try:
-                    response = requests.get(message_content.url)
+                    file_url = message_content.url
+                    if credentials["local_files_url"]:
+                        file_url = f"{credentials["local_files_url"].rstrip('/')}/files{message_content.url.split("/files")[-1]}"
+                    response = requests.get(file_url)
                     response.raise_for_status()
                     temp_file.write(response.content)
                 except Exception as ex:
-                    raise ValueError(f"Failed to fetch data from url {message_content.url}, {ex}")
+                    raise ValueError(f"Failed to fetch data from url {file_url}, {ex}")
             temp_file.flush()
         file = client.files.upload(file=temp_file.name, config={"mime_type": message_content.mime_type})
         while file.state.name == "PROCESSING":
             time.sleep(5)
-            file = client.files.get(file.name)
+            file = client.files.get(name=file.name)
         # google will delete your upload files in 2 days.
         file_cache.setex(key, 47 * 60 * 60, file.name)
 
