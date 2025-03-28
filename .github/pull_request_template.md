@@ -45,8 +45,8 @@
 >   - [ ] Demonstrate the Functionality with Example Inputs/Outputs
 > - **Breaking Changes** (requires comprehensive Testing):
 >   - **Conversation & Interaction**:
->       - [ ] Message Flow Handling (System Messages and User→Assistant Turn-taking)
->       - [ ] Tool Interaction Flow (Multi-round Usage and Output Handling if applicable)
+>     - [ ] Message Flow Handling (System Messages and User→Assistant Turn-taking)
+>     - [ ] Tool Interaction Flow (Multi-round Usage and Output Handling if applicable)
 >   - **Input/Output Handling**:
 >     - [ ] Multimodal Input Handling (Images, PDFs, Audio, Video if applicable)
 >     - [ ] Multimodal Output Generation (Images, Audio, Video if applicable)
