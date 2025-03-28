@@ -1,66 +1,66 @@
 ## Related Issue or Context
 <!-- 
-- Link related issues if applicable: #issue_number
-- Or provide context about why this change is needed
+- Link related Issues if applicable: #issue_number
+- Or provide Context about why this Change is needed
 -->
 
 ## Type of Change
 <!-- Put an `x` in all the boxes that apply -->
-- [ ] Bug fix (non-breaking change which fixes an issue)
-- [ ] New feature (non-breaking change which adds functionality)
-- [ ] Breaking change (fix or feature that may cause existing functionality to not work as expected)
-- [ ] Documentation update
-- [ ] Code refactoring
+- [ ] Bug Fix (non-breaking change which fixes an Issue)
+- [ ] New Feature (non-breaking change which adds Functionality)
+- [ ] Breaking Change (fix or feature that may cause existing Functionality to not work as expected)
+- [ ] Documentation Update
+- [ ] Code Refactoring
 - [ ] Other
 
 ## Version Control (if applicable)
-- [ ] Version bumped in manifest.yaml (top-level `version` field, not in meta section)
+- [ ] Version bumped in Manifest.yaml (top-level `Version` field, not in Meta section)
 <!-- Version format: MAJOR.MINOR.PATCH
-- MAJOR (0.x.x): Reserved for major releases with widespread breaking changes
-- MINOR (x.0.x): For new features or limited breaking changes
-- PATCH (x.x.0): For backwards-compatible bug fixes and minor improvements
+- MAJOR (0.x.x): Reserved for Major Releases with widespread Breaking Changes
+- MINOR (x.0.x): For New Features or limited Breaking Changes
+- PATCH (x.x.0): For backwards-compatible Bug Fixes and minor Improvements
 -->
 
 ## Test Evidence (if applicable)
 > [!IMPORTANT]
-> Visual proof is required for bug fixes, new features, and breaking changes:
+> Visual Proof is required for Bug Fixes, New Features, and Breaking Changes:
 
 ### Screenshots or Video/GIF:
 
 > [!NOTE]
 > For Non-LLM Plugin Changes:
-> - **Bug fixes**:
->   - [ ] Show the fix working
-> - **New features**:
->   - [ ] Demonstrate the functionality
-> - **Breaking changes**:
->   - [ ] Show both old and new behavior
+> - **Bug Fixes**:
+>   - [ ] Show the Fix working
+> - **New Features**:
+>   - [ ] Demonstrate the Functionality
+> - **Breaking Changes**:
+>   - [ ] Show both Old and New Behavior
 >
 > For LLM Plugin Changes:
-> - **Bug fixes**:
->   - [ ] Show the fix working with example inputs/outputs
-> - **New features**:
->   - [ ] Demonstrate the functionality with example inputs/outputs
-> - **Breaking changes** (requires comprehensive testing):
+> - **Bug Fixes**:
+>   - [ ] Show the Fix working with Example Inputs/Outputs
+> - **New Features**:
+>   - [ ] Demonstrate the Functionality with Example Inputs/Outputs
+> - **Breaking Changes** (requires comprehensive Testing):
 >   - **Conversation & Interaction**:
->     - Conversation sequence correctness:
->       - [ ] System message handling
->       - [ ] Proper turn-taking (user→assistant messages)
->     - Tool usage demonstrations (if applicable):
->       - [ ] Multi-round tool interactions
->       - [ ] Appropriate handling of tool outputs
+>     - Conversation Sequence Correctness:
+>       - [ ] System Message Handling
+>       - [ ] Proper Turn-taking (User→Assistant Messages)
+>     - Tool Usage Demonstrations (if applicable):
+>       - [ ] Multi-round Tool Interactions
+>       - [ ] Appropriate Handling of Tool Outputs
 >   - **Input/Output Handling**:
->     - [ ] Multimodal input handling (images, PDFs, audio, video if applicable)
->     - [ ] Multimodal output generation (images, PDFs, audio, video if applicable)
->     - [ ] Structured output format (if applicable)
+>     - [ ] Multimodal Input Handling (Images, PDFs, Audio, Video if applicable)
+>     - [ ] Multimodal Output Generation (Images, PDFs, Audio, Video if applicable)
+>     - [ ] Structured Output Format (if applicable)
 >   - **Metrics**:
->     - [ ] Token consumption metrics
+>     - [ ] Token Consumption Metrics
 >   - **Others**:
->     - [ ] Reasoning process (if applicable, e.g. tool use)
+>     - [ ] Reasoning Process (if applicable, e.g. tool use)
 
 ### Environment Verification (if applicable)
 > [!IMPORTANT]
-> Please confirm your testing environment:
-- [ ] Changes tested in a clean/isolated environment
-- [ ] Test environment matches production configuration
-- [ ] No cached data influenced the test results 
+> Please confirm your Testing Environment:
+- [ ] Changes tested in a Clean/Isolated Environment
+- [ ] Test Environment matches Production Configuration
+- [ ] No Cached Data influenced the Test Results 
