@@ -13,6 +13,9 @@
 - [ ] Code refactoring
 - [ ] Other
 
+## Version Control
+- [ ] Version bumped in manifest.yaml (top-level `version` field, not in meta section) (if applicable)
+
 ## Test Evidence
 > [!IMPORTANT]
 > Visual proof is required for Bug fixes, New features, Breaking changes:
