@@ -58,7 +58,7 @@
 >   - **Others**:
 >     - [ ] Reasoning Process (if applicable, e.g. tool use)
 
-### Environment Verification (if applicable)
+### Environment Verification
 > [!IMPORTANT]
 > Please confirm your Testing Environment:
 - [ ] Changes tested in a Clean/Isolated Environment
