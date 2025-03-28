@@ -247,7 +247,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         )
         return result
 
-    def _handle_tool_call_stream(self, response, tool_calls):
+    def _handle_tool_call_stream(self, response, tool_calls, incremental_output):
         tool_calls_stream = response.output.choices[0].message["tool_calls"]
         for tool_call_stream in tool_calls_stream:
             idx = tool_call_stream.get('index')
@@ -258,10 +258,16 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     func_name = tool_call_stream.get('function').get('name')
                     tool_call_obj = tool_calls[idx]
                     if func_name:
-                        tool_call_obj['function']['name'] += func_name
+                        if incremental_output:
+                            tool_call_obj['function']['name'] += func_name
+                        else:
+                            tool_call_obj['function']['name'] = func_name
                     args = tool_call_stream.get('function').get('arguments')
                     if args:
-                        tool_call_obj['function']['arguments'] += args
+                        if incremental_output:
+                            tool_call_obj['function']['arguments'] += args
+                        else:
+                            tool_call_obj['function']['arguments'] = args
 
     def _handle_generate_stream_response(
         self,
@@ -292,7 +298,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 resp_content = response.output.choices[0].message.content
                 assistant_prompt_message = AssistantPromptMessage(content="")
                 if "tool_calls" in response.output.choices[0].message:
-                    self._handle_tool_call_stream(response, tool_calls)
+                    self._handle_tool_call_stream(response, tool_calls, False)
                 elif resp_content:
                     if isinstance(resp_content, list):
                         resp_content = resp_content[0]["text"]
@@ -335,7 +341,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 )
                 if not resp_content:
                     if "tool_calls" in response.output.choices[0].message:
-                        self._handle_tool_call_stream(response, tool_calls)
+                        self._handle_tool_call_stream(response, tool_calls, False)
                     continue
                 if isinstance(resp_content, list):
                     resp_content = resp_content[0]["text"]
