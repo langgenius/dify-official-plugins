@@ -1,4 +1,4 @@
-dify_plugin==0.0.1b68
+dify_plugin==0.0.1b73
 google-ai-generativelanguage~=0.6.9
 google-api-python-client~=2.90.0
 google-api-core~=2.18.0
@@ -11,3 +11,4 @@ grpcio-status~=1.62.3
 httplib2~=0.22.0
 proto-plus~=1.25.0
 protobuf~=4.25.5
+google-genai~=1.2.0

@@ -20,19 +20,19 @@ credentials_for_provider:
     required: true
     label:
       en_US: Telegraph Access Token
-      ja_JP: Telegraph Access Token
-      zh_Hans: Telegraph Access Token
-      pt_BR: Telegraph Access Token
+      ja_JP: Telegraphアクセストークン
+      zh_Hans: Telegraph 访问令牌
+      pt_BR: Token de Acesso do Telegraph
     placeholder:
-      en_US: Please input your Telegraph Access Token
+      en_US: Enter your Telegraph access token
       ja_JP: Telegraphアクセストークンを入力してください
-      zh_Hans: 请输入您的Telegraph访问令牌
-      pt_BR: Por favor, insira seu Token de Acesso do Telegraph
+      zh_Hans: 请输入您的 Telegraph 访问令牌
+      pt_BR: Digite seu token de acesso do Telegraph
     help:
-    en_US: Get your Access Token from Telegraph
-    ja_JP: Telegraphからアクセストークンを取得
-    zh_Hans: 从Telegraph获取访问令牌
-    pt_BR: Obtenha seu Token de Acesso do Telegraph
+      en_US: How to get your Telegraph access token
+      ja_JP: Telegraphアクセストークンの取得方法
+      zh_Hans: 如何获取 Telegraph 访问令牌
+      pt_BR: Como obter seu token de acesso do Telegraph
     url: https://telegra.ph/api#createAccount
 tools:
   - tools/telegraph.yaml

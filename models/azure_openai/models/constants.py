@@ -531,7 +531,17 @@ LLM_BASE_MODELS = [
                         en_US="specifying the format that the model must output",
                     ),
                     required=False,
-                    options=["text", "json_object"],
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
                 ),
             ],
             pricing=PriceConfig(
@@ -675,7 +685,17 @@ LLM_BASE_MODELS = [
                         en_US="specifying the format that the model must output",
                     ),
                     required=False,
-                    options=["text", "json_object"],
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
                 ),
             ],
             pricing=PriceConfig(
@@ -1199,27 +1219,6 @@ LLM_BASE_MODELS = [
                 ModelPropertyKey.CONTEXT_SIZE: 128000,
             },
             parameter_rules=[
-                ParameterRule(
-                    name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
-                    type="string",
-                    help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
-                    ),
-                    required=False,
-                    options=["text", "json_object", "json_schema"],
-                ),
-                ParameterRule(
-                    name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
-                    type="text",
-                    help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
-                    ),
-                    required=False,
-                ),
                 _get_o1_max_tokens(default=512, min_val=1, max_val=32768),
             ],
             pricing=PriceConfig(
@@ -1247,27 +1246,6 @@ LLM_BASE_MODELS = [
                 ModelPropertyKey.CONTEXT_SIZE: 128000,
             },
             parameter_rules=[
-                ParameterRule(
-                    name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
-                    type="string",
-                    help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
-                    ),
-                    required=False,
-                    options=["text", "json_object", "json_schema"],
-                ),
-                ParameterRule(
-                    name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
-                    type="text",
-                    help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
-                    ),
-                    required=False,
-                ),
                 _get_o1_max_tokens(default=512, min_val=1, max_val=65536),
             ],
             pricing=PriceConfig(

@@ -7,10 +7,11 @@ from dify_plugin.entities.model import EmbeddingInputType, PriceType
 from dify_plugin.entities.model.text_embedding import EmbeddingUsage, TextEmbeddingResult
 from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 from tencentcloud.common import credential
-from tencentcloud.common.exception import TencentCloudSDKException
+from tencentcloud.common.exception.tencent_cloud_sdk_exception import TencentCloudSDKException
 from tencentcloud.common.profile.client_profile import ClientProfile
 from tencentcloud.common.profile.http_profile import HttpProfile
-from tencentcloud.hunyuan.v20230901 import hunyuan_client, models
+from tencentcloud.lkeap.v20240522 import lkeap_client, models
+
 
 logger = logging.getLogger(__name__)
 
@@ -38,22 +39,19 @@ class HunyuanTextEmbeddingModel(TextEmbeddingModel):
         :param input_type: input type
         :return: embeddings result
         """
-        if model != "hunyuan-embedding":
-            raise ValueError("Invalid model name")
+        if model != "lke-text-embedding-v1":
+            raise ValueError(f"Invalid model name '{model}'")
+
+        # https://cloud.tencent.com/document/api/1772/115343
         client = self._setup_hunyuan_client(credentials)
-        embeddings = []
-        token_usage = 0
-        for input in texts:
-            request = models.GetEmbeddingRequest()
-            params = {"Input": input}
-            request.from_json_string(json.dumps(params))
-            response = client.GetEmbedding(request)
-            usage = response.Usage.TotalTokens
-            embeddings.extend([data.Embedding for data in response.Data])
-            token_usage += usage
+        req = models.GetEmbeddingRequest()
+        params = {"Model": model, "Inputs": texts}
+        req.from_json_string(json.dumps(params))
+        resp = client.GetEmbedding(req)
+        token_usage = resp.Usage.TotalTokens
         result = TextEmbeddingResult(
             model=model,
-            embeddings=embeddings,
+            embeddings=[data.Embedding for data in resp.Data],
             usage=self._calc_response_usage(model=model, credentials=credentials, tokens=token_usage),
         )
         return result
@@ -82,10 +80,10 @@ class HunyuanTextEmbeddingModel(TextEmbeddingModel):
         secret_key = credentials["secret_key"]
         cred = credential.Credential(secret_id, secret_key)
         httpProfile = HttpProfile()
-        httpProfile.endpoint = "hunyuan.tencentcloudapi.com"
+        httpProfile.endpoint = "lkeap.tencentcloudapi.com"
         clientProfile = ClientProfile()
         clientProfile.httpProfile = httpProfile
-        client = hunyuan_client.HunyuanClient(cred, "", clientProfile)
+        client = lkeap_client.LkeapClient(cred, "ap-guangzhou", clientProfile)
         return client
 
     def _calc_response_usage(self, model: str, credentials: dict, tokens: int) -> EmbeddingUsage:

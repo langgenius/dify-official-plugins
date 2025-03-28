@@ -121,7 +121,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             )
         try:
             client = AzureOpenAI(**self._to_credential_kwargs(credentials))
-            if "o1" in model or "o3" in model:
+            if base_model_name.startswith(("o1", "o3")):
                 client.chat.completions.create(
                     messages=[{"role": "user", "content": "ping"}],
                     model=model,
@@ -285,6 +285,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
+        base_model_name = self._get_base_model_name(credentials)
         client = AzureOpenAI(**self._to_credential_kwargs(credentials))
         response_format = model_parameters.get("response_format")
         if response_format:
@@ -305,6 +306,8 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 }
             else:
                 model_parameters["response_format"] = {"type": response_format}
+        elif "json_schema" in model_parameters:
+            del model_parameters["json_schema"]
         extra_model_kwargs = {}
         if tools:
             extra_model_kwargs["tools"] = [
@@ -315,14 +318,17 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             extra_model_kwargs["stop"] = stop
         if user:
             extra_model_kwargs["user"] = user
-        prompt_messages = self._clear_illegal_prompt_messages(model, prompt_messages)
+        prompt_messages = self._clear_illegal_prompt_messages(base_model_name, prompt_messages)
         block_as_stream = False
-        if "o1" in model or "o3" in model:
-            if stream:
-                block_as_stream = True
-                stream = False
-                if "stream_options" in extra_model_kwargs:
-                    del extra_model_kwargs["stream_options"]
+        if base_model_name.startswith(("o1", "o3")):
+            # o1 and o1-* do not support streaming
+            # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/reasoning#api--feature-support
+            if base_model_name.startswith("o1"):
+                if stream:
+                    block_as_stream = True
+                    stream = False
+                    if "stream_options" in extra_model_kwargs:
+                        del extra_model_kwargs["stream_options"]
             if "stop" in extra_model_kwargs:
                 del extra_model_kwargs["stop"]
         response = client.chat.completions.create(
@@ -372,7 +378,11 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             system_fingerprint=block_result.system_fingerprint,
             delta=LLMResultChunkDelta(
                 index=0,
-                message=AssistantPromptMessage(content=text),
+                message=AssistantPromptMessage(
+                    content=text or "",
+                    name=block_result.message.name,
+                    tool_calls=block_result.message.tool_calls,
+                ),
                 finish_reason="stop",
                 usage=block_result.usage,
             ),
@@ -407,7 +417,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                                     for item in prompt_message.content
                                 ]
                             )
-        if "o1" in model or "o3" in model:
+        if model.startswith(("o1", "o3")):
             system_message_count = len(
                 [m for m in prompt_messages if isinstance(m, SystemPromptMessage)]
             )
@@ -660,9 +670,9 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         Official documentation: https://github.com/openai/openai-cookbook/blob/
         main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb"""
         model = credentials["base_model_name"]
+        if model.startswith(("o1", "o3")):
+            model = "gpt-4o"
         try:
-            if "o1" in model or "o3" in model:
-                model = "gpt-4o"
             encoding = tiktoken.encoding_for_model(model)
         except KeyError:
             logger.warning("Warning: model not found. Using cl100k_base encoding.")
@@ -674,8 +684,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         elif (
             model.startswith("gpt-35-turbo")
             or model.startswith("gpt-4")
-            or "o1" in model
-            or "o3" in model
+            or model.startswith(("o1", "o3"))
         ):
             tokens_per_message = 3
             tokens_per_name = 1
@@ -769,3 +778,40 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         if not base_model_name:
             raise ValueError("Base Model Name is required")
         return base_model_name
+
+    # TODO: remove this method once https://github.com/langgenius/dify-plugin-sdks/pull/57 is merged
+    #       and the version of dify-plugin-sdks is updated
+    def _code_block_mode_wrapper(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
+    ) -> Union[LLMResult, Generator[LLMResultChunk, None, None]]:
+
+        if "response_format" in model_parameters and model_parameters["response_format"] in ["JSON", "XML"]:
+            return super()._code_block_mode_wrapper(
+                model=model,
+                credentials=credentials,
+                prompt_messages=prompt_messages,
+                model_parameters=model_parameters,
+                tools=tools,
+                stop=stop,
+                stream=stream,
+                user=user,
+            )
+        else:
+            return self._invoke(
+                model=model,
+                credentials=credentials,
+                prompt_messages=prompt_messages,
+                model_parameters=model_parameters,
+                tools=tools,
+                stop=stop,
+                stream=stream,
+                user=user,
+            )
