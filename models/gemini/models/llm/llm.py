@@ -276,7 +276,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         key = f"{message_content.type.value}:{hash(message_content.data)}"
         if file_cache.exists(key):
             try:
-                return genai.get_file(file_cache.get(key))
+                return client.files.get(name=file_cache.get(key))
             except:
                 pass
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
