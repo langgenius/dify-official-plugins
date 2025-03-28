@@ -13,21 +13,30 @@ Before starting, ensure the following:
 
 ## 2. Local Deployment Using Docker
 
-### Step 1: Modify Dify Configuration File
-Locate the configuration file at:
-`dify/api/core/tools/provider/builtin/searxng/docker/settings.yml`
-This file contains the necessary settings for integrating SearXNG with Dify. Refer to the official documentation for detailed configuration options.
-
-### Step 2: Start the SearXNG Service
-Run the following command in the root directory of your Dify installation to start the SearXNG Docker container:
+### Step 1: Start the SearXNG Docker Service
+```shell
+$ mkdir my-instance
+$ cd my-instance
+$ export PORT=8081
+$ docker pull searxng/searxng
+$ docker run --rm \
+             -d -p ${PORT}:8080 \
+             -v "${PWD}/searxng:/etc/searxng" \
+             -e "BASE_URL=http://localhost:$PORT/" \
+             -e "INSTANCE_NAME=my-instance" \
+             searxng/searxng
+2f998.... # container's ID
 ```
-cd dify
+> Note: Use port `8081` instead of `8080` to avoid conflicts with other Docker services.
 
-docker run --rm -d -p 8081:8080 \
--v "${PWD}/api/core/tools/provider/builtin/searxng/docker:/etc/searxng" \
-searxng/searxng
+### Step 2: Modify the SearXNG Configuration
+
+Edit the `my-instance/searxng/settings.yml` file,  make sure the `formats` has `json` format(default is only `html`) and the `limiter` is `false`.
+
+Then restart the SearXNG Docker service.
+```shell
+$ docker restart 2f998
 ```
-This command will launch the SearXNG service on port `8081`.
 
 ### Step 3: Authenticate in Dify
 1. Go to **Tools > SearXNG > To authorize** in your Dify dashboard.
