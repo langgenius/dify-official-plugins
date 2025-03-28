@@ -190,7 +190,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: full response or stream response chunk generator result
         """
         config = types.GenerateContentConfig()
-        if schema := model_parameters.get("schema"):
+        if schema := model_parameters.get("json_schema"):
             try:
                 schema = json.loads(schema)
             except:
