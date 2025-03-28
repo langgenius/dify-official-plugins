@@ -1,0 +1,244 @@
+description:
+  human:
+    en_US: Generate presentation slides from text using SlideSpeak API.
+    zh_Hans: 使用 SlideSpeak API 从文本生成演示幻灯片。
+  llm: This tool converts text input into a presentation using the SlideSpeak API
+    service, with options for slide length, template, language, and other customization features.
+extra:
+  python:
+    source: tools/presentation_generator.py
+identity:
+  author: Kalo Chin
+  label:
+    en_US: Presentation Generator
+    zh_Hans: 演示文稿生成器
+  name: presentation_generator
+parameters:
+- form: llm
+  human_description:
+    en_US: The topic or content to be converted into presentation slides.
+    zh_Hans: 需要转换为幻灯片的内容或主题。
+  label:
+    en_US: Topic or Content
+    zh_Hans: 主题或内容
+  llm_description: A string containing the topic or content to be transformed into
+    presentation slides.
+  name: plain_text
+  required: true
+  type: string
+- form: llm
+  human_description:
+    en_US: The desired number of slides in the presentation.
+    zh_Hans: 演示文稿中所需的幻灯片数量。
+  label:
+    en_US: Number of Slides
+    zh_Hans: 幻灯片数量
+  llm_description: Required parameter specifying the number of slides to generate.
+  name: length
+  required: true
+  type: number
+- form: llm
+  human_description:
+    en_US: The visual template for the presentation.
+    zh_Hans: 演示文稿的视觉模板。
+  label:
+    en_US: Presentation Template
+    zh_Hans: 演示模板
+  llm_description: Required parameter specifying the presentation template.
+  name: template
+  options:
+  - label:
+      en_US: Default
+      zh_Hans: Default
+    value: default
+  - label:
+      en_US: Gradient
+      zh_Hans: Gradient
+    value: gradient
+  - label:
+      en_US: Adam
+      zh_Hans: Adam
+    value: adam
+  - label:
+      en_US: Bruno
+      zh_Hans: Bruno
+    value: bruno
+  - label:
+      en_US: Clyde
+      zh_Hans: Clyde
+    value: clyde
+  - label:
+      en_US: Daniel
+      zh_Hans: Daniel
+    value: daniel
+  - label:
+      en_US: Eddy
+      zh_Hans: Eddy
+    value: eddy
+  - label:
+      en_US: Felix
+      zh_Hans: Felix
+    value: felix
+  - label:
+      en_US: Iris
+      zh_Hans: Iris
+    value: iris
+  - label:
+      en_US: Monolith
+      zh_Hans: Monolith
+    value: monolith
+  - label:
+      en_US: Nexus
+      zh_Hans: Nexus
+    value: nexus
+  - label:
+      en_US: Aurora
+      zh_Hans: Aurora
+    value: aurora
+  - label:
+      en_US: Lavender
+      zh_Hans: Lavender
+    value: lavender
+  - label:
+      en_US: Nebula
+      zh_Hans: Nebula
+    value: nebula
+  required: true
+  type: select
+- form: llm
+  human_description:
+    en_US: The language to use in the presentation (default is "ORIGINAL").
+    zh_Hans: 演示文稿中使用的语言（默认为"ORIGINAL"）。
+  label:
+    en_US: Language
+    zh_Hans: 语言
+  llm_description: Optional parameter specifying the language to use in the presentation.
+  name: language
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: Whether to include stock images in the presentation (default is true).
+    zh_Hans: 是否在演示文稿中包含图片（默认为true）。
+  label:
+    en_US: Include Images
+    zh_Hans: 包含图片
+  llm_description: Optional boolean parameter specifying whether to include stock images.
+  name: fetch_images
+  required: false
+  type: boolean
+- form: llm
+  human_description:
+    en_US: The tone to use for the text in the presentation.
+    zh_Hans: 演示文稿中文本使用的语调。
+  label:
+    en_US: Text Tone
+    zh_Hans: 文本语调
+  llm_description: Optional parameter specifying the tone for the text.
+  name: tone
+  options:
+  - label:
+      en_US: Default
+      zh_Hans: 默认
+    value: default
+  - label:
+      en_US: Casual
+      zh_Hans: 随意
+    value: casual
+  - label:
+      en_US: Professional
+      zh_Hans: 专业
+    value: professional
+  - label:
+      en_US: Funny
+      zh_Hans: 幽默
+    value: funny
+  - label:
+      en_US: Educational
+      zh_Hans: 教育
+    value: educational
+  - label:
+      en_US: Sales Pitch
+      zh_Hans: 销售推销
+    value: sales_pitch
+  required: false
+  type: select
+- form: llm
+  human_description:
+    en_US: How verbose or lengthy the text should be (default is "standard").
+    zh_Hans: 文本应该有多详细或冗长（默认为"standard"）。
+  label:
+    en_US: Text Verbosity
+    zh_Hans: 文本详细程度
+  llm_description: Optional parameter specifying the verbosity level of the text.
+  name: verbosity
+  options:
+  - label:
+      en_US: Concise
+      zh_Hans: 简洁
+    value: concise
+  - label:
+      en_US: Standard
+      zh_Hans: 标准
+    value: standard
+  - label:
+      en_US: Text-heavy
+      zh_Hans: 文本丰富
+    value: text-heavy
+  required: false
+  type: select
+- form: llm
+  human_description:
+    en_US: Custom instructions to follow when generating the presentation.
+    zh_Hans: 生成演示文稿时要遵循的自定义指示。
+  label:
+    en_US: Custom Instructions
+    zh_Hans: 自定义指示
+  llm_description: Optional parameter for custom instructions to follow when generating the presentation.
+  name: custom_user_instructions
+  required: false
+  type: string
+- form: form
+  human_description:
+    en_US: Whether to include a cover slide (default is true).
+    zh_Hans: 是否包含封面幻灯片（默认为true）。
+  label:
+    en_US: Include Cover Slide
+    zh_Hans: 封面幻灯片
+  llm_description: Optional boolean parameter specifying whether to include a cover slide.
+  name: include_cover
+  required: false
+  type: boolean
+- form: form
+  human_description:
+    en_US: Whether to include a table of contents slide (default is true).
+    zh_Hans: 是否包含目录幻灯片（默认为true）。
+  label:
+    en_US: Include Table of Contents
+    zh_Hans: 包含目录
+  llm_description: Optional boolean parameter specifying whether to include a table of contents slide.
+  name: include_table_of_contents
+  required: false
+  type: boolean
+- form: form
+  human_description:
+    en_US: Whether to include the brand logo in slides (default is false).
+    zh_Hans: 是否在幻灯片中包含品牌标志（默认为false）。
+  label:
+    en_US: Use Brand Logo
+    zh_Hans: 使用品牌标志
+  llm_description: Optional boolean parameter specifying whether to include the brand logo.
+  name: use_branding_logo
+  required: false
+  type: boolean
+- form: form
+  human_description:
+    en_US: Whether to apply the brand color to slides (default is false).
+    zh_Hans: 是否将品牌颜色应用于幻灯片（默认为false）。
+  label:
+    en_US: Use Brand Color
+    zh_Hans: 使用品牌颜色
+  llm_description: Optional boolean parameter specifying whether to apply the brand color.
+  name: use_branding_color
+  required: false
+  type: boolean
