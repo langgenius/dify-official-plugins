@@ -15,6 +15,11 @@
 
 ## Version Control
 - [ ] Version bumped in manifest.yaml (top-level `version` field, not in meta section) (if applicable)
+<!-- Version format: MAJOR.MINOR.PATCH
+- MAJOR (0.x.x): Reserved for major releases with widespread breaking changes
+- MINOR (x.0.x): For new features or limited breaking changes
+- PATCH (x.x.0): For backwards-compatible bug fixes and minor improvements
+-->
 
 ## Test Evidence
 > [!IMPORTANT]
