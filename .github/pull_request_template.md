@@ -19,6 +19,7 @@
 - MAJOR (0.x.x): Reserved for Major Releases with widespread Breaking Changes
 - MINOR (x.0.x): For New Features or limited Breaking Changes
 - PATCH (x.x.0): For backwards-compatible Bug Fixes and minor Improvements
+- Note: Each version component (MAJOR, MINOR, PATCH) can be 2 digits, e.g., 10.11.22
 -->
 
 ## Test Evidence (if applicable)
