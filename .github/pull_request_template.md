@@ -58,7 +58,16 @@
 
 ### Environment Verification
 > [!IMPORTANT]
-> Please confirm your Testing Environment:
-- [ ] Changes tested in a Clean/Isolated Environment
-- [ ] Test Environment matches Production Configuration
-- [ ] No Cached Data influenced the Test Results 
+> At least one environment must be tested.
+
+#### Local Deployment Environment
+##### Local Deployment Dify Version: <!-- Specify your version (e.g., 1.1.3) -->
+- [ ] Changes tested in an Isolated Environment that matches Production Configuration
+<!--
+- Python virtual env matching Manifest.yaml & requirements.txt
+- No breaking changes in Dify that may affect the testing result
+-->
+- [ ] No Cached Data influenced the Test Results
+
+#### SaaS Environment
+- [ ] Testing performed on cloud.dify.ai
