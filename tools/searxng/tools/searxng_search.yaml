@@ -78,3 +78,27 @@ parameters:
         value: social_media
     required: true
     type: select
+  - default: null
+    form: form
+    label:
+      en_US: time range
+      zh_Hans: 时间范围
+    name: time_range
+    human_description:
+      en_US: corresponding to the SearXNG API's time_range parameter, also depends on whether the search engine supports it
+      zh_Hans: 对应的是 SearXNG API 的 time_range 参数，也取决于搜索引擎是否支持
+    options:
+      - label:
+          en_US: In a day
+          zh_Hans: 一天内
+        value: day
+      - label:
+          en_US: In a month
+          zh_Hans: 一个月内
+        value: month
+      - label:
+          en_US: In a year
+          zh_Hans: 一年内
+        value: year
+    type: select
+    required: false
