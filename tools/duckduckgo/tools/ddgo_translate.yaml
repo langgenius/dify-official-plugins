@@ -49,6 +49,19 @@ parameters:
       en_US: select the language to translate.
       zh_Hans: 选择要翻译的语言
     form: form
+  - name: proxy_server
+    type: string
+    required: false
+    placeholder:
+      en_US: "http://user:pass@example.com:3128"
+      zh_Hans: "http://user:pass@example.com:3128"
+    label:
+      en_US: Proxy server
+      zh_Hans: 代理服务器
+    human_description:
+      en_US: "Supports http/https/socks proxies. Example: http://user:pass@example.com:3128."
+      zh_Hans: "支持 http/https/socks 代理。示例：http://user:pass@example.com:3128。"
+    form: form
 extra:
   python:
     source: tools/ddgo_translate.py

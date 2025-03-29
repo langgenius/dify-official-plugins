@@ -42,6 +42,19 @@ parameters:
       en_US: Whether to pass the search results to llm for summarization.
       zh_Hans: 是否需要将搜索结果传给大模型总结
     form: form
+  - name: proxy_server
+    type: string
+    required: false
+    placeholder:
+      en_US: "http://user:pass@example.com:3128"
+      zh_Hans: "http://user:pass@example.com:3128"
+    label:
+      en_US: Proxy server
+      zh_Hans: 代理服务器
+    human_description:
+      en_US: "Supports http/https/socks proxies. Example: http://user:pass@example.com:3128."
+      zh_Hans: "支持 http/https/socks 代理。示例：http://user:pass@example.com:3128。"
+    form: form
 extra:
   python:
     source: tools/ddgo_search.py
