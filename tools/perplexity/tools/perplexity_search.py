@@ -48,7 +48,10 @@ class PerplexityAITool(Tool):
             payload["return_citations"] = tool_parameters["return_citations"]
         if "search_domain_filter" in tool_parameters:
             if isinstance(tool_parameters["search_domain_filter"], str):
-                payload["search_domain_filter"] = [tool_parameters["search_domain_filter"]]
+                if tool_parameters["search_domain_filter"] == "":
+                    payload["search_domain_filter"] = []
+                else:
+                    payload["search_domain_filter"] = [tool_parameters["search_domain_filter"]]
             elif isinstance(tool_parameters["search_domain_filter"], list):
                 payload["search_domain_filter"] = tool_parameters["search_domain_filter"]
         response = requests.post(url=PERPLEXITY_API_URL, json=payload, headers=headers)
