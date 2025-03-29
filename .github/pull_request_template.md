@@ -29,7 +29,7 @@
 <!-- Provide your evidence here -->
 
 > [!NOTE]
-> For Non-LLM Plugin Changes:
+> For Non-LLM Models Changes:
 > - **Bug Fixes**:
 >   - [ ] Show the Fix working
 > - **New Features**:
@@ -37,8 +37,8 @@
 > - **Breaking Changes**:
 >   - [ ] Show both Old and New Behavior
 >
-> For LLM Plugin Changes:
-> [LLM Plugin Test Example](https://github.com/langgenius/dify-official-plugins/blob/main/.assets/test-examples/llm-plugin-tests/llm_test_example.md)
+> For LLM Models Changes:
+> [LLM Models Test Example](https://github.com/langgenius/dify-official-plugins/blob/main/.assets/test-examples/llm-plugin-tests/llm_test_example.md)
 > - **Bug Fixes**:
 >   - [ ] Show the Fix working with Example Inputs/Outputs
 > - **New Features**:
