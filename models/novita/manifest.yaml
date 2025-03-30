@@ -1,12 +1,10 @@
 author: langgenius
-created_at: 2024-10-08 16:58:21.101264-04:00
+created_at: 2024-10-08T16:58:21.101264-04:00
 description:
   en_US: Novita AI provides an LLM API that matches various application scenarios with high cost-effectiveness.
   zh_Hans: 适配多种海外应用场景的高性价比 LLM API
 icon: icon_s_en.svg
 label:
-  en_US: Novita
-description:
   en_US: Novita
 meta:
   arch:
@@ -35,4 +33,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.2
+version: 0.0.3

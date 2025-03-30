@@ -1,0 +1,70 @@
+description:
+  human:
+    en_US: Gets the README from a repository directory.
+    pt_BR: Obter o README de um diretório do repositório.
+    zh_Hans: 从存储库某个目录中获取README
+  llm: A tool when you wants to gets the README content from a repository directory.
+extra:
+  python:
+    source: tools/github_repository_readme.py
+identity:
+  author: itning
+  icon: icon.svg
+  label:
+    en_US: Get README content
+    pt_BR: Obter conteúdo do README
+    zh_Hans: 获取README内容
+  name: github_repository_readme
+parameters:
+- form: llm
+  human_description:
+    en_US: The account owner of the repository. The name is not case sensitive.
+    pt_BR: Proprietário da conta do repositório. O nome não diferencia maiúsculas de minúsculas.
+    zh_Hans: 仓库的账户所有者。名称不区分大小写。
+  label:
+    en_US: owner
+    pt_BR: owner
+    zh_Hans: owner
+  llm_description: The account owner of the repository. The name is not case sensitive.
+  name: owner
+  required: true
+  type: string
+- form: llm
+  human_description:
+    en_US: The name of the repository without the .git extension. The name is not case sensitive.
+    pt_BR: O nome do repositório sem a extensão .git. O nome não diferencia maiúsculas de minúsculas.
+    zh_Hans: 仓库名称不带.git扩展名。名称不区分大小写。
+  label:
+    en_US: repo
+    pt_BR: repo
+    zh_Hans: repo
+  llm_description: The name of the repository without the .git extension. The name is not case sensitive.
+  name: repo
+  required: true
+  type: string
+- form: llm
+  human_description:
+    en_US: "The name of the commit/branch/tag. Default: the repository’s default branch."
+    pt_BR: "O nome do commit/branch/tag. Valor padrão: a branch padrão do repositório."
+    zh_Hans: commit/branch/tag的名称。默认值：仓库的默认分支。
+  label:
+    en_US: ref
+    pt_BR: ref
+    zh_Hans: ref
+  llm_description: "The name of the commit/branch/tag. Default: the repository’s default branch."
+  name: ref
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: The alternate path to look for a README file
+    pt_BR: O caminho alternativo para encontrar o arquivo README
+    zh_Hans: 查找README文件的备用路径。
+  label:
+    en_US: dir
+    pt_BR: dir
+    zh_Hans: dir
+  llm_description: The alternate path to look for a README file
+  name: dir
+  required: false
+  type: string

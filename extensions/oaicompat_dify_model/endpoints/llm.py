@@ -33,7 +33,10 @@ class OaicompatDifyModelEndpoint(Endpoint, BaseAuth):
 
         llm: Optional[dict] = settings.get("llm")
         if not llm:
-            raise ValueError("LLM is not set")
+            raise ValueError("LLM is not set")        
+
+        if "completion_params" not in llm:
+            llm["completion_params"] = {}
 
         data = r.get_json(force=True)
         if not data:
@@ -72,9 +75,7 @@ class OaicompatDifyModelEndpoint(Endpoint, BaseAuth):
         def generator():
             if not stream:
                 llm_invoke_response = self.session.model.llm.invoke(
-                    model_config=LLMModelConfig(
-                        completion_params=llm.get("completion_params", {}), **llm
-                    ),
+                    model_config=LLMModelConfig(**llm),
                     prompt_messages=prompt_messages,
                     tools=tools,
                     stream=False,
@@ -105,9 +106,7 @@ class OaicompatDifyModelEndpoint(Endpoint, BaseAuth):
                 )
             else:
                 llm_invoke_response = self.session.model.llm.invoke(
-                    model_config=LLMModelConfig(
-                        completion_params=llm.get("completion_params", {}), **llm
-                    ),
+                    model_config=LLMModelConfig(**llm),
                     prompt_messages=prompt_messages,
                     tools=tools,
                     stream=True,

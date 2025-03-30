@@ -1,6 +1,6 @@
 import random
-from base64 import b64decode
-from typing import Any, Union
+import base64
+from typing import Any
 from openai import AzureOpenAI
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
@@ -36,24 +36,13 @@ class DallE3Tool(Tool):
         response = client.images.generate(
             prompt=prompt,
             model=model,
-            size=size,
+            size=size, # type: ignore
             n=n,
             extra_body=extra_body,
             style=style,
             quality=quality,
             response_format="b64_json",
         )
-        # result = []
-        # for image in response.data:
-        #     result.append(
-        #         self.create_blob_message(
-        #             blob=b64decode(image.b64_json),
-        #             meta={"mime_type": "image/png"},
-        #             save_as=self.VariableKey.IMAGE.value,
-        #         )
-        #     )
-        # result.append(self.create_text_message(f"\nGenerate image source to Seed ID: {seed_id}"))
-        # yield result
         for image in response.data:
             if not image.b64_json:
                 continue

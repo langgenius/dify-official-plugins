@@ -942,7 +942,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                             })
                         else:
                             content.append({"type": "text", "text": message.content})
-                    
                     if prompt_message_dicts and prompt_message_dicts[-1]["role"] == "assistant":
                         prompt_message_dicts[-1]["content"].extend(content)
                     else:

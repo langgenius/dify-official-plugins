@@ -18,7 +18,9 @@ class DuckDuckGoTranslateTool(Tool):
             "keywords": tool_parameters.get("query"),
             "to": tool_parameters.get("translate_to"),
         }
-        response = (
-            DDGS().translate(**query_dict)[0].get("translated", "Unable to translate!")
-        )
+        proxy = tool_parameters.get("proxy_server", None)
+        if proxy:
+            response = (DDGS(proxy=proxy).translate(**query_dict)[0].get("translated", "Unable to translate!"))
+        else:
+            response = (DDGS().translate(**query_dict)[0].get("translated", "Unable to translate!"))
         yield self.create_text_message(text=response)

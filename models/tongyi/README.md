@@ -4,4 +4,4 @@ Tongyi Qwen, developed by Alibaba Cloud, is a sophisticated series of LLMs. It i
 # Configure
 After installation, you need to get API keys from [Alibaba Cloud](https://bailian.console.aliyun.com/?apiKey=1#/api-key) and setup in Settings -> Model Provider.
 
-![](_assets/tongyi.png)
+![](_assets/tongyi.PNG)

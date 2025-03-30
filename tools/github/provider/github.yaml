@@ -52,3 +52,4 @@ identity:
   - utilities
 tools:
 - tools/github_repositories.yaml
+- tools/github_repository_readme.yaml
