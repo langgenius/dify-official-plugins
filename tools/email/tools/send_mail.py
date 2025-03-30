@@ -6,6 +6,7 @@ from dify_plugin import Tool
 from dify_plugin.file.file import File
 from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.markdown_utils import convert_markdown_to_html
+
 from tools.send import SendEmailToolParameters, send_mail
 
 
@@ -21,7 +22,7 @@ class SendMailTool(Tool):
         if not smtp_server:
             yield self.create_text_message("please input smtp server")
             return
-            
+
         smtp_port = self.runtime.credentials.get("smtp_port", "")
         try:
             smtp_port = int(smtp_port)
@@ -37,6 +38,7 @@ class SendMailTool(Tool):
             yield self.create_text_message("Invalid parameter userid, the sender is not a mailbox")
             return
             
+
         receiver_email = tool_parameters["send_to"]
         if not receiver_email:
             yield self.create_text_message("please input receiver email")
@@ -45,23 +47,22 @@ class SendMailTool(Tool):
         if not email_rgx.match(receiver_email):
             yield self.create_text_message("Invalid parameter receiver email, the receiver email is not a mailbox")
             return
-            
+
         email_content = tool_parameters.get("email_content", "")
         if not email_content:
             yield self.create_text_message("please input email content")
             return
-            
+
         subject = tool_parameters.get("subject", "")
         if not subject:
             yield self.create_text_message("please input email subject")
             return
-            
+
         encrypt_method = self.runtime.credentials.get("encrypt_method", "")
         if not encrypt_method:
             yield self.create_text_message("please input encrypt method")
             return
-            
-        # Process CC recipients
+
         cc_email = tool_parameters.get('cc', '')
         cc_email_list = []
         if cc_email:
@@ -74,6 +75,7 @@ class SendMailTool(Tool):
                     return
                     
         # Process BCC recipients
+
         bcc_email = tool_parameters.get('bcc', '')
         bcc_email_list = []
         if bcc_email:
@@ -103,6 +105,7 @@ class SendMailTool(Tool):
             attachments = [attachments]
         
         # Create email parameters object with all fields
+
         send_email_params = SendEmailToolParameters(
             smtp_server=smtp_server,
             smtp_port=smtp_port,
@@ -141,3 +144,4 @@ class SendMailTool(Tool):
             )
         else:
             yield self.create_text_message(response_text)
+
