@@ -1,10 +1,19 @@
 import os
 import json
+import pathlib
 import time
+import tempfile
 
 class FileCache:
     def __init__(self, cache_file="file_cache.json"):
-        self.cache_file = cache_file
+        dir = os.path.dirname(cache_file)
+        try:
+            # try to check if the cache file is writable
+            with tempfile.TemporaryDirectory(dir=dir):
+                self.cache_file = cache_file
+        except Exception:
+            self.cache_file = str(pathlib.Path(tempfile.gettempdir()) / cache_file)
+
         self._ensure_cache_file()
 
     def _ensure_cache_file(self):
