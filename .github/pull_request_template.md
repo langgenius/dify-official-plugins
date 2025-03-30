@@ -39,7 +39,6 @@
 >   - [ ] Show both Old and New Behavior
 >
 > For LLM Models Changes:
-> [LLM Models Test Example](https://github.com/langgenius/dify-official-plugins/blob/main/.assets/test-examples/llm-plugin-tests/llm_test_example.md)
 > - **Bug Fixes**:
 >   - [ ] Show the Fix working with Example Inputs/Outputs
 > - **New Features**:
@@ -56,6 +55,8 @@
 >     - [ ] Token Consumption Metrics
 >   - **Others**:
 >     - [ ] e.g., Reasoning Process for Claude 3.7 Sonnet, Grounding for Gemini (if applicable)
+<!-- LLM Models Test Example: -->
+<!-- https://github.com/langgenius/dify-official-plugins/blob/main/.assets/test-examples/llm-plugin-tests/llm_test_example.md -->
 
 ### Environment Verification
 > [!IMPORTANT]
