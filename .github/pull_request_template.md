@@ -55,7 +55,7 @@
 >   - **Metrics**:
 >     - [ ] Token Consumption Metrics
 >   - **Others**:
->     - [ ] e.g., Reasoning Process for  Claude 3.7 Sonnet, Grounding for Gemini (if applicable)
+>     - [ ] e.g., Reasoning Process for Claude 3.7 Sonnet, Grounding for Gemini (if applicable)
 
 ### Environment Verification
 > [!IMPORTANT]
@@ -63,7 +63,7 @@
 
 #### Local Deployment Environment
 Local Deployment Dify Version: <!-- Specify your version (e.g., 1.1.3) -->
-- [ ] Changes tested in an Clean Environment that matches Production Configuration
+- [ ] Changes tested in a Clean Environment that matches Production Configuration
 <!--
 - Python virtual env matching Manifest.yaml & requirements.txt
 - No breaking changes in Dify that may affect the testing result
@@ -71,7 +71,7 @@ Local Deployment Dify Version: <!-- Specify your version (e.g., 1.1.3) -->
 
 #### SaaS Environment
 - [ ] Testing performed on cloud.dify.ai
-- [ ] Changes tested in an Clean Environment that matches Production Configuration
+- [ ] Changes tested in a Clean Environment that matches Production Configuration
 <!--
 - Python virtual env matching Manifest.yaml & requirements.txt
 -->
