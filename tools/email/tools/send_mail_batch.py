@@ -1,11 +1,12 @@
 import json
 import re
 from typing import Any, Generator
-from dify_plugin.entities.tool import ToolInvokeMessage
-from tools.send import SendEmailToolParameters, send_mail
+
 from dify_plugin import Tool
+from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.file.file import File
 from tools.markdown_utils import convert_markdown_to_html
+from tools.send import SendEmailToolParameters, send_mail
 
 
 class SendMailTool(Tool):
@@ -71,6 +72,38 @@ class SendMailTool(Tool):
             yield self.create_text_message("please input encrypt method")
             return
             
+        # Process CC recipients
+        cc_email = tool_parameters.get('cc', '')
+        cc_email_list = []
+        if cc_email:
+            try:
+                cc_email_list = json.loads(cc_email)
+                for cc_email_item in cc_email_list:
+                    if not email_rgx.match(cc_email_item):
+                        yield self.create_text_message(
+                            f"Invalid parameter cc email, the cc email({cc_email_item}) is not a mailbox"
+                        )
+                        return
+            except json.JSONDecodeError:
+                yield self.create_text_message("Invalid JSON format for CC list")
+                return
+                
+        # Process BCC recipients
+        bcc_email = tool_parameters.get('bcc', '')
+        bcc_email_list = []
+        if bcc_email:
+            try:
+                bcc_email_list = json.loads(bcc_email)
+                for bcc_email_item in bcc_email_list:
+                    if not email_rgx.match(bcc_email_item):
+                        yield self.create_text_message(
+                            f"Invalid parameter bcc email, the bcc email({bcc_email_item}) is not a mailbox"
+                        )
+                        return
+            except json.JSONDecodeError:
+                yield self.create_text_message("Invalid JSON format for BCC list")
+                return
+        
         # Check if markdown to HTML conversion is requested
         convert_to_html = tool_parameters.get("convert_to_html", False)
         
@@ -88,32 +121,40 @@ class SendMailTool(Tool):
         if attachments is not None and not isinstance(attachments, list):
             attachments = [attachments]
             
-        # Dictionary to store results for each recipient
-        msg = {}
+        # Create email parameters with all fields
+        send_email_params = SendEmailToolParameters(
+            smtp_server=smtp_server,
+            smtp_port=smtp_port,
+            email_account=sender,
+            email_password=password,
+            sender_to=receivers_email,
+            subject=subject,
+            email_content=email_content,
+            plain_text_content=plain_text_content if convert_to_html else None,
+            encrypt_method=encrypt_method,
+            is_html=convert_to_html,
+            attachments=attachments,
+            cc_recipients=cc_email_list,
+            bcc_recipients=bcc_email_list
+        )
         
-        # Send email to each recipient
-        for receiver in receivers_email:
-            send_email_params = SendEmailToolParameters(
-                smtp_server=smtp_server,
-                smtp_port=smtp_port,
-                email_account=sender,
-                email_password=password,
-                sender_to=receiver,
-                subject=subject,
-                email_content=email_content,
-                plain_text_content=plain_text_content if convert_to_html else None,
-                encrypt_method=encrypt_method,
-                is_html=convert_to_html,
-                attachments=attachments
-            )
+        # Initialize response message for all recipients
+        msg = {}
+        for receiver in receivers_email + cc_email_list + bcc_email_list:
+            msg[receiver] = "send email success"
             
-            if send_mail(send_email_params):
-                if attachments:
-                    msg[receiver] = f"Email sent successfully with {len(attachments)} attachment(s)"
-                else:
-                    msg[receiver] = "Email sent successfully"
-            else:
-                msg[receiver] = "Email sending failed"
+        # Send the email and get result
+        result = send_mail(send_email_params)
+        
+        # Process any error results
+        if result:
+            for key, (integer_value, bytes_value) in result.items():
+                msg[key] = f"send email failed: {integer_value} {bytes_value.decode('utf-8')}"
                 
-        # Return the results
-        yield self.create_text_message(json.dumps(msg, indent=2))
+        # Add attachment information to the response
+        response_text = json.dumps(msg, indent=2)
+        if attachments:
+            attachment_info = f"Email sent with {len(attachments)} attachment(s)"
+            yield self.create_text_message(f"{attachment_info}. Details: {response_text}")
+        else:
+            yield self.create_text_message(response_text)

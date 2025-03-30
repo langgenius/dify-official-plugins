@@ -1,16 +1,16 @@
+import json
 import re
 from typing import Any, Generator
-from dify_plugin.entities.tool import ToolInvokeMessage
-from tools.send import SendEmailToolParameters, send_mail
+
 from dify_plugin import Tool
 from dify_plugin.file.file import File
+from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.markdown_utils import convert_markdown_to_html
+from tools.send import SendEmailToolParameters, send_mail
 
 
 class SendMailTool(Tool):
-    def _invoke(
-        self, tool_parameters: dict[str, Any]
-    ) -> Generator[ToolInvokeMessage, None, None]:
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         invoke tools
         """
@@ -61,6 +61,30 @@ class SendMailTool(Tool):
             yield self.create_text_message("please input encrypt method")
             return
             
+        # Process CC recipients
+        cc_email = tool_parameters.get('cc', '')
+        cc_email_list = []
+        if cc_email:
+            cc_email_list = json.loads(cc_email)
+            for cc_email_item in cc_email_list:
+                if not email_rgx.match(cc_email_item):
+                    yield self.create_text_message(
+                        f"Invalid parameter cc email, the cc email({cc_email_item}) is not a mailbox"
+                    )
+                    return
+                    
+        # Process BCC recipients
+        bcc_email = tool_parameters.get('bcc', '')
+        bcc_email_list = []
+        if bcc_email:
+            bcc_email_list = json.loads(bcc_email)
+            for bcc_email_item in bcc_email_list:
+                if not email_rgx.match(bcc_email_item):
+                    yield self.create_text_message(
+                        f"Invalid parameter bcc email, the bcc email({bcc_email_item}) is not a mailbox"
+                    )
+                    return
+            
         # Check if markdown to HTML conversion is requested
         convert_to_html = tool_parameters.get("convert_to_html", False)
         
@@ -84,22 +108,36 @@ class SendMailTool(Tool):
             smtp_port=smtp_port,
             email_account=sender,
             email_password=password,
-            sender_to=receiver_email,
+            sender_to=[receiver_email],
             subject=subject,
             email_content=email_content,
-            plain_text_content=plain_text_content if convert_to_html else None,
             encrypt_method=encrypt_method,
             is_html=convert_to_html,
-            attachments=attachments
-        )        
-        # Send the email and get result
-        success = send_mail(send_email_params)
+            plain_text_content=plain_text_content if convert_to_html else None,
+            attachments=attachments,
+            cc_recipients=cc_email_list,
+            bcc_recipients=bcc_email_list
+        )
         
-        # Return appropriate message based on result
-        if success:
-            if attachments:
-                yield self.create_text_message(f"Email sent successfully with {len(attachments)} attachment(s)")
-            else:
-                yield self.create_text_message("Email sent successfully")
+        # Prepare response message
+        msg = {}
+        for receiver in [receiver_email] + cc_email_list + bcc_email_list:
+            msg[receiver] = "send email success"
+            
+        # Send the email and get result
+        result = send_mail(send_email_params)
+        
+        # Process results
+        if result:
+            for key, (integer_value, bytes_value) in result.items():
+                msg[key] = f"send email failed: {integer_value} {bytes_value.decode('utf-8')}"
+                
+        # Add attachment information to the response message
+        response_text = json.dumps(msg)
+        if attachments:
+            attachment_count = len(attachments)
+            yield self.create_text_message(
+                f"Email sent with {attachment_count} attachment(s). Details: {response_text}"
+            )
         else:
-            yield self.create_text_message("Failed to send email")
+            yield self.create_text_message(response_text)
