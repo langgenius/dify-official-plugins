@@ -3,13 +3,13 @@ import time
 from collections.abc import Generator, Mapping
 from typing import Any, Optional, cast
 
+import pydantic
 from dify_plugin.entities.agent import AgentInvokeMessage
 from dify_plugin.entities.model.llm import LLMModelConfig, LLMUsage
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
     SystemPromptMessage,
-    ToolPromptMessage,
     UserPromptMessage,
 )
 from dify_plugin.entities.tool import (
@@ -26,17 +26,16 @@ from dify_plugin.interfaces.agent import (
 )
 from output_parser.cot_output_parser import CotAgentOutputParser
 from prompt.template import REACT_PROMPT_TEMPLATES
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 
 ignore_observation_providers = ["wenxin"]
 
 
 class ReActParams(BaseModel):
     query: str
-    instruction: str | None
+    instruction: str
     model: AgentModelConfig
     tools: list[ToolEntity] | None
-    inputs: dict[str, Any] = {}
     maximum_iterations: int = 3
 
 
@@ -49,83 +48,91 @@ class AgentPromptEntity(BaseModel):
     next_iteration: str
 
 
-class ToolInvokeMeta(BaseModel):
-    """
-    Tool invoke meta
-    """
-
-    time_cost: float = Field(..., description="The time cost of the tool invoke")
-    error: Optional[str] = None
-    tool_config: Optional[dict] = None
-
-    @classmethod
-    def empty(cls) -> "ToolInvokeMeta":
-        """
-        Get an empty instance of ToolInvokeMeta
-        """
-        return cls(time_cost=0.0, error=None, tool_config={})
-
-    @classmethod
-    def error_instance(cls, error: str) -> "ToolInvokeMeta":
-        """
-        Get an instance of ToolInvokeMeta with error
-        """
-        return cls(time_cost=0.0, error=error, tool_config={})
-
-    def to_dict(self) -> dict:
-        return {
-            "time_cost": self.time_cost,
-            "error": self.error,
-            "tool_config": self.tool_config,
-        }
-
-
 class ReActAgentStrategy(AgentStrategy):
+    def __init__(self, session):
+        super().__init__(session)
+        self.query = ""
+        self.instruction = ""
+        self.history_prompt_messages = []
+        self.prompt_messages_tools = []
+
+    @property
+    def _user_prompt_message(self) -> UserPromptMessage:
+        return UserPromptMessage(content=self.query)
+
+    @property
+    def _system_prompt_message(self) -> SystemPromptMessage:
+        prompt_entity = AgentPromptEntity(
+            first_prompt=REACT_PROMPT_TEMPLATES["english"]["chat"]["prompt"],
+            next_iteration=REACT_PROMPT_TEMPLATES["english"]["chat"][
+                "agent_scratchpad"
+            ],
+        )
+        if not prompt_entity:
+            raise ValueError("Agent prompt configuration is not set")
+        first_prompt = prompt_entity.first_prompt
+
+        system_prompt = (
+            first_prompt.replace("{{instruction}}", self.instruction)
+            .replace(
+                "{{tools}}",
+                json.dumps(
+                    [
+                        tool.model_dump(mode="json")
+                        for tool in self._prompt_messages_tools
+                    ]
+                ),
+            )
+            .replace(
+                "{{tool_names}}",
+                ", ".join([tool.name for tool in self._prompt_messages_tools]),
+            )
+        )
+
+        return SystemPromptMessage(content=system_prompt)
+
     def _invoke(self, parameters: dict[str, Any]) -> Generator[AgentInvokeMessage]:
-        react_params = ReActParams(**parameters)
-        query = react_params.query
-        model = react_params.model
+        try:
+            react_params = ReActParams(**parameters)
+        except pydantic.ValidationError as e:
+            raise ValueError(f"Invalid parameters: {e!s}") from e
+
+        # Init parameters
+        self.query = react_params.query
+        self.instruction = react_params.instruction
         agent_scratchpad = []
-        history_prompt_messages: list[PromptMessage] = []
-        current_session_messages = []
-        self._organize_historic_prompt_messages(
-            history_prompt_messages, current_session_messages=current_session_messages
-        )
-        tools = react_params.tools
-        tool_instances = {tool.identity.name: tool for tool in tools} if tools else {}
-        react_params.model.completion_params = (
-            react_params.model.completion_params or {}
-        )
-        # check model mode
+        iteration_step = 1
+        max_iteration_steps = react_params.maximum_iterations
+        run_agent_state = True
+        llm_usage: dict[str, Optional[LLMUsage]] = {"usage": None}
+        final_answer = ""
+        prompt_messages = []
+
+        # Init model
+        model = react_params.model
         stop = (
             react_params.model.completion_params.get("stop", [])
             if react_params.model.completion_params
             else []
         )
-
         if (
             "Observation" not in stop
             and model.provider not in ignore_observation_providers
         ):
             stop.append("Observation")
-        # init instruction
-        inputs = react_params.inputs
-        instruction = react_params.instruction or ""
-        self._instruction = self._fill_in_inputs_from_external_data_tools(
-            instruction, inputs
-        )
 
-        iteration_step = 1
-        max_iteration_steps = react_params.maximum_iterations
+        # Init prompts
+        self.history_prompt_messages = model.history_prompt_messages
 
         # convert tools into ModelRuntime Tool format
+        tools = react_params.tools
+        tool_instances = {tool.identity.name: tool for tool in tools} if tools else {}
+        react_params.model.completion_params = (
+            react_params.model.completion_params or {}
+        )
         prompt_messages_tools = self._init_prompt_tools(tools)
         self._prompt_messages_tools = prompt_messages_tools
 
-        run_agent_state = True
-        llm_usage: dict[str, Optional[LLMUsage]] = {"usage": None}
-        final_answer = ""
-        prompt_messages = []
         while run_agent_state and iteration_step <= max_iteration_steps:
             # continue to run until there is not any tool call
             run_agent_state = False
@@ -146,8 +153,10 @@ class ReActAgentStrategy(AgentStrategy):
             message_file_ids: list[str] = []
 
             # recalc llm max tokens
-            prompt_messages = self._organize_prompt_messages(agent_scratchpad, query)
-            if model.completion_params:
+            prompt_messages = self._organize_prompt_messages(
+                agent_scratchpad, self.query
+            )
+            if model.entity and model.completion_params:
                 self.recalc_llm_max_tokens(
                     model.entity, prompt_messages, model.completion_params
                 )
@@ -351,40 +360,6 @@ class ReActAgentStrategy(AgentStrategy):
             }
         )
 
-    def _organize_system_prompt(self) -> SystemPromptMessage:
-        """
-        Organize system prompt
-        """
-
-        prompt_entity = AgentPromptEntity(
-            first_prompt=REACT_PROMPT_TEMPLATES["english"]["chat"]["prompt"],
-            next_iteration=REACT_PROMPT_TEMPLATES["english"]["chat"][
-                "agent_scratchpad"
-            ],
-        )
-        if not prompt_entity:
-            raise ValueError("Agent prompt configuration is not set")
-        first_prompt = prompt_entity.first_prompt
-
-        system_prompt = (
-            first_prompt.replace("{{instruction}}", self._instruction)
-            .replace(
-                "{{tools}}",
-                json.dumps(
-                    [
-                        tool.model_dump(mode="json")
-                        for tool in self._prompt_messages_tools
-                    ]
-                ),
-            )
-            .replace(
-                "{{tool_names}}",
-                ", ".join([tool.name for tool in self._prompt_messages_tools]),
-            )
-        )
-
-        return SystemPromptMessage(content=system_prompt)
-
     def _organize_user_query(
         self, query, prompt_messages: list[PromptMessage]
     ) -> list[PromptMessage]:
@@ -402,7 +377,7 @@ class ReActAgentStrategy(AgentStrategy):
         Organize
         """
         # organize system prompt
-        system_message = self._organize_system_prompt()
+        system_message = self._system_prompt_message
 
         # organize current assistant messages
         agent_scratchpad = agent_scratchpad
@@ -410,9 +385,6 @@ class ReActAgentStrategy(AgentStrategy):
             assistant_messages = []
         else:
             assistant_message = AssistantPromptMessage(content="")
-            assistant_message.content = (
-                ""  # FIXME: type check tell mypy that assistant_message.content is str
-            )
             for unit in agent_scratchpad:
                 if unit.is_final():
                     assert isinstance(assistant_message.content, str)
@@ -434,14 +406,7 @@ class ReActAgentStrategy(AgentStrategy):
 
         if assistant_messages:
             # organize historic prompt messages
-            historic_messages = self._organize_historic_prompt_messages(
-                [
-                    system_message,
-                    *query_messages,
-                    *assistant_messages,
-                    UserPromptMessage(content="continue"),
-                ]
-            )
+            historic_messages = self.history_prompt_messages
             messages = [
                 system_message,
                 *historic_messages,
@@ -451,9 +416,7 @@ class ReActAgentStrategy(AgentStrategy):
             ]
         else:
             # organize historic prompt messages
-            historic_messages = self._organize_historic_prompt_messages(
-                [system_message, *query_messages]
-            )
+            historic_messages = self.history_prompt_messages
             messages = [system_message, *historic_messages, *query_messages]
 
         # join all messages
@@ -531,7 +494,7 @@ class ReActAgentStrategy(AgentStrategy):
                 else:
                     result += f"tool response: {response.message!r}."
         except Exception as e:
-            result = f"tool invoke error: {str(e)}"
+            result = f"tool invoke error: {e!s}"
 
         return result, tool_invoke_parameters
 
@@ -542,20 +505,6 @@ class ReActAgentStrategy(AgentStrategy):
         return AgentScratchpadUnit.Action(
             action_name=action["action"], action_input=action["action_input"]
         )
-
-    def _fill_in_inputs_from_external_data_tools(
-        self, instruction: str, inputs: Mapping[str, Any]
-    ) -> str:
-        """
-        fill in inputs from external data tools
-        """
-        for key, value in inputs.items():
-            try:
-                instruction = instruction.replace(f"{{{{{key}}}}}", str(value))
-            except Exception:
-                continue
-
-        return instruction
 
     def _format_assistant_message(
         self, agent_scratchpad: list[AgentScratchpadUnit]
@@ -575,68 +524,3 @@ class ReActAgentStrategy(AgentStrategy):
                     message += f"Observation: {scratchpad.observation}\n\n"
 
         return message
-
-    def _organize_historic_prompt_messages(
-        self,
-        history_prompt_messages: list[PromptMessage],
-        current_session_messages: list[PromptMessage] | None = None,
-    ) -> list[PromptMessage]:
-        """
-        organize historic prompt messages
-        """
-        result: list[PromptMessage] = []
-        scratchpads: list[AgentScratchpadUnit] = []
-        current_scratchpad: AgentScratchpadUnit | None = None
-
-        for message in history_prompt_messages:
-            if isinstance(message, AssistantPromptMessage):
-                if not current_scratchpad:
-                    assert isinstance(message.content, str)
-                    current_scratchpad = AgentScratchpadUnit(
-                        agent_response=message.content,
-                        thought=message.content
-                        or "I am thinking about how to help you",
-                        action_str="",
-                        action=None,
-                        observation=None,
-                    )
-                    scratchpads.append(current_scratchpad)
-                if message.tool_calls:
-                    try:
-                        current_scratchpad.action = AgentScratchpadUnit.Action(
-                            action_name=message.tool_calls[0].function.name,
-                            action_input=json.loads(
-                                message.tool_calls[0].function.arguments
-                            ),
-                        )
-                        current_scratchpad.action_str = json.dumps(
-                            current_scratchpad.action.to_dict()
-                        )
-                    except Exception:
-                        pass
-            elif isinstance(message, ToolPromptMessage):
-                if current_scratchpad:
-                    assert isinstance(message.content, str)
-                    current_scratchpad.observation = message.content
-                else:
-                    raise NotImplementedError("expected str type")
-            elif isinstance(message, UserPromptMessage):
-                if scratchpads:
-                    result.append(
-                        AssistantPromptMessage(
-                            content=self._format_assistant_message(scratchpads)
-                        )
-                    )
-                    scratchpads = []
-                    current_scratchpad = None
-
-                result.append(message)
-
-        if scratchpads:
-            result.append(
-                AssistantPromptMessage(
-                    content=self._format_assistant_message(scratchpads)
-                )
-            )
-
-        return current_session_messages or []

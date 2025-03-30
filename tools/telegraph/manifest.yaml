@@ -1,4 +1,4 @@
-version: 0.0.3
+version: 0.0.5
 type: plugin
 author: langgenius
 name: telegraph
@@ -13,6 +13,11 @@ description:
   zh_Hans: 一个让您轻松发布内容的Telegraph插件
   pt_BR: Um plugin do Telegraph que permite publicar seu conteúdo facilmente
 icon: icon.jpg
+tags:
+- social
+- news
+- productivity
+- utilities
 resource:
   memory: 268435456
   permission:
@@ -25,7 +30,7 @@ plugins:
   tools:
     - provider/telegraph.yaml
 meta:
-  version: 0.0.2
+  version: 0.0.1
   arch:
     - amd64
     - arm64
@@ -34,4 +39,3 @@ meta:
     version: "3.12"
     entrypoint: main
 created_at: 2025-01-10T18:15:57.414556+08:00
-verified: false

@@ -30,6 +30,8 @@ class SendEmailToolParameters(BaseModel):
     cc_recipients: List[str] = []
     bcc_recipients: List[str] = []
 
+    cc_recipients: List[str] = []
+    bcc_recipients: List[str] = []
 
 def send_mail(params: SendEmailToolParameters) -> Dict[str, Tuple[int, bytes]]:
     timeout = 60
@@ -78,7 +80,6 @@ def send_mail(params: SendEmailToolParameters) -> Dict[str, Tuple[int, bytes]]:
     all_recipients = params.sender_to + params.cc_recipients + params.bcc_recipients
     
     ctx = ssl.create_default_context()
-
     try:
         if params.encrypt_method.upper() == "SSL":
             with smtplib.SMTP_SSL(params.smtp_server, params.smtp_port, context=ctx, timeout=timeout) as server:

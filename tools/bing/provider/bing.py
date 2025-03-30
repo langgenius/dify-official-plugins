@@ -11,11 +11,11 @@ class BingProvider(ToolProvider):
             for _ in BingWebSearchTool.from_credentials(credentials).invoke(
                 tool_parameters={
                     "query": "test",
-                    "enable_computation": True,
-                    "enable_entities": True,
-                    "enable_news": True,
-                    "enable_related_search": True,
-                    "enable_webpages": True,
+                    "enable_computation": credentials.get("allow_computation", False),
+                    "enable_entities": credentials.get("allow_entities", False),
+                    "enable_news": credentials.get("allow_news", False),
+                    "enable_related_search": credentials.get("allow_related_searches", False),
+                    "enable_webpages": credentials.get("allow_web_pages", False),
                     "limit": 10,
                     "result_type": "link",
                     "market": "US",
