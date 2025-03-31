@@ -1,4 +1,4 @@
-from google.api_core import exceptions
+from google.genai import errors
 
 from dify_plugin.errors.model import (
     InvokeAuthorizationError,
@@ -15,41 +15,18 @@ class _CommonGemini:
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
         """
         Map model invoke error to unified error
-        The key is the ermd = genai.GenerativeModel(model) error type thrown to the caller
-        The value is the md = genai.GenerativeModel(model) error type thrown by the model,
-        which needs to be converted into a unified error type for the caller.
-
-        :return: Invoke emd = genai.GenerativeModel(model) error mapping
         """
         return {
-            InvokeConnectionError: [exceptions.RetryError],
+            InvokeConnectionError: [errors.APIError],
             InvokeServerUnavailableError: [
-                exceptions.ServiceUnavailable,
-                exceptions.InternalServerError,
-                exceptions.BadGateway,
-                exceptions.GatewayTimeout,
-                exceptions.DeadlineExceeded,
+                errors.ServerError,
             ],
-            InvokeRateLimitError: [exceptions.ResourceExhausted, exceptions.TooManyRequests],
-            InvokeAuthorizationError: [
-                exceptions.Unauthenticated,
-                exceptions.PermissionDenied,
-                exceptions.Unauthenticated,
-                exceptions.Forbidden,
-            ],
+            InvokeRateLimitError: [],
+            InvokeAuthorizationError: [],
             InvokeBadRequestError: [
-                exceptions.BadRequest,
-                exceptions.InvalidArgument,
-                exceptions.FailedPrecondition,
-                exceptions.OutOfRange,
-                exceptions.NotFound,
-                exceptions.MethodNotAllowed,
-                exceptions.Conflict,
-                exceptions.AlreadyExists,
-                exceptions.Aborted,
-                exceptions.LengthRequired,
-                exceptions.PreconditionFailed,
-                exceptions.RequestRangeNotSatisfiable,
-                exceptions.Cancelled,
+                errors.ClientError,
+                errors.UnknownFunctionCallArgumentError,
+                errors.UnsupportedFunctionError,
+                errors.FunctionInvocationError,
             ],
         }
