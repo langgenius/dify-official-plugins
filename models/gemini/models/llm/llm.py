@@ -209,6 +209,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         config.temperature = model_parameters.get("temperature", None)
         config.max_output_tokens = model_parameters.get("max_output_tokens", None)
 
+        # TODO:use model feature to enable image generation
+        if "image" in model:
+            config.response_modalities=['Text', 'Image']
+
         config.tools = []
         if model_parameters.get("grounding"):
             config.tools.append(types.Tool(google_search=types.GoogleSearch()))
@@ -445,6 +449,14 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                                 ),
                             )
                         ]
+                    elif part.inline_data:
+                        base64_str = base64.b64encode(part.inline_data.data).decode('utf-8')
+                        assistant_prompt_message.content = [MultiModalPromptMessageContent(
+                            type=PromptMessageContentType.IMAGE,
+                            base64_data=base64_str,
+                            format=".png",
+                            mime_type=part.inline_data.mime_type,
+                        )]
                 
                 grounding_metadata = r.candidates[0].grounding_metadata
                 if grounding_metadata and grounding_metadata.search_entry_point:
