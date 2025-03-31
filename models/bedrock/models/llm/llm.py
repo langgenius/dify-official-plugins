@@ -320,6 +320,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             index = 0
             tool_calls: list[AssistantPromptMessage.ToolCall] = []
             tool_use = {}
+            reasoning_header_added = False
 
             for chunk in response["stream"]:
                 if "messageStart" in chunk:
@@ -346,24 +347,22 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     )
                 elif "contentBlockDelta" in chunk:
                     delta = chunk["contentBlockDelta"]["delta"]
-                    if "reasoningContent" in delta and "text" in delta["reasoningContent"]:
-                        # Get reasoning content text
-                        reasoning_text = delta["reasoningContent"]["text"] or ""
+                    if "reasoningContent" in delta:
+                        formatted_reasoning = ''
+                        if "text" in delta["reasoningContent"]:
+                            # Get reasoning content text
+                            reasoning_text = delta["reasoningContent"]["text"] or ""
 
-                        # Use class variable to track if header has been added, 
-                        # instead of relying on full_assistant_content which may not be updated
-                        if not hasattr(self, '_reasoning_header_added'):
-                            self._reasoning_header_added = False
+                            # start point of reasoningContent
+                            if not reasoning_header_added:
+                                formatted_reasoning = "<think>\n" + reasoning_text
+                                reasoning_header_added = True
+                            else:
+                                formatted_reasoning = reasoning_text
 
-                        # Format reasoning content
-                        if not self._reasoning_header_added:
-                            # Only add the opening tag once for the first block
-                            formatted_reasoning = "<think>\n" + reasoning_text
-                            # Record that the marker has been added
-                            self._reasoning_header_added = True
-                        else:
-                            # For subsequent blocks, just add the content without tags
-                            formatted_reasoning = reasoning_text
+                        # end of reasoningContent
+                        elif "signature" in delta["reasoningContent"]:
+                            formatted_reasoning = '</think>'
 
                         # Update complete content, although it may not be needed here, but maintains code consistency
                         full_assistant_content += formatted_reasoning
@@ -382,14 +381,6 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                         )
                     elif "text" in delta and delta["text"]:
                         text = delta["text"]
-
-                        # Check if separator and line breaks need to be added
-                        # If there was reasoning content before and this is the first regular text
-                        if hasattr(self, '_reasoning_header_added') and self._reasoning_header_added:
-                            # Add closing tag for reasoning content
-                            text = "\n</think>\n\n" + text
-                            # Remove _reasoning_header_added
-                            delattr(self, '_reasoning_header_added')
 
                         full_assistant_content += text
 
@@ -412,10 +403,11 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 elif "contentBlockStop" in chunk:
                     # If reasoning was started but never completed (no text content followed)
                     # we need to close the thinking tag
-                    if hasattr(self, '_reasoning_header_added') and self._reasoning_header_added:
+                    if reasoning_header_added is False and full_assistant_content.startswith("<think>"):
                         assistant_prompt_message = AssistantPromptMessage(
                             content="\n</think>"
                         )
+                        reasoning_header_added = True
                         index += 1
                         yield LLMResultChunk(
                             model=model,
@@ -425,7 +417,6 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                                 message=assistant_prompt_message,
                             ),
                         )
-                        delattr(self, '_reasoning_header_added')
                         
                     if "input" in tool_use:
                         tool_call = AssistantPromptMessage.ToolCall(
