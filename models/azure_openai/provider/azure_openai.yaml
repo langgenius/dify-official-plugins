@@ -46,6 +46,9 @@ model_credential_schema:
         zh_Hans: API 版本
       options:
         - label:
+            en_US: 2025-03-01-preview
+          value: 2025-03-01-preview
+        - label:
             en_US: 2025-02-01-preview
           value: 2025-02-01-preview
         - label:
@@ -127,6 +130,12 @@ model_credential_schema:
             - value: llm
               variable: __model_type
           value: gpt-4-32k
+        - label:
+            en_US: gpt-4.5-preview
+          show_on:
+            - value: llm
+              variable: __model_type
+          value: gpt-4.5-preview
         - label:
             en_US: o3-mini
           show_on:
