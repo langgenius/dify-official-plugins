@@ -3,7 +3,7 @@ from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin import ToolProvider
 
 
-class GitHubProvider(ToolProvider):
+class GithubProvider(ToolProvider):
     def _validate_credentials(self, credentials: dict) -> None:
         try:
             if "access_tokens" not in credentials or not credentials.get("access_tokens"):

@@ -7,7 +7,7 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.model import InvokeError
 
 
-class GitHubRepositoryReadmeTool(Tool):
+class GithubRepositoryReadmeTool(Tool):
     def _invoke(
             self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:

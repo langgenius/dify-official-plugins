@@ -7,7 +7,7 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
 
 
-class GitHubRepositoriesTool(Tool):
+class GithubRepositoriesTool(Tool):
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
