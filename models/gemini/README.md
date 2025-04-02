@@ -6,4 +6,4 @@ After installing the Gemini plugin, configure it with your API key, which you ca
 
 ![](./_assets/gemini-01.png)
 
-If you use `url` mode for `MULTIMODAL_SEND_FORMAT` in gemeni and other vision models meantime, you can set `Local Files URL` to gain better performance.
+If you use `url` mode for `MULTIMODAL_SEND_FORMAT` in gemeni and other vision models meantime, you can set `Files URL` to gain better performance.
