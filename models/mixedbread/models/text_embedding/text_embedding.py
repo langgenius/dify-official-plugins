@@ -24,7 +24,7 @@ class MixedBreadTextEmbeddingModel(TextEmbeddingModel):
     Model class for MixedBread text embedding model.
     """
 
-    api_base: str = "https://api.mixedbread.ai/v1"
+    api_base: str = "https://api.mixedbread.com/v1"
 
     def _invoke(
         self,
