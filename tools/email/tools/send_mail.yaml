@@ -69,3 +69,28 @@ parameters:
     name: email_content
     required: true
     type: string
+  - form: form
+    human_description:
+      en_US: Convert content from markdown to HTML
+      zh_Hans: 将内容从Markdown转换为HTML
+    label:
+      en_US: Convert to HTML
+      zh_Hans: 转换为HTML
+    llm_description: Whether to convert the email content from markdown to HTML format
+    name: convert_to_html
+    required: false
+    type: boolean
+    default: false
+  - form: llm
+    human_description:
+      en_US: Files to attach to the email
+      zh_Hans: 要附加到电子邮件的文件
+    label:
+      en_US: File Attachments
+      zh_Hans: 文件附件
+    llm_description: Files to attach to the email
+    name: attachments
+    required: false
+    type: files
+    array: true
+
