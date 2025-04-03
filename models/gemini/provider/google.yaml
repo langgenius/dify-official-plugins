@@ -1,13 +1,14 @@
-background: '#FCFDFF'
+background: "#FCFDFF"
 configurate_methods:
-- predefined-model
+  - predefined-model
 description:
   en_US: Google's Gemini model.
   zh_Hans: 谷歌提供的 Gemini 模型.
 extra:
   python:
     model_sources:
-    - models/llm/llm.py
+      - models/llm/llm.py
+      - models/text_embedding/text_embedding.py
     provider_source: provider/google.py
 help:
   title:
@@ -25,17 +26,22 @@ models:
   llm:
     position: models/llm/_position.yaml
     predefined:
-    - models/llm/*.yaml
+      - models/llm/*.yaml
+  text_embedding:
+    position: models/text_embedding/_position.yaml
+    predefined:
+      - models/text_embedding/*.yaml
 provider: google
 provider_credential_schema:
   credential_form_schemas:
-  - label:
-      en_US: API Key
-    placeholder:
-      en_US: Enter your API Key
-      zh_Hans: 在此输入您的 API Key
-    required: true
-    type: secret-input
-    variable: google_api_key
+    - label:
+        en_US: API Key
+      placeholder:
+        en_US: Enter your API Key
+        zh_Hans: 在此输入您的 API Key
+      required: true
+      type: secret-input
+      variable: google_api_key
 supported_model_types:
-- llm
+  - llm
+  - text-embedding
