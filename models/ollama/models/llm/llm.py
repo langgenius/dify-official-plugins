@@ -5,6 +5,7 @@ from collections.abc import Generator
 from decimal import Decimal
 from typing import Any, Optional, Union, cast
 from urllib.parse import urljoin
+
 import requests
 from dify_plugin.entities.model import (
     AIModelEntity,
@@ -182,6 +183,12 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
         if "keep_alive" in model_parameters:
             data["keep_alive"] = model_parameters["keep_alive"]
             del model_parameters["keep_alive"]
+        if "json_schema" in model_parameters:
+            try:
+                data["format"] = json.loads(model_parameters["json_schema"])
+            except json.JSONDecodeError:
+                data["format"] = "json"
+            del model_parameters["json_schema"]
         data["options"] = model_parameters or {}
         if stop:
             data["options"]["stop"] = stop
@@ -335,7 +342,7 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                 continue
             try:
                 chunk_json = json.loads(chunk)
-            except json.JSONDecodeError as e:
+            except json.JSONDecodeError:
                 yield create_final_llm_result_chunk(
                     index=chunk_index,
                     message=AssistantPromptMessage(content=""),
@@ -703,6 +710,15 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                         zh_Hans="返回响应的格式。目前唯一接受的值是json。",
                     ),
                     options=["json"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema", zh_Hans="JSON Schema"),
+                    type=ParameterType.STRING,
+                    help=I18nObject(
+                        en_US="Return output in the format defined by JSON Schema.",
+                        zh_Hans="按照JSON Schema定义的格式返回output",
+                    ),
                 ),
             ],
             pricing=PriceConfig(
