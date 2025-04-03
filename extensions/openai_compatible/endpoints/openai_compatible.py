@@ -26,22 +26,19 @@ class OpenaiCompatible(Endpoint, BaseAuth):
             data = r.get_json()
             messages = data.get("messages", [])
             stream = data.get("stream", False)
-
             conversation_id, query = self._get_memory(memory_mode, messages)
+            inputs = data.get("inputs", {})
+            inputs["messages"] = json.dumps(messages)
 
             if stream:
-
                 def generator():
                     response = self.session.app.chat.invoke(
                         app_id=app_id,
-                        inputs={
-                            "messages": json.dumps(messages),
-                        },
+                        inputs=inputs,
                         query=query,
                         response_mode="streaming",
                         conversation_id=conversation_id,
                     )
-
                     return self._handle_chat_stream_message(app_id, response)
 
                 return Response(
@@ -56,9 +53,7 @@ class OpenaiCompatible(Endpoint, BaseAuth):
             else:
                 response = self.session.app.chat.invoke(
                     app_id=app_id,
-                    inputs={
-                        "messages": json.dumps(messages),
-                    },
+                    inputs=inputs,
                     query=query,
                     response_mode="blocking",
                     conversation_id=conversation_id,
@@ -72,6 +67,40 @@ class OpenaiCompatible(Endpoint, BaseAuth):
             return Response(f"Error: {e}", status=400, content_type="text/plain")
         except Exception as e:
             return Response(f"Error: {e}", status=500, content_type="text/plain")
+    
+    def messages_to_text(self, messages: list[dict[str, Any]]) -> str:
+        """
+        Convert a list of messages to a formatted text block.
+
+        :param messages: A list of dictionaries formatted as OpenAI messages.
+        :return: A string containing the formatted conversation.
+        """
+        text_block = []
+        for message in messages:
+            role = message.get("role")
+            content = message.get("content")
+            if role and content:
+                text_block.append(f"{role.upper()}:\n{content}")
+        return "\n".join(text_block)
+    
+    def convert_to_openai_messages(self, raw_message: str) -> list[dict]:
+        """
+        Convert a raw message string to a list of messages suitable for OpenAI API.
+
+        :param raw_message: A string containing the conversation messages.
+        :return: A list of dictionaries formatted as OpenAI messages.
+        """
+        messages = []
+        lines = raw_message.strip().split('\n')
+
+        for line in lines:
+            if line.startswith("SYSTEM:"):
+                messages.append({"role": "system", "content": line[len("SYSTEM:"):].strip()})
+            elif line.startswith("USER:"):
+                messages.append({"role": "user", "content": line[len("USER:"):].strip()})
+            elif line.startswith("ASSISTANT:"):
+                messages.append({"role": "assistant", "content": line[len("ASSISTANT:"):].strip()})
+        return messages
 
     def _get_memory(
         self, memory_mode: str, messages: list[dict[str, Any]]
@@ -94,6 +123,8 @@ class OpenaiCompatible(Endpoint, BaseAuth):
                 raise ValueError("No user message found")
 
             return "", user_message
+        elif memory_mode == "all_messages":
+            return "", self.messages_to_text(messages)
         else:
             raise ValueError(
                 f"Invalid memory mode: {memory_mode}, only support last_user_message for now"
