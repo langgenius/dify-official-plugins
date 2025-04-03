@@ -1,6 +1,6 @@
 version: 0.0.1
 type: plugin
-author: lcandy
+author: langgenius
 name: dropbox
 label:
   en_US: Dropbox
@@ -45,4 +45,3 @@ meta:
     entrypoint: main
 created_at: 2025-04-03T17:41:08.159756+08:00
 privacy: PRIVACY.md
-verified: false
