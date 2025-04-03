@@ -1,0 +1,49 @@
+identity:
+  author: lcandy
+  name: dropbox
+  label:
+    en_US: Dropbox
+    zh_Hans: Dropbox
+    pt_BR: Dropbox
+    ja_JP: Dropbox
+    zh_Hant: Dropbox
+  description:
+    en_US: Interact with Dropbox files and folders
+    zh_Hans: 与 Dropbox 文件和文件夹交互
+    pt_BR: Interaja com arquivos e pastas do Dropbox
+    ja_JP: Dropbox のファイルとフォルダを操作します
+    zh_Hant: 與 Dropbox 檔案和資料夾互動
+  icon: icon.svg
+credentials_for_provider:
+  access_token:
+    type: secret-input
+    required: true
+    label:
+      en_US: Access Token
+      zh_Hans: 访问令牌
+      pt_BR: Token de Acesso
+      ja_JP: アクセストークン
+      zh_Hant: 存取權杖
+    placeholder:
+      en_US: Please input your Dropbox access token
+      zh_Hans: 请输入您的 Dropbox 访问令牌
+      pt_BR: Por favor, insira seu token de acesso do Dropbox
+      ja_JP: Dropbox アクセストークンを入力してください
+      zh_Hant: 請輸入您的 Dropbox 存取權杖
+    help:
+      en_US: Get your access token from Dropbox App Console
+      zh_Hans: 从 Dropbox 应用控制台获取您的访问令牌
+      pt_BR: Obtenha seu token de acesso no Console de Aplicativos do Dropbox
+      ja_JP: Dropbox アプリコンソールからアクセストークンを取得してください
+      zh_Hant: 請從 Dropbox 應用程式主控台取得您的存取權杖
+    url: https://www.dropbox.com/developers/apps
+tools:
+  - tools/list_files.yaml
+  - tools/search_files.yaml
+  - tools/upload_file.yaml
+  - tools/download_file.yaml
+  - tools/create_folder.yaml
+  - tools/delete_file.yaml
+extra:
+  python:
+    source: provider/dropbox.py

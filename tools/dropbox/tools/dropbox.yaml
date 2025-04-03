@@ -1,0 +1,38 @@
+identity:
+  name: dropbox
+  author: lcandy
+  label:
+    en_US: Dropbox
+    zh_Hans: Dropbox
+    pt_BR: Dropbox
+    ja_JP: Dropbox
+    zh_Hant: Dropbox
+description:
+  human:
+    en_US: Interact with Dropbox
+    zh_Hans: 与 Dropbox 交互
+    pt_BR: Interagir com o Dropbox
+    ja_JP: Dropbox と連携する
+    zh_Hant: 與 Dropbox 互動
+  llm: Provides access to Dropbox services, allowing you to interact with files and folders in a Dropbox account.
+parameters:
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: Query string
+      zh_Hans: 查询语句
+      pt_BR: Termo de consulta
+      ja_JP: クエリ文字列
+      zh_Hant: 查詢語句
+    human_description:
+      en_US: Enter your Dropbox operation query
+      zh_Hans: 输入您的 Dropbox 操作查询
+      pt_BR: Digite sua consulta de operação do Dropbox
+      ja_JP: Dropbox 操作クエリを入力してください
+      zh_Hant: 請輸入您要執行的 Dropbox 操作指令
+    llm_description: The query describing the Dropbox operation you want to perform.
+    form: llm
+extra:
+  python:
+    source: tools/dropbox.py

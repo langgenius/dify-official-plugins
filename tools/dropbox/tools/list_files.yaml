@@ -1,0 +1,38 @@
+identity:
+  name: list_files
+  author: lcandy
+  label:
+    en_US: List Files
+    zh_Hans: 列出文件
+    pt_BR: Listar Arquivos
+    ja_JP: ファイル一覧
+    zh_Hant: 列出檔案
+description:
+  human:
+    en_US: List files and folders in a Dropbox folder
+    zh_Hans: 列出 Dropbox 文件夹中的文件和文件夹
+    pt_BR: Listar arquivos e pastas em uma pasta do Dropbox
+    ja_JP: Dropbox フォルダ内のファイルとフォルダを一覧表示します
+    zh_Hant: 列出 Dropbox 資料夾中的檔案與資料夾
+  llm: Lists all files and folders within a specified Dropbox folder path. If no path is provided, lists contents of the root folder. Returns details including file names, paths, types (file/folder), sizes, and modification dates.
+parameters:
+  - name: folder_path
+    type: string
+    required: false
+    label:
+      en_US: Folder Path
+      zh_Hans: 文件夹路径
+      pt_BR: Caminho da Pasta
+      ja_JP: フォルダパス
+      zh_Hant: 資料夾路徑
+    human_description:
+      en_US: The path of the folder to list (leave empty for root)
+      zh_Hans: 要列出内容的文件夹路径（留空表示根目录）
+      pt_BR: O caminho da pasta para listar (deixe vazio para a raiz)
+      ja_JP: 一覧表示するフォルダのパス（ルートの場合は空のままにします）
+      zh_Hant: 欲列出內容的資料夾路徑（留空代表根目錄）
+    llm_description: Path to the Dropbox folder whose contents you want to list. Leave empty to list the root folder. Use format like '/Documents' or '/Photos/Vacation'. Paths are case-sensitive.
+    form: llm
+extra:
+  python:
+    source: tools/list_files.py 

@@ -1,0 +1,90 @@
+identity:
+  name: upload_file
+  author: lcandy
+  label:
+    en_US: Upload File
+    zh_Hans: 上传文件
+    pt_BR: Enviar Arquivo
+    ja_JP: ファイルアップロード
+    zh_Hant: 上傳檔案
+description:
+  human:
+    en_US: Upload a file to Dropbox
+    zh_Hans: 将文件上传到 Dropbox
+    pt_BR: Enviar um arquivo para o Dropbox
+    ja_JP: Dropbox にファイルをアップロードします
+    zh_Hant: 將檔案上傳至 Dropbox
+  llm: Uploads a file to Dropbox at the specified path. Can upload text content directly or binary content as base64-encoded string. Returns information about the uploaded file including path, size, and modification date.
+parameters:
+  - name: file_path
+    type: string
+    required: true
+    label:
+      en_US: File Path
+      zh_Hans: 文件路径
+      pt_BR: Caminho do Arquivo
+      ja_JP: ファイルパス
+      zh_Hant: 檔案路徑
+    human_description:
+      en_US: The path where the file will be saved in Dropbox
+      zh_Hans: 文件在 Dropbox 中的保存路径
+      pt_BR: O caminho onde o arquivo será salvo no Dropbox
+      ja_JP: Dropbox に保存されるファイルのパス
+      zh_Hant: 檔案在 Dropbox 中的儲存路徑
+    llm_description: The destination path in Dropbox where the file will be saved. Should include filename with extension, like '/Documents/report.txt' or '/Photos/image.jpg'. Paths are case-sensitive and must start with a forward slash.
+    form: llm
+  - name: file_content
+    type: string
+    required: false
+    label:
+      en_US: File Content
+      zh_Hans: 文件内容
+      pt_BR: Conteúdo do Arquivo
+      ja_JP: ファイル内容
+      zh_Hant: 檔案內容
+    human_description:
+      en_US: The text content to save (for text files)
+      zh_Hans: 要保存的文本内容（用于文本文件）
+      pt_BR: O conteúdo de texto a ser salvo (para arquivos de texto)
+      ja_JP: 保存するテキスト内容（テキストファイル用）
+      zh_Hant: 要儲存的文字內容（適用於文字檔）
+    llm_description: The text content to be stored in the file. Use this for text files. Either file_content or file_content_base64 must be provided.
+    form: llm
+  - name: file_content_base64
+    type: string
+    required: false
+    label:
+      en_US: File Content (Base64)
+      zh_Hans: 文件内容（Base64）
+      pt_BR: Conteúdo do Arquivo (Base64)
+      ja_JP: ファイル内容（Base64）
+      zh_Hant: 檔案內容（Base64）
+    human_description:
+      en_US: The base64-encoded content (for binary files)
+      zh_Hans: Base64 编码的内容（用于二进制文件）
+      pt_BR: O conteúdo codificado em base64 (para arquivos binários)
+      ja_JP: Base64 エンコードされた内容（バイナリファイル用）
+      zh_Hant: Base64 編碼的內容（適用於二進位檔）
+    llm_description: Base64-encoded content for the file. Use this for binary files like images or documents. Either file_content or file_content_base64 must be provided.
+    form: llm
+  - name: overwrite
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Overwrite
+      zh_Hans: 覆盖
+      pt_BR: Sobrescrever
+      ja_JP: 上書き
+      zh_Hant: 覆寫
+    human_description:
+      en_US: Whether to overwrite the file if it already exists
+      zh_Hans: 如果文件已存在，是否覆盖
+      pt_BR: Se deve sobrescrever o arquivo se ele já existir
+      ja_JP: ファイルが既に存在する場合に上書きするかどうか
+      zh_Hant: 若檔案已存在，是否要覆寫
+    llm_description: Set to true to overwrite the file if it already exists. Set to false to avoid overwriting existing files. Default is false.
+    form: llm
+extra:
+  python:
+    source: tools/upload_file.py 

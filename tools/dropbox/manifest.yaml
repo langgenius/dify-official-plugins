@@ -1,0 +1,47 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: dropbox
+label:
+  en_US: Dropbox
+  ja_JP: Dropbox
+  zh_Hans: Dropbox
+  pt_BR: Dropbox
+  zh_Hant: Dropbox
+description:
+  en_US: Interact with Dropbox files and folders. Allows listing, searching, uploading, downloading, and managing files.
+  ja_JP: Dropbox のファイルとフォルダを操作します。ファイルの一覧表示、検索、アップロード、ダウンロード、管理が可能です。
+  zh_Hans: 与 Dropbox 文件和文件夹交互。允许列出、搜索、上传、下载和管理文件。
+  pt_BR: Interaja com arquivos e pastas do Dropbox. Permite listar, pesquisar, fazer upload, download e gerenciar arquivos.
+  zh_Hant: 與 Dropbox 檔案和資料夾互動。可列出、搜尋、上傳、下載以及管理檔案。
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+    storage:
+      enabled: true
+      size: 1048576
+plugins:
+  tools:
+    - provider/dropbox.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+created_at: 2025-04-03T17:41:08.159756+08:00
+privacy: PRIVACY.md
