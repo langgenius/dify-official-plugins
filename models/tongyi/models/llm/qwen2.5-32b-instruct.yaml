@@ -4,7 +4,9 @@ label:
   en_US: qwen2.5-32b-instruct
 model_type: llm
 features:
+  - multi-tool-call
   - agent-thought
+  - stream-tool-call
 model_properties:
   mode: chat
   context_size: 131072
@@ -69,7 +71,7 @@ parameter_rules:
   - name: response_format
     use_template: response_format
 pricing:
-  input: '0.0035'
-  output: '0.007'
+  input: '0.002'
+  output: '0.006'
   unit: '0.001'
   currency: RMB
