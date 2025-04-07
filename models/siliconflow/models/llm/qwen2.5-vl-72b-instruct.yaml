@@ -1,12 +1,12 @@
-model: Qwen/Qwen2-VL-72B-Instruct
+model: Qwen/Qwen2.5-VL-72B-Instruct
 label:
-  en_US: Qwen/Qwen2-VL-72B-Instruct
+  en_US: Qwen/Qwen2.5-VL-72B-Instruct
 model_type: llm
 features:
   - vision
 model_properties:
   mode: chat
-  context_size: 32768
+  context_size: 131072
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -82,4 +82,3 @@ pricing:
   output: '4.13'
   unit: '0.000001'
   currency: RMB
-deprecated: true

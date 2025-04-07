@@ -16,6 +16,6 @@ parameter_rules:
     default: 4096
 pricing:
   input: "0.00"
-  output: "1.26"
+  output: "0.00"
   unit: "0.000001"
   currency: RMB
