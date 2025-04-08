@@ -52,7 +52,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         stop: Optional[list[str]] = None,
         stream: bool = True,
         user: Optional[str] = None,
-    ) -> Union[LLMResult, Generator]:
+    ) -> Union[LLMResult, Generator[LLMResultChunk]]:
         """
         Invoke large language model
 
@@ -176,7 +176,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         stop: Optional[list[str]] = None,
         stream: bool = True,
         user: Optional[str] = None,
-    ) -> Union[LLMResult, Generator]:
+    ) -> Union[LLMResult, Generator[LLMResultChunk]]:
         """
         Invoke large language model
 
@@ -398,7 +398,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             credentials: dict,
             response: Iterator[types.GenerateContentResponse],
             prompt_messages: list[PromptMessage],
-    ) -> Generator:
+    ) -> Generator[LLMResultChunk]:
         """
         Handle llm stream response
 
