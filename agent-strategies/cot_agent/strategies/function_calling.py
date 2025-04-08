@@ -96,7 +96,8 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             )
             yield round_log
 
-            if iteration_step == max_iteration_steps:
+            # If max_iteration_steps=1, need to execute tool calls
+            if iteration_step == max_iteration_steps and max_iteration_steps > 1:
                 # the last iteration, remove all tools
                 prompt_messages_tools = []
 
@@ -342,6 +343,11 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                 },
             )
             iteration_step += 1
+
+        # If max_iteration_steps=1, need to return tool responses
+        if tool_responses and max_iteration_steps == 1:
+            for resp in tool_responses:
+                yield self.create_text_message(resp["tool_response"])        
 
         yield self.create_json_message(
             {

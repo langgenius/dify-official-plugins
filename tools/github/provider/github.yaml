@@ -1,34 +1,34 @@
 credentials_for_provider:
   access_tokens:
     help:
-      en_US: Get your Access Tokens from Github
+      en_US: Get your Access Tokens from GitHub
       pt_BR: Obtenha sua chave da API do Google no Google
-      zh_Hans: 从 Github 获取您的 Access Tokens
+      zh_Hans: 从 GitHub 获取您的 Access Tokens
     label:
       en_US: Access Tokens
       pt_BR: Tokens de acesso
       zh_Hans: Access Tokens
     placeholder:
-      en_US: Please input your Github Access Tokens
-      pt_BR: Insira seus Tokens de Acesso do Github
-      zh_Hans: 请输入你的 Github Access Tokens
+      en_US: Please input your GitHub Access Tokens
+      pt_BR: Insira seus Tokens de Acesso do GitHub
+      zh_Hans: 请输入你的 GitHub Access Tokens
     required: true
     type: secret-input
     url: https://github.com/settings/tokens?type=beta
   api_version:
     default: '2022-11-28'
     help:
-      en_US: Get your API Version from Github
-      pt_BR: Obtenha sua versão da API do Github
-      zh_Hans: 从 Github 获取您的 API Version
+      en_US: Get your API Version from GitHub
+      pt_BR: Obtenha sua versão da API do GitHub
+      zh_Hans: 从 GitHub 获取您的 API Version
     label:
       en_US: API Version
       pt_BR: Versão da API
       zh_Hans: API Version
     placeholder:
-      en_US: Please input your Github API Version
-      pt_BR: Insira sua versão da API do Github
-      zh_Hans: 请输入你的 Github API Version
+      en_US: Please input your GitHub API Version
+      pt_BR: Insira sua versão da API do GitHub
+      zh_Hans: 请输入你的 GitHub API Version
     required: false
     type: text-input
     url: https://docs.github.com/en/rest/about-the-rest-api/api-versions?apiVersion=2022-11-28
@@ -41,12 +41,12 @@ identity:
     en_US: GitHub is an online software source code hosting service.
     pt_BR: GitHub é uma plataforma online para serviços de hospedagem de código fonte
       de software.
-    zh_Hans: GitHub是一个在线软件源代码托管服务平台。
+    zh_Hans: GitHub 是一个在线软件源代码托管服务平台。
   icon: icon.svg
   label:
-    en_US: Github
-    pt_BR: Github
-    zh_Hans: Github
+    en_US: GitHub
+    pt_BR: GitHub
+    zh_Hans: GitHub
   name: github
   tags:
   - utilities

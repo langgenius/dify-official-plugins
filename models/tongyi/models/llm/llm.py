@@ -247,7 +247,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         )
         return result
 
-    def _handle_tool_call_stream(self, response, tool_calls):
+    def _handle_tool_call_stream(self, response, tool_calls, incremental_output):
         tool_calls_stream = response.output.choices[0].message["tool_calls"]
         for tool_call_stream in tool_calls_stream:
             idx = tool_call_stream.get('index')
@@ -258,10 +258,16 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     func_name = tool_call_stream.get('function').get('name')
                     tool_call_obj = tool_calls[idx]
                     if func_name:
-                        tool_call_obj['function']['name'] += func_name
+                        if incremental_output:
+                            tool_call_obj['function']['name'] += func_name
+                        else:
+                            tool_call_obj['function']['name'] = func_name
                     args = tool_call_stream.get('function').get('arguments')
                     if args:
-                        tool_call_obj['function']['arguments'] += args
+                        if incremental_output:
+                            tool_call_obj['function']['arguments'] += args
+                        else:
+                            tool_call_obj['function']['arguments'] = args
 
     def _handle_generate_stream_response(
         self,
@@ -292,7 +298,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 resp_content = response.output.choices[0].message.content
                 assistant_prompt_message = AssistantPromptMessage(content="")
                 if "tool_calls" in response.output.choices[0].message:
-                    self._handle_tool_call_stream(response, tool_calls)
+                    self._handle_tool_call_stream(response, tool_calls, False)
                 elif resp_content:
                     if isinstance(resp_content, list):
                         resp_content = resp_content[0]["text"]
@@ -335,7 +341,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 )
                 if not resp_content:
                     if "tool_calls" in response.output.choices[0].message:
-                        self._handle_tool_call_stream(response, tool_calls)
+                        self._handle_tool_call_stream(response, tool_calls, False)
                     continue
                 if isinstance(resp_content, list):
                     resp_content = resp_content[0]["text"]
@@ -374,12 +380,14 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         if isinstance(message, UserPromptMessage):
             if isinstance(content, str):
                 message_text = f"{human_prompt} {content}"
-            else:
+            elif isinstance(content, list):
                 message_text = ""
                 for sub_message in content:
                     if sub_message.type == PromptMessageContentType.TEXT:
                         message_text = f"{human_prompt} {sub_message.data}"
                         break
+            else:
+                raise TypeError(f"[convert_one_message_to_text] Unexpected content type: {type(content)}")
         elif isinstance(message, AssistantPromptMessage):
             message_text = f"{ai_prompt} {content}"
         elif isinstance(message, SystemPromptMessage | ToolPromptMessage):
@@ -598,17 +606,36 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
 
         content = delta.get("content") or ""
         reasoning_content = delta.get("reasoning_content")
-
-        if reasoning_content:
-            if not is_reasoning:
-                content = "<think>\n" + reasoning_content
-                is_reasoning = True
-            else:
-                content = reasoning_content
-        elif is_reasoning and content:
-            content = "\n</think>" + content
-            is_reasoning = False
+        try:
+            if reasoning_content:
+                try:
+                    if isinstance(reasoning_content, list):
+                        reasoning_content = "\n".join(map(str, reasoning_content))
+                    elif not isinstance(reasoning_content, str):
+                        reasoning_content = str(reasoning_content)
+                    
+                    if not is_reasoning:
+                        content = "<think>\n" + reasoning_content
+                        is_reasoning = True
+                    else:
+                        content = reasoning_content
+                except Exception as ex:
+                    raise ValueError(
+                        f"[wrap_thinking_by_reasoning_content-1] {ex}"
+                    ) from ex
+            elif is_reasoning and content:
+                if not isinstance(content, list):
+                    content = str(content)
+                else:
+                    content = ""
+                content = "\n</think>" + content
+                is_reasoning = False
+        except Exception as ex:
+            raise ValueError(
+                f"[wrap_thinking_by_reasoning_content-2] {ex}"
+            ) from ex
         return content, is_reasoning
+    
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
         """

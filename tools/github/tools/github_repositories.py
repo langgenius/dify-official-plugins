@@ -19,7 +19,7 @@ class GithubRepositoriesTool(Tool):
         if not query:
             yield self.create_text_message("Please input symbol")
         if "access_tokens" not in self.runtime.credentials or not self.runtime.credentials.get("access_tokens"):
-            yield self.create_text_message("Github API Access Tokens is required.")
+            yield self.create_text_message("GitHub API Access Tokens is required.")
         if "api_version" not in self.runtime.credentials or not self.runtime.credentials.get("api_version"):
             api_version = "2022-11-28"
         else:
@@ -66,4 +66,4 @@ class GithubRepositoriesTool(Tool):
             else:
                 yield self.create_text_message(response.json().get("message"))
         except Exception as e:
-            yield self.create_text_message("Github API Key and Api Version is invalid. {}".format(e))
+            yield self.create_text_message("GitHub API Key and Api Version is invalid. {}".format(e))

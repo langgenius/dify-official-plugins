@@ -181,16 +181,21 @@ class GoogleLargeLanguageModel(_CommonGemini, LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
+        conditions = [
+            bool(model_parameters.get("json_schema")),
+            bool(model_parameters.get("grounding")),
+            bool(tools),
+        ]
+        if sum(conditions) >= 2:
+            raise errors.FunctionInvocationError(
+                "gemini not support use multiple features at same time: json_schema, grounding, tools+knowledge"
+            )
         config = types.GenerateContentConfig()
         if schema := model_parameters.get("json_schema"):
             try:
                 schema = json.loads(schema)
             except:
                 raise errors.FunctionInvocationError("Invalid JSON Schema")
-            if tools:
-                raise errors.FunctionInvocationError(
-                    "gemini not support use Tools and JSON Schema at same time"
-                )
             config.response_schema = schema
             config.response_mime_type = "application/json"
         if stop:
@@ -204,10 +209,6 @@ class GoogleLargeLanguageModel(_CommonGemini, LargeLanguageModel):
         config.tools = []
         if model_parameters.get("grounding"):
             config.tools.append(types.Tool(google_search=types.GoogleSearch()))
-            if tools:
-                raise errors.FunctionInvocationError(
-                    "gemini not support use Tools and Grounding at same time"
-                )
         if tools:
             config.tools.append(self._convert_tools_to_glm_tool(tools))
 
@@ -215,7 +216,7 @@ class GoogleLargeLanguageModel(_CommonGemini, LargeLanguageModel):
 
         history = []
         for msg in prompt_messages:  # makes message roles strictly alternating
-            content = self._format_message_to_glm_content(msg)
+            content = self._format_message_to_glm_content(msg, credentials)
             if history and history[-1].role == content.role:
                 history[-1].parts.extend(content.parts)
             else:
@@ -258,7 +259,7 @@ class GoogleLargeLanguageModel(_CommonGemini, LargeLanguageModel):
             raise ValueError(f"Got unknown type {message}")
         return message_text
 
-    def _format_message_to_glm_content(self, message: PromptMessage) -> types.Content:
+    def _format_message_to_glm_content(self, message: PromptMessage, credentials: dict) -> types.Content:
         """
         Format a single message into glm.Content for Google API
 
@@ -274,8 +275,8 @@ class GoogleLargeLanguageModel(_CommonGemini, LargeLanguageModel):
                     if c.type == PromptMessageContentType.TEXT:
                         glm_content.parts.append(types.Part.from_text(text=c.data))
                     else:
-                        f = self._upload_file_content_to_google(message_content=c)
-                        glm_content.parts.append(types.Part.from_uri(file_uri=f.uri, mime_type=f.mime_type))
+                        uri, mime_type = self._upload_file_content_to_google(message_content=c, credentials=credentials)
+                        glm_content.parts.append(types.Part.from_uri(file_uri=uri, mime_type=mime_type))
 
             return glm_content
         elif isinstance(message, AssistantPromptMessage):
@@ -301,27 +302,30 @@ class GoogleLargeLanguageModel(_CommonGemini, LargeLanguageModel):
             raise ValueError(f"Got unknown type {message}")
 
     def _upload_file_content_to_google(
-        self, message_content: MultiModalPromptMessageContent
+        self, message_content: MultiModalPromptMessageContent, credentials: dict
     ) -> types.File:
 
         key = f"{message_content.type.value}:{hash(message_content.data)}"
         if file_cache.exists(key):
-            try:
-                return self.client.files.get(name=file_cache.get(key))
-            except:
-                pass
+            value = file_cache.get(key).split(";")
+            return value[0], value[1]
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
             if message_content.base64_data:
                 file_content = base64.b64decode(message_content.base64_data)
                 temp_file.write(file_content)
             else:
                 try:
-                    response = requests.get(message_content.url)
+                    file_url = message_content.url
+                    if "file_url" in credentials and credentials["file_url"]:
+                        file_url = f"{credentials["file_url"].rstrip('/')}/files{message_content.url.split("/files")[-1]}"
+                    if not file_url.startswith("https://") and not file_url.startswith("http://"):
+                        raise ValueError(f"Set FILES_URL env first!")
+                    response = requests.get(file_url)
                     response.raise_for_status()
                     temp_file.write(response.content)
                 except Exception as ex:
                     raise ValueError(
-                        f"Failed to fetch data from url {message_content.url}, {ex}"
+                        f"Failed to fetch data from url {file_url} {ex}"
                     )
             temp_file.flush()
         file = self.client.files.upload(
@@ -331,14 +335,14 @@ class GoogleLargeLanguageModel(_CommonGemini, LargeLanguageModel):
             time.sleep(5)
             file = self.client.files.get(name=file.name)
         # google will delete your upload files in 2 days.
-        file_cache.setex(key, 47 * 60 * 60, file.name)
+        file_cache.setex(key, 47 * 60 * 60, f"{file.uri};{file.mime_type}")
 
         try:
             os.unlink(temp_file.name)
         except PermissionError:
             # windows may raise permission error
             pass
-        return file
+        return file.uri, file.mime_type
 
     def _handle_generate_response(
             self,
@@ -401,7 +405,32 @@ class GoogleLargeLanguageModel(_CommonGemini, LargeLanguageModel):
             assistant_prompt_message = AssistantPromptMessage(content="")
             parts = r.candidates[0].content.parts
             index += 1
-            if parts is None:
+            for part in parts:
+                if part.text:
+                    assistant_prompt_message.content += part.text
+                elif part.function_call:
+                    assistant_prompt_message.tool_calls = [
+                        AssistantPromptMessage.ToolCall(
+                            id=part.function_call.name,
+                            type="function",
+                            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                name=part.function_call.name,
+                                arguments=json.dumps(dict(part.function_call.args.items())),
+                            ),
+                        )
+                    ]
+                
+                # transform assistant message to prompt message
+                yield LLMResultChunk(
+                    model=model,
+                    prompt_messages=prompt_messages,
+                    delta=LLMResultChunkDelta(index=index, message=assistant_prompt_message)
+                )
+            if r.candidates[0].finish_reason:
+                assistant_prompt_message = AssistantPromptMessage(content="")
+                grounding_metadata = r.candidates[0].grounding_metadata
+                if grounding_metadata and grounding_metadata.search_entry_point:
+                    assistant_prompt_message.content += self._render_grounding_source(grounding_metadata)
                 # calculate num tokens
                 prompt_tokens = r.usage_metadata.prompt_token_count or self.get_num_tokens(
                     model, credentials, prompt_messages
@@ -422,30 +451,13 @@ class GoogleLargeLanguageModel(_CommonGemini, LargeLanguageModel):
                     ),
                 )
 
-            else:
-                for part in parts:
-                    if part.text:
-                        assistant_prompt_message.content += part.text
-                    elif part.function_call:
-                        assistant_prompt_message.tool_calls = [
-                            AssistantPromptMessage.ToolCall(
-                                id=part.function_call.name,
-                                type="function",
-                                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                    name=part.function_call.name,
-                                    arguments=json.dumps(dict(part.function_call.args.items())),
-                                ),
-                            )
-                        ]
+    def _render_grounding_source(self, grounding_metadata: types.GroundingMetadata) -> str:
+        """
+        Render google search source links
+        """
+        result = "\n\n**Search Sources:**\n"
+        for index, entry in enumerate(grounding_metadata.grounding_chunks, start=1):
+            result += f"{index}. [{entry.web.title}]({entry.web.uri})\n"
+        return result
                 
-                grounding_metadata = r.candidates[0].grounding_metadata
-                if grounding_metadata and grounding_metadata.search_entry_point:
-                    assistant_prompt_message.content += grounding_metadata.search_entry_point.rendered_content
-
-                # transform assistant message to prompt message
-                yield LLMResultChunk(
-                    model=model,
-                    prompt_messages=prompt_messages,
-                    delta=LLMResultChunkDelta(index=index, message=assistant_prompt_message)
-                )
 

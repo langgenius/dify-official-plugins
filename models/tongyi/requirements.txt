@@ -1,4 +1,5 @@
-dify_plugin==0.0.1b73
-numpy~=2.2.3
+dify_plugin==0.0.1b76
+numpy~=2.2.4
 dashscope~=1.22.2
-openai~=1.65.4
+openai~=1.70.0
+pydub~=0.25.1

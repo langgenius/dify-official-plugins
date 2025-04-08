@@ -39,7 +39,6 @@
 >   - [ ] Show both Old and New Behavior
 >
 > For LLM Models Changes:
-> [LLM Models Test Example](https://github.com/langgenius/dify-official-plugins/blob/main/.assets/test-examples/llm-plugin-tests/llm_test_example.md)
 > - **Bug Fixes**:
 >   - [ ] Show the Fix working with Example Inputs/Outputs
 > - **New Features**:
@@ -55,20 +54,25 @@
 >   - **Metrics**:
 >     - [ ] Token Consumption Metrics
 >   - **Others**:
->     - [ ] e.g., Reasoning Process for  Claude 3.7 Sonnet, Grounding for Gemini (if applicable)
+>     - [ ] e.g., Reasoning Process for Claude 3.7 Sonnet, Grounding for Gemini (if applicable)
+<!-- LLM Models Test Example: -->
+<!-- https://github.com/langgenius/dify-official-plugins/blob/main/.assets/test-examples/llm-plugin-tests/llm_test_example.md -->
 
 ### Environment Verification
 > [!IMPORTANT]
 > At least one environment must be tested.
 
 #### Local Deployment Environment
-##### Local Deployment Dify Version: <!-- Specify your version (e.g., 1.1.3) -->
-- [ ] Changes tested in an Isolated Environment that matches Production Configuration
+Local Deployment Dify Version: <!-- Specify your version (e.g., 1.1.3) -->
+- [ ] Changes tested in a Clean Environment that matches Production Configuration
 <!--
 - Python virtual env matching Manifest.yaml & requirements.txt
 - No breaking changes in Dify that may affect the testing result
 -->
-- [ ] No Cached Data influenced the Test Results
 
 #### SaaS Environment
 - [ ] Testing performed on cloud.dify.ai
+- [ ] Changes tested in a Clean Environment that matches Production Configuration
+<!--
+- Python virtual env matching Manifest.yaml & requirements.txt
+-->

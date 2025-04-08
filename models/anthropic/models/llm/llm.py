@@ -54,6 +54,24 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         self.previous_thinking_blocks = []
         self.previous_redacted_thinking_blocks = []
 
+    def _process_text_for_cache(self, text):
+        """
+        Process text content to detect <cache> tags and return the appropriate 
+        content format with cache_control if needed.
+        
+        :param text: Text content to process
+        :return: Processed content, either as string or dict with cache_control
+        """
+        if "<cache>" in text:
+            return {
+                "type": "text",
+                "text": text.replace("<cache>", ""),
+                "cache_control": {"type": "ephemeral"}
+            }
+        return {"type": "text", "text": text}
+
+
+
     def _invoke(
         self,
         model: str,
@@ -398,7 +416,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         prompt_messages: Sequence[PromptMessage],
     ) -> LLMResult:
         """
-        Handle llm chat response
+        Handle llm chat response with cache token adjustments for billing
 
         :param model: model name
         :param credentials: credentials
@@ -429,6 +447,17 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     ),
                 )
                 assistant_prompt_message.tool_calls.append(tool_call)
+                
+        # Extract cache metrics if available
+        cache_creation_input_tokens = 0
+        cache_read_input_tokens = 0
+        if response.usage:
+            if hasattr(response.usage, "cache_creation_input_tokens"):
+                cache_creation_input_tokens = response.usage.cache_creation_input_tokens
+            
+            if hasattr(response.usage, "cache_read_input_tokens"):
+                cache_read_input_tokens = response.usage.cache_read_input_tokens
+        
         prompt_tokens = (
             response.usage
             and response.usage.input_tokens
@@ -445,12 +474,27 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 prompt_messages=[assistant_prompt_message],
             )
         )
-        usage = self._calc_response_usage(
+        
+        # UPDATED: Token accounting for billing with cache adjustments
+        adjusted_prompt_tokens = prompt_tokens
+        
+        # Cache write premium: add full cache tokens plus 25% premium
+        if cache_creation_input_tokens > 0:
+            cache_write_premium = int(cache_creation_input_tokens * 0.25)
+            adjusted_prompt_tokens += cache_creation_input_tokens + cache_write_premium
+        
+        # Cache read discount: only charge 10% of cached tokens (90% discount)
+        if cache_read_input_tokens > 0:
+            adjusted_prompt_tokens += int(cache_read_input_tokens * 0.1)
+        
+        # Get usage with adjusted token count for billing
+        usage = super()._calc_response_usage(
             model=model,
             credentials=credentials,
-            prompt_tokens=prompt_tokens,
-            completion_tokens=completion_tokens,
+            prompt_tokens=adjusted_prompt_tokens,
+            completion_tokens=completion_tokens
         )
+        
         result = LLMResult(
             model=response.model,
             prompt_messages=list(prompt_messages),
@@ -458,6 +502,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             usage=usage,
         )
         return result
+
+
 
     def _handle_chat_generate_stream_response(
         self,
@@ -467,12 +513,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         prompt_messages: Sequence[PromptMessage],
     ) -> Generator:
         """
-        Handle llm chat stream response
-
-        :param model: model name
-        :param response: response
-        :param prompt_messages: prompt messages
-        :return: llm response chunk generator
+        Handle llm chat stream response with token adjustments for caching
         """
         full_assistant_content = ""
         return_model = ""
@@ -495,11 +536,20 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         current_thinking_blocks = []
         current_redacted_thinking_blocks = []
         
+        # Add cache token tracking
+        cache_creation_input_tokens = 0
+        cache_read_input_tokens = 0
+        
         for chunk in response:
             if isinstance(chunk, MessageStartEvent):
                 if chunk.message:
                     return_model = chunk.message.model
                     input_tokens = chunk.message.usage.input_tokens
+                    # Check for cache metrics in the start event
+                    if hasattr(chunk.message.usage, "cache_creation_input_tokens"):
+                        cache_creation_input_tokens = chunk.message.usage.cache_creation_input_tokens
+                    if hasattr(chunk.message.usage, "cache_read_input_tokens"):
+                        cache_read_input_tokens = chunk.message.usage.cache_read_input_tokens
             elif hasattr(chunk, "type") and chunk.type == "content_block_start":
                 if hasattr(chunk, "content_block"):
                     content_block = chunk.content_block
@@ -621,6 +671,11 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             elif isinstance(chunk, MessageDeltaEvent):
                 output_tokens = chunk.usage.output_tokens
                 finish_reason = chunk.delta.stop_reason
+                # Check for updated cache metrics
+                if hasattr(chunk.usage, "cache_creation_input_tokens"):
+                    cache_creation_input_tokens = chunk.usage.cache_creation_input_tokens
+                if hasattr(chunk.usage, "cache_read_input_tokens"):
+                    cache_read_input_tokens = chunk.usage.cache_read_input_tokens
             elif isinstance(chunk, MessageStopEvent):
                 if current_block_type == "thinking" and current_block_index is not None:
                     assistant_prompt_message = AssistantPromptMessage(content="\n</think>")
@@ -647,9 +702,26 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 if tool_calls and current_redacted_thinking_blocks:
                     self.previous_redacted_thinking_blocks = current_redacted_thinking_blocks
                 
-                usage = self._calc_response_usage(
-                    model, credentials, input_tokens, output_tokens
+                # UPDATED: Token accounting for billing with cache adjustments
+                adjusted_prompt_tokens = input_tokens
+
+                # Cache write premium: add full cache tokens plus 25% premium
+                if cache_creation_input_tokens > 0:
+                    cache_write_premium = int(cache_creation_input_tokens * 0.25)
+                    adjusted_prompt_tokens += cache_creation_input_tokens + cache_write_premium
+
+                # Cache read discount: only charge 10% of cached tokens (90% discount)
+                if cache_read_input_tokens > 0:
+                    adjusted_prompt_tokens += int(cache_read_input_tokens * 0.1)
+                
+                # Get usage with adjusted token count for billing
+                usage = super()._calc_response_usage(
+                    model, 
+                    credentials, 
+                    adjusted_prompt_tokens,
+                    output_tokens
                 )
+                
                 for tool_call in tool_calls:
                     if not tool_call.function.arguments:
                         tool_call.function.arguments = "{}"
@@ -692,36 +764,75 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         Convert prompt messages to dict list and system
         """
         system = ""
+        system_components = []
         first_loop = True
         for message in prompt_messages:
             if isinstance(message, SystemPromptMessage):
                 if isinstance(message.content, str):
-                    message.content = message.content.strip()
+                    content = message.content.strip()
+                    if "<cache>" in content:
+                        system_components.append({
+                            "type": "text",
+                            "text": content.replace("<cache>", ""),
+                            "cache_control": {"type": "ephemeral"}
+                        })
+                    else:
+                        system_components.append({"type": "text", "text": content})
+                    
+                    if first_loop:
+                        system = content
+                        first_loop = False
+                    else:
+                        system += "\n"
+                        system += content
                 elif isinstance(message.content, list):
-                    message.content = "".join(
-                        (
-                            c.data.strip()
-                            for c in message.content
-                            if isinstance(c, TextPromptMessageContent)
-                        )
-                    )
+                    combined_content = ""
+                    for c in message.content:
+                        if isinstance(c, TextPromptMessageContent):
+                            text_content = c.data.strip()
+                            combined_content += text_content
+                    
+                    if "<cache>" in combined_content:
+                        system_components.append({
+                            "type": "text",
+                            "text": combined_content.replace("<cache>", ""),
+                            "cache_control": {"type": "ephemeral"}
+                        })
+                    else:
+                        system_components.append({"type": "text", "text": combined_content})
+                    
+                    if first_loop:
+                        system = combined_content
+                        first_loop = False
+                    else:
+                        system += "\n"
+                        system += combined_content
                 else:
                     raise ValueError(
                         f"Unknown system prompt message content type {type(message.content)}"
                     )
-                if first_loop:
-                    system = message.content
-                    first_loop = False
-                else:
-                    system += "\n"
-                    system += message.content
+        
+        # If we have structured system components with cache controls, use them instead of a single string
+        if len(system_components) > 0 and any(comp.get("cache_control") for comp in system_components):
+            system = system_components
+        
         prompt_message_dicts = []
         for message in prompt_messages:
             if not isinstance(message, SystemPromptMessage):
                 if isinstance(message, UserPromptMessage):
                     message = cast(UserPromptMessage, message)
                     if isinstance(message.content, str):
-                        message_dict = {"role": "user", "content": message.content}
+                        if "<cache>" in message.content:
+                            message_dict = {
+                                "role": "user", 
+                                "content": [{
+                                    "type": "text",
+                                    "text": message.content.replace("<cache>", ""),
+                                    "cache_control": {"type": "ephemeral"}
+                                }]
+                            }
+                        else:
+                            message_dict = {"role": "user", "content": message.content}
                         prompt_message_dicts.append(message_dict)
                     else:
                         sub_messages = []
@@ -730,10 +841,18 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                                 message_content = cast(
                                     TextPromptMessageContent, message_content
                                 )
-                                sub_message_dict = {
-                                    "type": "text",
-                                    "text": message_content.data,
-                                }
+                                text_content = message_content.data
+                                if "<cache>" in text_content:
+                                    sub_message_dict = {
+                                        "type": "text",
+                                        "text": text_content.replace("<cache>", ""),
+                                        "cache_control": {"type": "ephemeral"}
+                                    }
+                                else:
+                                    sub_message_dict = {
+                                        "type": "text",
+                                        "text": text_content,
+                                    }
                                 sub_messages.append(sub_message_dict)
                             elif message_content.type == PromptMessageContentType.IMAGE:
                                 message_content = cast(
@@ -808,16 +927,21 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     
                     if message.tool_calls:
                         for tool_call in message.tool_calls:
-                            content.append(
-                                {
-                                    "type": "tool_use",
-                                    "id": tool_call.id,
-                                    "name": tool_call.function.name,
-                                    "input": json.loads(tool_call.function.arguments),
-                                }
-                            )
+                            content.append({
+                                "type": "tool_use",
+                                "id": tool_call.id,
+                                "name": tool_call.function.name,
+                                "input": json.loads(tool_call.function.arguments),
+                            })
                     elif message.content:
-                        content.append({"type": "text", "text": message.content})
+                        if "<cache>" in message.content:
+                            content.append({
+                                "type": "text", 
+                                "text": message.content.replace("<cache>", ""),
+                                "cache_control": {"type": "ephemeral"}
+                            })
+                        else:
+                            content.append({"type": "text", "text": message.content})
                     if prompt_message_dicts and prompt_message_dicts[-1]["role"] == "assistant":
                         prompt_message_dicts[-1]["content"].extend(content)
                     else:
@@ -826,19 +950,34 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         )
                 elif isinstance(message, ToolPromptMessage):
                     message = cast(ToolPromptMessage, message)
-                    message_dict = {
-                        "role": "user",
-                        "content": [
-                            {
-                                "type": "tool_result",
-                                "tool_use_id": message.tool_call_id,
-                                "content": message.content,
-                            }
-                        ],
-                    }
+                    content = message.content
+                    if "<cache>" in content:
+                        message_dict = {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "tool_result",
+                                    "tool_use_id": message.tool_call_id,
+                                    "content": content.replace("<cache>", ""),
+                                    "cache_control": {"type": "ephemeral"}
+                                }
+                            ],
+                        }
+                    else:
+                        message_dict = {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "tool_result",
+                                    "tool_use_id": message.tool_call_id,
+                                    "content": content,
+                                }
+                            ],
+                        }
                     prompt_message_dicts.append(message_dict)
                 else:
                     raise ValueError(f"Got unknown type {message}")
+                    
         return (system, prompt_message_dicts)
 
     def _convert_one_message_to_text(self, message: PromptMessage) -> str:

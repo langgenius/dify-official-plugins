@@ -30,15 +30,15 @@ parameter_rules:
     default: 8192
     min: 1
     max: 8192
-  - name: grounding
-    label:
-      en_US: Grounding
-    type: float
-    help:
-      en_US: ensures responses are based on reliable sources.
-    required: false
-    min: 0
-    max: 1
+  # - name: grounding
+  #   label:
+  #     en_US: Grounding
+  #   type: float
+  #   help:
+  #     en_US: ensures responses are based on reliable sources.
+  #   required: false
+  #   min: 0
+  #   max: 1
 pricing:
   input: '0.00'
   output: '0.00'

@@ -6,7 +6,7 @@ from collections.abc import Generator
 from typing import Optional, Union, cast
 import google.auth.transport.requests
 import requests
-import google.cloud.aiplatform_v1 as glm
+import vertexai.generative_models as glm
 from anthropic import AnthropicVertex, Stream
 from anthropic.types import (
     ContentBlockDeltaEvent,
@@ -493,7 +493,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             generation_config_params["response_mime_type"] = "application/json"
         elif mime_type:
             generation_config_params["response_mime_type"] = mime_type
-
+        
         generation_config = glm.GenerationConfig(**generation_config_params)
         
         response = google_model.generate_content(
@@ -506,9 +506,8 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             return self._handle_generate_stream_response(model, credentials, response, prompt_messages)
         return self._handle_generate_response(model, credentials, response, prompt_messages)
 
-
     def _handle_generate_response(
-        self, model: str, credentials: dict, response: glm.GenerateContentResponse, prompt_messages: list[PromptMessage]
+        self, model: str, credentials: dict, response: glm.GenerationResponse, prompt_messages: list[PromptMessage]
     ) -> LLMResult:
         """
         Handle llm response
@@ -519,7 +518,6 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :param prompt_messages: prompt messages
         :return: llm response
         """
-
         assistant_prompt_message = AssistantPromptMessage(content=response.candidates[0].content.parts[0].text)
         prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
         completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
@@ -528,7 +526,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         return result
 
     def _handle_generate_stream_response(
-        self, model: str, credentials: dict, response: glm.GenerateContentResponse, prompt_messages: list[PromptMessage]
+        self, model: str, credentials: dict, response: glm.GenerationResponse, prompt_messages: list[PromptMessage]
     ) -> Generator:
         """
         Handle llm stream response
@@ -736,7 +734,6 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 exceptions.Cancelled,
             ],
         }
-
 
     def _convert_schema_for_vertex(self, schema):
         """

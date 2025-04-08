@@ -1,0 +1,56 @@
+identity:
+  name: download_file
+  author: lcandy
+  label:
+    en_US: Download File
+    zh_Hans: 下载文件
+    pt_BR: Baixar Arquivo
+    ja_JP: ファイルダウンロード
+    zh_Hant: 下載檔案
+description:
+  human:
+    en_US: Download a file from Dropbox
+    zh_Hans: 从 Dropbox 下载文件
+    pt_BR: Baixar um arquivo do Dropbox
+    ja_JP: Dropbox からファイルをダウンロードします
+    zh_Hant: 從 Dropbox 下載檔案
+  llm: Downloads a file from Dropbox at the specified path. Returns file metadata and optionally the file content (as base64 for binary files or text for text files).
+parameters:
+  - name: file_path
+    type: string
+    required: true
+    label:
+      en_US: File Path
+      zh_Hans: 文件路径
+      pt_BR: Caminho do Arquivo
+      ja_JP: ファイルパス
+      zh_Hant: 檔案路徑
+    human_description:
+      en_US: The path of the file to download from Dropbox
+      zh_Hans: 要从 Dropbox 下载的文件路径
+      pt_BR: O caminho do arquivo para baixar do Dropbox
+      ja_JP: Dropbox からダウンロードするファイルのパス
+      zh_Hant: 欲從 Dropbox 下載的檔案路徑
+    llm_description: The path of the file to download from Dropbox. Should include the complete path with filename and extension, like '/Documents/report.txt'. Paths are case-sensitive and must start with a forward slash.
+    form: llm
+  - name: include_content
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Include Content
+      zh_Hans: 包含内容
+      pt_BR: Incluir Conteúdo
+      ja_JP: 内容を含める
+      zh_Hant: 包含內容
+    human_description:
+      en_US: Whether to include the file content in the response
+      zh_Hans: 是否在响应中包含文件内容
+      pt_BR: Se deve incluir o conteúdo do arquivo na resposta
+      ja_JP: レスポンスにファイルの内容を含めるかどうか
+      zh_Hant: 是否在回應中包含檔案內容
+    llm_description: Set to true to include the file content in the response. For small text files, the content will be provided as text. For binary files, the content will be provided as base64-encoded string. Default is false.
+    form: llm
+extra:
+  python:
+    source: tools/download_file.py 
