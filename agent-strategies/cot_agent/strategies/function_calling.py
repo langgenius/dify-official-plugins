@@ -59,6 +59,8 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         self.query = query
         self.instruction = fc_params.instruction
         history_prompt_messages = fc_params.model.history_prompt_messages
+        history_prompt_messages.insert(0, self._system_prompt_message)
+        history_prompt_messages.append(self._user_prompt_message)
 
         # convert tool messages
         tools = fc_params.tools
@@ -458,8 +460,6 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         current_thoughts: list[PromptMessage],
         history_prompt_messages: list[PromptMessage],
     ) -> list[PromptMessage]:
-        history_prompt_messages.insert(0, self._system_prompt_message)
-        history_prompt_messages.append(self._user_prompt_message)
         prompt_messages = [
             *history_prompt_messages,
             *current_thoughts,
