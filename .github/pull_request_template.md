@@ -38,7 +38,10 @@
 - [ ] My Changes Affect Token Consumption Metrics
 <!-- Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
-- [ ] My Changes Affect Other Functionalities (e.g., Reasoning Process for Claude 3.7 Sonnet, Grounding for Gemini)
+- [ ] My Changes Affect Other LLM Functionalities (e.g., Reasoning Process for Claude 3.7 Sonnet, Grounding for Gemini)
+<!-- Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
+
+- [ ] Other Changes (e.g., Add New Models)
 <!-- Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
 ## Version Control (Any Changes to the Plugin Will Require Bumping the Version)
