@@ -1,8 +1,7 @@
 import base64
-import tempfile
+import io
 import json
 import time
-import os
 from collections.abc import Generator, Iterator
 from typing import Optional, Union
 
@@ -37,21 +36,20 @@ from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 
 from .utils import FileCache
 
-
 file_cache = FileCache()
 
 
 class GoogleLargeLanguageModel(LargeLanguageModel):
     def _invoke(
-        self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
-        stream: bool = True,
-        user: Optional[str] = None,
+            self,
+            model: str,
+            credentials: dict,
+            prompt_messages: list[PromptMessage],
+            model_parameters: dict,
+            tools: Optional[list[PromptMessageTool]] = None,
+            stop: Optional[list[str]] = None,
+            stream: bool = True,
+            user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model
@@ -78,11 +76,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         )
 
     def get_num_tokens(
-        self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        tools: Optional[list[PromptMessageTool]] = None,
+            self,
+            model: str,
+            credentials: dict,
+            prompt_messages: list[PromptMessage],
+            tools: Optional[list[PromptMessageTool]] = None,
     ) -> int:
         """
         Get number of tokens for given prompt messages
@@ -167,15 +165,15 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             raise CredentialsValidateFailedError(str(ex))
 
     def _generate(
-        self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
-        stream: bool = True,
-        user: Optional[str] = None,
+            self,
+            model: str,
+            credentials: dict,
+            prompt_messages: list[PromptMessage],
+            model_parameters: dict,
+            tools: Optional[list[PromptMessageTool]] = None,
+            stop: Optional[list[str]] = None,
+            stream: bool = True,
+            user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model
@@ -208,7 +206,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             config.response_mime_type = "application/json"
         if stop:
             config.stop_sequences = stop
-        
+
         config.top_p = model_parameters.get("top_p", None)
         config.top_k = model_parameters.get("top_k", None)
         config.temperature = model_parameters.get("temperature", None)
@@ -310,46 +308,45 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             raise ValueError(f"Got unknown type {message}")
 
     def _upload_file_content_to_google(
-        self, message_content: MultiModalPromptMessageContent, credentials: dict
+            self, message_content: MultiModalPromptMessageContent, credentials: dict
     ) -> types.File:
 
         key = f"{message_content.type.value}:{hash(message_content.data)}"
         if file_cache.exists(key):
             value = file_cache.get(key).split(";")
             return value[0], value[1]
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            if message_content.base64_data:
-                file_content = base64.b64decode(message_content.base64_data)
-                temp_file.write(file_content)
-            else:
-                try:
-                    file_url = message_content.url
-                    if "file_url" in credentials and credentials["file_url"]:
-                        file_url = f"{credentials["file_url"].rstrip('/')}/files{message_content.url.split("/files")[-1]}"
-                    if not file_url.startswith("https://") and not file_url.startswith("http://"):
-                        raise ValueError(f"Set FILES_URL env first!")
-                    response = requests.get(file_url)
-                    response.raise_for_status()
-                    temp_file.write(response.content)
-                except Exception as ex:
-                    raise ValueError(
-                        f"Failed to fetch data from url {file_url} {ex}"
-                    )
-            temp_file.flush()
-        file = self.client.files.upload(
-            file=temp_file.name, config={"mime_type": message_content.mime_type}
-        )
+
+        buffer = io.BytesIO()
+        if message_content.base64_data:
+            buffer.write(base64.b64decode(message_content.base64_data))
+        else:
+            try:
+                file_url = message_content.url
+                if "file_url" in credentials and credentials["file_url"]:
+                    file_url = f"{credentials["file_url"].rstrip('/')}/files{message_content.url.split("/files")[-1]}"
+                if not file_url.startswith("https://") and not file_url.startswith("http://"):
+                    raise ValueError(f"Set FILES_URL env first!")
+                response = requests.get(file_url)
+                response.raise_for_status()
+
+                buffer = io.BytesIO()
+                # handle 256kb, every time
+                for chunk in response.iter_content(chunk_size=262144):
+                    buffer.write(chunk)
+                # reset ptr to zero
+            except Exception as ex:
+                raise ValueError(f"Failed to fetch data from url {file_url} {ex}")
+        # reset ptr to zero
+        buffer.seek(0)
+
+        file = self.client.files.upload(file=buffer, config={"mime_type": message_content.mime_type})
+
         while file.state.name == "PROCESSING":
             time.sleep(5)
             file = self.client.files.get(name=file.name)
         # google will delete your upload files in 2 days.
         file_cache.setex(key, 47 * 60 * 60, f"{file.uri};{file.mime_type}")
 
-        try:
-            os.unlink(temp_file.name)
-        except PermissionError:
-            # windows may raise permission error
-            pass
         return file.uri, file.mime_type
 
     def _handle_generate_response(
@@ -427,7 +424,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                             ),
                         )
                     ]
-                
+
                 # transform assistant message to prompt message
                 yield LLMResultChunk(
                     model=model,
@@ -467,7 +464,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         for index, entry in enumerate(grounding_metadata.grounding_chunks, start=1):
             result += f"{index}. [{entry.web.title}]({entry.web.uri})\n"
         return result
-                
 
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
