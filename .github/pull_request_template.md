@@ -1,5 +1,7 @@
 ## Related Issue or Context
 <!--
+⚠️ NOTE: This repository is for Dify Official Plugins only. For third-party plugin submissions, please submit to https://github.com/langgenius/dify-plugins instead.
+
 - Link Related Issues if Applicable: #issue_number
 - Or Provide Context about Why this Change is Needed
 -->
