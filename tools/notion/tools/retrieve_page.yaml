@@ -1,0 +1,56 @@
+identity:
+  name: retrieve_page
+  author: langgenius
+  label:
+    en_US: Retrieve Notion Page
+    zh_Hans: 获取 Notion 页面
+    pt_BR: Recuperar Página do Notion
+    ja_JP: Notion ページを取得
+    zh_Hant: 獲取 Notion 頁面
+description:
+  human:
+    en_US: Retrieve a page from Notion by its ID
+    zh_Hans: 通过 ID 获取 Notion 页面
+    pt_BR: Recuperar uma página do Notion pelo seu ID
+    ja_JP: ID で Notion ページを取得します
+    zh_Hant: 通過 ID 獲取 Notion 頁面
+  llm: Retrieve a Notion page by its ID. Returns page content, properties, and metadata. The page must be shared with your integration.
+parameters:
+  - name: page_id
+    type: string
+    required: true
+    label:
+      en_US: Page ID
+      zh_Hans: 页面 ID
+      pt_BR: ID da Página
+      ja_JP: ページ ID
+      zh_Hant: 頁面 ID
+    human_description:
+      en_US: The ID of the Notion page to retrieve
+      zh_Hans: 要获取的 Notion 页面的 ID
+      pt_BR: O ID da página do Notion a ser recuperada
+      ja_JP: 取得する Notion ページの ID
+      zh_Hant: 要獲取的 Notion 頁面的 ID
+    llm_description: The ID of the Notion page to retrieve. This can be found in the page URL after the workspace name and slash, usually ending with a hyphen and random characters.
+    form: llm
+  - name: include_content
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: Include Content
+      zh_Hans: 包含内容
+      pt_BR: Incluir Conteúdo
+      ja_JP: コンテンツを含める
+      zh_Hant: 包含內容
+    human_description:
+      en_US: Whether to include the page content in the response
+      zh_Hans: 是否在响应中包含页面内容
+      pt_BR: Se deve incluir o conteúdo da página na resposta
+      ja_JP: レスポンスにページコンテンツを含めるかどうか
+      zh_Hant: 是否在回應中包含頁面內容
+    llm_description: Whether to include the page blocks/content in the response. If set to false, only page properties will be returned.
+    form: llm
+extra:
+  python:
+    source: tools/retrieve_page.py 
