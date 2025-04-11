@@ -1,4 +1,4 @@
-## Related Issue or Context
+## Related Issues or Context
 <!--
 ⚠️ NOTE: This repository is for Dify Official Plugins only. For third-party plugin submissions, please submit to https://github.com/langgenius/dify-plugins instead.
 
