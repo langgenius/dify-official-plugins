@@ -11,11 +11,11 @@
 - [ ] Documentation
 - [ ] Other
 
-## Non-LLM Models Plugin Code Changes
+## Code Changes: Non-LLM Models Plugin
 - [ ] I have Run All Tests Relevant to My Changes
 <!-- Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
-## LLM Models Plugin Code Changes
+## Code Changes: LLM Models Plugin
 
 <!-- LLM Models Test Example: -->
 <!-- https://github.com/langgenius/dify-official-plugins/blob/main/.assets/test-examples/llm-plugin-tests/llm_test_example.md -->
