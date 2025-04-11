@@ -39,7 +39,7 @@ For community contributions, please submit to https://github.com/langgenius/dify
 - [ ] My Changes Affect Token Consumption Metrics
 <!-- Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
-- [ ] My Changes Affect Other LLM Functionalities (Reasoning Process for Claude 3.7 Sonnet, Grounding for Gemini, etc.)
+- [ ] My Changes Affect Other LLM Functionalities (Reasoning Process for Claude, Grounding for Gemini, etc.)
 <!-- Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
 - [ ] Other Changes (Add New Models, etc.)
