@@ -1,0 +1,72 @@
+identity:
+  name: update_database
+  author: langgenius
+  label:
+    en_US: Update Notion Database
+    zh_Hans: 更新 Notion 数据库
+    pt_BR: Atualizar Banco de Dados do Notion
+    ja_JP: Notion データベースを更新
+    zh_Hant: 更新 Notion 資料庫
+description:
+  human:
+    en_US: Update a database in Notion with new title or properties
+    zh_Hans: 使用新标题或属性更新 Notion 数据库
+    pt_BR: Atualizar um banco de dados no Notion com novo título ou propriedades
+    ja_JP: 新しいタイトルやプロパティで Notion データベースを更新します
+    zh_Hant: 使用新標題或屬性更新 Notion 資料庫
+  llm: Update an existing Notion database with a new title or modified properties. Returns the updated database URL and metadata.
+parameters:
+  - name: database_id
+    type: string
+    required: true
+    label:
+      en_US: Database ID
+      zh_Hans: 数据库 ID
+      pt_BR: ID do Banco de Dados
+      ja_JP: データベース ID
+      zh_Hant: 資料庫 ID
+    human_description:
+      en_US: The ID of the Notion database to update
+      zh_Hans: 要更新的 Notion 数据库的 ID
+      pt_BR: O ID do banco de dados do Notion a ser atualizado
+      ja_JP: 更新する Notion データベースの ID
+      zh_Hant: 要更新的 Notion 資料庫的 ID
+    llm_description: The ID of the Notion database to update. This can be found in the database URL after the workspace name and slash, usually ending with a hyphen and random characters.
+    form: llm
+  - name: title
+    type: string
+    required: false
+    label:
+      en_US: New Title
+      zh_Hans: 新标题
+      pt_BR: Novo Título
+      ja_JP: 新しいタイトル
+      zh_Hant: 新標題
+    human_description:
+      en_US: New title for the database (leave empty to keep current title)
+      zh_Hans: 数据库的新标题（留空以保留当前标题）
+      pt_BR: Novo título para o banco de dados (deixe em branco para manter o título atual)
+      ja_JP: データベースの新しいタイトル（現在のタイトルを維持する場合は空白）
+      zh_Hant: 資料庫的新標題（留空以保留當前標題）
+    llm_description: New title for the database. Leave empty or omit to keep the current title.
+    form: llm
+  - name: properties
+    type: string
+    required: false
+    label:
+      en_US: Database Properties
+      zh_Hans: 数据库属性
+      pt_BR: Propriedades do Banco de Dados
+      ja_JP: データベースプロパティ
+      zh_Hant: 資料庫屬性
+    human_description:
+      en_US: Updated properties definition for the database in JSON format
+      zh_Hans: 数据库的更新属性定义（JSON 格式）
+      pt_BR: Definição de propriedades atualizadas para o banco de dados em formato JSON
+      ja_JP: データベースの更新プロパティ定義（JSON 形式）
+      zh_Hant: 資料庫的更新屬性定義（JSON 格式）
+    llm_description: Updated properties definition for the database in JSON format. Only include properties you want to update. Example to rename a property - {"Old Name":{"name":"New Name"}}
+    form: llm
+extra:
+  python:
+    source: tools/update_database.py 

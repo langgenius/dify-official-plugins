@@ -1,0 +1,53 @@
+identity:
+  author: langgenius
+  name: notion
+  label:
+    en_US: Notion
+    zh_Hans: Notion
+    pt_BR: Notion
+    ja_JP: Notion
+    zh_Hant: Notion
+  description:
+    en_US: Connect to Notion to search, query databases, and create content
+    zh_Hans: 连接 Notion 以搜索、查询数据库和创建内容
+    pt_BR: Conecte-se ao Notion para pesquisar, consultar bancos de dados e criar conteúdo
+    ja_JP: Notionに接続して検索、データベースのクエリ、コンテンツの作成を行います
+    zh_Hant: 連接 Notion 以搜索、查詢數據庫和創建內容
+  icon: icon.svg
+credentials_for_provider:
+  integration_token:
+    type: secret-input
+    required: true
+    label:
+      en_US: Integration Secret
+      zh_Hans: 接口密钥 (Integration Secret)
+      pt_BR: Segredo de Integração (Integration Secret)
+      ja_JP: 統合シークレット (Integration Secret)
+      zh_Hant: 整合密鑰 (Integration Secret)
+    placeholder:
+      en_US: Enter your Notion Integration Token
+      zh_Hans: 输入您的 Notion 接口令牌
+      pt_BR: Digite seu Token de Integração do Notion
+      ja_JP: Notion統合トークンを入力してください
+      zh_Hant: 輸入您的 Notion 整合權杖
+    help:
+      en_US: Get your integration token from the Notion Integrations page
+      zh_Hans: 从 Notion 集成页面获取您的接口令牌
+      pt_BR: Obtenha seu token de integração na página de Integrações do Notion
+      ja_JP: Notion統合ページから統合トークンを取得してください
+      zh_Hant: 從 Notion 整合頁面獲取您的整合權杖
+    url: https://www.notion.so/profile/integrations
+tools:
+  - tools/search_notion.yaml
+  - tools/query_database.yaml
+  - tools/create_page.yaml
+  - tools/retrieve_page.yaml
+  - tools/update_page.yaml
+  - tools/retrieve_database.yaml
+  - tools/create_database.yaml
+  - tools/update_database.yaml
+  - tools/retrieve_comments.yaml
+  - tools/create_comment.yaml
+extra:
+  python:
+    source: provider/notion.py

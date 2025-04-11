@@ -1,0 +1,38 @@
+identity:
+  name: retrieve_database
+  author: langgenius
+  label:
+    en_US: Retrieve Notion Database
+    zh_Hans: 获取 Notion 数据库
+    pt_BR: Recuperar Banco de Dados do Notion
+    ja_JP: Notion データベースを取得
+    zh_Hant: 獲取 Notion 資料庫
+description:
+  human:
+    en_US: Retrieve a database structure from Notion by its ID
+    zh_Hans: 通过 ID 获取 Notion 数据库结构
+    pt_BR: Recuperar uma estrutura de banco de dados do Notion pelo seu ID
+    ja_JP: ID で Notion データベース構造を取得します
+    zh_Hant: 通過 ID 獲取 Notion 資料庫結構
+  llm: Retrieve a Notion database structure by its ID. Returns database properties, schema, and metadata. The database must be shared with your integration.
+parameters:
+  - name: database_id
+    type: string
+    required: true
+    label:
+      en_US: Database ID
+      zh_Hans: 数据库 ID
+      pt_BR: ID do Banco de Dados
+      ja_JP: データベース ID
+      zh_Hant: 資料庫 ID
+    human_description:
+      en_US: The ID of the Notion database to retrieve
+      zh_Hans: 要获取的 Notion 数据库的 ID
+      pt_BR: O ID do banco de dados do Notion a ser recuperado
+      ja_JP: 取得する Notion データベースの ID
+      zh_Hant: 要獲取的 Notion 資料庫的 ID
+    llm_description: The ID of the Notion database to retrieve. This can be found in the database URL after the workspace name and slash, usually ending with a hyphen and random characters.
+    form: llm
+extra:
+  python:
+    source: tools/retrieve_database.py 

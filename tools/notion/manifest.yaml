@@ -1,0 +1,56 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: notion
+label:
+  en_US: Notion
+  ja_JP: Notion
+  zh_Hans: Notion
+  pt_BR: Notion
+  zh_Hant: Notion
+description:
+  en_US: Comprehensive Notion integration allowing you to search, retrieve, create, and update pages, databases, and comments directly from your Dify applications. Query databases with filters, manage database properties, and organize your Notion workspace efficiently.
+  ja_JP: Difyアプリケーションから直接Notionのページ、データベース、コメントを検索、取得、作成、更新できる包括的な統合。フィルター付きでデータベースを照会し、データベースのプロパティを管理し、Notionワークスペースを効率的に整理します。
+  zh_Hans: 全面的 Notion 集成，允许您直接从 Dify 应用程序中搜索、获取、创建和更新页面、数据库和评论。使用筛选器查询数据库，管理数据库属性，高效组织您的 Notion 工作区。
+  pt_BR: Integração abrangente com o Notion permitindo pesquisar, recuperar, criar e atualizar páginas, bancos de dados e comentários diretamente de seus aplicativos Dify. Consulte bancos de dados com filtros, gerencie propriedades de banco de dados e organize seu espaço de trabalho do Notion de forma eficiente.
+  zh_Hant: 全面的 Notion 整合，讓您直接從 Dify 應用程式中搜尋、獲取、建立和更新頁面、資料庫和評論。使用篩選器查詢資料庫，管理資料庫屬性，有效組織您的 Notion 工作區。
+icon: icon.svg
+tags:
+  - productivity
+  - business
+  - utilities
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+    endpoint:
+      enabled: true
+    app:
+      enabled: true
+    storage:
+      enabled: true
+      size: 1048576
+plugins:
+  tools:
+    - provider/notion.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+created_at: 2025-04-11T17:42:56.427709+08:00
+privacy: PRIVACY.md
+verified: false

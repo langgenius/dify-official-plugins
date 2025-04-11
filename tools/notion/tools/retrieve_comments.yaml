@@ -1,0 +1,56 @@
+identity:
+  name: retrieve_comments
+  author: langgenius
+  label:
+    en_US: Retrieve Notion Comments
+    zh_Hans: 获取 Notion 评论
+    pt_BR: Recuperar Comentários do Notion
+    ja_JP: Notion コメントを取得
+    zh_Hant: 獲取 Notion 評論
+description:
+  human:
+    en_US: Retrieve comments from a Notion page or block
+    zh_Hans: 获取 Notion 页面或块的评论
+    pt_BR: Recuperar comentários de uma página ou bloco do Notion
+    ja_JP: Notion ページまたはブロックからコメントを取得します
+    zh_Hant: 獲取 Notion 頁面或區塊的評論
+  llm: Retrieve comments from a Notion page or block. Returns the comments with their content, author information, and timestamps.
+parameters:
+  - name: block_id
+    type: string
+    required: true
+    label:
+      en_US: Block or Page ID
+      zh_Hans: 块或页面 ID
+      pt_BR: ID do Bloco ou Página
+      ja_JP: ブロックまたはページ ID
+      zh_Hant: 區塊或頁面 ID
+    human_description:
+      en_US: The ID of the Notion block or page to retrieve comments from
+      zh_Hans: 要获取评论的 Notion 块或页面的 ID
+      pt_BR: O ID do bloco ou página do Notion para recuperar comentários
+      ja_JP: コメントを取得する Notion ブロックまたはページの ID
+      zh_Hant: 要獲取評論的 Notion 區塊或頁面的 ID
+    llm_description: The ID of the Notion block or page to retrieve comments from. This can be found in the page URL after the workspace name and slash, usually ending with a hyphen and random characters.
+    form: llm
+  - name: page_size
+    type: number
+    required: false
+    default: 100
+    label:
+      en_US: Page Size
+      zh_Hans: 页面大小
+      pt_BR: Tamanho da Página
+      ja_JP: ページサイズ
+      zh_Hant: 頁面大小
+    human_description:
+      en_US: Maximum number of comments to retrieve (1-100)
+      zh_Hans: 要获取的最大评论数（1-100）
+      pt_BR: Número máximo de comentários a serem recuperados (1-100)
+      ja_JP: 取得する最大コメント数（1〜100）
+      zh_Hant: 要獲取的最大評論數（1-100）
+    llm_description: Maximum number of comments to retrieve. Must be between 1 and 100, default is 100.
+    form: llm
+extra:
+  python:
+    source: tools/retrieve_comments.py 

@@ -1,0 +1,90 @@
+identity:
+  name: update_page
+  author: langgenius
+  label:
+    en_US: Update Notion Page
+    zh_Hans: 更新 Notion 页面
+    pt_BR: Atualizar Página do Notion
+    ja_JP: Notion ページを更新
+    zh_Hant: 更新 Notion 頁面
+description:
+  human:
+    en_US: Update a page in Notion with new title or content
+    zh_Hans: 使用新标题或内容更新 Notion 页面
+    pt_BR: Atualizar uma página no Notion com novo título ou conteúdo
+    ja_JP: 新しいタイトルやコンテンツで Notion ページを更新します
+    zh_Hant: 使用新標題或內容更新 Notion 頁面
+  llm: Update an existing Notion page with a new title, new content, or both. Returns the updated page URL and metadata.
+parameters:
+  - name: page_id
+    type: string
+    required: true
+    label:
+      en_US: Page ID
+      zh_Hans: 页面 ID
+      pt_BR: ID da Página
+      ja_JP: ページ ID
+      zh_Hant: 頁面 ID
+    human_description:
+      en_US: The ID of the Notion page to update
+      zh_Hans: 要更新的 Notion 页面的 ID
+      pt_BR: O ID da página do Notion a ser atualizada
+      ja_JP: 更新する Notion ページの ID
+      zh_Hant: 要更新的 Notion 頁面的 ID
+    llm_description: The ID of the Notion page to update. This can be found in the page URL after the workspace name and slash, usually ending with a hyphen and random characters.
+    form: llm
+  - name: title
+    type: string
+    required: false
+    label:
+      en_US: New Title
+      zh_Hans: 新标题
+      pt_BR: Novo Título
+      ja_JP: 新しいタイトル
+      zh_Hant: 新標題
+    human_description:
+      en_US: New title for the page (leave empty to keep current title)
+      zh_Hans: 页面的新标题（留空以保留当前标题）
+      pt_BR: Novo título para a página (deixe em branco para manter o título atual)
+      ja_JP: ページの新しいタイトル（現在のタイトルを維持する場合は空白）
+      zh_Hant: 頁面的新標題（留空以保留當前標題）
+    llm_description: New title for the page. Leave empty or omit to keep the current title.
+    form: llm
+  - name: content
+    type: string
+    required: false
+    label:
+      en_US: New Content
+      zh_Hans: 新内容
+      pt_BR: Novo Conteúdo
+      ja_JP: 新しいコンテンツ
+      zh_Hant: 新內容
+    human_description:
+      en_US: New content to append to the page
+      zh_Hans: 要附加到页面的新内容
+      pt_BR: Novo conteúdo para anexar à página
+      ja_JP: ページに追加する新しいコンテンツ
+      zh_Hant: 要附加到頁面的新內容
+    llm_description: New content to append to the page as a paragraph. This will add a new paragraph to the page, not replace existing content.
+    form: llm
+  - name: archive
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Archive Page
+      zh_Hans: 归档页面
+      pt_BR: Arquivar Página
+      ja_JP: ページをアーカイブ
+      zh_Hant: 歸檔頁面
+    human_description:
+      en_US: Whether to archive the page
+      zh_Hans: 是否归档页面
+      pt_BR: Se deve arquivar a página
+      ja_JP: ページをアーカイブするかどうか
+      zh_Hant: 是否歸檔頁面
+    llm_description: Whether to archive the page. If set to true, the page will be moved to the archive.
+    form: llm
+extra:
+  python:
+    source: tools/update_page.py 
