@@ -24,7 +24,7 @@ For community contributions, please submit to https://github.com/langgenius/dify
 - [ ] My Changes Affect Message Flow Handling (System Messages and User→Assistant Turn-Taking)
 <!-- Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
-- [ ] My Changes Affect Tool Interaction Flow (Multi-Round Usage and Output Handling)
+- [ ] My Changes Affect Tool Interaction Flow (Multi-Round Usage and Output Handling, for both Agent App and Agent Node)
 <!-- Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
 - [ ] My Changes Affect Multimodal Input Handling (Images, PDFs, Audio, Video, etc.)
