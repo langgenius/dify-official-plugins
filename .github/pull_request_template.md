@@ -7,47 +7,48 @@ For community contributions, please submit to https://github.com/langgenius/dify
 - Or Provide Context about Why this Change is Needed
 -->
 
-## Non-Code Changes
+## This PR contains Non-Code Changes
 <!-- Put an `x` in all the boxes that Apply -->
 - [ ] Documentation
 - [ ] Other
 
-## Code Changes: Non-LLM Models Plugin
+## This PR contains Code Changes: Non-LLM Models Plugin
 - [ ] I have Run All Tests Relevant to My Changes
-<!-- Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
+<!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
-## Code Changes: LLM Models Plugin
+## This PR contains Code Changes: LLM Models Plugin
 
 <!-- LLM Models Test Example: -->
 <!-- https://github.com/langgenius/dify-official-plugins/blob/main/.assets/test-examples/llm-plugin-tests/llm_test_example.md -->
 
 - [ ] My Changes Affect Message Flow Handling (System Messages and User→Assistant Turn-Taking)
-<!-- Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
+<!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
 - [ ] My Changes Affect Tool Interaction Flow (Multi-Round Usage and Output Handling, for both Agent App and Agent Node)
-<!-- Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
+<!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
 - [ ] My Changes Affect Multimodal Input Handling (Images, PDFs, Audio, Video, etc.)
-<!-- Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
+<!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
 - [ ] My Changes Affect Multimodal Output Generation (Images, Audio, Video, etc.)
-<!-- Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
+<!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
 - [ ] My Changes Affect Structured Output Format (JSON, XML, etc.)
-<!-- Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
+<!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
 - [ ] My Changes Affect Token Consumption Metrics
-<!-- Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
+<!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
 - [ ] My Changes Affect Other LLM Functionalities (Reasoning Process for Claude, Grounding for Gemini, etc.)
-<!-- Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
+<!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
 - [ ] Other Changes (Add New Models, etc.)
-<!-- Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
+<!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
 ## Version Control (Any Changes to the Plugin Will Require Bumping the Version)
 - [ ] I have Bumped Up the Version in Manifest.yaml (Top-Level `Version` Field, Not in Meta Section)
-<!-- Version Format: MAJOR.MINOR.PATCH
+<!--
+⚠️ NOTE: Version Format: MAJOR.MINOR.PATCH
 - MAJOR (0.x.x): Reserved for Major Releases with Widespread Breaking Changes
 - MINOR (x.0.x): For New Features or Limited Breaking Changes
 - PATCH (x.x.0): For Backwards-Compatible Bug Fixes and Minor Improvements
@@ -55,7 +56,9 @@ For community contributions, please submit to https://github.com/langgenius/dify
 -->
 
 ## Environment Verification (If Any Code Changes)
-<!-- At Least One Environment Must Be Tested. -->
+<!-- 
+⚠️ NOTE: At Least One Environment Must Be Tested. 
+-->
 
 ### Local Deployment Environment
 - [ ] I have Tested My Changes on Local Deployment Dify with a Clean Environment That Matches the Production Configuration. Dify Version is: <!-- Specify Your Version (e.g., 1.2.0) -->
