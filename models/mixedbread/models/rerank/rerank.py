@@ -2,15 +2,22 @@ from typing import Optional
 
 import httpx
 from dify_plugin.entities import I18nObject
-from dify_plugin.entities.model import (AIModelEntity, FetchFrom,
-                                        ModelPropertyKey, ModelType)
+from dify_plugin.entities.model import (
+    AIModelEntity,
+    FetchFrom,
+    ModelPropertyKey,
+    ModelType,
+)
 from dify_plugin.entities.model.rerank import RerankDocument, RerankResult
-from dify_plugin.errors.model import (CredentialsValidateFailedError,
-                                      InvokeAuthorizationError,
-                                      InvokeBadRequestError,
-                                      InvokeConnectionError, InvokeError,
-                                      InvokeRateLimitError,
-                                      InvokeServerUnavailableError)
+from dify_plugin.errors.model import (
+    CredentialsValidateFailedError,
+    InvokeAuthorizationError,
+    InvokeBadRequestError,
+    InvokeConnectionError,
+    InvokeError,
+    InvokeRateLimitError,
+    InvokeServerUnavailableError,
+)
 from dify_plugin.interfaces.model.rerank_model import RerankModel
 
 
@@ -18,6 +25,8 @@ class MixedBreadRerankModel(RerankModel):
     """
     Model class for MixedBread rerank model.
     """
+
+    api_base: str = "https://api.mixedbread.com/v1"
 
     def _invoke(
         self,
@@ -41,18 +50,32 @@ class MixedBreadRerankModel(RerankModel):
         :param user: unique user id
         :return: rerank result
         """
+        api_key = credentials["api_key"]
+        if not api_key:
+            raise CredentialsValidateFailedError("api_key is required")
+
         if len(docs) == 0:
             return RerankResult(model=model, docs=[])
 
-        base_url = credentials.get("base_url", "https://api.mixedbread.com/v1")
+        base_url = credentials.get("base_url", self.api_base)
         base_url = base_url.removesuffix("/")
 
+        url = base_url + "/reranking"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+
+        data = {
+            "model": f"mixedbread-ai/{model}",
+            "query": query,
+            "input": docs,
+            "top_k": top_n,
+            "return_input": True,
+        }
+
         try:
-            response = httpx.post(
-                base_url + "/reranking",
-                json={"model": model, "query": query, "input": docs, "top_k": top_n, "return_input": True},
-                headers={"Authorization": f"Bearer {credentials.get('api_key')}", "Content-Type": "application/json"},
-            )
+            response = httpx.post(url, headers=headers, json=data)
             response.raise_for_status()
             results = response.json()
 
@@ -107,16 +130,25 @@ class MixedBreadRerankModel(RerankModel):
             InvokeBadRequestError: [httpx.RequestError],
         }
 
-    def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
+    def get_customizable_model_schema(
+        self, model: str, credentials: dict
+    ) -> Optional[AIModelEntity]:
         """
-        generate custom model entities from credentials
+        Get customizable model schema
+
+        :param model: model name
+        :param credentials: model credentials
+        :return: model schema
         """
-        entity = AIModelEntity(
+        return AIModelEntity(
             model=model,
             label=I18nObject(en_US=model),
             model_type=ModelType.RERANK,
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
-            model_properties={ModelPropertyKey.CONTEXT_SIZE: int(credentials.get("context_size", "512"))},
+            model_properties={
+                ModelPropertyKey.CONTEXT_SIZE: int(
+                    credentials.get("context_size", "512")
+                )
+            },
+            parameter_rules=[],
         )
-
-        return entity

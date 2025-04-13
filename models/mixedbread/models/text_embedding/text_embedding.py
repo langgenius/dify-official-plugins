@@ -4,19 +4,28 @@ from typing import Optional
 
 import requests
 from dify_plugin.entities import I18nObject
-from dify_plugin.entities.model import (AIModelEntity, EmbeddingInputType,
-                                        FetchFrom, ModelPropertyKey, ModelType,
-                                        PriceType)
-from dify_plugin.entities.model.text_embedding import (EmbeddingUsage,
-                                                       TextEmbeddingResult)
-from dify_plugin.errors.model import (CredentialsValidateFailedError,
-                                      InvokeAuthorizationError,
-                                      InvokeBadRequestError,
-                                      InvokeConnectionError, InvokeError,
-                                      InvokeRateLimitError,
-                                      InvokeServerUnavailableError)
-from dify_plugin.interfaces.model.text_embedding_model import \
-    TextEmbeddingModel
+from dify_plugin.entities.model import (
+    AIModelEntity,
+    EmbeddingInputType,
+    FetchFrom,
+    ModelPropertyKey,
+    ModelType,
+    PriceType,
+)
+from dify_plugin.entities.model.text_embedding import (
+    EmbeddingUsage,
+    TextEmbeddingResult,
+)
+from dify_plugin.errors.model import (
+    CredentialsValidateFailedError,
+    InvokeAuthorizationError,
+    InvokeBadRequestError,
+    InvokeConnectionError,
+    InvokeError,
+    InvokeRateLimitError,
+    InvokeServerUnavailableError,
+)
+from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 
 
 class MixedBreadTextEmbeddingModel(TextEmbeddingModel):
@@ -52,9 +61,12 @@ class MixedBreadTextEmbeddingModel(TextEmbeddingModel):
         base_url = base_url.removesuffix("/")
 
         url = base_url + "/embeddings"
-        headers = {"Authorization": "Bearer " + api_key, "Content-Type": "application/json"}
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
 
-        data = {"model": model, "input": texts}
+        data = {"model": f"mixedbread-ai/{model}", "input": texts}
 
         try:
             response = requests.post(url, headers=headers, data=dumps(data))
@@ -64,7 +76,7 @@ class MixedBreadTextEmbeddingModel(TextEmbeddingModel):
         if response.status_code != 200:
             try:
                 resp = response.json()
-                msg = resp["detail"]
+                msg = resp.get("detail", resp["message"])
                 if response.status_code == 401:
                     raise InvokeAuthorizationError(msg)
                 elif response.status_code == 429:
@@ -83,17 +95,25 @@ class MixedBreadTextEmbeddingModel(TextEmbeddingModel):
             embeddings = resp["data"]
             usage = resp["usage"]
         except Exception as e:
-            raise InvokeServerUnavailableError(f"Failed to convert response to json: {e} with text: {response.text}")
+            raise InvokeServerUnavailableError(
+                f"Failed to convert response to json: {e} with text: {response.text}"
+            )
 
-        usage = self._calc_response_usage(model=model, credentials=credentials, tokens=usage["total_tokens"])
+        usage = self._calc_response_usage(
+            model=model, credentials=credentials, tokens=usage["total_tokens"]
+        )
 
         result = TextEmbeddingResult(
-            model=model, embeddings=[[float(data) for data in x["embedding"]] for x in embeddings], usage=usage
+            model=model,
+            embeddings=[[float(data) for data in x["embedding"]] for x in embeddings],
+            usage=usage,
         )
 
         return result
 
-    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> int:
+    def get_num_tokens(
+        self, model: str, credentials: dict, texts: list[str]
+    ) -> list[int]:
         """
         Get number of tokens for given prompt messages
 
@@ -102,7 +122,10 @@ class MixedBreadTextEmbeddingModel(TextEmbeddingModel):
         :param texts: texts to embed
         :return:
         """
-        return sum(self._get_num_tokens_by_gpt2(text) for text in texts)
+        tokens = []
+        for text in texts:
+            tokens.append(self._get_num_tokens_by_gpt2(text))
+        return tokens
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -127,7 +150,9 @@ class MixedBreadTextEmbeddingModel(TextEmbeddingModel):
             InvokeBadRequestError: [KeyError, InvokeBadRequestError],
         }
 
-    def _calc_response_usage(self, model: str, credentials: dict, tokens: int) -> EmbeddingUsage:
+    def _calc_response_usage(
+        self, model: str, credentials: dict, tokens: int
+    ) -> EmbeddingUsage:
         """
         Calculate response usage
 
@@ -138,7 +163,10 @@ class MixedBreadTextEmbeddingModel(TextEmbeddingModel):
         """
         # get input price info
         input_price_info = self.get_price(
-            model=model, credentials=credentials, price_type=PriceType.INPUT, tokens=tokens
+            model=model,
+            credentials=credentials,
+            price_type=PriceType.INPUT,
+            tokens=tokens,
         )
 
         # transform usage
@@ -154,16 +182,25 @@ class MixedBreadTextEmbeddingModel(TextEmbeddingModel):
 
         return usage
 
-    def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
+    def get_customizable_model_schema(
+        self, model: str, credentials: dict
+    ) -> Optional[AIModelEntity]:
         """
-        generate custom model entities from credentials
+        Get customizable model schema
+
+        :param model: model name
+        :param credentials: model credentials
+        :return: model schema
         """
-        entity = AIModelEntity(
+        return AIModelEntity(
             model=model,
             label=I18nObject(en_US=model),
             model_type=ModelType.TEXT_EMBEDDING,
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
-            model_properties={ModelPropertyKey.CONTEXT_SIZE: int(credentials.get("context_size", "512"))},
+            model_properties={
+                ModelPropertyKey.CONTEXT_SIZE: int(
+                    credentials.get("context_size", "512")
+                )
+            },
+            parameter_rules=[],
         )
-
-        return entity
