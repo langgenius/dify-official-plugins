@@ -7,7 +7,7 @@ For community contributions, please submit to https://github.com/langgenius/dify
 - Or Provide Context about Why this Change is Needed
 -->
 
-## This PR contains Non-Code Changes
+## This PR contains Changes to *Non-Plugin* 
 <!-- Put an `x` in all the boxes that apply by replacing [ ] with [x] 
 For example:
 - [x] Documentation -->
@@ -15,11 +15,11 @@ For example:
 - [ ] Documentation
 - [ ] Other
 
-## This PR contains Code Changes: Non-LLM Models Plugin
+## This PR contains Changes to *Non-LLM Models Plugin*
 - [ ] I have Run All Tests Relevant to My Changes
 <!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
-## This PR contains Code Changes: LLM Models Plugin
+## This PR contains Changes to *LLM Models Plugin*
 
 <!-- LLM Models Test Example: -->
 <!-- https://github.com/langgenius/dify-official-plugins/blob/main/.assets/test-examples/llm-plugin-tests/llm_test_example.md -->
