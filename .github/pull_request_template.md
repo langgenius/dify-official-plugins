@@ -8,7 +8,10 @@ For community contributions, please submit to https://github.com/langgenius/dify
 -->
 
 ## This PR contains Non-Code Changes
-<!-- Put an `x` in all the boxes that Apply -->
+<!-- Put an `x` in all the boxes that apply by replacing [ ] with [x] 
+For example:
+- [x] Documentation -->
+
 - [ ] Documentation
 - [ ] Other
 
