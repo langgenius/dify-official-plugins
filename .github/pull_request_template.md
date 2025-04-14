@@ -52,9 +52,9 @@ For example:
 - [ ] I have Bumped Up the Version in Manifest.yaml (Top-Level `Version` Field, Not in Meta Section)
 <!--
 ⚠️ NOTE: Version Format: MAJOR.MINOR.PATCH
-- MAJOR (0.x.x): Reserved for Major Releases with Widespread Breaking Changes
-- MINOR (x.0.x): For New Features or Limited Breaking Changes
-- PATCH (x.x.0): For Backwards-Compatible Bug Fixes and Minor Improvements
+- MAJOR (0.x.x): Reserved for Significant architectural changes or incompatible API modifications
+- MINOR (x.0.x): For New feature additions while maintaining backward compatibility
+- PATCH (x.x.0): For Backward-compatible bug fixes and minor improvements
 - Note: Each Version Component (MAJOR, MINOR, PATCH) Can Be 2 Digits, e.g., 10.11.22
 -->
 
