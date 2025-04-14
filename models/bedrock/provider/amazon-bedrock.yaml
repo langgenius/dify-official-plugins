@@ -141,6 +141,17 @@ provider_credential_schema:
       placeholder:
         en_US: A model you have access to (e.g. amazon.titan-text-lite-v1) for validation.
         zh_Hans: 为了进行验证，请输入一个您可用的模型名称 (例如：amazon.titan-text-lite-v1)
+    - variable: bedrock_proxy_url
+      label:
+        en_US: Bedrock Proxy URL
+        zh_Hans: Bedrock Proxy URL
+      type: text-input
+      required: false
+      placeholder:
+        en_US: Enter your proxy address (e.g. 127.0.0.1:7890)
+      help:
+        text:
+          en_US: Proxy address for Bedrock API connections
 models:
   llm:
     predefined:
