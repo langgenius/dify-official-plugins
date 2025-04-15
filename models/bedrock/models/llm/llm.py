@@ -771,10 +771,10 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         # use proxy if provided
         if credentials.get("bedrock_proxy_url"):
-            client_config = Config(region_name=credentials["aws_region"], proxies={
+            client_config.proxies = {
                 'http': 'http://' + credentials.get("bedrock_proxy_url"),
                 'https': 'http://' + credentials.get("bedrock_proxy_url")
-            })
+            }
 
         runtime_client = boto3.client(
             service_name="bedrock-runtime",
