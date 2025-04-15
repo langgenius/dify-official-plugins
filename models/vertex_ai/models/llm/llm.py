@@ -109,7 +109,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             request = google.auth.transport.requests.Request()
             credentials.refresh(request)
             token = credentials.token
-        if "opus" in model or "claude-3-5-sonnet" in model:
+        if "opus" in model or "claude-3-5-sonnet" in model or "claude-3-7-sonnet" in model:
             location = "us-east5"
         else:
             location = "us-central1"
@@ -123,8 +123,21 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         (system, prompt_message_dicts) = self._convert_claude_prompt_messages(prompt_messages)
         if system:
             extra_model_kwargs["system"] = system
+
+        thinking_params = {}
+        enable_thinking = model_parameters.pop("thinking", False)
+        budget_tokens = model_parameters.pop("budget_tokens", None)
+
+        if "claude-3-7-sonnet" in model and enable_thinking:
+            thinking_params["type"] = "enabled"
+            if budget_tokens is not None:
+                thinking_params["budget_tokens"] = budget_tokens
+
+        if thinking_params:
+            extra_model_kwargs["thinking"] = thinking_params
+
         response = client.messages.create(
-            model=model, messages=prompt_message_dicts, stream=stream, **model_parameters, **extra_model_kwargs
+            model=model, messages=prompt_message_dicts, stream=stream, extra_body=extra_model_kwargs, **model_parameters
         )
         if stream:
             return self._handle_claude_stream_response(model, credentials, response, prompt_messages)
@@ -173,36 +186,83 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             input_tokens = 0
             output_tokens = 0
             finish_reason = None
-            index = 0
+            yielded_chunk_index = 0
+            in_thinking_block = False
+            last_chunk_was_thinking_start = False
+
             for chunk in response:
+                
+                current_last_chunk_was_thinking_start = last_chunk_was_thinking_start
+                last_chunk_was_thinking_start = False
+
                 if isinstance(chunk, MessageStartEvent):
                     return_model = chunk.message.model
                     input_tokens = chunk.message.usage.input_tokens
                 elif isinstance(chunk, MessageDeltaEvent):
                     output_tokens = chunk.usage.output_tokens
+                    if chunk.delta.stop_reason and in_thinking_block:
+                        in_thinking_block = False
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(index=yielded_chunk_index, message=AssistantPromptMessage(content="\n\n</think>"))
+                        )
+                        yielded_chunk_index += 1
                     finish_reason = chunk.delta.stop_reason
                 elif isinstance(chunk, MessageStopEvent):
+                    if in_thinking_block:
+                        in_thinking_block = False
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(index=yielded_chunk_index, message=AssistantPromptMessage(content="\n\n</think>"))
+                        )
+                        yielded_chunk_index += 1
                     usage = self._calc_response_usage(model, credentials, input_tokens, output_tokens)
                     yield LLMResultChunk(
                         model=return_model,
                         prompt_messages=prompt_messages,
                         delta=LLMResultChunkDelta(
-                            index=index + 1,
+                            index=yielded_chunk_index,
                             message=AssistantPromptMessage(content=""),
                             finish_reason=finish_reason,
                             usage=usage,
                         ),
                     )
                 elif isinstance(chunk, ContentBlockDeltaEvent):
-                    chunk_text = chunk.delta.text or ""
-                    full_assistant_content += chunk_text
-                    assistant_prompt_message = AssistantPromptMessage(content=chunk_text or "")
-                    index = chunk.index
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(index=index, message=assistant_prompt_message),
-                    )
+                    content_to_yield = None
+                    if chunk.delta.type == 'thinking_delta' and chunk.delta.thinking:
+                        if not in_thinking_block:
+                            in_thinking_block = True
+                            yield LLMResultChunk(
+                                model=model,
+                                prompt_messages=prompt_messages,
+                                delta=LLMResultChunkDelta(index=yielded_chunk_index, message=AssistantPromptMessage(content="<think>\n\n"))
+                            )
+                            yielded_chunk_index += 1
+                            last_chunk_was_thinking_start = True
+                        content_to_yield = chunk.delta.thinking
+                    elif chunk.delta.type == 'text_delta' and chunk.delta.text:
+                        if in_thinking_block:
+                            in_thinking_block = False
+                            yield LLMResultChunk(
+                                model=model,
+                                prompt_messages=prompt_messages,
+                                delta=LLMResultChunkDelta(index=yielded_chunk_index, message=AssistantPromptMessage(content="\n\n</think>"))
+                            )
+                            yielded_chunk_index += 1
+                        content_to_yield = chunk.delta.text
+                    
+                    if content_to_yield is not None:
+                        full_assistant_content += content_to_yield
+                        assistant_prompt_message = AssistantPromptMessage(content=content_to_yield)
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(index=yielded_chunk_index, message=assistant_prompt_message),
+                        )
+                        if not current_last_chunk_was_thinking_start:
+                             yielded_chunk_index += 1
         except Exception as ex:
             raise InvokeError(str(ex))
 
@@ -538,6 +598,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         """
         index = -1
         for chunk in response:
+            
             candidate = chunk.candidates[0]
             for part in candidate.content.parts:
                 assistant_prompt_message = AssistantPromptMessage(content="")
