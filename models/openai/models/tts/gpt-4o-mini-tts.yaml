@@ -1,4 +1,4 @@
-model: tts-1
+model: gpt-4o-mini-tts
 model_type: tts
 model_properties:
   default_voice: 'alloy'
@@ -40,7 +40,7 @@ model_properties:
   audio_type: 'mp3'
   max_workers: 5
 pricing:
-  input: '0.015'
+  input: '0.012'
   output: '0'
   unit: '0.001'
   currency: USD
