@@ -1215,7 +1215,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         if model.startswith("ft:"):
             model = model.split(":")[1]
 
-        # Currently, we can use gpt4o to calculate chatgpt-4o-latest, o1, o3, gpt-4.1 token.
+        # Currently, we can use gpt4o to calculate chatgpt-4o-latest, o1, o3, gpt-4.1's token.
         if model == "chatgpt-4o-latest" or model.startswith(("o1", "o3")) or model.startswith("gpt-4.1"):
             model = "gpt-4o"
 
