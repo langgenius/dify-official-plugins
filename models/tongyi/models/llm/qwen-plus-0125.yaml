@@ -1,8 +1,8 @@
-# this model corresponds to qwen-max, for more details
-# please refer to (https://help.aliyun.com/zh/model-studio/getting-started/models#cf6cc4aa2aokf)
-model: qwen-max-latest
+# this model corresponds to qwen-plus-0125, for more details
+# please refer to (https://help.aliyun.com/zh/model-studio/getting-started/models#bb0ffee88bwnk)
+model: qwen-plus-0125
 label:
-  en_US: qwen-max-latest
+  en_US: qwen-plus-0125
 model_type: llm
 features:
   - multi-tool-call
@@ -81,7 +81,7 @@ parameter_rules:
   - name: response_format
     use_template: response_format
 pricing:
-  input: '0.0024'
-  output: '0.0096'
+  input: '0.0008'
+  output: '0.002'
   unit: '0.001'
   currency: RMB

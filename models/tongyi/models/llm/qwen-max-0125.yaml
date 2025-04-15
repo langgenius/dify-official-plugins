@@ -1,8 +1,8 @@
-# this model corresponds to qwen-max, for more details
+# this model corresponds to qwen-max-0125, for more details
 # please refer to (https://help.aliyun.com/zh/model-studio/getting-started/models#cf6cc4aa2aokf)
-model: qwen-max-latest
+model: qwen-max-0125
 label:
-  en_US: qwen-max-latest
+  en_US: qwen-max-0125
 model_type: llm
 features:
   - multi-tool-call
