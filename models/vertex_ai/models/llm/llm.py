@@ -6,7 +6,7 @@ from collections.abc import Generator
 from typing import Optional, Union, cast
 import google.auth.transport.requests
 import requests
-import vertexai.generative_models as glm
+from google.cloud import aiplatform_v1 as glm
 from anthropic import AnthropicVertex, Stream
 from anthropic.types import (
     ContentBlockDeltaEvent,
@@ -40,7 +40,6 @@ from dify_plugin.errors.model import (
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from google.api_core import exceptions
-from google.cloud import aiplatform
 from google.oauth2 import service_account
 from PIL import Image
 
@@ -450,9 +449,9 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         location = credentials["vertex_location"]
         if service_account_info:
             service_accountSA = service_account.Credentials.from_service_account_info(service_account_info)
-            aiplatform.init(credentials=service_accountSA, project=project_id, location=location)
+            glm.init(credentials=service_accountSA, project=project_id, location=location)
         else:
-            aiplatform.init(project=project_id, location=location)
+            glm.init(project=project_id, location=location)
             
         history = []
         system_instruction = ""
@@ -507,7 +506,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         return self._handle_generate_response(model, credentials, response, prompt_messages)
 
     def _handle_generate_response(
-        self, model: str, credentials: dict, response: glm.GenerationResponse, prompt_messages: list[PromptMessage]
+        self, model: str, credentials: dict, response: glm.GenerateContentResponse, prompt_messages: list[PromptMessage]
     ) -> LLMResult:
         """
         Handle llm response
@@ -526,7 +525,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         return result
 
     def _handle_generate_stream_response(
-        self, model: str, credentials: dict, response: glm.GenerationResponse, prompt_messages: list[PromptMessage]
+        self, model: str, credentials: dict, response: glm.GenerateContentResponse, prompt_messages: list[PromptMessage]
     ) -> Generator:
         """
         Handle llm stream response
@@ -643,11 +642,11 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         if isinstance(message, UserPromptMessage):
             parts = []
             if isinstance(message.content, str):
-                parts.append(glm.Part.from_text(message.content))
+                parts.append(glm.Part(text=message.content))
             elif isinstance(message.content, list):
                 for c in message.content:
                     if c.type == PromptMessageContentType.TEXT:
-                        parts.append(glm.Part.from_text(c.data))
+                        parts.append(glm.Part(text=c.data))
                     elif c.type in [
                         PromptMessageContentType.IMAGE,
                         PromptMessageContentType.DOCUMENT,
@@ -656,20 +655,20 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                     ]:
                         data = c.base64_data
                         mime_type = getattr(c, 'mime_type', None)
-                        parts.append(glm.Part.from_data(data=data, mime_type=mime_type))
+                        parts.append(glm.Part(inline_data=glm.Blob(data=data, mime_type=mime_type)))
                     else:
                         raise ValueError(f"Unsupported content type: {c.type}")
             glm_content = glm.Content(role="user", parts=parts)
             return glm_content
-        elif isinstance(message, AssistantPromptMessage):
+        elif isinstance(message, AssistantPromptMessage):   
             if message.content:
-                glm_content = glm.Content(role="model", parts=[glm.Part.from_text(message.content)])
+                glm_content = glm.Content(role="model", parts=[glm.Part(text=message.content)])
             if message.tool_calls:
                 glm_content = glm.Content(
                     role="model",
                     parts=[
-                        glm.Part.from_function_response(
-                            glm.FunctionCall(
+                        glm.Part(
+                            function_call=glm.FunctionCall(
                                 name=message.tool_calls[0].function.name,
                                 args=json.loads(message.tool_calls[0].function.arguments),
                             )
@@ -682,7 +681,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 role="function",
                 parts=[
                     glm.Part(
-                        function_response=glm.FunctionResponse(
+                        function_call=glm.FunctionCall(
                             name=message.name, response={"response": message.content}
                         )
                     )
