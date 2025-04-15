@@ -60,11 +60,13 @@ class ClarityUpscalerTool(Tool):
             
             # Create a more user-friendly message with the result image
             if "image" in result and "url" in result["image"]:
-                text = f"Upscaled image available at: {result['image']['url']}"
+                # Create an image message directly with the URL
+                image_url = result["image"]["url"]
+                image_message = self.create_image_message(image_url=image_url)
+                yield from [json_message, image_message]
             else:
                 text = "Image upscaled successfully, but no URL was returned."
-                
-            text_message = self.create_text_message(text)
-            yield from [json_message, text_message]
+                text_message = self.create_text_message(text)
+                yield from [json_message, text_message]
         except Exception as e:
             yield self.create_text_message(f"Error upscaling image: {str(e)}")
