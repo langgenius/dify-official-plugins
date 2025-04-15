@@ -132,7 +132,7 @@ parameters:
   required: false
   type: number
 - default: true
-  form: llm
+  form: form
   human_description:
     en_US: Whether to enable the safety checker.
     zh_Hans: 是否启用安全检查器。
