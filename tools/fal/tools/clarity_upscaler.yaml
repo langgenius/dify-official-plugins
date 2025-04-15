@@ -7,10 +7,11 @@ extra:
   python:
     source: tools/clarity_upscaler.py
 identity:
-  author: Dify Plugin Contributor
+  author: Kalo Chin
+  icon: icon.svg
   label:
     en_US: Clarity Upscaler
-    zh_Hans: Clarity 图像提升器
+    zh_Hans: Clarity Upscaler
   name: clarity_upscaler
 parameters:
 - form: llm
@@ -36,7 +37,7 @@ parameters:
   required: false
   type: string
 - default: "masterpiece, best quality, highres"
-  form: form
+  form: llm
   human_description:
     en_US: The prompt to guide image upscaling. Be as descriptive as possible for best results.
     zh_Hans: 指导图像提升的提示词。尽可能详细描述以获得最佳效果。
@@ -48,7 +49,7 @@ parameters:
   required: false
   type: string
 - default: 2
-  form: form
+  form: llm
   human_description:
     en_US: The factor by which to upscale the image.
     zh_Hans: 图像放大的倍数。
@@ -60,7 +61,7 @@ parameters:
   required: false
   type: number
 - default: "(worst quality, low quality, normal quality:2)"
-  form: form
+  form: llm
   human_description:
     en_US: The negative prompt to address details you don't want in the image.
     zh_Hans: 负面提示词，用于指定您不希望在图像中出现的细节。
@@ -72,7 +73,7 @@ parameters:
   required: false
   type: string
 - default: 0.35
-  form: form
+  form: llm
   human_description:
     en_US: The creativity level. Higher values allow the model to deviate more from the prompt.
     zh_Hans: 创造力水平。较高的值允许模型更多地偏离提示词。
@@ -84,7 +85,7 @@ parameters:
   required: false
   type: number
 - default: 0.6
-  form: form
+  form: llm
   human_description:
     en_US: The resemblance to the original image. Higher values make the model try to keep the original image.
     zh_Hans: 与原始图像的相似度。较高的值使模型尝试保持原始图像的特征。
@@ -96,7 +97,7 @@ parameters:
   required: false
   type: number
 - default: 4
-  form: form
+  form: llm
   human_description:
     en_US: The CFG scale. Controls how closely the model sticks to your prompt.
     zh_Hans: CFG 比例。控制模型与提示词的贴合程度。
@@ -108,7 +109,7 @@ parameters:
   required: false
   type: number
 - default: 18
-  form: form
+  form: llm
   human_description:
     en_US: The number of inference steps to perform.
     zh_Hans: 执行的推理步骤数量。
@@ -119,7 +120,7 @@ parameters:
   name: num_inference_steps
   required: false
   type: number
-- form: form
+- form: llm
   human_description:
     en_US: The random seed for deterministic generation. Same seed with same parameters produces same result.
     zh_Hans: 用于确定性生成的随机种子。相同的种子和参数会产生相同的结果。
@@ -131,7 +132,7 @@ parameters:
   required: false
   type: number
 - default: true
-  form: form
+  form: llm
   human_description:
     en_US: Whether to enable the safety checker.
     zh_Hans: 是否启用安全检查器。
