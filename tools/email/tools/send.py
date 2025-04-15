@@ -54,7 +54,7 @@ def send_mail(params: SendEmailToolParameters) -> Dict[str, Tuple[int, bytes]]:
 
     # Create alternative part for plain text and HTML
     alt_part = MIMEMultipart("alternative")
-    print("hello")
+
     # Use plain_text_content if it exists and HTML is enabled, otherwise use email_content
     plain_text = params.plain_text_content if params.is_html and params.plain_text_content else params.email_content
 
