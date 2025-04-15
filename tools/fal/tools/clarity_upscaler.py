@@ -1,10 +1,11 @@
 import os
-from typing import Any, Generator
+from typing import Any, Generator, TypeVar
 import fal_client
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
 from dify_plugin.file.file import File
 
+T = TypeVar('T')
 
 class ClarityUpscalerTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
@@ -15,15 +16,35 @@ class ClarityUpscalerTool(Tool):
             yield self.create_text_message("No image file or URL provided")
             return
         
-        prompt = tool_parameters.get("prompt", "masterpiece, best quality, highres")
-        upscale_factor = tool_parameters.get("upscale_factor", 2)
-        negative_prompt = tool_parameters.get("negative_prompt", "(worst quality, low quality, normal quality:2)")
-        creativity = tool_parameters.get("creativity", 0.35)
-        resemblance = tool_parameters.get("resemblance", 0.6)
-        guidance_scale = tool_parameters.get("guidance_scale", 4)
-        num_inference_steps = tool_parameters.get("num_inference_steps", 18)
+        # Define default parameters
+        defaults = {
+            "prompt": "masterpiece, best quality, highres",
+            "upscale_factor": 2,
+            "negative_prompt": "(worst quality, low quality, normal quality:2)",
+            "creativity": 0.35,
+            "resemblance": 0.6,
+            "guidance_scale": 4,
+            "num_inference_steps": 18,
+            "enable_safety_checker": False
+        }
+        
+        # Helper function to get parameter with default
+        def get_param(key: str, default_value: T) -> T:
+            value = tool_parameters.get(key)
+            if value is None or value == "":
+                return default_value
+            return value
+            
+        # Apply defaults and handle special cases
+        processed_params = {k: get_param(k, v) for k, v in defaults.items()}
+        
+        # Special handling for parameters with constraints
+        processed_params["upscale_factor"] = max(1, processed_params["upscale_factor"])
+        
+        # Handle seed separately (can be None)
         seed = tool_parameters.get("seed")
-        enable_safety_checker = tool_parameters.get("enable_safety_checker", True)
+        if seed == "":
+            seed = None
 
         api_key = self.runtime.credentials["fal_api_key"]
         os.environ["FAL_KEY"] = api_key
@@ -38,16 +59,10 @@ class ClarityUpscalerTool(Tool):
                 yield self.create_text_message(f"Error uploading image file: {str(e)}")
                 return
         
+        # Build arguments for the API call
         arguments = {
             "image_url": image_url,
-            "prompt": prompt,
-            "upscale_factor": upscale_factor,
-            "negative_prompt": negative_prompt,
-            "creativity": creativity,
-            "resemblance": resemblance,
-            "guidance_scale": guidance_scale,
-            "num_inference_steps": num_inference_steps,
-            "enable_safety_checker": enable_safety_checker
+            **processed_params
         }
         
         # Add seed if provided
