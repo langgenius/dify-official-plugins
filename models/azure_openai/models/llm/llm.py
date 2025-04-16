@@ -670,14 +670,14 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         Official documentation: https://github.com/openai/openai-cookbook/blob/
         main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb"""
         model = credentials["base_model_name"]
-        if model.startswith(("o1", "o3", "gpt-4.5")):
+        if model.startswith(("o1", "o3", "gpt-4.1", "gpt-4.5")):
             model = "gpt-4o"
         try:
             encoding = tiktoken.encoding_for_model(model)
         except KeyError:
             logger.warning("Warning: model not found. Using cl100k_base encoding.")
-            model = "cl100k_base"
-            encoding = tiktoken.get_encoding(model)
+            encoding_name = "cl100k_base"
+            encoding = tiktoken.get_encoding(encoding_name)
         if model.startswith("gpt-35-turbo-0301"):
             tokens_per_message = 4
             tokens_per_name = -1

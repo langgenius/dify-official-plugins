@@ -90,6 +90,9 @@ model_credential_schema:
         - label:
             en_US: "2024-06-01"
           value: "2024-06-01"
+        - label:
+            en_US: "2024-10-21"
+          value: "2024-10-21"
       placeholder:
         en_US: Select your API Version here
         zh_Hans: 在此选择您的 API 版本
@@ -190,6 +193,24 @@ model_credential_schema:
             - value: llm
               variable: __model_type
           value: gpt-4o-2024-08-06
+        - label:
+            en_US: gpt-4.1
+          show_on:
+            - value: llm
+              variable: __model_type
+          value: gpt-4.1
+        - label:
+            en_US: gpt-4.1-mini
+          show_on:
+            - value: llm
+              variable: __model_type
+          value: gpt-4.1-mini
+        - label:
+            en_US: gpt-4.1-nano
+          show_on:
+            - value: llm
+              variable: __model_type
+          value: gpt-4.1-nano
         - label:
             en_US: gpt-4-turbo
           show_on:
