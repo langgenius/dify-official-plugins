@@ -3,7 +3,6 @@ label:
   en_US: glm-z1-airx
 model_type: llm
 features:
-  - reasoning
   - agent-thought
   - stream-tool-call
 model_properties:
