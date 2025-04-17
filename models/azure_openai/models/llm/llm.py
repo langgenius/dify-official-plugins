@@ -121,7 +121,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             )
         try:
             client = AzureOpenAI(**self._to_credential_kwargs(credentials))
-            if base_model_name.startswith(("o1", "o3")):
+            if base_model_name.startswith(("o1", "o3", "o4")):
                 client.chat.completions.create(
                     messages=[{"role": "user", "content": "ping"}],
                     model=model,
@@ -320,7 +320,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             extra_model_kwargs["user"] = user
         prompt_messages = self._clear_illegal_prompt_messages(base_model_name, prompt_messages)
         block_as_stream = False
-        if base_model_name.startswith(("o1", "o3")):
+        if base_model_name.startswith(("o1", "o3", "o4")):
             # o1 and o1-* do not support streaming
             # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/reasoning#api--feature-support
             if base_model_name.startswith("o1"):
@@ -417,7 +417,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                                     for item in prompt_message.content
                                 ]
                             )
-        if model.startswith(("o1", "o3")):
+        if model.startswith(("o1", "o3", "o4")):
             system_message_count = len(
                 [m for m in prompt_messages if isinstance(m, SystemPromptMessage)]
             )
@@ -670,7 +670,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         Official documentation: https://github.com/openai/openai-cookbook/blob/
         main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb"""
         model = credentials["base_model_name"]
-        if model.startswith(("o1", "o3", "gpt-4.1", "gpt-4.5")):
+        if model.startswith(("o1", "o3", "o4", "gpt-4.1", "gpt-4.5")):
             model = "gpt-4o"
         try:
             encoding = tiktoken.encoding_for_model(model)
@@ -684,7 +684,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         elif (
             model.startswith("gpt-35-turbo")
             or model.startswith("gpt-4")
-            or model.startswith(("o1", "o3"))
+            or model.startswith(("o1", "o3", "o4"))
         ):
             tokens_per_message = 3
             tokens_per_name = 1
