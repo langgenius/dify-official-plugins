@@ -58,13 +58,19 @@ For example:
 - Note: Each Version Component (MAJOR, MINOR, PATCH) Can Be 2 Digits, e.g., 10.11.22
 -->
 
+## Dify Plugin SDK Version
+- [ ] Using `dify_plugin>=0.1.0,<0.2.0` in requirements.txt
+<!-- 
+SDK docs https://github.com/langgenius/dify-plugin-sdks/blob/main/python/README.md
+-->
+
 ## Environment Verification (If Any Code Changes)
 <!-- 
 ⚠️ NOTE: At Least One Environment Must Be Tested. 
 -->
 
 ### Local Deployment Environment
-- [ ] I have Tested My Changes on Local Deployment Dify with a Clean Environment That Matches the Production Configuration. Dify Version is: <!-- Specify Your Version (e.g., 1.2.0) -->
+- [ ] Dify Version is: <!-- Specify Your Version (e.g., 1.2.0) -->, I have Tested My Changes on Local Deployment Dify with a Clean Environment That Matches the Production Configuration. 
 <!--
 - Python Virtual Env Matching Manifest.yaml & requirements.txt
 - No Breaking Changes in Dify That May Affect the Testing Result
