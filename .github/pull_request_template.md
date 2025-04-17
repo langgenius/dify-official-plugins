@@ -16,7 +16,7 @@ For example:
 - [ ] Other
 
 ## This PR contains Changes to *Non-LLM Models Plugin*
-- [ ] I have Run All Tests Relevant to My Changes
+- [ ] I have Run Comprehensive Tests Relevant to My Changes
 <!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
 ## This PR contains Changes to *LLM Models Plugin*
