@@ -1,0 +1,45 @@
+settings:
+  - name: aws_secret_access_key
+    type: secret-input
+    required: true
+    label:
+      en_US: AWS Secret Access Key
+      zh_Hans: AWS 秘密访问密钥
+      ja_Jp: AWS シークレットアクセスキー
+      pt_BR: Chave de Acesso Secreta da AWS
+    placeholder:
+      en_US: Please input your AWS Secret Access Key
+      zh_Hans: 请输入你的 AWS 秘密访问密钥
+      ja_Jp: あなたの AWS シークレットアクセスキーを入力してください
+      pt_BR: Por favor, insira sua Chave de Acesso Secreta da AWS
+
+  - name: aws_access_key_id
+    type: secret-input
+    required: true
+    label:
+      en_US: AWS Access Key ID
+      zh_Hans: AWS 访问密钥 ID
+      ja_Jp: AWS アクセスキー ID
+      pt_BR: ID da Chave de Acesso da AWS
+    placeholder:
+      en_US: Please input your AWS Access Key ID
+      zh_Hans: 请输入你的 AWS 访问密钥 ID
+      ja_Jp: あなたの AWS アクセスキー ID を入力してください
+      pt_BR: Por favor, insira seu ID da Chave de Acesso da AWS
+
+  - name: region_name
+    type: text-input
+    required: true
+    label:
+      en_US: AWS Region Name
+      zh_Hans: AWS 区域名称
+      ja_Jp: AWS リージョン名
+      pt_BR: Nome da Região AWS
+    placeholder:
+      en_US: Please input your AWS Region Name (e.g., us-east-1)
+      zh_Hans: 请输入你的 AWS 区域名称（例如：us-east-1）
+      ja_Jp: あなたの AWS リージョン名を入力してください（例：us-east-1）
+      pt_BR: Please input your AWS Region Name (e.g., us-east-1)
+
+endpoints:
+  - endpoints/aws_bedrock_knowledge_base.yaml

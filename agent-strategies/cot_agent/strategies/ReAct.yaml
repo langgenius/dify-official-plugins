@@ -9,6 +9,8 @@ description:
   en_US: ReAct is a basic strategy for agent, model will use the tools provided to perform the task.
   zh_Hans: ReAct 是一个基本的 Agent 策略，模型将使用提供的工具来执行任务。
   pt_BR: ReAct is a basic strategy for agent, model will use the tools provided to perform the task.
+features:
+  - history-messages
 parameters:
   - name: model
     type: model-selector
@@ -22,9 +24,9 @@ parameters:
     type: array[tools]
     required: true
     label:
-      en_US: Tools list
+      en_US: Tool list
       zh_Hans: 工具列表
-      pt_BR: Tools list
+      pt_BR: Tool list
   - name: instruction
     type: string
     required: true
@@ -47,9 +49,9 @@ parameters:
     type: number
     required: true
     label:
-      en_US: Maxium Iterations
+      en_US: Maximum Iterations
       zh_Hans: 最大迭代次数
-      pt_BR: Maxium Iterations
+      pt_BR: Maximum Iterations
     default: 3
     min: 1
     max: 30

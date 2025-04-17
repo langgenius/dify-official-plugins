@@ -493,7 +493,14 @@ class XinferenceAILargeLanguageModel(LargeLanguageModel):
             generate_config["stop"] = stop
         if tools and len(tools) > 0:
             generate_config["tools"] = [
-                {"type": "function", "function": helper.dump_model(tool)}
+                {
+                    "type": "function",
+                    "function": {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "parameters": tool.parameters
+                    }
+                }
                 for tool in tools
             ]
         vision = credentials.get("support_vision", False)
@@ -509,10 +516,6 @@ class XinferenceAILargeLanguageModel(LargeLanguageModel):
                 **generate_config,
             )
             if stream:
-                if tools and len(tools) > 0:
-                    raise InvokeBadRequestError(
-                        "xinference tool calls does not support stream mode"
-                    )
                 return self._handle_chat_stream_response(
                     model=model,
                     credentials=credentials,

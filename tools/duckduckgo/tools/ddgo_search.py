@@ -18,7 +18,8 @@ class DuckDuckGoSearchTool(Tool):
         query = tool_parameters.get("query")
         max_results = tool_parameters.get("max_results", 5)
         require_summary = tool_parameters.get("require_summary", False)
-        response = DDGS().text(query, max_results=max_results)
+        proxy = tool_parameters.get("proxy_server", None)
+        response = DDGS(proxy=proxy).text(query, max_results=max_results) if proxy else DDGS().text(query, max_results=max_results)
         if require_summary:
             results = "\n".join([res.get("body") for res in response])
             results = self.summary_results(content=results, query=query)

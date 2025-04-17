@@ -1,2 +1,2 @@
-dify_plugin==0.0.1b65
-tencentcloud-sdk-python~=3.0.1294
+dify_plugin==0.0.1b73
+tencentcloud-sdk-python~=3.0.1332

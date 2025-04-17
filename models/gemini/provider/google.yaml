@@ -37,5 +37,13 @@ provider_credential_schema:
     required: true
     type: secret-input
     variable: google_api_key
+  - label:
+      en_US: Files URL
+    placeholder:
+      en_US: Enter the Local FILES URL prefix to get better upload performance
+      zh_Hans: 在此输入本地文件地址的URL前缀
+    required: false
+    type: text-input
+    variable: file_url
 supported_model_types:
 - llm

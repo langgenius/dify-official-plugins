@@ -1,5 +1,4 @@
 import logging
-import re
 from collections.abc import Generator
 from typing import Optional
 from dify_plugin.entities.model import (
@@ -250,6 +249,17 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             return _handle_chat_response()
         return _handle_stream_chat_response()
 
+    def wrap_thinking(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
+        content = ""
+        reasoning_content = None
+        if hasattr(delta, "content"):
+            content = delta.content
+        if hasattr(delta, "reasoning_content"):
+            reasoning_content = delta.reasoning_content
+        return self._wrap_thinking_by_reasoning_content(
+            {"content": content, "reasoning_content": reasoning_content}, is_reasoning
+        )
+
     def _generate_v3(
         self,
         model: str,
@@ -268,44 +278,62 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
 
         def _handle_stream_chat_response(chunks: Generator[ChatCompletionChunk]) -> Generator:
             is_reasoning_started = False
+            chunk_index = 0
+            full_assistant_content = ""
+            finish_reason = None
+            usage = None
+            tools_calls: list[AssistantPromptMessage.ToolCall] = []
             for chunk in chunks:
-                content = ""
-                if chunk.choices:
-                    delta = chunk.choices[0].delta
-                    if is_reasoning_started and not hasattr(delta, "reasoning_content") and not delta.content:
-                        content = ""
-                    elif hasattr(delta, "reasoning_content"):
-                        if not is_reasoning_started:
-                            is_reasoning_started = True
-                            content = "> 💭 " + delta.reasoning_content
-                        else:
-                            content = delta.reasoning_content
+                chunk_index += 1
+                if chunk:
+                    if chunk.usage:
+                        usage = self._calc_response_usage(
+                            model=model,
+                            credentials=credentials,
+                            prompt_tokens=chunk.usage.prompt_tokens,
+                            completion_tokens=chunk.usage.prompt_tokens,
+                        )
+                    if chunk.choices:
+                        finish_reason = chunk.choices[0].finish_reason
+                        delta = chunk.choices[0].delta
+                        delta_content, is_reasoning_started = self.wrap_thinking(delta, is_reasoning_started)
 
-                        if "\n" in content:
-                            content = re.sub(r"\n(?!(>|\n))", "\n> ", content)
-                    elif is_reasoning_started:
-                        content = "\n\n" + delta.content
-                        is_reasoning_started = False
-                    else:
-                        content = delta.content
+                        if delta.tool_calls:
+                            tools_calls = self._increase_tool_call(delta.tool_calls, tools_calls)
 
+                    assistant_prompt_message = AssistantPromptMessage(
+                        content=delta_content,
+                    )
+                    full_assistant_content += delta_content
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(
+                            index=chunk_index,
+                            message=assistant_prompt_message,
+                        ),
+                    )
+
+            if tools_calls:
                 yield LLMResultChunk(
                     model=model,
                     prompt_messages=prompt_messages,
                     delta=LLMResultChunkDelta(
-                        index=0,
-                        message=AssistantPromptMessage(content=content, tool_calls=[]),
-                        usage=self._calc_response_usage(
-                            model=model,
-                            credentials=credentials,
-                            prompt_tokens=chunk.usage.prompt_tokens,
-                            completion_tokens=chunk.usage.completion_tokens,
-                        )
-                        if chunk.usage
-                        else None,
-                        finish_reason=chunk.choices[0].finish_reason if chunk.choices else None,
+                    index=chunk_index,
+                    message=AssistantPromptMessage(tool_calls=tools_calls, content=""),
                     ),
                 )
+
+            yield self._create_final_llm_result_chunk(
+                index=chunk_index,
+                message=AssistantPromptMessage(content=""),
+                finish_reason=finish_reason,
+                usage=usage,
+                model=model,
+                credentials=credentials,
+                prompt_messages=prompt_messages,
+                full_content=full_assistant_content,
+            )
 
         def _handle_chat_response(resp: ChatCompletion) -> LLMResult:
             choice = resp.choices[0]
@@ -346,9 +374,93 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         chunks = client.stream_chat(prompt_messages, **req_params)
         return _handle_stream_chat_response(chunks)
 
-    def get_customizable_model_schema(
-        self, model: str, credentials: dict
-    ) -> Optional[AIModelEntity]:
+    def _create_final_llm_result_chunk(
+        self,
+        index: int,
+        message: AssistantPromptMessage,
+        finish_reason: str,
+        usage: dict,
+        model: str,
+        prompt_messages: list[PromptMessage],
+        credentials: dict,
+        full_content: str,
+    ) -> LLMResultChunk:
+        # calculate num tokens
+        prompt_tokens = usage and usage.prompt_tokens
+        if prompt_tokens is None:
+            prompt_tokens = self._num_tokens_from_string(text=prompt_messages[0].content)
+        completion_tokens = usage and usage.completion_tokens
+        if completion_tokens is None:
+            completion_tokens = self._num_tokens_from_string(text=full_content)
+
+        # transform usage
+        usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+
+        return LLMResultChunk(
+            model=model,
+            prompt_messages=prompt_messages,
+            delta=LLMResultChunkDelta(index=index, message=message, finish_reason=finish_reason, usage=usage),
+        )
+    def _extract_response_tool_calls(self, response_tool_calls: list[dict]) -> list[AssistantPromptMessage.ToolCall]:
+        """
+        Extract tool calls from response
+
+        :param response_tool_calls: response tool calls
+        :return: list of tool calls
+        """
+        tool_calls = []
+        if response_tool_calls:
+            for response_tool_call in response_tool_calls:
+                function = AssistantPromptMessage.ToolCall.ToolCallFunction(
+                    name=response_tool_call.get("function", {}).get("name", ""),
+                    arguments=response_tool_call.get("function", {}).get("arguments", ""),
+                )
+
+                tool_call = AssistantPromptMessage.ToolCall(
+                    id=response_tool_call.get("id", ""), type=response_tool_call.get("type", ""), function=function
+                )
+                tool_calls.append(tool_call)
+
+        return tool_calls
+    def _increase_tool_call(
+        self, new_tool_calls: list[AssistantPromptMessage.ToolCall], tools_calls: list[AssistantPromptMessage.ToolCall]
+    ) -> list[AssistantPromptMessage.ToolCall]:
+        for new_tool_call in new_tool_calls:
+            # get tool call
+            tool_call, tools_calls = self._get_tool_call(new_tool_call.function.name, tools_calls)
+            # update tool call
+            if new_tool_call.id:
+                tool_call.id = new_tool_call.id
+            if new_tool_call.type:
+                tool_call.type = new_tool_call.type
+            if new_tool_call.function.name:
+                tool_call.function.name = new_tool_call.function.name
+            if new_tool_call.function.arguments:
+                tool_call.function.arguments += new_tool_call.function.arguments
+        return tools_calls
+
+    def _get_tool_call(self, tool_call_id: str, tools_calls: list[AssistantPromptMessage.ToolCall]):
+        """
+        Get or create a tool call by ID
+
+        :param tool_call_id: tool call ID
+        :param tools_calls: list of existing tool calls
+        :return: existing or new tool call, updated tools_calls
+        """
+        if not tool_call_id:
+            return tools_calls[-1], tools_calls
+
+        tool_call = next((tool_call for tool_call in tools_calls if tool_call.id == tool_call_id), None)
+        if tool_call is None:
+            tool_call = AssistantPromptMessage.ToolCall(
+                id=tool_call_id,
+                type="function",
+                function=AssistantPromptMessage.ToolCall.ToolCallFunction(name="", arguments=""),
+            )
+            tools_calls.append(tool_call)
+
+        return tool_call, tools_calls
+    def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:
         """
         used to define customizable model schema
         """

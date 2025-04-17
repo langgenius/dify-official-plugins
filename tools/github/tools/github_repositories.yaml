@@ -1,9 +1,9 @@
 description:
   human:
-    en_US: Search the Github repository to retrieve the open source projects you need
-    pt_BR: Pesquise o repositório do Github para recuperar os projetos de código aberto
+    en_US: Search the GitHub repository to retrieve the open source projects you need
+    pt_BR: Pesquise o repositório do GitHub para recuperar os projetos de código aberto
       necessários.
-    zh_Hans: 搜索Github仓库，检索你需要的开源项目。
+    zh_Hans: 搜索GitHub仓库，检索你需要的开源项目。
   llm: A tool when you wants to search for popular warehouses or open source projects
     for any keyword. format query condition like "keywords+language:js", language
     can be other dev languages.

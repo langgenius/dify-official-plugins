@@ -15,7 +15,7 @@ parameter_rules:
     max: 8192
     default: 4096
 pricing:
-  input: "0.00"
+  input: "1.26"
   output: "1.26"
   unit: "0.000001"
   currency: RMB

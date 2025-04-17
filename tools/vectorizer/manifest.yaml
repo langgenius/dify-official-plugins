@@ -17,7 +17,7 @@ meta:
     entrypoint: main
     language: python
     version: "3.12"
-  version: 0.0.1
+  version: 1.0.0
 name: vectorizer
 plugins:
   tools:

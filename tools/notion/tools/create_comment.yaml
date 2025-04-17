@@ -1,0 +1,55 @@
+identity:
+  name: create_comment
+  author: langgenius
+  label:
+    en_US: Create Notion Comment
+    zh_Hans: 创建 Notion 评论
+    pt_BR: Criar Comentário no Notion
+    ja_JP: Notion コメントを作成
+    zh_Hant: 建立 Notion 評論
+description:
+  human:
+    en_US: Create a new comment on a Notion page
+    zh_Hans: 在 Notion 页面上创建新评论
+    pt_BR: Criar um novo comentário em uma página do Notion
+    ja_JP: Notion ページに新しいコメントを作成します
+    zh_Hant: 在 Notion 頁面上建立新評論
+  llm: Create a new comment on a Notion page. Returns the created comment's ID and content.
+parameters:
+  - name: page_id
+    type: string
+    required: true
+    label:
+      en_US: Page ID
+      zh_Hans: 页面 ID
+      pt_BR: ID da Página
+      ja_JP: ページ ID
+      zh_Hant: 頁面 ID
+    human_description:
+      en_US: The ID of the Notion page to comment on
+      zh_Hans: 要评论的 Notion 页面的 ID
+      pt_BR: O ID da página do Notion para comentar
+      ja_JP: コメントする Notion ページの ID
+      zh_Hant: 要評論的 Notion 頁面的 ID
+    llm_description: The ID of the Notion page to comment on. This can be found in the page URL after the workspace name and slash, usually ending with a hyphen and random characters.
+    form: llm
+  - name: content
+    type: string
+    required: true
+    label:
+      en_US: Comment Content
+      zh_Hans: 评论内容
+      pt_BR: Conteúdo do Comentário
+      ja_JP: コメント内容
+      zh_Hant: 評論內容
+    human_description:
+      en_US: The text content of the comment
+      zh_Hans: 评论的文本内容
+      pt_BR: O conteúdo de texto do comentário
+      ja_JP: コメントのテキスト内容
+      zh_Hant: 評論的文字內容
+    llm_description: The text content of the comment. This supports basic text formatting.
+    form: llm
+extra:
+  python:
+    source: tools/create_comment.py 

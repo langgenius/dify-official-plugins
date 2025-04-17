@@ -3,20 +3,21 @@ import tempfile
 import json
 import time
 import os
-from collections.abc import Generator
+from collections.abc import Generator, Iterator
 from typing import Optional, Union
 
 import requests
-import google.ai.generativelanguage as glm
-import google.generativeai as genai
-from google.api_core import exceptions
-from google.generativeai.types import ContentType, File, GenerateContentResponse
-from google.generativeai.types.content_types import to_part
-from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
+from google import genai
+from google.genai import errors, types
+from dify_plugin.entities.model.llm import (
+    LLMResult,
+    LLMResultChunk,
+    LLMResultChunkDelta,
+)
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
-    PromptMessageContent,
+    MultiModalPromptMessageContent,
     PromptMessageContentType,
     PromptMessageTool,
     SystemPromptMessage,
@@ -36,7 +37,9 @@ from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 
 from .utils import FileCache
 
+
 file_cache = FileCache()
+
 
 class GoogleLargeLanguageModel(LargeLanguageModel):
     def _invoke(
@@ -63,7 +66,16 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
-        return self._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
+        return self._generate(
+            model,
+            credentials,
+            prompt_messages,
+            model_parameters,
+            tools,
+            stop,
+            stream,
+            user,
+        )
 
     def get_num_tokens(
         self,
@@ -92,10 +104,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: Combined string with necessary human_prompt and ai_prompt tags.
         """
         messages = messages.copy()
-        text = "".join((self._convert_one_message_to_text(message) for message in messages))
+        text = "".join(
+            (self._convert_one_message_to_text(message) for message in messages)
+        )
         return text.rstrip()
 
-    def _convert_tools_to_glm_tool(self, tools: list[PromptMessageTool]) -> glm.Tool:
+    def _convert_tools_to_glm_tool(self, tools: list[PromptMessageTool]) -> types.Tool:
         """
         Convert tool messages to glm tools
 
@@ -106,22 +120,31 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         for tool in tools:
             properties = {}
             for key, value in tool.parameters.get("properties", {}).items():
-                properties[key] = {
-                    "type_": glm.Type.STRING,
+                property_def = {
+                    "type": "STRING",
                     "description": value.get("description", ""),
-                    "enum": value.get("enum", []),
                 }
+                if "enum" in value:
+                    property_def["enum"] = value["enum"]
+                properties[key] = property_def
+
             if properties:
-                parameters = glm.Schema(
-                    type=glm.Type.OBJECT, properties=properties, required=tool.parameters.get("required", [])
+                parameters = types.Schema(
+                    type="OBJECT",
+                    properties=properties,
+                    required=tool.parameters.get("required", []),
                 )
             else:
                 parameters = None
-            function_declaration = glm.FunctionDeclaration(
-                name=tool.name, parameters=parameters, description=tool.description
+
+            functions = types.FunctionDeclaration(
+                name=tool.name,
+                parameters=parameters,
+                description=tool.description,
             )
-            function_declarations.append(function_declaration)
-        return glm.Tool(function_declarations=function_declarations)
+            function_declarations.append(functions)
+
+        return types.Tool(function_declarations=function_declarations)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -133,7 +156,13 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         """
         try:
             ping_message = UserPromptMessage(content="ping")
-            self._generate(model, credentials, [ping_message], stream=False, model_parameters={"max_output_tokens": 5})
+            self._generate(
+                model,
+                credentials,
+                [ping_message],
+                stream=False,
+                model_parameters={"max_output_tokens": 5},
+            )
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
@@ -160,125 +189,61 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
-        config_kwargs = model_parameters.copy()
-        if schema := config_kwargs.pop("json_schema", None):
+        conditions = [
+            bool(model_parameters.get("json_schema")),
+            bool(model_parameters.get("grounding")),
+            bool(tools),
+        ]
+        if sum(conditions) >= 2:
+            raise errors.FunctionInvocationError(
+                "gemini not support use multiple features at same time: json_schema, grounding, tools+knowledge"
+            )
+        config = types.GenerateContentConfig()
+        if schema := model_parameters.get("json_schema"):
             try:
                 schema = json.loads(schema)
             except:
-                raise exceptions.InvalidArgument("Invalid JSON Schema")
-            if tools:
-                raise exceptions.InvalidArgument("gemini not support use Tools and JSON Schema at same time")
-            config_kwargs["response_schema"] = schema
-            config_kwargs["response_mime_type"] = "application/json"
+                raise errors.FunctionInvocationError("Invalid JSON Schema")
+            config.response_schema = schema
+            config.response_mime_type = "application/json"
         if stop:
-            config_kwargs["stop_sequences"] = stop
+            config.stop_sequences = stop
+        
+        config.top_p = model_parameters.get("top_p", None)
+        config.top_k = model_parameters.get("top_k", None)
+        config.temperature = model_parameters.get("temperature", None)
+        config.max_output_tokens = model_parameters.get("max_output_tokens", None)
 
-        genai.configure(api_key=credentials["google_api_key"])
+        config.tools = []
+        if model_parameters.get("grounding"):
+            config.tools.append(types.Tool(google_search=types.GoogleSearch()))
+        if tools:
+            config.tools.append(self._convert_tools_to_glm_tool(tools))
+
+        self.client = genai.Client(api_key=credentials["google_api_key"])
 
         history = []
-        system_instruction = None
-
-        for msg in prompt_messages:
-            content = self._format_message_to_glm_content(msg)
-            if history and history[-1]["role"] == content["role"]:
-                history[-1]["parts"].extend(content["parts"])
-            elif content["role"] == "system":
-                system_instruction = content["parts"][0]
+        for msg in prompt_messages:  # makes message roles strictly alternating
+            content = self._format_message_to_glm_content(msg, credentials)
+            if history and history[-1].role == content.role:
+                history[-1].parts.extend(content.parts)
             else:
                 history.append(content)
-        
-        if not history:
-            raise InvokeError("The user prompt message is required. You only add a system prompt message.")
 
-        google_model = genai.GenerativeModel(model_name=model, system_instruction=system_instruction)
-        response = google_model.generate_content(
-            contents=history,
-            generation_config=genai.types.GenerationConfig(**config_kwargs),
-            stream=stream,
-            tools=self._convert_tools_to_glm_tool(tools) if tools else None,
-            request_options={"timeout": 600},
-        )
         if stream:
+            response = self.client.models.generate_content_stream(
+                model=model,
+                contents=history,
+                config=config,
+            )
             return self._handle_generate_stream_response(model, credentials, response, prompt_messages)
+
+        response = self.client.models.generate_content(
+            model=model,
+            contents=history,
+            config=config,
+        )
         return self._handle_generate_response(model, credentials, response, prompt_messages)
-
-    def _handle_generate_response(
-        self, model: str, credentials: dict, response: GenerateContentResponse, prompt_messages: list[PromptMessage]
-    ) -> LLMResult:
-        """
-        Handle llm response
-
-        :param model: model name
-        :param credentials: credentials
-        :param response: response
-        :param prompt_messages: prompt messages
-        :return: llm response
-        """
-        assistant_prompt_message = AssistantPromptMessage(content=response.text)
-        if response.usage_metadata:
-            prompt_tokens = response.usage_metadata.prompt_token_count
-            completion_tokens = response.usage_metadata.candidates_token_count
-        else:
-            prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
-            completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
-        usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
-        result = LLMResult(model=model, prompt_messages=prompt_messages, message=assistant_prompt_message, usage=usage)
-        return result
-
-    def _handle_generate_stream_response(
-        self, model: str, credentials: dict, response: GenerateContentResponse, prompt_messages: list[PromptMessage]
-    ) -> Generator:
-        """
-        Handle llm stream response
-
-        :param model: model name
-        :param credentials: credentials
-        :param response: response
-        :param prompt_messages: prompt messages
-        :return: llm response chunk generator result
-        """
-        index = -1
-        for chunk in response:
-            for part in chunk.parts:
-                assistant_prompt_message = AssistantPromptMessage(content="")
-                if part.text:
-                    assistant_prompt_message.content += part.text
-                if part.function_call:
-                    assistant_prompt_message.tool_calls = [
-                        AssistantPromptMessage.ToolCall(
-                            id=part.function_call.name,
-                            type="function",
-                            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                name=part.function_call.name,
-                                arguments=json.dumps(dict(part.function_call.args.items())),
-                            ),
-                        )
-                    ]
-                index += 1
-                if not response._done:
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(index=index, message=assistant_prompt_message),
-                    )
-                else:
-                    if hasattr(response, "usage_metadata") and response.usage_metadata:
-                        prompt_tokens = response.usage_metadata.prompt_token_count
-                        completion_tokens = response.usage_metadata.candidates_token_count
-                    else:
-                        prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
-                        completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
-                    usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(
-                            index=index,
-                            message=assistant_prompt_message,
-                            finish_reason=str(chunk.candidates[0].finish_reason),
-                            usage=usage,
-                        ),
-                    )
 
     def _convert_one_message_to_text(self, message: PromptMessage) -> str:
         """
@@ -301,42 +266,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         else:
             raise ValueError(f"Got unknown type {message}")
         return message_text
-    
-    def _upload_file_content_to_google(self, message_content: PromptMessageContent) -> File:
-        key = f"{message_content.type.value}:{hash(message_content.data)}"
-        if file_cache.exists(key):
-            try:
-                return genai.get_file(file_cache.get(key))
-            except:
-                pass
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            if message_content.base64_data:
-                file_content = base64.b64decode(message_content.base64_data)
-                temp_file.write(file_content)
-            else:
-                try:
-                    response = requests.get(message_content.url)
-                    response.raise_for_status()
-                    temp_file.write(response.content)
-                except Exception as ex:
-                    raise ValueError(f"Failed to fetch data from url {message_content.url}, {ex}")
-            temp_file.flush()
 
-        file = genai.upload_file(path=temp_file.name, mime_type=message_content.mime_type)
-        while file.state.name == "PROCESSING":
-            time.sleep(5)
-            file = genai.get_file(file.name)
-        # google will delete your upload files in 2 days.
-        file_cache.setex(key, 47 * 60 * 60, file.name)
-
-        try:
-            os.unlink(temp_file.name)
-        except PermissionError:
-            # windows may raise permission error
-            pass
-        return file
-
-    def _format_message_to_glm_content(self, message: PromptMessage) -> ContentType:
+    def _format_message_to_glm_content(self, message: PromptMessage, credentials: dict) -> types.Content:
         """
         Format a single message into glm.Content for Google API
 
@@ -344,89 +275,216 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: glm Content representation of message
         """
         if isinstance(message, UserPromptMessage):
-            glm_content = {"role": "user", "parts": []}
+            glm_content = types.Content(role="user", parts=[])
             if isinstance(message.content, str):
-                glm_content["parts"].append(to_part(message.content))
+                glm_content.parts.append(types.Part.from_text(text=message.content))
             else:
                 for c in message.content:
                     if c.type == PromptMessageContentType.TEXT:
-                        glm_content["parts"].append(to_part(c.data))
+                        glm_content.parts.append(types.Part.from_text(text=c.data))
                     else:
-                        glm_content["parts"].append(self._upload_file_content_to_google(c))
+                        uri, mime_type = self._upload_file_content_to_google(message_content=c, credentials=credentials)
+                        glm_content.parts.append(types.Part.from_uri(file_uri=uri, mime_type=mime_type))
 
             return glm_content
         elif isinstance(message, AssistantPromptMessage):
-            glm_content = {"role": "model", "parts": []}
+            glm_content = types.Content(role="model", parts=[])
             if message.content:
-                glm_content["parts"].append(to_part(message.content))
+                glm_content.parts.append(types.Part.from_text(text=message.content))
             if message.tool_calls:
-                glm_content["parts"].append(
-                    to_part(
-                        glm.FunctionCall(
-                            name=message.tool_calls[0].function.name,
-                            args=json.loads(message.tool_calls[0].function.arguments),
-                        )
+                glm_content.parts.append(
+                    types.Part.from_function_call(
+                        name=message.tool_calls[0].function.name,
+                        args=json.loads(message.tool_calls[0].function.arguments),
                     )
                 )
             return glm_content
         elif isinstance(message, SystemPromptMessage):
-            if isinstance(message.content, list):
-                text_contents = filter(lambda c: isinstance(c, TextPromptMessageContent), message.content)
-                message.content = "".join(c.data for c in text_contents)
-            return {"role": "system", "parts": [to_part(message.content)]}
+            return types.Content(role="user", parts=[types.Part.from_text(text=message.content)])
         elif isinstance(message, ToolPromptMessage):
-            return {
-                "role": "function",
-                "parts": [
-                    glm.Part(
-                        function_response=glm.FunctionResponse(
-                            name=message.name, response={"response": message.content}
-                        )
-                    )
-                ],
-            }
+            return types.Content(
+                role="function",
+                parts=[types.Part.from_function_response(name=message.name, response={"response": message.content})],
+            )
         else:
             raise ValueError(f"Got unknown type {message}")
+
+    def _upload_file_content_to_google(
+        self, message_content: MultiModalPromptMessageContent, credentials: dict
+    ) -> types.File:
+
+        key = f"{message_content.type.value}:{hash(message_content.data)}"
+        if file_cache.exists(key):
+            value = file_cache.get(key).split(";")
+            return value[0], value[1]
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            if message_content.base64_data:
+                file_content = base64.b64decode(message_content.base64_data)
+                temp_file.write(file_content)
+            else:
+                try:
+                    file_url = message_content.url
+                    if "file_url" in credentials and credentials["file_url"]:
+                        file_url = f"{credentials["file_url"].rstrip('/')}/files{message_content.url.split("/files")[-1]}"
+                    if not file_url.startswith("https://") and not file_url.startswith("http://"):
+                        raise ValueError(f"Set FILES_URL env first!")
+                    response = requests.get(file_url)
+                    response.raise_for_status()
+                    temp_file.write(response.content)
+                except Exception as ex:
+                    raise ValueError(
+                        f"Failed to fetch data from url {file_url} {ex}"
+                    )
+            temp_file.flush()
+        file = self.client.files.upload(
+            file=temp_file.name, config={"mime_type": message_content.mime_type}
+        )
+        while file.state.name == "PROCESSING":
+            time.sleep(5)
+            file = self.client.files.get(name=file.name)
+        # google will delete your upload files in 2 days.
+        file_cache.setex(key, 47 * 60 * 60, f"{file.uri};{file.mime_type}")
+
+        try:
+            os.unlink(temp_file.name)
+        except PermissionError:
+            # windows may raise permission error
+            pass
+        return file.uri, file.mime_type
+
+    def _handle_generate_response(
+            self,
+            model: str,
+            credentials: dict,
+            response: types.GenerateContentResponse,
+            prompt_messages: list[PromptMessage],
+    ) -> LLMResult:
+        """
+        Handle llm response
+
+        :param model: model name
+        :param credentials: credentials
+        :param response: response
+        :param prompt_messages: prompt messages
+        :return: llm response
+        """
+        # transform assistant message to prompt message
+        assistant_prompt_message = AssistantPromptMessage(content=response.text)
+
+        # calculate num tokens
+        if response.usage_metadata:
+            prompt_tokens = response.usage_metadata.prompt_token_count
+            completion_tokens = response.usage_metadata.candidates_token_count
+        else:
+            prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
+            completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
+
+        # transform usage
+        usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+
+        # transform response
+        result = LLMResult(
+            model=model,
+            prompt_messages=prompt_messages,
+            message=assistant_prompt_message,
+            usage=usage,
+        )
+
+        return result
+
+    def _handle_generate_stream_response(
+            self,
+            model: str,
+            credentials: dict,
+            response: Iterator[types.GenerateContentResponse],
+            prompt_messages: list[PromptMessage],
+    ) -> Generator:
+        """
+        Handle llm stream response
+
+        :param model: model name
+        :param credentials: credentials
+        :param response: response
+        :param prompt_messages: prompt messages
+        :return: llm response chunk generator result
+        """
+        index = -1
+        for r in response:
+            assistant_prompt_message = AssistantPromptMessage(content="")
+            parts = r.candidates[0].content.parts
+            index += 1
+            for part in parts:
+                if part.text:
+                    assistant_prompt_message.content += part.text
+                elif part.function_call:
+                    assistant_prompt_message.tool_calls = [
+                        AssistantPromptMessage.ToolCall(
+                            id=part.function_call.name,
+                            type="function",
+                            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                name=part.function_call.name,
+                                arguments=json.dumps(dict(part.function_call.args.items())),
+                            ),
+                        )
+                    ]
+                
+                # transform assistant message to prompt message
+                yield LLMResultChunk(
+                    model=model,
+                    prompt_messages=prompt_messages,
+                    delta=LLMResultChunkDelta(index=index, message=assistant_prompt_message)
+                )
+            if r.candidates[0].finish_reason:
+                assistant_prompt_message = AssistantPromptMessage(content="")
+                grounding_metadata = r.candidates[0].grounding_metadata
+                if grounding_metadata and grounding_metadata.search_entry_point:
+                    assistant_prompt_message.content += self._render_grounding_source(grounding_metadata)
+                # calculate num tokens
+                prompt_tokens = r.usage_metadata.prompt_token_count or self.get_num_tokens(
+                    model, credentials, prompt_messages
+                )
+                completion_tokens = r.usage_metadata.candidates_token_count or self.get_num_tokens(
+                    model, credentials, [assistant_prompt_message]
+                )
+                # transform usage
+                usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+                yield LLMResultChunk(
+                    model=model,
+                    prompt_messages=prompt_messages,
+                    delta=LLMResultChunkDelta(
+                        index=index,
+                        message=assistant_prompt_message,
+                        finish_reason=str(r.candidates[0].finish_reason),
+                        usage=usage,
+                    ),
+                )
+
+    def _render_grounding_source(self, grounding_metadata: types.GroundingMetadata) -> str:
+        """
+        Render google search source links
+        """
+        result = "\n\n**Search Sources:**\n"
+        for index, entry in enumerate(grounding_metadata.grounding_chunks, start=1):
+            result += f"{index}. [{entry.web.title}]({entry.web.uri})\n"
+        return result
+                
 
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
         """
         Map model invoke error to unified error
-        The key is the ermd = genai.GenerativeModel(model) error type thrown to the caller
-        The value is the md = genai.GenerativeModel(model) error type thrown by the model,
-        which needs to be converted into a unified error type for the caller.
-
-        :return: Invoke emd = genai.GenerativeModel(model) error mapping
         """
         return {
-            InvokeConnectionError: [exceptions.RetryError],
+            InvokeConnectionError: [errors.APIError],
             InvokeServerUnavailableError: [
-                exceptions.ServiceUnavailable,
-                exceptions.InternalServerError,
-                exceptions.BadGateway,
-                exceptions.GatewayTimeout,
-                exceptions.DeadlineExceeded,
+                errors.ServerError,
             ],
-            InvokeRateLimitError: [exceptions.ResourceExhausted, exceptions.TooManyRequests],
-            InvokeAuthorizationError: [
-                exceptions.Unauthenticated,
-                exceptions.PermissionDenied,
-                exceptions.Unauthenticated,
-                exceptions.Forbidden,
-            ],
+            InvokeRateLimitError: [],
+            InvokeAuthorizationError: [],
             InvokeBadRequestError: [
-                exceptions.BadRequest,
-                exceptions.InvalidArgument,
-                exceptions.FailedPrecondition,
-                exceptions.OutOfRange,
-                exceptions.NotFound,
-                exceptions.MethodNotAllowed,
-                exceptions.Conflict,
-                exceptions.AlreadyExists,
-                exceptions.Aborted,
-                exceptions.LengthRequired,
-                exceptions.PreconditionFailed,
-                exceptions.RequestRangeNotSatisfiable,
-                exceptions.Cancelled,
+                errors.ClientError,
+                errors.UnknownFunctionCallArgumentError,
+                errors.UnsupportedFunctionError,
+                errors.FunctionInvocationError,
             ],
         }

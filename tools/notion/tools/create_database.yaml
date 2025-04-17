@@ -1,0 +1,74 @@
+identity:
+  name: create_database
+  author: langgenius
+  label:
+    en_US: Create Notion Database
+    zh_Hans: 创建 Notion 数据库
+    pt_BR: Criar Banco de Dados do Notion
+    ja_JP: Notion データベースを作成
+    zh_Hant: 建立 Notion 資料庫
+description:
+  human:
+    en_US: Create a new database in Notion with custom properties
+    zh_Hans: 在 Notion 中创建具有自定义属性的新数据库
+    pt_BR: Criar um novo banco de dados no Notion com propriedades personalizadas
+    ja_JP: カスタムプロパティを持つ新しい Notion データベースを作成します
+    zh_Hant: 在 Notion 中建立具有自定義屬性的新資料庫
+  llm: Create a new database in Notion with specified properties. The database will be created as a child of a specified parent page.
+parameters:
+  - name: parent_page_id
+    type: string
+    required: true
+    label:
+      en_US: Parent Page ID
+      zh_Hans: 父页面 ID
+      pt_BR: ID da Página Pai
+      ja_JP: 親ページ ID
+      zh_Hant: 父頁面 ID
+    human_description:
+      en_US: The ID of the parent page where the database will be created
+      zh_Hans: 数据库将被创建在哪个父页面中
+      pt_BR: O ID da página pai onde o banco de dados será criado
+      ja_JP: データベースが作成される親ページの ID
+      zh_Hant: 資料庫將被建立在哪個父頁面中
+    llm_description: The ID of the parent page where the database will be created. Must be a page ID (not a database ID) and the page must be shared with your integration.
+    form: llm
+  - name: title
+    type: string
+    required: true
+    label:
+      en_US: Database Title
+      zh_Hans: 数据库标题
+      pt_BR: Título do Banco de Dados
+      ja_JP: データベースタイトル
+      zh_Hant: 資料庫標題
+    human_description:
+      en_US: Title for the new database
+      zh_Hans: 新数据库的标题
+      pt_BR: Título para o novo banco de dados
+      ja_JP: 新しいデータベースのタイトル
+      zh_Hant: 新資料庫的標題
+    llm_description: Title for the new database. This will be displayed at the top of the database in Notion.
+    form: llm
+  - name: properties
+    type: string
+    required: true
+    label:
+      en_US: Database Properties
+      zh_Hans: 数据库属性
+      pt_BR: Propriedades do Banco de Dados
+      ja_JP: データベースプロパティ
+      zh_Hant: 資料庫屬性
+    human_description:
+      en_US: Properties definition for the database in JSON format
+      zh_Hans: 数据库属性定义（JSON 格式）
+      pt_BR: Definição de propriedades para o banco de dados em formato JSON
+      ja_JP: データベースのプロパティ定義（JSON 形式）
+      zh_Hant: 資料庫屬性定義（JSON 格式）
+    llm_description: |
+      Properties definition for the database in JSON format. Example: 
+      {"Name":{"title":{}},"Description":{"rich_text":{}},"Status":{"select":{"options":[{"name":"Not started"},{"name":"In progress"},{"name":"Done"}]}},"Due Date":{"date":{}}}
+    form: llm
+extra:
+  python:
+    source: tools/create_database.py 

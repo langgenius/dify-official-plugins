@@ -34,6 +34,16 @@ parameter_rules:
     max: 8192
   - name: json_schema
     use_template: json_schema
+  - name: grounding
+    label:
+      en_US: Grounding
+      ja_JP: Grounding
+    type: boolean
+    help:
+      en_US: ensures responses are based on Google Search.
+      ja_JP: Google検索に基づいた応答をします。
+    required: true
+    default: false
 pricing:
   input: '0.00'
   output: '0.00'
