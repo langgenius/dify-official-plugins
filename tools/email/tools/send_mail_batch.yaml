@@ -27,6 +27,17 @@ parameters:
     type: string
   - form: llm
     human_description:
+      en_US: Reply-to email address
+      zh_Hans: 回复电子邮件地址
+    label:
+      en_US: Reply-to email address
+      zh_Hans: 回复电子邮件地址
+    llm_description: Reply-to email address
+    name: reply_to
+    required: false
+    type: string
+  - form: llm
+    human_description:
       en_US: Carbon copy email account
       zh_Hans: 抄送邮箱账号
     label:
