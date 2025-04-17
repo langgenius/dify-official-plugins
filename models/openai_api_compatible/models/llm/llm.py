@@ -50,8 +50,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 required=False,
             ))
             entity.parameter_rules.append(ParameterRule(
-                name="json_schema",
-                use_template="json_schema"
+                name=DefaultParameterName.JSON_SCHEMA.value,
+                use_template=DefaultParameterName.JSON_SCHEMA.value
             ))
 
         if "display_name" in credentials and credentials["display_name"] != "":
