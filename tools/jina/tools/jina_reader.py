@@ -33,6 +33,8 @@ class JinaReaderTool(Tool):
         wait_for_selector = tool_parameters.get("wait_for_selector")
         if wait_for_selector is not None and wait_for_selector != "":
             headers["X-Wait-For-Selector"] = wait_for_selector
+        if tool_parameters.get("remove_images", False):
+            headers["X-Retain-Images"] = "none"
         if tool_parameters.get("image_caption", False):
             headers["X-With-Generated-Alt"] = "true"
         if tool_parameters.get("gather_all_links_at_the_end", False):
@@ -44,6 +46,8 @@ class JinaReaderTool(Tool):
             headers["X-Proxy-Url"] = proxy_server
         if tool_parameters.get("no_cache", False):
             headers["X-No-Cache"] = "true"
+        if tool_parameters.get("no_cache_track", False):
+            headers["DNT"] = "1"
         # max_retries = tool_parameters.get("max_retries", 3)
         response = requests.get(
             str(URL(self._jina_reader_endpoint + url)),
