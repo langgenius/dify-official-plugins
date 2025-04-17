@@ -9,7 +9,7 @@ credentials_for_provider:
       ja_JP: MinerUサーバのBase URLを入力してください
       zh_Hans: 请输入你的 MinerU 服务的 Base URL
     required: true
-    type: secret-input
+    type: text-input
   token:
     label:
       en_US: Token

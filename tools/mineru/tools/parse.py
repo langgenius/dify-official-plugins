@@ -7,9 +7,10 @@ import time
 import zipfile
 from collections.abc import Generator
 from dataclasses import dataclass
-from typing import Any, Dict
+from typing import Any, Dict, List, Optional
 
 import httpx
+from dify_plugin.invocations.file import UploadFileResponse
 from requests import post,get,put
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
@@ -24,6 +25,20 @@ class Credentials:
     token: str
     server_type: str
 
+@dataclass
+class ZipContent:
+    md_content: str = ""
+    content_list: List[Dict[str, Any]] = None
+    images: List[UploadFileResponse] = None
+    html_content: Optional[str] = None
+    docx_content: Optional[bytes] = None
+    latex_content: Optional[str] = None
+
+    def __post_init__(self):
+        if self.content_list is None:
+            self.content_list = []
+        if self.images is None:
+            self.images = []
 
 class MineruTool(Tool):
 
@@ -121,7 +136,11 @@ class MineruTool(Tool):
                 "image/jpeg"
             )
             images.append(file_res)
+            if not file_res.preview_url:
+                yield self.create_blob_message(image_bytes, meta={"filename": file_name, "mime_type": "image/jpeg"})
 
+
+        md_content = self._replace_md_img_path(md_content, images)
         yield self.create_variable_message("images", images)
         yield self.create_text_message(md_content)
         yield self.create_json_message({"content_list": content_list})
@@ -137,6 +156,7 @@ class MineruTool(Tool):
             "enable_table": tool_parameters.get("enable_table", True),
             "language": tool_parameters.get("language", "auto"),
             "layout_model": tool_parameters.get("layout_model", "doclayout_yolo"),
+            "extra_formats": json.loads(tool_parameters.get("extra_formats", "[]")),
             "files": [
                 {"name": file.filename, "is_ocr": tool_parameters.get("enable_ocr",False)}
             ]
@@ -164,16 +184,8 @@ class MineruTool(Tool):
 
             extract_result = self._poll_get_parse_result(credentials, batch_id)
 
-            zip_result = self._download_and_extract_zip(extract_result.get("full_zip_url"))
-
-            md_content = zip_result.get("md_content", "")
-            content_list = zip_result.get("content_list", [])
-            images = zip_result.get("images", [])
-            md_content = self._replace_md_img_path(md_content, images)
-
-            yield self.create_text_message(md_content)
-            yield self.create_json_message({"content_list": content_list,"full_zip_url":extract_result.get("full_zip_url")})
-            yield self.create_variable_message("images", images)
+            yield from self._download_and_extract_zip(extract_result.get("full_zip_url"))
+            yield self.create_variable_message("full_zip_url", extract_result.get("full_zip_url"))
         else:
             logger.error('apply upload url failed,reason:{}'.format(result.msg))
             raise Exception('apply upload url failed,reason:{}'.format(result.msg))
@@ -206,42 +218,62 @@ class MineruTool(Tool):
         logger.error("Polling timeout reached without getting completed result")
         raise TimeoutError("Parse operation timed out")
 
-    def _download_and_extract_zip(self, url: str) -> dict[str, Any]:
+    def _download_and_extract_zip(self, url: str) -> Generator[ToolInvokeMessage, None, None]:
         """Download and extract zip file from URL."""
         response = httpx.get(url)
         response.raise_for_status()
-        zip_content = response.content
-        images = []
-        md_content = ""
-        content_list = []
-        with zipfile.ZipFile(io.BytesIO(zip_content)) as zip_file:
-            for file_info in zip_file.infolist():
-                file_name = file_info.filename
-                if not file_info.is_dir():
-                    if file_name.lower().startswith("images/") and file_name.lower().endswith(('.png', '.jpg', '.jpeg')):
-                            with zip_file.open(file_info) as image_file:
-                                image_content = image_file.read()
-                                base_name = os.path.basename(file_name)
-                                file_res = self.session.file.upload(
-                                    base_name,
-                                    image_content,
-                                    "image/jpeg"
-                                )
-                                images.append(file_res)
-                    elif file_name.lower() == "full.md":
-                        with zip_file.open(file_info) as md_file:
-                            md_content = md_file.read().decode('utf-8')
-                    elif file_name.lower().endswith('.json') and file_name.lower()!="layout.json":
-                        with zip_file.open(file_info) as json_file:
-                            json_content = json_file.read().decode('utf-8')
-                            content_list.append(json.loads(json_content))
 
-        return {"md_content": md_content, "content_list": content_list, "images": images}
+        content = ZipContent()
+
+        with zipfile.ZipFile(io.BytesIO(response.content)) as zip_file:
+            for file_info in zip_file.infolist():
+                if file_info.is_dir():
+                    continue
+
+                file_name = file_info.filename.lower()
+                with zip_file.open(file_info) as f:
+                    if file_name.startswith("images/") and file_name.endswith(('.png', '.jpg', '.jpeg')):
+                        upload_file_res = self._process_image(f, file_info)
+                        content.images.append(upload_file_res)
+                        if not upload_file_res.preview_url:
+                            yield self.create_blob_message(f.read(),
+                                                           meta={"filename": file_name, "mime_type": "image/jpeg"})
+                    elif file_name.endswith(".md"):
+                        content.md_content = f.read().decode('utf-8')
+                    elif file_name.endswith('.json') and file_name != "layout.json":
+                        content.content_list.append(json.loads(f.read().decode('utf-8')))
+                    elif file_name.endswith('.html'):
+                        content.html_content = f.read().decode('utf-8')
+                        yield self.create_blob_message(content.html_content,
+                                                       meta={"filename":file_name,"mime_type":"text/html"})
+                    elif file_name.endswith('.docx'):
+                        content.docx_content = f.read()
+                        yield self.create_blob_message(content.docx_content,
+                                                       meta={"filename":file_name,"mime_type":"application/msword"})
+                    elif file_name.endswith('.tex'):
+                        content.latex_content = f.read().decode('utf-8')
+                        yield self.create_blob_message(content.latex_content,
+                                                       meta={"filename":file_name,"mime_type":"application/x-tex"})
+        yield self.create_json_message({"content_list": content.content_list})
+        content.md_content = self._replace_md_img_path(content.md_content, content.images)
+        yield self.create_text_message(content.md_content)
+        yield self.create_variable_message("images", content.images)
+
+    def _process_image(self, image_file, file_info: zipfile.ZipInfo) -> UploadFileResponse:
+        """Process an image file from the zip archive."""
+        image_content = image_file.read()
+        base_name = os.path.basename(file_info.filename)
+        return self.session.file.upload(
+            base_name,
+            image_content,
+            "image/jpeg"
+        )
 
     @staticmethod
-    def _replace_md_img_path(md_content: str, images: list) -> str:
+    def _replace_md_img_path(md_content: str, images: list[UploadFileResponse]) -> str:
         for image in images:
-            md_content = md_content.replace("images/"+image.name, image.preview_url)
+            if image.preview_url:
+                md_content = md_content.replace("images/"+image.name, image.preview_url)
         return md_content
 
     def parser_pdf(

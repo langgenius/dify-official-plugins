@@ -144,6 +144,20 @@ parameters:
       ja_JP: （公式API用）OCR認識を有効にするかどうか
     llm_description: (For official API) Whether to enable OCR recognition
     form: form
+  - name: extra_formats
+    type: string
+    required: false
+    default: "[]"
+    label:
+      zh_Hans: 额外导出格式
+      en_US: Extra export formats
+      ja_JP: 追加のエクスポート形式
+    human_description:
+      zh_Hans: '（用于官方API）示例：["docx","html"],markdown、json为默认导出格式，无须设置，该参数仅支持docx、html、latex三种格式中的一个或多个'
+      en_US: '(For official API) Example: ["docx","html"], markdown, json are the default export formats, no need to set, this parameter only supports one or more of docx, html, latex'
+      ja_JP: '（公式API用）例：["docx","html"]、markdown、jsonはデフォルトのエクスポート形式であり、設定する必要はありません。このパラメータは、docx、html、latexの3つの形式のいずれかまたは複数のみをサポートします'
+    llm_description: '(For official API) Example: ["docx","html"], markdown, json are the default export formats, no need to set, this parameter only supports one or more of docx, html, latex'
+    form: form
 output_schema:
     type: object
     properties:
@@ -151,6 +165,10 @@ output_schema:
         type: array
         items:
           type: object
+        description: The images extracted from the PDF
+      full_zip_url:
+        type: string
+        description: The zip URL of the complete parsed result
 extra:
   python:
     source: tools/parse.py
