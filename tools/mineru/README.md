@@ -17,7 +17,7 @@ MinerU is a tool that converts PDFs into machine-readable formats (e.g., markdow
 
 MinerU is a document parser that can parse complex document data for any downstream LLM use case (RAG, agents)
 
-[GitHub - opendatalab/MinerU: A high-quality tool for convert PDF to Markdown and JSON.一站式开源高质量数据提取工具，将PDF转换成Markdown和JSON格式。](https://github.com/opendatalab/MinerU)
+[GitHub - opendatalab/MinerU: A high-quality tool for convert PDF to Markdown and JSON.](https://github.com/opendatalab/MinerU)
 
 ## Key Features
 
@@ -46,14 +46,14 @@ The version 0.0.2 can now support the official API of MinerU.
 
 ### Input Parameters
 
-| 参数                         | 类型       | 是否必选 | 示例              | 描述                                                                                                                                                                                                                                                 |
-|:--------------------------:| -------- | ---- | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| enable formula recognition | bool     | 否    | true            | 是否开启公式识别，默认 true                                                                                                                                                                                                                                   |
-| enable table recognition   | bool     | 否    | true            | 是否开启表格识别，默认 true                                                                                                                                                                                                                                   |
-| layout model               | string   | 否    | doclayout_yolo  | 可选值：doclayout_yolo、layoutlmv3，默认值为 doclayout_yolo。doclayout_yolo 为自研模型，效果更好                                                                                                                                                                        |
-| document language          | string   | 否    | ch              | 指定文档语言，默认 ch，可以设置为auto，当为auto时模型会自动识别文档语言，其他可选值列表详见：[](https://paddlepaddle.github.io/PaddleOCR/latest/ppocr/blog/multi_languages.html#5)[多语言模型 - PaddleOCR 文档](https://paddlepaddle.github.io/PaddleOCR/latest/ppocr/blog/multi_languages.html#5) |
-| enable ocr recognition     | bool     | 否    | true            | 是否启动 ocr 功能，默认 false                                                                                                                                                                                                                               |
-| extra export formats       | [string] | 否    | ["docx","html"] | markdown、json为默认导出格式，无须设置，该参数仅支持docx、html、latex三种格式中的一个或多个                                                                                                                                                                                         |
+| parameter                  | type     | required | example         | description                                                                                                                                                                                                                                                                                                                                                                              |
+|:--------------------------:| -------- | -------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| enable formula recognition | bool     | false    | true            | Whether to enable formula recognition, the default is true                                                                                                                                                                                                                                                                                                                               |
+| enable table recognition   | bool     | false    | true            | Whether to enable table recognition, the default is true                                                                                                                                                                                                                                                                                                                                 |
+| layout model               | string   | false    | doclayout_yolo  | Optional value: doclayout_yolo, layoutlmv3, the default value is doclayout_yolo. doclayout_yolo is a self-developed model, the effect is better                                                                                                                                                                                                                                          |
+| document language          | string   | false    | ch              | Specify the document language, the default ch, can be set to auto, when it is auto, the model will automatically recognize the document language, see the list of other optional values for details：[](https://paddlepaddle.github.io/PaddleOCR/latest/ppocr/blog/multi_languages.html#5)[PaddleOCR ](https://paddlepaddle.github.io/PaddleOCR/latest/ppocr/blog/multi_languages.html#5) |
+| enable ocr recognition     | bool     | false    | true            | Whether to start the ocr function, the default is false                                                                                                                                                                                                                                                                                                                                  |
+| extra export formats       | [string] | false    | ["docx","html"] | Markdown and json are the default export formats without setting. This parameter only supports one or more of the three formats of docx, html, and latex.                                                                                                                                                                                                                                |
 
 ![](./_assets/mineru3.jpg)
 
@@ -106,8 +106,6 @@ as above
 ![](./_assets/mineru6.jpg)
 
 ![](./_assets/mineru7.jpg)
-
-
 
 https://github.com/langgenius/dify/issues/16327
 
