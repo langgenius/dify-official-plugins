@@ -48,8 +48,8 @@ identity:
   author: langgenius
   name: mineru
   label:
-    en_US: MinerU2
-    zh_Hans: MinerU2
+    en_US: MinerU
+    zh_Hans: MinerU
     ja_JP: MinerU
   description:
     en_US: MinerU is a tool that converts PDFs into machine-readable formats (e.g., markdown, JSON), allowing for easy extraction into any format. MinerU was born during the pre-training process of InternLM. We focus on solving symbol conversion issues in scientific literature and hope to contribute to technological development in the era of large models.https://github.com/opendatalab/MinerU
