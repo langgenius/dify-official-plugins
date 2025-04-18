@@ -233,11 +233,13 @@ class MineruTool(Tool):
                 file_name = file_info.filename.lower()
                 with zip_file.open(file_info) as f:
                     if file_name.startswith("images/") and file_name.endswith(('.png', '.jpg', '.jpeg')):
-                        upload_file_res = self._process_image(f, file_info)
+                        image_bytes = f.read()
+                        upload_file_res = self._process_image(image_bytes, file_info)
                         content.images.append(upload_file_res)
                         if not upload_file_res.preview_url:
-                            yield self.create_blob_message(f.read(),
-                                                           meta={"filename": file_name, "mime_type": "image/jpeg"})
+                            base_name = os.path.basename(file_info.filename)
+                            yield self.create_blob_message(image_bytes,
+                                                           meta={"filename": base_name, "mime_type": "image/jpeg"})
                     elif file_name.endswith(".md"):
                         content.md_content = f.read().decode('utf-8')
                     elif file_name.endswith('.json') and file_name != "layout.json":
@@ -259,13 +261,12 @@ class MineruTool(Tool):
         yield self.create_text_message(content.md_content)
         yield self.create_variable_message("images", content.images)
 
-    def _process_image(self, image_file, file_info: zipfile.ZipInfo) -> UploadFileResponse:
+    def _process_image(self, image_bytes:bytes, file_info: zipfile.ZipInfo) -> UploadFileResponse:
         """Process an image file from the zip archive."""
-        image_content = image_file.read()
         base_name = os.path.basename(file_info.filename)
         return self.session.file.upload(
             base_name,
-            image_content,
+            image_bytes,
             "image/jpeg"
         )
 
