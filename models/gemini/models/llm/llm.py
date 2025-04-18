@@ -24,24 +24,16 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
 )
-from dify_plugin.errors.model import (
-    CredentialsValidateFailedError,
-    InvokeAuthorizationError,
-    InvokeBadRequestError,
-    InvokeConnectionError,
-    InvokeError,
-    InvokeRateLimitError,
-    InvokeServerUnavailableError,
-)
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 
+from ..common_gemini import _CommonGemini
 from .utils import FileCache
 
 
 file_cache = FileCache()
 
 
-class GoogleLargeLanguageModel(LargeLanguageModel):
+class GoogleLargeLanguageModel(_CommonGemini, LargeLanguageModel):
     def _invoke(
         self,
         model: str,
@@ -469,22 +461,3 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         return result
                 
 
-    @property
-    def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
-        """
-        Map model invoke error to unified error
-        """
-        return {
-            InvokeConnectionError: [errors.APIError],
-            InvokeServerUnavailableError: [
-                errors.ServerError,
-            ],
-            InvokeRateLimitError: [],
-            InvokeAuthorizationError: [],
-            InvokeBadRequestError: [
-                errors.ClientError,
-                errors.UnknownFunctionCallArgumentError,
-                errors.UnsupportedFunctionError,
-                errors.FunctionInvocationError,
-            ],
-        }
