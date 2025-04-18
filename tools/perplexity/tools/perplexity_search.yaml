@@ -48,17 +48,9 @@ parameters:
       zh_Hans: sonar-reasoning-pro
     value: sonar-reasoning-pro
   - label:
-      en_US: llama-3.1-sonar-small-128k-online
-      zh_Hans: llama-3.1-sonar-small-128k-online
-    value: llama-3.1-sonar-small-128k-online
-  - label:
-      en_US: llama-3.1-sonar-large-128k-online
-      zh_Hans: llama-3.1-sonar-large-128k-online
-    value: llama-3.1-sonar-large-128k-online
-  - label:
-      en_US: llama-3.1-sonar-huge-128k-online
-      zh_Hans: llama-3.1-sonar-huge-128k-online
-    value: llama-3.1-sonar-huge-128k-online
+      en_US: sonar-deep-research
+      zh_Hans: sonar-deep-research
+    value: sonar-deep-research
   required: false
   type: select
 - default: 4096
@@ -148,22 +140,33 @@ parameters:
   required: false
   step: 0.1
   type: number
-- default: true
+- default: false
   form: form
   human_description:
-    en_US: Whether to return citations in the response.
-    zh_Hans: 是否在响应中返回引用。
+    en_US: Whether to return images in the response.
+    zh_Hans: 是否在响应中返回图像。
   label:
-    en_US: Return Citations
-    zh_Hans: 返回引用
-  name: return_citations
+    en_US: Return Images
+    zh_Hans: 返回图像
+  name: return_images
+  required: false
+  type: boolean
+- default: false
+  form: form
+  human_description:
+    en_US: Whether to return related questions in the response.
+    zh_Hans: 是否在响应中返回相关问题。
+  label:
+    en_US: Return Related Questions
+    zh_Hans: 返回相关问题
+  name: return_related_questions
   required: false
   type: boolean
 - default: ''
   form: form
   human_description:
-    en_US: Domain to filter the search results.
-    zh_Hans: 用于过滤搜索结果的域名。
+    en_US: Domain to filter the search results. Use comma to separate multiple domains. Up to 3 domains are supported.
+    zh_Hans: 用于过滤搜索结果的域名。使用逗号分隔多个域名。最多支持3个域名。
   label:
     en_US: Search Domain Filter
     zh_Hans: 搜索域过滤器
@@ -197,4 +200,27 @@ parameters:
       zh_Hans: 年
     value: year
   required: false
+  type: select
+- default: low
+  form: form
+  human_description:
+    en_US: Determines how much search context is retrieved for the model.
+    zh_Hans: 确定模型检索的搜索上下文量。
+  label:
+    en_US: Search Context Size
+    zh_Hans: 搜索上下文大小
+  name: search_context_size
+  options:
+  - label:
+      en_US: Low
+      zh_Hans: 低
+    value: low
+  - label:
+      en_US: Medium
+      zh_Hans: 中等
+    value: medium
+  - label:
+      en_US: High
+      zh_Hans: 高
+    value: high
   type: select

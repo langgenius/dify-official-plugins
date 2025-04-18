@@ -1,3 +1,2 @@
-dify_plugin==0.0.1b65
-yfinance==0.2.54
-pandas==2.2.3
+dify_plugin>=0.1.0,<0.2.0
+yfinance==0.2.55

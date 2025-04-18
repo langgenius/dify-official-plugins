@@ -93,6 +93,10 @@ parameters:
           zh_Hans: 一天内
         value: day
       - label:
+          en_US: In a week
+          zh_Hans: 一周内
+        value: week
+      - label:
           en_US: In a month
           zh_Hans: 一个月内
         value: month

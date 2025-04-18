@@ -10,7 +10,7 @@ features:
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 32768
+  context_size: 131072
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -81,7 +81,7 @@ parameter_rules:
   - name: response_format
     use_template: response_format
 pricing:
-  input: '0.02'
-  output: '0.06'
+  input: '0.0024'
+  output: '0.0096'
   unit: '0.001'
   currency: RMB
