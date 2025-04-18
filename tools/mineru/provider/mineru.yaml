@@ -21,6 +21,7 @@ credentials_for_provider:
       zh_Hans: 请输入你的 MinerU 服务的令牌
     required: false
     type: secret-input
+    url: https://mineru.net/apiManage/token
   server_type:
     label:
       en_US: Server Type

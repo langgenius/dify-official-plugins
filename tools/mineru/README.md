@@ -1,6 +1,6 @@
 # MinerU Dify Plugin
 
-## What's New in v0.0.2?
+## What's New?
 
 - Support the official API of MinerU
   ![](./_assets/mineru8.jpg)
@@ -10,6 +10,12 @@
 - Supports more export formats (HTML, DOC, LaTeX). The download links for the additional formats will be stored in the `files` of the output variables.
   
   ![](./_assets/mineru1.jpg)
+  
+  
+
+## DEMO DSL
+[demo_dsl.yml](./_assets/mineru_demo.yml)
+
 
 ## GitHub
 
