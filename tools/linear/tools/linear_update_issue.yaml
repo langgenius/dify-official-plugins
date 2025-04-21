@@ -1,0 +1,107 @@
+identity:
+  name: linear_update_issue
+  author: langgenius
+  label:
+    en_US: Update Linear Issue
+    zh_Hans: 更新 Linear 问题
+    pt_BR: Atualizar problema no Linear
+    ja_JP: Linear 課題を更新
+    zh_Hant: 更新 Linear 問題
+description:
+  human:
+    en_US: Update an existing issue in Linear with new title, description, priority, or status.
+    zh_Hans: 使用新的标题、描述、优先级或状态更新 Linear 中的现有问题。
+    pt_BR: Atualizar um problema existente no Linear com novo título, descrição, prioridade ou status.
+    ja_JP: 新しいタイトル、説明、優先度、またはステータスで Linear の既存の課題を更新します。
+    zh_Hant: 使用新的標題、描述、優先級或狀態更新 Linear 中的現有問題。
+  llm: Updates an existing Linear issue's properties. Requires the issue ID and accepts any combination of updatable fields including title, description, priority, or status.
+parameters:
+  - name: id
+    type: string
+    required: true
+    label:
+      en_US: Issue ID
+      zh_Hans: 问题 ID
+      pt_BR: ID do Problema
+      ja_JP: 課題ID
+      zh_Hant: 問題 ID
+    human_description:
+      en_US: ID of the issue to update
+      zh_Hans: 要更新的问题的 ID
+      pt_BR: ID do problema a ser atualizado
+      ja_JP: 更新する課題のID
+      zh_Hant: 要更新的問題的 ID
+    llm_description: The unique identifier of the issue to update
+    form: llm
+  - name: title
+    type: string
+    required: false
+    label:
+      en_US: New Title
+      zh_Hans: 新标题
+      pt_BR: Novo Título
+      ja_JP: 新しいタイトル
+      zh_Hant: 新標題
+    human_description:
+      en_US: New title for the issue
+      zh_Hans: 问题的新标题
+      pt_BR: Novo título para o problema
+      ja_JP: 課題の新しいタイトル
+      zh_Hant: 問題的新標題
+    llm_description: New title for the issue (leave empty to keep current title)
+    form: llm
+  - name: description
+    type: string
+    required: false
+    label:
+      en_US: New Description
+      zh_Hans: 新描述
+      pt_BR: Nova Descrição
+      ja_JP: 新しい説明
+      zh_Hant: 新描述
+    human_description:
+      en_US: New description for the issue (Markdown supported)
+      zh_Hans: 问题的新描述（支持 Markdown）
+      pt_BR: Nova descrição para o problema (Markdown suportado)
+      ja_JP: 課題の新しい説明（Markdown対応）
+      zh_Hant: 問題的新描述（支持 Markdown）
+    llm_description: New description for the issue, supporting Markdown formatting (leave empty to keep current description)
+    form: llm
+  - name: priority
+    type: number
+    required: false
+    label:
+      en_US: New Priority
+      zh_Hans: 新优先级
+      pt_BR: Nova Prioridade
+      ja_JP: 新しい優先度
+      zh_Hant: 新優先級
+    human_description:
+      en_US: New priority for the issue (0-4, where 0 is no priority and 1 is urgent)
+      zh_Hans: 问题的新优先级（0-4，其中 0 表示无优先级，1 表示紧急）
+      pt_BR: Nova prioridade para o problema (0-4, onde 0 é sem prioridade e 1 é urgente)
+      ja_JP: 課題の新しい優先度（0-4、0は優先度なし、1は緊急）
+      zh_Hant: 問題的新優先級（0-4，其中 0 表示無優先級，1 表示緊急）
+    llm_description: New priority level of the issue (0=No priority, 1=Urgent, 2=High, 3=Normal, 4=Low)
+    form: llm
+  - name: status
+    type: string
+    required: false
+    label:
+      en_US: New Status
+      zh_Hans: 新状态
+      pt_BR: Novo Status
+      ja_JP: 新しいステータス
+      zh_Hant: 新狀態
+    human_description:
+      en_US: "New status for the issue (e.g., \"Todo\", \"In Progress\", \"Done\")"
+      zh_Hans: "问题的新状态（例如，\"待办\"，\"进行中\"，\"已完成\"）"
+      pt_BR: "Novo status para o problema (ex: \"A fazer\", \"Em andamento\", \"Concluído\")"
+      ja_JP: "課題の新しいステータス（例：「未着手」、「進行中」、「完了」）"
+      zh_Hant: "問題的新狀態（例如，\"待辦\"，\"進行中\"，\"已完成\"）"
+    llm_description: New workflow state ID of the issue
+    form: llm
+extra:
+  python:
+    source: tools/linear_update_issue.py
+    class: LinearUpdateIssueTool 
