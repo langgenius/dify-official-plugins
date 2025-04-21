@@ -2,196 +2,166 @@ from typing import Dict, Any, Generator
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from .linear_client import LinearClient, LinearQueryException
+from client import Linear  # Use the client from the client directory
+from client.Exceptions import LinearApiException, LinearAuthenticationException, LinearResourceNotFoundException # Import standard exceptions
 
 
 class LinearUpdateIssueTool(Tool):
     """Tool for updating issues in Linear."""
 
-    def __init__(self, **kwargs):
-        """Initialize the tool with Linear client.
-        
-        Args:
-            **kwargs: Additional arguments passed to the parent class.
-        """
-        super().__init__(**kwargs)
-        self.client = None
-
-    def _get_linear_client(self) -> LinearClient:
-        """Get configured Linear client.
-        
-        Returns:
-            Configured LinearClient instance
-        """
-        if not hasattr(self, 'runtime') or not self.runtime:
-            raise ValueError("Runtime is not available")
-        
-        credentials = self.runtime.credentials or {}
-        api_key = credentials.get('linear_api_key', '')
-        
-        if not api_key:
-            raise ValueError("LINEAR_API_KEY is required.")
-            
-        return LinearClient(api_key=api_key)
-
-    def _invoke(self, params: Dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
+    def _invoke(self, tool_parameters: Dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """Update an existing issue in Linear.
 
         Args:
-            params: Dictionary containing issueId and optional parameters like title,
+            tool_parameters: Dictionary containing issueId and optional parameters like title,
                    description, state, assigneeId, priority, and labels.
 
         Yields:
             A message with the result of the issue update.
         """
+        # Check credentials first
+        if "linear_api_key" not in self.runtime.credentials or not self.runtime.credentials.get("linear_api_key"):
+            yield self.create_text_message("Linear API Key is required.")
+            return
+        
+        api_key = self.runtime.credentials.get("linear_api_key")
+
         try:
-            # Initialize the client
-            self.client = self._get_linear_client()
+            # Initialize the client inside _invoke
+            linear_client = Linear(api_key)
             
-            # Extract parameters
-            issue_id = params.get('issueId', '').strip()
-            title = params.get('title')
-            description = params.get('description')
-            state_id = params.get('stateId', '').strip() if params.get('stateId') else None
-            assignee_id = params.get('assigneeId', '').strip() if params.get('assigneeId') is not None else None
-            priority = params.get('priority')
-            labels = params.get('labels', [])
+            # Extract parameters - Use 'id' to match YAML
+            issue_id = tool_parameters.get('id', '').strip()
+            title = tool_parameters.get('title')
+            description = tool_parameters.get('description')
+            # Status is handled by stateId in the API
+            state_id = tool_parameters.get('status') # Get status ID (from YAML 'status' param)
+            assignee_id_param = tool_parameters.get('assigneeId') # Keep as None if not provided
+            priority_param = tool_parameters.get('priority') # Keep as None if not provided
+            labels = tool_parameters.get('labels') # Expecting list of IDs or None
             
-            # Validate required parameters
+            # Validate required issue ID
             if not issue_id:
-                yield self.create_text_message("Error: issueId is required")
+                yield self.create_text_message("Error: Issue ID ('id') is required.")
                 return
             
-            # Return error if no update fields are provided
-            if not any([title is not None, description is not None, state_id, assignee_id is not None, priority is not None, labels]):
-                yield self.create_text_message("Error: At least one field to update must be provided")
-                return
-            
-            # Build GraphQL mutation input
-            mutation_input = {
-                "id": issue_id
-            }
+            # Build the update input dictionary dynamically
+            update_input = {}
+            updated_field_names = [] # For user feedback message
 
             if title is not None:
-                mutation_input["title"] = str(title).replace('"', '\\"')
-
+                update_input["title"] = str(title)
+                updated_field_names.append("title")
             if description is not None:
-                mutation_input["description"] = str(description).replace('"', '\\"').replace('\n', '\\n')
-
+                update_input["description"] = str(description)
+                updated_field_names.append("description")
             if state_id:
-                mutation_input["stateId"] = state_id
-
-            if assignee_id is not None:
-                if assignee_id == "":
-                    # To unassign an issue, we need to pass null
-                    mutation_input["assigneeId"] = None
+                update_input["stateId"] = str(state_id)
+                updated_field_names.append("status (stateId)")
+            
+            # Handle assignee update (including unassigning)
+            if assignee_id_param is not None:
+                if assignee_id_param == "" or assignee_id_param.lower() == "null" or assignee_id_param.lower() == "none":
+                     update_input["assigneeId"] = None # Explicitly set to null for unassigning
+                     updated_field_names.append("assignee (unassigned)")
                 else:
-                    mutation_input["assigneeId"] = assignee_id
+                     update_input["assigneeId"] = str(assignee_id_param)
+                     updated_field_names.append("assignee")
 
-            if priority is not None:
+            # Handle priority update
+            if priority_param is not None:
                 try:
-                    priority_value = int(priority)
-                    if priority_value >= 0 and priority_value <= 4:
-                        mutation_input["priority"] = priority_value
+                    priority_value = int(priority_param)
+                    if 0 <= priority_value <= 4:
+                        update_input["priority"] = priority_value
+                        updated_field_names.append(f"priority ({priority_value})")
+                    else:
+                        yield self.create_text_message(f"Warning: Invalid priority value '{priority_param}'. Must be 0-4. Skipping priority.")
                 except (ValueError, TypeError):
-                    pass
-            
-            # Format the input for GraphQL - handle special cases for strings and nulls
-            mutation_input_str = ""
-            for k, v in mutation_input.items():
-                if k == "id":
-                    mutation_input_str += f'{k}: "{v}", '
-                elif v is None:
-                    mutation_input_str += f'{k}: null, '
-                elif isinstance(v, str):
-                    mutation_input_str += f'{k}: "{v}", '
-                else:
-                    mutation_input_str += f'{k}: {v}, '
-            
-            # Handle labels
-            labels_connection = ""
-            if labels and isinstance(labels, list):
-                label_ids = [f'"{label_id}"' for label_id in labels]
-                labels_connection = f'labelIds: [{", ".join(label_ids)}]'
-                if mutation_input_str:
-                    mutation_input_str += labels_connection
-                else:
-                    mutation_input_str = labels_connection
-            
-            graphql_mutation = f"""
-            mutation UpdateIssue {{
-              issueUpdate(
-                input: {{{mutation_input_str}}}
-              ) {{
-                success
-                issue {{
-                  id
-                  title
-                  description
-                  priority
-                  state {{
-                    id
-                    name
-                  }}
-                  assignee {{
-                    id
-                    name
-                  }}
-                  url
-                  identifier
-                }}
-              }}
-            }}
-            """
+                    yield self.create_text_message(f"Warning: Invalid priority format '{priority_param}'. Must be a number. Skipping priority.")
 
-            result = self.client.execute_graphql(graphql_mutation)
-            
-            if result and 'data' in result and 'issueUpdate' in result.get('data', {}):
-                issue_result = result['data']['issueUpdate']
-                
-                if issue_result.get('success'):
-                    issue = issue_result.get('issue', {})
-                    
-                    # Format response with safe gets
-                    state_info = issue.get('state', {})
-                    assignee_info = issue.get('assignee', {})
-                    
-                    # Create a user-friendly response
-                    updated_fields = []
-                    if title is not None:
-                        updated_fields.append("title")
-                    if description is not None:
-                        updated_fields.append("description")
-                    if state_id:
-                        updated_fields.append("state")
-                    if assignee_id is not None:
-                        updated_fields.append("assignee")
-                    if priority is not None:
-                        updated_fields.append("priority")
-                    if labels:
-                        updated_fields.append("labels")
-                    
-                    fields_text = ", ".join(updated_fields)
-                    
-                    yield self.create_text_message(
-                        f"Issue {issue.get('identifier')} updated successfully.\n"
-                        f"Updated fields: {fields_text}\n"
-                        f"URL: {issue.get('url')}"
-                    )
-                    return
-                
-            # Handle API errors
-            if result and 'errors' in result:
-                error_messages = [error.get('message', 'Unknown error') for error in result.get('errors', [])]
-                error_message = '; '.join(error_messages)
-                yield self.create_text_message(f"Error: {error_message}")
+            # Handle labels update
+            if labels is not None:
+                 if isinstance(labels, list) and all(isinstance(item, str) for item in labels):
+                     update_input["labelIds"] = labels
+                     updated_field_names.append("labels")
+                 elif isinstance(labels, str) and labels.strip(): # Handle comma-separated string?
+                      try:
+                           label_list = [l.strip() for l in labels.split(',') if l.strip()]
+                           if label_list:
+                                update_input["labelIds"] = label_list
+                                updated_field_names.append("labels")
+                           else: # Empty string after stripping/splitting
+                                yield self.create_text_message(f"Warning: Provided labels string was empty after processing. Skipping labels update.")
+                      except Exception:
+                           yield self.create_text_message(f"Warning: Could not parse labels string '{labels}'. Skipping labels update.")
+                 elif labels == []: # Explicitly empty list clears labels? Check API behavior
+                      update_input["labelIds"] = [] # Assume empty list clears labels
+                      updated_field_names.append("labels (cleared)")
+                 else:
+                      yield self.create_text_message(f"Warning: Invalid format for labels. Expected a list of strings (label IDs) or comma-separated string. Skipping labels update.")
+
+            # Check if any fields were actually added for update
+            if not update_input:
+                yield self.create_text_message("Error: No valid fields provided to update.")
                 return
             
-            yield self.create_text_message("Error: Failed to update issue - unknown error")
+            # Define the GraphQL mutation using variables
+            graphql_mutation = """
+            mutation IssueUpdate($id: String!, $input: IssueUpdateInput!) {
+              issueUpdate(id: $id, input: $input) {
+                success
+                issue {
+                  id
+                  identifier
+                  title
+                  url
+                  # Add other fields shown in response as needed
+                  state { id name }
+                  priority
+                }
+              }
+            }
+            """
+
+            # Execute using query_graphql with variables
+            result = linear_client.query_graphql(
+                query=graphql_mutation, 
+                variables={"id": issue_id, "input": update_input}
+            )
+
+            # Process result
+            if result and 'data' in result and result['data'] and 'issueUpdate' in result['data']:
+                issue_result = result['data']['issueUpdate']
+                
+                if issue_result and issue_result.get('success'):
+                    issue = issue_result.get('issue', {})
+                    if issue:
+                        fields_text = ", ".join(updated_field_names) if updated_field_names else "(no fields specified)"
+                        yield self.create_text_message(
+                            f"Issue {issue.get('identifier')} updated successfully.\n"
+                            f"Updated fields: {fields_text}\n"
+                            f"URL: {issue.get('url')}"
+                        )
+                    else:
+                        yield self.create_text_message("Issue updated successfully, but no issue details were returned.")
+                    return
+                else:
+                    error_msg = "Failed to update issue. Reason unknown."
+                    yield self.create_text_message(f"Error: {error_msg}")
+                    return
             
-        except ValueError as e:
-            yield self.create_text_message(f"Error: {str(e)}")
-        except LinearQueryException as e:
-            yield self.create_text_message(f"Linear query error: {str(e)}")
+            # Fallback error if response structure is unexpected
+            yield self.create_text_message("Error: Failed to update issue - unexpected API response.")
+
+        # Updated exception handling
+        except LinearAuthenticationException:
+            yield self.create_text_message("Authentication failed. Please check your Linear API key.")
+        except LinearResourceNotFoundException as e:
+            yield self.create_text_message(f"Error: Issue with ID '{issue_id}' not found. Details: {str(e)}")
+        except LinearApiException as e:
+            yield self.create_text_message(f"Linear API error: {str(e)}")
+        except ValueError as e: # Catch potential int conversion errors
+             yield self.create_text_message(f"Input error: {str(e)}")
         except Exception as e:
-            yield self.create_text_message(f"Error: {str(e)}") 
+            yield self.create_text_message(f"An unexpected error occurred: {str(e)}") 

@@ -9,17 +9,15 @@ label:
   pt_BR: Linear
   zh_Hant: Linear
 description:
-  en_US: Linear integration for Dify. Create, update, search issues, manage comments, and get user information from Linear directly from your Dify applications.
-  ja_JP: DifyのLinear統合。Difyアプリケーションから直接Linearの課題を作成、更新、検索し、コメントを管理し、ユーザー情報を取得します。
-  zh_Hans: Linear 与 Dify 的集成。直接从 Dify 应用程序创建、更新、搜索问题，管理评论，并获取 Linear 的用户信息。
-  pt_BR: Integração do Linear para Dify. Crie, atualize, pesquise problemas, gerencie comentários e obtenha informações do usuário do Linear diretamente de seus aplicativos Dify.
-  zh_Hant: Linear 與 Dify 的整合。直接從 Dify 應用程式建立、更新、搜尋問題，管理評論，並獲取 Linear 的用戶資訊。
+  en_US: Linear integration for Dify. Create, update, search issues, add comments, search users and teams, and get your profile information from Linear directly from your Dify applications.
+  ja_JP: DifyのためのLinear統合。Difyアプリケーションから直接、Linearの課題の作成、更新、検索、コメントの追加、ユーザーとチームの検索、および自分のプロフィール情報の取得を行います。
+  zh_Hans: Linear 与 Dify 的集成。直接从 Dify 应用程序创建、更新、搜索问题，添加评论，搜索用户和团队，并获取您在 Linear 中的个人资料信息。
+  pt_BR: Integração do Linear para Dify. Crie, atualize, pesquise problemas, adicione comentários, pesquise usuários e equipes e obtenha informações do seu perfil do Linear diretamente de seus aplicativos Dify.
+  zh_Hant: Linear 與 Dify 的整合。直接從 Dify 應用程式建立、更新、搜尋問題，添加評論，搜尋用戶和團隊，並獲取您在 Linear 中的個人資料資訊。
 icon: icon.svg
 tags:
   - productivity
-  - project management
   - business
-  - issue tracking
 resource:
   memory: 268435456
   permission:
@@ -54,4 +52,4 @@ meta:
     entrypoint: main
 created_at: 2025-04-15T13:31:50.928581+08:00
 privacy: PRIVACY.md
-verified: false
+verified: true
