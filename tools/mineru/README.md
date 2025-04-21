@@ -14,7 +14,7 @@
   
 
 ## DEMO DSL
-[demo_dsl.yml](./_assets/mineru_demo.yml)
+[demo_dsl.yml](https://github.com/langgenius/dify-official-plugins/blob/main/tools/mineru/_assets/mineru_demo.yml)
 
 
 ## GitHub
