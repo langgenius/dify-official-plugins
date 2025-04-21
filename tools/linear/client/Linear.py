@@ -6,7 +6,7 @@ from .Exceptions import LinearApiException, LinearAuthenticationException, Linea
 
 class Linear:
     # Class-level variable to control logging
-    _logging_enabled = True
+    _logging_enabled = False
     
     @classmethod
     def enable_logging(cls, enabled=True):
