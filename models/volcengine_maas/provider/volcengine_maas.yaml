@@ -111,6 +111,12 @@ model_credential_schema:
       zh_Hans: 基础模型
     options:
     - label:
+        en_US: Doubao-1.5-thinking-pro
+      value: Doubao-1.5-thinking-pro
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
         en_US: DeepSeek-R1-Distill-Qwen-32B
       value: DeepSeek-R1-Distill-Qwen-32B
       show_on:
