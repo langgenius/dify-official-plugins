@@ -111,8 +111,7 @@ def is_cache_supported(model_id: str) -> bool:
     :return: True if the model supports caching, False otherwise
     """
     result = model_id in CACHE_SUPPORTED_MODELS
-    print(f"[CACHE CONFIG] Checking if model {model_id} supports caching: {result}")
-    logger.info(f"[CACHE CONFIG] Checking if model {model_id} supports caching: {result}")
+    # Removed redundant print statement
     return result
 
 def get_cache_config(model_id: str) -> dict:
