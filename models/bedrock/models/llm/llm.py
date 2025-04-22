@@ -470,7 +470,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
                         # end of reasoningContent
                         elif "signature" in delta["reasoningContent"]: 
-                            formatted_reasoning = '</think>'
+                            formatted_reasoning = '\n</think>'
 
                         # Update complete content, although it may not be needed here, but maintains code consistency
                         full_assistant_content += formatted_reasoning
