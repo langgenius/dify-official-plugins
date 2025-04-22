@@ -1,7 +1,7 @@
-model: o3-mini
+model: o44-mini
 label:
-  zh_Hans: o3-mini
-  en_US: o3-mini
+  zh_Hans: o4-mini
+  en_US: o4-mini
 model_type: llm
 features:
   - agent-thought
