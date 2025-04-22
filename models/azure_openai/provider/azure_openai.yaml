@@ -146,6 +146,18 @@ model_credential_schema:
               variable: __model_type
           value: o3-mini
         - label:
+            en_US: o3
+          show_on:
+            - value: llm
+              variable: __model_type
+          value: o3
+        - label:
+            en_US: o4-mini
+          show_on:
+            - value: llm
+              variable: __model_type
+          value: o4-mini
+        - label:
             en_US: o1-mini
           show_on:
             - value: llm

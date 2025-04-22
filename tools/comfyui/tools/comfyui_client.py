@@ -2,6 +2,7 @@ from enum import StrEnum
 import json
 import random
 import uuid
+from typing import Any
 
 import httpx
 from websocket import WebSocket
@@ -147,7 +148,7 @@ class ComfyUiClient:
             else:
                 continue
 
-    def generate_image_by_prompt(self, prompt: dict) -> list[bytes]:
+    def generate_image_by_prompt(self, prompt: dict) -> list[dict[str, str | bytes]]:
         try:
             ws, client_id = self.open_websocket_connection()
             prompt_id = self.queue_prompt(client_id, prompt)
@@ -159,7 +160,11 @@ class ComfyUiClient:
                     image_data = self.get_image(
                         img["filename"], img["subfolder"], img["type"]
                     )
-                    images.append(image_data)
+                    images.append({
+                        "data": image_data,
+                        "filename": img["filename"],
+                        "type": img["type"],
+                    })
             return images
         finally:
             ws.close()
