@@ -2,20 +2,24 @@
 
 ## What's New?
 
-- Support the official API of MinerU
+- Support the **official API of MinerU**
   ![](./_assets/mineru8.jpg)
+
+- Local Deplay corresponds to MinerU **release 1.3.6**
+
+- The supported input file types have been increased to include **PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, and JPEG.**
 
 - Remove the "Replace Markdown Image Path" tool. Now, the image paths in the Markdown will be automatically replaced with previewable URLs (the validity period of the URL is determined by the FILES_ACCESS_TIMEOUT in dify.env).If you want to use this feature, please update the Dify's core code.![](./_assets/mineru2.jpg)
 
 - Supports more export formats (HTML, DOC, LaTeX). The download links for the additional formats will be stored in the `files` of the output variables.
   
   ![](./_assets/mineru1.jpg)
-  
-  
 
 ## DEMO DSL
-[demo_dsl.yml](https://github.com/langgenius/dify-official-plugins/blob/main/tools/mineru/_assets/mineru_demo.yml)
 
+**You can download the YAML file and import it into Dify. This demo includes a basic capability demonstration of the plugin.**
+
+[demo_dsl.yml](https://github.com/langgenius/dify-official-plugins/blob/main/tools/mineru/_assets/mineru_demo.yml)
 
 ## GitHub
 
@@ -81,7 +85,7 @@ The plugin provides five types of output for each processed file:
 
 ### 2. Local Deploy
 
-Version 0.0.2 of the plugin corresponds to MinerU release 1.2.2.
+Version 0.2.0 of the plugin corresponds to MinerU release 1.3.6.
 
 1. Deploy Derived Projects
 
@@ -117,4 +121,4 @@ https://github.com/langgenius/dify/issues/16327
 
 ## Credits
 
-This plugin is powered by [MinerU]([GitHub - opendatalab/MinerU: A high-quality tool for convert PDF to Markdown and JSON.一站式开源高质量数据提取工具，将PDF转换成Markdown和JSON格式。](https://github.com/opendatalab/MinerU))
+This plugin is powered by [MinerU]([GitHub - opendatalab/MinerU: A high-quality tool for convert PDF to Markdown and JSON.](https://github.com/opendatalab/MinerU))
