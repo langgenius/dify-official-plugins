@@ -1,4 +1,5 @@
 import base64
+import logging
 import tempfile
 import json
 import time
@@ -173,6 +174,19 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             )
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
+        
+    def _get_response_modalities(self, model: str) -> list[str]:
+        """_get_response_modalities returns response modalities supported 
+        by the given model.
+        """
+        # FIXME(QuantumGhost): Multimodal output is currently limited to 
+        # the gemini-2.0-flash-experiment model. The model name is currently 
+        # hardcoded for simplicity; consider revisiting this approach for flexibility.
+        if model != "gemini-2.0-flash-experiment":
+            return ["Text"]
+        
+        return ["Text", "Image"]
+
 
     def _generate(
         self,
@@ -206,7 +220,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             config.response_mime_type = "application/json"
         else:
             # Enable multimodal support only if JSON schema is not provided.
-            config.response_modalities = ["Text", "Image"]
+            config.response_modalities = self._get_response_modalities(model)
 
         if stop:
             config.stop_sequences = stop
