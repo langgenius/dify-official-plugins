@@ -18,14 +18,8 @@ from botocore.exceptions import (  # type: ignore
 
 from dify_plugin import LargeLanguageModel
 from dify_plugin.entities import I18nObject
-from dify_plugin.entities.model import (
-    AIModelEntity,
-    FetchFrom,
-    ModelType,
-    PriceConfig,
-)
+
 from dify_plugin.entities.model.llm import (
-    LLMMode,
     LLMResult,
     LLMResultChunk,
     LLMResultChunkDelta,
@@ -50,7 +44,9 @@ from dify_plugin.errors.model import (
     InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
-
+from dify_plugin.interfaces.model.openai_compatible.llm import (
+    OAICompatLargeLanguageModel,
+)
 from provider.get_bedrock_client import get_bedrock_client
 
 logger = logging.getLogger(__name__)
@@ -64,7 +60,7 @@ if you are not sure about the structure.
 """  # noqa: E501
 
 
-class BedrockLargeLanguageModel(LargeLanguageModel):
+class BedrockLargeLanguageModel(OAICompatLargeLanguageModel):
     # please refer to the documentation: https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html
     # TODO There is invoke issue: context limit on Cohere Model, will add them after fixed.
     CONVERSE_API_ENABLED_MODEL_INFO = [
@@ -346,87 +342,29 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     )
                 elif "contentBlockDelta" in chunk:
                     delta = chunk["contentBlockDelta"]["delta"]
-                    if "reasoningContent" in delta and "text" in delta["reasoningContent"]:
-                        # Get reasoning content text
-                        reasoning_text = delta["reasoningContent"]["text"] or ""
-
-                        # Use class variable to track if header has been added, 
-                        # instead of relying on full_assistant_content which may not be updated
-                        if not hasattr(self, '_reasoning_header_added'):
-                            self._reasoning_header_added = False
-
-                        # Format reasoning content
-                        if not self._reasoning_header_added:
-                            # Only add the opening tag once for the first block
-                            formatted_reasoning = "<think>\n" + reasoning_text
-                            # Record that the marker has been added
-                            self._reasoning_header_added = True
-                        else:
-                            # For subsequent blocks, just add the content without tags
-                            formatted_reasoning = reasoning_text
-
-                        # Update complete content, although it may not be needed here, but maintains code consistency
-                        full_assistant_content += formatted_reasoning
-
-                        assistant_prompt_message = AssistantPromptMessage(
-                            content=formatted_reasoning
+                    delta_content, is_reasoning_started = self._wrap_thinking_by_reasoning_content(
+                        delta, is_reasoning_started
+                    )
+                    full_assistant_content += delta_content
+                    assistant_prompt_message = AssistantPromptMessage(
+                            content=delta_content
                         )
-                        index = chunk["contentBlockDelta"]["contentBlockIndex"]
-                        yield LLMResultChunk(
-                            model=model,
-                            prompt_messages=prompt_messages,
-                            delta=LLMResultChunkDelta(
-                                index=index + 1,
-                                message=assistant_prompt_message,
-                            ),
-                        )
-                    elif "text" in delta and delta["text"]:
-                        text = delta["text"]
-
-                        # Check if separator and line breaks need to be added
-                        # If there was reasoning content before and this is the first regular text
-                        if hasattr(self, '_reasoning_header_added') and self._reasoning_header_added:
-                            # Add closing tag for reasoning content
-                            text = "\n</think>\n\n" + text
-                            # Remove _reasoning_header_added
-                            delattr(self, '_reasoning_header_added')
-
-                        full_assistant_content += text
-
-                        assistant_prompt_message = AssistantPromptMessage(
-                            content=text or "",
-                        )
-                        index = chunk["contentBlockDelta"]["contentBlockIndex"]
-                        yield LLMResultChunk(
-                            model=model,
-                            prompt_messages=prompt_messages,
-                            delta=LLMResultChunkDelta(
-                                index=index + 1,
-                                message=assistant_prompt_message,
-                            ),
-                        )
-                    elif "toolUse" in delta:
+                    index = chunk["contentBlockDelta"]["contentBlockIndex"]
+                    if "toolUse" in delta:
                         if "input" not in tool_use:
                             tool_use["input"] = ""
                         tool_use["input"] += delta["toolUse"]["input"]
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(
+                            index=index + 1,
+                            message=assistant_prompt_message,
+                        ),
+                    )
                 elif "contentBlockStop" in chunk:
                     # If reasoning was started but never completed (no text content followed)
                     # we need to close the thinking tag
-                    if hasattr(self, '_reasoning_header_added') and self._reasoning_header_added:
-                        assistant_prompt_message = AssistantPromptMessage(
-                            content="\n</think>"
-                        )
-                        index += 1
-                        yield LLMResultChunk(
-                            model=model,
-                            prompt_messages=prompt_messages,
-                            delta=LLMResultChunkDelta(
-                                index=index + 1,
-                                message=assistant_prompt_message,
-                            ),
-                        )
-                        delattr(self, '_reasoning_header_added')
-                        
                     if "input" in tool_use:
                         tool_call = AssistantPromptMessage.ToolCall(
                             id=tool_use["toolUseId"],
@@ -992,3 +930,29 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             return InvokeConnectionError(error_msg)
 
         return InvokeError(error_msg)
+
+    def _wrap_thinking_by_reasoning_content(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
+            """
+            If the reasoning response is from delta.get("reasoning_content"), we wrap
+            it with HTML think tag.
+
+            :param delta: delta dictionary from LLM streaming response
+            :param is_reasoning: is reasoning
+            :return: tuple of (processed_content, is_reasoning)
+            """
+
+            content = delta.get("text") or ""
+            reasoning_content = delta.get("reasoningContent")
+
+            if reasoning_content:
+                if not is_reasoning:
+                    reasoning_content = reasoning_content.get("text") or ""
+                    content = "<think>\n" + reasoning_content
+                    is_reasoning = True
+                else:
+                    content = reasoning_content.get("text") or ""
+            elif is_reasoning and content:
+                content = "\n</think>" + content
+                is_reasoning = False
+                
+            return content, is_reasoning
