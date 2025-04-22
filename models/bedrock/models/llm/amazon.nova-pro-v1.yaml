@@ -12,6 +12,16 @@ model_properties:
   mode: chat
   context_size: 300000
 parameter_rules:
+  - name: enable_cache
+    label:
+      zh_Hans: 启用提示缓存
+      en_US: Enable Prompt Cache
+    type: boolean
+    required: false
+    default: true
+    help:
+      zh_Hans: 启用提示缓存可以提高性能并降低成本。Amazon Nova Pro支持在system和messages字段中使用缓存检查点，每个检查点至少需要1024个token。
+      en_US: Enable prompt caching to improve performance and reduce costs. Amazon Nova Pro supports cache checkpoints in system and messages fields with a minimum of 1024 tokens per checkpoint.
   - name: max_new_tokens
     use_template: max_tokens
     required: true
@@ -48,7 +58,7 @@ parameter_rules:
       zh_Hans: 对于每个后续标记，仅从前 K 个选项中进行采样。使用 top_k 删除长尾低概率响应。
       en_US: Only sample from the top K options for each subsequent token. Use top_k to remove long tail low probability responses.
 pricing:
-  input: '0.0008'
-  output: '0.0032'
+  input: '0.00012'
+  output: '0.00048'
   unit: '0.001'
   currency: USD
