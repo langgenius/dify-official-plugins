@@ -1,0 +1,161 @@
+description:
+  human:
+    en_US: Search for issues in Linear using various criteria such as text, team, status, assignee, labels, and priority.
+    zh_Hans: 使用各种条件在 Linear 中搜索问题，如文本、团队、状态、负责人、标签和优先级。
+    pt_BR: Pesquise problemas no Linear usando vários critérios como texto, equipe, status, responsável, etiquetas e prioridade.
+    ja_JP: テキスト、チーム、ステータス、担当者、ラベル、優先度などのさまざまな条件を使用して Linear で課題を検索します。
+    zh_Hant: 使用各種條件在 Linear 中搜索問題，如文本、團隊、狀態、負責人、標籤和優先級。
+  llm: Searches Linear issues using flexible criteria. Supports filtering by any combination of title/description text, team, status, assignee, labels, priority (1=urgent, 2=high, 3=normal, 4=low), and estimate.
+extra:
+  python:
+    source: tools/linear_search_issues.py
+    class: LinearSearchIssuesTool
+identity:
+  name: linear_search_issues
+  author: langgenius
+  icon: icon.svg
+  label:
+    en_US: Search Linear Issues
+    zh_Hans: 搜索 Linear 问题
+    pt_BR: Pesquisar problemas no Linear
+    ja_JP: Linear 課題を検索
+    zh_Hant: 搜索 Linear 問題
+parameters:
+  - name: query
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Search Text
+      zh_Hans: 搜索文本
+      pt_BR: Texto de Pesquisa
+      ja_JP: 検索テキスト
+      zh_Hant: 搜索文本
+    human_description:
+      en_US: Text to search in issue titles and descriptions
+      zh_Hans: 在问题标题和描述中搜索的文本
+      pt_BR: Texto para pesquisar em títulos e descrições de problemas
+      ja_JP: 課題のタイトルと説明で検索するテキスト
+      zh_Hant: 在問題標題和描述中搜索的文本
+    llm_description: Optional text to search in title and description of issues
+  - name: teamId
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Team ID
+      zh_Hans: 团队 ID
+      pt_BR: ID da Equipe
+      ja_JP: チームID
+      zh_Hant: 團隊 ID
+    human_description:
+      en_US: ID of the team to filter issues by
+      zh_Hans: 用于筛选问题的团队 ID
+      pt_BR: ID da equipe para filtrar problemas
+      ja_JP: 課題をフィルタリングするチームのID
+      zh_Hant: 用於篩選問題的團隊 ID
+    llm_description: Filter issues by team ID
+  - name: status
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Status
+      zh_Hans: 状态
+      pt_BR: Status
+      ja_JP: ステータス
+      zh_Hant: 狀態
+    human_description:
+      en_US: "Filter issues by status name (e.g., \"Todo\", \"In Progress\", \"Done\")"
+      zh_Hans: "按状态名称筛选问题（例如，\"待办\"，\"进行中\"，\"已完成\"）"
+      pt_BR: "Filtrar problemas por nome de status (ex: \"A fazer\", \"Em andamento\", \"Concluído\")"
+      ja_JP: "ステータス名で課題をフィルタリング（例：「未着手」、「進行中」、「完了」）"
+      zh_Hant: "按狀態名稱篩選問題（例如，\"待辦\"，\"進行中\"，\"已完成\"）"
+    llm_description: "Filter by status name (e.g., 'In Progress', 'Done')"
+  - name: assigneeId
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Assignee ID
+      zh_Hans: 负责人 ID
+      pt_BR: ID do Responsável
+      ja_JP: 担当者ID
+      zh_Hant: 負責人 ID
+    human_description:
+      en_US: ID of the user assigned to the issues
+      zh_Hans: 分配给问题的用户的 ID
+      pt_BR: ID do usuário atribuído aos problemas
+      ja_JP: 課題に割り当てられたユーザーのID
+      zh_Hant: 分配給問題的用戶的 ID
+    llm_description: Filter by assignee's user ID
+  - name: labels
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Labels
+      zh_Hans: 标签
+      pt_BR: Etiquetas
+      ja_JP: ラベル
+      zh_Hant: 標籤
+    human_description:
+      en_US: Filter issues by label names (comma-separated list)
+      zh_Hans: 按标签名称筛选问题（逗号分隔的列表）
+      pt_BR: Filtrar problemas por nomes de etiquetas (lista separada por vírgulas)
+      ja_JP: ラベル名で課題をフィルタリング（カンマ区切りリスト）
+      zh_Hant: 按標籤名稱篩選問題（逗號分隔的列表）
+    llm_description: Filter by label names (comma-separated list of label names)
+  - name: priority
+    type: number
+    required: false
+    form: llm
+    label:
+      en_US: Priority
+      zh_Hans: 优先级
+      pt_BR: Prioridade
+      ja_JP: 優先度
+      zh_Hant: 優先級
+    human_description:
+      en_US: Filter issues by priority (0-4, where 0 is no priority and 1 is urgent)
+      zh_Hans: 按优先级筛选问题（0-4，其中 0 表示无优先级，1 表示紧急）
+      pt_BR: Filtrar problemas por prioridade (0-4, onde 0 é sem prioridade e 1 é urgente)
+      ja_JP: 優先度で課題をフィルタリング（0-4、0は優先度なし、1は緊急）
+      zh_Hant: 按優先級篩選問題（0-4，其中 0 表示無優先級，1 表示緊急）
+    llm_description: Filter by priority (1=urgent, 2=high, 3=normal, 4=low)
+  - name: limit
+    type: number
+    required: false
+    default: 10
+    form: llm
+    label:
+      en_US: Result Limit
+      zh_Hans: 结果限制
+      pt_BR: Limite de Resultados
+      ja_JP: 結果制限
+      zh_Hant: 結果限制
+    human_description:
+      en_US: "Maximum number of issues to return (default: 10)"
+      zh_Hans: "最多返回的问题数量（默认：10）"
+      pt_BR: "Número máximo de problemas a retornar (padrão: 10)"
+      ja_JP: "返す課題の最大数（デフォルト：10）"
+      zh_Hant: "最多返回的問題數量（默認：10）"
+    llm_description: "Max results to return (default: 10)"
+  - name: includeArchived
+    type: boolean
+    required: false
+    default: false
+    form: llm
+    label:
+      en_US: Include Archived
+      zh_Hans: 包含已归档
+      pt_BR: Incluir Arquivados
+      ja_JP: アーカイブを含む
+      zh_Hant: 包含已歸檔
+    human_description:
+      en_US: Include archived issues in search results
+      zh_Hans: 在搜索结果中包含已归档的问题
+      pt_BR: Incluir problemas arquivados nos resultados da pesquisa
+      ja_JP: 検索結果にアーカイブされた課題を含める
+      zh_Hant: 在搜索結果中包含已歸檔的問題
+    llm_description: "Include archived issues in results (default: false)" 

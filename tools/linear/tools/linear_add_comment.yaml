@@ -1,0 +1,90 @@
+identity:
+  name: linear_add_comment
+  author: langgenius
+  label:
+    en_US: Add Comment to Issue
+    zh_Hans: 添加评论到问题
+    pt_BR: Adicionar Comentário ao Problema
+    ja_JP: 課題にコメントを追加
+    zh_Hant: 添加評論到問題
+description:
+  human:
+    en_US: Add a comment to an existing Linear issue.
+    zh_Hans: 向现有的 Linear 问题添加评论。
+    pt_BR: Adicionar um comentário a um problema existente no Linear.
+    ja_JP: 既存の Linear 課題にコメントを追加します。
+    zh_Hant: 向現有的 Linear 問題添加評論。
+  llm: Adds a comment to an existing Linear issue. Supports markdown formatting in the comment body. Can optionally specify a custom user name and avatar for the comment.
+parameters:
+  - name: issueId
+    type: string
+    required: true
+    label:
+      en_US: Issue ID
+      zh_Hans: 问题 ID
+      pt_BR: ID do Problema
+      ja_JP: 課題ID
+      zh_Hant: 問題 ID
+    human_description:
+      en_US: ID of the issue to add a comment to
+      zh_Hans: 要添加评论的问题的 ID
+      pt_BR: ID do problema ao qual adicionar um comentário
+      ja_JP: コメントを追加する課題のID
+      zh_Hant: 要添加評論的問題的 ID
+    llm_description: ID of the issue to comment on
+    form: llm
+  - name: body
+    type: string
+    required: true
+    label:
+      en_US: Comment Body
+      zh_Hans: 评论内容
+      pt_BR: Corpo do Comentário
+      ja_JP: コメント本文
+      zh_Hant: 評論內容
+    human_description:
+      en_US: "The text content of the comment (Markdown supported)"
+      zh_Hans: "评论的文本内容（支持 Markdown）"
+      pt_BR: "O conteúdo de texto do comentário (Markdown suportado)"
+      ja_JP: "コメントのテキスト内容（Markdown対応）"
+      zh_Hant: "評論的文本內容（支持 Markdown）"
+    llm_description: Comment text in markdown format
+    form: llm
+  - name: createAsUser
+    type: string
+    required: false
+    label:
+      en_US: Display Name
+      zh_Hans: 显示名称
+      pt_BR: Nome de Exibição
+      ja_JP: 表示名
+      zh_Hant: 顯示名稱
+    human_description:
+      en_US: Custom name to display for the comment
+      zh_Hans: 评论显示的自定义名称
+      pt_BR: Nome personalizado para exibir para o comentário
+      ja_JP: コメントに表示するカスタム名
+      zh_Hant: 評論顯示的自定義名稱
+    llm_description: Optional custom username to show for the comment
+    form: llm
+  - name: displayIconUrl
+    type: string
+    required: false
+    label:
+      en_US: Avatar URL
+      zh_Hans: 头像 URL
+      pt_BR: URL do Avatar
+      ja_JP: アバターURL
+      zh_Hant: 頭像 URL
+    human_description:
+      en_US: URL for the avatar icon to display with the comment
+      zh_Hans: 与评论一起显示的头像图标的 URL
+      pt_BR: URL para o ícone de avatar a ser exibido com o comentário
+      ja_JP: コメントと一緒に表示するアバターアイコンのURL
+      zh_Hant: 與評論一起顯示的頭像圖標的 URL
+    llm_description: Optional avatar URL for the comment
+    form: llm
+extra:
+  python:
+    source: tools/linear_add_comment.py
+    class: LinearAddCommentTool 

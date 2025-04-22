@@ -1,0 +1,56 @@
+identity:
+  author: langgenius
+  name: linear
+  label:
+    en_US: Linear
+    zh_Hans: Linear
+    pt_BR: Linear
+    ja_JP: Linear
+    zh_Hant: Linear
+  description:
+    en_US: Linear is a project management tool for modern software teams.
+    zh_Hans: Linear 是现代软件团队的项目管理工具。
+    pt_BR: Linear é uma ferramenta de gerenciamento de projetos para equipes de software modernas.
+    ja_JP: Linearは、現代のソフトウェアチームのためのプロジェクト管理ツールです。
+    zh_Hant: Linear 是現代軟體團隊的專案管理工具。
+  icon: icon.svg
+
+credentials_for_provider:
+  linear_api_key:
+    label:
+      en_US: Linear Personal API Key
+      zh_Hans: Linear 个人 API 密钥
+      pt_BR: Chave API Pessoal do Linear
+      ja_JP: Linear 個人用 API キー
+      zh_Hant: Linear 個人 API 金鑰
+    placeholder:
+      en_US: Enter your Linear Personal API key
+      zh_Hans: 输入您的 Linear 个人 API 密钥
+      pt_BR: Digite sua chave API pessoal do Linear
+      ja_JP: Linear 個人用 API キーを入力してください
+      zh_Hant: 輸入您的 Linear 個人 API 金鑰
+    help:
+      en_US: Found in Settings > Account > Security & access > Personal API keys
+      zh_Hans: 可以在 设置 > 帐户 > 安全和访问 > 个人 API 密钥 中找到
+      pt_BR: Encontrado em Configurações > Conta > Segurança e acesso > Chaves API pessoais
+      ja_JP: 設定 > アカウント > セキュリティとアクセス > 個人用 API キー にあります
+      zh_Hant: 可以在 設定 > 帳戶 > 安全和訪問 > 個人 API 金鑰 中找到
+    required: true
+    type: secret-input
+    url: https://linear.app/settings/account/security
+
+supported_model_types: []
+configurate_methods: []
+
+tools:
+  - tools/linear_create_issue.yaml
+  - tools/linear_update_issue.yaml
+  - tools/linear_search_issues.yaml
+  - tools/linear_get_user_issues.yaml
+  - tools/linear_add_comment.yaml
+  - tools/linear_get_users.yaml
+  - tools/linear_get_teams.yaml
+  - tools/linear_get_my_profile.yaml
+extra:
+  python:
+    source: provider/linear.py

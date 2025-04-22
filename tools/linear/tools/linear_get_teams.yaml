@@ -1,0 +1,57 @@
+identity:
+  name: linear_get_teams
+  author: langgenius # Or your preferred author name
+  label:
+    en_US: Get Linear Teams
+    zh_Hans: 获取 Linear 团队
+    pt_BR: Obter Times do Linear
+    ja_JP: Linear チームを取得
+    zh_Hant: 獲取 Linear 團隊
+description:
+  human:
+    en_US: Search for teams in Linear by name to retrieve their details, including team ID.
+    zh_Hans: 通过名称在 Linear 中搜索团队，以检索其详细信息，包括团队 ID。
+    pt_BR: Pesquise times no Linear por nome para recuperar seus detalhes, incluindo ID do time.
+    ja_JP: 名前で Linear のチームを検索し、チームIDを含む詳細を取得します。
+    zh_Hant: 通過名稱在 Linear 中搜索團隊，以檢索其詳細信息，包括團隊 ID。
+  llm: Searches for Linear teams based on name (partial match, case-insensitive). Returns a list of matching teams including their ID, name, key, and description. Useful for finding a team's ID needed for creating issues.
+parameters:
+  - name: name
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Name
+      zh_Hans: 团队名称
+      pt_BR: Nome do Time
+      ja_JP: チーム名
+      zh_Hant: 團隊名稱
+    human_description:
+      en_US: Optional partial name of the team to search for (case-insensitive).
+      zh_Hans: 要搜索的可选部分团队名称（不区分大小写）。
+      pt_BR: Nome parcial opcional do time para pesquisar (sem distinção entre maiúsculas e minúsculas).
+      ja_JP: 検索するチームの部分的な名前（オプション、大文字と小文字を区別しない）。
+      zh_Hant: 要搜索的可選部分團隊名稱（不區分大小寫）。
+    llm_description: Optional. Partial name to search for (case-insensitive). If omitted, returns all accessible teams (up to the limit).
+  - name: limit
+    type: number
+    required: false
+    default: 10
+    form: llm
+    label:
+      en_US: Result Limit
+      zh_Hans: 结果限制
+      pt_BR: Limite de Resultados
+      ja_JP: 結果制限
+      zh_Hant: 結果限制
+    human_description:
+      en_US: "Maximum number of teams to return (default: 10, max: 50)."
+      zh_Hans: "最多返回的团队数量（默认：10，最大：50）。"
+      pt_BR: "Número máximo de times a retornar (padrão: 10, máx: 50)."
+      ja_JP: "返すチームの最大数（デフォルト：10、最大：50）。"
+      zh_Hant: "最多返回的團隊數量（默認：10，最大：50）。"
+    llm_description: "Max results to return (default: 10, max: 50)."
+extra:
+  python:
+    source: tools/linear_get_teams.py
+    class: LinearGetTeamsTool 

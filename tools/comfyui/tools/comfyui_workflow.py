@@ -1,4 +1,5 @@
 import json
+import mimetypes
 from typing import Any, Generator
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
@@ -78,6 +79,6 @@ class ComfyUIWorkflowTool(Tool):
         images = comfyui.generate_image_by_prompt(prompt)
         for img in images:
             yield self.create_blob_message(
-                blob=img,
-                meta={"mime_type": "image/png"},
+                blob=img["data"],
+                meta={"filename": img["filename"], "mime_type": mimetypes.guess_type(img["filename"])[0] or "image/png"},
             )

@@ -1,0 +1,55 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: linear
+label:
+  en_US: Linear
+  ja_JP: Linear
+  zh_Hans: Linear
+  pt_BR: Linear
+  zh_Hant: Linear
+description:
+  en_US: Linear integration for Dify. Create, update, search issues, add comments, search users and teams, and get your profile information from Linear directly from your Dify applications.
+  ja_JP: DifyのためのLinear統合。Difyアプリケーションから直接、Linearの課題の作成、更新、検索、コメントの追加、ユーザーとチームの検索、および自分のプロフィール情報の取得を行います。
+  zh_Hans: Linear 与 Dify 的集成。直接从 Dify 应用程序创建、更新、搜索问题，添加评论，搜索用户和团队，并获取您在 Linear 中的个人资料信息。
+  pt_BR: Integração do Linear para Dify. Crie, atualize, pesquise problemas, adicione comentários, pesquise usuários e equipes e obtenha informações do seu perfil do Linear diretamente de seus aplicativos Dify.
+  zh_Hant: Linear 與 Dify 的整合。直接從 Dify 應用程式建立、更新、搜尋問題，添加評論，搜尋用戶和團隊，並獲取您在 Linear 中的個人資料資訊。
+icon: icon.svg
+tags:
+  - productivity
+  - business
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+    endpoint:
+      enabled: true
+    app:
+      enabled: true
+    storage:
+      enabled: true
+      size: 1048576
+plugins:
+  tools:
+    - provider/linear.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+created_at: 2025-04-15T13:31:50.928581+08:00
+privacy: PRIVACY.md
+verified: true
