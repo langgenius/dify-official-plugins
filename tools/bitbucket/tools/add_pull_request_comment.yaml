@@ -7,9 +7,9 @@ identity:
     pt_BR: Adicionar Comentário ao Pull Request
 description:
   human:
-    en_US: Adds a comment to a specific pull request in a BitBucket repository.
-    zh_Hans: 在 BitBucket 仓库的特定拉取请求中添加评论。
-    pt_BR: Adiciona um comentário a um pull request específico em um repositório BitBucket.
+    en_US: Adds a comment to a specific pull request in a Bitbucket repository.
+    zh_Hans: 在 Bitbucket 仓库的特定拉取请求中添加评论。
+    pt_BR: Adiciona um comentário a um pull request específico em um repositório Bitbucket.
   llm: Adds a comment to a specified pull request. Requires workspace slug, repository slug, pull request ID, and the comment text. Returns the created comment object.
 parameters:
   - name: workspace_slug
@@ -23,7 +23,7 @@ parameters:
       en_US: The slug or UUID of the workspace.
       zh_Hans: 工作区的标识符或 UUID。
       pt_BR: O slug ou UUID do workspace.
-    llm_description: The unique identifier (slug or UUID surrounded by {}) for the BitBucket workspace containing the repository.
+    llm_description: The unique identifier (slug or UUID surrounded by {}) for the Bitbucket workspace containing the repository.
     form: llm
   - name: repository_slug
     type: string
@@ -36,7 +36,7 @@ parameters:
       en_US: The slug of the repository.
       zh_Hans: 仓库的标识符。
       pt_BR: O slug do repositório.
-    llm_description: The unique identifier (slug) for the BitBucket repository within the specified workspace.
+    llm_description: The unique identifier (slug) for the Bitbucket repository within the specified workspace.
     form: llm
   - name: pull_request_id
     type: string

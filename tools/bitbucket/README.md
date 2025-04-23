@@ -1,8 +1,8 @@
-## Dify Plugin for BitBucket
+## Dify Plugin for Bitbucket
 
 ### Description
 
-This Dify plugin allows you to interact with the BitBucket API, enabling you to perform various actions such as acquiring info from repositories, projects, pull requests. The plugin is designed to facilitate seamless integration with BitBucket's features and functionalities.
+This Dify plugin allows you to interact with the Bitbucket API, enabling you to perform various actions such as acquiring info from repositories, projects, pull requests. The plugin is designed to facilitate seamless integration with Bitbucket's features and functionalities.
 
 ### Tools
 
@@ -23,7 +23,7 @@ This plugin provides the following functionalities:
 
 ### Setup
 
-1. Get your BitBucket API credentials at [Bitbucket App Password](https://bitbucket.org/account/settings/app-passwords/)
+1. Get your Bitbucket API credentials at [Bitbucket App Password](https://bitbucket.org/account/settings/app-passwords/)
 
 ![](_assets/create-app-password.png)
 
@@ -31,7 +31,7 @@ This plugin provides the following functionalities:
 
 ![](_assets/permissions.png)
 
-3. Authenticate the plugin with your BitBucket username using the app password you created.
+3. Authenticate the plugin with your Bitbucket username using the app password you created.
 
     > Note that there are two authentication methods available: Bitbucket username + App Password or Email + Password. Choose the one that suits you best. You can get your Bitbucket username at [Account settings](https://bitbucket.org/account/settings/). We recommend using the App Password method for better security.
 
