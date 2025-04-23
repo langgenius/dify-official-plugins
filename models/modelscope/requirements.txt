@@ -1,1 +1,2 @@
 dify_plugin~=0.0.1b72
+openai==1.74.0
