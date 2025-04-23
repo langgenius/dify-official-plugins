@@ -1,0 +1,64 @@
+credentials_for_provider:
+  bitbucket_url:
+    type: text-input
+    required: true
+    label:
+      en_US: Bitbucket URL
+      zh_Hans: Bitbucket URL
+      pt_BR: URL do Bitbucket
+    placeholder:
+      en_US: https://api.bitbucket.org
+      zh_Hans: https://api.bitbucket.org
+      pt_BR: https://api.bitbucket.org
+    help:
+      en_US: The base URL of your Bitbucket instance 
+      zh_Hans: 您的 Bitbucket 实例的基础 URL
+      pt_BR: A URL base da sua instância do Bitbucket
+    url: todo
+  username:
+    type: text-input
+    label:
+      en_US: Username/Email
+      zh_Hans: 用户名/邮箱
+      pt_BR: Nome de usuário/Email
+    required: true
+    help:
+      en_US: Your Bitbucket username or email address.
+      zh_Hans: 您的 Bitbucket 用户名或邮箱地址。
+      pt_BR: Seu nome de usuário ou endereço de email do Bitbucket.
+    url: todo
+  password:
+    type: secret-input
+    label:
+      en_US: App Password/Account Password
+      zh_Hans: 应用密码/账户密码
+      pt_BR: Senha de App/Conta
+    required: true
+    help:
+      en_US: Your Bitbucket App Password or Account Password. Create one in your Bitbucket account settings.
+      zh_Hans: 您的 Bitbucket 应用密码或账户密码。请在您的 Bitbucket 账户设置中创建一个。
+      pt_BR: Sua Senha de App do Bitbucket ou Senha de Conta. Crie um nas configurações da sua conta Bitbucket.
+    url: todo
+identity:
+  author: langgenius
+  name: bitbucket
+  label:
+    en_US: Bitbucket Cloud
+    zh_Hans: Bitbucket Cloud
+    pt_BR: Bitbucket Cloud
+  description:
+    en_US: Provides tools to interact with Bitbucket.
+    zh_Hans: 提供与 Bitbucket 交互的工具。
+    pt_BR: Fornece ferramentas para interagir com o Bitbucket.
+  icon: icon.svg
+tools:
+  - tools/add_pull_request_comment.yaml
+  - tools/get_pull_request.yaml
+  - tools/list_pull_request.yaml
+  - tools/get_repository.yaml
+  - tools/get_workspace.yaml
+  - tools/list_repository.yaml
+  - tools/list_workspace.yaml
+extra:
+  python:
+    source: provider/bitbucket.py
