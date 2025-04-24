@@ -4,7 +4,7 @@ from tools.dalle2 import DallE2Tool
 from dify_plugin import ToolProvider
 
 
-class DALLEProvider(ToolProvider):
+class OpenAIProvider(ToolProvider):
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
         try:
             for _ in DallE2Tool.from_credentials(credentials, user_id="").invoke(
