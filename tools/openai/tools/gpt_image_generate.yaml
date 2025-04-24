@@ -79,7 +79,7 @@ parameters:
   max: 10
   min: 1
   name: n
-  required: true
+  required: false
   type: number
 - default: auto
   form: form

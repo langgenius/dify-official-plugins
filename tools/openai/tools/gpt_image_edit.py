@@ -114,6 +114,18 @@ class GPTImageEditTool(Tool):
         if quality != "auto":
              edit_args["quality"] = quality
 
+        # Number of images to generate (optional, defaults to 1)
+        n = tool_parameters.get("n", 1)
+        try:
+            n = int(n)
+            if not 1 <= n <= 10:
+                yield self.create_text_message("Invalid n value. Must be between 1 and 10.")
+                return
+            edit_args["n"] = n
+        except (TypeError, ValueError):
+            yield self.create_text_message("Invalid n value. Must be a number between 1 and 10.")
+            return
+
         # --- API Call ---
         try:
             response = client.images.edit(**edit_args)
@@ -141,22 +153,47 @@ class GPTImageEditTool(Tool):
                 mask_file.close()
 
         # --- Process Response ---
-        for image_data in response.data:
-            if not image_data.b64_json:
-                continue
-            # For edits, the output format isn't configurable via API for gpt-image-1,
-            # it seems to follow input or defaults (likely PNG).
-            # Let's assume PNG or decode if possible.
-            (mime_type, blob_image) = self._decode_image(image_data.b64_json)
-            
-            # Include usage information in metadata if available
-            metadata = {"mime_type": mime_type}
-            if hasattr(response, 'usage'):
-                metadata["usage"] = response.usage
-            
-            yield self.create_blob_message(
-                blob=blob_image, meta=metadata
-            )
+        try:
+            for image_data in response.data:
+                if not image_data.b64_json:
+                    continue
+                
+                # For edits, the output format isn't configurable via API for gpt-image-1,
+                # it seems to follow input or defaults (likely PNG).
+                # Let's assume PNG or decode if possible.
+                try:
+                    mime_type, blob_image = self._decode_image(image_data.b64_json)
+                    
+                    # Create metadata dictionary
+                    metadata = {"mime_type": mime_type}
+                    
+                    # Add usage information if available
+                    if hasattr(response, 'usage'):
+                        usage_dict = {}
+                        if hasattr(response.usage, 'total_tokens'):
+                            usage_dict['total_tokens'] = response.usage.total_tokens
+                        if hasattr(response.usage, 'input_tokens'):
+                            usage_dict['input_tokens'] = response.usage.input_tokens
+                        if hasattr(response.usage, 'output_tokens'):
+                            usage_dict['output_tokens'] = response.usage.output_tokens
+                        if hasattr(response.usage, 'input_tokens_details'):
+                            usage_dict['input_tokens_details'] = {
+                                'text_tokens': response.usage.input_tokens_details.text_tokens,
+                                'image_tokens': response.usage.input_tokens_details.image_tokens
+                            }
+                        if usage_dict:
+                            metadata['usage'] = usage_dict
+                    
+                    yield self.create_blob_message(
+                        blob=blob_image,
+                        meta=metadata
+                    )
+                except Exception as e:
+                    yield self.create_text_message(f"Error processing response image: {str(e)}")
+                    continue
+        except Exception as e:
+            yield self.create_text_message(f"Error processing response: {str(e)}")
+            return
 
     @staticmethod
     def _decode_image(base64_image: str) -> tuple[str, bytes]:

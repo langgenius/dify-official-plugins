@@ -126,4 +126,19 @@ parameters:
       zh_Hans: 高
     value: high
   required: false
-  type: select 
+  type: select
+- default: 1
+  form: form
+  human_description:
+    en_US: Number of images to generate (between 1 and 10).
+    pt_BR: Número de imagens a serem geradas (entre 1 e 10).
+    zh_Hans: 要生成的图像数量（1到10之间）。
+  label:
+    en_US: Number of Images
+    pt_BR: Número de Imagens
+    zh_Hans: 图像数量
+  name: n
+  min: 1
+  max: 10
+  required: false
+  type: number 
