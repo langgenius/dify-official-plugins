@@ -110,16 +110,13 @@ class GPTImageGenerateTool(Tool):
         n = 1 # Default to 1
         if n_str is not None:
             try:
-                 n = int(n_str)
-                 # API docs say 1-10, but example uses 1. Let's stick to 1 for now for gpt-image-1
-                 # if not 1 <= n <= 10:
-                 if n != 1:
-                     # raise ValueError("Number of images (n) must be between 1 and 10.")
-                     raise ValueError("Number of images (n) must be 1 for this tool configuration.")
+                n = int(n_str)
+                if not 1 <= n <= 10:
+                    raise ValueError("Number of images (n) must be between 1 and 10.")
             except ValueError as e:
-                 yield self.create_text_message(f"Invalid n: {e}")
-                 return
-        # generation_args["n"] = n # Always 1, so OpenAI library default is fine.
+                yield self.create_text_message(f"Invalid n: {e}")
+                return
+        generation_args["n"] = n  # Include n in generation arguments
 
         # --- API Call --- 
         try:
