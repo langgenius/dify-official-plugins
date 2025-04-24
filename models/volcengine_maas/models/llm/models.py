@@ -40,11 +40,11 @@ configs: dict[str, ModelConfig] = {
         features=[ModelFeature.AGENT_THOUGHT],
     ),
     "DeepSeek-R1": ModelConfig(
-        properties=ModelProperties(context_size=65536, max_tokens=8192, mode=LLMMode.CHAT),
+        properties=ModelProperties(context_size=65536, max_tokens=16384, mode=LLMMode.CHAT),
         features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
     ),
     "DeepSeek-V3": ModelConfig(
-        properties=ModelProperties(context_size=65536, max_tokens=8192, mode=LLMMode.CHAT),
+        properties=ModelProperties(context_size=128000, max_tokens=16384, mode=LLMMode.CHAT),
         features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
     ),
     "Doubao-1.5-vision-pro-32k": ModelConfig(
