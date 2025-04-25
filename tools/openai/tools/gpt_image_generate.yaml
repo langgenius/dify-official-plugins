@@ -1,0 +1,219 @@
+description:
+  human:
+    en_US: GPT Image Generate (gpt-image-1) is a text to image generation tool
+    pt_BR: GPT Image Generate (gpt-image-1) é uma ferramenta de geração de imagem a partir de texto
+    zh_Hans: GPT Image Generate (gpt-image-1) 是一个文本到图像的生成工具
+  llm: GPT Image Generate is a tool used to generate images from text using OpenAI's gpt-image-1 model
+extra:
+  python:
+    source: tools/gpt_image_generate.py
+identity:
+  author: langgenius
+  description:
+    en_US: GPT Image Generate is OpenAI's most advanced model for image generation, featuring superior instruction following, text rendering, and real-world knowledge.
+    pt_BR: GPT Image Generate é o modelo mais avançado da OpenAI para geração de imagens, com acompanhamento superior de instruções, renderização de texto e conhecimento do mundo real.
+    zh_Hans: GPT Image Generate 是 OpenAI 最先进的图像生成模型，具有卓越的指令遵循、文本渲染和真实世界知识。
+  label:
+    en_US: GPT Image Generate
+    pt_BR: GPT Image Generate
+    zh_Hans: GPT 图像生成
+  name: gpt_image_generate
+parameters:
+- form: llm
+  human_description:
+    en_US: Detailed description of the image you want to generate (max 32000 chars). Check the official OpenAI documentation for GPT Image.
+    pt_BR: Descrição detalhada da imagem que você deseja gerar (máx 32000 chars). Verifique a documentação oficial da OpenAI para GPT Image.
+    zh_Hans: 您想要生成的图像的详细描述（最多 32000 字符）。请查看 GPT Image 的 OpenAI 官方文档。
+  label:
+    en_US: Prompt
+    pt_BR: Prompt
+    zh_Hans: 提示词
+  llm_description: Detailed image prompt for GPT Image (max 32000 characters). Describe the desired image clearly.
+  name: prompt
+  required: true
+  type: string
+- default: auto
+  form: form
+  human_description:
+    en_US: Select the image size
+    pt_BR: Selecione o tamanho da imagem
+    zh_Hans: 选择图像大小
+  label:
+    en_US: Image size
+    pt_BR: Tamanho da imagem
+    zh_Hans: 图像大小
+  name: size
+  options:
+  - label:
+      en_US: Auto
+      pt_BR: Automático
+      zh_Hans: 自动
+    value: auto
+  - label:
+      en_US: Square (1024x1024)
+      pt_BR: Quadrado (1024x1024)
+      zh_Hans: 方形 (1024x1024)
+    value: "1024x1024"
+  - label:
+      en_US: Portrait (1024x1536)
+      pt_BR: Retrato (1024x1536)
+      zh_Hans: 竖屏/肖像 (1024x1536)
+    value: "1024x1536"
+  - label:
+      en_US: Landscape (1536x1024)
+      pt_BR: Paisagem (1536x1024)
+      zh_Hans: 横屏/风景 (1536x1024)
+    value: "1536x1024"
+  required: false
+  type: select
+- default: 1
+  form: form
+  human_description:
+    en_US: Number of images to generate (Must be less than 10).
+    pt_BR: Número de imagens a gerar (Deve ser menor que 10).
+    zh_Hans: 要生成的图像数量（必须小于 10）。
+  label:
+    en_US: Number of images
+    pt_BR: Número de imagens
+    zh_Hans: 图像数量
+  max: 10
+  min: 1
+  name: n
+  required: false
+  type: number
+- default: auto
+  form: form
+  human_description:
+    en_US: Select the image quality
+    pt_BR: Selecione a qualidade da imagem
+    zh_Hans: 选择图像质量
+  label:
+    en_US: Image quality
+    pt_BR: Qualidade da imagem
+    zh_Hans: 图像质量
+  name: quality
+  options:
+  - label:
+      en_US: Auto
+      pt_BR: Automático
+      zh_Hans: 自动
+    value: auto
+  - label:
+      en_US: Low
+      pt_BR: Baixa
+      zh_Hans: 低
+    value: low
+  - label:
+      en_US: Medium
+      pt_BR: Média
+      zh_Hans: 中
+    value: medium
+  - label:
+      en_US: High
+      pt_BR: Alta
+      zh_Hans: 高
+    value: high
+  required: false
+  type: select
+- default: auto
+  form: form
+  human_description:
+    en_US: Select the image background type. Transparent requires PNG or WebP format and works best with medium/high quality.
+    pt_BR: Selecione o tipo de fundo da imagem. Fundo transparente requer formato PNG ou WebP e funciona melhor com qualidade média/alta.
+    zh_Hans: 选择图像背景类型。透明背景需要 PNG 或 WebP 格式，并且最适用于中/高质量。
+  label:
+    en_US: Background
+    pt_BR: Fundo
+    zh_Hans: 背景
+  name: background
+  options:
+  - label:
+      en_US: Auto
+      pt_BR: Automático
+      zh_Hans: 自动
+    value: auto
+  - label:
+      en_US: Opaque
+      pt_BR: Opaco
+      zh_Hans: 不透明
+    value: opaque
+  - label:
+      en_US: Transparent
+      pt_BR: Transparente
+      zh_Hans: 透明
+    value: transparent
+  required: false
+  type: select
+- default: auto
+  form: form
+  human_description:
+    en_US: Select the output image format.
+    pt_BR: Selecione o formato da imagem de saída.
+    zh_Hans: 选择输出图像格式。
+  label:
+    en_US: Output Format
+    pt_BR: Formato de Saída
+    zh_Hans: 输出格式
+  name: output_format
+  options:
+  - label:
+      en_US: Auto
+      pt_BR: Automático
+      zh_Hans: 自动
+    value: auto
+  - label:
+      en_US: PNG
+      pt_BR: PNG
+      zh_Hans: PNG
+    value: png
+  - label:
+      en_US: JPEG
+      pt_BR: JPEG
+      zh_Hans: JPEG
+    value: jpeg
+  - label:
+      en_US: WebP
+      pt_BR: WebP
+      zh_Hans: WebP
+    value: webp
+  required: false
+  type: select
+- default: 100
+  form: form
+  human_description:
+    en_US: Set compression level (0-100) for JPEG/WebP formats.
+    pt_BR: Defina o nível de compressão (0-100) para formatos JPEG/WebP.
+    zh_Hans: 设置 JPEG/WebP 格式的压缩级别（0-100）。
+  label:
+    en_US: Output Compression
+    pt_BR: Compressão de Saída
+    zh_Hans: 输出压缩
+  name: output_compression
+  max: 100
+  min: 0
+  required: false
+  type: number
+- default: auto
+  form: form
+  human_description:
+    en_US: Control content moderation level.
+    pt_BR: Controle o nível de moderação de conteúdo.
+    zh_Hans: 控制内容审核级别。
+  label:
+    en_US: Moderation
+    pt_BR: Moderação
+    zh_Hans: 内容审核
+  name: moderation
+  options:
+  - label:
+      en_US: Auto
+      pt_BR: Automático
+      zh_Hans: 自动
+    value: auto
+  - label:
+      en_US: Low
+      pt_BR: Baixo
+      zh_Hans: 低
+    value: low
+  required: false
+  type: select

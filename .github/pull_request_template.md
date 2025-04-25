@@ -1,78 +1,80 @@
-## Related Issue or Context
-<!-- 
-- Link related Issues if applicable: #issue_number
-- Or provide Context about why this Change is needed
+## Related Issues or Context
+<!--
+⚠️ NOTE: This repository is for Dify Official Plugins only. 
+For community contributions, please submit to https://github.com/langgenius/dify-plugins instead.
+
+- Link Related Issues if Applicable: #issue_number
+- Or Provide Context about Why this Change is Needed
 -->
 
-## Type of Change
-<!-- Put an `x` in all the boxes that apply -->
-- [ ] Bug Fix (non-breaking change which fixes an Issue)
-- [ ] New Feature (non-breaking change which adds Functionality)
-- [ ] Breaking Change (fix or feature that may cause existing Functionality to not work as expected)
-- [ ] Documentation Update
-- [ ] Code Refactoring
+## This PR contains Changes to *Non-Plugin* 
+<!-- Put an `x` in all the boxes that apply by replacing [ ] with [x] 
+For example:
+- [x] Documentation -->
+
+- [ ] Documentation
 - [ ] Other
 
-## Version Control (if applicable)
-- [ ] Version bumped in Manifest.yaml (top-level `Version` field, not in Meta section)
-<!-- Version format: MAJOR.MINOR.PATCH
-- MAJOR (0.x.x): Reserved for Major Releases with widespread Breaking Changes
-- MINOR (x.0.x): For New Features or limited Breaking Changes
-- PATCH (x.x.0): For backwards-compatible Bug Fixes and minor Improvements
-- Note: Each version component (MAJOR, MINOR, PATCH) can be 2 digits, e.g., 10.11.22
--->
+## This PR contains Changes to *Non-LLM Models Plugin*
+- [ ] I have Run Comprehensive Tests Relevant to My Changes
+<!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
-## Test Evidence (if applicable)
-> [!IMPORTANT]
-> Visual Proof is required for Bug Fixes, New Features, and Breaking Changes:
+## This PR contains Changes to *LLM Models Plugin*
 
-### Screenshots or Video/GIF:
-<!-- Provide your evidence here -->
-
-> [!NOTE]
-> For Non-LLM Models Changes:
-> - **Bug Fixes**:
->   - [ ] Show the Fix working
-> - **New Features**:
->   - [ ] Demonstrate the Functionality
-> - **Breaking Changes**:
->   - [ ] Show both Old and New Behavior
->
-> For LLM Models Changes:
-> - **Bug Fixes**:
->   - [ ] Show the Fix working with Example Inputs/Outputs
-> - **New Features**:
->   - [ ] Demonstrate the Functionality with Example Inputs/Outputs
-> - **Breaking Changes** (requires comprehensive Testing):
->   - **Conversation & Interaction**:
->     - [ ] Message Flow Handling (System Messages and User→Assistant Turn-taking)
->     - [ ] Tool Interaction Flow (Multi-round Usage and Output Handling if applicable)
->   - **Input/Output Handling**:
->     - [ ] Multimodal Input Handling (Images, PDFs, Audio, Video if applicable)
->     - [ ] Multimodal Output Generation (Images, Audio, Video if applicable)
->     - [ ] Structured Output Format (if applicable)
->   - **Metrics**:
->     - [ ] Token Consumption Metrics
->   - **Others**:
->     - [ ] e.g., Reasoning Process for Claude 3.7 Sonnet, Grounding for Gemini (if applicable)
 <!-- LLM Models Test Example: -->
 <!-- https://github.com/langgenius/dify-official-plugins/blob/main/.assets/test-examples/llm-plugin-tests/llm_test_example.md -->
 
-### Environment Verification
-> [!IMPORTANT]
-> At least one environment must be tested.
+- [ ] My Changes Affect Message Flow Handling (System Messages and User→Assistant Turn-Taking)
+<!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
-#### Local Deployment Environment
-Local Deployment Dify Version: <!-- Specify your version (e.g., 1.1.3) -->
-- [ ] Changes tested in a Clean Environment that matches Production Configuration
+- [ ] My Changes Affect Tool Interaction Flow (Multi-Round Usage and Output Handling, for both Agent App and Agent Node)
+<!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
+
+- [ ] My Changes Affect Multimodal Input Handling (Images, PDFs, Audio, Video, etc.)
+<!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
+
+- [ ] My Changes Affect Multimodal Output Generation (Images, Audio, Video, etc.)
+<!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
+
+- [ ] My Changes Affect Structured Output Format (JSON, XML, etc.)
+<!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
+
+- [ ] My Changes Affect Token Consumption Metrics
+<!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
+
+- [ ] My Changes Affect Other LLM Functionalities (Reasoning Process, Grounding, Prompt Caching, etc.)
+<!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
+
+- [ ] Other Changes (Add New Models, etc.)
+<!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
+
+## Version Control (Any Changes to the Plugin Will Require Bumping the Version)
+- [ ] I have Bumped Up the Version in Manifest.yaml (Top-Level `Version` Field, Not in Meta Section)
 <!--
-- Python virtual env matching Manifest.yaml & requirements.txt
-- No breaking changes in Dify that may affect the testing result
+⚠️ NOTE: Version Format: MAJOR.MINOR.PATCH
+- MAJOR (0.x.x): Reserved for Significant architectural changes or incompatible API modifications
+- MINOR (x.0.x): For New feature additions while maintaining backward compatibility
+- PATCH (x.x.0): For Backward-compatible bug fixes and minor improvements
+- Note: Each Version Component (MAJOR, MINOR, PATCH) Can Be 2 Digits, e.g., 10.11.22
 -->
 
-#### SaaS Environment
-- [ ] Testing performed on cloud.dify.ai
-- [ ] Changes tested in a Clean Environment that matches Production Configuration
+## Dify Plugin SDK Version
+- [ ] I'm Using `dify_plugin>=0.1.0,<0.2.0` in requirements.txt ([SDK docs](https://github.com/langgenius/dify-plugin-sdks/blob/main/python/README.md))
+
+## Environment Verification (If Any Code Changes)
+<!-- 
+⚠️ NOTE: At Least One Environment Must Be Tested. 
+-->
+
+### Local Deployment Environment
+- [ ] Dify Version is: <!-- Specify Your Version (e.g., 1.2.0) -->, I have Tested My Changes on Local Deployment Dify with a Clean Environment That Matches the Production Configuration. 
 <!--
-- Python virtual env matching Manifest.yaml & requirements.txt
+- Python Virtual Env Matching Manifest.yaml & requirements.txt
+- No Breaking Changes in Dify That May Affect the Testing Result
+-->
+
+### SaaS Environment
+- [ ] I have Tested My Changes on cloud.dify.ai with a Clean Environment That Matches the Production Configuration
+<!--
+- Python Virtual Env Matching Manifest.yaml & requirements.txt
 -->

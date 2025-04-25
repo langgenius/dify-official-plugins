@@ -1,0 +1,69 @@
+identity:
+  author: langgenius
+  name: add_pull_request_comment
+  label:
+    en_US: Add Pull Request Comment
+    zh_Hans: 添加拉取请求评论
+    pt_BR: Adicionar Comentário ao Pull Request
+description:
+  human:
+    en_US: Adds a comment to a specific pull request in a Bitbucket repository.
+    zh_Hans: 在 Bitbucket 仓库的特定拉取请求中添加评论。
+    pt_BR: Adiciona um comentário a um pull request específico em um repositório Bitbucket.
+  llm: Adds a comment to a specified pull request. Requires workspace slug, repository slug, pull request ID, and the comment text. Returns the created comment object.
+parameters:
+  - name: workspace_slug
+    type: string
+    required: true
+    label:
+      en_US: Workspace Slug
+      zh_Hans: 工作区标识符
+      pt_BR: Slug do Workspace
+    human_description:
+      en_US: The slug or UUID of the workspace.
+      zh_Hans: 工作区的标识符或 UUID。
+      pt_BR: O slug ou UUID do workspace.
+    llm_description: The unique identifier (slug or UUID surrounded by {}) for the Bitbucket workspace containing the repository.
+    form: llm
+  - name: repository_slug
+    type: string
+    required: true
+    label:
+      en_US: Repository Slug
+      zh_Hans: 仓库标识符
+      pt_BR: Slug do Repositório
+    human_description:
+      en_US: The slug of the repository.
+      zh_Hans: 仓库的标识符。
+      pt_BR: O slug do repositório.
+    llm_description: The unique identifier (slug) for the Bitbucket repository within the specified workspace.
+    form: llm
+  - name: pull_request_id
+    type: string
+    required: true
+    label:
+      en_US: Pull Request ID
+      zh_Hans: 拉取请求 ID
+      pt_BR: ID do Pull Request
+    human_description:
+      en_US: The ID of the pull request.
+      zh_Hans: 拉取请求的 ID。
+      pt_BR: O ID do pull request.
+    llm_description: The numeric ID of the pull request to add the comment to.
+    form: llm
+  - name: comment
+    type: string
+    required: true
+    label:
+      en_US: Comment
+      zh_Hans: 评论内容
+      pt_BR: Comentário
+    human_description:
+      en_US: The content of the comment to add.
+      zh_Hans: 要添加的评论内容。
+      pt_BR: O conteúdo do comentário a ser adicionado.
+    llm_description: The text content of the comment to be added to the pull request.
+    form: llm
+extra:
+  python:
+    source: tools/add_pull_request_comment.py

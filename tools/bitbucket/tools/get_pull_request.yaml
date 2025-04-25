@@ -1,0 +1,56 @@
+identity:
+  author: langgenius
+  name: get_pull_request
+  label:
+    en_US: Get Pull Request Details
+    zh_Hans: 获取拉取请求详情
+    pt_BR: Obter Detalhes do Pull Request
+description:
+  human:
+    en_US: Retrieves details for a specific pull request in a Bitbucket repository.
+    zh_Hans: 获取 Bitbucket 仓库中特定拉取请求的详细信息。
+    pt_BR: Recupera detalhes de um pull request específico em um repositório Bitbucket.
+  llm: Fetches the details of a specific pull request using its ID, repository slug, and workspace slug. Returns the pull request object.
+parameters:
+  - name: workspace_slug
+    type: string
+    required: true
+    label:
+      en_US: Workspace Slug
+      zh_Hans: 工作区标识符
+      pt_BR: Slug do Workspace
+    human_description:
+      en_US: The slug or UUID of the workspace.
+      zh_Hans: 工作区的标识符或 UUID。
+      pt_BR: O slug ou UUID do workspace.
+    llm_description: The unique identifier (slug or UUID surrounded by {}) for the Bitbucket workspace containing the repository.
+    form: llm
+  - name: repository_slug
+    type: string
+    required: true
+    label:
+      en_US: Repository Slug
+      zh_Hans: 仓库标识符
+      pt_BR: Slug do Repositório
+    human_description:
+      en_US: The slug of the repository.
+      zh_Hans: 仓库的标识符。
+      pt_BR: O slug do repositório.
+    llm_description: The unique identifier (slug) for the Bitbucket repository within the specified workspace.
+    form: llm
+  - name: pull_request_id
+    type: string
+    required: true
+    label:
+      en_US: Pull Request ID
+      zh_Hans: 拉取请求 ID
+      pt_BR: ID do Pull Request
+    human_description:
+      en_US: The ID of the pull request.
+      zh_Hans: 拉取请求的 ID。
+      pt_BR: O ID do pull request.
+    llm_description: The string ID of the pull request to retrieve details for.
+    form: llm
+extra:
+  python:
+    source: tools/get_pull_request.py

@@ -48,3 +48,4 @@ provider_credential_schema:
 supported_model_types:
 - llm
 - text-embedding
+- tts

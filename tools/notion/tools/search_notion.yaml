@@ -1,0 +1,56 @@
+identity:
+  name: search_notion
+  author: langgenius
+  label:
+    en_US: Search Notion
+    zh_Hans: 搜索 Notion
+    pt_BR: Pesquisar no Notion
+    ja_JP: Notion を検索
+    zh_Hant: 搜尋 Notion
+description:
+  human:
+    en_US: Search for pages and databases in your Notion workspace
+    zh_Hans: 在您的 Notion 工作区中搜索页面和数据库
+    pt_BR: Pesquise páginas e bancos de dados em seu workspace do Notion
+    ja_JP: Notion ワークスペース内のページとデータベースを検索します
+    zh_Hant: 在您的 Notion 工作區中搜尋頁面和資料庫
+  llm: Search for pages and databases in a Notion workspace by title or content. Returns a list of matching results with their URLs, titles, and object types (page or database).
+parameters:
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: Search Query
+      zh_Hans: 搜索查询
+      pt_BR: Consulta de Pesquisa
+      ja_JP: 検索クエリ
+      zh_Hant: 搜尋查詢
+    human_description:
+      en_US: Enter keywords to search for in Notion
+      zh_Hans: 输入要在 Notion 中搜索的关键词
+      pt_BR: Digite palavras-chave para pesquisar no Notion
+      ja_JP: Notion で検索するキーワードを入力してください
+      zh_Hant: 輸入要在 Notion 中搜尋的關鍵字
+    llm_description: The search query to find pages or databases in Notion. Can be any keywords that might appear in the title or content.
+    form: llm
+  - name: limit
+    type: number
+    required: false
+    default: 10
+    label:
+      en_US: Maximum Results
+      zh_Hans: 最大结果数
+      pt_BR: Resultados Máximos
+      ja_JP: 最大結果数
+      zh_Hant: 最大結果數
+    human_description:
+      en_US: Maximum number of search results to return
+      zh_Hans: 返回的搜索结果最大数量
+      pt_BR: Número máximo de resultados de pesquisa a retornar
+      ja_JP: 返す検索結果の最大数
+      zh_Hant: 返回的搜尋結果最大數量
+    llm_description: The maximum number of search results to return. Default is 10.
+    form: llm
+extra:
+  python:
+    source: tools/search_notion.py 

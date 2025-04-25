@@ -1216,15 +1216,15 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             model = model.split(":")[1]
 
         # Currently, we can use gpt4o to calculate chatgpt-4o-latest's token.
-        if model == "chatgpt-4o-latest" or model.startswith(("o1", "o3")):
+        if model == "chatgpt-4o-latest" or model.startswith(("o1", "o3", "gpt-4.1", "gpt-4.5")):
             model = "gpt-4o"
 
         try:
             encoding = tiktoken.encoding_for_model(model)
         except KeyError:
             logger.warning("Warning: model not found. Using cl100k_base encoding.")
-            model = "cl100k_base"
-            encoding = tiktoken.get_encoding(model)
+            encoding_name = "cl100k_base"
+            encoding = tiktoken.get_encoding(encoding_name)
 
         if model.startswith("gpt-3.5-turbo-0301"):
             # every message follows <im_start>{role/name}\n{content}<im_end>\n

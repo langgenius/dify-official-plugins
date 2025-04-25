@@ -1,0 +1,115 @@
+name: image-to-video
+description:
+  human:
+    en_US: Generate video from uploaded images via SiliconFlow's video generation models.
+    zh_CN: 通过上传图片使用硅基流动的视频生成模型生成视频。
+  llm: This tool is used to generate video from uploaded images via SiliconFlow's image-to-video models.
+extra:
+  python:
+    source: tools/image-to-video.py
+identity:
+  author: SiliconFlow, Inc.
+  icon: icon.svg
+  label:
+    en_US: Image to Video
+    zh_CN: 图生视频
+  name: ImageToVideo
+parameters:
+  - form: llm
+    human_description:
+      en_US: The text prompt describing how the uploaded image should be animated into a video.
+      zh_Hans: 描述如何将上传的图片制作成视频的文本提示词。
+    label:
+      en_US: prompt
+      zh_Hans: 提示词
+    llm_description: this prompt text will be used to guide video generation based on the uploaded image.
+    name: prompt
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: "Upload the source image for video generation."
+      zh_Hans: "上传作为视频生成起点的源图像。"
+    label:
+      en_US: Source Image
+      zh_Hans: 源图像
+    llm_description: Source image required for image-to-video generation.
+    name: image
+    type: file
+    required: true
+  - default: Wan-AI/Wan2.1-I2V-14B-720P
+    form: form
+    human_description:
+      en_US: "Choose the model for video generation"
+      zh_Hans: "选择用于视频生成的模型"
+    label:
+      en_US: Choose Video Model
+      zh_Hans: 选择生成视频的模型
+    name: model
+    options:
+      - label:
+          en_US: Wan-AI Image to Video
+          zh_Hans: Wan-AI 图生视频
+        value: Wan-AI/Wan2.1-I2V-14B-720P
+      - label:
+          en_US: Wan-AI Image to Video (Turbo)
+          zh_Hans: Wan-AI 图生视频（快速版）
+        value: Wan-AI/Wan2.1-I2V-14B-720P-Turbo
+    required: true
+    type: select
+  - default: 1280x720
+    form: form
+    human_description:
+      en_US: "Set the size of the generated video."
+      zh_Hans: "设置生成视频的尺寸。"
+    label:
+      en_US: Video Size
+      zh_Hans: 视频尺寸
+    name: video_size
+    options:
+      - label:
+          en_US: 854x480 (480p)
+          zh_Hans: 854x480 (480p)
+        value: 854x480
+      - label:
+          en_US: 1024x576 (576p)
+          zh_Hans: 1024x576 (576p)
+        value: 1024x576
+      - label:
+          en_US: 1280x720 (720p)
+          zh_Hans: 1280x720 (720p)
+        value: 1280x720
+      - label:
+          en_US: 1920x1080 (1080p)
+          zh_Hans: 1920x1080 (1080p)
+        value: 1920x1080
+    required: true
+    type: select
+  - form: form
+    human_description:
+      en_US: The same seed and prompt can produce similar videos.
+      zh_Hans: 相同的种子和提示可以产生相似的视频。
+    label:
+      en_US: Seed
+      zh_Hans: 种子
+    max: 1000000
+    min: 0
+    name: seed
+    type: number
+  - form: form
+    human_description:
+      en_US: "Negative prompt for controlling what you don't want in the video."
+      zh_Hans: "设置不希望在视频中出现的内容的负面提示词。"
+    label:
+      en_US: Negative Prompt
+      zh_Hans: 负面提示词
+    name: negative_prompt
+    required: false
+    type: string
+
+secrets:
+  - name: SILICONFLOW_API_KEY
+    label: SiliconFlow API Key
+    type: string
+    help: 您可以从SiliconFlow官网获取API密钥
+    required: true 

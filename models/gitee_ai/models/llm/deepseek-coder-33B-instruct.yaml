@@ -43,7 +43,6 @@ parameter_rules:
     default: 0.7
     min: 0.0
     max: 1.0
-    precision: 1
     required: true
     help:
       en_US: "The randomness of the sampling temperature control output. The temperature value is within the range of [0.0, 1.0]. The higher the value, the more random and creative the output; the lower the value, the more stable it is. It is recommended to adjust either top_p or temperature parameters according to your needs to avoid adjusting both at the same time."

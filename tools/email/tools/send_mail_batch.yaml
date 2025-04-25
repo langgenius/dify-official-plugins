@@ -27,6 +27,17 @@ parameters:
     type: string
   - form: llm
     human_description:
+      en_US: Reply-to email address
+      zh_Hans: 回复电子邮件地址
+    label:
+      en_US: Reply-to email address
+      zh_Hans: 回复电子邮件地址
+    llm_description: Reply-to email address
+    name: reply_to
+    required: false
+    type: string
+  - form: llm
+    human_description:
       en_US: Carbon copy email account
       zh_Hans: 抄送邮箱账号
     label:
@@ -69,3 +80,27 @@ parameters:
     name: email_content
     required: true
     type: string
+  - form: form
+    human_description:
+      en_US: Convert content from markdown to HTML
+      zh_Hans: 将内容从Markdown转换为HTML
+    label:
+      en_US: Convert to HTML
+      zh_Hans: 转换为HTML
+    llm_description: Whether to convert the email content from markdown to HTML format
+    name: convert_to_html
+    required: false
+    type: boolean
+    default: false
+  - form: llm
+    human_description:
+      en_US: Files to attach to the email
+      zh_Hans: 要附加到电子邮件的文件
+    label:
+      en_US: File Attachments
+      zh_Hans: 文件附件
+    llm_description: Files to attach to the email
+    name: attachments
+    required: false
+    type: files
+

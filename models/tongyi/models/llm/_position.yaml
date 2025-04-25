@@ -16,6 +16,7 @@
 - qwen-vl-max-0201
 - qwen-vl-max
 - qwen-max-latest
+- qwen-max-0125
 - qwen-max-1201
 - qwen-max-0919
 - qwen-max-0428
@@ -24,6 +25,11 @@
 - qwen-max
 - qwen-max-longcontext
 - qwen-plus-latest
+- qwen-plus-0125
+- qwen-plus-0112
+- qwen-plus-1220
+- qwen-plus-1127
+- qwen-plus-1125
 - qwen-plus-0919
 - qwen-plus-0806
 - qwen-plus-0723

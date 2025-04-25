@@ -41,19 +41,20 @@ class PerplexityAITool(Tool):
             "presence_penalty": tool_parameters.get("presence_penalty", 0),
             "frequency_penalty": tool_parameters.get("frequency_penalty", 1),
             "stream": False,
+            "web_search_options": {
+                "search_context_size": tool_parameters.get("search_context_size", "low"),
+            },
         }
         if "search_recency_filter" in tool_parameters:
             payload["search_recency_filter"] = tool_parameters["search_recency_filter"]
-        if "return_citations" in tool_parameters:
-            payload["return_citations"] = tool_parameters["return_citations"]
+        if "return_images" in tool_parameters:
+            payload["return_images"] = tool_parameters["return_images"]
+        if "return_related_questions" in tool_parameters:
+            payload["return_related_questions"] = tool_parameters["return_related_questions"]
         if "search_domain_filter" in tool_parameters:
-            if isinstance(tool_parameters["search_domain_filter"], str):
-                if tool_parameters["search_domain_filter"] == "":
-                    payload["search_domain_filter"] = []
-                else:
-                    payload["search_domain_filter"] = [tool_parameters["search_domain_filter"]]
-            elif isinstance(tool_parameters["search_domain_filter"], list):
-                payload["search_domain_filter"] = tool_parameters["search_domain_filter"]
+            payload["search_domain_filter"] = [] if tool_parameters["search_domain_filter"] == "" else [domain.strip() for domain in tool_parameters["search_domain_filter"].split(",")][:3]
+        if "search_context_size" in tool_parameters:
+            payload["web_search_options"]["search_context_size"] = tool_parameters["search_context_size"]
         response = requests.post(url=PERPLEXITY_API_URL, json=payload, headers=headers)
         response.raise_for_status()
         valuable_res = self._parse_response(response.json())
