@@ -13,6 +13,16 @@ model_properties:
   context_size: 200000
 # docs: https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages.html
 parameter_rules:
+  - name: enable_cache
+    label:
+      zh_Hans: 启用提示缓存
+      en_US: Enable Prompt Cache
+    type: boolean
+    required: false
+    default: true
+    help:
+      zh_Hans: 启用提示缓存可以提高性能并降低成本。Claude 3.7 Sonnet支持在system、messages和tools字段中使用缓存检查点。
+      en_US: Enable prompt caching to improve performance and reduce costs. Claude 3.7 Sonnet supports cache checkpoints in system, messages, and tools fields.
   - name: reasoning_type
     label:
       zh_Hans: 推理配置

@@ -1,0 +1,121 @@
+description:
+  human:
+    en_US: Generate video from text descriptions via SiliconFlow's video generation models.
+    zh_CN: 通过文本描述使用硅基流动的视频生成模型生成视频。
+  llm: This tool is used to generate video directly from text prompts via SiliconFlow's text-to-video models.
+extra:
+  python:
+    source: tools/text-to-video.py
+identity:
+  author: SiliconFlow, Inc.
+  icon: icon.svg
+  label:
+    en_US: Text to Video
+    zh_CN: 文生视频
+  name: TextToVideo
+parameters:
+  - form: llm
+    human_description:
+      en_US: The detailed text prompt used to generate the video.
+      zh_Hans: 用于生成视频的详细文本描述。
+    label:
+      en_US: prompt
+      zh_Hans: 提示词
+    llm_description: this prompt text will be used to generate a video from scratch.
+    name: prompt
+    required: true
+    type: string
+  - default: tencent/HunyuanVideo-HD
+    form: form
+    human_description:
+      en_US: "Choose the model for video generation"
+      zh_Hans: "选择用于视频生成的模型"
+    label:
+      en_US: Choose Video Model
+      zh_Hans: 选择生成视频的模型
+    name: model
+    options:
+      - label:
+          en_US: Tencent HunyuanVideo
+          zh_Hans: 腾讯混元视频
+        value: tencent/HunyuanVideo
+      - label:
+          en_US: Tencent HunyuanVideo HD
+          zh_Hans: 腾讯混元视频高清版
+        value: tencent/HunyuanVideo-HD
+      - label:
+          en_US: Wan-AI Text to Video
+          zh_Hans: Wan-AI 文生视频
+        value: Wan-AI/Wan2.1-T2V-14B
+      - label:
+          en_US: Wan-AI Text to Video (Turbo)
+          zh_Hans: Wan-AI 文生视频（快速版）
+        value: Wan-AI/Wan2.1-T2V-14B-Turbo
+    required: true
+    type: select
+  - default: 1280x720
+    form: form
+    human_description:
+      en_US: "Set the size of the generated video."
+      zh_Hans: "设置生成视频的尺寸。"
+    label:
+      en_US: Video Size
+      zh_Hans: 视频尺寸
+    name: video_size
+    options:
+      - label:
+          en_US: 854x480 (480p)
+          zh_Hans: 854x480 (480p)
+        value: 854x480
+      - label:
+          en_US: 1024x576 (576p)
+          zh_Hans: 1024x576 (576p)
+        value: 1024x576
+      - label:
+          en_US: 1280x720 (720p)
+          zh_Hans: 1280x720 (720p)
+        value: 1280x720
+      - label:
+          en_US: 1920x1080 (1080p)
+          zh_Hans: 1920x1080 (1080p)
+        value: 1920x1080
+    required: true
+    type: select
+  - default: 4
+    form: form
+    human_description:
+      en_US: "Duration of the generated video in seconds."
+      zh_Hans: "生成视频的时长，以秒为单位。"
+    label:
+      en_US: Duration (seconds)
+      zh_Hans: 时长(秒)
+    name: duration
+    type: number
+    required: false
+  - form: form
+    human_description:
+      en_US: The same seed and prompt can produce similar videos.
+      zh_Hans: 相同的种子和提示可以产生相似的视频。
+    label:
+      en_US: Seed
+      zh_Hans: 种子
+    max: 1000000
+    min: 0
+    name: seed
+    type: number
+  - form: form
+    human_description:
+      en_US: "Negative prompt for controlling what you don't want in the video."
+      zh_Hans: "设置不希望在视频中出现的内容的负面提示词。"
+    label:
+      en_US: Negative Prompt
+      zh_Hans: 负面提示词
+    name: negative_prompt
+    required: false
+    type: string
+secrets:
+  - name: SILICONFLOW_API_KEY
+    label: SiliconFlow API Key
+    type: string
+    help: 您可以从SiliconFlow官网获取API密钥
+    required: true 

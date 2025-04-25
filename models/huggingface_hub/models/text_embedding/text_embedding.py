@@ -162,8 +162,8 @@ class HuggingfaceHubTextEmbeddingModel(_CommonHuggingfaceHub, TextEmbeddingModel
             tokens=tokens,
         )
         usage = EmbeddingUsage(
-            tokens=tokens,
-            total_tokens=tokens,
+            tokens=tokens[0],
+            total_tokens=tokens[0],
             unit_price=input_price_info.unit_price,
             price_unit=input_price_info.unit,
             total_price=input_price_info.total_amount,

@@ -1,6 +1,6 @@
 provider: bedrock
 label:
-  en_US: AWS
+  en_US: Amazon Bedrock
 description:
   en_US: Bedrock LLM Model 
 background: "#FCFDFF"
@@ -164,7 +164,7 @@ models:
       - "models/text_embedding/*.yaml"
 extra:
   python:
-    provider_source: provider/amazon-bedrock.py
+    provider_source: provider/bedrock.py
     model_sources:
       - "models/llm/llm.py"
       - "models/rerank/rerank.py"

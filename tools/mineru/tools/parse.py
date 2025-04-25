@@ -40,6 +40,7 @@ class ZipContent:
         if self.images is None:
             self.images = []
 
+
 class MineruTool(Tool):
 
     def _get_credentials(self) -> Credentials:
@@ -54,6 +55,7 @@ class MineruTool(Tool):
             logger.error("Missing token for remote server type")
             raise ToolProviderCredentialValidationError("Please input token")
         return Credentials(base_url=base_url, server_type=server_type, token=token)
+
 
     @staticmethod
     def _get_headers(credentials:Credentials) -> Dict[str, str]:
@@ -72,9 +74,11 @@ class MineruTool(Tool):
     def _build_api_url(base_url: str, *paths: str) -> str:
         return str(URL(base_url) / "/".join(paths))
 
+
     def _invoke(self, tool_parameters: Dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         credentials = self._get_credentials()
-        yield from self.parser_pdf(credentials, tool_parameters)
+        yield from self.parser_file(credentials, tool_parameters)
+
 
     def validate_token(self) -> None:
         """Validate URL and token."""
@@ -94,16 +98,19 @@ class MineruTool(Tool):
                 logger.error(f"Remote server validation failed with status {response.status_code}")
                 raise ToolProviderCredentialValidationError("Please check your base_url and token")
 
-    def _parser_pdf_local(self, credentials: Credentials, tool_parameters: Dict[str, Any]):
-        """Parse PDF files by local server."""
+
+    def _parser_file_local(self, credentials: Credentials, tool_parameters: Dict[str, Any]):
+        """Parse files by local server."""
         file = tool_parameters.get("file")
         if not file:
-            logger.error("No file provided for PDF parsing")
+            logger.error("No file provided for file parsing")
             raise ValueError("File is required")
 
+        self._validate_file_type(file.filename)
+
         headers = self._get_headers(credentials)
-        task_url = self._build_api_url(credentials.base_url, "pdf_parse")
-        logger.info(f"Starting PDF parse request to {task_url}")
+        task_url = self._build_api_url(credentials.base_url, "file_parse")
+        logger.info(f"Starting file parse request to {task_url}")
         params = {
             'parse_method': tool_parameters.get('parse_method', 'auto'),
             'return_layout': False,
@@ -113,14 +120,14 @@ class MineruTool(Tool):
         }
 
         file_data = {
-            "pdf_file": (file.filename, file.blob, 'application/pdf'),
+            "file": (file.filename, file.blob),
         }
         response = post(task_url, headers=headers, params=params, files=file_data)
         if response.status_code != 200:
-            logger.error(f"PDF parse failed with status {response.status_code}")
-            yield self.create_text_message(f"Failed to parse PDF.result: {response.text}")
+            logger.error(f"File parse failed with status {response.status_code}")
+            yield self.create_text_message(f"Failed to parse file. result: {response.text}")
             return
-        logger.info("PDF parse completed successfully")
+        logger.info("File parse completed successfully")
         response_json = response.json()
         md_content = response_json.get("md_content", "")
         content_list = response_json.get("content_list", [])
@@ -145,9 +152,15 @@ class MineruTool(Tool):
         yield self.create_text_message(md_content)
         yield self.create_json_message({"content_list": content_list})
 
-    def _parser_pdf_remote(self, credentials: Credentials, tool_parameters: Dict[str, Any]):
-        """Parse PDF files by remote server."""
+
+    def _parser_file_remote(self, credentials: Credentials, tool_parameters: Dict[str, Any]):
+        """Parse files by remote server."""
         file = tool_parameters.get("file")
+        if not file:
+            logger.error("No file provided for file parsing")
+            raise ValueError("File is required")
+        self._validate_file_type(file.filename)
+
         header = self._get_headers(credentials)
 
         # create parsing task
@@ -190,6 +203,7 @@ class MineruTool(Tool):
             logger.error('apply upload url failed,reason:{}'.format(result.msg))
             raise Exception('apply upload url failed,reason:{}'.format(result.msg))
 
+
     def _poll_get_parse_result(self, credentials: Credentials, batch_id: str) -> Dict[str, Any]:
         """poll get parser result."""
         url = self._build_api_url(credentials.base_url, f"api/v4/extract-results/batch/{batch_id}")
@@ -217,6 +231,7 @@ class MineruTool(Tool):
 
         logger.error("Polling timeout reached without getting completed result")
         raise TimeoutError("Parse operation timed out")
+
 
     def _download_and_extract_zip(self, url: str) -> Generator[ToolInvokeMessage, None, None]:
         """Download and extract zip file from URL."""
@@ -261,6 +276,7 @@ class MineruTool(Tool):
         yield self.create_text_message(content.md_content)
         yield self.create_variable_message("images", content.images)
 
+
     def _process_image(self, image_bytes:bytes, file_info: zipfile.ZipInfo) -> UploadFileResponse:
         """Process an image file from the zip archive."""
         base_name = os.path.basename(file_info.filename)
@@ -270,6 +286,7 @@ class MineruTool(Tool):
             "image/jpeg"
         )
 
+
     @staticmethod
     def _replace_md_img_path(md_content: str, images: list[UploadFileResponse]) -> str:
         for image in images:
@@ -277,14 +294,22 @@ class MineruTool(Tool):
                 md_content = md_content.replace("images/"+image.name, image.preview_url)
         return md_content
 
-    def parser_pdf(
+    @staticmethod
+    def _validate_file_type(filename: str) -> str:
+        extension = os.path.splitext(filename)[1].lower()
+        if extension not in [".pdf", ".doc", ".docx", ".ppt", ".pptx", ".png", ".jpg", ".jpeg"]:
+            raise ValueError(f"File extension {extension} is not supported")
+        return extension
+
+
+    def parser_file(
         self,
         credentials: Credentials,
         tool_parameters: Dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
         if credentials.server_type=="local":
-            yield from self._parser_pdf_local(credentials, tool_parameters)
+            yield from self._parser_file_local(credentials, tool_parameters)
         elif credentials.server_type=="remote":
-            yield from self._parser_pdf_remote(credentials, tool_parameters)
+            yield from self._parser_file_remote(credentials, tool_parameters)
 
 
