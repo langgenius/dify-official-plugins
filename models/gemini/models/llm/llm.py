@@ -1,10 +1,11 @@
 import base64
+import logging
 import tempfile
 import json
 import time
 import os
-from collections.abc import Generator, Iterator
-from typing import Optional, Union
+from collections.abc import Generator, Iterator, Sequence
+from typing import Optional, Union, Mapping, Any
 
 import requests
 from google import genai
@@ -18,11 +19,18 @@ from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
     MultiModalPromptMessageContent,
+    PromptMessageContent,
+    AudioPromptMessageContent,
+    DocumentPromptMessageContent,
+    ImagePromptMessageContent,
+    ImagePromptMessageContent,
+    TextPromptMessageContent,
     PromptMessageContentType,
     PromptMessageTool,
     SystemPromptMessage,
     ToolPromptMessage,
     UserPromptMessage,
+    VideoPromptMessageContent,
 )
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -52,7 +60,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         stop: Optional[list[str]] = None,
         stream: bool = True,
         user: Optional[str] = None,
-    ) -> Union[LLMResult, Generator]:
+    ) -> Union[LLMResult, Generator[LLMResultChunk]]:
         """
         Invoke large language model
 
@@ -66,6 +74,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
+        _ = user
         return self._generate(
             model,
             credentials,
@@ -111,7 +120,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
     def _convert_tools_to_glm_tool(self, tools: list[PromptMessageTool]) -> types.Tool:
         """
-        Convert tool messages to glm tools
+        Convert tool messages to google-genai's Tool Type.
 
         :param tools: tool messages
         :return: glm tools
@@ -157,55 +166,62 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         try:
             ping_message = UserPromptMessage(content="ping")
             self._generate(
-                model,
-                credentials,
-                [ping_message],
+                model=model,
+                credentials=credentials,
+                prompt_messages=[ping_message],
                 stream=False,
                 model_parameters={"max_output_tokens": 5},
             )
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
+        
+    def _get_response_modalities(self, model: str) -> list[str]:
+        """_get_response_modalities returns response modalities supported 
+        by the given model.
+        """
+        # FIXME(QuantumGhost): Multimodal output is currently limited to 
+        # the gemini-2.0-flash-experiment model. The model name is currently 
+        # hardcoded for simplicity; consider revisiting this approach for flexibility.
+        if model != "gemini-2.0-flash-experiment":
+            return ["Text"]
+        
+        return ["Text", "Image"]
+
 
     def _generate(
         self,
         model: str,
         credentials: dict,
         prompt_messages: list[PromptMessage],
-        model_parameters: dict,
+        model_parameters: Mapping[str, Any],
         tools: Optional[list[PromptMessageTool]] = None,
         stop: Optional[list[str]] = None,
         stream: bool = True,
         user: Optional[str] = None,
-    ) -> Union[LLMResult, Generator]:
-        """
-        Invoke large language model
-
-        :param model: model name
-        :param credentials: credentials kwargs
-        :param prompt_messages: prompt messages
-        :param model_parameters: model parameters
-        :param stop: stop words
-        :param stream: is stream response
-        :param user: unique user id
-        :return: full response or stream response chunk generator result
-        """
-        conditions = [
+    ) -> Union[LLMResult, Generator[LLMResultChunk]]:
+        conditions: list[bool] = [
             bool(model_parameters.get("json_schema")),
             bool(model_parameters.get("grounding")),
             bool(tools),
         ]
         if sum(conditions) >= 2:
-            raise errors.FunctionInvocationError(
+            raise InvokeError(
                 "gemini not support use multiple features at same time: json_schema, grounding, tools+knowledge"
             )
         config = types.GenerateContentConfig()
+        if system_instruction := self._get_system_instruction(prompt_messages=prompt_messages):
+            config.system_instruction = system_instruction
         if schema := model_parameters.get("json_schema"):
             try:
                 schema = json.loads(schema)
-            except:
-                raise errors.FunctionInvocationError("Invalid JSON Schema")
+            except (TypeError, ValueError) as exc:
+                raise InvokeError("Invalid JSON Schema") from exc
             config.response_schema = schema
             config.response_mime_type = "application/json"
+        else:
+            # Enable multimodal support only if JSON schema is not provided.
+            config.response_modalities = self._get_response_modalities(model)
+
         if stop:
             config.stop_sequences = stop
         
@@ -220,7 +236,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         if tools:
             config.tools.append(self._convert_tools_to_glm_tool(tools))
 
-        self.client = genai.Client(api_key=credentials["google_api_key"])
+        genai_client = genai.Client(api_key=credentials["google_api_key"])
 
         history = []
         for msg in prompt_messages:  # makes message roles strictly alternating
@@ -229,16 +245,16 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 history[-1].parts.extend(content.parts)
             else:
                 history.append(content)
-
+        contents = self._convert_to_contents(prompt_messages=prompt_messages)
         if stream:
-            response = self.client.models.generate_content_stream(
+            response = genai_client.models.generate_content_stream(
                 model=model,
-                contents=history,
+                contents=contents,
                 config=config,
             )
             return self._handle_generate_stream_response(model, credentials, response, prompt_messages)
 
-        response = self.client.models.generate_content(
+        response = genai_client.models.generate_content(
             model=model,
             contents=history,
             config=config,
@@ -267,7 +283,37 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             raise ValueError(f"Got unknown type {message}")
         return message_text
 
-    def _format_message_to_glm_content(self, message: PromptMessage, credentials: dict) -> types.Content:
+    def _get_system_instruction(
+        self, *, prompt_messages: Sequence[PromptMessage]
+    ) -> str:
+        # `prompt_messages` should be a sequence containing at least one 
+        # `SystemPromptMessage`.
+        # If the sequence is empty or the first element is not a 
+        # `SystemPromptMessage`, 
+        # the method returns an empty string, effectively indicating the 
+        # absence of a system instruction.
+        if len(prompt_messages) == 0:
+            return ""
+        if not isinstance(prompt_messages[0], SystemPromptMessage):
+            return ""
+        system_instruction = ""
+        prompt = prompt_messages[0]
+        if isinstance(prompt.content, str):
+            system_instruction = prompt.content
+        elif isinstance(prompt.content, list):
+            system_instruction = ""
+            for content in prompt.content:
+                if isinstance(content, TextPromptMessageContent):
+                    system_instruction += content.data
+                else:
+                    raise InvokeError(
+                        "system prompt content does not support image, document, video, audio"
+                    )
+        else:
+            raise InvokeError("system prompt content must be a string or a list of strings")
+        return system_instruction
+
+    def _format_message_to_glm_content(self, message: PromptMessage, genai_client: genai.Client) -> types.Content:
         """
         Format a single message into glm.Content for Google API
 
@@ -283,7 +329,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     if c.type == PromptMessageContentType.TEXT:
                         glm_content.parts.append(types.Part.from_text(text=c.data))
                     else:
-                        uri, mime_type = self._upload_file_content_to_google(message_content=c, credentials=credentials)
+                        uri, mime_type = self._upload_file_content_to_google(message_content=c, genai_client=genai_client)
                         glm_content.parts.append(types.Part.from_uri(file_uri=uri, mime_type=mime_type))
 
             return glm_content
@@ -310,7 +356,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             raise ValueError(f"Got unknown type {message}")
 
     def _upload_file_content_to_google(
-        self, message_content: MultiModalPromptMessageContent, credentials: dict
+        self, message_content: MultiModalPromptMessageContent, credentials: dict,
+        genai_client: genai.Client,
     ) -> types.File:
 
         key = f"{message_content.type.value}:{hash(message_content.data)}"
@@ -336,12 +383,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                         f"Failed to fetch data from url {file_url} {ex}"
                     )
             temp_file.flush()
-        file = self.client.files.upload(
+        file = genai_client.client.files.upload(
             file=temp_file.name, config={"mime_type": message_content.mime_type}
         )
         while file.state.name == "PROCESSING":
             time.sleep(5)
-            file = self.client.files.get(name=file.name)
+            file = genai_client.files.get(name=file.name)
         # google will delete your upload files in 2 days.
         file_cache.setex(key, 47 * 60 * 60, f"{file.uri};{file.mime_type}")
 
@@ -374,13 +421,18 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # calculate num tokens
         if response.usage_metadata:
             prompt_tokens = response.usage_metadata.prompt_token_count
+            if prompt_tokens is None:
+                raise ValueError("prompt_tokens is None")
             completion_tokens = response.usage_metadata.candidates_token_count
+            if completion_tokens is None:
+                raise ValueError("completion_tokens is None")
         else:
             prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
             completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
 
         # transform usage
-        usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+        # copy credentials to avoid modifying the original dict
+        usage = self._calc_response_usage(model, dict(credentials), prompt_tokens, completion_tokens)
 
         # transform response
         result = LLMResult(
@@ -398,7 +450,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             credentials: dict,
             response: Iterator[types.GenerateContentResponse],
             prompt_messages: list[PromptMessage],
-    ) -> Generator:
+    ) -> Generator[LLMResultChunk]:
         """
         Handle llm stream response
 
@@ -409,55 +461,62 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: llm response chunk generator result
         """
         index = -1
-        for r in response:
-            assistant_prompt_message = AssistantPromptMessage(content="")
-            parts = r.candidates[0].content.parts
-            index += 1
-            for part in parts:
-                if part.text:
-                    assistant_prompt_message.content += part.text
-                elif part.function_call:
-                    assistant_prompt_message.tool_calls = [
-                        AssistantPromptMessage.ToolCall(
-                            id=part.function_call.name,
-                            type="function",
-                            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                name=part.function_call.name,
-                                arguments=json.dumps(dict(part.function_call.args.items())),
-                            ),
+        prompt_tokens = 0
+        completion_tokens = 0
+        for chunk in response:
+            if not chunk.candidates:
+                continue
+            for candidate in chunk.candidates:
+                if not candidate.content or not candidate.content.parts:
+                    continue
+
+                message = self._parse_parts(candidate.content.parts)
+                index += len(candidate.content.parts)
+                if chunk.usage_metadata:
+                    prompt_tokens += chunk.usage_metadata.prompt_token_count or 0
+                    completion_tokens += (
+                        chunk.usage_metadata.candidates_token_count or 0
+                    )
+
+                # if the stream is not finished, yield the chunk
+                if not candidate.finish_reason:
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=list(prompt_messages),
+                        delta=LLMResultChunkDelta(
+                            index=index,
+                            message=message,
+                        ),
+                    )
+                # if the stream is finished, yield the chunk and the finish reason
+                else:
+                    if prompt_tokens == 0 or completion_tokens == 0:
+                        prompt_tokens = self.get_num_tokens(
+                            model=model,
+                            credentials=credentials,
+                            prompt_messages=prompt_messages,
                         )
-                    ]
-                
-                # transform assistant message to prompt message
-                yield LLMResultChunk(
-                    model=model,
-                    prompt_messages=prompt_messages,
-                    delta=LLMResultChunkDelta(index=index, message=assistant_prompt_message)
-                )
-            if r.candidates[0].finish_reason:
-                assistant_prompt_message = AssistantPromptMessage(content="")
-                grounding_metadata = r.candidates[0].grounding_metadata
-                if grounding_metadata and grounding_metadata.search_entry_point:
-                    assistant_prompt_message.content += self._render_grounding_source(grounding_metadata)
-                # calculate num tokens
-                prompt_tokens = r.usage_metadata.prompt_token_count or self.get_num_tokens(
-                    model, credentials, prompt_messages
-                )
-                completion_tokens = r.usage_metadata.candidates_token_count or self.get_num_tokens(
-                    model, credentials, [assistant_prompt_message]
-                )
-                # transform usage
-                usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
-                yield LLMResultChunk(
-                    model=model,
-                    prompt_messages=prompt_messages,
-                    delta=LLMResultChunkDelta(
-                        index=index,
-                        message=assistant_prompt_message,
-                        finish_reason=str(r.candidates[0].finish_reason),
-                        usage=usage,
-                    ),
-                )
+                        completion_tokens = self.get_num_tokens(
+                            model=model,
+                            credentials=credentials,
+                            prompt_messages=[message],
+                        )
+                    usage = self._calc_response_usage(
+                        model=model,
+                        credentials=dict(credentials),
+                        prompt_tokens=prompt_tokens,
+                        completion_tokens=completion_tokens,
+                    )
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=list(prompt_messages),
+                        delta=LLMResultChunkDelta(
+                            index=index,
+                            message=message,
+                            finish_reason=candidate.finish_reason,
+                            usage=usage,
+                        ),
+                    )
 
     def _render_grounding_source(self, grounding_metadata: types.GroundingMetadata) -> str:
         """
@@ -475,12 +534,13 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         Map model invoke error to unified error
         """
         return {
-            InvokeConnectionError: [errors.APIError],
+            InvokeConnectionError: [
+                errors.APIError, 
+                errors.ClientError,
+            ],
             InvokeServerUnavailableError: [
                 errors.ServerError,
             ],
-            InvokeRateLimitError: [],
-            InvokeAuthorizationError: [],
             InvokeBadRequestError: [
                 errors.ClientError,
                 errors.UnknownFunctionCallArgumentError,
@@ -488,3 +548,140 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 errors.FunctionInvocationError,
             ],
         }
+
+    def _parse_parts(self, parts: Sequence[types.Part], /) -> AssistantPromptMessage:
+        contents: list[PromptMessageContent] = []
+        function_calls = []
+        for part in parts:
+            if part.text:
+                contents.append(TextPromptMessageContent(data=part.text))
+            if part.function_call:
+                function_call = part.function_call
+                function_call_id = function_call.id
+                function_call_name = function_call.name
+                function_call_args = function_call.args
+                if not isinstance(function_call_id, str):
+                    raise InvokeError("function_call_id received is not a string")
+                if not isinstance(function_call_name, str):
+                    raise InvokeError("function_call_name received is not a string")
+                if not isinstance(function_call_args, dict):
+                    raise InvokeError("function_call_args received is not a dict")
+                function_call = AssistantPromptMessage.ToolCall(
+                    id=function_call_id,
+                    type="function",
+                    function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                        name=function_call_name,
+                        arguments=json.dumps(function_call_args),
+                    ),
+                )
+                function_calls.append(function_call)
+            if part.inline_data:
+                inline_data = part.inline_data
+                mime_type = inline_data.mime_type
+                data = inline_data.data
+                if mime_type is None:
+                    raise InvokeError("receive inline_data with no mime_type")
+                if data is None:
+                    raise InvokeError("receive inline_data with no data")
+                if mime_type.startswith("image/"):
+                    mime_subtype = mime_type.split("/", maxsplit=1)[-1]
+                    # Here the data returned by genai-sdk is already a base64-encoded
+                    # byte string, so just decode it to utf-8 string is enough.
+                    contents.append(
+                        ImagePromptMessageContent(
+                            format=mime_subtype,
+                            base64_data=base64.b64encode(data).decode(),
+                            mime_type=mime_type,
+                        )
+                    )
+                else:
+                    raise InvokeError(f"unsupported mime_type {mime_type}")
+
+        # FIXME: This is a workaround to fix the typing issue in the dify_plugin
+        # https://github.com/langgenius/dify-plugin-sdks/issues/41
+        # fixed_contents = [content.model_dump(mode="json") for content in contents]
+        message = AssistantPromptMessage(
+            content=contents, tool_calls=function_calls  # type: ignore
+        )
+        return message
+    
+    def _convert_to_contents(self, prompt_messages: Sequence[PromptMessage]) -> list[types.ContentDict]:
+        """_convert_to_content convert input prompt messages to contents sent to Google 
+        Gemini models.
+        """
+        contents: list[types.ContentDict] = []
+
+        last_content: Optional[types.ContentDict] = None
+        for prompt in prompt_messages:
+            # skip all `SystemPromptMessage` messages, since they are handled 
+            # by `_get_system_instruction`.
+            if isinstance(prompt, SystemPromptMessage):
+                continue
+
+            content = self._convert_to_content_dict(prompt)
+            if last_content is None:
+                last_content = content
+                continue
+            
+            if last_content.get('role') != content.get('role'):
+                contents.append(last_content)
+                last_content = content
+                continue
+            # merge parts with the same role.
+            parts = last_content.get("parts") or []
+            parts.extend(content.get("parts") or [])
+            last_content = types.ContentDict(
+                parts=parts,
+                role=content.get("role"),
+            )
+        # append the last content if exists
+        if last_content is not None:
+            contents.append(last_content)
+        return contents
+
+    def _convert_to_content_dict(self, prompt: PromptMessage) -> types.ContentDict:
+        
+        role = "user" if isinstance(prompt, UserPromptMessage) else "model"
+        parts = []
+
+        prompt_contents = prompt.content
+        if isinstance(prompt_contents, str):
+            parts.append(types.Part.from_text(text=prompt_contents))
+        elif isinstance(prompt_contents, list):
+            for content in prompt_contents:
+                parts.append(_content_to_part(content))
+        else:
+            raise InvokeError("prompt content must be a string or a list")
+        
+        return types.ContentDict(parts=parts, role=role)
+
+
+def _content_to_part(content: PromptMessageContent) -> types.Part:
+    if isinstance(content, TextPromptMessageContent):
+        return types.Part.from_text(text=content.data)
+    elif isinstance(
+                    content,
+                    (ImagePromptMessageContent,
+                    DocumentPromptMessageContent,
+                    VideoPromptMessageContent,
+                    AudioPromptMessageContent,
+                    )
+                ):
+        if content.url:
+            return types.Part.from_uri(
+                file_uri=content.url,
+                mime_type=content.mime_type,
+            )
+        else:
+            return types.Part.from_bytes(
+                data=base64.b64decode(content.base64_data),
+                mime_type=content.mime_type,
+            )
+    else:
+        type_tag = getattr(content, "type", None)
+        # NOTE(QuantumGhost): The `PromptMessageContent` should be an ABC with an attribute named `type`. 
+        # However, the current implementation does not include that attribute, so accessing `type` here will be flagged
+        # by type checker.
+        # 
+        # Ignore the error for now.
+        raise InvokeError(f"unknown content type, type={type_tag}, python_type={type(content)}")  # type: ignore
