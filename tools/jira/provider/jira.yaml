@@ -1,0 +1,64 @@
+identity:
+  author: langgenius
+  name: jira
+  label:
+    en_US: Jira
+    zh_Hans: Jira
+    pt_BR: Jira
+  description:
+    en_US: Connect to Jira to manage issues and projects.
+    zh_Hans: 连接到 Jira 以管理问题和项目。
+    pt_BR: Conecte-se ao Jira para gerenciar problemas e projetos.
+  icon: icon.svg
+credentials_for_provider:
+  jira_url:
+    type: text-input
+    required: true
+    label:
+      en_US: Jira URL
+      zh_Hans: Jira URL
+    placeholder:
+      en_US: "https://your-domain.atlassian.net"
+      zh_Hans: "https://your-domain.atlassian.net"
+    help:
+      en_US: The base URL of your Jira Cloud or Server instance.
+      zh_Hans: 您的 Jira Cloud 或 Server 实例的基础 URL。
+    url: https://community.atlassian.com/forums/Jira-questions/what-is-my-jira-URL/qaq-p/2106728
+  username:
+    type: text-input
+    required: true
+    label:
+      en_US: Username
+      zh_Hans: 用户名
+    placeholder:
+      en_US: Please input your Jira username
+      zh_Hans: 请输入您的 Jira 用户名
+    help:
+      en_US: Your Jira account username (usually the email address you registered with).
+      zh_Hans: 您的 Jira 帐户用户名（通常为注册使用的邮箱地址）。
+  api_token:
+    type: secret-input
+    required: true
+    label:
+      en_US: API Token
+      zh_Hans: API 令牌
+    placeholder:
+      en_US: Please input your Jira API token
+      zh_Hans: 请输入您的 Jira API 令牌
+    help:
+      en_US: Create an API token from your Atlassian account settings.
+      zh_Hans: 从您的 Atlassian 帐户设置创建 API 令牌。
+    url: https://id.atlassian.com/manage-profile/security/api-tokens
+tools:
+  - tools/list_project.yaml
+  - tools/get_project.yaml
+  - tools/list_board.yaml
+  - tools/get_board.yaml
+  - tools/list_issue.yaml
+  - tools/get_issue.yaml
+  - tools/create_issue.yaml
+  - tools/del_issue.yaml
+  - tools/list_issue_type.yaml
+extra:
+  python:
+    source: provider/jira.py

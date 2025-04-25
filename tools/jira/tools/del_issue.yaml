@@ -1,0 +1,30 @@
+identity:
+  name: delete_issue
+  author: langgenius
+  label:
+    en_US: Delete Jira Issue
+    zh_Hans: 删除 Jira 问题
+    pt_BR: Excluir Issue
+description:
+  human:
+    en_US: Deletes a specific issue in Jira.
+    zh_Hans: 删除 Jira 中指定的问题。
+    pt_BR: Excluir uma issue específica
+  llm: Deletes the Jira issue identified by the provided issue ID. Returns confirmation of the deletion.
+parameters:
+  - name: issue_id
+    type: string # Jira issue IDs can be numeric or string keys like 'PROJ-123'
+    required: true
+    label:
+      en_US: Issue ID or Key
+      zh_Hans: 问题 ID 或 Key
+      pt_BR: ID ou Chave da Issue
+    human_description:
+      en_US: The ID or Key of the Jira issue to delete.
+      zh_Hans: 要删除的 Jira 问题的 ID 或 Key。
+      pt_BR: O ID ou a chave da issue a ser excluída.
+    llm_description: The unique identifier (ID or Key like 'PROJ-123') for the Jira issue that needs to be deleted. This field is mandatory.
+    form: llm
+extra:
+  python:
+    source: tools/del_issue.py
