@@ -1444,3 +1444,33 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 })
         
         return formatted_messages
+    def _convert_messages_to_prompt(self, prompt_messages: list[PromptMessage], prefix: str, model_name: str) -> str:
+        """
+        Convert a list of PromptMessage objects to a single string prompt
+
+        :param prompt_messages: List of PromptMessage objects
+        :param prefix: Model prefix (from model.split(".")[0])
+        :param model_name: Model name (from model.split(".")[1])
+        :return: A string representation of the messages
+        """
+        prompt_str = ""
+
+        for message in prompt_messages:
+            role = message.role
+            content = message.content
+
+            # Add role prefix based on message type
+            if role == "system":
+                prompt_str += f"System: {content}\n\n"
+            elif role == "user":
+                prompt_str += f"User: {content}\n\n"
+            elif role == "assistant":
+                prompt_str += f"Assistant: {content}\n\n"
+            elif role == "function":
+                # Handle function messages if needed
+                prompt_str += f"Function ({message.name}): {content}\n\n"
+            else:
+                # Handle any other role types
+                prompt_str += f"{role.capitalize()}: {content}\n\n"
+
+        return prompt_str.strip()
