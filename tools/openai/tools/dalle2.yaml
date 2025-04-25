@@ -1,0 +1,80 @@
+description:
+  human:
+    en_US: DALL-E is a text to image tool
+    pt_BR: DALL-E is a text to image tool
+    zh_Hans: DALL-E 是一个文本到图像的工具
+  llm: DALL-E is a tool used to generate images from text
+extra:
+  python:
+    source: tools/dalle2.py
+identity:
+  author: langgenius
+  description:
+    en_US: DALL-E 2 is a powerful drawing tool that can draw the image you want based
+      on your prompt
+    pt_BR: DALL-E 2 is a powerful drawing tool that can draw the image you want based
+      on your prompt
+    zh_Hans: DALL-E 2 是一个强大的绘画工具，它可以根据您的提示词绘制出您想要的图像
+  label:
+    en_US: DALL-E 2
+    zh_Hans: DALL-E 2 绘画
+  name: dalle2
+parameters:
+- form: llm
+  human_description:
+    en_US: Image prompt, you can check the official documentation of DallE 2
+    pt_BR: Image prompt, you can check the official documentation of DallE 2
+    zh_Hans: 图像提示词，您可以查看 DallE 2 的官方文档
+  label:
+    en_US: Prompt
+    pt_BR: Prompt
+    zh_Hans: 提示词
+  llm_description: Image prompt of DallE 2, you should describe the image you want
+    to generate as a list of words as possible as detailed
+  name: prompt
+  required: true
+  type: string
+- default: large
+  form: form
+  human_description:
+    en_US: used for selecting the image size
+    pt_BR: used for selecting the image size
+    zh_Hans: 用于选择图像大小
+  label:
+    en_US: Image size
+    pt_BR: Image size
+    zh_Hans: 图像大小
+  name: size
+  options:
+  - label:
+      en_US: Small(256x256)
+      pt_BR: Small(256x256)
+      zh_Hans: 小(256x256)
+    value: small
+  - label:
+      en_US: Medium(512x512)
+      pt_BR: Medium(512x512)
+      zh_Hans: 中(512x512)
+    value: medium
+  - label:
+      en_US: Large(1024x1024)
+      pt_BR: Large(1024x1024)
+      zh_Hans: 大(1024x1024)
+    value: large
+  required: true
+  type: select
+- default: 1
+  form: form
+  human_description:
+    en_US: used for selecting the number of images
+    pt_BR: used for selecting the number of images
+    zh_Hans: 用于选择图像数量
+  label:
+    en_US: Number of images
+    pt_BR: Number of images
+    zh_Hans: 图像数量
+  max: 10
+  min: 1
+  name: n
+  required: true
+  type: number

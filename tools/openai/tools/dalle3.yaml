@@ -1,0 +1,131 @@
+description:
+  human:
+    en_US: DALL-E is a text to image tool
+    pt_BR: DALL-E is a text to image tool
+    zh_Hans: DALL-E 是一个文本到图像的工具
+  llm: DALL-E is a tool used to generate images from text
+extra:
+  python:
+    source: tools/dalle3.py
+identity:
+  author: langgenius
+  description:
+    en_US: DALL-E 3 is a powerful drawing tool that can draw the image you want based
+      on your prompt, compared to DallE 2, DallE 3 has stronger drawing ability, but
+      it will consume more resources
+    pt_BR: DALL-E 3 is a powerful drawing tool that can draw the image you want based
+      on your prompt, compared to DallE 2, DallE 3 has stronger drawing ability, but
+      it will consume more resources
+    zh_Hans: DALL-E 3 是一个强大的绘画工具，它可以根据您的提示词绘制出您想要的图像，相比于DallE 2， DallE 3拥有更强的绘画能力，但会消耗更多的资源
+  label:
+    en_US: DALL-E 3
+    pt_BR: DALL-E 3
+    zh_Hans: DALL-E 3 绘画
+  name: dalle3
+parameters:
+- form: llm
+  human_description:
+    en_US: Image prompt, you can check the official documentation of DallE 3
+    pt_BR: Image prompt, you can check the official documentation of DallE 3
+    zh_Hans: 图像提示词，您可以查看 DallE 3 的官方文档
+  label:
+    en_US: Prompt
+    pt_BR: Prompt
+    zh_Hans: 提示词
+  llm_description: Image prompt of DallE 3, you should describe the image you want
+    to generate as a list of words as possible as detailed
+  name: prompt
+  required: true
+  type: string
+- default: square
+  form: form
+  human_description:
+    en_US: selecting the image size
+    pt_BR: selecting the image size
+    zh_Hans: 选择图像大小
+  label:
+    en_US: Image size
+    pt_BR: Image size
+    zh_Hans: 图像大小
+  name: size
+  options:
+  - label:
+      en_US: Squre(1024x1024)
+      pt_BR: Squre(1024x1024)
+      zh_Hans: 方(1024x1024)
+    value: square
+  - label:
+      en_US: Vertical(1024x1792)
+      pt_BR: Vertical(1024x1792)
+      zh_Hans: 竖屏(1024x1792)
+    value: vertical
+  - label:
+      en_US: Horizontal(1792x1024)
+      pt_BR: Horizontal(1792x1024)
+      zh_Hans: 横屏(1792x1024)
+    value: horizontal
+  required: true
+  type: select
+- default: 1
+  form: form
+  human_description:
+    en_US: selecting the number of images
+    pt_BR: selecting the number of images
+    zh_Hans: 选择图像数量
+  label:
+    en_US: Number of images
+    pt_BR: Number of images
+    zh_Hans: 图像数量
+  max: 1
+  min: 1
+  name: n
+  required: true
+  type: number
+- default: standard
+  form: form
+  human_description:
+    en_US: selecting the image quality
+    pt_BR: selecting the image quality
+    zh_Hans: 选择图像质量
+  label:
+    en_US: Image quality
+    pt_BR: Image quality
+    zh_Hans: 图像质量
+  name: quality
+  options:
+  - label:
+      en_US: Standard
+      pt_BR: Standard
+      zh_Hans: 标准
+    value: standard
+  - label:
+      en_US: HD
+      pt_BR: HD
+      zh_Hans: 高清
+    value: hd
+  required: true
+  type: select
+- default: vivid
+  form: form
+  human_description:
+    en_US: selecting the image style
+    pt_BR: selecting the image style
+    zh_Hans: 选择图像风格
+  label:
+    en_US: Image style
+    pt_BR: Image style
+    zh_Hans: 图像风格
+  name: style
+  options:
+  - label:
+      en_US: Vivid
+      pt_BR: Vivid
+      zh_Hans: 生动
+    value: vivid
+  - label:
+      en_US: Natural
+      pt_BR: Natural
+      zh_Hans: 自然
+    value: natural
+  required: true
+  type: select
