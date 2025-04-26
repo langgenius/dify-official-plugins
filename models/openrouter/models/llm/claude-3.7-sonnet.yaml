@@ -1,0 +1,71 @@
+model: anthropic/claude-3.7-sonnet
+label:
+  en_US: claude-3.7-sonnet
+model_type: llm
+features:
+  - agent-thought
+  - vision
+  - tool-call
+  - stream-tool-call
+  - document
+model_properties:
+  mode: chat
+  context_size: 200000
+parameter_rules:
+  - name: thinking
+    label:
+      zh_Hans: 推理模式
+      en_US: Thinking Mode
+    type: boolean
+    default: false
+    required: false
+    help:
+      zh_Hans: 控制模型的推理能力。启用时，temperature、top_p和top_k将被禁用。
+      en_US: Controls the model's thinking capability. When enabled, temperature, top_p and top_k will be disabled.
+  - name: thinking_budget
+    label:
+      zh_Hans: 推理预算
+      en_US: Thinking Budget
+    type: int
+    default: 1024
+    min: 0
+    max: 128000
+    required: false
+    help:
+      zh_Hans: 推理的预算限制（最小1024），必须小于max_tokens。仅在推理模式启用时可用。
+      en_US: Budget limit for thinking (minimum 1024), must be less than max_tokens. Only available when thinking mode is enabled.
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: top_k
+    label:
+      zh_Hans: 取样数量
+      en_US: Top k
+    type: int
+    help:
+      zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
+      en_US: Only sample from the top K options for each subsequent token.
+    required: false
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 64000
+    min: 1
+    max: 128000
+  - name: response_format
+    use_template: response_format
+  - name: extended_output
+    label:
+      zh_Hans: 扩展输出
+      en_US: Extended Output
+    type: boolean
+    default: false
+    help:
+      zh_Hans: 启用长达128K标记的输出能力。
+      en_US: Enable capability for up to 128K output tokens.
+pricing:
+  input: "3.00"
+  output: "15.00"
+  unit: "0.000001"
+  currency: USD

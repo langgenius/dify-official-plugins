@@ -7,6 +7,7 @@
 - openai/gpt-4
 - openai/gpt-4-32k
 - openai/gpt-3.5-turbo
+- anthropic/claude-3.7-sonnet
 - anthropic/claude-3.5-sonnet
 - anthropic/claude-3-haiku
 - anthropic/claude-3-opus
