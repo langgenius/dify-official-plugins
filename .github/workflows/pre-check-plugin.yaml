@@ -69,6 +69,25 @@ jobs:
             exit 1
           fi
 
+      - name: Check If Version Exists
+        run: |
+          # get version, author, name
+          VERSION=$(yq '.version' ${{ env.PLUGIN_PATH }}/manifest.yaml)
+          AUTHOR=$(yq '.author' ${{ env.PLUGIN_PATH }}/manifest.yaml)
+          NAME=$(yq '.name' ${{ env.PLUGIN_PATH }}/manifest.yaml)
+          echo "Checking plugin version: $VERSION"
+
+          # Check if the version already exists
+          RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.MARKETPLACE_BASE_URL }}/api/v1/plugins/$AUTHOR/$NAME/$VERSION")
+          
+          if [ "$RESPONSE_CODE" = "200" ]; then
+            RESPONSE=$(curl -s "${{ env.MARKETPLACE_BASE_URL }}/api/v1/plugins/$AUTHOR/$NAME/$VERSION")
+            if [ "$(echo "$RESPONSE" | jq -r '.code')" = "0" ]; then
+              echo "!!! Plugin version $VERSION already exists, please update the version number in manifest.yaml"
+              exit 1
+            fi
+          fi
+
       - name: Check Plugin Deps
         run: |
           if [ -f ${{ env.PLUGIN_PATH }}/requirements.txt ]; then
