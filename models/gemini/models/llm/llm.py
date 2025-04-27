@@ -182,7 +182,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # FIXME(QuantumGhost): Multimodal output is currently limited to 
         # the gemini-2.0-flash-experiment model. The model name is currently 
         # hardcoded for simplicity; consider revisiting this approach for flexibility.
-        if model != "gemini-2.0-flash-experiment":
+        if model != "gemini-2.0-flash-exp":
             return ["Text"]
         
         return ["Text", "Image"]
