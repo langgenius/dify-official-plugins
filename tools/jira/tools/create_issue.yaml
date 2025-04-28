@@ -1,0 +1,56 @@
+identity:
+  name: create_issue
+  author: langgenius
+  label:
+    en_US: Create Jira Issue
+    zh_Hans: 创建 Jira 问题
+    pt_BR: Criar Issue
+description:
+  human:
+    en_US: Creates a new issue in Jira.
+    zh_Hans: 在 Jira 中创建一个新的问题。
+    pt_BR: Criar uma nova issue em um projeto.
+  llm: Creates a new issue in Jira using the provided description. Returns the details of the created issue.
+parameters:
+  - name: project_key
+    type: string
+    required: true
+    label:
+      en_US: Project Key or ID
+      zh_Hans: 项目 Key 或 ID
+      pt_BR: Chave do Projeto
+    human_description:
+      en_US: The Key of the Jira project to retrieve details for (e.g., 'PROJ').
+      zh_Hans: 要获取详情的 Jira 项目的 Key (例如 'PROJ') 或 ID (例如 '10001')。
+      pt_BR: A chave do projeto onde a issue será criada.
+    llm_description: The unique key (e.g., 'PROJ') or ID (e.g., '10001') for the Jira project for which details are requested. This field is mandatory.
+    form: llm
+  - name: summary
+    type: string
+    required: true
+    label:
+      en_US: Summary
+      zh_Hans: 问题摘要
+      pt_BR: Resumo
+    human_description:
+      en_US: The summary for the new Jira issue.
+      zh_Hans: 新 Jira 问题的摘要信息。
+      pt_BR: Um breve resumo da issue.
+    llm_description: The detailed summary of the issue to be created in Jira. This field is mandatory.
+    form: llm
+  - name: issue_type_id
+    type: string
+    required: true
+    label:
+      en_US: Issue Type ID
+      zh_Hans: 问题类型 ID
+      pt_BR: Tipo de Issue
+    human_description:
+      en_US: The ID of the Jira issue type to be used for the new issue.
+      zh_Hans: 要用于新问题的 Jira 问题类型的 ID。
+      pt_BR: O ID do tipo de issue do Jira a ser usado para a nova issue.
+    llm_description: The unique ID for the Jira issue type that will be assigned to the new issue. This field is mandatory.
+    form: llm
+extra:
+  python:
+    source: tools/create_issue.py

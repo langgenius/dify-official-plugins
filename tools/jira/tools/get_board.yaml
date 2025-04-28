@@ -1,0 +1,30 @@
+identity:
+  name: get_board
+  author: langgenius
+  label:
+    en_US: Get Jira Board Details
+    zh_Hans: 获取 Jira 看板详情
+    pt_BR: Obter Quadro
+description:
+  human:
+    en_US: Retrieves details for a specific Jira board.
+    zh_Hans: 获取 Jira 中指定看板的详细信息。
+    pt_BR: Obter detalhes de um quadro específico
+  llm: Fetches the details of a specific Jira Agile board using its ID. Returns the board information.
+parameters:
+  - name: board_id
+    type: string
+    required: true
+    label:
+      en_US: Board ID
+      zh_Hans: 看板 ID
+      pt_BR: ID do Quadro
+    human_description:
+      en_US: The ID of the Jira board to retrieve details for.
+      zh_Hans: 要获取详情的 Jira 看板的 ID。
+      pt_BR: O ID do quadro a ser recuperado.
+    llm_description: The numeric ID of the Jira Agile board for which details are requested. This field is mandatory.
+    form: llm
+extra:
+  python:
+    source: tools/get_board.py

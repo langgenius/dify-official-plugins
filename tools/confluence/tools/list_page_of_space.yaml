@@ -1,0 +1,26 @@
+identity:
+  name: list_page_of_space
+  author: langgenius
+  label:
+    en_US: List Pages in Space in Confluence
+    zh_Hans: 列出 Confluence 空间中的页面
+description:
+  human:
+    en_US: Lists all pages within a specified Confluence space.
+    zh_Hans: 列出指定 Confluence 空间中的所有页面。
+  llm: Retrieves a list of all pages contained within a specific Confluence space, identified by its space key. Returns a list of page summaries including ID, title, and type.
+parameters:
+  - name: space_key
+    type: string
+    required: true
+    label:
+      en_US: Space Key
+      zh_Hans: Space Key
+    human_description:
+      en_US: The key of the Confluence space whose pages should be listed.
+      zh_Hans: 要列出其页面的 Confluence 空间的 Key。
+    llm_description: The unique key identifying the Confluence space (e.g., 'DOC') for which to list pages.
+    form: llm
+extra:
+  python:
+    source: tools/list_page_of_space.py
