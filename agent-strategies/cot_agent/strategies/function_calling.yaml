@@ -11,6 +11,7 @@ description:
   pt_BR: Function Calling is a basic strategy for agent, model will use the tools provided to perform the task.
 features:
   - history-messages
+  - context
 parameters:
   - name: model
     type: model-selector
@@ -37,6 +38,8 @@ parameters:
     auto_generate:
       type: prompt_instruction
     template:
+      enabled: true
+    context:
       enabled: true
   - name: query
     type: string
