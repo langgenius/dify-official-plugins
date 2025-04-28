@@ -1,7 +1,7 @@
 model: o4-mini-2025-04-16
 label:
-  zh_Hans: o4-mini
-  en_US: o4-mini
+  zh_Hans: o4-mini-2025-04-16
+  en_US: o4-mini-2025-04-16
 model_type: llm
 features:
   - agent-thought
