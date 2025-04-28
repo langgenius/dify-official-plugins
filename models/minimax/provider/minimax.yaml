@@ -6,6 +6,7 @@ extra:
     model_sources:
     - models/llm/llm.py
     - models/text_embedding/text_embedding.py
+    - models/tts/tts.py
     provider_source: provider/minimax.py
 help:
   title:
@@ -26,6 +27,9 @@ models:
   text_embedding:
     predefined:
     - models/text_embedding/*.yaml
+  tts:
+    predefined:
+    - models/tts/*.yaml
 provider: minimax
 provider_credential_schema:
   credential_form_schemas:
