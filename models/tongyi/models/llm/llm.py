@@ -33,6 +33,7 @@ from dify_plugin.entities.model.llm import (
     LLMResult,
     LLMResultChunk,
     LLMResultChunkDelta,
+    LLMUsage,
 )
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
@@ -147,6 +148,48 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
+    def _calc_response_usage(
+        self,
+        model: str,
+        credentials: dict,
+        input_tokens: int,
+        output_tokens: int,
+        is_thinking: bool = False
+    ) -> LLMUsage:
+        """
+        Calculate response usage
+
+        :param model: model name
+        :param credentials: credentials
+        :param input_tokens: input tokens
+        :param output_tokens: output tokens
+        :param is_thinking: whether the output is thinking content
+        :return: model usage
+        """
+        schema = self.get_model_schema(model, credentials)
+        pricing_input = float(schema.pricing.input) * input_tokens
+        # Choose pricing based on thinking mode
+        if is_thinking and hasattr(schema.pricing, 'output_thinking'):
+            pricing_output = float(schema.pricing.output_thinking) * output_tokens
+        else:
+            pricing_output = float(schema.pricing.output) * output_tokens
+        total = pricing_input + pricing_output
+
+        return LLMUsage(
+            prompt_tokens=input_tokens,
+            completion_tokens=output_tokens,
+            total_tokens=input_tokens + output_tokens,
+            prompt_price=pricing_input,
+            completion_price=pricing_output,
+            total_price=total,
+            prompt_unit_price=float(schema.pricing.input),
+            prompt_price_unit=1000,
+            completion_unit_price=float(schema.pricing.output),
+            completion_price_unit=1000,
+            currency=schema.pricing.currency,
+            latency=0,
+        )
+
     def _generate(
         self,
         model: str,
@@ -180,6 +223,22 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             extra_model_kwargs["tools"] = self._convert_tools(tools)
         if stop:
             extra_model_kwargs["stop"] = stop
+
+        # Support thinking mode parameters
+        # If model_parameters contains enable_thinking and thinking_budget parameters, add them to extra_body
+        extra_body = {}
+        is_thinking_enabled = False
+        if "enable_thinking" in model_parameters:
+            is_thinking_enabled = model_parameters["enable_thinking"]
+            extra_body["enable_thinking"] = model_parameters.pop("enable_thinking")
+        if "thinking_budget" in model_parameters and extra_body.get(
+            "enable_thinking", False
+        ):
+            extra_body["thinking_budget"] = model_parameters.pop("thinking_budget")
+
+        if extra_body:
+            extra_model_kwargs["extra_body"] = extra_body
+
         params = {
             "model": model,
             **model_parameters,
@@ -204,10 +263,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             )
         if stream:
             return self._handle_generate_stream_response(
-                model, credentials, response, prompt_messages
+                model, credentials, response, prompt_messages, is_thinking_enabled
             )
         return self._handle_generate_response(
-            model, credentials, response, prompt_messages
+            model, credentials, response, prompt_messages, is_thinking_enabled
         )
 
     def _handle_generate_response(
@@ -216,6 +275,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         credentials: dict,
         response: GenerationResponse,
         prompt_messages: list[PromptMessage],
+        is_thinking_enabled: bool = False,
     ) -> LLMResult:
         """
         Handle llm response
@@ -224,6 +284,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param credentials: credentials
         :param response: response
         :param prompt_messages: prompt messages
+        :param is_thinking_enabled: whether thinking mode is enabled
         :return: llm response
         """
         if response.status_code not in {200, HTTPStatus.OK}:
@@ -238,6 +299,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             credentials,
             response.usage.input_tokens,
             response.usage.output_tokens,
+            is_thinking_enabled,
         )
         result = LLMResult(
             model=model,
@@ -275,6 +337,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         credentials: dict,
         responses: Generator[GenerationResponse, None, None],
         prompt_messages: list[PromptMessage],
+        is_thinking_enabled: bool = False,
     ) -> Generator:
         """
         Handle llm stream response
@@ -283,6 +346,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param credentials: credentials
         :param responses: response
         :param prompt_messages: prompt messages
+        :param is_thinking_enabled: whether thinking mode is enabled
         :return: llm response chunk generator result
         """
         is_reasoning = False
@@ -320,9 +384,28 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                         message_tool_calls.append(message_tool_call)
                     assistant_prompt_message.tool_calls = message_tool_calls
                 usage = response.usage
-                usage = self._calc_response_usage(
-                    model, credentials, usage.input_tokens, usage.output_tokens
+                model_usage = self._calc_response_usage(
+                    model,
+                    credentials,
+                    usage.input_tokens,
+                    usage.output_tokens,
+                    is_thinking_enabled and is_reasoning
                 )
+                # Convert ModelUsage to dictionary to be compatible with the expected type of LLMResultChunkDelta
+                usage_dict = {
+                    "prompt_tokens": model_usage.prompt_tokens,
+                    "completion_tokens": model_usage.completion_tokens,
+                    "total_tokens": model_usage.total_tokens,
+                    "prompt_price": model_usage.prompt_price,
+                    "completion_price": model_usage.completion_price,
+                    "total_price": model_usage.total_price,
+                    "prompt_unit_price": model_usage.prompt_unit_price,
+                    "prompt_price_unit": model_usage.prompt_price_unit,
+                    "completion_unit_price": model_usage.completion_unit_price,
+                    "completion_price_unit": model_usage.completion_price_unit,
+                    "currency": model_usage.currency,
+                    "latency": model_usage.latency
+                }
                 yield LLMResultChunk(
                     model=model,
                     prompt_messages=prompt_messages,
@@ -330,7 +413,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                         index=index,
                         message=assistant_prompt_message,
                         finish_reason=resp_finish_reason,
-                        usage=usage,
+                        usage=usage_dict,
                     ),
                 )
             else:
@@ -595,6 +678,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             }
             tool_definitions.append(tool_definition)
         return tool_definitions
+
     def _wrap_thinking_by_reasoning_content(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
         """
         If the reasoning response is from delta.get("reasoning_content"), we wrap
@@ -613,7 +697,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                         reasoning_content = "\n".join(map(str, reasoning_content))
                     elif not isinstance(reasoning_content, str):
                         reasoning_content = str(reasoning_content)
-                    
+
                     if not is_reasoning:
                         content = "<think>\n" + reasoning_content
                         is_reasoning = True
@@ -635,7 +719,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 f"[wrap_thinking_by_reasoning_content-2] {ex}"
             ) from ex
         return content, is_reasoning
-    
+
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
         """
