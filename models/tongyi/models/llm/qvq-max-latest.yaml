@@ -1,9 +1,8 @@
 # this model corresponds to qwen-max, for more details
 # please refer to (https://help.aliyun.com/zh/model-studio/getting-started/models#cf6cc4aa2aokf)
-model: qvq-max
+model: qvq-max-latest
 label:
-  en_US: qvq-max
-  zh_Hans: 通义千问QWQ-Max
+  en_US: qvq-max-latest
 model_type: llm
 features:
   - vision

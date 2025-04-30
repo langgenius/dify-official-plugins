@@ -3,7 +3,6 @@
 model: qwq-plus
 label:
   en_US: qwq-plus
-  zh_Hans: 通义千问QWQ-Plus
 model_type: llm
 features:
   - agent-thought

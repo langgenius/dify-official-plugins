@@ -3,7 +3,6 @@
 model: qwq-32b
 label:
   en_US: qwq-32b
-  zh_Hans: 通义千问QWQ-32B
 model_type: llm
 features:
   - agent-thought
