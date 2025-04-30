@@ -59,7 +59,7 @@ parameters:
       ja_JP: 入力画像
     name: images
     type: files
-  - form: form
+  - form: llm
     human_description:
       en_US: exported from ComfyUI workflow
       zh_Hans: 从ComfyUI的工作流中导出
@@ -70,7 +70,7 @@ parameters:
     name: workflow_json
     required: true
     type: string
-  - form: form
+  - form: llm
     human_description:
       en_US:
         When the workflow has multiple image nodes, enter the ID list of these
@@ -84,7 +84,7 @@ parameters:
       en_US: Use commas to separate multiple node ID
       zh_Hans: 多个节点ID时使用半角逗号分隔
     type: string
-  - form: form
+  - form: llm
     human_description:
       en_US:
         If you need to generate different images each time, you need to enter the
