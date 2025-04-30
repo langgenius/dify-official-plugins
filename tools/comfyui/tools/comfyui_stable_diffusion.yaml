@@ -90,7 +90,7 @@ parameters:
     required: false
     type: number
   - default: 20
-    form: form
+    form: llm
     human_description:
       en_US: Steps
       pt_BR: Steps
@@ -103,7 +103,7 @@ parameters:
     required: false
     type: number
   - default: 1024
-    form: form
+    form: llm
     human_description:
       en_US: Width
       pt_BR: Width
@@ -116,7 +116,7 @@ parameters:
     required: false
     type: number
   - default: 1024
-    form: form
+    form: llm
     human_description:
       en_US: Height
       pt_BR: Height
@@ -129,7 +129,7 @@ parameters:
     required: false
     type: number
   - default: bad art, ugly, deformed, watermark, duplicated, discontinuous lines
-    form: form
+    form: llm
     human_description:
       en_US: Negative prompt
       pt_BR: Negative prompt
@@ -142,7 +142,7 @@ parameters:
     required: false
     type: string
   - default: 7.0
-    form: form
+    form: llm
     human_description:
       en_US: CFG Scale
       pt_BR: CFG Scale

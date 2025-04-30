@@ -9,6 +9,8 @@ description:
   en_US: Function Calling is a basic strategy for agent, model will use the tools provided to perform the task.
   zh_Hans: Function Calling 是一个基本的 Agent 策略，模型将使用提供的工具来执行任务。
   pt_BR: Function Calling is a basic strategy for agent, model will use the tools provided to perform the task.
+features:
+  - history-messages
 parameters:
   - name: model
     type: model-selector

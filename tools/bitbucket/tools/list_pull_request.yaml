@@ -1,0 +1,43 @@
+identity:
+  author: langgenius
+  name: list_pull_request
+  label:
+    en_US: List Pull Requests
+    zh_Hans: 列出拉取请求
+    pt_BR: Listar Pull Requests
+description:
+  human:
+    en_US: Lists pull requests for a specific Bitbucket repository.
+    zh_Hans: 列出特定 Bitbucket 仓库的拉取请求。
+    pt_BR: Lista pull requests para um repositório Bitbucket específico.
+  llm: Retrieves a list of pull requests for a given repository within a workspace. Can optionally filter by state (e.g., OPEN, MERGED, DECLINED). Returns a list of pull request objects.
+parameters:
+  - name: workspace_slug
+    type: string
+    required: true
+    label:
+      en_US: Workspace Slug
+      zh_Hans: 工作区标识符
+      pt_BR: Slug do Workspace
+    human_description:
+      en_US: The slug or UUID of the workspace.
+      zh_Hans: 工作区的标识符或 UUID。
+      pt_BR: O slug ou UUID do workspace.
+    llm_description: The unique identifier (slug or UUID surrounded by {}) for the Bitbucket workspace containing the repository.
+    form: llm
+  - name: repository_slug
+    type: string
+    required: true
+    label:
+      en_US: Repository Slug
+      zh_Hans: 仓库标识符
+      pt_BR: Slug do Repositório
+    human_description:
+      en_US: The slug of the repository.
+      zh_Hans: 仓库的标识符。
+      pt_BR: O slug do repositório.
+    llm_description: The unique identifier (slug) for the Bitbucket repository within the specified workspace.
+    form: llm
+extra:
+  python:
+    source: tools/list_pull_request.py

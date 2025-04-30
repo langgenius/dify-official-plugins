@@ -1,0 +1,17 @@
+identity:
+  name: list_workspace
+  author: langgenius
+  label:
+    en_US: List Workspace
+    zh_Hans: 列出工作区
+    pt_BR: Listar Workspace
+description:
+  human:
+    en_US: List all Bitbucket workspaces accessible to the authenticated user.
+    zh_Hans: 列出经身份验证用户可访问的所有 Bitbucket 工作区。
+    pt_BR: Listar todos os workspaces do Bitbucket acessíveis ao usuário autenticado.
+  llm: Lists all Bitbucket workspaces that the authenticated user is a member of. Returns a list of workspace objects containing details like name, slug, UUID, and privacy status. No parameters are required.
+parameters: [] # No parameters needed for this tool
+extra:
+  python:
+    source: tools/list_workspace.py

@@ -62,6 +62,8 @@ if you are not sure about the structure.
 </instructions>
 """
 
+# o1, o3, o4 compatibility
+O_SERIES_COMPATIBILITY = ("o1", "o3", "o4")
 
 class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
     """
@@ -712,9 +714,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         # clear illegal prompt messages
         prompt_messages = self._clear_illegal_prompt_messages(model, prompt_messages)
 
-        # o1, o3 compatibility
+        # o1, o3, o4 compatibility
         block_as_stream = False
-        if model.startswith(("o1", "o3")):
+        if model.startswith(O_SERIES_COMPATIBILITY):
             if "max_tokens" in model_parameters:
                 model_parameters["max_completion_tokens"] = model_parameters[
                     "max_tokens"
@@ -1092,7 +1094,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                             )
 
         # o1, o3 compatibility
-        if model.startswith(("o1", "o3")):
+        if model.startswith(O_SERIES_COMPATIBILITY):
             system_message_count = len(
                 [m for m in prompt_messages if isinstance(m, SystemPromptMessage)]
             )
@@ -1216,15 +1218,15 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             model = model.split(":")[1]
 
         # Currently, we can use gpt4o to calculate chatgpt-4o-latest's token.
-        if model == "chatgpt-4o-latest" or model.startswith(("o1", "o3")):
+        if model == "chatgpt-4o-latest" or model.startswith(("o1", "o3", "gpt-4.1", "gpt-4.5")):
             model = "gpt-4o"
 
         try:
             encoding = tiktoken.encoding_for_model(model)
         except KeyError:
             logger.warning("Warning: model not found. Using cl100k_base encoding.")
-            model = "cl100k_base"
-            encoding = tiktoken.get_encoding(model)
+            encoding_name = "cl100k_base"
+            encoding = tiktoken.get_encoding(encoding_name)
 
         if model.startswith("gpt-3.5-turbo-0301"):
             # every message follows <im_start>{role/name}\n{content}<im_end>\n

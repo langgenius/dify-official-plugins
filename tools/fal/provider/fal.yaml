@@ -28,3 +28,4 @@ tools:
   - tools/flux_1_dev.yaml
   - tools/flux_1_1_pro.yaml
   - tools/wizper.yaml
+  - tools/clarity_upscaler.yaml

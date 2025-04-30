@@ -1,0 +1,48 @@
+identity:
+  name: create_page
+  author: langgenius
+  label:
+    en_US: Create Confluence Page
+    zh_Hans: 创建 Confluence 页面
+description:
+  human:
+    en_US: Creates a new page in a specified Confluence space.
+    zh_Hans: 在指定的 Confluence 空间中创建一个新页面。
+  llm: Creates a new page in Confluence under a specific space. Requires the space key, page title, and page content (in Confluence Storage Format). Returns information about the created page.
+parameters:
+  - name: space_key
+    type: string
+    required: true
+    label:
+      en_US: Space Key
+      zh_Hans: 空间 Key
+    human_description:
+      en_US: The key of the Confluence space where the page will be created.
+      zh_Hans: 将在其中创建页面的 Confluence 空间的 Key。
+    llm_description: The unique key identifying the Confluence space (e.g., 'DOC').
+    form: llm
+  - name: title
+    type: string
+    required: true
+    label:
+      en_US: Page Title
+      zh_Hans: 页面标题
+    human_description:
+      en_US: The title for the new Confluence page.
+      zh_Hans: 新 Confluence 页面的标题。
+    llm_description: The title for the new page.
+    form: llm
+  - name: body
+    type: string
+    required: true
+    label:
+      en_US: Page Content (in Storage Format)
+      zh_Hans: 页面内容（以存储格式）
+    human_description:
+      en_US: The content of the page in Confluence Storage Format.
+      zh_Hans: Confluence 存储格式的页面内容。
+    llm_description: The main content for the page, written in Confluence Storage Format.
+    form: llm
+extra:
+  python:
+    source: tools/create_page.py

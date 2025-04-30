@@ -1,0 +1,30 @@
+identity:
+  name: list_issues_type
+  author: langgenius
+  label:
+    en_US: List Jira Issue Types for Project
+    zh_Hans: 列出指定项目的 Jira 问题类型
+    pt_BR: Listar Tipos de Issue
+description:
+  human:
+    en_US: Lists all issue types available for a specific Jira project.
+    zh_Hans: 列出指定 Jira 项目中所有可用的问题类型。
+    pt_BR: Listar todos os tipos de issue disponíveis
+  llm: Fetches the details of a specific Jira project using its key (e.g., 'PROJ'). Returns the issue types available for the project.
+parameters:
+  - name: project_key
+    type: string
+    required: true
+    label:
+      en_US: Project Key or ID
+      zh_Hans: 项目 Key 或 ID
+      pt_BR: Chave do Projeto
+    human_description:
+      en_US: The Key of the Jira project to retrieve details for (e.g., 'PROJ').
+      zh_Hans: 要获取详情的 Jira 项目的 Key (例如 'PROJ') 或 ID (例如 '10001')。
+      pt_BR: A chave do projeto onde a issue será criada.
+    llm_description: The unique key (e.g., 'PROJ') or ID (e.g., '10001') for the Jira project for which details are requested. This field is mandatory.
+    form: llm
+extra:
+  python:
+    source: tools/get_project.py

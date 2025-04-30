@@ -11,6 +11,16 @@ model_properties:
   mode: chat
   context_size: 128000
 parameter_rules:
+  - name: enable_cache
+    label:
+      zh_Hans: 启用提示缓存
+      en_US: Enable Prompt Cache
+    type: boolean
+    required: false
+    default: true
+    help:
+      zh_Hans: 启用提示缓存可以提高性能并降低成本。Amazon Nova Micro支持在system和messages字段中使用缓存检查点，每个检查点至少需要1024个token。
+      en_US: Enable prompt caching to improve performance and reduce costs. Amazon Nova Micro supports cache checkpoints in system and messages fields with a minimum of 1024 tokens per checkpoint.
   - name: max_new_tokens
     use_template: max_tokens
     required: true

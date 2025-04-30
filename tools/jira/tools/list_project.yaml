@@ -1,0 +1,17 @@
+identity:
+  name: list_projects
+  author: langgenius
+  label:
+    en_US: List Projects
+    zh_Hans: 列出项目
+    pt_BR: Listar Projetos
+description:
+  human:
+    en_US: List all accessible projects
+    zh_Hans: 列出所有可访问的项目
+    pt_BR: Listar todos os projetos acessíveis
+  llm: Retrieves a list of all projects accessible in the configured Jira instance. Returns a list of projects.
+parameters: [] # No parameters needed for this tool
+extra:
+  python:
+    source: tools/list_project.py

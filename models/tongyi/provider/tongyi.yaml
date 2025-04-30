@@ -9,6 +9,7 @@ extra:
     - models/rerank/rerank.py
     - models/text_embedding/text_embedding.py
     - models/tts/tts.py
+    - models/speech2text/speech2text.py
     provider_source: provider/tongyi.py
 help:
   title:
@@ -82,17 +83,20 @@ models:
   llm:
     position: models/llm/_position.yaml
     predefined:
-    - models/llm/*.yaml
+      - models/llm/*.yaml
   rerank:
     position: models/rerank/_position.yaml
     predefined:
-    - models/rerank/*.yaml
+      - models/rerank/*.yaml
+  speech2text:
+    predefined:
+      - models/speech2text/*.yaml
   text_embedding:
     predefined:
-    - models/text_embedding/*.yaml
+      - models/text_embedding/*.yaml
   tts:
     predefined:
-    - models/tts/*.yaml
+      - models/tts/*.yaml
 provider: tongyi
 provider_credential_schema:
   credential_form_schemas:
@@ -105,7 +109,8 @@ provider_credential_schema:
     type: secret-input
     variable: dashscope_api_key
 supported_model_types:
-- llm
-- tts
-- text-embedding
-- rerank
+  - llm
+  - text-embedding
+  - rerank
+  - speech2text
+  - tts

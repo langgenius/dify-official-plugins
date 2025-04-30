@@ -35,7 +35,7 @@ class CotAgentOutputParser:
                     )
                 else:
                     return json_str or ""
-            except:
+            except Exception:
                 return json_str or ""
 
         def extra_json_from_code_block(

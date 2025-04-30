@@ -1,0 +1,30 @@
+identity:
+  name: list_issues_for_board
+  author: langgenius
+  label:
+    en_US: List Jira Issues for Board
+    zh_Hans: 列出 Jira 看板问题
+    pt_BR: Listar Issues para o Quadro
+description:
+  human:
+    en_US: Lists all issues associated with a specific Jira Agile board.
+    zh_Hans: 列出与指定 Jira 敏捷看板关联的所有问题。
+    pt_BR: Lista todas as issues associadas a um quadro ágil específico do Jira.
+  llm: Retrieves a list of all issues associated with the specified Jira Agile board ID. Returns a list of issues or an error if the board is not found or an error occurs.
+parameters:
+  - name: board_id
+    type: string
+    required: true
+    label:
+      en_US: Board ID
+      zh_Hans: 看板 ID
+      pt_BR: ID do Quadro
+    human_description:
+      en_US: The ID of the Jira Agile board for which to list issues.
+      zh_Hans: 要列出问题的 Jira 敏捷看板的 ID。
+      pt_BR: O ID do quadro ágil do Jira para o qual listar as issues.
+    llm_description: The numeric ID of the Jira Agile board whose issues should be listed. This field is mandatory.
+    form: llm
+extra:
+  python:
+    source: tools/list_issue.py

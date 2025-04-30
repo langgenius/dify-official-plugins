@@ -1,0 +1,9 @@
+model: paraformer-realtime-v1
+model_type: speech2text
+model_properties:
+  file_upload_limit: 100
+  supported_file_extensions: aac,amr,avi,flac,flv,m4a,mkv,mov,mp3,mp4,mpeg,ogg,opus,wav,webm,wma,wmv
+pricing:
+  input: "0.00024"
+  unit: "0.00001"
+  currency: RMB

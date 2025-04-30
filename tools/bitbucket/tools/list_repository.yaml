@@ -1,0 +1,30 @@
+identity:
+  name: list_repository
+  author: langgenius
+  label:
+    en_US: List Repository
+    zh_Hans: 列出存储库
+    pt_BR: Listar Repositório
+description:
+  human:
+    en_US: List all repositories within a specific Bitbucket workspace.
+    zh_Hans: 列出指定 Bitbucket 工作区内的所有存储库。
+    pt_BR: Listar todos os repositórios dentro de um workspace específico do Bitbucket.
+  llm: Lists all repositories accessible to the authenticated user within the specified Bitbucket workspace slug. Returns a list of repository objects containing details like name, slug, description, and privacy status.
+parameters:
+  - name: workspace_slug
+    type: string
+    required: true
+    label:
+      en_US: Workspace Slug
+      zh_Hans: 工作区标识符
+      pt_BR: Slug do Workspace
+    human_description:
+      en_US: The unique identifier (slug) of the Bitbucket workspace.
+      zh_Hans: Bitbucket 工作区的唯一标识符 (slug)。
+      pt_BR: O identificador único (slug) do workspace do Bitbucket.
+    llm_description: The slug of the Bitbucket workspace from which to list repositories. This is typically the workspace name in lowercase, possibly with hyphens instead of spaces.
+    form: llm
+extra:
+  python:
+    source: tools/list_repository.py

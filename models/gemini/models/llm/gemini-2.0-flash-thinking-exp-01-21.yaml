@@ -14,6 +14,9 @@ model_properties:
 parameter_rules:
   - name: temperature
     use_template: temperature
+    default: 1
+    min: 0
+    max: 2
   - name: top_p
     use_template: top_p
   - name: top_k

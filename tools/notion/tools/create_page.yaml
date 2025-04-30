@@ -1,0 +1,90 @@
+identity:
+  name: create_page
+  author: langgenius
+  label:
+    en_US: Create Notion Page
+    zh_Hans: 创建 Notion 页面
+    pt_BR: Criar Página no Notion
+    ja_JP: Notion ページを作成
+    zh_Hant: 建立 Notion 頁面
+description:
+  human:
+    en_US: Create a new page in Notion with title and content
+    zh_Hans: 在 Notion 中创建带有标题和内容的新页面
+    pt_BR: Criar uma nova página no Notion com título e conteúdo
+    ja_JP: タイトルとコンテンツを含む新しい Notion ページを作成します
+    zh_Hant: 在 Notion 中建立帶有標題和內容的新頁面
+  llm: Create a new page in Notion with a title and content. The page can be created in a parent page or database. Returns the URL of the newly created page.
+parameters:
+  - name: title
+    type: string
+    required: true
+    label:
+      en_US: Page Title
+      zh_Hans: 页面标题
+      pt_BR: Título da Página
+      ja_JP: ページタイトル
+      zh_Hant: 頁面標題
+    human_description:
+      en_US: Title for the new Notion page
+      zh_Hans: 新 Notion 页面的标题
+      pt_BR: Título para a nova página do Notion
+      ja_JP: 新しい Notion ページのタイトル
+      zh_Hant: 新 Notion 頁面的標題
+    llm_description: Title for the new Notion page.
+    form: llm
+  - name: content
+    type: string
+    required: true
+    label:
+      en_US: Page Content
+      zh_Hans: 页面内容
+      pt_BR: Conteúdo da Página
+      ja_JP: ページコンテンツ
+      zh_Hant: 頁面內容
+    human_description:
+      en_US: Content for the new Notion page
+      zh_Hans: 新 Notion 页面的内容
+      pt_BR: Conteúdo para a nova página do Notion
+      ja_JP: 新しい Notion ページのコンテンツ
+      zh_Hant: 新 Notion 頁面的內容
+    llm_description: Content for the new Notion page. Plain text that will be converted to a paragraph block.
+    form: llm
+  - name: parent_id
+    type: string
+    required: false
+    label:
+      en_US: Parent ID
+      zh_Hans: 父级 ID
+      pt_BR: ID Pai
+      ja_JP: 親 ID
+      zh_Hant: 父級 ID
+    human_description:
+      en_US: ID of parent page or database (optional)
+      zh_Hans: 父级页面或数据库的 ID（可选）
+      pt_BR: ID da página ou banco de dados pai (opcional)
+      ja_JP: 親ページまたはデータベースの ID（オプション）
+      zh_Hant: 父級頁面或資料庫的 ID（選填）
+    llm_description: Optional ID of the parent page or database where the new page will be created. If not provided, the page will be created at the top level.
+    form: llm
+  - name: parent_type
+    type: string
+    required: false
+    default: page
+    label:
+      en_US: Parent Type
+      zh_Hans: 父级类型
+      pt_BR: Tipo de Pai
+      ja_JP: 親タイプ
+      zh_Hant: 父級類型
+    human_description:
+      en_US: Type of parent (page or database)
+      zh_Hans: 父级的类型（页面或数据库）
+      pt_BR: Tipo de pai (página ou banco de dados)
+      ja_JP: 親のタイプ（ページまたはデータベース）
+      zh_Hant: 父級的類型（頁面或資料庫）
+    llm_description: Type of the parent - either 'page' or 'database'. Default is 'page'. This determines how the new page will be created.
+    form: llm
+extra:
+  python:
+    source: tools/create_page.py 

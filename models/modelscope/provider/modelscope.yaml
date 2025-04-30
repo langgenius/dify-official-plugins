@@ -1,0 +1,99 @@
+background: '#FFFFFF'
+configurate_methods:
+- predefined-model
+- customizable-model
+description:
+  en_US: Models provided by ModelScope
+  zh_Hans: ModelScope 提供的模型
+extra:
+  python:
+    model_sources:
+    - models/llm/llm.py
+    provider_source: provider/modelscope.py
+help:
+  title:
+    en_US: Get your API Key from ModelScope
+    zh_Hans: 从 ModelScope 获取 API Key
+  url:
+    en_US: https://modelscope.cn/docs/model-service/API-Inference/intro
+icon_large:
+  en_US: icon_l_en.png
+icon_small:
+  en_US: icon.svg
+label:
+  en_US: ModelScope
+  zh_Hans: 魔搭社区
+model_credential_schema:
+  credential_form_schemas:
+  - label:
+      en_US: API Key
+    placeholder:
+      en_US: Enter your API Key
+      zh_Hans: 在此输入您的 API Key
+    required: true
+    type: secret-input
+    variable: api_key
+  - default: '4096'
+    label:
+      en_US: Model context size
+      zh_Hans: 模型上下文长度
+    placeholder:
+      en_US: Enter your Model context size
+      zh_Hans: 在此输入您的模型上下文长度
+    required: true
+    type: text-input
+    variable: context_size
+  - default: '4096'
+    label:
+      en_US: Upper bound for max tokens
+      zh_Hans: 最大 token 上限
+    type: text-input
+    variable: max_tokens
+  - default: no_call
+    label:
+      en_US: Function calling
+    options:
+    - label:
+        en_US: Not supported
+        zh_Hans: 不支持
+      value: no_call
+    - label:
+        en_US: Tool Call
+        zh_Hans: Tool Call
+      value: tool_call
+    required: false
+    type: select
+    variable: function_calling_type
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: Enter your model name
+      zh_Hans: 输入模型名称
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+    - models/llm/*.yaml
+provider: modelscope
+provider_credential_schema:
+  credential_form_schemas:
+  - label:
+      en_US: API Key
+    placeholder:
+      en_US: Enter your API Key
+      zh_Hans: 在此输入您的 API Key
+    required: true
+    type: secret-input
+    variable: api_key
+  - label:
+      en_US: API Base
+    placeholder:
+      en_US: Base URL, e.g. https://api-inference.modelscope.cn/v1
+      zh_Hans: Base URL, 如：https://api-inference.modelscope.cn/v1
+    required: false
+    type: text-input
+    variable: endpoint_url
+supported_model_types:
+- llm

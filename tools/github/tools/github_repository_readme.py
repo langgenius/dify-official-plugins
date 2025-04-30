@@ -23,7 +23,7 @@ class GithubRepositoryReadmeTool(Tool):
         if not repo:
             yield self.create_text_message("Please input repo")
         if "access_tokens" not in self.runtime.credentials or not self.runtime.credentials.get("access_tokens"):
-            yield self.create_text_message("Github API Access Tokens is required.")
+            yield self.create_text_message("GitHub API Access Tokens is required.")
         if "api_version" not in self.runtime.credentials or not self.runtime.credentials.get("api_version"):
             api_version = "2022-11-28"
         else:

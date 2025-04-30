@@ -1,2 +1,2 @@
-dify_plugin==0.0.1b65
+dify_plugin>=0.1.0,<0.2.0
 dashscope==1.20.14

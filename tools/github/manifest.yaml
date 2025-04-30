@@ -7,9 +7,9 @@ description:
   zh_Hans: GitHub是一个在线软件源代码托管服务平台。
 icon: icon.svg
 label:
-  en_US: Github
-  pt_BR: Github
-  zh_Hans: Github
+  en_US: GitHub
+  pt_BR: GitHub
+  zh_Hans: GitHub
 meta:
   arch:
   - amd64
@@ -34,4 +34,4 @@ resource:
 tags:
 - utilities
 type: plugin
-version: 0.0.4
+version: 0.0.5

@@ -1,0 +1,38 @@
+identity:
+  name: create_folder
+  author: lcandy
+  label:
+    en_US: Create Folder
+    zh_Hans: 创建文件夹
+    pt_BR: Criar Pasta
+    ja_JP: フォルダ作成
+    zh_Hant: 建立資料夾
+description:
+  human:
+    en_US: Create a new folder in Dropbox
+    zh_Hans: 在 Dropbox 中创建新文件夹
+    pt_BR: Criar uma nova pasta no Dropbox
+    ja_JP: Dropbox に新しいフォルダを作成します
+    zh_Hant: 在 Dropbox 中建立新資料夾
+  llm: Creates a new folder at the specified path in Dropbox. Returns information about the created folder including path and ID.
+parameters:
+  - name: folder_path
+    type: string
+    required: true
+    label:
+      en_US: Folder Path
+      zh_Hans: 文件夹路径
+      pt_BR: Caminho da Pasta
+      ja_JP: フォルダパス
+      zh_Hant: 資料夾路徑
+    human_description:
+      en_US: The path where the folder will be created in Dropbox
+      zh_Hans: 文件夹在 Dropbox 中的创建路径
+      pt_BR: O caminho onde a pasta será criada no Dropbox
+      ja_JP: Dropbox でフォルダを作成するパス
+      zh_Hant: 欲在 Dropbox 中建立資料夾的路徑
+    llm_description: The path where the folder will be created in Dropbox. Should be specified as a complete path, like '/Documents/Projects' or '/Photos/Vacation2023'. Paths are case-sensitive and must start with a forward slash.
+    form: llm
+extra:
+  python:
+    source: tools/create_folder.py 

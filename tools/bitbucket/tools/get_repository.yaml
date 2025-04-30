@@ -1,0 +1,43 @@
+identity:
+  name: get_repository
+  author: langgenius
+  label:
+    en_US: Get Repository
+    zh_Hans: 获取存储库
+    pt_BR: Obter Repositório
+description:
+  human:
+    en_US: Get details of a specific repository within a Bitbucket workspace.
+    zh_Hans: 获取 Bitbucket 工作区内特定存储库的详细信息。
+    pt_BR: Obter detalhes de um repositório específico dentro de um workspace do Bitbucket.
+  llm: Retrieves detailed information about a specific repository identified by its slug within a given workspace slug. Returns a repository object including name, slug, UUID, description, creation/update timestamps, and privacy status.
+parameters:
+  - name: workspace_slug
+    type: string
+    required: true
+    label:
+      en_US: Workspace Slug
+      zh_Hans: 工作区标识符
+      pt_BR: Slug do Workspace
+    human_description:
+      en_US: The unique identifier (slug) of the Bitbucket workspace containing the repository.
+      zh_Hans: 包含该存储库的 Bitbucket 工作区的唯一标识符 (slug)。
+      pt_BR: O identificador único (slug) do workspace do Bitbucket que contém o repositório.
+    llm_description: The slug of the Bitbucket workspace where the repository resides.
+    form: llm
+  - name: repository_slug
+    type: string
+    required: true
+    label:
+      en_US: Repository Slug
+      zh_Hans: 存储库标识符
+      pt_BR: Slug do Repositório
+    human_description:
+      en_US: The unique identifier (slug) of the Bitbucket repository.
+      zh_Hans: Bitbucket 存储库的唯一标识符 (slug)。
+      pt_BR: O identificador único (slug) do repositório Bitbucket.
+    llm_description: The slug of the Bitbucket repository to retrieve details for. This is usually the repository name in lowercase, possibly with hyphens.
+    form: llm
+extra:
+  python:
+    source: tools/get_repository.py
