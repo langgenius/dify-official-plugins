@@ -1,0 +1,52 @@
+model: meta
+label:
+  en_US: Meta Llama
+icon: icon_s_en.svg
+model_type: llm
+features:
+  - tool-call
+  - agent-thought
+model_properties:
+  mode: chat
+  context_size: 128000
+parameter_rules:
+  - name: model_name
+    label:
+      zh_Hans: Bedrock 模型
+      en_US: Bedrock Model
+    type: string
+    help:
+      zh_Hans: 指定模型名称
+      en_US: specify model name
+    required: true
+    default: Llama 3.1 70B Instruct
+    options:
+      - Llama 3 8B Instruct
+      - Llama 3 70B Instruct
+      - Llama 3.1 8B Instruct
+      - Llama 3.1 70B Instruct
+      - Llama 3.1 405B Instruct
+      - Llama 3.2 11B Instruct
+      - Llama 3.2 90B Instruct
+  - name: cross-region
+    label:
+      zh_Hans: 使用跨区域推理
+      en_US: Use Cross-Region Inference
+    type: boolean
+    required: true
+    default: true
+    help:
+      zh_Hans: 跨区域推理会自动选择您所在地理区域 AWS 区域 内的最佳位置来处理您的推理请求。
+      en_US: Cross-Region inference automatically selects the optimal AWS Region within your geography to process your inference request.
+  - name: temperature
+    use_template: temperature
+
+  - name: top_p
+    use_template: top_p
+
+  - name: max_gen_len
+    use_template: max_tokens
+    required: true
+    default: 512
+    min: 1
+    max: 2048

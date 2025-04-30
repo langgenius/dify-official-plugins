@@ -1,6 +1,6 @@
-model: amazon.nova-micro-v1:0
+model: amazon nova
 label:
-  en_US: Nova Micro V1
+  en_US: Amazon Nova
 icon: icon_s_en.svg
 model_type: llm
 features:
@@ -12,6 +12,30 @@ model_properties:
   mode: chat
   context_size: 300000
 parameter_rules:
+  - name: model_name
+    label:
+      zh_Hans: Bedrock 模型
+      en_US: Bedrock Model
+    type: string
+    help:
+      zh_Hans: 指定模型名称
+      en_US: specify model name
+    required: true
+    default: Nova Pro
+    options:
+      - Nova Pro
+      - Nova Lite
+      - Nova Micro
+  - name: cross-region
+    label:
+      zh_Hans: 使用跨区域推理
+      en_US: Use Cross-Region Inference
+    type: boolean
+    required: true
+    default: true
+    help:
+      zh_Hans: 跨区域推理会自动选择您所在地理区域 AWS 区域 内的最佳位置来处理您的推理请求。
+      en_US: Cross-Region inference automatically selects the optimal AWS Region within your geography to process your inference request.
   - name: enable_cache
     label:
       zh_Hans: 启用提示缓存
@@ -20,8 +44,8 @@ parameter_rules:
     required: false
     default: true
     help:
-      zh_Hans: 启用提示缓存可以提高性能并降低成本。Amazon Nova Micro支持在system和messages字段中使用缓存检查点，每个检查点至少需要1024个token。
-      en_US: Enable prompt caching to improve performance and reduce costs. Amazon Nova Micro supports cache checkpoints in system and messages fields with a minimum of 1024 tokens per checkpoint.
+      zh_Hans: 启用提示缓存可以提高性能并降低成本。Amazon Nova支持在system和messages字段中使用缓存检查点，每个检查点至少需要1024个token。
+      en_US: Enable prompt caching to improve performance and reduce costs. Amazon Nova Pro supports cache checkpoints in system and messages fields with a minimum of 1024 tokens per checkpoint.
   - name: max_new_tokens
     use_template: max_tokens
     required: true
@@ -57,8 +81,3 @@ parameter_rules:
     label:
       zh_Hans: 对于每个后续标记，仅从前 K 个选项中进行采样。使用 top_k 删除长尾低概率响应。
       en_US: Only sample from the top K options for each subsequent token. Use top_k to remove long tail low probability responses.
-pricing:
-  input: '0.00003'
-  output: '0.00012'
-  unit: '0.001'
-  currency: USD

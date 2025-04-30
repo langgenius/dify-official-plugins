@@ -53,6 +53,7 @@ from dify_plugin.errors.model import (
 
 from provider.get_bedrock_client import get_bedrock_client
 from .cache_config import is_cache_supported, get_cache_config
+from . import model_ids
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 logger = logging.getLogger(__name__)
@@ -85,8 +86,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         {"prefix": "cohere.command-r", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "amazon.titan", "support_system_prompts": False, "support_tool_use": False},
         {"prefix": "ai21.jamba-1-5", "support_system_prompts": True, "support_tool_use": False},
-        {"prefix": "amazon.nova", "support_system_prompts": True, "support_tool_use": False},
-        {"prefix": "us.amazon.nova", "support_system_prompts": True, "support_tool_use": False},
+        {"prefix": "amazon.nova", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "us.amazon.nova", "support_system_prompts": True, "support_tool_use": True},
     ]
 
     @staticmethod
@@ -155,15 +156,24 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :return: full response or stream response chunk generator result
         """
 
-        model_info = BedrockLargeLanguageModel._find_model_info(model)
+        model_name = model_parameters.pop('model_name')
+        model_id = model_ids.get_model_id(model, model_name)
+        if model_parameters.pop('cross-region', False):
+            region_name = credentials['aws_region']
+            region_prefix = model_ids.get_region_area(region_name)
+            if not region_prefix:
+                raise InvokeError(f'Region {region_name} Unsupport cross-region Inference')
+            model_id = "{}.{}".format(region_prefix, model_id)
+
+        model_info = BedrockLargeLanguageModel._find_model_info(model_id)
         if model_info:
-            model_info["model"] = model
+            model_info["model"] = model_id
             # invoke models via boto3 converse API
             return self._generate_with_converse(
                 model_info, credentials, prompt_messages, model_parameters, stop, stream, user, tools
             )
         # invoke other models via boto3 client
-        return self._generate(model, credentials, prompt_messages, model_parameters, stop, stream, user)
+        return self._generate(model_id, credentials, prompt_messages, model_parameters, stop, stream, user)
 
     def _generate_with_converse(
         self,
@@ -330,8 +340,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         else:
             assistant_prompt_message = AssistantPromptMessage(content=response_content[0]["text"])
 
-        # calculate num tokens
+        # calculate num token
         if response["usage"]:
+            logger.info(f"response['usage']: {response['usage']}")
             # transform usage
             prompt_tokens = response["usage"]["inputTokens"]
             completion_tokens = response["usage"]["outputTokens"]
@@ -692,19 +703,20 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 message_dict = {"role": "user", "content": sub_messages}
         elif isinstance(message, AssistantPromptMessage):
             message = cast(AssistantPromptMessage, message)
+            message_dict = {
+                "role" : "assistant",
+                "content": []
+            }
+
             if message.tool_calls:
-                message_dict = {
-                    "role": "assistant",
-                    "content": [
-                        {
-                            "toolUse": {
-                                "toolUseId": message.tool_calls[0].id,
-                                "name": message.tool_calls[0].function.name,
-                                "input": json.loads(message.tool_calls[0].function.arguments),
-                            }
-                        }
-                    ],
-                }
+                for tool_use in message.tool_calls:
+                    message_dict["content"].append({
+                                "toolUse": {
+                                    "toolUseId": tool_use.id,
+                                    "name": tool_use.function.name,
+                                    "input": json.loads(tool_use.function.arguments),
+                                }
+                            })
             else:
                 message_dict = {"role": "assistant", "content": [{"text": message.content}]}
         elif isinstance(message, SystemPromptMessage):
@@ -743,8 +755,13 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :param tools: tools for tool calling
         :return:md = genai.GenerativeModel(model)
         """
-        prefix = model.split(".")[0]
-        model_name = model.split(".")[1]
+        model_id = model_ids.get_first_model(model)
+        if model_id.startswith('us.') or model_id.startswith('eu.'):
+            prefix = model_id.split(".")[1]
+            model_name = model_id.split(".")[2]
+        else:
+            prefix = model_id.split(".")[0]
+            model_name = model_id.split(".")[1]
 
         if isinstance(prompt_messages, str):
             prompt = prompt_messages
@@ -761,12 +778,14 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :param credentials: model credentials
         :return:
         """
+        model_id = model_ids.get_first_model(model)
+
         required_params = {}
-        if "anthropic" in model:
+        if "anthropic" in model_id:
             required_params = {
                 "max_tokens": 32,
             }
-        elif "ai21" in model:
+        elif "ai21" in model_id:
             # ValidationException: Malformed input request: #/temperature: expected type: Number,
             # found: Null#/maxTokens: expected type: Integer, found: Null#/topP: expected type: Number, found: Null,
             # please reformat your input and try again.
@@ -779,7 +798,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         try:
             ping_message = UserPromptMessage(content="ping")
             self._invoke(
-                model=model,
+                model=model_id,
                 credentials=credentials,
                 prompt_messages=[ping_message],
                 model_parameters=required_params,
@@ -930,8 +949,10 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         Create payload for bedrock api call depending on model provider
         """
         payload = {}
-        model_prefix = model.split(".")[0]
-        model_name = model.split(".")[1]
+        if model.startswith('us.') or model.startswith('eu.'):
+            model_prefix = model.split(".")[1]
+        else:
+            model_prefix = model.split(".")[0]
 
         if model_prefix == "ai21":
             payload["temperature"] = model_parameters.get("temperature")
@@ -1444,6 +1465,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 })
         
         return formatted_messages
+
     def _convert_messages_to_prompt(
             self, messages: list[PromptMessage], model_prefix: str, model_name: Optional[str] = None
     ) -> str:

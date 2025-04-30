@@ -1,6 +1,6 @@
-model: us.anthropic.claude-3-7-sonnet-20250219-v1:0
+model: anthropic claude
 label:
-  en_US: Claude 3.7 Sonnet(US.Cross Region Inference)
+  en_US: Anthropic Claude
 icon: icon_s_en.svg
 model_type: llm
 features:
@@ -13,6 +13,34 @@ model_properties:
   context_size: 200000
 # docs: https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages.html
 parameter_rules:
+  - name: model_name
+    label:
+      zh_Hans: Bedrock 模型
+      en_US: Bedrock Model
+    type: string
+    help:
+      zh_Hans: 指定模型名称
+      en_US: specify model name
+    required: true
+    default: Claude 3.7 Sonnet
+    options:
+      - Claude 3.7 Sonnet
+      - Claude 3.5 Sonnet
+      - Claude 3.5 Sonnet V2
+      - Claude 3 Sonnet
+      - Claude 3.5 Haiku
+      - Claude 3 Haiku
+      - Claude 3 Opus
+  - name: cross-region
+    label:
+      zh_Hans: 使用跨区域推理
+      en_US: Use Cross-Region Inference
+    type: boolean
+    required: true
+    default: true
+    help:
+      zh_Hans: 跨区域推理会自动选择您所在地理区域 AWS 区域 内的最佳位置来处理您的推理请求。
+      en_US: Cross-Region inference automatically selects the optimal AWS Region within your geography to process your inference request.
   - name: enable_cache
     label:
       zh_Hans: 启用提示缓存
@@ -58,7 +86,7 @@ parameter_rules:
       zh_Hans: 最大token数
       en_US: Max Tokens
     type: int
-    default: 8192
+    default: 4096
     min: 1
     max: 128000
     help:
@@ -108,8 +136,3 @@ parameter_rules:
       en_US: Only sample from the top K options for each subsequent token. Use top_k to remove long tail low probability responses.
   - name: response_format
     use_template: response_format
-pricing:
-  input: '0.003'
-  output: '0.015'
-  unit: '0.001'
-  currency: USD
