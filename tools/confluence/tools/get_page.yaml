@@ -1,0 +1,26 @@
+identity:
+  name: get_page
+  author: langgenius
+  label:
+    en_US: Get the content of a Confluence page
+    zh_Hans: 获取 Confluence 页面的内容
+description:
+  human:
+    en_US: Retrieves details of a specific Confluence page by its ID.
+    zh_Hans: 通过页面 ID 获取特定 Confluence 页面的详细信息。
+  llm: Fetches the details of a Confluence page using its unique page ID. Returns information like title, content (in storage format), space key, version, and links.
+parameters:
+  - name: page_id
+    type: string
+    required: true
+    label:
+      en_US: Page ID
+      zh_Hans: 页面 ID
+    human_description:
+      en_US: The unique ID of the Confluence page to retrieve.
+      zh_Hans: 要检索的 Confluence 页面的唯一 ID。
+    llm_description: The unique identifier for the Confluence page you want to fetch.
+    form: llm
+extra:
+  python:
+    source: tools/get_page.py

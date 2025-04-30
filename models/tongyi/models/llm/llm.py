@@ -64,15 +64,15 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
     tokenizers = {}
 
     def _invoke(
-        self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
-        stream: bool = True,
-        user: Optional[str] = None,
+            self,
+            model: str,
+            credentials: dict,
+            prompt_messages: list[PromptMessage],
+            model_parameters: dict,
+            tools: Optional[list[PromptMessageTool]] = None,
+            stop: Optional[list[str]] = None,
+            stream: bool = True,
+            user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model
@@ -99,11 +99,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         )
 
     def get_num_tokens(
-        self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        tools: Optional[list[PromptMessageTool]] = None,
+            self,
+            model: str,
+            credentials: dict,
+            prompt_messages: list[PromptMessage],
+            tools: Optional[list[PromptMessageTool]] = None,
     ) -> int:
         """
         Get number of tokens for given prompt messages
@@ -148,15 +148,15 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             raise CredentialsValidateFailedError(str(ex))
 
     def _generate(
-        self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
-        stream: bool = True,
-        user: Optional[str] = None,
+            self,
+            model: str,
+            credentials: dict,
+            prompt_messages: list[PromptMessage],
+            model_parameters: dict,
+            tools: Optional[list[PromptMessageTool]] = None,
+            stop: Optional[list[str]] = None,
+            stream: bool = True,
+            user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model
@@ -196,11 +196,14 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages
             )
+            enable_thinking = model_parameters.get("enable_thinking", False)
             response = Generation.call(
                 **params,
                 result_format="message",
+                # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition, QwQ, and QVQ only supports streaming output.
                 stream=stream,
-                incremental_output=False if tools else stream,
+                # Qwen3 open-source edition, QwQ, and QVQ models only supports incremental_output set to True.
+                incremental_output=True if enable_thinking else stream,
             )
         if stream:
             return self._handle_generate_stream_response(
@@ -211,11 +214,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         )
 
     def _handle_generate_response(
-        self,
-        model: str,
-        credentials: dict,
-        response: GenerationResponse,
-        prompt_messages: list[PromptMessage],
+            self,
+            model: str,
+            credentials: dict,
+            response: GenerationResponse,
+            prompt_messages: list[PromptMessage],
     ) -> LLMResult:
         """
         Handle llm response
@@ -270,11 +273,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             tool_call_obj['function']['arguments'] = args
 
     def _handle_generate_stream_response(
-        self,
-        model: str,
-        credentials: dict,
-        responses: Generator[GenerationResponse, None, None],
-        prompt_messages: list[PromptMessage],
+            self,
+            model: str,
+            credentials: dict,
+            responses: Generator[GenerationResponse, None, None],
+            prompt_messages: list[PromptMessage],
     ) -> Generator:
         """
         Handle llm stream response
@@ -410,10 +413,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         return text.rstrip()
 
     def _convert_prompt_messages_to_tongyi_messages(
-        self,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        rich_content: bool = False,
+            self,
+            credentials: dict,
+            prompt_messages: list[PromptMessage],
+            rich_content: bool = False,
     ) -> list[dict]:
         """
         Convert prompt messages to tongyi messages
@@ -537,7 +540,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         return f"file://{file_path}"
 
     def _upload_file_to_tongyi(
-        self, credentials: dict, message_content: DocumentPromptMessageContent
+            self, credentials: dict, message_content: DocumentPromptMessageContent
     ) -> str:
         """
         Upload file to Tongyi
@@ -595,6 +598,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             }
             tool_definitions.append(tool_definition)
         return tool_definitions
+
     def _wrap_thinking_by_reasoning_content(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
         """
         If the reasoning response is from delta.get("reasoning_content"), we wrap
@@ -613,7 +617,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                         reasoning_content = "\n".join(map(str, reasoning_content))
                     elif not isinstance(reasoning_content, str):
                         reasoning_content = str(reasoning_content)
-                    
+
                     if not is_reasoning:
                         content = "<think>\n" + reasoning_content
                         is_reasoning = True
@@ -635,7 +639,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 f"[wrap_thinking_by_reasoning_content-2] {ex}"
             ) from ex
         return content, is_reasoning
-    
+
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
         """
@@ -659,7 +663,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         }
 
     def get_customizable_model_schema(
-        self, model: str, credentials: dict
+            self, model: str, credentials: dict
     ) -> Optional[AIModelEntity]:
         """
         Architecture for defining customizable models
