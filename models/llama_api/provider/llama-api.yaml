@@ -14,7 +14,7 @@ help:
     en_US: Get your API Key from Llama API
     zh_Hans: 从 Llama API 获取 API Key
   url:
-    en_US: https://llama.developer.meta.com/api-keys
+    en_US: https://llama.developer.meta.com?utm_source=partner-dify&utm_medium=readme
 supported_model_types:
   - llm
 configurate_methods:
