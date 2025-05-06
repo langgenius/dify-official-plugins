@@ -47,6 +47,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         {"prefix": "eu.anthropic.claude-3", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "anthropic.claude-3", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "us.meta.llama3-2", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "us.meta.llama4", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "meta.llama", "support_system_prompts": True, "support_tool_use": False},
         {"prefix": "mistral.mistral-7b-instruct", "support_system_prompts": False, "support_tool_use": False},
         {"prefix": "mistral.mixtral-8x7b-instruct", "support_system_prompts": False, "support_tool_use": False},
