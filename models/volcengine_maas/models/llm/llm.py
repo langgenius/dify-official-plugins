@@ -465,7 +465,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         used to define customizable model schema
         """
         model_config = get_model_config(credentials)
-        if model.startswith("DeepSeek-R1"):
+        if model.lower().startswith("deepseek-r1"):
             rules = [
                 ParameterRule(
                     name="max_tokens",
@@ -475,6 +475,13 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     max=model_config.properties.max_tokens,
                     default=512,
                     label=I18nObject(zh_Hans="最大生成长度", en_US="Max Tokens"),
+                ),
+                ParameterRule(
+                    name="skip_moderation",
+                    type=ParameterType.BOOLEAN,
+                    default=False,
+                    label=I18nObject(zh_Hans="跳过内容审核", en_US="Skip Moderation"),
+                    help=I18nObject(zh_Hans="跳过内容审核，需要先联系火山引擎开通此功能", en_US="Skip Moderation, please contact Volcengine to enable this feature first"),
                 ),
             ]
         else:
@@ -522,6 +529,13 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     max=model_config.properties.max_tokens,
                     default=512,
                     label=I18nObject(zh_Hans="最大生成长度", en_US="Max Tokens"),
+                ),
+                ParameterRule(
+                    name="skip_moderation",
+                    type=ParameterType.BOOLEAN,
+                    default=False,
+                    label=I18nObject(zh_Hans="跳过内容审核", en_US="Skip Moderation"),
+                    help=I18nObject(zh_Hans="跳过内容审核，需要先联系火山引擎开通此功能", en_US="Skip Moderation, please contact Volcengine to enable this feature first"),
                 ),
             ]
 
