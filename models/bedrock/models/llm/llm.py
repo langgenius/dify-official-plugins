@@ -87,6 +87,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         {"prefix": "ai21.jamba-1-5", "support_system_prompts": True, "support_tool_use": False},
         {"prefix": "amazon.nova", "support_system_prompts": True, "support_tool_use": False},
         {"prefix": "us.amazon.nova", "support_system_prompts": True, "support_tool_use": False},
+        {"prefix": "us.meta.llama4-maverick-17b-instruct", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "us.meta.llama4-scout-17b-instruct", "support_system_prompts": True, "support_tool_use": True},
     ]
 
     @staticmethod
