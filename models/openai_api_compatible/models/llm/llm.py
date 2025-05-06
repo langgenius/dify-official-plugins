@@ -61,7 +61,7 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             user,
         )
 
-    def _get_customizable_model_schema(
+    def get_customizable_model_schema(
         self, model: str, credentials: Mapping
     ) -> Optional[AIModelEntity]:
         entity = super().get_customizable_model_schema(model, credentials)
