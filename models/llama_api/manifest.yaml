@@ -1,6 +1,6 @@
 version: 0.0.1
 type: plugin
-author: meta
+author: langgenius
 name: llama-api
 label:
   en_US: Llama API
