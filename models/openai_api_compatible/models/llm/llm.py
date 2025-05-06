@@ -33,6 +33,18 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 en_US=credentials["display_name"], zh_Hans=credentials["display_name"]
             )
 
+        entity.parameter_rules += [
+            ParameterRule(
+                name="enable_thinking",
+                label=I18nObject(en_US="Thinking mode", zh_Hans="思考模式"),
+                help=I18nObject(
+                    en_US="Whether to enable thinking mode, applicable to various thinking mode models deployed on reasoning frameworks such as vLLM and SGLang, for example Qwen3.",
+                    zh_Hans="是否开启思考模式，适用于vLLM和SGLang等推理框架部署的多种思考模式模型，例如Qwen3。",
+                ),
+                type=ParameterType.BOOLEAN,
+                required=False,
+            )
+        ]
         return entity
 
     def _invoke(
@@ -60,21 +72,3 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             stream,
             user,
         )
-
-    def get_customizable_model_schema(
-        self, model: str, credentials: Mapping
-    ) -> Optional[AIModelEntity]:
-        entity = super().get_customizable_model_schema(model, credentials)
-        entity.parameter_rules += [
-            ParameterRule(
-                name="enable_thinking",
-                label=I18nObject(en_US="Thinking mode", zh_Hans="思考模式"),
-                help=I18nObject(
-                    en_US="Whether to enable thinking mode, applicable to various thinking mode models deployed on reasoning frameworks such as vLLM and SGLang, for example Qwen3.",
-                    zh_Hans="是否开启思考模式，适用于vLLM和SGLang等推理框架部署的多种思考模式模型，例如Qwen3。",
-                ),
-                type=ParameterType.BOOLEAN,
-                required=False,
-            )
-        ]
-        return entity
