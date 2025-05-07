@@ -3,7 +3,7 @@ import base64
 import json
 import logging
 from collections.abc import Generator
-from typing import Optional, Union, cast, Dict, Any
+from typing import Optional, Union, cast
 
 # 3rd import
 import boto3  # type: ignore
@@ -99,15 +99,15 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         return None
 
     def _code_block_mode_wrapper(
-        self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
-        stream: bool = True,
-        user: Optional[str] = None,
+            self,
+            model: str,
+            credentials: dict,
+            prompt_messages: list[PromptMessage],
+            model_parameters: dict,
+            tools: Optional[list[PromptMessageTool]] = None,
+            stop: Optional[list[str]] = None,
+            stream: bool = True,
+            user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Code block mode wrapper for invoking large language model
@@ -132,15 +132,15 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         return self._invoke(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 
     def _invoke(
-        self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
-        stream: bool = True,
-        user: Optional[str] = None,
+            self,
+            model: str,
+            credentials: dict,
+            prompt_messages: list[PromptMessage],
+            model_parameters: dict,
+            tools: Optional[list[PromptMessageTool]] = None,
+            stop: Optional[list[str]] = None,
+            stream: bool = True,
+            user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model
@@ -176,15 +176,15 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         return self._generate(model_id, credentials, prompt_messages, model_parameters, stop, stream, user)
 
     def _generate_with_converse(
-        self,
-        model_info: dict,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        model_parameters: dict,
-        stop: Optional[list[str]] = None,
-        stream: bool = True,
-        user: Optional[str] = None,
-        tools: Optional[list[PromptMessageTool]] = None,
+            self,
+            model_info: dict,
+            credentials: dict,
+            prompt_messages: list[PromptMessage],
+            model_parameters: dict,
+            stop: Optional[list[str]] = None,
+            stream: bool = True,
+            user: Optional[str] = None,
+            tools: Optional[list[PromptMessageTool]] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model with converse API
@@ -198,7 +198,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :return: full response or stream response chunk generator result
         """
         bedrock_client = get_bedrock_client("bedrock-runtime", credentials)
-        
+
         # Check if cache is enabled in model parameters
         enable_cache = model_parameters.pop("enable_cache", False)
         logger.info(f"---enable_cache---: {enable_cache}")
@@ -209,10 +209,10 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         cache_supported = is_cache_supported(model_id) and enable_cache
         print(f"[CACHE DEBUG] Model: {model_id}, Cache supported: {cache_supported}")
         logger.info(f"[CACHE DEBUG] Model: {model_id}, Cache supported: {cache_supported}")
-        
+
         # Convert messages with cache points if enabled
         system, prompt_message_dicts = self._convert_converse_prompt_messages(
-            prompt_messages, 
+            prompt_messages,
             model_id=model_id,
             enable_cache=enable_cache
         )
@@ -229,21 +229,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             parameters["system"] = system
 
         if model_info["support_tool_use"] and tools:
-            tool_config = self._convert_converse_tool_config(tools=tools)
-            parameters["toolConfig"] = tool_config
-            
-            # Add cache point to tools if enabled and supported by the model
-            if enable_cache and tool_config and "tools" in tool_config:
-                # Check if model supports tool caching
-                if cache_supported and "tools" in get_cache_config(model_id)["supported_fields"]:
-                    # Add cache point after tools
-                    if "cachePoint" not in tool_config:
-                        tool_config["cachePoint"] = {"type": "default"}
-                        print(f"[CACHE DEBUG] Added cache point to tools for model: {model_id}")
-        
-        # Print the full request parameters for debugging
-        print(f"[CACHE DEBUG] Full request parameters: {json.dumps(parameters, default=str)}")
-        logger.info(f"[CACHE DEBUG] Full request parameters: {json.dumps(parameters, default=str)}")
+            parameters["toolConfig"] = self._convert_converse_tool_config(tools=tools)
         try:
             # for issue #10976
             conversations_list = parameters["messages"]
@@ -251,9 +237,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             for i in range(len(conversations_list) - 2, -1, -1):
                 if conversations_list[i]["role"] == conversations_list[i + 1]["role"]:
                     conversations_list[i]["content"].extend(conversations_list.pop(i + 1)["content"])
-            logger.info(f"parameters: {parameters}")
+
             if stream:
-                logger.info(f"stream: {stream}")
                 response = bedrock_client.converse_stream(**parameters)
                 return self._handle_converse_stream_response(
                     model_info["model"], credentials, response, prompt_messages
@@ -261,24 +246,24 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             else:
                 logger.info(f"converse: {parameters}")
                 response = bedrock_client.converse(**parameters)
-                
+
                 # Log cache usage metrics if available
                 if "usage" in response:
                     # Extract token usage
                     input_tokens = response["usage"].get("inputTokens", 0)
                     output_tokens = response["usage"].get("outputTokens", 0)
-                    
+
                     # Extract cache metrics if available
                     cache_read_tokens = response["usage"].get("cacheReadInputTokens", 0)
                     cache_write_tokens = response["usage"].get("cacheWriteInputTokens", 0)
-                    
+
                     # Always log the metrics for debugging
                     print(f"[CACHE METRICS] Model: {model_id}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
                     logger.info(f"[CACHE METRICS] Model: {model_id}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
-                    
+
                     # Print the full response usage for debugging
                     print(f"[CACHE DEBUG] Response usage: {json.dumps(response['usage'], default=str)}")
-                    
+
                     # Log cache usage if any tokens were read or written
                     if cache_read_tokens > 0 or cache_write_tokens > 0:
                         logger.info(f"Cache metrics - Model: {model_id}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
@@ -293,7 +278,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     # Log if usage data is missing
                     print(f"[WARNING] No usage data in response")
                     logger.warning(f"No usage data in response")
-                
+
                 return self._handle_converse_response(model_info["model"], credentials, response, prompt_messages)
         except ClientError as ex:
             error_code = ex.response["Error"]["Code"]
@@ -309,7 +294,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             raise InvokeError(str(ex))
 
     def _handle_converse_response(
-        self, model: str, credentials: dict, response: dict, prompt_messages: list[PromptMessage]
+            self, model: str, credentials: dict, response: dict, prompt_messages: list[PromptMessage]
     ) -> LLMResult:
         """
         Handle llm chat response
@@ -320,7 +305,6 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :param prompt_messages: prompt messages
         :return: full response chunk generator result
         """
-        logger.info(f"response: {response}")
         response_content = response["output"]["message"]["content"]
         # transform assistant message to prompt message
         if response["stopReason"] == "tool_use":
@@ -340,17 +324,16 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         else:
             assistant_prompt_message = AssistantPromptMessage(content=response_content[0]["text"])
 
-        # calculate num token
+        # calculate num tokens
         if response["usage"]:
-            logger.info(f"response['usage']: {response['usage']}")
             # transform usage
             prompt_tokens = response["usage"]["inputTokens"]
             completion_tokens = response["usage"]["outputTokens"]
-            
+
             # Log cache metrics if available
             cache_read_tokens = response["usage"].get("cacheReadInputTokens", 0)
             cache_write_tokens = response["usage"].get("cacheWriteInputTokens", 0)
-            
+
             if cache_read_tokens > 0 or cache_write_tokens > 0:
                 logger.info(f"Cache metrics - Model: {model}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
                 # If tokens were read from cache, log the savings
@@ -385,11 +368,11 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         return text, tool_use
 
     def _handle_converse_stream_response(
-        self,
-        model: str,
-        credentials: dict,
-        response: dict,
-        prompt_messages: list[PromptMessage],
+            self,
+            model: str,
+            credentials: dict,
+            response: dict,
+            prompt_messages: list[PromptMessage],
     ) -> Generator:
         """
         Handle llm chat stream response
@@ -426,18 +409,18 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     if "usage" in chunk["metadata"]:
                         input_tokens = chunk["metadata"]["usage"].get("inputTokens", 0)
                         output_tokens = chunk["metadata"]["usage"].get("outputTokens", 0)
-                        
+
                         # Extract cache metrics if available
                         cache_read_tokens = chunk["metadata"]["usage"].get("cacheReadInputTokens", 0)
                         cache_write_tokens = chunk["metadata"]["usage"].get("cacheWriteInputTokens", 0)
-                        
+
                         # Always log the metrics for debugging
                         print(f"[STREAM CACHE METRICS] Model: {model}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
                         logger.info(f"[STREAM CACHE METRICS] Model: {model}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
-                        
+
                         # Print the full usage data for debugging
                         print(f"[STREAM USAGE DATA] {json.dumps(chunk['metadata']['usage'], default=str)}")
-                        
+
                         # Log cache usage if any tokens were read or written
                         if cache_read_tokens > 0 or cache_write_tokens > 0:
                             logger.info(f"Cache metrics - Model: {model}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
@@ -452,7 +435,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                         # Log if usage data is missing
                         print(f"[STREAM WARNING] No usage data in metadata: {json.dumps(chunk['metadata'], default=str)}")
                         logger.warning(f"No usage data in metadata chunk: {json.dumps(chunk['metadata'], default=str)}")
-                    
+
                     usage = self._calc_response_usage(model, credentials, input_tokens, output_tokens)
                     yield LLMResultChunk(
                         model=return_model,
@@ -480,7 +463,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                                 formatted_reasoning = reasoning_text
 
                         # end of reasoningContent
-                        elif "signature" in delta["reasoningContent"]: 
+                        elif "signature" in delta["reasoningContent"]:
                             formatted_reasoning = '\n</think>'
 
                         # Update complete content, although it may not be needed here, but maintains code consistency
@@ -536,7 +519,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                                 message=assistant_prompt_message,
                             ),
                         )
-                        
+
                     if "input" in tool_use:
                         tool_call = AssistantPromptMessage.ToolCall(
                             id=tool_use["toolUseId"],
@@ -552,7 +535,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             raise InvokeError(str(ex))
 
     def _convert_converse_api_model_parameters(
-        self, model_parameters: dict, stop: Optional[list[str]] = None
+            self, model_parameters: dict, stop: Optional[list[str]] = None
     ) -> tuple[dict, dict]:
         inference_config = {}
         additional_model_fields = {}
@@ -570,7 +553,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         if "top_k" in model_parameters:
             additional_model_fields["top_k"] = model_parameters["top_k"]
-            
+
         # process reasoning related parameters, construct nested reasoning_config structure
         if "reasoning_type" in model_parameters:
             reasoning_type = model_parameters["reasoning_type"]
@@ -597,7 +580,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         """
         Convert prompt messages to dict list and system
         Add cache points for supported models when enable_cache is True
-        
+
         :param prompt_messages: List of prompt messages to convert
         :param model_id: Model ID to check for cache support
         :param enable_cache: Whether to enable caching
@@ -605,49 +588,56 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         """
         system = []
         prompt_message_dicts = []
-        
+
         # Check if model supports caching
         cache_supported = model_id and is_cache_supported(model_id) and enable_cache
         cache_config = get_cache_config(model_id) if cache_supported else None
-        
+
         # Process system messages first
         system_messages = [msg for msg in prompt_messages if isinstance(msg, SystemPromptMessage)]
         other_messages = [msg for msg in prompt_messages if not isinstance(msg, SystemPromptMessage)]
-        
+
         # Add system messages
         for message in system_messages:
             message.content = message.content.strip()
             system.append({"text": message.content})
-            
+
         # Add cache point to system if it's not empty and caching is supported for system field
         if system and cache_supported and cache_config and "system" in cache_config["supported_fields"]:
             system.append({"cachePoint": {"type": "default"}})
             print(f"[CACHE DEBUG] Added cache point to system messages for model: {model_id}")
-            
+
         # Process other messages
         for message in other_messages:
             message_dict = self._convert_prompt_message_to_dict(message)
             prompt_message_dicts.append(message_dict)
-            
-        # Add cache point to the last message if caching is supported for messages field
-        if prompt_message_dicts and cache_supported and cache_config and "messages" in cache_config["supported_fields"]:
-            # For the last user message, add a cache point
-            if prompt_message_dicts[-1]["role"] == "user":
-                # Check if content is a list and has enough elements
-                if isinstance(prompt_message_dicts[-1]["content"], list):
+
+        # Only add cache point to messages if supported
+        if cache_supported and cache_config and "messages" in cache_config["supported_fields"]:
+            # Find all user messages
+            user_message_indices = [i for i, msg in enumerate(prompt_message_dicts) if msg["role"] in ["user", "assistant"]]
+
+            # Add cache point to the second-to-last user message if there are at least 2 user messages
+            if len(user_message_indices) >= 2:
+                # Get the second-to-last user message index
+                second_to_last_user_index = user_message_indices[-2]
+                message = prompt_message_dicts[second_to_last_user_index]
+
+                # Check if content is a list
+                if isinstance(message["content"], list):
                     # Add cache point to the content array
-                    prompt_message_dicts[-1]["content"].append({"cachePoint": {"type": "default"}})
-                    print(f"[CACHE DEBUG] Added cache point to user message content list for model: {model_id}")
+                    message["content"].append({"cachePoint": {"type": "default"}})
+                    print(f"[CACHE DEBUG] Added cache point to second-to-last user message content list for model: {model_id}")
                 else:
                     # If content is not a list, convert it to a list with the original content and add cache point
-                    original_content = prompt_message_dicts[-1]["content"]
-                    prompt_message_dicts[-1]["content"] = [{"text": original_content}, {"cachePoint": {"type": "default"}}]
-                    print(f"[CACHE DEBUG] Converted user message content to list and added cache point for model: {model_id}")
+                    original_content = message["content"]
+                    message["content"] = [{"text": original_content}, {"cachePoint": {"type": "default"}}]
+                    print(f"[CACHE DEBUG] Converted second-to-last user message content to list and added cache point for model: {model_id}")
 
         # Print the final system and messages for debugging
         print(f"[CACHE DEBUG] System messages: {json.dumps(system, default=str)}")
         print(f"[CACHE DEBUG] Prompt messages: {json.dumps(prompt_message_dicts, default=str)}")
-        
+
         return system, prompt_message_dicts
 
     def _convert_converse_tool_config(self, tools: Optional[list[PromptMessageTool]] = None) -> dict:
@@ -711,12 +701,12 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             if message.tool_calls:
                 for tool_use in message.tool_calls:
                     message_dict["content"].append({
-                                "toolUse": {
-                                    "toolUseId": tool_use.id,
-                                    "name": tool_use.function.name,
-                                    "input": json.loads(tool_use.function.arguments),
-                                }
-                            })
+                        "toolUse": {
+                            "toolUseId": tool_use.id,
+                            "name": tool_use.function.name,
+                            "input": json.loads(tool_use.function.arguments),
+                        }
+                    })
             else:
                 message_dict = {"role": "assistant", "content": [{"text": message.content}]}
         elif isinstance(message, SystemPromptMessage):
@@ -740,11 +730,11 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         return message_dict
 
     def get_num_tokens(
-        self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage] | str,
-        tools: Optional[list[PromptMessageTool]] = None,
+            self,
+            model: str,
+            credentials: dict,
+            prompt_messages: list[PromptMessage] | str,
+            tools: Optional[list[PromptMessageTool]] = None,
     ) -> int:
         """
         Get number of tokens for given prompt messages
@@ -814,7 +804,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             raise CredentialsValidateFailedError(str(ex))
 
     def _convert_one_message_to_text(
-        self, message: PromptMessage, model_prefix: str, model_name: Optional[str] = None
+            self, message: PromptMessage, model_prefix: str, model_name: Optional[str] = None
     ) -> str:
         """
         Convert a single message to a string.
@@ -844,106 +834,35 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         return message_text
 
-    def _convert_messages_to_anthropic_format(self, messages: list[PromptMessage], enable_cache: bool = False) -> list[dict]:
+    def _convert_messages_to_prompt(
+            self, messages: list[PromptMessage], model_prefix: str, model_name: Optional[str] = None
+    ) -> str:
         """
-        Convert messages to Anthropic format with cache_control if enabled
-        
-        :param messages: List of prompt messages
-        :param enable_cache: Whether to enable caching
-        :return: List of messages in Anthropic format
+        Format a list of messages into a full prompt for the Anthropic, Amazon and Llama models
+
+        :param messages: List of PromptMessage to combine.
+        :param model_name: specific model name.Optional,just to distinguish llama2 and llama3
+        :return: Combined string with necessary human_prompt and ai_prompt tags.
         """
-        formatted_messages = []
-        
-        for message in messages:
-            if isinstance(message, UserPromptMessage):
-                if isinstance(message.content, str):
-                    content = [{"type": "text", "text": message.content}]
-                    
-                    # Add cache_control to user messages if enabled
-                    if enable_cache:
-                        content.append({
-                            "type": "text",
-                            "text": "",
-                            "cache_control": {"type": "ephemeral"}
-                        })
-                    
-                    formatted_messages.append({
-                        "role": "user",
-                        "content": content
-                    })
-                else:
-                    # Handle multi-modal content
-                    content = []
-                    for item in message.content:
-                        if item.type == PromptMessageContentType.TEXT:
-                            content.append({"type": "text", "text": item.data})
-                        elif item.type == PromptMessageContentType.IMAGE:
-                            # Process image data
-                            data_split = item.data.split(";base64,")
-                            mime_type = data_split[0].replace("data:", "")
-                            base64_data = data_split[1]
-                            
-                            content.append({
-                                "type": "image",
-                                "source": {
-                                    "type": "base64",
-                                    "media_type": mime_type,
-                                    "data": base64_data
-                                }
-                            })
-                    
-                    # Add cache_control if enabled
-                    if enable_cache:
-                        content.append({
-                            "type": "text",
-                            "text": "",
-                            "cache_control": {"type": "ephemeral"}
-                        })
-                    
-                    formatted_messages.append({
-                        "role": "user",
-                        "content": content
-                    })
-            
-            elif isinstance(message, AssistantPromptMessage):
-                if message.tool_calls:
-                    # Handle tool calls
-                    formatted_messages.append({
-                        "role": "assistant",
-                        "content": [{"type": "text", "text": message.content}],
-                        "tool_calls": [
-                            {
-                                "id": tool_call.id,
-                                "type": tool_call.type,
-                                "function": {
-                                    "name": tool_call.function.name,
-                                    "arguments": tool_call.function.arguments
-                                }
-                            } for tool_call in message.tool_calls
-                        ]
-                    })
-                else:
-                    formatted_messages.append({
-                        "role": "assistant",
-                        "content": [{"type": "text", "text": message.content}]
-                    })
-            
-            elif isinstance(message, ToolPromptMessage):
-                formatted_messages.append({
-                    "role": "tool",
-                    "tool_call_id": message.tool_call_id,
-                    "content": [{"type": "text", "text": message.content}]
-                })
-        
-        return formatted_messages
+        if not messages:
+            return ""
+
+        messages = messages.copy()  # don't mutate the original list
+        if not isinstance(messages[-1], AssistantPromptMessage):
+            messages.append(AssistantPromptMessage(content=""))
+
+        text = "".join(self._convert_one_message_to_text(message, model_prefix, model_name) for message in messages)
+
+        # trim off the trailing ' ' that might come from the "Assistant: "
+        return text.rstrip()
 
     def _create_payload(
-        self,
-        model: str,
-        prompt_messages: list[PromptMessage],
-        model_parameters: dict,
-        stop: Optional[list[str]] = None,
-        stream: bool = True,
+            self,
+            model: str,
+            prompt_messages: list[PromptMessage],
+            model_parameters: dict,
+            stop: Optional[list[str]] = None,
+            stream: bool = True,
     ):
         """
         Create payload for bedrock api call depending on model provider
@@ -978,14 +897,14 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         return payload
 
     def _generate(
-        self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        model_parameters: dict,
-        stop: Optional[list[str]] = None,
-        stream: bool = True,
-        user: Optional[str] = None,
+            self,
+            model: str,
+            credentials: dict,
+            prompt_messages: list[PromptMessage],
+            model_parameters: dict,
+            stop: Optional[list[str]] = None,
+            stream: bool = True,
+            user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model
@@ -999,12 +918,6 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
-        # Extract enable_cache parameter, default to True
-        enable_cache = model_parameters.pop("enable_cache", True)
-        
-        # Check if model supports caching
-        cache_supported = is_cache_supported(model) and enable_cache
-        
         client_config = Config(region_name=credentials["aws_region"])
 
         runtime_client = boto3.client(
@@ -1015,52 +928,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         )
 
         model_prefix = model.split(".")[0]
-        model_name = model.split(".")[1] if len(model.split(".")) > 1 else ""
-        
-        # Create base payload
         payload = self._create_payload(model, prompt_messages, model_parameters, stop, stream)
-        
-        # Add cache points if supported
-        if cache_supported:
-            if model_prefix == "anthropic":
-                # For Anthropic models using InvokeModel API
-                if "messages" in payload:
-                    # Use the new method to format messages with cache control
-                    anthropic_messages = self._convert_messages_to_anthropic_format(prompt_messages, enable_cache=True)
-                    payload["messages"] = anthropic_messages
-                elif "prompt" in payload:
-                    # For older Anthropic format
-                    # Add cache control marker at the end of the prompt
-                    cache_marker = "\n\nCache Control: ephemeral"
-                    if not payload["prompt"].endswith(cache_marker):
-                        payload["prompt"] += cache_marker
-                        
-                # Log that cache is enabled for this request
-                logger.info(f"Cache enabled for Anthropic model: {model}")
-            
-            elif model_prefix == "amazon" and "nova" in model_name:
-                # For Amazon Nova models
-                if "messages" in payload:
-                    for message in payload["messages"]:
-                        if message["role"] == "user" and "content" in message:
-                            if isinstance(message["content"], list):
-                                message["content"].append({"cachePoint": {"type": "default"}})
-                            else:
-                                message["content"] = [
-                                    {"text": message["content"]},
-                                    {"cachePoint": {"type": "default"}}
-                                ]
-                
-                if "system" in payload and isinstance(payload["system"], list):
-                    payload["system"].append({"cachePoint": {"type": "default"}})
-                elif "system" in payload and isinstance(payload["system"], str):
-                    payload["system"] = [
-                        {"text": payload["system"]},
-                        {"cachePoint": {"type": "default"}}
-                    ]
-                    
-                # Log that cache is enabled for this request
-                logger.info(f"Cache enabled for Amazon Nova model: {model}")
 
         # need workaround for ai21 models which doesn't support streaming
         if stream and model_prefix != "ai21":
@@ -1091,7 +959,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         return self._handle_generate_response(model, credentials, response, prompt_messages)
 
     def _handle_generate_response(
-        self, model: str, credentials: dict, response: dict, prompt_messages: list[PromptMessage]
+            self, model: str, credentials: dict, response: dict, prompt_messages: list[PromptMessage]
     ) -> LLMResult:
         """
         Handle llm response
@@ -1111,64 +979,11 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         # get output text and calculate num tokens based on model / provider
         model_prefix = model.split(".")[0]
-        model_name = model.split(".")[1] if len(model.split(".")) > 1 else ""
-        logger.info(f"model_prefix: {model_prefix}, model_name: {model_name}")
+
         if model_prefix == "ai21":
             output = response_body.get("completions")[0].get("data").get("text")
             prompt_tokens = len(response_body.get("prompt").get("tokens"))
             completion_tokens = len(response_body.get("completions")[0].get("data").get("tokens"))
-
-        elif model_prefix == "anthropic":
-            output = response_body.get("completion")
-            prompt_tokens = response_body.get("usage", {}).get("input_tokens", 0)
-            completion_tokens = response_body.get("usage", {}).get("output_tokens", 0)
-            
-            # Log cache metrics if available
-            if "usage" in response_body:
-                cache_read_tokens = response_body["usage"].get("cache_read_input_tokens", 0)
-                cache_write_tokens = response_body["usage"].get("cache_write_input_tokens", 0)
-                
-                # Always log the metrics for debugging
-                print(f"[ANTHROPIC CACHE METRICS] Model: {model}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
-                logger.info(f"[ANTHROPIC CACHE METRICS] Model: {model}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
-                
-                # Print the full usage data for debugging
-                print(f"[ANTHROPIC USAGE DATA] {json.dumps(response_body['usage'], default=str)}")
-                
-                if cache_read_tokens > 0 or cache_write_tokens > 0:
-                    logger.info(f"Cache metrics - Model: {model}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
-                    if cache_read_tokens > 0:
-                        print(f"[ANTHROPIC CACHE HIT] {cache_read_tokens} tokens read from cache")
-                        logger.info(f"Cache hit detected - {cache_read_tokens} tokens read from cache")
-                    elif cache_write_tokens > 0:
-                        print(f"[ANTHROPIC CACHE WRITE] {cache_write_tokens} tokens written to cache")
-                        logger.info(f"Cache write detected - {cache_write_tokens} tokens written to cache")
-        
-        elif model_prefix == "amazon" and "nova" in model_name:
-            output = response_body.get("output", {}).get("text", "")
-            prompt_tokens = response_body.get("usage", {}).get("inputTokens", 0)
-            completion_tokens = response_body.get("usage", {}).get("outputTokens", 0)
-            
-            # Log cache metrics if available
-            if "usage" in response_body:
-                cache_read_tokens = response_body["usage"].get("cacheReadInputTokens", 0)
-                cache_write_tokens = response_body["usage"].get("cacheWriteInputTokens", 0)
-                
-                # Always log the metrics for debugging
-                print(f"[NOVA CACHE METRICS] Model: {model}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
-                logger.info(f"[NOVA CACHE METRICS] Model: {model}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
-                
-                # Print the full usage data for debugging
-                print(f"[NOVA USAGE DATA] {json.dumps(response_body['usage'], default=str)}")
-                
-                if cache_read_tokens > 0 or cache_write_tokens > 0:
-                    logger.info(f"Cache metrics - Model: {model}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
-                    if cache_read_tokens > 0:
-                        print(f"[NOVA CACHE HIT] {cache_read_tokens} tokens read from cache")
-                        logger.info(f"Cache hit detected - {cache_read_tokens} tokens read from cache")
-                    elif cache_write_tokens > 0:
-                        print(f"[NOVA CACHE WRITE] {cache_write_tokens} tokens written to cache")
-                        logger.info(f"Cache write detected - {cache_write_tokens} tokens written to cache")
 
         elif model_prefix == "cohere":
             output = response_body.get("generations")[0].get("text")
@@ -1195,7 +1010,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         return result
 
     def _handle_generate_stream_response(
-        self, model: str, credentials: dict, response: dict, prompt_messages: list[PromptMessage]
+            self, model: str, credentials: dict, response: dict, prompt_messages: list[PromptMessage]
     ) -> Generator:
         """
         Handle llm stream response
@@ -1207,8 +1022,6 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :return: llm response chunk generator result
         """
         model_prefix = model.split(".")[0]
-        model_name = model.split(".")[1] if len(model.split(".")) > 1 else ""
-        
         if model_prefix == "ai21":
             response_body = json.loads(response.get("body").read().decode("utf-8"))
 
@@ -1242,57 +1055,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
             payload = json.loads(chunk.get("bytes").decode())
 
-            if model_prefix == "anthropic":
-                content_delta = payload.get("completion")
-                finish_reason = payload.get("stop_reason")
-                
-                # Extract cache metrics if available in the last chunk
-                if finish_reason and "usage" in payload:
-                    cache_read_tokens = payload["usage"].get("cache_read_input_tokens", 0)
-                    cache_write_tokens = payload["usage"].get("cache_write_input_tokens", 0)
-                    
-                    # Always log the metrics for debugging
-                    print(f"[ANTHROPIC STREAM CACHE METRICS] Model: {model}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
-                    logger.info(f"[ANTHROPIC STREAM CACHE METRICS] Model: {model}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
-                    
-                    # Print the full usage data for debugging
-                    print(f"[ANTHROPIC STREAM USAGE DATA] {json.dumps(payload['usage'], default=str)}")
-                    
-                    if cache_read_tokens > 0 or cache_write_tokens > 0:
-                        logger.info(f"Cache metrics - Model: {model}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
-                        if cache_read_tokens > 0:
-                            print(f"[ANTHROPIC STREAM CACHE HIT] {cache_read_tokens} tokens read from cache")
-                            logger.info(f"Cache hit detected - {cache_read_tokens} tokens read from cache")
-                        elif cache_write_tokens > 0:
-                            print(f"[ANTHROPIC STREAM CACHE WRITE] {cache_write_tokens} tokens written to cache")
-                            logger.info(f"Cache write detected - {cache_write_tokens} tokens written to cache")
-            
-            elif model_prefix == "amazon" and "nova" in model_name:
-                content_delta = payload.get("output", {}).get("text", "")
-                finish_reason = payload.get("stopReason")
-                
-                # Extract cache metrics if available in the last chunk
-                if finish_reason and "usage" in payload:
-                    cache_read_tokens = payload["usage"].get("cacheReadInputTokens", 0)
-                    cache_write_tokens = payload["usage"].get("cacheWriteInputTokens", 0)
-                    
-                    # Always log the metrics for debugging
-                    print(f"[NOVA STREAM CACHE METRICS] Model: {model}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
-                    logger.info(f"[NOVA STREAM CACHE METRICS] Model: {model}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
-                    
-                    # Print the full usage data for debugging
-                    print(f"[NOVA STREAM USAGE DATA] {json.dumps(payload['usage'], default=str)}")
-                    
-                    if cache_read_tokens > 0 or cache_write_tokens > 0:
-                        logger.info(f"Cache metrics - Model: {model}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
-                        if cache_read_tokens > 0:
-                            print(f"[NOVA STREAM CACHE HIT] {cache_read_tokens} tokens read from cache")
-                            logger.info(f"Cache hit detected - {cache_read_tokens} tokens read from cache")
-                        elif cache_write_tokens > 0:
-                            print(f"[NOVA STREAM CACHE WRITE] {cache_write_tokens} tokens written to cache")
-                            logger.info(f"Cache write detected - {cache_write_tokens} tokens written to cache")
-            
-            elif model_prefix == "cohere":
+            model_prefix = model.split(".")[0]
+            if model_prefix == "cohere":
                 content_delta = payload.get("text")
                 finish_reason = payload.get("finish_reason")
 
@@ -1314,8 +1078,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
             else:
                 # get num tokens from metrics in last chunk
-                prompt_tokens = payload.get("amazon-bedrock-invocationMetrics", {}).get("inputTokenCount", 0)
-                completion_tokens = payload.get("amazon-bedrock-invocationMetrics", {}).get("outputTokenCount", 0)
+                prompt_tokens = payload["amazon-bedrock-invocationMetrics"]["inputTokenCount"]
+                completion_tokens = payload["amazon-bedrock-invocationMetrics"]["outputTokenCount"]
 
                 # transform usage
                 usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
@@ -1372,111 +1136,3 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             return InvokeConnectionError(error_msg)
 
         return InvokeError(error_msg)
-
-    def _convert_messages_to_anthropic_format(self, messages: list[PromptMessage], enable_cache: bool = False) -> list[dict]:
-        """
-        Convert messages to Anthropic format with cache_control if enabled
-        
-        :param messages: List of prompt messages
-        :param enable_cache: Whether to enable caching
-        :return: List of messages in Anthropic format
-        """
-        formatted_messages = []
-        
-        for message in messages:
-            if isinstance(message, UserPromptMessage):
-                if isinstance(message.content, str):
-                    content = [{"type": "text", "text": message.content}]
-                    
-                    # Add cache_control to user messages if enabled
-                    if enable_cache:
-                        content.append({
-                            "type": "text",
-                            "text": "",
-                            "cache_control": {"type": "ephemeral"}
-                        })
-                    
-                    formatted_messages.append({
-                        "role": "user",
-                        "content": content
-                    })
-                else:
-                    # Handle multi-modal content
-                    content = []
-                    for item in message.content:
-                        if item.type == PromptMessageContentType.TEXT:
-                            content.append({"type": "text", "text": item.data})
-                        elif item.type == PromptMessageContentType.IMAGE:
-                            # Process image data
-                            data_split = item.data.split(";base64,")
-                            mime_type = data_split[0].replace("data:", "")
-                            base64_data = data_split[1]
-                            
-                            content.append({
-                                "type": "image",
-                                "source": {
-                                    "type": "base64",
-                                    "media_type": mime_type,
-                                    "data": base64_data
-                                }
-                            })
-                    
-                    # Add cache_control if enabled
-                    if enable_cache:
-                        content.append({
-                            "type": "text",
-                            "text": "",
-                            "cache_control": {"type": "ephemeral"}
-                        })
-                    
-                    formatted_messages.append({
-                        "role": "user",
-                        "content": content
-                    })
-            
-            elif isinstance(message, AssistantPromptMessage):
-                if message.tool_calls:
-                    # Handle tool calls
-                    formatted_messages.append({
-                        "role": "assistant",
-                        "content": [{"type": "text", "text": message.content}],
-                        "tool_calls": [
-                            {
-                                "id": tool_call.id,
-                                "type": tool_call.type,
-                                "function": {
-                                    "name": tool_call.function.name,
-                                    "arguments": tool_call.function.arguments
-                                }
-                            } for tool_call in message.tool_calls
-                        ]
-                    })
-                else:
-                    formatted_messages.append({
-                        "role": "assistant",
-                        "content": [{"type": "text", "text": message.content}]
-                    })
-            
-            elif isinstance(message, ToolPromptMessage):
-                formatted_messages.append({
-                    "role": "tool",
-                    "tool_call_id": message.tool_call_id,
-                    "content": [{"type": "text", "text": message.content}]
-                })
-        
-        return formatted_messages
-
-    def _convert_messages_to_prompt(
-            self, messages: list[PromptMessage], model_prefix: str, model_name: Optional[str] = None
-    ) -> str:
-        if not messages:
-            return ""
-
-        messages = messages.copy()  # don't mutate the original list
-        if not isinstance(messages[-1], AssistantPromptMessage):
-            messages.append(AssistantPromptMessage(content=""))
-
-        text = "".join(self._convert_one_message_to_text(message, model_prefix, model_name) for message in messages)
-
-        # trim off the trailing ' ' that might come from the "Assistant: "
-        return text.rstrip()
