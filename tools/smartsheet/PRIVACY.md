@@ -30,4 +30,4 @@ You have the right to:
 For privacy-related inquiries, please contact:
 - Email: support@langgenius.ai
 
-Last updated: May 7, 2023
+Last updated: April 27, 2024
