@@ -1,0 +1,84 @@
+identity:
+  name: add_rows
+  author: langgenius
+  label:
+    en_US: Add Rows
+    zh_Hans: 添加行
+    pt_BR: Adicionar Linhas
+    ja_JP: 行を追加
+    zh_Hant: 添加行
+description:
+  human:
+    en_US: Add one or more rows to a Smartsheet sheet.
+    zh_Hans: 向 Smartsheet 表格添加一行或多行数据。
+    pt_BR: Adicione uma ou mais linhas a uma planilha do Smartsheet.
+    ja_JP: Smartsheetシートに1つ以上の行を追加します。
+    zh_Hant: 向 Smartsheet 表格添加一行或多行數據。
+  llm: Adds one or more rows to a specified Smartsheet sheet. You must provide the sheet ID, and the row data as a structured object that maps column names to values. The function returns information about the newly created rows, including their row IDs.
+parameters:
+  - name: sheet_id
+    type: string
+    required: true
+    label:
+      en_US: Sheet ID
+      zh_Hans: 表格 ID
+      pt_BR: ID da Planilha
+      ja_JP: シートID
+      zh_Hant: 表格 ID
+    human_description:
+      en_US: The ID of the Smartsheet sheet to add rows to.
+      zh_Hans: 要添加行的 Smartsheet 表格的 ID。
+      pt_BR: O ID da planilha do Smartsheet para adicionar linhas.
+      ja_JP: 行を追加するSmartsheetシートのID。
+      zh_Hant: 要添加行的 Smartsheet 表格的 ID。
+    llm_description: The unique identifier of the Smartsheet sheet to add rows to. This is a number that appears in the URL when viewing the sheet in a web browser (e.g., https://app.smartsheet.com/sheets/SHEET_ID).
+    form: llm
+  - name: row_data
+    type: string
+    required: true
+    label:
+      en_US: Row Data
+      zh_Hans: 行数据
+      pt_BR: Dados da Linha
+      ja_JP: 行データ
+      zh_Hant: 行數據
+    human_description:
+      en_US: The data for the new row(s), formatted as a JSON object matching column names to values.
+      zh_Hans: 新行的数据，格式为 JSON 对象，将列名映射到值。
+      pt_BR: Os dados para as novas linhas, formatados como um objeto JSON associando nomes de colunas a valores.
+      ja_JP: 新しい行のデータ。列名と値を対応させたJSONオブジェクトとしてフォーマットされます。
+      zh_Hant: 新行的數據，格式為 JSON 對象，將列名映射到值。
+    llm_description: |
+      The data for the rows to be added, formatted as a JSON array of objects where each object represents a row. 
+      Each row object should map column names to their values. 
+      
+      Example: 
+      [
+        {"Project Name": "New Project", "Status": "In Progress", "Due Date": "2023-12-31"},
+        {"Project Name": "Another Project", "Status": "Not Started", "Due Date": "2024-01-15"}
+      ]
+      
+      Or for a single row:
+      {"Project Name": "New Project", "Status": "In Progress", "Due Date": "2023-12-31"}
+    form: llm
+  - name: to_top
+    type: string
+    required: false
+    default: "true"
+    label:
+      en_US: Add to Top
+      zh_Hans: 添加到顶部
+      pt_BR: Adicionar ao Topo
+      ja_JP: 上部に追加
+      zh_Hant: 添加到頂部
+    human_description:
+      en_US: Whether to add the new rows to the top of the sheet.
+      zh_Hans: 是否将新行添加到表格的顶部。
+      pt_BR: Se as novas linhas devem ser adicionadas ao topo da planilha.
+      ja_JP: 新しい行をシートの上部に追加するかどうか。
+      zh_Hant: 是否將新行添加到表格的頂部。
+    llm_description: String value that should be "true" to add rows to the top of the sheet or "false" to add to the bottom. Defaults to "true".
+    form: llm
+extra:
+  python:
+    source: tools/add_rows.py 

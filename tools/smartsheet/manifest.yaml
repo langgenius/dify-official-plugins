@@ -1,0 +1,50 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: smartsheet
+label:
+  en_US: Smartsheet
+  ja_JP: Smartsheet
+  zh_Hans: Smartsheet
+  pt_BR: Smartsheet
+  zh_Hant: Smartsheet
+description:
+  en_US: Smartsheet is a work management platform that helps teams collaborate, organize, and execute on work.
+  ja_JP: Smartsheetは、チームが共同作業、整理、実行をサポートするワーク管理プラットフォームです。
+  zh_Hans: Smartsheet 是一个工作管理平台，帮助团队协作、组织和执行工作。
+  pt_BR: Smartsheet é uma plataforma de gerenciamento de trabalho que ajuda equipes a colaborar, organizar e executar tarefas.
+  zh_Hant: Smartsheet 是一個工作管理平台，幫助團隊協作、組織和執行工作。
+icon: icon.png
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+    endpoint:
+      enabled: true
+    storage:
+      enabled: true
+      size: 1048576
+plugins:
+  tools:
+    - provider/smartsheet.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+created_at: 2025-04-27T11:41:33.912322+08:00
+privacy: PRIVACY.md
+verified: false

@@ -1,0 +1,49 @@
+identity:
+  author: langgenius
+  name: smartsheet
+  label:
+    en_US: Smartsheet
+    zh_Hans: Smartsheet
+    pt_BR: Smartsheet
+    ja_JP: Smartsheet
+    zh_Hant: Smartsheet
+  description:
+    en_US: Smartsheet is a work management platform that helps teams collaborate, organize, and execute on work.
+    zh_Hans: Smartsheet 是一个工作管理平台，帮助团队协作、组织和执行工作。
+    pt_BR: Smartsheet é uma plataforma de gerenciamento de trabalho que ajuda equipes a colaborar, organizar e executar tarefas.
+    ja_JP: Smartsheetは、チームが共同作業、整理、実行をサポートするワーク管理プラットフォームです。
+    zh_Hant: Smartsheet 是一個工作管理平台，幫助團隊協作、組織和執行工作。
+  icon: icon.png
+
+credentials_for_provider:
+  api_key:
+    label:
+      en_US: Smartsheet API Key
+      zh_Hans: Smartsheet API 密钥
+      pt_BR: Chave API do Smartsheet
+      ja_JP: Smartsheet API キー
+      zh_Hant: Smartsheet API 密鑰
+    placeholder:
+      en_US: Enter your Smartsheet API key
+      zh_Hans: 输入您的 Smartsheet API 密钥
+      pt_BR: Digite sua chave API do Smartsheet
+      ja_JP: Smartsheet API キーを入力してください
+      zh_Hant: 輸入您的 Smartsheet API 密鑰
+    help:
+      en_US: Found in Smartsheet > Account > Personal Settings > API Access
+      zh_Hans: 可在 Smartsheet > 账户 > 个人设置 > API 访问中找到
+      pt_BR: Encontrado em Smartsheet > Conta > Configurações Pessoais > Acesso à API
+      ja_JP: Smartsheet > アカウント > 個人設定 > API アクセスにあります
+      zh_Hant: 可在 Smartsheet > 帳戶 > 個人設置 > API 訪問中找到
+    required: true
+    type: secret-input
+    url: https://app.smartsheet.com
+
+tools:
+  - tools/get_sheet_info.yaml
+  - tools/add_rows.yaml
+  - tools/update_rows.yaml
+  - tools/search_sheet.yaml
+extra:
+  python:
+    source: provider/smartsheet.py

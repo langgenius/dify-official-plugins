@@ -1,0 +1,30 @@
+identity:
+  name: smartsheet
+  author: langgenius
+  label:
+    en_US: smartsheet
+    zh_Hans: smartsheet
+    pt_BR: smartsheet
+description:
+  human:
+    en_US: smartsheet
+    zh_Hans: smartsheet
+    pt_BR: smartsheet
+  llm: smartsheet
+parameters:
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: Query string
+      zh_Hans: 查询语句
+      pt_BR: Query string
+    human_description:
+      en_US: smartsheet
+      zh_Hans: smartsheet
+      pt_BR: smartsheet
+    llm_description: smartsheet
+    form: llm
+extra:
+  python:
+    source: tools/smartsheet.py
