@@ -1,7 +1,6 @@
 import logging
 from collections.abc import Generator
 from typing import cast, Optional, Union
-from transformers import AutoTokenizer
 
 import openai
 
@@ -534,11 +533,10 @@ class LlamaApiLargeLanguageModel(LargeLanguageModel):
         messages: list[PromptMessage],
         tools: Optional[list[PromptMessageTool]] = None,
     ) -> int:
-        tokenizer = AutoTokenizer.from_pretrained("unsloth/Llama-4-Scout-17B-16E-Instruct-unsloth-bnb-4bit")
         num_tokens = 0
         messages_dict = [self._convert_prompt_message_to_dict(m) for m in messages]
         for message in messages_dict:
-            num_tokens += len(tokenizer.encode(str(message), add_special_tokens=False))
+            num_tokens += self._get_num_tokens_by_gpt2(str(message))
         return num_tokens
 
     def _extract_response_tool_calls(

@@ -1,3 +1,2 @@
 dify_plugin>=0.2.0,<0.3.0
-transformers~=4.51.3
 openai~=1.77.0
