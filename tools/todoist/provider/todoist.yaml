@@ -1,0 +1,39 @@
+identity:
+  author: langgenius
+  name: todoist
+  label:
+    en_US: Todoist
+    zh_Hans: Todoist
+    pt_BR: Todoist
+  description:
+    en_US: Interact with Todoist to manage your tasks and projects
+    zh_Hans: 与 Todoist 交互来管理您的任务和项目
+    pt_BR: Interaja com o Todoist para gerenciar suas tarefas e projetos
+  icon: icon.svg
+credentials_for_provider:
+  api_token:
+    type: secret-input
+    required: true
+    label:
+      en_US: API Token
+      zh_Hans: API 令牌
+      pt_BR: Token da API
+    placeholder:
+      en_US: Enter your Todoist API token
+      zh_Hans: 输入您的 Todoist API 令牌
+      pt_BR: Digite seu token da API do Todoist
+    help:
+      en_US: Get your API token from Todoist Settings > Integrations > API token
+      zh_Hans: 从 Todoist 设置 > 关联应用 > API 口令获取
+      pt_BR: Obtenha seu token da API em Configurações do Todoist > Integrações > Token da API
+    url: https://app.todoist.com/app/settings/integrations/developer
+tools:
+  - tools/list_projects.yaml
+  - tools/get_project.yaml
+  - tools/list_tasks.yaml
+  - tools/get_task.yaml
+  - tools/create_task.yaml
+  - tools/complete_task.yaml
+extra:
+  python:
+    source: provider/todoist.py
