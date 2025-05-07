@@ -1,0 +1,26 @@
+identity:
+  name: get_space
+  author: langgenius
+  label:
+    en_US: Get info of Confluence Space
+    zh_Hans: 获取 Confluence 空间信息
+description:
+  human:
+    en_US: Retrieves details of a specific Confluence space by its key.
+    zh_Hans: 通过 Space Key 获取特定 Confluence 空间的详细信息。
+  llm: Fetches the details of a Confluence space using its unique space key. Returns information like space name, key, description, and homepage ID.
+parameters:
+  - name: space_key
+    type: string
+    required: true
+    label:
+      en_US: Space Key
+      zh_Hans: Space Key
+    human_description:
+      en_US: The key of the Confluence space to retrieve.
+      zh_Hans: 要检索的 Confluence 空间的 Key。
+    llm_description: The unique key identifying the Confluence space (e.g., 'DOC').
+    form: llm
+extra:
+  python:
+    source: tools/get_space.py

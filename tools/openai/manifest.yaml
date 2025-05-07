@@ -1,0 +1,37 @@
+author: langgenius
+created_at: '2024-09-20T08:03:44.658609186Z'
+description:
+  en_US: OpenAI Image Generation and Editing
+  pt_BR: OpenAI Image Generation and Editing
+  zh_Hans: OpenAI 图像生成和编辑
+icon: icon.png
+label:
+  en_US: OpenAI
+  pt_BR: OpenAI
+  zh_Hans: OpenAI
+meta:
+  arch:
+  - amd64
+  - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: '3.12'
+  version: 0.0.1
+name: openai_tool
+plugins:
+  tools:
+  - provider/openai.yaml
+resource:
+  memory: 1048576
+  permission:
+    model:
+      enabled: true
+      llm: true
+    tool:
+      enabled: true
+tags:
+- image
+- productivity
+type: plugin
+version: 0.0.1

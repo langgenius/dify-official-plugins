@@ -58,7 +58,7 @@ class HuggingfaceTeiTextEmbeddingModel(TextEmbeddingModel):
         server_url = credentials["server_url"]
         server_url = server_url.removesuffix("/")
         headers = {"Content-Type": "application/json"}
-        api_key = credentials["api_key"]
+        api_key = credentials.get("api_key")
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
         context_size = self._get_context_size(model, credentials)

@@ -1,0 +1,33 @@
+description:
+  human:
+    en_US:
+      Face swap. Infuses a face on the second image to the first image.
+    pt_BR:
+      Face swap. Infuses a face on the second image to the first image.
+    zh_Hans: 换脸。将第二张图片上的人脸注入第一张图片。
+  llm: swap faces
+extra:
+  python:
+    source: tools/comfyui_face_swap.py
+identity:
+  author: yt-koike
+  label:
+    en_US: FaceSwap
+    pt_BR: FaceSwap
+    zh_Hans: FaceSwap
+  name: face_swap
+
+parameters:
+  - name: images
+    form: llm
+    label:
+      en_US: Input Image
+      zh_Hans: 输入的图片
+    llm_description:
+      The input images.
+      If input is array of image, the first two will be used.
+    human_description:
+      en_US: The input image
+      zh_Hans: 输入的图片
+    required: true
+    type: files

@@ -1,0 +1,54 @@
+description:
+  human:
+    en_US:
+      A foundation model for zero-shot metric monocular depth estimation developed by Apple. https://github.com/spacepxl/ComfyUI-Depth-Pro
+    pt_BR:
+      A foundation model for zero-shot metric monocular depth estimation developed by Apple. https://github.com/spacepxl/ComfyUI-Depth-Pro
+    zh_Hans: Apple 所開發的零拍公制單眼深度估計基礎模型。https://github.com/spacepxl/ComfyUI-Depth-Pro
+  llm: estimates depth of a regular RGB image
+extra:
+  python:
+    source: tools/comfyui_depth_pro.py
+identity:
+  author: yt-koike
+  label:
+    en_US: Depth Pro
+    pt_BR: Depth Pro
+    zh_Hans: Depth Pro
+  name: depth_pro
+
+parameters:
+  - name: images
+    form: llm
+    label:
+      en_US: Input Image
+      zh_Hans: 输入的图片
+    llm_description:
+      The input image. If input is array of image, the first one will be used.
+    human_description:
+      en_US: The input image
+      zh_Hans: 输入的图片
+    required: true
+    type: files
+    
+  - name: precision
+    form: form
+    human_description:
+      en_US:
+        Precision of the model
+      pt_BR:
+        Precision of the model
+      zh_Hans: 模型的精度
+    label:
+      en_US: precision
+      pt_BR: precision
+      zh_Hans: 精度
+    required: true
+    type: select
+    options:
+      - label:
+          en_US: fp16
+        value: fp16
+      - label:
+          en_US: fp32
+        value: fp32

@@ -1,0 +1,75 @@
+description:
+  human:
+    en_US:
+      A highly practical solution for robust monocular depth estimation by training on a combination of 1.5M labeled images and 62M+ unlabeled images.
+      https://github.com/kijai/ComfyUI-DepthAnythingV2
+    pt_BR:
+      A highly practical solution for robust monocular depth estimation by training on a combination of 1.5M labeled images and 62M+ unlabeled images.
+      https://github.com/kijai/ComfyUI-DepthAnythingV2
+    zh_Hans: 透過在 1.5M 標記影像和 62M+ 非標記影像的組合上進行訓練，為強健的單眼深度估計提供了高度實用的解決方案。      https://github.com/kijai/ComfyUI-DepthAnythingV2
+  llm: estimates the depth of a regular RGB image
+extra:
+  python:
+    source: tools/comfyui_depth_anything.py
+identity:
+  author: yt-koike
+  label:
+    en_US: Depth Anything
+    pt_BR: Depth Anything
+    zh_Hans: Depth Anything
+  name: depth_anything
+
+parameters:
+  - name: images
+    form: llm
+    label:
+      en_US: Input Image
+      zh_Hans: 输入的图片
+    llm_description:
+      The input image.
+      If input is array of image, the first one will be used.
+    human_description:
+      en_US: The input image
+      zh_Hans: 输入的图片
+    required: true
+    type: files
+
+  - name: model
+    form: form
+    human_description:
+      en_US:
+        Model
+      pt_BR:
+        Model
+      zh_Hans: 模型
+    label:
+      en_US: Model
+      pt_BR: Model
+      zh_Hans: 模型
+    required: true
+    type: select
+    options:
+      - label:
+          en_US: depth_anything_v2_vits_fp16.safetensors
+        value: depth_anything_v2_vits_fp16.safetensors
+      - label:
+          en_US: depth_anything_v2_vits_fp32.safetensors
+        value: depth_anything_v2_vits_fp32.safetensors
+      - label:
+          en_US: depth_anything_v2_vitb_fp16.safetensors
+        value: depth_anything_v2_vitb_fp16.safetensors
+      - label:
+          en_US: depth_anything_v2_vitb_fp32.safetensors
+        value: depth_anything_v2_vitb_fp32.safetensors
+      - label:
+          en_US: depth_anything_v2_vitl_fp16.safetensors
+        value: depth_anything_v2_vitl_fp16.safetensors
+      - label:
+          en_US: depth_anything_v2_vitl_fp32.safetensors
+        value: depth_anything_v2_vitl_fp32.safetensors
+      - label:
+          en_US: depth_anything_v2_metric_hypersim_vitl_fp32.safetensors
+        value: depth_anything_v2_metric_hypersim_vitl_fp32.safetensors
+      - label:
+          en_US: depth_anything_v2_metric_vkitti_vitl_fp32.safetensors
+        value: depth_anything_v2_metric_vkitti_vitl_fp32.safetensors

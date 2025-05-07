@@ -1,0 +1,30 @@
+identity:
+  name: get_workspace
+  author: langgenius
+  label:
+    en_US: Get Workspace Details
+    zh_Hans: 获取工作区详情
+    pt_BR: Obter Detalhes do Workspace
+description:
+  human:
+    en_US: Get details of a specific Bitbucket workspace, including its projects.
+    zh_Hans: 获取特定 Bitbucket 工作区的详细信息，包括其项目。
+    pt_BR: Obter detalhes de um workspace específico do Bitbucket, incluindo seus projetos.
+  llm: Retrieves detailed information about a specific Bitbucket workspace identified by its slug, including a list of projects within that workspace. Returns a workspace object with nested project details (name, key, description, etc.).
+parameters:
+  - name: workspace_slug
+    type: string
+    required: true
+    label:
+      en_US: Workspace Slug
+      zh_Hans: 工作区标识符
+      pt_BR: Slug do Workspace
+    human_description:
+      en_US: The unique identifier (slug) of the Bitbucket workspace.
+      zh_Hans: Bitbucket 工作区的唯一标识符 (slug)。
+      pt_BR: O identificador único (slug) do workspace do Bitbucket.
+    llm_description: The slug of the Bitbucket workspace for which to retrieve details and associated projects.
+    form: llm
+extra:
+  python:
+    source: tools/get_workspace.py

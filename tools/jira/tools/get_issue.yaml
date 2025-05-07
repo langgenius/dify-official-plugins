@@ -1,0 +1,30 @@
+identity:
+  name: get_issue
+  author: langgenius
+  label:
+    en_US: Get Jira Issue Details
+    zh_Hans: 获取 Jira 问题详情
+    pt_BR: Obter Issue
+description:
+  human:
+    en_US: Retrieves details for a specific Jira issue.
+    zh_Hans: 获取 Jira 中指定问题的详细信息。
+    pt_BR: Obter detalhes de uma issue específica
+  llm: Fetches the details of a specific Jira issue using its key (e.g., 'PROJ-123'). Returns the issue information or an error if not found.
+parameters:
+  - name: issue_key
+    type: string
+    required: true
+    label:
+      en_US: Issue Key
+      zh_Hans: 问题 Key
+      pt_BR: ID ou Chave da Issue
+    human_description:
+      en_US: The Key of the Jira issue to retrieve details for (e.g., 'PROJ-123').
+      zh_Hans: 要获取详情的 Jira 问题的 Key (例如 'PROJ-123')。
+      pt_BR: O ID ou a chave da issue a ser recuperada.
+    llm_description: The unique key (e.g., 'PROJ-123') for the Jira issue for which details are requested. This field is mandatory.
+    form: llm
+extra:
+  python:
+    source: tools/get_issue.py

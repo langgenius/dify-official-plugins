@@ -1,10 +1,10 @@
 identity:
-  name: parse-pdf
+  name: parse-file
   author: langgenius
   label:
-    en_US: Parse PDF
-    zh_Hans: Parse PDF
-    ja_JP: Parse PDF
+    en_US: Parse File
+    zh_Hans: Parse File
+    ja_JP: Parse File
 description:
   human:
     en_US: a tool for parsing text, tables, and images, supporting multiple formats such as pdf, pptx, docx, etc. supporting multiple languages such as English, Chinese, etc.
@@ -20,10 +20,10 @@ parameters:
       zh_Hans: file
       ja_JP: file
     human_description:
-      en_US:  the file to be parsed
-      zh_Hans: 用于解析的文件
-      ja_JP: 解析するファイル
-    llm_description: the file to be parsed
+      en_US:  the file to be parsed(support pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
+      zh_Hans: 用于解析的文件(支持 pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
+      ja_JP: 解析するファイル(pdf、ppt、pptx、doc、docx、png、jpg、jpegをサポート)
+    llm_description: the file to be parsed (support pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
     form: llm
   - name: parse_method
     type: select
@@ -165,7 +165,7 @@ output_schema:
         type: array
         items:
           type: object
-        description: The images extracted from the PDF
+        description: The images extracted from the file
       full_zip_url:
         type: string
         description: The zip URL of the complete parsed result

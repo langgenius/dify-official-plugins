@@ -1,0 +1,186 @@
+description:
+  human:
+    en_US:
+      Image to video model. Supports Stable Video Diffusion(SVD) only.
+    pt_BR:
+      Image to video model. Supports Stable Video Diffusion(SVD) only.
+    zh_Hans: 一个预定义的 ComfyUI 工作流，可以使用一个模型和最多3个loras来生成图像。支持包含文本编码器/clip的SD1.5、SDXL、SD3和FLUX，但不支持需要clip加载器的模型。
+    ja_JP: 画像toビデオ。Stable Video Diffusion(SVD) のみサポートしています。
+  llm: generates video from image
+extra:
+  python:
+    source: tools/comfyui_img2vid.py
+identity:
+  author: yt-koike
+  label:
+    en_US: Img2Vid
+    pt_BR: Img2Vid
+    zh_Hans: Img2Vid
+  name: img2vid
+
+parameters:
+  - name: images
+    form: llm
+    label:
+      en_US: Input Image
+      zh_Hans: 输入的图片
+      ja_JP: 入力画像
+    llm_description:
+      The input image, used to transfer to the comfyui workflow to generate
+      another image.
+      If input is array of image, the first one will be used.
+    human_description:
+      en_US: The input image
+      zh_Hans: 输入的图片
+      ja_JP: 入力画像
+    required: true
+    type: files
+
+  - name: model
+    form: llm
+    human_description:
+      en_US: Img2Vid Model Name (SVD only)
+      pt_BR: Img2Vid Model Name (SVD only)
+      zh_Hans: Img2Vid 模型名称 (SVD only)
+    label:
+      en_US: Img2Vid Model Name (SVD only)
+      pt_BR: Img2Vid Model Name (SVD only)
+      zh_Hans: Img2Vid 模型名称 (SVD only)
+    required: true
+    type: string
+
+  - name: width
+    default: 800
+    form: llm
+    human_description:
+      en_US: Width
+      pt_BR: Width
+      zh_Hans: Width
+      ja_JP: 画像幅
+    label:
+      en_US: Width
+      pt_BR: Width
+      zh_Hans: Width
+      ja_JP: 画像幅
+    required: true
+    type: number
+
+  - name: height
+    default: 800
+    form: llm
+    human_description:
+      en_US: Height
+      pt_BR: Height
+      zh_Hans: Height
+      ja_JP: 画像高さ
+    label:
+      en_US: Height
+      pt_BR: Height
+      zh_Hans: Height
+      ja_JP: 画像高さ
+    required: true
+    type: number
+
+  - name: steps
+    form: llm
+    default: 20
+    human_description:
+      en_US: Steps
+      pt_BR: Steps
+      zh_Hans: Steps
+      ja_JP: ステップ数
+    label:
+      en_US: Steps
+      pt_BR: Steps
+      zh_Hans: Steps
+      ja_JP: ステップ数
+    required: false
+    type: number
+
+  - name: cfg
+    default: 2.5
+    form: llm
+    human_description:
+      en_US: CFG Scale
+      pt_BR: CFG Scale
+      zh_Hans: 提示词相关性(CFG Scale)
+      ja_JP: CFG スケール
+    label:
+      en_US: CFG Scale
+      pt_BR: CFG Scale
+      zh_Hans: CFG Scale
+      ja_JP: CFG スケール
+    required: false
+    type: number
+
+  - name: denoise
+    default: 1.0
+    form: llm
+    human_description:
+      en_US: Denoise Ratio
+      pt_BR: Denoise Ratio
+      zh_Hans: Denoise Ratio
+    label:
+      en_US: Denoise Ratio
+      pt_BR: Denoise Ratio
+      zh_Hans: Denoise Ratio
+    required: false
+    type: number
+
+  - name: fps
+    default: 6
+    form: llm
+    human_description:
+      en_US: FPS
+      pt_BR: FPS
+      zh_Hans: FPS
+    label:
+      en_US: FPS
+      pt_BR: FPS
+      zh_Hans: FPS
+    required: false
+    type: number
+
+  - name: frames
+    default: 14
+    form: llm
+    human_description:
+      en_US: Frames
+      pt_BR: Frames
+      zh_Hans: 图像数量
+      ja_JP: フレーム合計数
+    label:
+      en_US: Frames
+      pt_BR: Frames
+      zh_Hans: Frames
+      ja_JP: Frames
+    required: false
+    type: number
+
+  - name: sampler_name
+    form: llm
+    default: eular
+    human_description:
+      en_US: Sampling method
+      pt_BR: Sampling method
+      zh_Hans: Sampling method
+    label:
+      en_US: Sampling method
+      pt_BR: Sampling method
+      zh_Hans: Sampling method
+    required: true
+    type: string
+
+  - name: scheduler
+    default: normal
+    form: llm
+    human_description:
+      en_US: Scheduler
+      pt_BR: Scheduler
+      zh_Hans: Scheduler
+    label:
+      en_US: Scheduler
+      pt_BR: Scheduler
+      zh_Hans: Scheduler
+    required: true
+    type: string

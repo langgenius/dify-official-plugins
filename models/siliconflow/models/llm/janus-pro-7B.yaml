@@ -4,7 +4,6 @@ label:
   en_US: deepseek-ai/Janus-Pro-7B
 model_type: llm
 features:
-  - agent-thought
   - vision
 model_properties:
   mode: chat
@@ -20,3 +19,4 @@ pricing:
   output: "0.00"
   unit: "0.000001"
   currency: RMB
+deprecated: true

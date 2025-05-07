@@ -1,0 +1,60 @@
+{
+    "12": {
+        "inputs": {
+            "enabled": true,
+            "swap_model": "inswapper_128.onnx",
+            "facedetection": "YOLOv5l",
+            "face_restore_model": "codeformer-v0.1.0.pth",
+            "face_restore_visibility": 1,
+            "codeformer_weight": 0.5,
+            "detect_gender_input": "no",
+            "detect_gender_source": "no",
+            "input_faces_index": "0",
+            "source_faces_index": "0",
+            "console_log_level": 1,
+            "input_image": [
+                "22",
+                0
+            ],
+            "source_image": [
+                "15",
+                0
+            ]
+        },
+        "class_type": "ReActorFaceSwap",
+        "_meta": {
+            "title": "ReActor 🌌 Fast Face Swap"
+        }
+    },
+    "15": {
+        "inputs": {
+            "image": "1.jpg"
+        },
+        "class_type": "LoadImage",
+        "_meta": {
+            "title": "LoadImage"
+        }
+    },
+    "21": {
+        "inputs": {
+            "filename_prefix": "ComfyUI",
+            "images": [
+                "12",
+                0
+            ]
+        },
+        "class_type": "SaveImage",
+        "_meta": {
+            "title": "SaveImage"
+        }
+    },
+    "22": {
+        "inputs": {
+            "image": "2.jpg"
+        },
+        "class_type": "LoadImage",
+        "_meta": {
+            "title": "LoadImage"
+        }
+    }
+}

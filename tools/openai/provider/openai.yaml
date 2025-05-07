@@ -1,0 +1,69 @@
+credentials_for_provider:
+  openai_api_key:
+    help:
+      en_US: Please input your OpenAI API key
+      pt_BR: Please input your OpenAI API key
+      zh_Hans: 请输入你的 OpenAI API key
+    label:
+      en_US: OpenAI API key
+      pt_BR: OpenAI API key
+      zh_Hans: OpenAI API key
+    placeholder:
+      en_US: Please input your OpenAI API key
+      pt_BR: Please input your OpenAI API key
+      zh_Hans: 请输入你的 OpenAI API key
+    required: true
+    type: secret-input
+  openai_base_url:
+    help:
+      en_US: Please input your OpenAI base URL
+      pt_BR: Please input your OpenAI base URL
+      zh_Hans: 请输入你的 OpenAI base URL
+    label:
+      en_US: OpenAI base URL
+      pt_BR: OpenAI base URL
+      zh_Hans: OpenAI base URL
+    placeholder:
+      en_US: Please input your OpenAI base URL
+      pt_BR: Please input your OpenAI base URL
+      zh_Hans: 请输入你的 OpenAI base URL
+    required: false
+    type: text-input
+  openai_organization_id:
+    help:
+      en_US: Please input your OpenAI organization ID
+      pt_BR: Please input your OpenAI organization ID
+      zh_Hans: 请输入你的 OpenAI organization ID
+    label:
+      en_US: OpenAI organization ID
+      pt_BR: OpenAI organization ID
+      zh_Hans: OpenAI organization ID
+    placeholder:
+      en_US: Please input your OpenAI organization ID
+      pt_BR: Please input your OpenAI organization ID
+      zh_Hans: 请输入你的 OpenAI organization ID
+    required: false
+    type: text-input
+extra:
+  python:
+    source: provider/openai.py
+identity:
+  author: langgenius
+  description:
+    en_US: OpenAI Image Generation and Editing
+    pt_BR: OpenAI Image Generation and Editing
+    zh_Hans: OpenAI 图像生成和编辑
+  icon: icon.png
+  label:
+    en_US: OpenAI
+    pt_BR: OpenAI
+    zh_Hans: OpenAI
+  name: openai
+  tags:
+  - image
+  - productivity
+tools:
+- tools/gpt_image_generate.yaml
+- tools/gpt_image_edit.yaml
+- tools/dalle2.yaml
+- tools/dalle3.yaml
