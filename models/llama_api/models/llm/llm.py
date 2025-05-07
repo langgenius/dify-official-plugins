@@ -44,7 +44,6 @@ from openai.types.chat.chat_completion_chunk import (
     ChoiceDeltaToolCall,
 )
 from openai.types.chat.chat_completion_message import FunctionCall
-from rich import print
 
 logger = logging.getLogger(__name__)
 
