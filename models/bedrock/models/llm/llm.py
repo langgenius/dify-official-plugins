@@ -132,15 +132,15 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         return self._invoke(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 
     def _invoke(
-            self,
-            model: str,
-            credentials: dict,
-            prompt_messages: list[PromptMessage],
-            model_parameters: dict,
-            tools: Optional[list[PromptMessageTool]] = None,
-            stop: Optional[list[str]] = None,
-            stream: bool = True,
-            user: Optional[str] = None,
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model
@@ -155,7 +155,6 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
-
         model_name = model_parameters.pop('model_name')
         model_id = model_ids.get_model_id(model, model_name)
         if model_parameters.pop('cross-region', False):
@@ -176,15 +175,15 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         return self._generate(model_id, credentials, prompt_messages, model_parameters, stop, stream, user)
 
     def _generate_with_converse(
-            self,
-            model_info: dict,
-            credentials: dict,
-            prompt_messages: list[PromptMessage],
-            model_parameters: dict,
-            stop: Optional[list[str]] = None,
-            stream: bool = True,
-            user: Optional[str] = None,
-            tools: Optional[list[PromptMessageTool]] = None,
+        self,
+        model_info: dict,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
+        tools: Optional[list[PromptMessageTool]] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model with converse API
@@ -294,7 +293,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             raise InvokeError(str(ex))
 
     def _handle_converse_response(
-            self, model: str, credentials: dict, response: dict, prompt_messages: list[PromptMessage]
+        self, model: str, credentials: dict, response: dict, prompt_messages: list[PromptMessage]
     ) -> LLMResult:
         """
         Handle llm chat response
@@ -368,11 +367,11 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         return text, tool_use
 
     def _handle_converse_stream_response(
-            self,
-            model: str,
-            credentials: dict,
-            response: dict,
-            prompt_messages: list[PromptMessage],
+        self,
+        model: str,
+        credentials: dict,
+        response: dict,
+        prompt_messages: list[PromptMessage],
     ) -> Generator:
         """
         Handle llm chat stream response
@@ -535,7 +534,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             raise InvokeError(str(ex))
 
     def _convert_converse_api_model_parameters(
-            self, model_parameters: dict, stop: Optional[list[str]] = None
+        self, model_parameters: dict, stop: Optional[list[str]] = None
     ) -> tuple[dict, dict]:
         inference_config = {}
         additional_model_fields = {}
@@ -730,11 +729,11 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         return message_dict
 
     def get_num_tokens(
-            self,
-            model: str,
-            credentials: dict,
-            prompt_messages: list[PromptMessage] | str,
-            tools: Optional[list[PromptMessageTool]] = None,
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage] | str,
+        tools: Optional[list[PromptMessageTool]] = None,
     ) -> int:
         """
         Get number of tokens for given prompt messages
@@ -760,6 +759,13 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         return self._get_num_tokens_by_gpt2(prompt)
 
+    def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:
+        model_schemas = self.predefined_models()
+        for model_schema in model_schemas:
+            if model_schema.model == 'anthropic claude':
+                return model_schema
+        return model_schemas[0]
+
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
         Validate model credentials
@@ -768,27 +774,45 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :param credentials: model credentials
         :return:
         """
-        model_id = model_ids.get_first_model(model)
-
-        required_params = {}
-        if "anthropic" in model_id:
+        if "anthropic" in model:
+            model = 'anthropic claude'
             required_params = {
                 "max_tokens": 32,
-            }
-        elif "ai21" in model_id:
-            # ValidationException: Malformed input request: #/temperature: expected type: Number,
-            # found: Null#/maxTokens: expected type: Integer, found: Null#/topP: expected type: Number, found: Null,
-            # please reformat your input and try again.
+                "model_name" : "Claude 3 Haiku",
+                "cross-region" : True
+            } 
+        elif "ai21" in model:
+            model = 'ai21'
             required_params = {
-                "temperature": 0.7,
-                "topP": 0.9,
-                "maxTokens": 32,
+                "model_name" : "Jamba 1.5 Mini"
+            } 
+        elif "deepseek" in model:
+            model = 'deepseek'
+            required_params = {
+                "model_name" : "DeepSeek-R1"
+            } 
+        elif "meta" in model:
+            model = 'meta'
+            required_params = {
+                "model_name" : "Llama 3.2 11B Instruct",
+                "cross-region" : True
+            } 
+        elif "mistral" in model:
+            model = 'mistral'
+            required_params = {
+                "model_name" : "Mistral Large"
             }
+        else:
+            model = 'amazon nova'
+            required_params = {
+                "model_name" : "Nova Lite",
+                "cross-region" : True
+            } 
 
         try:
             ping_message = UserPromptMessage(content="ping")
             self._invoke(
-                model=model_id,
+                model=model,
                 credentials=credentials,
                 prompt_messages=[ping_message],
                 model_parameters=required_params,
@@ -804,7 +828,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             raise CredentialsValidateFailedError(str(ex))
 
     def _convert_one_message_to_text(
-            self, message: PromptMessage, model_prefix: str, model_name: Optional[str] = None
+        self, message: PromptMessage, model_prefix: str, model_name: Optional[str] = None
     ) -> str:
         """
         Convert a single message to a string.
@@ -857,18 +881,18 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         return text.rstrip()
 
     def _create_payload(
-            self,
-            model: str,
-            prompt_messages: list[PromptMessage],
-            model_parameters: dict,
-            stop: Optional[list[str]] = None,
-            stream: bool = True,
+        self,
+        model: str,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
     ):
         """
         Create payload for bedrock api call depending on model provider
         """
         payload = {}
-        if model.startswith('us.') or model.startswith('eu.'):
+        if model.startswith('us.') or model.startswith('eu.') or model.startswith('apac.'):
             model_prefix = model.split(".")[1]
         else:
             model_prefix = model.split(".")[0]
@@ -897,14 +921,14 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         return payload
 
     def _generate(
-            self,
-            model: str,
-            credentials: dict,
-            prompt_messages: list[PromptMessage],
-            model_parameters: dict,
-            stop: Optional[list[str]] = None,
-            stream: bool = True,
-            user: Optional[str] = None,
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model
@@ -959,7 +983,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         return self._handle_generate_response(model, credentials, response, prompt_messages)
 
     def _handle_generate_response(
-            self, model: str, credentials: dict, response: dict, prompt_messages: list[PromptMessage]
+        self, model: str, credentials: dict, response: dict, prompt_messages: list[PromptMessage]
     ) -> LLMResult:
         """
         Handle llm response
@@ -1010,7 +1034,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         return result
 
     def _handle_generate_stream_response(
-            self, model: str, credentials: dict, response: dict, prompt_messages: list[PromptMessage]
+        self, model: str, credentials: dict, response: dict, prompt_messages: list[PromptMessage]
     ) -> Generator:
         """
         Handle llm stream response

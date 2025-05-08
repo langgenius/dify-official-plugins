@@ -1,6 +1,6 @@
 ## Amazon Bedrock
 
-**Author:** aws
+**Author:** aws  
 **Type:** Model Provider
 
 
