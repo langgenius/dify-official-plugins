@@ -31,6 +31,7 @@ credentials_for_provider:
     url: https://serpapi.com/manage-api-key
 tools:
   - tools/google_search.yaml
+  - tools/google_image_search.yaml
 extra:
   python:
     source: provider/google.py

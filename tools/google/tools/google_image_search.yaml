@@ -1,16 +1,16 @@
 identity:
-  name: google_search
-  author: Dify
+  name: google_image_search
+  author: Ryan Low
   label:
-    en_US: GoogleSearch
-    zh_Hans: 谷歌搜索
-    pt_BR: GoogleSearch
+    en_US: Google Image Search
+    zh_Hans: 谷歌图片搜索
+    pt_BR: Google Image Search
 description:
   human:
-    en_US: A tool for performing a Google SERP search and extracting snippets and webpages.Input should be a search query.
-    zh_Hans: 一个用于执行 Google SERP 搜索并提取片段和网页的工具。输入应该是一个搜索查询。
-    pt_BR: A tool for performing a Google SERP search and extracting snippets and webpages.Input should be a search query.
-  llm: A tool for performing a Google SERP search and extracting snippets and webpages.Input should be a search query.
+    en_US: A tool for performing a Google image search and extracting images. Input should be a search query.
+    zh_Hans: 一个用于执行 Google 图片搜索并提取图片的工具。输入应该是一个搜索查询。
+    pt_BR: A tool for performing a Google image search and extracting images. Input should be a search query.
+  llm: A tool for performing a Google image search and extracting images. Input should be a search query.
 parameters:
   - name: query
     type: string
@@ -64,6 +64,111 @@ parameters:
       pt_BR: Parameter defines from where you want the search to originate. If several locations match the location requested, we'll pick the most popular one. Head to the /locations.json API if you need more precise control. The location and uule parameters can't be used together. It is recommended to specify location at the city level in order to simulate a real user’s search. If location is omitted, the search may take on the location of the proxy.
     llm_description: Location
     form: llm
+  - name: max_results
+    type: number
+    required: true
+    default: 3
+    label:
+      en_US: Max results
+      zh_Hans: 最大结果数量
+    human_description:
+      en_US: The max results.
+      zh_Hans: 最大结果数量
+    form: form
+  - name: imgsz
+    type: select
+    required: false
+    default: m
+    llm_description: Parameter defines the size of images.
+    human_description:
+      en_US: Parameter defines the size of images.
+      zh_Hans: 设置图片尺寸
+    form: form
+    label:
+      en_US: Parameter defines the size of images.
+      zh_Hans: Parameter defines the size of images.
+      pt_BR: Parameter defines the size of images.
+    options:
+      - value: l
+        label:
+          en_US: Large
+          zh_Hans: Large
+          pt_BR: Large
+      - value: m
+        label: 
+          en_US: Medium
+          zh_Hans: Medium
+          pt_BR: Medium
+      - value: i
+        label:
+          en_US: Icon
+          zh_Hans: Icon
+          pt_BR: Icon
+      - value: vga
+        label:
+          en_US: Larger than 640x480
+          zh_Hans: Larger than 640x480
+          pt_BR: Larger than 640x480
+      - value: svga
+        label:
+          en_US: Larger than 800x600
+          zh_Hans: Larger than 800x600
+          pt_BR: Larger than 800x600
+      - value: xga
+        label:
+          en_US: Larger than 1024x768
+          zh_Hans: Larger than 1024x768
+          pt_BR: Larger than 1024x768
+      - value: 2mp
+        label:
+          en_US: Larger than 2 MP
+          zh_Hans: Larger than 2 MP
+          pt_BR: Larger than 2 MP
+      - value: 4mp
+        label:
+          en_US: Larger than 4 MP
+          zh_Hans: Larger than 4 MP
+          pt_BR: Larger than 4 MP
+      - value: 6mp
+        label:
+          en_US: Larger than 6 MP
+          zh_Hans: Larger than 6 MP
+          pt_BR: Larger than 6 MP
+      - value: 8mp
+        label:
+          en_US: Larger than 8 MP
+          zh_Hans: Larger than 8 MP
+          pt_BR: Larger than 8 MP
+      - value: 10mp
+        label:
+          en_US: Larger than 10 MP
+          zh_Hans: Larger than 10 MP
+          pt_BR: Larger than 10 MP
+      - value: 12mp
+        label:
+          en_US: Larger than 12 MP
+          zh_Hans: Larger than 12 MP
+          pt_BR: Larger than 12 MP
+      - value: 15mp
+        label:
+          en_US: Larger than 15 MP
+          zh_Hans: Larger than 15 MP
+          pt_BR: Larger than 15 MP
+      - value: 20mp
+        label:
+          en_US: Larger than 20 MP
+          zh_Hans: Larger than 20 MP
+          pt_BR: Larger than 20 MP
+      - value: 40mp
+        label:
+          en_US: Larger than 40 MP
+          zh_Hans: Larger than 40 MP
+          pt_BR: Larger than 40 MP
+      - value: 70mp
+        label:
+          en_US: Larger than 70 MP
+          zh_Hans: Larger than 70 MP
+          pt_BR: Larger than 70 MP
 extra:
   python:
-    source: tools/google_search.py
+    source: tools/google_image_search.py
