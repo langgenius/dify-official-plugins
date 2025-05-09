@@ -11,7 +11,7 @@ from dify_plugin.entities.model.text_embedding import (
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from google import genai
 from google.genai import errors as GoogleAPIErrors  # Using an alias to avoid potential name collisions if 'errors' is used elsewhere
-from google.generativeai import types as genai_types
+from google.genai import types as genai_types
 
 
 class GeminiTextEmbeddingModel(TextEmbeddingModel):
