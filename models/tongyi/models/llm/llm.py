@@ -211,15 +211,18 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             if model.startswith(("qwen3-", "qwq-")):
                 incremental_output = True
 
+            incremental_output = incremental_output if tools else streaming_output
+
             response = Generation.call(
                 **params,
                 result_format="message",
                 stream=streaming_output,
-                incremental_output=incremental_output if tools else streaming_output,
+                incremental_output=incremental_output,
             )
-        if stream:
+
+        if streaming_output:
             return self._handle_generate_stream_response(
-                model, credentials, response, prompt_messages
+                model, credentials, response, prompt_messages, incremental_output,
             )
         return self._handle_generate_response(
             model, credentials, response, prompt_messages
@@ -290,6 +293,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             credentials: dict,
             responses: Generator[GenerationResponse, None, None],
             prompt_messages: list[PromptMessage],
+            incremental_output: bool,
     ) -> Generator:
         """
         Handle llm stream response
@@ -298,6 +302,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param credentials: credentials
         :param responses: response
         :param prompt_messages: prompt messages
+        :param incremental_output: is incremental output
         :return: llm response chunk generator result
         """
         is_reasoning = False
@@ -313,7 +318,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 resp_content = response.output.choices[0].message.content
                 assistant_prompt_message = AssistantPromptMessage(content="")
                 if "tool_calls" in response.output.choices[0].message:
-                    self._handle_tool_call_stream(response, tool_calls, False)
+                    self._handle_tool_call_stream(response, tool_calls, incremental_output)
                 elif resp_content:
                     if isinstance(resp_content, list):
                         resp_content = resp_content[0]["text"]
@@ -356,7 +361,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 )
                 if not resp_content:
                     if "tool_calls" in response.output.choices[0].message:
-                        self._handle_tool_call_stream(response, tool_calls, False)
+                        self._handle_tool_call_stream(response, tool_calls, incremental_output)
                     continue
                 if isinstance(resp_content, list):
                     resp_content = resp_content[0]["text"]
