@@ -8,7 +8,14 @@ from dify_plugin.entities.model.text_embedding import (
     EmbeddingUsage,
     TextEmbeddingResult,
 )
-from dify_plugin.errors.model import CredentialsValidateFailedError
+from dify_plugin.errors.model import (
+    CredentialsValidateFailedError,
+    InvokeAuthorizationError,
+    InvokeBadRequestError,
+    InvokeConnectionError,
+    InvokeRateLimitError,
+    InvokeServerUnavailableError,
+)
 from google import genai
 from google.genai import errors as GoogleAPIErrors  # Using an alias to avoid potential name collisions if 'errors' is used elsewhere
 from google.genai import types as genai_types
@@ -18,6 +25,32 @@ class GeminiTextEmbeddingModel(TextEmbeddingModel):
     """
     Model class for Google Gemini text embedding model.
     """
+
+    @property
+    def _invoke_error_mapping(self) -> dict[type, list[type[Exception]]]:
+        return {
+            InvokeConnectionError: [
+                GoogleAPIErrors.DeadlineExceeded,
+                GoogleAPIErrors.Unknown, # Can sometimes be connection related
+            ],
+            InvokeServerUnavailableError: [
+                GoogleAPIErrors.InternalServerError,
+                GoogleAPIErrors.ServiceUnavailable,
+            ],
+            InvokeRateLimitError: [
+                GoogleAPIErrors.ResourceExhausted,
+            ],
+            InvokeAuthorizationError: [
+                GoogleAPIErrors.PermissionDenied,
+            ],
+            InvokeBadRequestError: [
+                GoogleAPIErrors.InvalidArgumentError,
+                GoogleAPIErrors.FailedPrecondition, # e.g. API not enabled
+                GoogleAPIErrors.OutOfRange, # e.g. invalid value for a field
+                GoogleAPIErrors.AlreadyExists, # if trying to create something that exists
+                GoogleAPIErrors.NotFound, # if a resource is not found
+            ],
+        }
 
     def _invoke(
         self,
@@ -301,3 +334,4 @@ class GeminiTextEmbeddingModel(TextEmbeddingModel):
             latency=time.perf_counter() - getattr(self, 'started_at', time.perf_counter()),
         )
         return usage
+
