@@ -1,6 +1,4 @@
 from typing import Any, Generator
-from httpx import get
-from yarl import URL
 from dify_plugin.entities.tool import (
     ToolInvokeMessage,
 )

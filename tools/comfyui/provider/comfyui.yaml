@@ -43,3 +43,4 @@ tools:
 - tools/comfyui_face_swap.yaml
 - tools/comfyui_list_models.yaml
 - tools/comfyui_list_samplers.yaml
+- tools/comfyui_image_info.yaml

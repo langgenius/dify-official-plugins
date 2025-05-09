@@ -29,7 +29,7 @@ parameters:
         Image prompt, you can check the official documentation of Stable Diffusion
         or FLUX
       zh_Hans: 图像提示词，您可以查看 Stable Diffusion 或者 FLUX 的官方文档
-      ja_JP: プロンプト
+      ja_JP: プロンプト．Stable Diffusion や FLUX の公式ドキュメントをご参照ください。
   - form: llm
     label:
       en_US: Negative Prompt

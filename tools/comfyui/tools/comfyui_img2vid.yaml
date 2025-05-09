@@ -15,7 +15,8 @@ identity:
   label:
     en_US: Img2Vid
     pt_BR: Img2Vid
-    zh_Hans: Img2Vid
+    zh_Hans: 图像到视频
+    ja_JP: 画像toビデオ
   name: img2vid
 
 parameters:

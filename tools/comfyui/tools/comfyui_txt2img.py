@@ -52,14 +52,15 @@ class ComfyuiTxt2Img(Tool):
         base_url = self.runtime.credentials.get("base_url", "")
         if not base_url:
             yield self.create_text_message("Please input base_url")
-        self.cli = ComfyUiClient(base_url)
+        self.comfyui = ComfyUiClient(base_url)
         if tool_parameters.get("model"):
             self.runtime.credentials["model"] = tool_parameters["model"]
         model = self.runtime.credentials.get("model", None)
         if not model:
             yield self.create_text_message("Please input model")
-        if model not in self.cli.get_checkpoints():
-            raise ToolProviderCredentialValidationError(f"model {model} does not exist")
+        if model not in self.comfyui.get_checkpoints():
+            raise ToolProviderCredentialValidationError(
+                f"model {model} does not exist")
         prompt = tool_parameters.get("prompt", "")
         if not prompt:
             yield self.create_text_message("Please input prompt")
@@ -67,8 +68,8 @@ class ComfyuiTxt2Img(Tool):
         width = tool_parameters.get("width", 1024)
         height = tool_parameters.get("height", 1024)
         steps = tool_parameters.get("steps", 1)
-        valid_samplers = self.cli.get_samplers()
-        valid_schedulers = self.cli.get_schedulers()
+        valid_samplers = self.comfyui.get_samplers()
+        valid_schedulers = self.comfyui.get_schedulers()
         sampler_name = tool_parameters.get("sampler_name", "euler")
         if sampler_name not in valid_samplers:
             raise ToolProviderCredentialValidationError(
@@ -85,13 +86,16 @@ class ComfyuiTxt2Img(Tool):
         lora_strength_list = []
         if tool_parameters.get("lora_1"):
             lora_list.append(tool_parameters["lora_1"])
-            lora_strength_list.append(tool_parameters.get("lora_strength_1", 1))
+            lora_strength_list.append(
+                tool_parameters.get("lora_strength_1", 1))
         if tool_parameters.get("lora_2"):
             lora_list.append(tool_parameters["lora_2"])
-            lora_strength_list.append(tool_parameters.get("lora_strength_2", 1))
+            lora_strength_list.append(
+                tool_parameters.get("lora_strength_2", 1))
         if tool_parameters.get("lora_3"):
             lora_list.append(tool_parameters["lora_3"])
-            lora_strength_list.append(tool_parameters.get("lora_strength_3", 1))
+            lora_strength_list.append(
+                tool_parameters.get("lora_strength_3", 1))
         yield from self.text2img(
             model=model,
             model_type=model_type,
@@ -167,7 +171,8 @@ class ComfyuiTxt2Img(Tool):
             draw_options["3"]["inputs"]["positive"][0] = last_node_id
         try:
             client_id = str(uuid.uuid4())
-            result = self.cli.queue_prompt_image(client_id, prompt=draw_options)
+            result = self.comfyui.queue_prompt_image(
+                client_id, prompt=draw_options)
             image = b""
             for node in result:
                 for img in result[node]:
@@ -198,7 +203,7 @@ class ComfyuiTxt2Img(Tool):
         ]
         if self.runtime.credentials:
             try:
-                models = self.cli.get_checkpoints()
+                models = self.comfyui.get_checkpoints()
                 if len(models) != 0:
                     parameters.append(
                         ToolParameter(
@@ -215,13 +220,14 @@ class ComfyuiTxt2Img(Tool):
                             default=models[0],
                             options=[
                                 ToolParameterOption(
-                                    value=i, label=I18nObject(en_US=i, zh_Hans=i)
+                                    value=i, label=I18nObject(
+                                        en_US=i, zh_Hans=i)
                                 )
                                 for i in models
                             ],
                         )
                     )
-                loras = self.cli.get_loras()
+                loras = self.comfyui.get_loras()
                 if len(loras) != 0:
                     for n in range(1, 4):
                         parameters.append(
@@ -240,14 +246,15 @@ class ComfyuiTxt2Img(Tool):
                                 required=False,
                                 options=[
                                     ToolParameterOption(
-                                        value=i, label=I18nObject(en_US=i, zh_Hans=i)
+                                        value=i, label=I18nObject(
+                                            en_US=i, zh_Hans=i)
                                     )
                                     for i in loras
                                 ],
                             )
                         )
-                sample_methods = self.cli.get_samplers()
-                schedulers = self.cli.get_schedulers()
+                sample_methods = self.comfyui.get_samplers()
+                schedulers = self.comfyui.get_schedulers()
                 if len(sample_methods) != 0:
                     parameters.append(
                         ToolParameter(
@@ -266,7 +273,8 @@ class ComfyuiTxt2Img(Tool):
                             default=sample_methods[0],
                             options=[
                                 ToolParameterOption(
-                                    value=i, label=I18nObject(en_US=i, zh_Hans=i)
+                                    value=i, label=I18nObject(
+                                        en_US=i, zh_Hans=i)
                                 )
                                 for i in sample_methods
                             ],
@@ -276,7 +284,8 @@ class ComfyuiTxt2Img(Tool):
                     parameters.append(
                         ToolParameter(
                             name="scheduler",
-                            label=I18nObject(en_US="Scheduler", zh_Hans="Scheduler"),
+                            label=I18nObject(
+                                en_US="Scheduler", zh_Hans="Scheduler"),
                             human_description=I18nObject(
                                 en_US="Scheduler of Stable Diffusion, you can check the official documentation of Stable Diffusion",
                                 zh_Hans="Stable Diffusion 的Scheduler，您可以查看 Stable Diffusion 的官方文档",
@@ -288,7 +297,8 @@ class ComfyuiTxt2Img(Tool):
                             default=schedulers[0],
                             options=[
                                 ToolParameterOption(
-                                    value=i, label=I18nObject(en_US=i, zh_Hans=i)
+                                    value=i, label=I18nObject(
+                                        en_US=i, zh_Hans=i)
                                 )
                                 for i in schedulers
                             ],
@@ -297,7 +307,8 @@ class ComfyuiTxt2Img(Tool):
                 parameters.append(
                     ToolParameter(
                         name="model_type",
-                        label=I18nObject(en_US="Model Type", zh_Hans="Model Type"),
+                        label=I18nObject(en_US="Model Type",
+                                         zh_Hans="Model Type"),
                         human_description=I18nObject(
                             en_US="Model Type of Stable Diffusion or Flux, you can check the official documentation of Stable Diffusion or Flux",
                             zh_Hans="Stable Diffusion 或 FLUX 的模型类型，您可以查看 Stable Diffusion 或 Flux 的官方文档",

@@ -5,8 +5,6 @@ import uuid
 from copy import deepcopy
 from enum import Enum
 from typing import Any, Generator
-import httpx
-import requests
 from dify_plugin.entities.tool import (
     ToolInvokeMessage,
     ToolParameter,
@@ -55,21 +53,20 @@ class ComfyuiImg2Vid(Tool):
         base_url = self.runtime.credentials.get("base_url", "")
         if not base_url:
             yield self.create_text_message("Please input base_url")
-        self.cli = ComfyUiClient(base_url)
-        image_server_url = self.runtime.credentials.get("image_server_url", "")
-        if not image_server_url:
-            yield self.create_text_message("Please input image_server_url")
+        self.comfyui = ComfyUiClient(base_url)
+
         if tool_parameters.get("model"):
             self.runtime.credentials["model"] = tool_parameters["model"]
         model = self.runtime.credentials.get("model", None)
         if not model:
             yield self.create_text_message("Please input model")
             return
-        if model not in self.cli.get_checkpoints():
-            raise ToolProviderCredentialValidationError(f"model {model} does not exist")
+        if model not in self.comfyui.get_checkpoints():
+            raise ToolProviderCredentialValidationError(
+                f"model {model} does not exist")
         steps = tool_parameters.get("steps", 20)
-        valid_samplers = self.cli.get_samplers()
-        valid_schedulers = self.cli.get_schedulers()
+        valid_samplers = self.comfyui.get_samplers()
+        valid_schedulers = self.comfyui.get_schedulers()
         sampler_name = tool_parameters.get("sampler_name", "euler")
         if sampler_name not in valid_samplers:
             raise ToolProviderCredentialValidationError(
@@ -86,26 +83,19 @@ class ComfyuiImg2Vid(Tool):
         height = tool_parameters.get("height", 800)
         fps = tool_parameters.get("fps", 6)
         frames = tool_parameters.get("frames", 14)
-        model_type = tool_parameters.get("model_type", ModelType.SD15.name)
         images = tool_parameters.get("images") or []
         image_names = []
         for image in images:
             if image.type != FileType.IMAGE:
                 continue
-            blob = httpx.get(image_server_url.rstrip("/") + image.url, timeout=3)
-            image_name = self.cli.post_image(image.filename, blob, image.mime_type)
-            if image_name is None:
-                raise ToolProviderCredentialValidationError(
-                    f"File upload to ComfyUI failed"
-                )
+            image_name = self.comfyui.post_image(
+                image.filename, image.blob, image.mime_type)
             image_names.append(image_name)
         if len(image_names) == 0:
             yield self.create_text_message("Please input images")
             return
         yield from self.img2vid(
-            base_url=base_url,
             model=model,
-            model_type=model_type,
             width=width,
             height=height,
             fps=fps,
@@ -120,9 +110,7 @@ class ComfyuiImg2Vid(Tool):
 
     def img2vid(
         self,
-        base_url: str,
         model: str,
-        model_type: str,
         width: int,
         height: int,
         fps: int,
@@ -157,7 +145,8 @@ class ComfyuiImg2Vid(Tool):
 
         try:
             client_id = str(uuid.uuid4())
-            result = self.cli.queue_prompt_image(client_id, prompt=draw_options)
+            result = self.comfyui.queue_prompt_image(
+                client_id, prompt=draw_options)
             image = b""
             for node in result:
                 for img in result[node]:
@@ -188,7 +177,7 @@ class ComfyuiImg2Vid(Tool):
         ]
         if self.runtime.credentials:
             try:
-                models = self.cli.get_checkpoints()
+                models = self.comfyui.get_checkpoints()
                 if len(models) != 0:
                     parameters.append(
                         ToolParameter(
@@ -205,13 +194,14 @@ class ComfyuiImg2Vid(Tool):
                             default=models[0],
                             options=[
                                 ToolParameterOption(
-                                    value=i, label=I18nObject(en_US=i, zh_Hans=i)
+                                    value=i, label=I18nObject(
+                                        en_US=i, zh_Hans=i)
                                 )
                                 for i in models
                             ],
                         )
                     )
-                loras = self.cli.get_loras()
+                loras = self.comfyui.get_loras()
                 if len(loras) != 0:
                     for n in range(1, 4):
                         parameters.append(
@@ -230,14 +220,15 @@ class ComfyuiImg2Vid(Tool):
                                 required=False,
                                 options=[
                                     ToolParameterOption(
-                                        value=i, label=I18nObject(en_US=i, zh_Hans=i)
+                                        value=i, label=I18nObject(
+                                            en_US=i, zh_Hans=i)
                                     )
                                     for i in loras
                                 ],
                             )
                         )
-                sample_methods = self.cli.get_samplers()
-                schedulers = self.cli.get_schedulers()
+                sample_methods = self.comfyui.get_samplers()
+                schedulers = self.comfyui.get_schedulers()
                 if len(sample_methods) != 0:
                     parameters.append(
                         ToolParameter(
@@ -256,7 +247,8 @@ class ComfyuiImg2Vid(Tool):
                             default=sample_methods[0],
                             options=[
                                 ToolParameterOption(
-                                    value=i, label=I18nObject(en_US=i, zh_Hans=i)
+                                    value=i, label=I18nObject(
+                                        en_US=i, zh_Hans=i)
                                 )
                                 for i in sample_methods
                             ],
@@ -266,7 +258,8 @@ class ComfyuiImg2Vid(Tool):
                     parameters.append(
                         ToolParameter(
                             name="scheduler",
-                            label=I18nObject(en_US="Scheduler", zh_Hans="Scheduler"),
+                            label=I18nObject(
+                                en_US="Scheduler", zh_Hans="Scheduler"),
                             human_description=I18nObject(
                                 en_US="Scheduler of Stable Diffusion, you can check the official documentation of Stable Diffusion",
                                 zh_Hans="Stable Diffusion 的Scheduler，您可以查看 Stable Diffusion 的官方文档",
@@ -278,7 +271,8 @@ class ComfyuiImg2Vid(Tool):
                             default=schedulers[0],
                             options=[
                                 ToolParameterOption(
-                                    value=i, label=I18nObject(en_US=i, zh_Hans=i)
+                                    value=i, label=I18nObject(
+                                        en_US=i, zh_Hans=i)
                                 )
                                 for i in schedulers
                             ],
@@ -287,7 +281,8 @@ class ComfyuiImg2Vid(Tool):
                 parameters.append(
                     ToolParameter(
                         name="model_type",
-                        label=I18nObject(en_US="Model Type", zh_Hans="Model Type"),
+                        label=I18nObject(en_US="Model Type",
+                                         zh_Hans="Model Type"),
                         human_description=I18nObject(
                             en_US="Model Type of Stable Diffusion or Flux, you can check the official documentation of Stable Diffusion or Flux",
                             zh_Hans="Stable Diffusion 或 FLUX 的模型类型，您可以查看 Stable Diffusion 或 Flux 的官方文档",

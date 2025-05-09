@@ -1,18 +1,15 @@
 import json
 import os
-import random
 import uuid
 from copy import deepcopy
 from enum import Enum
 from typing import Any, Generator
-import httpx
 from dify_plugin.entities.tool import (
     ToolInvokeMessage,
     ToolParameter,
     ToolParameterOption,
     I18nObject,
 )
-from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin import Tool
 
 
@@ -36,21 +33,15 @@ class ComfyuiFaceSwap(Tool):
         base_url = self.runtime.credentials.get("base_url", "")
         if not base_url:
             yield self.create_text_message("Please input base_url")
-        self.cli = ComfyUiClient(base_url)
-        image_server_url = self.runtime.credentials.get("image_server_url", "")
-        if not image_server_url:
-            yield self.create_text_message("Please input image_server_url")
+        self.comfyui = ComfyUiClient(base_url)
+
         images = tool_parameters.get("images") or []
         image_names = []
         for image in images:
             if image.type != FileType.IMAGE:
                 continue
-            blob = httpx.get(image_server_url.rstrip("/") + image.url, timeout=3)
-            image_name = self.cli.post_image(image.filename, blob, image.mime_type)
-            if image_name is None:
-                raise ToolProviderCredentialValidationError(
-                    f"File upload to ComfyUI failed"
-                )
+            image_name = self.comfyui.post_image(
+                image.filename, image.blob, image.mime_type)
             image_names.append(image_name)
         if len(image_names) <= 1:
             yield self.create_text_message("Please input two images")
@@ -65,7 +56,8 @@ class ComfyuiFaceSwap(Tool):
 
         try:
             client_id = str(uuid.uuid4())
-            result = self.cli.queue_prompt_image(client_id, prompt=draw_options)
+            result = self.comfyui.queue_prompt_image(
+                client_id, prompt=draw_options)
             image = b""
             for node in result:
                 for img in result[node]:
@@ -98,7 +90,7 @@ class ComfyuiFaceSwap(Tool):
         ]
         if self.runtime.credentials:
             try:
-                models = self.cli.get_checkpoints()
+                models = self.comfyui.get_checkpoints()
                 if len(models) != 0:
                     parameters.append(
                         ToolParameter(
@@ -115,13 +107,14 @@ class ComfyuiFaceSwap(Tool):
                             default=models[0],
                             options=[
                                 ToolParameterOption(
-                                    value=i, label=I18nObject(en_US=i, zh_Hans=i)
+                                    value=i, label=I18nObject(
+                                        en_US=i, zh_Hans=i)
                                 )
                                 for i in models
                             ],
                         )
                     )
-                loras = self.cli.get_loras()
+                loras = self.comfyui.get_loras()
                 if len(loras) != 0:
                     for n in range(1, 4):
                         parameters.append(
@@ -140,14 +133,15 @@ class ComfyuiFaceSwap(Tool):
                                 required=False,
                                 options=[
                                     ToolParameterOption(
-                                        value=i, label=I18nObject(en_US=i, zh_Hans=i)
+                                        value=i, label=I18nObject(
+                                            en_US=i, zh_Hans=i)
                                     )
                                     for i in loras
                                 ],
                             )
                         )
-                sample_methods = self.cli.get_samplers()
-                schedulers = self.cli.get_schedulers()
+                sample_methods = self.comfyui.get_samplers()
+                schedulers = self.comfyui.get_schedulers()
                 if len(sample_methods) != 0:
                     parameters.append(
                         ToolParameter(
@@ -166,7 +160,8 @@ class ComfyuiFaceSwap(Tool):
                             default=sample_methods[0],
                             options=[
                                 ToolParameterOption(
-                                    value=i, label=I18nObject(en_US=i, zh_Hans=i)
+                                    value=i, label=I18nObject(
+                                        en_US=i, zh_Hans=i)
                                 )
                                 for i in sample_methods
                             ],
@@ -176,7 +171,8 @@ class ComfyuiFaceSwap(Tool):
                     parameters.append(
                         ToolParameter(
                             name="scheduler",
-                            label=I18nObject(en_US="Scheduler", zh_Hans="Scheduler"),
+                            label=I18nObject(
+                                en_US="Scheduler", zh_Hans="Scheduler"),
                             human_description=I18nObject(
                                 en_US="Scheduler of Stable Diffusion, you can check the official documentation of Stable Diffusion",
                                 zh_Hans="Stable Diffusion 的Scheduler，您可以查看 Stable Diffusion 的官方文档",
@@ -188,7 +184,8 @@ class ComfyuiFaceSwap(Tool):
                             default=schedulers[0],
                             options=[
                                 ToolParameterOption(
-                                    value=i, label=I18nObject(en_US=i, zh_Hans=i)
+                                    value=i, label=I18nObject(
+                                        en_US=i, zh_Hans=i)
                                 )
                                 for i in schedulers
                             ],
@@ -197,7 +194,8 @@ class ComfyuiFaceSwap(Tool):
                 parameters.append(
                     ToolParameter(
                         name="model_type",
-                        label=I18nObject(en_US="Model Type", zh_Hans="Model Type"),
+                        label=I18nObject(en_US="Model Type",
+                                         zh_Hans="Model Type"),
                         human_description=I18nObject(
                             en_US="Model Type of Stable Diffusion or Flux, you can check the official documentation of Stable Diffusion or Flux",
                             zh_Hans="Stable Diffusion 或 FLUX 的模型类型，您可以查看 Stable Diffusion 或 Flux 的官方文档",
