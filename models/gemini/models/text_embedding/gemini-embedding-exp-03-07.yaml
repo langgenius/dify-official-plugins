@@ -1,0 +1,9 @@
+model: gemini-embedding-exp-03-07
+model_type: text-embedding
+model_properties:
+  context_size: 2048
+  max_chunks: 32
+pricing:
+  input: '0.00013'
+  unit: '0.001'
+  currency: USD

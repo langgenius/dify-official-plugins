@@ -8,7 +8,9 @@ extra:
   python:
     model_sources:
     - models/llm/llm.py
+    - models/text_embedding/text_embedding.py
     provider_source: provider/google.py
+
 help:
   title:
     en_US: Get your API Key from Google
@@ -26,6 +28,9 @@ models:
     position: models/llm/_position.yaml
     predefined:
     - models/llm/*.yaml
+  text_embedding:
+    predefined:
+      - "models/text_embedding/*.yaml"
 provider: google
 provider_credential_schema:
   credential_form_schemas:
@@ -47,3 +52,4 @@ provider_credential_schema:
     variable: file_url
 supported_model_types:
 - llm
+- text-embedding

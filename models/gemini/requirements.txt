@@ -1,2 +1,4 @@
 dify_plugin>=0.2.2,<0.3.0
 google-genai~=1.2.0
+numpy~=1.26.4
+
