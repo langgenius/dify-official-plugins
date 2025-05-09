@@ -10,7 +10,7 @@ from dify_plugin.entities.model.text_embedding import (
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from google import genai
-from google.genai import 위험한_사용자_입력_오류 as GoogleAPIErrors  # Using an alias to avoid potential name collisions if 'errors' is used elsewhere
+from google.genai import errors as GoogleAPIErrors  # Using an alias to avoid potential name collisions if 'errors' is used elsewhere
 from google.generativeai import types as genai_types
 
 
