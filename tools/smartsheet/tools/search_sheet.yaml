@@ -1,0 +1,73 @@
+identity:
+  name: search_sheet
+  author: langgenius
+  label:
+    en_US: Search Sheet
+    zh_Hans: 搜索表格
+    pt_BR: Pesquisar Planilha
+    ja_JP: シート検索
+    zh_Hant: 搜索表格
+description:
+  human:
+    en_US: Search for data within a Smartsheet sheet.
+    zh_Hans: 在 Smartsheet 表格中搜索数据。
+    pt_BR: Pesquise dados em uma planilha do Smartsheet.
+    ja_JP: Smartsheetシート内のデータを検索します。
+    zh_Hant: 在 Smartsheet 表格中搜索數據。
+  llm: Searches for data within a specified Smartsheet sheet. You can provide a search term to find matching rows. The function returns the rows containing the search term along with their row IDs.
+parameters:
+  - name: sheet_id
+    type: string
+    required: true
+    label:
+      en_US: Sheet ID
+      zh_Hans: 表格 ID
+      pt_BR: ID da Planilha
+      ja_JP: シートID
+      zh_Hant: 表格 ID
+    human_description:
+      en_US: The ID of the Smartsheet sheet to search in.
+      zh_Hans: 要搜索的 Smartsheet 表格的 ID。
+      pt_BR: O ID da planilha do Smartsheet para pesquisar.
+      ja_JP: 検索するSmartsheetシートのID。
+      zh_Hant: 要搜索的 Smartsheet 表格的 ID。
+    llm_description: The unique identifier of the Smartsheet sheet to search in. This is a number that appears in the URL when viewing the sheet in a web browser (e.g., https://app.smartsheet.com/sheets/SHEET_ID).
+    form: llm
+  - name: search_term
+    type: string
+    required: true
+    label:
+      en_US: Search Term
+      zh_Hans: 搜索词
+      pt_BR: Termo de Pesquisa
+      ja_JP: 検索語
+      zh_Hant: 搜索詞
+    human_description:
+      en_US: The term to search for within the sheet.
+      zh_Hans: 在表格中搜索的词。
+      pt_BR: O termo a ser pesquisado na planilha.
+      ja_JP: シート内で検索する用語。
+      zh_Hant: 在表格中搜索的詞。
+    llm_description: The text to search for within the sheet. The search is case-insensitive and will match partial text within cell values.
+    form: llm
+  - name: max_results
+    type: string
+    required: false
+    default: "10"
+    label:
+      en_US: Maximum Results
+      zh_Hans: 最大结果数
+      pt_BR: Resultados Máximos
+      ja_JP: 最大結果数
+      zh_Hant: 最大結果數
+    human_description:
+      en_US: The maximum number of matching rows to return.
+      zh_Hans: 返回的匹配行的最大数量。
+      pt_BR: O número máximo de linhas correspondentes a retornar.
+      ja_JP: 返される一致する行の最大数。
+      zh_Hant: 返回的匹配行的最大數量。
+    llm_description: The maximum number of matching rows to return. Defaults to 10. The value should be a positive integer.
+    form: llm
+extra:
+  python:
+    source: tools/search_sheet.py 

@@ -1,0 +1,44 @@
+model: mistral
+label:
+  en_US: Mistral AI
+icon: icon_s_en.svg
+model_type: llm
+features:
+  - tool-call
+  - agent-thought
+model_properties:
+  mode: chat
+  context_size: 32000
+parameter_rules:
+  - name: model_name
+    label:
+      zh_Hans: Bedrock 模型
+      en_US: Bedrock Model
+    type: string
+    help:
+      zh_Hans: 指定模型名称
+      en_US: specify model name
+    required: true
+    default: Mistral Large
+    options:
+      - Mistral 7B Instruct
+      - Mistral Large
+      - Mistral Small
+      - Mixtral 8x7B Instruct
+
+  - name: temperature
+    use_template: temperature
+    required: false
+    default: 0.7
+
+  - name: top_p
+    use_template: top_p
+    required: false
+    default: 1
+
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 512
+    min: 1
+    max: 4096

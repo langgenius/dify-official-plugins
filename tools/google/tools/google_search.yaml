@@ -25,6 +25,45 @@ parameters:
       pt_BR: used for searching
     llm_description: key words for searching
     form: llm
+  - name: hl
+    type: string
+    required: false
+    label:
+      en_US: Language
+      zh_Hans: 语言
+      pt_BR: Language
+    human_description:
+      en_US: Parameter defines the language to use for the Google search. It's a two-letter language code. (e.g., en for English, es for Spanish, or fr for French). Head to https://serpapi.com/google-languages for a full list of supported Google languages.
+      zh_Hans: 此参数定义用于 Google 搜索的语言。它是一个两字母的语言代码。 (例如，en 代表英语，es 代表西班牙语，fr 代表法语)。请前往 https://serpapi.com/google-languages 查看完整的支持 Google 语言列表。
+      pt_BR: Parameter defines the language to use for the Google search. It's a two-letter language code. (e.g., en for English, es for Spanish, or fr for French). Head to https://serpapi.com/google-languages for a full list of supported Google languages.
+    llm_description: Language
+    form: llm
+  - name: gl
+    type: string
+    required: false
+    label:
+      en_US: Country
+      zh_Hans: 国家
+      pt_BR: Country
+    human_description:
+      en_US: Parameter defines the country to use for the Google search. It's a two-letter country code. (e.g., us for the United States, uk for United Kingdom, or fr for France). Head to the https://serpapi.com/google-countries for a full list of supported Google countries.
+      zh_Hans: 此参数定义用于 Google 搜索的国家。它是一个两字母的国家代码。 (例如，us 代表美国，uk 代表英国，fr 代表法国)。请前往 https://serpapi.com/google-countries 查看完整的支持 Google 国家列表。
+      pt_BR: Parameter defines the country to use for the Google search. It's a two-letter country code. (e.g., us for the United States, uk for United Kingdom, or fr for France). Head to the https://serpapi.com/google-countries for a full list of supported Google countries.
+    llm_description: Country
+    form: llm
+  - name: location
+    type: string
+    required: false
+    label:
+      en_US: Location
+      zh_Hans: 位置
+      pt_BR: Location
+    human_description:
+      en_US: Parameter defines from where you want the search to originate. If several locations match the location requested, we'll pick the most popular one. Head to the /locations.json API if you need more precise control. The location and uule parameters can't be used together. It is recommended to specify location at the city level in order to simulate a real user’s search. If location is omitted, the search may take on the location of the proxy.
+      zh_Hans: 此参数定义搜索的位置。如果有多个位置与请求的位置匹配，我们将选择最受欢迎的一个。如果需要更精确的控制，请前往 /locations.json API。location 和 uule 参数不能同时使用。建议在城市级别指定位置，以模拟真实用户的搜索。如果省略位置，则搜索可能会采用代理的位置。
+      pt_BR: Parameter defines from where you want the search to originate. If several locations match the location requested, we'll pick the most popular one. Head to the /locations.json API if you need more precise control. The location and uule parameters can't be used together. It is recommended to specify location at the city level in order to simulate a real user’s search. If location is omitted, the search may take on the location of the proxy.
+    llm_description: Location
+    form: llm
 extra:
   python:
     source: tools/google_search.py

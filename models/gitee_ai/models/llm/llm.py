@@ -65,10 +65,6 @@ class GiteeAILargeLanguageModel(_CommonOaiApiCompat, LargeLanguageModel):
             user=user,
         )
 
-    def validate_credentials(self, model: str, credentials: dict) -> None:
-        self._add_custom_parameters(credentials, model, None, True)
-        self.validate_credentials(model, credentials)
-
     def _add_custom_parameters(self, credentials: dict, model: str, model_parameters: dict, stream: bool) -> None:
         credentials["endpoint_url"] = "https://ai.gitee.com/v1"
         credentials["mode"] = LLMMode.CHAT.value

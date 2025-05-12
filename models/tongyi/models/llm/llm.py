@@ -196,18 +196,33 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages
             )
-            enable_thinking = model_parameters.get("enable_thinking", False)
+
+            # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition, QwQ, and QVQ only supports streaming output.
+            streaming_output = stream
+            if (
+                    model in ("qwen-plus-latest", "qwen-plus-2025-04-28",
+                              "qwen-turbo-latest", "qwen-turbo-2025-04-28")
+                    and model_parameters.get("enable_thinking", False)
+            ) or model.startswith(("qwen3-", "qwq-", "qvq-")):
+                streaming_output = True
+
+            # Qwen3 open-source edition and QwQ models only supports incremental_output set to True.
+            incremental_output = False
+            if model.startswith(("qwen3-", "qwq-")):
+                incremental_output = True
+
+            incremental_output = incremental_output if tools else streaming_output
+
             response = Generation.call(
                 **params,
                 result_format="message",
-                # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition, QwQ, and QVQ only supports streaming output.
-                stream=stream,
-                # Qwen3 open-source edition, QwQ, and QVQ models only supports incremental_output set to True.
-                incremental_output=True if enable_thinking else stream,
+                stream=streaming_output,
+                incremental_output=incremental_output,
             )
-        if stream:
+
+        if streaming_output:
             return self._handle_generate_stream_response(
-                model, credentials, response, prompt_messages
+                model, credentials, response, prompt_messages, incremental_output,
             )
         return self._handle_generate_response(
             model, credentials, response, prompt_messages
@@ -278,6 +293,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             credentials: dict,
             responses: Generator[GenerationResponse, None, None],
             prompt_messages: list[PromptMessage],
+            incremental_output: bool,
     ) -> Generator:
         """
         Handle llm stream response
@@ -286,6 +302,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param credentials: credentials
         :param responses: response
         :param prompt_messages: prompt messages
+        :param incremental_output: is incremental output
         :return: llm response chunk generator result
         """
         is_reasoning = False
@@ -301,7 +318,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 resp_content = response.output.choices[0].message.content
                 assistant_prompt_message = AssistantPromptMessage(content="")
                 if "tool_calls" in response.output.choices[0].message:
-                    self._handle_tool_call_stream(response, tool_calls, False)
+                    self._handle_tool_call_stream(response, tool_calls, incremental_output)
                 elif resp_content:
                     if isinstance(resp_content, list):
                         resp_content = resp_content[0]["text"]
@@ -344,7 +361,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 )
                 if not resp_content:
                     if "tool_calls" in response.output.choices[0].message:
-                        self._handle_tool_call_stream(response, tool_calls, False)
+                        self._handle_tool_call_stream(response, tool_calls, incremental_output)
                     continue
                 if isinstance(resp_content, list):
                     resp_content = resp_content[0]["text"]

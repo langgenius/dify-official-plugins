@@ -1,4 +1,4 @@
-dify_plugin==0.0.1b73
+dify_plugin>=0.2.0,<0.3.0
 anthropic==0.42.0
 vertexai==1.71.1
 Pillow==11.0.0

@@ -1,0 +1,28 @@
+description:
+  human:
+    en_US:
+      Lists available checkpoints on connected ComfyUI.
+    pt_BR:
+      Lists available checkpoints on connected ComfyUI.
+    zh_Hans: 列出连接的 ComfyUI 上可用的检查点。
+    ja_JP: 利用可能なチェックポイントを取得します。
+  llm: lists available checkpoints on connected ComfyUI.
+extra:
+  python:
+    source: tools/comfyui_list_models.py
+identity:
+  author: yt-koike
+  label:
+    en_US: List models
+    zh_Hans: List models
+    ja_JP: モデル取得
+  name: list_model
+output_schema:
+  type: object
+  properties:
+    models:
+      type: array[string]
+      label:
+        en_US: Models
+        zh_Hans: 模型
+        ja_JP: モデル

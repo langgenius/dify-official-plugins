@@ -1,0 +1,15 @@
+identity:
+  name: list_projects
+  author: laboratory
+  label:
+    en_US: List Projects
+    zh_Hans: 列出项目
+description:
+  human:
+    en_US: List all projects in Todoist
+    zh_Hans: 列出 Todoist 中的所有项目
+  llm: Lists all projects from Todoist. Returns project details including name, URL, and other metadata.
+parameters: []  # No parameters needed as this lists all projects
+extra:
+  python:
+    source: tools/list_projects.py

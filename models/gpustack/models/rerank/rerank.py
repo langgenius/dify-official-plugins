@@ -55,7 +55,7 @@ class GPUStackRerankModel(RerankModel):
         if top_n is None:
             top_n = 3
         model = model.strip()
-        endpoint_url = credentials["endpoint_url"]
+        endpoint_url = credentials["endpoint_url"].rstrip("/").removesuffix("/v1")
         headers = {
             "Authorization": f"Bearer {credentials.get('api_key')}",
             "Content-Type": "application/json",

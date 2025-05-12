@@ -1,0 +1,28 @@
+description:
+  human:
+    en_US:
+      Lists available upscale models on connected ComfyUI.
+    pt_BR:
+      Lists available upscale models on connected ComfyUI.
+    zh_Hans: 在连接的 ComfyUI 上列出可用的高档车型。
+    ja_JP: 利用可能なアップスケールモデルを取得します。
+  llm: Lists available upscale models on connected ComfyUI.
+extra:
+  python:
+    source: tools/comfyui_list_upscalers.py
+identity:
+  author: yt-koike
+  label:
+    en_US: List upscale models
+    zh_Hans: 列出连放大机型
+    ja_JP: アップスケールモデル取得
+  name: list_samplers
+output_schema:
+  type: object
+  properties:
+    upscale_models:
+      type: array[string]
+      label:
+        en_US: Upscale models
+        zh_Hans: 放大机型
+        ja_JP: アップスケールモデル
