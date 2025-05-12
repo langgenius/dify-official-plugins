@@ -187,6 +187,21 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             **extra_model_kwargs,
         }
         model_schema = self.get_model_schema(model, credentials)
+
+        incremental_output = False if tools else stream
+
+        thinking_business_qwen3 = model in ("qwen-plus-latest", "qwen-plus-2025-04-28",
+                                            "qwen-turbo-latest", "qwen-turbo-2025-04-28") \
+                                  and model_parameters.get("enable_thinking", False)
+
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition, QwQ, and QVQ models only supports streaming output.
+        if thinking_business_qwen3 or model.startswith(("qwen3-", "qwq-", "qvq-")):
+            stream = True
+
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition and QwQ models only supports incremental_output set to True.
+        if thinking_business_qwen3 or model.startswith(("qwen3-", "qwq-")):
+            incremental_output = True
+
         if ModelFeature.VISION in (model_schema.features or []):
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages, rich_content=True
@@ -196,31 +211,13 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages
             )
-
-            # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition, QwQ, and QVQ only supports streaming output.
-            streaming_output = stream
-            if (
-                    model in ("qwen-plus-latest", "qwen-plus-2025-04-28",
-                              "qwen-turbo-latest", "qwen-turbo-2025-04-28")
-                    and model_parameters.get("enable_thinking", False)
-            ) or model.startswith(("qwen3-", "qwq-", "qvq-")):
-                streaming_output = True
-
-            # Qwen3 open-source edition and QwQ models only supports incremental_output set to True.
-            incremental_output = False
-            if model.startswith(("qwen3-", "qwq-")):
-                incremental_output = True
-
-            incremental_output = incremental_output if tools else streaming_output
-
             response = Generation.call(
                 **params,
                 result_format="message",
-                stream=streaming_output,
+                stream=stream,
                 incremental_output=incremental_output,
             )
-
-        if streaming_output:
+        if stream:
             return self._handle_generate_stream_response(
                 model, credentials, response, prompt_messages, incremental_output,
             )
