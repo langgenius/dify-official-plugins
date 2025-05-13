@@ -16,14 +16,14 @@ parameters:
     type: string
     required: true
     label:
-      en_US: Text 
+      en_US: Text
       zh_Hans: 内容
       pt_BR: text
     human_description:
       en_US: text content
       zh_Hans: 文本内容
       pt_BR: text content
-    llm_description: text content
+    llm_description: text content to be converted to speech
     form: llm
   - name: voice_id
     type: string
@@ -31,7 +31,7 @@ parameters:
     label:
       en_US: voice id
       zh_Hans: 声音 ID
-      pt_BR: text
+      pt_BR: voice id
     human_description:
       en_US: Fish Audio voice id 
       zh_Hans: Fish Audio 的声音 ID
@@ -45,25 +45,75 @@ parameters:
     label:
       en_US: format
       zh_Hans: 类型
+      pt_BR: format
     options:
       - label:
           en_US: mp3
           zh_Hans: mp3
+          pt_BR: mp3
         value: mp3
       - label:
           en_US: wav
           zh_Hans: wav
+          pt_BR: wav
         value: wav
       - label:
           en_US: pcm
           zh_Hans: pcm
+          pt_BR: pcm
         value: pcm
     human_description:
       en_US: audio format
       zh_Hans: 声音格式
       pt_BR: audio format
     llm_description: audio format
-    form: form
+    form: llm
+  - name: model
+    type: select
+    required: false
+    label:
+      en_US: model
+      zh_Hans: 模型
+      pt_BR: model
+    options:
+      - label:
+          en_US: speech-1.5
+          zh_Hans: speech-1.5
+          pt_BR: speech-1.5
+        value: speech-1.5
+      - label:
+          en_US: speech-1.6
+          zh_Hans: speech-1.6
+          pt_BR: speech-1.6
+        value: speech-1.6
+      - label:
+          en_US: agent-x0
+          zh_Hans: agent-x0
+          pt_BR: agent-x0
+        value: agent-x0
+    human_description:
+      en_US: tts model
+      zh_Hans: 文本转语音模型
+      pt_BR: tts model
+    llm_description: tts model, optional, speech-1.5, speech-1.6, agent-x0
+    form: llm
+  - name: speed
+    type: number
+    required: false
+    label:
+      en_US: audio speed
+      zh_Hans: 语速
+      pt_BR: audio speed
+    default: 1
+    max: 2.0
+    min: 0.5
+    step: 0.01
+    human_description:
+      en_US: audio speed (0.5-2.0)
+      zh_Hans: 语速 (0.5-2.0)
+      pt_BR: audio speed (0.5-2.0)
+    llm_description: audio speed (0.5-2.0), default 1.0
+    form: llm
 extra:
   python:
     source: tools/tts.py
