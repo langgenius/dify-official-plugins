@@ -45,18 +45,22 @@ parameters:
     label:
       en_US: format
       zh_Hans: 类型
+      pt_BR: format
     options:
       - label:
           en_US: mp3
           zh_Hans: mp3
+          pt_BR: mp3
         value: mp3
       - label:
           en_US: wav
           zh_Hans: wav
+          pt_BR: wav
         value: wav
       - label:
           en_US: pcm
           zh_Hans: pcm
+          pt_BR: pcm
         value: pcm
     human_description:
       en_US: audio format
@@ -70,18 +74,22 @@ parameters:
     label:
       en_US: model
       zh_Hans: 模型
+      pt_BR: model
     options:
       - label:
           en_US: speech-1.5
           zh_Hans: speech-1.5
+          pt_BR: speech-1.5
         value: speech-1.5
       - label:
           en_US: speech-1.6
           zh_Hans: speech-1.6
+          pt_BR: speech-1.6
         value: speech-1.6
       - label:
           en_US: agent-x0
           zh_Hans: agent-x0
+          pt_BR: agent-x0
         value: agent-x0
     human_description:
       en_US: tts model
