@@ -86,16 +86,11 @@ parameters:
           zh_Hans: speech-1.6
           pt_BR: speech-1.6
         value: speech-1.6
-      - label:
-          en_US: agent-x0
-          zh_Hans: agent-x0
-          pt_BR: agent-x0
-        value: agent-x0
     human_description:
       en_US: tts model
       zh_Hans: 文本转语音模型
       pt_BR: tts model
-    llm_description: tts model, optional, speech-1.5, speech-1.6, agent-x0
+    llm_description: tts model, optional, speech-1.5, speech-1.6
     form: llm
   - name: speed
     type: number
