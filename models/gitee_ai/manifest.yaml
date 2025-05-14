@@ -6,7 +6,7 @@ description:
 icon: Gitee-AI-Logo.svg
 label:
   en_US: Gitee AI
-  zh_Hans: Gitee AI
+  zh_Hans: 魔力方舟
 meta:
   arch:
     - amd64
@@ -34,4 +34,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.1.1
+version: 0.1.2
