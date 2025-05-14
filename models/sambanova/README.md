@@ -4,4 +4,6 @@ SambaNova Cloud is a cloud-based inference platform from SambaNova, Experience t
 
 ## Configure
 
-To use SambaNovaCloud, you'll need your [API key](https://cloud.sambanova.ai/apis) . After installing the plugin, find the Model Provider settings and enter the key you obtained from SambaNova Cloud. Save to activate.
+To use SambaNovaCloud, you'll need your [API key](http://cloud.sambanova.ai?utm_source=dify&utm_medium=external&utm_campaign=cloud_signup) . After installing the plugin, find the Model Provider settings and enter the key you obtained from SambaNova Cloud. Save to activate.
+
+![](./_assets/sambanova-api-key.png)
