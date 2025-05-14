@@ -902,7 +902,8 @@ LLM_BASE_MODELS = [
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式", en_US="specifying the format that the model must output"
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
@@ -978,7 +979,8 @@ LLM_BASE_MODELS = [
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式", en_US="specifying the format that the model must output"
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
@@ -1055,7 +1057,7 @@ LLM_BASE_MODELS = [
                     type="string",
                     help=I18nObject(
                         zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output"
+                        en_US="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
@@ -1132,7 +1134,7 @@ LLM_BASE_MODELS = [
                     type="string",
                     help=I18nObject(
                         zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output"
+                        en_US="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
@@ -1209,7 +1211,7 @@ LLM_BASE_MODELS = [
                     type="string",
                     help=I18nObject(
                         zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output"
+                        en_US="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
@@ -1285,7 +1287,8 @@ LLM_BASE_MODELS = [
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式", en_US="specifying the format that the model must output"
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
@@ -1361,7 +1364,8 @@ LLM_BASE_MODELS = [
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式", en_US="specifying the format that the model must output"
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
@@ -1850,6 +1854,7 @@ LLM_BASE_MODELS = [
                 ModelFeature.AGENT_THOUGHT,
                 ModelFeature.MULTI_TOOL_CALL,
                 ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
             ],
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
@@ -1911,6 +1916,7 @@ LLM_BASE_MODELS = [
                 ModelFeature.AGENT_THOUGHT,
                 ModelFeature.MULTI_TOOL_CALL,
                 ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
             ],
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
