@@ -16,7 +16,8 @@ class XAIProvider(ModelProvider):
         """
         try:
             model_instance = self.get_model_instance(ModelType.LLM)
-            model_instance.validate_credentials(model="grok-beta", credentials=credentials)
+            model = credentials.get("model", "grok-3-mini-beta")
+            model_instance.validate_credentials(model=model, credentials=credentials)
         except CredentialsValidateFailedError as ex:
             raise ex
         except Exception as ex:

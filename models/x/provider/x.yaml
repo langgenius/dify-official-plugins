@@ -1,18 +1,19 @@
 configurate_methods:
-- predefined-model
+  - predefined-model
 description:
-  en_US: xAI is a company working on building artificial intelligence to accelerate
+  en_US:
+    xAI is a company working on building artificial intelligence to accelerate
     human scientific discovery. We are guided by our mission to advance our collective
     understanding of the universe.
 extra:
   python:
     model_sources:
-    - models/llm/llm.py
+      - models/llm/llm.py
     provider_source: provider/x.py
 models:
   llm:
     predefined:
-    - models/llm/*.yaml
+      - models/llm/*.yaml
 help:
   title:
     en_US: Get your token from xAI
@@ -28,22 +29,54 @@ label:
 provider: x
 provider_credential_schema:
   credential_form_schemas:
-  - label:
-      en_US: API Key
-    placeholder:
-      en_US: Enter your API Key
-      zh_Hans: 在此输入您的 API Key
-    required: true
-    type: secret-input
-    variable: api_key
-  - default: https://api.x.ai/v1
-    label:
-      en_US: API Base
-    placeholder:
-      en_US: Enter your API Base
-      zh_Hans: 在此输入您的 API Base
-    required: false
-    type: text-input
-    variable: endpoint_url
+    - label:
+        en_US: API Key
+      placeholder:
+        en_US: Enter your API Key
+        zh_Hans: 在此输入您的 API Key
+      required: true
+      type: secret-input
+      variable: api_key
+    - default: grok-3-mini-beta
+      label:
+        en_US: Model
+        zh_Hans: 模型
+      options:
+        - label:
+            en_US: grok-3-mini-beta
+          value: grok-3-mini-beta
+        - label:
+            en_US: grok-3-beta
+          value: grok-3-beta
+        - label:
+            en_US: grok-3-fast-beta
+          value: grok-3-fast-beta
+        - label:
+            en_US: grok-3-mini-fast-beta
+          value: grok-3-mini-fast-beta
+        - label:
+            en_US: grok-beta
+          value: grok-beta
+        - label:
+            en_US: grok-vision-beta
+          value: grok-vision-beta
+        - label:
+            en_US: grok-2-1212
+          value: grok-2-1212
+        - label:
+            en_US: grok-2-vision-1212
+          value: grok-2-vision-1212
+      required: false
+      type: select
+      variable: model
+    - default: https://api.x.ai/v1
+      label:
+        en_US: API Base
+      placeholder:
+        en_US: Enter your API Base
+        zh_Hans: 在此输入您的 API Base
+      required: false
+      type: text-input
+      variable: endpoint_url
 supported_model_types:
-- llm
+  - llm
