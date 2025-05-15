@@ -239,17 +239,21 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         genai_client = genai.Client(api_key=credentials["google_api_key"])
 
         history = []
+        file_server_url_prefix = credentials.get("file_url") or None
         for msg in prompt_messages:  # makes message roles strictly alternating
-            content = self._format_message_to_glm_content(msg, credentials)
+            content = self._format_message_to_glm_content(
+                msg, 
+                genai_client=genai_client, 
+                file_server_url_prefix=file_server_url_prefix)
             if history and history[-1].role == content.role:
                 history[-1].parts.extend(content.parts)
             else:
                 history.append(content)
-        contents = self._convert_to_contents(prompt_messages=prompt_messages)
+        # contents = self._convert_to_contents(prompt_messages=prompt_messages)
         if stream:
             response = genai_client.models.generate_content_stream(
                 model=model,
-                contents=contents,
+                contents=history,
                 config=config,
             )
             return self._handle_generate_stream_response(model, credentials, response, prompt_messages)
@@ -313,7 +317,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             raise InvokeError("system prompt content must be a string or a list of strings")
         return system_instruction
 
-    def _format_message_to_glm_content(self, message: PromptMessage, genai_client: genai.Client) -> types.Content:
+    def _format_message_to_glm_content(
+            self, message: PromptMessage, genai_client: genai.Client, 
+            file_server_url_prefix: str|None=None,
+        ) -> types.Content:
         """
         Format a single message into glm.Content for Google API
 
@@ -329,7 +336,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     if c.type == PromptMessageContentType.TEXT:
                         glm_content.parts.append(types.Part.from_text(text=c.data))
                     else:
-                        uri, mime_type = self._upload_file_content_to_google(message_content=c, genai_client=genai_client)
+                        uri, mime_type = self._upload_file_content_to_google(
+                            message_content=c, genai_client=genai_client, file_server_url_prefix=file_server_url_prefix
+                            )
                         glm_content.parts.append(types.Part.from_uri(file_uri=uri, mime_type=mime_type))
 
             return glm_content
@@ -356,8 +365,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             raise ValueError(f"Got unknown type {message}")
 
     def _upload_file_content_to_google(
-        self, message_content: MultiModalPromptMessageContent, credentials: dict,
+        self, message_content: MultiModalPromptMessageContent,
         genai_client: genai.Client,
+        file_server_url_prefix: str | None = None,
     ) -> types.File:
 
         key = f"{message_content.type.value}:{hash(message_content.data)}"
@@ -371,11 +381,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             else:
                 try:
                     file_url = message_content.url
-                    if "file_url" in credentials and credentials["file_url"]:
-                        file_url = f"{credentials["file_url"].rstrip('/')}/files{message_content.url.split("/files")[-1]}"
+                    if file_server_url_prefix:
+                        file_url = f"{file_server_url_prefix.rstrip('/')}/files{message_content.url.split("/files")[-1]}"
                     if not file_url.startswith("https://") and not file_url.startswith("http://"):
                         raise ValueError(f"Set FILES_URL env first!")
-                    response = requests.get(file_url)
+                    response: requests.Response = requests.get(file_url)
                     response.raise_for_status()
                     temp_file.write(response.content)
                 except Exception as ex:
@@ -383,7 +393,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                         f"Failed to fetch data from url {file_url} {ex}"
                     )
             temp_file.flush()
-        file = genai_client.client.files.upload(
+        file = genai_client.files.upload(
             file=temp_file.name, config={"mime_type": message_content.mime_type}
         )
         while file.state.name == "PROCESSING":
