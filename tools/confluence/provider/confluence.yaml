@@ -23,27 +23,15 @@ credentials_for_provider:
     help:
       en_US: The base URL of your Confluence instance.
       zh_Hans: 您的 Confluence 实例的基础 URL。
-  username:
-    type: text-input
-    required: true
-    label:
-      en_US: Username
-      zh_Hans: 用户名
-    placeholder:
-      en_US: Please input your Confluence username
-      zh_Hans: 请输入您的 Confluence 用户名
-    help:
-      en_US: Your Confluence account username (usually the email address you registered with).
-      zh_Hans: 您的 Confluence 帐户用户名（通常为注册使用的邮箱地址）。
-  api_token:
+  token:
     type: secret-input
     required: true
     label:
-      en_US: API Token
-      zh_Hans: API 令牌
+      en_US: Access Token
+      zh_Hans: 访问令牌
     placeholder:
-      en_US: Please input your Confluence API token
-      zh_Hans: 请输入您的 Confluence API 令牌
+      en_US: Please input your Confluence access token with auth method, like "Basic <token>"
+      zh_Hans: 请输入您的带有认证方法的 Confluence 访问令牌，如"Basic <token>"
     help:
       en_US: Create an API token from your Atlassian account settings.
       zh_Hans: 从您的 Atlassian 帐户设置创建 API 令牌。
