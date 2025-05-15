@@ -204,6 +204,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 schema = json.loads(schema)
             except:
                 raise errors.FunctionInvocationError("Invalid JSON Schema")
+            # if it is openai schema, convert to google schema
+            if "schema" in schema:
+                schema = self._read_from_openai_schema(schema)
             config.response_schema = schema
             config.response_mime_type = "application/json"
         if stop:
@@ -467,8 +470,19 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         for index, entry in enumerate(grounding_metadata.grounding_chunks, start=1):
             result += f"{index}. [{entry.web.title}]({entry.web.uri})\n"
         return result
-                
 
+    def _read_from_openai_schema(self, json_schema: dict) -> dict:
+        """
+        Read json schema from openai schema
+        """
+        schema = json_schema.get("schema", dict())
+        if not isinstance(schema, dict):
+            return json_schema
+        for key in list(schema.keys()):
+            if key not in types.Schema.model_fields:
+                del schema[key]
+        return schema
+    
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
         """
