@@ -31,12 +31,19 @@ from pydantic import BaseModel
 ignore_observation_providers = ["wenxin"]
 
 
+class ContextItem(BaseModel):
+    content: str
+    title: str
+    metadata: dict[str, Any]
+
+
 class ReActParams(BaseModel):
     query: str
     instruction: str
     model: AgentModelConfig
     tools: list[ToolEntity] | None
     maximum_iterations: int = 3
+    context: list[ContextItem] = None
 
 
 class AgentPromptEntity(BaseModel):
@@ -49,8 +56,8 @@ class AgentPromptEntity(BaseModel):
 
 
 class ReActAgentStrategy(AgentStrategy):
-    def __init__(self, session):
-        super().__init__(session)
+    def __init__(self, runtime, session):
+        super().__init__(runtime, session)
         self.query = ""
         self.instruction = ""
         self.history_prompt_messages = []
@@ -344,6 +351,34 @@ class ReActAgentStrategy(AgentStrategy):
             iteration_step += 1
 
         yield self.create_text_message(final_answer)
+
+        # If context is a list of dict, create retriever resource message
+        if isinstance(react_params.context, list):
+            yield self.create_retriever_resource_message(
+                retriever_resources=[
+                    ToolInvokeMessage.RetrieverResourceMessage.RetrieverResource(
+                        content=ctx.content,
+                        position=ctx.metadata.get("position"),
+                        dataset_id=ctx.metadata.get("dataset_id"),
+                        dataset_name=ctx.metadata.get("dataset_name"),
+                        document_id=ctx.metadata.get("document_id"),
+                        document_name=ctx.metadata.get("document_name"),
+                        data_source_type=ctx.metadata.get("document_data_source_type"),
+                        segment_id=ctx.metadata.get("segment_id"),
+                        retriever_from=ctx.metadata.get("retriever_from"),
+                        score=ctx.metadata.get("score"),
+                        hit_count=ctx.metadata.get("segment_hit_count"),
+                        word_count=ctx.metadata.get("segment_word_count"),
+                        segment_position=ctx.metadata.get("segment_position"),
+                        index_node_hash=ctx.metadata.get("segment_index_node_hash"),
+                        page=ctx.metadata.get("page"),
+                        doc_metadata=ctx.metadata.get("doc_metadata"),
+                    )
+                    for ctx in react_params.context
+                ],
+                context="",
+            )
+
         yield self.create_json_message(
             {
                 "execution_metadata": {
