@@ -25,7 +25,7 @@ icon_small:
   en_US: Gitee-AI-Logo.svg
 label:
   en_US: Gitee AI
-  zh_Hans: 魔力方舟
+  zh_Hans: 模力方舟
 models:
   llm:
     position: models/llm/_position.yaml
