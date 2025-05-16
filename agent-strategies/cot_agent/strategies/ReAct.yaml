@@ -14,7 +14,7 @@ features:
 parameters:
   - name: model
     type: model-selector
-    scope: tool-call&llm
+    scope: llm
     required: true
     label:
       en_US: Model
