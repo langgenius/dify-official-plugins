@@ -5,6 +5,8 @@ label:
 model_type: llm
 features:
   - agent-thought
+  # ! vision features is not supported in OpenAI o3-mini
+  # https://platform.openai.com/docs/models/o3-mini
 model_properties:
   mode: chat
   context_size: 200000
