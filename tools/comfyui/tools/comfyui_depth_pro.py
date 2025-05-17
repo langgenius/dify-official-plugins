@@ -21,8 +21,8 @@ class ComfyuiDepthPro(Tool):
         self.comfyui = ComfyUiClient(base_url)
         precision = tool_parameters.get("precision", None)
         if not precision:
-            yield self.create_text_message("Please input precision")
-            return
+            raise ToolProviderCredentialValidationError(
+                "Please input precision")
         images = tool_parameters.get("images") or []
         image_names = []
         for image in images:

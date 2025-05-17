@@ -1,9 +1,7 @@
 description:
   human:
-    en_US:
-      Lists available checkpoints on connected ComfyUI.
-    pt_BR:
-      Lists available checkpoints on connected ComfyUI.
+    en_US: Lists available checkpoints on connected ComfyUI.
+    pt_BR: Lists available checkpoints on connected ComfyUI.
     zh_Hans: 列出连接的 ComfyUI 上可用的检查点。
     ja_JP: 利用可能なチェックポイントを取得します。
   llm: lists available checkpoints on connected ComfyUI.
@@ -16,13 +14,25 @@ identity:
     en_US: List models
     zh_Hans: List models
     ja_JP: モデル取得
-  name: list_model
+  name: list_models
 output_schema:
   type: object
   properties:
-    models:
+    checkpoints:
       type: array[string]
       label:
-        en_US: Models
+        en_US: Checkpoints
         zh_Hans: 模型
         ja_JP: モデル
+    loras:
+      type: array[string]
+      label:
+        en_US: LORAs
+        zh_Hans: LORA
+        ja_JP: LORA
+    upscale_models:
+      type: array[string]
+      label:
+        en_US: Upscale models
+        zh_Hans: 放大机型
+        ja_JP: アップスケールモデル

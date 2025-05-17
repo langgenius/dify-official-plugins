@@ -43,8 +43,9 @@ class ComfyuiUpscaler(Tool):
             self.runtime.credentials["model"] = tool_parameters["model"]
         model = self.runtime.credentials.get("model", None)
         if not model:
-            yield self.create_text_message("Please input model")
-            return
+            raise ToolProviderCredentialValidationError(
+                "Please input model")
+
         if model not in self.comfyui.get_upscale_models():
             raise ToolProviderCredentialValidationError(
                 f"model {model} does not exist")
@@ -58,8 +59,8 @@ class ComfyuiUpscaler(Tool):
                 image.filename, image.blob, image.mime_type)
             image_names.append(image_name)
         if len(image_names) == 0:
-            yield self.create_text_message("Please input images")
-            return
+            raise ToolProviderCredentialValidationError(
+                "Please input images")
 
         if not SD_UPSCALE_OPTIONS:
             current_dir = os.path.dirname(os.path.realpath(__file__))

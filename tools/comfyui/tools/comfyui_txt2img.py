@@ -82,20 +82,21 @@ class ComfyuiTxt2Img(Tool):
             )
         cfg = tool_parameters.get("cfg", 7.0)
         model_type = tool_parameters.get("model_type", ModelType.SD15.name)
+
         lora_list = []
+        if len(tool_parameters.get("lora_names", "")) > 0:
+            lora_list = tool_parameters.get("lora_names").split(",")
+        valid_loras = self.comfyui.get_loras()
+        for lora in lora_list:
+            if lora not in valid_loras:
+                raise ToolProviderCredentialValidationError(
+                    f"LORA {lora} does not exist.")
+
         lora_strength_list = []
-        if tool_parameters.get("lora_1"):
-            lora_list.append(tool_parameters["lora_1"])
-            lora_strength_list.append(
-                tool_parameters.get("lora_strength_1", 1))
-        if tool_parameters.get("lora_2"):
-            lora_list.append(tool_parameters["lora_2"])
-            lora_strength_list.append(
-                tool_parameters.get("lora_strength_2", 1))
-        if tool_parameters.get("lora_3"):
-            lora_list.append(tool_parameters["lora_3"])
-            lora_strength_list.append(
-                tool_parameters.get("lora_strength_3", 1))
+        if len(tool_parameters.get("lora_strengths", "")) > 0:
+            lora_strength_list = [float(x) for x in tool_parameters.get(
+                "lora_strengths").split(",")]
+
         yield from self.text2img(
             model=model,
             model_type=model_type,
@@ -134,36 +135,45 @@ class ComfyuiTxt2Img(Tool):
             with open(os.path.join(current_dir, "txt2img.json")) as file:
                 SD_TXT2IMG_OPTIONS.update(json.load(file))
         draw_options = deepcopy(SD_TXT2IMG_OPTIONS)
-        draw_options["3"]["inputs"]["steps"] = steps
-        draw_options["3"]["inputs"]["sampler_name"] = sampler_name
-        draw_options["3"]["inputs"]["scheduler"] = scheduler
-        draw_options["3"]["inputs"]["cfg"] = cfg
-        draw_options["3"]["inputs"]["seed"] = random.randint(0, 100000000)
+        sampler_node = draw_options["3"]
+        prompt_node = draw_options["6"]
+        negative_prompt_node = draw_options["7"]
+        sampler_node["inputs"]["steps"] = steps
+        sampler_node["inputs"]["sampler_name"] = sampler_name
+        sampler_node["inputs"]["scheduler"] = scheduler
+        sampler_node["inputs"]["cfg"] = cfg
+        sampler_node["inputs"]["seed"] = random.randint(0, 100000000)
         draw_options["4"]["inputs"]["ckpt_name"] = model
         draw_options["5"]["inputs"]["width"] = width
         draw_options["5"]["inputs"]["height"] = height
-        draw_options["6"]["inputs"]["text"] = prompt
-        draw_options["7"]["inputs"]["text"] = negative_prompt
+        prompt_node["inputs"]["text"] = prompt
+        negative_prompt_node["inputs"]["text"] = negative_prompt
         if model_type in {ModelType.SD3.name, ModelType.FLUX.name}:
             draw_options["5"]["class_type"] = "EmptySD3LatentImage"
-        if lora_list:
-            draw_options["3"]["inputs"]["model"][0] = "10"
-            draw_options["6"]["inputs"]["clip"][0] = "10"
-            draw_options["7"]["inputs"]["clip"][0] = "10"
-            for i, (lora, strength) in enumerate(
-                zip(lora_list, lora_strength_list), 10
-            ):
-                if i - 10 == len(lora_list) - 1:
-                    next_node_id = "4"
-                else:
-                    next_node_id = str(i + 1)
-                lora_node = deepcopy(LORA_NODE)
-                lora_node["inputs"]["lora_name"] = lora
-                lora_node["inputs"]["strength_model"] = strength
-                lora_node["inputs"]["strength_clip"] = strength
-                lora_node["inputs"]["model"][0] = next_node_id
-                lora_node["inputs"]["clip"][0] = next_node_id
-                draw_options[str(i)] = lora_node
+
+        lora_start_id = 100
+        lora_end_id = lora_start_id + len(lora_list) - 1
+        for i, lora_name in enumerate(lora_list):
+            try:
+                strength = lora_strength_list[i]
+            except:
+                strength = 1.0
+            lora_node = deepcopy(LORA_NODE)
+            lora_node["inputs"]["lora_name"] = lora_name
+            lora_node["inputs"]["strength_model"] = strength
+            lora_node["inputs"]["strength_clip"] = strength
+            lora_node["inputs"]["model"][0] = str(lora_start_id+i-1)
+            lora_node["inputs"]["clip"][0] = str(lora_start_id+i-1)
+            draw_options[str(lora_start_id+i)] = lora_node
+        if len(lora_list) > 0:
+            draw_options[str(
+                lora_start_id)]["inputs"]["model"][0] = sampler_node["inputs"]["model"][0]
+            draw_options[str(
+                lora_start_id)]["inputs"]["clip"][0] = prompt_node["inputs"]["clip"][0]
+            sampler_node["inputs"]["model"][0] = str(lora_end_id)
+            prompt_node["inputs"]["clip"][0] = str(lora_end_id)
+            negative_prompt_node["inputs"]["clip"][0] = str(lora_end_id)
+
         if model_type == ModelType.FLUX.name:
             last_node_id = str(10 + len(lora_list))
             draw_options[last_node_id] = deepcopy(FluxGuidanceNode)

@@ -61,10 +61,7 @@ class ComfyUiClient:
         get loras
         """
         try:
-            base_url = self.runtime.credentials.get("base_url", None)
-            if not base_url:
-                return []
-            api_url = str(URL(base_url) / "models" / "loras")
+            api_url = str(self.base_url / "models" / "loras")
             response = httpx.get(url=api_url, timeout=(2, 10))
             if response.status_code != 200:
                 return []

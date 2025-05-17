@@ -1,10 +1,7 @@
 description:
   human:
-    en_US:
-      Face swap. Infuses a face on the second image to the first image.
-    pt_BR:
-      Face swap. Infuses a face on the second image to the first image.
-    zh_Hans: 换脸。将第二张图片上的人脸注入第一张图片。
+    en_US: Face swap. Extracts a face on the first image and infuses it to the second image.
+    zh_Hans: 换脸。提取第一张图像上的人脸，并将其注入第二张图像。
     ja_JP: 1枚目に写った顔を2枚目の画像に写します．
   llm: swap faces
 extra:
@@ -14,7 +11,6 @@ identity:
   author: yt-koike
   label:
     en_US: FaceSwap
-    pt_BR: FaceSwap
     zh_Hans: FaceSwap
     ja_JP: FaceSwap
   name: face_swap
@@ -26,8 +22,7 @@ parameters:
       en_US: Input Image
       zh_Hans: 输入的图片
       ja_JP: 入力画像
-    llm_description:
-      The input images. If input is array of image, the first two will be used.
+    llm_description: The input images. If input is array of image, the first two will be used.
     human_description:
       en_US: The input image. If input is array of image, the first one will be used.
       zh_Hans: 输入的图片。如果输入是图像数组，将使用第一个图像。

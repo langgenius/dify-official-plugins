@@ -14,6 +14,7 @@ from dify_plugin import Tool
 
 
 from tools.comfyui_client import ComfyUiClient, FileType
+from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
 
 class ModelType(Enum):
@@ -44,8 +45,8 @@ class ComfyuiFaceSwap(Tool):
                 image.filename, image.blob, image.mime_type)
             image_names.append(image_name)
         if len(image_names) <= 1:
-            yield self.create_text_message("Please input two images")
-            return
+            raise ToolProviderCredentialValidationError(
+                "Please input two images")
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "face_swap.json")) as file:

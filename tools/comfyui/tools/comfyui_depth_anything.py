@@ -23,8 +23,8 @@ class ComfyuiDepthAnything(Tool):
         self.comfyui = ComfyUiClient(base_url)
         model = tool_parameters.get("model", None)
         if not model:
-            yield self.create_text_message("Please input model")
-            return
+            raise ToolProviderCredentialValidationError("Please input model")
+
         images = tool_parameters.get("images") or []
         image_names = []
         for image in images:

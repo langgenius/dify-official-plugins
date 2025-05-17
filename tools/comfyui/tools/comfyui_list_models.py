@@ -17,4 +17,6 @@ class ComfyuiListModels(Tool):
         if not base_url:
             yield self.create_text_message("Please input base_url")
         cli = ComfyUiClient(base_url)
-        yield self.create_variable_message("models", cli.get_checkpoints())
+        yield self.create_variable_message("checkpoints", cli.get_checkpoints())
+        yield self.create_variable_message("loras", cli.get_loras())
+        yield self.create_variable_message("upscale_models", cli.get_upscale_models())

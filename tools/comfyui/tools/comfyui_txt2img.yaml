@@ -73,30 +73,6 @@ parameters:
     name: model_type
     required: true
     type: string
-  - form: form
-    human_description:
-      en_US: Lora 1
-      pt_BR: Lora 1
-      zh_Hans: Lora 1
-    label:
-      en_US: Lora 1
-      pt_BR: Lora 1
-      zh_Hans: Lora 1
-    name: lora_1
-    required: false
-    type: string
-  - form: form
-    human_description:
-      en_US: Lora Strength 1
-      pt_BR: Lora Strength 1
-      zh_Hans: Lora模型的权重
-    label:
-      en_US: Lora Strength 1
-      pt_BR: Lora Strength 1
-      zh_Hans: Lora Strength 1
-    name: lora_strength_1
-    required: false
-    type: number
   - default: 20
     form: llm
     human_description:
@@ -202,51 +178,29 @@ parameters:
     name: scheduler
     required: false
     type: string
-  - form: form
+
+  - name: lora_names
+    form: llm
     human_description:
-      en_US: Lora 2
-      pt_BR: Lora 2
-      zh_Hans: Lora 2
+      en_US: LORAs, put comma between each LORA name if multiple
+      zh_Hans: LORA, 如果有多个 LORA 名称，请在名称之间加上逗号
+      ja_JP: LORA, 複数ある場合はコンマで区切ってください
     label:
-      en_US: Lora 2
-      pt_BR: Lora 2
-      zh_Hans: Lora 2
-    name: lora_2
+      en_US: LORAs
+      zh_Hans: LORA
+      ja_JP: LORA
     required: false
     type: string
-  - form: form
+
+  - name: lora_strengths
+    form: llm
     human_description:
-      en_US: Lora Strength 2
-      pt_BR: Lora Strength 2
-      zh_Hans: Lora模型的权重
+      en_US: LORAs strength, put comma between each LORA strength if multiple
+      zh_Hans: LORA 力量, 如果有多个 LORA 力量，请在名称之间加上逗号
+      ja_JP: LORA 強度, 複数ある場合はコンマで区切ってください
     label:
-      en_US: Lora Strength 2
-      pt_BR: Lora Strength 2
-      zh_Hans: Lora Strength 2
-    name: lora_strength_2
-    required: false
-    type: number
-  - form: form
-    human_description:
-      en_US: Lora 3
-      pt_BR: Lora 3
-      zh_Hans: Lora 3
-    label:
-      en_US: Lora 3
-      pt_BR: Lora 3
-      zh_Hans: Lora 3
-    name: lora_3
+      en_US: LORAs strength
+      zh_Hans: LORA 力量
+      ja_JP: LORA 強度
     required: false
     type: string
-  - form: form
-    human_description:
-      en_US: Lora Strength 3
-      pt_BR: Lora Strength 3
-      zh_Hans: Lora模型的权重
-    label:
-      en_US: Lora Strength 3
-      pt_BR: Lora Strength 3
-      zh_Hans: Lora Strength 3
-    name: lora_strength_3
-    required: false
-    type: number

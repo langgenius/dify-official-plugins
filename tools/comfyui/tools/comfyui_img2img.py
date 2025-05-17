@@ -59,15 +59,13 @@ class ComfyuiImg2Img(Tool):
             self.runtime.credentials["model"] = tool_parameters["model"]
         model = self.runtime.credentials.get("model", None)
         if not model:
-            yield self.create_text_message("Please input model")
-            return
+            raise ToolProviderCredentialValidationError("Please input model")
         if model not in self.comfyui.get_checkpoints():
             raise ToolProviderCredentialValidationError(
                 f"model {model} does not exist")
         prompt = tool_parameters.get("prompt", "")
         if not prompt:
-            yield self.create_text_message("Please input prompt")
-            return
+            raise ToolProviderCredentialValidationError("Please input prompt")
         negative_prompt = tool_parameters.get("negative_prompt", "")
         steps = tool_parameters.get("steps", 20)
         valid_samplers = self.comfyui.get_samplers()
@@ -93,8 +91,23 @@ class ComfyuiImg2Img(Tool):
                 image.filename, image.blob, image.mime_type)
             image_names.append(image_name)
         if len(image_names) == 0:
-            yield self.create_text_message("Please input images")
-            return
+            raise ToolProviderCredentialValidationError(
+                "Please input images")
+
+        lora_list = []
+        if len(tool_parameters.get("lora_names", "")) > 0:
+            lora_list = tool_parameters.get("lora_names").split(",")
+        lora_list = [x.lstrip(" ").rstrip(" ") for x in lora_list]
+        valid_loras = self.comfyui.get_loras()
+        for lora in lora_list:
+            if lora not in valid_loras:
+                raise ToolProviderCredentialValidationError(
+                    f"LORA {lora} does not exist.")
+        lora_strength_list = []
+        if len(tool_parameters.get("lora_strengths", "")) > 0:
+            lora_strength_list = [float(x.lstrip(" ").rstrip(" ")) for x in tool_parameters.get(
+                "lora_strengths").split(",")]
+
         yield from self.img2img(
             model=model,
             denoise=denoise,
@@ -105,6 +118,8 @@ class ComfyuiImg2Img(Tool):
             sampler_name=sampler_name,
             scheduler=scheduler,
             cfg=cfg,
+            lora_list=lora_list,
+            lora_strength_list=lora_strength_list,
         )
 
     def img2img(
@@ -118,6 +133,8 @@ class ComfyuiImg2Img(Tool):
         sampler_name: str,
         scheduler: str,
         cfg: float,
+        lora_list: list[str],
+        lora_strength_list: list[float],
     ) -> Generator[ToolInvokeMessage, None, None]:
         """
         generate image
@@ -127,16 +144,42 @@ class ComfyuiImg2Img(Tool):
             with open(os.path.join(current_dir, "img2img.json")) as file:
                 SD_TXT2IMG_OPTIONS.update(json.load(file))
         draw_options = deepcopy(SD_TXT2IMG_OPTIONS)
-        draw_options["3"]["inputs"]["steps"] = steps
-        draw_options["3"]["inputs"]["sampler_name"] = sampler_name
-        draw_options["3"]["inputs"]["scheduler"] = scheduler
-        draw_options["3"]["inputs"]["cfg"] = cfg
-        draw_options["3"]["inputs"]["denoise"] = denoise
-        draw_options["3"]["inputs"]["seed"] = random.randint(0, 100000000)
+        sampler_node = draw_options["3"]
+        prompt_node = draw_options["6"]
+        negative_prompt_node = draw_options["7"]
+        sampler_node["inputs"]["steps"] = steps
+        sampler_node["inputs"]["sampler_name"] = sampler_name
+        sampler_node["inputs"]["scheduler"] = scheduler
+        sampler_node["inputs"]["cfg"] = cfg
+        sampler_node["inputs"]["denoise"] = denoise
+        sampler_node["inputs"]["seed"] = random.randint(0, 100000000)
+        prompt_node["inputs"]["text"] = prompt
+        negative_prompt_node["inputs"]["text"] = negative_prompt
         draw_options["14"]["inputs"]["ckpt_name"] = model
-        draw_options["6"]["inputs"]["text"] = prompt
-        draw_options["7"]["inputs"]["text"] = negative_prompt
         draw_options["10"]["inputs"]["image"] = image_name
+
+        lora_start_id = 100
+        lora_end_id = lora_start_id + len(lora_list) - 1
+        for i, lora_name in enumerate(lora_list):
+            try:
+                strength = lora_strength_list[i]
+            except:
+                strength = 1.0
+            lora_node = deepcopy(LORA_NODE)
+            lora_node["inputs"]["lora_name"] = lora_name
+            lora_node["inputs"]["strength_model"] = strength
+            lora_node["inputs"]["strength_clip"] = strength
+            lora_node["inputs"]["model"][0] = str(lora_start_id+i-1)
+            lora_node["inputs"]["clip"][0] = str(lora_start_id+i-1)
+            draw_options[str(lora_start_id+i)] = lora_node
+        if len(lora_list) > 0:
+            draw_options[str(
+                lora_start_id)]["inputs"]["model"][0] = sampler_node["inputs"]["model"][0]
+            draw_options[str(
+                lora_start_id)]["inputs"]["clip"][0] = prompt_node["inputs"]["clip"][0]
+            sampler_node["inputs"]["model"][0] = str(lora_end_id)
+            prompt_node["inputs"]["clip"][0] = str(lora_end_id)
+            negative_prompt_node["inputs"]["clip"][0] = str(lora_end_id)
 
         try:
             client_id = str(uuid.uuid4())

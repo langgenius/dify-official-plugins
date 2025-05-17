@@ -1,9 +1,7 @@
 description:
   human:
-    en_US:
-      Edits an given image with the prompt.
-    pt_BR:
-      Edits an given image with the prompt.
+    en_US: Edits an given image with the prompt.
+    pt_BR: Edits an given image with the prompt.
     zh_Hans: 按提示编辑给定图像。
     ja_JP: プロンプトにもとづいて画像を編集します．
   llm: edits an given image as you want based on your prompt.
@@ -101,7 +99,7 @@ parameters:
     label:
       en_US: Negative prompt
       pt_BR: Negative prompt
-      zh_Hans: Negative prompt  
+      zh_Hans: Negative prompt
       ja_JP: ネガティブプロンプト
     required: false
     type: string
@@ -168,4 +166,30 @@ parameters:
       zh_Hans: Scheduler
       ja_JP: スケジューラー
     required: true
+    type: string
+
+  - name: lora_names
+    form: llm
+    human_description:
+      en_US: LORAs, put comma between each LORA name if multiple
+      zh_Hans: LORA, 如果有多个 LORA 名称，请在名称之间加上逗号
+      ja_JP: LORA, 複数ある場合はコンマで区切ってください
+    label:
+      en_US: LORAs
+      zh_Hans: LORA
+      ja_JP: LORA
+    required: false
+    type: string
+
+  - name: lora_strengths
+    form: llm
+    human_description:
+      en_US: LORAs strength, put comma between each LORA strength if multiple
+      zh_Hans: LORA 力量, 如果有多个 LORA 力量，请在名称之间加上逗号
+      ja_JP: LORA 強度, 複数ある場合はコンマで区切ってください
+    label:
+      en_US: LORAs strength
+      zh_Hans: LORA 力量
+      ja_JP: LORA 強度
+    required: false
     type: string
