@@ -3,6 +3,8 @@ label:
   en_US: deepseek-ai/DeepSeek-V3
 model_type: llm
 features:
+  - tool-call
+  - multi-tool-call
   - agent-thought
 model_properties:
   mode: chat

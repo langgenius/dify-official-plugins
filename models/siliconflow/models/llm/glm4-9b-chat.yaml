@@ -3,6 +3,8 @@ label:
   en_US: THUDM/glm-4-9b-chat
 model_type: llm
 features:
+  - tool-call
+  - multi-tool-call
   - agent-thought
 model_properties:
   mode: chat

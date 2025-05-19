@@ -3,6 +3,8 @@ label:
   en_US: Qwen/Qwen2.5-72B-Instruct-128K
 model_type: llm
 features:
+  - tool-call
+  - multi-tool-call
   - agent-thought
 model_properties:
   mode: chat

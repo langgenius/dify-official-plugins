@@ -52,7 +52,6 @@ class SiliconflowLargeLanguageModel(OAICompatLargeLanguageModel):
                 [
                     ModelFeature.TOOL_CALL,
                     ModelFeature.MULTI_TOOL_CALL,
-                    ModelFeature.STREAM_TOOL_CALL,
                 ]
                 if credentials.get("function_calling_type") == "tool_call"
                 else []
