@@ -41,7 +41,7 @@ BEDROCK_MODEL_IDS = {
         'Jamba 1.5 Large': 'ai21.jamba-1-5-large-v1:0'
     },
     'deepseek': {
-        'DeepSeek-R1': 'deepseek.r1-v1:0'
+        'DeepSeek R1': 'deepseek.r1-v1:0'
     }
 }
 
@@ -57,20 +57,6 @@ def get_model_id(model_type, model_name):
         str: The corresponding Bedrock model ID, or None if not found
     """
     return BEDROCK_MODEL_IDS.get(model_type, {}).get(model_name)
-
-def get_first_model(model_type):
-    """
-    Get the Bedrock model ID for the specified model type and name.
-    
-    Args:
-        model_type (str): The type of model (e.g., 'claude', 'amazon nova')
-        model_name (str): The name of the model (e.g., 'Claude 3 Opus')
-        
-    Returns:
-        str: The corresponding Bedrock model ID, or None if not found
-    """
-    models = BEDROCK_MODEL_IDS.get(model_type, {})
-    return next(iter(models.values()))
 
 def get_region_area(region_name):
     """
