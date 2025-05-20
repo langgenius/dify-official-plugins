@@ -1,4 +1,17 @@
 settings:
+  - name: model_id
+    type: text-input
+    required: true
+    label:
+      en_US: Model ID
+      zh_Hans: 模型ID
+      pt_BR: ID do Modelo
+      ja_JP: モデルID
+    placeholder:
+      en_US: Please input your model ID, such as my-dify-model-1
+      zh_Hans: 请输入你的模型ID，例如 my-dify-model-1
+      pt_BR: Por favor, insira o ID do seu modelo, como my-dify-model-1
+      ja_JP: モデルIDを入力してください, 例えば my-dify-model-1
   - name: api_key
     type: secret-input
     required: true
@@ -48,3 +61,4 @@ settings:
         value: last_user_message
 endpoints:
   - endpoints/openai_compatible.yaml
+  - endpoints/models.yaml

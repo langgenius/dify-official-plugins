@@ -1,0 +1,5 @@
+path: "/models"
+method: "GET"
+extra:
+  python:
+    source: "endpoints/models.py"
