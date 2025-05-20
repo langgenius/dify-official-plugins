@@ -927,14 +927,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
-        client_config = Config(region_name=credentials["aws_region"])
-
-        runtime_client = boto3.client(
-            service_name="bedrock-runtime",
-            config=client_config,
-            aws_access_key_id=credentials.get("aws_access_key_id"),
-            aws_secret_access_key=credentials.get("aws_secret_access_key"),
-        )
+        bedrock_client = get_bedrock_client("bedrock-runtime", credentials)
 
         model_prefix = model.split(".")[0]
         payload = self._create_payload(model, prompt_messages, model_parameters, stop, stream)
