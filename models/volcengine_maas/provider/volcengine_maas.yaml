@@ -111,6 +111,12 @@ model_credential_schema:
       zh_Hans: 基础模型
     options:
     - label:
+        en_US: Doubao-1.5-thinking-vision-pro
+      value: Doubao-1.5-thinking-vision-pro
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
         en_US: Doubao-1.5-UI-TARS
       value: Doubao-1.5-UI-TARS
       show_on:

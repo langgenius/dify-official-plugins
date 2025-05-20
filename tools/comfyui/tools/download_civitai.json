@@ -1,0 +1,14 @@
+{
+  "11": {
+    "inputs": {
+      "model_id": "1162518",
+      "version_id": "1714314",
+      "token_id": "API_token_here",
+      "save_dir": "checkpoints"
+    },
+    "class_type": "CivitAI Downloader",
+    "_meta": {
+      "title": "CivitAI Download"
+    }
+  }
+}

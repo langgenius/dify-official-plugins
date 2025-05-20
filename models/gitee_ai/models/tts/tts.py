@@ -35,12 +35,12 @@ class GiteeAIText2SpeechModel(_CommonGiteeAI, TTSModel):
         :return: text translated to audio file
         """
         try:
-            self._tts_invoke_streaming(
+            audio_data = b''.join(self._tts_invoke_streaming(
                 model=model,
                 credentials=credentials,
                 content_text="Hello Dify!",
                 voice=self._get_model_default_voice(model, credentials),
-            )
+            ))
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
@@ -54,12 +54,15 @@ class GiteeAIText2SpeechModel(_CommonGiteeAI, TTSModel):
         :return: text translated to audio file
         """
         try:
-            endpoint_url = "https://ai.gitee.com/api/serverless/" + model + "/text-to-speech"
+            endpoint_url = "https://ai.gitee.com/v1/audio/speech"
             headers = {"Content-Type": "application/json"}
             api_key = credentials.get("api_key")
             if api_key:
                 headers["Authorization"] = f"Bearer {api_key}"
-            payload = {"inputs": content_text}
+            payload = {
+                "model": model,
+                "input": content_text
+            }
             response = requests.post(endpoint_url, headers=headers, json=payload)
             if response.status_code != 200:
                 raise InvokeBadRequestError(response.text)

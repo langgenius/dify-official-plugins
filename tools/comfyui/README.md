@@ -51,3 +51,74 @@ Add the `ComfyUI` tool in the Agent application, then send a picture description
 ### 7. Image input
 
 Some ComfyUI workflows require multiple images inputs. In Dify, it will find every `LoadImage` node in the `WORKFLOW JSON` and fill in the image files input by the user in order. When you want to change this order, you can adjust it by filling in the `Image node ID list`. For example, if your workflow needs to input images into the 35th, 69th, and 87th nodes, then input `69,35,87` will pass the first image to the 69th node.
+
+## Nodes
+
+![](./_assets/nodes.png)
+
+### workflow
+
+workflow node is Basic node for ComfyUI.
+You can set any ComfyUI node settings by inputting JSON to this node.
+
+### Txt2Img
+
+Txt2Img node can generate an image from texts(prompt and negative prompt).
+
+### Img2Img
+
+Img2Img node can edit an given image according to prompt and negative prompt.
+
+### Img2Vid
+
+Img2Vid node can generate an video from an given image.
+You need to install [SVD model](https://huggingface.co/stabilityai/stable-video-diffusion-img2vid) or [SVD XT model](https://huggingface.co/stabilityai/stable-video-diffusion-img2vid-xt) to ComfyUI in advance. [Hugging Face Download node](#hugging-face-download) would be helpful to 
+download them.
+
+### Upscale
+
+Upscale node can enlarge an given image with models. 
+
+### Depth Anything
+
+Depth Anything node can perform monocular depth estimation.
+You need to install https://github.com/kijai/ComfyUI-DepthAnythingV2 to ComfyUI in advance.
+
+### Depth Pro
+
+Depth Pro node can perform monocular depth estimation.
+You need to install https://github.com/spacepxl/ComfyUI-Depth-Pro to ComfyUI in advance.
+
+### Face Swap
+
+Face Swap node can extract a face on the first image and infuse it to the second image.
+You need to install https://github.com/Gourieff/ComfyUI-ReActor to ComfyUI in advance.
+
+### List Models
+
+List Models can fetch all models available on the connected ComfyUI.
+Those models include checkpoints, LORAs and upscale models.
+
+### List Samplers
+
+List Samplers node can fetch all samplers and schedulers available on the connected ComfyUI.
+
+### Image Info
+
+Image Info node can extract basic information from a given image.
+These include width, height, [mode](https://pillow.readthedocs.io/en/stable/handbook/concepts.html#modes), filename and MIME type.
+This node would be useful when you use [Img2Vid node](#img2vid).
+
+### CivitAI Download
+
+CivitAI Download node can download models from [CivitAI](https://civitai.com/home).
+You need to input model ID and version ID to download a model.
+These two IDs are shown as AIR(see the highlited area on the image below).
+
+![](_assets/AIR.jpg)
+
+You need to install https://github.com/ciri/comfyui-model-downloader to ComfyUI in advance.
+
+### Hugging Face Download
+Hugging Face Download can download models from [Hugging Face](https://huggingface.co/).
+You need to install https://github.com/ciri/comfyui-model-downloader to ComfyUI in advance.

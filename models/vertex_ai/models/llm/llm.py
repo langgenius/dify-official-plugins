@@ -737,47 +737,139 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
 
     def _convert_schema_for_vertex(self, schema):
         """
-        Convert JSON schema to Vertex AI's expected format
-        
-        :param schema: The original JSON schema
-        :return: Converted schema for Vertex AI
+        Convert JSON schema to Vertex AI's expected format (uppercase types)
+        and validate structure. Automatically converts specific 'type' arrays:
+        - ["string", "null"] -> type: "STRING", nullable: true
+        - ["number", "string"] or ["string", "number"] -> type: "STRING"
+
+        :param schema: The original JSON schema (dict, list, string, etc.)
+        :return: Converted schema for Vertex AI or raises ValueError for invalid structures.
+        :raises ValueError: If the schema contains unsupported structures or types.
         """
-        import json
         if isinstance(schema, str):
             try:
                 schema = json.loads(schema)
-            except json.JSONDecodeError:
-                pass
-        
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Input schema string is not valid JSON: {e}") from e
+
         if isinstance(schema, dict):
             converted_schema = {}
-            
-            for key, value in schema.items():
-                if key == "type" and isinstance(value, str):
-                    converted_schema[key] = value.upper()
-                    
-                elif key == "properties" and isinstance(value, dict):
-                    converted_props = {}
-                    for prop_name, prop_def in value.items():
-                        converted_props[prop_name] = self._convert_schema_for_vertex(prop_def)
-                    converted_schema[key] = converted_props
-                    
-                elif key == "items" and isinstance(value, dict):
-                    converted_schema[key] = self._convert_schema_for_vertex(value)
-                    
-                elif key == "enum" and isinstance(value, list):
-                    converted_schema[key] = value
-                    
-                else:
-                    if isinstance(value, (dict, list)):
-                        converted_schema[key] = self._convert_schema_for_vertex(value)
+            # Define keys that expect nested schemas (dict)
+            nested_schema_keys = {"properties", "items"}
+            # Define keys that expect lists
+            list_keys = {"enum", "required"}
+            # Define keys that expect strings
+            string_keys = {"description", "format"} # Removed 'type' for special handling
+            # Define keys that expect numbers
+            number_keys = {"minimum", "maximum"}
+            # Define keys that expect integers
+            integer_keys = {"minItems", "maxItems"}
+            # Define keys that expect booleans
+            boolean_keys = {"nullable"}
+            # Vertex AI specific key
+            vertex_specific_keys = {"propertyOrdering"} # Expects a list
+
+            # All known keys *except* 'type' which has special handling below
+            known_keys_minus_type = (
+                nested_schema_keys | list_keys | string_keys | number_keys |
+                integer_keys | boolean_keys | vertex_specific_keys
+            )
+
+            # --- Special Handling for 'type' key ---
+            if "type" in schema:
+                value = schema["type"]
+                if isinstance(value, str):
+                    # Standard case: single string type
+                    converted_schema["type"] = value.upper()
+                elif isinstance(value, list):
+                    # Handle specific list patterns
+                    # Use lowercased set for order-insensitive comparison
+                    type_set = set(item.lower() if isinstance(item, str) else item for item in value)
+
+                    if type_set == {"string", "null"}:
+                        # Convert ["string", "null"] to type: STRING, nullable: true
+                        converted_schema["type"] = "STRING"
+                        converted_schema["nullable"] = True
+                    elif type_set == {"number", "string"}:
+                         # Convert ["number", "string"] to type: STRING
+                         converted_schema["type"] = "STRING"
+                    # Add more elif conditions here for other list types if needed in the future
+                    # Example: elif type_set == {"integer", "null"}:
+                    #             converted_schema["type"] = "INTEGER"
+                    #             converted_schema["nullable"] = True
                     else:
+                        # It's a list, but not one we know how to auto-convert
+                        raise ValueError(
+                            f"Invalid schema: Unsupported list value for 'type' key: {value}. "
+                            f"Vertex AI expects a single string type. "
+                            f"Auto-conversion only supported for ['string', 'null'] and ['number', 'string']."
+                        )
+                else:
+                    # It's not a string and not a list - definitely invalid for 'type'
+                    raise ValueError(
+                        f"Invalid schema: Value for 'type' key must be a string or a supported list "
+                        f"(like ['string', 'null']), but got {type(value).__name__}. Schema snippet: {{'type': {value}}}"
+                    )
+            # --- End Special Handling for 'type' key ---
+
+
+            # --- Process other keys ---
+            for key, value in schema.items():
+                if key == "type":
+                    continue # Already handled above
+
+                if key in nested_schema_keys:
+                    if isinstance(value, dict):
+                         if key == "properties":
+                             converted_props = {}
+                             for prop_name, prop_def in value.items():
+                                 # Recursively convert property definitions
+                                 converted_props[prop_name] = self._convert_schema_for_vertex(prop_def)
+                             converted_schema[key] = converted_props
+                         elif key == "items":
+                              # Recursively convert item definition
+                              converted_schema[key] = self._convert_schema_for_vertex(value)
+                    else:
+                         raise ValueError(
+                             f"Invalid schema: Value for '{key}' key must be a dictionary, "
+                             f"but got {type(value).__name__}. Schema snippet: {{'{key}': {value}}}"
+                         )
+                elif key in list_keys | vertex_specific_keys:
+                     if isinstance(value, list):
+                         if key == "required" and not all(isinstance(item, str) for item in value):
+                             raise ValueError(f"Invalid schema: All items in 'required' list must be strings.")
+                         # Copy list values directly for enum, required, propertyOrdering
+                         converted_schema[key] = value
+                     else:
+                         raise ValueError(
+                             f"Invalid schema: Value for '{key}' key must be a list, "
+                             f"but got {type(value).__name__}. Schema snippet: {{'{key}': {value}}}"
+                         )
+                elif key in known_keys_minus_type:
+                     # For other known keys, copy the value directly.
+                     if key == "nullable" and not isinstance(value, bool):
+                          # Allow nullable to be set by the type conversion logic above
+                          if key not in converted_schema: # Only raise if not already set by type logic
+                            raise ValueError(f"Invalid schema: Value for 'nullable' must be boolean.")
+                     elif key == "nullable" and key in converted_schema:
+                         # If type logic set nullable=True, don't overwrite with potentially false value from original schema
+                         pass
+                     else:
                         converted_schema[key] = value
-                        
+                else:
+                    # Handle unknown keys: Ignore them as they are likely unsupported by Vertex AI
+                    # print(f"Warning: Unknown schema key '{key}' encountered. Ignoring.")
+                    pass # Ignore unknown keys
+
             return converted_schema
-            
+
         elif isinstance(schema, list):
+            # Handle top-level lists (e.g., schema defining an array directly)
             return [self._convert_schema_for_vertex(item) for item in schema]
-            
+
         else:
-            return schema
+            # Handle primitive types (int, str, bool, None, float) - return as is
+            if isinstance(schema, (int, str, bool, float)) or schema is None:
+                return schema
+            else:
+                 raise ValueError(f"Invalid schema component type: {type(schema).__name__}")

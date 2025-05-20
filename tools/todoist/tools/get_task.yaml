@@ -1,0 +1,26 @@
+identity:
+  name: get_task
+  author: laboratory
+  label:
+    en_US: Get Task
+    zh_Hans: 获取任务
+description:
+  human:
+    en_US: Get details of a specific Todoist task
+    zh_Hans: 获取指定 Todoist 任务的详细信息
+  llm: Retrieves detailed information about a specific task from Todoist using the task ID.
+parameters:
+  - name: task_id
+    type: string
+    required: true
+    label:
+      en_US: Task ID
+      zh_Hans: 任务 ID
+    human_description:
+      en_US: The ID of the task to get details for
+      zh_Hans: 要获取详情的任务 ID
+    llm_description: The ID of the task to retrieve. This must be a valid task ID from Todoist.
+    form: llm
+extra:
+  python:
+    source: tools/get_task.py

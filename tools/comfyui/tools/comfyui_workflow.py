@@ -3,13 +3,13 @@ import mimetypes
 from typing import Any, Generator
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
-import httpx
 from tools.comfyui_client import ComfyUiClient, FileType
 from dify_plugin import Tool
 
 
 def sanitize_json_string(s):
-    escape_dict = {"\n": "\\n", "\r": "\\r", "\t": "\\t", "\x08": "\\b", "\x0c": "\\f"}
+    escape_dict = {"\n": "\\n", "\r": "\\r",
+                   "\t": "\\t", "\x08": "\\b", "\x0c": "\\f"}
     for char, escaped in escape_dict.items():
         s = s.replace(char, escaped)
     return s
@@ -19,7 +19,7 @@ class ComfyUIWorkflowTool(Tool):
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
-        comfyui = ComfyUiClient(self.runtime.credentials["base_url"])
+        self.comfyui = ComfyUiClient(self.runtime.credentials["base_url"])
         positive_prompt = tool_parameters.get("positive_prompt", "")
         negative_prompt = tool_parameters.get("negative_prompt", "")
         images = tool_parameters.get("images") or []
@@ -28,12 +28,8 @@ class ComfyUIWorkflowTool(Tool):
         for image in images:
             if image.type != FileType.IMAGE:
                 continue
-            files = {
-                "image": (image.filename, image.blob, image.mime_type),
-                "overwrite": "true",
-            }
-            res = httpx.post(str(comfyui.base_url / "upload/image"), files=files)
-            image_name = res.json().get("name")
+            image_name = self.comfyui.post_image(
+                image.filename, image.blob, image.mime_type)
             image_names.append(image_name)
         set_prompt_with_ksampler = True
         if "{{positive_prompt}}" in workflow:
@@ -54,7 +50,7 @@ class ComfyUIWorkflowTool(Tool):
                 yield self.create_text_message("the Workflow JSON is not correct")
         if set_prompt_with_ksampler:
             try:
-                prompt = comfyui.set_prompt_by_ksampler(
+                prompt = self.comfyui.set_prompt_by_ksampler(
                     prompt, positive_prompt, negative_prompt
                 )
             except Exception:
@@ -65,7 +61,7 @@ class ComfyUIWorkflowTool(Tool):
             if image_ids := tool_parameters.get("image_ids"):
                 image_ids = image_ids.split(",")
                 try:
-                    prompt = comfyui.set_prompt_images_by_ids(
+                    prompt = self.comfyui.set_prompt_images_by_ids(
                         prompt, image_names, image_ids
                     )
                 except Exception:
@@ -73,12 +69,14 @@ class ComfyUIWorkflowTool(Tool):
                         "the Image Node ID List not match your upload image files."
                     )
             else:
-                prompt = comfyui.set_prompt_images_by_default(prompt, image_names)
+                prompt = self.comfyui.set_prompt_images_by_default(
+                    prompt, image_names)
         if seed_id := tool_parameters.get("seed_id"):
-            prompt = comfyui.set_prompt_seed_by_id(prompt, seed_id)
-        images = comfyui.generate_image_by_prompt(prompt)
+            prompt = self.comfyui.set_prompt_seed_by_id(prompt, seed_id)
+        images = self.comfyui.generate_image_by_prompt(prompt)
         for img in images:
             yield self.create_blob_message(
                 blob=img["data"],
-                meta={"filename": img["filename"], "mime_type": mimetypes.guess_type(img["filename"])[0] or "image/png"},
+                meta={"filename": img["filename"], "mime_type": mimetypes.guess_type(
+                    img["filename"])[0] or "image/png"},
             )

@@ -1,0 +1,41 @@
+version: 0.0.3
+type: plugin
+author: langgenius
+name: llama-api
+label:
+  en_US: Llama API
+  ja_JP: Llama API
+  zh_Hans: Llama API
+  pt_BR: Llama API
+description:
+  en_US: Llama API
+  ja_JP: Llama API
+  zh_Hans: Llama API
+  pt_BR: Llama API
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+plugins:
+  models:
+    - provider/llama-api.yaml
+meta:
+  version: 0.0.3
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+created_at: 2025-04-21T10:19:15.396651-07:00
+privacy: PRIVACY.md
+verified: false

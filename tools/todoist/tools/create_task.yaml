@@ -1,0 +1,59 @@
+identity:
+  name: create_task
+  author: laboratory
+  label:
+    en_US: Create Task
+    zh_Hans: 创建任务
+description:
+  human:
+    en_US: Create a new task in Todoist
+    zh_Hans: 在 Todoist 中创建新任务
+  llm: Creates a new task in Todoist with specified content, project, due date, and priority.
+parameters:
+  - name: content
+    type: string
+    required: true
+    label:
+      en_US: Task Content
+      zh_Hans: 任务内容
+    human_description:
+      en_US: The content/description of the task
+      zh_Hans: 任务的内容/描述
+    llm_description: The content or description of the task to be created. This is the main text that describes what needs to be done.
+    form: llm
+  - name: project_id
+    type: string
+    required: true
+    label:
+      en_US: Project ID
+      zh_Hans: 项目 ID
+    human_description:
+      en_US: The ID of the project to create the task in
+      zh_Hans: 要创建任务的项目 ID
+    llm_description: The ID of the project where the task should be created. If not provided, task will be created in the user's inbox.
+    form: llm
+  - name: due_string
+    type: string
+    required: false
+    label:
+      en_US: Due Date
+      zh_Hans: 截止日期
+    human_description:
+      en_US: The due date for the task (e.g., "today", "tomorrow", "next Monday")
+      zh_Hans: 任务的截止日期（例如："today"、"tomorrow"、"next Monday"）
+    llm_description: The due date for the task. Can be specified in natural language like "today", "tomorrow", "next Monday", or a specific date like "2023-12-31".
+    form: llm
+  - name: priority
+    type: number
+    required: false
+    label:
+      en_US: Priority
+      zh_Hans: 优先级
+    human_description:
+      en_US: Task priority (1-4, where 4 is highest)
+      zh_Hans: 任务优先级（1-4，4为最高）
+    llm_description: Task priority level from 1 to 4, where 4 is highest priority and 1 is lowest priority. Default is 1.
+    form: llm
+extra:
+  python:
+    source: tools/create_task.py

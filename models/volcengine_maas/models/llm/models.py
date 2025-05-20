@@ -15,6 +15,10 @@ class ModelConfig(BaseModel):
 
 
 configs: dict[str, ModelConfig] = {
+    "Doubao-1.5-thinking-vision-pro": ModelConfig(
+        properties=ModelProperties(context_size=131072, max_tokens=16384, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION],
+    ),
     "Doubao-1.5-UI-TARS": ModelConfig(
         properties=ModelProperties(context_size=32768, max_tokens=4096, mode=LLMMode.CHAT),
         features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION],
@@ -177,6 +181,8 @@ def get_v2_req_params(credentials: dict, model_parameters: dict, stop: list[str]
         req_params["frequency_penalty"] = model_parameters.get("frequency_penalty")
     if stop:
         req_params["stop"] = stop
+    if model_parameters.get("skip_moderation"):
+        req_params["skip_moderation"] = model_parameters.get("skip_moderation")
     return req_params
 
 
@@ -197,4 +203,6 @@ def get_v3_req_params(credentials: dict, model_parameters: dict, stop: list[str]
         req_params["frequency_penalty"] = model_parameters.get("frequency_penalty")
     if stop:
         req_params["stop"] = stop
+    if model_parameters.get("skip_moderation"):
+        req_params["skip_moderation"] = model_parameters.get("skip_moderation")
     return req_params

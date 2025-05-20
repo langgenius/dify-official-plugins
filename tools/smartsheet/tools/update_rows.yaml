@@ -1,0 +1,65 @@
+identity:
+  name: update_rows
+  author: langgenius
+  label:
+    en_US: Update Rows
+    zh_Hans: 更新行
+    pt_BR: Atualizar Linhas
+    ja_JP: 行を更新
+    zh_Hant: 更新行
+description:
+  human:
+    en_US: Update existing rows in a Smartsheet sheet.
+    zh_Hans: 更新 Smartsheet 表格中的现有行。
+    pt_BR: Atualize linhas existentes em uma planilha do Smartsheet.
+    ja_JP: Smartsheetシートの既存の行を更新します。
+    zh_Hant: 更新 Smartsheet 表格中的現有行。
+  llm: Updates existing rows in a specified Smartsheet sheet. You must provide the sheet ID, row IDs, and the data to update as a structured object that maps column names to values. The function returns information about the update operation.
+parameters:
+  - name: sheet_id
+    type: string
+    required: true
+    label:
+      en_US: Sheet ID
+      zh_Hans: 表格 ID
+      pt_BR: ID da Planilha
+      ja_JP: シートID
+      zh_Hant: 表格 ID
+    human_description:
+      en_US: The ID of the Smartsheet sheet containing the rows to update.
+      zh_Hans: 包含要更新行的 Smartsheet 表格的 ID。
+      pt_BR: O ID da planilha do Smartsheet contendo as linhas a serem atualizadas.
+      ja_JP: 更新する行を含むSmartsheetシートのID。
+      zh_Hant: 包含要更新行的 Smartsheet 表格的 ID。
+    llm_description: The unique identifier of the Smartsheet sheet containing the rows to update. This is a number that appears in the URL when viewing the sheet in a web browser (e.g., https://app.smartsheet.com/sheets/SHEET_ID).
+    form: llm
+  - name: row_updates
+    type: string
+    required: true
+    label:
+      en_US: Row Updates
+      zh_Hans: 行更新
+      pt_BR: Atualizações de Linha
+      ja_JP: 行の更新
+      zh_Hant: 行更新
+    human_description:
+      en_US: The data for updating the rows, including row IDs and the column values to update.
+      zh_Hans: 更新行的数据，包括行 ID 和要更新的列值。
+      pt_BR: Os dados para atualizar as linhas, incluindo IDs de linha e os valores de coluna a serem atualizados.
+      ja_JP: 行IDと更新する列の値を含む、行を更新するためのデータ。
+      zh_Hant: 更新行的數據，包括行 ID 和要更新的列值。
+    llm_description: |
+      The data for updating rows, formatted as a JSON array of objects where each object includes a row_id and the column values to update.
+      
+      Example:
+      [
+        {"row_id": "123456789", "Project Name": "Updated Project", "Status": "Completed"},
+        {"row_id": "987654321", "Project Name": "Another Project", "Status": "In Progress"}
+      ]
+      
+      Or for a single row:
+      {"row_id": "123456789", "Project Name": "Updated Project", "Status": "Completed"}
+    form: llm
+extra:
+  python:
+    source: tools/update_rows.py 

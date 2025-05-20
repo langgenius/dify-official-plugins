@@ -1,0 +1,174 @@
+identity:
+  name: google_image_search
+  author: Ryan Low
+  label:
+    en_US: Google Image Search
+    zh_Hans: 谷歌图片搜索
+    pt_BR: Google Image Search
+description:
+  human:
+    en_US: A tool for performing a Google image search and extracting images. Input should be a search query.
+    zh_Hans: 一个用于执行 Google 图片搜索并提取图片的工具。输入应该是一个搜索查询。
+    pt_BR: A tool for performing a Google image search and extracting images. Input should be a search query.
+  llm: A tool for performing a Google image search and extracting images. Input should be a search query.
+parameters:
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: Query string
+      zh_Hans: 查询语句
+      pt_BR: Query string
+    human_description:
+      en_US: used for searching
+      zh_Hans: 用于搜索网页内容
+      pt_BR: used for searching
+    llm_description: key words for searching
+    form: llm
+  - name: hl
+    type: string
+    required: false
+    label:
+      en_US: Language
+      zh_Hans: 语言
+      pt_BR: Language
+    human_description:
+      en_US: Parameter defines the language to use for the Google search. It's a two-letter language code. (e.g., en for English, es for Spanish, or fr for French). Head to https://serpapi.com/google-languages for a full list of supported Google languages.
+      zh_Hans: 此参数定义用于 Google 搜索的语言。它是一个两字母的语言代码。 (例如，en 代表英语，es 代表西班牙语，fr 代表法语)。请前往 https://serpapi.com/google-languages 查看完整的支持 Google 语言列表。
+      pt_BR: Parameter defines the language to use for the Google search. It's a two-letter language code. (e.g., en for English, es for Spanish, or fr for French). Head to https://serpapi.com/google-languages for a full list of supported Google languages.
+    llm_description: Language
+    form: llm
+  - name: gl
+    type: string
+    required: false
+    label:
+      en_US: Country
+      zh_Hans: 国家
+      pt_BR: Country
+    human_description:
+      en_US: Parameter defines the country to use for the Google search. It's a two-letter country code. (e.g., us for the United States, uk for United Kingdom, or fr for France). Head to the https://serpapi.com/google-countries for a full list of supported Google countries.
+      zh_Hans: 此参数定义用于 Google 搜索的国家。它是一个两字母的国家代码。 (例如，us 代表美国，uk 代表英国，fr 代表法国)。请前往 https://serpapi.com/google-countries 查看完整的支持 Google 国家列表。
+      pt_BR: Parameter defines the country to use for the Google search. It's a two-letter country code. (e.g., us for the United States, uk for United Kingdom, or fr for France). Head to the https://serpapi.com/google-countries for a full list of supported Google countries.
+    llm_description: Country
+    form: llm
+  - name: location
+    type: string
+    required: false
+    label:
+      en_US: Location
+      zh_Hans: 位置
+      pt_BR: Location
+    human_description:
+      en_US: Parameter defines from where you want the search to originate. If several locations match the location requested, we'll pick the most popular one. Head to the /locations.json API if you need more precise control. The location and uule parameters can't be used together. It is recommended to specify location at the city level in order to simulate a real user’s search. If location is omitted, the search may take on the location of the proxy.
+      zh_Hans: 此参数定义搜索的位置。如果有多个位置与请求的位置匹配，我们将选择最受欢迎的一个。如果需要更精确的控制，请前往 /locations.json API。location 和 uule 参数不能同时使用。建议在城市级别指定位置，以模拟真实用户的搜索。如果省略位置，则搜索可能会采用代理的位置。
+      pt_BR: Parameter defines from where you want the search to originate. If several locations match the location requested, we'll pick the most popular one. Head to the /locations.json API if you need more precise control. The location and uule parameters can't be used together. It is recommended to specify location at the city level in order to simulate a real user’s search. If location is omitted, the search may take on the location of the proxy.
+    llm_description: Location
+    form: llm
+  - name: max_results
+    type: number
+    required: true
+    default: 3
+    label:
+      en_US: Max results
+      zh_Hans: 最大结果数量
+    human_description:
+      en_US: The max results.
+      zh_Hans: 最大结果数量
+    form: form
+  - name: imgsz
+    type: select
+    required: false
+    default: m
+    llm_description: Parameter defines the size of images.
+    human_description:
+      en_US: Parameter defines the size of images.
+      zh_Hans: 设置图片尺寸
+    form: form
+    label:
+      en_US: Parameter defines the size of images.
+      zh_Hans: Parameter defines the size of images.
+      pt_BR: Parameter defines the size of images.
+    options:
+      - value: l
+        label:
+          en_US: Large
+          zh_Hans: Large
+          pt_BR: Large
+      - value: m
+        label: 
+          en_US: Medium
+          zh_Hans: Medium
+          pt_BR: Medium
+      - value: i
+        label:
+          en_US: Icon
+          zh_Hans: Icon
+          pt_BR: Icon
+      - value: vga
+        label:
+          en_US: Larger than 640x480
+          zh_Hans: Larger than 640x480
+          pt_BR: Larger than 640x480
+      - value: svga
+        label:
+          en_US: Larger than 800x600
+          zh_Hans: Larger than 800x600
+          pt_BR: Larger than 800x600
+      - value: xga
+        label:
+          en_US: Larger than 1024x768
+          zh_Hans: Larger than 1024x768
+          pt_BR: Larger than 1024x768
+      - value: 2mp
+        label:
+          en_US: Larger than 2 MP
+          zh_Hans: Larger than 2 MP
+          pt_BR: Larger than 2 MP
+      - value: 4mp
+        label:
+          en_US: Larger than 4 MP
+          zh_Hans: Larger than 4 MP
+          pt_BR: Larger than 4 MP
+      - value: 6mp
+        label:
+          en_US: Larger than 6 MP
+          zh_Hans: Larger than 6 MP
+          pt_BR: Larger than 6 MP
+      - value: 8mp
+        label:
+          en_US: Larger than 8 MP
+          zh_Hans: Larger than 8 MP
+          pt_BR: Larger than 8 MP
+      - value: 10mp
+        label:
+          en_US: Larger than 10 MP
+          zh_Hans: Larger than 10 MP
+          pt_BR: Larger than 10 MP
+      - value: 12mp
+        label:
+          en_US: Larger than 12 MP
+          zh_Hans: Larger than 12 MP
+          pt_BR: Larger than 12 MP
+      - value: 15mp
+        label:
+          en_US: Larger than 15 MP
+          zh_Hans: Larger than 15 MP
+          pt_BR: Larger than 15 MP
+      - value: 20mp
+        label:
+          en_US: Larger than 20 MP
+          zh_Hans: Larger than 20 MP
+          pt_BR: Larger than 20 MP
+      - value: 40mp
+        label:
+          en_US: Larger than 40 MP
+          zh_Hans: Larger than 40 MP
+          pt_BR: Larger than 40 MP
+      - value: 70mp
+        label:
+          en_US: Larger than 70 MP
+          zh_Hans: Larger than 70 MP
+          pt_BR: Larger than 70 MP
+extra:
+  python:
+    source: tools/google_image_search.py

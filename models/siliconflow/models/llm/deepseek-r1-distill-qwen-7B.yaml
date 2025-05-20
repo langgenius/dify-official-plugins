@@ -4,7 +4,9 @@ label:
   en_US: deepseek-ai/DeepSeek-R1-Distill-Qwen-7B
 model_type: llm
 features:
+  - multi-tool-call
   - agent-thought
+  - stream-tool-call
 model_properties:
   mode: chat
   context_size: 32000

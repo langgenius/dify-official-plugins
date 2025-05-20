@@ -1,0 +1,44 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: sambanova
+label:
+  en_US: SambaNovaCloud
+  ja_JP: SambaNovaCloud
+  zh_Hans: SambaNovaCloud
+  pt_BR: SambaNovaCloud
+description:
+  en_US: SambaNova Cloud provides access to the SambaNova Cloud API, which hosts
+    LLama4, Qwen and DeepSeek Models.
+  ja_JP: SambaNova Cloud provides access to the SambaNova Cloud API, which hosts
+    LLama4, Qwen and DeepSeek Models.
+  zh_Hans: SambaNova Cloud provides access to the SambaNova Cloud API, which hosts
+    LLama4, Qwen and DeepSeek Models.
+  pt_BR: SambaNova Cloud provides access to the SambaNova Cloud API, which hosts
+    LLama4, Qwen and DeepSeek Models.
+icon: icon_s_en.svg
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+plugins:
+  models:
+    - provider/sambanova.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: null
+created_at: 2025-05-12T15:02:07.839808-05:00

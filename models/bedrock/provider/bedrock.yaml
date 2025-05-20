@@ -139,8 +139,8 @@ provider_credential_schema:
         zh_Hans: 可用模型名称
       type: text-input
       placeholder:
-        en_US: A model you have access to (e.g. amazon.titan-text-lite-v1) for validation.
-        zh_Hans: 为了进行验证，请输入一个您可用的模型名称 (例如：amazon.titan-text-lite-v1)
+        en_US: A model you have access to (e.g. amazon.nova-pro-v1:0) for validation.
+        zh_Hans: 为了进行验证，请输入一个您可用的模型名称 (例如：amazon.nova-pro-v1:0)
     - variable: bedrock_proxy_url
       label:
         en_US: Bedrock Proxy URL

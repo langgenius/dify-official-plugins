@@ -33,7 +33,6 @@ from dify_plugin.entities.model.llm import (
     LLMResult,
     LLMResultChunk,
     LLMResultChunkDelta,
-    LLMUsage,
 )
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
@@ -65,15 +64,15 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
     tokenizers = {}
 
     def _invoke(
-        self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
-        stream: bool = True,
-        user: Optional[str] = None,
+            self,
+            model: str,
+            credentials: dict,
+            prompt_messages: list[PromptMessage],
+            model_parameters: dict,
+            tools: Optional[list[PromptMessageTool]] = None,
+            stop: Optional[list[str]] = None,
+            stream: bool = True,
+            user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model
@@ -100,11 +99,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         )
 
     def get_num_tokens(
-        self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        tools: Optional[list[PromptMessageTool]] = None,
+            self,
+            model: str,
+            credentials: dict,
+            prompt_messages: list[PromptMessage],
+            tools: Optional[list[PromptMessageTool]] = None,
     ) -> int:
         """
         Get number of tokens for given prompt messages
@@ -148,58 +147,16 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
-    def _calc_response_usage(
-        self,
-        model: str,
-        credentials: dict,
-        input_tokens: int,
-        output_tokens: int,
-        is_thinking: bool = False
-    ) -> LLMUsage:
-        """
-        Calculate response usage
-
-        :param model: model name
-        :param credentials: credentials
-        :param input_tokens: input tokens
-        :param output_tokens: output tokens
-        :param is_thinking: whether the output is thinking content
-        :return: model usage
-        """
-        schema = self.get_model_schema(model, credentials)
-        pricing_input = float(schema.pricing.input) * input_tokens
-        # Choose pricing based on thinking mode
-        if is_thinking and hasattr(schema.pricing, 'output_thinking'):
-            pricing_output = float(schema.pricing.output_thinking) * output_tokens
-        else:
-            pricing_output = float(schema.pricing.output) * output_tokens
-        total = pricing_input + pricing_output
-
-        return LLMUsage(
-            prompt_tokens=input_tokens,
-            completion_tokens=output_tokens,
-            total_tokens=input_tokens + output_tokens,
-            prompt_price=pricing_input,
-            completion_price=pricing_output,
-            total_price=total,
-            prompt_unit_price=float(schema.pricing.input),
-            prompt_price_unit=1000,
-            completion_unit_price=float(schema.pricing.output),
-            completion_price_unit=1000,
-            currency=schema.pricing.currency,
-            latency=0,
-        )
-
     def _generate(
-        self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
-        stream: bool = True,
-        user: Optional[str] = None,
+            self,
+            model: str,
+            credentials: dict,
+            prompt_messages: list[PromptMessage],
+            model_parameters: dict,
+            tools: Optional[list[PromptMessageTool]] = None,
+            stop: Optional[list[str]] = None,
+            stream: bool = True,
+            user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model
@@ -223,22 +180,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             extra_model_kwargs["tools"] = self._convert_tools(tools)
         if stop:
             extra_model_kwargs["stop"] = stop
-
-        # Support thinking mode parameters
-        # If model_parameters contains enable_thinking and thinking_budget parameters, add them to extra_body
-        extra_body = {}
-        is_thinking_enabled = False
-        if "enable_thinking" in model_parameters:
-            is_thinking_enabled = model_parameters["enable_thinking"]
-            extra_body["enable_thinking"] = model_parameters.pop("enable_thinking")
-        if "thinking_budget" in model_parameters and extra_body.get(
-            "enable_thinking", False
-        ):
-            extra_body["thinking_budget"] = model_parameters.pop("thinking_budget")
-
-        if extra_body:
-            extra_model_kwargs["extra_body"] = extra_body
-
         params = {
             "model": model,
             **model_parameters,
@@ -246,6 +187,21 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             **extra_model_kwargs,
         }
         model_schema = self.get_model_schema(model, credentials)
+
+        incremental_output = False if tools else stream
+
+        thinking_business_qwen3 = model in ("qwen-plus-latest", "qwen-plus-2025-04-28",
+                                            "qwen-turbo-latest", "qwen-turbo-2025-04-28") \
+                                  and model_parameters.get("enable_thinking", False)
+
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition, QwQ, and QVQ models only supports streaming output.
+        if thinking_business_qwen3 or model.startswith(("qwen3-", "qwq-", "qvq-")):
+            stream = True
+
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition and QwQ models only supports incremental_output set to True.
+        if thinking_business_qwen3 or model.startswith(("qwen3-", "qwq-")):
+            incremental_output = True
+
         if ModelFeature.VISION in (model_schema.features or []):
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages, rich_content=True
@@ -259,23 +215,22 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 **params,
                 result_format="message",
                 stream=stream,
-                incremental_output=False if tools else stream,
+                incremental_output=incremental_output,
             )
         if stream:
             return self._handle_generate_stream_response(
-                model, credentials, response, prompt_messages, is_thinking_enabled
+                model, credentials, response, prompt_messages, incremental_output,
             )
         return self._handle_generate_response(
-            model, credentials, response, prompt_messages, is_thinking_enabled
+            model, credentials, response, prompt_messages
         )
 
     def _handle_generate_response(
-        self,
-        model: str,
-        credentials: dict,
-        response: GenerationResponse,
-        prompt_messages: list[PromptMessage],
-        is_thinking_enabled: bool = False,
+            self,
+            model: str,
+            credentials: dict,
+            response: GenerationResponse,
+            prompt_messages: list[PromptMessage],
     ) -> LLMResult:
         """
         Handle llm response
@@ -284,7 +239,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param credentials: credentials
         :param response: response
         :param prompt_messages: prompt messages
-        :param is_thinking_enabled: whether thinking mode is enabled
         :return: llm response
         """
         if response.status_code not in {200, HTTPStatus.OK}:
@@ -299,7 +253,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             credentials,
             response.usage.input_tokens,
             response.usage.output_tokens,
-            is_thinking_enabled,
         )
         result = LLMResult(
             model=model,
@@ -332,12 +285,12 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             tool_call_obj['function']['arguments'] = args
 
     def _handle_generate_stream_response(
-        self,
-        model: str,
-        credentials: dict,
-        responses: Generator[GenerationResponse, None, None],
-        prompt_messages: list[PromptMessage],
-        is_thinking_enabled: bool = False,
+            self,
+            model: str,
+            credentials: dict,
+            responses: Generator[GenerationResponse, None, None],
+            prompt_messages: list[PromptMessage],
+            incremental_output: bool,
     ) -> Generator:
         """
         Handle llm stream response
@@ -346,7 +299,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param credentials: credentials
         :param responses: response
         :param prompt_messages: prompt messages
-        :param is_thinking_enabled: whether thinking mode is enabled
+        :param incremental_output: is incremental output
         :return: llm response chunk generator result
         """
         is_reasoning = False
@@ -362,7 +315,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 resp_content = response.output.choices[0].message.content
                 assistant_prompt_message = AssistantPromptMessage(content="")
                 if "tool_calls" in response.output.choices[0].message:
-                    self._handle_tool_call_stream(response, tool_calls, False)
+                    self._handle_tool_call_stream(response, tool_calls, incremental_output)
                 elif resp_content:
                     if isinstance(resp_content, list):
                         resp_content = resp_content[0]["text"]
@@ -384,28 +337,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                         message_tool_calls.append(message_tool_call)
                     assistant_prompt_message.tool_calls = message_tool_calls
                 usage = response.usage
-                model_usage = self._calc_response_usage(
-                    model,
-                    credentials,
-                    usage.input_tokens,
-                    usage.output_tokens,
-                    is_thinking_enabled and is_reasoning
+                usage = self._calc_response_usage(
+                    model, credentials, usage.input_tokens, usage.output_tokens
                 )
-                # Convert ModelUsage to dictionary to be compatible with the expected type of LLMResultChunkDelta
-                usage_dict = {
-                    "prompt_tokens": model_usage.prompt_tokens,
-                    "completion_tokens": model_usage.completion_tokens,
-                    "total_tokens": model_usage.total_tokens,
-                    "prompt_price": model_usage.prompt_price,
-                    "completion_price": model_usage.completion_price,
-                    "total_price": model_usage.total_price,
-                    "prompt_unit_price": model_usage.prompt_unit_price,
-                    "prompt_price_unit": model_usage.prompt_price_unit,
-                    "completion_unit_price": model_usage.completion_unit_price,
-                    "completion_price_unit": model_usage.completion_price_unit,
-                    "currency": model_usage.currency,
-                    "latency": model_usage.latency
-                }
                 yield LLMResultChunk(
                     model=model,
                     prompt_messages=prompt_messages,
@@ -413,7 +347,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                         index=index,
                         message=assistant_prompt_message,
                         finish_reason=resp_finish_reason,
-                        usage=usage_dict,
+                        usage=usage,
                     ),
                 )
             else:
@@ -424,7 +358,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 )
                 if not resp_content:
                     if "tool_calls" in response.output.choices[0].message:
-                        self._handle_tool_call_stream(response, tool_calls, False)
+                        self._handle_tool_call_stream(response, tool_calls, incremental_output)
                     continue
                 if isinstance(resp_content, list):
                     resp_content = resp_content[0]["text"]
@@ -493,10 +427,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         return text.rstrip()
 
     def _convert_prompt_messages_to_tongyi_messages(
-        self,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        rich_content: bool = False,
+            self,
+            credentials: dict,
+            prompt_messages: list[PromptMessage],
+            rich_content: bool = False,
     ) -> list[dict]:
         """
         Convert prompt messages to tongyi messages
@@ -620,7 +554,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         return f"file://{file_path}"
 
     def _upload_file_to_tongyi(
-        self, credentials: dict, message_content: DocumentPromptMessageContent
+            self, credentials: dict, message_content: DocumentPromptMessageContent
     ) -> str:
         """
         Upload file to Tongyi
@@ -743,7 +677,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         }
 
     def get_customizable_model_schema(
-        self, model: str, credentials: dict
+            self, model: str, credentials: dict
     ) -> Optional[AIModelEntity]:
         """
         Architecture for defining customizable models
