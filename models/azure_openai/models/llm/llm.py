@@ -795,12 +795,6 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
     def _get_image_patches(self, n: int) -> float:
         return (n + 32 - 1) // 32
 
-    def scale_down(self, width: int, height: int) -> tuple[int, int]:
-        while width > 2048 or height > 2048:
-            width //= 2
-            height //= 2
-        return width, height
-
     # This algorithm is based on https://platform.openai.com/docs/guides/images-vision?api-mode=chat#calculating-costs
     def _num_tokens_from_images(
         self, base_model_name: str, image_details: list[dict]
@@ -839,10 +833,10 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     new_width = width * shrink_factor
                     new_height = height * shrink_factor
 
-                    width_patches = math.ceil(new_width) // 32
-                    height_patches = math.ceil(new_height) // 32
+                    w_patches = int(new_width / 32)
+                    h_patches = int(new_height / 32)
 
-                    tokens = width_patches * height_patches
+                    tokens = w_patches * h_patches
 
                 if base_model_name.startswith("o4-mini"):
                     num_tokens += int(tokens * 1.72)
@@ -855,9 +849,25 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     # Regardless of input size, low detail images are a fixed cost.
                     num_tokens += 85
                 else:
-                    new_width, new_height = self.scale_down(width, height)
-                    total_tiles = new_width + new_height
-                    tiles_count = total_tiles // 512
-                    num_tokens += int(tiles_count * tile_tokens + base_tokens)
+                    # Scale the image longest side to 2048px
+                    if width > 2048 or height > 2048:
+                        aspect_ratio = width / height
+                        if aspect_ratio > 1:
+                            width, height = 2048, int(2048 / aspect_ratio)
+                        else:
+                            width, height = int(2048 * aspect_ratio), 2048
+
+                    # Further scale the image shortest side to 768px
+                    if width >= height and height > 768:
+                        width, height = int((768 / height) * width), 768
+                    elif height > width and width > 768:
+                        width, height = 768, int((768 / width) * height)
+
+                    # Calculate the number of tiles
+                    w_tiles = math.ceil(width / 512)
+                    h_tiles = math.ceil(height / 512)
+                    total_tiles = w_tiles * h_tiles
+
+                    num_tokens += base_tokens + total_tiles * tile_tokens
 
         return num_tokens
