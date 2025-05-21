@@ -2,6 +2,7 @@ import copy
 import json
 import logging
 from collections.abc import Generator, Sequence
+import math
 from typing import Optional, Union, cast
 import tiktoken
 from dify_plugin.entities.model import AIModelEntity, ModelPropertyKey
@@ -35,6 +36,9 @@ from openai.types.chat import (
 from openai.types.chat.chat_completion_chunk import ChoiceDeltaToolCall
 from ..common import _CommonAzureOpenAI
 from ..constants import LLM_BASE_MODELS
+from PIL import Image
+import base64
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -318,7 +322,9 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             extra_model_kwargs["stop"] = stop
         if user:
             extra_model_kwargs["user"] = user
-        prompt_messages = self._clear_illegal_prompt_messages(base_model_name, prompt_messages)
+        prompt_messages = self._clear_illegal_prompt_messages(
+            base_model_name, prompt_messages
+        )
         block_as_stream = False
         if base_model_name.startswith(("o1", "o3", "o4")):
             # o1 and o1-* do not support streaming
@@ -694,14 +700,18 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             )
         num_tokens = 0
         messages_dict = [self._convert_prompt_message_to_dict(m) for m in messages]
+        image_details: list[dict] = []
         for message in messages_dict:
             num_tokens += tokens_per_message
             for key, value in message.items():
                 if isinstance(value, list):
                     text = ""
                     for item in value:
-                        if isinstance(item, dict) and item["type"] == "text":
-                            text += item["text"]
+                        if isinstance(item, dict):
+                            if item["type"] == "text":
+                                text += item["text"]
+                            elif item["type"] == "image_url":
+                                image_details.append(item["image_url"])
                     value = text
                 if key == "tool_calls":
                     for tool_call in value:
@@ -722,6 +732,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         num_tokens += 3
         if tools:
             num_tokens += self._num_tokens_for_tools(encoding, tools)
+        num_tokens += self._num_tokens_from_images(image_details=image_details, base_model_name=credentials["base_model_name"])
         return num_tokens
 
     @staticmethod
@@ -792,8 +803,9 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator[LLMResultChunk, None, None]]:
-
-        if "response_format" in model_parameters and model_parameters["response_format"] in ["JSON", "XML"]:
+        if "response_format" in model_parameters and model_parameters[
+            "response_format"
+        ] in ["JSON", "XML"]:
             return super()._code_block_mode_wrapper(
                 model=model,
                 credentials=credentials,
@@ -815,3 +827,78 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 stream=stream,
                 user=user,
             )
+
+    def _get_image_patches(self, n: int) -> float:
+        return (n + 32 - 1) // 32
+
+    def scale_down(self, width: int, height: int) -> tuple[int, int]:
+        while width > 2048 or height > 2048:
+            width //= 2
+            height //= 2
+        return width, height
+
+
+    # This algorithm is based on https://platform.openai.com/docs/guides/images-vision?api-mode=chat#calculating-costs
+    def _num_tokens_from_images(
+        self, base_model_name: str, image_details: list[dict]
+    ) -> int:
+        num_tokens: int = 0
+        base_tokens: int = 0
+        tile_tokens: int = 0
+
+        if base_model_name in ("gpt-4o", "gpt-4.1", "gpt-4.5"):
+            base_tokens = 85
+            tile_tokens = 170
+        elif base_model_name in ("gpt-4o-mini"):
+            base_tokens = 2833
+            tile_tokens = 5667
+        elif base_model_name in ("o1", "o3", "o1-pro"):
+            base_tokens = 75
+            tile_tokens = 150
+
+        for image_detail in image_details:
+            base64_str = image_detail["url"].split(",")[1]
+
+            image_data = base64.b64decode(base64_str)
+            image = Image.open(io.BytesIO(image_data))
+            width, height = image.size
+
+            if base_model_name in ("gpt-4.1-mini", "gpt-4.1-nano", "o4-mini"):
+                width_patches = self._get_image_patches(width)
+                height_patches = self._get_image_patches(height)
+                cap = 1536
+
+                tokens = width_patches * height_patches
+
+                if tokens <= cap:
+                    num_tokens += int(tokens)
+                else:
+                    shrink_factor = math.sqrt(cap * 32**2 / tokens)
+
+                    new_width = width * shrink_factor
+                    new_height = height * shrink_factor
+
+                    width_patches = math.ceil(new_width) // 32
+                    height_patches = math.ceil(new_height) // 32
+
+                    int_patch_width = int(width_patches)
+
+                    ratio = int_patch_width / width_patches
+                    width = int(round(new_width * ratio))
+                    height = int(round(new_height * ratio))
+
+                    width_patches = width // 32
+                    height_patches = height // 32
+
+                    num_tokens += int(width_patches * height_patches)
+            else:
+                if image_detail["detail"] == "low":
+                    # Regardless of input size, low detail images are a fixed cost.
+                    num_tokens += 85
+                else:
+                    new_width, new_height = self.scale_down(width, height)
+                    total_tiles = new_width + new_height
+                    tiles_count = total_tiles // 512
+                    num_tokens += int(tiles_count * tile_tokens + base_tokens)
+
+        return num_tokens
