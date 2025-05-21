@@ -732,7 +732,9 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         num_tokens += 3
         if tools:
             num_tokens += self._num_tokens_for_tools(encoding, tools)
-        num_tokens += self._num_tokens_from_images(image_details=image_details, base_model_name=credentials["base_model_name"])
+        num_tokens += self._num_tokens_from_images(
+            image_details=image_details, base_model_name=credentials["base_model_name"]
+        )
         return num_tokens
 
     @staticmethod
@@ -799,7 +801,6 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             height //= 2
         return width, height
 
-
     # This algorithm is based on https://platform.openai.com/docs/guides/images-vision?api-mode=chat#calculating-costs
     def _num_tokens_from_images(
         self, base_model_name: str, image_details: list[dict]
@@ -832,9 +833,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
                 tokens = width_patches * height_patches
 
-                if tokens <= cap:
-                    num_tokens += int(tokens)
-                else:
+                if tokens > cap:
                     shrink_factor = math.sqrt(cap * 32**2 / (width * height))
 
                     new_width = width * shrink_factor
@@ -843,7 +842,14 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     width_patches = math.ceil(new_width) // 32
                     height_patches = math.ceil(new_height) // 32
 
-                    num_tokens += int(width_patches * height_patches)
+                    tokens = width_patches * height_patches
+
+                if base_model_name == "o4-mini":
+                    num_tokens += int(tokens * 1.72)
+                elif base_model_name == "gpt-4.1-nano":
+                    num_tokens += int(tokens * 2.46)
+                elif base_model_name == "gpt-4.1-mini":
+                    num_tokens += int(tokens * 1.62)
             else:
                 if image_detail["detail"] == "low":
                     # Regardless of input size, low detail images are a fixed cost.
