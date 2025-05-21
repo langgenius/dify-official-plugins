@@ -873,7 +873,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 if tokens <= cap:
                     num_tokens += int(tokens)
                 else:
-                    shrink_factor = math.sqrt(cap * 32**2 / tokens)
+                    shrink_factor = math.sqrt(cap * 32**2 / (width * height))
 
                     new_width = width * shrink_factor
                     new_height = height * shrink_factor
