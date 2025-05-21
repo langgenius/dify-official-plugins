@@ -2,6 +2,7 @@ import copy
 import json
 import logging
 from collections.abc import Generator, Sequence
+import math
 from typing import Optional, Union, cast
 import tiktoken
 from dify_plugin.entities.model import AIModelEntity, ModelPropertyKey
@@ -35,6 +36,9 @@ from openai.types.chat import (
 from openai.types.chat.chat_completion_chunk import ChoiceDeltaToolCall
 from ..common import _CommonAzureOpenAI
 from ..constants import LLM_BASE_MODELS
+from PIL import Image
+import base64
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -318,7 +322,9 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             extra_model_kwargs["stop"] = stop
         if user:
             extra_model_kwargs["user"] = user
-        prompt_messages = self._clear_illegal_prompt_messages(base_model_name, prompt_messages)
+        prompt_messages = self._clear_illegal_prompt_messages(
+            base_model_name, prompt_messages
+        )
         block_as_stream = False
         if base_model_name.startswith(("o1", "o3", "o4")):
             # o1 and o1-* do not support streaming
@@ -694,14 +700,18 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             )
         num_tokens = 0
         messages_dict = [self._convert_prompt_message_to_dict(m) for m in messages]
+        image_details: list[dict] = []
         for message in messages_dict:
             num_tokens += tokens_per_message
             for key, value in message.items():
                 if isinstance(value, list):
                     text = ""
                     for item in value:
-                        if isinstance(item, dict) and item["type"] == "text":
-                            text += item["text"]
+                        if isinstance(item, dict):
+                            if item["type"] == "text":
+                                text += item["text"]
+                            elif item["type"] == "image_url":
+                                image_details.append(item["image_url"])
                     value = text
                 if key == "tool_calls":
                     for tool_call in value:
@@ -722,6 +732,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         num_tokens += 3
         if tools:
             num_tokens += self._num_tokens_for_tools(encoding, tools)
+        num_tokens += self._num_tokens_from_images(image_details=image_details, base_model_name=credentials["base_model_name"])
         return num_tokens
 
     @staticmethod
