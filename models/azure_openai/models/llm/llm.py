@@ -322,6 +322,8 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             extra_model_kwargs["stop"] = stop
         if user:
             extra_model_kwargs["user"] = user
+        if stream:
+            extra_model_kwargs["stream_options"] = {"include_usage": True}
         prompt_messages = self._clear_illegal_prompt_messages(
             base_model_name, prompt_messages
         )
@@ -491,8 +493,15 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         system_fingerprint = None
         completion = ""
         tool_calls = []
+        prompt_tokens = 0
+        completion_tokens = 0
+        has_usage = False
         for chunk in response:
             if len(chunk.choices) == 0:
+                if chunk.usage:
+                    prompt_tokens = chunk.usage.prompt_tokens
+                    completion_tokens = chunk.usage.completion_tokens
+                    has_usage = True
                 continue
             delta = chunk.choices[0]
             if delta.delta is None:
@@ -518,13 +527,14 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 ),
             )
             index += 1
-        prompt_tokens = self._num_tokens_from_messages(
-            credentials, prompt_messages, tools
-        )
-        full_assistant_prompt_message = AssistantPromptMessage(content=completion)
-        completion_tokens = self._num_tokens_from_messages(
-            credentials, [full_assistant_prompt_message]
-        )
+        if not has_usage:
+            prompt_tokens = self._num_tokens_from_messages(
+                credentials, prompt_messages, tools
+            )
+            full_assistant_prompt_message = AssistantPromptMessage(content=completion)
+            completion_tokens = self._num_tokens_from_messages(
+                credentials, [full_assistant_prompt_message]
+            )
         usage = self._calc_response_usage(
             model, credentials, prompt_tokens, completion_tokens
         )
