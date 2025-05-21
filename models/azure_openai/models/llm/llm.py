@@ -732,9 +732,11 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         num_tokens += 3
         if tools:
             num_tokens += self._num_tokens_for_tools(encoding, tools)
-        num_tokens += self._num_tokens_from_images(
-            image_details=image_details, base_model_name=credentials["base_model_name"]
-        )
+        if len(image_details) > 0:
+            num_tokens += self._num_tokens_from_images(
+                image_details=image_details,
+                base_model_name=credentials["base_model_name"],
+            )
         return num_tokens
 
     @staticmethod
