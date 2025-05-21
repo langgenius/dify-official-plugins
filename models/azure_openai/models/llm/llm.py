@@ -809,13 +809,13 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         base_tokens: int = 0
         tile_tokens: int = 0
 
-        if base_model_name in ("gpt-4o", "gpt-4.1", "gpt-4.5"):
-            base_tokens = 85
-            tile_tokens = 170
-        elif base_model_name in ("gpt-4o-mini"):
+        if base_model_name.startswith("gpt-4o-mini"):
             base_tokens = 2833
             tile_tokens = 5667
-        elif base_model_name in ("o1", "o3", "o1-pro"):
+        elif base_model_name.startswith(("gpt-4o", "gpt-4.1", "gpt-4.5")):
+            base_tokens = 85
+            tile_tokens = 170
+        elif base_model_name.startswith(("o1", "o3", "o1-pro")):
             base_tokens = 75
             tile_tokens = 150
 
@@ -826,7 +826,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             image = Image.open(io.BytesIO(image_data))
             width, height = image.size
 
-            if base_model_name in ("gpt-4.1-mini", "gpt-4.1-nano", "o4-mini"):
+            if base_model_name.startswith(("gpt-4.1-mini", "gpt-4.1-nano", "o4-mini")):
                 width_patches = self._get_image_patches(width)
                 height_patches = self._get_image_patches(height)
                 cap = 1536
@@ -844,11 +844,11 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
                     tokens = width_patches * height_patches
 
-                if base_model_name == "o4-mini":
+                if base_model_name.startswith("o4-mini"):
                     num_tokens += int(tokens * 1.72)
-                elif base_model_name == "gpt-4.1-nano":
+                elif base_model_name.startswith("gpt-4.1-nano"):
                     num_tokens += int(tokens * 2.46)
-                elif base_model_name == "gpt-4.1-mini":
+                elif base_model_name.startswith("gpt-4.1-mini"):
                     num_tokens += int(tokens * 1.62)
             else:
                 if image_detail["detail"] == "low":
