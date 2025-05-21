@@ -846,8 +846,8 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     int_patch_width = int(width_patches)
 
                     ratio = int_patch_width / width_patches
-                    width = int(round(new_width * ratio))
-                    height = int(round(new_height * ratio))
+                    width = int(math.ceil(new_width * ratio))
+                    height = int(math.ceil(new_height * ratio))
 
                     width_patches = width // 32
                     height_patches = height // 32
