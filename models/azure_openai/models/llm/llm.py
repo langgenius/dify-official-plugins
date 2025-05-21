@@ -843,15 +843,6 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     width_patches = math.ceil(new_width) // 32
                     height_patches = math.ceil(new_height) // 32
 
-                    int_patch_width = int(width_patches)
-
-                    ratio = int_patch_width / width_patches
-                    width = int(math.ceil(new_width * ratio))
-                    height = int(math.ceil(new_height * ratio))
-
-                    width_patches = width // 32
-                    height_patches = height // 32
-
                     num_tokens += int(width_patches * height_patches)
             else:
                 if image_detail["detail"] == "low":
