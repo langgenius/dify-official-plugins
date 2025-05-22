@@ -29,7 +29,7 @@ parameter_rules:
     type: int
     default: 1024
     min: 0
-    max: 128000
+    max: 64000
     required: false
     help:
       zh_Hans: 推理的预算限制（最小1024），必须小于max_tokens。仅在推理模式启用时可用。
