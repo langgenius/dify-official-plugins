@@ -352,8 +352,8 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             function_declarations=[
                 glm.FunctionDeclaration(
                     name=tool.name,
-                    parameters=glm.Schema(
-                        type=glm.Type.OBJECT,
+                    parameters=dict(
+                        type="object",
                         properties={
                             key: {
                                 "type_": value.get("type", "string").upper(),
