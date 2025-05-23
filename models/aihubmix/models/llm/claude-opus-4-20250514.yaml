@@ -29,7 +29,7 @@ parameter_rules:
     type: int
     default: 1024
     min: 0
-    max: 128000
+    max: 32000
     required: false
     help:
       zh_Hans: 推理的预算限制（最小1024），必须小于max_tokens。仅在推理模式启用时可用。
@@ -52,18 +52,9 @@ parameter_rules:
     required: true
     default: 32000
     min: 1
-    max: 128000
+    max: 32000
   - name: response_format
     use_template: response_format
-  - name: extended_output
-    label:
-      zh_Hans: 扩展输出
-      en_US: Extended Output
-    type: boolean
-    default: false
-    help:
-      zh_Hans: 启用长达128K标记的输出能力。
-      en_US: Enable capability for up to 128K output tokens.
 pricing:
   input: '16.80'
   output: '84.00'
