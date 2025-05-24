@@ -37,29 +37,23 @@ provider_credential_schema:
       required: true
       type: secret-input
       variable: api_key
-    - default: grok-3-mini-beta
+    - default: grok-3-mini
       label:
         en_US: Model
         zh_Hans: 模型
       options:
         - label:
-            en_US: grok-3-mini-beta
-          value: grok-3-mini-beta
+            en_US: grok-3-mini
+          value: grok-3-mini
         - label:
-            en_US: grok-3-beta
-          value: grok-3-beta
+            en_US: grok-3
+          value: grok-3
         - label:
-            en_US: grok-3-fast-beta
-          value: grok-3-fast-beta
+            en_US: grok-3-fast
+          value: grok-3-fast
         - label:
-            en_US: grok-3-mini-fast-beta
-          value: grok-3-mini-fast-beta
-        - label:
-            en_US: grok-beta
-          value: grok-beta
-        - label:
-            en_US: grok-vision-beta
-          value: grok-vision-beta
+            en_US: grok-3-mini-fast
+          value: grok-3-mini-fast
         - label:
             en_US: grok-2-1212
           value: grok-2-1212

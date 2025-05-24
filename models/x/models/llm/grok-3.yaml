@@ -1,6 +1,6 @@
-model: grok-3-beta
+model: grok-3
 label:
-  en_US: grok-3-beta
+  en_US: grok-3
 model_type: llm
 features:
   - agent-thought
@@ -31,6 +31,16 @@ parameter_rules:
       - json_schema
   - name: json_schema
     use_template: json_schema
+  - name: search_parameters
+    label: 
+      zh_Hans: 联网搜索参数
+      en_US: Live Search Parameters
+    type: text
+    default: "{\n  \"mode\": \"auto\"\n}"
+    help:
+      zh_Hans: 传递给联网搜索的参数，具体参数见 https://docs.x.ai/docs/api-reference#chat-completions
+      en_US: Parameters to pass to the live search, see https://docs.x.ai/docs/api-reference#chat-completions
+    required: false
 pricing:
   input: "3.00"
   output: "15.00"
