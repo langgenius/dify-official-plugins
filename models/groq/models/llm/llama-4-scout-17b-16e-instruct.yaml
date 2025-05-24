@@ -1,13 +1,15 @@
-model: llama3-groq-70b-8192-tool-use-preview
+model: meta-llama/llama-4-scout-17b-16e-instruct
 label:
-  zh_Hans: Llama3-groq-70b-8192-tool-use (PREVIEW)
-  en_US: Llama3-groq-70b-8192-tool-use (PREVIEW)
+  zh_Hans: Llama 4 Scout 17B 16E Instruct Preview
+  en_US: Llama 4 Scout 17B 16E Instruct Preview
 model_type: llm
 features:
   - agent-thought
+  - multi-tool-call
+  - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 8192
+  context_size: 131072
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -19,8 +21,7 @@ parameter_rules:
     min: 1
     max: 8192
 pricing:
-  input: "0.05"
-  output: "0.08"
-  unit: "0.000001"
+  input: '0.05'
+  output: '0.1'
+  unit: '0.000001'
   currency: USD
-deprecated: true

@@ -1,7 +1,7 @@
-# https://ai.google.dev/gemini-api/docs/models?hl=zh-cn#gemini-2.5-pro-exp-03-25
-model: gemini-2.5-pro-exp-03-25
+# https://ai.google.dev/gemini-api/docs/models#gemini-2.5-flash-preview
+model: gemini-2.5-flash-preview-05-20
 label:
-  en_US: Gemini 2.5 Pro Experimental 03-25
+  en_US: Gemini 2.5 Flash Preview 05-20
 model_type: llm
 features:
   - agent-thought
@@ -35,11 +35,21 @@ parameter_rules:
     use_template: max_tokens
     default: 8192
     min: 1
-    max: 64000
+    max: 65536
   - name: json_schema
     use_template: json_schema
+  - name: grounding
+    label:
+      en_US: Grounding
+      ja_JP: Grounding
+    type: boolean
+    help:
+      en_US: ensures responses are based on Google Search.
+      ja_JP: Google検索に基づいた応答をします。
+    required: true
+    default: false
 pricing:
-  input: '0.00'
-  output: '0.00'
+  input: '0.15'
+  output: '0.60'
   unit: '0.000001'
   currency: USD

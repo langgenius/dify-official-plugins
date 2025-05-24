@@ -1093,7 +1093,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                                 ]
                             )
 
-        # o1, o3 compatibility
+        # o1, o3, o4 compatibility
         if model.startswith(O_SERIES_COMPATIBILITY):
             system_message_count = len(
                 [m for m in prompt_messages if isinstance(m, SystemPromptMessage)]
@@ -1218,7 +1218,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             model = model.split(":")[1]
 
         # Currently, we can use gpt4o to calculate chatgpt-4o-latest's token.
-        if model == "chatgpt-4o-latest" or model.startswith(("o1", "o3", "gpt-4.1", "gpt-4.5")):
+        if model == "chatgpt-4o-latest" or model.startswith(("o1", "o3", "o4", "gpt-4.1", "gpt-4.5")):
             model = "gpt-4o"
 
         try:
@@ -1236,7 +1236,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         elif (
             model.startswith("gpt-3.5-turbo")
             or model.startswith("gpt-4")
-            or model.startswith(("o1", "o3"))
+            or model.startswith(("o1", "o3", "o4"))
         ):
             tokens_per_message = 3
             tokens_per_name = 1
