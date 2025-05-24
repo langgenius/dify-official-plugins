@@ -1,0 +1,83 @@
+provider: aihubmix
+label:
+  en_US: Aihubmix
+description:
+  en_US: Models provided by Aihubmix.
+  zh_Hans: Aihubmix 提供的模型。
+icon_small:
+  en_US: icon_s_en.svg
+icon_large:
+  en_US: icon_l_en.svg
+background: "#E5E7EB"
+help:
+  title:
+    en_US: Get your API Key from Aihubmix
+    zh_Hans: 从 Aihubmix 获取 API Key
+  url:
+    en_US: https://aihubmix.com/token
+supported_model_types:
+  - llm
+  - text-embedding
+  - rerank
+  - speech2text
+  - tts
+configurate_methods:
+  - predefined-model
+  - customizable-model
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        zh_Hans: 在此输入您的 API Key
+        en_US: Enter your API Key
+model_credential_schema:
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: Enter your model name
+      zh_Hans: 输入模型名称
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        zh_Hans: 在此输入您的 API Key
+        en_US: Enter your API Key
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+      - models/llm/*.yaml
+  rerank:
+    position: models/rerank/_position.yaml
+    predefined:
+      - models/rerank/*.yaml
+  speech2text:
+    position: models/speech2text/_position.yaml
+    predefined:
+      - models/speech2text/*.yaml
+  text_embedding:
+    position: models/text_embedding/_position.yaml
+    predefined:
+      - models/text_embedding/*.yaml
+  tts:
+    position: models/tts/_position.yaml
+    predefined:
+      - models/tts/*.yaml
+extra:
+  python:
+    provider_source: provider/aihubmix.py
+    model_sources:
+      - models/llm/llm.py
+      - models/rerank/rerank.py
+      - models/text_embedding/text_embedding.py
+      - models/tts/tts.py
+      - models/speech2text/speech2text.py
