@@ -1,6 +1,6 @@
-model: grok-3-mini-beta
+model: grok-3-mini-fast
 label:
-  en_US: grok-3-mini-beta
+  en_US: grok-3-mini-fast
 model_type: llm
 features:
   - agent-thought
@@ -44,7 +44,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: "0.30"
-  output: "0.50"
+  input: "0.60"
+  output: "4.00"
   unit: "0.000001"
   currency: USD

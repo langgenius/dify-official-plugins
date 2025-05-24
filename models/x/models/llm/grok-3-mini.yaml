@@ -1,6 +1,6 @@
-model: grok-3-beta
+model: grok-3-mini
 label:
-  en_US: grok-3-beta
+  en_US: grok-3-mini
 model_type: llm
 features:
   - agent-thought
@@ -17,6 +17,18 @@ parameter_rules:
     use_template: top_p
   - name: frequency_penalty
     use_template: frequency_penalty
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理工作
+      en_US: reasoning_effort
+    type: string
+    help:
+      zh_Hans: 限制推理模型的推理工作
+      en_US: constrains effort on reasoning for reasoning models
+    required: false
+    options:
+      - low
+      - high
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -32,7 +44,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: "3.00"
-  output: "15.00"
+  input: "0.30"
+  output: "0.50"
   unit: "0.000001"
   currency: USD
