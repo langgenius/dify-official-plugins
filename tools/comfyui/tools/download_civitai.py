@@ -25,7 +25,10 @@ class DownloadCivitAI(Tool):
         civitai_api_key = self.runtime.credentials.get("civitai_api_key")
         if civitai_api_key is None:
             raise ToolProviderCredentialValidationError("Please input civitai_api_key")
-        self.comfyui = ComfyUiClient(base_url)
+        self.comfyui = ComfyUiClient(
+            base_url,
+            self.runtime.credentials.get("comfyui_api_key")
+        )
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "download.json")) as file:

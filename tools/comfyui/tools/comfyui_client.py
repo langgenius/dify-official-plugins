@@ -26,8 +26,15 @@ class FileType(StrEnum):
 
 
 class ComfyUiClient:
-    def __init__(self, base_url: str):
+    def __init__(self, base_url: str, api_key: str = None): # Add api_key parameter
         self.base_url = URL(base_url)
+        self.api_key = api_key # Store api_key
+
+    def _get_headers(self) -> dict: # Helper method to get headers
+        headers = {}
+        if self.api_key:
+            headers["Authorization"] = f"Bearer {self.api_key}"
+        return headers
 
     def get_checkpoints(self) -> list[str]:
         """
@@ -35,7 +42,7 @@ class ComfyUiClient:
         """
         try:
             api_url = str(self.base_url / "models" / "checkpoints")
-            response = httpx.get(url=api_url, timeout=(2, 10))
+            response = httpx.get(url=api_url, timeout=(2, 10), headers=self._get_headers()) # Add headers
             if response.status_code != 200:
                 return []
             else:
@@ -49,7 +56,7 @@ class ComfyUiClient:
         """
         try:
             api_url = str(self.base_url / "models" / "upscale_models")
-            response = httpx.get(url=api_url, timeout=(2, 10))
+            response = httpx.get(url=api_url, timeout=(2, 10), headers=self._get_headers()) # Add headers
             if response.status_code != 200:
                 return []
             else:
@@ -63,7 +70,7 @@ class ComfyUiClient:
         """
         try:
             api_url = str(self.base_url / "models" / "loras")
-            response = httpx.get(url=api_url, timeout=(2, 10))
+            response = httpx.get(url=api_url, timeout=(2, 10), headers=self._get_headers()) # Add headers
             if response.status_code != 200:
                 return []
             else:
@@ -77,7 +84,7 @@ class ComfyUiClient:
         """
         try:
             api_url = str(self.base_url / "object_info" / "KSampler")
-            response = httpx.get(url=api_url, timeout=(2, 10))
+            response = httpx.get(url=api_url, timeout=(2, 10), headers=self._get_headers()) # Add headers
             if response.status_code != 200:
                 return []
             else:
@@ -92,7 +99,7 @@ class ComfyUiClient:
         """
         try:
             api_url = str(self.base_url / "object_info" / "KSampler")
-            response = httpx.get(url=api_url, timeout=(2, 10))
+            response = httpx.get(url=api_url, timeout=(2, 10), headers=self._get_headers()) # Add headers
             if response.status_code != 200:
                 return []
             else:
@@ -103,7 +110,8 @@ class ComfyUiClient:
 
     def get_history(self, prompt_id: str) -> dict:
         res = httpx.get(str(self.base_url / "history"),
-                        params={"prompt_id": prompt_id})
+                        params={"prompt_id": prompt_id},
+                        headers=self._get_headers()) # Add headers
         history = res.json()[prompt_id]
         return history
 
@@ -112,6 +120,7 @@ class ComfyUiClient:
             str(self.base_url / "view"),
             params={"filename": filename,
                     "subfolder": subfolder, "type": folder_type},
+            headers=self._get_headers() # Add headers
         )
         return response.content
 
@@ -127,7 +136,7 @@ class ComfyUiClient:
         }
         try:
             res = requests.post(
-                str(self.base_url / "upload" / "image"), files=files)
+                str(self.base_url / "upload" / "image"), files=files, headers=self._get_headers()) # Add headers for requests
             image_name = res.json().get("name")
             return image_name
         except:
@@ -137,6 +146,7 @@ class ComfyUiClient:
         res = httpx.post(
             str(self.base_url / "prompt"),
             json={"client_id": client_id, "prompt": prompt},
+            headers=self._get_headers() # Add headers
         )
         try:
             prompt_id = res.json()["prompt_id"]
@@ -154,7 +164,11 @@ class ComfyUiClient:
         ws_address = (
             f"{ws_protocol}://{self.base_url.authority}/ws?clientId={client_id}"
         )
-        ws.connect(ws_address)
+        # 添加headers
+        headers = []
+        if self.api_key:
+            headers.append(f"Authorization: Bearer {self.api_key}")
+        ws.connect(ws_address, header=headers)
         return ws, client_id
 
     def set_prompt_by_ksampler(
@@ -262,10 +276,12 @@ class ComfyUiClient:
             params={"filename": filename,
                     "subfolder": subfolder, "type": folder_type},
             timeout=(2, 10),
+            headers=self._get_headers() # Add headers
         )
         return response.content
 
     def generate_image_by_prompt(self, prompt: dict) -> list[dict[str, str | bytes]]:
+        ws = None
         try:
             ws, client_id = self.open_websocket_connection()
             prompt_id = self.queue_prompt(client_id, prompt)
@@ -286,56 +302,73 @@ class ComfyUiClient:
                     )
             return images
         finally:
-            ws.close()
+            if ws is not None:
+                try:
+                    ws.close()
+                except:
+                    pass
 
     def queue_prompt_image(self, client_id, prompt):
-        """
-        send prompt task and rotate
-        """
-        url = str(self.base_url / "prompt")
-        respond = httpx.post(
-            url,
-            data=json.dumps({"client_id": client_id, "prompt": prompt}),
-            timeout=(2, 10),
-        )
-        prompt_id = respond.json()["prompt_id"]
-        ws = WebSocket()
-        if "https" == self.base_url.scheme:
-            ws_url = str(self.base_url).replace("https", "ws")
-        else:
-            ws_url = str(self.base_url).replace("http", "ws")
-        ws.connect(str(URL(f"{ws_url}") / "ws") +
-                   f"?clientId={client_id}", timeout=120)
-        output_images = {}
-        while True:
-            out = ws.recv()
-            if isinstance(out, str):
-                message = json.loads(out)
-                if message["type"] == "executing":
-                    data = message["data"]
-                    if data["node"] is None and data["prompt_id"] == prompt_id:
-                        break
-                elif message["type"] == "status":
-                    data = message["data"]
-                    if data["status"]["exec_info"]["queue_remaining"] == 0 and data.get(
-                        "sid"
-                    ):
-                        break
+        ws = None
+        try:
+            url = str(self.base_url / "prompt")
+            respond = httpx.post(
+                url,
+                data=json.dumps({"client_id": client_id, "prompt": prompt}),
+                timeout=(2, 10),
+                headers=self._get_headers()  # 添加认证头
+            )
+            prompt_id = respond.json()["prompt_id"]
+            ws = WebSocket()
+            if "https" == self.base_url.scheme:
+                ws_url = str(self.base_url).replace("https", "ws")
             else:
-                continue
-        history = self.get_history(prompt_id)
-        for o in history["outputs"]:
-            for node_id in history["outputs"]:
-                node_output = history["outputs"][node_id]
-                if "images" in node_output:
-                    images_output = []
-                    for image in node_output["images"]:
-                        image_data = self.download_image(
-                            image["filename"],
-                            image["subfolder"],
-                            image["type"],
-                        )
-                        images_output.append(image_data)
-                    output_images[node_id] = images_output
-        ws.close()
+                ws_url = str(self.base_url).replace("http", "ws")
+                
+            # 添加 WebSocket 认证头
+            headers = []
+            if self.api_key:
+                headers.append(f"Authorization: Bearer {self.api_key}")
+            ws.connect(
+                str(URL(f"{ws_url}") / "ws") + f"?clientId={client_id}",
+                timeout=120,
+                header=headers
+            )
+            output_images = {}
+            while True:
+                out = ws.recv()
+                if isinstance(out, str):
+                    message = json.loads(out)
+                    if message["type"] == "executing":
+                        data = message["data"]
+                        if data["node"] is None and data["prompt_id"] == prompt_id:
+                            break
+                    elif message["type"] == "status":
+                        data = message["data"]
+                        if data["status"]["exec_info"]["queue_remaining"] == 0 and data.get(
+                            "sid"
+                        ):
+                            break
+                    else:
+                        continue
+            history = self.get_history(prompt_id)
+            for o in history["outputs"]:
+                for node_id in history["outputs"]:
+                    node_output = history["outputs"][node_id]
+                    if "images" in node_output:
+                        images_output = []
+                        for image in node_output["images"]:
+                            image_data = self.download_image(
+                                image["filename"],
+                                image["subfolder"],
+                                image["type"],
+                            )
+                            images_output.append(image_data)
+                        output_images[node_id] = images_output
+        finally:
+            if ws is not None:
+                try:
+                    ws.close()
+                except:
+                    pass
         return output_images

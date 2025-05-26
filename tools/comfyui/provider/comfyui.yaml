@@ -9,6 +9,15 @@ credentials_for_provider:
     required: true
     type: text-input
     url: https://docs.dify.ai/guides/tools/tool-configuration/comfyui
+  comfyui_api_key: # Add this section
+    label:
+      en_US: ComfyUI API Key（ComfyUI-Sentinel Plugins）
+      zh_Hans: ComfyUI API 密钥（ComfyUI-Sentinel 插件）
+    placeholder:
+      en_US: Please input your ComfyUI API Token
+      zh_Hans: 请输入你的 ComfyUI API Token
+    required: false
+    type: secret-input # It's better to use secret-input for API keys
   civitai_api_key:
     label:
       en_US: CivitAI API Key

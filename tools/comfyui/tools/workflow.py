@@ -17,10 +17,13 @@ def clean_json_string(s):
 
 
 class ComfyUIWorkflowTool(Tool):
-    def _invoke(
-        self, tool_parameters: dict[str, Any]
-    ) -> Generator[ToolInvokeMessage, None, None]:
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         comfyui = ComfyUiClient(self.runtime.credentials["base_url"])
+        # 这里需要传入 api_key
+        comfyui = ComfyUiClient(
+            self.runtime.credentials["base_url"],
+            self.runtime.credentials.get("comfyui_api_key")
+        )
         images = tool_parameters.get("images") or []
         prompt = json.loads(clean_json_string(
             tool_parameters.get("workflow_json")))
@@ -33,7 +36,10 @@ class ComfyUIWorkflowTool(Tool):
                 "overwrite": "true",
             }
             res = httpx.post(
-                str(comfyui.base_url / "upload" / "image"), files=files)
+                str(comfyui.base_url / "upload" / "image"),
+                files=files,
+                headers=comfyui._get_headers()  # 添加认证头
+            )
             image_name = res.json().get("name")
             image_names.append(image_name)
 

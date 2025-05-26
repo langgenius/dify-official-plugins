@@ -34,7 +34,10 @@ class ComfyuiFaceSwap(Tool):
         base_url = self.runtime.credentials.get("base_url", "")
         if not base_url:
             yield self.create_text_message("Please input base_url")
-        self.comfyui = ComfyUiClient(base_url)
+        self.comfyui = ComfyUiClient(
+            base_url,
+            self.runtime.credentials.get("comfyui_api_key")
+        )
 
         images = tool_parameters.get("images") or []
         image_names = []

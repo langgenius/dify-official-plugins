@@ -25,7 +25,10 @@ class DownloadHuggingFace(Tool):
         if hf_api_key is None:
             raise ToolProviderCredentialValidationError("Please input hf_api_key")
 
-        self.comfyui = ComfyUiClient(base_url)
+        self.comfyui = ComfyUiClient(
+            base_url,
+            self.runtime.credentials.get("comfyui_api_key")
+        )
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "download.json")) as file:

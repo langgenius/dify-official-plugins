@@ -20,7 +20,7 @@ identity:
   label:
     en_US: Txt2Img
     pt_BR: Txt2Img
-    zh_Hans: 文本到视频
+    zh_Hans: 文本到图像
     ja_JP: テキストto画像
   name: txt2img
 parameters:
