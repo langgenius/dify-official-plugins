@@ -71,13 +71,18 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
     # please refer to the documentation: https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html
     # TODO There is invoke issue: context limit on Cohere Model, will add them after fixed.
     CONVERSE_API_ENABLED_MODEL_INFO = [
-        {"prefix": "anthropic.claude-v2", "support_system_prompts": True, "support_tool_use": False},
         {"prefix": "us.deepseek", "support_system_prompts": True, "support_tool_use": False},
-        {"prefix": "anthropic.claude-v1", "support_system_prompts": True, "support_tool_use": False},
-        {"prefix": "us.anthropic.claude-3", "support_system_prompts": True, "support_tool_use": True},
-        {"prefix": "eu.anthropic.claude-3", "support_system_prompts": True, "support_tool_use": True},
-        {"prefix": "anthropic.claude-3", "support_system_prompts": True, "support_tool_use": True},
-        {"prefix": "us.meta.llama3-2", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "us.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "eu.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "apac.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "amazon.nova", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "us.amazon.nova", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "eu.amazon.nova", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "apac.amazon.nova", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "us.meta.llama", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "eu.meta.llama", "support_system_prompts": True, "support_tool_use": True},
+        {"prefix": "apac.meta.llama", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "meta.llama", "support_system_prompts": True, "support_tool_use": False},
         {"prefix": "mistral.mistral-7b-instruct", "support_system_prompts": False, "support_tool_use": False},
         {"prefix": "mistral.mixtral-8x7b-instruct", "support_system_prompts": False, "support_tool_use": False},
@@ -86,8 +91,6 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         {"prefix": "cohere.command-r", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "amazon.titan", "support_system_prompts": False, "support_tool_use": False},
         {"prefix": "ai21.jamba-1-5", "support_system_prompts": True, "support_tool_use": False},
-        {"prefix": "amazon.nova", "support_system_prompts": True, "support_tool_use": True},
-        {"prefix": "us.amazon.nova", "support_system_prompts": True, "support_tool_use": True},
     ]
 
     @staticmethod

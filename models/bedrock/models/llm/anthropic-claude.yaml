@@ -24,6 +24,8 @@ parameter_rules:
     required: true
     default: Claude 3.7 Sonnet
     options:
+      - Claude 4.0 Sonnet
+      - Claude 4.0 Opus
       - Claude 3.7 Sonnet
       - Claude 3.5 Sonnet
       - Claude 3.5 Sonnet V2
