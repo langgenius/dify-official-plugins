@@ -1,12 +1,12 @@
-# Minimax TTS 插件
+# Minimax TTS  Plugin
 
-本插件为 [Minimax](https://www.minimax.chat/) 语音合成（TTS）服务的 Dify 插件。
+This plugin is a Dify plugin for Minimax Text-to-Speech (TTS) service.
 
 ## 依赖
 - requests
 
-## 配置
-- 需在 provider/minimax_tts.yaml 中配置 group_id 和 api_key。
+## Configuration
+- You need to configure group_id and api_key
 
-## 用法
-- 通过 dify 工具调用文本转语音。 
+## Usage
+- Use the Dify tool to call text-to-speech conversion.
