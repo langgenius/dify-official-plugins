@@ -19,7 +19,6 @@ def clean_json_string(s):
 class ComfyUIWorkflowTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         comfyui = ComfyUiClient(self.runtime.credentials["base_url"])
-        # 这里需要传入 api_key
         comfyui = ComfyUiClient(
             self.runtime.credentials["base_url"],
             self.runtime.credentials.get("comfyui_api_key")
@@ -38,7 +37,7 @@ class ComfyUIWorkflowTool(Tool):
             res = httpx.post(
                 str(comfyui.base_url / "upload" / "image"),
                 files=files,
-                headers=comfyui._get_headers()  # 添加认证头
+                headers=comfyui._get_headers()
             )
             image_name = res.json().get("name")
             image_names.append(image_name)

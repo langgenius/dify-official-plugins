@@ -16,13 +16,12 @@ class ComfyUIProvider(ToolProvider):
             ws_protocol = "wss"
         ws_address = f"{ws_protocol}://{base_url.authority}/ws?clientId=test123"
         
-        # 修改这里：将headers改为list类型，这是websocket-client要求的格式
         headers = []
         if comfyui_api_key:
             headers.append(f"Authorization: Bearer {comfyui_api_key}")
 
         try:
-            ws.connect(ws_address, header=headers)  # 使用header参数（不是headers）
+            ws.connect(ws_address, header=headers)
         except Exception as e:
             raise ToolProviderCredentialValidationError(
                 f"can not connect to {ws_address}. Error: {str(e)}"

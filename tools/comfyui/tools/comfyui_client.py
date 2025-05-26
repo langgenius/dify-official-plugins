@@ -164,7 +164,6 @@ class ComfyUiClient:
         ws_address = (
             f"{ws_protocol}://{self.base_url.authority}/ws?clientId={client_id}"
         )
-        # 添加headers
         headers = []
         if self.api_key:
             headers.append(f"Authorization: Bearer {self.api_key}")
@@ -316,7 +315,7 @@ class ComfyUiClient:
                 url,
                 data=json.dumps({"client_id": client_id, "prompt": prompt}),
                 timeout=(2, 10),
-                headers=self._get_headers()  # 添加认证头
+                headers=self._get_headers()
             )
             prompt_id = respond.json()["prompt_id"]
             ws = WebSocket()
@@ -325,7 +324,6 @@ class ComfyUiClient:
             else:
                 ws_url = str(self.base_url).replace("http", "ws")
                 
-            # 添加 WebSocket 认证头
             headers = []
             if self.api_key:
                 headers.append(f"Authorization: Bearer {self.api_key}")
