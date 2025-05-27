@@ -279,8 +279,9 @@ The plugin handles various error scenarios:
 
 ```bash
 # Clone and setup
-git clone https://github.com/langgenius/dify-plugin-brave-search
-cd dify-plugin-brave-search
+git clonehttps://github.com/langgenius/dify-official-plugins
+cd defy-official-plugins
+cd tools/brave
 
 # Create virtual environment
 python -m venv venv
@@ -320,18 +321,6 @@ pre-commit run --all-files
 5. **Document** your changes
 6. **Submit** a pull request
 
-### Testing
-
-```bash
-# Run all tests
-pytest
-
-# Run with coverage
-pytest --cov=tools --cov-report=html
-
-# Run specific test
-pytest tests/test_brave_search.py::test_search_functionality
-```
 
 ### Custom Search Parameters
 
