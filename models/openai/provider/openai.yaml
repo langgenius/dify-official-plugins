@@ -1,9 +1,10 @@
 provider: openai
 label:
-  en_US: OpenAI
+  en_US: GitHub AI Models (OpenAI Compatible)
+  zh_Hans: GitHub AI 模型 (OpenAI 兼容)
 description:
-  en_US: Models provided by OpenAI, such as GPT-3.5-Turbo and GPT-4.
-  zh_Hans: OpenAI 提供的模型，例如 GPT-3.5-Turbo 和 GPT-4。
+  en_US: Access OpenAI-compatible models via the GitHub AI endpoint.
+  zh_Hans: 通过 GitHub AI 端点访问 OpenAI 兼容模型。
 icon_small:
   en_US: icon_s_en.svg
 icon_large:
@@ -11,10 +12,10 @@ icon_large:
 background: "#E5E7EB"
 help:
   title:
-    en_US: Get your API Key from OpenAI
-    zh_Hans: 从 OpenAI 获取 API Key
+    en_US: Using GitHub AI Models
+    zh_Hans: 使用 GitHub AI 模型
   url:
-    en_US: https://platform.openai.com/account/api-keys
+    en_US: https://docs.github.com/en/copilot/github-copilot-enterprise/models-github-ai
 supported_model_types:
   - llm
   - text-embedding
@@ -33,23 +34,15 @@ model_credential_schema:
       en_US: Enter your model name
       zh_Hans: 输入模型名称
   credential_form_schemas:
-    - variable: openai_api_key
+    - variable: github_token
       label:
-        en_US: API Key
+        en_US: GitHub Token
+        zh_Hans: GitHub Token
       type: secret-input
       required: true
       placeholder:
-        zh_Hans: 在此输入您的 API Key
-        en_US: Enter your API Key
-    - variable: openai_organization
-      label:
-        zh_Hans: 组织 ID
-        en_US: Organization
-      type: text-input
-      required: false
-      placeholder:
-        zh_Hans: 在此输入您的组织 ID
-        en_US: Enter your Organization ID
+        zh_Hans: 在此输入您的 GitHub Token (GITHUB_TOKEN)
+        en_US: Enter your GitHub Token (GITHUB_TOKEN)
     - variable: openai_api_base
       label:
         zh_Hans: API Base
@@ -57,27 +50,19 @@ model_credential_schema:
       type: text-input
       required: false
       placeholder:
-        zh_Hans: 在此输入您的 API Base
-        en_US: Enter your API Base
+        zh_Hans: 在此输入您的 API Base，默认为 https://models.github.ai/inference
+        en_US: Enter your API Base, defaults to https://models.github.ai/inference
 provider_credential_schema:
   credential_form_schemas:
-    - variable: openai_api_key
+    - variable: github_token
       label:
-        en_US: API Key
+        en_US: GitHub Token
+        zh_Hans: GitHub Token
       type: secret-input
       required: true
       placeholder:
-        zh_Hans: 在此输入您的 API Key
-        en_US: Enter your API Key
-    - variable: openai_organization
-      label:
-        zh_Hans: 组织 ID
-        en_US: Organization
-      type: text-input
-      required: false
-      placeholder:
-        zh_Hans: 在此输入您的组织 ID
-        en_US: Enter your Organization ID
+        zh_Hans: 在此输入您的 GitHub Token (GITHUB_TOKEN)
+        en_US: Enter your GitHub Token (GITHUB_TOKEN)
     - variable: openai_api_base
       label:
         zh_Hans: API Base
@@ -85,8 +70,8 @@ provider_credential_schema:
       type: text-input
       required: false
       placeholder:
-        zh_Hans: 在此输入您的 API Base, 如：https://api.openai.com
-        en_US: Enter your API Base, e.g. https://api.openai.com
+        zh_Hans: 在此输入您的 API Base, 例如 https://models.github.ai/inference
+        en_US: Enter your API Base, e.g. https://models.github.ai/inference
 models:
   llm:
     predefined:

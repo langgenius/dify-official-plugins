@@ -1,12 +1,13 @@
 version: 0.0.25
 type: plugin
 author: "langgenius"
-name: "openai"
+name: "github_ai_via_openai_plugin"
 description:
-  en_US: Models provided by OpenAI, such as GPT-3.5-Turbo and GPT-4.
-  zh_Hans: OpenAI 提供的模型，例如 GPT-3.5-Turbo 和 GPT-4。
+  en_US: Access OpenAI-compatible models via the GitHub AI endpoint.
+  zh_Hans: 通过 GitHub AI 端点访问 OpenAI 兼容模型。
 label:
-  en_US: "OpenAI"
+  en_US: "GitHub AI (OpenAI Compatible)"
+  zh_Hans: "GitHub AI (OpenAI 兼容)"
 created_at: "2024-07-12T08:03:44.658609186Z"
 icon: icon_s_en.svg
 resource:

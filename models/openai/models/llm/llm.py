@@ -401,45 +401,51 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         credentials_kwargs = self._to_credential_kwargs(credentials)
         client = OpenAI(**credentials_kwargs)
 
-        # get all remote models
-        remote_models = client.models.list()
-
-        fine_tune_models = [
-            model for model in remote_models if model.id.startswith("ft:")
-        ]
-
         ai_model_entities = []
-        for model in fine_tune_models:
-            base_model = model.id.split(":")[1]
+        try:
+            # get all remote models
+            remote_models_response = client.models.list()
 
-            base_model_schema = None
-            for (
-                predefined_model_name,
-                predefined_model,
-            ) in predefined_models_map.items():
-                if predefined_model_name in base_model:
-                    base_model_schema = predefined_model
+            fine_tune_models = [
+                model for model in remote_models_response if model.id.startswith("ft:")
+            ]
 
-            if not base_model_schema:
-                continue
+            for model_data in fine_tune_models:
+                base_model = model_data.id.split(":")[1]
 
-            ai_model_entity = AIModelEntity(
-                model=model.id,
-                label=I18nObject(zh_Hans=model.id, en_US=model.id),
-                model_type=ModelType.LLM,
-                features=base_model_schema.features,
-                fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
-                model_properties=base_model_schema.model_properties,
-                parameter_rules=base_model_schema.parameter_rules,
-                pricing=PriceConfig(
-                    input=Decimal("0.003"),
-                    output=Decimal("0.006"),
-                    unit=Decimal("0.001"),
-                    currency="USD",
-                ),
+                base_model_schema = None
+                for (
+                    predefined_model_name,
+                    predefined_model,
+                ) in predefined_models_map.items():
+                    if predefined_model_name in base_model:
+                        base_model_schema = predefined_model
+
+                if not base_model_schema:
+                    continue
+
+                ai_model_entity = AIModelEntity(
+                    model=model_data.id,
+                    label=I18nObject(zh_Hans=model_data.id, en_US=model_data.id),
+                    model_type=ModelType.LLM,
+                    features=base_model_schema.features,
+                    fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+                    model_properties=base_model_schema.model_properties,
+                    parameter_rules=base_model_schema.parameter_rules,
+                    pricing=PriceConfig( # Assuming a default pricing, adjust if necessary
+                        input=Decimal("0.003"),
+                        output=Decimal("0.006"),
+                        unit=Decimal("0.001"),
+                        currency="USD",
+                    ),
+                )
+                ai_model_entities.append(ai_model_entity)
+        except Exception as e:
+            logger.warning(
+                f"Failed to fetch remote models from GitHub AI endpoint: {e}. "
+                "Proceeding without custom model list."
             )
-
-            ai_model_entities.append(ai_model_entity)
+            return []
 
         return ai_model_entities
 

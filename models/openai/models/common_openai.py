@@ -15,17 +15,16 @@ class _CommonOpenAI:
         :return:
         """
         credentials_kwargs = {
-            "api_key": credentials['openai_api_key'],
+            "api_key": credentials['github_token'],
             "timeout": Timeout(315.0, read=300.0, write=10.0, connect=5.0),
             "max_retries": 1,
         }
 
-        if credentials.get("openai_api_base"):
-            openai_api_base = credentials["openai_api_base"].rstrip("/")
-            credentials_kwargs["base_url"] = openai_api_base + "/v1"
-
-        if 'openai_organization' in credentials:
-            credentials_kwargs['organization'] = credentials['openai_organization']
+        openai_api_base = credentials.get("openai_api_base")
+        if openai_api_base:
+            credentials_kwargs["base_url"] = openai_api_base.rstrip("/") + "/v1"
+        else:
+            credentials_kwargs["base_url"] = "https://models.github.ai/inference/v1"
 
         return credentials_kwargs
 
