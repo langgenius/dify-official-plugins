@@ -11,12 +11,19 @@ model_properties:
 parameter_rules:
   - name: temperature
     use_template: temperature
+    default: 1.0
+    min: 0.0
+    max: 2.0
   - name: top_p
     use_template: top_p
   - name: presence_penalty
     use_template: presence_penalty
+    min: -2.0
+    max: 2.0
   - name: frequency_penalty
     use_template: frequency_penalty
+    min: -2.0
+    max: 2.0
   - name: response_format
     label:
       zh_Hans: 回复格式
