@@ -449,7 +449,10 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             else None
         )
         project_id = credentials["vertex_project_id"]
-        location = credentials["vertex_location"]
+        if "preview" in model:
+            location = "us-central1"
+        else:
+            location = credentials["vertex_location"]
         if service_account_info:
             service_accountSA = service_account.Credentials.from_service_account_info(service_account_info)
             aiplatform.init(credentials=service_accountSA, project=project_id, location=location)
@@ -479,31 +482,54 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 else:
                     history.append(content)
 
-        google_model = glm.GenerativeModel(model_name=model, system_instruction=system_instruction)
+        if dynamic_threshold is not None and model.startswith("gemini-2."):
+            from google import genai
+            from google.genai.types import Tool, GenerateContentConfig, GoogleSearch
 
-        if dynamic_threshold is not None:
-            tools = self._convert_grounding_to_glm_tool(dynamic_threshold=dynamic_threshold)
+            SCOPES = [
+                "https://www.googleapis.com/auth/cloud-platform",
+                "https://www.googleapis.com/auth/generative-language"
+            ]
+            credential = service_account.Credentials.from_service_account_info(
+                service_account_info,
+                scopes=SCOPES
+            )
+            client = genai.Client(credentials=credential, project=project_id, location=location, vertexai=True)
+
+            google_search_tool = Tool(google_search=GoogleSearch())
+            response = client.models.generate_content(
+                model=model,
+                contents=history[0].parts[0].text if history else "",
+                config=GenerateContentConfig(
+                    tools=[google_search_tool],
+                    response_modalities=["TEXT"],
+                )
+            )
         else:
-            tools = self._convert_tools_to_glm_tool(tools) if tools else None
+            google_model = glm.GenerativeModel(model_name=model, system_instruction=system_instruction)
 
-        mime_type = config_kwargs.pop("response_mime_type", None)
-        
-        generation_config_params = config_kwargs.copy()
-        
-        if response_schema:
-            generation_config_params["response_schema"] = response_schema
-            generation_config_params["response_mime_type"] = "application/json"
-        elif mime_type:
-            generation_config_params["response_mime_type"] = mime_type
-        
-        generation_config = glm.GenerationConfig(**generation_config_params)
-        
-        response = google_model.generate_content(
-            contents=history,
-            generation_config=generation_config,
-            stream=stream,
-            tools=tools,
-        )
+            if dynamic_threshold is not None:
+                tools = self._convert_grounding_to_glm_tool(dynamic_threshold=dynamic_threshold)
+            else:
+                tools = self._convert_tools_to_glm_tool(tools) if tools else None
+            mime_type = config_kwargs.pop("response_mime_type", None)
+
+            generation_config_params = config_kwargs.copy()
+
+            if response_schema:
+                generation_config_params["response_schema"] = response_schema
+                generation_config_params["response_mime_type"] = "application/json"
+            elif mime_type:
+                generation_config_params["response_mime_type"] = mime_type
+
+            generation_config = glm.GenerationConfig(**generation_config_params)
+
+            response = google_model.generate_content(
+                contents=history,
+                generation_config=generation_config,
+                stream=stream,
+                tools=tools,
+            )
         if stream:
             return self._handle_generate_stream_response(model, credentials, response, prompt_messages)
         return self._handle_generate_response(model, credentials, response, prompt_messages)
@@ -557,7 +583,14 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         """
         index = -1
         for chunk in response:
-            candidate = chunk.candidates[0]
+            if isinstance(chunk, tuple):
+                key, value = chunk
+                if key == 'candidates':
+                    candidate = value[0]
+                else:
+                    continue
+            else:
+                candidate = chunk.candidates[0]
             for part in candidate.content.parts:
                 assistant_prompt_message = AssistantPromptMessage(content="", tool_calls=[])
 
@@ -590,7 +623,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                     reference_lines = []
                     grounding_chunks = None
                     try:
-                        grounding_chunks = chunk.candidates[0].grounding_metadata.grounding_chunks
+                        grounding_chunks = candidate.grounding_metadata.grounding_chunks
                     except AttributeError:
                         try:
                             candidate_dict = chunk.candidates[0].to_dict()
