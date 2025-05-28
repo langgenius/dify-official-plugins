@@ -47,7 +47,7 @@ parameter_rules:
       en_US: Parameters to pass to the live search, see https://docs.x.ai/docs/api-reference#chat-completions
     required: false
 pricing:
-  input: '3.00'
-  output: '15.00'
-  unit: '0.000001'
+  input: "3.00"
+  output: "15.00"
+  unit: "0.000001"
   currency: USD
