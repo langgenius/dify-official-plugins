@@ -341,33 +341,35 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         text = "".join((self._convert_one_message_to_text(message) for message in messages))
         return text.rstrip()
 
-    def _convert_tools_to_glm_tool(self, tools: list[PromptMessageTool]) -> "glm.Tool":
+    def _convert_tools_to_glm_tool(self, tools: list[PromptMessageTool]) -> list["glm.Tool"]:
         """
         Convert tool messages to glm tools
 
         :param tools: tool messages
         :return: glm tools
         """
-        return glm.Tool(
-            function_declarations=[
-                glm.FunctionDeclaration(
-                    name=tool.name,
-                    parameters=dict(
-                        type="object",
-                        properties={
-                            key: {
-                                "type_": value.get("type", "string").upper(),
-                                "description": value.get("description", ""),
-                                "enum": value.get("enum", []),
-                            }
-                            for (key, value) in tool.parameters.get("properties", {}).items()
-                        },
-                        required=tool.parameters.get("required", []),
-                    ),
-                )
-                for tool in tools
-            ]
-        )
+        return [
+            glm.Tool(
+                function_declarations=[
+                    glm.FunctionDeclaration(
+                        name=tool.name,
+                        parameters=dict(
+                            type="object",
+                            properties={
+                                key: {
+                                    "type_": value.get("type", "string").upper(),
+                                    "description": value.get("description", ""),
+                                    "enum": value.get("enum", []),
+                                }
+                                for (key, value) in tool.parameters.get("properties", {}).items()
+                            },
+                            required=tool.parameters.get("required", []),
+                        ),
+                    )
+                    for tool in tools
+                ]
+            )
+        ]
 
     def _convert_grounding_to_glm_tool(self, dynamic_threshold: Optional[float]) -> list["glm.Tool"]:
         """
@@ -518,7 +520,23 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :param prompt_messages: prompt messages
         :return: llm response
         """
-        assistant_prompt_message = AssistantPromptMessage(content=response.candidates[0].content.parts[0].text)
+        assistant_prompt_message = AssistantPromptMessage(content="", tool_calls=[])
+        part = response.candidates[0].content.parts[0]
+        if part.function_call:
+            tool_call = [
+                AssistantPromptMessage.ToolCall(
+                    id=part.function_call.name,
+                    type="function",
+                    function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                        name=part.function_call.name,
+                        arguments=json.dumps(dict(part.function_call.args.items())),
+                    ),
+                )
+            ]
+            assistant_prompt_message.tool_calls.append(tool_call)
+        elif part.text:
+            assistant_prompt_message.content = part.text
+
         prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
         completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
         usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
@@ -542,8 +560,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             candidate = chunk.candidates[0]
             for part in candidate.content.parts:
                 assistant_prompt_message = AssistantPromptMessage(content="")
-                if part.text:
-                    assistant_prompt_message.content += part.text
+
                 if part.function_call:
                     assistant_prompt_message.tool_calls = [
                         AssistantPromptMessage.ToolCall(
@@ -555,6 +572,9 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                             ),
                         )
                     ]
+                elif part.text:
+                    assistant_prompt_message.content += part.text
+
                 index += 1
                 if not hasattr(candidate, "finish_reason") or not candidate.finish_reason:
                     yield LLMResultChunk(
