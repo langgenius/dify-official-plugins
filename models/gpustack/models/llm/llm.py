@@ -5,6 +5,7 @@ import requests
 
 from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model import (
+    DefaultParameterName,
     ModelFeature,
     ParameterRule,
     ParameterType,
@@ -131,13 +132,30 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
 
     def get_customizable_model_schema(self, model, credentials):
         entity =  super().get_customizable_model_schema(model, credentials)
-        agent_though_support = credentials.get("agent_though_support", "not_supported")
-        if agent_though_support == "supported":
+        agent_thought_support = credentials.get("agent_thought_support", "not_supported")
+        if agent_thought_support == "supported":
             try:
                 entity.features.index(ModelFeature.AGENT_THOUGHT)
             except ValueError:
                 entity.features.append(ModelFeature.AGENT_THOUGHT)
 
+        structured_output_support = credentials.get("structured_output_support", "not_supported")
+        if structured_output_support == "supported":
+            entity.parameter_rules.append(ParameterRule(
+                name=DefaultParameterName.RESPONSE_FORMAT.value,
+                label=I18nObject(en_US="Response Format", zh_Hans="回复格式"),
+                help=I18nObject(
+                    en_US="Specifying the format that the model must output.",
+                    zh_Hans="指定模型必须输出的格式。",
+                ),
+                type=ParameterType.STRING,
+                options=["text", "json_object", "json_schema"],
+                required=False,
+            ))
+            entity.parameter_rules.append(ParameterRule(
+                name=DefaultParameterName.JSON_SCHEMA.value,
+                use_template=DefaultParameterName.JSON_SCHEMA.value
+            ))
         entity.parameter_rules += [
             ParameterRule(
                 name="enable_thinking",
