@@ -201,14 +201,16 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         """
         bedrock_client = get_bedrock_client("bedrock-runtime", credentials)
 
-        # Check if cache is enabled in model parameters
-        enable_cache = model_parameters.pop("enable_cache", False)
-        logger.info(f"---enable_cache---: {enable_cache}")
+        # Get cache checkpoint settings from model parameters
+        system_cache_checkpoint = model_parameters.pop("system_cache_checkpoint", True)
+        latest_two_messages_cache_checkpoint = model_parameters.pop("latest_two_messages_cache_checkpoint", False)
+        logger.info(f"---cache_checkpoints--- system: {system_cache_checkpoint}, penultimate: {latest_two_messages_cache_checkpoint}")
         model_id = model_info["model"]
-        print(f"[CACHE DEBUG] Model: {model_id}, Cache enabled: {enable_cache}")
-        logger.info(f"[CACHE DEBUG] Model: {model_id}, Cache enabled: {enable_cache}")
+        print(f"[CACHE DEBUG] Model: {model_id}, Cache checkpoints - System: {system_cache_checkpoint}, Penultimate: {latest_two_messages_cache_checkpoint}")
+        logger.info(f"[CACHE DEBUG] Model: {model_id}, Cache checkpoints - System: {system_cache_checkpoint}, Penultimate: {latest_two_messages_cache_checkpoint}")
 
-        cache_supported = is_cache_supported(model_id) and enable_cache
+        # Enable cache if either checkpoint is enabled
+        cache_supported = is_cache_supported(model_id)
         print(f"[CACHE DEBUG] Model: {model_id}, Cache supported: {cache_supported}")
         logger.info(f"[CACHE DEBUG] Model: {model_id}, Cache supported: {cache_supported}")
 
@@ -216,7 +218,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         system, prompt_message_dicts = self._convert_converse_prompt_messages(
             prompt_messages,
             model_id=model_id,
-            enable_cache=enable_cache
+            system_cache_checkpoint=system_cache_checkpoint,
+            latest_two_messages_cache_checkpoint=latest_two_messages_cache_checkpoint
         )
         inference_config, additional_model_fields = self._convert_converse_api_model_parameters(model_parameters, stop)
 
@@ -576,22 +579,23 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         return inference_config, additional_model_fields
 
-    def _convert_converse_prompt_messages(self, prompt_messages: list[PromptMessage], model_id: str = None, enable_cache: bool = True) -> tuple[list, list[dict]]:
+    def _convert_converse_prompt_messages(self, prompt_messages: list[PromptMessage], model_id: str = None,
+        system_cache_checkpoint: bool = True, latest_two_messages_cache_checkpoint: bool = False) -> tuple[list, list[dict]]:
         """
         Convert prompt messages to dict list and system
         Add cache points for supported models when enable_cache is True
 
         :param prompt_messages: List of prompt messages to convert
         :param model_id: Model ID to check for cache support
-        :param enable_cache: Whether to enable caching
+        :param system_cache_checkpoint: Whether to add cache checkpoint to system message
+        :param latest_two_messages_cache_checkpoint: Whether to add cache checkpoint to the latest two user messages
         :return: Tuple of system messages and prompt message dicts
         """
         system = []
         prompt_message_dicts = []
 
         # Check if model supports caching
-        cache_supported = model_id and is_cache_supported(model_id) and enable_cache
-        cache_config = get_cache_config(model_id) if cache_supported else None
+        cache_config = get_cache_config(model_id)
 
         # Process system messages first
         system_messages = [msg for msg in prompt_messages if isinstance(msg, SystemPromptMessage)]
@@ -602,40 +606,45 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             message.content = message.content.strip()
             system.append({"text": message.content})
 
-        # Add cache point to system if it's not empty and caching is supported for system field
-        if system and cache_supported and cache_config and "system" in cache_config["supported_fields"]:
+            # Add cache point to system if it's not empty and caching is supported for system field
+        # and system_cache_checkpoint is enabled
+        if system and cache_config and "system" in cache_config["supported_fields"] and system_cache_checkpoint:
             system.append({"cachePoint": {"type": "default"}})
             print(f"[CACHE DEBUG] Added cache point to system messages for model: {model_id}")
 
-        # Process other messages
+            # Process other messages
         for message in other_messages:
             message_dict = self._convert_prompt_message_to_dict(message)
             prompt_message_dicts.append(message_dict)
 
-        # Only add cache point to messages if supported
-        if cache_supported and cache_config and "messages" in cache_config["supported_fields"]:
+            # Only add cache point to messages if supported and latest_two_messages_cache_checkpoint is enabled
+        if cache_config and "messages" in cache_config["supported_fields"] and latest_two_messages_cache_checkpoint:
             # Find all user messages
-            user_message_indices = [i for i, msg in enumerate(prompt_message_dicts) if msg["role"] in ["user", "assistant"]]
+            user_message_indices = [i for i, msg in enumerate(prompt_message_dicts) if msg["role"] in ["user"]]
 
-            # Add cache point to the second-to-last user message if there are at least 2 user messages
-            if len(user_message_indices) >= 2:
-                # Get the second-to-last user message index
-                second_to_last_user_index = user_message_indices[-2]
-                message = prompt_message_dicts[second_to_last_user_index]
+            # Add cache point to available user messages (up to the latest two)
+            if len(user_message_indices) > 0:
+                # Get indices for the latest messages (either one or two depending on availability)
+                indices_to_cache = user_message_indices[-min(2, len(user_message_indices)):]
+                print(f"[CACHE DEBUG] indices_to_cacheis {indices_to_cache}")
+                for idx in indices_to_cache:
+                    message = prompt_message_dicts[idx]
+                    print(f"[CACHE DEBUG] current idx is {idx}")
 
-                # Check if content is a list
-                if isinstance(message["content"], list):
-                    # Add cache point to the content array
-                    message["content"].append({"cachePoint": {"type": "default"}})
-                    print(f"[CACHE DEBUG] Added cache point to second-to-last user message content list for model: {model_id}")
-                else:
-                    # If content is not a list, convert it to a list with the original content and add cache point
-                    original_content = message["content"]
-                    message["content"] = [{"text": original_content}, {"cachePoint": {"type": "default"}}]
-                    print(f"[CACHE DEBUG] Converted second-to-last user message content to list and added cache point for model: {model_id}")
+                    # Check if content is a list
+                    if isinstance(message["content"], list):
+                        # Add cache point to the content array
+                        message["content"].append({"cachePoint": {"type": "default"}})
+                        print(f"[CACHE DEBUG] Added cache point to user message content list at index {idx} for model: {model_id}")
+                    else:
+                        # If content is not a list, convert it to a list with the original content and add cache point
+                        original_content = message["content"]
+                        message["content"] = [{"text": original_content}, {"cachePoint": {"type": "default"}}]
+                        print(f"[CACHE DEBUG] Converted user message content to list and added cache point at index {idx} for model: {model_id}")
 
+                    prompt_message_dicts[idx] = message
         # Print the final system and messages for debugging
-        print(f"[CACHE DEBUG] System messages: {json.dumps(system, default=str)}")
+        # print(f"[CACHE DEBUG] System messages: {json.dumps(system, default=str)}")
         print(f"[CACHE DEBUG] Prompt messages: {json.dumps(prompt_message_dicts, default=str)}")
 
         return system, prompt_message_dicts

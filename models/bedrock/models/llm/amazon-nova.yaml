@@ -36,16 +36,24 @@ parameter_rules:
     help:
       zh_Hans: 跨区域推理会自动选择您所在地理区域 AWS 区域 内的最佳位置来处理您的推理请求。
       en_US: Cross-Region inference automatically selects the optimal AWS Region within your geography to process your inference request.
-  - name: enable_cache
+  - name: system_cache_checkpoint
     label:
-      zh_Hans: 启用提示缓存
-      en_US: Enable Prompt Cache
+      zh_Hans: 缓存系统提示词
+      en_US: Cache System Prompt
     type: boolean
     required: false
-    default: true
     help:
-      zh_Hans: 启用提示缓存可以提高性能并降低成本。Amazon Nova支持在system和messages字段中使用缓存检查点，每个检查点至少需要1024个token。
-      en_US: Enable prompt caching to improve performance and reduce costs. Amazon Nova Pro supports cache checkpoints in system and messages fields with a minimum of 1024 tokens per checkpoint.
+      zh_Hans: 在系统消息中启用缓存检查点，可以提高性能并降低成本。
+      en_US: Enable cache checkpoint in the system message to improve performance and reduce costs.
+  - name: latest_two_messages_cache_checkpoint
+    label:
+      zh_Hans: 缓存用户消息
+      en_US: Cache User Messages
+    type: boolean
+    required: false
+    help:
+      zh_Hans: 在最新的两条用户消息中启用缓存检查点，可以提高性能并降低成本。
+      en_US: Enable cache checkpoint in the latest two user messages to improve performance and reduce costs.
   - name: max_new_tokens
     use_template: max_tokens
     required: true
