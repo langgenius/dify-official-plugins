@@ -4,7 +4,12 @@ import httpx
 
 from dify_plugin import RerankModel
 from dify_plugin.entities import I18nObject
-from dify_plugin.entities.model import AIModelEntity, FetchFrom, ModelPropertyKey, ModelType
+from dify_plugin.entities.model import (
+    AIModelEntity,
+    FetchFrom,
+    ModelPropertyKey,
+    ModelType,
+)
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
     InvokeAuthorizationError,
@@ -18,6 +23,7 @@ from dify_plugin.entities.model.rerank import (
     RerankDocument,
     RerankResult,
 )
+
 
 class JinaRerankModel(RerankModel):
     """
@@ -48,24 +54,31 @@ class JinaRerankModel(RerankModel):
         :param user: unique user id
         :return: rerank result
         """
+        api_key = credentials["api_key"]
+        if not api_key:
+            raise CredentialsValidateFailedError("api_key is required")
+
         if len(docs) == 0:
             return RerankResult(model=model, docs=[])
 
         base_url = credentials.get("base_url", self.api_base)
-        if base_url.endswith("/"):
-            base_url = base_url[:-1]
+        base_url = base_url.removesuffix("/")
+
+        url = base_url + "/rerank"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+
+        data = {
+            "model": model,
+            "query": query,
+            "documents": docs,
+            "top_n": top_n,
+        }
 
         try:
-            response = httpx.post(
-                base_url + "/rerank",
-                json={
-                    "model": model,
-                    "query": query,
-                    "documents": docs,
-                    "top_n": top_n,
-                },
-                headers={"Authorization": f"Bearer {credentials.get('api_key')}"},
-            )
+            response = httpx.post(url, headers=headers, json=data)
             response.raise_for_status()
             results = response.json()
 
