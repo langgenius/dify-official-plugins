@@ -1,0 +1,33 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: baserow
+label:
+  en_US: Baserow
+  ja_JP: Baserow
+  zh_Hans: Baserow
+  pt_BR: Baserow
+description:
+  en_US: Baserow is an open-source online database tool. This plugin allows you to create and manage rows using Baserow's API.
+  ja_JP: Baserow はオープンソースのオンラインデータベースツールです。このプラグインを使用すると、Baserow の API を使用して行を作成および管理できます。
+  zh_Hans: Baserow 是一个开源的在线数据库工具。该插件允许您使用 Baserow 的 API 创建和管理行。
+  pt_BR: Baserow é uma ferramenta de banco de dados online de código aberto. Este plugin permite que você crie e gerencie linhas usando a API do Baserow.
+icon: icon.png
+resource:
+  memory: 268435456
+  permission: {}
+plugins:
+  tools:
+    - provider/baserow.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+created_at: 2025-04-21T22:09:22.160377917+08:00
+privacy: PRIVACY.md
+verified: false

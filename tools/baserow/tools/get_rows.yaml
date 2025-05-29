@@ -1,0 +1,26 @@
+identity:
+  name: get_rows
+  author: langgenius
+  label:
+    en_US: Get Rows
+    zh_Hans: 获取指定表格的所有行
+description:
+  human:
+    en_US: Get all rows from a Baserow table
+    zh_Hans: 获取指定表格的所有行
+  llm: Retrieves all rows from a Baserow table using the table ID.
+parameters:
+  - name: table_id
+    type: string
+    required: true
+    label:
+      en_US: Table ID
+      zh_Hans: 表格 ID
+    human_description:
+      en_US: The ID of the table to retrieve rows from.
+      zh_Hans: 要获取其行的表格 ID
+    llm_description: The ID of the table to retrieve rows from. This must be a valid table ID from Baserow.
+    form: llm
+extra:
+  python:
+    source: tools/get_rows.py
