@@ -291,7 +291,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                             model=model,
                             credentials=credentials,
                             prompt_tokens=chunk.usage.prompt_tokens,
-                            completion_tokens=chunk.usage.prompt_tokens,
+                            completion_tokens=chunk.usage.completion_tokens,
                         )
                     if chunk.choices:
                         finish_reason = chunk.choices[0].finish_reason
