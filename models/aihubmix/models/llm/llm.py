@@ -69,6 +69,10 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
     ) -> Union[LLMResult, Generator]:
         try:
             self._update_credential(model, credentials)
+            enable_thinking = model_parameters.pop("enable_thinking", None)
+            if enable_thinking is not None:
+                model_parameters["chat_template_kwargs"] = {"enable_thinking": bool(enable_thinking)}
+
             return self._dispatch_to_appropriate_model(
                 model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
             )
