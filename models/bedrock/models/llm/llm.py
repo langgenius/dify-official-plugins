@@ -213,6 +213,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         cache_supported = is_cache_supported(model_id)
         print(f"[CACHE DEBUG] Model: {model_id}, Cache supported: {cache_supported}")
         logger.info(f"[CACHE DEBUG] Model: {model_id}, Cache supported: {cache_supported}")
+        if cache_supported == False:
+            system_cache_checkpoint = False
+            latest_two_messages_cache_checkpoint = False
 
         # Convert messages with cache points if enabled
         system, prompt_message_dicts = self._convert_converse_prompt_messages(
