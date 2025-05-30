@@ -1,4 +1,4 @@
-model: 	ernie-3.5-128k
+model: ernie-4.0-turbo-128k
 label:
   zh_Hans: ernie-4.0-turbo-128k
   en_US: ernie-4.0-turbo-128k
