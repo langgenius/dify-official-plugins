@@ -1,0 +1,58 @@
+provider: baidu_qianfan
+label:
+  en_US: BaiduQianfan
+description:
+  en_US: Models provided by Baidu Cloud ModelBuilder.
+  zh_Hans: 百度智能云 ModelBuilder 提供的模型。
+icon_small:
+  en_US: icon_s_en.png
+icon_large:
+  en_US: icon_s_en.png
+background: "#E5E7EB"
+help:
+  title:
+    en_US: Get your API Key from Baidu Cloud ModelBuilder
+    zh_Hans: 从 百度智能云 ModelBuilder 获取 API Key
+  url:
+    en_US: https://cloud.baidu.com/doc/qianfan-api/s/ym9chdsy5
+supported_model_types:
+  - llm
+configurate_methods:
+  - predefined-model
+  - customizable-model
+model_credential_schema:
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: Enter your model name
+      zh_Hans: 输入模型名称
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        zh_Hans: 在此输入您的 API Key
+        en_US: Enter your API Key
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        zh_Hans: 在此输入您的 API Key
+        en_US: Enter your API Key
+models:
+  llm:
+    predefined:
+      - "models/llm/*.yaml"
+extra:
+  python:
+    provider_source: provider/baidu_qianfan.py
+    model_sources:
+      - "models/llm/llm.py"
