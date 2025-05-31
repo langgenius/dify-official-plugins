@@ -27,6 +27,6 @@ class GPUStackTextEmbeddingModel(OAICompatEmbeddingModel):
 
     def _get_compatible_credentials(self, credentials: dict) -> dict:
         credentials = credentials.copy()
-        base_url = credentials["endpoint_url"].rstrip("/").removesuffix("/v1")
+        base_url = credentials["endpoint_url"].rstrip("/").removesuffix("/v1").removesuffix("/v1-openai")
         credentials["endpoint_url"] = f"{base_url}/v1"
         return credentials
