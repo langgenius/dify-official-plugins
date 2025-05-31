@@ -1,0 +1,25 @@
+model: deepseek-r1
+label:
+  zh_Hans: deepseek-r1
+  en_US: deepseek-r1
+model_type: llm
+features:
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 98304
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 4096
+    min: 1
+    max: 16384
+  - name: response_format
+    use_template: response_format
+
+pricing:
+  input: '0.004'
+  output: '0.016'
+  unit: '0.001'
+  currency: CNY

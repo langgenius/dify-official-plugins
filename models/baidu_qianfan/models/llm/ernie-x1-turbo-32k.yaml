@@ -1,0 +1,22 @@
+model: ernie-x1-turbo-32k
+label:
+  zh_Hans: ernie-x1-turbo-32k
+  en_US: ernie-x1-turbo-32k
+model_type: llm
+features:
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 32768
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 2048
+    min: 2
+    max: 16384
+pricing:
+  input: '0.001'
+  output: '0.004'
+  unit: '0.001'
+  currency: CNY
