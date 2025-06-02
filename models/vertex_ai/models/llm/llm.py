@@ -348,28 +348,56 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :param tools: tool messages
         :return: glm tools
         """
-        return [
-            glm.Tool(
-                function_declarations=[
-                    glm.FunctionDeclaration(
-                        name=tool.name,
-                        parameters=dict(
-                            type="object",
-                            properties={
-                                key: {
-                                    "type_": value.get("type", "string").upper(),
-                                    "description": value.get("description", ""),
-                                    "enum": value.get("enum", []),
-                                }
-                                for (key, value) in tool.parameters.get("properties", {}).items()
-                            },
-                            required=tool.parameters.get("required", []),
-                        ),
-                    )
-                    for tool in tools
-                ]
+        tool_declarations = []
+        for tool_config in tools:
+            properties_for_schema = {}
+            
+            # tool_config.parameters is guaranteed to be a dict by the Pydantic model
+            parameters_input_dict = tool_config.parameters
+            raw_properties = parameters_input_dict.get("properties", {})
+
+            if isinstance(raw_properties, dict):
+                for key, value_schema in raw_properties.items():
+                    if not isinstance(value_schema, dict):
+                        # Property schema must be a dictionary
+                        continue
+
+                    raw_type_str = str(value_schema.get("type", "string")).upper()
+                    # Map "SELECT" to "STRING" for Vertex AI compatibility
+                    final_type_for_prop = "STRING" if raw_type_str == "SELECT" else raw_type_str
+                    
+                    prop_details = {
+                        "type_": final_type_for_prop, # Vertex AI SDK maps 'type_' to protobuf 'type'
+                        "description": value_schema.get("description", ""),
+                    }
+                    
+                    enum_values = value_schema.get("enum")
+                    # Add enum only if it's a non-empty list (OpenAPI recommendation)
+                    if enum_values and isinstance(enum_values, list):
+                        prop_details["enum"] = enum_values
+                    
+                    properties_for_schema[key] = prop_details
+
+            # Schema for the 'parameters' object of the function declaration
+            parameters_schema_for_declaration = {
+                "type": "OBJECT", 
+                "properties": properties_for_schema,
+            }
+            
+            required_params = parameters_input_dict.get("required")
+            # Add required only if it's a non-empty list of strings (OpenAPI recommendation)
+            if required_params and isinstance(required_params, list) and all(isinstance(item, str) for item in required_params):
+                parameters_schema_for_declaration["required"] = required_params
+
+            # tool_config.description is Optional[str], which is fine for FunctionDeclaration
+            function_declaration = glm.FunctionDeclaration(
+                name=tool_config.name,
+                description=tool_config.description, 
+                parameters=parameters_schema_for_declaration
             )
-        ]
+            tool_declarations.append(function_declaration)
+
+        return [glm.Tool(function_declarations=tool_declarations)] if tool_declarations else None
 
     def _convert_grounding_to_glm_tool(self, dynamic_threshold: Optional[float]) -> list["glm.Tool"]:
         """
