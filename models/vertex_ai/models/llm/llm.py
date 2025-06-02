@@ -42,6 +42,8 @@ from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from google.api_core import exceptions
 from google.cloud import aiplatform
 from google.oauth2 import service_account
+from google import genai
+from google.genai.types import Tool, GenerateContentConfig, GoogleSearch
 from PIL import Image
 
 
@@ -511,9 +513,6 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                     history.append(content)
 
         if dynamic_threshold is not None and model.startswith("gemini-2."):
-            from google import genai
-            from google.genai.types import Tool, GenerateContentConfig, GoogleSearch
-
             SCOPES = [
                 "https://www.googleapis.com/auth/cloud-platform",
                 "https://www.googleapis.com/auth/generative-language"
