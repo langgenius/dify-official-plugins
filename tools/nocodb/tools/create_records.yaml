@@ -1,0 +1,65 @@
+identity:
+  name: create_records
+  author: langgenius
+  label:
+    en_US: "Create Records"
+    zh_Hans: "创建记录"
+    pt_BR: "Criar Registros"
+    ja_JP: "レコード作成"
+description:
+  human:
+    en_US: "Create one or multiple records in a NocoDB table"
+    zh_Hans: "在 NocoDB 表中创建单个或多个记录"
+    pt_BR: "Criar um ou múltiplos registros em uma tabela NocoDB"
+    ja_JP: "NocoDB テーブルに 1 つまたは複数のレコードを作成します"
+  llm: "Creates new records in a NocoDB table. Can create a single record with field values or multiple records in bulk operation. Accepts data as JSON format with column-value pairs for the fields to be inserted."
+parameters:
+  - name: table_name
+    type: string
+    required: true
+    label:
+      en_US: "Table Name"
+      zh_Hans: "表名"
+      pt_BR: "Nome da Tabela"
+      ja_JP: "テーブル名"
+    human_description:
+      en_US: "Name of the NocoDB table to create records in"
+      zh_Hans: "要创建记录的 NocoDB 表名"
+      pt_BR: "Nome da tabela NocoDB para criar registros"
+      ja_JP: "レコードを作成する NocoDB テーブルの名前"
+    llm_description: "The name of the table where records will be created. Should match the exact table name in your NocoDB base."
+    form: llm
+  - name: data
+    type: string
+    required: true
+    label:
+      en_US: "Record Data"
+      zh_Hans: "记录数据"
+      pt_BR: "Dados do Registro"
+      ja_JP: "レコードデータ"
+    human_description:
+      en_US: "JSON data containing the field values for the new record(s)"
+      zh_Hans: "包含新记录字段值的 JSON 数据"
+      pt_BR: "Dados JSON contendo os valores dos campos para o(s) novo(s) registro(s)"
+      ja_JP: "新しいレコードのフィールド値を含む JSON データ"
+    llm_description: "JSON string containing the data for record creation. For single record: {\"column1\": \"value1\", \"column2\": \"value2\"}. For multiple records: [{\"column1\": \"value1\"}, {\"column1\": \"value2\"}]. Column names should match the table schema."
+    form: llm
+  - name: bulk
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: "Bulk Creation"
+      zh_Hans: "批量创建"
+      pt_BR: "Criação em Lote"
+      ja_JP: "バルク作成"
+    human_description:
+      en_US: "Set to true for bulk creation of multiple records (default: false)"
+      zh_Hans: "设置为 true 以批量创建多个记录（默认：false）"
+      pt_BR: "Defina como true para criação em lote de múltiplos registros (padrão: false)"
+      ja_JP: "複数レコードのバルク作成の場合は true に設定（デフォルト：false）"
+    llm_description: "Boolean flag indicating whether this is a bulk creation operation. Set to true when creating multiple records at once, false for single record creation."
+    form: llm
+extra:
+  python:
+    source: tools/create_records.py 
