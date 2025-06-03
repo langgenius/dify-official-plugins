@@ -17,6 +17,8 @@ description:
 icon: icon.svg
 tags:
   - productivity
+  - business
+  - utilities
 resource:
   memory: 268435456
   permission:
