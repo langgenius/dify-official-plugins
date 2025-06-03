@@ -17,7 +17,7 @@ class ModelConfig(BaseModel):
 configs: dict[str, ModelConfig] = {
     "Doubao-1.5-thinking-vision-pro": ModelConfig(
         properties=ModelProperties(context_size=131072, max_tokens=16384, mode=LLMMode.CHAT),
-        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION],
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO],
     ),
     "Doubao-1.5-UI-TARS": ModelConfig(
         properties=ModelProperties(context_size=32768, max_tokens=4096, mode=LLMMode.CHAT),
@@ -29,7 +29,7 @@ configs: dict[str, ModelConfig] = {
     ),
     "Doubao-1.5-vision-pro": ModelConfig(
         properties=ModelProperties(context_size=131072, max_tokens=16384, mode=LLMMode.CHAT),
-        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION],
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO],
     ),
     "Doubao-1.5-thinking-pro": ModelConfig(
         properties=ModelProperties(context_size=131072, max_tokens=16384, mode=LLMMode.CHAT),

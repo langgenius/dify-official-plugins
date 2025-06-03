@@ -15,7 +15,9 @@ from volcenginesdkarkruntime.types.chat import (  # type: ignore
     ChatCompletionToolParam,
     ChatCompletionUserMessageParam,
 )
+from volcenginesdkarkruntime.types.chat.chat_completion_content_part_video_param import ChatCompletionContentPartVideoParam
 from volcenginesdkarkruntime.types.chat.chat_completion_content_part_image_param import ImageURL  # type: ignore
+from volcenginesdkarkruntime.types.chat.chat_completion_content_part_video_param import VideoURL
 from volcenginesdkarkruntime.types.chat.chat_completion_message_tool_call_param import Function  # type: ignore
 from volcenginesdkarkruntime.types.create_embedding_response import CreateEmbeddingResponse  # type: ignore
 from volcenginesdkarkruntime.types.shared_params import FunctionDefinition  # type: ignore
@@ -29,6 +31,7 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     ToolPromptMessage,
     UserPromptMessage,
+    VideoPromptMessageContent,
 )
 
 DEFAULT_V2_ENDPOINT = "maas-api.ml-platform-cn-beijing.volces.com"
@@ -116,6 +119,16 @@ class ArkClientV3:
                                     detail=message_content.detail.value,
                                 ),
                                 type="image_url",
+                            )
+                        )
+                    elif message_content.type == PromptMessageContentType.VIDEO:
+                        message_content = cast(VideoPromptMessageContent, message_content)
+                        content.append(
+                            ChatCompletionContentPartVideoParam(
+                                video_url=VideoURL(
+                                    url=message_content.data
+                                ),
+                                type="video_url",
                             )
                         )
             message_dict = ChatCompletionUserMessageParam(role="user", content=content)
