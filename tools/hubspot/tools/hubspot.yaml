@@ -1,0 +1,30 @@
+identity:
+  name: hubspot
+  author: langgenius
+  label:
+    en_US: hubspot
+    zh_Hans: hubspot
+    pt_BR: hubspot
+description:
+  human:
+    en_US: hubspot
+    zh_Hans: hubspot
+    pt_BR: hubspot
+  llm: hubspot
+parameters:
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: Query string
+      zh_Hans: 查询语句
+      pt_BR: Query string
+    human_description:
+      en_US: hubspot
+      zh_Hans: hubspot
+      pt_BR: hubspot
+    llm_description: hubspot
+    form: llm
+extra:
+  python:
+    source: tools/hubspot.py
