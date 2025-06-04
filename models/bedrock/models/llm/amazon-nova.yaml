@@ -23,6 +23,7 @@ parameter_rules:
     required: true
     default: Nova Pro
     options:
+      - Nova Premier
       - Nova Pro
       - Nova Lite
       - Nova Micro
