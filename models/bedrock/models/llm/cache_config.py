@@ -14,7 +14,8 @@ CACHE_SUPPORTED_MODELS = [
     # "anthropic.claude-3-5-sonnet-20241022-v2:0",
     "amazon.nova-micro-v1:0",
     "amazon.nova-lite-v1:0",
-    "amazon.nova-pro-v1:0"
+    "amazon.nova-pro-v1:0",
+    "amazon.nova-premier-v1:0"
 ]
 
 # Cache configuration for each model
