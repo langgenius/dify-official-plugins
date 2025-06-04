@@ -53,6 +53,11 @@ CACHE_CONFIG = {
         "min_tokens": 1024,
         "max_checkpoints": 4,
         "supported_fields": ["system", "messages"]
+    },
+    "amazon.nova-premier-v1:0": {
+        "min_tokens": 1024,
+        "max_checkpoints": 4,
+        "supported_fields": ["system", "messages"]
     }
 }
 
