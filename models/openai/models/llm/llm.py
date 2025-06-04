@@ -41,6 +41,7 @@ from dify_plugin.entities.model.llm import (
 )
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    AudioPromptMessageContent,
     ImagePromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
@@ -1142,6 +1143,17 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                             "image_url": {
                                 "url": message_content.data,
                                 "detail": message_content.detail.value,
+                            },
+                        }
+                        sub_messages.append(sub_message_dict)
+                    elif isinstance(message_content, AudioPromptMessageContent):
+                        data_split = message_content.data.split(";base64,")
+                        base64_data = data_split[1]
+                        sub_message_dict = {
+                            "type": "input_audio",
+                            "input_audio": {
+                                "data": base64_data,
+                                "format": message_content.format,
                             },
                         }
                         sub_messages.append(sub_message_dict)
