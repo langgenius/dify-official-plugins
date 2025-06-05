@@ -526,7 +526,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             google_search_tool = Tool(google_search=GoogleSearch())
             response = client.models.generate_content(
                 model=model,
-                contents=history[0].parts[0].text if history else "",
+                contents=[item.to_dict() for item in history],
                 config=GenerateContentConfig(
                     tools=[google_search_tool],
                     response_modalities=["TEXT"],
