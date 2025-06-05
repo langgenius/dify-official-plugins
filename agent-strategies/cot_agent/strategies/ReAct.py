@@ -43,7 +43,7 @@ class ReActParams(BaseModel):
     model: AgentModelConfig
     tools: list[ToolEntity] | None
     maximum_iterations: int = 3
-    context: list[ContextItem] = None
+    context: list[ContextItem] | None = None
 
 
 class AgentPromptEntity(BaseModel):
