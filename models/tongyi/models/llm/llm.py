@@ -491,7 +491,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             video_url = message_content.data
                             if message_content.data.startswith("data:"):
                                 raise InvokeError(
-                                    "not support base64, please set MULTIMODAL_SEND_VIDEO_FORMAT to url"
+                                    "not support base64, please set MULTIMODAL_SEND_FORMAT to url"
                                 )
                             sub_message_dict = {"video": video_url}
                             user_messages.append(sub_message_dict)
