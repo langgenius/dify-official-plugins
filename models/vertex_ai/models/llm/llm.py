@@ -112,7 +112,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             request = google.auth.transport.requests.Request()
             credentials.refresh(request)
             token = credentials.token
-        if "opus" in model or "claude-3-5-sonnet" in model:
+        if any(m in model for m in ["opus", "claude-3-5-sonnet", "claude-3-7-sonnet", "claude-sonnet-4"]):
             location = "us-east5"
         else:
             location = "us-central1"
@@ -526,7 +526,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             google_search_tool = Tool(google_search=GoogleSearch())
             response = client.models.generate_content(
                 model=model,
-                contents=history[0].parts[0].text if history else "",
+                contents=[item.to_dict() for item in history],
                 config=GenerateContentConfig(
                     tools=[google_search_tool],
                     response_modalities=["TEXT"],
