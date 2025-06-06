@@ -1,6 +1,8 @@
 description:
   human:
-    en_US: Download from Hugging Face
+    en_US: Download from https://huggingface.co/
+    zh_Hans: 从 https://huggingface.co/ 下载模型
+    ja_JP: https://huggingface.co/ からモデルをダウンロード
   llm: Download from Hugging Face
 extra:
   python:
@@ -15,7 +17,7 @@ parameters:
     form: llm
     label:
       en_US: Repository ID
-      zh_Hans: Repository ID
+      zh_Hans: 仓库ID
       ja_JP: レポジトリ ID
     llm_description: Repository ID
     type: string

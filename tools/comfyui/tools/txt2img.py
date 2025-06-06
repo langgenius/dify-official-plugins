@@ -1,7 +1,6 @@
 import json
 import os
 import random
-import uuid
 from copy import deepcopy
 from enum import Enum
 from typing import Any, Generator
@@ -43,13 +42,14 @@ class ModelType(Enum):
 
 
 class ComfyuiTxt2Img(Tool):
-    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
+    def _invoke(
+        self, tool_parameters: dict[str, Any]
+    ) -> Generator[ToolInvokeMessage, None, None]:
         base_url = self.runtime.credentials.get("base_url", "")
         if not base_url:
             yield self.create_text_message("Please input base_url")
         self.comfyui = ComfyUiClient(
-            base_url,
-            self.runtime.credentials.get("comfyui_api_key")
+            base_url, self.runtime.credentials.get("comfyui_api_key")
         )
         if tool_parameters.get("model"):
             self.runtime.credentials["model"] = tool_parameters["model"]
@@ -57,8 +57,7 @@ class ComfyuiTxt2Img(Tool):
         if not model:
             yield self.create_text_message("Please input model")
         if model not in self.comfyui.get_checkpoints():
-            raise ToolProviderCredentialValidationError(
-                f"model {model} does not exist")
+            raise ToolProviderCredentialValidationError(f"model {model} does not exist")
         prompt = tool_parameters.get("prompt", "")
         if not prompt:
             yield self.create_text_message("Please input prompt")
@@ -88,12 +87,14 @@ class ComfyuiTxt2Img(Tool):
         for lora in lora_list:
             if lora not in valid_loras:
                 raise ToolProviderCredentialValidationError(
-                    f"LORA {lora} does not exist.")
+                    f"LORA {lora} does not exist."
+                )
 
         lora_strength_list = []
         if len(tool_parameters.get("lora_strengths", "")) > 0:
-            lora_strength_list = [float(x) for x in tool_parameters.get(
-                "lora_strengths").split(",")]
+            lora_strength_list = [
+                float(x) for x in tool_parameters.get("lora_strengths").split(",")
+            ]
 
         yield from self.text2img(
             model=model,
@@ -130,24 +131,24 @@ class ComfyuiTxt2Img(Tool):
         """
         if not SD_TXT2IMG_OPTIONS:
             current_dir = os.path.dirname(os.path.realpath(__file__))
-            with open(os.path.join(current_dir, "txt2img.json")) as file:
+            with open(os.path.join(current_dir, "json", "txt2img.json")) as file:
                 SD_TXT2IMG_OPTIONS.update(json.load(file))
-        draw_options = deepcopy(SD_TXT2IMG_OPTIONS)
-        sampler_node = draw_options["3"]
-        prompt_node = draw_options["6"]
-        negative_prompt_node = draw_options["7"]
+        workflow_json = deepcopy(SD_TXT2IMG_OPTIONS)
+        sampler_node = workflow_json["3"]
+        prompt_node = workflow_json["6"]
+        negative_prompt_node = workflow_json["7"]
         sampler_node["inputs"]["steps"] = steps
         sampler_node["inputs"]["sampler_name"] = sampler_name
         sampler_node["inputs"]["scheduler"] = scheduler
         sampler_node["inputs"]["cfg"] = cfg
         sampler_node["inputs"]["seed"] = random.randint(0, 100000000)
-        draw_options["4"]["inputs"]["ckpt_name"] = model
-        draw_options["5"]["inputs"]["width"] = width
-        draw_options["5"]["inputs"]["height"] = height
+        workflow_json["4"]["inputs"]["ckpt_name"] = model
+        workflow_json["5"]["inputs"]["width"] = width
+        workflow_json["5"]["inputs"]["height"] = height
         prompt_node["inputs"]["text"] = prompt
         negative_prompt_node["inputs"]["text"] = negative_prompt
         if model_type in {ModelType.SD3.name, ModelType.FLUX.name}:
-            draw_options["5"]["class_type"] = "EmptySD3LatentImage"
+            workflow_json["5"]["class_type"] = "EmptySD3LatentImage"
 
         lora_start_id = 100
         lora_end_id = lora_start_id + len(lora_list) - 1
@@ -160,39 +161,40 @@ class ComfyuiTxt2Img(Tool):
             lora_node["inputs"]["lora_name"] = lora_name
             lora_node["inputs"]["strength_model"] = strength
             lora_node["inputs"]["strength_clip"] = strength
-            lora_node["inputs"]["model"][0] = str(lora_start_id+i-1)
-            lora_node["inputs"]["clip"][0] = str(lora_start_id+i-1)
-            draw_options[str(lora_start_id+i)] = lora_node
+            lora_node["inputs"]["model"][0] = str(lora_start_id + i - 1)
+            lora_node["inputs"]["clip"][0] = str(lora_start_id + i - 1)
+            workflow_json[str(lora_start_id + i)] = lora_node
         if len(lora_list) > 0:
-            draw_options[str(
-                lora_start_id)]["inputs"]["model"][0] = sampler_node["inputs"]["model"][0]
-            draw_options[str(
-                lora_start_id)]["inputs"]["clip"][0] = prompt_node["inputs"]["clip"][0]
+            workflow_json[str(lora_start_id)]["inputs"]["model"][0] = sampler_node[
+                "inputs"
+            ]["model"][0]
+            workflow_json[str(lora_start_id)]["inputs"]["clip"][0] = prompt_node[
+                "inputs"
+            ]["clip"][0]
             sampler_node["inputs"]["model"][0] = str(lora_end_id)
             prompt_node["inputs"]["clip"][0] = str(lora_end_id)
             negative_prompt_node["inputs"]["clip"][0] = str(lora_end_id)
 
         if model_type == ModelType.FLUX.name:
             last_node_id = str(10 + len(lora_list))
-            draw_options[last_node_id] = deepcopy(FluxGuidanceNode)
-            draw_options[last_node_id]["inputs"]["conditioning"][0] = "6"
-            draw_options["3"]["inputs"]["positive"][0] = last_node_id
+            workflow_json[last_node_id] = deepcopy(FluxGuidanceNode)
+            workflow_json[last_node_id]["inputs"]["conditioning"][0] = "6"
+            workflow_json["3"]["inputs"]["positive"][0] = last_node_id
+
         try:
-            client_id = str(uuid.uuid4())
-            result = self.comfyui.queue_prompt_image(
-                client_id, prompt=draw_options)
-            image = b""
-            for node in result:
-                for img in result[node]:
-                    if img:
-                        image = img
-                        break
-            yield self.create_blob_message(
-                blob=image,
-                meta={"mime_type": "image/png"},
-            )
+            output_images = self.comfyui.generate(workflow_json)
         except Exception as e:
-            yield self.create_text_message(f"Failed to generate image: {str(e)}")
+            raise ToolProviderCredentialValidationError(
+                f"Failed to generate image: {str(e)}"
+            )
+        for img in output_images:
+            yield self.create_blob_message(
+                blob=img["data"],
+                meta={
+                    "filename": img["filename"],
+                    "mime_type": img["mime_type"],
+                },
+            )
 
     def get_runtime_parameters(self) -> list[ToolParameter]:
         parameters = [
@@ -228,8 +230,7 @@ class ComfyuiTxt2Img(Tool):
                             default=models[0],
                             options=[
                                 ToolParameterOption(
-                                    value=i, label=I18nObject(
-                                        en_US=i, zh_Hans=i)
+                                    value=i, label=I18nObject(en_US=i, zh_Hans=i)
                                 )
                                 for i in models
                             ],
@@ -254,8 +255,7 @@ class ComfyuiTxt2Img(Tool):
                                 required=False,
                                 options=[
                                     ToolParameterOption(
-                                        value=i, label=I18nObject(
-                                            en_US=i, zh_Hans=i)
+                                        value=i, label=I18nObject(en_US=i, zh_Hans=i)
                                     )
                                     for i in loras
                                 ],
@@ -281,8 +281,7 @@ class ComfyuiTxt2Img(Tool):
                             default=sample_methods[0],
                             options=[
                                 ToolParameterOption(
-                                    value=i, label=I18nObject(
-                                        en_US=i, zh_Hans=i)
+                                    value=i, label=I18nObject(en_US=i, zh_Hans=i)
                                 )
                                 for i in sample_methods
                             ],
@@ -292,8 +291,7 @@ class ComfyuiTxt2Img(Tool):
                     parameters.append(
                         ToolParameter(
                             name="scheduler",
-                            label=I18nObject(
-                                en_US="Scheduler", zh_Hans="Scheduler"),
+                            label=I18nObject(en_US="Scheduler", zh_Hans="Scheduler"),
                             human_description=I18nObject(
                                 en_US="Scheduler of Stable Diffusion, you can check the official documentation of Stable Diffusion",
                                 zh_Hans="Stable Diffusion 的Scheduler，您可以查看 Stable Diffusion 的官方文档",
@@ -305,8 +303,7 @@ class ComfyuiTxt2Img(Tool):
                             default=schedulers[0],
                             options=[
                                 ToolParameterOption(
-                                    value=i, label=I18nObject(
-                                        en_US=i, zh_Hans=i)
+                                    value=i, label=I18nObject(en_US=i, zh_Hans=i)
                                 )
                                 for i in schedulers
                             ],
@@ -315,8 +312,7 @@ class ComfyuiTxt2Img(Tool):
                 parameters.append(
                     ToolParameter(
                         name="model_type",
-                        label=I18nObject(en_US="Model Type",
-                                         zh_Hans="Model Type"),
+                        label=I18nObject(en_US="Model Type", zh_Hans="Model Type"),
                         human_description=I18nObject(
                             en_US="Model Type of Stable Diffusion or Flux, you can check the official documentation of Stable Diffusion or Flux",
                             zh_Hans="Stable Diffusion 或 FLUX 的模型类型，您可以查看 Stable Diffusion 或 Flux 的官方文档",
