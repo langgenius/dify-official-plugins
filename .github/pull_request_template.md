@@ -59,7 +59,7 @@ For example:
 -->
 
 ## Dify Plugin SDK Version
-- [ ] I'm Using `dify_plugin>=0.2.0,<0.4.0` in requirements.txt ([SDK docs](https://github.com/langgenius/dify-plugin-sdks/blob/main/python/README.md))
+- [ ] I'm Using `dify_plugin>=0.3.0,<0.4.0` in requirements.txt ([SDK docs](https://github.com/langgenius/dify-plugin-sdks/blob/main/python/README.md))
 
 ## Environment Verification (If Any Code Changes)
 <!-- 
