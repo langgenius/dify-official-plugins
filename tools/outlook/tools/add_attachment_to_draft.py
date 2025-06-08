@@ -114,59 +114,35 @@ class AddAttachmentToDraftTool(Tool):
         Read file object from Dify and encode it for attachment
         """
         try:
-            # file_obj should be a file object from Dify's file parameter
-            if hasattr(file_obj, 'read'):
-                # It's a file-like object
-                file_content = file_obj.read()
-                file_name = getattr(file_obj, 'name', 'attachment')
-                if hasattr(file_obj, 'seek'):
-                    file_obj.seek(0)  # Reset file pointer if possible
-            elif isinstance(file_obj, str):
-                # It's a file path/name - try to read using window.fs
-                try:
-                    file_content = window.fs.readFile(file_obj)
-                    if isinstance(file_content, bytes):
-                        file_name = file_obj
-                    else:
-                        # If it's a promise or other object, convert to bytes
-                        file_content = bytes(file_content)
-                        file_name = file_obj
-                except Exception as e:
-                    return f"Error reading file '{file_obj}': {str(e)}"
-            elif hasattr(file_obj, 'filename') and hasattr(file_obj, 'content'):
-                # It's a Dify file object with filename and content
-                file_content = file_obj.content
-                file_name = file_obj.filename
-                if isinstance(file_content, str):
-                    file_content = file_content.encode('utf-8')
-            else:
-                return f"Invalid file object type: {type(file_obj)}"
-            
-            # Ensure file_content is bytes
+            file_content = file_obj.blob  # Use 'blob' for file bytes
+            file_name = file_obj.filename
+            # Use file_obj.extension if available to ensure correct file extension
+            file_extension = getattr(file_obj, 'extension', None)
+            if file_extension and not file_name.endswith(file_extension):
+                file_name += file_extension
             if isinstance(file_content, str):
                 file_content = file_content.encode('utf-8')
-            
+
             file_size = len(file_content)
-            
+
             # Check file size limit (25MB for Graph API)
             if file_size > 25 * 1024 * 1024:
                 return f"File too large: {file_size} bytes. Maximum size is 25MB."
-            
+
             # Encode to base64
             encoded_content = base64.b64encode(file_content).decode('utf-8')
-            
+
             # Get MIME type from filename
             mime_type, _ = mimetypes.guess_type(file_name)
             if not mime_type:
                 mime_type = 'application/octet-stream'
-            
+
             return {
                 'content': encoded_content,
                 'mime_type': mime_type,
                 'size': file_size,
                 'name': os.path.basename(file_name) if file_name else 'attachment'
             }
-            
         except Exception as e:
             return f"Error processing file: {str(e)}"
     
