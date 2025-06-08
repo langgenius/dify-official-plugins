@@ -1,29 +1,68 @@
 identity:
-  name: list_issues_for_board
+  name: list_issues
   author: langgenius
   label:
-    en_US: List Jira Issues for Board
-    zh_Hans: 列出 Jira 看板问题
-    pt_BR: Listar Issues para o Quadro
+    en_US: List Jira Issues for Project
+    zh_Hans: 列出 Jira 项目清单
+    pt_BR: Listar Issues para o Projeto
 description:
   human:
-    en_US: Lists all issues associated with a specific Jira Agile board.
-    zh_Hans: 列出与指定 Jira 敏捷看板关联的所有问题。
-    pt_BR: Lista todas as issues associadas a um quadro ágil específico do Jira.
-  llm: Retrieves a list of all issues associated with the specified Jira Agile board ID. Returns a list of issues or an error if the board is not found or an error occurs.
+    en_US: Lists all issues associated with a specific Jira project.
+    zh_Hans: 列出与指定 Jira 项目关联的所有问题。
+    pt_BR: Lista todas as issues associadas a um projeto específico do Jira.
+  llm: Retrieves a list of all issues associated with the specified Jira project key. Returns a list of issues or an error if the project is not found or an error occurs.
 parameters:
-  - name: board_id
+  - name: project_key
     type: string
     required: true
     label:
-      en_US: Board ID
-      zh_Hans: 看板 ID
-      pt_BR: ID do Quadro
+      en_US: Project Key
+      zh_Hans: 项目键
+      pt_BR: Chave do Projeto
     human_description:
-      en_US: The ID of the Jira Agile board for which to list issues.
-      zh_Hans: 要列出问题的 Jira 敏捷看板的 ID。
-      pt_BR: O ID do quadro ágil do Jira para o qual listar as issues.
-    llm_description: The numeric ID of the Jira Agile board whose issues should be listed. This field is mandatory.
+      en_US: The key of the Jira project for which to list issues.
+      zh_Hans: 要列出问题的 Jira 项目的键。
+      pt_BR: A chave do projeto do Jira para o qual listar as issues.
+    llm_description: The key of the Jira project whose issues should be listed. This field is mandatory.
+    form: llm
+  - name: status
+    type: string
+    required: false
+    label:
+      en_US: Status Filter
+      zh_Hans: 状态过滤器
+      pt_BR: Filtro de Status
+    human_description:
+      en_US: Optional filter to show only issues with a specific status.
+      zh_Hans: 可选过滤器，仅显示具有特定状态的问题。
+      pt_BR: Filtro opcional para mostrar apenas issues com um status específico.
+    llm_description: Optional parameter to filter issues by their status.
+    form: llm
+  - name: assignee
+    type: string
+    required: false
+    label:
+      en_US: Assignee Filter
+      zh_Hans: 经办人过滤器
+      pt_BR: Filtro de Responsável
+    human_description:
+      en_US: Optional filter to show only issues assigned to a specific user. Use 'currentUser' to show issues assigned to the current user.
+      zh_Hans: 可选过滤器，仅显示分配给特定用户的问题。使用 'currentUser' 显示分配给当前用户的问题。
+      pt_BR: Filtro opcional para mostrar apenas issues atribuídas a um usuário específico. Use 'currentUser' para mostrar issues atribuídas ao usuário atual.
+    llm_description: Optional parameter to filter issues by assignee. Use 'currentUser' to show issues assigned to the current user.
+    form: llm
+  - name: limit
+    type: number
+    required: false
+    label:
+      en_US: Result Limit
+      zh_Hans: 结果限制
+      pt_BR: Limite de Resultados
+    human_description:
+      en_US: Optional maximum number of issues to return.
+      zh_Hans: 可选的最大返回问题数量。
+      pt_BR: Número máximo opcional de issues a retornar.
+    llm_description: Optional parameter to limit the number of issues returned. Defaults to 50 if not specified.
     form: llm
 extra:
   python:

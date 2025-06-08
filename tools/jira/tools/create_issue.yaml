@@ -10,20 +10,20 @@ description:
     en_US: Creates a new issue in Jira.
     zh_Hans: 在 Jira 中创建一个新的问题。
     pt_BR: Criar uma nova issue em um projeto.
-  llm: Creates a new issue in Jira using the provided description. Returns the details of the created issue.
+  llm: Creates a new issue in Jira using the provided description. Returns the details of the created issue. The issue type ID is optional - if not provided, Jira will use the default issue type for the project.
 parameters:
   - name: project_key
     type: string
     required: true
     label:
-      en_US: Project Key or ID
-      zh_Hans: 项目 Key 或 ID
+      en_US: Project Key
+      zh_Hans: 项目 Key
       pt_BR: Chave do Projeto
     human_description:
-      en_US: The Key of the Jira project to retrieve details for (e.g., 'PROJ').
-      zh_Hans: 要获取详情的 Jira 项目的 Key (例如 'PROJ') 或 ID (例如 '10001')。
+      en_US: The Key of the Jira project (e.g., 'PROJ').
+      zh_Hans: Jira 项目的 Key (例如 'PROJ')。
       pt_BR: A chave do projeto onde a issue será criada.
-    llm_description: The unique key (e.g., 'PROJ') or ID (e.g., '10001') for the Jira project for which details are requested. This field is mandatory.
+    llm_description: The unique key for the Jira project (e.g., 'PROJ'). This is the short identifier for your project, not the project ID. This field is mandatory.
     form: llm
   - name: summary
     type: string
@@ -40,7 +40,7 @@ parameters:
     form: llm
   - name: issue_type_id
     type: string
-    required: true
+    required: false
     label:
       en_US: Issue Type ID
       zh_Hans: 问题类型 ID
@@ -49,7 +49,7 @@ parameters:
       en_US: The ID of the Jira issue type to be used for the new issue.
       zh_Hans: 要用于新问题的 Jira 问题类型的 ID。
       pt_BR: O ID do tipo de issue do Jira a ser usado para a nova issue.
-    llm_description: The unique ID for the Jira issue type that will be assigned to the new issue. This field is mandatory.
+    llm_description: The unique ID for the Jira issue type that will be assigned to the new issue. This field is optional - if not provided, Jira will use the default issue type for the project.
     form: llm
 extra:
   python:
