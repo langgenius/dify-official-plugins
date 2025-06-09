@@ -54,16 +54,49 @@ parameters:
    form: form
    default: auto
  - name: emotion
-   type: string
+   type: select
    required: false
    label:
        en_US: Emotion
        zh_Hans: 情感
    human_description:
-       en_US: Emotion (e.g. happy, sad, neutral)
-       zh_Hans: 情感（如 happy, sad, neutral）
+       en_US: Emotion for speech synthesis
+       zh_Hans: 语音合成的情感
    form: form
-   default: happy
+   default: auto
+   options:
+     - value: auto
+       label:
+         en_US: Auto
+         zh_Hans: 自动
+     - value: happy
+       label:
+         en_US: Happy
+         zh_Hans: 快乐
+     - value: sad
+       label:
+         en_US: Sad
+         zh_Hans: 悲伤
+     - value: angry
+       label:
+         en_US: Angry
+         zh_Hans: 愤怒
+     - value: fearful
+       label:
+         en_US: Fearful
+         zh_Hans: 恐惧
+     - value: disgusted
+       label:
+         en_US: Disgusted
+         zh_Hans: 厌恶
+     - value: surprised
+       label:
+         en_US: Surprised
+         zh_Hans: 惊讶
+     - value: neutral
+       label:
+         en_US: Neutral
+         zh_Hans: 中性
  - name: vol
    type: number
    required: false

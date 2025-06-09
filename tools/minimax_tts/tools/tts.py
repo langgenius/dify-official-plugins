@@ -25,7 +25,7 @@ class MinimaxTTS(Tool):
         voice_id = tool_parameters.get("voice_id") or tool_parameters.get("VoiceID") or "male-qn-qingse"
         model = tool_parameters.get("model", "speech-02-hd")
         language_boost = tool_parameters.get("language_boost", "auto")
-        emotion = tool_parameters.get("emotion", "happy")  # 默认 happy
+        emotion = tool_parameters.get("emotion", "auto")  # 默认 auto
         vol = tool_parameters.get("vol", 1)  # 默认 1
         try:
             vol = float(vol)
@@ -38,7 +38,8 @@ class MinimaxTTS(Tool):
             "voice_id": voice_id,
             "vol": vol
         }
-        if emotion:
+        # 当emotion不为auto时才添加到voice_setting中
+        if emotion and emotion != "auto":
             voice_setting["emotion"] = emotion
 
         url = f"https://api.minimax.chat/v1/t2a_v2?GroupId={group_id}"
