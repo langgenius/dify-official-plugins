@@ -1,0 +1,13 @@
+model: Qwen3-Embedding-0.6B
+label:
+  zh_Hans: Qwen3-Embedding-0.6B
+  en_US: Qwen3-Embedding-0.6B
+model_type: text-embedding
+model_properties:
+  context_size: 32000
+  max_chunks: 20
+
+name: Qwen3-Embedding-0.6B
+provider: gitee_ai
+visible: true
+description: Qwen3-Embedding-0.6B 是一个高效的中文文本嵌入模型，适用于多种文本向量化场景。 
