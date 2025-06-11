@@ -1,6 +1,7 @@
 from dify_plugin.entities.model import ModelFeature
 from dify_plugin.entities.model.llm import LLMMode
 from pydantic import BaseModel
+from volcenginesdkarkruntime.types.chat.completion_create_params import Thinking
 
 
 class ModelProperties(BaseModel):
@@ -196,7 +197,8 @@ def get_v2_req_params(credentials: dict, model_parameters: dict, stop: list[str]
     if model_parameters.get("skip_moderation"):
         req_params["skip_moderation"] = model_parameters.get("skip_moderation")
     if model_parameters.get("thinking"):
-        req_params["thinking"] = {"type": model_parameters.get("thinking")}
+        thinking: Thinking = {"type": model_parameters["thinking"]}
+        req_params["thinking"] = thinking
     return req_params
 
 
@@ -220,5 +222,6 @@ def get_v3_req_params(credentials: dict, model_parameters: dict, stop: list[str]
     if model_parameters.get("skip_moderation"):
         req_params["skip_moderation"] = model_parameters.get("skip_moderation")
     if model_parameters.get("thinking"):
-        req_params["thinking"] = {"type": model_parameters.get("thinking")}
+        thinking: Thinking = {"type": model_parameters["thinking"]}
+        req_params["thinking"] = thinking
     return req_params
