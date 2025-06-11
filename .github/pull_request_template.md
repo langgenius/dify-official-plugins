@@ -45,7 +45,7 @@ For example:
 - [ ] My Changes Affect Other LLM Functionalities (Reasoning Process, Grounding, Prompt Caching, etc.)
 <!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
-- [ ] Other Changes (Add New Models, etc.)
+- [ ] Other Changes (Add New Models, Fix Model Parameters etc.)
 <!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
 ## Version Control (Any Changes to the Plugin Will Require Bumping the Version)
