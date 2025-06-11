@@ -15,6 +15,18 @@ class ModelConfig(BaseModel):
 
 
 configs: dict[str, ModelConfig] = {
+    "Doubao-Seed-1.6": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=16384, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO],
+    ),
+    "Doubao-Seed-1.6-flash": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=16384, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO],
+    ),
+    "Doubao-Seed-1.6-thinking": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=16384, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO],
+    ),
     "Doubao-1.5-thinking-vision-pro": ModelConfig(
         properties=ModelProperties(context_size=131072, max_tokens=16384, mode=LLMMode.CHAT),
         features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO],
@@ -183,6 +195,8 @@ def get_v2_req_params(credentials: dict, model_parameters: dict, stop: list[str]
         req_params["stop"] = stop
     if model_parameters.get("skip_moderation"):
         req_params["skip_moderation"] = model_parameters.get("skip_moderation")
+    if model_parameters.get("thinking"):
+        req_params["thinking"] = {"type": model_parameters.get("thinking")}
     return req_params
 
 
@@ -205,4 +219,6 @@ def get_v3_req_params(credentials: dict, model_parameters: dict, stop: list[str]
         req_params["stop"] = stop
     if model_parameters.get("skip_moderation"):
         req_params["skip_moderation"] = model_parameters.get("skip_moderation")
+    if model_parameters.get("thinking"):
+        req_params["thinking"] = {"type": model_parameters.get("thinking")}
     return req_params

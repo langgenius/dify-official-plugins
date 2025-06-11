@@ -539,6 +539,27 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                 ),
             ]
 
+        if model in ("doubao-1-5-thinking-pro-m-250428", "doubao-seed-1-6-250615"):
+            rules.append(
+                ParameterRule(
+                    name="thinking",
+                    type=ParameterType.STRING,
+                    default="enabled",
+                    label=I18nObject(zh_Hans="深度思考模式", en_US="thinking"),
+                    options=["enabled", "disabled", "auto"],
+                )
+            )
+        elif model in ("doubao-1-5-thinking-vision-pro-250428", "doubao-seed-1-6-flash-250615"):
+            rules.append(
+                ParameterRule(
+                    name="thinking",
+                    type=ParameterType.STRING,
+                    default="enabled",
+                    label=I18nObject(zh_Hans="深度思考模式", en_US="thinking"),
+                    options=["enabled", "disabled"],
+                )
+            )
+
         model_properties = {}
         model_properties[ModelPropertyKey.CONTEXT_SIZE] = (
             model_config.properties.context_size
