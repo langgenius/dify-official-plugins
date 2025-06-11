@@ -1,0 +1,41 @@
+identity:
+  name: delete_object
+  author: langgenius
+  label:
+    en_US: "Delete Object"
+    ja_JP: "オブジェクトを削除"
+    zh_Hans: "删除对象"
+    pt_BR: "Excluir Objeto"
+    zh_Hant: "刪除物件"
+
+description:
+  human:
+    en_US: "Delete a generated PDF or image from APITemplate.io CDN"
+    ja_JP: "APITemplate.io CDN から生成された PDF または画像を削除します"
+    zh_Hans: "从 APITemplate.io CDN 删除生成的 PDF 或图像"
+    pt_BR: "Excluir um PDF ou imagem gerada do CDN do APITemplate.io"
+    zh_Hant: "從 APITemplate.io CDN 刪除生成的 PDF 或圖像"
+  llm: "Deletes a PDF or image from CDN and marks the transaction as deleted. Requires the transaction reference ID from a previously generated document."
+
+parameters:
+  - name: transaction_ref
+    type: string
+    required: true
+    label:
+      en_US: "Transaction Reference"
+      ja_JP: "トランザクション参照"
+      zh_Hans: "交易参考"
+      pt_BR: "Referência da Transação"
+      zh_Hant: "交易參考"
+    human_description:
+      en_US: "The transaction reference ID of the object to delete"
+      ja_JP: "削除するオブジェクトのトランザクション参照ID"
+      zh_Hans: "要删除的对象的交易参考ID"
+      pt_BR: "O ID de referência da transação do objeto a ser excluído"
+      zh_Hant: "要刪除的物件的交易參考ID"
+    llm_description: "The transaction reference ID returned when the PDF or image was created. Example: '1618d386-2343-3d234-b9c7-99c82bb9f104'"
+    form: llm
+
+extra:
+  python:
+    source: tools/delete_object.py 

@@ -1,0 +1,56 @@
+identity:
+  author: langgenius
+  name: apitemplate
+  label:
+    en_US: APITemplate.io
+    ja_JP: APITemplate.io
+    zh_Hans: APITemplate.io
+    pt_BR: APITemplate.io
+    zh_Hant: APITemplate.io
+  description:
+    en_US: "Generate PDFs and images from templates using APITemplate.io"
+    ja_JP: "APITemplate.io を使用してテンプレートから PDF と画像を生成"
+    zh_Hans: "使用 APITemplate.io 从模板生成 PDF 和图像"
+    pt_BR: "Gere PDFs e imagens usando APITemplate.io"
+    zh_Hant: "使用 APITemplate.io 生成 PDF 和圖像"
+  icon: icon.png
+
+credentials_for_provider:
+  api_key:
+    label:
+      en_US: "API Key"
+      ja_JP: "API キー"
+      zh_Hans: "API 密钥"
+      pt_BR: "Chave da API"
+      zh_Hant: "API 金鑰"
+    placeholder:
+      en_US: "Enter your APITemplate.io API key"
+      ja_JP: "APITemplate.io API キーを入力してください"
+      zh_Hans: "输入您的 APITemplate.io API 密钥"
+      pt_BR: "Digite sua chave da API do APITemplate.io"
+      zh_Hant: "輸入您的 APITemplate.io API 金鑰"
+    help:
+      en_US: "Found in your APITemplate.io account under API Integration section"
+      ja_JP: "APITemplate.io アカウントの API Integration セクションにあります"
+      zh_Hans: "可在您的 APITemplate.io 账户的 API Integration 部分找到"
+      pt_BR: "Encontrado em sua conta APITemplate.io na seção API Integration"
+      zh_Hant: "可在您的 APITemplate.io 帳戶的 API Integration 部分找到"
+    required: true
+    type: secret-input
+    url: https://app.apitemplate.io/manage-api/
+
+supported_model_types: []
+configurate_methods: []
+
+tools:
+  - tools/create_pdf.yaml
+  - tools/create_image.yaml
+  - tools/create_pdf_from_html.yaml
+  - tools/create_pdf_from_url.yaml
+  - tools/delete_object.yaml
+  - tools/get_account_information.yaml
+  - tools/list_objects.yaml
+
+extra:
+  python:
+    source: provider/apitemplate.py

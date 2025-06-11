@@ -1,0 +1,24 @@
+identity:
+  name: get_account_information
+  author: langgenius
+  label:
+    en_US: "Get Account Information"
+    ja_JP: "アカウント情報を取得"
+    zh_Hans: "获取账户信息"
+    pt_BR: "Obter Informações da Conta"
+    zh_Hant: "取得帳戶資訊"
+
+description:
+  human:
+    en_US: "Retrieve APITemplate.io account information including usage and quotas"
+    ja_JP: "使用量とクォータを含む APITemplate.io アカウント情報を取得します"
+    zh_Hans: "检索包括使用量和配额在内的 APITemplate.io 账户信息"
+    pt_BR: "Recuperar informações da conta APITemplate.io incluindo uso e cotas"
+    zh_Hant: "檢索包括使用量和配額在內的 APITemplate.io 帳戶資訊"
+  llm: "Retrieves comprehensive account information including subscription status, API quotas, usage statistics, and template limits. No parameters required."
+
+parameters: []
+
+extra:
+  python:
+    source: tools/get_account_information.py 

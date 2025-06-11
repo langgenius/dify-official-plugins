@@ -1,0 +1,61 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: apitemplate
+label:
+  en_US: APITemplate.io
+  ja_JP: APITemplate.io
+  zh_Hans: APITemplate.io
+  pt_BR: APITemplate.io
+  zh_Hant: APITemplate.io
+description:
+  en_US: "Generate PDFs and images from templates using APITemplate.io. Create professional documents, invoices, certificates, and images through template-based generation."
+  ja_JP: "APITemplate.io を使用してテンプレートから PDF と画像を生成します。テンプレートベースの生成により、プロフェッショナルな文書、請求書、証明書、画像を作成します。"
+  zh_Hans: "使用 APITemplate.io 从模板生成 PDF 和图像。通过基于模板的生成创建专业文档、发票、证书和图像。"
+  pt_BR: "Gere PDFs e imagens a partir de modelos usando APITemplate.io. Crie documentos profissionais, faturas, certificados e imagens através da geração baseada em modelos."
+  zh_Hant: "使用 APITemplate.io 從範本生成 PDF 和圖像。透過基於範本的生成建立專業文件、發票、證書和圖像。"
+icon: icon.png
+tags:
+  - design
+  - business
+  - productivity
+  - utilities
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+    node:
+      enabled: false
+    endpoint:
+      enabled: true
+    app:
+      enabled: false
+    storage:
+      enabled: true
+      size: 1048576
+plugins:
+  tools:
+    - provider/apitemplate.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: null
+created_at: 2025-06-11T16:12:16.158606+08:00
+privacy: PRIVACY.md
+repo: https://github.com/langgenius/dify-official-plugins
+verified: false

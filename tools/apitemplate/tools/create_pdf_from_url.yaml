@@ -1,0 +1,95 @@
+identity:
+  name: create_pdf_from_url
+  author: langgenius
+  label:
+    en_US: "Create PDF from URL"
+    ja_JP: "URLからPDFを作成"
+    zh_Hans: "从URL创建PDF"
+    pt_BR: "Criar PDF da URL"
+    zh_Hant: "從URL建立PDF"
+
+description:
+  human:
+    en_US: "Generate a PDF document from a web page URL using APITemplate.io"
+    ja_JP: "APITemplate.io を使用してウェブページのURLから PDF ドキュメントを生成します"
+    zh_Hans: "使用 APITemplate.io 从网页URL生成 PDF 文档"
+    pt_BR: "Gerar um documento PDF a partir de uma URL de página web usando APITemplate.io"
+    zh_Hant: "使用 APITemplate.io 從網頁URL生成 PDF 文件"
+  llm: "Creates a PDF document by capturing and converting a web page from a specified URL. Supports various PDF generation settings like paper size, orientation, and margins."
+
+parameters:
+  - name: url
+    type: string
+    required: true
+    label:
+      en_US: "Web Page URL"
+      ja_JP: "ウェブページURL"
+      zh_Hans: "网页URL"
+      pt_BR: "URL da Página Web"
+      zh_Hant: "網頁URL"
+    human_description:
+      en_US: "The URL of the web page to convert to PDF"
+      ja_JP: "PDFに変換するウェブページのURL"
+      zh_Hans: "要转换为PDF的网页URL"
+      pt_BR: "A URL da página web para converter em PDF"
+      zh_Hant: "要轉換為PDF的網頁URL"
+    llm_description: "The complete URL of the web page to convert to PDF. Must include http:// or https://. Example: 'https://example.com/page'"
+    form: llm
+
+  - name: paper_size
+    type: string
+    required: false
+    label:
+      en_US: "Paper Size"
+      ja_JP: "用紙サイズ"
+      zh_Hans: "纸张大小"
+      pt_BR: "Tamanho do Papel"
+      zh_Hant: "紙張大小"
+    human_description:
+      en_US: "Paper size for the PDF (A4, Letter, Legal, etc.)"
+      ja_JP: "PDFの用紙サイズ（A4、Letter、Legalなど）"
+      zh_Hans: "PDF的纸张大小（A4、Letter、Legal等）"
+      pt_BR: "Tamanho do papel para o PDF (A4, Letter, Legal, etc.)"
+      zh_Hant: "PDF的紙張大小（A4、Letter、Legal等）"
+    llm_description: "Paper size for the PDF. Options: A4, A3, A2, A1, A0, Letter, Legal, Tabloid, Ledger. Default is A4."
+    form: llm
+
+  - name: orientation
+    type: string
+    required: false
+    label:
+      en_US: "Orientation"
+      ja_JP: "向き"
+      zh_Hans: "方向"
+      pt_BR: "Orientação"
+      zh_Hant: "方向"
+    human_description:
+      en_US: "Page orientation: portrait (1) or landscape (2)"
+      ja_JP: "ページの向き：縦向き（1）または横向き（2）"
+      zh_Hans: "页面方向：纵向（1）或横向（2）"
+      pt_BR: "Orientação da página: retrato (1) ou paisagem (2)"
+      zh_Hant: "頁面方向：縱向（1）或橫向（2）"
+    llm_description: "Page orientation. Use '1' for portrait (vertical) or '2' for landscape (horizontal). Default is '1' (portrait)."
+    form: llm
+
+  - name: filename
+    type: string
+    required: false
+    label:
+      en_US: "Custom Filename"
+      ja_JP: "カスタムファイル名"
+      zh_Hans: "自定义文件名"
+      pt_BR: "Nome do Arquivo Personalizado"
+      zh_Hant: "自訂檔案名稱"
+    human_description:
+      en_US: "Optional custom filename for the generated PDF (must end with .pdf)"
+      ja_JP: "生成されるPDFのオプションのカスタムファイル名（.pdfで終わる必要があります）"
+      zh_Hans: "生成PDF的可选自定义文件名（必须以.pdf结尾）"
+      pt_BR: "Nome de arquivo personalizado opcional para o PDF gerado (deve terminar com .pdf)"
+      zh_Hant: "生成PDF的可選自訂檔案名稱（必須以.pdf結尾）"
+    llm_description: "Optional custom filename for the PDF. If not provided, a UUID will be used. Must end with '.pdf'. Example: 'webpage_capture.pdf'"
+    form: llm
+
+extra:
+  python:
+    source: tools/create_pdf_from_url.py 
