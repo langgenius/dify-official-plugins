@@ -1,5 +1,6 @@
 from collections.abc import Mapping
 
+import httpx
 import openai
 from httpx import Timeout
 
@@ -26,6 +27,9 @@ class _CommonOpenAI:
 
         if 'openai_organization' in credentials:
             credentials_kwargs['organization'] = credentials['openai_organization']
+
+        if 'openai_api_proxy' in credentials and credentials['openai_api_proxy'] != "":
+            credentials_kwargs['http_client'] = httpx.Client(proxy=credentials['openai_api_proxy'])
 
         return credentials_kwargs
 
