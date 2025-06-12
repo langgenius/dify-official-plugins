@@ -35,6 +35,11 @@ configs: dict[str, ModelConfig] = {
         properties=ModelProperties(context_size=131072, max_tokens=16384, mode=LLMMode.CHAT),
         features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
     ),
+    "Doubao-1.5-thinking-pro-m": ModelConfig(
+        properties=ModelProperties(context_size=131072, max_tokens=16384, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+    ),
     "DeepSeek-R1-Distill-Qwen-32B": ModelConfig(
         properties=ModelProperties(context_size=65536, max_tokens=8192, mode=LLMMode.CHAT),
         features=[ModelFeature.AGENT_THOUGHT],
