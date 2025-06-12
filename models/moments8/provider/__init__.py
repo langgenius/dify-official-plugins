@@ -1,0 +1,1 @@
+from .moments8 import Moments8ModelProvider
