@@ -535,6 +535,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 config=GenerateContentConfig(
                     tools=[google_search_tool],
                     response_modalities=["TEXT"],
+                    system_instruction=system_instruction
                 )
             )
         else:
@@ -563,7 +564,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 tools=tools,
             )
         if stream:
-            return self._handle_generate_stream_response(model, credentials, response, prompt_messages)
+            return self._handle_generate_stream_response(model, credentials, response, prompt_messages, system_instruction)
         return self._handle_generate_response(model, credentials, response, prompt_messages)
 
     def _handle_generate_response(
@@ -602,7 +603,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         return result
 
     def _handle_generate_stream_response(
-        self, model: str, credentials: dict, response: glm.GenerationResponse, prompt_messages: list[PromptMessage]
+        self, model: str, credentials: dict, response: glm.GenerationResponse, prompt_messages: list[PromptMessage], system_instruction: str
     ) -> Generator:
         """
         Handle llm stream response
@@ -614,6 +615,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :return: llm response chunk generator result
         """
         index = -1
+        is_first_gemini2_response = True
         for chunk in response:
             if isinstance(chunk, tuple):
                 key, value = chunk
@@ -681,8 +683,11 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                         reference_section = "\n\nGrounding Sources\n" + "\n".join(reference_lines)
                     else:
                         reference_section = ""
-
-                    integrated_text = f"{assistant_prompt_message.content}{reference_section}"
+                    if is_first_gemini2_response and model.startswith("gemini-2.") and system_instruction:
+                        integrated_text = f"{assistant_prompt_message.content}"
+                        is_first_gemini2_response = False
+                    else:
+                        integrated_text = f"{assistant_prompt_message.content}{reference_section}"
                     assistant_message_with_refs = AssistantPromptMessage(content=integrated_text, tool_calls=assistant_prompt_message.tool_calls)
 
                     yield LLMResultChunk(
