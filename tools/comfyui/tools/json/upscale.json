@@ -9,7 +9,7 @@
     },
     "class_type": "SaveImage",
     "_meta": {
-      "title": "画像を保存"
+      "title": "SaveImage"
     }
   },
   "13": {
@@ -18,7 +18,7 @@
     },
     "class_type": "UpscaleModelLoader",
     "_meta": {
-      "title": "拡大モデルを読み込む"
+      "title": "UpscaleModelLoader"
     }
   },
   "14": {
@@ -34,7 +34,7 @@
     },
     "class_type": "ImageUpscaleWithModel",
     "_meta": {
-      "title": "モデルを使用して画像を拡大"
+      "title": "ImageUpscaleWithModel"
     }
   },
   "16": {
@@ -43,7 +43,7 @@
     },
     "class_type": "LoadImage",
     "_meta": {
-      "title": "画像を読み込む"
+      "title": "LoadImage"
     }
   }
 }
