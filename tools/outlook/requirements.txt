@@ -1,0 +1,4 @@
+dify_plugin~=0.3.2
+azure-identity~=1.15.0
+msgraph-sdk~=1.0.0
+msal~=1.26.0
