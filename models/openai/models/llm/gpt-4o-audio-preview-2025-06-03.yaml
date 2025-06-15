@@ -1,7 +1,7 @@
-model: gpt-4o-audio-preview
+model: gpt-4o-audio-preview-2025-06-03
 label:
-  zh_Hans: gpt-4o-audio-preview
-  en_US: gpt-4o-audio-preview
+  zh_Hans: gpt-4o-audio-preview-2025-06-03
+  en_US: gpt-4o-audio-preview-2025-06-03
 model_type: llm
 features:
   - multi-tool-call
