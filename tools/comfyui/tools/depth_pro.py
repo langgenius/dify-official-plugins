@@ -1,6 +1,6 @@
 import json
+import mimetypes
 import os
-import uuid
 from typing import Any, Generator
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin.entities.tool import ToolInvokeMessage
@@ -19,43 +19,37 @@ class ComfyuiDepthPro(Tool):
         if not base_url:
             yield self.create_text_message("Please input base_url")
         self.comfyui = ComfyUiClient(
-            base_url,
-            self.runtime.credentials.get("comfyui_api_key")
+            base_url, self.runtime.credentials.get("comfyui_api_key")
         )
         precision = tool_parameters.get("precision", None)
         if not precision:
-            raise ToolProviderCredentialValidationError(
-                "Please input precision")
-        images = tool_parameters.get("images") or []
+            raise ToolProviderCredentialValidationError("Please input precision")
         image_names = []
-        for image in images:
+        for image in tool_parameters.get("images", []):
             if image.type != FileType.IMAGE:
                 continue
-            image_name = self.comfyui.post_image(
-                image.filename, image.blob, image.mime_type)
+            image_name = self.comfyui.upload_image(
+                image.filename, image.blob, image.mime_type
+            )
             image_names.append(image_name)
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(current_dir, "comfyui_depth_pro.json")) as file:
-            draw_options = json.load(file)
-        draw_options["6"]["inputs"]["precision"] = precision
-        draw_options["8"]["inputs"]["image"] = image_names[0]
+        with open(os.path.join(current_dir, "json", "depth_pro.json")) as file:
+            workflow_json = json.load(file)
+        workflow_json["6"]["inputs"]["precision"] = precision
+        workflow_json["8"]["inputs"]["image"] = image_names[0]
 
         try:
-            client_id = str(uuid.uuid4())
-            result = self.comfyui.queue_prompt_image(
-                client_id, prompt=draw_options)
-            image = b""
-            for node in result:
-                for img in result[node]:
-                    if img:
-                        image = img
-                        break
-            yield self.create_blob_message(
-                blob=image,
-                meta={"mime_type": "image/png"},
-            )
+            output_images = self.comfyui.generate(workflow_json)
         except Exception as e:
             raise ToolProviderCredentialValidationError(
                 f"Failed to generate image: {str(e)}. Maybe install https://github.com/spacepxl/ComfyUI-Depth-Pro on ComfyUI"
+            )
+        for img in output_images:
+            yield self.create_blob_message(
+                blob=img["data"],
+                meta={
+                    "filename": img["filename"],
+                    "mime_type": img["mime_type"],
+                },
             )

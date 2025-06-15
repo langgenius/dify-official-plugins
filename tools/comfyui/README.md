@@ -56,6 +56,9 @@ You can set any ComfyUI node settings by inputting JSON to this node.
 ### Txt2Img
 
 Txt2Img node can generate an image from texts(prompt and negative prompt).
+If you want to generate large images(typically 1600x1600 or bigger), HiresFix option is for you.
+It generates a small and consistent image then upscale it.
+Without HiresFix, large images tend to have unnaturally duplicated objects and artifacts.
 
 ### Img2Img
 
