@@ -19,6 +19,7 @@ from volcenginesdkarkruntime.types.chat.chat_completion_content_part_video_param
 from volcenginesdkarkruntime.types.chat.chat_completion_content_part_image_param import ImageURL  # type: ignore
 from volcenginesdkarkruntime.types.chat.chat_completion_content_part_video_param import VideoURL
 from volcenginesdkarkruntime.types.chat.chat_completion_message_tool_call_param import Function  # type: ignore
+from volcenginesdkarkruntime.types.chat.completion_create_params import Thinking
 from volcenginesdkarkruntime.types.create_embedding_response import CreateEmbeddingResponse  # type: ignore
 from volcenginesdkarkruntime.types.shared_params import FunctionDefinition  # type: ignore
 
@@ -183,6 +184,7 @@ class ArkClientV3:
         top_p: Optional[float] = None,
         temperature: Optional[float] = None,
         skip_moderation: Optional[bool] = None,
+        thinking: Thinking | None = None,
     ) -> ChatCompletion:
         """Block chat"""
         return self.ark.chat.completions.create(
@@ -195,6 +197,7 @@ class ArkClientV3:
             presence_penalty=presence_penalty,
             top_p=top_p,
             temperature=temperature,
+            thinking=thinking,
             extra_headers={"x-ark-moderation-scene": "skip-ark-moderation"} if skip_moderation else None,
         )
 
@@ -209,6 +212,7 @@ class ArkClientV3:
         top_p: Optional[float] = None,
         temperature: Optional[float] = None,
         skip_moderation: Optional[bool] = None,
+        thinking: Thinking | None = None,
     ) -> Generator[ChatCompletionChunk]:
         """Stream chat"""
         chunks = self.ark.chat.completions.create(
@@ -223,6 +227,7 @@ class ArkClientV3:
             top_p=top_p,
             temperature=temperature,
             stream_options={"include_usage": True},
+            thinking=thinking,
             extra_headers={"x-ark-moderation-scene": "skip-ark-moderation"} if skip_moderation else None,
         )
         yield from chunks

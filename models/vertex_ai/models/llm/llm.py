@@ -47,6 +47,9 @@ from google.genai.types import Tool, GenerateContentConfig, GoogleSearch
 from PIL import Image
 
 
+GLOBAL_ONLY_MODELS = ["gemini-2.5-pro-preview-06-05"]
+
+
 class VertexAiLargeLanguageModel(LargeLanguageModel):
     def _invoke(
         self,
@@ -479,7 +482,9 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             else None
         )
         project_id = credentials["vertex_project_id"]
-        if "preview" in model:
+        if model in GLOBAL_ONLY_MODELS:
+            location = "global"
+        elif "preview" in model:
             location = "us-central1"
         else:
             location = credentials["vertex_location"]

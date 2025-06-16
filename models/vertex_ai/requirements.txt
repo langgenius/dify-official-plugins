@@ -1,5 +1,5 @@
-dify_plugin>=0.2.0,<0.3.0
+dify_plugin>=0.2.0,<0.4.0
 anthropic==0.42.0
-google-cloud-aiplatform==1.74.0
+google-cloud-aiplatform==1.97.0
 google-genai==1.11.0
 Pillow==11.0.0
