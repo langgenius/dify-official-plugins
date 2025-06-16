@@ -111,6 +111,24 @@ model_credential_schema:
       zh_Hans: 基础模型
     options:
     - label:
+        en_US: Doubao-Seed-1.6
+      value: Doubao-Seed-1.6
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
+        en_US: Doubao-Seed-1.6-flash
+      value: Doubao-Seed-1.6-flash
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
+        en_US: Doubao-Seed-1.6-thinking
+      value: Doubao-Seed-1.6-thinking
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
         en_US: Doubao-1.5-thinking-vision-pro
       value: Doubao-1.5-thinking-vision-pro
       show_on:

@@ -37,6 +37,26 @@ model_credential_schema:
     required: false
     type: secret-input
     variable: api_key
+  - default: "60"
+    label:
+      en_US: invoke timeout (unit:second)
+      zh_Hans: 调用超时时间 (单位:秒)
+    placeholder:
+      en_US: Enter invoke timeout value
+      zh_Hans: 在此输入调用超时时间
+    required: true
+    type: text-input
+    variable: invoke_timeout
+  - default: "3"
+    label:
+      en_US: max retries
+      zh_Hans: 调用重试次数
+    placeholder:
+      en_US: Enter max retries
+      zh_Hans: 在此输入调用重试次数
+    required: true
+    type: text-input
+    variable: max_retries
   model:
     label:
       en_US: Model Name

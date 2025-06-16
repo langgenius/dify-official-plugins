@@ -20,6 +20,9 @@ from dify_plugin.errors.model import (
 from dify_plugin.interfaces.model.rerank_model import RerankModel
 from models.helper import TeiHelper
 
+DEFAULT_MAX_RETRIES = 3
+DEFAULT_INVOKE_TIMEOUT = 60
+
 
 class HuggingfaceTeiRerankModel(RerankModel):
     """
@@ -52,12 +55,14 @@ class HuggingfaceTeiRerankModel(RerankModel):
             return RerankResult(model=model, docs=[])
         server_url = credentials["server_url"]
         server_url = server_url.removesuffix("/")
+        max_retries = int(credentials.get("max_retries") or DEFAULT_MAX_RETRIES)
+        invoke_timeout = int(credentials.get("invoke_timeout") or DEFAULT_INVOKE_TIMEOUT)
         headers = {"Content-Type": "application/json"}
         api_key = credentials.get("api_key")
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
         try:
-            results = TeiHelper.invoke_rerank(server_url, query, docs, headers)
+            results = TeiHelper.invoke_rerank(server_url, query, docs, headers, invoke_timeout, max_retries)
             rerank_documents = []
             for result in results:
                 rerank_document = RerankDocument(

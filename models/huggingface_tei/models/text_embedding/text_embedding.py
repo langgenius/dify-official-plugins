@@ -25,6 +25,9 @@ from dify_plugin.errors.model import (
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from models.helper import TeiHelper
 
+DEFAULT_MAX_RETRIES = 3
+DEFAULT_INVOKE_TIMEOUT = 60
+
 
 class HuggingfaceTeiTextEmbeddingModel(TextEmbeddingModel):
     """
@@ -57,6 +60,8 @@ class HuggingfaceTeiTextEmbeddingModel(TextEmbeddingModel):
         """
         server_url = credentials["server_url"]
         server_url = server_url.removesuffix("/")
+        max_retries = int(credentials.get("max_retries") or DEFAULT_MAX_RETRIES)
+        invoke_timeout = int(credentials.get("invoke_timeout") or DEFAULT_INVOKE_TIMEOUT)
         headers = {"Content-Type": "application/json"}
         api_key = credentials.get("api_key")
         if api_key:
@@ -84,7 +89,7 @@ class HuggingfaceTeiTextEmbeddingModel(TextEmbeddingModel):
         try:
             for i in _iter:
                 iter_texts = inputs[i : i + max_chunks]
-                results = TeiHelper.invoke_embeddings(server_url, iter_texts, headers)
+                results = TeiHelper.invoke_embeddings(server_url, iter_texts, headers, invoke_timeout, max_retries)
                 embeddings = results["data"]
                 embeddings = [embedding["embedding"] for embedding in embeddings]
                 batched_embeddings.extend(embeddings)
