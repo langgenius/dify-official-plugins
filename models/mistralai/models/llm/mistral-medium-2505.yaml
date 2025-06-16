@@ -1,13 +1,13 @@
-model: open-codestral-mamba
+model: mistral-medium-2505
 label:
-  zh_Hans: Codestral Mamba (Latest)
-  en_US: Codestral Mamba (Latest)
+  zh_Hans: Mistral Medium (25.05)
+  en_US: Mistral Medium (25.05)
 model_type: llm
 features:
   - agent-thought
 model_properties:
   mode: chat
-  context_size: 256000
+  context_size: 128000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -23,7 +23,7 @@ parameter_rules:
     use_template: max_tokens
     default: 1024
     min: 1
-    max: 256000
+    max: 128000
   - name: safe_prompt
     default: false
     type: boolean
@@ -67,7 +67,7 @@ parameter_rules:
     min: -2
     max: 2
 pricing:
-  input: '0.008'
-  output: '0.024'
-  unit: '0.001'
+  input: '0.4'
+  output: '2'
+  unit: '0.000001'
   currency: USD

@@ -1,13 +1,13 @@
-model: open-codestral-mamba
+model: magistral-small-2506
 label:
-  zh_Hans: Codestral Mamba (Latest)
-  en_US: Codestral Mamba (Latest)
+  zh_Hans: Magistral Small (25.06)
+  en_US: Magistral Small (25.06)
 model_type: llm
 features:
   - agent-thought
 model_properties:
   mode: chat
-  context_size: 256000
+  context_size: 128000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -16,14 +16,17 @@ parameter_rules:
     max: 1
   - name: top_p
     use_template: top_p
-    default: 1
+    default: 0.95
     min: 0
     max: 1
   - name: max_tokens
     use_template: max_tokens
-    default: 1024
+    default: 40960
     min: 1
-    max: 256000
+    max: 128000
+    help:
+      en_US: Maximum tokens to generate. 40960 recommended for complex tasks. Context window is 128k but performance may degrade past 40k.
+      zh_Hans: 生成的最大令牌数。复杂任务建议使用40960。上下文窗口为128k，但超过40k后性能可能下降。
   - name: safe_prompt
     default: false
     type: boolean
@@ -66,8 +69,18 @@ parameter_rules:
     default: 0
     min: -2
     max: 2
+  - name: reasoning_mode
+    type: boolean
+    default: true
+    help:
+      en_US: Enable reasoning mode with system prompt for step-by-step problem solving. When disabled, uses standard chat behavior without system prompt.
+      zh_Hans: 启用带系统提示的推理模式进行逐步问题解决。禁用时，使用标准聊天行为而无系统提示。
+    label:
+      en_US: Reasoning Mode
+      zh_Hans: 推理模式
+
 pricing:
-  input: '0.008'
-  output: '0.024'
-  unit: '0.001'
+  input: '0.5'
+  output: '1.5'
+  unit: '0.000001'
   currency: USD
