@@ -145,6 +145,13 @@ class Moments8LargeLanguageModel(LargeLanguageModel):
 
                                 # Handle content delta
                                 content = delta.get("content", "")
+                                if content == "<think>":
+                                    content = content.replace("<think>", "<think>\n")
+                                elif content == "</think>":
+                                    content = content.replace("</think>", "\n</think>")
+                                content = content.replace("<think>", "<think>\n")
+                                logger.info("stream content: %s", content)
+
                                 role = delta.get("role", "assistant")
 
                                 # Create assistant message for content chunks
