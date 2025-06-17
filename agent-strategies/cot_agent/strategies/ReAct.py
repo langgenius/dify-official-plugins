@@ -49,8 +49,8 @@ class AgentPromptEntity(BaseModel):
 
 
 class ReActAgentStrategy(AgentStrategy):
-    def __init__(self, session):
-        super().__init__(session)
+    def __init__(self, session, runtime):
+        super().__init__(session, runtime)
         self.query = ""
         self.instruction = ""
         self.history_prompt_messages = []
@@ -100,13 +100,13 @@ class ReActAgentStrategy(AgentStrategy):
         # Init parameters
         self.query = react_params.query
         self.instruction = react_params.instruction
-        agent_scratchpad = []
+        agent_scratchpad: list[AgentScratchpadUnit] = []
         iteration_step = 1
         max_iteration_steps = react_params.maximum_iterations
         run_agent_state = True
         llm_usage: dict[str, Optional[LLMUsage]] = {"usage": None}
         final_answer = ""
-        prompt_messages = []
+        prompt_messages: list[PromptMessage] = []
 
         # Init model
         model = react_params.model
@@ -168,7 +168,7 @@ class ReActAgentStrategy(AgentStrategy):
                 stop=stop,
             )
 
-            usage_dict = {}
+            usage_dict: dict[str, Optional[LLMUsage]] = {"usage": None}
             react_chunks = CotAgentOutputParser.handle_react_stream_output(
                 chunks, usage_dict
             )

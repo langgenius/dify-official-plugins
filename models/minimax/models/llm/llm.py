@@ -36,6 +36,7 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
         "minimax-text-01": MinimaxChatCompletionPro,
         "abab7-chat-preview": MinimaxChatCompletionPro,
         "abab6.5s-chat": MinimaxChatCompletionPro,
+        "abab6.5t-chat": MinimaxChatCompletionPro,
         "abab6.5-chat": MinimaxChatCompletionPro,
         "abab6-chat": MinimaxChatCompletionPro,
         "abab5.5s-chat": MinimaxChatCompletionPro,
