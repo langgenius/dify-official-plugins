@@ -382,6 +382,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :return:
         """
         credentials_kwargs = {"api_key": credentials["dashscope_api_key"]}
+        if credentials.get("use_international_endpoint", False):
+            credentials_kwargs["base_url"] = "https://dashscope-intl.aliyuncs.com/compatible-mode/v1"
         return credentials_kwargs
 
     def _convert_one_message_to_text(self, message: PromptMessage) -> str:

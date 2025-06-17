@@ -108,6 +108,13 @@ provider_credential_schema:
     required: true
     type: secret-input
     variable: dashscope_api_key
+  - label:
+      en_US: Use International Endpoint
+      zh_Hans: 使用国际端点
+    type: switch
+    required: false
+    default: false
+    variable: use_international_endpoint
 supported_model_types:
   - llm
   - text-embedding
