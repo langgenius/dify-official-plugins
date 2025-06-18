@@ -538,8 +538,8 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     help=I18nObject(zh_Hans="跳过内容审核，需要先联系火山引擎开通此功能", en_US="Skip Moderation, please contact Volcengine to enable this feature first"),
                 ),
             ]
-
-        if model in ("doubao-1-5-thinking-pro-m-250428", "doubao-seed-1-6-250615"):
+        base_model = credentials.get("base_model_name", "")
+        if base_model.lower() in ("doubao-1.5-thinking-pro", "doubao-seed-1.6"):
             rules.append(
                 ParameterRule(
                     name="thinking",
@@ -549,7 +549,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     options=["enabled", "disabled", "auto"],
                 )
             )
-        elif model in ("doubao-1-5-thinking-vision-pro-250428", "doubao-seed-1-6-flash-250615"):
+        elif base_model.lower() in ("doubao-1.5-thinking-vision-pro", "doubao-seed-1.6-flash"):
             rules.append(
                 ParameterRule(
                     name="thinking",
@@ -559,6 +559,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     options=["enabled", "disabled"],
                 )
             )
+
 
         model_properties = {}
         model_properties[ModelPropertyKey.CONTEXT_SIZE] = (

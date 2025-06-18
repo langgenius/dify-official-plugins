@@ -41,6 +41,22 @@ parameters:
     required: true
     type: string
 
+  - name: negative_prompt
+    default: bad art, ugly, deformed, watermark, duplicated, discontinuous lines
+    form: llm
+    human_description:
+      en_US: Negative prompt
+      pt_BR: Negative prompt
+      zh_Hans: Negative prompt
+      ja_JP: ネガティブプロンプト
+    label:
+      en_US: Negative prompt
+      pt_BR: Negative prompt
+      zh_Hans: Negative prompt
+      ja_JP: ネガティブプロンプト
+    required: false
+    type: string
+
   - name: images
     form: llm
     label:
@@ -85,24 +101,8 @@ parameters:
       pt_BR: Steps
       zh_Hans: Steps
       ja_JP: ステップ数
-    required: false
+    required: true
     type: number
-
-  - name: negative_prompt
-    default: bad art, ugly, deformed, watermark, duplicated, discontinuous lines
-    form: llm
-    human_description:
-      en_US: Negative prompt
-      pt_BR: Negative prompt
-      zh_Hans: Negative prompt
-      ja_JP: ネガティブプロンプト
-    label:
-      en_US: Negative prompt
-      pt_BR: Negative prompt
-      zh_Hans: Negative prompt
-      ja_JP: ネガティブプロンプト
-    required: false
-    type: string
 
   - name: cfg
     default: 7.0
