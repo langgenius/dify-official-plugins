@@ -47,7 +47,7 @@ from google.genai.types import Tool, GenerateContentConfig, GoogleSearch
 from PIL import Image
 
 
-GLOBAL_ONLY_MODELS = ["gemini-2.5-pro-preview-06-05"]
+GLOBAL_ONLY_MODELS = ["gemini-2.5-pro-preview-06-05", "gemini-2.5-flash-lite-preview-06-17"]
 
 
 class VertexAiLargeLanguageModel(LargeLanguageModel):
