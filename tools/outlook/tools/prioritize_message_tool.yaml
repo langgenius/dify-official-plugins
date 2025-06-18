@@ -1,0 +1,59 @@
+identity:
+  name: prioritize_email
+  display_name: Prioritize Email
+  author: Dify
+  label:
+    en_US: Prioritize Email
+    zh_Hans: 设置邮件优先级
+    pt_BR: Priorizar E-mail
+    ja_JP: メールの優先度設定
+    zh_Hant: 設置郵件優先級
+description:
+  human:
+    en_US: Set the priority level of an email message
+    zh_Hans: 设置邮件的优先级级别
+    pt_BR: Definir o nível de prioridade de um e-mail
+    ja_JP: メールの優先度を設定
+    zh_Hant: 設置郵件的優先級別
+  llm: Set the priority level of an email message in Outlook using Microsoft Graph API
+
+parameters:
+  - name: email_id
+    type: string
+    required: true
+    label:
+      en_US: Email ID
+      zh_Hans: 邮件ID
+      pt_BR: ID do E-mail
+      ja_JP: メールID
+      zh_Hant: 郵件ID
+    human_description:
+      en_US: The unique identifier of the email to prioritize
+      zh_Hans: 要设置优先级的邮件的唯一标识符
+      pt_BR: O identificador único do e-mail para priorizar
+      ja_JP: 優先度を設定するメールの一意の識別子
+      zh_Hant: 要設置優先級的郵件的唯一識別符
+    llm_description: The unique identifier of the email to prioritize, this ID can be obtained from the list_messages tool
+    form: llm
+
+  - name: priority_level
+    type: string
+    required: false
+    default: high
+    label:
+      en_US: Priority Level
+      zh_Hans: 优先级
+      pt_BR: Nível de Prioridade
+      ja_JP: 優先度
+      zh_Hant: 優先級
+    human_description:
+      en_US: The priority level to set for the email
+      zh_Hans: 要为邮件设置的优先级
+      pt_BR: O nível de prioridade a ser definido para o e-mail
+      ja_JP: メールに設定する優先度
+      zh_Hant: 要為郵件設置的優先級
+    llm_description: The priority level to set for the email, can be low, normal, or high, default is high
+    form: llm
+extra:
+  python:
+    source: tools/prioritize_message_tool.py
