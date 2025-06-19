@@ -1,10 +1,11 @@
-model: o3-2025-04-16
+model: o3-pro
 label:
-  zh_Hans: o3-2025-04-16
-  en_US: o3-2025-04-16
+  zh_Hans: o3-pro
+  en_US: o3-pro
 model_type: llm
 features:
   - agent-thought
+  - vision
 model_properties:
   mode: chat
   context_size: 200000
@@ -43,7 +44,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: "2.0"
-  output: "8.0"
+  input: "20.0"
+  output: "80.0"
   unit: "0.000001"
   currency: USD
