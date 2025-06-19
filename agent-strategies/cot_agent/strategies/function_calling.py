@@ -1,4 +1,5 @@
 import json
+import logging
 import time
 from collections.abc import Generator
 from copy import deepcopy
@@ -39,10 +40,8 @@ class FunctionCallingParams(BaseModel):
 
 
 class FunctionCallingAgentStrategy(AgentStrategy):
-    def __init__(self, runtime, session):
-        super().__init__(runtime, session)
-        self.query = ""
-        self.instruction = ""
+    query: str = ""
+    instruction: str | None = ""
 
     @property
     def _user_prompt_message(self) -> UserPromptMessage:
@@ -52,7 +51,9 @@ class FunctionCallingAgentStrategy(AgentStrategy):
     def _system_prompt_message(self) -> SystemPromptMessage:
         return SystemPromptMessage(content=self.instruction)
 
-    def _invoke(self, parameters: dict[str, Any]) -> Generator[AgentInvokeMessage]:
+    def _invoke(
+        self, parameters: dict[str, Any]
+    ) -> Generator[AgentInvokeMessage, None, None]:
         """
         Run FunctionCall agent application
         """
@@ -304,13 +305,13 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                 **tool_call_args,
                             },
                         )
-                        result = ""
+                        tool_result = ""
                         for tool_invoke_response in tool_invoke_responses:
                             if (
                                 tool_invoke_response.type
                                 == ToolInvokeMessage.MessageType.TEXT
                             ):
-                                result += cast(
+                                tool_result += cast(
                                     ToolInvokeMessage.TextMessage,
                                     tool_invoke_response.message,
                                 ).text
@@ -318,8 +319,13 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                 tool_invoke_response.type
                                 == ToolInvokeMessage.MessageType.LINK
                             ):
-                                result += (
-                                    f"result link: {cast(ToolInvokeMessage.TextMessage, tool_invoke_response.message).text}."
+                                tool_result += (
+                                    "result link: "
+                                    + cast(
+                                        ToolInvokeMessage.TextMessage,
+                                        tool_invoke_response.message,
+                                    ).text
+                                    + "."
                                     + " please tell user to check it."
                                 )
                             elif tool_invoke_response.type in {
@@ -327,35 +333,45 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                 ToolInvokeMessage.MessageType.IMAGE,
                             }:
                                 # Extract the file path or URL from the message
-                                if hasattr(response.message, 'text'):
-                                    file_info = response.message.text
+                                if hasattr(tool_invoke_response.message, "text"):
+                                    file_info = cast(
+                                        ToolInvokeMessage.TextMessage,
+                                        tool_invoke_response.message,
+                                    ).text
                                     # Try to create a blob message with the file content
                                     try:
                                         # If it's a local file path, try to read it
-                                        if file_info.startswith('/files/'):
+                                        if file_info.startswith("/files/"):
                                             import os
+
                                             if os.path.exists(file_info):
-                                                with open(file_info, 'rb') as f:
+                                                with open(file_info, "rb") as f:
                                                     file_content = f.read()
                                                 # Create a blob message with the file content
                                                 blob_response = self.create_blob_message(
                                                     blob=file_content,
                                                     meta={
                                                         "mime_type": "image/png",
-                                                        "filename": os.path.basename(file_info)
-                                                    }
+                                                        "filename": os.path.basename(
+                                                            file_info
+                                                        ),
+                                                    },
                                                 )
                                                 yield blob_response
                                     except Exception:
-                                        # If file reading fails, continue without blob
-                                        pass
-                                result += (
+                                        logging.exception(
+                                            "Failed to create blob message"
+                                        )
+                                tool_result += (
                                     "image has been created and sent to user already, "
                                     + "you do not need to create it, just tell the user to check it now."
                                 )
-                                # Pass the original image message through as well
-                                yield response
-                            elif response.type == ToolInvokeMessage.MessageType.JSON:
+                                # TODO: convert to agent invoke message
+                                yield tool_invoke_response
+                            elif (
+                                tool_invoke_response.type
+                                == ToolInvokeMessage.MessageType.JSON
+                            ):
                                 text = json.dumps(
                                     cast(
                                         ToolInvokeMessage.JsonMessage,
@@ -363,18 +379,20 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                     ).json_object,
                                     ensure_ascii=False,
                                 )
-                                result += f"tool response: {text}."
-                            elif response.type == ToolInvokeMessage.MessageType.BLOB:
-                                blob_message = cast(ToolInvokeMessage.BlobMessage, response.message)
-                                result += f"Generated file with mime_type: {blob_message.meta.get('mime_type', 'unknown')}. "
-                                # Pass the blob message through for file handling
-                                yield response
+                                tool_result += f"tool response: {text}."
+                            elif (
+                                tool_invoke_response.type
+                                == ToolInvokeMessage.MessageType.BLOB
+                            ):
+                                tool_result += "Generated file ... "
+                                # TODO: convert to agent invoke message
+                                yield tool_invoke_response
                             else:
-                                result += (
+                                tool_result += (
                                     f"tool response: {tool_invoke_response.message!r}."
                                 )
                     except Exception as e:
-                        result = f"tool invoke error: {e!s}"
+                        tool_result = f"tool invoke error: {e!s}"
                     tool_response = {
                         "tool_call_id": tool_call_id,
                         "tool_call_name": tool_call_name,
@@ -382,7 +400,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                             **tool_instance.runtime_parameters,
                             **tool_call_args,
                         },
-                        "tool_response": result,
+                        "tool_response": tool_result,
                     }
 
                 yield self.finish_log_message(
@@ -439,7 +457,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             # If max_iteration_steps=1, need to return tool responses
             if tool_responses and max_iteration_steps == 1:
                 for resp in tool_responses:
-                    yield self.create_text_message(resp["tool_response"])
+                    yield self.create_text_message(str(resp["tool_response"]))
             iteration_step += 1
         yield self.create_json_message(
             {
