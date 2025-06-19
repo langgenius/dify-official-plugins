@@ -1,0 +1,77 @@
+identity:
+  name: list_objects
+  author: langgenius
+  label:
+    en_US: "List Objects"
+    ja_JP: "オブジェクトをリスト"
+    zh_Hans: "列出对象"
+    pt_BR: "Listar Objetos"
+    zh_Hant: "列出物件"
+
+description:
+  human:
+    en_US: "List all generated PDFs and images from APITemplate.io"
+    ja_JP: "APITemplate.io から生成されたすべての PDF と画像をリストします"
+    zh_Hans: "列出 APITemplate.io 生成的所有 PDF 和图像"
+    pt_BR: "Listar todos os PDFs e imagens geradas do APITemplate.io"
+    zh_Hant: "列出 APITemplate.io 生成的所有 PDF 和圖像"
+  llm: "Retrieves a list of all generated PDFs and images with details like download URLs, creation dates, transaction references, and file types. Supports filtering and pagination."
+
+parameters:
+  - name: limit
+    type: string
+    required: false
+    label:
+      en_US: "Limit"
+      ja_JP: "制限"
+      zh_Hans: "限制"
+      pt_BR: "Limite"
+      zh_Hant: "限制"
+    human_description:
+      en_US: "Number of records to retrieve (default: 300, max: 300)"
+      ja_JP: "取得するレコード数（デフォルト：300、最大：300）"
+      zh_Hans: "要检索的记录数（默认：300，最大：300）"
+      pt_BR: "Número de registros a recuperar (padrão: 300, máx: 300)"
+      zh_Hant: "要檢索的記錄數（預設：300，最大：300）"
+    llm_description: "Maximum number of objects to return. Default is 300. Maximum is 300."
+    form: llm
+
+  - name: offset
+    type: string
+    required: false
+    label:
+      en_US: "Offset"
+      ja_JP: "オフセット"
+      zh_Hans: "偏移"
+      pt_BR: "Deslocamento"
+      zh_Hant: "偏移"
+    human_description:
+      en_US: "Number of records to skip (default: 0)"
+      ja_JP: "スキップするレコード数（デフォルト：0）"
+      zh_Hans: "要跳过的记录数（默认：0）"
+      pt_BR: "Número de registros a pular (padrão: 0)"
+      zh_Hant: "要跳過的記錄數（預設：0）"
+    llm_description: "Number of records to skip from the beginning. Used for pagination. Default is 0."
+    form: llm
+
+  - name: transaction_type
+    type: string
+    required: false
+    label:
+      en_US: "Transaction Type"
+      ja_JP: "トランザクションタイプ"
+      zh_Hans: "交易类型"
+      pt_BR: "Tipo de Transação"
+      zh_Hant: "交易類型"
+    human_description:
+      en_US: "Filter by file type: PDF, JPEG, or MERGE"
+      ja_JP: "ファイルタイプでフィルタ：PDF、JPEG、またはMERGE"
+      zh_Hans: "按文件类型筛选：PDF、JPEG 或 MERGE"
+      pt_BR: "Filtrar por tipo de arquivo: PDF, JPEG ou MERGE"
+      zh_Hant: "按檔案類型篩選：PDF、JPEG 或 MERGE"
+    llm_description: "Filter results by transaction type. Options: 'PDF' (PDF files), 'JPEG' (image files), 'MERGE' (merged PDFs)."
+    form: llm
+
+extra:
+  python:
+    source: tools/list_objects.py 

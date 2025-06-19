@@ -1,4 +1,4 @@
-version: 0.0.15
+version: 0.0.16
 type: plugin
 author: "langgenius"
 name: "agent"
@@ -24,7 +24,7 @@ plugins:
   agent_strategies:
     - "provider/agent.yaml"
 meta:
-  version: 0.0.1
+  version: 0.0.2
   arch:
     - "amd64"
     - "arm64"

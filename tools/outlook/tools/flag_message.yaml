@@ -1,0 +1,93 @@
+identity:
+  name: flag_email
+  display_name: Flag Email
+  author: Dify
+  label:
+    en_US: Flag Email
+    zh_Hans: 标记邮件
+    pt_BR: Marcar E-mail
+    ja_JP: メールにフラグ
+    zh_Hant: 標記郵件
+description:
+  human:
+    en_US: Flag an email message for follow-up
+    zh_Hans: 标记邮件以便跟进
+    pt_BR: Marcar um e-mail para acompanhamento
+    ja_JP: メールにフォローアップ用のフラグを設定
+    zh_Hant: 標記郵件以便跟進
+  llm: Flag an email message in Outlook using Microsoft Graph API, supports setting flag status and due date
+
+parameters:
+  - name: email_id
+    type: string
+    required: true
+    label:
+      en_US: Email ID
+      zh_Hans: 邮件ID
+      pt_BR: ID do E-mail
+      ja_JP: メールID
+      zh_Hant: 郵件ID
+    human_description:
+      en_US: The unique identifier of the email to flag
+      zh_Hans: 要标记的邮件的唯一标识符
+      pt_BR: O identificador único do e-mail para marcar
+      ja_JP: フラグを付けるメールの一意の識別子
+      zh_Hant: 要標記的郵件的唯一識別符
+    llm_description: The unique identifier of the email to flag, this ID can be obtained from the list_messages tool
+    form: llm
+  - name: flag_status
+    type: string
+    required: false
+    default: flagged
+    label:
+      en_US: Flag Status
+      zh_Hans: 标记状态
+      pt_BR: Status da Marcação
+      ja_JP: フラグ状態
+      zh_Hant: 標記狀態
+    human_description:
+      en_US: The status of the flag
+      zh_Hans: 标记的状态
+      pt_BR: O status da marcação
+      ja_JP: フラグの状態
+      zh_Hant: 標記的狀態
+    llm_description: The status of the flag, can be flagged or complete, default is flagged
+    form: llm
+  - name: due_date_days
+    type: number
+    required: false
+    min: 0
+    label:
+      en_US: Due Date Days
+      zh_Hans: 到期天数
+      pt_BR: Dias para Vencimento
+      ja_JP: 期限日数
+      zh_Hant: 到期天數
+    human_description:
+      en_US: Number of days from now until the flag is due
+      zh_Hans: 从现在到标记到期的天数
+      pt_BR: Número de dias a partir de agora até o vencimento da marcação
+      ja_JP: フラグの期限までの日数
+      zh_Hant: 從現在到標記到期的天數
+    llm_description: Number of days from now until the flag is due, optional, if not provided, no due date will be set
+    form: llm
+  - name: flag_message
+    type: string
+    required: false
+    label:
+      en_US: Flag Message
+      zh_Hans: 标记消息
+      pt_BR: Mensagem da Marcação
+      ja_JP: フラグメッセージ
+      zh_Hant: 標記訊息
+    human_description:
+      en_US: Optional message to include with the flag
+      zh_Hans: 可选的标记消息
+      pt_BR: Mensagem opcional para incluir com a marcação
+      ja_JP: フラグに含めるオプションのメッセージ
+      zh_Hant: 可選的標記訊息
+    llm_description: Optional message to include with the flag, can be used to provide context or instructions
+    form: llm
+extra:
+  python:
+    source: tools/flag_message.py

@@ -1,0 +1,13 @@
+model: Qwen3-Embedding-8B
+label:
+  zh_Hans: Qwen3-Embedding-8B
+  en_US: Qwen3-Embedding-8B
+model_type: text-embedding
+model_properties:
+  context_size: 32000
+  max_chunks: 20
+
+name: Qwen3-Embedding-8B
+provider: gitee_ai
+visible: true
+description: Qwen3-Embedding-8B 是一个高效的中文文本嵌入模型，适用于多种文本向量化场景。 

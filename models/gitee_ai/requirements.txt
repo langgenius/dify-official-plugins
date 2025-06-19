@@ -1,2 +1,3 @@
-dify_plugin>=0.1.0,<0.2.0
+dify_plugin>=0.3.0,<0.4.0
 dashscope==1.20.14
+pydub~=0.25.1
