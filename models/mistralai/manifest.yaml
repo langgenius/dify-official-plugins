@@ -1,8 +1,8 @@
 author: langgenius
 created_at: '2024-09-20T00:13:50.29298939-04:00'
 description:
-  en_US: Models provided by MistralAI, such as open-mistral-7b and mistral-large-latest.
-  zh_Hans: MistralAI 提供的模型，例如 open-mistral-7b 和 mistral-large-latest。
+  en_US: Models provided by MistralAI, including Magistral models with prompt_mode support, Mistral Large/Medium/Small, Pixtral vision models, Codestral for coding, specialized embedding models, and content moderation services.
+  zh_Hans: MistralAI 提供的模型，包括支持 prompt_mode 的 Magistral 模型、Mistral Large/Medium/Small、Pixtral 视觉模型、Codestral 编程模型、专用嵌入模型和内容审核服务。
 icon: icon_s_en.png
 label:
   en_US: MistralAI
@@ -25,7 +25,7 @@ resource:
     model:
       enabled: true
       llm: true
-      moderation: false
+      moderation: true
       rerank: true
       speech2text: false
       text_embedding: true
@@ -33,4 +33,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.2
+version: 0.0.4

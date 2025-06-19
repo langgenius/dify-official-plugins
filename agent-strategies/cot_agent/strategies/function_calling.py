@@ -39,8 +39,8 @@ class FunctionCallingParams(BaseModel):
 
 
 class FunctionCallingAgentStrategy(AgentStrategy):
-    def __init__(self, session):
-        super().__init__(session)
+    def __init__(self, runtime, session):
+        super().__init__(runtime, session)
         self.query = ""
         self.instruction = ""
 
@@ -305,34 +305,74 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                             },
                         )
                         result = ""
-                        for response in tool_invoke_responses:
-                            if response.type == ToolInvokeMessage.MessageType.TEXT:
+                        for tool_invoke_response in tool_invoke_responses:
+                            if (
+                                tool_invoke_response.type
+                                == ToolInvokeMessage.MessageType.TEXT
+                            ):
                                 result += cast(
-                                    ToolInvokeMessage.TextMessage, response.message
+                                    ToolInvokeMessage.TextMessage,
+                                    tool_invoke_response.message,
                                 ).text
-                            elif response.type == ToolInvokeMessage.MessageType.LINK:
+                            elif (
+                                tool_invoke_response.type
+                                == ToolInvokeMessage.MessageType.LINK
+                            ):
                                 result += (
-                                    f"result link: {cast(ToolInvokeMessage.TextMessage, response.message).text}."
+                                    f"result link: {cast(ToolInvokeMessage.TextMessage, tool_invoke_response.message).text}."
                                     + " please tell user to check it."
                                 )
-                            elif response.type in {
+                            elif tool_invoke_response.type in {
                                 ToolInvokeMessage.MessageType.IMAGE_LINK,
                                 ToolInvokeMessage.MessageType.IMAGE,
                             }:
+                                # Extract the file path or URL from the message
+                                if hasattr(response.message, 'text'):
+                                    file_info = response.message.text
+                                    # Try to create a blob message with the file content
+                                    try:
+                                        # If it's a local file path, try to read it
+                                        if file_info.startswith('/files/'):
+                                            import os
+                                            if os.path.exists(file_info):
+                                                with open(file_info, 'rb') as f:
+                                                    file_content = f.read()
+                                                # Create a blob message with the file content
+                                                blob_response = self.create_blob_message(
+                                                    blob=file_content,
+                                                    meta={
+                                                        "mime_type": "image/png",
+                                                        "filename": os.path.basename(file_info)
+                                                    }
+                                                )
+                                                yield blob_response
+                                    except Exception:
+                                        # If file reading fails, continue without blob
+                                        pass
                                 result += (
                                     "image has been created and sent to user already, "
                                     + "you do not need to create it, just tell the user to check it now."
                                 )
+                                # Pass the original image message through as well
+                                yield response
                             elif response.type == ToolInvokeMessage.MessageType.JSON:
                                 text = json.dumps(
                                     cast(
-                                        ToolInvokeMessage.JsonMessage, response.message
+                                        ToolInvokeMessage.JsonMessage,
+                                        tool_invoke_response.message,
                                     ).json_object,
                                     ensure_ascii=False,
                                 )
                                 result += f"tool response: {text}."
+                            elif response.type == ToolInvokeMessage.MessageType.BLOB:
+                                blob_message = cast(ToolInvokeMessage.BlobMessage, response.message)
+                                result += f"Generated file with mime_type: {blob_message.meta.get('mime_type', 'unknown')}. "
+                                # Pass the blob message through for file handling
+                                yield response
                             else:
-                                result += f"tool response: {response.message!r}."
+                                result += (
+                                    f"tool response: {tool_invoke_response.message!r}."
+                                )
                     except Exception as e:
                         result = f"tool invoke error: {e!s}"
                     tool_response = {
