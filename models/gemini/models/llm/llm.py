@@ -567,11 +567,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 contents.append(TextPromptMessageContent(data=part.text))
             if part.function_call:
                 function_call = part.function_call
-                function_call_id = function_call.id
+                # Generate a unique ID since Gemini API doesn't provide one
+                function_call_id = f"gemini_call_{function_call.name}_{time.time_ns()}"
+                logging.info(f"Generated function call ID: {function_call_id}")
                 function_call_name = function_call.name
                 function_call_args = function_call.args
-                if not isinstance(function_call_id, str):
-                    raise InvokeError("function_call_id received is not a string")
                 if not isinstance(function_call_name, str):
                     raise InvokeError("function_call_name received is not a string")
                 if not isinstance(function_call_args, dict):

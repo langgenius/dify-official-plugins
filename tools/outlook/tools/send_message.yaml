@@ -1,0 +1,40 @@
+identity:
+  name: send_message
+  display_name: Send Message
+  author: Dify
+  label:
+    en_US: Send Message
+    zh_Hans: 发送消息
+    pt_BR: Enviar Mensagem
+    ja_JP: メッセージを送信
+    zh_Hant: 發送訊息
+description:
+  human:
+    en_US: Send a draft email message
+    zh_Hans: 发送草稿电子邮件
+    pt_BR: Enviar uma mensagem de e-mail rascunho
+    ja_JP: 下書きメールを送信
+    zh_Hant: 發送草稿電子郵件
+  llm: Send a draft email message through Outlook using Microsoft Graph API, requires a draft ID from the draft_message tool
+
+parameters:
+  - name: draft_id
+    type: string
+    required: true
+    label:
+      en_US: Draft ID
+      zh_Hans: 草稿ID
+      pt_BR: ID do Rascunho
+      ja_JP: 下書きID
+      zh_Hant: 草稿ID
+    human_description:
+      en_US: The unique identifier of the draft message to send
+      zh_Hans: 要发送的草稿消息的唯一标识符
+      pt_BR: O identificador único do rascunho para enviar
+      ja_JP: 送信する下書きの一意の識別子
+      zh_Hant: 要發送的草稿訊息的唯一識別符
+    llm_description: The unique identifier of the draft message to send, this ID can be obtained from the draft_message tool
+    form: llm
+extra:
+  python:
+    source: tools/send_message.py 

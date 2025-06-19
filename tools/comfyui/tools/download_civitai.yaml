@@ -1,6 +1,8 @@
 description:
   human:
-    en_US: Download from CivitAI
+    en_US: Download models from https://civitai.com/
+    zh_Hans: 从 https://civitai.com/ 下载模型
+    ja_JP: https://civitai.com/ からモデルをダウンロード
   llm: Download from CivitAI
 extra:
   python:
@@ -9,6 +11,8 @@ identity:
   author: yt-koike
   label:
     en_US: CivitAI Download
+    zh_Hans: CivitAI Download
+    ja_JP: CivitAI Download
   name: download_civitai
 parameters:
   - name: model_id
@@ -17,7 +21,7 @@ parameters:
       en_US: Model ID
       zh_Hans: 模型 ID
       ja_JP: モデル ID
-    llm_description: model id
+    llm_description: Model ID
     type: number
     human_description:
       en_US: ID of Model
@@ -33,10 +37,10 @@ parameters:
     llm_description: Version ID
     type: number
     human_description:
-      en_US: Version ID
-      zh_Hans: 版本 ID
-      ja_JP: バージョン ID
-    required: true
+      en_US: Version ID. If none, the latest model will be installed.
+      zh_Hans: 版本 ID. 如果没有，将安装最新的型号.
+      ja_JP: バージョン ID. 指定なしの場合は最新版をダウンロードします.
+    required: false
   - name: save_dir
     form: form
     label:

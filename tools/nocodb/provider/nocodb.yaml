@@ -1,0 +1,81 @@
+identity:
+  author: langgenius
+  name: nocodb
+  label:
+    en_US: NocoDB
+    zh_Hans: NocoDB
+    pt_BR: NocoDB
+    ja_JP: NocoDB
+  description:
+    en_US: "Connect to NocoDB to manage database records and perform CRUD operations"
+    zh_Hans: "连接到 NocoDB 以管理数据库记录并执行 CRUD 操作"
+    pt_BR: "Conecte-se ao NocoDB para gerenciar registros de banco de dados e executar operações CRUD"
+    ja_JP: "NocoDB に接続してデータベースレコードを管理し、CRUD操作を実行します"
+  icon: icon.svg
+
+credentials_for_provider:
+  nocodb_url:
+    type: text-input
+    required: true
+    label:
+      en_US: "NocoDB URL"
+      zh_Hans: "NocoDB 地址"
+      pt_BR: "URL do NocoDB"
+      ja_JP: "NocoDB URL"
+    placeholder:
+      en_US: "Enter your NocoDB instance URL (e.g., https://your-nocodb.com)"
+      zh_Hans: "输入您的 NocoDB 实例地址（例如：https://your-nocodb.com）"
+      pt_BR: "Digite a URL da sua instância NocoDB (ex: https://your-nocodb.com)"
+      ja_JP: "NocoDB インスタンスの URL を入力してください（例：https://your-nocodb.com）"
+    help:
+      en_US: "The base URL of your NocoDB instance"
+      zh_Hans: "您的 NocoDB 实例的基础地址"
+      pt_BR: "A URL base da sua instância NocoDB"
+      ja_JP: "NocoDB インスタンスのベース URL"
+  nocodb_api_token:
+    type: secret-input
+    required: true
+    label:
+      en_US: "NocoDB API Token"
+      zh_Hans: "NocoDB API 令牌"
+      pt_BR: "Token da API NocoDB"
+      ja_JP: "NocoDB API トークン"
+    placeholder:
+      en_US: "Enter your NocoDB API token"
+      zh_Hans: "输入您的 NocoDB API 令牌"
+      pt_BR: "Digite seu token da API NocoDB"
+      ja_JP: "NocoDB API トークンを入力してください"
+    help:
+      en_US: "Get your API token from NocoDB Settings > Account Settings > API Tokens"
+      zh_Hans: "从 NocoDB 设置 > 账户设置 > API 令牌 获取您的 API 令牌"
+      pt_BR: "Obtenha seu token da API em NocoDB Configurações > Configurações da Conta > Tokens da API"
+      ja_JP: "NocoDB 設定 > アカウント設定 > API トークン から API トークンを取得してください"
+    url: https://docs.nocodb.com/account-settings/api-tokens
+  nocodb_base_id:
+    type: text-input
+    required: true
+    label:
+      en_US: "NocoDB Base ID"
+      zh_Hans: "NocoDB 基础 ID"
+      pt_BR: "ID da Base NocoDB"
+      ja_JP: "NocoDB ベース ID"
+    placeholder:
+      en_US: "Enter your NocoDB base ID"
+      zh_Hans: "输入您的 NocoDB 基础 ID"
+      pt_BR: "Digite o ID da sua base NocoDB"
+      ja_JP: "NocoDB ベース ID を入力してください"
+    help:
+      en_US: "The ID of the NocoDB base/project you want to work with"
+      zh_Hans: "您要使用的 NocoDB 基础/项目的 ID"
+      pt_BR: "O ID da base/projeto NocoDB com o qual você deseja trabalhar"
+      ja_JP: "作業する NocoDB ベース/プロジェクトの ID"
+
+tools:
+  - tools/retrieve_records.yaml
+  - tools/create_records.yaml
+  - tools/update_records.yaml
+  - tools/delete_records.yaml
+  - tools/get_schema.yaml
+extra:
+  python:
+    source: provider/nocodb.py

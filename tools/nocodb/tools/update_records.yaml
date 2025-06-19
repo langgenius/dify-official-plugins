@@ -1,0 +1,79 @@
+identity:
+  name: update_records
+  author: langgenius
+  label:
+    en_US: "Update Records"
+    zh_Hans: "更新记录"
+    pt_BR: "Atualizar Registros"
+    ja_JP: "レコード更新"
+description:
+  human:
+    en_US: "Update one or multiple records in a NocoDB table"
+    zh_Hans: "在 NocoDB 表中更新单个或多个记录"
+    pt_BR: "Atualizar um ou múltiplos registros em uma tabela NocoDB"
+    ja_JP: "NocoDB テーブルの 1 つまたは複数のレコードを更新します"
+  llm: "Updates existing records in a NocoDB table. Can update a single record by ID or multiple records in bulk operation. Accepts data as JSON format with column-value pairs for the fields to be updated."
+parameters:
+  - name: table_name
+    type: string
+    required: true
+    label:
+      en_US: "Table Name"
+      zh_Hans: "表名"
+      pt_BR: "Nome da Tabela"
+      ja_JP: "テーブル名"
+    human_description:
+      en_US: "Name of the NocoDB table to update records in"
+      zh_Hans: "要更新记录的 NocoDB 表名"
+      pt_BR: "Nome da tabela NocoDB para atualizar registros"
+      ja_JP: "レコードを更新する NocoDB テーブルの名前"
+    llm_description: "The name of the table where records will be updated. Should match the exact table name in your NocoDB base."
+    form: llm
+  - name: row_id
+    type: string
+    required: false
+    label:
+      en_US: "Row ID"
+      zh_Hans: "行 ID"
+      pt_BR: "ID da Linha"
+      ja_JP: "行 ID"
+    human_description:
+      en_US: "ID of the record to update (required for single record update)"
+      zh_Hans: "要更新的记录 ID（单个记录更新时必需）"
+      pt_BR: "ID do registro para atualizar (obrigatório para atualização de registro único)"
+      ja_JP: "更新するレコードの ID（単一レコード更新の場合は必須）"
+    llm_description: "The ID of the specific record to update. Required for single record updates, not used for bulk updates."
+    form: llm
+  - name: data
+    type: string
+    required: true
+    label:
+      en_US: "Update Data"
+      zh_Hans: "更新数据"
+      pt_BR: "Dados de Atualização"
+      ja_JP: "更新データ"
+    human_description:
+      en_US: "JSON data containing the field values to update"
+      zh_Hans: "包含要更新的字段值的 JSON 数据"
+      pt_BR: "Dados JSON contendo os valores dos campos para atualizar"
+      ja_JP: "更新するフィールド値を含む JSON データ"
+    llm_description: "JSON string containing the data for record updates. Should contain only the fields to be updated: {\"column1\": \"new_value1\", \"column2\": \"new_value2\"}. Column names should match the table schema."
+    form: llm
+  - name: bulk_ids
+    type: string
+    required: false
+    label:
+      en_US: "Bulk IDs"
+      zh_Hans: "批量 ID"
+      pt_BR: "IDs em Lote"
+      ja_JP: "バルク ID"
+    human_description:
+      en_US: "Comma-separated list of record IDs for bulk updates (optional)"
+      zh_Hans: "用于批量更新的记录 ID 列表，用逗号分隔（可选）"
+      pt_BR: "Lista de IDs de registros separados por vírgula para atualizações em lote (opcional)"
+      ja_JP: "バルク更新用のレコード ID のカンマ区切りリスト（オプション）"
+    llm_description: "Comma-separated list of record IDs to update in bulk operation. When provided, the same update data will be applied to all specified records. Example: \"123,456,789\"."
+    form: llm
+extra:
+  python:
+    source: tools/update_records.py 

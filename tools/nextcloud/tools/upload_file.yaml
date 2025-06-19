@@ -1,0 +1,73 @@
+identity:
+  name: upload_file
+  author: langgenius
+  label:
+    en_US: Upload File
+    ja_JP: ファイルアップロード
+    zh_Hans: 上传文件
+    pt_BR: Enviar Arquivo
+    zh_Hant: 上傳檔案
+description:
+  human:
+    en_US: Upload a file to NextCloud from text content or base64 data
+    ja_JP: テキストコンテンツまたは base64 データから NextCloud にファイルをアップロードします
+    zh_Hans: 从文本内容或 base64 数据上传文件到 NextCloud
+    pt_BR: Enviar um arquivo para o NextCloud a partir de conteúdo de texto ou dados base64
+    zh_Hant: 從文字內容或 base64 資料上傳檔案到 NextCloud
+  llm: Uploads a file to NextCloud at the specified path. Can upload text content directly or binary data encoded as base64. Creates any necessary parent directories.
+parameters:
+  - name: file_path
+    type: string
+    required: true
+    label:
+      en_US: File Path
+      ja_JP: ファイルパス
+      zh_Hans: 文件路径
+      pt_BR: Caminho do Arquivo
+      zh_Hant: 檔案路徑
+    human_description:
+      en_US: The full path where the file will be uploaded (e.g. /Documents/new_file.txt)
+      ja_JP: ファイルがアップロードされる完全なパス（例 /Documents/new_file.txt）
+      zh_Hans: 文件将被上传的完整路径（例如 /Documents/new_file.txt）
+      pt_BR: O caminho completo onde o arquivo será enviado (ex /Documents/new_file.txt)
+      zh_Hant: 檔案將被上傳的完整路徑（例如 /Documents/new_file.txt）
+    llm_description: The complete destination path for the uploaded file including filename and extension. Must start with "/" and be case-sensitive.
+    form: llm
+  - name: content
+    type: string
+    required: true
+    label:
+      en_US: File Content
+      ja_JP: ファイル内容
+      zh_Hans: 文件内容
+      pt_BR: Conteúdo do Arquivo
+      zh_Hant: 檔案內容
+    human_description:
+      en_US: The content of the file (text content or base64 encoded binary data)
+      ja_JP: ファイルの内容（テキストコンテンツまたは base64 エンコードされたバイナリデータ）
+      zh_Hans: 文件的内容（文本内容或 base64 编码的二进制数据）
+      pt_BR: O conteúdo do arquivo (conteúdo de texto ou dados binários codificados em base64)
+      zh_Hant: 檔案的內容（文字內容或 base64 編碼的二進制資料）
+    llm_description: The file content to upload. For text files, provide the text directly. For binary files, provide base64 encoded data.
+    form: llm
+  - name: content_type
+    type: string
+    required: false
+    default: "text"
+    label:
+      en_US: Content Type
+      ja_JP: コンテンツタイプ
+      zh_Hans: 内容类型
+      pt_BR: Tipo de Conteúdo
+      zh_Hant: 內容類型
+    human_description:
+      en_US: The type of content (text or base64 for binary data)
+      ja_JP: コンテンツの種類（バイナリデータの場合は text または base64）
+      zh_Hans: 内容类型（文本为 text，二进制数据为 base64）
+      pt_BR: O tipo de conteúdo (text ou base64 para dados binários)
+      zh_Hant: 內容類型（文字為 text，二進制資料為 base64）
+    llm_description: Specify "text" for plain text content or "base64" for binary data encoded as base64. Default is "text".
+    form: llm
+extra:
+  python:
+    source: tools/upload_file.py 

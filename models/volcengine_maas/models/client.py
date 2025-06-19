@@ -15,8 +15,11 @@ from volcenginesdkarkruntime.types.chat import (  # type: ignore
     ChatCompletionToolParam,
     ChatCompletionUserMessageParam,
 )
+from volcenginesdkarkruntime.types.chat.chat_completion_content_part_video_param import ChatCompletionContentPartVideoParam
 from volcenginesdkarkruntime.types.chat.chat_completion_content_part_image_param import ImageURL  # type: ignore
+from volcenginesdkarkruntime.types.chat.chat_completion_content_part_video_param import VideoURL
 from volcenginesdkarkruntime.types.chat.chat_completion_message_tool_call_param import Function  # type: ignore
+from volcenginesdkarkruntime.types.chat.completion_create_params import Thinking
 from volcenginesdkarkruntime.types.create_embedding_response import CreateEmbeddingResponse  # type: ignore
 from volcenginesdkarkruntime.types.shared_params import FunctionDefinition  # type: ignore
 
@@ -29,6 +32,7 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     ToolPromptMessage,
     UserPromptMessage,
+    VideoPromptMessageContent,
 )
 
 DEFAULT_V2_ENDPOINT = "maas-api.ml-platform-cn-beijing.volces.com"
@@ -118,6 +122,16 @@ class ArkClientV3:
                                 type="image_url",
                             )
                         )
+                    elif message_content.type == PromptMessageContentType.VIDEO:
+                        message_content = cast(VideoPromptMessageContent, message_content)
+                        content.append(
+                            ChatCompletionContentPartVideoParam(
+                                video_url=VideoURL(
+                                    url=message_content.data
+                                ),
+                                type="video_url",
+                            )
+                        )
             message_dict = ChatCompletionUserMessageParam(role="user", content=content)
         elif isinstance(message, AssistantPromptMessage):
             message = cast(AssistantPromptMessage, message)
@@ -170,6 +184,7 @@ class ArkClientV3:
         top_p: Optional[float] = None,
         temperature: Optional[float] = None,
         skip_moderation: Optional[bool] = None,
+        thinking: Thinking | None = None,
     ) -> ChatCompletion:
         """Block chat"""
         return self.ark.chat.completions.create(
@@ -182,6 +197,7 @@ class ArkClientV3:
             presence_penalty=presence_penalty,
             top_p=top_p,
             temperature=temperature,
+            thinking=thinking,
             extra_headers={"x-ark-moderation-scene": "skip-ark-moderation"} if skip_moderation else None,
         )
 
@@ -196,6 +212,7 @@ class ArkClientV3:
         top_p: Optional[float] = None,
         temperature: Optional[float] = None,
         skip_moderation: Optional[bool] = None,
+        thinking: Thinking | None = None,
     ) -> Generator[ChatCompletionChunk]:
         """Stream chat"""
         chunks = self.ark.chat.completions.create(
@@ -210,6 +227,7 @@ class ArkClientV3:
             top_p=top_p,
             temperature=temperature,
             stream_options={"include_usage": True},
+            thinking=thinking,
             extra_headers={"x-ark-moderation-scene": "skip-ark-moderation"} if skip_moderation else None,
         )
         yield from chunks

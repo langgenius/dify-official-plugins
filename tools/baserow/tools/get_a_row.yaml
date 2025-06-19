@@ -1,0 +1,37 @@
+identity:
+  name: get_a_row
+  author: langgenius
+  label:
+    en_US: Get A Rows
+    zh_Hans: 获取指定行
+description:
+  human:
+    en_US: Get a row from a Baserow table
+    zh_Hans: 获取指定行
+  llm: Retrieves a row from a Baserow table using the table ID and row ID.
+parameters:
+  - name: table_id
+    type: string
+    required: true
+    label:
+      en_US: Table ID
+      zh_Hans: 表格 ID
+    human_description:
+      en_US: The ID of the table to retrieve rows from.
+      zh_Hans: 要获取其行的表格 ID
+    llm_description: The ID of the table to retrieve rows from. This must be a valid table ID from Baserow.
+    form: llm
+  - name: row_id
+    type: string
+    required: true
+    label:
+      en_US: Row ID
+      zh_Hans: 行 ID
+    human_description:
+      en_US: The ID of the row to retrieve.
+      zh_Hans: 要获取的行的 ID
+    llm_description: The ID of the row to retrieve. This must be a valid row ID from Baserow.
+    form: llm
+extra:
+  python:
+    source: tools/get_a_row.py

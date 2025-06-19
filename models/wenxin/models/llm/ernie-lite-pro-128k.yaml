@@ -38,5 +38,8 @@ parameter_rules:
       en_US: Specifies the upper limit on the length of generated results. If the generated results are truncated, you can increase this parameter.
   - name: presence_penalty
     use_template: presence_penalty
+    default: 1.0
+    min: 1.0
+    max: 2.0
   - name: frequency_penalty
     use_template: frequency_penalty

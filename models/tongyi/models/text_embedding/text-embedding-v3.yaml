@@ -3,7 +3,7 @@ model: text-embedding-v3
 model_type: text-embedding
 model_properties:
   context_size: 8192
-  max_chunks: 25
+  max_chunks: 10
 pricing:
   input: "0.0007"
   unit: "0.001"

@@ -10,7 +10,7 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
     def _update_credential(self, model: str, credentials: dict):
         credentials["endpoint_url"] = "https://openrouter.ai/api/v1"
         credentials["mode"] = self.get_model_mode(model).value
-        credentials["function_calling_type"] = "tool_call"
+        credentials["function_calling_type"] = "tools"  # change to "tools"
 
     def _invoke(
         self,
@@ -24,6 +24,13 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._update_credential(model, credentials)
+        
+        # Add parameter conversion logic
+        if "functions" in model_parameters:
+            model_parameters["tools"] = [{"type": "function", "function": func} for func in model_parameters.pop("functions")]
+        if "function_call" in model_parameters:
+            model_parameters["tool_choice"] = model_parameters.pop("function_call")
+            
         return self._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
@@ -42,6 +49,13 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._update_credential(model, credentials)
+        
+        # Add parameter conversion logic
+        if "functions" in model_parameters:
+            model_parameters["tools"] = [{"type": "function", "function": func} for func in model_parameters.pop("functions")]
+        if "function_call" in model_parameters:
+            model_parameters["tool_choice"] = model_parameters.pop("function_call")
+            
         return super()._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 
     def _generate_block_as_stream(

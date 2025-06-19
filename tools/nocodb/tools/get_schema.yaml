@@ -1,0 +1,34 @@
+identity:
+  name: get_schema
+  author: langgenius
+  label:
+    en_US: "Get Table Schema"
+    zh_Hans: "获取表结构"
+    pt_BR: "Obter Esquema da Tabela"
+    ja_JP: "テーブルスキーマ取得"
+description:
+  human:
+    en_US: "Retrieve the schema and metadata of a NocoDB table including column definitions"
+    zh_Hans: "检索 NocoDB 表的结构和元数据，包括列定义"
+    pt_BR: "Recuperar o esquema e metadados de uma tabela NocoDB incluindo definições de colunas"
+    ja_JP: "列定義を含む NocoDB テーブルのスキーマとメタデータを取得します"
+  llm: "Retrieves the complete schema information for a NocoDB table, including column names, data types, constraints, and other metadata. This is useful for understanding the table structure before creating or updating records."
+parameters:
+  - name: table_name
+    type: string
+    required: true
+    label:
+      en_US: "Table Name"
+      zh_Hans: "表名"
+      pt_BR: "Nome da Tabela"
+      ja_JP: "テーブル名"
+    human_description:
+      en_US: "Name of the NocoDB table to get schema information for"
+      zh_Hans: "要获取结构信息的 NocoDB 表名"
+      pt_BR: "Nome da tabela NocoDB para obter informações do esquema"
+      ja_JP: "スキーマ情報を取得する NocoDB テーブルの名前"
+    llm_description: "The name of the table to retrieve schema information from. Should match the exact table name in your NocoDB base."
+    form: llm
+extra:
+  python:
+    source: tools/get_schema.py 

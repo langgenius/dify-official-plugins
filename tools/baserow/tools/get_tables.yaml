@@ -1,0 +1,14 @@
+identity:
+  name: get_tables
+  author: langgenius
+  label:
+    en_US: Get Tables
+    zh_Hans: 获取所有表格
+description:
+  human:
+    en_US: Get all tables from Baserow
+    zh_Hans: 获取所有表格
+  llm: Retrieves all tables from Baserow.
+extra:
+  python:
+    source: tools/get_tables.py

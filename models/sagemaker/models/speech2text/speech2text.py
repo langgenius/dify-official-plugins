@@ -4,7 +4,7 @@ from typing import IO, Any, Optional
 
 import boto3  # type: ignore
 
-from provider.sagemaker import generate_presigned_url
+from provider.sagemaker import generate_presigned_url, buffer_to_s3
 
 from dify_plugin.entities.model import AIModelEntity, FetchFrom, I18nObject, ModelType
 from dify_plugin.errors.model import (
@@ -67,17 +67,25 @@ class SageMakerSpeech2TextModel(Speech2TextModel):
             s3_prefix = "dify/speech2text/"
             sagemaker_endpoint = credentials.get("sagemaker_endpoint")
             bucket = credentials.get("audio_s3_cache_bucket")
-            assert bucket is not None, "audio_s3_cache_bucket is required in credentials"
+            
+            if bucket:
+                # For FunASR Model
+                object_key = buffer_to_s3(self.s3_client, file, bucket, s3_prefix)
+                payload = {"bucket_name": bucket, "s3_key" : object_key}
+                # s3_presign_url = generate_presigned_url(self.s3_client, file, bucket, s3_prefix)
+                # payload = {"audio_s3_presign_uri": s3_presign_url}
+                response_model = self.sagemaker_client.invoke_endpoint(
+                    EndpointName=sagemaker_endpoint, Body=json.dumps(payload), ContentType="application/json"
+                )
+                json_str = response_model["Body"].read().decode("utf8")
+                json_obj = json.loads(json_str)
+                asr_text = json_obj["text"]
+            else:
+                # For Whisper Model
+                resp = self.sagemaker_client.invoke_endpoint(EndpointName=sagemaker_endpoint, Body=file.read(), ContentType='audio/x-audio')
+                json_obj = json.loads(resp["Body"].read().decode("utf8"))
+                asr_text = json_obj["text"]
 
-            s3_presign_url = generate_presigned_url(self.s3_client, file, bucket, s3_prefix)
-            payload = {"audio_s3_presign_uri": s3_presign_url}
-
-            response_model = self.sagemaker_client.invoke_endpoint(
-                EndpointName=sagemaker_endpoint, Body=json.dumps(payload), ContentType="application/json"
-            )
-            json_str = response_model["Body"].read().decode("utf8")
-            json_obj = json.loads(json_str)
-            asr_text = json_obj["text"]
         except Exception as e:
             logger.exception(f"failed to invoke speech2text model, model: {model}")
             raise CredentialsValidateFailedError(str(e))

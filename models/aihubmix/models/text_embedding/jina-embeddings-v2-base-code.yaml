@@ -1,0 +1,9 @@
+model: jina-embeddings-v2-base-code
+model_type: text-embedding
+model_properties:
+  context_size: 8192
+  max_chunks: 2048
+pricing:
+  input: '0.18'
+  unit: '0.000001'
+  currency: USD

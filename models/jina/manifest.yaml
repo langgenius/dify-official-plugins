@@ -1,13 +1,13 @@
-version: 0.0.6
+version: 0.0.7
 type: plugin
 author: "langgenius"
 name: "jina"
-icon: "icon_s_en.svg"
+description:
+  en_US: Embedding and Rerank Model Supported
 label:
   en_US: "Jina"
 created_at: "2024-07-12T08:03:44.658609186Z"
-description:
-  en_US: Embedding and Rerank Model Supported
+icon: "icon_s_en.svg"
 resource:
   memory: 1048576
   permission:

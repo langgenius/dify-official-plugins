@@ -1,0 +1,95 @@
+identity:
+  name: create_pdf_from_html
+  author: langgenius
+  label:
+    en_US: "Create PDF from HTML"
+    ja_JP: "HTMLからPDFを作成"
+    zh_Hans: "从HTML创建PDF"
+    pt_BR: "Criar PDF do HTML"
+    zh_Hant: "從HTML建立PDF"
+
+description:
+  human:
+    en_US: "Generate a PDF document from HTML content using APITemplate.io"
+    ja_JP: "APITemplate.io を使用して HTML コンテンツから PDF ドキュメントを生成します"
+    zh_Hans: "使用 APITemplate.io 从 HTML 内容生成 PDF 文档"
+    pt_BR: "Gerar um documento PDF a partir de conteúdo HTML usando APITemplate.io"
+    zh_Hant: "使用 APITemplate.io 從 HTML 內容生成 PDF 文件"
+  llm: "Creates a PDF document from HTML body content with optional CSS styling and dynamic data. Supports Jinja2 templating for dynamic content replacement."
+
+parameters:
+  - name: html_body
+    type: string
+    required: true
+    label:
+      en_US: "HTML Body"
+      ja_JP: "HTML本文"
+      zh_Hans: "HTML主体"
+      pt_BR: "Corpo HTML"
+      zh_Hant: "HTML主體"
+    human_description:
+      en_US: "The HTML content for the PDF body. Supports Jinja2 syntax for dynamic content"
+      ja_JP: "PDF本文のHTMLコンテンツ。動的コンテンツのJinja2構文をサポート"
+      zh_Hans: "PDF正文的HTML内容。支持动态内容的Jinja2语法"
+      pt_BR: "O conteúdo HTML para o corpo do PDF. Suporta sintaxe Jinja2 para conteúdo dinâmico"
+      zh_Hant: "PDF主體的HTML內容。支持動態內容的Jinja2語法"
+    llm_description: "HTML markup for the PDF body. Can include Jinja2 template variables like {{name}}. Example: '<h1>Invoice {{invoice_number}}</h1><p>Date: {{date}}</p>'"
+    form: llm
+
+  - name: css_styles
+    type: string
+    required: false
+    label:
+      en_US: "CSS Styles"
+      ja_JP: "CSSスタイル"
+      zh_Hans: "CSS样式"
+      pt_BR: "Estilos CSS"
+      zh_Hant: "CSS樣式"
+    human_description:
+      en_US: "Optional CSS styles to apply to the PDF. Should include the style tag"
+      ja_JP: "PDFに適用するオプションのCSSスタイル。styleタグを含める必要があります"
+      zh_Hans: "应用于PDF的可选CSS样式。应包含style标签"
+      pt_BR: "Estilos CSS opcionais para aplicar ao PDF. Deve incluir a tag style"
+      zh_Hant: "應用於PDF的可選CSS樣式。應包含style標籤"
+    llm_description: "CSS markup to style the PDF. Should include style tags. Example: '<style>body{font-family: Arial;} .header{color: blue;}</style>'"
+    form: llm
+
+  - name: template_data
+    type: string
+    required: false
+    label:
+      en_US: "Template Data"
+      ja_JP: "テンプレートデータ"
+      zh_Hans: "模板数据"
+      pt_BR: "Dados do Modelo"
+      zh_Hant: "範本資料"
+    human_description:
+      en_US: "JSON data to replace template variables in the HTML"
+      ja_JP: "HTML内のテンプレート変数を置換するJSONデータ"
+      zh_Hans: "用于替换HTML中模板变量的JSON数据"
+      pt_BR: "Dados JSON para substituir variáveis do modelo no HTML"
+      zh_Hant: "用於替換HTML中範本變數的JSON資料"
+    llm_description: "JSON object containing values for template variables in the HTML. Example: '{\"name\": \"John Doe\", \"invoice_number\": \"INV-001\", \"date\": \"2024-01-15\"}'"
+    form: llm
+
+  - name: filename
+    type: string
+    required: false
+    label:
+      en_US: "Custom Filename"
+      ja_JP: "カスタムファイル名"
+      zh_Hans: "自定义文件名"
+      pt_BR: "Nome do Arquivo Personalizado"
+      zh_Hant: "自訂檔案名稱"
+    human_description:
+      en_US: "Optional custom filename for the generated PDF (must end with .pdf)"
+      ja_JP: "生成されるPDFのオプションのカスタムファイル名（.pdfで終わる必要があります）"
+      zh_Hans: "生成PDF的可选自定义文件名（必须以.pdf结尾）"
+      pt_BR: "Nome de arquivo personalizado opcional para o PDF gerado (deve terminar com .pdf)"
+      zh_Hant: "生成PDF的可選自訂檔案名稱（必須以.pdf結尾）"
+    llm_description: "Optional custom filename for the PDF. If not provided, a UUID will be used. Must end with '.pdf'. Example: 'report_123.pdf'"
+    form: llm
+
+extra:
+  python:
+    source: tools/create_pdf_from_html.py 
