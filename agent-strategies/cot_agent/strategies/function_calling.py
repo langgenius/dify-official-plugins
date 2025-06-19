@@ -327,8 +327,8 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                 ToolInvokeMessage.MessageType.IMAGE,
                             }:
                                 # Extract the file path or URL from the message
-                                if hasattr(response.message, 'text'):
-                                    file_info = response.message.text
+                                if hasattr(tool_invoke_response.message, 'text'):
+                                    file_info = tool_invoke_response.message.text
                                     # Try to create a blob message with the file content
                                     try:
                                         # If it's a local file path, try to read it
@@ -354,8 +354,8 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                     + "you do not need to create it, just tell the user to check it now."
                                 )
                                 # Pass the original image message through as well
-                                yield response
-                            elif response.type == ToolInvokeMessage.MessageType.JSON:
+                                yield tool_invoke_response
+                            elif tool_invoke_response.type == ToolInvokeMessage.MessageType.JSON:
                                 text = json.dumps(
                                     cast(
                                         ToolInvokeMessage.JsonMessage,
@@ -364,11 +364,11 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                     ensure_ascii=False,
                                 )
                                 result += f"tool response: {text}."
-                            elif response.type == ToolInvokeMessage.MessageType.BLOB:
-                                blob_message = cast(ToolInvokeMessage.BlobMessage, response.message)
+                            elif tool_invoke_response.type == ToolInvokeMessage.MessageType.BLOB:
+                                blob_message = cast(ToolInvokeMessage.BlobMessage, tool_invoke_response.message)
                                 result += f"Generated file with mime_type: {blob_message.meta.get('mime_type', 'unknown')}. "
                                 # Pass the blob message through for file handling
-                                yield response
+                                yield tool_invoke_response
                             else:
                                 result += (
                                     f"tool response: {tool_invoke_response.message!r}."
