@@ -28,6 +28,8 @@ class WecomGroupBotTool(Tool):
         message_type = tool_parameters.get("message_type", "text")
         if message_type == "markdown":
             payload = {"msgtype": "markdown", "markdown": {"content": content}}
+        elif  message_type == "markdown_v2":
+            payload = {"msgtype": "markdown_v2", "markdown_v2": {"content": content}}
         else:
             payload = {"msgtype": "text", "text": {"content": content}}
         api_url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send"

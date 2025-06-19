@@ -1,0 +1,78 @@
+identity:
+  name: list_messages
+  display_name: List Messages
+  author: Dify
+  label:
+    en_US: List Messages
+    zh_Hans: 列出消息
+    pt_BR: Listar Mensagens
+    ja_JP: メッセージ一覧
+    zh_Hant: 列出訊息
+description:
+  human:
+    en_US: List messages from your Outlook inbox
+    zh_Hans: 列出您的 Outlook 收件箱中的消息
+    pt_BR: Listar mensagens da sua caixa de entrada do Outlook
+    ja_JP: Outlook の受信トレイからメッセージを一覧表示
+    zh_Hant: 列出您的 Outlook 收件箱中的訊息
+  llm: List messages from the users Outlook inbox using Microsoft Graph API, supports filtering and pagination
+
+parameters:
+  - name: folder
+    type: string
+    required: false
+    default: inbox
+    label:
+      en_US: Folder
+      zh_Hans: 文件夹
+      pt_BR: Pasta
+      ja_JP: フォルダ
+      zh_Hant: 資料夾
+    human_description:
+      en_US: The folder to list messages from
+      zh_Hans: 要列出消息的文件夹
+      pt_BR: A pasta para listar mensagens
+      ja_JP: メッセージを一覧表示するフォルダ
+      zh_Hant: 要列出訊息的資料夾
+    llm_description: The folder to list messages from, default is inbox, other options include sentitems, drafts, deleteditems, archive
+    form: llm
+  - name: search
+    type: string
+    required: false
+    label:
+      en_US: Search
+      zh_Hans: 搜索
+      pt_BR: Pesquisar
+      ja_JP: 検索
+      zh_Hant: 搜尋
+    human_description:
+      en_US: Search query to filter messages
+      zh_Hans: 用于过滤消息的搜索查询
+      pt_BR: Consulta de pesquisa para filtrar mensagens
+      ja_JP: メッセージをフィルタリングする検索クエリ
+      zh_Hant: 用於過濾訊息的搜尋查詢
+    llm_description: Search query to filter messages, supports subject, sender, recipient, and body content search
+    form: llm
+  - name: limit
+    type: number
+    required: false
+    default: 10
+    min: 1
+    max: 100
+    label:
+      en_US: Limit
+      zh_Hans: 限制
+      pt_BR: Limite
+      ja_JP: 制限
+      zh_Hant: 限制
+    human_description:
+      en_US: Maximum number of messages to return
+      zh_Hans: 要返回的最大消息数
+      pt_BR: Número máximo de mensagens a retornar
+      ja_JP: 返すメッセージの最大数
+      zh_Hant: 要返回的最大訊息數
+    llm_description: Maximum number of messages to return, between 1 and 100, default is 10
+    form: llm
+extra:
+  python:
+    source: tools/list_messages.py 

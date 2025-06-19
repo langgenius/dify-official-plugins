@@ -49,8 +49,8 @@ class AgentPromptEntity(BaseModel):
 
 
 class ReActAgentStrategy(AgentStrategy):
-    def __init__(self, session):
-        super().__init__(session)
+    def __init__(self, session, runtime):
+        super().__init__(session, runtime)
         self.query = ""
         self.instruction = ""
         self.history_prompt_messages = []
@@ -100,13 +100,13 @@ class ReActAgentStrategy(AgentStrategy):
         # Init parameters
         self.query = react_params.query
         self.instruction = react_params.instruction
-        agent_scratchpad = []
+        agent_scratchpad: list[AgentScratchpadUnit] = []
         iteration_step = 1
         max_iteration_steps = react_params.maximum_iterations
         run_agent_state = True
         llm_usage: dict[str, Optional[LLMUsage]] = {"usage": None}
         final_answer = ""
-        prompt_messages = []
+        prompt_messages: list[PromptMessage] = []
 
         # Init model
         model = react_params.model
@@ -168,7 +168,7 @@ class ReActAgentStrategy(AgentStrategy):
                 stop=stop,
             )
 
-            usage_dict = {}
+            usage_dict: dict[str, Optional[LLMUsage]] = {"usage": None}
             react_chunks = CotAgentOutputParser.handle_react_stream_output(
                 chunks, usage_dict
             )
@@ -280,7 +280,7 @@ class ReActAgentStrategy(AgentStrategy):
                         status=ToolInvokeMessage.LogMessage.LogStatus.START,
                     )
                     yield tool_call_log
-                    tool_invoke_response, tool_invoke_parameters = (
+                    tool_invoke_response, tool_invoke_parameters, additional_messages = (
                         self._handle_invoke_action(
                             action=scratchpad.action,
                             tool_instances=tool_instances,
@@ -289,6 +289,10 @@ class ReActAgentStrategy(AgentStrategy):
                     )
                     scratchpad.observation = tool_invoke_response
                     scratchpad.agent_response = tool_invoke_response
+
+                    # Yield any additional messages (like BLOB messages for files)
+                    for message in additional_messages:
+                        yield message
                     yield self.finish_log_message(
                         log=tool_call_log,
                         data={
@@ -427,7 +431,7 @@ class ReActAgentStrategy(AgentStrategy):
         action: AgentScratchpadUnit.Action,
         tool_instances: Mapping[str, ToolEntity],
         message_file_ids: list[str],
-    ) -> tuple[str, dict[str, Any] | str]:
+    ) -> tuple[str, dict[str, Any] | str, list[ToolInvokeMessage]]:
         """
         handle invoke action
         :param action: action
@@ -467,6 +471,7 @@ class ReActAgentStrategy(AgentStrategy):
                 parameters=tool_invoke_parameters,
             )
             result = ""
+            additional_messages = []  # Collect messages that need to be yielded
             for response in tool_invoke_responses:
                 if response.type == ToolInvokeMessage.MessageType.TEXT:
                     result += cast(ToolInvokeMessage.TextMessage, response.message).text
@@ -479,9 +484,14 @@ class ReActAgentStrategy(AgentStrategy):
                     ToolInvokeMessage.MessageType.IMAGE_LINK,
                     ToolInvokeMessage.MessageType.IMAGE,
                 }:
+                    # Pass through the original IMAGE_LINK response for upper layer handling
+                    additional_messages.append(response)
+                    # Include the actual file path information for the LLM
+                    image_link_text = cast(ToolInvokeMessage.TextMessage, response.message).text
                     result += (
-                        "image has been created and sent to user already, "
-                        + "you do not need to create it, just tell the user to check it now."
+                        f"Image has been successfully generated and saved to: {image_link_text}. "
+                        + "The image file is now available for download. "
+                        + "Please inform the user that the image has been created successfully."
                     )
                 elif response.type == ToolInvokeMessage.MessageType.JSON:
                     text = json.dumps(
@@ -491,12 +501,17 @@ class ReActAgentStrategy(AgentStrategy):
                         ensure_ascii=False,
                     )
                     result += f"tool response: {text}."
+                elif response.type == ToolInvokeMessage.MessageType.BLOB:
+                    blob_message = cast(ToolInvokeMessage.BlobMessage, response.message)
+                    result += f"Generated file with mime_type: {blob_message.meta.get('mime_type', 'unknown')}. "
+                    additional_messages.append(response)
                 else:
                     result += f"tool response: {response.message!r}."
         except Exception as e:
             result = f"tool invoke error: {e!s}"
+            additional_messages = []
 
-        return result, tool_invoke_parameters
+        return result, tool_invoke_parameters, additional_messages
 
     def _convert_dict_to_action(self, action: dict) -> AgentScratchpadUnit.Action:
         """

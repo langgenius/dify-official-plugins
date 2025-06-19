@@ -63,5 +63,10 @@ parameters:
       pt_BR: Markdown
       zh_Hans: Markdown
     value: markdown
+  - label:
+      en_US: Markdown V2
+      pt_BR: Markdown V2
+      zh_Hans: Markdown V2
+    value: markdown_v2
   required: true
   type: select

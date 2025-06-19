@@ -104,7 +104,7 @@ class TeiHelper:
 
     @staticmethod
     def invoke_tokenize(
-        server_url: str, texts: list[str], headers: Optional[dict] = None
+        server_url: str, texts: list[str], headers: Optional[dict] = None, invoke_timeout: int = 60, max_retries: int = 3
     ) -> list[list[dict]]:
         """
         Invoke tokenize endpoint
@@ -132,17 +132,27 @@ class TeiHelper:
 
         :param server_url: server url
         :param texts: texts to tokenize
+        :param invoke_timeout: invoke timeout
+        :param max_retries: max retries
         """
         url = f"{server_url}/tokenize"
         json_data = {"inputs": texts}
-        resp = httpx.post(url, json=json_data, headers=headers)
 
-        resp.raise_for_status()
+        for attempt in range(max_retries + 1):
+            try:
+                resp = httpx.post(url, json=json_data, headers=headers, timeout=invoke_timeout)
+                resp.raise_for_status()
+                break
+            except (httpx.RequestError, httpx.HTTPStatusError) as e:
+                if attempt >= max_retries:
+                    raise
+                print(f"Request failed, retry {attempt+1}/{max_retries}... ({e})")
+
         return resp.json()
 
     @staticmethod
     def invoke_embeddings(
-        server_url: str, texts: list[str], headers: Optional[dict] = None
+        server_url: str, texts: list[str], headers: Optional[dict] = None, invoke_timeout: int = 60, max_retries: int = 3
     ) -> dict:
         """
         Invoke embeddings endpoint
@@ -166,17 +176,28 @@ class TeiHelper:
 
         :param server_url: server url
         :param texts: texts to embed
+        :param invoke_timeout: invoke timeout
+        :param max_retries: max retries
         """
         # Use OpenAI compatible API here, which has usage tracking
         url = f"{server_url}/v1/embeddings"
         json_data = {"input": texts}
-        resp = httpx.post(url, json=json_data, headers=headers)
-        resp.raise_for_status()
+
+        for attempt in range(max_retries + 1):
+            try:
+                resp = httpx.post(url, json=json_data, headers=headers, timeout=invoke_timeout)
+                resp.raise_for_status()
+                break
+            except (httpx.RequestError, httpx.HTTPStatusError) as e:
+                if attempt >= max_retries:
+                    raise
+                print(f"Request failed, retry {attempt+1}/{max_retries}... ({e})")
+
         return resp.json()
 
     @staticmethod
     def invoke_rerank(
-        server_url: str, query: str, docs: list[str], headers: Optional[dict] = None
+        server_url: str, query: str, docs: list[str], headers: Optional[dict] = None, invoke_timeout: int = 60, max_retries: int = 3
     ) -> list[dict]:
         """
         Invoke rerank endpoint
@@ -192,10 +213,20 @@ class TeiHelper:
 
         :param server_url: server url
         :param texts: texts to rerank
-        :param candidates: candidates to rerank
+        :param invoke_timeout: invoke timeout
+        :param max_retries: max retries
         """
-        params = {"query": query, "texts": docs, "return_text": True}
+        json_data = {"query": query, "texts": docs, "return_text": True}
         url = f"{server_url}/rerank"
-        response = httpx.post(url, json=params, headers=headers)
-        response.raise_for_status()
-        return response.json()
+
+        for attempt in range(max_retries + 1):
+            try:
+                resp = httpx.post(url, json=json_data, headers=headers, timeout=invoke_timeout)
+                resp.raise_for_status()
+                break
+            except (httpx.RequestError, httpx.HTTPStatusError) as e:
+                if attempt >= max_retries:
+                    raise
+                print(f"Request failed, retry {attempt+1}/{max_retries}... ({e})")
+
+        return resp.json()

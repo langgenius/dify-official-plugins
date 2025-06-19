@@ -1,0 +1,76 @@
+identity:
+  name: add_attachment_to_draft
+  display_name: Add Attachment to Draft
+  author: Dify
+  label:
+    en_US: Add Attachment to Draft
+    zh_Hans: 向草稿添加附件
+    pt_BR: Adicionar Anexo ao Rascunho
+    ja_JP: 下書きに添付ファイルを追加
+    zh_Hant: 向草稿添加附件
+description:
+  human:
+    en_US: Add a file attachment to a draft email
+    zh_Hans: 向草稿邮件添加文件附件
+    pt_BR: Adicionar um anexo a um rascunho de e-mail
+    ja_JP: 下書きメールにファイルを添付
+    zh_Hant: 向草稿郵件添加檔案附件
+  llm: Add a file attachment to an existing draft email in Outlook using Microsoft Graph API
+
+parameters:
+  - name: draft_id
+    type: string
+    required: true
+    label:
+      en_US: Draft ID
+      zh_Hans: 草稿ID
+      pt_BR: ID do Rascunho
+      ja_JP: 下書きID
+      zh_Hant: 草稿ID
+    human_description:
+      en_US: The unique identifier of the draft email
+      zh_Hans: 草稿邮件的唯一标识符
+      pt_BR: O identificador único do rascunho de e-mail
+      ja_JP: 下書きメールの一意の識別子
+      zh_Hant: 草稿郵件的唯一識別符
+    llm_description: The unique identifier of the draft email to add the attachment to, this ID can be obtained from the list_draft tool
+    form: llm
+
+  - name: file_to_attach
+    type: files
+    required: true
+    label:
+      en_US: Files to Attach
+      zh_Hans: 要附加的文件
+      pt_BR: Arquivos para Anexar
+      ja_JP: 添付するファイル
+      zh_Hant: 要附加的檔案
+    human_description:
+      en_US: The files to attach to the draft email
+      zh_Hans: 要附加到草稿邮件的文件
+      pt_BR: Os arquivos para anexar ao rascunho de e-mail
+      ja_JP: 下書きメールに添付するファイル
+      zh_Hant: 要附加到草稿郵件的檔案
+    llm_description: The files to attach to the draft email, you can upload multiple files
+    form: llm
+
+  - name: attachment_name
+    type: string
+    required: false
+    label:
+      en_US: Attachment Name
+      zh_Hans: 附件名称
+      pt_BR: Nome do Anexo
+      ja_JP: 添付ファイル名
+      zh_Hant: 附件名稱
+    human_description:
+      en_US: Optional name for the attachment
+      zh_Hans: 可选的附件名称
+      pt_BR: Nome opcional para o anexo
+      ja_JP: 添付ファイルのオプション名
+      zh_Hant: 可選的附件名稱
+    llm_description: Optional name for the attachment, if not provided, a default name will be used
+    form: llm
+extra:
+  python:
+    source: tools/add_attachment_to_draft.py
