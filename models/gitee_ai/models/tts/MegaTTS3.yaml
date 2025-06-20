@@ -1,4 +1,4 @@
-model: speecht5_tts
+model: MegaTTS3
 model_type: tts
 model_properties:
   default_voice: 'default'

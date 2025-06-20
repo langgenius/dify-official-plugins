@@ -1,0 +1,77 @@
+identity:
+  name: create_image
+  author: langgenius
+  label:
+    en_US: "Create Image from Template"
+    ja_JP: "テンプレートから画像を作成"
+    zh_Hans: "从模板创建图像"
+    pt_BR: "Criar Imagem do Modelo"
+    zh_Hant: "從範本建立圖像"
+
+description:
+  human:
+    en_US: "Generate JPEG and PNG images from a template using APITemplate.io"
+    ja_JP: "APITemplate.io を使用してテンプレートから JPEG と PNG 画像を生成します"
+    zh_Hans: "使用 APITemplate.io 从模板生成 JPEG 和 PNG 图像"
+    pt_BR: "Gerar imagens JPEG e PNG a partir de um modelo usando APITemplate.io"
+    zh_Hant: "使用 APITemplate.io 從範本生成 JPEG 和 PNG 圖像"
+  llm: "Creates JPEG and PNG images from a specified template using provided override data. Returns download URLs for both image formats along with transaction reference."
+
+parameters:
+  - name: template_id
+    type: string
+    required: true
+    label:
+      en_US: "Template ID"
+      ja_JP: "テンプレートID"
+      zh_Hans: "模板ID"
+      pt_BR: "ID do Modelo"
+      zh_Hant: "範本ID"
+    human_description:
+      en_US: "The unique identifier of the image template to use"
+      ja_JP: "使用する画像テンプレートの一意識別子"
+      zh_Hans: "要使用的图像模板的唯一标识符"
+      pt_BR: "O identificador único do modelo de imagem a ser usado"
+      zh_Hant: "要使用的圖像範本的唯一識別符"
+    llm_description: "The image template ID from your APITemplate.io account. This can be found in the web console under 'Manage Templates'. Example: '79667b2b1876e347'"
+    form: llm
+
+  - name: overrides_data
+    type: string
+    required: true
+    label:
+      en_US: "Override Data"
+      ja_JP: "オーバーライドデータ"
+      zh_Hans: "覆盖数据"
+      pt_BR: "Dados de Sobreposição"
+      zh_Hant: "覆蓋資料"
+    human_description:
+      en_US: "JSON data containing overrides for template objects (text, images, etc.)"
+      ja_JP: "テンプレートオブジェクト（テキスト、画像など）のオーバーライドを含むJSONデータ"
+      zh_Hans: "包含模板对象（文本、图像等）覆盖的JSON数据"
+      pt_BR: "Dados JSON contendo sobreposições para objetos do modelo (texto, imagens, etc.)"
+      zh_Hant: "包含範本物件（文字、圖像等）覆蓋的JSON資料"
+    llm_description: "JSON object with overrides array containing modifications for template elements. Example: '{\"overrides\": [{\"name\": \"text_1\", \"text\": \"Hello World\"}, {\"name\": \"image_1\", \"src\": \"https://example.com/image.jpg\"}]}'"
+    form: llm
+
+  - name: output_image_type
+    type: string
+    required: false
+    label:
+      en_US: "Output Image Type"
+      ja_JP: "出力画像タイプ"
+      zh_Hans: "输出图像类型"
+      pt_BR: "Tipo de Imagem de Saída"
+      zh_Hant: "輸出圖像類型"
+    human_description:
+      en_US: "Type of image output: all (JPEG+PNG), jpegOnly, or pngOnly"
+      ja_JP: "画像出力のタイプ: all (JPEG+PNG)、jpegOnly、またはpngOnly"
+      zh_Hans: "图像输出类型：all (JPEG+PNG)、jpegOnly 或 pngOnly"
+      pt_BR: "Tipo de saída de imagem: all (JPEG+PNG), jpegOnly ou pngOnly"
+      zh_Hant: "圖像輸出類型：all (JPEG+PNG)、jpegOnly 或 pngOnly"
+    llm_description: "Output image format. Options: 'all' (both JPEG and PNG), 'jpegOnly' (JPEG only), 'pngOnly' (PNG only). Default is 'all'."
+    form: llm
+
+extra:
+  python:
+    source: tools/create_image.py 

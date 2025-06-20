@@ -1,0 +1,40 @@
+identity:
+  name: get_message
+  display_name: Get Message
+  author: Dify
+  label:
+    en_US: Get Message
+    zh_Hans: 获取消息
+    pt_BR: Obter Mensagem
+    ja_JP: メッセージを取得
+    zh_Hant: 獲取訊息
+description:
+  human:
+    en_US: Get detailed information about a specific email message
+    zh_Hans: 获取特定电子邮件的详细信息
+    pt_BR: Obter informações detalhadas sobre uma mensagem de e-mail específica
+    ja_JP: 特定のメールの詳細情報を取得
+    zh_Hant: 獲取特定電子郵件的詳細資訊
+  llm: Get detailed information about a specific email message using Microsoft Graph API, including content, attachments, and metadata
+
+parameters:
+  - name: message_id
+    type: string
+    required: true
+    label:
+      en_US: Message ID
+      zh_Hans: 消息ID
+      pt_BR: ID da Mensagem
+      ja_JP: メッセージID
+      zh_Hant: 訊息ID
+    human_description:
+      en_US: The unique identifier of the message to retrieve
+      zh_Hans: 要检索的消息的唯一标识符
+      pt_BR: O identificador único da mensagem para recuperar
+      ja_JP: 取得するメッセージの一意の識別子
+      zh_Hant: 要檢索的訊息的唯一識別符
+    llm_description: The unique identifier of the message to retrieve, this ID can be obtained from the list_messages tool
+    form: llm
+extra:
+  python:
+    source: tools/get_message.py 
