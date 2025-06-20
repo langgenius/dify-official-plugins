@@ -5,6 +5,7 @@ from dify_plugin.entities.model.message import (
     PromptMessage,
     PromptMessageTool,
     SystemPromptMessage,
+    TextPromptMessageContent,
     ToolPromptMessage,
     UserPromptMessage,
 )
@@ -20,6 +21,7 @@ from dify_plugin.errors.model import (
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from models.llm.chat_completion import MinimaxChatCompletion
 from models.llm.chat_completion_pro import MinimaxChatCompletionPro
+from models.llm.chat_completion_v2 import MinimaxChatCompletionV2
 from models.llm.errors import (
     BadRequestError,
     InsufficientAccountBalanceError,
@@ -33,7 +35,8 @@ from models.llm.types import MinimaxMessage
 
 class MinimaxLargeLanguageModel(LargeLanguageModel):
     model_apis = {
-        "minimax-text-01": MinimaxChatCompletionPro,
+        "minimax-m1": MinimaxChatCompletionV2,
+        "minimax-text-01": MinimaxChatCompletionV2,
         "abab7-chat-preview": MinimaxChatCompletionPro,
         "abab6.5s-chat": MinimaxChatCompletionPro,
         "abab6.5t-chat": MinimaxChatCompletionPro,
@@ -59,7 +62,7 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
-        Validate credentials for Baichuan model
+        Validate credentials for Minimax model
         """
         if model not in self.model_apis:
             raise CredentialsValidateFailedError(f"Invalid model: {model}")
@@ -67,14 +70,21 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
             raise CredentialsValidateFailedError("Invalid API key")
         if not credentials.get("minimax_group_id"):
             raise CredentialsValidateFailedError("Invalid group ID")
-        instance = MinimaxChatCompletionPro()
+
+        # Use the correct class based on the model
+        instance = self.model_apis[model]()
+
+        # Get endpoint_url from credentials, use default if not provided
+        endpoint_url = credentials.get("endpoint_url", "https://api.minimax.chat/")
+
         try:
             instance.generate(
                 model=model,
                 api_key=credentials["minimax_api_key"],
                 group_id=credentials["minimax_group_id"],
+                endpoint_url=endpoint_url,
                 prompt_messages=[MinimaxMessage(content="ping", role="USER")],
-                model_parameters={},
+                model_parameters={"max_tokens": 50},
                 tools=[],
                 stop=[],
                 stream=False,
@@ -117,17 +127,23 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
         user: str | None = None,
     ) -> LLMResult | Generator:
         """
-        use MinimaxChatCompletionPro as the type of client, anyway,  MinimaxChatCompletion has the same interface
+        Generate response using the appropriate client class for the model
         """
-        client: MinimaxChatCompletionPro = self.model_apis[model]()
+        # Use the correct class based on the model
+        client = self.model_apis[model]()
         if tools:
             tools = [
                 {"name": tool.name, "description": tool.description, "parameters": tool.parameters} for tool in tools
             ]
+
+        # Get endpoint_url from credentials, use default if not provided
+        endpoint_url = credentials.get("endpoint_url", "https://api.minimax.chat/")
+
         response = client.generate(
             model=model,
             api_key=credentials["minimax_api_key"],
             group_id=credentials["minimax_group_id"],
+            endpoint_url=endpoint_url,
             prompt_messages=[self._convert_prompt_message_to_minimax_message(message) for message in prompt_messages],
             model_parameters=model_parameters,
             tools=tools,
@@ -145,25 +161,58 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
 
     def _convert_prompt_message_to_minimax_message(self, prompt_message: PromptMessage) -> MinimaxMessage:
         """
-        convert PromptMessage to MinimaxMessage so that we can use MinimaxChatCompletionPro interface
+        convert PromptMessage to MinimaxMessage so that we can use the appropriate client interface
         """
+        # Extract content as string, handling None and list cases
+        content = self._extract_text_content(prompt_message.content)
+
         if isinstance(prompt_message, SystemPromptMessage):
-            return MinimaxMessage(role=MinimaxMessage.Role.SYSTEM.value, content=prompt_message.content)
+            return MinimaxMessage(role=MinimaxMessage.Role.SYSTEM.value, content=content)
         elif isinstance(prompt_message, UserPromptMessage):
-            return MinimaxMessage(role=MinimaxMessage.Role.USER.value, content=prompt_message.content)
+            return MinimaxMessage(role=MinimaxMessage.Role.USER.value, content=content)
         elif isinstance(prompt_message, AssistantPromptMessage):
             if prompt_message.tool_calls:
-                message = MinimaxMessage(role=MinimaxMessage.Role.ASSISTANT.value, content="")
+                message = MinimaxMessage(role=MinimaxMessage.Role.ASSISTANT.value, content=content)
                 message.function_call = {
                     "name": prompt_message.tool_calls[0].function.name,
                     "arguments": prompt_message.tool_calls[0].function.arguments,
                 }
                 return message
-            return MinimaxMessage(role=MinimaxMessage.Role.ASSISTANT.value, content=prompt_message.content)
+            return MinimaxMessage(role=MinimaxMessage.Role.ASSISTANT.value, content=content)
         elif isinstance(prompt_message, ToolPromptMessage):
-            return MinimaxMessage(role=MinimaxMessage.Role.FUNCTION.value, content=prompt_message.content)
+            return MinimaxMessage(role=MinimaxMessage.Role.FUNCTION.value, content=content)
         else:
             raise NotImplementedError(f"Prompt message type {type(prompt_message)} is not supported")
+
+    def _extract_text_content(self, content) -> str:
+        """
+        Extract text content from PromptMessage content field
+
+        :param content: content field from PromptMessage (can be None, str, or list)
+        :return: text content as string
+        """
+        if content is None:
+            return ""
+        elif isinstance(content, str):
+            return content
+        elif isinstance(content, list):
+            # Handle multimodal content - extract text parts
+            text_parts = []
+            for item in content:
+                if isinstance(item, TextPromptMessageContent):
+                    # This is a TextPromptMessageContent object
+                    text_parts.append(item.data)
+                elif hasattr(item, 'type') and hasattr(item, 'data'):
+                    # This is another PromptMessageContent object
+                    if item.type == "text":
+                        text_parts.append(item.data)
+                elif isinstance(item, dict) and item.get('type') == 'text':
+                    # This is a dict with text content
+                    text_parts.append(item.get('data', ''))
+            return ' '.join(text_parts) if text_parts else ""
+        else:
+            # Fallback: convert to string
+            return str(content)
 
     def _handle_chat_generate_response(
         self, model: str, prompt_messages: list[PromptMessage], credentials: dict, response: MinimaxMessage
