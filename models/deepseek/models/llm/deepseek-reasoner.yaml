@@ -5,6 +5,9 @@ label:
 model_type: llm
 features:
   - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
 model_properties:
   mode: chat
   context_size: 128000
@@ -14,6 +17,18 @@ parameter_rules:
     min: 1
     max: 8192
     default: 4096
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - text
+      - json_object
 pricing:
   input: "4"
   output: "16"
