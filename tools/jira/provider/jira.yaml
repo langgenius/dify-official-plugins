@@ -59,6 +59,7 @@ tools:
   - tools/create_issue.yaml
   - tools/del_issue.yaml
   - tools/list_issue_type.yaml
+  - tools/get_issue_project.yaml
 extra:
   python:
     source: provider/jira.py
