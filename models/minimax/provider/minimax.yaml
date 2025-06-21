@@ -13,7 +13,7 @@ help:
     en_US: Get your API Key from Minimax
     zh_Hans: 从 Minimax 获取您的 API Key
   url:
-    en_US: https://api.minimax.chat/user-center/basic-information/interface-key
+    en_US: https://platform.minimaxi.com/user-center/basic-information/interface-key
 icon_large:
   en_US: icon_l_en.png
 icon_small:
@@ -49,6 +49,16 @@ provider_credential_schema:
     required: true
     type: text-input
     variable: minimax_group_id
+  - default: https://api.minimaxi.com
+    label:
+      en_US: API Base
+      zh_Hans: API Base
+    placeholder:
+      en_US: Enter your API Base
+      zh_Hans: 在此输入您的 API Base
+    required: false
+    type: text-input
+    variable: endpoint_url
 supported_model_types:
 - llm
 - text-embedding
