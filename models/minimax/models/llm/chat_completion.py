@@ -37,7 +37,6 @@ class MinimaxChatCompletion:
         if not api_key or not group_id:
             raise InvalidAPIKeyError("Invalid API key or group ID")
 
-        # Remove trailing slash and construct URL
         base_url = endpoint_url.rstrip('/')
         url = f"{base_url}/v1/text/chatcompletion?GroupId={group_id}"
 
@@ -58,7 +57,7 @@ class MinimaxChatCompletion:
             prompt_messages = prompt_messages[1:]
         if len(prompt_messages) == 0:
             raise BadRequestError("At least one user message is required")
-        messages = [{"sender_type": message.role, "text": message.content} for message in prompt_messages]
+        messages = [message.to_completion_dict() for message in prompt_messages]
         headers = {"Authorization": "Bearer " + api_key, "Content-Type": "application/json"}
         body = {
             "model": model,

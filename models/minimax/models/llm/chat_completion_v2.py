@@ -2,6 +2,7 @@ from collections.abc import Generator
 from json import dumps, loads
 from typing import Any, Union
 from requests import Response, post
+import logging
 from models.llm.errors import (
     BadRequestError,
     InsufficientAccountBalanceError,
@@ -15,7 +16,8 @@ from models.llm.types import MinimaxMessage
 
 class MinimaxChatCompletionV2:
     """
-    Minimax Chat Completion V2 API, supports OpenAI-compatible format
+    Minimax Chat Completion V2 API
+    Supports OpenAI compatible format and multi-tool calling
     """
 
     def generate(
@@ -32,137 +34,27 @@ class MinimaxChatCompletionV2:
         user: str,
     ) -> Union[MinimaxMessage, Generator[MinimaxMessage, None, None]]:
         """
-        generate chat completion using v2 API
+        Call MiniMax v2 API to generate response
         """
-        if not api_key or not group_id:
-            raise InvalidAPIKeyError("Invalid API key or group ID")
+        if not api_key:
+            raise InvalidAPIKeyError("API key is required")
 
-        # Remove trailing slash and construct URL
+        # 构建请求 URL
         base_url = endpoint_url.rstrip('/')
         url = f"{base_url}/v1/text/chatcompletion_v2"
 
-        # Build request parameters
-        extra_kwargs = {}
-        if "max_tokens" in model_parameters and isinstance(
-            model_parameters["max_tokens"], int
-        ):
-            extra_kwargs["max_tokens"] = model_parameters["max_tokens"]
-        if "temperature" in model_parameters and isinstance(
-            model_parameters["temperature"], (int, float)
-        ):
-            extra_kwargs["temperature"] = float(
-                model_parameters["temperature"]
-            )
-        if "top_p" in model_parameters and isinstance(
-            model_parameters["top_p"], (int, float)
-        ):
-            extra_kwargs["top_p"] = float(model_parameters["top_p"])
-        if "top_k" in model_parameters and isinstance(
-            model_parameters["top_k"], int
-        ):
-            extra_kwargs["top_k"] = model_parameters["top_k"]
-        if "presence_penalty" in model_parameters and isinstance(
-            model_parameters["presence_penalty"], (int, float)
-        ):
-            extra_kwargs["presence_penalty"] = float(
-                model_parameters["presence_penalty"]
-            )
-        if "frequency_penalty" in model_parameters and isinstance(
-            model_parameters["frequency_penalty"], (int, float)
-        ):
-            extra_kwargs["frequency_penalty"] = float(
-                model_parameters["frequency_penalty"]
-            )
-
-        if len(prompt_messages) == 0:
-            raise BadRequestError("At least one message is required")
-
-        # Check if at least one user message exists, if not, add one
-        has_user_message = any(
-            message.role == MinimaxMessage.Role.USER.value
-            for message in prompt_messages
-        )
-        if not has_user_message:
-            # Add an empty user message
-            user_message = MinimaxMessage(
-                content="",
-                role=MinimaxMessage.Role.USER.value
-            )
-            prompt_messages.append(user_message)
-
-        # Convert messages to OpenAI-compatible format
-        messages = []
-        for message in prompt_messages:
-            # Map MinimaxMessage roles to API expected roles
-            role_mapping = {
-                MinimaxMessage.Role.USER.value: "user",          # "USER" -> "user"
-                MinimaxMessage.Role.ASSISTANT.value: "assistant",  # "BOT" -> "assistant"
-                MinimaxMessage.Role.SYSTEM.value: "system",      # "SYSTEM" -> "system"
-                MinimaxMessage.Role.FUNCTION.value: "tool",      # "FUNCTION" -> "tool"
-            }
-
-            api_role = role_mapping.get(message.role, message.role.lower())
-
-            # Ensure content is not None - MiniMax API requires string content
-            content = message.content if message.content is not None else ""
-
-            msg_dict = {
-                "role": api_role,
-                "content": content
-            }
-
-            # Handle assistant message with function call
-            if message.role == MinimaxMessage.Role.ASSISTANT.value and message.function_call:
-                # Convert function_call to tool_calls format
-                msg_dict["tool_calls"] = [{
-                    "id": f"call_function_{hash(message.function_call['name']) % 10000000000}",
-                    "type": "function",
-                    "function": {
-                        "name": message.function_call["name"],
-                        "arguments": message.function_call["arguments"]
-                    }
-                }]
-                # For function call messages, content can be empty
-                msg_dict["content"] = content
-
-            # Handle tool message - need tool_call_id
-            elif api_role == "tool":
-                # Tool messages should have tool_call_id, but we don't have it in MinimaxMessage
-                # For compatibility, we'll use a generated ID
-                msg_dict["tool_call_id"] = f"call_function_{hash(message.content) % 10000000000}"
-
-            messages.append(msg_dict)
-
+        # 准备请求头
         headers = {
             "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json"
         }
 
-        body = {
-            "model": model,
-            "messages": messages,
-            "stream": stream,
-            **extra_kwargs,
-        }
+        # 构建请求体
+        body = self._build_request_body(
+            model, prompt_messages, model_parameters, tools, stop, stream
+        )
 
-        # Add tools if provided
-        if tools:
-            body["tools"] = [
-                {
-                    "type": "function",
-                    "function": {
-                        "name": tool["name"],
-                        "description": tool["description"],
-                        "parameters": tool["parameters"]
-                    }
-                } for tool in tools
-            ]
-            body["tool_choice"] = "auto"
-
-        # Add stop sequences if provided
-        if stop:
-            body["stop"] = stop
-
+        # 发送请求
         try:
             response = post(
                 url=url,
@@ -172,178 +64,201 @@ class MinimaxChatCompletionV2:
                 timeout=(10, 300)
             )
         except Exception as e:
-            raise InternalServerError(str(e))
+            raise InternalServerError(f"Request failed: {str(e)}")
 
+        # 处理响应
         if response.status_code != 200:
-            error_text = response.text
-            try:
-                error_json = loads(error_text)
-                if "error" in error_json:
-                    error_msg = error_json["error"].get("message", error_text)
-                    error_code = error_json["error"].get("code", "unknown")
-                    self._handle_error_by_message(error_msg, error_code)
-                else:
-                    raise InternalServerError(error_text)
-            except (ValueError, KeyError):
-                raise InternalServerError(error_text)
+            self._handle_error_response(response)
 
         if stream:
-            return self._handle_stream_chat_generate_response(response)
-        return self._handle_chat_generate_response(response)
-
-    def _wrap_thinking_by_reasoning_content(self, message_data: dict, is_reasoning: bool) -> tuple[str, bool]:
-        """
-        Handle reasoning_content in MiniMax response format
-        :param message_data: message data from API response
-        :param is_reasoning: current reasoning state
-        :return: tuple of (processed_content, is_reasoning)
-        """
-        content = message_data.get("content") or ""
-        reasoning_content = message_data.get("reasoning_content")
-
-        try:
-            if reasoning_content:
-                # Convert reasoning_content to string if needed
-                if isinstance(reasoning_content, list):
-                    reasoning_content = "\n".join(map(str, reasoning_content))
-                elif not isinstance(reasoning_content, str):
-                    reasoning_content = str(reasoning_content)
-
-                if not is_reasoning:
-                    # Start reasoning block
-                    content = "<think>\n" + reasoning_content
-                    is_reasoning = True
-                else:
-                    # Continue reasoning block
-                    content = reasoning_content
-            elif is_reasoning and content:
-                # End reasoning block and start normal content
-                if not isinstance(content, str):
-                    content = str(content)
-                content = "\n</think>\n\n" + content
-                is_reasoning = False
-        except Exception as ex:
-            raise ValueError(f"[wrap_thinking_by_reasoning_content] {ex}") from ex
-
-        return content, is_reasoning
-
-    def _handle_error_by_message(self, message: str, code: str):
-        """Handle error based on error message and code"""
-        message_lower = message.lower()
-        if "unauthorized" in message_lower or "invalid api key" in message_lower:
-            raise InvalidAuthenticationError(message)
-        elif "insufficient" in message_lower and "balance" in message_lower:
-            raise InsufficientAccountBalanceError(message)
-        elif "rate limit" in message_lower or "too many requests" in message_lower:
-            raise RateLimitReachedError(message)
-        elif "bad request" in message_lower or "invalid" in message_lower:
-            raise BadRequestError(message)
+            return self._handle_stream_response(response)
         else:
-            raise InternalServerError(message)
+            return self._handle_non_stream_response(response)
 
-    def _handle_error_by_code(self, code: int, msg: str):
-        """Handle error based on Minimax error code"""
-        if code in {1000, 1001, 1013, 1027}:
-            raise InternalServerError(msg)
-        elif code in {1002, 1039}:
-            raise RateLimitReachedError(msg)
-        elif code == 1004:
-            raise InvalidAuthenticationError(msg)
-        elif code == 1008:
-            raise InsufficientAccountBalanceError(msg)
-        elif code == 2013:
-            raise BadRequestError(msg)
-        else:
-            raise InternalServerError(msg)
+    def _build_request_body(
+        self,
+        model: str,
+        prompt_messages: list[MinimaxMessage],
+        model_parameters: dict,
+        tools: list[dict[str, Any]],
+        stop: list[str] | None,
+        stream: bool
+    ) -> dict:
+        """Build request body"""
+        # Convert message format
+        messages = self._convert_messages(prompt_messages)
 
-    def _handle_chat_generate_response(self, response: Response) -> MinimaxMessage:
-        """
-        handle chat generate response for non-streaming
-        """
-        response_json = response.json()
+        # Basic request body
+        body = {
+            "model": model,
+            "messages": messages,
+            "stream": stream
+        }
 
-        # Check for Minimax-specific error format first
-        if "base_resp" in response_json and response_json["base_resp"]["status_code"] != 0:
-            code = response_json["base_resp"]["status_code"]
-            msg = response_json["base_resp"]["status_msg"]
-            self._handle_error_by_code(code, msg)
+        # Add model parameters
+        if "max_tokens" in model_parameters:
+            body["max_tokens"] = int(model_parameters["max_tokens"])
+        if "temperature" in model_parameters:
+            body["temperature"] = float(model_parameters["temperature"])
+        if "top_p" in model_parameters:
+            body["top_p"] = float(model_parameters["top_p"])
+        if "top_k" in model_parameters:
+            body["top_k"] = int(model_parameters["top_k"])
+        if "presence_penalty" in model_parameters:
+            body["presence_penalty"] = float(model_parameters["presence_penalty"])
+        if "frequency_penalty" in model_parameters:
+            body["frequency_penalty"] = float(model_parameters["frequency_penalty"])
 
-        # Check for OpenAI-style error format
-        if "error" in response_json:
-            error_info = response_json["error"]
-            error_msg = error_info.get("message", "Unknown error")
-            error_code = error_info.get("code", "unknown")
-            self._handle_error_by_message(error_msg, error_code)
+        # Add tools
+        if tools:
+            body["tools"] = [{
+                "type": "function",
+                "function": {
+                    "name": tool["name"],
+                    "description": tool["description"],
+                    "parameters": tool["parameters"]
+                }
+            } for tool in tools]
+            body["tool_choice"] = "auto"
 
-        # Extract the response content
-        choices = response_json.get("choices", [])
-        if not choices:
-            raise InternalServerError(f"No choices in response: {response_json}")
+        # Add stop sequences
+        if stop:
+            body["stop"] = stop
 
-        choice = choices[0]
-        message_content = choice.get("message", {})
+        return body
 
-        # Handle reasoning_content and normal content
-        is_reasoning = False
-        processed_content, _ = self._wrap_thinking_by_reasoning_content(message_content, is_reasoning)
+    def _convert_messages(self, prompt_messages: list[MinimaxMessage]) -> list[dict]:
+        """Convert message format to API required format"""
+        messages = []
 
-        # If we have reasoning_content, we might need to close the thinking block
-        if message_content.get("reasoning_content") and message_content.get("content"):
-            # We have both reasoning and normal content, close the thinking block
-            content = message_content.get("content", "")
-            if processed_content.startswith("<think>"):
-                processed_content = processed_content + "\n</think>\n\n" + content
-            else:
-                processed_content = content
-        elif not processed_content:
-            # Fallback to original content
-            processed_content = message_content.get("content", "")
-
-        # Create MinimaxMessage with assistant role
-        message = MinimaxMessage(
-            content=processed_content,
-            role=MinimaxMessage.Role.ASSISTANT.value
-        )
-
-        # Handle tool calls
-        tool_calls = message_content.get("tool_calls")
-        if tool_calls:
-            # Convert tool calls to function call format for compatibility
-            if tool_calls and len(tool_calls) > 0:
-                first_tool_call = tool_calls[0]
-                if first_tool_call.get("type") == "function":
-                    function_info = first_tool_call.get("function", {})
-                    message.function_call = {
-                        "name": function_info.get("name", ""),
-                        "arguments": function_info.get("arguments", "{}")
-                    }
-
-        # Extract usage information
-        usage_info = response_json.get("usage", {})
-        if usage_info:
-            # Ensure prompt_tokens and completion_tokens are properly set
-            prompt_tokens = usage_info.get("prompt_tokens", 0)
-            total_tokens = usage_info.get("total_tokens", 0)
-            completion_tokens = usage_info.get("completion_tokens", total_tokens - prompt_tokens)
-
-            message.usage = {
-                "prompt_tokens": prompt_tokens,
-                "completion_tokens": completion_tokens,
-                "total_tokens": total_tokens,
+        for message in prompt_messages:
+            # Role mapping
+            role_mapping = {
+                "USER": "user",
+                "BOT": "assistant",
+                "SYSTEM": "system",
+                "FUNCTION": "tool"
             }
 
-        # Set stop reason
-        message.stop_reason = choice.get("finish_reason", "")
+            msg_dict = {
+                "role": role_mapping.get(message.role, "user"),
+                "content": message.content or ""
+            }
 
-        return message
+            # Handle tool calls in assistant messages
+            if message.role == "BOT" and message.tool_calls:
+                msg_dict["tool_calls"] = [
+                    {
+                        "id": tc["id"],
+                        "type": tc.get("type", "function"),
+                        "function": tc.get("function", {})
+                    }
+                    for tc in message.tool_calls
+                ]
 
-    def _handle_stream_chat_generate_response(
+            # Handle tool response messages
+            if msg_dict["role"] == "tool" and message.tool_call_id:
+                msg_dict["tool_call_id"] = message.tool_call_id
+
+            messages.append(msg_dict)
+
+        return messages
+
+    def _handle_error_response(self, response: Response):
+        """Handle error response"""
+        try:
+            error_data = response.json()
+        except (ValueError, Exception):
+            raise InternalServerError(f"Invalid response: {response.text}")
+
+        # 处理标准错误格式
+        if "error" in error_data:
+            error = error_data["error"]
+            message = error.get("message", "Unknown error")
+
+            if "unauthorized" in message.lower() or "invalid api key" in message.lower():
+                raise InvalidAuthenticationError(message)
+            elif "insufficient" in message.lower() and "balance" in message.lower():
+                raise InsufficientAccountBalanceError(message)
+            elif "rate limit" in message.lower():
+                raise RateLimitReachedError(message)
+            elif "tool call id is invalid" in message.lower():
+                raise BadRequestError(f"Invalid tool call ID: {message}")
+            else:
+                raise InternalServerError(message)
+
+        # 处理 MiniMax 特定错误格式
+        if "base_resp" in error_data and error_data["base_resp"]["status_code"] != 0:
+            status_code = error_data["base_resp"]["status_code"]
+            status_msg = error_data["base_resp"]["status_msg"]
+
+            error_mapping = {
+                1000: InternalServerError,
+                1001: InternalServerError,
+                1002: RateLimitReachedError,
+                1004: InvalidAuthenticationError,
+                1008: InsufficientAccountBalanceError,
+                1013: InternalServerError,
+                1027: InternalServerError,
+                1039: RateLimitReachedError,
+                2013: BadRequestError
+            }
+
+            error_class = error_mapping.get(status_code, InternalServerError)
+            raise error_class(status_msg)
+
+        raise InternalServerError(f"Unknown error: {response.text}")
+
+    def _handle_non_stream_response(self, response: Response) -> MinimaxMessage:
+        """Handle non-stream response"""
+        data = response.json()
+
+        # 检查错误
+        if "error" in data:
+            self._handle_error_response(response)
+
+        # 提取响应内容
+        choices = data.get("choices", [])
+        if not choices:
+            raise InternalServerError("No choices in response")
+
+        choice = choices[0]
+        message_data = choice.get("message", {})
+
+        # Process content and reasoning chain
+        content = self._process_content_with_reasoning(message_data)
+
+        # 创建响应消息
+        result_message = MinimaxMessage(
+            content=content,
+            role="BOT"
+        )
+
+        # 处理工具调用
+        if message_data.get("tool_calls"):
+            result_message.tool_calls = message_data["tool_calls"]
+
+        # 添加使用信息
+        usage = data.get("usage", {})
+        if usage:
+            result_message.usage = {
+                "prompt_tokens": usage.get("prompt_tokens", 0),
+                "completion_tokens": usage.get("completion_tokens", 0),
+                "total_tokens": usage.get("total_tokens", 0)
+            }
+
+        # 添加停止原因
+        result_message.stop_reason = choice.get("finish_reason", "")
+
+        return result_message
+
+    def _handle_stream_response(
         self, response: Response
     ) -> Generator[MinimaxMessage, None, None]:
-        """
-        handle stream chat generate response
-        """
+        """Handle stream response"""
         is_reasoning = False
+        tool_call_chunks = {}  # Used to accumulate tool call information
+        has_reasoning_content = False  # Whether there is reasoning content
 
         for line in response.iter_lines():
             if not line:
@@ -354,95 +269,174 @@ class MinimaxChatCompletionV2:
                 line_str = line_str[6:].strip()
 
             if line_str == "[DONE]":
+                # Check if there are unprocessed tool calls
+                if tool_call_chunks:
+                    # Process remaining tool calls
+                    valid_tool_calls = []
+                    for index in sorted(tool_call_chunks.keys()):
+                        tc = tool_call_chunks[index]
+                        if tc.get("id") and tc.get("function", {}).get("name"):
+                            valid_tool_calls.append(tc)
+
+                    if valid_tool_calls:
+                        # If reasoning is still in progress, end reasoning first
+                        if is_reasoning:
+                            yield MinimaxMessage(content="\n</think>\n\n", role="BOT")
+                            is_reasoning = False
+
+                        tool_message = MinimaxMessage(content="", role="BOT")
+                        tool_message.tool_calls = valid_tool_calls
+                        yield tool_message
+                elif is_reasoning:
+                    # If reasoning is still in progress, close the reasoning tag
+                    yield MinimaxMessage(content="\n</think>\n\n", role="BOT")
                 break
 
             try:
                 data = loads(line_str)
-            except ValueError:
+            except (ValueError, Exception):
                 continue
 
-            # Check for errors
-            if "base_resp" in data and data["base_resp"]["status_code"] != 0:
-                code = data["base_resp"]["status_code"]
-                msg = data["base_resp"]["status_msg"]
-                self._handle_error_by_code(code, msg)
-
+            # 检查错误
             if "error" in data:
-                error_info = data["error"]
-                error_msg = error_info.get("message", "Unknown error")
-                error_code = error_info.get("code", "unknown")
-                self._handle_error_by_message(error_msg, error_code)
+                self._handle_error_response(response)
 
             choices = data.get("choices", [])
             if not choices:
                 continue
 
             choice = choices[0]
+            delta = choice.get("delta", {})
 
-            # Handle delta chunks (streaming content)
-            if "delta" in choice:
-                delta = choice["delta"]
+            finish_reason = choice.get("finish_reason")
 
-                # Process reasoning_content and content with thinking wrapper
-                processed_content, is_reasoning = self._wrap_thinking_by_reasoning_content(delta, is_reasoning)
+            # Process content and reasoning content
+            if "content" in delta or "reasoning_content" in delta:
+                if "reasoning_content" in delta:
+                    has_reasoning_content = True
 
-                if processed_content:
-                    yield MinimaxMessage(
-                        content=processed_content,
-                        role=MinimaxMessage.Role.ASSISTANT.value
-                    )
+                content, is_reasoning = self._process_delta_with_reasoning(
+                    delta, is_reasoning
+                )
 
-                # Handle tool calls delta
-                tool_calls = delta.get("tool_calls")
-                if tool_calls:
-                    for tool_call in tool_calls:
-                        if tool_call.get("type") == "function":
-                            function_info = tool_call.get("function", {})
-                            function_call_message = MinimaxMessage(
-                                content="",
-                                role=MinimaxMessage.Role.ASSISTANT.value
-                            )
-                            function_call_message.function_call = {
-                                "name": function_info.get("name", ""),
-                                "arguments": function_info.get("arguments", "{}")
-                            }
-                            yield function_call_message
+                if content:
+                    yield MinimaxMessage(content=content, role="BOT")
 
-            # Handle final message chunk (contains usage and final message)
-            elif "message" in choice:
+            # Accumulate tool call information
+            if "tool_calls" in delta:
+                for tool_call in delta["tool_calls"]:
+                    index = tool_call.get("index", 0)
+
+                    if index not in tool_call_chunks:
+                        tool_call_chunks[index] = {
+                            "id": "",
+                            "type": "function",
+                            "function": {"name": "", "arguments": ""}
+                        }
+
+                    # Accumulate tool call information
+                    if "id" in tool_call:
+                        tool_call_chunks[index]["id"] = tool_call["id"]
+                    if "type" in tool_call:
+                        tool_call_chunks[index]["type"] = tool_call["type"]
+                    if "function" in tool_call:
+                        func = tool_call["function"]
+                        if "name" in func:
+                            tool_call_chunks[index]["function"]["name"] = func["name"]
+                        if "arguments" in func:
+                            tool_call_chunks[index]["function"]["arguments"] += func["arguments"]
+
+            # Check if tool call is completed
+            if finish_reason == "tool_calls":
+                # If there is reasoning content but not properly ended, end reasoning first
+                if has_reasoning_content and is_reasoning:
+                    yield MinimaxMessage(content="\n</think>\n\n", role="BOT")
+                    is_reasoning = False
+
+                # Build complete tool call list, filter out invalid tool calls
+                valid_tool_calls = []
+                for index in sorted(tool_call_chunks.keys()):
+                    tc = tool_call_chunks[index]
+                    # Ensure tool call is valid (must have ID and function name)
+                    if tc.get("id") and tc.get("function", {}).get("name"):
+                        valid_tool_calls.append(tc)
+
+                # Only return when there are valid tool calls
+                if valid_tool_calls:
+                    tool_message = MinimaxMessage(content="", role="BOT")
+                    tool_message.tool_calls = valid_tool_calls
+                    yield tool_message
+
+                # Clear accumulated tool calls
+                tool_call_chunks = {}
+
+            # Process usage information (last chunk)
+            if "usage" in data and data["usage"]:
+                usage_message = MinimaxMessage(content="", role="BOT")
+                usage_message.usage = {
+                    "prompt_tokens": data["usage"].get("prompt_tokens", 0),
+                    "completion_tokens": data["usage"].get("completion_tokens", 0),
+                    "total_tokens": data["usage"].get("total_tokens", 0)
+                }
+                usage_message.stop_reason = choice.get("finish_reason", "")
+                yield usage_message
+
+            # Process complete message (for cases where tool_calls might be in message)
+            if "message" in choice:
                 message_data = choice["message"]
+                if message_data.get("tool_calls") and not tool_call_chunks:
+                    # If reasoning is still in progress, end reasoning first
+                    if is_reasoning:
+                        yield MinimaxMessage(content="\n</think>\n\n", role="BOT")
+                        is_reasoning = False
 
-                # Handle tool calls in final message
-                tool_calls = message_data.get("tool_calls")
-                if tool_calls:
-                    for tool_call in tool_calls:
-                        if tool_call.get("type") == "function":
-                            function_info = tool_call.get("function", {})
-                            function_call_message = MinimaxMessage(
-                                content="",
-                                role=MinimaxMessage.Role.ASSISTANT.value
-                            )
-                            function_call_message.function_call = {
-                                "name": function_info.get("name", ""),
-                                "arguments": function_info.get("arguments", "{}")
-                            }
-                            yield function_call_message
+                    tool_message = MinimaxMessage(content="", role="BOT")
+                    tool_message.tool_calls = message_data["tool_calls"]
+                    yield tool_message
 
-                # Handle usage info in final chunk
-                usage_info = data.get("usage", {})
-                if usage_info:
-                    prompt_tokens = usage_info.get("prompt_tokens", 0)
-                    total_tokens = usage_info.get("total_tokens", 0)
-                    completion_tokens = usage_info.get("completion_tokens", total_tokens - prompt_tokens)
+    def _process_content_with_reasoning(self, message_data: dict) -> str:
+        """Process message containing reasoning content"""
+        content = message_data.get("content", "")
+        reasoning_content = message_data.get("reasoning_content")
 
-                    usage_message = MinimaxMessage(
-                        content="",
-                        role=MinimaxMessage.Role.ASSISTANT.value
-                    )
-                    usage_message.usage = {
-                        "prompt_tokens": prompt_tokens,
-                        "completion_tokens": completion_tokens,
-                        "total_tokens": total_tokens,
-                    }
-                    usage_message.stop_reason = choice.get("finish_reason", "")
-                    yield usage_message
+        if reasoning_content:
+            # Wrap reasoning content in thinking tags
+            if isinstance(reasoning_content, list):
+                reasoning_content = "\n".join(map(str, reasoning_content))
+
+            if content:
+                # Has both reasoning content and normal content - complete thinking chain format
+                return f"<think>\n{reasoning_content}\n</think>\n\n{content}"
+            else:
+                # Only has reasoning content - might have subsequent tool calls, don't close yet
+                return f"<think>\n{reasoning_content}\n</think>"
+
+        return content
+
+    def _process_delta_with_reasoning(
+        self, delta: dict, is_reasoning: bool
+    ) -> tuple[str, bool]:
+        """Process reasoning content in stream response"""
+        content = delta.get("content", "")
+        reasoning_content = delta.get("reasoning_content")
+
+        if reasoning_content:
+            if isinstance(reasoning_content, list):
+                reasoning_content = "\n".join(map(str, reasoning_content))
+
+            if not is_reasoning:
+                # Start reasoning
+                return f"<think>\n{reasoning_content}", True
+            else:
+                # Continue reasoning
+                return reasoning_content, True
+        elif content:
+            if is_reasoning:
+                # Reasoning ends, has normal content - close thinking chain
+                return f"\n</think>\n\n{content}", False
+            else:
+                # Normal content
+                return content, False
+        else:
+            # No content, maintain current state
+            return "", is_reasoning

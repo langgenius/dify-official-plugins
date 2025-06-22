@@ -63,7 +63,7 @@ class MinimaxChatCompletionPro:
             prompt_messages = prompt_messages[1:]
         if len(prompt_messages) == 0:
             raise BadRequestError("At least one user message is required")
-        messages = [message.to_dict() for message in prompt_messages]
+        messages = [message.to_pro_dict() for message in prompt_messages]
         headers = {"Authorization": "Bearer " + api_key, "Content-Type": "application/json"}
         body = {
             "model": model,

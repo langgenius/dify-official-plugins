@@ -36,7 +36,7 @@ from models.llm.types import MinimaxMessage
 class MinimaxLargeLanguageModel(LargeLanguageModel):
     model_apis = {
         "minimax-m1": MinimaxChatCompletionV2,
-        "minimax-text-01": MinimaxChatCompletionV2,
+        "minimax-text-01": MinimaxChatCompletionPro,
         "abab7-chat-preview": MinimaxChatCompletionPro,
         "abab6.5s-chat": MinimaxChatCompletionPro,
         "abab6.5t-chat": MinimaxChatCompletionPro,
@@ -75,7 +75,7 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
         instance = self.model_apis[model]()
 
         # Get endpoint_url from credentials, use default if not provided
-        endpoint_url = credentials.get("endpoint_url", "https://api.minimax.chat/")
+        endpoint_url = credentials.get("endpoint_url", "https://api.minimaxi.com/")
 
         try:
             instance.generate(
@@ -100,9 +100,9 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
         prompt_messages: list[PromptMessage],
         tools: list[PromptMessageTool] | None = None,
     ) -> int:
-        return self._num_tokens_from_messages(prompt_messages, tools)
+        return self._num_tokens_from_messages(prompt_messages, tools, model)
 
-    def _num_tokens_from_messages(self, messages: list[PromptMessage], tools: list[PromptMessageTool]) -> int:
+    def _num_tokens_from_messages(self, messages: list[PromptMessage], tools: list[PromptMessageTool], model: str = None) -> int:
         """
         Calculate num tokens for minimax model
 
@@ -112,7 +112,7 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
         Minimax does not provide their own tokenizer of adab5.5 and abab5 model
         therefore, we use gpt2 tokenizer instead
         """
-        messages_dict = [self._convert_prompt_message_to_minimax_message(m).to_dict() for m in messages]
+        messages_dict = [self._convert_prompt_message_to_minimax_message(m, model).to_dict() for m in messages]
         return self._get_num_tokens_by_gpt2(str(messages_dict))
 
     def _generate(
@@ -144,7 +144,7 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
             api_key=credentials["minimax_api_key"],
             group_id=credentials["minimax_group_id"],
             endpoint_url=endpoint_url,
-            prompt_messages=[self._convert_prompt_message_to_minimax_message(message) for message in prompt_messages],
+            prompt_messages=[self._convert_prompt_message_to_minimax_message(message, model) for message in prompt_messages],
             model_parameters=model_parameters,
             tools=tools,
             stop=stop,
@@ -159,7 +159,7 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
             model=model, prompt_messages=prompt_messages, credentials=credentials, response=response
         )
 
-    def _convert_prompt_message_to_minimax_message(self, prompt_message: PromptMessage) -> MinimaxMessage:
+    def _convert_prompt_message_to_minimax_message(self, prompt_message: PromptMessage, model: str = None) -> MinimaxMessage:
         """
         convert PromptMessage to MinimaxMessage so that we can use the appropriate client interface
         """
@@ -171,16 +171,42 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
         elif isinstance(prompt_message, UserPromptMessage):
             return MinimaxMessage(role=MinimaxMessage.Role.USER.value, content=content)
         elif isinstance(prompt_message, AssistantPromptMessage):
+            message = MinimaxMessage(role=MinimaxMessage.Role.ASSISTANT.value, content=content)
             if prompt_message.tool_calls:
-                message = MinimaxMessage(role=MinimaxMessage.Role.ASSISTANT.value, content=content)
-                message.function_call = {
-                    "name": prompt_message.tool_calls[0].function.name,
-                    "arguments": prompt_message.tool_calls[0].function.arguments,
-                }
-                return message
-            return MinimaxMessage(role=MinimaxMessage.Role.ASSISTANT.value, content=content)
+                # Determine how to handle tool calls based on API type
+                api_class = self.model_apis.get(model) if model else None
+                if api_class == MinimaxChatCompletionV2:
+                    # V2 API supports multiple tool calls
+                    message.tool_calls = [
+                        {
+                            "id": tc.id,
+                            "type": tc.type,
+                            "function": {
+                                "name": tc.function.name,
+                                "arguments": tc.function.arguments,
+                            },
+                        }
+                        for tc in prompt_message.tool_calls
+                    ]
+                elif api_class == MinimaxChatCompletionPro:
+                    # Pro API uses function_call format, taking only the first tool call
+                    if prompt_message.tool_calls:
+                        tc = prompt_message.tool_calls[0]  # Pro API typically supports only single function call
+                        message.function_call = {
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments,
+                        }
+                # Original API (MinimaxChatCompletion) does not support tool calls, ignore
+            return message
         elif isinstance(prompt_message, ToolPromptMessage):
-            return MinimaxMessage(role=MinimaxMessage.Role.FUNCTION.value, content=content)
+            message = MinimaxMessage(role=MinimaxMessage.Role.FUNCTION.value, content=content)
+            # Set corresponding fields based on API type
+            api_class = self.model_apis.get(model) if model else None
+            if api_class == MinimaxChatCompletionV2:
+                # V2 API requires tool_call_id
+                message.tool_call_id = prompt_message.tool_call_id
+            # Pro API and original API do not require special handling for tool messages
+            return message
         else:
             raise NotImplementedError(f"Prompt message type {type(prompt_message)} is not supported")
 
@@ -223,10 +249,38 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
             prompt_tokens=response.usage["prompt_tokens"],
             completion_tokens=response.usage["completion_tokens"],
         )
+
+        tool_calls = []
+        if response.tool_calls:
+            # Handle v2 API tool calls format
+            for tc in response.tool_calls:
+                tool_calls.append(
+                    AssistantPromptMessage.ToolCall(
+                        id=tc.get("id", ""),
+                        type=tc.get("type", "function"),
+                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                            name=tc.get("function", {}).get("name", ""),
+                            arguments=tc.get("function", {}).get("arguments", "{}"),
+                        ),
+                    )
+                )
+        elif response.function_call:
+            # Handle Pro API function_call format
+            tool_calls.append(
+                AssistantPromptMessage.ToolCall(
+                    id="",  # Pro API has no ID concept, use empty string
+                    type="function",
+                    function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                        name=response.function_call.get("name", ""),
+                        arguments=response.function_call.get("arguments", "{}"),
+                    ),
+                )
+            )
+
         return LLMResult(
             model=model,
             prompt_messages=prompt_messages,
-            message=AssistantPromptMessage(content=response.content, tool_calls=[]),
+            message=AssistantPromptMessage(content=response.content, tool_calls=tool_calls),
             usage=usage,
         )
 
@@ -255,26 +309,42 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                         finish_reason=message.stop_reason or None,
                     ),
                 )
-            elif message.function_call:
-                if "name" not in message.function_call or "arguments" not in message.function_call:
-                    continue
+            elif message.tool_calls or message.function_call:
+                # Handle tool calls in streaming (both v2 API and Pro API)
+                tool_calls = []
+                if message.tool_calls:
+                    # V2 API tool calls format
+                    for tc in message.tool_calls:
+                        tool_calls.append(
+                            AssistantPromptMessage.ToolCall(
+                                id=tc.get("id", ""),
+                                type=tc.get("type", "function"),
+                                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                    name=tc.get("function", {}).get("name", ""),
+                                    arguments=tc.get("function", {}).get("arguments", "{}"),
+                                ),
+                            )
+                        )
+                elif message.function_call:
+                    # Pro API function_call format
+                    tool_calls.append(
+                        AssistantPromptMessage.ToolCall(
+                            id="",  # Pro API has no ID concept, use empty string
+                            type="function",
+                            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                name=message.function_call.get("name", ""),
+                                arguments=message.function_call.get("arguments", "{}"),
+                            ),
+                        )
+                    )
+
                 yield LLMResultChunk(
                     model=model,
                     prompt_messages=prompt_messages,
                     delta=LLMResultChunkDelta(
                         index=0,
-                        message=AssistantPromptMessage(
-                            content="",
-                            tool_calls=[
-                                AssistantPromptMessage.ToolCall(
-                                    id="",
-                                    type="function",
-                                    function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                        name=message.function_call["name"], arguments=message.function_call["arguments"]
-                                    ),
-                                )
-                            ],
-                        ),
+                        message=AssistantPromptMessage(content="", tool_calls=tool_calls),
+                        finish_reason=None,
                     ),
                 )
             else:
