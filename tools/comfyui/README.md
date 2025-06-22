@@ -115,5 +115,16 @@ These two IDs are shown as AIR(see the highlited area on the image below).
 You need to install https://github.com/ServiceStack/comfy-asset-downloader to ComfyUI in advance.
 
 ### Hugging Face Download
-Hugging Face Download can download models from [Hugging Face](https://huggingface.co/).
+Hugging Face Download node can download models from [Hugging Face](https://huggingface.co/).
+You need to install https://github.com/ServiceStack/comfy-asset-downloader to ComfyUI in advance.
+
+### Download By URL 
+Download By URL node can download models from a given URL.
+You need to install https://github.com/ServiceStack/comfy-asset-downloader to ComfyUI in advance.
+
+### Download By JSON
+Download By JSON node can download models specified by ComfyUI's workflow json.
+More specifically, it downloads all the models listed in "properties":{"models": [...]} in every node.
+It needs a JSON file exported with "Export", not "Export (API)".
+
 You need to install https://github.com/ServiceStack/comfy-asset-downloader to ComfyUI in advance.
