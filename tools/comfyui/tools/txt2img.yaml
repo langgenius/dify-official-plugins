@@ -209,20 +209,6 @@ parameters:
     required: false
     type: string
 
-  - name: hiresfix_enabled
-    form: form
-    default: false
-    human_description:
-      en_US: "Activate HiresFix: Generates large and consistent images. Slow."
-      zh_Hans: "HiresFix 启用：由于能够输出更大且一致的图像，生成时间会变慢。"
-      ja_JP: "HiresFix 有効化: 大きく一貫性のある画像を出力できる分、生成時間が遅くなります"
-    label:
-      en_US: HiresFix
-      zh_Hans: HiresFix
-      ja_JP: HiresFix
-    required: false
-    type: boolean
-
   - name: hiresfix_denoise
     form: llm
     default: 0.6
@@ -253,11 +239,11 @@ parameters:
 
   - name: hiresfix_upscale_method
     form: form
-    default: bilinear
+    default: disabled
     human_description:
-      en_US: HiresFix upscale method
-      zh_Hans: HiresFix 方法
-      ja_JP: HiresFix メソッド
+      en_US: HiresFix upscale method. If enabled, it generates large and consistent images. Slow."
+      zh_Hans: HiresFix 方法,HiresFix 启用由于能够输出更大且一致的图像，生成时间会变慢。
+      ja_JP: HiresFix メソッド．HiresFix 有効化すると大きく一貫性のある画像を出力できる分、生成時間が遅くなります
     label:
       en_US: HiresFix Method
       zh_Hans: HiresFix 方法
@@ -266,17 +252,20 @@ parameters:
     type: select
     options:
       - label:
-          en_US: nearest-exact
+          en_US: Disable HiresFix
+        value: disabled
+      - label:
+          en_US: Nearest Exact
         value: nearest-exact
       - label:
-          en_US: bilinear
+          en_US: Bilinear
         value: bilinear
       - label:
-          en_US: area
+          en_US: Area
         value: area
       - label:
-          en_US: bicubic
+          en_US: Bicubic
         value: bicubic
       - label:
-          en_US: bislerp
+          en_US: Bislerp
         value: bislerp

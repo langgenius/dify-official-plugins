@@ -98,7 +98,9 @@ class ComfyuiTxt2Img(Tool):
         # make workflow json
         current_dir = os.path.dirname(os.path.realpath(__file__))
         workflow_template_path = os.path.join(current_dir, "json", "txt2img.json")
-        is_hiresfix_enabled: bool = tool_parameters.get("hiresfix_enabled", 0) > 0
+        is_hiresfix_enabled: bool = (
+            tool_parameters.get("hiresfix_upscale_method") != "disabled"
+        )
         if is_hiresfix_enabled:
             workflow_template_path = os.path.join(
                 current_dir, "json", "txt2img_hiresfix.json"
