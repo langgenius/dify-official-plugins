@@ -45,31 +45,7 @@ credentials_for_provider:
       zh_Hans: 例如 "https://api.fish.audio"
       pt_BR: An endpoint is like "https://api.fish.audio"
     default: https://api.fish.audio
-  latency:
-    type: select
-    required: true
-    label:
-      en_US: Fish Audio balance mode
-      zh_Hans: Fish Audio 平衡模式
-      pt_BR: Fishaio balance mode
-    options:
-      - label:
-          en_US: normal
-          zh_Hans: normal
-        value: normal
-      - label:
-          en_US: balance
-          zh_Hans: balance
-        value: balance
-    placeholder:
-      en_US: Please input your Fish Audio balance mode
-      zh_Hans: 请输入你的 Fish Audio 平衡模式
-      pt_BR: Please input your Fish Audio balance mode
-    help:
-      en_US: Balance mode will reduce latency to 300 ms, but may decrease stability
-      zh_Hans: 平衡模式会将延迟降低到 300 毫秒，但可能会降低稳定性
-      pt_BR: Balance mode will reduce latency to 300 ms, but may decrease stability
-    default: normal
+
 tools:
   - tools/tts.yaml
 extra:
