@@ -28,10 +28,6 @@ class DownloadCivitAI(Tool):
             raise ToolProviderCredentialValidationError("Please input civitai_api_key")
         self.comfyui = ComfyUiClient(base_url)
 
-        current_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(current_dir, "json", "download.json")) as file:
-            workflow_json = json.loads(file.read())
-
         model_id = tool_parameters.get("model_id")
         version_id = tool_parameters.get("version_id")
         save_dir = tool_parameters.get("save_dir")
@@ -63,27 +59,11 @@ class DownloadCivitAI(Tool):
             )
         model_filenames = [file["name"] for file in model_detail["files"]]
 
-        workflow_json["1"]["inputs"][
-            "url"
-        ] = f"https://civitai.com/api/download/models/{version_id}"
-        workflow_json["1"]["inputs"]["filename"] = model_filenames[0].split("/")[-1]
-        workflow_json["1"]["inputs"]["token"] = civitai_api_key
-        workflow_json["1"]["inputs"]["save_to"] = save_dir
-
-        response = requests.head(
-            workflow_json["1"]["inputs"]["url"],
-            headers={"Authorization": f"Bearer {civitai_api_key}"},
+        self.comfyui.download_model(
+            f"https://civitai.com/api/download/models/{version_id}",
+            save_dir,
+            model_filenames[0].split("/")[-1],
+            civitai_api_key,
         )
-        if response.status_code >= 400:
-            raise ToolProviderCredentialValidationError(
-                "Download failed. Please check URL and api_token."
-            )
-
-        try:
-            output_images = self.comfyui.generate(workflow_json)
-        except Exception as e:
-            raise ToolProviderCredentialValidationError(
-                f"Failed to download: {str(e)}. Please make sure https://github.com/ServiceStack/comfy-asset-downloader works on ComfyUI"
-            )
         yield self.create_variable_message("model_name_human", model_name_human)
         yield self.create_variable_message("model_name", model_filenames[0])

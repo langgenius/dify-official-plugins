@@ -65,3 +65,5 @@ tools:
   - tools/image_info.yaml
   - tools/download_civitai.yaml
   - tools/download_huggingface.yaml
+  - tools/download_by_json.yaml
+  - tools/download_by_url.yaml

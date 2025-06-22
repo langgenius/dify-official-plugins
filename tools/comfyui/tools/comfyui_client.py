@@ -1,6 +1,7 @@
 from enum import StrEnum
 import json
 import mimetypes
+import os
 import random
 import uuid
 
@@ -379,3 +380,38 @@ class ComfyUiClient:
                 except:
                     pass
         return output_images
+
+    def download_model(self, url, save_dir, filename=None, token=None):
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        with open(os.path.join(current_dir, "json", "download.json")) as file:
+            workflow_json = json.loads(file.read())
+
+        workflow_json["1"]["inputs"]["url"] = url
+        workflow_json["1"]["inputs"]["save_to"] = save_dir
+        if filename is None:
+            workflow_json["1"]["inputs"]["filename"] = url.split("/")[-1].split("?")[0]
+        else:
+            workflow_json["1"]["inputs"]["filename"] = filename
+        if token is None:
+            workflow_json["1"]["inputs"]["token"] = ""
+        else:
+            workflow_json["1"]["inputs"]["token"] = token
+
+        headers = {}
+        if token is not None:
+            headers = {"Authorization": f"Bearer {token}"}
+        response = requests.head(
+            workflow_json["1"]["inputs"]["url"],
+            headers=headers,
+        )
+        if response.status_code >= 400:
+            raise ToolProviderCredentialValidationError(
+                "Download failed. Please check URL and api_token."
+            )
+
+        try:
+            _ = self.generate(workflow_json)
+        except Exception as e:
+            raise ToolProviderCredentialValidationError(
+                f"Failed to download: {str(e)}. Please make sure https://github.com/ServiceStack/comfy-asset-downloader works on ComfyUI"
+            )
