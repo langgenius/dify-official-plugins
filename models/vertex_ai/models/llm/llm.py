@@ -47,6 +47,9 @@ from google.genai.types import Tool, GenerateContentConfig, GoogleSearch
 from PIL import Image
 
 
+GLOBAL_ONLY_MODELS = ["gemini-2.5-pro-preview-06-05", "gemini-2.5-flash-lite-preview-06-17"]
+
+
 class VertexAiLargeLanguageModel(LargeLanguageModel):
     def _invoke(
         self,
@@ -112,7 +115,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             request = google.auth.transport.requests.Request()
             credentials.refresh(request)
             token = credentials.token
-        if "opus" in model or "claude-3-5-sonnet" in model:
+        if any(m in model for m in ["opus", "claude-3-5-sonnet", "claude-3-7-sonnet", "claude-sonnet-4"]):
             location = "us-east5"
         else:
             location = "us-central1"
@@ -479,7 +482,9 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             else None
         )
         project_id = credentials["vertex_project_id"]
-        if "preview" in model:
+        if model in GLOBAL_ONLY_MODELS:
+            location = "global"
+        elif "preview" in model:
             location = "us-central1"
         else:
             location = credentials["vertex_location"]
@@ -526,10 +531,11 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             google_search_tool = Tool(google_search=GoogleSearch())
             response = client.models.generate_content(
                 model=model,
-                contents=history[0].parts[0].text if history else "",
+                contents=[item.to_dict() for item in history],
                 config=GenerateContentConfig(
                     tools=[google_search_tool],
                     response_modalities=["TEXT"],
+                    system_instruction=system_instruction
                 )
             )
         else:
@@ -558,7 +564,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 tools=tools,
             )
         if stream:
-            return self._handle_generate_stream_response(model, credentials, response, prompt_messages)
+            return self._handle_generate_stream_response(model, credentials, response, prompt_messages, system_instruction)
         return self._handle_generate_response(model, credentials, response, prompt_messages)
 
     def _handle_generate_response(
@@ -597,7 +603,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         return result
 
     def _handle_generate_stream_response(
-        self, model: str, credentials: dict, response: glm.GenerationResponse, prompt_messages: list[PromptMessage]
+        self, model: str, credentials: dict, response: glm.GenerationResponse, prompt_messages: list[PromptMessage], system_instruction: str
     ) -> Generator:
         """
         Handle llm stream response
@@ -609,6 +615,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :return: llm response chunk generator result
         """
         index = -1
+        is_first_gemini2_response = True
         for chunk in response:
             if isinstance(chunk, tuple):
                 key, value = chunk
@@ -676,8 +683,11 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                         reference_section = "\n\nGrounding Sources\n" + "\n".join(reference_lines)
                     else:
                         reference_section = ""
-
-                    integrated_text = f"{assistant_prompt_message.content}{reference_section}"
+                    if is_first_gemini2_response and model.startswith("gemini-2.") and system_instruction:
+                        integrated_text = f"{assistant_prompt_message.content}"
+                        is_first_gemini2_response = False
+                    else:
+                        integrated_text = f"{assistant_prompt_message.content}{reference_section}"
                     assistant_message_with_refs = AssistantPromptMessage(content=integrated_text, tool_calls=assistant_prompt_message.tool_calls)
 
                     yield LLMResultChunk(

@@ -45,7 +45,7 @@ For example:
 - [ ] My Changes Affect Other LLM Functionalities (Reasoning Process, Grounding, Prompt Caching, etc.)
 <!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
-- [ ] Other Changes (Add New Models, etc.)
+- [ ] Other Changes (Add New Models, Fix Model Parameters etc.)
 <!-- 📷 Include Screenshots/Videos Demonstrating the Fix, New Feature, or the Behavior Before/After Breaking Changes. -->
 
 ## Version Control (Any Changes to the Plugin Will Require Bumping the Version)
@@ -59,7 +59,7 @@ For example:
 -->
 
 ## Dify Plugin SDK Version
-- [ ] I'm Using `dify_plugin>=0.2.0,<0.4.0` in requirements.txt ([SDK docs](https://github.com/langgenius/dify-plugin-sdks/blob/main/python/README.md))
+- [ ] I'm Using `dify_plugin>=0.3.0,<0.4.0` in requirements.txt ([SDK docs](https://github.com/langgenius/dify-plugin-sdks/blob/main/python/README.md))
 
 ## Environment Verification (If Any Code Changes)
 <!-- 

@@ -171,6 +171,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
+        if credentials.get("use_international_endpoint", "false") is "true":
+            import dashscope
+            dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
         credentials_kwargs = self._to_credential_kwargs(credentials)
         mode = self.get_model_mode(model, credentials)
         if model in {"qwen-turbo-chat", "qwen-plus-chat"}:
@@ -491,7 +494,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             video_url = message_content.data
                             if message_content.data.startswith("data:"):
                                 raise InvokeError(
-                                    "not support base64, please set MULTIMODAL_SEND_VIDEO_FORMAT to url"
+                                    "not support base64, please set MULTIMODAL_SEND_FORMAT to url"
                                 )
                             sub_message_dict = {"video": video_url}
                             user_messages.append(sub_message_dict)

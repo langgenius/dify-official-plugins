@@ -1,0 +1,151 @@
+identity:
+  name: draft_email
+  display_name: Draft Email
+  author: Dify
+  label:
+    en_US: Draft Email
+    zh_Hans: 创建草稿邮件
+    pt_BR: Rascunhar E-mail
+    ja_JP: メールの下書き作成
+    zh_Hant: 創建草稿郵件
+description:
+  human:
+    en_US: Create a draft email in Outlook
+    zh_Hans: 在 Outlook 中创建草稿邮件
+    pt_BR: Criar um rascunho de e-mail no Outlook
+    ja_JP: Outlook でメールの下書きを作成
+    zh_Hant: 在 Outlook 中創建草稿郵件
+  llm: Create a draft email in Outlook using Microsoft Graph API, this tool creates a draft that can be sent later using the send_message tool
+
+parameters:
+  - name: to_recipients
+    type: string
+    required: true
+    label:
+      en_US: To Recipients
+      zh_Hans: 收件人
+      pt_BR: Destinatários
+      ja_JP: 宛先
+      zh_Hant: 收件人
+    human_description:
+      en_US: Email addresses of the recipients
+      zh_Hans: 收件人的电子邮件地址
+      pt_BR: Endereços de e-mail dos destinatários
+      ja_JP: 受信者のメールアドレス
+      zh_Hant: 收件人的電子郵件地址
+    llm_description: Email addresses of the primary recipients, multiple addresses should be comma-separated, example, john@example.com, jane@example.com
+    form: llm
+
+  - name: cc_recipients
+    type: string
+    required: false
+    label:
+      en_US: CC Recipients
+      zh_Hans: 抄送收件人
+      pt_BR: Destinatários em Cópia
+      ja_JP: CC 宛先
+      zh_Hant: 副本收件人
+    human_description:
+      en_US: Email addresses of CC recipients
+      zh_Hans: 抄送收件人的电子邮件地址
+      pt_BR: Endereços de e-mail dos destinatários em cópia
+      ja_JP: CC 受信者のメールアドレス
+      zh_Hant: 副本收件人的電子郵件地址
+    llm_description: Email addresses of CC recipients, multiple addresses should be comma-separated, optional
+    form: llm
+
+  - name: bcc_recipients
+    type: string
+    required: false
+    label:
+      en_US: BCC Recipients
+      zh_Hans: 密送收件人
+      pt_BR: Destinatários em Cópia Oculta
+      ja_JP: BCC 宛先
+      zh_Hant: 密件副本收件人
+    human_description:
+      en_US: Email addresses of BCC recipients
+      zh_Hans: 密送收件人的电子邮件地址
+      pt_BR: Endereços de e-mail dos destinatários em cópia oculta
+      ja_JP: BCC 受信者のメールアドレス
+      zh_Hant: 密件副本收件人的電子郵件地址
+    llm_description: Email addresses of BCC recipients, multiple addresses should be comma-separated, optional
+    form: llm
+
+  - name: subject
+    type: string
+    required: true
+    label:
+      en_US: Subject
+      zh_Hans: 主题
+      pt_BR: Assunto
+      ja_JP: 件名
+      zh_Hant: 主旨
+    human_description:
+      en_US: Subject line of the email
+      zh_Hans: 邮件的主题行
+      pt_BR: Linha de assunto do e-mail
+      ja_JP: メールの件名
+      zh_Hant: 郵件的主旨行
+    llm_description: The subject line of the email message
+    form: llm
+
+  - name: body
+    type: string
+    required: true
+    label:
+      en_US: Body
+      zh_Hans: 正文
+      pt_BR: Corpo
+      ja_JP: 本文
+      zh_Hant: 內文
+    human_description:
+      en_US: Content of the email message
+      zh_Hans: 邮件的内容
+      pt_BR: Conteúdo da mensagem de e-mail
+      ja_JP: メールの本文
+      zh_Hant: 郵件的內容
+    llm_description: The content of the email message, can be plain text or HTML, if HTML is used, it should be properly formatted
+    form: llm
+
+  - name: body_type
+    type: string
+    required: false
+    default: text
+    label:
+      en_US: Body Type
+      zh_Hans: 正文类型
+      pt_BR: Tipo de Corpo
+      ja_JP: 本文タイプ
+      zh_Hant: 內文類型
+    human_description:
+      en_US: Type of the email body content
+      zh_Hans: 邮件正文内容的类型
+      pt_BR: Tipo do conteúdo do corpo do e-mail
+      ja_JP: メール本文のタイプ
+      zh_Hant: 郵件內文內容的類型
+    llm_description: Type of the email body content, can be text or html, default is text
+    form: llm
+
+  - name: importance
+    type: string
+    required: false
+    default: normal
+    label:
+      en_US: Importance
+      zh_Hans: 重要性
+      pt_BR: Importância
+      ja_JP: 重要度
+      zh_Hant: 重要性
+    human_description:
+      en_US: Importance level of the email
+      zh_Hans: 邮件的重要性级别
+      pt_BR: Nível de importância do e-mail
+      ja_JP: メールの重要度
+      zh_Hant: 郵件的重要性級別
+    llm_description: Importance level of the email, can be low, normal, or high, default is normal
+    form: llm
+
+extra:
+  python:
+    source: tools/draft_message.py
