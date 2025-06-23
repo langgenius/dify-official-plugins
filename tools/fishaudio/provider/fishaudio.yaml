@@ -48,6 +48,7 @@ credentials_for_provider:
 
 tools:
   - tools/tts.yaml
+  - tools/list_modes.yaml
 extra:
   python:
     source: provider/fishaudio.py
