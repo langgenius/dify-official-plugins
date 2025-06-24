@@ -20,7 +20,6 @@ supported_model_types:
   - speech2text
 configurate_methods:
   - predefined-model
-  - customizable-model
 provider_credential_schema:
   credential_form_schemas:
     - variable: api_key
@@ -76,67 +75,8 @@ provider_credential_schema:
           label:
             en_US: Normal
             zh_Hans: 标准
-model_credential_schema:
-  model:
-    label:
-      en_US: Model Name
-      zh_Hans: 模型名称
-    placeholder:
-      en_US: Enter your model name
-      zh_Hans: 输入模型名称
-  credential_form_schemas:
-    - variable: api_key
-      label:
-        en_US: API Key
-      type: secret-input
-      required: true
-      placeholder:
-        zh_Hans: 在此输入您的 API Key
-        en_US: Enter your API Key
-    - variable: api_base
-      label:
-        en_US: API URL
-      type: text-input
-      required: false
-      default: https://api.fish.audio
-      placeholder:
-        en_US: Enter your API URL
-        zh_Hans: 在此输入您的 API URL
-    - variable: model_id
-      label:
-        zh_Hans: 模型 ID
-        en_US: Model ID
-      type: text-input
-      required: true
-      placeholder:
-        zh_Hans: 在此输入您的模型 ID
-        en_US: Enter your Model ID
-    - variable: output_format
-      label:
-        zh_Hans: 输出格式
-        en_US: Output Format
-      type: select
-      required: false
-      default: "mp3"
-      placeholder:
-        zh_Hans: 选择输出格式
-        en_US: Select output format
-      options:
-        - value: "mp3"
-          label:
-            zh_Hans: MP3
-            en_US: MP3
-        - value: "wav"
-          label:
-            zh_Hans: WAV
-            en_US: WAV
-        - value: "pcm"
-          label:
-            zh_Hans: PCM
-            en_US: PCM
 models:
   tts:
-    position: models/tts/_position.yaml
     predefined:
       - "models/tts/*.yaml"
   speech2text:
