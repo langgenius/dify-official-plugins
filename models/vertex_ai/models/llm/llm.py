@@ -490,9 +490,9 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             location = credentials["vertex_location"]
         if service_account_info:
             service_accountSA = service_account.Credentials.from_service_account_info(service_account_info)
-            aiplatform.init(credentials=service_accountSA, project=project_id, location=location)
+            aiplatform.init(credentials=service_accountSA, project=project_id, location=location, api_transport="rest")
         else:
-            aiplatform.init(project=project_id, location=location)
+            aiplatform.init(project=project_id, location=location, api_transport="rest")
             
         history = []
         system_instruction = ""

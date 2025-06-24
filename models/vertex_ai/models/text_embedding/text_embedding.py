@@ -59,9 +59,9 @@ class VertexAiTextEmbeddingModel(CommonVertexAi, TextEmbeddingModel):
         location = credentials["vertex_location"]
         if service_account_info:
             service_accountSA = service_account.Credentials.from_service_account_info(service_account_info)
-            aiplatform.init(credentials=service_accountSA, project=project_id, location=location)
+            aiplatform.init(credentials=service_accountSA, project=project_id, location=location, api_transport="rest")
         else:
-            aiplatform.init(project=project_id, location=location)
+            aiplatform.init(project=project_id, location=location, api_transport="rest")
         client = VertexTextEmbeddingModel.from_pretrained(model)
         (embeddings_batch, embedding_used_tokens) = self._embedding_invoke(client=client, texts=texts)
         usage = self._calc_response_usage(model=model, credentials=credentials, tokens=embedding_used_tokens)
@@ -108,9 +108,9 @@ class VertexAiTextEmbeddingModel(CommonVertexAi, TextEmbeddingModel):
             location = credentials["vertex_location"]
             if service_account_info:
                 service_accountSA = service_account.Credentials.from_service_account_info(service_account_info)
-                aiplatform.init(credentials=service_accountSA, project=project_id, location=location)
+                aiplatform.init(credentials=service_accountSA, project=project_id, location=location, api_transport="rest")
             else:
-                aiplatform.init(project=project_id, location=location)
+                aiplatform.init(project=project_id, location=location, api_transport="rest")
             client = VertexTextEmbeddingModel.from_pretrained(model)
             self._embedding_invoke(model=model, client=client, texts=["ping"])
         except Exception as ex:
