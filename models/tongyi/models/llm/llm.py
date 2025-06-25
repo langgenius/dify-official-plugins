@@ -306,6 +306,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :return: llm response chunk generator result
         """
         is_reasoning = False
+        # This is used to handle unincremental output correctly
         full_text = ""
         tool_calls = []
         for index, response in enumerate(responses):
@@ -322,10 +323,14 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 elif resp_content:
                     if isinstance(resp_content, list):
                         resp_content = resp_content[0]["text"]
-                    assistant_prompt_message.content = resp_content.replace(
-                        full_text, "", 1
-                    )
-                    full_text = resp_content
+                    if incremental_output:
+                        assistant_prompt_message.content = resp_content
+                        full_text += resp_content
+                    else:
+                        assistant_prompt_message.content = resp_content.replace(
+                            full_text, "", 1
+                        )
+                        full_text = resp_content
                 if tool_calls:
                     message_tool_calls = []
                     for tool_call_obj in tool_calls:
@@ -365,10 +370,16 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     continue
                 if isinstance(resp_content, list):
                     resp_content = resp_content[0]["text"]
+                if incremental_output:
+                    delta = resp_content
+                    full_text += delta
+                else:
+                    delta = resp_content.replace(full_text, "", 1)
+                    full_text = resp_content
+                
                 assistant_prompt_message = AssistantPromptMessage(
-                    content=resp_content.replace(full_text, "", 1)
+                    content=delta
                 )
-                full_text = resp_content
                 yield LLMResultChunk(
                     model=model,
                     prompt_messages=prompt_messages,
