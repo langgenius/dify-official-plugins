@@ -171,7 +171,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
-        if credentials.get("use_international_endpoint", "false") is "true":
+        if credentials.get("use_international_endpoint", "false") == "true":
             import dashscope
             dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
         credentials_kwargs = self._to_credential_kwargs(credentials)
@@ -570,6 +570,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             api_key=credentials.dashscope_api_key,
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         )
+        if credentials.get("use_international_endpoint", "false") == "true":
+            client = OpenAI(
+                api_key=credentials.dashscope_api_key,
+                base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+            )
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
             if message_content.base64_data:
                 file_content = base64.b64decode(message_content.base64_data)
