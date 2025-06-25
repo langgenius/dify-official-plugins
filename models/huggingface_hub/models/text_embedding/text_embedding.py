@@ -1,4 +1,3 @@
-import json
 import time
 from typing import Optional
 import numpy as np
@@ -46,18 +45,15 @@ class HuggingfaceHubTextEmbeddingModel(_CommonHuggingfaceHub, TextEmbeddingModel
         execute_model = model
         if credentials["huggingfacehub_api_type"] == "inference_endpoints":
             execute_model = credentials["huggingfacehub_endpoint_url"]
-        output = client.post(
-            json={
-                "inputs": texts,
-                "options": {"wait_for_model": False, "use_cache": False},
-            },
+        output = client.feature_extraction(
+            text=texts,
             model=execute_model,
         )
-        embeddings = json.loads(output.decode())
+
         tokens = self.get_num_tokens(model, credentials, texts)
         usage = self._calc_response_usage(model, credentials, tokens)
         return TextEmbeddingResult(
-            embeddings=self._mean_pooling(embeddings), usage=usage, model=model
+            embeddings=self._mean_pooling(output), usage=usage, model=model
         )
 
     def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
@@ -121,7 +117,7 @@ class HuggingfaceHubTextEmbeddingModel(_CommonHuggingfaceHub, TextEmbeddingModel
         return entity
 
     @staticmethod
-    def _mean_pooling(embeddings: list) -> list[float]:
+    def _mean_pooling(embeddings: list) -> list[list[float]]:
         if not isinstance(embeddings[0][0], list):
             return embeddings
         sentence_embeddings = [
