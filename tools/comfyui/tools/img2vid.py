@@ -61,16 +61,16 @@ class ComfyuiImg2Vid(Tool):
             raise ToolProviderCredentialValidationError(f"model {model} does not exist")
         steps = tool_parameters.get("steps", 20)
         valid_samplers = self.comfyui.get_samplers()
-        valid_schedulers = self.comfyui.get_schedulers()
         sampler_name = tool_parameters.get("sampler_name", "euler")
         if sampler_name not in valid_samplers:
             raise ToolProviderCredentialValidationError(
-                f"sampler {sampler_name} does not exist"
+                f"Sampler {sampler_name} does not exist. Valid samplers are {valid_samplers}."
             )
-        scheduler = tool_parameters.get("scheduler", "karras")
-        if scheduler not in valid_schedulers:
+        valid_schedulers = self.comfyui.get_schedulers()
+        scheduler_name = tool_parameters.get("scheduler", "normal")
+        if scheduler_name not in valid_schedulers:
             raise ToolProviderCredentialValidationError(
-                f"scheduler {scheduler} does not exist"
+                f"Scheduler {scheduler_name} does not exist. Valid schedulers are {valid_schedulers}."
             )
         cfg = tool_parameters.get("cfg", 2.5)
         denoise = tool_parameters.get("denoise", 1.0)

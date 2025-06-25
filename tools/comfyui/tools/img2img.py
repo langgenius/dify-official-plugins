@@ -63,17 +63,18 @@ class ComfyuiImg2Img(Tool):
             raise ToolProviderCredentialValidationError("Please input prompt")
         negative_prompt = tool_parameters.get("negative_prompt", "")
         steps = tool_parameters.get("steps", 20)
+
         valid_samplers = self.comfyui.get_samplers()
-        valid_schedulers = self.comfyui.get_schedulers()
         sampler_name = tool_parameters.get("sampler_name", "euler")
         if sampler_name not in valid_samplers:
             raise ToolProviderCredentialValidationError(
-                f"sampler {sampler_name} does not exist"
+                f"Sampler {sampler_name} does not exist. Valid samplers are {valid_samplers}."
             )
-        scheduler = tool_parameters.get("scheduler", "normal")
-        if scheduler not in valid_schedulers:
+        valid_schedulers = self.comfyui.get_schedulers()
+        scheduler_name = tool_parameters.get("scheduler", "normal")
+        if scheduler_name not in valid_schedulers:
             raise ToolProviderCredentialValidationError(
-                f"scheduler {scheduler} does not exist"
+                f"Scheduler {scheduler_name} does not exist. Valid schedulers are {valid_schedulers}."
             )
         cfg = tool_parameters.get("cfg", 7.0)
         denoise = tool_parameters.get("denoise", 0.8)
@@ -114,7 +115,7 @@ class ComfyuiImg2Img(Tool):
             image_name=image_names[0],
             steps=steps,
             sampler_name=sampler_name,
-            scheduler=scheduler,
+            scheduler=scheduler_name,
             cfg=cfg,
             lora_list=lora_list,
             lora_strength_list=lora_strength_list,
