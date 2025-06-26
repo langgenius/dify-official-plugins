@@ -51,7 +51,7 @@ parameter_rules:
     default: false
   - name: json_schema
     use_template: json_schema
-# https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-2.5-pro
+# https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-2.5-flash
 pricing:
   input: '0.30'
   output: '2.50'
