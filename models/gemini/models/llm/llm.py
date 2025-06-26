@@ -32,24 +32,16 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
     VideoPromptMessageContent,
 )
-from dify_plugin.errors.model import (
-    CredentialsValidateFailedError,
-    InvokeAuthorizationError,
-    InvokeBadRequestError,
-    InvokeConnectionError,
-    InvokeError,
-    InvokeRateLimitError,
-    InvokeServerUnavailableError,
-)
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 
+from ..common_gemini import _CommonGemini
 from .utils import FileCache
 
 
 file_cache = FileCache()
 
 
-class GoogleLargeLanguageModel(LargeLanguageModel):
+class GoogleLargeLanguageModel(_CommonGemini, LargeLanguageModel):
     def _invoke(
         self,
         model: str,
@@ -537,28 +529,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         for index, entry in enumerate(grounding_metadata.grounding_chunks, start=1):
             result += f"{index}. [{entry.web.title}]({entry.web.uri})\n"
         return result
-                
-
-    @property
-    def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
-        """
-        Map model invoke error to unified error
-        """
-        return {
-            InvokeConnectionError: [
-                errors.APIError, 
-                errors.ClientError,
-            ],
-            InvokeServerUnavailableError: [
-                errors.ServerError,
-            ],
-            InvokeBadRequestError: [
-                errors.ClientError,
-                errors.UnknownFunctionCallArgumentError,
-                errors.UnsupportedFunctionError,
-                errors.FunctionInvocationError,
-            ],
-        }
 
     def _parse_parts(self, parts: Sequence[types.Part], /) -> AssistantPromptMessage:
         contents: list[PromptMessageContent] = []
