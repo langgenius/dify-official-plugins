@@ -244,9 +244,10 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     else 0,
                 },
             )
-            assistant_message = AssistantPromptMessage(content="", tool_calls=[])
-            if not tool_calls:
-                assistant_message.content = response
+            
+            # Regardless of whether there is a tool call, if there is a response, it is sent to the model as context
+            if response.strip():
+                assistant_message = AssistantPromptMessage(content=response, tool_calls=[])
                 current_thoughts.append(assistant_message)
 
             final_answer += response + "\n"
