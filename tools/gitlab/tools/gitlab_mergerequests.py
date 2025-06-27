@@ -22,12 +22,13 @@ class GitlabMergeRequestsTool(Tool):
             yield self.create_text_message("Gitlab API Access Tokens is required.")
         if not site_url:
             site_url = "https://gitlab.com"
-        result = self.get_merge_requests(site_url, access_token, repository, branch, start_time, end_time, state)
+        ssl_verify = self.runtime.credentials.get("ssl_verify", True)
+        result = self.get_merge_requests(site_url, access_token, repository, branch, start_time, end_time, state, ssl_verify)
         for item in result:
             yield self.create_json_message(item)
 
     def get_merge_requests(
-        self, site_url: str, access_token: str, repository: str, branch: str, start_time: str, end_time: str, state: str
+        self, site_url: str, access_token: str, repository: str, branch: str, start_time: str, end_time: str, state: str, ssl_verify: bool
     ) -> list[dict[str, Any]]:
         domain = site_url
         headers = {"PRIVATE-TOKEN": access_token}
@@ -40,7 +41,7 @@ class GitlabMergeRequestsTool(Tool):
                 params["created_after"] = start_time
             if end_time:
                 params["created_before"] = end_time
-            response = requests.get(merge_requests_url, headers=headers, params=params)
+            response = requests.get(merge_requests_url, headers=headers, params=params, verify=ssl_verify)
             response.raise_for_status()
             merge_requests = response.json()
             for mr in merge_requests:

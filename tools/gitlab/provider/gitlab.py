@@ -18,7 +18,7 @@ class GitlabProvider(ToolProvider):
                     "Content-Type": "application/vnd.text+json",
                     "Authorization": f"Bearer {credentials.get('access_tokens')}",
                 }
-                response = requests.get(url=f"{site_url}/api/v4/user", headers=headers)
+                response = requests.get(url=f"{site_url}/api/v4/user", headers=headers, verify=credentials.get('ssl_verify', True))
                 if response.status_code != 200:
                     raise ToolProviderCredentialValidationError(response.json().get("message"))
             except Exception as e:

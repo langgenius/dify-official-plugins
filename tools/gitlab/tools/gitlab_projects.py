@@ -18,12 +18,13 @@ class GitlabProjectsTool(Tool):
             yield self.create_text_message("Gitlab API Access Tokens is required.")
         if not site_url:
             site_url = "https://gitlab.com"
-        result = self.fetch_projects(site_url, access_token, project_name, page, page_size)
+        ssl_verify = self.runtime.credentials.get("ssl_verify", True)
+        result = self.fetch_projects(site_url, access_token, project_name, page, page_size, ssl_verify)
         for item in result:
             yield self.create_json_message(item)
 
     def fetch_projects(
-        self, site_url: str, access_token: str, project_name: str, page: str, page_size: str
+        self, site_url: str, access_token: str, project_name: str, page: str, page_size: str, ssl_verify: bool
     ) -> list[dict[str, Any]]:
         domain = site_url
         headers = {"PRIVATE-TOKEN": access_token}
@@ -36,7 +37,7 @@ class GitlabProjectsTool(Tool):
                 )
             else:
                 projects_url = f"{domain}/api/v4/projects?page={page}&per_page={page_size}"
-            response = requests.get(projects_url, headers=headers)
+            response = requests.get(projects_url, headers=headers, verify=ssl_verify)
             response.raise_for_status()
             projects = response.json()
             for project in projects:

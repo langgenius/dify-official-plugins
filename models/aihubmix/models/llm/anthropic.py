@@ -168,6 +168,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             else:
                 extra_headers["anthropic-beta"] = "pdfs-2024-09-25"
 
+        extra_headers["APP-Code"] = "Dify2025"
         if not any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
             self.previous_thinking_blocks = []
             self.previous_redacted_thinking_blocks = []

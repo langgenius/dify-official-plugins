@@ -26,6 +26,16 @@ credentials_for_provider:
     required: false
     type: text-input
     url: https://gitlab.com/help
+  ssl_verify:
+    default: true
+    help:
+      en_US: Whether to verify the SSL certificate
+      zh_Hans: 是否验证 SSL 证书
+    label:
+      en_US: Whether to verify the SSL certificate
+      zh_Hans: 是否验证 SSL 证书
+    required: false
+    type: boolean
 extra:
   python:
     source: provider/gitlab.py

@@ -174,7 +174,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             )
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
-
+        
     def _get_response_modalities(self, model: str) -> list[str]:
         """_get_response_modalities returns response modalities supported 
         by the given model.
@@ -236,8 +236,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         if tools:
             config.tools.append(self._convert_tools_to_glm_tool(tools))
 
-        genai_client = genai.Client(api_key=credentials["api_key"],http_options={"base_url": "https://aihubmix.com/gemini"})
-
+        genai_client = genai.Client(api_key=credentials["api_key"], http_options={
+            "base_url": "https://aihubmix.com/gemini",
+            "headers": {
+                "APP-Code": "Dify2025"
+            }
+        })
         history = []
         file_server_url_prefix = credentials.get("file_url") or None
         for msg in prompt_messages:  # makes message roles strictly alternating
@@ -256,7 +260,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 contents=history,
                 config=config,
             )
-
             return self._handle_generate_stream_response(model, credentials, response, prompt_messages)
 
         response = genai_client.models.generate_content(
@@ -264,7 +267,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             contents=history,
             config=config,
         )
-
         return self._handle_generate_response(model, credentials, response, prompt_messages)
 
     def _convert_one_message_to_text(self, message: PromptMessage) -> str:
@@ -337,6 +339,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 for c in message.content:
                     if c.type == PromptMessageContentType.TEXT:
                         glm_content.parts.append(types.Part.from_text(text=c.data))
+                    elif c.type == PromptMessageContentType.IMAGE and c.base64_data:
+                        glm_content.parts.append(
+                            types.Part.from_bytes(
+                                data=base64.b64decode(c.base64_data), mime_type=c.mime_type
+                            )
+                        )
                     else:
                         uri, mime_type = self._upload_file_content_to_google(
                             message_content=c, genai_client=genai_client, file_server_url_prefix=file_server_url_prefix
@@ -475,11 +483,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         index = -1
         prompt_tokens = 0
         completion_tokens = 0
-        
         for chunk in response:
             if not chunk.candidates:
                 continue
-            
             for candidate in chunk.candidates:
                 if not candidate.content or not candidate.content.parts:
                     continue
@@ -488,18 +494,21 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 index += len(candidate.content.parts)
                 if chunk.usage_metadata:
                     prompt_tokens += chunk.usage_metadata.prompt_token_count or 0
-                    completion_tokens += chunk.usage_metadata.candidates_token_count or 0
-                
-                # 如果流未完成，生成块
-                if candidate.finish_reason is None:
+                    completion_tokens += (
+                        chunk.usage_metadata.candidates_token_count or 0
+                    )
+
+                # if the stream is not finished, yield the chunk
+                if not candidate.finish_reason:
                     yield LLMResultChunk(
                         model=model,
-                        prompt_messages=prompt_messages,
+                        prompt_messages=list(prompt_messages),
                         delta=LLMResultChunkDelta(
                             index=index,
                             message=message,
                         ),
                     )
+                # if the stream is finished, yield the chunk and the finish reason
                 else:
                     if prompt_tokens == 0 or completion_tokens == 0:
                         prompt_tokens = self.get_num_tokens(
@@ -520,7 +529,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     )
                     yield LLMResultChunk(
                         model=model,
-                        prompt_messages=prompt_messages,
+                        prompt_messages=list(prompt_messages),
                         delta=LLMResultChunkDelta(
                             index=index,
                             message=message,
@@ -568,11 +577,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 contents.append(TextPromptMessageContent(data=part.text))
             if part.function_call:
                 function_call = part.function_call
-                function_call_id = function_call.id
+                # Generate a unique ID since Gemini API doesn't provide one
+                function_call_id = f"gemini_call_{function_call.name}_{time.time_ns()}"
+                logging.info(f"Generated function call ID: {function_call_id}")
                 function_call_name = function_call.name
                 function_call_args = function_call.args
-                if not isinstance(function_call_id, str):
-                    raise InvokeError("function_call_id received is not a string")
                 if not isinstance(function_call_name, str):
                     raise InvokeError("function_call_name received is not a string")
                 if not isinstance(function_call_args, dict):
@@ -608,20 +617,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 else:
                     raise InvokeError(f"unsupported mime_type {mime_type}")
 
-        # 根据内容列表创建消息
-        if len(contents) == 1:
-            # 如果只有一个文本内容，直接使用其数据作为内容
-            message = AssistantPromptMessage(
-                content=contents[0].data if isinstance(contents[0], TextPromptMessageContent) else contents,
-                tool_calls=function_calls
-            )
-        else:
-            # 如果有多个内容或非文本内容，使用内容列表
-            message = AssistantPromptMessage(
-                content=contents,
-                tool_calls=function_calls
-            )
-        
+        # FIXME: This is a workaround to fix the typing issue in the dify_plugin
+        # https://github.com/langgenius/dify-plugin-sdks/issues/41
+        # fixed_contents = [content.model_dump(mode="json") for content in contents]
+        message = AssistantPromptMessage(
+            content=contents, tool_calls=function_calls  # type: ignore
+        )
         return message
     
     def _convert_to_contents(self, prompt_messages: Sequence[PromptMessage]) -> list[types.ContentDict]:
