@@ -49,6 +49,7 @@ credentials_for_provider:
 tools:
   - tools/tts.yaml
   - tools/list_model.yaml
+  - tools/create_model.yaml
 extra:
   python:
     source: provider/fishaudio.py

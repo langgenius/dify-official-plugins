@@ -36,26 +36,26 @@ class ListModel(Tool):
                 page = param.get("page_number", 1)
                 size = param.get("page_size", 10)
                 if not items:
-                    yield self.create_text_message("未找到任何模型。")
+                    yield self.create_text_message("found no models.")
                 else:
                     lines = [
-                        f"📦 共找到 {total} 个模型，当前为第 {page} 页，每页 {size} 个。\n"
+                        f"📦 found {total} models, currently page {page} ,{size} items per page\n"
                     ]
 
                     for i, item in enumerate(items, start=1):
-                        id = item.id  # 前提是你用 alias="_id" 做了映射
-                        title = item.title or "无标题"
-                        author = item.author.nickname if item.author else "匿名"
-                        languages = ", ".join(item.languages) if item.languages else "未指定"
-                        desc = item.description.strip() or "无描述"
-                        visibility = item.visibility or "未知"
+                        id = item.id
+                        title = item.title or "No title"
+                        author = item.author.nickname if item.author else "Anonymous"
+                        languages = ", ".join(item.languages) if item.languages else "Not specified"
+                        desc = item.description.strip() or "No description"
+                        visibility = item.visibility or "Unknown"
 
                         lines.append(
                             f"{i}. 【{title}】(ID: {id})\n"
-                            f"    👤 作者：{author}\n"
-                            f"    🌐 语言：{languages}\n"
-                            f"    📝 描述：{desc}\n"
-                            f"    🔒 可见性：{visibility}"
+                            f"    👤 Author: {author}\n"
+                            f"    🌐 Language: {languages}\n"
+                            f"    📝 Description: {desc}\n"
+                            f"    🔒 Visibility: {visibility}"
                         )
 
                     yield self.create_text_message("\n\n".join(lines))
