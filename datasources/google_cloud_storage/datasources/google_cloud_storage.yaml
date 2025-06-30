@@ -1,0 +1,27 @@
+identity:
+  name: google_cloud_storage
+  author: langgenius
+  label:
+    en_US: Google Cloud Storage
+    zh_Hans: Google Cloud Storage
+description:
+  en_US: Search for files in your Google Cloud Storage bucket
+  zh_Hans: 在您的 Google Cloud Storage 存储桶中搜索文件
+
+parameters:
+
+output_schema:
+    type: object
+    properties:
+      result:
+        type: object
+        properties:
+          file_name:
+            type: string
+            description: file name
+          content:
+            type: string
+            description: file content
+extra:
+  python:
+    source: datasources/google_cloud_storage.py
