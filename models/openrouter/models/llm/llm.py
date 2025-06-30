@@ -24,13 +24,19 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._update_credential(model, credentials)
-        
+        reasoning_budget = model_parameters.get('reasoning_budget')
+        if reasoning_budget:
+            model_parameters.pop('reasoning_budget')
+            model_parameters['reasoning'] = {'max_tokens': reasoning_budget}
+        reasoning_effort = model_parameters.get('reasoning_effort')
+        if reasoning_effort:
+            model_parameters.pop('reasoning_effort')
+            model_parameters['reasoning'] = {'effort': reasoning_effort}
         # Add parameter conversion logic
         if "functions" in model_parameters:
             model_parameters["tools"] = [{"type": "function", "function": func} for func in model_parameters.pop("functions")]
         if "function_call" in model_parameters:
             model_parameters["tool_choice"] = model_parameters.pop("function_call")
-            
         return self._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
