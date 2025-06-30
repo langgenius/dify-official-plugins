@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<svg width="40" height="40" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
+ <defs>
+  <filter color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse" height="40" id="filter0_dd_9200_31286" width="40" x="0" y="0">
+   <feFlood flood-opacity="0" result="BackgroundImageFix"/>
+   <feColorMatrix in="SourceAlpha" result="hardAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"/>
+   <feMorphology in="SourceAlpha" operator="erode" radius="2"/>
+   <feOffset dy="2"/>
+   <feGaussianBlur stdDeviation="2"/>
+   <feComposite in2="hardAlpha" operator="out"/>
+   <feColorMatrix type="matrix" values="0 0 0 0 0.0352941 0 0 0 0 0.0352941 0 0 0 0 0.0431373 0 0 0 0.06 0"/>
+   <feBlend in2="BackgroundImageFix"/>
+   <feColorMatrix in="SourceAlpha" result="hardAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"/>
+   <feMorphology in="SourceAlpha" operator="erode" radius="2"/>
+   <feOffset dy="3"/>
+   <feGaussianBlur stdDeviation="5"/>
+   <feComposite in2="hardAlpha" operator="out"/>
+   <feColorMatrix type="matrix" values="0 0 0 0 0.0352941 0 0 0 0 0.0352941 0 0 0 0 0.0431373 0 0 0 0.08 0"/>
+   <feBlend in2="effect1_dropShadow_9200_31286"/>
+   <feBlend in="SourceGraphic" in2="effect2_dropShadow_9200_31286"/>
+  </filter>
+ </defs>
+ <g class="layer">
+  <title>Layer 1</title>
+  <g filter="url(#filter0_dd_9200_31286)" id="svg_1">
+   <rect fill="#444CE7" height="40" id="svg_2" rx="8" width="40" x="0" y="0"/>
+   <path clip-rule="evenodd" d="m25,12.22c0,-0.92 0.75,-1.67 1.67,-1.67l3.33,0c0.92,0 1.67,0.75 1.67,1.67c0,0.93 -0.75,1.67 -1.67,1.67l-3.33,0c-0.92,0 -1.67,-0.73 -1.67,-1.67z" fill="white" fill-rule="evenodd" id="svg_4"/>
+   <path clip-rule="evenodd" d="m8.33,12.22c0,-0.92 0.75,-1.67 1.67,-1.67l11.12,0c0.92,0 1.67,0.75 1.67,1.67c0,0.93 -0.75,1.67 -1.67,1.67l-11.12,0c-0.92,0 -1.67,-0.73 -1.67,-1.67z" fill="white" fill-rule="evenodd" id="svg_5"/>
+   <path clip-rule="evenodd" d="m8.33,20c0,-0.92 0.75,-1.67 1.67,-1.67l3.33,0c0.92,0 1.67,0.75 1.67,1.67c0,0.92 -0.75,1.67 -1.67,1.67l-3.33,0c-0.92,0 -1.67,-0.75 -1.67,-1.67z" fill="white" fill-rule="evenodd" id="svg_6"/>
+   <path clip-rule="evenodd" d="m17.22,20c0,-0.92 0.75,-1.67 1.67,-1.67l11.12,0c0.92,0 1.67,0.75 1.67,1.67c0,0.92 -0.75,1.67 -1.67,1.67l-11.12,0c-0.92,0 -1.67,-0.75 -1.67,-1.67z" fill="white" fill-rule="evenodd" id="svg_7"/>
+   <path clip-rule="evenodd" d="m25,27.78c0,-0.93 0.75,-1.67 1.67,-1.67l3.33,0c0.92,0 1.67,0.73 1.67,1.67c0,0.92 -0.75,1.67 -1.67,1.67l-3.33,0c-0.92,0 -1.67,-0.75 -1.67,-1.67z" fill="white" fill-rule="evenodd" id="svg_8"/>
+   <path clip-rule="evenodd" d="m8.33,27.78c0,-0.93 0.75,-1.67 1.67,-1.67l11.12,0c0.92,0 1.67,0.73 1.67,1.67c0,0.92 -0.75,1.67 -1.67,1.67l-11.12,0c-0.92,0 -1.67,-0.75 -1.67,-1.67z" fill="white" fill-rule="evenodd" id="svg_9"/>
+  </g>
+ </g>
+</svg>
