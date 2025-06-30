@@ -50,4 +50,4 @@ class GoogleCloudStorageDataSource(OnlineDriveDatasource):
         blob = bucket.blob(key)
         b64bytes = blob.download_as_bytes()
 
-        yield self.create_blob_message("key", b64bytes)
+        yield self.create_blob_message(key, b64bytes)
