@@ -1,0 +1,17 @@
+identity:
+  author: langgenius
+  name: dify_cleaner
+  label:
+    en_US: dify_cleaner
+    zh_Hans: dify_cleaner
+    pt_BR: dify_cleaner
+  description:
+    en_US: cleaner
+    zh_Hans: cleaner
+    pt_BR: cleaner
+  icon: icon.svg
+tools:
+  - tools/dify_cleaner.yaml
+extra:
+  python:
+    source: provider/dify_cleaner.py

@@ -1,0 +1,58 @@
+identity:
+  name: dify_cleaner
+  author: langgenius
+  label:
+    en_US: dify_cleaner
+    zh_Hans: dify_cleaner
+    pt_BR: dify_cleaner
+description:
+  human:
+    en_US: cleaner
+    zh_Hans: cleaner
+    pt_BR: cleaner
+  llm: cleaner
+parameters:
+  - name: text
+    type: string
+    required: true
+    label:
+      en_US: text
+      zh_Hans: text
+      pt_BR: text
+    human_description:
+      en_US: the text to be cleaned
+      zh_Hans: 要清理的文本
+      pt_BR: the text to be cleaned
+    llm_description: the text to be cleaned
+    form: llm
+  - name: remove_extra_spaces
+    type: boolean
+    default: false
+    required: false
+    label:
+      en_US: remove_extra_spaces
+      zh_Hans: remove_extra_spaces
+      pt_BR: remove_extra_spaces
+    human_description:
+      en_US: Replace consecutive spaces, line breaks and tabs
+      zh_Hans: 替换掉连续的空格、换行符和制表符
+      pt_BR: Replace consecutive spaces, line breaks and tabs
+    llm_description: Replace consecutive spaces, line breaks and tabs
+    form: form
+  - name: remove_urls_emails
+    type: boolean
+    default: false
+    required: false
+    label:
+      en_US: remove_urls_emails
+      zh_Hans: remove_urls_emails
+      pt_BR: remove_urls_emails
+    human_description:
+      en_US: Delete all URLs and email addresses
+      zh_Hans: 删除所有 URL 和电子邮件地址
+      pt_BR: Delete all URLs and email addresses
+    llm_description: Delete all URLs and email addresses
+    form: form
+extra:
+  python:
+    source: tools/dify_cleaner.py
