@@ -2,13 +2,13 @@
 
 LlamaParse is a GenAI-native document parser that can parse complex document data for any downstream LLM use case (RAG, agents). This plugin integrates LlamaParse capabilities into the Dify platform.
 
-![LlamaParse screenshot](./_assets/llama_parse.png)
+![LlamaParse screenshot](./_assets/LlamaCloud_pic.png)
 
 ## Features
 
 ✅ **Broad file type support**: Parse various unstructured file types (.pdf, .pptx, .docx, .xlsx, .html) with text, tables, visual elements, and complex layouts.
 
-✅ **Table recognition**: Accurately parse embedded tables into text and semi-structured representations.
+✅ **Table recognition**: Accurately parse embeddLed tables into text and semi-structured representations.
 
 ✅ **Multimodal parsing**: Extract visual elements (images/diagrams) into structured formats using the latest multimodal models.
 
@@ -16,12 +16,16 @@ LlamaParse is a GenAI-native document parser that can parse complex document dat
 
 ✅ **Advanced LLM Mode**: Enhanced parsing with LLM-powered layout reconstruction, target pages, max pages, and custom prompts.
 
+![LlamaParse in Dify](./_assets/llama_parse.png)
+
 ## Tools Included
 
 This plugin provides two tools:
 
 ### 1. Llama Parse (Standard)
 The standard LlamaParse tool with basic parsing capabilities.
+
+![LlamaParse Standard Feature](./_assets/Llaama_parse_Standard.png)
 
 ### 2. Llama Parse Advanced (LLM Mode)
 An advanced version with enhanced features:
@@ -31,6 +35,8 @@ An advanced version with enhanced features:
 - **System Prompt**: Override default LlamaParse system prompt (use with caution)
 - **User Prompt**: Transform or modify parsed content (e.g., translation, summarization)
 
+![LlamaParse Custom Feature](./_assets/LlamaParse_Custom.png)
+
 ## Getting Started
 
 ### API Key Setup
@@ -39,6 +45,9 @@ An advanced version with enhanced features:
 2. Generate your API key
 3. Configure the API key in your Dify plugin settings
 
+![LlamaParse API Key](./_assets/Llama_Parse_APIKey.png)
+
+
 ### Configuration Setup
 
 For file upload functionality, configure the `FILES_URL` environment variable in your Dify `.env` file:
@@ -46,7 +55,6 @@ For file upload functionality, configure the `FILES_URL` environment variable in
 - **Docker Compose**: `FILES_URL=http://api:5001`
 - **Other deployments**: `FILES_URL=http://YOUR_DIFY_HOST_IP:5001`
 
-See [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) for detailed configuration instructions.
 
 ### Usage Limits
 
@@ -118,10 +126,6 @@ The plugin provides three types of output for each processed file:
      - JSON: "application/json"
      - Markdown: "text/markdown"
      - Text: "text/plain"
-
-## Troubleshooting
-
-If you encounter issues, see the [TROUBLESHOOTING.md](./TROUBLESHOOTING.md) guide for common problems and solutions.
 
 ## Credits
 
