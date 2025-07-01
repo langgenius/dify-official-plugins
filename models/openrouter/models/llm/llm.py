@@ -34,9 +34,9 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
                 reasoning_budget = -1
             elif enable_thinking == 'disabled':
                 reasoning_budget = 0
-        reasoning_effort = model_parameters.get('reasoning_effort')
         if reasoning_budget:
             model_parameters['reasoning'] = {'max_tokens': reasoning_budget}
+        reasoning_effort = model_parameters.get('reasoning_effort')
         if reasoning_effort:
             model_parameters.pop('reasoning_effort')
             model_parameters['reasoning'] = {'effort': reasoning_effort}
