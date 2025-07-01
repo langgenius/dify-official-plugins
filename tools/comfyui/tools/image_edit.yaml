@@ -3,23 +3,15 @@ description:
     en_US:
       A highly practical solution for robust monocular depth estimation by training on a combination of 1.5M labeled images and 62M+ unlabeled images.
       https://github.com/kijai/ComfyUI-DepthAnythingV2
-    pt_BR:
-      A highly practical solution for robust monocular depth estimation by training on a combination of 1.5M labeled images and 62M+ unlabeled images.
-      https://github.com/kijai/ComfyUI-DepthAnythingV2
-    zh_Hans: 透過在 1.5M 標記影像和 62M+ 非標記影像的組合上進行訓練，為強健的單眼深度估計提供了高度實用的解決方案。      https://github.com/kijai/ComfyUI-DepthAnythingV2
-    ja_JP: 1.5Mのラベル付き画像と62M以上のラベルなし画像の組み合わせで学習した，ロバストな単眼奥行き推定を実現する実用性の高いソリューション。https://github.com/kijai/ComfyUI-DepthAnythingV2
   llm: estimates the depth of a regular RGB image
 extra:
   python:
-    source: tools/depth_anything.py
+    source: tools/image_edit.py
 identity:
   author: yt-koike
   label:
-    en_US: Depth Anything
-    pt_BR: Depth Anything
-    zh_Hans: Depth Anything
-    ja_JP: Depth Anything
-  name: depth_anything
+    en_US: Image Edit
+  name: image_edit
 
 parameters:
   - name: images
@@ -37,44 +29,46 @@ parameters:
     required: true
     type: files
 
-  - name: model
+  - name: feature
     form: form
     human_description:
       en_US:
-        Model
-      pt_BR:
-        Model
-      zh_Hans: 模型
-      ja_JP: モデル
+        Feature
     label:
-      en_US: Model
-      pt_BR: Model
-      zh_Hans: 模型
-      ja_JP: モデル
+      en_US: Feature
     required: true
     type: select
     options:
       - label:
-          en_US: depth_anything_v2_vits_fp16.safetensors
+          en_US: Depth Anything S FP16
         value: depth_anything_v2_vits_fp16.safetensors
       - label:
-          en_US: depth_anything_v2_vits_fp32.safetensors
+          en_US: Depth Anything S FP32
         value: depth_anything_v2_vits_fp32.safetensors
       - label:
-          en_US: depth_anything_v2_vitb_fp16.safetensors
+          en_US: Depth Anything B FP16
         value: depth_anything_v2_vitb_fp16.safetensors
       - label:
-          en_US: depth_anything_v2_vitb_fp32.safetensors
+          en_US: Depth Anything B FP32
         value: depth_anything_v2_vitb_fp32.safetensors
       - label:
-          en_US: depth_anything_v2_vitl_fp16.safetensors
+          en_US: Depth Anything L FP16
         value: depth_anything_v2_vitl_fp16.safetensors
       - label:
-          en_US: depth_anything_v2_vitl_fp32.safetensors
+          en_US: Depth Anything L FP32
         value: depth_anything_v2_vitl_fp32.safetensors
       - label:
-          en_US: depth_anything_v2_metric_hypersim_vitl_fp32.safetensors
+          en_US: Depth Anything Hypersim
         value: depth_anything_v2_metric_hypersim_vitl_fp32.safetensors
       - label:
-          en_US: depth_anything_v2_metric_vkitti_vitl_fp32.safetensors
+          en_US: Depth Anything VKITTI
         value: depth_anything_v2_metric_vkitti_vitl_fp32.safetensors
+      - label:
+          en_US: Depth Pro FP16
+        value: depth_pro_fp16
+      - label:
+          en_US: Depth Pro FP32
+        value: depth_pro_fp32
+      - label:
+          en_US: FaceSwap
+        value: face_swap

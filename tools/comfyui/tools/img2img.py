@@ -9,27 +9,9 @@ from dify_plugin.entities.tool import (
 )
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin import Tool
-
+from tools.comfyui_workflow import ComfyUiWorkflow
 
 from tools.comfyui_client import ComfyUiClient, FileType
-
-SD_TXT2IMG_OPTIONS = {}
-LORA_NODE = {
-    "inputs": {
-        "lora_name": "",
-        "strength_model": 1,
-        "strength_clip": 1,
-        "model": ["11", 0],
-        "clip": ["11", 1],
-    },
-    "class_type": "LoraLoader",
-    "_meta": {"title": "Load LoRA"},
-}
-FluxGuidanceNode = {
-    "inputs": {"guidance": 3.5, "conditioning": ["6", 0]},
-    "class_type": "FluxGuidance",
-    "_meta": {"title": "FluxGuidance"},
-}
 
 
 class ModelType(Enum):
@@ -138,53 +120,31 @@ class ComfyuiImg2Img(Tool):
         """
         generate image
         """
-        if not SD_TXT2IMG_OPTIONS:
-            current_dir = os.path.dirname(os.path.realpath(__file__))
-            with open(os.path.join(current_dir, "json", "img2img.json")) as file:
-                SD_TXT2IMG_OPTIONS.update(json.load(file))
-        workflow_json = deepcopy(SD_TXT2IMG_OPTIONS)
-        sampler_node = workflow_json["3"]
-        prompt_node = workflow_json["6"]
-        negative_prompt_node = workflow_json["7"]
-        sampler_node["inputs"]["steps"] = steps
-        sampler_node["inputs"]["sampler_name"] = sampler_name
-        sampler_node["inputs"]["scheduler"] = scheduler
-        sampler_node["inputs"]["cfg"] = cfg
-        sampler_node["inputs"]["denoise"] = denoise
-        sampler_node["inputs"]["seed"] = random.randint(0, 100000000)
-        prompt_node["inputs"]["text"] = prompt
-        negative_prompt_node["inputs"]["text"] = negative_prompt
+        with open(os.path.join(current_dir, "json", "img2img.json")) as file:
+            workflow = ComfyUiWorkflow(file.read())
+        workflow.set_Ksampler(
+            workflow.identify_node_by_class_type("KSampler"),
+            steps,
+            sampler_name,
+            scheduler,
+            cfg,
+            denoise,
+            random.randint(0, 100000000),
+        )
+        workflow.set_prompt("6", prompt)
+        workflow.set_prompt("7", negative_prompt)
+        workflow.set_model_loader(None, model)
+        workflow.set_image_names([image_name])
 
-        workflow_json["14"]["inputs"]["ckpt_name"] = model
-        workflow_json["10"]["inputs"]["image"] = image_name
-
-        lora_start_id = 100
-        lora_end_id = lora_start_id + len(lora_list) - 1
         for i, lora_name in enumerate(lora_list):
             try:
                 strength = lora_strength_list[i]
             except:
                 strength = 1.0
-            lora_node = deepcopy(LORA_NODE)
-            lora_node["inputs"]["lora_name"] = lora_name
-            lora_node["inputs"]["strength_model"] = strength
-            lora_node["inputs"]["strength_clip"] = strength
-            lora_node["inputs"]["model"][0] = str(lora_start_id + i - 1)
-            lora_node["inputs"]["clip"][0] = str(lora_start_id + i - 1)
-            workflow_json[str(lora_start_id + i)] = lora_node
-        if len(lora_list) > 0:
-            workflow_json[str(lora_start_id)]["inputs"]["model"][0] = sampler_node[
-                "inputs"
-            ]["model"][0]
-            workflow_json[str(lora_start_id)]["inputs"]["clip"][0] = prompt_node[
-                "inputs"
-            ]["clip"][0]
-            sampler_node["inputs"]["model"][0] = str(lora_end_id)
-            prompt_node["inputs"]["clip"][0] = str(lora_end_id)
-            negative_prompt_node["inputs"]["clip"][0] = str(lora_end_id)
+            workflow.add_lora_node("3", "6", "7", lora_name, strength, strength)
 
         try:
-            output_images = self.comfyui.generate(workflow_json)
+            output_images = self.comfyui.generate(workflow.get_json())
         except Exception as e:
             raise ToolProviderCredentialValidationError(
                 f"Failed to generate image: {str(e)}"
@@ -197,3 +157,4 @@ class ComfyuiImg2Img(Tool):
                     "mime_type": img["mime_type"],
                 },
             )
+        yield self.create_json_message(workflow.get_json())

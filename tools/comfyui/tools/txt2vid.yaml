@@ -5,44 +5,66 @@ description:
     pt_BR:
       Image to video model. Supports Stable Video Diffusion(SVD) only.
     zh_Hans: 一个预定义的 ComfyUI 工作流，可以使用一个模型和最多3个loras来生成图像。支持包含文本编码器/clip的SD1.5、SDXL、SD3和FLUX，但不支持需要clip加载器的模型。
-    ja_JP: 画像toビデオ。Stable Video Diffusion(SVD) のみサポートしています。
+    ja_JP: テキストtoビデオ。Stable Video Diffusion(SVD) のみサポートしています。
   llm: generates video from image
 extra:
   python:
-    source: tools/img2vid.py
+    source: tools/txt2vid.py
 identity:
   author: yt-koike
   label:
-    en_US: Img2Vid
-    pt_BR: Img2Vid
+    en_US: Txt2Vid
+    pt_BR: Txt2Vid
     zh_Hans: 图像到视频
-    ja_JP: 画像toビデオ
-  name: img2vid
+    ja_JP: テキストtoビデオ
+  name: txt2vid
 
 parameters:
-  - name: images
+  - name: prompt
     form: llm
-    label:
-      en_US: Input Image
-      zh_Hans: 输入的图片
-      ja_JP: 入力画像
-    llm_description:
-      The input image, used to transfer to the comfyui workflow to generate
-      another image.
-      If input is array of image, the first one will be used.
     human_description:
-      en_US: The input image
-      zh_Hans: 输入的图片
-      ja_JP: 入力画像
+      en_US:
+        Image prompt, you can check the official documentation of Stable Diffusion
+        or FLUX
+      pt_BR:
+        Image prompt, you can check the official documentation of Stable Diffusion
+        or FLUX
+      zh_Hans: 图像提示词，您可以查看 Stable Diffusion 或者 FLUX 的官方文档
+      ja_JP: プロンプト
+    label:
+      en_US: Prompt
+      pt_BR: Prompt
+      zh_Hans: 提示词
+      ja_JP: プロンプト
+    llm_description:
+      Image prompt of Stable Diffusion, you should describe the image
+      you want to generate as a list of words as possible as detailed, the prompt must
+      be written in English.
     required: true
-    type: files
+    type: string
+
+  - name: negative_prompt
+    default: bad art, ugly, deformed, watermark, duplicated, discontinuous lines
+    form: llm
+    human_description:
+      en_US: Negative prompt
+      pt_BR: Negative prompt
+      zh_Hans: Negative prompt
+      ja_JP: ネガティブプロンプト
+    label:
+      en_US: Negative prompt
+      pt_BR: Negative prompt
+      zh_Hans: Negative prompt
+      ja_JP: ネガティブプロンプト
+    required: false
+    type: string
 
   #- name: model
   #  form: llm
   #  label:
-  #    en_US: Img2Vid Model Name
+  #    en_US: Txt2Vid Model Name
   #  human_description:
-  #    en_US: Img2Vid Model Name. If omitted, default model will be downloaded.
+  #    en_US: Txt2Vid Model Name. If omitted, default model will be downloaded.
   #  required: false
   #  type: string
 
@@ -70,11 +92,12 @@ parameters:
           en_US: LTXV
         value: ltxv
       - label:
-          en_US: Stable Video Diffusion
-        value: svd
+          en_US: Mochi
+        value: mochi
       - label:
-          en_US: Stable Video Diffusion XT
-        value: svd_xt
+          en_US: Hunyuan
+        value: hunyuan
+
 
   - name: memory_usage
     form: form
@@ -94,6 +117,7 @@ parameters:
           en_US: Minimal
         value: minimal
      
+
   - name: fps
     default: 6
     form: llm
@@ -157,6 +181,36 @@ parameters:
   #  required: false
   #  type: number
 
+
+  - name: width
+    form: llm
+    human_description:
+      en_US: Width
+      pt_BR: Width
+      zh_Hans: Width
+      ja_JP: 画像幅
+    label:
+      en_US: Width
+      pt_BR: Width
+      zh_Hans: Width
+      ja_JP: 画像幅
+    required: true
+    type: number
+
+  - name: height
+    form: llm
+    human_description:
+      en_US: Height
+      pt_BR: Height
+      zh_Hans: Height
+      ja_JP: 画像高さ
+    label:
+      en_US: Height
+      pt_BR: Height
+      zh_Hans: Height
+      ja_JP: 画像高さ
+    required: true
+    type: number
   #- name: cfg
   #  default: 2.5
   #  form: llm
@@ -170,20 +224,6 @@ parameters:
   #    pt_BR: CFG Scale
   #    zh_Hans: CFG Scale
   #    ja_JP: CFG スケール
-  #  required: false
-  #  type: number
-
-  #- name: denoise
-  #  default: 1.0
-  #  form: llm
-  #  human_description:
-  #    en_US: Denoise Ratio
-  #    pt_BR: Denoise Ratio
-  #    zh_Hans: Denoise Ratio
-  #  label:
-  #    en_US: Denoise Ratio
-  #    pt_BR: Denoise Ratio
-  #    zh_Hans: Denoise Ratio
   #  required: false
   #  type: number
 

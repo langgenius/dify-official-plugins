@@ -38,6 +38,22 @@ class ComfyUiClient:
             headers["Authorization"] = f"Bearer {self.api_key}"
         return headers
 
+    def get_model_dirs(self) -> list[str]:
+        """
+        get checkpoints
+        """
+        try:
+            api_url = str(self.base_url / "models")
+            response = httpx.get(
+                url=api_url, timeout=(2, 10), headers=self._get_headers()
+            )  # Add headers
+            if response.status_code != 200:
+                return []
+            else:
+                return response.json()
+        except Exception as e:
+            return []
+
     def get_checkpoints(self) -> list[str]:
         """
         get checkpoints
@@ -303,7 +319,7 @@ class ComfyUiClient:
         history = self.get_history(prompt_id)
         images = []
         for output in history["outputs"].values():
-            for img in output.get("images", []):
+            for img in output.get("images", []) + output.get("gifs", []):
                 image_data = self.get_image(
                     img["filename"], img["subfolder"], img["type"]
                 )
@@ -381,7 +397,12 @@ class ComfyUiClient:
                     pass
         return output_images
 
-    def download_model(self, url, save_dir, filename=None, token=None):
+    def download_model(self, url, save_dir, filename=None, token=None) -> str:
+        if save_dir not in self.get_model_dirs():
+            raise ToolProviderCredentialValidationError(
+                f"Model directory {save_dir} does not exist."
+            )
+
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "download.json")) as file:
             workflow_json = json.loads(file.read())
@@ -389,9 +410,8 @@ class ComfyUiClient:
         workflow_json["1"]["inputs"]["url"] = url
         workflow_json["1"]["inputs"]["save_to"] = save_dir
         if filename is None:
-            workflow_json["1"]["inputs"]["filename"] = url.split("/")[-1].split("?")[0]
-        else:
-            workflow_json["1"]["inputs"]["filename"] = filename
+            filename = url.split("/")[-1].split("?")[0]
+        workflow_json["1"]["inputs"]["filename"] = filename
         if token is None:
             workflow_json["1"]["inputs"]["token"] = ""
         else:
@@ -404,9 +424,13 @@ class ComfyUiClient:
             workflow_json["1"]["inputs"]["url"],
             headers=headers,
         )
-        if response.status_code >= 400:
+        if response.status_code == 401:
             raise ToolProviderCredentialValidationError(
-                "Download failed. Please check URL and api_token."
+                f"401 Unauthorized. Please check the api_token."
+            )
+        elif response.status_code >= 400:
+            raise ToolProviderCredentialValidationError(
+                f"Download failed. Error {response.status_code}. Please check the URL."
             )
 
         try:
@@ -415,3 +439,22 @@ class ComfyUiClient:
             raise ToolProviderCredentialValidationError(
                 f"Failed to download: {str(e)}. Please make sure https://github.com/ServiceStack/comfy-asset-downloader works on ComfyUI"
             )
+
+        return filename
+
+    def convert_webp2mp4(self, webp_blob, fps):
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        with open(os.path.join(current_dir, "json", "webp2mp4.json")) as file:
+            workflow_json = json.loads(file.read())
+
+        uploaded_image = self.upload_image("input.webp", webp_blob, "image/webp")
+        workflow_json["25"]["inputs"]["frame_rate"] = fps
+        workflow_json["28"]["inputs"]["image"] = uploaded_image
+
+        try:
+            output_files = self.generate(workflow_json)
+        except Exception as e:
+            raise ToolProviderCredentialValidationError(
+                f"Failed to download: {str(e)}. Please make sure https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite works on ComfyUI"
+            )
+        return output_files[0]

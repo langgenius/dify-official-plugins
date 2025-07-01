@@ -12,7 +12,7 @@ from dify_plugin.entities.tool import (
 )
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin import Tool
-
+from tools.comfyui_workflow import ComfyUiWorkflow
 from tools.comfyui_client import ComfyUiClient
 
 LORA_NODE = {
@@ -106,79 +106,65 @@ class ComfyuiTxt2Img(Tool):
                 current_dir, "json", "txt2img_hiresfix.json"
             )
         with open(workflow_template_path) as file:
-            workflow_json = json.load(file)
+            workflow = ComfyUiWorkflow(file.read())
 
-        sampler_node = workflow_json["3"]
-        prompt_node = workflow_json["6"]
-        negative_prompt_node = workflow_json["7"]
-        sampler_node["inputs"]["steps"] = steps
-        sampler_node["inputs"]["sampler_name"] = sampler_name
-        sampler_node["inputs"]["scheduler"] = scheduler
-        sampler_node["inputs"]["cfg"] = cfg
-        sampler_node["inputs"]["seed"] = random.randint(0, 100000000)
-        workflow_json["4"]["inputs"]["ckpt_name"] = model
-        workflow_json["5"]["inputs"]["width"] = width
-        workflow_json["5"]["inputs"]["height"] = height
-        prompt_node["inputs"]["text"] = prompt
-        negative_prompt_node["inputs"]["text"] = negative_prompt
+        workflow.set_Ksampler(
+            None,
+            steps,
+            sampler_name,
+            scheduler_name,
+            cfg,
+            1.0,
+            random.randint(0, 100000000),
+            node_id="3",
+        )
+        workflow.set_model_loader(None, model)
+        workflow.set_property("6", "inputs/text", prompt)
+        workflow.set_property("7", "inputs/text", negative_prompt)
 
         if is_hiresfix_enabled:
-            sampler_node2 = workflow_json["11"]
-            sampler_node2["inputs"]["sampler_name"] = sampler_name
-            sampler_node2["inputs"]["scheduler"] = scheduler
-            sampler_node2["inputs"]["steps"] = steps
-            sampler_node2["inputs"]["cfg"] = cfg
-            sampler_node2["inputs"]["denoise"] = tool_parameters.get(
-                "hiresfix_denoise", 0.6
+            workflow.set_Ksampler(
+                steps,
+                sampler_name,
+                scheduler_name,
+                cfg,
+                tool_parameters.get("hiresfix_denoise", 0.6),
+                random.randint(0, 100000000),
+                node_id="11",
             )
 
             hiresfix_size_ratio = tool_parameters.get("hiresfix_size_ratio", 0.5)
-            workflow_json["5"]["inputs"]["width"] = round(width * hiresfix_size_ratio)
-            workflow_json["5"]["inputs"]["height"] = round(height * hiresfix_size_ratio)
-            workflow_json["10"]["inputs"]["width"] = width
-            workflow_json["10"]["inputs"]["height"] = height
-            workflow_json["10"]["inputs"]["upscale_method"] = tool_parameters.get(
-                "hiresfix_upscale_method", "bilinear"
+            workflow.set_empty_latent_image(
+                workflow.identify_node_by_class_type("EmptyLatentImage"),
+                round(width * hiresfix_size_ratio),
+                round(height * hiresfix_size_ratio),
+            )
+
+            workflow.set_property("10", "inputs/width", width)
+            workflow.set_property("10", "inputs/height", height)
+            workflow.set_property(
+                "10",
+                "inputs/upscale_method",
+                tool_parameters.get("hiresfix_upscale_method", "bilinear"),
             )
 
         if model_type in {ModelType.SD3.name, ModelType.FLUX.name}:
-            workflow_json["5"]["class_type"] = "EmptySD3LatentImage"
+            workflow.set_property("5", "class_type", "EmptySD3LatentImage")
 
         # add loras to workflow json
-        lora_start_id = 100
-        lora_end_id = lora_start_id + len(lora_list) - 1
         for i, lora_name in enumerate(lora_list):
             try:
                 strength = lora_strength_list[i]
             except:
                 strength = 1.0
-            lora_node = deepcopy(LORA_NODE)
-            lora_node["inputs"]["lora_name"] = lora_name
-            lora_node["inputs"]["strength_model"] = strength
-            lora_node["inputs"]["strength_clip"] = strength
-            lora_node["inputs"]["model"][0] = str(lora_start_id + i - 1)
-            lora_node["inputs"]["clip"][0] = str(lora_start_id + i - 1)
-            workflow_json[str(lora_start_id + i)] = lora_node
-        if len(lora_list) > 0:
-            workflow_json[str(lora_start_id)]["inputs"]["model"][0] = sampler_node[
-                "inputs"
-            ]["model"][0]
-            workflow_json[str(lora_start_id)]["inputs"]["clip"][0] = prompt_node[
-                "inputs"
-            ]["clip"][0]
-            sampler_node["inputs"]["model"][0] = str(lora_end_id)
-            prompt_node["inputs"]["clip"][0] = str(lora_end_id)
-            negative_prompt_node["inputs"]["clip"][0] = str(lora_end_id)
+            workflow.add_lora_node("3", "6", "7", lora_name, strength, strength)
 
         if model_type == ModelType.FLUX.name:
-            last_node_id = str(10 + len(lora_list))
-            workflow_json[last_node_id] = deepcopy(FluxGuidanceNode)
-            workflow_json[last_node_id]["inputs"]["conditioning"][0] = "6"
-            workflow_json["3"]["inputs"]["positive"][0] = last_node_id
+            workflow.add_flux_guidance("3", 3.5)
 
         # send a query to ComfyUI
         try:
-            output_images = self.comfyui.generate(workflow_json)
+            output_images = self.comfyui.generate(workflow.get_json())
         except Exception as e:
             raise ToolProviderCredentialValidationError(
                 f"Failed to generate image: {str(e)}"
@@ -191,7 +177,7 @@ class ComfyuiTxt2Img(Tool):
                     "mime_type": img["mime_type"],
                 },
             )
-        yield self.create_json_message(workflow_json)
+        yield self.create_json_message(workflow.get_json())
 
     def get_runtime_parameters(self) -> list[ToolParameter]:
         parameters = [

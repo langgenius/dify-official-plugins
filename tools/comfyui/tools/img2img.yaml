@@ -138,7 +138,7 @@ parameters:
 
   - name: sampler_name
     form: llm
-    default: eular
+    default: euler
     human_description:
       en_US: Sampling method
       pt_BR: Sampling method
