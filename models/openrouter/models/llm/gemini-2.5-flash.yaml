@@ -45,6 +45,31 @@ parameter_rules:
     options:
       - text
       - json_object
+  - name: enable_thinking
+    required: false
+    type: string
+    default: manual
+    label:
+      zh_Hans: 思考模式
+      en_US: Thinking mode
+    help:
+      zh_Hans: 是否开启思考模式。
+      en_US: Whether to enable thinking mode.
+    options:
+      - dynamic
+      - disabled
+      - manual
+  - name: reasoning_budget
+    label:
+      zh_Hans: 思考预算
+      en_US: Reasoning budget
+    type: int
+    help:
+      zh_Hans: 思考预算，单位为 token
+      en_US: Reasoning budget, in tokens
+    required: false
+    min: 0
+    max: 24576
 pricing:
   input: "0.3"
   output: "2.5"
