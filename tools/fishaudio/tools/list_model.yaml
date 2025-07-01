@@ -1,0 +1,139 @@
+identity:
+  name: list_model
+  author: langgenius
+  label:
+    en_US: List all models
+    zh_Hans: 列出发音人
+description:
+  human:
+    en_US: List all models
+    zh_Hans: 列出发音人
+  llm: A tool to list all models using the Fish Audio API
+
+parameters:
+  - name: page_size
+    type: number
+    required: true
+    default: 10
+    label:
+      en_US: Page Size
+      zh_Hans: 每页数量
+    human_description:
+      en_US: Number of items per page
+      zh_Hans: 每页显示的模型数量
+    llm_description: Number of models per page
+    form: llm
+    min: 1
+
+  - name: page_number
+    type: number
+    required: true
+    default: 1
+    label:
+      en_US: Page Number
+      zh_Hans: 页码
+    human_description:
+      en_US: Page number to retrieve
+      zh_Hans: 当前页码
+    llm_description: Page number to retrieve
+    form: llm
+    min: 1
+
+  - name: title
+    type: string
+    required: false
+    label:
+      en_US: Title Filter
+      zh_Hans: 标题筛选
+    human_description:
+      en_US: Filter models by title
+      zh_Hans: 通过标题筛选模型
+    llm_description: Title to filter models
+    form: llm
+
+  - name: tag
+    type: string
+    required: false
+    label:
+      en_US: Tag
+      zh_Hans: 标签
+    human_description:
+      en_US: Filter by tag (comma-separated if multiple)
+      zh_Hans: 通过标签筛选（多个用英文逗号分隔）
+    llm_description: Filter by tag(s)
+    form: llm
+
+  - name: self_only
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Only My Models
+      zh_Hans: 仅私有模型
+    human_description:
+      en_US: Whether to show only your private models
+      zh_Hans: 是否只显示你的私有模型
+    llm_description: Show only models created by yourself
+    form: form
+
+  - name: author_id
+    type: string
+    required: false
+    label:
+      en_US: Author ID
+      zh_Hans: 作者ID
+    human_description:
+      en_US: Filter by specific author ID
+      zh_Hans: 通过指定作者 ID 进行筛选
+    llm_description: Filter by author ID
+    form: llm
+
+  - name: language
+    type: string
+    required: false
+    label:
+      en_US: Language
+      zh_Hans: 语言
+    human_description:
+      en_US: Filter by supported language(s)
+      zh_Hans: 根据支持的语言筛选
+    llm_description: Filter by supported language(s)
+    form: llm
+
+  - name: title_language
+    type: string
+    required: false
+    label:
+      en_US: Title Language
+      zh_Hans: 标题语言
+    human_description:
+      en_US: Filter by title's language
+      zh_Hans: 通过标题的语言筛选
+    llm_description: Filter by title's language
+    form: llm
+
+  - name: sort_by
+    type: select
+    required: false
+    default: task_count
+    label:
+      en_US: Sort By
+      zh_Hans: 排序方式
+    options:
+      - label:
+          en_US: Task Count
+          zh_Hans: 任务数
+        value: task_count
+      - label:
+          en_US: Created Time
+          zh_Hans: 创建时间
+        value: created_at
+    human_description:
+      en_US: Sort models by task count or creation time
+      zh_Hans: 根据任务数或创建时间排序
+    llm_description: Sorting method
+    form: form
+
+extra:
+  python:
+    source: tools/list_model.py
