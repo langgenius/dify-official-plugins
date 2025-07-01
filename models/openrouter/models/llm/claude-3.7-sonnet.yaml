@@ -64,6 +64,17 @@ parameter_rules:
     help:
       zh_Hans: 启用长达128K标记的输出能力。
       en_US: Enable capability for up to 128K output tokens.
+  - name: reasoning_budget
+    label:
+      zh_Hans: 思考预算
+      en_US: Reasoning budget
+    type: int
+    help:
+      zh_Hans: 思考预算，单位为 token
+      en_US: Reasoning budget, in tokens
+    required: false
+    min: 1024
+    max: 64000
 pricing:
   input: "3.00"
   output: "15.00"
