@@ -32,7 +32,7 @@ class GoogleCloudStorageDataSource(OnlineDriveDatasource):
         client = storage.Client(credentials=creds)
         blobs = client.list_blobs(bucket_name, prefix=prefix, max_results=max_keys, start_offset=start_after)
         is_truncated = blobs.next_page_token is not None
-        pages = [OnlineDriveFile(key=blob.name, size=blob.size) for blob in blobs]
+        pages = [OnlineDriveFile(key=blob.name, size=blob.size) for blob in blobs if not blob.name.endswith('/')]
 
         file_bucket = OnlineDriveFileBucket(bucket=bucket_name, files=pages, is_truncated=is_truncated)
         return [file_bucket]
