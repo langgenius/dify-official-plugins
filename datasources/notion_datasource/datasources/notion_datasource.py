@@ -21,7 +21,7 @@ class NotionDataSource(OnlineDocumentDatasource):
     _NOTION_BOT_USER = "https://api.notion.com/v1/users/me"
 
     def _get_pages(
-        self, datasource_parameters: dict[str, Any]
+            self, datasource_parameters: dict[str, Any]
     ) -> Generator[OnlineDocumentPagesMessage, None, None]:
         # Get integration token from credentials
         access_token = self.runtime.credentials.get("integration_secret")
@@ -40,11 +40,10 @@ class NotionDataSource(OnlineDocumentDatasource):
             total=len(pages),
         )
         print(datasource_parameters)
-        yield self.create_pages_message(pages = [online_document_info])
-
+        yield self.create_pages_message(pages=[online_document_info])
 
     def _get_content(
-        self, page: GetOnlineDocumentPageContentRequest
+            self, page: GetOnlineDocumentPageContentRequest
     ) -> Generator[DataSourceMessage, None, None]:
         access_token = self.runtime.credentials.get("integration_secret")
         if not access_token:
@@ -63,8 +62,6 @@ class NotionDataSource(OnlineDocumentDatasource):
         yield self.create_variable_message("content", online_document_res['content'])
         yield self.create_variable_message("page_id", online_document_res['page_id'])
         yield self.create_variable_message("workspace_id", online_document_res['workspace_id'])
-
-
 
     def notion_workspace_name(self, access_token: str):
         headers = {
