@@ -86,7 +86,7 @@ parameters:
       pt_BR: Model Name
       zh_Hans: 模型名称
       ja_JP: モデル名
-    required: true
+    required: false
     type: string
 
   - name: steps

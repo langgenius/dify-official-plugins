@@ -64,7 +64,7 @@ parameters:
     type: string
   - form: llm
     human_description:
-      en_US: Model Name
+      en_US: Model Name. If omitted, the default model will be installed.
       pt_BR: Model Name
       zh_Hans: 模型名称
       ja_JP: モデル名
@@ -74,15 +74,16 @@ parameters:
       zh_Hans: 模型名称
       ja_JP: モデル名
     name: model
-    required: true
+    required: false
     type: string
-  - form: llm
+
+  - name: ecosystem
+    form: llm
     human_description:
       en_US: Ecosystem of the model. For example, sdxl, flux1 and sd1.
     label:
       en_US: Ecosystem
-    name: ecosystem
-    required: true
+    required: false
     type: string
 
   - name: steps

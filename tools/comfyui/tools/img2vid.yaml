@@ -1,9 +1,8 @@
 description:
   human:
-    en_US: Image to video model. Supports Stable Video Diffusion(SVD) only.
-    pt_BR: Image to video model. Supports Stable Video Diffusion(SVD) only.
+    en_US: Image to video model. Supports Wan2.1, LTXV and Stable Video Diffusion(SVD).
     zh_Hans: 一个预定义的 ComfyUI 工作流，可以使用一个模型和最多3个loras来生成图像。支持包含文本编码器/clip的SD1.5、SDXL、SD3和FLUX，但不支持需要clip加载器的模型。
-    ja_JP: 画像toビデオ。Stable Video Diffusion(SVD) のみサポートしています。
+    ja_JP: 画像toビデオ。Wan2.1 と LTXV，Stable Video Diffusion(SVD) をサポートしています。
   llm: generates video from image
 extra:
   python:
