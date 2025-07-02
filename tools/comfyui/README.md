@@ -4,6 +4,8 @@
 
 [ComfyUI](https://www.comfy.org/) is the most powerful and modular diffusion model GUI, API and backend with a graph/nodes interface. Now you can use it in Dify, input the prompt or images, and get the generated image.
 
+It is highly recommended to install [comfy-asset-downloader](https://github.com/ServiceStack/comfy-asset-downloader.git) on your ComfyUI server as this plugin needs it to download models automatically.
+
 ## Configuration
 
 ### 1. Ensure that the ComfyUI workflow is running normally
@@ -48,9 +50,9 @@ Some ComfyUI workflows require multiple images inputs. In Dify, it will find eve
 
 ![](./_assets/nodes.png)
 
-### workflow
+### Workflow
 
-workflow node is Basic node for ComfyUI.
+Workflow node is a basic node for ComfyUI.
 You can set any ComfyUI node settings by inputting JSON to this node.
 
 ### Txt2Img
@@ -60,6 +62,10 @@ If you want to generate large images(typically 1600x1600 or bigger), HiresFix op
 It generates a small and consistent image then upscale it.
 Without HiresFix, large images tend to have unnaturally duplicated objects and artifacts.
 
+### Txt2Vid
+
+Txt2Vid node can generate an video from texts(prompt and negative prompt).
+
 ### Img2Img
 
 Img2Img node can edit an given image according to prompt and negative prompt.
@@ -67,32 +73,27 @@ Img2Img node can edit an given image according to prompt and negative prompt.
 ### Img2Vid
 
 Img2Vid node can generate an video from an given image.
-You need to install [SVD model](https://huggingface.co/stabilityai/stable-video-diffusion-img2vid) or [SVD XT model](https://huggingface.co/stabilityai/stable-video-diffusion-img2vid-xt) to ComfyUI in advance. [Hugging Face Download node](#hugging-face-download) would be helpful to 
-download them.
 
-### Upscale
 
-Upscale node can enlarge an given image with models. 
+### Image Edit
 
-### Depth Anything
+Image Edit node takes images and edits them in a various way.
 
-Depth Anything node can perform monocular depth estimation.
-You need to install https://github.com/kijai/ComfyUI-DepthAnythingV2 to ComfyUI in advance.
+The following features are supported.
+* Depth Anything: Performs monocular depth estimation.
+* Depth Pro: Performs monocular depth estimation.
+* Faceswap: Extracts a face on the first image and infuse it to the second image.
+* Upscale ESRGAN x4: Enlarges an given image with models by 4 (512x512 -> 2048x2048). 
 
-### Depth Pro
-
-Depth Pro node can perform monocular depth estimation.
-You need to install https://github.com/spacepxl/ComfyUI-Depth-Pro to ComfyUI in advance.
-
-### Face Swap
-
-Face Swap node can extract a face on the first image and infuse it to the second image.
-You need to install https://github.com/Gourieff/ComfyUI-ReActor to ComfyUI in advance.
+Some features require addons for ComfyUI. You need to install them to ComfyUI in advance.
+* Depth Anything: https://github.com/kijai/ComfyUI-DepthAnythingV2
+* Depth Pro: https://github.com/spacepxl/ComfyUI-Depth-Pro
+* Faceswap: https://github.com/Gourieff/ComfyUI-ReActor
+* Upscale ESRGAN x4: No addons required
 
 ### List Models
 
-List Models can fetch all models available on the connected ComfyUI.
-Those models include checkpoints, LORAs and upscale models.
+List Models can fetch all the names of the models available on the connected ComfyUI.
 
 ### List Samplers
 
@@ -126,5 +127,29 @@ You need to install https://github.com/ServiceStack/comfy-asset-downloader to Co
 Download By JSON node can download models specified by ComfyUI's workflow json.
 More specifically, it downloads all the models listed in "properties":{"models": [...]} in every node.
 It needs a JSON file exported with "Export", not "Export (API)".
-
 You need to install https://github.com/ServiceStack/comfy-asset-downloader to ComfyUI in advance.
+
+## Prebuild Docker Image
+
+If you don't know how to host ComfyUI, a [prebuilt docker image](https://hub.docker.com/r/l125/comfyui-for-dify) would help you.
+It has [ComfyUI](https://github.com/comfyanonymous/ComfyUI) itself and all the required packages for this plugin.
+
+All you need to start a ComfyUI server is to type the following command on a server with docker and a GPU installed.
+```
+docker run --gpus all -p 8188:8188 l125/comfyui-for-dify:v0.2.0
+```
+
+If you want to save large models to somewhere other than the system disk, say "/mnt/hdd/models", you can use -v option.
+```
+docker run -v /mnt/hdd/models:/ComfyUI/models --gpus all -p 8188:8188 l125/comfyui-for-dify:v0.2.0
+```
+
+Specifically, the docker image contains the following packages.
+
+* https://github.com/comfyanonymous/ComfyUI: ComfyUI
+* https://github.com/ltdrdata/ComfyUI-Manager: Manager for ComfyUI. helps you to install ComfyUI addons.
+* https://github.com/ServiceStack/comfy-asset-downloader.git: Asset downloader for ComfyUI
+* https://github.com/kijai/ComfyUI-DepthAnythingV2.git: Addon for Depth Anything
+* https://github.com/spacepxl/ComfyUI-Depth-Pro.git: Addon for Depth Pro
+* https://github.com/Gourieff/ComfyUI-ReActor.git: Addon for Faceswap
+* https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git: Addon for converting WEBP to MP4
