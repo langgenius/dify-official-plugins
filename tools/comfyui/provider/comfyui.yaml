@@ -52,14 +52,12 @@ identity:
   tags:
     - image
 tools:
-  - tools/workflow.yaml
+  - tools/run_workflow.yaml
   - tools/txt2img.yaml
+  - tools/txt2vid.yaml
   - tools/img2img.yaml
   - tools/img2vid.yaml
-  - tools/upscale.yaml
-  - tools/depth_anything.yaml
-  - tools/depth_pro.yaml
-  - tools/face_swap.yaml
+  - tools/image_edit.yaml
   - tools/list_models.yaml
   - tools/list_samplers.yaml
   - tools/image_info.yaml
