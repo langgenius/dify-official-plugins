@@ -1,4 +1,4 @@
-model: bce-reranker-base_v1
+model: bce-reranker-base
 model_type: rerank
 model_properties:
   context_size: 4096
