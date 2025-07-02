@@ -71,5 +71,5 @@ parameters:
           en_US: FaceSwap
         value: face_swap
       - label:
-          en_US: Upscale ESRGAN
-        value: upscale_esrgan
+          en_US: Upscale ESRGAN x4
+        value: upscale_esrgan_x4
