@@ -1,14 +1,7 @@
-import json
-import os
-import uuid
-
 from typing import Any, Generator
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
-
 import httpx
-import requests
-import requests
 from tools.comfyui_client import ComfyUiClient
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
@@ -22,10 +15,12 @@ class DownloadCivitAI(Tool):
         """
         base_url = self.runtime.credentials.get("base_url")
         if base_url is None:
-            raise ToolProviderCredentialValidationError("Please input base_url")
+            raise ToolProviderCredentialValidationError(
+                "Please input base_url")
         civitai_api_key = self.runtime.credentials.get("civitai_api_key")
         if civitai_api_key is None:
-            raise ToolProviderCredentialValidationError("Please input civitai_api_key")
+            raise ToolProviderCredentialValidationError(
+                "Please input civitai_api_key")
         self.comfyui = ComfyUiClient(base_url)
 
         model_id = tool_parameters.get("model_id")
@@ -38,7 +33,8 @@ class DownloadCivitAI(Tool):
 
             model_name_human = model_data["name"]
         except:
-            raise ToolProviderCredentialValidationError(f"Model {model_id} not found.")
+            raise ToolProviderCredentialValidationError(
+                f"Model {model_id} not found.")
         if "error" in model_data:
             raise ToolProviderCredentialValidationError(model_data["error"])
         if version_id is None:
@@ -67,3 +63,16 @@ class DownloadCivitAI(Tool):
         )
         yield self.create_variable_message("model_name_human", model_name_human)
         yield self.create_variable_message("model_name", model_filenames[0])
+
+        air = ""
+        ecosystem, model_type, source = "", "", ""
+        try:
+            air: str = httpx.get(
+                f"https://civitai.com/api/v1/model-versions/{version_id}").json()["air"]
+            ecosystem, model_type, source = air.split(":")[2:5]
+        except:
+            pass
+        yield self.create_variable_message("air", air)
+        yield self.create_variable_message("ecosystem", ecosystem)
+        yield self.create_variable_message("type", model_type)
+        yield self.create_variable_message("source", source)

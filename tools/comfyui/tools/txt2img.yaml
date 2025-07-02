@@ -64,7 +64,7 @@ parameters:
     type: string
   - form: llm
     human_description:
-      en_US: Model Name
+      en_US: Model Name. If omitted, the default model will be installed.
       pt_BR: Model Name
       zh_Hans: 模型名称
       ja_JP: モデル名
@@ -74,21 +74,16 @@ parameters:
       zh_Hans: 模型名称
       ja_JP: モデル名
     name: model
-    required: true
+    required: false
     type: string
-  - form: llm
+
+  - name: ecosystem
+    form: llm
     human_description:
-      en_US: Model Type
-      pt_BR: Model Type
-      zh_Hans: 模型类型
-      ja_JP: モデルタイプ
+      en_US: Ecosystem of the model. For example, sdxl, flux1 and sd1.
     label:
-      en_US: Model Type
-      pt_BR: Model Type
-      zh_Hans: 模型类型
-      ja_JP: モデルタイプ
-    name: model_type
-    required: true
+      en_US: Ecosystem
+    required: false
     type: string
 
   - name: steps
@@ -165,7 +160,7 @@ parameters:
       zh_Hans: Sampling method
       ja_JP: サンプリング手法
     name: sampler_name
-    required: false
+    required: true
     type: string
   - form: llm
     default: normal
@@ -180,7 +175,7 @@ parameters:
       zh_Hans: Scheduler
       ja_JP: スケジューラー
     name: scheduler
-    required: false
+    required: true
     type: string
 
   - name: lora_names

@@ -107,3 +107,20 @@ output_schema:
         en_US: Model Name
         zh_Hans: 型号名称
         ja_JP: モデル名
+    air:
+      type: string
+      label:
+        en_US: AIR
+    ecosystem:
+      type: string
+      label:
+        en_US: Ecosystem
+        ja_JP: エコシステム
+    type:
+      type: string
+      label:
+        en_US: Type
+    source:
+      type: string
+      label:
+        en_US: Source
