@@ -1,18 +1,13 @@
 import dataclasses
-import io
-import json
 import os
 import random
-from enum import Enum
-
 from typing import Any, Generator
 from dify_plugin.entities.tool import (
     ToolInvokeMessage,
 )
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin import Tool
-from PIL import Image
-from tools.comfyui_client import ComfyUiClient, FileType
+from tools.comfyui_client import ComfyUiClient
 from tools.comfyui_workflow import ComfyUiWorkflow
 
 
