@@ -14,7 +14,7 @@ from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin import Tool
 from PIL import Image
 from tools.comfyui_client import ComfyUiClient, FileType
-
+from tools.comfyui_workflow import ComfyUiWorkflow
 LORA_NODE = {
     "inputs": {
         "lora_name": "",
@@ -42,6 +42,7 @@ class ModelType(Enum):
 
 @dataclasses.dataclass(frozen=False)
 class ComfyuiImg2VidConfig:
+    model_name: str
     width: int
     height: int
     fps: int
@@ -131,7 +132,12 @@ class ComfyuiImg2Vid(Tool):
         elif model_type == "svd":
             output_images = self.img2vid_svd(config)
         elif model_type == "svd_xt":
-            output_images = self.img2vid_svd_xt(config)
+            config.model_name = self.comfyui.download_model(
+                "https://huggingface.co/stabilityai/stable-video-diffusion-img2vid-xt/resolve/main/svd_xt.safetensors",
+                "checkpoints",
+                token=self.get_hf_key(),
+            )
+            output_images = self.img2vid_svd(config)
 
         for img in output_images:
             if config.output_format == "mp4":
@@ -147,13 +153,15 @@ class ComfyuiImg2Vid(Tool):
     def get_civit_key(self) -> str:
         civitai_api_key = self.runtime.credentials.get("civitai_api_key")
         if civitai_api_key is None:
-            raise ToolProviderCredentialValidationError("Please input civitai_api_key")
+            raise ToolProviderCredentialValidationError(
+                "Please input civitai_api_key")
         return civitai_api_key
 
     def get_hf_key(self) -> str:
         hf_api_key = self.runtime.credentials.get("hf_api_key")
         if hf_api_key is None:
-            raise ToolProviderCredentialValidationError("Please input hf_api_key")
+            raise ToolProviderCredentialValidationError(
+                "Please input hf_api_key")
         return hf_api_key
 
     def img2vid_svd(
@@ -172,64 +180,19 @@ class ComfyuiImg2Vid(Tool):
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "img2vid_svd.json")) as file:
-            workflow_json = json.load(file)
-
-        # workflow_json["3"]["inputs"]["steps"] = config.steps
-        # workflow_json["3"]["inputs"]["sampler_name"] = config.sampler_name
-        # workflow_json["3"]["inputs"]["scheduler"] = config.scheduler_name
-        # workflow_json["3"]["inputs"]["cfg"] = config.cfg
-        # workflow_json["3"]["inputs"]["denoise"] = config.denoise
-        workflow_json["3"]["inputs"]["seed"] = random.randint(0, 100000000)
-        workflow_json["10"]["inputs"]["fps"] = config.fps
-        workflow_json["12"]["inputs"]["width"] = config.width
-        workflow_json["12"]["inputs"]["height"] = config.height
-        workflow_json["12"]["inputs"]["fps"] = config.fps
-        workflow_json["12"]["inputs"]["video_frames"] = config.frameN
-        workflow_json["15"]["inputs"]["ckpt_name"] = config.model_name
-        workflow_json["23"]["inputs"]["image"] = config.image_name
+            workflow = ComfyUiWorkflow(file.read())
+        workflow.set_Ksampler(None, config.steps, config.sampler_name, config.scheduler_name,
+                              config.cfg, config.denoise, random.randint(0, 100000000))
+        workflow.set_animated_webp(None, config.fps)
+        workflow.set_property("12", "inputs/width", config.width)
+        workflow.set_property("12", "inputs/height", config.height)
+        workflow.set_property("12", "inputs/fps", config.fps)
+        workflow.set_property("12", "inputs/video_frames", config.frameN)
+        workflow.set_property("15", "inputs/ckpt_name", config.model_name)
+        workflow.set_image_names([config.image_name])
 
         try:
-            output_images = self.comfyui.generate(workflow_json)
-        except Exception as e:
-            raise ToolProviderCredentialValidationError(
-                f"Failed to generate image: {str(e)}"
-            )
-        return output_images
-
-    def img2vid_svd_xt(
-        self, config: ComfyuiImg2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
-        if config.model_name == "":
-            # download model
-            config.model_name = self.comfyui.download_model(
-                "https://huggingface.co/stabilityai/stable-video-diffusion-img2vid-xt/resolve/main/svd_xt.safetensors",
-                "checkpoints",
-                token=self.get_hf_key(),
-            )
-
-        current_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(current_dir, "json", "img2vid_svd.json")) as file:
-            workflow_json = json.load(file)
-
-        # workflow_json["3"]["inputs"]["steps"] = config.steps
-        # workflow_json["3"]["inputs"]["sampler_name"] = config.sampler_name
-        # workflow_json["3"]["inputs"]["scheduler"] = config.scheduler_name
-        # workflow_json["3"]["inputs"]["cfg"] = config.cfg
-        # workflow_json["3"]["inputs"]["denoise"] = config.denoise
-        workflow_json["3"]["inputs"]["seed"] = random.randint(0, 100000000)
-        workflow_json["10"]["inputs"]["fps"] = config.fps
-        workflow_json["12"]["inputs"]["width"] = config.width
-        workflow_json["12"]["inputs"]["height"] = config.height
-        workflow_json["12"]["inputs"]["fps"] = config.fps
-        workflow_json["12"]["inputs"]["video_frames"] = config.frameN
-        workflow_json["15"]["inputs"]["ckpt_name"] = config.model_name
-        workflow_json["23"]["inputs"]["image"] = config.image_name
-
-        try:
-            output_images = self.comfyui.generate(workflow_json)
+            output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
             raise ToolProviderCredentialValidationError(
                 f"Failed to generate image: {str(e)}"
@@ -267,28 +230,21 @@ class ComfyuiImg2Vid(Tool):
         )
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "img2vid_wan2_1.json")) as file:
-            workflow_json = json.load(file)
-
-        sampler_node = workflow_json["3"]
-        # sampler_node["inputs"]["steps"] = config.steps
-        # sampler_node["inputs"]["sampler_name"] = config.sampler_name
-        # sampler_node["inputs"]["scheduler"] = config.scheduler_name
-        # sampler_node["inputs"]["cfg"] = config.cfg
-        # sampler_node["inputs"]["denoise"] = config.denoise
-        sampler_node["inputs"]["seed"] = random.randint(0, 100000000)
-        wan2vid = workflow_json["50"]
-        wan2vid["inputs"]["width"] = config.width
-        wan2vid["inputs"]["height"] = config.height
-        wan2vid["inputs"]["length"] = config.frameN
-        workflow_json["28"]["inputs"]["fps"] = config.fps
-        workflow_json["37"]["inputs"]["ckpt_name"] = config.model_name
-        workflow_json["37"]["inputs"]["clip_name"] = text_encoder
-        workflow_json["39"]["inputs"]["vae_name"] = vae
-        workflow_json["49"]["inputs"]["clip_name"] = clip_vision
-        workflow_json["52"]["inputs"]["image"] = config.image_name
+            workflow = ComfyUiWorkflow(file.read())
+        workflow.set_Ksampler(None, config.steps, config.sampler_name, config.scheduler_name,
+                              config.cfg, config.denoise, random.randint(0, 100000000))
+        workflow.set_property("50", "inputs/width", config.width)
+        workflow.set_property("50", "inputs/height", config.height)
+        workflow.set_property("50", "inputs/length", config.frameN)
+        workflow.set_animated_webp(None, config.fps)
+        workflow.set_unet(None, config.model_name)
+        workflow.set_clip(None, text_encoder)
+        workflow.set_vae(None, vae)
+        workflow.set_clip_vision(None, clip_vision)
+        workflow.set_image_names([config.image_name])
 
         try:
-            output_images = self.comfyui.generate(workflow_json)
+            output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
             raise ToolProviderCredentialValidationError(
                 f"Failed to generate image: {str(e)}"
@@ -301,6 +257,10 @@ class ComfyuiImg2Vid(Tool):
         """
         generate image
         """
+        if config.frameN < 10:
+            raise ToolProviderCredentialValidationError(
+                "FrameN must be 10 or more for LTXV"
+            )
         if config.model_name == "":
             # download model
             config.model_name = self.comfyui.download_model(
@@ -314,27 +274,21 @@ class ComfyuiImg2Vid(Tool):
             token=self.get_hf_key(),
         )
 
-        if config.frameN < 10:
-            raise ToolProviderCredentialValidationError(
-                "FrameN must be 10 or more for LTXV"
-            )
-
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "img2vid_ltxv.json")) as file:
-            workflow_json = json.load(file)
-
-        ltxv_node = workflow_json["77"]
-        ltxv_node["inputs"]["width"] = config.width
-        ltxv_node["inputs"]["height"] = config.height
-        ltxv_node["inputs"]["length"] = config.frameN
-        workflow_json["38"]["inputs"]["clip_name"] = text_encoder
-        workflow_json["41"]["inputs"]["frame_rate"] = config.fps
-        workflow_json["69"]["inputs"]["frame_rate"] = config.fps
-        workflow_json["72"]["inputs"]["noise_seed"] = random.randint(0, 100000000)
-        workflow_json["78"]["inputs"]["image"] = config.image_name
+            workflow = ComfyUiWorkflow(file.read())
+        workflow.set_property("77", "inputs/width", config.width)
+        workflow.set_property("77", "inputs/height", config.height)
+        workflow.set_property("77", "inputs/length", config.frameN)
+        workflow.set_clip(None, text_encoder)
+        workflow.set_animated_webp(None, config.fps)
+        workflow.set_property("69", "inputs/frame_rate", config.fps)
+        workflow.set_property("72", "inputs/noise_seed",
+                              random.randint(0, 100000000))
+        workflow.set_image_names([config.image_name])
 
         try:
-            output_images = self.comfyui.generate(workflow_json)
+            output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
             raise ToolProviderCredentialValidationError(
                 f"Failed to generate image: {str(e)}"

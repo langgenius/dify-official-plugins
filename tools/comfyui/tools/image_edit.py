@@ -66,7 +66,7 @@ class ComfyuiDepthAnything(Tool):
             workflow.set_property("8", "inputs/image", image_name)
             try:
                 output_images.append(
-                    self.comfyui.generate(workflow.get_json())[0])
+                    self.comfyui.generate(workflow.json())[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
                     f"Failed to generate image: {str(e)}. Maybe install https://github.com/spacepxl/ComfyUI-Depth-Pro on ComfyUI"
@@ -83,7 +83,7 @@ class ComfyuiDepthAnything(Tool):
             workflow.set_property("3", "inputs/image", image_name)
             try:
                 output_images.append(
-                    self.comfyui.generate(workflow.get_json())[0])
+                    self.comfyui.generate(workflow.json())[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
                     f"Failed to generate image: {str(e)}. Maybe install https://github.com/kijai/ComfyUI-DepthAnythingV2 on ComfyUI"
@@ -97,7 +97,7 @@ class ComfyuiDepthAnything(Tool):
         workflow.set_property("15", "inputs/image", image_name1)
         workflow.set_property("22", "inputs/image", image_name2)
         try:
-            output_images = self.comfyui.generate(workflow.get_json())
+            output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
             raise ToolProviderCredentialValidationError(
                 f"Failed to generate image: {str(e)}. Maybe install https://github.com/Gourieff/ComfyUI-ReActor on ComfyUI"
@@ -117,7 +117,7 @@ class ComfyuiDepthAnything(Tool):
             workflow.set_property("16", "inputs/image", image_name)
             try:
                 output_images.append(
-                    self.comfyui.generate(workflow.get_json())[0])
+                    self.comfyui.generate(workflow.json())[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
                     f"Failed to generate image: {str(e)}. Maybe install https://github.com/kijai/ComfyUI-DepthAnythingV2 on ComfyUI"

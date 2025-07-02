@@ -29,7 +29,7 @@ class ComfyUiWorkflow:
     def __str__(self):
         return str(self._workflow_json).replace("'", '"')
 
-    def get_json(self) -> dict:
+    def json(self) -> dict:
         return self._workflow_json
 
     def get_property(self, node_id: str | None, path: str):
@@ -148,6 +148,13 @@ class ComfyUiWorkflow:
             raise Exception(f"Node {node_id} is not CLIPLoader")
         self.set_property(node_id, "inputs/clip_name", clip_name)
 
+    def set_clip_vision(self, node_id: str | None, clip_name: str):
+        if node_id is None:
+            node_id = self.identify_node_by_class_type("CLIPVisionLoader")
+        if self.get_class_type(node_id) != "CLIPVisionLoader":
+            raise Exception(f"Node {node_id} is not CLIPVisionLoader")
+        self.set_property(node_id, "inputs/clip_name", clip_name)
+
     def set_dual_clip(self, node_id: str | None, clip_name1: str, clip_name2: str):
         if node_id is None:
             node_id = self.identify_node_by_class_type("DualCLIPLoader")
@@ -191,6 +198,15 @@ class ComfyUiWorkflow:
         self.set_property(node_id, "inputs/height", height)
         self.set_property(node_id, "inputs/length", length)
         self.set_property(node_id, "inputs/batch_size", batch_size)
+
+    def set_animated_webp(self, node_id: str | None, fps: int, lossless: bool = True):
+        if node_id is None:
+            node_id = self.identify_node_by_class_type("SaveAnimatedWEBP")
+        if self.get_class_type(node_id) != "SaveAnimatedWEBP":
+            raise Exception(f"Node {node_id} is not SaveAnimatedWEBP")
+        self.set_property(node_id, "inputs/fps", fps)
+        self.set_property(node_id, "inputs/lossless",
+                          "true" if lossless else "false")
 
     def add_lora_node(
         self,

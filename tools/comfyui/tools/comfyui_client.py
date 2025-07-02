@@ -38,12 +38,15 @@ class ComfyUiClient:
             headers["Authorization"] = f"Bearer {self.api_key}"
         return headers
 
-    def get_model_dirs(self) -> list[str]:
+    def get_model_dirs(self, path="") -> list[str]:
         """
         get checkpoints
         """
         try:
-            api_url = str(self.base_url / "models")
+            if path == "":
+                api_url = f"{self.base_url}/models"
+            else:
+                api_url = f"{self.base_url}/models/{path}"
             response = httpx.get(
                 url=api_url, timeout=(2, 10), headers=self._get_headers()
             )  # Add headers
@@ -58,49 +61,19 @@ class ComfyUiClient:
         """
         get checkpoints
         """
-        try:
-            api_url = str(self.base_url / "models" / "checkpoints")
-            response = httpx.get(
-                url=api_url, timeout=(2, 10), headers=self._get_headers()
-            )  # Add headers
-            if response.status_code != 200:
-                return []
-            else:
-                return response.json()
-        except Exception as e:
-            return []
+        return self.get_model_dirs("checkpoints")
 
     def get_upscale_models(self) -> list[str]:
         """
         get upscale models
         """
-        try:
-            api_url = str(self.base_url / "models" / "upscale_models")
-            response = httpx.get(
-                url=api_url, timeout=(2, 10), headers=self._get_headers()
-            )  # Add headers
-            if response.status_code != 200:
-                return []
-            else:
-                return response.json()
-        except Exception as e:
-            return []
+        return self.get_model_dirs("upscale_models")
 
     def get_loras(self) -> list[str]:
         """
         get loras
         """
-        try:
-            api_url = str(self.base_url / "models" / "loras")
-            response = httpx.get(
-                url=api_url, timeout=(2, 10), headers=self._get_headers()
-            )  # Add headers
-            if response.status_code != 200:
-                return []
-            else:
-                return response.json()
-        except Exception as e:
-            return []
+        return self.get_model_dirs("loras")
 
     def get_samplers(self) -> list[str]:
         """
@@ -148,7 +121,8 @@ class ComfyUiClient:
     def get_image(self, filename: str, subfolder: str, folder_type: str) -> bytes:
         response = httpx.get(
             str(self.base_url / "view"),
-            params={"filename": filename, "subfolder": subfolder, "type": folder_type},
+            params={"filename": filename,
+                    "subfolder": subfolder, "type": folder_type},
             headers=self._get_headers(),  # Add headers
         )
         return response.content
@@ -208,7 +182,8 @@ class ComfyUiClient:
         self, origin_prompt: dict, positive_prompt: str, negative_prompt: str = ""
     ) -> dict:
         prompt = origin_prompt.copy()
-        id_to_class_type = {id: details["class_type"] for id, details in prompt.items()}
+        id_to_class_type = {id: details["class_type"]
+                            for id, details in prompt.items()}
         k_sampler = [
             key for key, value in id_to_class_type.items() if value == "KSampler"
         ][0]
@@ -233,7 +208,8 @@ class ComfyUiClient:
         self, origin_prompt: dict, image_names: list[str]
     ) -> dict:
         prompt = origin_prompt.copy()
-        id_to_class_type = {id: details["class_type"] for id, details in prompt.items()}
+        id_to_class_type = {id: details["class_type"]
+                            for id, details in prompt.items()}
         load_image_nodes = [
             key for key, value in id_to_class_type.items() if value == "LoadImage"
         ]
@@ -246,9 +222,11 @@ class ComfyUiClient:
         if seed_id not in prompt:
             raise Exception("Not a valid seed node")
         if "seed" in prompt[seed_id]["inputs"]:
-            prompt[seed_id]["inputs"]["seed"] = random.randint(10**14, 10**15 - 1)
+            prompt[seed_id]["inputs"]["seed"] = random.randint(
+                10**14, 10**15 - 1)
         elif "noise_seed" in prompt[seed_id]["inputs"]:
-            prompt[seed_id]["inputs"]["noise_seed"] = random.randint(10**14, 10**15 - 1)
+            prompt[seed_id]["inputs"]["noise_seed"] = random.randint(
+                10**14, 10**15 - 1)
         else:
             raise Exception("Not a valid seed node")
         return prompt
@@ -264,7 +242,8 @@ class ComfyUiClient:
                 if message["type"] == "progress":
                     data = message["data"]
                     current_step = data["value"]
-                    print("In K-Sampler -> Step: ", current_step, " of: ", data["max"])
+                    print("In K-Sampler -> Step: ",
+                          current_step, " of: ", data["max"])
                 if message["type"] == "execution_cached":
                     data = message["data"]
                     for itm in data["nodes"]:
@@ -299,7 +278,8 @@ class ComfyUiClient:
         url = str(self.base_url / "view")
         response = httpx.get(
             url,
-            params={"filename": filename, "subfolder": subfolder, "type": folder_type},
+            params={"filename": filename,
+                    "subfolder": subfolder, "type": folder_type},
             timeout=(2, 10),
             headers=self._get_headers(),  # Add headers
         )
@@ -398,11 +378,6 @@ class ComfyUiClient:
         return output_images
 
     def download_model(self, url, save_dir, filename=None, token=None) -> str:
-        if save_dir not in self.get_model_dirs():
-            raise ToolProviderCredentialValidationError(
-                f"Model directory {save_dir} does not exist."
-            )
-
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "download.json")) as file:
             workflow_json = json.loads(file.read())
@@ -436,9 +411,12 @@ class ComfyUiClient:
         try:
             _ = self.generate(workflow_json)
         except Exception as e:
-            raise ToolProviderCredentialValidationError(
-                f"Failed to download: {str(e)}. Please make sure https://github.com/ServiceStack/comfy-asset-downloader works on ComfyUI"
-            )
+            error = f"Failed to download: {str(e)}."
+            if len(self.get_model_dirs(save_dir)) == 0:
+                error += f"Please make sure the destination folder named models/{save_dir} exists."
+            else:
+                error += "Please make sure https://github.com/ServiceStack/comfy-asset-downloader works on ComfyUI."
+            raise ToolProviderCredentialValidationError(error)
 
         return filename
 
@@ -447,7 +425,8 @@ class ComfyUiClient:
         with open(os.path.join(current_dir, "json", "webp2mp4.json")) as file:
             workflow_json = json.loads(file.read())
 
-        uploaded_image = self.upload_image("input.webp", webp_blob, "image/webp")
+        uploaded_image = self.upload_image(
+            "input.webp", webp_blob, "image/webp")
         workflow_json["25"]["inputs"]["frame_rate"] = fps
         workflow_json["28"]["inputs"]["image"] = uploaded_image
 

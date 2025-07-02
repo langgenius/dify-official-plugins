@@ -39,7 +39,8 @@ class ComfyuiImg2Img(Tool):
         if not model:
             raise ToolProviderCredentialValidationError("Please input model")
         if model not in self.comfyui.get_checkpoints():
-            raise ToolProviderCredentialValidationError(f"model {model} does not exist")
+            raise ToolProviderCredentialValidationError(
+                f"model {model} does not exist")
         prompt = tool_parameters.get("prompt", "")
         if not prompt:
             raise ToolProviderCredentialValidationError("Please input prompt")
@@ -89,44 +90,14 @@ class ComfyuiImg2Img(Tool):
                 for x in tool_parameters.get("lora_strengths").split(",")
             ]
 
-        yield from self.img2img(
-            model=model,
-            denoise=denoise,
-            prompt=prompt,
-            negative_prompt=negative_prompt,
-            image_name=image_names[0],
-            steps=steps,
-            sampler_name=sampler_name,
-            scheduler=scheduler_name,
-            cfg=cfg,
-            lora_list=lora_list,
-            lora_strength_list=lora_strength_list,
-        )
-
-    def img2img(
-        self,
-        model: str,
-        denoise: float,
-        prompt: str,
-        negative_prompt: str,
-        steps: int,
-        image_name: str,
-        sampler_name: str,
-        scheduler: str,
-        cfg: float,
-        lora_list: list[str],
-        lora_strength_list: list[float],
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+        current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "img2img.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
         workflow.set_Ksampler(
-            workflow.identify_node_by_class_type("KSampler"),
+            None,
             steps,
             sampler_name,
-            scheduler,
+            scheduler_name,
             cfg,
             denoise,
             random.randint(0, 100000000),
@@ -141,10 +112,11 @@ class ComfyuiImg2Img(Tool):
                 strength = lora_strength_list[i]
             except:
                 strength = 1.0
-            workflow.add_lora_node("3", "6", "7", lora_name, strength, strength)
+            workflow.add_lora_node(
+                "3", "6", "7", lora_name, strength, strength)
 
         try:
-            output_images = self.comfyui.generate(workflow.get_json())
+            output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
             raise ToolProviderCredentialValidationError(
                 f"Failed to generate image: {str(e)}"
@@ -157,4 +129,4 @@ class ComfyuiImg2Img(Tool):
                     "mime_type": img["mime_type"],
                 },
             )
-        yield self.create_json_message(workflow.get_json())
+        yield self.create_json_message(workflow.json())

@@ -56,7 +56,8 @@ class ComfyuiTxt2Img(Tool):
         if not model:
             yield self.create_text_message("Please input model")
         if model not in self.comfyui.get_checkpoints():
-            raise ToolProviderCredentialValidationError(f"model {model} does not exist")
+            raise ToolProviderCredentialValidationError(
+                f"model {model} does not exist")
         prompt = tool_parameters.get("prompt", "")
         if not prompt:
             yield self.create_text_message("Please input prompt")
@@ -97,7 +98,8 @@ class ComfyuiTxt2Img(Tool):
 
         # make workflow json
         current_dir = os.path.dirname(os.path.realpath(__file__))
-        workflow_template_path = os.path.join(current_dir, "json", "txt2img.json")
+        workflow_template_path = os.path.join(
+            current_dir, "json", "txt2img.json")
         is_hiresfix_enabled: bool = (
             tool_parameters.get("hiresfix_upscale_method") != "disabled"
         )
@@ -109,14 +111,13 @@ class ComfyuiTxt2Img(Tool):
             workflow = ComfyUiWorkflow(file.read())
 
         workflow.set_Ksampler(
-            None,
+            "3",
             steps,
             sampler_name,
             scheduler_name,
             cfg,
             1.0,
             random.randint(0, 100000000),
-            node_id="3",
         )
         workflow.set_model_loader(None, model)
         workflow.set_property("6", "inputs/text", prompt)
@@ -124,16 +125,17 @@ class ComfyuiTxt2Img(Tool):
 
         if is_hiresfix_enabled:
             workflow.set_Ksampler(
+                "11",
                 steps,
                 sampler_name,
                 scheduler_name,
                 cfg,
                 tool_parameters.get("hiresfix_denoise", 0.6),
                 random.randint(0, 100000000),
-                node_id="11",
             )
 
-            hiresfix_size_ratio = tool_parameters.get("hiresfix_size_ratio", 0.5)
+            hiresfix_size_ratio = tool_parameters.get(
+                "hiresfix_size_ratio", 0.5)
             workflow.set_empty_latent_image(
                 workflow.identify_node_by_class_type("EmptyLatentImage"),
                 round(width * hiresfix_size_ratio),
@@ -157,14 +159,15 @@ class ComfyuiTxt2Img(Tool):
                 strength = lora_strength_list[i]
             except:
                 strength = 1.0
-            workflow.add_lora_node("3", "6", "7", lora_name, strength, strength)
+            workflow.add_lora_node(
+                "3", "6", "7", lora_name, strength, strength)
 
         if model_type == ModelType.FLUX.name:
             workflow.add_flux_guidance("3", 3.5)
 
         # send a query to ComfyUI
         try:
-            output_images = self.comfyui.generate(workflow.get_json())
+            output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
             raise ToolProviderCredentialValidationError(
                 f"Failed to generate image: {str(e)}"
@@ -177,7 +180,7 @@ class ComfyuiTxt2Img(Tool):
                     "mime_type": img["mime_type"],
                 },
             )
-        yield self.create_json_message(workflow.get_json())
+        yield self.create_json_message(workflow.json())
 
     def get_runtime_parameters(self) -> list[ToolParameter]:
         parameters = [
@@ -213,7 +216,8 @@ class ComfyuiTxt2Img(Tool):
                             default=models[0],
                             options=[
                                 ToolParameterOption(
-                                    value=i, label=I18nObject(en_US=i, zh_Hans=i)
+                                    value=i, label=I18nObject(
+                                        en_US=i, zh_Hans=i)
                                 )
                                 for i in models
                             ],
@@ -238,7 +242,8 @@ class ComfyuiTxt2Img(Tool):
                                 required=False,
                                 options=[
                                     ToolParameterOption(
-                                        value=i, label=I18nObject(en_US=i, zh_Hans=i)
+                                        value=i, label=I18nObject(
+                                            en_US=i, zh_Hans=i)
                                     )
                                     for i in loras
                                 ],
@@ -264,7 +269,8 @@ class ComfyuiTxt2Img(Tool):
                             default=sample_methods[0],
                             options=[
                                 ToolParameterOption(
-                                    value=i, label=I18nObject(en_US=i, zh_Hans=i)
+                                    value=i, label=I18nObject(
+                                        en_US=i, zh_Hans=i)
                                 )
                                 for i in sample_methods
                             ],
@@ -274,7 +280,8 @@ class ComfyuiTxt2Img(Tool):
                     parameters.append(
                         ToolParameter(
                             name="scheduler",
-                            label=I18nObject(en_US="Scheduler", zh_Hans="Scheduler"),
+                            label=I18nObject(
+                                en_US="Scheduler", zh_Hans="Scheduler"),
                             human_description=I18nObject(
                                 en_US="Scheduler of Stable Diffusion, you can check the official documentation of Stable Diffusion",
                                 zh_Hans="Stable Diffusion 的Scheduler，您可以查看 Stable Diffusion 的官方文档",
@@ -286,7 +293,8 @@ class ComfyuiTxt2Img(Tool):
                             default=schedulers[0],
                             options=[
                                 ToolParameterOption(
-                                    value=i, label=I18nObject(en_US=i, zh_Hans=i)
+                                    value=i, label=I18nObject(
+                                        en_US=i, zh_Hans=i)
                                 )
                                 for i in schedulers
                             ],
@@ -295,7 +303,8 @@ class ComfyuiTxt2Img(Tool):
                 parameters.append(
                     ToolParameter(
                         name="model_type",
-                        label=I18nObject(en_US="Model Type", zh_Hans="Model Type"),
+                        label=I18nObject(en_US="Model Type",
+                                         zh_Hans="Model Type"),
                         human_description=I18nObject(
                             en_US="Model Type of Stable Diffusion or Flux, you can check the official documentation of Stable Diffusion or Flux",
                             zh_Hans="Stable Diffusion 或 FLUX 的模型类型，您可以查看 Stable Diffusion 或 Flux 的官方文档",
