@@ -78,16 +78,10 @@ parameters:
     type: string
   - form: llm
     human_description:
-      en_US: Model Type
-      pt_BR: Model Type
-      zh_Hans: 模型类型
-      ja_JP: モデルタイプ
+      en_US: Ecosystem of the model. For example, sdxl, flux1 and sd1.
     label:
-      en_US: Model Type
-      pt_BR: Model Type
-      zh_Hans: 模型类型
-      ja_JP: モデルタイプ
-    name: model_type
+      en_US: Ecosystem
+    name: ecosystem
     required: true
     type: string
 

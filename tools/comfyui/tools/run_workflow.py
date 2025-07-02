@@ -29,17 +29,10 @@ class ComfyUIWorkflowTool(Tool):
         for image in images:
             if image.type != FileType.IMAGE:
                 continue
-            files = {
-                "image": (image.filename, image.blob, image.mime_type),
-                "overwrite": "true",
-            }
-            res = httpx.post(
-                str(self.comfyui.base_url / "upload" / "image"), files=files
-            )
-            image_name = res.json().get("name")
+            image_name = self.comfyui.upload_image(
+                image.filename, image.blob, image.mime_type)
             image_names.append(image_name)
-
-        if image_names:
+        if len(image_names) > 0:
             image_ids = tool_parameters.get("image_ids")
             if image_ids is None:
                 workflow.set_image_names(image_names)
@@ -60,6 +53,7 @@ class ComfyUIWorkflowTool(Tool):
             raise ToolProviderCredentialValidationError(
                 f"Failed to generate image: {str(e)}. Please check if the workflow JSON works on ComfyUI."
             )
+
         for img in output_images:
             yield self.create_blob_message(
                 blob=img["data"],

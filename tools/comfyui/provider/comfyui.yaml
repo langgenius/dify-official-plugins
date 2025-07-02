@@ -57,7 +57,6 @@ tools:
   - tools/txt2vid.yaml
   - tools/img2img.yaml
   - tools/img2vid.yaml
-  - tools/upscale.yaml
   - tools/image_edit.yaml
   - tools/list_models.yaml
   - tools/list_samplers.yaml

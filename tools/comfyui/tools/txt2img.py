@@ -37,10 +37,17 @@ class ModelType(Enum):
     SD15 = 1
     SDXL = 2
     SD3 = 3
-    FLUX = 4
+    FLUX1 = 4
 
 
 class ComfyuiTxt2Img(Tool):
+    def get_hf_key(self) -> str:
+        hf_api_key = self.runtime.credentials.get("hf_api_key")
+        if hf_api_key is None:
+            raise ToolProviderCredentialValidationError(
+                "Please input hf_api_key")
+        return hf_api_key
+
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
@@ -52,9 +59,13 @@ class ComfyuiTxt2Img(Tool):
         )
         if tool_parameters.get("model"):
             self.runtime.credentials["model"] = tool_parameters["model"]
-        model = self.runtime.credentials.get("model", None)
-        if not model:
-            yield self.create_text_message("Please input model")
+        model = self.runtime.credentials.get("model", "")
+        if model == "":
+            model = self.comfyui.download_model(
+                "https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive/resolve/main/v1-5-pruned-emaonly-fp16.safetensors",
+                "checkpoints",
+                token=self.get_hf_key()
+            )
         if model not in self.comfyui.get_checkpoints():
             raise ToolProviderCredentialValidationError(
                 f"model {model} does not exist")
@@ -78,7 +89,7 @@ class ComfyuiTxt2Img(Tool):
                 f"Scheduler {scheduler_name} does not exist. Valid schedulers are {valid_schedulers}."
             )
         cfg = tool_parameters.get("cfg", 7.0)
-        model_type = tool_parameters.get("model_type", ModelType.SD15.name)
+        ecosystem = tool_parameters.get("ecosystem", ModelType.SD15.name)
 
         lora_list = []
         if len(tool_parameters.get("lora_names", "")) > 0:
@@ -150,7 +161,7 @@ class ComfyuiTxt2Img(Tool):
                 tool_parameters.get("hiresfix_upscale_method", "bilinear"),
             )
 
-        if model_type in {ModelType.SD3.name, ModelType.FLUX.name}:
+        if ecosystem in {ModelType.SD3.name, ModelType.FLUX1.name}:
             workflow.set_property("5", "class_type", "EmptySD3LatentImage")
 
         # add loras to workflow json
@@ -162,7 +173,7 @@ class ComfyuiTxt2Img(Tool):
             workflow.add_lora_node(
                 "3", "6", "7", lora_name, strength, strength)
 
-        if model_type == ModelType.FLUX.name:
+        if ecosystem == ModelType.FLUX1.name:
             workflow.add_flux_guidance("3", 3.5)
 
         # send a query to ComfyUI

@@ -35,15 +35,6 @@ parameters:
     required: true
     type: files
 
-  - name: model_name
-    form: llm
-    label:
-      en_US: Img2Vid Model Name
-    human_description:
-      en_US: Img2Vid Model Name. If omitted, default model will be downloaded.
-    required: false
-    type: string
-
   - name: model_type
     form: form
     human_description:
@@ -126,6 +117,7 @@ parameters:
       en_US: Output Format
     required: true
     type: select
+    default: webm
     options:
       - label:
           en_US: MP4
@@ -133,6 +125,54 @@ parameters:
       - label:
           en_US: WEBM
         value: webm
+
+  - name: model_name
+    form: llm
+    label:
+      en_US: Img2Vid Model Name
+    human_description:
+      en_US: Img2Vid Model Name. If omitted, default model will be downloaded.
+    required: false
+    type: string
+
+  - name: prompt
+    form: llm
+    human_description:
+      en_US:
+        Image prompt, you can check the official documentation of Stable Diffusion
+        or FLUX
+      pt_BR:
+        Image prompt, you can check the official documentation of Stable Diffusion
+        or FLUX
+      zh_Hans: 图像提示词，您可以查看 Stable Diffusion 或者 FLUX 的官方文档
+      ja_JP: プロンプト
+    label:
+      en_US: Prompt
+      pt_BR: Prompt
+      zh_Hans: 提示词
+      ja_JP: プロンプト
+    llm_description:
+      Image prompt of Stable Diffusion, you should describe the image
+      you want to generate as a list of words as possible as detailed, the prompt must
+      be written in English.
+    required: false
+    type: string
+
+  - name: negative_prompt
+    default: bad art, ugly, deformed, watermark, duplicated, discontinuous lines
+    form: llm
+    human_description:
+      en_US: Negative prompt
+      pt_BR: Negative prompt
+      zh_Hans: Negative prompt
+      ja_JP: ネガティブプロンプト
+    label:
+      en_US: Negative prompt
+      pt_BR: Negative prompt
+      zh_Hans: Negative prompt
+      ja_JP: ネガティブプロンプト
+    required: false
+    type: string
 
   #- name: steps
   #  form: llm

@@ -22,6 +22,13 @@ class ModelType(Enum):
 
 
 class ComfyuiImg2Img(Tool):
+    def get_hf_key(self) -> str:
+        hf_api_key = self.runtime.credentials.get("hf_api_key")
+        if hf_api_key is None:
+            raise ToolProviderCredentialValidationError(
+                "Please input hf_api_key")
+        return hf_api_key
+
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
@@ -35,9 +42,13 @@ class ComfyuiImg2Img(Tool):
 
         if tool_parameters.get("model"):
             self.runtime.credentials["model"] = tool_parameters["model"]
-        model = self.runtime.credentials.get("model", None)
-        if not model:
-            raise ToolProviderCredentialValidationError("Please input model")
+        model = self.runtime.credentials.get("model", "")
+        if model == "":
+            model = self.comfyui.download_model(
+                "https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive/resolve/main/v1-5-pruned-emaonly-fp16.safetensors",
+                "checkpoints",
+                token=self.get_hf_key()
+            )
         if model not in self.comfyui.get_checkpoints():
             raise ToolProviderCredentialValidationError(
                 f"model {model} does not exist")

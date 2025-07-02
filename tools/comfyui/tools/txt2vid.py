@@ -291,7 +291,8 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_property("38", "inputs/clip_name", text_encoder)
         workflow.set_property("72", "inputs/noise_seed",
                               random.randint(0, 100000000))
-        ltxv_node_id = workflow.identify_node_by_class_type("LTXVImgToVideo")
+        ltxv_node_id = workflow.identify_node_by_class_type(
+            "EmptyLTXVLatentVideo")
         workflow.set_property(ltxv_node_id, "inputs/width", config.width)
         workflow.set_property(ltxv_node_id, "inputs/height", config.height)
         workflow.set_property(ltxv_node_id, "inputs/length", config.frameN)

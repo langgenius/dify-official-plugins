@@ -10,8 +10,9 @@ extra:
 identity:
   author: hjlarry
   label:
-    en_US: workflow
+    en_US: Workflow
     zh_Hans: 工作流
+    ja_JP: ワークフロー
   name: workflow
 parameters:
   - form: llm

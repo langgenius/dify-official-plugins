@@ -55,6 +55,8 @@ class ComfyuiImg2VidConfig:
     cfg: float
     output_format: str
     memory_usage: str
+    prompt: str | None
+    negative_prompt: str | None
 
 
 class ComfyuiImg2Vid(Tool):
@@ -122,6 +124,8 @@ class ComfyuiImg2Vid(Tool):
             scheduler_name=scheduler_name,
             output_format=tool_parameters.get("output_format", "mp4"),
             memory_usage=tool_parameters.get("memory_usage"),
+            prompt=tool_parameters.get("prompt", ""),
+            negative_prompt=tool_parameters.get("negative_prompt", ""),
         )
 
         model_type = tool_parameters.get("model_type")
@@ -236,6 +240,8 @@ class ComfyuiImg2Vid(Tool):
         workflow.set_property("50", "inputs/width", config.width)
         workflow.set_property("50", "inputs/height", config.height)
         workflow.set_property("50", "inputs/length", config.frameN)
+        workflow.set_prompt("6", config.prompt)
+        workflow.set_prompt("7", config.negative_prompt)
         workflow.set_animated_webp(None, config.fps)
         workflow.set_unet(None, config.model_name)
         workflow.set_clip(None, text_encoder)
@@ -286,6 +292,8 @@ class ComfyuiImg2Vid(Tool):
         workflow.set_property("72", "inputs/noise_seed",
                               random.randint(0, 100000000))
         workflow.set_image_names([config.image_name])
+        workflow.set_prompt("6", config.prompt)
+        workflow.set_prompt("7", config.negative_prompt)
 
         try:
             output_images = self.comfyui.generate(workflow.json())
