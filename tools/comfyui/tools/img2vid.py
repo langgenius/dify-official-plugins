@@ -109,7 +109,7 @@ class ComfyuiImg2Vid(Tool):
         height = pil_img.height
 
         config = ComfyuiImg2VidConfig(
-            model_name="",
+            model_name=tool_parameters.get("model_name", ""),
             width=width,
             height=height,
             fps=fps,

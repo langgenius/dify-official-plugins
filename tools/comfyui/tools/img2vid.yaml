@@ -1,9 +1,7 @@
 description:
   human:
-    en_US:
-      Image to video model. Supports Stable Video Diffusion(SVD) only.
-    pt_BR:
-      Image to video model. Supports Stable Video Diffusion(SVD) only.
+    en_US: Image to video model. Supports Stable Video Diffusion(SVD) only.
+    pt_BR: Image to video model. Supports Stable Video Diffusion(SVD) only.
     zh_Hans: 一个预定义的 ComfyUI 工作流，可以使用一个模型和最多3个loras来生成图像。支持包含文本编码器/clip的SD1.5、SDXL、SD3和FLUX，但不支持需要clip加载器的模型。
     ja_JP: 画像toビデオ。Stable Video Diffusion(SVD) のみサポートしています。
   llm: generates video from image
@@ -37,22 +35,20 @@ parameters:
     required: true
     type: files
 
-  #- name: model
-  #  form: llm
-  #  label:
-  #    en_US: Img2Vid Model Name
-  #  human_description:
-  #    en_US: Img2Vid Model Name. If omitted, default model will be downloaded.
-  #  required: false
-  #  type: string
+  - name: model_name
+    form: llm
+    label:
+      en_US: Img2Vid Model Name
+    human_description:
+      en_US: Img2Vid Model Name. If omitted, default model will be downloaded.
+    required: false
+    type: string
 
   - name: model_type
     form: form
     human_description:
-      en_US:
-        Model
-      pt_BR:
-        Model
+      en_US: Model
+      pt_BR: Model
       zh_Hans: 模型
       ja_JP: モデル
     label:
@@ -76,24 +72,22 @@ parameters:
           en_US: Stable Video Diffusion XT
         value: svd_xt
 
-  - name: memory_usage
-    form: form
-    human_description:
-      en_US:
-        Memory Usage
-    label:
-      en_US:
-        Memory Usage
-    required: true
-    type: select
-    options:
-      - label:
-          en_US: Default
-        value: default
-      - label:
-          en_US: Minimal
-        value: minimal
-     
+  #- name: memory_usage
+  #  form: form
+  #  human_description:
+  #    en_US: Memory Usage
+  #  label:
+  #    en_US: Memory Usage
+  #  required: true
+  #  type: select
+  #  options:
+  #    - label:
+  #        en_US: Default
+  #      value: default
+  #    - label:
+  #        en_US: Minimal
+  #      value: minimal
+
   - name: fps
     default: 6
     form: llm
@@ -127,8 +121,7 @@ parameters:
   - name: output_format
     form: form
     human_description:
-      en_US:
-        Output Format
+      en_US: Output Format
     label:
       en_US: Output Format
     required: true
@@ -140,7 +133,7 @@ parameters:
       - label:
           en_US: WEBM
         value: webm
-      
+
   #- name: steps
   #  form: llm
   #  default: 20
