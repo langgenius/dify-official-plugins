@@ -1,0 +1,49 @@
+{
+  "9": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "14",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "SaveImage"
+    }
+  },
+  "13": {
+    "inputs": {
+      "model_name": "RealESRGAN_x4plus.pth"
+    },
+    "class_type": "UpscaleModelLoader",
+    "_meta": {
+      "title": "UpscaleModelLoader"
+    }
+  },
+  "14": {
+    "inputs": {
+      "upscale_model": [
+        "13",
+        0
+      ],
+      "image": [
+        "16",
+        0
+      ]
+    },
+    "class_type": "ImageUpscaleWithModel",
+    "_meta": {
+      "title": "ImageUpscaleWithModel"
+    }
+  },
+  "16": {
+    "inputs": {
+      "image": "cd44b136-2b8c-40fd-8f92-9d96af3797d8.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "LoadImage"
+    }
+  }
+}

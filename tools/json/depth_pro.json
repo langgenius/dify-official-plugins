@@ -1,0 +1,64 @@
+{
+    "6": {
+        "inputs": {
+            "precision": "fp16"
+        },
+        "class_type": "LoadDepthPro",
+        "_meta": {
+            "title": "(Down)Load Depth Pro model"
+        }
+    },
+    "7": {
+        "inputs": {
+            "depth_pro_model": [
+                "6",
+                0
+            ],
+            "image": [
+                "8",
+                0
+            ]
+        },
+        "class_type": "DepthPro",
+        "_meta": {
+            "title": "Depth Pro"
+        }
+    },
+    "8": {
+        "inputs": {
+            "image": "1.jpg"
+        },
+        "class_type": "LoadImage",
+        "_meta": {
+            "title": "LoadImage"
+        }
+    },
+    "9": {
+        "inputs": {
+            "per_image": true,
+            "invert": true,
+            "gamma": 1,
+            "depth": [
+                "7",
+                0
+            ]
+        },
+        "class_type": "MetricDepthToRelative",
+        "_meta": {
+            "title": "Metric Depth to Relative"
+        }
+    },
+    "10": {
+        "inputs": {
+            "filename_prefix": "ComfyUI",
+            "images": [
+                "9",
+                0
+            ]
+        },
+        "class_type": "SaveImage",
+        "_meta": {
+            "title": "SaveImage"
+        }
+    }
+}

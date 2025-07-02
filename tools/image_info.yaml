@@ -1,0 +1,67 @@
+description:
+  human:
+    en_US:
+      Gets basic information of given images including sizes, filenames, MIMEs and Pillow modes.
+    pt_BR:
+      Gets basic information of given images including sizes, filenames, MIMEs and Pillow modes.
+    zh_Hans: 获取给定图像的基本信息，包括尺寸、文件名、MIMEs 和 Pillow 模式。
+    ja_JP: 画像のサイズ，ファイル名，MIME，Pillow モードを得ます．
+  llm: gets basic information of given images including sizes, filenames, MIMEs and Pillow modes
+extra:
+  python:
+    source: tools/image_info.py
+identity:
+  author: yt-koike
+  label:
+    en_US: Image Info
+    zh_Hans: 图片信息
+    ja_JP: 画像情報抽出
+  name: image_info
+parameters:
+  - name: images
+    form: llm
+    label:
+      en_US: Input Images
+      zh_Hans: 输入的图片
+      ja_JP: 入力画像
+    llm_description:
+      The input images
+    human_description:
+      en_US: The input image
+      zh_Hans: 输入的图片
+      ja_JP: 入力画像
+    required: true
+    type: files
+output_schema:
+  type: object
+  properties:
+    widths:
+      type: array[number]
+      label:
+        en_US: Widths
+        zh_Hans: 图像宽度
+        ja_JP: 画像幅
+    heights:
+      type: array[number]
+      label:
+        en_US: Heights
+        zh_Hans: 图像高度
+        ja_JP: 画像高さ
+    modes:
+      type: array[string]
+      label:
+        en_US: Modes
+        zh_Hans: 模式
+        ja_JP: モード
+    filenames:
+      type: array[string]
+      label:
+        en_US: Filenames
+        zh_Hans: 文件名
+        ja_JP: ファイル名
+    mimes:
+      type: array[string]
+      label:
+        en_US: MIME types
+        zh_Hans: MIME types
+        ja_JP: MIME types

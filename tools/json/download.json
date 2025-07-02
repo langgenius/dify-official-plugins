@@ -1,0 +1,14 @@
+{
+  "1": {
+    "inputs": {
+      "url": "",
+      "save_to": "",
+      "filename": "",
+      "token": ""
+    },
+    "class_type": "AssetDownloader",
+    "_meta": {
+      "title": "Requires Asset"
+    }
+  }
+}
