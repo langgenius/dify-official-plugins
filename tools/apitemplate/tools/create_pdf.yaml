@@ -1,0 +1,77 @@
+identity:
+  name: create_pdf
+  author: langgenius
+  label:
+    en_US: "Create PDF from Template"
+    ja_JP: "テンプレートからPDFを作成"
+    zh_Hans: "从模板创建PDF"
+    pt_BR: "Criar PDF do Modelo"
+    zh_Hant: "從範本建立PDF"
+
+description:
+  human:
+    en_US: "Generate a PDF document from a template using APITemplate.io"
+    ja_JP: "APITemplate.io を使用してテンプレートから PDF ドキュメントを生成します"
+    zh_Hans: "使用 APITemplate.io 从模板生成 PDF 文档"
+    pt_BR: "Gerar um documento PDF a partir de um modelo usando APITemplate.io"
+    zh_Hant: "使用 APITemplate.io 從範本生成 PDF 文件"
+  llm: "Creates a PDF document from a specified template using provided JSON data. Returns the download URL of the generated PDF along with metadata like page count and transaction reference."
+
+parameters:
+  - name: template_id
+    type: string
+    required: true
+    label:
+      en_US: "Template ID"
+      ja_JP: "テンプレートID"
+      zh_Hans: "模板ID"
+      pt_BR: "ID do Modelo"
+      zh_Hant: "範本ID"
+    human_description:
+      en_US: "The unique identifier of the template to use for PDF generation"
+      ja_JP: "PDF生成に使用するテンプレートの一意識別子"
+      zh_Hans: "用于PDF生成的模板唯一标识符"
+      pt_BR: "O identificador único do modelo a ser usado para geração de PDF"
+      zh_Hant: "用於PDF生成的範本唯一識別符"
+    llm_description: "The template ID from your APITemplate.io account. This can be found in the web console under 'Manage Templates'. Example: '79667b2b1876e347'"
+    form: llm
+
+  - name: json_data
+    type: string
+    required: true
+    label:
+      en_US: "JSON Data"
+      ja_JP: "JSONデータ"
+      zh_Hans: "JSON数据"
+      pt_BR: "Dados JSON"
+      zh_Hant: "JSON資料"
+    human_description:
+      en_US: "JSON data to populate the template fields"
+      ja_JP: "テンプレートフィールドを埋めるためのJSONデータ"
+      zh_Hans: "用于填充模板字段的JSON数据"
+      pt_BR: "Dados JSON para preencher os campos do modelo"
+      zh_Hant: "用於填充範本欄位的JSON資料"
+    llm_description: "JSON object containing the data to populate template variables. Example: '{\"invoice_number\": \"INV-001\", \"date\": \"2024-01-15\", \"amount\": 1250.00}'"
+    form: llm
+
+  - name: filename
+    type: string
+    required: false
+    label:
+      en_US: "Custom Filename"
+      ja_JP: "カスタムファイル名"
+      zh_Hans: "自定义文件名"
+      pt_BR: "Nome do Arquivo Personalizado"
+      zh_Hant: "自訂檔案名稱"
+    human_description:
+      en_US: "Optional custom filename for the generated PDF (must end with .pdf)"
+      ja_JP: "生成されるPDFのオプションのカスタムファイル名（.pdfで終わる必要があります）"
+      zh_Hans: "生成PDF的可选自定义文件名（必须以.pdf结尾）"
+      pt_BR: "Nome de arquivo personalizado opcional para o PDF gerado (deve terminar com .pdf)"
+      zh_Hant: "生成PDF的可選自訂檔案名稱（必須以.pdf結尾）"
+    llm_description: "Optional custom filename for the PDF. If not provided, a UUID will be used. Must end with '.pdf'. Example: 'invoice_123.pdf'"
+    form: llm
+
+extra:
+  python:
+    source: tools/create_pdf.py 

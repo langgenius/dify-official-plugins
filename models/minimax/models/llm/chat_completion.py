@@ -23,6 +23,7 @@ class MinimaxChatCompletion:
         model: str,
         api_key: str,
         group_id: str,
+        endpoint_url: str,
         prompt_messages: list[MinimaxMessage],
         model_parameters: dict,
         tools: list[dict[str, Any]],
@@ -35,13 +36,16 @@ class MinimaxChatCompletion:
         """
         if not api_key or not group_id:
             raise InvalidAPIKeyError("Invalid API key or group ID")
-        url = f"https://api.minimax.chat/v1/text/chatcompletion?GroupId={group_id}"
+
+        base_url = endpoint_url.rstrip('/')
+        url = f"{base_url}/v1/text/chatcompletion?GroupId={group_id}"
+
         extra_kwargs = {}
-        if "max_tokens" in model_parameters and type(model_parameters["max_tokens"]) == int:
+        if "max_tokens" in model_parameters and isinstance(model_parameters["max_tokens"], int):
             extra_kwargs["tokens_to_generate"] = model_parameters["max_tokens"]
-        if "temperature" in model_parameters and type(model_parameters["temperature"]) == float:
+        if "temperature" in model_parameters and isinstance(model_parameters["temperature"], float):
             extra_kwargs["temperature"] = model_parameters["temperature"]
-        if "top_p" in model_parameters and type(model_parameters["top_p"]) == float:
+        if "top_p" in model_parameters and isinstance(model_parameters["top_p"], float):
             extra_kwargs["top_p"] = model_parameters["top_p"]
         prompt = "你是一个什么都懂的专家"
         role_meta = {"user_name": "我", "bot_name": "专家"}
@@ -53,7 +57,7 @@ class MinimaxChatCompletion:
             prompt_messages = prompt_messages[1:]
         if len(prompt_messages) == 0:
             raise BadRequestError("At least one user message is required")
-        messages = [{"sender_type": message.role, "text": message.content} for message in prompt_messages]
+        messages = [message.to_completion_dict() for message in prompt_messages]
         headers = {"Authorization": "Bearer " + api_key, "Content-Type": "application/json"}
         body = {
             "model": model,

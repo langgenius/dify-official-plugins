@@ -1,0 +1,74 @@
+identity:
+  name: create_model
+  author: langgenius
+  label:
+    en_US: Create voice model
+    zh_Hans: 创建发音人模型
+description:
+  human:
+    en_US: Voice Clone, create a voice model
+    zh_Hans: 声音克隆，创建一个发音人模型
+  llm: A tool to voice clone,this model can be used by tts.
+
+parameters:
+  - name: title
+    type: string
+    required: true
+    label:
+      en_US: Title
+      zh_Hans: 标题
+    human_description:
+      en_US: Title to this model
+      zh_Hans: 此语音模型的标题
+    llm_description: Title to this model
+    form: llm
+
+  - name: description
+    type: string
+    required: false
+    label:
+      en_US: Description
+      zh_Hans: 描述
+    human_description:
+      en_US: Description to this model
+      zh_Hans: 此语音模型的描述
+    llm_description: Description to this model
+    form: llm
+
+  - name: visibility
+    type: select
+    required: true
+    default: private
+    label:
+      en_US: Visibility
+      zh_Hans: 可见性
+    options:
+      - label:
+          en_US: Private
+          zh_Hans: 私有
+        value: private
+      - label:
+          en_US: Public
+          zh_Hans: 公开
+        value: public
+    human_description:
+      en_US: This voice model will be visible in the discover page or not.
+      zh_Hans: 此语音模型是否在发现页面中可见。
+    llm_description: This voice model will be visible in the discover page or not.
+    form: form
+
+  - name: audio
+    type: files
+    required: true
+    label:
+      en_US: Audio files
+      zh_Hans: 音频文件
+    human_description:
+      en_US: The audio files to be used for voice cloning,min 10s, max 90s, recommend 30s.
+      zh_Hans: 用于克隆的音频文件，最短10秒，最长90秒，推荐30秒。
+    llm_description: The audio files to be used for voice cloning
+    form: llm
+
+extra:
+  python:
+    source: tools/create_model.py

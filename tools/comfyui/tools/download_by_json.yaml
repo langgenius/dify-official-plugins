@@ -1,0 +1,41 @@
+description:
+  human:
+    en_US: Download models from https://civitai.com/
+    zh_Hans: 从 https://civitai.com/ 下载模型
+    ja_JP: https://civitai.com/ からモデルをダウンロード
+  llm: Download from CivitAI
+extra:
+  python:
+    source: tools/download_by_json.py
+identity:
+  author: yt-koike
+  label:
+    en_US: Download by JSON
+    zh_Hans: Download by JSON
+    ja_JP: Download by JSON
+  name: download_by_json
+parameters:
+  - name: workflow_json
+    form: llm
+    label:
+      en_US: Full Workflow JSON
+      zh_Hans: 完整工作流程的 JSON
+      ja_JP: ワークフロー JSON
+    llm_description: Model ID
+    type: string
+    human_description:
+      en_US: Full Workflow JSON
+      zh_Hans: 完整工作流程的 JSON
+      ja_JP: ワークフロー JSON
+    required: true
+
+
+output_schema:
+  type: object
+  properties:
+    model_names:
+      type: array[string]
+      label:
+        en_US: Model Name
+        zh_Hans: 型号名称
+        ja_JP: モデル名

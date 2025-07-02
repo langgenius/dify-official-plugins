@@ -14,7 +14,8 @@ CACHE_SUPPORTED_MODELS = [
     # "anthropic.claude-3-5-sonnet-20241022-v2:0",
     "amazon.nova-micro-v1:0",
     "amazon.nova-lite-v1:0",
-    "amazon.nova-pro-v1:0"
+    "amazon.nova-pro-v1:0",
+    "amazon.nova-premier-v1:0"
 ]
 
 # Cache configuration for each model
@@ -50,6 +51,11 @@ CACHE_CONFIG = {
         "supported_fields": ["system", "messages"]
     },
     "amazon.nova-pro-v1:0": {
+        "min_tokens": 1024,
+        "max_checkpoints": 4,
+        "supported_fields": ["system", "messages"]
+    },
+    "amazon.nova-premier-v1:0": {
         "min_tokens": 1024,
         "max_checkpoints": 4,
         "supported_fields": ["system", "messages"]

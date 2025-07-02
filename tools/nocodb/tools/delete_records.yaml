@@ -1,0 +1,64 @@
+identity:
+  name: delete_records
+  author: langgenius
+  label:
+    en_US: "Delete Records"
+    zh_Hans: "删除记录"
+    pt_BR: "Excluir Registros"
+    ja_JP: "レコード削除"
+description:
+  human:
+    en_US: "Delete one or multiple records from a NocoDB table"
+    zh_Hans: "从 NocoDB 表中删除单个或多个记录"
+    pt_BR: "Excluir um ou múltiplos registros de uma tabela NocoDB"
+    ja_JP: "NocoDB テーブルから 1 つまたは複数のレコードを削除します"
+  llm: "Deletes records from a NocoDB table. Can delete a single record by ID or multiple records in bulk operation. This operation is permanent and cannot be undone."
+parameters:
+  - name: table_name
+    type: string
+    required: true
+    label:
+      en_US: "Table Name"
+      zh_Hans: "表名"
+      pt_BR: "Nome da Tabela"
+      ja_JP: "テーブル名"
+    human_description:
+      en_US: "Name of the NocoDB table to delete records from"
+      zh_Hans: "要删除记录的 NocoDB 表名"
+      pt_BR: "Nome da tabela NocoDB para excluir registros"
+      ja_JP: "レコードを削除する NocoDB テーブルの名前"
+    llm_description: "The name of the table where records will be deleted. Should match the exact table name in your NocoDB base."
+    form: llm
+  - name: row_id
+    type: string
+    required: false
+    label:
+      en_US: "Row ID"
+      zh_Hans: "行 ID"
+      pt_BR: "ID da Linha"
+      ja_JP: "行 ID"
+    human_description:
+      en_US: "ID of the record to delete (required for single record deletion)"
+      zh_Hans: "要删除的记录 ID（单个记录删除时必需）"
+      pt_BR: "ID do registro para excluir (obrigatório para exclusão de registro único)"
+      ja_JP: "削除するレコードの ID（単一レコード削除の場合は必須）"
+    llm_description: "The ID of the specific record to delete. Required for single record deletions, not used for bulk deletions."
+    form: llm
+  - name: bulk_ids
+    type: string
+    required: false
+    label:
+      en_US: "Bulk IDs"
+      zh_Hans: "批量 ID"
+      pt_BR: "IDs em Lote"
+      ja_JP: "バルク ID"
+    human_description:
+      en_US: "Comma-separated list of record IDs for bulk deletion (optional)"
+      zh_Hans: "用于批量删除的记录 ID 列表，用逗号分隔（可选）"
+      pt_BR: "Lista de IDs de registros separados por vírgula para exclusão em lote (opcional)"
+      ja_JP: "バルク削除用のレコード ID のカンマ区切りリスト（オプション）"
+    llm_description: "Comma-separated list of record IDs to delete in bulk operation. All specified records will be permanently deleted. Example: \"123,456,789\"."
+    form: llm
+extra:
+  python:
+    source: tools/delete_records.py 

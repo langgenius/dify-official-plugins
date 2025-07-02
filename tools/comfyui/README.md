@@ -56,6 +56,9 @@ You can set any ComfyUI node settings by inputting JSON to this node.
 ### Txt2Img
 
 Txt2Img node can generate an image from texts(prompt and negative prompt).
+If you want to generate large images(typically 1600x1600 or bigger), HiresFix option is for you.
+It generates a small and consistent image then upscale it.
+Without HiresFix, large images tend to have unnaturally duplicated objects and artifacts.
 
 ### Img2Img
 
@@ -112,5 +115,16 @@ These two IDs are shown as AIR(see the highlited area on the image below).
 You need to install https://github.com/ServiceStack/comfy-asset-downloader to ComfyUI in advance.
 
 ### Hugging Face Download
-Hugging Face Download can download models from [Hugging Face](https://huggingface.co/).
+Hugging Face Download node can download models from [Hugging Face](https://huggingface.co/).
+You need to install https://github.com/ServiceStack/comfy-asset-downloader to ComfyUI in advance.
+
+### Download By URL 
+Download By URL node can download models from a given URL.
+You need to install https://github.com/ServiceStack/comfy-asset-downloader to ComfyUI in advance.
+
+### Download By JSON
+Download By JSON node can download models specified by ComfyUI's workflow json.
+More specifically, it downloads all the models listed in "properties":{"models": [...]} in every node.
+It needs a JSON file exported with "Export", not "Export (API)".
+
 You need to install https://github.com/ServiceStack/comfy-asset-downloader to ComfyUI in advance.

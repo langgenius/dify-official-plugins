@@ -24,13 +24,27 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._update_credential(model, credentials)
-        
+        reasoning_budget = model_parameters.get('reasoning_budget')
+        if reasoning_budget:
+            model_parameters.pop('reasoning_budget')
+        enable_thinking = model_parameters.get('enable_thinking')
+        if enable_thinking:
+            model_parameters.pop('enable_thinking')
+            if enable_thinking == 'dynamic':
+                reasoning_budget = -1
+            elif enable_thinking == 'disabled':
+                reasoning_budget = 0
+        if reasoning_budget:
+            model_parameters['reasoning'] = {'max_tokens': reasoning_budget}
+        reasoning_effort = model_parameters.get('reasoning_effort')
+        if reasoning_effort:
+            model_parameters.pop('reasoning_effort')
+            model_parameters['reasoning'] = {'effort': reasoning_effort}
         # Add parameter conversion logic
         if "functions" in model_parameters:
             model_parameters["tools"] = [{"type": "function", "function": func} for func in model_parameters.pop("functions")]
         if "function_call" in model_parameters:
             model_parameters["tool_choice"] = model_parameters.pop("function_call")
-            
         return self._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
@@ -57,6 +71,31 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
             model_parameters["tool_choice"] = model_parameters.pop("function_call")
             
         return super()._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
+
+    def _wrap_thinking_by_reasoning_content(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
+        """
+        If the reasoning response is from delta.get("reasoning") or delta.get("reasoning_content"),
+        we wrap it with HTML think tag.
+
+        :param delta: delta dictionary from LLM streaming response
+        :param is_reasoning: is reasoning
+        :return: tuple of (processed_content, is_reasoning)
+        """
+
+        content = delta.get("content") or ""
+        # NOTE(hzw): OpenRouter uses "reasoning" instead of "reasoning_content".
+        reasoning_content = delta.get("reasoning") or delta.get("reasoning_content")
+
+        if reasoning_content:
+            if not is_reasoning:
+                content = "<think>\n" + reasoning_content
+                is_reasoning = True
+            else:
+                content = reasoning_content
+        elif is_reasoning and content:
+            content = "\n</think>" + content
+            is_reasoning = False
+        return content, is_reasoning
 
     def _generate_block_as_stream(
         self,

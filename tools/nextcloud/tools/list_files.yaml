@@ -1,0 +1,57 @@
+identity:
+  name: list_files
+  author: langgenius
+  label:
+    en_US: List Files
+    ja_JP: ファイル一覧
+    zh_Hans: 列出文件
+    pt_BR: Listar Arquivos
+    zh_Hant: 列出檔案
+description:
+  human:
+    en_US: List files and folders in a NextCloud directory
+    ja_JP: NextCloud ディレクトリ内のファイルとフォルダを一覧表示します
+    zh_Hans: 列出 NextCloud 目录中的文件和文件夹
+    pt_BR: Listar arquivos e pastas em um diretório do NextCloud
+    zh_Hant: 列出 NextCloud 目錄中的檔案和資料夾
+  llm: Lists files and directories in a specified NextCloud folder path. Returns information about each item including name, type (file/directory), size, and modification date. Use this to explore NextCloud folder contents or find specific files.
+parameters:
+  - name: path
+    type: string
+    required: false
+    default: "/"
+    label:
+      en_US: Folder Path
+      ja_JP: フォルダパス
+      zh_Hans: 文件夹路径
+      pt_BR: Caminho da Pasta
+      zh_Hant: 資料夾路徑
+    human_description:
+      en_US: The path of the folder to list files from (default is root folder "/")
+      ja_JP: ファイルを一覧表示するフォルダのパス（デフォルトはルートフォルダ"/"）
+      zh_Hans: 要列出文件的文件夹路径（默认为根文件夹"/"）
+      pt_BR: O caminho da pasta para listar arquivos (padrão é a pasta raiz "/")
+      zh_Hant: 要列出檔案的資料夾路徑（預設為根資料夾"/"）
+    llm_description: The NextCloud folder path to list contents from. Use "/" for root directory, "/Documents" for Documents folder, etc. Path should start with "/" and be case-sensitive.
+    form: llm
+  - name: include_size
+    type: string
+    required: false
+    default: "true"
+    label:
+      en_US: Include File Sizes
+      ja_JP: ファイルサイズを含める
+      zh_Hans: 包含文件大小
+      pt_BR: Incluir Tamanhos dos Arquivos
+      zh_Hant: 包含檔案大小
+    human_description:
+      en_US: Whether to include file size information in the results
+      ja_JP: 結果にファイルサイズ情報を含めるかどうか
+      zh_Hans: 是否在结果中包含文件大小信息
+      pt_BR: Se deve incluir informações de tamanho dos arquivos nos resultados
+      zh_Hant: 是否在結果中包含檔案大小資訊
+    llm_description: Set to true to include file size information for each item. Default is true.
+    form: llm
+extra:
+  python:
+    source: tools/list_files.py 

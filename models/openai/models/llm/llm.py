@@ -41,6 +41,7 @@ from dify_plugin.entities.model.llm import (
 )
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    AudioPromptMessageContent,
     ImagePromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
@@ -723,7 +724,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 ]
                 del model_parameters["max_tokens"]
 
-            if re.match(r"^o1(-\d{4}-\d{2}-\d{2})?$", model):
+            if re.match(r"^(o1|o3)(-\d{4}-\d{2}-\d{2})?$", model) or "o3-pro" in model:
                 if stream:
                     block_as_stream = True
                     stream = False
@@ -733,28 +734,107 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             if "stop" in extra_model_kwargs:
                 del extra_model_kwargs["stop"]
 
-        # chat model
-        response = client.chat.completions.create(
-            messages=[self._convert_prompt_message_to_dict(m) for m in prompt_messages],  # type: ignore
-            model=model,
-            stream=stream,
-            **model_parameters,
-            **extra_model_kwargs,
-        )  # type: ignore
-
-        if stream:
-            return self._handle_chat_generate_stream_response(
-                model, credentials, response, prompt_messages, tools
+        if "o3-pro" in model:
+            block_result = self._chat_generate_o3_pro(
+                model=model,
+                credentials=credentials,
+                prompt_messages=prompt_messages,
+                model_parameters=model_parameters,
+                client=client,
+                user=user,
+            )
+        else:
+            # chat model
+            messages: Any = [self._convert_prompt_message_to_dict(m) for m in prompt_messages]
+            response = client.chat.completions.create(
+                messages=messages,
+                model=model,
+                stream=stream,
+                **model_parameters,
+                **extra_model_kwargs,
             )
 
-        block_result = self._handle_chat_generate_response(
-            model, credentials, response, prompt_messages, tools
-        )
+            if stream:
+                return self._handle_chat_generate_stream_response(model, credentials, response, prompt_messages, tools)
+
+            block_result = self._handle_chat_generate_response(model, credentials, response, prompt_messages, tools)
 
         if block_as_stream:
-            return self._handle_chat_block_as_stream_response(
-                block_result, prompt_messages, stop
+            return self._handle_chat_block_as_stream_response(block_result, prompt_messages, stop)
+        
+        return block_result
+
+    def _chat_generate_o3_pro(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        client: OpenAI,
+        user: Optional[str] = None,
+    ) -> LLMResult:
+        """
+        Invoke o3-pro model using responses.create API.
+        """
+        # 1. Prepare input string from prompt messages
+        input_parts = []
+        role_map = {
+            UserPromptMessage: "user",
+            AssistantPromptMessage: "assistant",
+            ToolPromptMessage: "tool",
+        }
+        for m in prompt_messages:
+            role = role_map.get(type(m))
+            if not role:
+                continue
+
+            content_str = ""
+            if isinstance(m.content, str):
+                content_str = m.content
+            elif isinstance(m.content, list):
+                content_str = "\n".join(
+                    [item.data for item in m.content if item.type == PromptMessageContentType.TEXT]
+                )
+            
+            if content_str:
+                input_parts.append(f"{role}: {content_str}")
+        
+        final_input = "\n\n".join(input_parts)
+
+        # 2. Adapt parameters for responses.create
+        response_params = model_parameters.copy()
+        if "max_completion_tokens" in response_params:
+            response_params["max_output_tokens"] = response_params.pop("max_completion_tokens")
+        if user:
+            response_params['user'] = user
+
+        # 3. Call API
+        resp_obj = client.responses.create(
+            model=model,
+            input=final_input,
+            **response_params
+        )
+
+        # 4. Handle response and convert to LLMResult
+        text_content = resp_obj.output_text or ""
+        assistant_prompt_message = AssistantPromptMessage(content=text_content)
+        
+        usage = None
+        if resp_obj.usage:
+            usage = self._calc_response_usage(
+                model=model,
+                credentials=credentials,
+                prompt_tokens=resp_obj.usage.input_tokens,
+                completion_tokens=resp_obj.usage.output_tokens,
             )
+        
+        block_result = LLMResult(
+            model=resp_obj.model,
+            prompt_messages=prompt_messages,
+            message=assistant_prompt_message,
+            usage=usage,
+            system_fingerprint=None,
+        )
 
         return block_result
 
@@ -1142,6 +1222,17 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                             "image_url": {
                                 "url": message_content.data,
                                 "detail": message_content.detail.value,
+                            },
+                        }
+                        sub_messages.append(sub_message_dict)
+                    elif isinstance(message_content, AudioPromptMessageContent):
+                        data_split = message_content.data.split(";base64,")
+                        base64_data = data_split[1]
+                        sub_message_dict = {
+                            "type": "input_audio",
+                            "input_audio": {
+                                "data": base64_data,
+                                "format": message_content.format,
                             },
                         }
                         sub_messages.append(sub_message_dict)

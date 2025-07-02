@@ -110,7 +110,7 @@ parameters:
       zh_Hans: 最大返回结果数量
       pt_BR: Maximum number of results to return
     min: 1
-    max: 10
+    max: 100
     default: 5
 
   - name: search_type

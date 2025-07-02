@@ -29,8 +29,6 @@ class MinimaxTextEmbeddingModel(TextEmbeddingModel):
     Model class for Minimax text embedding model.
     """
 
-    api_base: str = "https://api.minimax.chat/v1/embeddings"
-
     def _invoke(
         self,
         model: str,
@@ -51,11 +49,16 @@ class MinimaxTextEmbeddingModel(TextEmbeddingModel):
         """
         api_key = credentials["minimax_api_key"]
         group_id = credentials["minimax_group_id"]
+
+        # Get endpoint_url from credentials, use default if not provided
+        endpoint_url = credentials.get("endpoint_url", "https://api.minimax.chat/")
+        base_url = endpoint_url.rstrip('/')
+
         if model != "embo-01":
             raise ValueError("Invalid model name")
         if not api_key:
             raise CredentialsValidateFailedError("api_key is required")
-        url = f"{self.api_base}?GroupId={group_id}"
+        url = f"{base_url}/v1/embeddings?GroupId={group_id}"
         headers = {"Authorization": "Bearer " + api_key, "Content-Type": "application/json"}
         embedding_type = "db" if input_type == EmbeddingInputType.DOCUMENT else "query"
         data = {"model": "embo-01", "texts": texts, "type": embedding_type}

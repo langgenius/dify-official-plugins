@@ -55,6 +55,7 @@ class GaodeRepositoriesTool(Tool):
                             yield self.create_text_message(
                                 text=self.session.model.summary.invoke(json.dumps(contents, ensure_ascii=False), '')
                             )
+                            return
             s.close()
             yield self.create_text_message(f"No weather information for {city} was found.")
         except Exception as e:

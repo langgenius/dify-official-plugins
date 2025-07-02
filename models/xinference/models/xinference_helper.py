@@ -120,8 +120,10 @@ class XinferenceHelper:
             model_handle_type = "embedding"
         elif response_json.get("model_type") == "audio":
             model_handle_type = "audio"
-            if model_family and model_family in {"ChatTTS", "CosyVoice", "FishAudio"}:
-                model_ability.append("text-to-audio")
+            has_tts_ability = any(ability in ["text2audio", "text-to-audio"] for ability in model_ability)
+            if (model_family and model_family in {"ChatTTS", "CosyVoice", "FishAudio"}) or has_tts_ability:
+                if "text-to-audio" not in model_ability:
+                    model_ability.append("text-to-audio")
             else:
                 model_ability.append("audio-to-text")
         elif model_format == "ggmlv3" and "chatglm" in response_json["model_name"]:

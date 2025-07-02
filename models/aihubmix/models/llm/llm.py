@@ -32,6 +32,9 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
         credentials["endpoint_url"] = "https://aihubmix.com/v1"
         credentials["mode"] = self.get_model_mode(model).value
         credentials["function_calling_type"] = "tool_call"
+        credentials["extra_headers"] = {
+            "APP-Code": "Dify2025"
+        }
 
     def _dispatch_to_appropriate_model(
         self,

@@ -1,0 +1,29 @@
+meta:
+  arch:
+    - amd64
+    - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: "3.12"
+  version: 0.0.1
+name: maas
+author: langgenius
+label:
+  en_US: Huawei Cloud MaaS
+  zh_Hans: 华为云MaaS平台
+description:
+  en_US: Huawei Cloud MaaS provides access to various models (LLMs), configurable via model name, API key, and other parameters.
+  zh_Hans: 华为云MaaS平台提供对各种模型（LLM）的访问，可通过模型名称、API密钥和其他参数进行配置。
+icon: maas_square.svg
+plugins:
+  models:
+    - provider/maas.yaml
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: false
+type: plugin
+version: 0.0.1
+created_at: 2025-06-04T12:32:17.824356+08:00

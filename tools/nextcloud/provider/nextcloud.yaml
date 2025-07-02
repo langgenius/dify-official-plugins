@@ -1,0 +1,87 @@
+identity:
+  author: langgenius
+  name: nextcloud
+  label:
+    en_US: NextCloud
+    ja_JP: NextCloud
+    zh_Hans: NextCloud
+    pt_BR: NextCloud
+    zh_Hant: NextCloud
+  description:
+    en_US: Connect to NextCloud via WebDAV to manage files and folders
+    ja_JP: WebDAV 経由で NextCloud に接続してファイルとフォルダを管理します
+    zh_Hans: 通过 WebDAV 连接到 NextCloud 以管理文件和文件夹
+    pt_BR: Conecte-se ao NextCloud via WebDAV para gerenciar arquivos e pastas
+    zh_Hant: 透過 WebDAV 連接到 NextCloud 以管理檔案和資料夾
+  icon: icon.svg
+
+credentials_for_provider:
+  webdav_hostname:
+    type: text-input
+    required: true
+    label:
+      en_US: NextCloud Server URL
+      ja_JP: NextCloud サーバー URL
+      zh_Hans: NextCloud 服务器 URL
+      pt_BR: URL do Servidor NextCloud
+      zh_Hant: NextCloud 伺服器 URL
+    placeholder:
+      en_US: https://cloud.example.com
+      ja_JP: https://cloud.example.com
+      zh_Hans: https://cloud.example.com
+      pt_BR: https://cloud.example.com
+      zh_Hant: https://cloud.example.com
+    help:
+      en_US: Your NextCloud server URL (e.g., https://cloud.example.com)
+      ja_JP: NextCloud サーバーの URL（例 https://cloud.example.com）
+      zh_Hans: 您的 NextCloud 服务器 URL（例如 https://cloud.example.com）
+      pt_BR: URL do seu servidor NextCloud (ex https://cloud.example.com)
+      zh_Hant: 您的 NextCloud 伺服器 URL（例如 https://cloud.example.com）
+  username:
+    type: text-input
+    required: true
+    label:
+      en_US: Username
+      ja_JP: ユーザー名
+      zh_Hans: 用户名
+      pt_BR: Nome de usuário
+      zh_Hant: 使用者名稱
+    placeholder:
+      en_US: Enter your NextCloud username
+      ja_JP: NextCloud のユーザー名を入力してください
+      zh_Hans: 输入您的 NextCloud 用户名
+      pt_BR: Digite seu nome de usuário do NextCloud
+      zh_Hant: 輸入您的 NextCloud 使用者名稱
+  app_password:
+    type: secret-input
+    required: true
+    label:
+      en_US: App Password
+      ja_JP: アプリパスワード
+      zh_Hans: 应用密码
+      pt_BR: Senha do Aplicativo
+      zh_Hant: 應用程式密碼
+    placeholder:
+      en_US: Enter your NextCloud app password
+      ja_JP: NextCloud のアプリパスワードを入力してください
+      zh_Hans: 输入您的 NextCloud 应用密码
+      pt_BR: Digite sua senha de aplicativo do NextCloud
+      zh_Hant: 輸入您的 NextCloud 應用程式密碼
+    help:
+      en_US: Generate an app password in NextCloud Settings > Security > App passwords
+      ja_JP: NextCloud の設定 > セキュリティ > アプリパスワード でアプリパスワードを生成してください
+      zh_Hans: 在 NextCloud 设置 > 安全 > 应用密码 中生成应用密码
+      pt_BR: Gere uma senha de aplicativo em Configurações do NextCloud > Segurança > Senhas de aplicativo
+      zh_Hant: 在 NextCloud 設定 > 安全性 > 應用程式密碼 中產生應用程式密碼
+    url: https://docs.nextcloud.com/server/latest/user_manual/en/session_management.html#app-passwords
+
+tools:
+  - tools/list_files.yaml
+  - tools/download_file.yaml
+  - tools/create_folder.yaml
+  - tools/delete_file.yaml
+  - tools/search_files.yaml
+  - tools/upload_file.yaml
+extra:
+  python:
+    source: provider/nextcloud.py
