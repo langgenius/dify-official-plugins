@@ -32,7 +32,7 @@ class ComfyUiWorkflow:
     def get_json(self) -> dict:
         return self._workflow_json
 
-    def get_property(self, node_id: str, path: str):
+    def get_property(self, node_id: str | None, path: str):
         try:
             workflow_json = self._workflow_json[node_id]
             for name in path.split("/")[:-1]:
@@ -41,7 +41,7 @@ class ComfyUiWorkflow:
         except:
             return None
 
-    def set_property(self, node_id: str, path: str, value, can_create=False):
+    def set_property(self, node_id: str | None, path: str, value, can_create=False):
         workflow_json = self._workflow_json[node_id]
         for name in path.split("/")[:-1]:
             if not can_create and name not in workflow_json:
@@ -63,9 +63,11 @@ class ComfyUiWorkflow:
         # Returns the node_id of the only node with a given class_type
         possible_node_ids = self.get_node_ids_by_class_type(class_type)
         if len(possible_node_ids) == 0:
-            raise Exception(f"There are no nodes with the class_name '{class_type}'.")
+            raise Exception(
+                f"There are no nodes with the class_name '{class_type}'.")
         elif len(possible_node_ids) > 1:
-            raise Exception(f"There are some nodes with the class_name '{class_type}'.")
+            raise Exception(
+                f"There are some nodes with the class_name '{class_type}'.")
         return possible_node_ids[0]
 
     def randomize_seed(self):
@@ -76,7 +78,8 @@ class ComfyUiWorkflow:
                 )
             if self.get_property(node_id, "inputs/noise_seed") is not None:
                 self.set_property(
-                    node_id, "inputs/noise_seed", random.randint(10**14, 10**15 - 1)
+                    node_id, "inputs/noise_seed", random.randint(
+                        10**14, 10**15 - 1)
                 )
 
     def set_image_names(
@@ -87,16 +90,17 @@ class ComfyUiWorkflow:
         for i, node_id in enumerate(ordered_node_ids):
             self.set_property(node_id, "inputs/image", image_names[i])
 
-    def set_model_loader(self, node_id: str, ckpt_name: str):
+    def set_model_loader(self, node_id: str | None, ckpt_name: str):
         if node_id is None:
-            node_id = self.identify_node_by_class_type("CheckpointLoaderSimple")
+            node_id = self.identify_node_by_class_type(
+                "CheckpointLoaderSimple")
         if self.get_property(node_id, "class_type") != "CheckpointLoaderSimple":
             raise Exception(f"Node {node_id} is not CheckpointLoaderSimple")
         self.set_property(node_id, "inputs/ckpt_name", ckpt_name)
 
     def set_Ksampler(
         self,
-        node_id: str,
+        node_id: str | None,
         steps: int,
         sampler_name: str,
         scheduler_name: str,
@@ -117,7 +121,7 @@ class ComfyUiWorkflow:
 
     def set_empty_latent_image(
         self,
-        node_id: str,
+        node_id: str | None,
         width: int,
         height: int,
         batch_size: int = 1,
@@ -130,12 +134,63 @@ class ComfyUiWorkflow:
         self.set_property(node_id, "inputs/height", height)
         self.set_property(node_id, "inputs/batch_size", batch_size)
 
-    def set_prompt(self, node_id: str, prompt: str):
+    def set_prompt(self, node_id: str | None, prompt: str):
         if node_id is None:
             node_id = self.identify_node_by_class_type("CLIPTextEncode")
         if self.get_class_type(node_id) != "CLIPTextEncode":
             raise Exception(f"Node {node_id} is not CLIPTextEncode")
         self.set_property(node_id, "inputs/text", prompt)
+
+    def set_clip(self, node_id: str | None, clip_name: str):
+        if node_id is None:
+            node_id = self.identify_node_by_class_type("CLIPLoader")
+        if self.get_class_type(node_id) != "CLIPLoader":
+            raise Exception(f"Node {node_id} is not CLIPLoader")
+        self.set_property(node_id, "inputs/clip_name", clip_name)
+
+    def set_dual_clip(self, node_id: str | None, clip_name1: str, clip_name2: str):
+        if node_id is None:
+            node_id = self.identify_node_by_class_type("DualCLIPLoader")
+        if self.get_class_type(node_id) != "DualCLIPLoader":
+            raise Exception(f"Node {node_id} is not DualCLIPLoader")
+        self.set_property(node_id, "inputs/clip_name1", clip_name1)
+        self.set_property(node_id, "inputs/clip_name2", clip_name2)
+
+    def set_vae(self, node_id: str | None, vae_name: str):
+        if node_id is None:
+            node_id = self.identify_node_by_class_type("VAELoader")
+        if self.get_class_type(node_id) != "VAELoader":
+            raise Exception(f"Node {node_id} is not VAELoader")
+        self.set_property(node_id, "inputs/vae_name", vae_name)
+
+    def set_unet(self, node_id: str | None, unet_name: str):
+        if node_id is None:
+            node_id = self.identify_node_by_class_type("UNETLoader")
+        if self.get_class_type(node_id) != "UNETLoader":
+            raise Exception(f"Node {node_id} is not UNETLoader")
+        self.set_property(node_id, "inputs/unet_name", unet_name)
+
+    def set_empty_hunyuan(self, node_id: str | None, width: int, height: int, length: int, batch_size: int = 1):
+        if node_id is None:
+            node_id = self.identify_node_by_class_type(
+                "EmptyHunyuanLatentVideo")
+        if self.get_class_type(node_id) != "EmptyHunyuanLatentVideo":
+            raise Exception(f"Node {node_id} is not EmptyHunyuanLatentVideo")
+        self.set_property(node_id, "inputs/width", width)
+        self.set_property(node_id, "inputs/height", height)
+        self.set_property(node_id, "inputs/length", length)
+        self.set_property(node_id, "inputs/batch_size", batch_size)
+
+    def set_empty_mochi(self, node_id: str | None, width: int, height: int, length: int, batch_size: int = 1):
+        if node_id is None:
+            node_id = self.identify_node_by_class_type(
+                "EmptyMochiLatentVideo")
+        if self.get_class_type(node_id) != "EmptyMochiLatentVideo":
+            raise Exception(f"Node {node_id} is not EmptyMochiLatentVideo")
+        self.set_property(node_id, "inputs/width", width)
+        self.set_property(node_id, "inputs/height", height)
+        self.set_property(node_id, "inputs/length", length)
+        self.set_property(node_id, "inputs/batch_size", batch_size)
 
     def add_lora_node(
         self,
@@ -146,7 +201,8 @@ class ComfyUiWorkflow:
         strength_model: float = 1,
         strength_clip: float = 1,
     ):
-        lora_id = str(max([int(node_id) for node_id in self._workflow_json]) + 1)
+        lora_id = str(max([int(node_id)
+                      for node_id in self._workflow_json]) + 1)
         self._workflow_json[lora_id] = deepcopy(LORA_NODE)
         model_src_id = self.get_property(sampler_node_id, "inputs/model")[0]
         clip_src_id = self.get_property(prompt_node_id, "inputs/clip")[0]
@@ -159,11 +215,13 @@ class ComfyUiWorkflow:
         self.set_property(sampler_node_id, "inputs/model", [lora_id, 0])
         self.set_property(prompt_node_id, "inputs/model", [lora_id, 0])
         self.set_property(prompt_node_id, "inputs/clip", [lora_id, 1])
-        self.set_property(negative_prompt_node_id, "inputs/model", [lora_id, 0])
+        self.set_property(negative_prompt_node_id,
+                          "inputs/model", [lora_id, 0])
         self.set_property(negative_prompt_node_id, "inputs/clip", [lora_id, 1])
 
-    def add_flux_guidance(self, sampler_node_id: str, guidance: float):
-        new_node_id = str(max([int(node_id) for node_id in self._workflow_json]) + 1)
+    def add_flux_guidance(self, sampler_node_id: str | None, guidance: float):
+        new_node_id = str(max([int(node_id)
+                          for node_id in self._workflow_json]) + 1)
         self._workflow_json[new_node_id] = deepcopy(FluxGuidanceNode)
         self.set_property(new_node_id, "inputs/guidance", guidance)
         self.set_property(
