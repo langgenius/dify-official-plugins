@@ -28,7 +28,7 @@ class FileType(StrEnum):
 
 
 class ComfyUiClient:
-    def __init__(self, base_url: str, api_key: str = None):  # Add api_key parameter
+    def __init__(self, base_url: str, api_key: str | None = None):  # Add api_key parameter
         self.base_url = URL(base_url)
         self.api_key = api_key  # Store api_key
 
@@ -38,15 +38,15 @@ class ComfyUiClient:
             headers["Authorization"] = f"Bearer {self.api_key}"
         return headers
 
-    def get_model_dirs(self, path="") -> list[str]:
+    def get_model_dirs(self, path: str | None = None) -> list[str]:
         """
         get checkpoints
         """
         try:
-            if path == "":
-                api_url = f"{self.base_url}/models"
+            if path is None:
+                api_url = str(self.base_url/"models")
             else:
-                api_url = f"{self.base_url}/models/{path}"
+                api_url = str(self.base_url/"models"/path)
             response = httpx.get(
                 url=api_url, timeout=(2, 10), headers=self._get_headers()
             )  # Add headers
@@ -413,9 +413,9 @@ class ComfyUiClient:
         except Exception as e:
             error = f"Failed to download: {str(e)}."
             if len(self.get_model_dirs(save_dir)) == 0:
-                error += f"Please make sure the destination folder named models/{save_dir} exists."
+                error += f"Please make sure that https://github.com/ServiceStack/comfy-asset-downloader works on ComfyUI and the destination folder named models/{save_dir} exists."
             else:
-                error += "Please make sure https://github.com/ServiceStack/comfy-asset-downloader works on ComfyUI."
+                error += "Please make sure that https://github.com/ServiceStack/comfy-asset-downloader works on ComfyUI."
             raise ToolProviderCredentialValidationError(error)
 
         return filename
