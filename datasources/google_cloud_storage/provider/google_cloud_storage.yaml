@@ -8,7 +8,7 @@ identity:
     en_US: Google Cloud Storage Datasource
     zh_Hans: Google Cloud Storage 数据源
   icon: icon.svg
-provider_type: file_storage
+provider_type: online_drive
 credentials_schema:
   - name: credentials
     type: secret-input

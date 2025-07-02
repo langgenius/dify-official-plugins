@@ -3,8 +3,9 @@ from collections.abc import Generator
 from typing import Any
 
 from dify_plugin.entities.datasource import (
-    DataSourceMessage,
+    DatasourceMessage,
     OnlineDriveBrowseFilesRequest,
+    OnlineDriveBrowseFilesResponse,
     OnlineDriveFileBucket,
     OnlineDriveDownloadFileRequest,
     OnlineDriveFile,
@@ -17,7 +18,7 @@ from google.oauth2 import service_account
 class GoogleCloudStorageDataSource(OnlineDriveDatasource):
     def _browse_files(
         self,  request: OnlineDriveBrowseFilesRequest
-    ) -> list[OnlineDriveFileBucket]:
+    ) -> OnlineDriveBrowseFilesResponse:
         credentials = self.runtime.credentials.get("credentials")
         bucket_name = request.bucket
         prefix = request.prefix or ""
@@ -35,9 +36,9 @@ class GoogleCloudStorageDataSource(OnlineDriveDatasource):
         pages = [OnlineDriveFile(key=blob.name, size=blob.size) for blob in blobs if not blob.name.endswith('/')]
 
         file_bucket = OnlineDriveFileBucket(bucket=bucket_name, files=pages, is_truncated=is_truncated)
-        return [file_bucket]
+        return OnlineDriveBrowseFilesResponse(files=[file_bucket])
 
-    def _download_file(self, request: OnlineDriveDownloadFileRequest) -> Generator[DataSourceMessage, None, None]:
+    def _download_file(self, request: OnlineDriveDownloadFileRequest) -> Generator[DatasourceMessage, None, None]:
         credentials = self.runtime.credentials.get("credentials")
         bucket_name = request.bucket
         key = request.key
