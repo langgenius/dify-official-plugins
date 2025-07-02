@@ -23,10 +23,11 @@ class NotionExtractor:
     def extract(self) -> Dict[str, Any]:
         """Main entry point for invoking the tool."""
         extractor_result = self._load_data_as_documents(self._page_id, self._page_type)
-        return {"content": extractor_result,
-                "workspace_id": self._workspace_id,
-                "page_id": self._page_id}
-
+        return {
+            "content": extractor_result,
+            "workspace_id": self._workspace_id,
+            "page_id": self._page_id,
+        }
 
     def _load_data_as_documents(self, notion_obj_id: str, notion_obj_type: str) -> str:
         """Load data from Notion as documents."""

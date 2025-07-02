@@ -13,16 +13,20 @@ class FirecrawlDatasourceProvider(DatasourceProvider):
                 raise ToolProviderCredentialValidationError("api key is required")
 
             base_url = credentials.get("base_url") or "https://api.firecrawl.dev"
-            headers = {"Content-Type": "application/json",
-                      "Authorization": f"Bearer {api_key}"}
+            headers = {
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {api_key}",
+            }
             payload = {
                 "url": "https://example.com",
                 "includePaths": [],
                 "excludePaths": [],
                 "limit": 1,
-                "scrapeOptions": {"onlyMainContent": True}
+                "scrapeOptions": {"onlyMainContent": True},
             }
-            response = requests.post(f"{base_url}/v1/crawl", json=payload, headers=headers)
+            response = requests.post(
+                f"{base_url}/v1/crawl", json=payload, headers=headers
+            )
             if response.status_code == 200:
                 return True
             else:

@@ -18,7 +18,7 @@ class JinaReaderDatasource(WebsiteCrawlDatasource):
         """
         invoke tools
         """
-        api_key = self.runtime.credentials.get("api_key","")
+        api_key = self.runtime.credentials.get("api_key", "")
         self._api_key = api_key
         try:
             crawl_res = WebSiteInfo(web_info_list=[], status="", total=0, completed=0)
@@ -44,7 +44,6 @@ class JinaReaderDatasource(WebsiteCrawlDatasource):
         except Exception as e:
             raise ValueError(f"An error occurred: {str(e)}")
 
-
     def _handle_new_job(self, datasource_parameters: dict[str, Any]):
         url = datasource_parameters.get("url")
         crawl_sub_pages = datasource_parameters.get("crawl_sub_pages", False)
@@ -65,13 +64,18 @@ class JinaReaderDatasource(WebsiteCrawlDatasource):
         )
         if response.json().get("code") != 200:
             raise ValueError("Failed to crawl")
-        return {"status": "active", "job_id": response.json().get("data", {}).get("taskId")}
-
+        return {
+            "status": "active",
+            "job_id": response.json().get("data", {}).get("taskId"),
+        }
 
     def _handle_existing_job(self, job_id: str):
         response = requests.post(
             "https://adaptivecrawlstatus-kir3wx7b3a-uc.a.run.app",
-            headers={"Content-Type": "application/json", "Authorization": f"Bearer {self._api_key}"},
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {self._api_key}",
+            },
             json={"taskId": job_id},
         )
         if response.json().get("code") != 200:
@@ -88,18 +92,21 @@ class JinaReaderDatasource(WebsiteCrawlDatasource):
         if crawl_status_data["status"] == "completed":
             response = requests.post(
                 "https://adaptivecrawlstatus-kir3wx7b3a-uc.a.run.app",
-                headers={"Content-Type": "application/json", "Authorization": f"Bearer {self._api_key}"},
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {self._api_key}",
+                },
                 json={"taskId": job_id, "urls": list(data.get("processed", {}).keys())},
             )
             data = response.json().get("data", {})
             web_info_list = [
-                WebSiteInfoDetail(title=item.get("data", {}).get("title"),
-                                  source_url=item.get("data", {}).get("url"),
-                                  description=item.get("data", {}).get("description"),
-                                  content=item.get("data", {}).get("content"),
-                                  )
+                WebSiteInfoDetail(
+                    title=item.get("data", {}).get("title"),
+                    source_url=item.get("data", {}).get("url"),
+                    description=item.get("data", {}).get("description"),
+                    content=item.get("data", {}).get("content"),
+                )
                 for item in data.get("processed", {}).values()
             ]
             crawl_status_data["data"] = web_info_list
         return crawl_status_data
-
