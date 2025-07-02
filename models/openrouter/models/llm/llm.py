@@ -24,22 +24,23 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._update_credential(model, credentials)
-        reasoning_budget = model_parameters.get('reasoning_budget')
-        if reasoning_budget:
-            model_parameters.pop('reasoning_budget')
-        enable_thinking = model_parameters.get('enable_thinking')
-        if enable_thinking:
-            model_parameters.pop('enable_thinking')
-            if enable_thinking == 'dynamic':
-                reasoning_budget = -1
-            elif enable_thinking == 'disabled':
-                reasoning_budget = 0
-        if reasoning_budget:
-            model_parameters['reasoning'] = {'max_tokens': reasoning_budget}
-        reasoning_effort = model_parameters.get('reasoning_effort')
-        if reasoning_effort:
-            model_parameters.pop('reasoning_effort')
-            model_parameters['reasoning'] = {'effort': reasoning_effort}
+        # reasoning
+        reasoning_params = {}
+        reasoning_budget = model_parameters.pop('reasoning_budget', None)
+        enable_thinking = model_parameters.pop('enable_thinking', None)
+        if enable_thinking == 'dynamic':
+            reasoning_budget = -1
+        if reasoning_budget is not None:
+            reasoning_params['max_tokens'] = reasoning_budget
+        reasoning_effort = model_parameters.pop('reasoning_effort', None)
+        if reasoning_effort is not None:
+            reasoning_params['effort'] = reasoning_effort
+        exclude_reasoning_tokens = model_parameters.pop('exclude_reasoning_tokens', None)
+        if exclude_reasoning_tokens is not None:
+            reasoning_params['exclude'] = exclude_reasoning_tokens
+        if reasoning_params:
+            model_parameters['reasoning'] = reasoning_params
+
         # Add parameter conversion logic
         if "functions" in model_parameters:
             model_parameters["tools"] = [{"type": "function", "function": func} for func in model_parameters.pop("functions")]
