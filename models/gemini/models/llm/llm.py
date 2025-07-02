@@ -383,7 +383,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 try:
                     file_url = message_content.url
                     if file_server_url_prefix:
-                        file_url = f"{file_server_url_prefix.rstrip('/')}/files{message_content.url.split("/files")[-1]}"
+                        file_url = f"{file_server_url_prefix.rstrip('/')}/files{message_content.url.split('/files')[-1]}"
                     if not file_url.startswith("https://") and not file_url.startswith("http://"):
                         raise ValueError(f"Set FILES_URL env first!")
                     response: requests.Response = requests.get(file_url)
