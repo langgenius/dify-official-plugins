@@ -20,6 +20,4 @@ class ComfyuiListModels(Tool):
             base_url,
             self.runtime.credentials.get("comfyui_api_key")
         )
-        yield self.create_variable_message("checkpoints", cli.get_checkpoints())
-        yield self.create_variable_message("loras", cli.get_loras())
-        yield self.create_variable_message("upscale_models", cli.get_upscale_models())
+        yield self.create_variable_message("models", cli.get_model_dirs(tool_parameters.get("model_type")))
