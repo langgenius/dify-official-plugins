@@ -16,8 +16,8 @@ class ComfyuiDepthAnything(Tool):
         """
         invoke tools
         """
-        base_url = self.runtime.credentials.get("base_url", "")
-        if not base_url:
+        base_url = self.runtime.credentials.get("base_url")
+        if base_url is None:
             yield self.create_text_message("Please input base_url")
         self.comfyui = ComfyUiClient(
             base_url, self.runtime.credentials.get("comfyui_api_key")
@@ -65,7 +65,8 @@ class ComfyuiDepthAnything(Tool):
         for image_name in image_names:
             workflow.set_property("8", "inputs/image", image_name)
             try:
-                output_images.append(self.comfyui.generate(workflow.get_json())[0])
+                output_images.append(
+                    self.comfyui.generate(workflow.get_json())[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
                     f"Failed to generate image: {str(e)}. Maybe install https://github.com/spacepxl/ComfyUI-Depth-Pro on ComfyUI"
@@ -81,7 +82,8 @@ class ComfyuiDepthAnything(Tool):
         for image_name in image_names:
             workflow.set_property("3", "inputs/image", image_name)
             try:
-                output_images.append(self.comfyui.generate(workflow.get_json())[0])
+                output_images.append(
+                    self.comfyui.generate(workflow.get_json())[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
                     f"Failed to generate image: {str(e)}. Maybe install https://github.com/kijai/ComfyUI-DepthAnythingV2 on ComfyUI"
@@ -107,12 +109,15 @@ class ComfyuiDepthAnything(Tool):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "upscale.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
-        model_name = ""
+        if "esrgan" in feature:
+            model_name = self.comfyui.download_model(
+                "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth", "upscale_models")
         workflow.set_property("13", "inputs/model_name", model_name)
         for image_name in image_names:
             workflow.set_property("16", "inputs/image", image_name)
             try:
-                output_images.append(self.comfyui.generate(workflow.get_json())[0])
+                output_images.append(
+                    self.comfyui.generate(workflow.get_json())[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
                     f"Failed to generate image: {str(e)}. Maybe install https://github.com/kijai/ComfyUI-DepthAnythingV2 on ComfyUI"

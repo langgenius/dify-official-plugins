@@ -20,8 +20,7 @@ parameters:
       en_US: Input Image
       zh_Hans: 输入的图片
       ja_JP: 入力画像
-    llm_description:
-      The input image
+    llm_description: The input image
     human_description:
       en_US: The input image. If input is array of image, the first one will be used.
       zh_Hans: 输入的图片。如果输入是图像数组，将使用第一个图像。
@@ -32,8 +31,7 @@ parameters:
   - name: feature
     form: form
     human_description:
-      en_US:
-        Feature
+      en_US: Feature
     label:
       en_US: Feature
     required: true
@@ -72,3 +70,6 @@ parameters:
       - label:
           en_US: FaceSwap
         value: face_swap
+      - label:
+          en_US: Upscale ESRGAN
+        value: upscale_esrgan
