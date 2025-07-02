@@ -1,3 +1,4 @@
+import asyncio
 from collections.abc import Generator
 from typing import Any
 
@@ -43,10 +44,7 @@ class GetMessageTool(Tool):
             graph_client = GraphServiceClient(credentials=credential)
             
             # Get message
-            message = graph_client.users.by_user_id(user_email).messages.by_message_id(message_id).get(
-                select=["id", "subject", "sender", "toRecipients", "ccRecipients", 
-                       "receivedDateTime", "body", "hasAttachments", "attachments"]
-            )
+            message = asyncio.run(graph_client.users.by_user_id(user_email).messages.by_message_id(message_id).get())
             
             if not message:
                 yield self.create_text_message("Message not found.")
