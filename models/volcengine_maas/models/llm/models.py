@@ -18,15 +18,18 @@ class ModelConfig(BaseModel):
 configs: dict[str, ModelConfig] = {
     "Doubao-Seed-1.6": ModelConfig(
         properties=ModelProperties(context_size=262144, max_tokens=16384, mode=LLMMode.CHAT),
-        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO],
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
     ),
     "Doubao-Seed-1.6-flash": ModelConfig(
         properties=ModelProperties(context_size=262144, max_tokens=16384, mode=LLMMode.CHAT),
-        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO],
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
     ),
     "Doubao-Seed-1.6-thinking": ModelConfig(
         properties=ModelProperties(context_size=262144, max_tokens=16384, mode=LLMMode.CHAT),
-        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO],
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
     ),
     "Doubao-1.5-thinking-vision-pro": ModelConfig(
         properties=ModelProperties(context_size=131072, max_tokens=16384, mode=LLMMode.CHAT),
