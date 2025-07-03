@@ -158,6 +158,8 @@ class ComfyuiTxt2Img(Tool):
                 "inputs/upscale_method",
                 tool_parameters.get("hiresfix_upscale_method", "bilinear"),
             )
+        else:
+            workflow.set_empty_latent_image(None, width, height)
 
         if ecosystem in {ModelType.SD3.name, ModelType.FLUX1.name}:
             workflow.set_property("5", "class_type", "EmptySD3LatentImage")
