@@ -208,6 +208,17 @@ class ComfyUiWorkflow:
         self.set_property(node_id, "inputs/lossless",
                           "true" if lossless else "false")
 
+    def set_asset_downloader(self, node_id: str | None, url: str, save_to: str, filename: str, token: str):
+        # This node is downloadable from https://github.com/ServiceStack/comfy-asset-downloader.
+        if node_id is None:
+            node_id = self.identify_node_by_class_type("AssetDownloader")
+        if self.get_class_type(node_id) != "AssetDownloader":
+            raise Exception(f"Node {node_id} is not AssetDownloader")
+        self.set_property(node_id, "inputs/url", url)
+        self.set_property(node_id, "inputs/save_to", save_to)
+        self.set_property(node_id, "inputs/filename", filename)
+        self.set_property(node_id, "inputs/token", token)
+
     def add_lora_node(
         self,
         sampler_node_id: str,

@@ -10,6 +10,7 @@ import requests
 from websocket import WebSocket
 from yarl import URL
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
+from tools.comfyui_workflow import ComfyUiWorkflow
 
 
 class FileType(StrEnum):
@@ -378,27 +379,10 @@ class ComfyUiClient:
         return output_images
 
     def download_model(self, url, save_dir, filename=None, token=None) -> str:
-        current_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(current_dir, "json", "download.json")) as file:
-            workflow_json = json.loads(file.read())
-
-        workflow_json["1"]["inputs"]["url"] = url
-        workflow_json["1"]["inputs"]["save_to"] = save_dir
-        if filename is None:
-            filename = url.split("/")[-1].split("?")[0]
-        workflow_json["1"]["inputs"]["filename"] = filename
-        if token is None:
-            workflow_json["1"]["inputs"]["token"] = ""
-        else:
-            workflow_json["1"]["inputs"]["token"] = token
-
         headers = {}
         if token is not None:
             headers = {"Authorization": f"Bearer {token}"}
-        response = requests.head(
-            workflow_json["1"]["inputs"]["url"],
-            headers=headers,
-        )
+        response = requests.head(url, headers=headers)
         if response.status_code == 401:
             raise ToolProviderCredentialValidationError(
                 f"401 Unauthorized. Please check the api_token."
@@ -408,8 +392,17 @@ class ComfyUiClient:
                 f"Download failed. Error {response.status_code}. Please check the URL."
             )
 
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        with open(os.path.join(current_dir, "json", "download.json")) as file:
+            workflow = ComfyUiWorkflow(file.read())
+        if filename is None:
+            filename = url.split("/")[-1].split("?")[0]
+        if token is None:
+            token = ""
+        workflow.set_asset_downloader(None, url, save_dir, filename, token)
+
         try:
-            _ = self.generate(workflow_json)
+            _ = self.generate(workflow.json())
         except Exception as e:
             error = f"Failed to download: {str(e)}."
             if len(self.get_model_dirs(save_dir)) == 0:
@@ -423,15 +416,15 @@ class ComfyUiClient:
     def convert_webp2mp4(self, webp_blob, fps):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "webp2mp4.json")) as file:
-            workflow_json = json.loads(file.read())
+            workflow = ComfyUiWorkflow(file.read())
 
         uploaded_image = self.upload_image(
             "input.webp", webp_blob, "image/webp")
-        workflow_json["25"]["inputs"]["frame_rate"] = fps
-        workflow_json["28"]["inputs"]["image"] = uploaded_image
+        workflow.set_property("25", "inputs/frame_rate", fps)
+        workflow.set_image_names([uploaded_image])
 
         try:
-            output_files = self.generate(workflow_json)
+            output_files = self.generate(workflow.json())
         except Exception as e:
             raise ToolProviderCredentialValidationError(
                 f"Failed to download: {str(e)}. Please make sure https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite works on ComfyUI"
