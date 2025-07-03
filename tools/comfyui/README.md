@@ -46,6 +46,14 @@ Add the `ComfyUI` tool in the Agent application, then send a picture description
 
 Some ComfyUI workflows require multiple images inputs. In Dify, it will find every `LoadImage` node in the `WORKFLOW JSON` and fill in the image files input by the user in order. When you want to change this order, you can adjust it by filling in the `Image node ID list`. For example, if your workflow needs to input images into the 35th, 69th, and 87th nodes, then input `69,35,87` will pass the first image to the 69th node.
 
+## Example Workflows
+
+There are some example workflows to show what this plugin can do for you.
+
+* [Txt2Img](_assets/Txt2Img.yml)
+* [Upscale](_assets/Upscale.yml)
+* [CivitAI Download](_assets/CivitAI.yml)
+
 ## Nodes
 
 ![](./_assets/nodes.png)
