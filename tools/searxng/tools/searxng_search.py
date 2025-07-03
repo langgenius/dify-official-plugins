@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Generator
 import requests
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
@@ -9,7 +9,7 @@ class SearXNGSearchTool(Tool):
     Tool for performing a search using SearXNG engine.
     """
 
-    def _invoke(self, tool_parameters: dict[str, Any]) -> ToolInvokeMessage | list[ToolInvokeMessage]:
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Invoke the SearXNG search tool.
 
@@ -35,5 +35,6 @@ class SearXNGSearchTool(Tool):
             raise Exception(f"Error {response.status_code}: {response.text}")
         res = response.json().get("results", [])
         if not res:
-            return self.create_text_message(f"No results found, get response: {response.content}")
-        return [self.create_json_message(item) for item in res]
+            yield self.create_text_message(f"No results found, get response: {response.content}")
+        else:
+            yield [self.create_json_message(item) for item in res]
