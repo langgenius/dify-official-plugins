@@ -6,12 +6,13 @@ description:
   llm: Run ComfyUI workflow.
 extra:
   python:
-    source: tools/workflow.py
+    source: tools/run_workflow.py
 identity:
   author: hjlarry
   label:
-    en_US: workflow
+    en_US: Workflow
     zh_Hans: 工作流
+    ja_JP: ワークフロー
   name: workflow
 parameters:
   - form: llm
@@ -52,14 +53,12 @@ parameters:
       en_US: Use commas to separate multiple node ID
       zh_Hans: 多个节点ID时使用半角逗号分隔
     type: string
-  - form: llm
+
+  - name: randomize_seed
+    form: form
     human_description:
-      en_US:
-        If you need to generate different images each time, you need to enter the
-        ID of the seed node.
-      zh_Hans: 如果需要每次生成时使用不同的种子，需要输入包含种子的节点的ID
+      en_US: If enabled, all the seeds in the workflow will be randomized.
     label:
-      en_US: Seed Node Id
-      zh_Hans: 种子节点ID
-    name: seed_id
-    type: string
+      en_US: Randomize seeds
+    type: boolean
+    default: true

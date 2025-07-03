@@ -1,11 +1,6 @@
-import json
-import os
-
 from typing import Any, Generator
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
-
-import requests
 from tools.comfyui_client import ComfyUiClient
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
@@ -14,13 +9,15 @@ class DownloadByURL(Tool):
     def get_civit_key(self) -> str:
         civitai_api_key = self.runtime.credentials.get("civitai_api_key")
         if civitai_api_key is None:
-            raise ToolProviderCredentialValidationError("Please input civitai_api_key")
+            raise ToolProviderCredentialValidationError(
+                "Please input civitai_api_key")
         return civitai_api_key
 
     def get_hf_key(self) -> str:
         hf_api_key = self.runtime.credentials.get("hf_api_key")
         if hf_api_key is None:
-            raise ToolProviderCredentialValidationError("Please input hf_api_key")
+            raise ToolProviderCredentialValidationError(
+                "Please input hf_api_key")
         return hf_api_key
 
     def _invoke(
@@ -31,7 +28,8 @@ class DownloadByURL(Tool):
         """
         base_url = self.runtime.credentials.get("base_url")
         if base_url is None:
-            raise ToolProviderCredentialValidationError("Please input base_url")
+            raise ToolProviderCredentialValidationError(
+                "Please input base_url")
         self.comfyui = ComfyUiClient(base_url)
 
         url = tool_parameters.get("url")
