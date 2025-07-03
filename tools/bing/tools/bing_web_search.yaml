@@ -103,7 +103,7 @@ parameters:
       zh_Hans: 限制返回结果的数量
       pt_BR: limit the number of results
     min: 1
-    max: 10
+    max: 100
     default: 5
   - name: result_type
     type: select
@@ -113,9 +113,9 @@ parameters:
       zh_Hans: 结果类型
       pt_BR: result type
     human_description:
-      en_US: return a list of links or texts
-      zh_Hans: 返回一个连接列表还是纯文本内容
-      pt_BR: return a list of links or texts
+      en_US: return a list of links, json or texts
+      zh_Hans: 返回一个列表，内容是链接、json还是纯文本
+      pt_BR: return a list of links, json or texts
     default: text
     options:
       - value: link
@@ -128,6 +128,11 @@ parameters:
           en_US: Text
           zh_Hans: 文本
           pt_BR: Text
+      - value: json
+        label:
+          en_US: JSON
+          zh_Hans: JSON
+          pt_BR: JSON
     form: form
   - name: market
     type: select
