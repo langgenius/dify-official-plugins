@@ -1,2 +1,2 @@
-dify_plugin==0.0.1b65
-ormsgpack==1.7.0
+dify_plugin>=0.3.0,<0.4.0
+fish-audio-sdk>=2025.6.3

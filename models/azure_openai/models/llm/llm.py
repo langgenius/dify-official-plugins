@@ -2,6 +2,7 @@ import copy
 import json
 import logging
 from collections.abc import Generator, Sequence
+import math
 from typing import Optional, Union, cast
 import tiktoken
 from dify_plugin.entities.model import AIModelEntity, ModelPropertyKey
@@ -35,6 +36,9 @@ from openai.types.chat import (
 from openai.types.chat.chat_completion_chunk import ChoiceDeltaToolCall
 from ..common import _CommonAzureOpenAI
 from ..constants import LLM_BASE_MODELS
+from PIL import Image
+import base64
+import io
 
 logger = logging.getLogger(__name__)
 
@@ -318,7 +322,11 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             extra_model_kwargs["stop"] = stop
         if user:
             extra_model_kwargs["user"] = user
-        prompt_messages = self._clear_illegal_prompt_messages(base_model_name, prompt_messages)
+        if stream:
+            extra_model_kwargs["stream_options"] = {"include_usage": True}
+        prompt_messages = self._clear_illegal_prompt_messages(
+            base_model_name, prompt_messages
+        )
         block_as_stream = False
         if base_model_name.startswith(("o1", "o3", "o4")):
             # o1 and o1-* do not support streaming
@@ -485,8 +493,15 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         system_fingerprint = None
         completion = ""
         tool_calls = []
+        prompt_tokens = 0
+        completion_tokens = 0
+        has_usage = False
         for chunk in response:
             if len(chunk.choices) == 0:
+                if chunk.usage:
+                    prompt_tokens = chunk.usage.prompt_tokens
+                    completion_tokens = chunk.usage.completion_tokens
+                    has_usage = True
                 continue
             delta = chunk.choices[0]
             if delta.delta is None:
@@ -512,13 +527,14 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 ),
             )
             index += 1
-        prompt_tokens = self._num_tokens_from_messages(
-            credentials, prompt_messages, tools
-        )
-        full_assistant_prompt_message = AssistantPromptMessage(content=completion)
-        completion_tokens = self._num_tokens_from_messages(
-            credentials, [full_assistant_prompt_message]
-        )
+        if not has_usage:
+            prompt_tokens = self._num_tokens_from_messages(
+                credentials, prompt_messages, tools
+            )
+            full_assistant_prompt_message = AssistantPromptMessage(content=completion)
+            completion_tokens = self._num_tokens_from_messages(
+                credentials, [full_assistant_prompt_message]
+            )
         usage = self._calc_response_usage(
             model, credentials, prompt_tokens, completion_tokens
         )
@@ -694,14 +710,18 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             )
         num_tokens = 0
         messages_dict = [self._convert_prompt_message_to_dict(m) for m in messages]
+        image_details: list[dict] = []
         for message in messages_dict:
             num_tokens += tokens_per_message
             for key, value in message.items():
                 if isinstance(value, list):
                     text = ""
                     for item in value:
-                        if isinstance(item, dict) and item["type"] == "text":
-                            text += item["text"]
+                        if isinstance(item, dict):
+                            if item["type"] == "text":
+                                text += item["text"]
+                            elif item["type"] == "image_url":
+                                image_details.append(item["image_url"])
                     value = text
                 if key == "tool_calls":
                     for tool_call in value:
@@ -722,6 +742,11 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         num_tokens += 3
         if tools:
             num_tokens += self._num_tokens_for_tools(encoding, tools)
+        if len(image_details) > 0:
+            num_tokens += self._num_tokens_from_images(
+                image_details=image_details,
+                base_model_name=credentials["base_model_name"],
+            )
         return num_tokens
 
     @staticmethod
@@ -778,3 +803,83 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         if not base_model_name:
             raise ValueError("Base Model Name is required")
         return base_model_name
+
+    def _get_image_patches(self, n: int) -> float:
+        return (n + 32 - 1) // 32
+
+    # This algorithm is based on https://platform.openai.com/docs/guides/images-vision?api-mode=chat#calculating-costs
+    def _num_tokens_from_images(
+        self, base_model_name: str, image_details: list[dict]
+    ) -> int:
+        num_tokens: int = 0
+        base_tokens: int = 0
+        tile_tokens: int = 0
+
+        if base_model_name.startswith("gpt-4o-mini"):
+            base_tokens = 2833
+            tile_tokens = 5667
+        elif base_model_name.startswith(("gpt-4o", "gpt-4.1", "gpt-4.5")):
+            base_tokens = 85
+            tile_tokens = 170
+        elif base_model_name.startswith(("o1", "o3", "o1-pro")):
+            base_tokens = 75
+            tile_tokens = 150
+
+        for image_detail in image_details:
+            base64_str = image_detail["url"].split(",")[1]
+
+            image_data = base64.b64decode(base64_str)
+            image = Image.open(io.BytesIO(image_data))
+            width, height = image.size
+
+            if base_model_name.startswith(("gpt-4.1-mini", "gpt-4.1-nano", "o4-mini")):
+                width_patches = self._get_image_patches(width)
+                height_patches = self._get_image_patches(height)
+                cap = 1536
+
+                tokens = width_patches * height_patches
+
+                if tokens > cap:
+                    shrink_factor = math.sqrt(cap * 32**2 / (width * height))
+
+                    new_width = width * shrink_factor
+                    new_height = height * shrink_factor
+
+                    w_patches = int(new_width / 32)
+                    h_patches = int(new_height / 32)
+
+                    tokens = w_patches * h_patches
+
+                if base_model_name.startswith("o4-mini"):
+                    num_tokens += int(tokens * 1.72)
+                elif base_model_name.startswith("gpt-4.1-nano"):
+                    num_tokens += int(tokens * 2.46)
+                elif base_model_name.startswith("gpt-4.1-mini"):
+                    num_tokens += int(tokens * 1.62)
+            else:
+                if image_detail["detail"] == "low":
+                    # Regardless of input size, low detail images are a fixed cost.
+                    num_tokens += 85
+                else:
+                    # Scale the image longest side to 2048px
+                    if width > 2048 or height > 2048:
+                        aspect_ratio = width / height
+                        if aspect_ratio > 1:
+                            width, height = 2048, int(2048 / aspect_ratio)
+                        else:
+                            width, height = int(2048 * aspect_ratio), 2048
+
+                    # Further scale the image shortest side to 768px
+                    if width >= height and height > 768:
+                        width, height = int((768 / height) * width), 768
+                    elif height > width and width > 768:
+                        width, height = 768, int((768 / width) * height)
+
+                    # Calculate the number of tiles
+                    w_tiles = math.ceil(width / 512)
+                    h_tiles = math.ceil(height / 512)
+                    total_tiles = w_tiles * h_tiles
+
+                    num_tokens += base_tokens + total_tiles * tile_tokens
+
+        return num_tokens

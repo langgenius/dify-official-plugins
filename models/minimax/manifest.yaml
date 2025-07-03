@@ -1,7 +1,8 @@
 author: langgenius
 created_at: '2024-09-20T00:13:50.29298939-04:00'
 description: 
-  en_US: Minimax
+  en_US: Minimax AI models for LLM, text embedding, and text-to-speech
+  zh_Hans: Minimax AI 提供的大语言模型、文本嵌入和语音合成服务
 icon: icon_s_en.png
 label:
   en_US: Minimax
@@ -19,17 +20,17 @@ plugins:
   models:
   - provider/minimax.yaml
 resource:
-  memory: 268435456
+  memory: 1048576
   permission:
     model:
       enabled: true
       llm: true
       moderation: false
-      rerank: true
+      rerank: false
       speech2text: false
       text_embedding: true
-      tts: false
+      tts: true
     tool:
       enabled: true
 type: plugin
-version: 0.0.7
+version: 0.0.8

@@ -26,6 +26,7 @@ credentials_for_provider:
     url: https://cloud.llamaindex.ai/
 tools:
   - tools/llama_parse.yaml
+  - tools/llama_parse_advanced.yaml
 extra:
   python:
     source: provider/llama.py

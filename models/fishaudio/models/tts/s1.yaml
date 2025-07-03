@@ -1,0 +1,11 @@
+model: s1
+model_type: tts
+model_properties:
+  audio_type: 'mp3'
+  max_workers: 5
+  word_limit: 1000
+pricing:
+  input: '15'
+  output: '0'
+  unit: '0.000001'
+  currency: USD

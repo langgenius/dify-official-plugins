@@ -29,8 +29,9 @@ class GitlabCommitsTool(Tool):
             yield self.create_text_message("Gitlab API Access Tokens is required.")
         if "site_url" not in self.runtime.credentials or not self.runtime.credentials.get("site_url"):
             site_url = "https://gitlab.com"
+        ssl_verify = self.runtime.credentials.get("ssl_verify", True)
         result = self.fetch_commits(
-            site_url, access_token, repository, branch, employee, start_time, end_time, change_type, is_repository=True
+            site_url, access_token, repository, branch, employee, start_time, end_time, change_type, is_repository=True, ssl_verify=ssl_verify
         )
         for item in result:
             yield self.create_json_message(item)
@@ -46,6 +47,7 @@ class GitlabCommitsTool(Tool):
         end_time: str,
         change_type: str,
         is_repository: bool,
+        ssl_verify: bool,
     ) -> list[dict[str, Any]]:
         domain = site_url
         headers = {"PRIVATE-TOKEN": access_token}
@@ -58,14 +60,14 @@ class GitlabCommitsTool(Tool):
                 params["ref_name"] = branch
             if employee:
                 params["author"] = employee
-            commits_response = requests.get(commits_url, headers=headers, params=params)
+            commits_response = requests.get(commits_url, headers=headers, params=params, verify=ssl_verify)
             commits_response.raise_for_status()
             commits = commits_response.json()
             for commit in commits:
                 commit_sha = commit["id"]
                 author_name = commit["author_name"]
                 diff_url = f"{domain}/api/v4/projects/{encoded_repository}/repository/commits/{commit_sha}/diff"
-                diff_response = requests.get(diff_url, headers=headers)
+                diff_response = requests.get(diff_url, headers=headers, verify=ssl_verify) 
                 diff_response.raise_for_status()
                 diffs = diff_response.json()
                 for diff in diffs:

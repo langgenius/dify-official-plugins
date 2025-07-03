@@ -24,6 +24,7 @@ class MinimaxChatCompletionPro:
         model: str,
         api_key: str,
         group_id: str,
+        endpoint_url: str,
         prompt_messages: list[MinimaxMessage],
         model_parameters: dict,
         tools: list[dict[str, Any]],
@@ -36,15 +37,19 @@ class MinimaxChatCompletionPro:
         """
         if not api_key or not group_id:
             raise InvalidAPIKeyError("Invalid API key or group ID")
-        url = f"https://api.minimax.chat/v1/text/chatcompletion_pro?GroupId={group_id}"
+
+        # Remove trailing slash and construct URL
+        base_url = endpoint_url.rstrip('/')
+        url = f"{base_url}/v1/text/chatcompletion_pro?GroupId={group_id}"
+
         extra_kwargs = {}
-        if "max_tokens" in model_parameters and type(model_parameters["max_tokens"]) == int:
+        if "max_tokens" in model_parameters and isinstance(model_parameters["max_tokens"], int):
             extra_kwargs["tokens_to_generate"] = model_parameters["max_tokens"]
-        if "temperature" in model_parameters and type(model_parameters["temperature"]) == float:
+        if "temperature" in model_parameters and isinstance(model_parameters["temperature"], float):
             extra_kwargs["temperature"] = model_parameters["temperature"]
-        if "top_p" in model_parameters and type(model_parameters["top_p"]) == float:
+        if "top_p" in model_parameters and isinstance(model_parameters["top_p"], float):
             extra_kwargs["top_p"] = model_parameters["top_p"]
-        if "mask_sensitive_info" in model_parameters and type(model_parameters["mask_sensitive_info"]) == bool:
+        if "mask_sensitive_info" in model_parameters and isinstance(model_parameters["mask_sensitive_info"], bool):
             extra_kwargs["mask_sensitive_info"] = model_parameters["mask_sensitive_info"]
         if model_parameters.get("plugin_web_search"):
             extra_kwargs["plugins"] = ["plugin_web_search"]
@@ -58,7 +63,7 @@ class MinimaxChatCompletionPro:
             prompt_messages = prompt_messages[1:]
         if len(prompt_messages) == 0:
             raise BadRequestError("At least one user message is required")
-        messages = [message.to_dict() for message in prompt_messages]
+        messages = [message.to_pro_dict() for message in prompt_messages]
         headers = {"Authorization": "Bearer " + api_key, "Content-Type": "application/json"}
         body = {
             "model": model,

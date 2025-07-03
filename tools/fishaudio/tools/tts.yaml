@@ -38,13 +38,38 @@ parameters:
       pt_BR: Fish Audio voice id
     llm_description: Fish Audio voice id
     form: llm
+  - name: model
+    type: select
+    required: true
+    default: speech-1.5
+    label:
+      en_US: TTS model
+      zh_Hans: TTS 模型
+    options:
+      - label:
+          en_US: s1
+          zh_Hans: s1
+        value: s1
+      - label:
+          en_US: speech-1.6
+          zh_Hans: speech-1.6
+        value: speech-1.6
+      - label:
+          en_US: speech-1.6
+          zh_Hans: speech-1.5
+        value: speech-1.5
+    human_description:
+      en_US: TTS model
+      zh_Hans: TTS模型
+    llm_description: audio format
+    form: form
   - name: format
     type: select
     required: true
     default: wav
     label:
       en_US: format
-      zh_Hans: 类型
+      zh_Hans: 音频格式
     options:
       - label:
           en_US: mp3
@@ -60,10 +85,59 @@ parameters:
         value: pcm
     human_description:
       en_US: audio format
-      zh_Hans: 声音格式
+      zh_Hans: 音频格式
       pt_BR: audio format
     llm_description: audio format
     form: form
+  - name: latency
+    type: select
+    required: true
+    default: normal
+    label:
+      en_US: Latency mode
+      zh_Hans: 延迟模式
+    options:
+      - label:
+          en_US: normal
+          zh_Hans: 标准
+        value: normal
+      - label:
+          en_US: balanced
+          zh_Hans: 平衡
+        value: balanced
+    human_description:
+      en_US: Latency to be used for the speech, balanced will reduce the latency but may lead to performance degradation
+      zh_Hans: 用于语音的延迟，平衡将减少延迟，但可能会导致性能下降
+      pt_BR: Latency to be used for the speech, balanced will reduce the latency but may lead to performance degradation
+    llm_description: Fish Audio balance mode
+    form: form
+  - name: speed
+    type: number
+    required: false
+    default: 1.0
+    label:
+      en_US: Speed
+      zh_Hans: 语速
+    human_description:
+      en_US: Speech speed (0.5-2.0)
+      zh_Hans: 语速：0.5-2.0，1.0为正常速度
+    llm_description: Speaking speed (0.5 ~ 2.0)
+    form: form
+    min: 0.5
+    max: 2.0
+  - name: volume
+    type: number
+    required: false
+    default: 0
+    label:
+      en_US: Volume
+      zh_Hans: 音量
+    human_description:
+      en_US: Volume adjustment in dB
+      zh_Hans: 音量：以分贝(dB)为单位调整
+    llm_description: Speaking volume
+    form: form
+
 extra:
   python:
     source: tools/tts.py
