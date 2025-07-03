@@ -51,13 +51,13 @@ parameter_rules:
   - name: enable_thinking
     required: false
     type: string
-    default: manual
+    default: dynamic
     label:
       zh_Hans: 思考模式
       en_US: Thinking mode
     help:
-      zh_Hans: 是否开启思考模式。
-      en_US: Whether to enable thinking mode.
+      zh_Hans: 切换思考模式。
+      en_US: Switch thinking mode.
     options:
       - dynamic
       - manual
@@ -72,6 +72,16 @@ parameter_rules:
     required: false
     min: 128
     max: 32768
+  - name: exclude_reasoning_tokens
+    label:
+      zh_Hans: 隐藏思考过程
+      en_US: Hide the thought process
+    type: boolean
+    default: true
+    help:
+      zh_Hans: 是否隐藏思考过程。
+      en_US: Whether to hide the thought process.
+    required: false
 pricing:
   input: "1.25"
   output: "10"
