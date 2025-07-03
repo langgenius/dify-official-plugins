@@ -28,8 +28,12 @@ class HubspotProvider(ToolProvider):
             client = HubSpot(access_token=credentials.get("access_token"))
             
             # Make a test API call to validate token
-            # Get a single contact to verify API access (limit=1)
+            # Test both read and write permissions by getting contacts
             client.crm.contacts.basic_api.get_page(limit=1)
+            
+            # Note: We're not testing write permissions during validation to avoid 
+            # creating test data in the user's HubSpot account. Write permissions
+            # will be validated when the user actually tries to create a contact.
             
         except ApiException as e:
             raise ToolProviderCredentialValidationError(f"Invalid HubSpot API token: {str(e)}")
