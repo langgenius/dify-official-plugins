@@ -240,10 +240,7 @@ class ComfyUiWorkflow:
         self.set_property(lora_id, "inputs/clip", [clip_src_id, 1])
 
         self.set_property(sampler_node_id, "inputs/model", [lora_id, 0])
-        self.set_property(prompt_node_id, "inputs/model", [lora_id, 0])
         self.set_property(prompt_node_id, "inputs/clip", [lora_id, 1])
-        self.set_property(negative_prompt_node_id,
-                          "inputs/model", [lora_id, 0])
         self.set_property(negative_prompt_node_id, "inputs/clip", [lora_id, 1])
 
     def add_flux_guidance(self, sampler_node_id: str | None, guidance: float):
