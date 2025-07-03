@@ -31,14 +31,15 @@ credentials_for_provider:
       ja_JP: HubSpot プライベートアプリのアクセストークンを入力してください
       zh_Hant: 輸入您的 HubSpot 私有應用存取權杖
     help:
-      en_US: Create a private app in HubSpot developer account to get an access token
-      zh_Hans: 在 HubSpot 开发者账户中创建私有应用以获取访问令牌
-      pt_BR: Crie um aplicativo privado na conta de desenvolvedor HubSpot para obter um token de acesso
-      ja_JP: アクセストークンを取得するには、HubSpot 開発者アカウントでプライベートアプリを作成してください
-      zh_Hant: 在 HubSpot 開發者帳戶中建立私有應用以獲取存取權杖
+      en_US: Create a private app in HubSpot. Required scopes - Read and Write for contacts and companies
+      zh_Hans: 在 HubSpot 中创建私有应用。必需的权限范围 - 联系人和公司的读写权限
+      pt_BR: Crie um aplicativo privado no HubSpot. Escopos necessários - Leitura e escrita para contatos e empresas
+      ja_JP: HubSpot でプライベートアプリを作成してください。必要なスコープ - 連絡先と会社の読み書き権限
+      zh_Hant: 在 HubSpot 中建立私有應用。必需的權限範圍 - 聯絡人和公司的讀寫權限
     url: https://developers.hubspot.com/docs/api/private-apps
 tools:
   - tools/get_companies.yaml
+  - tools/create_contact.yaml
 extra:
   python:
     source: provider/hubspot.py
