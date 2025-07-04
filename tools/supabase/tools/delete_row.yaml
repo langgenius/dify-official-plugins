@@ -1,0 +1,43 @@
+identity:
+  name: delete_rows
+  author: langgenuis
+  label:
+    en_US: Delete Row(s)
+    zh_CN: 删除行
+    ja_JP: 行を削除
+description:
+  human:
+    en_US: Delete existing row(s) in a specified table in Supabase.
+    zh_CN: 删除 Supabase 指定表中的现有行。
+    ja_JP: Supabase の指定したテーブルの既存の行を削除します。
+  llm: Delete existing row(s) in a specified table in Supabase.
+parameters:
+- name: table
+  type: string
+  required: true
+  label:
+    en_US: Table Name
+    zh_CN: 表名
+    ja_JP: テーブル名
+  human_description:
+    en_US: The name of the table to delete from.
+    zh_CN: 要删除的表名。
+    ja_JP: 削除対象のテーブル名。
+  llm_description: Provide the name of the table where you want to delete rows.
+  form: llm
+- name: filter
+  type: string
+  required: true
+  label:
+    en_US: Filter
+    zh_CN: 过滤条件
+    ja_JP: フィルター
+  human_description:
+    en_US: Filter condition to identify which rows to delete (e.g., 'id=1').
+    zh_CN: 用于标识要删除哪些行的过滤条件（如 'id=1'）。
+    ja_JP: 削除する行を特定するためのフィルター条件（例：'id=1'）。
+  llm_description: Provide a filter condition to specify which rows to delete. (e.g., 'id=1')
+  form: llm
+extra:
+  python:
+    source: tools/delete_row.py
