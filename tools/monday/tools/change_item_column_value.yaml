@@ -1,0 +1,69 @@
+identity:
+  name: change_item_column_value
+  author: langgenius
+  label:
+    en_US: Change Item Column Value
+    zh_CN: 修改项目列值
+    ja_JP: アイテム列の値を変更
+description:
+  human:
+    en_US: Change a simple column value of an item.
+    zh_CN: 修改项目的某个简单列的值。
+    ja_JP: アイテムの単純な列の値を変更します。
+  llm: Change a simple column value of an item.
+parameters:
+- name: board_id
+  type: string
+  required: true
+  label:
+    en_US: Board ID
+    zh_CN: 看板ID
+    ja_JP: ボードID
+  human_description:
+    en_US: The ID of the board containing the item
+    zh_CN: 包含该项目的看板ID
+    ja_JP: アイテムを含むボードのID
+  llm_description: 'The ID (string) of the board containing the item.'
+  form: llm
+- name: item_id
+  type: string
+  required: true
+  label:
+    en_US: Item ID
+    zh_CN: 项目ID
+    ja_JP: アイテムID
+  human_description:
+    en_US: The ID of the item to update
+    zh_CN: 要更新的项目ID
+    ja_JP: 更新するアイテムのID
+  llm_description: 'The ID (string) of the item to update.'
+  form: llm
+- name: column_id
+  type: string
+  required: true
+  label:
+    en_US: Column ID
+    zh_CN: 列ID
+    ja_JP: 列ID
+  human_description:
+    en_US: The ID of the column to update
+    zh_CN: 要更新的列ID
+    ja_JP: 更新する列のID
+  llm_description: 'The ID (string) of the column to update.'
+  form: llm
+- name: value
+  type: string
+  required: true
+  label:
+    en_US: Value
+    zh_CN: 新值
+    ja_JP: 新しい値
+  human_description:
+    en_US: The new value for the column
+    zh_CN: 列的新值
+    ja_JP: 列の新しい値
+  llm_description: 'The new value (string) for the column.'
+  form: llm
+extra:
+  python:
+    source: tools/change_item_column_value.py

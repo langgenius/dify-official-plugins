@@ -1,0 +1,69 @@
+identity:
+  name: change_item_status
+  author: langgenius
+  label:
+    en_US: Change Item Status
+    zh_CN: 修改项目状态
+    ja_JP: アイテムのステータスを変更
+description:
+  human:
+    en_US: Change the status column value of an item.
+    zh_CN: 修改项目的状态列值。
+    ja_JP: アイテムのステータス列の値を変更します。
+  llm: Change the status column value of an item.
+parameters:
+- name: board_id
+  type: string
+  required: true
+  label:
+    en_US: Board ID
+    zh_CN: 看板ID
+    ja_JP: ボードID
+  human_description:
+    en_US: The ID of the board containing the item
+    zh_CN: 包含该项目的看板ID
+    ja_JP: アイテムを含むボードのID
+  llm_description: 'The ID (string) of the board containing the item.'
+  form: llm
+- name: item_id
+  type: string
+  required: true
+  label:
+    en_US: Item ID
+    zh_CN: 项目ID
+    ja_JP: アイテムID
+  human_description:
+    en_US: The ID of the item to update
+    zh_CN: 要更新的项目ID
+    ja_JP: 更新するアイテムのID
+  llm_description: 'The ID (string) of the item to update.'
+  form: llm
+- name: column_id
+  type: string
+  required: true
+  label:
+    en_US: Column ID
+    zh_CN: 列ID
+    ja_JP: 列ID
+  human_description:
+    en_US: The ID of the status column to update
+    zh_CN: 要更新的状态列ID
+    ja_JP: 更新するステータス列のID
+  llm_description: 'The ID (string) of the status column to update.'
+  form: llm
+- name: status_label
+  type: string
+  required: true
+  label:
+    en_US: Status Label
+    zh_CN: 状态标签
+    ja_JP: ステータスラベル
+  human_description:
+    en_US: The new status label value
+    zh_CN: 新的状态标签值
+    ja_JP: 新しいステータスラベルの値
+  llm_description: 'The new status label value (string).'
+  form: llm
+extra:
+  python:
+    source: tools/change_item_status.py

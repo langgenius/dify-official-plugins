@@ -1,0 +1,30 @@
+identity:
+  name: fetch_columns_by_board_id
+  author: langgenius
+  label:
+    en_US: Fetch Columns by Board ID
+    zh_CN: 按看板ID获取列
+    ja_JP: ボードIDで列取得
+description:
+  human:
+    en_US: Fetch all columns from a specific board by its ID.
+    zh_CN: 根据看板ID获取该看板下的所有列。
+    ja_JP: ボードIDでそのボードの全列を取得します。
+  llm: Fetch all columns from a specific board by its ID.
+parameters:
+- name: board_id
+  type: string
+  required: true
+  label:
+    en_US: Board ID
+    zh_CN: 看板ID
+    ja_JP: ボードID
+  human_description:
+    en_US: The ID of the board to fetch columns from
+    zh_CN: 要获取列的看板ID
+    ja_JP: 列を取得するボードのID
+  llm_description: 'The ID (string) of the board to fetch columns from.'
+  form: llm
+extra:
+  python:
+    source: tools/fetch_columns_by_board_id.py
