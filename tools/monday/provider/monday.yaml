@@ -1,0 +1,42 @@
+identity:
+  author: langgenius
+  name: monday
+  label:
+    en_US: Monday.com
+    zh_CN: Monday.com
+    ja_JP: Monday.com
+  description:
+    en_US: A plugin to interact with Monday.com boards, items, and updates.
+    zh_CN: 用于与 Monday.com 的看板、项目和更新进行交互的插件。
+    ja_JP: Monday.com のボード、アイテム、更新と連携するためのプラグイン。
+  icon: icon.svg
+credentials_for_provider:
+  token:
+    type: secret-input
+    required: true
+    label:
+      en_US: Monday API Token
+      zh_CN: Monday API 密钥
+      ja_JP: Monday API トークン
+    placeholder:
+      en_US: Enter your Monday API token
+      zh_CN: 输入您的 Monday API 密钥
+      ja_JP: Monday API トークンを入力してください
+    help:
+      en_US: Your Monday API token can be found in https://<your-org>.monday.com/apps/manage/tokens
+      zh_CN: 您的 Monday API 密钥可在 https://<your-org>.monday.com/apps/manage/tokens 找到
+      ja_JP: あなたの Monday API トークンは https://<your-org>.monday.com/apps/manage/tokens で確認できます
+    url: https://<your-org>.monday.com/apps/manage/tokens
+tools:
+- tools/change_item_column_value.yaml
+- tools/change_item_status.yaml
+- tools/create_item.yaml
+- tools/create_item_update.yaml
+- tools/fetch_all_items_by_board_id.yaml
+- tools/fetch_board_by_id.yaml
+- tools/fetch_boards.yaml
+- tools/fetch_columns_by_board_id.yaml
+- tools/fetch_groups_by_board_id.yaml
+extra:
+  python:
+    source: provider/monday.py
