@@ -1,0 +1,57 @@
+identity:
+  name: send_message
+  author: langgenius
+  label:
+    en_US: Send Message
+    zh_CN: 发送消息
+    ja_JP: メッセージ送信
+description:
+  human:
+    en_US: Send a message to the Pushover user key
+    zh_CN: 向 Pushover 用户密钥发送消息
+    ja_JP: Pushoverユーザーキーにメッセージを送信
+  llm: Send a message to the Pushover user key
+parameters:
+- name: message
+  type: string
+  required: true
+  label:
+    en_US: Message
+    zh_CN: 消息内容
+    ja_JP: メッセージ
+  human_description:
+    en_US: The message to send
+    zh_CN: 要发送的消息内容
+    ja_JP: 送信するメッセージ
+  llm_description: Message to send to the Pushover user
+  form: llm
+- name: title
+  type: string
+  required: true
+  label:
+    en_US: Title
+    zh_CN: 标题
+    ja_JP: タイトル
+  human_description:
+    en_US: The title of the message
+    zh_CN: 消息标题
+    ja_JP: メッセージのタイトル
+  llm_description: Title of the message to send to the Pushover user
+  form: llm
+- name: device
+  type: string
+  required: false
+  label:
+    en_US: Device
+    zh_CN: 设备
+    ja_JP: デバイス
+  human_description:
+    en_US: The device to send the message to (optional)
+    zh_CN: 要发送消息的设备（可选）
+    ja_JP: メッセージを送信するデバイス（任意）
+  llm_description: Device to send the message to, if not specified, it will be sent
+    to all devices
+  form: llm
+extra:
+  python:
+    source: tools/send_message.py
