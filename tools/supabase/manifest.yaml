@@ -1,6 +1,6 @@
 version: 0.1.0
 type: plugin
-author: langgenuis
+author: langgenius
 name: supabase
 label:
   en_US: Supabase
