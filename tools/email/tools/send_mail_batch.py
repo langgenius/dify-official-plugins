@@ -19,6 +19,8 @@ class SendMailTool(Tool):
         invoke tools
         """
         sender = self.runtime.credentials.get("email_account", "")
+        sender_address = self.runtime.credentials.get("sender_address", sender) or sender
+        reply_to_address = tool_parameters.get("reply_to", "")
         email_rgx = re.compile("^[a-zA-Z0-9._-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$")
         password = self.runtime.credentials.get("email_password", "")
         smtp_server = self.runtime.credentials.get("smtp_server", "")
@@ -38,10 +40,15 @@ class SendMailTool(Tool):
             yield self.create_text_message("please input sender")
             return
             
-        if not email_rgx.match(sender):
+        if not email_rgx.match(sender_address):
             yield self.create_text_message("Invalid parameter userid, the sender is not a mailbox")
             return
             
+        if reply_to_address and not email_rgx.match(reply_to_address):
+            yield self.create_text_message(
+                "Invalid parameter reply_to_address, the value is not a valid email address"
+            )
+            return
 
         receivers_email = tool_parameters["send_to"]
         if not receivers_email:
@@ -134,6 +141,7 @@ class SendMailTool(Tool):
             email_account=sender,
             email_password=password,
             sender_to=receivers_email,
+            sender_address=sender_address,
             subject=subject,
             email_content=email_content,
             plain_text_content=plain_text_content if convert_to_html else None,
@@ -141,7 +149,8 @@ class SendMailTool(Tool):
             is_html=convert_to_html,
             attachments=attachments,
             cc_recipients=cc_email_list,
-            bcc_recipients=bcc_email_list
+            bcc_recipients=bcc_email_list,
+            reply_to_address=reply_to_address
         )
         
         # Initialize response message for all recipients
