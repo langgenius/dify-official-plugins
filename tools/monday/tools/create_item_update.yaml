@@ -1,0 +1,43 @@
+identity:
+  name: create_item_update
+  author: langgenius
+  label:
+    en_US: Create Item Update
+    zh_CN: 创建项目更新
+    ja_JP: アイテム更新を作成
+description:
+  human:
+    en_US: Create an update for a specific item.
+    zh_CN: 为指定项目创建更新。
+    ja_JP: 特定のアイテムに対する更新を作成します。
+  llm: Create an update for a specific item.
+parameters:
+- name: item_id
+  type: string
+  required: true
+  label:
+    en_US: Item ID
+    zh_CN: 项目ID
+    ja_JP: アイテムID
+  human_description:
+    en_US: The ID of the item to update
+    zh_CN: 要更新的项目ID
+    ja_JP: 更新するアイテムのID
+  llm_description: 'The ID (string) of the item to update.'
+  form: llm
+- name: update_value
+  type: string
+  required: true
+  label:
+    en_US: Update Value
+    zh_CN: 更新内容
+    ja_JP: 更新内容
+  human_description:
+    en_US: The content of the update
+    zh_CN: 更新的内容
+    ja_JP: 更新の内容
+  llm_description: 'The content (string) of the update.'
+  form: llm
+extra:
+  python:
+    source: tools/create_item_update.py

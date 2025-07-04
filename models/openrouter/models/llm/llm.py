@@ -1,6 +1,6 @@
 from collections.abc import Generator
 from typing import Optional, Union
-from dify_plugin.entities.model import AIModelEntity
+from dify_plugin.entities.model import AIModelEntity, ModelFeature
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
 from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
 from dify_plugin import OAICompatLargeLanguageModel
@@ -10,7 +10,11 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
     def _update_credential(self, model: str, credentials: dict):
         credentials["endpoint_url"] = "https://openrouter.ai/api/v1"
         credentials["mode"] = self.get_model_mode(model).value
-        credentials["function_calling_type"] = "tools"  # change to "tools"
+        schema = self.get_model_schema(model, credentials)
+        if schema and {ModelFeature.TOOL_CALL, ModelFeature.MULTI_TOOL_CALL}.intersection(
+            schema.features or []
+        ):
+            credentials["function_calling_type"] = "tool_call"
 
     def _invoke(
         self,
@@ -24,27 +28,22 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._update_credential(model, credentials)
-        reasoning_budget = model_parameters.get('reasoning_budget')
-        if reasoning_budget:
-            model_parameters.pop('reasoning_budget')
-        enable_thinking = model_parameters.get('enable_thinking')
-        if enable_thinking:
-            model_parameters.pop('enable_thinking')
-            if enable_thinking == 'dynamic':
-                reasoning_budget = -1
-            elif enable_thinking == 'disabled':
-                reasoning_budget = 0
-        if reasoning_budget:
-            model_parameters['reasoning'] = {'max_tokens': reasoning_budget}
-        reasoning_effort = model_parameters.get('reasoning_effort')
-        if reasoning_effort:
-            model_parameters.pop('reasoning_effort')
-            model_parameters['reasoning'] = {'effort': reasoning_effort}
-        # Add parameter conversion logic
-        if "functions" in model_parameters:
-            model_parameters["tools"] = [{"type": "function", "function": func} for func in model_parameters.pop("functions")]
-        if "function_call" in model_parameters:
-            model_parameters["tool_choice"] = model_parameters.pop("function_call")
+        # reasoning
+        reasoning_params = {}
+        reasoning_budget = model_parameters.pop('reasoning_budget', None)
+        enable_thinking = model_parameters.pop('enable_thinking', None)
+        if enable_thinking == 'dynamic':
+            reasoning_budget = -1
+        if reasoning_budget is not None:
+            reasoning_params['max_tokens'] = reasoning_budget
+        reasoning_effort = model_parameters.pop('reasoning_effort', None)
+        if reasoning_effort is not None:
+            reasoning_params['effort'] = reasoning_effort
+        exclude_reasoning_tokens = model_parameters.pop('exclude_reasoning_tokens', None)
+        if exclude_reasoning_tokens is not None:
+            reasoning_params['exclude'] = exclude_reasoning_tokens
+        if reasoning_params:
+            model_parameters['reasoning'] = reasoning_params
         return self._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
@@ -63,13 +62,6 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._update_credential(model, credentials)
-        
-        # Add parameter conversion logic
-        if "functions" in model_parameters:
-            model_parameters["tools"] = [{"type": "function", "function": func} for func in model_parameters.pop("functions")]
-        if "function_call" in model_parameters:
-            model_parameters["tool_choice"] = model_parameters.pop("function_call")
-            
         return super()._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 
     def _wrap_thinking_by_reasoning_content(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
@@ -125,7 +117,6 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         )
 
     def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
-        self._update_credential(model, credentials)
         return super().get_customizable_model_schema(model, credentials)
 
     def get_num_tokens(

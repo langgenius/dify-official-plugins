@@ -1,0 +1,43 @@
+identity:
+  name: create_a_row
+  author: langgenuis
+  label:
+    en_US: Create a Row
+    zh_CN: 创建行
+    ja_JP: 行を作成
+description:
+  human:
+    en_US: Create a new row in a specified table in Supabase.
+    zh_CN: 在 Supabase 的指定表中创建新行。
+    ja_JP: Supabase の指定したテーブルに新しい行を作成します。
+  llm: Create a new row in a specified table in Supabase.
+parameters:
+- name: table
+  type: string
+  required: true
+  label:
+    en_US: Table Name
+    zh_CN: 表名
+    ja_JP: テーブル名
+  human_description:
+    en_US: The name of the table to insert into.
+    zh_CN: 要插入的表名。
+    ja_JP: 挿入先のテーブル名。
+  llm_description: Provide the name of the table where you want to insert a new row.
+  form: llm
+- name: data
+  type: string
+  required: true
+  label:
+    en_US: Row Data
+    zh_CN: 行数据
+    ja_JP: 行データ
+  human_description:
+    en_US: Data for the new row as a JSON object.
+    zh_CN: 新行的数据，格式为 JSON 对象。
+    ja_JP: 新しい行のデータ（JSON オブジェクト形式）。
+  llm_description: Provide the data for the new row in JSON format.
+  form: llm
+extra:
+  python:
+    source: tools/create_a_row.py

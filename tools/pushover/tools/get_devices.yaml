@@ -1,0 +1,17 @@
+identity:
+  name: get_devices
+  author: langgenius
+  label:
+    en_US: Get Devices
+    zh_CN: 获取设备
+    ja_JP: デバイス取得
+description:
+  human:
+    en_US: Get the list of devices associated with the Pushover user key
+    zh_CN: 获取与 Pushover 用户密钥关联的设备列表
+    ja_JP: Pushoverユーザーキーに紐づくデバイス一覧を取得
+  llm: Get the list of devices associated with the Pushover user key
+parameters: []
+extra:
+  python:
+    source: tools/get_devices.py

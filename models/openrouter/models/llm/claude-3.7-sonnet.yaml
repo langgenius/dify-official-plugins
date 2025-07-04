@@ -75,6 +75,16 @@ parameter_rules:
     required: false
     min: 1024
     max: 64000
+  - name: exclude_reasoning_tokens
+    label:
+      zh_Hans: 隐藏思考过程
+      en_US: Hide the thought process
+    type: boolean
+    default: true
+    help:
+      zh_Hans: 是否隐藏思考过程。
+      en_US: Whether to hide the thought process.
+    required: false
 pricing:
   input: "3.00"
   output: "15.00"

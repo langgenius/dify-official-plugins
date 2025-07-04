@@ -5,7 +5,7 @@ description:
     The image generation API provided by SiliconFlow includes Flux and Stable
     Diffusion models.
   zh_CN: 硅基流动提供的图片生成 API，包含 Flux 和 Stable Diffusion 模型。
-icon: icon.svg
+icon: siliconflow_square.svg
 label:
   en_US: SiliconFlow
   zh_CN: 硅基流动
@@ -33,4 +33,4 @@ resource:
 tags:
   - image
 type: plugin
-version: 0.0.5
+version: 0.0.6

@@ -1,0 +1,30 @@
+identity:
+  name: fetch_groups_by_board_id
+  author: langgenius
+  label:
+    en_US: Fetch Groups by Board ID
+    zh_CN: 按看板ID获取分组
+    ja_JP: ボードIDでグループ取得
+description:
+  human:
+    en_US: Fetch all groups from a specific board by its ID.
+    zh_CN: 根据看板ID获取该看板下的所有分组。
+    ja_JP: ボードIDでそのボードの全グループを取得します。
+  llm: Fetch all groups from a specific board by its ID.
+parameters:
+- name: board_id
+  type: string
+  required: true
+  label:
+    en_US: Board ID
+    zh_CN: 看板ID
+    ja_JP: ボードID
+  human_description:
+    en_US: The ID of the board to fetch groups from
+    zh_CN: 要获取分组的看板ID
+    ja_JP: グループを取得するボードのID
+  llm_description: 'The ID (string) of the board to fetch groups from.'
+  form: llm
+extra:
+  python:
+    source: tools/fetch_groups_by_board_id.py
