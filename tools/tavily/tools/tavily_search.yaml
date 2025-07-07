@@ -1,9 +1,11 @@
 description:
   human:
-    en_US: A search engine tool built specifically for AI agents (LLMs), delivering
+    en_US:
+      A search engine tool built specifically for AI agents (LLMs), delivering
       real-time, accurate, and factual results at speed.
     zh_Hans: 专为人工智能代理 (LLM) 构建的搜索引擎工具，可快速提供实时、准确和真实的结果。
-  llm: A tool for search engine built specifically for AI agents (LLMs), delivering
+  llm:
+    A tool for search engine built specifically for AI agents (LLMs), delivering
     real-time, accurate, and factual results at speed.
 extra:
   python:
@@ -15,193 +17,911 @@ identity:
     zh_Hans: Tavily Search
   name: tavily_search
 parameters:
-- form: llm
-  human_description:
-    en_US: The search query you want to execute with Tavily.
-    zh_Hans: 您想用 Tavily 执行的搜索查询。
-  label:
-    en_US: Query
-    zh_Hans: 查询
-  llm_description: The search query.
-  name: query
-  required: true
-  type: string
-- default: basic
-  form: llm
-  human_description:
-    en_US: The depth of the search.
-    zh_Hans: 搜索的深度。
-  label:
-    en_US: Search Depth
-    zh_Hans: 搜索深度
-  llm_description: The depth of the search. 'basic' for standard search, 'advanced' for more comprehensive results.
-  name: search_depth
-  options:
-  - label:
-      en_US: Basic
-      zh_Hans: 基本
-    value: basic
-  - label:
-      en_US: Advanced
-      zh_Hans: 高级
-    value: advanced
-  required: false
-  type: select
-- default: general
-  form: llm
-  human_description:
-    en_US: The category of the search.
-    zh_Hans: 搜索的类别。
-  label:
-    en_US: Topic
-    zh_Hans: 主题
-  llm_description: The category of the search. Options include 'general', 'news', or 'finance'.
-  name: topic
-  options:
-  - label:
-      en_US: General
-      zh_Hans: 一般
-    value: general
-  - label:
-      en_US: News
-      zh_Hans: 新闻
-    value: news
-  - label:
-      en_US: Finance
-      zh_Hans: 金融
-    value: finance
-  required: false
-  type: select
-- default: 3
-  form: llm
-  human_description:
-    en_US: The number of days back from the current date to include in the search
-      results (only applicable when "topic" is "news").
-    zh_Hans: 从当前日期起向前追溯的天数，以包含在搜索结果中（仅当"topic"为"news"时适用）。
-  label:
-    en_US: Days
-    zh_Hans: 天数
-  llm_description: The number of days back from the current date to include in the search results. Only applicable when "topic" is "news".
-  min: 1
-  name: days
-  required: false
-  type: number
-- form: llm
-  human_description:
-    en_US: The time range back from the current date to filter results.
-    zh_Hans: 从当前日期起向后筛选结果的时间范围。
-  label:
-    en_US: Time Range
-    zh_Hans: 时间范围
-  llm_description: The time range back from the current date to filter results. Options include 'not_specified', 'day', 'week', 'month', or 'year'.
-  name: time_range
-  options:
-  - label:
-      en_US: Not Specified
-      zh_Hans: 不指定
-    value: not_specified
-  - label:
-      en_US: Day
-      zh_Hans: 天
-    value: day
-  - label:
-      en_US: Week
-      zh_Hans: 周
-    value: week
-  - label:
-      en_US: Month
-      zh_Hans: 月
-    value: month
-  - label:
-      en_US: Year
-      zh_Hans: 年
-    value: year
-  required: false
-  default: not_specified
-  type: select
-- default: 5
-  form: form
-  human_description:
-    en_US: The maximum number of search results to return.
-    zh_Hans: 要返回的最大搜索结果数。
-  label:
-    en_US: Max Results
-    zh_Hans: 最大结果数
-  llm_description: The maximum number of search results to return. Range is 1-20.
-  max: 20
-  min: 1
-  name: max_results
-  required: false
-  type: number
-- default: false
-  form: form
-  human_description:
-    en_US: Include a list of query-related images in the response.
-    zh_Hans: 在响应中包含与查询相关的图片列表。
-  label:
-    en_US: Include Images
-    zh_Hans: 包含图片
-  llm_description: When set to true, includes a list of query-related images in the response.
-  name: include_images
-  required: false
-  type: boolean
-- default: false
-  form: form
-  human_description:
-    en_US: When include_images is True, adds descriptive text for each image.
-    zh_Hans: 当 include_images 为 True 时，为每个图像添加描述文本。
-  label:
-    en_US: Include Image Descriptions
-    zh_Hans: 包含图片描述
-  llm_description: When include_images is True and this is set to true, adds descriptive text for each image.
-  name: include_image_descriptions
-  required: false
-  type: boolean
-- default: false
-  form: form
-  human_description:
-    en_US: Include a short answer to the original query in the response.
-    zh_Hans: 在响应中包含对原始查询的简短回答。
-  label:
-    en_US: Include Answer
-    zh_Hans: 包含答案
-  llm_description: When set to true, includes a short answer to the original query in the response.
-  name: include_answer
-  required: false
-  type: boolean
-- default: false
-  form: form
-  human_description:
-    en_US: Include the cleaned and parsed HTML content of each search result.
-    zh_Hans: 包含每个搜索结果的已清理和解析的HTML内容。
-  label:
-    en_US: Include Raw Content
-    zh_Hans: 包含原始内容
-  llm_description: When set to true, includes the cleaned and parsed HTML content of each search result.
-  name: include_raw_content
-  required: false
-  type: boolean
-- form: form
-  human_description:
-    en_US: A comma-separated list of domains to specifically include in the search
-      results.
-    zh_Hans: 要在搜索结果中特别包含的域的逗号分隔列表。
-  label:
-    en_US: Include Domains
-    zh_Hans: 包含域
-  llm_description: A comma-separated list of domains to specifically include in the search results.
-  name: include_domains
-  required: false
-  type: string
-- form: form
-  human_description:
-    en_US: A comma-separated list of domains to specifically exclude from the search
-      results.
-    zh_Hans: 要从搜索结果中特别排除的域的逗号分隔列表。
-  label:
-    en_US: Exclude Domains
-    zh_Hans: 排除域
-  llm_description: A comma-separated list of domains to specifically exclude from the search results.
-  name: exclude_domains
-  required: false
-  type: string
+  - name: query
+    form: llm
+    human_description:
+      en_US: The search query you want to execute with Tavily.
+      zh_Hans: 您想用 Tavily 执行的搜索查询。
+    label:
+      en_US: Query
+      zh_Hans: 查询
+    llm_description: The search query.
+    required: true
+    type: string
+  - name: search_depth
+    default: basic
+    form: llm
+    human_description:
+      en_US: The depth of the search.
+      zh_Hans: 搜索的深度。
+    label:
+      en_US: Search Depth
+      zh_Hans: 搜索深度
+    llm_description: The depth of the search. 'basic' for standard search, 'advanced' for more comprehensive results.
+    options:
+      - label:
+          en_US: Basic
+          zh_Hans: 基本
+        value: basic
+      - label:
+          en_US: Advanced
+          zh_Hans: 高级
+        value: advanced
+    required: false
+    type: select
+  - name: topic
+    default: general
+    form: llm
+    human_description:
+      en_US: The category of the search.
+      zh_Hans: 搜索的类别。
+    label:
+      en_US: Topic
+      zh_Hans: 主题
+    llm_description: The category of the search. Options include 'general', 'news', or 'finance'.
+    options:
+      - label:
+          en_US: General
+          zh_Hans: 一般
+        value: general
+      - label:
+          en_US: News
+          zh_Hans: 新闻
+        value: news
+      - label:
+          en_US: Finance
+          zh_Hans: 金融
+        value: finance
+    required: false
+    type: select
+  - name: days
+    default: 7
+    form: llm
+    human_description:
+      en_US:
+        The number of days back from the current date to include in the search
+        results (only applicable when "topic" is "news").
+      zh_Hans: 从当前日期起向前追溯的天数，以包含在搜索结果中（仅当"topic"为"news"时适用）。
+    label:
+      en_US: Days
+      zh_Hans: 天数
+    llm_description: The number of days back from the current date to include in the search results. Only applicable when "topic" is "news".
+    min: 1
+    required: false
+    type: number
+  - name: time_range
+    form: llm
+    human_description:
+      en_US: The time range back from the current date to filter results.
+      zh_Hans: 从当前日期起向后筛选结果的时间范围。
+    label:
+      en_US: Time Range
+      zh_Hans: 时间范围
+    llm_description: The time range back from the current date to filter results. Options include 'not_specified', 'day', 'week', 'month', or 'year'.
+    options:
+      - label:
+          en_US: Not Specified
+          zh_Hans: 不指定
+        value: not_specified
+      - label:
+          en_US: Day
+          zh_Hans: 天
+        value: day
+      - label:
+          en_US: Week
+          zh_Hans: 周
+        value: week
+      - label:
+          en_US: Month
+          zh_Hans: 月
+        value: month
+      - label:
+          en_US: Year
+          zh_Hans: 年
+        value: year
+    required: false
+    default: not_specified
+    type: select
+  - name: max_results
+    default: 5
+    form: form
+    human_description:
+      en_US: The maximum number of search results to return.
+      zh_Hans: 要返回的最大搜索结果数。
+    label:
+      en_US: Max Results
+      zh_Hans: 最大结果数
+    llm_description: The maximum number of search results to return. Range is 1-20.
+    max: 20
+    min: 1
+    required: false
+    type: number
+  - name: include_images
+    default: false
+    form: form
+    human_description:
+      en_US: Include a list of query-related images in the response.
+      zh_Hans: 在响应中包含与查询相关的图片列表。
+    label:
+      en_US: Include Images
+      zh_Hans: 包含图片
+    llm_description: When set to true, includes a list of query-related images in the response.
+    required: false
+    type: boolean
+  - name: include_image_descriptions
+    default: false
+    form: form
+    human_description:
+      en_US: When include_images is True, adds descriptive text for each image.
+      zh_Hans: 当 include_images 为 True 时，为每个图像添加描述文本。
+    label:
+      en_US: Include Image Descriptions
+      zh_Hans: 包含图片描述
+    llm_description: When include_images is True and this is set to true, adds descriptive text for each image.
+    required: false
+    type: boolean
+  - name: include_answer
+    default: false
+    form: form
+    human_description:
+      en_US: Include a short answer to the original query in the response.
+      zh_Hans: 在响应中包含对原始查询的简短回答。
+    label:
+      en_US: Include Answer
+      zh_Hans: 包含答案
+    llm_description: When set to true, includes a short answer to the original query in the response.
+    required: false
+    type: boolean
+  - name: include_raw_content
+    default: false
+    form: form
+    human_description:
+      en_US: Include the cleaned and parsed HTML content of each search result.
+      zh_Hans: 包含每个搜索结果的已清理和解析的HTML内容。
+    label:
+      en_US: Include Raw Content
+      zh_Hans: 包含原始内容
+    llm_description: When set to true, includes the cleaned and parsed HTML content of each search result.
+    required: false
+    type: boolean
+  - name: include_domains
+    form: form
+    human_description:
+      en_US:
+        A comma-separated list of domains to specifically include in the search
+        results.
+      zh_Hans: 要在搜索结果中特别包含的域的逗号分隔列表。
+    label:
+      en_US: Include Domains
+      zh_Hans: 包含域
+    llm_description: A comma-separated list of domains to specifically include in the search results.
+    required: false
+    type: string
+  - name: exclude_domains
+    form: form
+    human_description:
+      en_US:
+        A comma-separated list of domains to specifically exclude from the search
+        results.
+      zh_Hans: 要从搜索结果中特别排除的域的逗号分隔列表。
+    label:
+      en_US: Exclude Domains
+      zh_Hans: 排除域
+    llm_description: A comma-separated list of domains to specifically exclude from the search results.
+    required: false
+    type: string
+  - name: auto_parameters
+    default: false
+    form: form
+    human_description:
+      en_US: Automatically configure search parameters based on query content and intent.
+      zh_Hans: 根据查询内容和意图自动配置搜索参数。
+    label:
+      en_US: Auto Parameters
+      zh_Hans: 自动参数
+    llm_description: When set to true, Tavily automatically configures search parameters based on your query.
+    required: false
+    type: boolean
+  - name: chunks_per_source
+    default: 3
+    form: form
+    human_description:
+      en_US: Maximum number of content chunks returned per source (advanced search only).
+      zh_Hans: 每个来源返回的内容片段的最大数量（仅限高级搜索）。
+    label:
+      en_US: Chunks Per Source
+      zh_Hans: 每来源片段数
+    llm_description: Maximum number of relevant content chunks (1-3) returned per source. Valid only when search_depth is advanced.
+    max: 3
+    min: 1
+    required: false
+    type: number
+  - name: include_favicon
+    default: false
+    form: form
+    human_description:
+      en_US: Include favicon URL for each result.
+      zh_Hans: 包含每个结果的favicon URL。
+    label:
+      en_US: Include Favicon
+      zh_Hans: 包含Favicon
+    llm_description: When set to true, includes the favicon URL for each result.
+    required: false
+    type: boolean
+  - name: country
+    form: llm
+    human_description:
+      en_US: Boost search results from a specific country (topic must be general).
+      zh_Hans: 从特定国家/地区提升搜索结果（主题必须是general）。
+    label:
+      en_US: Country
+      zh_Hans: 国家
+    llm_description: Select a country to boost its content in results (only when topic is general).
+    required: false
+    type: select
+    options:
+      - label:
+          en_US: Afghanistan
+          zh_Hans: 阿富汗
+        value: afghanistan
+      - label:
+          en_US: Albania
+          zh_Hans: 阿尔巴尼亚
+        value: albania
+      - label:
+          en_US: Algeria
+          zh_Hans: 阿尔及利亚
+        value: algeria
+      - label:
+          en_US: Andorra
+          zh_Hans: 安道尔
+        value: andorra
+      - label:
+          en_US: Angola
+          zh_Hans: 安哥拉
+        value: angola
+      - label:
+          en_US: Argentina
+          zh_Hans: 阿根廷
+        value: argentina
+      - label:
+          en_US: Armenia
+          zh_Hans: 亚美尼亚
+        value: armenia
+      - label:
+          en_US: Australia
+          zh_Hans: 澳大利亚
+        value: australia
+      - label:
+          en_US: Austria
+          zh_Hans: 奥地利
+        value: austria
+      - label:
+          en_US: Azerbaijan
+          zh_Hans: 阿塞拜疆
+        value: azerbaijan
+      - label:
+          en_US: Bahamas
+          zh_Hans: 巴哈马
+        value: bahamas
+      - label:
+          en_US: Bahrain
+          zh_Hans: 巴林
+        value: bahrain
+      - label:
+          en_US: Bangladesh
+          zh_Hans: 孟加拉国
+        value: bangladesh
+      - label:
+          en_US: Barbados
+          zh_Hans: 巴巴多斯
+        value: barbados
+      - label:
+          en_US: Belarus
+          zh_Hans: 白俄罗斯
+        value: belarus
+      - label:
+          en_US: Belgium
+          zh_Hans: 比利时
+        value: belgium
+      - label:
+          en_US: Belize
+          zh_Hans: 伯利兹
+        value: belize
+      - label:
+          en_US: Benin
+          zh_Hans: 贝宁
+        value: benin
+      - label:
+          en_US: Bhutan
+          zh_Hans: 不丹
+        value: bhutan
+      - label:
+          en_US: Bolivia
+          zh_Hans: 玻利维亚
+        value: bolivia
+      - label:
+          en_US: Bosnia and Herzegovina
+          zh_Hans: 波斯尼亚和黑塞哥维那
+        value: bosnia and herzegovina
+      - label:
+          en_US: Botswana
+          zh_Hans: 博茨瓦纳
+        value: botswana
+      - label:
+          en_US: Brazil
+          zh_Hans: 巴西
+        value: brazil
+      - label:
+          en_US: Brunei
+          zh_Hans: 文莱
+        value: brunei
+      - label:
+          en_US: Bulgaria
+          zh_Hans: 保加利亚
+        value: bulgaria
+      - label:
+          en_US: Burkina Faso
+          zh_Hans: 布基纳法索
+        value: burkina faso
+      - label:
+          en_US: Burundi
+          zh_Hans: 布隆迪
+        value: burundi
+      - label:
+          en_US: Cambodia
+          zh_Hans: 柬埔寨
+        value: cambodia
+      - label:
+          en_US: Cameroon
+          zh_Hans: 喀麦隆
+        value: cameroon
+      - label:
+          en_US: Canada
+          zh_Hans: 加拿大
+        value: canada
+      - label:
+          en_US: Cape Verde
+          zh_Hans: 佛得角
+        value: cape verde
+      - label:
+          en_US: Central African Republic
+          zh_Hans: 中非共和国
+        value: central african republic
+      - label:
+          en_US: Chad
+          zh_Hans: 乍得
+        value: chad
+      - label:
+          en_US: Chile
+          zh_Hans: 智利
+        value: chile
+      - label:
+          en_US: China
+          zh_Hans: 中国
+        value: china
+      - label:
+          en_US: Colombia
+          zh_Hans: 哥伦比亚
+        value: colombia
+      - label:
+          en_US: Comoros
+          zh_Hans: 科摩罗
+        value: comoros
+      - label:
+          en_US: Congo
+          zh_Hans: 刚果
+        value: congo
+      - label:
+          en_US: Costa Rica
+          zh_Hans: 哥斯达黎加
+        value: costa rica
+      - label:
+          en_US: Croatia
+          zh_Hans: 克罗地亚
+        value: croatia
+      - label:
+          en_US: Cuba
+          zh_Hans: 古巴
+        value: cuba
+      - label:
+          en_US: Cyprus
+          zh_Hans: 塞浦路斯
+        value: cyprus
+      - label:
+          en_US: Czech Republic
+          zh_Hans: 捷克共和国
+        value: czech republic
+      - label:
+          en_US: Denmark
+          zh_Hans: 丹麦
+        value: denmark
+      - label:
+          en_US: Djibouti
+          zh_Hans: 吉布提
+        value: djibouti
+      - label:
+          en_US: Dominican Republic
+          zh_Hans: 多米尼加共和国
+        value: dominican republic
+      - label:
+          en_US: Ecuador
+          zh_Hans: 厄瓜多尔
+        value: ecuador
+      - label:
+          en_US: Egypt
+          zh_Hans: 埃及
+        value: egypt
+      - label:
+          en_US: El Salvador
+          zh_Hans: 萨尔瓦多
+        value: el salvador
+      - label:
+          en_US: Equatorial Guinea
+          zh_Hans: 赤道几内亚
+        value: equatorial guinea
+      - label:
+          en_US: Eritrea
+          zh_Hans: 厄立特里亚
+        value: eritrea
+      - label:
+          en_US: Estonia
+          zh_Hans: 爱沙尼亚
+        value: estonia
+      - label:
+          en_US: Ethiopia
+          zh_Hans: 埃塞俄比亚
+        value: ethiopia
+      - label:
+          en_US: Fiji
+          zh_Hans: 斐济
+        value: fiji
+      - label:
+          en_US: Finland
+          zh_Hans: 芬兰
+        value: finland
+      - label:
+          en_US: France
+          zh_Hans: 法国
+        value: france
+      - label:
+          en_US: Gabon
+          zh_Hans: 加蓬
+        value: gabon
+      - label:
+          en_US: Gambia
+          zh_Hans: 冈比亚
+        value: gambia
+      - label:
+          en_US: Georgia
+          zh_Hans: 格鲁吉亚
+        value: georgia
+      - label:
+          en_US: Germany
+          zh_Hans: 德国
+        value: germany
+      - label:
+          en_US: Ghana
+          zh_Hans: 加纳
+        value: ghana
+      - label:
+          en_US: Greece
+          zh_Hans: 希腊
+        value: greece
+      - label:
+          en_US: Guatemala
+          zh_Hans: 危地马拉
+        value: guatemala
+      - label:
+          en_US: Guinea
+          zh_Hans: 几内亚
+        value: guinea
+      - label:
+          en_US: Haiti
+          zh_Hans: 海地
+        value: haiti
+      - label:
+          en_US: Honduras
+          zh_Hans: 洪都拉斯
+        value: honduras
+      - label:
+          en_US: Hungary
+          zh_Hans: 匈牙利
+        value: hungary
+      - label:
+          en_US: Iceland
+          zh_Hans: 冰岛
+        value: iceland
+      - label:
+          en_US: India
+          zh_Hans: 印度
+        value: india
+      - label:
+          en_US: Indonesia
+          zh_Hans: 印度尼西亚
+        value: indonesia
+      - label:
+          en_US: Iran
+          zh_Hans: 伊朗
+        value: iran
+      - label:
+          en_US: Iraq
+          zh_Hans: 伊拉克
+        value: iraq
+      - label:
+          en_US: Ireland
+          zh_Hans: 爱尔兰
+        value: ireland
+      - label:
+          en_US: Israel
+          zh_Hans: 以色列
+        value: israel
+      - label:
+          en_US: Italy
+          zh_Hans: 意大利
+        value: italy
+      - label:
+          en_US: Jamaica
+          zh_Hans: 牙买加
+        value: jamaica
+      - label:
+          en_US: Japan
+          zh_Hans: 日本
+        value: japan
+      - label:
+          en_US: Jordan
+          zh_Hans: 约旦
+        value: jordan
+      - label:
+          en_US: Kazakhstan
+          zh_Hans: 哈萨克斯坦
+        value: kazakhstan
+      - label:
+          en_US: Kenya
+          zh_Hans: 肯尼亚
+        value: kenya
+      - label:
+          en_US: Kuwait
+          zh_Hans: 科威特
+        value: kuwait
+      - label:
+          en_US: Kyrgyzstan
+          zh_Hans: 吉尔吉斯斯坦
+        value: kyrgyzstan
+      - label:
+          en_US: Latvia
+          zh_Hans: 拉脱维亚
+        value: latvia
+      - label:
+          en_US: Lebanon
+          zh_Hans: 黎巴嫩
+        value: lebanon
+      - label:
+          en_US: Lesotho
+          zh_Hans: 莱索托
+        value: lesotho
+      - label:
+          en_US: Liberia
+          zh_Hans: 利比里亚
+        value: liberia
+      - label:
+          en_US: Libya
+          zh_Hans: 利比亚
+        value: libya
+      - label:
+          en_US: Liechtenstein
+          zh_Hans: 列支敦士登
+        value: liechtenstein
+      - label:
+          en_US: Lithuania
+          zh_Hans: 立陶宛
+        value: lithuania
+      - label:
+          en_US: Luxembourg
+          zh_Hans: 卢森堡
+        value: luxembourg
+      - label:
+          en_US: Madagascar
+          zh_Hans: 马达加斯加
+        value: madagascar
+      - label:
+          en_US: Malawi
+          zh_Hans: 马拉维
+        value: malawi
+      - label:
+          en_US: Malaysia
+          zh_Hans: 马来西亚
+        value: malaysia
+      - label:
+          en_US: Maldives
+          zh_Hans: 马尔代夫
+        value: maldives
+      - label:
+          en_US: Mali
+          zh_Hans: 马里
+        value: mali
+      - label:
+          en_US: Malta
+          zh_Hans: 马耳他
+        value: malta
+      - label:
+          en_US: Mauritania
+          zh_Hans: 毛里塔尼亚
+        value: mauritania
+      - label:
+          en_US: Mauritius
+          zh_Hans: 毛里求斯
+        value: mauritius
+      - label:
+          en_US: Mexico
+          zh_Hans: 墨西哥
+        value: mexico
+      - label:
+          en_US: Moldova
+          zh_Hans: 摩尔多瓦
+        value: moldova
+      - label:
+          en_US: Monaco
+          zh_Hans: 摩纳哥
+        value: monaco
+      - label:
+          en_US: Mongolia
+          zh_Hans: 蒙古
+        value: mongolia
+      - label:
+          en_US: Montenegro
+          zh_Hans: 黑山
+        value: montenegro
+      - label:
+          en_US: Morocco
+          zh_Hans: 摩洛哥
+        value: morocco
+      - label:
+          en_US: Mozambique
+          zh_Hans: 莫桑比克
+        value: mozambique
+      - label:
+          en_US: Myanmar
+          zh_Hans: 缅甸
+        value: myanmar
+      - label:
+          en_US: Namibia
+          zh_Hans: 纳米比亚
+        value: namibia
+      - label:
+          en_US: Nepal
+          zh_Hans: 尼泊尔
+        value: nepal
+      - label:
+          en_US: Netherlands
+          zh_Hans: 荷兰
+        value: netherlands
+      - label:
+          en_US: New Zealand
+          zh_Hans: 新西兰
+        value: new zealand
+      - label:
+          en_US: Nicaragua
+          zh_Hans: 尼加拉瓜
+        value: nicaragua
+      - label:
+          en_US: Niger
+          zh_Hans: 尼日尔
+        value: niger
+      - label:
+          en_US: Nigeria
+          zh_Hans: 尼日利亚
+        value: nigeria
+      - label:
+          en_US: North Korea
+          zh_Hans: 朝鲜
+        value: north korea
+      - label:
+          en_US: North Macedonia
+          zh_Hans: 北马其顿
+        value: north macedonia
+      - label:
+          en_US: Norway
+          zh_Hans: 挪威
+        value: norway
+      - label:
+          en_US: Oman
+          zh_Hans: 阿曼
+        value: oman
+      - label:
+          en_US: Pakistan
+          zh_Hans: 巴基斯坦
+        value: pakistan
+      - label:
+          en_US: Panama
+          zh_Hans: 巴拿马
+        value: panama
+      - label:
+          en_US: Papua New Guinea
+          zh_Hans: 巴布亚新几内亚
+        value: papua new guinea
+      - label:
+          en_US: Paraguay
+          zh_Hans: 巴拉圭
+        value: paraguay
+      - label:
+          en_US: Peru
+          zh_Hans: 秘鲁
+        value: peru
+      - label:
+          en_US: Philippines
+          zh_Hans: 菲律宾
+        value: philippines
+      - label:
+          en_US: Poland
+          zh_Hans: 波兰
+        value: poland
+      - label:
+          en_US: Portugal
+          zh_Hans: 葡萄牙
+        value: portugal
+      - label:
+          en_US: Qatar
+          zh_Hans: 卡塔尔
+        value: qatar
+      - label:
+          en_US: Romania
+          zh_Hans: 罗马尼亚
+        value: romania
+      - label:
+          en_US: Russia
+          zh_Hans: 俄罗斯
+        value: russia
+      - label:
+          en_US: Rwanda
+          zh_Hans: 卢旺达
+        value: rwanda
+      - label:
+          en_US: Saudi Arabia
+          zh_Hans: 沙特阿拉伯
+        value: saudi arabia
+      - label:
+          en_US: Senegal
+          zh_Hans: 塞内加尔
+        value: senegal
+      - label:
+          en_US: Serbia
+          zh_Hans: 塞尔维亚
+        value: serbia
+      - label:
+          en_US: Singapore
+          zh_Hans: 新加坡
+        value: singapore
+      - label:
+          en_US: Slovakia
+          zh_Hans: 斯洛伐克
+        value: slovakia
+      - label:
+          en_US: Slovenia
+          zh_Hans: 斯洛文尼亚
+        value: slovenia
+      - label:
+          en_US: Somalia
+          zh_Hans: 索马里
+        value: somalia
+      - label:
+          en_US: South Africa
+          zh_Hans: 南非
+        value: south africa
+      - label:
+          en_US: South Korea
+          zh_Hans: 韩国
+        value: south korea
+      - label:
+          en_US: South Sudan
+          zh_Hans: 南苏丹
+        value: south sudan
+      - label:
+          en_US: Spain
+          zh_Hans: 西班牙
+        value: spain
+      - label:
+          en_US: Sri Lanka
+          zh_Hans: 斯里兰卡
+        value: sri lanka
+      - label:
+          en_US: Sudan
+          zh_Hans: 苏丹
+        value: sudan
+      - label:
+          en_US: Sweden
+          zh_Hans: 瑞典
+        value: sweden
+      - label:
+          en_US: Switzerland
+          zh_Hans: 瑞士
+        value: switzerland
+      - label:
+          en_US: Syria
+          zh_Hans: 叙利亚
+        value: syria
+      - label:
+          en_US: Taiwan
+          zh_Hans: 台湾
+        value: taiwan
+      - label:
+          en_US: Tajikistan
+          zh_Hans: 塔吉克斯坦
+        value: tajikistan
+      - label:
+          en_US: Tanzania
+          zh_Hans: 坦桑尼亚
+        value: tanzania
+      - label:
+          en_US: Thailand
+          zh_Hans: 泰国
+        value: thailand
+      - label:
+          en_US: Togo
+          zh_Hans: 多哥
+        value: togo
+      - label:
+          en_US: Trinidad and Tobago
+          zh_Hans: 特立尼达和多巴哥
+        value: trinidad and tobago
+      - label:
+          en_US: Tunisia
+          zh_Hans: 突尼斯
+        value: tunisia
+      - label:
+          en_US: Turkey
+          zh_Hans: 土耳其
+        value: turkey
+      - label:
+          en_US: Turkmenistan
+          zh_Hans: 土库曼斯坦
+        value: turkmenistan
+      - label:
+          en_US: Uganda
+          zh_Hans: 乌干达
+        value: uganda
+      - label:
+          en_US: Ukraine
+          zh_Hans: 乌克兰
+        value: ukraine
+      - label:
+          en_US: United Arab Emirates
+          zh_Hans: 阿拉伯联合酋长国
+        value: united arab emirates
+      - label:
+          en_US: United Kingdom
+          zh_Hans: 英国
+        value: united kingdom
+      - label:
+          en_US: United States
+          zh_Hans: 美国
+        value: united states
+      - label:
+          en_US: Uruguay
+          zh_Hans: 乌拉圭
+        value: uruguay
+      - label:
+          en_US: Uzbekistan
+          zh_Hans: 乌兹别克斯坦
+        value: uzbekistan
+      - label:
+          en_US: Venezuela
+          zh_Hans: 委内瑞拉
+        value: venezuela
+      - label:
+          en_US: Vietnam
+          zh_Hans: 越南
+        value: vietnam
+      - label:
+          en_US: Yemen
+          zh_Hans: 也门
+        value: yemen
+      - label:
+          en_US: Zambia
+          zh_Hans: 赞比亚
+        value: zambia
+      - label:
+          en_US: Zimbabwe
+          zh_Hans: 津巴布韦
+        value: zimbabwe
+    default: united states
