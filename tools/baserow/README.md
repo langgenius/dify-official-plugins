@@ -43,6 +43,8 @@ Baserow is an open-source online database tool. This plugin allows you to create
 
 <img src="_assets/setup.png" alt="Setup Baserow API Token" width="300">
 
+Note: Self-hosting version requires Baserow version 1.33.3 or higher.
+
 3. Use the plugin
     - Call the plugin methods to interact with your Baserow database.
     - For example, to create a new row, use the `create_row` method with the appropriate `table_id` and `content`.
