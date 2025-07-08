@@ -2,7 +2,7 @@ from typing import Any, Generator
 from tavily import TavilyClient
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
-from .utils import process_search_images, process_search_favicons
+from .utils import process_images, process_favicons
 
 
 class TavilySearch:
@@ -140,15 +140,17 @@ class TavilySearchTool(Tool):
             if tool_parameters.get("include_images", False) and search_results.get(
                 "images"
             ):
-                yield from process_search_images(self, search_results.get("images", []))
+                image_urls = [
+                    image.get("url") if isinstance(image, dict) else image
+                    for image in search_results.get("images", [])
+                ]
+                yield from process_images(self, image_urls)
 
             # Process favicons from search results if include_favicon is enabled
             if tool_parameters.get("include_favicon", False) and search_results.get(
                 "results"
             ):
-                yield from process_search_favicons(
-                    self, search_results.get("results", [])
-                )
+                yield from process_favicons(self, search_results.get("results", []))
 
     def _format_results_as_text(
         self, search_results: dict, tool_parameters: dict[str, Any]
@@ -168,9 +170,6 @@ class TavilySearchTool(Tool):
             "answer"
         ):
             output_lines.append(f"**Answer:** {search_results['answer']}\n")
-
-        images = search_results.get("images", [])
-        image_idx = 0
 
         if "results" in search_results:
             for idx, result in enumerate(search_results["results"], 1):
@@ -197,29 +196,27 @@ class TavilySearchTool(Tool):
                 if content:
                     output_lines.append(f"**Content:**\n{content}\n")
 
-                # Add image to the result
-                if tool_parameters.get("include_images", False) and image_idx < len(
-                    images
-                ):
-                    image = images[image_idx]
-                    if isinstance(image, dict):
-                        image_url = image.get("url")
-                        description = image.get(
-                            "description", "Tavily search result image"
-                        )
-                    else:
-                        image_url = image
-                        description = "Tavily search result image"
-
-                    if image_url:
-                        output_lines.append(
-                            f"**Image:** ![{description}]({image_url})\n"
-                        )
-                    image_idx += 1
-
                 if tool_parameters.get("include_raw_content", False) and result.get(
                     "raw_content"
                 ):
                     output_lines.append(f"**Raw Content:**\n{result['raw_content']}\n")
                 output_lines.append("---\n")
+
+        # Display all images if requested
+        if tool_parameters.get("include_images", False) and search_results.get(
+            "images"
+        ):
+            output_lines.append("**Images:**\n")
+            for image in search_results["images"]:
+                if isinstance(image, dict):
+                    image_url = image.get("url")
+                    description = image.get("description", "Tavily search result image")
+                else:
+                    image_url = image
+                    description = "Tavily search result image"
+
+                if image_url:
+                    output_lines.append(f"![{description}]({image_url})\n")
+            output_lines.append("\n")
+
         return "\n".join(output_lines)

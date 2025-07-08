@@ -2,7 +2,7 @@ from typing import Any, Generator
 from tavily import TavilyClient
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
-from .utils import process_extract_images, process_extract_favicons
+from .utils import process_images, process_favicons
 
 
 class TavilyExtract:
@@ -147,9 +147,14 @@ class TavilyExtractTool(Tool):
             if extract_results.get("results"):
                 results = extract_results["results"]
                 if tool_parameters.get("include_images", False):
-                    yield from process_extract_images(self, results)
+                    image_urls = []
+                    for result in results:
+                        if "images" in result and result.get("images"):
+                            image_urls.extend(result["images"])
+                    if image_urls:
+                        yield from process_images(self, image_urls)
                 if tool_parameters.get("include_favicon", False):
-                    yield from process_extract_favicons(self, results)
+                    yield from process_favicons(self, results)
 
     def _format_results_as_text(self, extract_results: dict) -> str:
         """
@@ -178,10 +183,8 @@ class TavilyExtractTool(Tool):
             # Add images to the result
             if "images" in result and result["images"]:
                 output_lines.append("**Images:**\n")
-                for i, image_url in enumerate(result["images"], 1):
-                    output_lines.append(
-                        f"**Image {i}:** ![Image {i} from {url}]({image_url})\n"
-                    )
+                for image_url in result["images"]:
+                    output_lines.append(f"![Image from {url}]({image_url})\n")
 
             output_lines.append("---\n")
 
