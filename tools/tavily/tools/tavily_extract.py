@@ -1,8 +1,8 @@
 from typing import Any, Generator
 from tavily import TavilyClient
-import requests
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
+from .utils import process_extract_images, process_extract_favicons
 
 
 class TavilyExtract:
@@ -143,34 +143,13 @@ class TavilyExtractTool(Tool):
             text_message_content = self._format_results_as_text(extract_results)
             yield self.create_text_message(text=text_message_content)
 
-            # Process images and return as file blobs
-            # This will automatically add them to the 'files' variable
-            for result in extract_results.get("results", []):
-                if "images" in result and result["images"]:
-                    for image_url in result["images"]:
-                        try:
-                            # Download image content
-                            image_response = requests.get(image_url, timeout=10)
-                            image_response.raise_for_status()
-
-                            # Get mime type from response headers
-                            content_type = image_response.headers.get(
-                                "Content-Type", "image/jpeg"
-                            )
-
-                            # Extract filename from URL or generate one
-                            filename = image_url.split("/")[-1]
-                            if "?" in filename:
-                                filename = filename.split("?")[0]
-
-                            # Return as blob message - this automatically adds to 'files' variable
-                            yield self.create_blob_message(
-                                blob=image_response.content,
-                                meta={"mime_type": content_type, "filename": filename},
-                            )
-                        except Exception as e:
-                            # Log error but continue with other images
-                            print(f"Failed to download image {image_url}: {str(e)}")
+            # Process images and favicons
+            if extract_results.get("results"):
+                results = extract_results["results"]
+                if tool_parameters.get("include_images", False):
+                    yield from process_extract_images(self, results)
+                if tool_parameters.get("include_favicon", False):
+                    yield from process_extract_favicons(self, results)
 
     def _format_results_as_text(self, extract_results: dict) -> str:
         """
@@ -186,21 +165,28 @@ class TavilyExtractTool(Tool):
         for idx, result in enumerate(extract_results.get("results", []), 1):
             url = result.get("url", "")
             raw_content = result.get("raw_content", "")
-            output_lines.append(f"## Extracted Content {idx}: {url}\n")
+            output_lines.append(f"# Extracted Content {idx}: {url}\n")
+
+            # Add favicon to the result
+            if result.get("favicon"):
+                output_lines.append(
+                    f"**Favicon:** ![Favicon for {url}]({result['favicon']})\n"
+                )
+
             output_lines.append(f"**Raw Content:**\n{raw_content}\n")
 
-            if result.get("favicon"):
-                output_lines.append(f"**Favicon:** {result['favicon']}\n")
-
+            # Add images to the result
             if "images" in result and result["images"]:
                 output_lines.append("**Images:**\n")
                 for i, image_url in enumerate(result["images"], 1):
-                    output_lines.append(f"![Image {i} from {url}]({image_url})\n")
+                    output_lines.append(
+                        f"**Image {i}:** ![Image {i} from {url}]({image_url})\n"
+                    )
 
             output_lines.append("---\n")
 
         if extract_results.get("failed_results"):
-            output_lines.append("## Failed URLs:\n")
+            output_lines.append("# Failed URLs:\n")
             for failed in extract_results["failed_results"]:
                 url = failed.get("url", "")
                 error = failed.get("error", "Unknown error")

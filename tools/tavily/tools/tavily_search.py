@@ -1,8 +1,8 @@
 from typing import Any, Generator
 from tavily import TavilyClient
-import requests
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
+from .utils import process_search_images, process_search_favicons
 
 
 class TavilySearch:
@@ -140,41 +140,15 @@ class TavilySearchTool(Tool):
             if tool_parameters.get("include_images", False) and search_results.get(
                 "images"
             ):
-                for image in search_results["images"]:
-                    image_url = image.get("url")
-                    if image_url:
-                        try:
-                            # Download image content
-                            image_response = requests.get(image_url, timeout=10)
-                            image_response.raise_for_status()
+                yield from process_search_images(self, search_results.get("images", []))
 
-                            # Get mime type from response headers
-                            content_type = image_response.headers.get(
-                                "Content-Type", "image/jpeg"
-                            )
-
-                            # Extract filename from URL or generate one
-                            filename = image_url.split("/")[-1]
-                            if "?" in filename:
-                                filename = filename.split("?")[0]
-
-                            # Use description as alt text if available
-                            alt_text = image.get(
-                                "description", "Tavily search result image"
-                            )
-
-                            # Return as blob message - this automatically adds to 'files' variable
-                            yield self.create_blob_message(
-                                blob=image_response.content,
-                                meta={
-                                    "mime_type": content_type,
-                                    "filename": filename,
-                                    "alt_text": alt_text,
-                                },
-                            )
-                        except Exception as e:
-                            # Log error but continue with other images
-                            print(f"Failed to download image {image_url}: {str(e)}")
+            # Process favicons from search results if include_favicon is enabled
+            if tool_parameters.get("include_favicon", False) and search_results.get(
+                "results"
+            ):
+                yield from process_search_favicons(
+                    self, search_results.get("results", [])
+                )
 
     def _format_results_as_text(
         self, search_results: dict, tool_parameters: dict[str, Any]
@@ -194,18 +168,10 @@ class TavilySearchTool(Tool):
             "answer"
         ):
             output_lines.append(f"**Answer:** {search_results['answer']}\n")
-        if tool_parameters.get("include_images", False) and search_results.get(
-            "images"
-        ):
-            output_lines.append("**Images:**\n")
-            for image in search_results["images"]:
-                if (
-                    tool_parameters.get("include_image_descriptions", False)
-                    and "description" in image
-                ):
-                    output_lines.append(f"![{image['description']}]({image['url']})\n")
-                else:
-                    output_lines.append(f"![]({image['url']})\n")
+
+        images = search_results.get("images", [])
+        image_idx = 0
+
         if "results" in search_results:
             for idx, result in enumerate(search_results["results"], 1):
                 title = result.get("title", "No Title")
@@ -213,18 +179,44 @@ class TavilySearchTool(Tool):
                 content = result.get("content", "")
                 published_date = result.get("published_date", "")
                 score = result.get("score", "")
-                output_lines.append(f"### Result {idx}: [{title}]({url})\n")
+                output_lines.append(f"# Result {idx}: [{title}]({url})\n")
                 if tool_parameters.get("topic") == "news" and published_date:
                     output_lines.append(f"**Published Date:** {published_date}\n")
                 output_lines.append(f"**URL:** {url}\n")
                 if score:
                     output_lines.append(f"**Relevance Score:** {score}\n")
+
+                # Add favicon to the result
                 if tool_parameters.get("include_favicon", False) and result.get(
                     "favicon"
                 ):
-                    output_lines.append(f"**Favicon:** {result['favicon']}\n")
+                    output_lines.append(
+                        f"**Favicon:** ![Favicon for {result.get('title', 'website')}]({result['favicon']})\n"
+                    )
+
                 if content:
                     output_lines.append(f"**Content:**\n{content}\n")
+
+                # Add image to the result
+                if tool_parameters.get("include_images", False) and image_idx < len(
+                    images
+                ):
+                    image = images[image_idx]
+                    if isinstance(image, dict):
+                        image_url = image.get("url")
+                        description = image.get(
+                            "description", "Tavily search result image"
+                        )
+                    else:
+                        image_url = image
+                        description = "Tavily search result image"
+
+                    if image_url:
+                        output_lines.append(
+                            f"**Image:** ![{description}]({image_url})\n"
+                        )
+                    image_idx += 1
+
                 if tool_parameters.get("include_raw_content", False) and result.get(
                     "raw_content"
                 ):
