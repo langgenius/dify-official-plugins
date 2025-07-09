@@ -3,4 +3,4 @@
 
 deepl>=1.22.0
 dify-easy>=0.1.0
-dify-plugin<0.4.0,>=0.3.0
+dify_plugin>=0.3.0,<0.5.0
