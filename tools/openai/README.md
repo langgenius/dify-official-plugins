@@ -1,4 +1,4 @@
-# OpenAI Tools for Dify
+# OpenAI Tools
 
 ## Overview
 
