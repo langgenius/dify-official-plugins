@@ -60,6 +60,65 @@ parameters:
     value: o4-mini-deep-research
   required: false
   type: select
+- name: temperature
+  default: 1
+  form: form
+  human_description:
+    en_US: "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. Generally alter this or top_p but not both."
+    zh_Hans: "要使用的采样温度，介于 0 到 2 之间。较高值 (如 0.8) 使输出更随机，而较低值 (如 0.2) 使其更集中、更确定。通常建议修改此参数或 top_p，但不要两者同时修改。"
+  label:
+    en_US: Temperature
+    zh_Hans: 温度
+  required: false
+  type: number
+- name: reasoning_effort
+  default: medium
+  form: form
+  human_description:
+    en_US: "Constrains reasoning effort for o-series models. Supported values: low, medium, high. Reducing effort can speed up responses and reduce tokens."
+    zh_Hans: "约束 o 系列模型的推理努力。支持的值：low、medium、high。降低推理努力可以加快响应速度并减少 token 使用量。"
+  label:
+    en_US: Reasoning Effort
+    zh_Hans: 推理努力
+  options:
+    - label:
+        en_US: Low
+        zh_Hans: 低
+      value: low
+    - label:
+        en_US: Medium
+        zh_Hans: 中
+      value: medium
+    - label:
+        en_US: High
+        zh_Hans: 高
+      value: high
+  required: false
+  type: select
+- name: summary
+  default: auto
+  form: form
+  human_description:
+    en_US: "Summary style of the model's reasoning. One of auto, concise, detailed. Useful for understanding the model's thinking."
+    zh_Hans: "模型推理摘要样式，可选 auto、concise、detailed，用于了解模型思考过程。"
+  label:
+    en_US: Summary Style
+    zh_Hans: 摘要样式
+  options:
+    - label:
+        en_US: Auto
+        zh_Hans: 自动
+      value: auto
+    - label:
+        en_US: Concise
+        zh_Hans: 简洁
+      value: concise
+    - label:
+        en_US: Detailed
+        zh_Hans: 详细
+      value: detailed
+  required: false
+  type: select 
 - name: prompt
   form: llm
   human_description:
@@ -122,4 +181,4 @@ parameters:
     en_US: Timeout (seconds)
     zh_Hans: 超时（秒）
   required: false
-  type: number 
+  type: number

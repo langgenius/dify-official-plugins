@@ -1,13 +1,50 @@
 import logging
-import time
+from dataclasses import dataclass
+from typing import Any, Optional, List, Dict
 from collections.abc import Generator
-from typing import Any
 from openai import OpenAI
 from yarl import URL
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+
+# ---------------------------------------------------------------------------
+# Dataclass helpers for cleaner typing & structured data representation
+# ---------------------------------------------------------------------------
+
+
+@dataclass
+class ToolCallDetail:
+    tool: str
+    action: str
+    query: Optional[str] = None
+    url: Optional[str] = None
+    pattern: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Return a dict excluding None values."""
+        return {k: v for k, v in self.__dict__.items() if v is not None}
+
+
+@dataclass
+class ResponseData:
+    response_id: Optional[str]
+    status: Optional[str]
+    model: Optional[str]
+    background: Optional[bool] = None
+    max_tool_calls: Optional[int] = None
+    tools: Optional[List[str]] = None
+    error: Optional[str] = None
+    research_process: Optional[List[Dict[str, Any]]] = None
+    usage: Optional[Dict[str, int]] = None
+    reasoning_effort: Optional[str] = None
+    summary: Optional[str] = None
+
+    def to_dict(self) -> Dict[str, Any]:
+        """Return a dict representation excluding any None values."""
+        return {k: v for k, v in self.__dict__.items() if v is not None}
 
 class DeepResearchTool(Tool):
     """
@@ -27,6 +64,70 @@ class DeepResearchTool(Tool):
             timeout=timeout if timeout is not None else 3600,
         )
 
+    def _create_response_json(self, response: Any) -> Dict[str, Any]:
+        """Builds a structured JSON dict from an OpenAI response using dataclasses."""
+
+        # Base response fields
+        resp_data = ResponseData(
+            response_id=getattr(response, "id", None),
+            status=getattr(response, "status", None),
+            model=getattr(response, "model", None),
+            background=getattr(response, "background", None),
+            max_tool_calls=getattr(response, "max_tool_calls", None),
+            tools=[tool.type for tool in getattr(response, "tools", [])] or None,
+            error=getattr(response, "error", None),
+            # Extract reasoning details if present
+            reasoning_effort=(
+                (getattr(response, "reasoning", None) or {}).get("effort")
+                if isinstance(getattr(response, "reasoning", None), dict)
+                else getattr(getattr(response, "reasoning", None), "effort", None)
+            ),
+            summary=(
+                (getattr(response, "reasoning", None) or {}).get("summary")
+                if isinstance(getattr(response, "reasoning", None), dict)
+                else getattr(getattr(response, "reasoning", None), "summary", None)
+            ),
+        )
+
+        # Research process (if any tool calls present)
+        if getattr(response, "output", None):
+            calls: List[ToolCallDetail] = []
+            for item in response.output:
+                if item.type == "web_search_call":
+                    act = item.action
+                    calls.append(
+                        ToolCallDetail(
+                            tool="web_search",
+                            action=act.type,
+                            query=getattr(act, "query", None),
+                            url=getattr(act, "url", None),
+                            pattern=getattr(act, "pattern", None),
+                        )
+                    )
+                elif item.type == "code_interpreter_call":
+                    calls.append(ToolCallDetail(tool="code_interpreter", action="execute_code"))
+            if calls:
+                resp_data.research_process = [c.to_dict() for c in calls]
+
+        # Usage stats
+        if getattr(response, "usage", None):
+            resp_data.usage = {
+                "total_tokens": response.usage.total_tokens,
+                "input_tokens": response.usage.input_tokens,
+                "output_tokens": response.usage.output_tokens,
+            }
+
+        return resp_data.to_dict()
+
+    def _build_tools(self, use_web_search: bool, use_code_interpreter: bool) -> list[dict[str, Any]]:
+        """Returns the tools list expected by the OpenAI SDK based on flags."""
+        tools: list[dict[str, Any]] = []
+        if use_web_search:
+            tools.append({"type": "web_search_preview"})
+        if use_code_interpreter:
+            tools.append({"type": "code_interpreter", "container": {"type": "auto"}})
+        return tools
+
     def _invoke(self, tool_parameters: dict) -> Generator[ToolInvokeMessage, None, None]:
         """
         Invoke the deep research tool.
@@ -36,15 +137,16 @@ class DeepResearchTool(Tool):
 
         # --- Parameter Extraction and Validation ---
         action = tool_parameters.get("action", "start")
-
-        if action == "start":
-            yield from self._handle_start(client, tool_parameters)
-        elif action == "cancel":
-            yield from self._handle_cancel(client, tool_parameters)
-        elif action == "retrieve":
-            yield from self._handle_retrieve(client, tool_parameters)
-        else:
+        handler_map = {
+            "start": self._handle_start,
+            "cancel": self._handle_cancel,
+            "retrieve": self._handle_retrieve,
+        }
+        handler = handler_map.get(action)
+        if handler is None:
             yield self.create_text_message("Error: Invalid action specified.")
+        else:
+            yield from handler(client, tool_parameters)
 
     def _handle_start(self, client: OpenAI, tool_parameters: dict) -> Generator[ToolInvokeMessage, None, None]:
         """Handles the 'start' action."""
@@ -55,26 +157,42 @@ class DeepResearchTool(Tool):
 
         model = tool_parameters.get("model", "o3-deep-research")
         use_web_search = tool_parameters.get("use_web_search", True)
-        use_code_interpreter = tool_parameters.get("use_code_interpreter", False)
+        use_code_interpreter = tool_parameters.get("use_code_interpreter", True)
         max_tool_calls = tool_parameters.get("max_tool_calls")
+        temperature = tool_parameters.get("temperature")
+        reasoning_effort_param = tool_parameters.get("reasoning_effort")
+        summary_param = tool_parameters.get("summary")
 
         if not use_web_search and not use_code_interpreter:
             yield self.create_text_message("Error: At least one data source (web search or code interpreter) must be enabled.")
             return
 
-        tools = []
-        if use_web_search:
-            tools.append({"type": "web_search_preview"})
-        if use_code_interpreter:
-            tools.append({"type": "code_interpreter", "container": {"type": "auto"}})
-
+        tools = self._build_tools(use_web_search, use_code_interpreter)
+        
         create_args: dict[str, Any] = {
             "model": model,
             "input": prompt,
             "tools": tools,
             "background": True,  # Always run in the background for the 'start' action
         }
-        
+
+        # Optional advanced parameters (reasoning dict encapsulates effort & summary)
+        reasoning_cfg: Dict[str, Any] = {}
+        if reasoning_effort_param is not None:
+            reasoning_cfg["effort"] = reasoning_effort_param
+        if summary_param is not None:
+            reasoning_cfg["summary"] = summary_param
+        if reasoning_cfg:
+            create_args["reasoning"] = reasoning_cfg
+
+        # Include temperature if provided (allow explicit 0 value); default will be handled by API
+        if temperature is not None:
+            try:
+                create_args["temperature"] = float(temperature)
+            except (ValueError, TypeError):
+                yield self.create_text_message("Error: Temperature must be a number between 0 and 2.")
+                return
+
         if max_tool_calls is not None:
             try:
                 create_args["max_tool_calls"] = int(max_tool_calls)
@@ -88,14 +206,7 @@ class DeepResearchTool(Tool):
             yield self.create_text_message(f"Successfully started deep research task. Response ID: {response.id}")
             
             # Return structured JSON data for the start action
-            json_data = {
-                "response_id": response.id,
-                "status": response.status,
-                "model": response.model,
-                "background": response.background,
-                "max_tool_calls": response.max_tool_calls,
-                "tools": [tool.type for tool in response.tools] if response.tools else []
-            }
+            json_data = self._create_response_json(response)
             yield self.create_json_message(json_data)
         except Exception as e:
             logging.error(f"Failed to start deep research task: {e}", exc_info=True)
@@ -117,12 +228,7 @@ class DeepResearchTool(Tool):
                 yield self.create_text_message(f"Could not cancel task {response_id}. Current status: {cancelled_response.status}")
             
             # Return structured JSON data for the cancel action
-            json_data = {
-                "response_id": cancelled_response.id,
-                "status": cancelled_response.status,
-                "model": cancelled_response.model,
-                "tools": [tool.type for tool in cancelled_response.tools] if cancelled_response.tools else []
-            }
+            json_data = self._create_response_json(cancelled_response)
             yield self.create_json_message(json_data)
         except Exception as e:
             logging.error(f"Failed to cancel research task {response_id}: {e}", exc_info=True)
@@ -147,17 +253,7 @@ class DeepResearchTool(Tool):
                     yield self.create_text_message(f"Error: Deep research task failed. Reason: {response.error}")
                 
                 # Return structured JSON data for unfinished retrieve actions
-                json_data = {
-                    "response_id": response.id,
-                    "status": response.status,
-                    "model": response.model,
-                    "background": response.background,
-                    "tools": [tool.type for tool in response.tools] if response.tools else []
-                }
-                
-                if response.status == 'failed' and response.error:
-                    json_data["error"] = response.error
-                
+                json_data = self._create_response_json(response)
                 yield self.create_json_message(json_data)
 
         except Exception as e:
@@ -171,182 +267,70 @@ class DeepResearchTool(Tool):
         if formatted_report:
             yield self.create_text_message(formatted_report)
 
-        structured_data = {
-            "response_id": response.id,
-            "status": response.status,
-            "model": response.model,
-            "background": response.background,
-            "tools": [tool.type for tool in response.tools] if response.tools else []
-        }
-
-        # Process tool calls for structured JSON output
-        if response.output:
-            tool_call_details = []
-            for item in response.output:
-                if item.type == "web_search_call":
-                    action = item.action
-                    detail = {"tool": "web_search", "action": action.type}
-                    if hasattr(action, 'query'):
-                        detail["query"] = action.query
-                    if hasattr(action, 'url') and action.url:
-                        detail["url"] = action.url
-                    if hasattr(action, 'pattern'):
-                         detail["pattern"] = action.pattern
-                    tool_call_details.append(detail)
-                elif item.type == "code_interpreter_call":
-                    tool_call_details.append({"tool": "code_interpreter", "action": "execute_code"})
-            
-            if tool_call_details:
-                structured_data["research_process"] = tool_call_details
-
-        # Process usage information for structured JSON output
-        if response.usage:
-            structured_data["usage"] = {
-                "total_tokens": response.usage.total_tokens,
-                "input_tokens": response.usage.input_tokens,
-                "output_tokens": response.usage.output_tokens,
-            }
+        structured_data = self._create_response_json(response)
 
         # Yield structured data as a JSON message
         yield self.create_json_message(structured_data)
 
     def _format_output_with_numbered_citations(self, response) -> str:
+        """Formats output text with inline numbered citations and a reference list.
+
+        The implementation walks the annotations once, builds a mapping of URL → number,
+        then streams the final string together, avoiding expensive string slicing and
+        double-passes over the data.
         """
-        Formats the output text with numbered citations and a reference list.
-        """
-        # Find the final message content
-        message_content = None
-        final_report_text = ""
-        for item in response.output:
-            if item.type == 'message' and hasattr(item, 'content'):
-                for content_part in item.content:
-                    if content_part.type == 'output_text':
-                        message_content = content_part
-                        final_report_text = content_part.text
-                        break
-                if message_content:
-                    break
 
-        if not message_content or not hasattr(message_content, 'annotations') or not message_content.annotations:
-            return final_report_text
+        # Find the first (and usually only) output_text chunk in the response
+        message_content = next(
+            (
+                content_part
+                for item in response.output
+                if item.type == "message" and hasattr(item, "content")
+                for content_part in item.content
+                if content_part.type == "output_text"
+            ),
+            None,
+        )
 
-        text = message_content.text
-        annotations = message_content.annotations
+        if message_content is None:
+            return ""
 
-        # Create a mapping of unique URLs to reference numbers and titles
-        unique_refs = {}
-        ref_counter = 1
+        text: str = message_content.text
+        annotations = getattr(message_content, "annotations", None) or []
+
+        if not annotations:
+            return text  # No citations to process
+
+        # Preserve first-appearance order when numbering URLs
+        url_to_num: Dict[str, int] = {}
+        url_to_title: Dict[str, str] = {}
         for ann in annotations:
-            if hasattr(ann, 'url') and ann.url not in unique_refs:
-                unique_refs[ann.url] = {
-                    "number": ref_counter,
-                    "title": ann.title,
-                }
-                ref_counter += 1
-        
-        # Collect replacements to be made
-        replacements = []
-        for ann in annotations:
-            if hasattr(ann, 'url') and ann.url:
-                ref_num = unique_refs[ann.url]["number"]
-                
-                replacements.append({
-                    "start": ann.start_index,
-                    "end": ann.end_index,
-                    "text": f" [[{ref_num}]]({ann.url})"
-                })
+            url = getattr(ann, "url", None)
+            if url and url not in url_to_num:
+                idx = len(url_to_num) + 1
+                url_to_num[url] = idx
+                url_to_title[url] = ann.title
 
-        # Sort replacements by start index in reverse order to avoid index shifting issues
-        sorted_replacements = sorted(replacements, key=lambda x: x['start'], reverse=True)
+        # Build the body with inline citations in a single pass
+        parts: List[str] = []
+        cursor = 0
+        for ann in sorted(annotations, key=lambda a: a.start_index):
+            url = getattr(ann, "url", None)
+            if not url:
+                continue
+            num = url_to_num[url]
+            parts.append(text[cursor : ann.start_index])
+            parts.append(f" [[{num}]]({url})")
+            cursor = ann.end_index
+        parts.append(text[cursor:])
 
-        # Apply replacements to the text
-        for rep in sorted_replacements:
-            text = text[:rep['start']] + rep['text'] + text[rep['end']:]
+        result = "".join(parts)
 
-        # Build the reference list at the end
-        if unique_refs:
-            text += "\n\n---\n## References\n"
-            # Sort refs by number for the final list
-            sorted_ref_list = sorted(unique_refs.items(), key=lambda item: item[1]['number'])
-            for url, data in sorted_ref_list:
-                text += f"{data['number']}. [{data['title']}]({url})\n"
-        
-        return text
+        # Append reference section
+        if url_to_num:
+            result += "\n\n---\n## References\n"
+            for url, num in url_to_num.items():
+                title = url_to_title[url]
+                result += f"{num}. [{title}]({url})\n"
 
-    def _invoke_polling(self, tool_parameters: dict) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        Original invoke method with polling. Kept for reference or future use.
-        """
-        # --- Initialize OpenAI Client ---
-        client = self._get_openai_client(tool_parameters)
-
-        # --- Parameter Extraction and Validation ---
-        prompt = tool_parameters.get("prompt")
-        if not prompt or not isinstance(prompt, str):
-            yield self.create_text_message("Error: Research Prompt is required.")
-            return
-
-        model = tool_parameters.get("model", "o3-deep-research")
-        use_web_search = tool_parameters.get("use_web_search", True)
-        use_code_interpreter = tool_parameters.get("use_code_interpreter", False)
-        run_in_background = True # Was a parameter, now hardcoded for this logic path
-        max_tool_calls = tool_parameters.get("max_tool_calls")
-
-        if not use_web_search and not use_code_interpreter:
-            yield self.create_text_message("Error: At least one data source (web search or code interpreter) must be enabled.")
-            return
-
-        # --- Prepare API Request ---
-        tools = []
-        if use_web_search:
-            tools.append({"type": "web_search_preview"})
-        if use_code_interpreter:
-            tools.append({"type": "code_interpreter", "container": {"type": "auto"}})
-
-        create_args: dict[str, Any] = {
-            "model": model,
-            "input": prompt,
-            "tools": tools,
-        }
-
-        if run_in_background:
-            create_args["background"] = True
-        
-        if max_tool_calls is not None:
-            try:
-                create_args["max_tool_calls"] = int(max_tool_calls)
-            except (ValueError, TypeError):
-                yield self.create_text_message("Error: Max Tool Calls must be a valid number.")
-                return
-
-        # --- API Call ---
-        try:
-            yield self.create_text_message(f"Starting deep research task with model '{model}'...")
-            response = client.responses.create(**create_args)
-            logging.info(f"Polling initial create raw response: {response}")
-
-            if run_in_background:
-                yield self.create_text_message(f"Task running in background. Response ID: {response.id}")
-                while response.status in {"queued", "in_progress"}:
-                    yield self.create_text_message(f"Current status: {response.status}. Polling again in 10 seconds...")
-                    time.sleep(10)
-                    response = client.responses.retrieve(response.id)
-                    logging.info(f"Polling retrieval raw response: {response}")
-                
-                logging.info(f"Polling final raw response: {response}")
-                yield self.create_text_message(f"Task finished with status: {response.status}")
-
-            if response.status == 'completed':
-                yield from self._process_completed_response(response)
-            elif response.status == 'failed':
-                 yield self.create_text_message(f"Error: Deep research task failed. Reason: {response.error}")
-                 return
-            elif response.status == 'cancelled':
-                 yield self.create_text_message(f"Info: Deep research task was cancelled.")
-                 return
-
-
-        except Exception as e:
-            logging.error(f"An unexpected error occurred during polling invocation: {e}", exc_info=True)
-            yield self.create_text_message(f"An unexpected error occurred: {e}")
-            return 
+        return result
