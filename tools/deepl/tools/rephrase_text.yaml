@@ -1,0 +1,46 @@
+identity:
+  name: rephrase_text
+  author: langgenius
+  label:
+    en_US: Rephrase Text
+    zh_CN: 改写文本
+    ja_JP: テキスト言い換え
+description:
+  human:
+    en_US: Rephrase text to make it more natural
+    zh_CN: 改写文本使其更加自然流畅
+    ja_JP: テキストをより自然で流暢にするために言い換える
+  llm: Rephrase text to make it more natural
+parameters:
+- name: text
+  type: string
+  required: true
+  label:
+    en_US: Text
+    zh_CN: 文本
+    ja_JP: テキスト
+  human_description:
+    en_US: The text to rephrase
+    zh_CN: 要改写的文本
+    ja_JP: 言い換えるテキスト
+  llm_description: ''
+  form: llm
+- name: target_lang
+  type: string
+  required: true
+  label:
+    en_US: Target Language
+    zh_CN: 目标语言
+    ja_JP: 翻訳先言語
+  human_description:
+    en_US: The target language of the text. Follow the ISO 639-1 language codes. For
+      example, 'EN' for English, 'DE' for German, 'FR' for French, etc.
+    zh_CN: 文本的目标语言。遵循 ISO 639-1 语言代码。例如，'EN' 表示英语，'DE' 表示德语，'FR' 表示法语等。
+    ja_JP: テキストの翻訳先言語。ISO 639-1 言語コードに従ってください。例えば、'EN' は英語、'DE' はドイツ語、'FR' はフランス語などを表します。
+  llm_description: The target language of the text. Follow the ISO 639-1 language
+    codes. Required. For example, 'EN' for English, 'DE' for German, 'FR' for French,
+    etc.
+  form: llm
+extra:
+  python:
+    source: tools/rephrase_text.py
