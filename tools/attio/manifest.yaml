@@ -9,9 +9,9 @@ label:
   pt_BR: attio
 description:
   en_US: Connect to Attio to manage database records and perform CRM operations
-  ja_JP: Connect to Attio to manage database records and perform CRM operations
-  zh_Hans: Connect to Attio to manage database records and perform CRM operations
-  pt_BR: Connect to Attio to manage database records and perform CRM operations
+  ja_JP: Attio に接続してデータベースレコードを管理し、CRM 操作を実行します
+  zh_Hans: 连接 Attio 以管理数据库记录并执行 CRM 操作
+  pt_BR: Conecte-se ao Attio para gerenciar registros de banco de dados e realizar operações de CRM
 icon: icon.svg
 resource:
   memory: 268435456
