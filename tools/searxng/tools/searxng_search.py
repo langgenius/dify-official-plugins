@@ -37,4 +37,5 @@ class SearXNGSearchTool(Tool):
         if not res:
             yield self.create_text_message(f"No results found, get response: {response.content}")
         else:
-            yield [self.create_json_message(item) for item in res]
+            for item in res:
+                yield self.create_json_message(item)
