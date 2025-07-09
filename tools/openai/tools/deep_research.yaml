@@ -168,8 +168,8 @@ parameters:
     en_US: The maximum number of tool calls (e.g., web searches) the model can make. This helps control cost and latency.
     zh_Hans: 模型可以进行的最大工具调用次数（例如，网络搜索）。这有助于控制成本和延迟。
   label:
-    en_US: Max Tool Calls (Optional)
-    zh_Hans: 最大工具调用次数（可选）
+    en_US: Max Tool Calls
+    zh_Hans: 最大工具调用次数
   required: false
   type: number
 - name: timeout
