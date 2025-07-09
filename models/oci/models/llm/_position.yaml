@@ -3,3 +3,6 @@
 - meta.llama-3.1-405b-instruct
 - meta.llama-3.2-90b-vision-instruct
 - meta.llama-3.3-70b-instruct
+- meta.llama-4-maverick-17b-128e-instruct-fp8
+- meta.llama-4-scout-17b-16e-instruct
+- xai.grok-3

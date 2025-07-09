@@ -71,6 +71,18 @@ class OCILargeLanguageModel(LargeLanguageModel):
             "tool_call": False,
             "stream_tool_call": False,
         },
+        "meta.llama-4-maverick-17b-128e-instruct-fp8": {
+            "system": True,
+            "multimodal": False,
+            "tool_call": True,
+            "stream_tool_call": True,
+        },
+        "meta.llama-4-scout-17b-16e-instruct": {
+            "system": True,
+            "multimodal": False,
+            "tool_call": True,
+            "stream_tool_call": True,
+        },
         "cohere.command-r-08-2024": {
             "system": True,
             "multimodal": False,
@@ -82,6 +94,12 @@ class OCILargeLanguageModel(LargeLanguageModel):
             "multimodal": False,
             "tool_call": True,
             "stream_tool_call": False,
+        },
+        "xai.grok-3": {
+            "system": True,
+            "multimodal": False,
+            "tool_call": True,
+            "stream_tool_call": True,
         },
     }
 
@@ -276,6 +294,13 @@ class OCILargeLanguageModel(LargeLanguageModel):
                 meta_messages.append({"role": message.role.name, "content": [{"type": "TEXT", "text": text}]})
             args = {"apiFormat": "GENERIC", "messages": meta_messages, "numGenerations": 1, "topK": -1}
             request_args["chatRequest"].update(args)
+        elif model.startswith("xai"):
+            xai_messages = []
+            for message in prompt_messages:
+                text = message.content
+                xai_messages.append({"role": message.role.name, "content": [{"type": "TEXT", "text": text}]})
+            args = {"apiFormat": "GENERIC","messages": xai_messages,"numGenerations": 1,"topK": -1,}
+            request_args["chatRequest"].update(args)
         if stream:
             request_args["chatRequest"]["isStream"] = True
         response = client.chat(request_args)
@@ -324,6 +349,8 @@ class OCILargeLanguageModel(LargeLanguageModel):
                     if chunk["text"]:
                         assistant_prompt_message.content += chunk["text"]
                 elif model.startswith("meta"):
+                    assistant_prompt_message.content += chunk["message"]["content"][0]["text"]
+                elif model.startswith("xai"):
                     assistant_prompt_message.content += chunk["message"]["content"][0]["text"]
                 index += 1
                 yield LLMResultChunk(
