@@ -66,7 +66,7 @@ This page provides the API endpoint for each supported region. For example:
 
 Amazon Bedrock supports a range of Foundation Models (FMs) from various providers. You can view the full list of available models at the following link:
 
-🔗 [Amazon Bedrock 中支持的根基模型 - Amazon Bedrock](https://docs.aws.amazon.com/zh_cn/bedrock/latest/userguide/models-supported.html](https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html)
+[Supported foundation models in Amazon Bedrock - Amazon Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html)
 
 This page includes:
 
