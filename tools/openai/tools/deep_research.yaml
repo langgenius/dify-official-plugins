@@ -66,13 +66,13 @@ parameters:
     en_US: A detailed prompt for the research task, including what to do, sources to prioritize, and the desired output format (max 32000 chars). Required only for 'start' action.
     zh_Hans: 研究任务的详细提示，包括操作内容、优先来源和期望的输出格式（最多 32000 字符）。仅在操作为“开始”时需要。
   label:
-    en_US: Research Prompt
-    zh_Hans: 研究提示
+    en_US: Research Prompt  (for start)
+    zh_Hans: 研究提示 (用于开始)
   llm_description: A detailed text description of the research to be performed. It should be analytical, ask for data-backed reasoning, and specify the desired structure of the output. Required for 'start' action.
   required: false
   type: string
 - name: response_id
-  form: form
+  form: llm
   human_description:
     en_US: The ID of the task to cancel or retrieve. Required for 'cancel' and 'retrieve' actions.
     zh_Hans: 要取消或检索的任务的 ID。对于“取消”和“检索”操作是必需的。
