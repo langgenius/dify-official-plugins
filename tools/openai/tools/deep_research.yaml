@@ -112,4 +112,14 @@ parameters:
     en_US: Max Tool Calls (Optional)
     zh_Hans: 最大工具调用次数（可选）
   required: false
+  type: number
+- name: timeout
+  form: form
+  human_description:
+    en_US: The timeout in seconds for API requests.
+    zh_Hans: API 请求的超时时间（秒）。
+  label:
+    en_US: Timeout (seconds)
+    zh_Hans: 超时（秒）
+  required: false
   type: number 

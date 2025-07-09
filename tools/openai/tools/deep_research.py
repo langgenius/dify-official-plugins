@@ -14,20 +14,25 @@ class DeepResearchTool(Tool):
     Tool to perform deep research using OpenAI's specialized models.
     """
 
+    def _get_openai_client(self, tool_parameters: dict) -> OpenAI:
+        """Initializes and returns an OpenAI client."""
+        openai_organization = self.runtime.credentials.get("openai_organization_id")
+        openai_base_url = self.runtime.credentials.get("openai_base_url")
+        timeout = tool_parameters.get("timeout")
+        
+        return OpenAI(
+            api_key=self.runtime.credentials["openai_api_key"],
+            base_url=str(URL(openai_base_url) / "v1") if openai_base_url else None,
+            organization=openai_organization,
+            timeout=timeout if timeout is not None else 3600,
+        )
+
     def _invoke(self, tool_parameters: dict) -> Generator[ToolInvokeMessage, None, None]:
         """
         Invoke the deep research tool.
         """
         # --- Initialize OpenAI Client ---
-        openai_organization = self.runtime.credentials.get("openai_organization_id")
-        openai_base_url = self.runtime.credentials.get("openai_base_url")
-        
-        client = OpenAI(
-            api_key=self.runtime.credentials["openai_api_key"],
-            base_url=str(URL(openai_base_url) / "v1") if openai_base_url else None,
-            organization=openai_organization,
-            timeout=3600  # Recommended for deep research tasks
-        )
+        client = self._get_openai_client(tool_parameters)
 
         # --- Parameter Extraction and Validation ---
         action = tool_parameters.get("action", "start")
@@ -273,15 +278,7 @@ class DeepResearchTool(Tool):
         Original invoke method with polling. Kept for reference or future use.
         """
         # --- Initialize OpenAI Client ---
-        openai_organization = self.runtime.credentials.get("openai_organization_id")
-        openai_base_url = self.runtime.credentials.get("openai_base_url")
-        
-        client = OpenAI(
-            api_key=self.runtime.credentials["openai_api_key"],
-            base_url=str(URL(openai_base_url) / "v1") if openai_base_url else None,
-            organization=openai_organization,
-            timeout=3600  # Recommended for deep research tasks
-        )
+        client = self._get_openai_client(tool_parameters)
 
         # --- Parameter Extraction and Validation ---
         prompt = tool_parameters.get("prompt")
