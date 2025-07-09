@@ -15,24 +15,26 @@ class createObjectsTool(Tool):
             # Get credentials
             url = f"https://api.attio.com/v2/objects/"
             api_token = "Bearer " + self.runtime.credentials.get("attio_api_token")
-            api_slug = tool_parameters.get("object_slug", "") # Only low-case letters
-            singular = tool_parameters.get("singular_noun", "") # Person
-            plural = tool_parameters.get("plural_noun", "") # People
+            api_slug = tool_parameters.get("object_slug", "")  # Only low-case letters
+            singular = tool_parameters.get("singular_noun", "")  # Person
+            plural = tool_parameters.get("plural_noun", "")  # People
 
             if url.split("api")[1].find("//") != -1 or len(api_token) < 10:
-                yield self.create_text_message("Attio credentials are not properly configured.")
+                yield self.create_text_message(
+                    "Attio credentials are not properly configured."
+                )
                 return
-            
+
             if not api_slug:
                 yield self.create_text_message("Object slug is required.")
                 return
-            
+
             if api_slug != api_slug.lower():
                 yield self.create_text_message(
                     "Object slug must be in lower-case letters."
                 )
                 return
-            
+
             if not singular or not plural:
                 yield self.create_text_message(
                     "Singular and plural nouns are required."
@@ -44,7 +46,7 @@ class createObjectsTool(Tool):
                 "Authorization": api_token,
                 "Content-Type": "application/json",
             }
-            
+
             # Setup payload
             payload = {
                 "data": {
@@ -67,15 +69,15 @@ class createObjectsTool(Tool):
                 )
                 return
             elif response.status_code != 200:
-                yield self.create_text_message(f"Failed to create objects: {response.text}")
+                yield self.create_text_message(
+                    f"Failed to create objects: {response.text}"
+                )
                 return
-            
+
             yield self.create_text_message(
                 "Object created successfully. You can now add records to it."
             )
-            yield self.create_json_message(
-                response.json()
-            )
+            yield self.create_json_message(response.json())
 
         except requests.exceptions.Timeout:
             yield self.create_text_message("Request timeout - please try again")

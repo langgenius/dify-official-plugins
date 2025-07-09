@@ -51,7 +51,9 @@ class addRecordsTool(Tool):
             api_token = "Bearer " + self.runtime.credentials.get("attio_api_token")
 
             if url.split("api")[1].find("//") != -1 or len(api_token) < 10:
-                yield self.create_text_message("Attio credentials are not properly configured.")
+                yield self.create_text_message(
+                    "Attio credentials are not properly configured."
+                )
                 return
 
             # Setup payload
@@ -73,9 +75,11 @@ class addRecordsTool(Tool):
                 )
                 return
             elif response.status_code != 200:
-                yield self.create_text_message(f"Failed to create records: {response.text}")
+                yield self.create_text_message(
+                    f"Failed to create records: {response.text}"
+                )
                 return
-            
+
             yield self.create_text_message("Record created successfully.")
             yield self.create_json_message(response.json())
 

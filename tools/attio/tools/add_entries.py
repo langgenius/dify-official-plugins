@@ -26,7 +26,7 @@ class addEntriesTool(Tool):
             return
 
         if not data:
-            yield self.create_text_message("Data is required for record creation.")
+            yield self.create_text_message("Data is required for entries creation.")
             return
 
         if not parent_record_id or not parent_object_slug:
@@ -34,7 +34,7 @@ class addEntriesTool(Tool):
                 "Parent record ID and parent object slug are required."
             )
             return
-        
+
         # Parse JSON data
         try:
             data = json.loads(data)
@@ -46,7 +46,7 @@ class addEntriesTool(Tool):
         if data:
             if not isinstance(data, dict):
                 yield self.create_text_message(
-                    "For record creation, data must be a dictionary."
+                    "For entries creation, data must be a dictionary."
                 )
                 return
         else:
@@ -59,7 +59,9 @@ class addEntriesTool(Tool):
             api_token = "Bearer " + self.runtime.credentials.get("attio_api_token")
 
             if url.split("api")[1].find("//") != -1 or len(api_token) < 10:
-                yield self.create_text_message("Attio credentials are not properly configured.")
+                yield self.create_text_message(
+                    "Attio credentials are not properly configured."
+                )
                 return
 
             # Setup payload
@@ -90,9 +92,11 @@ class addEntriesTool(Tool):
                 )
                 return
             elif response.status_code != 200:
-                yield self.create_text_message(f"Failed to create entries: {response.text}")
+                yield self.create_text_message(
+                    f"Failed to create entries: {response.text}"
+                )
                 return
-            
+
             yield self.create_text_message("Entries created successfully.")
             yield self.create_json_message(response.json())
 
