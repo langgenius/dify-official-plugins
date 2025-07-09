@@ -22,6 +22,7 @@ class ToolCallDetail:
     query: Optional[str] = None
     url: Optional[str] = None
     pattern: Optional[str] = None
+    summary_text: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         """Return a dict excluding None values."""
@@ -106,6 +107,18 @@ class DeepResearchTool(Tool):
                     )
                 elif item.type == "code_interpreter_call":
                     calls.append(ToolCallDetail(tool="code_interpreter", action="execute_code"))
+                elif item.type == "reasoning":
+                    # Each reasoning item may contain multiple summary entries. Capture them all.
+                    for summ in getattr(item, "summary", []) or []:
+                        # Only include textual summaries for now.
+                        if getattr(summ, "type", None) == "summary_text":
+                            calls.append(
+                                ToolCallDetail(
+                                    tool="reasoning",
+                                    action="summary_text",
+                                    summary_text=getattr(summ, "text", None),
+                                )
+                            )
             if calls:
                 resp_data.research_process = [c.to_dict() for c in calls]
 
