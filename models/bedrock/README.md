@@ -31,52 +31,56 @@ After installing the plugin, configure the Amazon Bedrock credentials within the
 
 ![](./_assets/configure.png)
 
-### 1. 获取 Access Key 与 Secret Access Key
+### 1.  Obtain Access Key and Secret Access Key
 
-1. 登录 AWS 控制台。
+1. Log in to the AWS Management Console.
 
-点击右上角的账户名，选择 **“安全凭证”**（Security Credentials）菜单项。
+Click your account name in the top-right corner and select “Security Credentials” from the dropdown menu.
 
 ![](./_assets/Acess.png)
 
-在页面中找到 **“访问密钥 (Access Key)”** 一栏，点击 **“创建访问密钥”**。
+2. Scroll to the "Access keys" section and click “Create access key”.
 
 ![](./_assets/Key.png)
 
-1. 成功创建后，您将获得一组 `Access Key ID` 和 `Secret Access Key`。请妥善保存这两个值，它们是后续 API 调用所必需的身份凭证。
+3. Once created, you will receive an Access Key ID and a Secret Access Key
 
 ------
 
-### 2. 查找对应 Region 的 Endpoint URL
+### 2. Find the Endpoint URL for Your Region
 
-根据您在 AWS 中选择的 Region（区域），需要配置相应的服务 Endpoint。请参考 AWS 官方文档：
+Based on the AWS Region you selected, you need to configure the corresponding service endpoint for Amazon Bedrock. You can find the official list in the AWS documentation:
 
 🔗 [Amazon Bedrock endpoints and quotas - AWS General Reference](https://docs.aws.amazon.com/general/latest/gr/bedrock.html)
 
-在此页面中，您可以找到每个 Region 对应的 Bedrock API 端点，例如：
+This page provides the API endpoint for each supported region. For example:
 
-- `us-east-1`: bedrock-runtime.us-east-1.amazonaws.com (Https协议)
-- `eu-central-1`: bedrock-runtime.eu-central-1.amazonaws.com (Https协议)
+- `us-east-1`: bedrock-runtime.us-east-1.amazonaws.com (Https)
+- `eu-central-1`: bedrock-runtime.eu-central-1.amazonaws.com (Https)
 
-请确保在代码或配置中使用与您资源所在区域一致的 Endpoint。
+ Make sure the endpoint in your code or configuration matches the region where your Bedrock resources are enabled.
 
 ------
 
-### 3. 确认模型名称与授权情况
+### 3. Check Model Name and Access Permissions
 
-Amazon Bedrock 支持多个基础模型（Foundation Models），您可以通过以下链接查阅当前支持的模型列表：
+Amazon Bedrock supports a range of Foundation Models (FMs) from various providers. You can view the full list of available models at the following link:
 
 🔗 [Amazon Bedrock 中支持的根基模型 - Amazon Bedrock](https://docs.aws.amazon.com/zh_cn/bedrock/latest/userguide/models-supported.html)
 
-在页面中，您可以查看以下信息：
+This page includes:
 
-- 模型名称（如 Claude, Titan, Jurassic 等）
-- 模型提供商（如 Anthropic, AI21, Amazon 等）
-- 模型 ID（用于 API 调用）
-- 支持的功能（聊天、文本生成、图像生成等）
+Model Name (e.g., Claude, Titan, Jurassic)
 
-> ⚠️ **注意：**
->  使用某个模型前，您必须先在 AWS 控制台中启用该模型的访问权限。若该模型在您的账户中显示“已授权访问权限”，则说明您可以直接使用该模型，无需在代码中额外添加模型 ID 进行授权申请。
+Model Provider (e.g., Anthropic, AI21 Labs, Amazon)
+
+Model ID (used when calling the API)
+
+Supported capabilities (e.g., chat, text generation, image generation)
+
+⚠️ Note:
+Before using a model, you must first enable access to it in the AWS Management Console.
+If a model shows “Access granted” under your account, you can use it immediately without adding the model ID separately in your configuration.
 
 
 ## Issue Feedback | 问题反馈
