@@ -10,11 +10,7 @@
 
 The Attio Plugin connects [Dify](https://dify.ai/) with [Attio](https://www.attio.com/) to manage CRM data and automate operations such as listing, creating, updating, and deleting records, objects, lists, and attributes in your Attio workspace.
 
-To enhance user experience, two Agents are provided for generating filter and sort conditions. If you need to use filtering and sorting in List Record/List Entries, please copy and use these Agents together.
-
-Here they are:
-- Filters: https://udify.app/chat/uFQmhoKipxp20FnH
-- Sorts: https://udify.app/chat/5CnCuSBFGDn9RF3W
+*Attention* If you need to use filtering and sorting in List Record/List Entries, please view rules [here](https://attio.mintlify.app/rest-api/how-to/filtering-and-sorting), you can create agents to help you with that.
 
 ---
 
