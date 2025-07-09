@@ -1,0 +1,19 @@
+identity:
+  name: list_lists
+  author: langgenius
+  label:
+    en_US: "List Lists"
+    zh_Hans: "列出列表"
+    pt_BR: "Listar Listas"
+    ja_JP: "リスト一覧"
+description:
+  human:
+    en_US: "List all lists in Attio"
+    zh_Hans: "列出 Attio 中的所有列表"
+    pt_BR: "Listar todas as listas no Attio"
+    ja_JP: "Attio内のすべてのリストを一覧表示します"
+  llm: "Retrieve all lists in Attio."
+parameters:
+extra:
+  python:
+    source: tools/list_lists.py

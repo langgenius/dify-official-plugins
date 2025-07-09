@@ -1,0 +1,49 @@
+identity:
+  name: add_records
+  author: langgenius
+  label:
+    en_US: "Add Records"
+    zh_Hans: "添加记录"
+    pt_BR: "Adicionar Registros"
+    ja_JP: "レコードの追加"
+description:
+  human:
+    en_US: "Create one records in an Attio object"
+    zh_Hans: "在 Attio 对象中创建一条记录"
+    pt_BR: "Criar um registro em um objeto Attio"
+    ja_JP: "Attio オブジェクトにレコードを1件作成する"
+  llm: "Add a new record in an Attio table. Can create a single record with field values. Accepts data as JSON format with column-value pairs for the fields to be inserted."
+parameters:
+  - name: object_slug
+    type: string
+    required: true
+    label:
+      en_US: "Object Slug"
+      zh_Hans: "对象 Slug"
+      pt_BR: "Slug do Objeto"
+      ja_JP: "オブジェクトSlug"
+    human_description:
+      en_US: "Slug of object to add records in"
+      zh_Hans: "要添加记录的对象的 Slug"
+      pt_BR: "Slug do objeto para adicionar registros"
+      ja_JP: "レコードを追加するオブジェクトのSlug"
+    llm_description: "The slug of the object where records will be created. Should match the exact object slug in your Attio."
+    form: llm
+  - name: data
+    type: string
+    required: true
+    label:
+      en_US: "Record Data"
+      zh_Hans: "记录数据"
+      pt_BR: "Dados do Registro"
+      ja_JP: "レコードデータ"
+    human_description:
+      en_US: "JSON data containing the field values for the new record(s), every value of an attribute should be in a list[string](all values in a list"
+      zh_Hans: "包含新记录字段值的 JSON 数据，每个属性的值应为列表[string]（所有值在一个列表中）"
+      pt_BR: "Dados JSON contendo os valores dos campos para o novo registro(s), cada valor de um atributo deve ser uma lista[string] (todos os valores em uma lista)"
+      ja_JP: "新しいレコードのフィールド値を含むJSONデータ。各属性の値はリスト[string]（すべての値がリスト内）である必要があります"
+    llm_description: 'JSON string containing the data for record creation. For single record: {"column1": "value1", "column2": "value2"}. Colume ID should match the exact column IDs in your Attio object.'
+    form: llm
+extra:
+  python:
+    source: tools/add_records.py
