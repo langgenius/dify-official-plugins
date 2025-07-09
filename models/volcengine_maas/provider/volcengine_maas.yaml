@@ -9,6 +9,7 @@ extra:
     model_sources:
     - models/llm/llm.py
     - models/text_embedding/text_embedding.py
+    - models/speech2text/speech2text.py
     provider_source: provider/volcengine_maas.py
 help:
   title:
@@ -309,6 +310,12 @@ model_credential_schema:
         variable: __model_type
       value: Mistral-7B
     - label:
+        en_US: doubao-seed-asr
+      show_on:
+        - value: speech2text
+          variable: __model_type
+      value: doubao-seed-asr      
+    - label:
         en_US: Doubao-embedding
       show_on:
       - value: text-embedding
@@ -393,7 +400,11 @@ models:
   text_embedding:
     predefined:
     - models/text_embedding/*.yaml
+  speech2text:
+    predefined:
+      - models/speech2text/*.yaml    
 provider: volcengine_maas
 supported_model_types:
 - llm
 - text-embedding
+- speech2text
