@@ -31,6 +31,56 @@ After installing the plugin, configure the Amazon Bedrock credentials within the
 
 ![](./_assets/configure.png)
 
+### 1.  Obtain Access Key and Secret Access Key
+
+1. Log in to the AWS Management Console.
+
+Click your account name in the top-right corner and select “Security Credentials” from the dropdown menu.
+
+![](./_assets/Acess.png)
+
+2. Scroll to the "Access keys" section and click “Create access key”.
+
+![](./_assets/Key.png)
+
+3. Once created, you will receive an Access Key ID and a Secret Access Key
+
+------
+
+### 2. Find the Endpoint URL for Your Region
+
+Based on the AWS Region you selected, you need to configure the corresponding service endpoint for Amazon Bedrock. You can find the official list in the AWS documentation:
+
+🔗 [Amazon Bedrock endpoints and quotas - AWS General Reference](https://docs.aws.amazon.com/general/latest/gr/bedrock.html)
+
+This page provides the API endpoint for each supported region. For example:
+
+- `us-east-1`: bedrock-runtime.us-east-1.amazonaws.com (Https)
+- `eu-central-1`: bedrock-runtime.eu-central-1.amazonaws.com (Https)
+
+ Make sure the endpoint in your code or configuration matches the region where your Bedrock resources are enabled.
+
+------
+
+### 3. Check Model Name and Access Permissions
+
+Amazon Bedrock supports a range of Foundation Models (FMs) from various providers. You can view the full list of available models at the following link:
+
+[Supported foundation models in Amazon Bedrock - Amazon Bedrock](https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html)
+
+This page includes:
+
+Model Name (e.g., Claude, Titan, Jurassic)
+
+Model Provider (e.g., Anthropic, AI21 Labs, Amazon)
+
+Model ID (used when calling the API)
+
+Supported capabilities (e.g., chat, text generation, image generation)
+
+⚠️ Note:
+Before using a model, you must first enable access to it in the AWS Management Console.
+If a model shows “Access granted” under your account, you can use it immediately without adding the model ID separately in your configuration.
 
 
 ## Issue Feedback | 问题反馈
