@@ -36,8 +36,11 @@ After installing the plugin, configure the Amazon Bedrock credentials within the
 1. 登录 AWS 控制台。
 
 点击右上角的账户名，选择 **“安全凭证”**（Security Credentials）菜单项。
+
 ![](./_assets/Acess.png)
+
 在页面中找到 **“访问密钥 (Access Key)”** 一栏，点击 **“创建访问密钥”**。
+
 ![](./_assets/Key.png)
 
 1. 成功创建后，您将获得一组 `Access Key ID` 和 `Secret Access Key`。请妥善保存这两个值，它们是后续 API 调用所必需的身份凭证。
