@@ -81,6 +81,17 @@ class DeepResearchTool(Tool):
             response = client.responses.create(**create_args)
             logging.info(f"Start action raw response: {response}")
             yield self.create_text_message(f"Successfully started deep research task. Response ID: {response.id}")
+            
+            # Return structured JSON data for the start action
+            json_data = {
+                "response_id": response.id,
+                "status": response.status,
+                "model": response.model,
+                "background": response.background,
+                "max_tool_calls": response.max_tool_calls,
+                "tools": [tool.type for tool in response.tools] if response.tools else []
+            }
+            yield self.create_json_message(json_data)
         except Exception as e:
             logging.error(f"Failed to start deep research task: {e}", exc_info=True)
             yield self.create_text_message(f"Failed to start deep research task: {e}")
@@ -99,6 +110,15 @@ class DeepResearchTool(Tool):
                 yield self.create_text_message(f"Successfully cancelled research task with ID: {response_id}")
             else:
                 yield self.create_text_message(f"Could not cancel task {response_id}. Current status: {cancelled_response.status}")
+            
+            # Return structured JSON data for the cancel action
+            json_data = {
+                "response_id": cancelled_response.id,
+                "status": cancelled_response.status,
+                "model": cancelled_response.model,
+                "tools": [tool.type for tool in cancelled_response.tools] if cancelled_response.tools else []
+            }
+            yield self.create_json_message(json_data)
         except Exception as e:
             logging.error(f"Failed to cancel research task {response_id}: {e}", exc_info=True)
             yield self.create_text_message(f"Failed to cancel research task {response_id}: {e}")
@@ -120,6 +140,20 @@ class DeepResearchTool(Tool):
                 yield self.create_text_message(f"Status for task `{response_id}`: {response.status}")
                 if response.status == 'failed':
                     yield self.create_text_message(f"Error: Deep research task failed. Reason: {response.error}")
+                
+                # Return structured JSON data for unfinished retrieve actions
+                json_data = {
+                    "response_id": response.id,
+                    "status": response.status,
+                    "model": response.model,
+                    "background": response.background,
+                    "tools": [tool.type for tool in response.tools] if response.tools else []
+                }
+                
+                if response.status == 'failed' and response.error:
+                    json_data["error"] = response.error
+                
+                yield self.create_json_message(json_data)
 
         except Exception as e:
             logging.error(f"Failed to retrieve research task {response_id}: {e}", exc_info=True)
@@ -132,7 +166,13 @@ class DeepResearchTool(Tool):
         if formatted_report:
             yield self.create_text_message(formatted_report)
 
-        structured_data = {}
+        structured_data = {
+            "response_id": response.id,
+            "status": response.status,
+            "model": response.model,
+            "background": response.background,
+            "tools": [tool.type for tool in response.tools] if response.tools else []
+        }
 
         # Process tool calls for structured JSON output
         if response.output:
@@ -162,9 +202,8 @@ class DeepResearchTool(Tool):
                 "output_tokens": response.usage.output_tokens,
             }
 
-        # Yield all structured data as a single JSON message
-        if structured_data:
-            yield self.create_json_message(structured_data)
+        # Yield structured data as a JSON message
+        yield self.create_json_message(structured_data)
 
     def _format_output_with_numbered_citations(self, response) -> str:
         """
