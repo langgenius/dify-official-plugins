@@ -11,7 +11,6 @@ from dify_plugin.errors.model import (
 from dify_plugin.interfaces.model.openai_compatible.speech2text import (
     OAICompatSpeech2TextModel,
 )
-from dify_plugin.core.ext.ext_trace import get_request_id
 import gzip
 import json
 import uuid
@@ -113,7 +112,7 @@ class VolcengineOpenAISpeech2TextModel(OAICompatSpeech2TextModel):
         :param file: audio file
         :return: text for given audio file
         """
-        reqid = str(get_request_id()) if get_request_id() else str(uuid.uuid4())
+        reqid = str(uuid.uuid4())
         ws_url = credentials["ws_url"]
         header = {}
         header["X-Api-Resource-Id"] = "volc.bigasr.sauc.duration"
