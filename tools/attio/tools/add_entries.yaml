@@ -1,0 +1,79 @@
+identity:
+  name: add_entries
+  author: langgenius
+  label:
+    en_US: "Add Entries"
+    zh_Hans: "添加条目"
+    pt_BR: "Adicionar Entradas"
+    ja_JP: "エントリの追加"
+description:
+  human:
+    en_US: "Add an entry to a list in Attio"
+    zh_Hans: "在 Attio 的列表中添加条目"
+    pt_BR: "Adicionar uma entrada a uma lista no Attio"
+    ja_JP: "Attioのリストにエントリを追加する"
+  llm: "Add a new entry to an Attio list. Requires the list slug, entry data (as JSON), parent record ID, and parent object slug."
+parameters:
+  - name: list_slug
+    type: string
+    required: true
+    label:
+      en_US: "List Slug"
+      zh_Hans: "列表 Slug"
+      pt_BR: "Slug da Lista"
+      ja_JP: "リストSlug"
+    human_description:
+      en_US: "Slug of the list to add entries in"
+      zh_Hans: "要添加条目的列表的 Slug"
+      pt_BR: "Slug da lista para adicionar entradas"
+      ja_JP: "エントリを追加するリストのSlug"
+    llm_description: "The slug of the list where entries will be created. Should match the exact list slug in your Attio."
+    form: llm
+  - name: data
+    type: string
+    required: true
+    label:
+      en_US: "Entry Data"
+      zh_Hans: "条目数据"
+      pt_BR: "Dados da Entrada"
+      ja_JP: "エントリデータ"
+    human_description:
+      en_US: "JSON data containing the field values for the new entry"
+      zh_Hans: "包含新条目字段值的 JSON 数据"
+      pt_BR: "Dados JSON contendo os valores dos campos para a nova entrada"
+      ja_JP: "新しいエントリのフィールド値を含むJSONデータ"
+    llm_description: 'JSON string containing the data for entry creation. For single entry: {"column1": "value1", "column2": "value2"}. Column ID should match the exact column IDs in your Attio list.'
+    form: llm
+  - name: parent_record_id
+    type: string
+    required: true
+    label:
+      en_US: "Parent Record ID"
+      zh_Hans: "父记录ID"
+      pt_BR: "ID do Registro Pai"
+      ja_JP: "親レコードID"
+    human_description:
+      en_US: "ID of the parent record for this entry"
+      zh_Hans: "此条目的父记录ID"
+      pt_BR: "ID do registro pai para esta entrada"
+      ja_JP: "このエントリの親レコードID"
+    llm_description: "The ID of the parent record to which this entry belongs."
+    form: llm
+  - name: parent_object_slug
+    type: string
+    required: true
+    label:
+      en_US: "Parent Object Slug"
+      zh_Hans: "父对象Slug"
+      pt_BR: "Slug do Objeto Pai"
+      ja_JP: "親オブジェクトSlug"
+    human_description:
+      en_US: "Slug of the parent object for this entry"
+      zh_Hans: "此条目的父对象的Slug"
+      pt_BR: "Slug do objeto pai para esta entrada"
+      ja_JP: "このエントリの親オブジェクトのSlug"
+    llm_description: "The slug of the parent object to which this entry belongs."
+    form: llm
+extra:
+  python:
+    source: tools/add_entries.py

@@ -1,0 +1,49 @@
+identity:
+  name: delete_entries
+  author: langgenius
+  label:
+    en_US: "Delete Entries"
+    zh_Hans: "删除条目"
+    pt_BR: "Excluir Entradas"
+    ja_JP: "エントリの削除"
+description:
+  human:
+    en_US: "Delete an entry from a list in Attio"
+    zh_Hans: "从 Attio 的列表中删除条目"
+    pt_BR: "Excluir uma entrada de uma lista no Attio"
+    ja_JP: "Attioのリストからエントリを削除する"
+  llm: "Delete an entry from an Attio list. Requires the list slug and the entry ID."
+parameters:
+  - name: list_slug
+    type: string
+    required: true
+    label:
+      en_US: "List Slug"
+      zh_Hans: "列表 Slug"
+      pt_BR: "Slug da Lista"
+      ja_JP: "リストSlug"
+    human_description:
+      en_US: "Slug of the list from which to delete the entry"
+      zh_Hans: "要删除条目的列表的 Slug"
+      pt_BR: "Slug da lista de onde excluir a entrada"
+      ja_JP: "エントリを削除するリストのSlug"
+    llm_description: "The slug of the list from which the entry will be deleted."
+    form: llm
+  - name: entry_id
+    type: string
+    required: true
+    label:
+      en_US: "Entry ID"
+      zh_Hans: "条目ID"
+      pt_BR: "ID da Entrada"
+      ja_JP: "エントリID"
+    human_description:
+      en_US: "ID of the entry to delete"
+      zh_Hans: "要删除的条目的ID"
+      pt_BR: "ID da entrada a ser excluída"
+      ja_JP: "削除するエントリのID"
+    llm_description: "The ID of the entry to be deleted from the list."
+    form: llm
+extra:
+  python:
+    source: tools/delete_entries.py

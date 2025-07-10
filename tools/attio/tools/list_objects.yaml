@@ -1,0 +1,19 @@
+identity:
+  name: list_objects
+  author: langgenius
+  label:
+    en_US: "List Objects"
+    zh_Hans: "列出对象"
+    pt_BR: "Listar Objetos"
+    ja_JP: "オブジェクト一覧"
+description:
+  human:
+    en_US: "List all objects in Attio"
+    zh_Hans: "列出 Attio 中的所有对象"
+    pt_BR: "Listar todos os objetos no Attio"
+    ja_JP: "Attio内のすべてのオブジェクトを一覧表示します"
+  llm: "Retrieve all objects in Attio."
+parameters:
+extra:
+  python:
+    source: tools/list_objects.py

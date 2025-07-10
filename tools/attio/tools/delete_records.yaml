@@ -1,0 +1,49 @@
+identity:
+  name: delete_records
+  author: langgenius
+  label:
+    en_US: "Delete Records"
+    zh_Hans: "删除记录"
+    pt_BR: "Excluir Registros"
+    ja_JP: "レコードの削除"
+description:
+  human:
+    en_US: "Delete a record from an Attio object"
+    zh_Hans: "从 Attio 对象中删除一条记录"
+    pt_BR: "Excluir um registro de um objeto Attio"
+    ja_JP: "Attioオブジェクトからレコードを削除する"
+  llm: "Delete a record from an Attio object. Requires the object slug and the record ID."
+parameters:
+  - name: object_slug
+    type: string
+    required: true
+    label:
+      en_US: "Object Slug"
+      zh_Hans: "对象 Slug"
+      pt_BR: "Slug do Objeto"
+      ja_JP: "オブジェクトSlug"
+    human_description:
+      en_US: "Slug of the object from which to delete the record"
+      zh_Hans: "要删除记录的对象的 Slug"
+      pt_BR: "Slug do objeto de onde excluir o registro"
+      ja_JP: "レコードを削除するオブジェクトのSlug"
+    llm_description: "The slug of the object from which the record will be deleted."
+    form: llm
+  - name: record_id
+    type: string
+    required: true
+    label:
+      en_US: "Record ID"
+      zh_Hans: "记录ID"
+      pt_BR: "ID do Registro"
+      ja_JP: "レコードID"
+    human_description:
+      en_US: "ID of the record to delete"
+      zh_Hans: "要删除的记录的ID"
+      pt_BR: "ID do registro a ser excluído"
+      ja_JP: "削除するレコードのID"
+    llm_description: "The ID of the record to be deleted from the object."
+    form: llm
+extra:
+  python:
+    source: tools/delete_records.py
