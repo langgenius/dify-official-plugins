@@ -1,5 +1,4 @@
 import json
-import logging
 import time
 from collections.abc import Generator
 from copy import deepcopy
@@ -245,7 +244,6 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                 },
             )
             
-            # Regardless of whether there is a tool call, if there is a response, it is sent to the model as context
             if response.strip():
                 assistant_message = AssistantPromptMessage(content=response, tool_calls=[])
                 current_thoughts.append(assistant_message)
@@ -426,6 +424,10 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                             name=tool_call_name,
                         )
                     )
+            # After handling all tool calls, insert a blank line so the next assistant thought
+            # appears on a new line in the user interface.
+            if tool_calls:
+                yield self.create_text_message("\n")
 
             # update prompt tool
             for prompt_tool in prompt_messages_tools:
