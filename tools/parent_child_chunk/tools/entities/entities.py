@@ -24,7 +24,7 @@ class Rule(BaseModel):
 
 
 class ParentMode(StrEnum):
-    FULL_DOC = "full-doc"
+    FULL_DOC = "full_doc"
     PARAGRAPH = "paragraph"
 
 

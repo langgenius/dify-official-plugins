@@ -15,6 +15,9 @@ description:
 parameters:
   - name: input_text
     human_description:
+      en_US: The text you want to chunk.
+      zh_Hans: 输入文本
+      pt_BR: Conteúdo de Entrada
     label:
       en_US: Input Content
       zh_Hans: 输入文本
