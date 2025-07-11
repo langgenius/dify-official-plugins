@@ -122,20 +122,18 @@ parameters:
     required: false
     default: not_specified
     type: select
-  - name: max_results
-    default: 5
+  - name: auto_parameters
+    default: false
     form: form
     human_description:
-      en_US: The maximum number of search results to return.
-      zh_Hans: 要返回的最大搜索结果数。
+      en_US: Automatically configure search parameters based on query content and intent.
+      zh_Hans: 根据查询内容和意图自动配置搜索参数。
     label:
-      en_US: Max Results
-      zh_Hans: 最大结果数
-    llm_description: The maximum number of search results to return. Range is 1-20.
-    max: 20
-    min: 1
+      en_US: Auto Parameters
+      zh_Hans: 自动参数
+    llm_description: When set to true, Tavily automatically configures search parameters based on your query.
     required: false
-    type: number
+    type: boolean
   - name: include_images
     default: false
     form: form
@@ -158,6 +156,18 @@ parameters:
       en_US: Include Image Descriptions
       zh_Hans: 包含图片描述
     llm_description: When include_images is True and this is set to true, adds descriptive text for each image.
+    required: false
+    type: boolean
+  - name: include_favicon
+    default: false
+    form: form
+    human_description:
+      en_US: Include favicon URL for each result.
+      zh_Hans: 包含每个结果的favicon URL。
+    label:
+      en_US: Include Favicon
+      zh_Hans: 包含Favicon
+    llm_description: When set to true, includes the favicon URL for each result.
     required: false
     type: boolean
   - name: include_answer
@@ -184,6 +194,34 @@ parameters:
     llm_description: When set to true, includes the cleaned and parsed HTML content of each search result.
     required: false
     type: boolean
+  - name: max_results
+    default: 5
+    form: form
+    human_description:
+      en_US: The maximum number of search results to return.
+      zh_Hans: 要返回的最大搜索结果数。
+    label:
+      en_US: Max Results
+      zh_Hans: 最大结果数
+    llm_description: The maximum number of search results to return. Range is 1-20.
+    max: 20
+    min: 1
+    required: false
+    type: number
+  - name: chunks_per_source
+    default: 3
+    form: form
+    human_description:
+      en_US: Maximum number of content chunks returned per source (advanced search only).
+      zh_Hans: 每个来源返回的内容片段的最大数量（仅限高级搜索）。
+    label:
+      en_US: Chunks Per Source
+      zh_Hans: 每来源片段数
+    llm_description: Maximum number of relevant content chunks (1-3) returned per source. Valid only when search_depth is advanced.
+    max: 3
+    min: 1
+    required: false
+    type: number
   - name: include_domains
     form: form
     human_description:
@@ -210,44 +248,6 @@ parameters:
     llm_description: A comma-separated list of domains to specifically exclude from the search results.
     required: false
     type: string
-  - name: auto_parameters
-    default: false
-    form: form
-    human_description:
-      en_US: Automatically configure search parameters based on query content and intent.
-      zh_Hans: 根据查询内容和意图自动配置搜索参数。
-    label:
-      en_US: Auto Parameters
-      zh_Hans: 自动参数
-    llm_description: When set to true, Tavily automatically configures search parameters based on your query.
-    required: false
-    type: boolean
-  - name: chunks_per_source
-    default: 3
-    form: form
-    human_description:
-      en_US: Maximum number of content chunks returned per source (advanced search only).
-      zh_Hans: 每个来源返回的内容片段的最大数量（仅限高级搜索）。
-    label:
-      en_US: Chunks Per Source
-      zh_Hans: 每来源片段数
-    llm_description: Maximum number of relevant content chunks (1-3) returned per source. Valid only when search_depth is advanced.
-    max: 3
-    min: 1
-    required: false
-    type: number
-  - name: include_favicon
-    default: false
-    form: form
-    human_description:
-      en_US: Include favicon URL for each result.
-      zh_Hans: 包含每个结果的favicon URL。
-    label:
-      en_US: Include Favicon
-      zh_Hans: 包含Favicon
-    llm_description: When set to true, includes the favicon URL for each result.
-    required: false
-    type: boolean
   - name: country
     form: llm
     human_description:

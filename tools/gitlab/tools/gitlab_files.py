@@ -60,7 +60,7 @@ class GitlabFilesTool(Tool):
                     item_path = item["path"]
                     if item["type"] == "tree":
                         results.extend(
-                            self.fetch_files(site_url, access_token, identifier, branch, item_path, is_repository)
+                            self.fetch_files(site_url, access_token, identifier, branch, item_path, is_repository, ssl_verify)
                         )
                     else:
                         encoded_item_path = urllib.parse.quote(item_path, safe="")

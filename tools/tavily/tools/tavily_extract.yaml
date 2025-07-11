@@ -70,7 +70,7 @@ parameters:
         value: advanced
     default: basic
   - name: format
-    form: llm
+    form: form
     human_description:
       en_US: The format of extracted content.
       zh_Hans: 提取内容的格式。

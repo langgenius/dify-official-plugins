@@ -1,0 +1,96 @@
+identity:
+  name: list_entries
+  author: langgenius
+  label:
+    en_US: "List Entries"
+    zh_Hans: "列出记录"
+    pt_BR: "Listar Registros"
+    ja_JP: "エントリ一覧"
+description:
+  human:
+    en_US: "List all entries in an Attio list"
+    zh_Hans: "列出 Attio 列表中的所有记录"
+    pt_BR: "Listar todas as entradas em uma lista Attio"
+    ja_JP: "Attioリスト内のすべてのエントリを一覧表示します"
+  llm: "Retrieve all entries for a specified Attio list by providing the list slug. Supports optional filters, sorts, limit, and offset."
+parameters:
+  - name: list_slug
+    type: string
+    required: true
+    label:
+      en_US: "List Slug"
+      zh_Hans: "列表 Slug"
+      pt_BR: "Slug da Lista"
+      ja_JP: "リストSlug"
+    human_description:
+      en_US: "Slug of the list to retrieve entries from"
+      zh_Hans: "要检索记录的列表的 Slug"
+      pt_BR: "Slug da lista de onde recuperar entradas"
+      ja_JP: "エントリを取得するリストのSlug"
+    llm_description: "The slug of the list whose entries will be retrieved. Should match the exact list slug in your Attio."
+    form: llm
+  - name: filters
+    type: string
+    required: false
+    label:
+      en_US: "Filters"
+      zh_Hans: "筛选条件"
+      pt_BR: "Filtros"
+      ja_JP: "フィルター"
+    human_description:
+      en_US: "Optional JSON object to filter the entries"
+      zh_Hans: "用于筛选记录的可选 JSON 对象"
+      pt_BR: "Objeto JSON opcional para filtrar as entradas"
+      ja_JP: "エントリをフィルタリングするためのオプションのJSONオブジェクト"
+    llm_description: "Optional JSON string for filtering entries. Example: {\"column_id\": \"value\"}"
+    form: llm
+  - name: sorts
+    type: string
+    required: false
+    label:
+      en_US: "Sorts"
+      zh_Hans: "排序"
+      pt_BR: "Ordenações"
+      ja_JP: "ソート"
+    human_description:
+      en_US: "Optional JSON array to sort the entries"
+      zh_Hans: "用于排序记录的可选 JSON 数组"
+      pt_BR: "Array JSON opcional para ordenar as entradas"
+      ja_JP: "エントリをソートするためのオプションのJSON配列"
+    llm_description: "Optional JSON string for sorting entries. Example: [{\"column_id\": \"asc\"}]"
+    form: llm
+  - name: limit
+    type: number
+    default: 500
+    required: false
+    label:
+      en_US: "Limit"
+      zh_Hans: "数量限制"
+      pt_BR: "Limite"
+      ja_JP: "リミット"
+    human_description:
+      en_US: "Maximum number of entries to retrieve (default 500)"
+      zh_Hans: "要检索的最大记录数（默认500）"
+      pt_BR: "Número máximo de entradas a serem recuperadas (padrão 500)"
+      ja_JP: "取得するエントリの最大数（デフォルト500）"
+    llm_description: "Maximum number of entries to retrieve. Default is 500."
+    form: llm
+  - name: offset
+    type: number
+    default: 0
+    required: false
+    label:
+      en_US: "Offset"
+      zh_Hans: "偏移量"
+      pt_BR: "Offset"
+      ja_JP: "オフセット"
+    human_description:
+      en_US: "Number of entries to skip before starting to collect the result set (default 0)"
+      zh_Hans: "开始收集结果集前要跳过的记录数（默认0）"
+      pt_BR: "Número de entradas a serem ignoradas antes de começar a coletar o conjunto de resultados (padrão 0)"
+      ja_JP: "結果セットの収集を開始する前にスキップするエントリ数（デフォルト0）"
+    llm_description: "Number of entries to skip before starting to collect the result set. Default is 0."
+    form: llm
+extra:
+  python:
+    source: tools/list_entries.py

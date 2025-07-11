@@ -1,0 +1,64 @@
+identity:
+  name: create_objects
+  author: langgenius
+  label:
+    en_US: "Create Object"
+    zh_Hans: "创建对象"
+    pt_BR: "Criar Objeto"
+    ja_JP: "オブジェクト作成"
+description:
+  human:
+    en_US: "Create a new object in Attio workspace"
+    zh_Hans: "在 Attio 工作区中创建一个新对象"
+    pt_BR: "Criar um novo objeto no workspace Attio"
+    ja_JP: "Attioワークスペースに新しいオブジェクトを作成する"
+  llm: "Create a new object in Attio. You must provide a unique object slug (lowercase letters only), and singular/plural names for the object."
+parameters:
+  - name: object_slug
+    type: string
+    required: true
+    label:
+      en_US: "Object Slug"
+      zh_Hans: "对象 Slug"
+      pt_BR: "Slug do Objeto"
+      ja_JP: "オブジェクトSlug"
+    human_description:
+      en_US: "Unique slug for the object (lowercase letters only)"
+      zh_Hans: "对象的唯一 slug（仅小写字母）"
+      pt_BR: "Slug único para o objeto (apenas letras minúsculas)"
+      ja_JP: "オブジェクトの一意なスラッグ（小文字のみ）"
+    llm_description: "Unique slug for the object to be created. Must be lowercase letters only."
+    form: llm
+  - name: singular_noun
+    type: string
+    required: true
+    label:
+      en_US: "Singular Name"
+      zh_Hans: "单数名称"
+      pt_BR: "Nome Singular"
+      ja_JP: "単数名"
+    human_description:
+      en_US: "Singular noun for the object (e.g., Person)"
+      zh_Hans: "对象的单数名称（如 Person）"
+      pt_BR: "Nome singular do objeto (ex: Pessoa)"
+      ja_JP: "オブジェクトの単数名（例：Person）"
+    llm_description: "Singular noun for the object, e.g., Person."
+    form: llm
+  - name: plural_noun
+    type: string
+    required: true
+    label:
+      en_US: "Plural Name"
+      zh_Hans: "复数名称"
+      pt_BR: "Nome Plural"
+      ja_JP: "複数名"
+    human_description:
+      en_US: "Plural noun for the object (e.g., People)"
+      zh_Hans: "对象的复数名称（如 People）"
+      pt_BR: "Nome plural do objeto (ex: Pessoas)"
+      ja_JP: "オブジェクトの複数名（例：People）"
+    llm_description: "Plural noun for the object, e.g., People."
+    form: llm
+extra:
+  python:
+    source: tools/create_objects.py
