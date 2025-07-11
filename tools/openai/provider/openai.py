@@ -14,7 +14,7 @@ class OpenAIProvider(ToolProvider):
             
             # Test the API with a simple request
             response = client.chat.completions.create(
-                model="gpt-4.1-mini",
+                model="gpt-4.1-nano",
                 messages=[{"role": "user", "content": "Tell me a joke."}],
                 max_tokens=10
             )
