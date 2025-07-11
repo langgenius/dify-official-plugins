@@ -23,6 +23,7 @@ from dify_plugin.entities.model.rerank import (
     RerankDocument,
     RerankResult,
 )
+from models.shared.input import transform_jina_input_text
 
 
 class JinaRerankModel(RerankModel):
@@ -73,7 +74,7 @@ class JinaRerankModel(RerankModel):
         data = {
             "model": model,
             "query": query,
-            "documents": docs,
+            "documents": [transform_jina_input_text(model, doc) for doc in docs],
             "top_n": top_n,
         }
 
