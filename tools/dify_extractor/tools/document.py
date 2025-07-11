@@ -14,7 +14,7 @@ class ChildDocument(BaseModel):
     """Arbitrary metadata about the page content (e.g., source, relationships to other
         documents, etc.).
     """
-    metadata: dict = Field(default_factory={})
+    metadata: dict = Field(default_factory=dict)
 
 
 class Document(BaseModel):
@@ -27,7 +27,7 @@ class Document(BaseModel):
     """Arbitrary metadata about the page content (e.g., source, relationships to other
         documents, etc.).
     """
-    metadata: dict = Field(default_factory={})
+    metadata: dict = Field(default_factory=dict)
 
     provider: Optional[str] = "dify"
 
@@ -39,7 +39,7 @@ class Document(BaseModel):
             "vector": self.vector if self.vector is not None else None,
             "metadata": self.metadata,
             "provider": self.provider,
-            "children": [child.to_dict() for child in self.children]
+            "children": [child.model_dump() for child in self.children]
             if self.children
             else None,
         }

@@ -18,6 +18,8 @@ class ExcelExtractor(BaseExtractor):
     Args:
         file_bytes: file bytes.
         file_name: file name.
+        encoding: encoding.
+        autodetect_encoding: autodetect encoding.
     """
 
     def __init__(
@@ -53,7 +55,7 @@ class ExcelExtractor(BaseExtractor):
                 df.dropna(how="all", inplace=True)
 
                 md_content = f"## {sheet_name}\n\n"
-                md_content += "| " + " | ".join(cols) + " |\n"
+                md_content += "| " + " | ".join(str(col) for col in cols) + " |\n"
                 md_content += "| " + " | ".join(["---"] * len(cols)) + " |\n"
 
                 for index, row in df.iterrows():

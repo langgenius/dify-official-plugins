@@ -10,19 +10,17 @@ from google.oauth2 import service_account
 class GoogleCloudStorageDatasourceProvider(DatasourceProvider):
     def _validate_credentials(self, credentials: Mapping[str, Any]) -> None:
         try:
-            if "credentials" not in credentials or not credentials.get("credentials"):
+            if not credentials or not credentials.get("credentials"):
                 raise ToolProviderCredentialValidationError(
                     "Google Cloud Storage credentials are required."
                 )
-            if "bucket" not in credentials or not credentials.get("bucket"):
+            if not isinstance(credentials.get("credentials"), str):
                 raise ToolProviderCredentialValidationError(
-                    "Google Cloud Storage bucket is required."
+                    "Google Cloud Storage credentials must be a string json."
                 )
-
-            creds = service_account.Credentials.from_service_account_info(
-                json.loads(credentials.get("credentials"))
-            )
-            client = storage.Client(credentials=creds)
-            client.get_bucket(credentials.get("bucket"))
+            
+            service_account_obj = json.loads(credentials.get("credentials"))
+            google_client = storage.Client.from_service_account_info(service_account_obj)
+            google_client.list_buckets()
         except Exception as e:
             raise ToolProviderCredentialValidationError(str(e))

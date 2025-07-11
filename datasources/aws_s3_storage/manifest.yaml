@@ -1,20 +1,20 @@
 version: 0.0.1
 type: plugin
 author: langgenius
-name: google_cloud_storage
+name: aws_s3_storage
 label:
-  en_US: Google Cloud Storage
-  zh_Hans: Google Cloud Storage
+  en_US: AWS S3 Storage
+  zh_Hans: AWS S3 Storage
 description:
-  en_US: Google Cloud Storage Datasource
-  zh_Hans: Google Cloud Storage 数据源
+  en_US: AWS S3 Storage Datasource
+  zh_Hans: AWS S3 Storage 数据源
 icon: icon.png
 resource:
   memory: 268435456
   permission: {}
 plugins:
   datasources:
-    - provider/google_cloud_storage.yaml
+    - provider/aws_s3_storage.yaml
 meta:
   version: 0.0.1
   arch:

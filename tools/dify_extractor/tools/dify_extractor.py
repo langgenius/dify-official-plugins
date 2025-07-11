@@ -27,7 +27,7 @@ class DifyExtractorTool(Tool):
         elif file_extension == ".pdf":
             extractor = PdfExtractor(file_bytes, file_name)
         elif file_extension in {".md", ".markdown", ".mdx"}:
-            extractor = MarkdownExtractor(file_bytes, autodetect_encoding=True)
+            extractor = MarkdownExtractor(file_bytes, file_name, tool=self, autodetect_encoding=True)
         elif file_extension in {".htm", ".html"}:
             extractor = HtmlExtractor(file_bytes, file_name)
         elif file_extension == ".docx":
@@ -36,7 +36,7 @@ class DifyExtractorTool(Tool):
             extractor = CSVExtractor(file_bytes, file_name, autodetect_encoding=True)
         else:
             # txt
-            extractor = TextExtractor(file_bytes, autodetect_encoding=True)
+            extractor = TextExtractor(file_bytes, file_name, autodetect_encoding=True)
         extractor_result = extractor.extract()
         if extractor_result.img_list:
             yield self.create_variable_message("images", extractor_result.img_list)

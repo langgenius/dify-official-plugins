@@ -25,6 +25,8 @@ class WordExtractor(BaseExtractor):
         tool: Tool instance
         file_bytes: file bytes
         file_name: file name
+        encoding: encoding
+        autodetect_encoding: autodetect encoding
     """
 
     def __init__(self, tool: Tool, file_bytes: bytes, file_name: str):
@@ -33,11 +35,7 @@ class WordExtractor(BaseExtractor):
         self._file_name = file_name
         self._tool = tool
 
-    def __del__(self) -> None:
-        if hasattr(self, "temp_file"):
-            self.temp_file.close()
-
-    def extract(self) -> tuple[str, list[Document]]:
+    def extract(self) -> ExtractorResult:
         """Load given path as single page."""
         content, img_list = self.parse_docx(self._file_bytes)
         return ExtractorResult(
@@ -46,6 +44,7 @@ class WordExtractor(BaseExtractor):
                 Document(page_content=content, metadata={"source": self._file_name})
             ],
             img_list=img_list,
+            origin_result=None
         )
 
     @staticmethod

@@ -12,6 +12,7 @@ class HtmlExtractor(BaseExtractor):
 
     Args:
         file_bytes: HTML content in bytes format.
+        file_name: file name.
     """
 
     def __init__(self, file_bytes: bytes, file_name: str):

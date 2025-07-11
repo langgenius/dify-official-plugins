@@ -5,8 +5,8 @@ identity:
     en_US: Google Cloud Storage
     zh_Hans: Google Cloud Storage
 description:
-  en_US: Search for files in your Google Cloud Storage bucket
-  zh_Hans: 在您的 Google Cloud Storage 存储桶中搜索文件
+  en_US: Get files from your Google Cloud Storage bucket
+  zh_Hans: 从您的 Google Cloud Storage 存储桶中获取文件
 
 parameters:
 
@@ -16,12 +16,9 @@ output_schema:
       result:
         type: object
         properties:
-          file_name:
-            type: string
-            description: file name
-          content:
-            type: string
-            description: file content
+          file:
+            type: file
+            description: file
 extra:
   python:
     source: datasources/google_cloud_storage.py

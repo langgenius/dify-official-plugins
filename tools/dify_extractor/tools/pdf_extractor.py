@@ -10,6 +10,7 @@ class PdfExtractor(BaseExtractor):
 
     Args:
         file_bytes: file bytes
+        file_name: file name.
     """
 
     def __init__(self, file_bytes: bytes, file_name: str):

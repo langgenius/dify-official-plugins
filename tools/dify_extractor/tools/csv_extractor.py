@@ -4,8 +4,6 @@ import csv
 from typing import Optional
 
 import pandas as pd
-from pandas.core.dtypes.cast import maybe_downcast_numeric
-
 from tools.extractor_base import BaseExtractor
 from tools.helpers import detect_file_encodings
 from tools.document import Document, ExtractorResult
@@ -17,7 +15,11 @@ class CSVExtractor(BaseExtractor):
 
 
     Args:
-        file_path: Path to the file to load.
+        file_bytes: file bytes.
+        file_name: file name.
+        encoding: encoding.
+        autodetect_encoding: autodetect encoding.
+        csv_args: csv args.
     """
 
     def __init__(
