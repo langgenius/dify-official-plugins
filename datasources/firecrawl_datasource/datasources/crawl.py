@@ -2,7 +2,11 @@ import time
 from collections.abc import Generator
 from typing import Any, Mapping
 
-from dify_plugin.entities.datasource import WebSiteInfo, WebSiteInfoDetail, WebsiteCrawlMessage
+from dify_plugin.entities.datasource import (
+    WebSiteInfo,
+    WebSiteInfoDetail,
+    WebsiteCrawlMessage,
+)
 from dify_plugin.interfaces.datasource.website import WebsiteCrawlDatasource
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from requests import HTTPError
@@ -28,7 +32,8 @@ class CrawlDatasource(WebsiteCrawlDatasource):
         try:
             app = FirecrawlApp(
                 api_key=self.runtime.credentials.get("firecrawl_api_key"),
-                base_url=self.runtime.credentials.get("base_url") or "https://api.firecrawl.dev",
+                base_url=self.runtime.credentials.get("base_url")
+                or "https://api.firecrawl.dev",
             )
 
             crawl_sub_pages = datasource_parameters.get("crawl_subpages", True)
@@ -36,23 +41,31 @@ class CrawlDatasource(WebsiteCrawlDatasource):
             scrapeOptions = {
                 "onlyMainContent": datasource_parameters.get("only_main_content", True)
             }
-            scrapeOptions = {k: v for k, v in scrapeOptions.items() if v not in (None, "")}
+            scrapeOptions = {
+                k: v for k, v in scrapeOptions.items() if v not in (None, "")
+            }
 
             payload = {
-                "excludePaths": get_array_params(datasource_parameters, "exclude_paths") if crawl_sub_pages else [],
-                "includePaths": get_array_params(datasource_parameters, "include_paths") if crawl_sub_pages else [],
-                "maxDepth": datasource_parameters.get("max_depth") if crawl_sub_pages else None,
-                "limit": 1 if not crawl_sub_pages else datasource_parameters.get("limit", 5),
-                "scrapeOptions": scrapeOptions or None
+                "excludePaths": get_array_params(datasource_parameters, "exclude_paths")
+                if crawl_sub_pages
+                else [],
+                "includePaths": get_array_params(datasource_parameters, "include_paths")
+                if crawl_sub_pages
+                else [],
+                "maxDepth": datasource_parameters.get("max_depth")
+                if crawl_sub_pages
+                else None,
+                "limit": 1
+                if not crawl_sub_pages
+                else datasource_parameters.get("limit", 5),
+                "scrapeOptions": scrapeOptions or None,
             }
             payload = {k: v for k, v in payload.items() if v not in (None, "")}
 
-            crawl_res = WebSiteInfo(web_info_list=[], status="",total=0, completed=0)
+            crawl_res = WebSiteInfo(web_info_list=[], status="", total=0, completed=0)
 
             _crawl_result = app.crawl_url(
-                url=datasource_parameters["url"],
-                wait=False,
-                **payload
+                url=datasource_parameters["url"], wait=False, **payload
             )
             job_id = _crawl_result["id"]
             crawl_res.status = "processing"
@@ -87,8 +100,9 @@ class CrawlDatasource(WebsiteCrawlDatasource):
         crawl_res.web_info_list = [
             WebSiteInfoDetail(
                 source_url=item["source_url"],
-                content=item['content'] or "",
-                title=item['title'] or "",
-                description=item['description'] or ""
-            ) for item in _format_res["data"]
+                content=item["content"] or "",
+                title=item["title"] or "",
+                description=item["description"] or "",
+            )
+            for item in _format_res["data"]
         ]
