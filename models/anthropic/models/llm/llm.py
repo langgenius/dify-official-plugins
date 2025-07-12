@@ -242,18 +242,21 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
 
         # Helper to prune cache_control blocks to max 4 by priority
         def _prune_cache_blocks(payload: dict):
-            blocks: list[tuple[int, dict]] = []  # (priority, block_dict)
+            blocks: list[tuple[int, int, dict]] = []  # (priority, neg_length, block_dict)
 
             # Helper to record
-            def _record_block(d: dict, priority: int):
+            def _record_block(d: dict, priority: int, length: int = 0):
                 if "cache_control" in d:
-                    blocks.append((priority, d))
+                    blocks.append((priority, -length, d))
 
             # 1. system blocks
             if isinstance(payload.get("system"), list):
                 for block in payload["system"]:
                     if isinstance(block, dict):
-                        _record_block(block, 2)  # system priority 2
+                        text_len = 0
+                        if block.get("type") == "text":
+                            text_len = len(block.get("text", ""))
+                        _record_block(block, 2, text_len)  # system priority 2
 
             # 2. message content blocks
             for msg in payload.get("messages", []):
@@ -263,24 +266,29 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         if not isinstance(block, dict):
                             continue
                         btype = block.get("type")
+                        text_len = 0
                         if btype in {"image", "document"}:
                             pr = 1
                         elif btype in {"tool_use", "tool_result"}:
                             pr = 4
                         else:
                             pr = 3  # text or others
-                        _record_block(block, pr)
+                            if btype == "text":
+                                text_len = len(block.get("text", ""))
+                        _record_block(block, pr, text_len)
 
             # 3. tools definitions
             for tool_def in payload.get("tools", []):
                 if isinstance(tool_def, dict):
-                    _record_block(tool_def, 4)
+                    _record_block(tool_def, 4, 0)
 
-            # Sort by priority (lower number = higher priority)
-            blocks.sort(key=lambda x: x[0])
+            # Sort by priority (lower number = higher priority), then by length descending
+            blocks.sort(key=lambda x: (x[0], x[1]))
+
+            logging.info(f"Blocks: {blocks}")
 
             # Keep first 4
-            for idx, (_, block_dict) in enumerate(blocks):
+            for idx, (_, _, block_dict) in enumerate(blocks):
                 if idx >= 4:
                     block_dict.pop("cache_control", None)
 
