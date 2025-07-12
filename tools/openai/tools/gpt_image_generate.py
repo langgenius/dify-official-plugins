@@ -1,7 +1,7 @@
 import base64
 import random
 from collections.abc import Generator
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 from openai import OpenAI
 from yarl import URL
 from dify_plugin.entities.tool import ToolInvokeMessage
