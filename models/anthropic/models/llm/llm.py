@@ -269,6 +269,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         text_len = 0
                         if btype in {"image", "document"}:
                             pr = 1
+                            if block.get("source", {}).get("type") == "base64":
+                                text_len = len(block.get("source", {}).get("data", ""))
                         elif btype in {"tool_use", "tool_result"}:
                             pr = 4
                         else:
