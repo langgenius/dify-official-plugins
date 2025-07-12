@@ -2,6 +2,7 @@ import base64
 import io
 import json
 import re
+import copy
 from collections.abc import Generator, Sequence
 from typing import Any, Mapping, Optional, Union, cast
 import logging
@@ -283,6 +284,21 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 if idx >= 4:
                     block_dict.pop("cache_control", None)
 
+        def _sanitize_for_logging(data_structure: Any) -> Any:
+            """Recursively truncate 'data' fields in a nested structure for logging."""
+            if isinstance(data_structure, dict):
+                loggable_data = copy.deepcopy(data_structure)
+                for key, value in loggable_data.items():
+                    if key == 'data' and isinstance(value, str) and len(value) > 50:
+                        loggable_data[key] = f"{value[:50]}...[truncated]"
+                    else:
+                        loggable_data[key] = _sanitize_for_logging(value)
+                return loggable_data
+            elif isinstance(data_structure, list):
+                return [_sanitize_for_logging(item) for item in data_structure]
+            else:
+                return data_structure
+
         # Build preliminary request payload (without tools yet)
         request_payload = {
             "model": model,
@@ -328,7 +344,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             # Now prune cache blocks to respect Anthropic limit
             _prune_cache_blocks(request_payload)
 
-            logging.info(f"Anthropic API Request: {json.dumps(request_payload, indent=2)}")
+            loggable_request = _sanitize_for_logging(request_payload)
+            logging.info(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
             response = client.messages.create(
                 model=model,
                 messages=prompt_message_dicts,
@@ -339,8 +356,10 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 **{k: v for k, v in extra_model_kwargs.items() if k != "tools"},
             )
         else:
-            logging.info(f"Anthropic API Request: {json.dumps(request_payload, indent=2)}")
             _prune_cache_blocks(request_payload)
+
+            loggable_request = _sanitize_for_logging(request_payload)
+            logging.info(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
             response = client.messages.create(
                 model=model,
                 messages=prompt_message_dicts,
