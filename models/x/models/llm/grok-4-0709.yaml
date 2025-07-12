@@ -1,15 +1,16 @@
-model: grok-3-mini-fast
+model: grok-4-0709
 label:
-  en_US: grok-3-mini-fast
+  en_US: grok-4-0709
 model_type: llm
 features:
+  - vision
   - agent-thought
   - tool-call
   - multi-tool-call
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 131072
+  context_size: 256000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -18,18 +19,6 @@ parameter_rules:
     max: 2.0
   - name: top_p
     use_template: top_p
-  - name: reasoning_effort
-    label:
-      zh_Hans: 推理工作
-      en_US: reasoning_effort
-    type: string
-    help:
-      zh_Hans: 限制推理模型的推理工作
-      en_US: constrains effort on reasoning for reasoning models
-    required: false
-    options:
-      - low
-      - high
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -55,7 +44,7 @@ parameter_rules:
       en_US: Parameters to pass to the live search, see https://docs.x.ai/docs/api-reference#chat-completions
     required: false
 pricing:
-  input: "0.60"
-  output: "4.00"
+  input: "3.00"
+  output: "15.00"
   unit: "0.000001"
   currency: USD
