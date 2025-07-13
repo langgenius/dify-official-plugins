@@ -357,9 +357,9 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                                     },
                                                 )
                                                 yield blob_response
-                                    except Exception:
-                                        logging.exception(
-                                            "Failed to create blob message"
+                                    except Exception as e:
+                                        yield self.create_text_message(
+                                            f"Failed to create blob message: {e}"
                                         )
                                 tool_result += (
                                     "image has been created and sent to user already, "
