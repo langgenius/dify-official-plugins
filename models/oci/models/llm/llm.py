@@ -1,9 +1,12 @@
+import os
 import base64
 import copy
 import json
 import logging
+import mimetypes
 from collections.abc import Generator
 from typing import Optional, Union
+import requests
 import oci
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
 from dify_plugin.entities.model.message import (
@@ -35,8 +38,6 @@ request_template = {
         "apiFormat": "COHERE",
         "maxTokens": 600,
         "isStream": False,
-        "frequencyPenalty": 0,
-        "presencePenalty": 0,
         "temperature": 1,
         "topP": 0.75,
     },
@@ -52,6 +53,7 @@ oci_config_template = {
 
 
 class OCILargeLanguageModel(LargeLanguageModel):
+    CONTEXT_TOKEN_LIMIT: int = int(os.getenv("OCI_LLM_CONTEXT_TOKENS", 2000))
     _supported_models = {
         "meta.llama-3.1-405b-instruct": {
             "system": True,
@@ -61,7 +63,7 @@ class OCILargeLanguageModel(LargeLanguageModel):
         },
         "meta.llama-3.2-90b-vision-instruct": {
             "system": True,
-            "multimodal": False,
+            "multimodal": True,
             "tool_call": False,
             "stream_tool_call": False,
         },
@@ -73,13 +75,13 @@ class OCILargeLanguageModel(LargeLanguageModel):
         },
         "meta.llama-4-maverick-17b-128e-instruct-fp8": {
             "system": True,
-            "multimodal": False,
+            "multimodal": True,
             "tool_call": True,
             "stream_tool_call": True,
         },
         "meta.llama-4-scout-17b-16e-instruct": {
             "system": True,
-            "multimodal": False,
+            "multimodal": True,
             "tool_call": True,
             "stream_tool_call": True,
         },
@@ -96,6 +98,24 @@ class OCILargeLanguageModel(LargeLanguageModel):
             "stream_tool_call": False,
         },
         "xai.grok-3": {
+            "system": True,
+            "multimodal": False,
+            "tool_call": True,
+            "stream_tool_call": True,
+        },
+       "xai.grok-3-mini": {
+            "system": True,
+            "multimodal": False,
+            "tool_call": True,
+            "stream_tool_call": True,
+        },
+       "xai.grok-3-fast": {
+            "system": True,
+            "multimodal": False,
+            "tool_call": True,
+            "stream_tool_call": True,
+        },
+       "xai.grok-3-mini-fast": {
             "system": True,
             "multimodal": False,
             "tool_call": True,
@@ -259,9 +279,25 @@ class OCILargeLanguageModel(LargeLanguageModel):
         chat_history = []
         system_prompts = []
         request_args["chatRequest"]["maxTokens"] = model_parameters.pop("maxTokens", 600)
-        request_args["chatRequest"].update(model_parameters)
-        frequency_penalty = model_parameters.get("frequencyPenalty", 0)
-        presence_penalty = model_parameters.get("presencePenalty", 0)
+        # request_args["chatRequest"].update(model_parameters)
+        if model in ("xai.grok-3-mini-fast", "xai.grok-3-mini"):
+            safe_model_parameters = {
+                "temperature": model_parameters.get("temperature", 1),
+                "topP": model_parameters.get("topP", 0.75),
+            }
+            frequency_penalty = 0
+            presence_penalty = 0
+        else:
+            safe_model_parameters = {
+                "frequencyPenalty": model_parameters.get("frequencyPenalty", 0),
+                "presencePenalty": model_parameters.get("presencePenalty", 0),
+                "temperature": model_parameters.get("temperature", 1),
+                "topP": model_parameters.get("topP", 0.75),
+            }
+            frequency_penalty = safe_model_parameters["frequencyPenalty"]
+            presence_penalty = safe_model_parameters["presencePenalty"]
+
+        request_args["chatRequest"].update(safe_model_parameters)
         if frequency_penalty > 0 and presence_penalty > 0:
             raise InvokeBadRequestError("Cannot set both frequency penalty and presence penalty")
         valid_value = self._is_tool_call_supported(model, stream)
@@ -288,11 +324,98 @@ class OCILargeLanguageModel(LargeLanguageModel):
             }
             request_args["chatRequest"].update(args)
         elif model.startswith("meta"):
+            from typing import cast
+            from dify_plugin.entities.model.message import (
+                PromptMessageContentType,
+                TextPromptMessageContent,
+                ImagePromptMessageContent,
+            )
+
+            # まず全ての画像 URL を集めて「最後の画像」を選定
+            all_images = []
+            for msg in prompt_messages:
+                if isinstance(msg.content, list):
+                    for mc in msg.content:
+                        if mc.type == PromptMessageContentType.IMAGE:
+                            all_images.append(cast(ImagePromptMessageContent, mc).data)
+            last_image_url = all_images[-1] if all_images else None
+            used_image = False  # 画像使用フラグ
+
             meta_messages = []
             for message in prompt_messages:
-                text = message.content
-                meta_messages.append({"role": message.role.name, "content": [{"type": "TEXT", "text": text}]})
-            args = {"apiFormat": "GENERIC", "messages": meta_messages, "numGenerations": 1, "topK": -1}
+                sub_messages = []
+
+                # (A) もし content が list なら、その中身をループ
+                if isinstance(message.content, list):
+                    for mc in message.content:
+                        if mc.type == PromptMessageContentType.TEXT:
+                            txt = cast(TextPromptMessageContent, mc).data
+                            sub_messages.append({"type": "TEXT", "text": txt})
+
+                        elif mc.type == PromptMessageContentType.IMAGE:
+                            img_data = cast(ImagePromptMessageContent, mc).data
+
+                            # 1枚目の画像のみ処理、以降はスキップ
+                            if used_image or img_data != last_image_url:
+                                continue
+                            used_image = True
+
+                            # data URI ならそのまま、そうでなければダウンロード／Base64
+                            if img_data.startswith("data:"):
+                                img_url = img_data
+                            else:
+                                try:
+                                    if img_data.startswith(("http://", "https://")):
+                                        resp = requests.get(img_data)
+                                        resp.raise_for_status()
+                                        mime_type = (
+                                            resp.headers.get("Content-Type")
+                                            or mimetypes.guess_type(img_data)[0]
+                                            or "image/png"
+                                        )
+                                        img_bytes = resp.content
+                                    else:
+                                        with open(img_data, "rb") as f:
+                                            img_bytes = f.read()
+                                        mime_type = mimetypes.guess_type(img_data)[0] or "image/png"
+                                    base64_data = base64.b64encode(img_bytes).decode("utf-8")
+                                    img_url = f"data:{mime_type};base64,{base64_data}"
+                                except Exception as exc:
+                                    raise InvokeBadRequestError(f"Failed to load image: {exc}")
+
+                            sub_messages.append({
+                                "type": "IMAGE",
+                                "imageUrl": {"url": img_url, "detail": mc.detail.value},
+                            })
+
+                # (B) content が文字列（TEXT）の場合
+                else:
+                    sub_messages.append({"type": "TEXT", "text": message.content})
+
+                # TEXT／IMAGE が１つも入っていないメッセージはスキップ
+                if not sub_messages:
+                    continue
+
+                # ロール名とともに配列に追加
+                meta_messages.append({
+                    "role": message.role.name,
+                    "content": sub_messages,
+                })
+
+            # それでも空になってしまったら、最後のテキストだけを強制的に入れるフォールバック
+            if not meta_messages and prompt_messages:
+                last = prompt_messages[-1]
+                meta_messages.append({
+                    "role": last.role.name,
+                    "content": [{"type": "TEXT", "text": last.content}],
+                })
+
+            args = {
+                "apiFormat": "GENERIC",
+                "messages": meta_messages,
+                "numGenerations": 1,
+                "topK": -1,
+            }
             request_args["chatRequest"].update(args)
         elif model.startswith("xai"):
             xai_messages = []
@@ -328,51 +451,64 @@ class OCILargeLanguageModel(LargeLanguageModel):
         return result
 
     def _handle_generate_stream_response(
-        self, model: str, credentials: dict, response: BaseChatResponse, prompt_messages: list[PromptMessage]
-    ) -> Generator:
-        """
-        Handle llm stream response
+            self, model: str, credentials: dict, response: BaseChatResponse, prompt_messages: list[PromptMessage]
+        ) -> Generator:
+            """
+            Handle llm stream response
 
-        :param model: model name
-        :param credentials: credentials
-        :param response: response
-        :param prompt_messages: prompt messages
-        :return: llm response chunk generator result
-        """
-        index = -1
-        events = response.data.events()
-        for stream in events:
-            chunk = json.loads(stream.data)
-            if "finishReason" not in chunk:
-                assistant_prompt_message = AssistantPromptMessage(content="")
-                if model.startswith("cohere"):
-                    if chunk["text"]:
-                        assistant_prompt_message.content += chunk["text"]
-                elif model.startswith("meta"):
-                    assistant_prompt_message.content += chunk["message"]["content"][0]["text"]
-                elif model.startswith("xai"):
-                    assistant_prompt_message.content += chunk["message"]["content"][0]["text"]
-                index += 1
-                yield LLMResultChunk(
-                    model=model,
-                    prompt_messages=prompt_messages,
-                    delta=LLMResultChunkDelta(index=index, message=assistant_prompt_message),
-                )
-            else:
-                prompt_tokens = self.get_num_characters(model, credentials, prompt_messages)
-                completion_tokens = self.get_num_characters(model, credentials, [assistant_prompt_message])
-                usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
-                yield LLMResultChunk(
-                    model=model,
-                    prompt_messages=prompt_messages,
-                    delta=LLMResultChunkDelta(
-                        index=index,
-                        message=assistant_prompt_message,
-                        finish_reason=str(chunk["finishReason"]),
-                        usage=usage,
-                    ),
-                )
-
+            :param model: model name
+            :param credentials: credentials
+            :param response: response
+            :param prompt_messages: prompt messages
+            :return: llm response chunk generator result
+            """
+            index = -1
+            events = response.data.events()
+            full_text = ""
+            
+            for stream in events:
+                chunk = json.loads(stream.data)
+                
+                if "finishReason" not in chunk:
+                    assistant_prompt_message = AssistantPromptMessage(content="")
+                    
+                    if model.startswith("cohere"):
+                        if chunk.get("text"):
+                            assistant_prompt_message.content = chunk["text"]
+                            full_text += chunk["text"]
+                    elif model.startswith("meta"):
+                        if chunk.get("message", {}).get("content", [{}])[0].get("text"):
+                            text = chunk["message"]["content"][0]["text"]
+                            assistant_prompt_message.content = text
+                            full_text += text
+                    elif model.startswith("xai"):
+                        if chunk.get("message", {}).get("content", [{}])[0].get("text"):
+                            text = chunk["message"]["content"][0]["text"]
+                            assistant_prompt_message.content = text
+                            full_text += text
+                    
+                    if assistant_prompt_message.content:
+                        index += 1
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(index=index, message=assistant_prompt_message),
+                        )
+                else:
+                    prompt_tokens = self.get_num_characters(model, credentials, prompt_messages)
+                    completion_tokens = self.get_num_characters(model, credentials, [AssistantPromptMessage(content=full_text)])
+                    usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(
+                            index=index,
+                            message=AssistantPromptMessage(content=""),
+                            finish_reason=str(chunk["finishReason"]),
+                            usage=usage,
+                        ),
+                    )
+            
     def _convert_one_message_to_text(self, message: PromptMessage) -> str:
         """
         Convert a single message to a string.

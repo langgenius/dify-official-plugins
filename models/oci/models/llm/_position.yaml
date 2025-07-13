@@ -6,3 +6,6 @@
 - meta.llama-4-maverick-17b-128e-instruct-fp8
 - meta.llama-4-scout-17b-16e-instruct
 - xai.grok-3
+- xai.grok-3-mini
+- xai.grok-3-fast
+- xai.grok-3-mini-fast

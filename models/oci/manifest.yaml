@@ -5,7 +5,7 @@ description:
   zh_Hans: OCI 提供的模型，例如 Cohere Command R 和 Cohere Command R+。
 icon: icon_s_en.svg
 label:
-  en_US: OCIGenerativeAI
+  en_US: OCI Generative AI
 meta:
   arch:
     - amd64
@@ -33,4 +33,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.4
+version: 0.0.5
