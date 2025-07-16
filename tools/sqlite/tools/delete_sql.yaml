@@ -1,0 +1,38 @@
+identity:
+  name: delete_sql
+  author: langgenius
+  label:
+    en_US: Delete Table or Rows
+    zh_Hans: 删除表或行
+    pt_BR: Excluir Tabela ou Linhas
+    ja_JP: テーブルまたは行の削除
+    zh_Hant: 刪除表格或資料列
+description:
+  human:
+    en_US: Delete a table or rows from a table in the SQLite database using a provided SQL DELETE or DROP statement
+    zh_Hans: 使用提供的 SQL DELETE 或 DROP 语句从 SQLite 数据库中删除表或行
+    pt_BR: Exclua uma tabela ou linhas de uma tabela no banco de dados SQLite usando uma instrução SQL DELETE ou DROP fornecida
+    ja_JP: 指定された SQL DELETE または DROP 文を使って SQLite データベースからテーブルまたは行を削除します
+    zh_Hant: 使用提供的 SQL DELETE 或 DROP 陳述式從 SQLite 資料庫中刪除表格或資料列
+  llm: Delete a table or rows from the SQLite database. Use this tool to execute a valid SQL DELETE or DROP statement. The statement must start with DELETE or DROP. Only DELETE or DROP statements are allowed. Returns a success message or an error if the operation fails.
+parameters:
+  - name: delete_sql
+    type: string
+    required: true
+    label:
+      en_US: DELETE or DROP SQL Statement
+      zh_Hans: DELETE 或 DROP SQL 语句
+      pt_BR: Instrução SQL DELETE ou DROP
+      ja_JP: DELETE または DROP SQL 文
+      zh_Hant: DELETE 或 DROP SQL 陳述式
+    human_description:
+      en_US: The SQL statement to delete a table or rows. It must start with DELETE or DROP. Example, DELETE FROM users where name is Alice or DROP TABLE users
+      zh_Hans: 用于删除表或行的 SQL 语句。必须以 DELETE 或 DROP 开头。例如,DELETE FROM users where name is Alice 或 DROP TABLE users
+      pt_BR: A instrução SQL para excluir uma tabela ou linhas. Deve começar com DELETE ou DROP. Exemplo,DELETE FROM users onde name é Alice ou DROP TABLE users
+      ja_JP: テーブルまたは行を削除するための SQL 文。DELETE または DROP で始まる必要があります。例,DELETE FROM users where name is Alice または DROP TABLE users
+      zh_Hant: 用於刪除表格或資料列的 SQL 陳述式。必須以 DELETE 或 DROP 開頭。例如,DELETE FROM users where name is Alice 或 DROP TABLE users
+    llm_description: The SQL DELETE or DROP statement to execute. It must start with DELETE or DROP. Example,DELETE FROM users where name is Alice or DROP TABLE users
+    form: llm
+extra:
+  python:
+    source: tools/delete_sql.py 
