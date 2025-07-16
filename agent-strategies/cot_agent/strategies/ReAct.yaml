@@ -38,6 +38,14 @@ parameters:
       type: prompt_instruction
     template:
       enabled: true
+  - name: context
+    type: any
+    scope: array[object]
+    required: false
+    label:
+      en_US: Context
+      zh_Hans: 上下文
+      pt_BR: Context
   - name: query
     type: string
     required: true

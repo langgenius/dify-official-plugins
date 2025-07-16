@@ -1,4 +1,4 @@
-version: 0.0.21
+version: 0.0.22
 type: plugin
 author: "langgenius"
 name: "agent"
@@ -25,6 +25,7 @@ plugins:
     - "provider/agent.yaml"
 meta:
   version: 0.0.2
+  minimum_dify_version: "1.7.0"
   arch:
     - "amd64"
     - "arm64"
