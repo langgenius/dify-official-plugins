@@ -260,18 +260,44 @@ class DeepResearchTool(Tool):
 
             if response.status == 'completed':
                 yield from self._process_completed_response(response)
+            elif response.status == 'failed':
+                yield from self._process_failed_response(response)
             else:
                 yield self.create_text_message(f"Status for task `{response_id}`: {response.status}")
-                if response.status == 'failed':
-                    yield self.create_text_message(f"Error: Deep research task failed. Reason: {response.error}")
                 
-                # Return structured JSON data for unfinished retrieve actions
+                # For other non-terminal statuses (e.g. queued), return the full context
                 json_data = self._create_response_json(response)
                 yield self.create_json_message(json_data)
 
         except Exception as e:
             logging.error(f"Failed to retrieve research task {response_id}: {e}", exc_info=True)
             yield self.create_text_message(f"Failed to retrieve research task {response_id}: {e}")
+
+    def _process_failed_response(self, response) -> Generator[ToolInvokeMessage, None, None]:
+        """Processes a failed response object, yielding clear error messages."""
+        error_details = getattr(response, 'error', None)
+        error_message = "An unknown error occurred."
+        error_code = "unknown_error"
+
+        if error_details:
+            # The error object can be a dict or an object, so we use getattr.
+            error_message = getattr(error_details, 'message', str(error_details))
+            error_code = getattr(error_details, 'code', 'unknown_error')
+        
+        yield self.create_text_message(f"Status for task `{response.id}`: {response.status}")
+        yield self.create_text_message(f"Error: Deep research task failed (Code: {error_code}).")
+        yield self.create_text_message(f"Reason: {error_message}")
+
+        # Return a simplified, structured JSON error response
+        error_json = {
+            "response_id": response.id,
+            "status": response.status,
+            "error": {
+                "code": error_code,
+                "message": error_message,
+            },
+        }
+        yield self.create_json_message(error_json)
 
     def _process_completed_response(self, response) -> Generator[ToolInvokeMessage, None, None]:
         """Processes a completed response object."""
