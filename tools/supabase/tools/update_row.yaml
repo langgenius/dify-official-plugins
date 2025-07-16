@@ -1,0 +1,56 @@
+identity:
+  name: update_rows
+  author: langgenuis
+  label:
+    en_US: Update Row(s)
+    zh_CN: 更新行
+    ja_JP: 行を更新
+description:
+  human:
+    en_US: Update existing row(s) in a specified table in Supabase.
+    zh_CN: 更新 Supabase 指定表中的现有行。
+    ja_JP: Supabase の指定したテーブルの既存の行を更新します。
+  llm: Update existing row(s) in a specified table in Supabase.
+parameters:
+- name: table
+  type: string
+  required: true
+  label:
+    en_US: Table Name
+    zh_CN: 表名
+    ja_JP: テーブル名
+  human_description:
+    en_US: The name of the table to update.
+    zh_CN: 要更新的表名。
+    ja_JP: 更新対象のテーブル名。
+  llm_description: Provide the name of the table where you want to update rows.
+  form: llm
+- name: data
+  type: string
+  required: true
+  label:
+    en_US: Row Data
+    zh_CN: 行数据
+    ja_JP: 行データ
+  human_description:
+    en_US: Data for the row(s) to update as a JSON object.
+    zh_CN: 要更新的行数据，格式为 JSON 对象。
+    ja_JP: 更新する行のデータ（JSON オブジェクト形式）。
+  llm_description: Provide the data for the row(s) to update in JSON format.
+  form: llm
+- name: filter
+  type: string
+  required: true
+  label:
+    en_US: Filter
+    zh_CN: 过滤条件
+    ja_JP: フィルター
+  human_description:
+    en_US: Filter condition to identify which rows to update (e.g., 'id=1').
+    zh_CN: 用于标识要更新哪些行的过滤条件（如 'id=1'）。
+    ja_JP: 更新する行を特定するためのフィルター条件（例：'id=1'）。
+  llm_description: Provide a filter condition to specify which rows to update. (e.g., 'id=1')
+  form: llm
+extra:
+  python:
+    source: tools/update_row.py

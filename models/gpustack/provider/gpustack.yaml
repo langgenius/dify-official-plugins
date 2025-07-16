@@ -74,6 +74,24 @@ model_credential_schema:
           variable: __model_type
       type: text-input
       variable: max_tokens_to_sample
+    - variable: agent_thought_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Agent Thought
+      type: select
+      required: false
+      default: not_supported
+      options:
+        - value: supported
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: not_supported
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
     - default: no_call
       label:
         en_US: Function calling
@@ -134,6 +152,33 @@ model_credential_schema:
           variable: __model_type
       type: select
       variable: vision_support
+    - variable: structured_output_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Structured Output
+      type: select
+      required: false
+      default: not_supported
+      options:
+        - value: supported
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: not_supported
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+    - variable: stream_mode_delimiter
+      label:
+        zh_Hans: 流模式返回结果的分隔符
+        en_US: Delimiter for streaming results
+      show_on:
+        - variable: __model_type
+          value: llm
+      default: '\n\n'
+      type: text-input
     - variable: voices
       show_on:
         - variable: __model_type

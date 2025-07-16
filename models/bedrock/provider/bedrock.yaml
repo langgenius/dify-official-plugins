@@ -132,6 +132,10 @@ provider_credential_schema:
       placeholder:
         zh_Hans: 在此输入您的 Bedrock Endpoint URL, 如：https://123456.cloudfront.net
         en_US: Enter your Bedrock Endpoint URL, e.g. https://123456.cloudfront.net
+      help:
+        text:
+          en_US: Custom endpoint URL for Bedrock API (cannot be used with Proxy URL)
+          zh_Hans: Bedrock API 的自定义端点 URL（不能与代理 URL 同时使用）
     - variable: model_for_validation
       required: false
       label:
@@ -151,7 +155,8 @@ provider_credential_schema:
         en_US: Enter your proxy address (e.g. 127.0.0.1:7890)
       help:
         text:
-          en_US: Proxy address for Bedrock API connections
+          en_US: Proxy address for Bedrock API connections (cannot be used with Endpoint URL)
+          zh_Hans: Bedrock API 连接的代理地址（不能与端点 URL 同时使用）
 models:
   llm:
     predefined:

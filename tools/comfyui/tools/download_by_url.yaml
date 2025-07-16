@@ -1,0 +1,129 @@
+description:
+  human:
+    en_US: Download models from https://civitai.com/
+    zh_Hans: 从 https://civitai.com/ 下载模型
+    ja_JP: https://civitai.com/ からモデルをダウンロード
+  llm: Download from CivitAI
+extra:
+  python:
+    source: tools/download_by_url.py
+identity:
+  author: yt-koike
+  label:
+    en_US: Download by URL
+    zh_Hans: Download by URL
+    ja_JP: Download by URL
+  name: download_by_url
+parameters:
+  - name: url
+    form: llm
+    label:
+      en_US: URL
+      zh_Hans: URL
+      ja_JP: URL
+    llm_description: URL
+    type: string
+    human_description:
+      en_US: URL
+      zh_Hans: URL
+      ja_JP: URL
+    required: true
+
+  - name: name
+    form: llm
+    label:
+      en_US: Model Name
+      zh_Hans: Model Name
+      ja_JP: Model Name
+    llm_description: Model Name
+    type: string
+    human_description:
+      en_US: Model Name
+      zh_Hans: Model Name
+      ja_JP: Model Name
+    required: false
+
+  - name: save_dir
+    form: form
+    label:
+      en_US: Save Directory
+      zh_Hans: 目的地目录
+      ja_JP: 保存先ディレクトリ
+    llm_description: Save Directory
+    type: select
+    human_description:
+      en_US: Directory to save the downloaded file in
+      zh_Hans: 保存下载文件的目录
+      ja_JP: ダウンロードしたファイルの保存先ディレクトリ
+    options:
+      - value: checkpoints
+        label:
+          en_US: checkpoints
+      - value: loras
+        label:
+          en_US: loras
+      - value: vae
+        label:
+          en_US: vae
+      - value: controlnet
+        label:
+          en_US: controlnet
+      - value: text_encoders
+        label:
+          en_US: text_encoders
+      - value: upscale_models
+        label:
+          en_US: upscale_models
+      - value: diffusion_models
+        label:
+          en_US: diffusion_models
+      - value: clip_vision
+        label:
+          en_US: clip_vision
+      - value: style_models
+        label:
+          en_US: style_models
+      - value: embeddings
+        label:
+          en_US: embeddings
+      - value: diffusers
+        label:
+          en_US: diffusers
+      - value: vae_approx
+        label:
+          en_US: vae_approx
+    required: true
+
+  - name: token_type
+    form: form
+    label:
+      en_US: Token Type
+      zh_Hans: Token Type
+      ja_JP: Token Type
+    llm_description: Token Type
+    type: select
+    human_description:
+      en_US: Token Type
+      zh_Hans: Token Type
+      ja_JP: Token Type
+    options:
+      - value: none
+        label:
+          en_US: None
+      - value: civitai
+        label:
+          en_US: CivitAI
+      - value: hugging_face
+        label:
+          en_US: HuggingFace
+
+
+output_schema:
+  type: object
+  properties:
+    model_name:
+      type: string
+      label:
+        en_US: Model Name
+        zh_Hans: 型号名称
+        ja_JP: モデル名

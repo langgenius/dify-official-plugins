@@ -15,7 +15,7 @@ class GPUStackTextToSpeechModel(OAICompatText2SpeechModel):
         content_text: str,
         voice: str,
         user: str | None = None,
-    ) -> Any:  
+    ) -> Any:
         model = model.strip()
         compatible_credentials = self._get_compatible_credentials(credentials)
         return super()._invoke(model, tenant_id, compatible_credentials, content_text, voice, user)
@@ -39,7 +39,7 @@ class GPUStackTextToSpeechModel(OAICompatText2SpeechModel):
         :return: compatible credentials
         """
         compatible_credentials = credentials.copy()
-        base_url = credentials["endpoint_url"].rstrip("/").removesuffix("/v1")
+        base_url = credentials["endpoint_url"].rstrip("/").removesuffix("/v1").removesuffix("/v1-openai")
         compatible_credentials["endpoint_url"] = f"{base_url}/v1"
 
         return compatible_credentials

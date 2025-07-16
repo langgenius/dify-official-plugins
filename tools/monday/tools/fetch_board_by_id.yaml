@@ -1,0 +1,30 @@
+identity:
+  name: fetch_board_by_id
+  author: langgenius
+  label:
+    en_US: Fetch Board by ID
+    zh_CN: 按ID获取看板
+    ja_JP: IDでボード取得
+description:
+  human:
+    en_US: Fetch a specific board from Monday.com by its ID.
+    zh_CN: 根据ID从Monday.com获取指定看板。
+    ja_JP: IDでMonday.comから指定ボードを取得します。
+  llm: Fetch a specific board from Monday.com by its ID.
+parameters:
+- name: board_id
+  type: string
+  required: true
+  label:
+    en_US: Board ID
+    zh_CN: 看板ID
+    ja_JP: ボードID
+  human_description:
+    en_US: The ID of the board to fetch
+    zh_CN: 要获取的看板ID
+    ja_JP: 取得するボードのID
+  llm_description: 'The ID (string) of the board to fetch.'
+  form: llm
+extra:
+  python:
+    source: tools/fetch_board_by_id.py

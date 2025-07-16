@@ -1,0 +1,266 @@
+description:
+  human:
+    en_US:
+      a pre-defined comfyui workflow that can use one model and up to 3 loras
+      to generate images. Support SD1.5, SDXL, SD3 and FLUX which contain text encoders/clip,
+      but does not support models that requires a triple clip loader.
+    pt_BR:
+      a pre-defined comfyui workflow that can use one model and up to 3 loras
+      to generate images. Support SD1.5, SDXL, SD3 and FLUX which contain text encoders/clip,
+      but does not support models that requires a triple clip loader.
+    zh_Hans: 一个预定义的 ComfyUI 工作流，可以使用一个模型和最多3个loras来生成图像。支持包含文本编码器/clip的SD1.5、SDXL、SD3和FLUX，但不支持需要clip加载器的模型。
+    ja_JP: Lora を 3 つまで使用できるワークフローです。エンコーダー・クリップ付きのモデル SD1.5, SDXL, SD3, FLUX をサポートしています。clip loader が 3 つ必要なモデルはサポートされていません。
+
+  llm: draw the image you want based on your prompt.
+extra:
+  python:
+    source: tools/txt2img.py
+identity:
+  author: Qun
+  label:
+    en_US: Txt2Img
+    pt_BR: Txt2Img
+    zh_Hans: 文本到图像
+    ja_JP: テキストto画像
+  name: txt2img
+parameters:
+  - name: prompt
+    form: llm
+    human_description:
+      en_US:
+        Image prompt, you can check the official documentation of Stable Diffusion
+        or FLUX
+      pt_BR:
+        Image prompt, you can check the official documentation of Stable Diffusion
+        or FLUX
+      zh_Hans: 图像提示词，您可以查看 Stable Diffusion 或者 FLUX 的官方文档
+      ja_JP: プロンプト
+    label:
+      en_US: Prompt
+      pt_BR: Prompt
+      zh_Hans: 提示词
+      ja_JP: プロンプト
+    llm_description:
+      Image prompt of Stable Diffusion, you should describe the image
+      you want to generate as a list of words as possible as detailed, the prompt must
+      be written in English.
+    required: true
+    type: string
+
+  - name: negative_prompt
+    default: bad art, ugly, deformed, watermark, duplicated, discontinuous lines
+    form: llm
+    human_description:
+      en_US: Negative prompt
+      pt_BR: Negative prompt
+      zh_Hans: Negative prompt
+      ja_JP: ネガティブプロンプト
+    label:
+      en_US: Negative prompt
+      pt_BR: Negative prompt
+      zh_Hans: Negative prompt
+      ja_JP: ネガティブプロンプト
+    required: false
+    type: string
+  - form: llm
+    human_description:
+      en_US: Model Name. If omitted, the default model will be installed.
+      pt_BR: Model Name
+      zh_Hans: 模型名称
+      ja_JP: モデル名
+    label:
+      en_US: Model Name
+      pt_BR: Model Name
+      zh_Hans: 模型名称
+      ja_JP: モデル名
+    name: model
+    required: false
+    type: string
+
+  - name: ecosystem
+    form: llm
+    human_description:
+      en_US: Ecosystem of the model. For example, sdxl, flux1 and sd1.
+    label:
+      en_US: Ecosystem
+    required: false
+    type: string
+
+  - name: steps
+    form: llm
+    human_description:
+      en_US: Steps
+      pt_BR: Steps
+      zh_Hans: Steps
+      ja_JP: ステップ数
+    label:
+      en_US: Steps
+      pt_BR: Steps
+      zh_Hans: Steps
+      ja_JP: ステップ数
+    required: true
+    type: number
+
+  - name: width
+    form: llm
+    human_description:
+      en_US: Width
+      pt_BR: Width
+      zh_Hans: Width
+      ja_JP: 画像幅
+    label:
+      en_US: Width
+      pt_BR: Width
+      zh_Hans: Width
+      ja_JP: 画像幅
+    required: true
+    type: number
+
+  - name: height
+    form: llm
+    human_description:
+      en_US: Height
+      pt_BR: Height
+      zh_Hans: Height
+      ja_JP: 画像高さ
+    label:
+      en_US: Height
+      pt_BR: Height
+      zh_Hans: Height
+      ja_JP: 画像高さ
+    required: true
+    type: number
+
+  - default: 7.0
+    form: llm
+    human_description:
+      en_US: CFG Scale (7.0 by default)
+      pt_BR: CFG Scale (7.0 by default)
+      zh_Hans: 提示词相关性(CFG Scale) (7.0 by default)
+      ja_JP: CFG スケール (デフォルト値 7.0)
+    label:
+      en_US: CFG Scale
+      pt_BR: CFG Scale
+      zh_Hans: CFG Scale
+      ja_JP: CFG スケール
+    name: cfg
+    required: false
+    type: number
+
+  - form: llm
+    default: euler
+    human_description:
+      en_US: Sampling method
+      pt_BR: Sampling method
+      zh_Hans: Sampling method
+      ja_JP: サンプリング手法
+    label:
+      en_US: Sampling method
+      pt_BR: Sampling method
+      zh_Hans: Sampling method
+      ja_JP: サンプリング手法
+    name: sampler_name
+    required: true
+    type: string
+  - form: llm
+    default: normal
+    human_description:
+      en_US: Scheduler
+      pt_BR: Scheduler
+      zh_Hans: Scheduler
+      ja_JP: スケジューラー
+    label:
+      en_US: Scheduler
+      pt_BR: Scheduler
+      zh_Hans: Scheduler
+      ja_JP: スケジューラー
+    name: scheduler
+    required: true
+    type: string
+
+  - name: lora_names
+    form: llm
+    human_description:
+      en_US: LORAs, put comma between each LORA name if multiple
+      zh_Hans: LORA, 如果有多个 LORA 名称，请在名称之间加上逗号
+      ja_JP: LORA, 複数ある場合はコンマで区切ってください
+    label:
+      en_US: LORAs
+      zh_Hans: LORA
+      ja_JP: LORA
+    required: false
+    type: string
+
+  - name: lora_strengths
+    form: llm
+    human_description:
+      en_US: LORAs strength, put comma between each LORA strength if multiple
+      zh_Hans: LORA 力量, 如果有多个 LORA 力量，请在名称之间加上逗号
+      ja_JP: LORA 強度, 複数ある場合はコンマで区切ってください
+    label:
+      en_US: LORAs strength
+      zh_Hans: LORA 力量
+      ja_JP: LORA 強度
+    required: false
+    type: string
+
+  - name: hiresfix_denoise
+    form: llm
+    default: 0.6
+    human_description:
+      en_US: "Denoise coefficient for HiresFix upscaling. Default=0.6"
+      zh_Hans: "HiresFix 放大处理的降噪系数. Default=0.6"
+      ja_JP: "HiresFix 用 Denoise 係数. Default=0.6"
+    label:
+      en_US: HiresFix Denoise
+      zh_Hans: HiresFix Denoise
+      ja_JP: HiresFix Denoise
+    required: false
+    type: number
+
+  - name: hiresfix_size_ratio
+    form: llm
+    default: 0.5
+    human_description:
+      en_US: "0<(After Upscaling / Before Upscaling)<1: Bigger number generates images faster but more poorly. Default=0.5"
+      zh_Hans: "0<(缩放前 / 缩放后)<1: 数值越大，生成速度越快。Default=0.5"
+      ja_JP: "0<(アップスケーリング前 / アップスケーリング後)<1: 大きいほど速く生成されます。Default=0.5"
+    label:
+      en_US: HiresFix Size Ratio
+      zh_Hans: HiresFix Size Ratio
+      ja_JP: HiresFix Size Ratio
+    required: false
+    type: number
+
+  - name: hiresfix_upscale_method
+    form: form
+    default: disabled
+    human_description:
+      en_US: HiresFix upscale method. If enabled, it generates large and consistent images. Slow."
+      zh_Hans: HiresFix 方法,HiresFix 启用由于能够输出更大且一致的图像，生成时间会变慢。
+      ja_JP: HiresFix メソッド．HiresFix 有効化すると大きく一貫性のある画像を出力できる分、生成時間が遅くなります
+    label:
+      en_US: HiresFix Method
+      zh_Hans: HiresFix 方法
+      ja_JP: HiresFix メソッド
+    required: true
+    type: select
+    options:
+      - label:
+          en_US: Disable HiresFix
+        value: disabled
+      - label:
+          en_US: Nearest Exact
+        value: nearest-exact
+      - label:
+          en_US: Bilinear
+        value: bilinear
+      - label:
+          en_US: Area
+        value: area
+      - label:
+          en_US: Bicubic
+        value: bicubic
+      - label:
+          en_US: Bislerp
+        value: bislerp

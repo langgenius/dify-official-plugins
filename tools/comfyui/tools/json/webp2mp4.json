@@ -1,0 +1,33 @@
+{
+    "25": {
+        "inputs": {
+            "frame_rate": 8,
+            "loop_count": 0,
+            "filename_prefix": "AnimateDiff",
+            "format": "video/h264-mp4",
+            "pix_fmt": "yuv420p",
+            "crf": 19,
+            "save_metadata": true,
+            "trim_to_audio": false,
+            "pingpong": false,
+            "save_output": true,
+            "images": [
+                "28",
+                0
+            ]
+        },
+        "class_type": "VHS_VideoCombine",
+        "_meta": {
+            "title": "Video Combine 🎥🅥🅗🅢"
+        }
+    },
+    "28": {
+        "inputs": {
+            "image": "dea583b0-4511-470a-bb16-bbf5ac24b999.webp"
+        },
+        "class_type": "LoadImage",
+        "_meta": {
+            "title": "画像を読み込む"
+        }
+    }
+}

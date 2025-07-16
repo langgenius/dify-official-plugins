@@ -1,0 +1,54 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: nocodb
+label:
+  en_US: NocoDB
+  ja_JP: NocoDB
+  zh_Hans: NocoDB
+  pt_BR: NocoDB
+description:
+  en_US: "Connect to NocoDB to manage database records and perform CRUD operations"
+  ja_JP: "NocoDB に接続してデータベースレコードを管理し、CRUD操作を実行します"
+  zh_Hans: "连接到 NocoDB 以管理数据库记录并执行 CRUD 操作"
+  pt_BR: "Conecte-se ao NocoDB para gerenciar registros de banco de dados e executar operações CRUD"
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+    node:
+      enabled: false
+    endpoint:
+      enabled: true
+    app:
+      enabled: true
+    storage:
+      enabled: true
+      size: 1048576
+plugins:
+  tools:
+    - provider/nocodb.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: null
+created_at: 2025-06-03T16:22:43.370241+08:00
+privacy: PRIVACY.md
+repo: https://github.com/langgenius/dify-official-plugins
+verified: false

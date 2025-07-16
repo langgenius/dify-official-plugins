@@ -1,0 +1,100 @@
+description:
+  human:
+    en_US: Lists available checkpoints on connected ComfyUI.
+    pt_BR: Lists available checkpoints on connected ComfyUI.
+    zh_Hans: 列出连接的 ComfyUI 上可用的检查点。
+    ja_JP: 利用可能なチェックポイントを取得します。
+  llm: lists available checkpoints on connected ComfyUI.
+extra:
+  python:
+    source: tools/list_models.py
+identity:
+  author: yt-koike
+  label:
+    en_US: List models
+    zh_Hans: List models
+    ja_JP: モデル取得
+  name: list_models
+
+parameters:
+  - name: model_type
+    form: form
+    human_description:
+      en_US: Model Type
+      pt_BR: Model
+      zh_Hans: 模型
+      ja_JP: モデル
+    label:
+      en_US: Model Type
+      pt_BR: Model
+      zh_Hans: 模型
+      ja_JP: モデル
+    required: true
+    type: select
+    options:
+      - label:
+          en_US: checkpoints
+        value: checkpoints
+      - label:
+          en_US: configs
+        value: configs
+      - label:
+          en_US: loras
+        value: loras
+      - label:
+          en_US: vae
+        value: vae
+      - label:
+          en_US: text_encoders
+        value: text_encoders
+      - label:
+          en_US: diffusion_models
+        value: diffusion_models
+      - label:
+          en_US: clip_vision
+        value: clip_vision
+      - label:
+          en_US: style_models
+        value: style_models
+      - label:
+          en_US: embeddings
+        value: embeddings
+      - label:
+          en_US: diffusers
+        value: diffusers
+      - label:
+          en_US: vae_approx
+        value: vae_approx
+      - label:
+          en_US: controlnet
+        value: controlnet
+      - label:
+          en_US: gligen
+        value: gligen
+      - label:
+          en_US: upscale_models
+        value: upscale_models
+      - label:
+          en_US: custom_nodes
+        value: custom_nodes
+      - label:
+          en_US: hypernetworks
+        value: hypernetworks
+      - label:
+          en_US: photomaker
+        value: photomaker
+      - label:
+          en_US: classifiers
+        value: classifiers
+      - label:
+          en_US: VHS_video_formats
+        value: VHS_video_formats
+output_schema:
+  type: object
+  properties:
+    models:
+      type: array[string]
+      label:
+        en_US: Checkpoints
+        zh_Hans: 模型
+        ja_JP: モデル

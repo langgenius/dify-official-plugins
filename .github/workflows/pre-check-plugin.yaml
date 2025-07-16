@@ -3,7 +3,7 @@ name: Pre Check Plugin
 on:
   pull_request:
     types: [opened, synchronize, ready_for_review, review_requested, edited]
-    branches: 
+    branches:
       - main
       - dev
     paths-ignore:
@@ -30,30 +30,32 @@ jobs:
       - name: Clone Marketplace Toolkit
         run: |
           gh repo clone langgenius/dify-marketplace-toolkit -- .scripts/
-      
+
       - name: Download Plugin Daemon
         run: |
           gh release download -R langgenius/dify-plugin-daemon --pattern "dify-plugin-linux-amd64" --dir .scripts
           chmod +x .scripts/dify-plugin-linux-amd64
+          mv .scripts/dify-plugin-linux-amd64 /usr/local/bin/dify
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
         with:
-          python-version: 3.12.7
-      
-      - name: Install Python Dependencies
+          version: "latest"
+          activate-environment: false
+
+      - name: Setup Global Python
         run: |
-          python -m pip install --upgrade pip
-          pip install requests
+          uv venv --python 3.12.7
+          uv pip install requests dify_plugin pytest
 
       - name: yq - portable yaml processor
         uses: mikefarah/yq@v4.44.5
 
       - name: Get PR Path
         run: |
-          export PR_FILES=$(gh pr view -R ${{ env.REPO_NAME }} ${{ github.event.pull_request.number }} --json files --jq .files)
+          export PR_FILES=$(gh pr view -R ${{ env.REPO_NAME }} ${{ github.event.pull_request.number }} --json files --jq '.files | map(select(.path | startswith("tests/") | not))')
 
-          if PLUGIN_PATH=$(python3 .scripts/validator/check-prefix.py); then
+          if PLUGIN_PATH=$(uv run python .scripts/validator/check-prefix.py); then
               echo $PLUGIN_PATH
               echo "PLUGIN_PATH=$PLUGIN_PATH" >> $GITHUB_ENV
           else
@@ -79,7 +81,7 @@ jobs:
 
           # Check if the version already exists
           RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.MARKETPLACE_BASE_URL }}/api/v1/plugins/$AUTHOR/$NAME/$VERSION")
-          
+
           if [ "$RESPONSE_CODE" = "200" ]; then
             RESPONSE=$(curl -s "${{ env.MARKETPLACE_BASE_URL }}/api/v1/plugins/$AUTHOR/$NAME/$VERSION")
             if [ "$(echo "$RESPONSE" | jq -r '.code')" = "0" ]; then
@@ -88,24 +90,24 @@ jobs:
             fi
           fi
 
-      - name: Check Plugin Deps
+      - name: Test Changed Plugin
         run: |
-          if [ -f ${{ env.PLUGIN_PATH }}/requirements.txt ]; then
-            echo "Trying to install plugin dependencies..."
-            python3 -m venv .venv
-            source .venv/bin/activate
-            python3 -m pip install -r ${{ env.PLUGIN_PATH }}/requirements.txt
-            deactivate
+          if [ -d "tests/${{ env.PLUGIN_PATH }}" ]; then
+            if [ -f "tests/${{ env.PLUGIN_PATH }}/requirements.txt" ]; then
+              uv pip install -r tests/${{ env.PLUGIN_PATH }}/requirements.txt
+            fi
+            PYTHONPATH=. uv run pytest tests/${{ env.PLUGIN_PATH }}
           fi
 
       - name: Check Plugin Install
         run: |
-          if [ -f ${{ env.PLUGIN_PATH }}/requirements.txt ]; then
-              source .venv/bin/activate
-              pip install packaging
-              dify_version=$(pip list | grep 'dify_plugin' | awk '{print $2}')
+          cd ${{ env.PLUGIN_PATH }}
+          if [ -f requirements.txt ]; then
+              uv pip install packaging
+              uv pip install -r requirements.txt
+              dify_version=$(uv pip list | grep -E 'dify-plugin|dify_plugin' | awk '{print $2}')
               target_version="0.0.1b64"
-              result=$(python -c "from packaging.version import Version; print(0 if Version('$dify_version') > Version('$target_version') else 1)")
+              result=$(uv run python -c "from packaging.version import Version; print(0 if Version('$dify_version') > Version('$target_version') else 1)")
               if [ $result == 0 ]; then
                   export INSTALL_METHOD=serverless
                   export SERVERLESS_PORT=8080
@@ -115,9 +117,10 @@ jobs:
                   export AWS_LAMBDA_PORT=8080
                   export AWS_LAMBDA_HOST=0.0.0.0
               fi
-              python3 .scripts/validator/test-plugin-install.py -d ${{ env.PLUGIN_PATH }}
           fi
+          cd -
+          uv run python .scripts/validator/test-plugin-install.py -d ${{ env.PLUGIN_PATH }}
 
       - name: Check Packaging
         run: |
-          python3 .scripts/uploader/upload-package.py -d ${{ env.PLUGIN_PATH }} -t ${{ env.MARKETPLACE_TOKEN }} --plugin-daemon-path .scripts/dify-plugin-linux-amd64 -u ${{ env.MARKETPLACE_BASE_URL }} -f --test
+          uv run python .scripts/uploader/upload-package.py -d ${{ env.PLUGIN_PATH }} -t ${{ env.MARKETPLACE_TOKEN }} --plugin-daemon-path /usr/local/bin/dify -u ${{ env.MARKETPLACE_BASE_URL }} -f --test

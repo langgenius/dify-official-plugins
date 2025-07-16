@@ -1,13 +1,13 @@
 model: mistral-medium-latest
 label:
-  zh_Hans: mistral-medium-latest
-  en_US: mistral-medium-latest
+  zh_Hans: Mistral Medium (Latest)
+  en_US: Mistral Medium (Latest)
 model_type: llm
 features:
   - agent-thought
 model_properties:
   mode: chat
-  context_size: 32000
+  context_size: 128000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -23,7 +23,7 @@ parameter_rules:
     use_template: max_tokens
     default: 1024
     min: 1
-    max: 8000
+    max: 128000
   - name: safe_prompt
     default: false
     type: boolean
@@ -44,8 +44,30 @@ parameter_rules:
     default: 0
     min: 0
     max: 2147483647
+  - name: frequency_penalty
+    type: float
+    help:
+      en_US: Frequency penalty penalizes the repetition of words based on their frequency in the generated text.
+      zh_Hans: 频率惩罚根据生成文本中单词的频率来惩罚单词的重复
+    label:
+      en_US: Frequency Penalty
+      zh_Hans: 频率惩罚
+    default: 0
+    min: -2
+    max: 2
+  - name: presence_penalty
+    type: float
+    help:
+      en_US: Presence penalty determines how much the model penalizes the repetition of words or phrases.
+      zh_Hans: 存在惩罚决定模型对单词或短语重复的惩罚程度
+    label:
+      en_US: Presence Penalty
+      zh_Hans: 存在惩罚
+    default: 0
+    min: -2
+    max: 2
 pricing:
-  input: '0.0027'
-  output: '0.0081'
-  unit: '0.001'
+  input: '0.4'
+  output: '2'
+  unit: '0.000001'
   currency: USD

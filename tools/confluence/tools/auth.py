@@ -9,7 +9,8 @@ def auth(credential: dict[str, Any]) -> Confluence:
     """
     confluence = Confluence(
         url=credential.get("url"),
-        username=credential.get("username"),
-        password=credential.get("api_token"),
+        header={
+            "Authorization": credential.get("token")
+        }
     )
     return confluence

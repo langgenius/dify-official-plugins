@@ -1,0 +1,69 @@
+identity:
+  name: create_item
+  author: langgenius
+  label:
+    en_US: Create Item
+    zh_CN: 创建项目
+    ja_JP: アイテムを作成
+description:
+  human:
+    en_US: Create an item in a specific board and group.
+    zh_CN: 在指定的看板和分组中创建项目。
+    ja_JP: 指定したボードとグループにアイテムを作成します。
+  llm: Create an item in a specific board and group.
+parameters:
+- name: board_id
+  type: string
+  required: true
+  label:
+    en_US: Board ID
+    zh_CN: 看板ID
+    ja_JP: ボードID
+  human_description:
+    en_US: The ID of the board to create the item in
+    zh_CN: 要创建项目的看板ID
+    ja_JP: アイテムを作成するボードのID
+  llm_description: 'The ID (string) of the board to create the item in.'
+  form: llm
+- name: group_id
+  type: string
+  required: true
+  label:
+    en_US: Group ID
+    zh_CN: 分组ID
+    ja_JP: グループID
+  human_description:
+    en_US: The ID or title of the group to create the item in
+    zh_CN: 要创建项目的分组ID或名称
+    ja_JP: アイテムを作成するグループのIDまたはタイトル
+  llm_description: 'The ID or title (string) of the group to create the item in.'
+  form: llm
+- name: item_name
+  type: string
+  required: true
+  label:
+    en_US: Item Name
+    zh_CN: 项目名称
+    ja_JP: アイテム名
+  human_description:
+    en_US: The name of the item to create
+    zh_CN: 要创建的项目名称
+    ja_JP: 作成するアイテムの名前
+  llm_description: 'The name (string) of the item to create.'
+  form: llm
+- name: column_values
+  type: string
+  required: false
+  label:
+    en_US: Column Values
+    zh_CN: 列值
+    ja_JP: 列の値
+  human_description:
+    en_US: "A dictionary of column values for the item, for example: {'name': 'Test Item'}"
+    zh_CN: "项目的列值字典，例如：{'name': '测试项目'}"
+    ja_JP: "アイテムの列値の辞書。例: {'name': 'テストアイテム'}"
+  llm_description: 'A dictionary (string, JSON format) of column values for the item, e.g., {"name": "Test Item"}.'
+  form: llm
+extra:
+  python:
+    source: tools/create_item.py

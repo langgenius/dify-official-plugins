@@ -1,0 +1,48 @@
+identity:
+  name: update_a_row
+  author: langgenius
+  label:
+    en_US: Update a Row
+    zh_Hans: 更新行
+description:
+  human:
+    en_US: Update a row in a Baserow table
+    zh_Hans: 在指定的 Baserow 表格中更新一行
+  llm: Updates a row in a Baserow table using the table ID, row ID, and new row content.
+parameters:
+  - name: table_id
+    type: string
+    required: true
+    label:
+      en_US: Table ID
+      zh_Hans: 表格 ID
+    human_description:
+      en_US: The ID of the table to update the row in.
+      zh_Hans: 要更新其行的表格 ID
+    llm_description: The ID of the table to update the row in. This must be a valid table ID from Baserow.
+    form: llm
+  - name: row_id
+    type: string
+    required: true
+    label:
+      en_US: Row ID
+      zh_Hans: 行 ID
+    human_description:
+      en_US: The ID of the row to update.
+      zh_Hans: 要更新的行的 ID
+    llm_description: The ID of the row to update. This must be a valid row ID from Baserow.
+    form: llm
+  - name: content
+    type: string
+    required: true
+    label:
+      en_US: Content
+      zh_Hans: 内容
+    human_description:
+      en_US: The content of the row to update.
+      zh_Hans: '要更新的行的内容，以 JSON 格式提供，如 {"name": "New Row", "value": 123}'
+    llm_description: 'The content of the row to update. This must be a valid JSON object, for example {"name": "New Row", "value": 123}.'
+    form: llm
+extra:
+  python:
+    source: tools/update_a_row.py

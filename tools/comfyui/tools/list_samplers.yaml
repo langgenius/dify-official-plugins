@@ -1,0 +1,34 @@
+description:
+  human:
+    en_US:
+      Lists available samplers and schedulers on connected ComfyUI.
+    pt_BR:
+      Lists available samplers and schedulers on connected ComfyUI.
+    zh_Hans: 列出连接的 ComfyUI 上可用的采样器和调度程序。
+    ja_JP: 利用可能なサンプリング手法とスケジューラーを取得します。
+  llm: Lists available samplers and schedulers on connected ComfyUI.
+extra:
+  python:
+    source: tools/list_samplers.py
+identity:
+  author: yt-koike
+  label:
+    en_US: List samplers
+    zh_Hans: 列出连接采样器
+    ja_JP: サンプリング手法取得
+  name: list_samplers
+output_schema:
+  type: object
+  properties:
+    sampling_methods:
+      type: array[string]
+      label:
+        en_US: Sampling Methods
+        zh_Hans: 采样方法
+        ja_JP: サンプリング手法
+    schedulers:
+      type: array[string]
+      label:
+        en_US: Schedulers
+        zh_Hans: 调度程序
+        ja_JP: スケジューラー

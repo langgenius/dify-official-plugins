@@ -15,6 +15,7 @@ meta:
     language: python
     version: "3.12"
   version: 0.0.2
+  minimum_dify_version: 1.4.0
 name: gemini
 plugins:
   models:
@@ -33,4 +34,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.1.6
+version: 0.2.7

@@ -171,6 +171,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
+        if credentials.get("use_international_endpoint", "false") == "true":
+            import dashscope
+            dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
         credentials_kwargs = self._to_credential_kwargs(credentials)
         mode = self.get_model_mode(model, credentials)
         if model in {"qwen-turbo-chat", "qwen-plus-chat"}:
@@ -187,39 +190,39 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             **extra_model_kwargs,
         }
         model_schema = self.get_model_schema(model, credentials)
+
+        incremental_output = False if tools else stream
+
+        thinking_business_qwen3 = model in ("qwen-plus-latest", "qwen-plus-2025-04-28",
+                                            "qwen-turbo-latest", "qwen-turbo-2025-04-28") \
+                                  and model_parameters.get("enable_thinking", False)
+
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition, QwQ, and QVQ models only supports streaming output.
+        if thinking_business_qwen3 or model.startswith(("qwen3-", "qwq-", "qvq-")):
+            stream = True
+
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition and QwQ models only supports incremental_output set to True.
+        if thinking_business_qwen3 or model.startswith(("qwen3-", "qwq-")):
+            incremental_output = True
+
         if ModelFeature.VISION in (model_schema.features or []):
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages, rich_content=True
             )
-            response = MultiModalConversation.call(**params, stream=stream)
+            response = MultiModalConversation.call(**params, stream=stream, incremental_output=incremental_output)
         else:
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages
             )
-
-            # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition, QwQ, and QVQ only supports streaming output.
-            streaming_output = stream
-            if (
-                    model in ("qwen-plus-latest", "qwen-plus-2025-04-28",
-                              "qwen-turbo-latest", "qwen-turbo-2025-04-28")
-                    and model_parameters.get("enable_thinking", False)
-            ) or model.startswith(("qwen3-", "qwq-", "qvq-")):
-                streaming_output = True
-
-            # Qwen3 open-source edition and QwQ models only supports incremental_output set to True.
-            incremental_output = False
-            if model.startswith(("qwen3-", "qwq-")):
-                incremental_output = True
-
             response = Generation.call(
                 **params,
                 result_format="message",
-                stream=streaming_output,
-                incremental_output=incremental_output if tools else streaming_output,
+                stream=stream,
+                incremental_output=incremental_output,
             )
         if stream:
             return self._handle_generate_stream_response(
-                model, credentials, response, prompt_messages
+                model, credentials, response, prompt_messages, incremental_output,
             )
         return self._handle_generate_response(
             model, credentials, response, prompt_messages
@@ -290,6 +293,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             credentials: dict,
             responses: Generator[GenerationResponse, None, None],
             prompt_messages: list[PromptMessage],
+            incremental_output: bool,
     ) -> Generator:
         """
         Handle llm stream response
@@ -298,9 +302,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param credentials: credentials
         :param responses: response
         :param prompt_messages: prompt messages
+        :param incremental_output: is incremental output
         :return: llm response chunk generator result
         """
         is_reasoning = False
+        # This is used to handle unincremental output correctly
         full_text = ""
         tool_calls = []
         for index, response in enumerate(responses):
@@ -313,14 +319,18 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 resp_content = response.output.choices[0].message.content
                 assistant_prompt_message = AssistantPromptMessage(content="")
                 if "tool_calls" in response.output.choices[0].message:
-                    self._handle_tool_call_stream(response, tool_calls, False)
+                    self._handle_tool_call_stream(response, tool_calls, incremental_output)
                 elif resp_content:
                     if isinstance(resp_content, list):
                         resp_content = resp_content[0]["text"]
-                    assistant_prompt_message.content = resp_content.replace(
-                        full_text, "", 1
-                    )
-                    full_text = resp_content
+                    if incremental_output:
+                        assistant_prompt_message.content = resp_content
+                        full_text += resp_content
+                    else:
+                        assistant_prompt_message.content = resp_content.replace(
+                            full_text, "", 1
+                        )
+                        full_text = resp_content
                 if tool_calls:
                     message_tool_calls = []
                     for tool_call_obj in tool_calls:
@@ -356,14 +366,20 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 )
                 if not resp_content:
                     if "tool_calls" in response.output.choices[0].message:
-                        self._handle_tool_call_stream(response, tool_calls, False)
+                        self._handle_tool_call_stream(response, tool_calls, incremental_output)
                     continue
                 if isinstance(resp_content, list):
                     resp_content = resp_content[0]["text"]
+                if incremental_output:
+                    delta = resp_content
+                    full_text += delta
+                else:
+                    delta = resp_content.replace(full_text, "", 1)
+                    full_text = resp_content
+                
                 assistant_prompt_message = AssistantPromptMessage(
-                    content=resp_content.replace(full_text, "", 1)
+                    content=delta
                 )
-                full_text = resp_content
                 yield LLMResultChunk(
                     model=model,
                     prompt_messages=prompt_messages,
@@ -489,7 +505,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             video_url = message_content.data
                             if message_content.data.startswith("data:"):
                                 raise InvokeError(
-                                    "not support base64, please set MULTIMODAL_SEND_VIDEO_FORMAT to url"
+                                    "not support base64, please set MULTIMODAL_SEND_FORMAT to url"
                                 )
                             sub_message_dict = {"video": video_url}
                             user_messages.append(sub_message_dict)
@@ -565,6 +581,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             api_key=credentials.dashscope_api_key,
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         )
+        if credentials.get("use_international_endpoint", "false") == "true":
+            client = OpenAI(
+                api_key=credentials.dashscope_api_key,
+                base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+            )
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
             if message_content.base64_data:
                 file_content = base64.b64decode(message_content.base64_data)

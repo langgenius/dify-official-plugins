@@ -1,0 +1,43 @@
+identity:
+  name: fetch_boards
+  author: langgenius
+  label:
+    en_US: Fetch Boards
+    zh_CN: 获取看板列表
+    ja_JP: ボード一覧取得
+description:
+  human:
+    en_US: Fetch boards from Monday.com
+    zh_CN: 从Monday.com获取看板列表
+    ja_JP: Monday.comからボード一覧を取得します
+  llm: Fetch boards from Monday.com
+parameters:
+- name: limit
+  type: number
+  required: false
+  label:
+    en_US: Limit
+    zh_CN: 数量限制
+    ja_JP: 上限
+  human_description:
+    en_US: The maximum number of boards to fetch, defaults to 20
+    zh_CN: 获取的最大看板数，默认为20
+    ja_JP: 取得するボードの最大数（デフォルト20）
+  llm_description: 'The maximum number (number) of boards to fetch. Defaults to 20.'
+  form: llm
+- name: page
+  type: number
+  required: false
+  label:
+    en_US: Page
+    zh_CN: 页码
+    ja_JP: ページ
+  human_description:
+    en_US: The page number to fetch, defaults to 1
+    zh_CN: 获取的页码，默认为1
+    ja_JP: 取得するページ番号（デフォルト1）
+  llm_description: 'The page number (number) to fetch. Defaults to 1.'
+  form: llm
+extra:
+  python:
+    source: tools/fetch_boards.py

@@ -1,0 +1,78 @@
+identity:
+  name: list_draft_emails
+  display_name: List Draft Emails
+  author: Dify
+  label:
+    en_US: List Draft Emails
+    zh_Hans: 列出草稿邮件
+    pt_BR: Listar Rascunhos
+    ja_JP: 下書きメール一覧
+    zh_Hant: 列出草稿郵件
+description:
+  human:
+    en_US: List your draft emails
+    zh_Hans: 列出您的草稿邮件
+    pt_BR: Listar seus rascunhos de e-mail
+    ja_JP: 下書きメールを一覧表示
+    zh_Hant: 列出您的草稿郵件
+  llm: List draft emails from the Outlook drafts folder using Microsoft Graph API, supports filtering and pagination
+
+parameters:
+  - name: limit
+    type: number
+    required: false
+    default: 10
+    min: 1
+    max: 100
+    label:
+      en_US: Limit
+      zh_Hans: 限制
+      pt_BR: Limite
+      ja_JP: 制限
+      zh_Hant: 限制
+    human_description:
+      en_US: Maximum number of draft emails to return
+      zh_Hans: 要返回的最大草稿邮件数
+      pt_BR: Número máximo de rascunhos a retornar
+      ja_JP: 返す下書きメールの最大数
+      zh_Hant: 要返回的最大草稿郵件數
+    llm_description: Maximum number of draft emails to return, between 1 and 100, default is 10
+    form: llm
+  - name: search
+    type: string
+    required: false
+    label:
+      en_US: Search
+      zh_Hans: 搜索
+      pt_BR: Pesquisar
+      ja_JP: 検索
+      zh_Hant: 搜尋
+    human_description:
+      en_US: Search query to filter draft emails
+      zh_Hans: 用于过滤草稿邮件的搜索查询
+      pt_BR: Consulta de pesquisa para filtrar rascunhos
+      ja_JP: 下書きメールをフィルタリングする検索クエリ
+      zh_Hant: 用於過濾草稿郵件的搜尋查詢
+    llm_description: Search query to filter draft emails, supports subject, recipient, and body content search
+    form: llm
+  - name: include_attachments_info
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: Include Attachments Info
+      zh_Hans: 包含附件信息
+      pt_BR: Incluir Informações de Anexos
+      ja_JP: 添付ファイル情報を含める
+      zh_Hant: 包含附件資訊
+    human_description:
+      en_US: Whether to include attachment information in the response
+      zh_Hans: 是否在响应中包含附件信息
+      pt_BR: Se deve incluir informações de anexos na resposta
+      ja_JP: レスポンスに添付ファイル情報を含めるかどうか
+      zh_Hant: 是否在回應中包含附件資訊
+    llm_description: Whether to include attachment information in the response, default is true
+    form: llm
+extra:
+  python:
+    source: tools/list_draft.py 

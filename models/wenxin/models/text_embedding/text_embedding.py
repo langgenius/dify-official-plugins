@@ -1,71 +1,17 @@
-import time
-from abc import abstractmethod
-from collections.abc import Mapping
-from json import dumps
-from typing import Any, Optional
-from dify_plugin import TextEmbeddingModel
-from dify_plugin.entities.model import EmbeddingInputType, PriceType
-from dify_plugin.entities.model.text_embedding import (
-    EmbeddingUsage,
-    TextEmbeddingResult,
-)
-from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
-from requests import Response, post
-from models._common import BaiduAccessToken, _CommonWenxin
-from models.wenxin_errors import (
-    BadRequestError,
-    InternalServerError,
-    invoke_error_mapping,
-)
+from typing import Optional
+from dify_plugin import OAICompatEmbeddingModel
+from dify_plugin.entities.model import EmbeddingInputType
+from dify_plugin.entities.model.text_embedding import TextEmbeddingResult
 
 
-class TextEmbedding:
-    @abstractmethod
-    def embed_documents(
-        self, model: str, texts: list[str], user: str
-    ) -> tuple[list[list[float]], int, int]:
-        raise NotImplementedError
+class WenxinTextEmbeddingModel(OAICompatEmbeddingModel):
+    """
+    Model class for Wenxin text embedding model.
+    """
 
-
-class WenxinTextEmbedding(_CommonWenxin, TextEmbedding):
-    def embed_documents(
-        self, model: str, texts: list[str], user: str
-    ) -> tuple[list[list[float]], int, int]:
-        access_token = self._get_access_token()
-        url = f"{self.api_bases[model]}?access_token={access_token}"
-        body = self._build_embed_request_body(model, texts, user)
-        headers = {"Content-Type": "application/json"}
-        resp = post(url, data=dumps(body), headers=headers)
-        if resp.status_code != 200:
-            raise InternalServerError(f"Failed to invoke ernie bot: {resp.text}")
-        return self._handle_embed_response(model, resp)
-
-    def _build_embed_request_body(
-        self, model: str, texts: list[str], user: str
-    ) -> dict[str, Any]:
-        if len(texts) == 0:
-            raise BadRequestError("The number of texts should not be zero.")
-        body = {"input": texts, "user_id": user}
-        return body
-
-    def _handle_embed_response(
-        self, model: str, response: Response
-    ) -> tuple[list[list[float]], int, int]:
-        data = response.json()
-        if "error_code" in data:
-            code = data["error_code"]
-            msg = data["error_msg"]
-            self._handle_error(code, msg)
-        embeddings = [v["embedding"] for v in data["data"]]
-        _usage = data["usage"]
-        tokens = _usage["prompt_tokens"]
-        total_tokens = _usage["total_tokens"]
-        return (embeddings, tokens, total_tokens)
-
-
-class WenxinTextEmbeddingModel(TextEmbeddingModel):
-    def _create_text_embedding(self, api_key: str, secret_key: str) -> TextEmbedding:
-        return WenxinTextEmbedding(api_key, secret_key)
+    def validate_credentials(self, model: str, credentials: dict) -> None:
+        self._add_custom_parameters(credentials)
+        super().validate_credentials(model, credentials)
 
     def _invoke(
         self,
@@ -85,94 +31,13 @@ class WenxinTextEmbeddingModel(TextEmbeddingModel):
         :param input_type: input type
         :return: embeddings result
         """
-        api_key = credentials["api_key"]
-        secret_key = credentials["secret_key"]
-        embedding: TextEmbedding = self._create_text_embedding(api_key, secret_key)
-        user = user or "ErnieBotDefault"
-        context_size = self._get_context_size(model, credentials)
-        max_chunks = self._get_max_chunks(model, credentials)
-        inputs = []
-        indices = []
-        used_tokens = 0
-        used_total_tokens = 0
-        for i, text in enumerate(texts):
-            num_tokens = self._get_num_tokens_by_gpt2(text)
-            if num_tokens >= context_size:
-                cutoff = int((len(text) * context_size) // num_tokens)
-                inputs.append(text[0:cutoff])
-            else:
-                inputs.append(text)
-            indices += [i]
-        batched_embeddings = []
-        _iter = range(0, len(inputs), max_chunks)
-        for i in _iter:
-            (embeddings_batch, _used_tokens, _total_used_tokens) = (
-                embedding.embed_documents(model, inputs[i : i + max_chunks], user)
-            )
-            used_tokens += _used_tokens
-            used_total_tokens += _total_used_tokens
-            batched_embeddings += embeddings_batch
-        usage = self._calc_response_usage(
-            model, credentials, used_tokens, used_total_tokens
-        )
-        return TextEmbeddingResult(
-            model=model, embeddings=batched_embeddings, usage=usage
-        )
+        self._add_custom_parameters(credentials)
+        return super()._invoke(model, credentials, texts, user)
 
-    def get_num_tokens(
-        self, model: str, credentials: dict, texts: list[str]
-    ) -> list[int]:
-        """
-        Get number of tokens for given prompt messages
+    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> int:
+        self._add_custom_parameters(credentials)
+        return super().get_num_tokens(model, credentials, texts)
 
-        :param model: model name
-        :param credentials: model credentials
-        :param texts: texts to embed
-        :return:
-        """
-        if len(texts) == 0:
-            return []
-        total_num_tokens = []
-        for text in texts:
-            total_num_tokens.append(self._get_num_tokens_by_gpt2(text))
-        return total_num_tokens
-
-    def validate_credentials(self, model: str, credentials: Mapping) -> None:
-        api_key = credentials["api_key"]
-        secret_key = credentials["secret_key"]
-        try:
-            BaiduAccessToken.get_access_token(api_key, secret_key)
-        except Exception as e:
-            raise CredentialsValidateFailedError(f"Credentials validation failed: {e}")
-
-    @property
-    def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
-        return invoke_error_mapping()
-
-    def _calc_response_usage(
-        self, model: str, credentials: dict, tokens: int, total_tokens: int
-    ) -> EmbeddingUsage:
-        """
-        Calculate response usage
-
-        :param model: model name
-        :param credentials: model credentials
-        :param tokens: input tokens
-        :return: usage
-        """
-        input_price_info = self.get_price(
-            model=model,
-            credentials=credentials,
-            price_type=PriceType.INPUT,
-            tokens=tokens,
-        )
-        usage = EmbeddingUsage(
-            tokens=tokens,
-            total_tokens=total_tokens,
-            unit_price=input_price_info.unit_price,
-            price_unit=input_price_info.unit,
-            total_price=input_price_info.total_amount,
-            currency=input_price_info.currency,
-            latency=time.perf_counter() - self.started_at,
-        )
-        return usage
+    @classmethod
+    def _add_custom_parameters(cls, credentials: dict) -> None:
+        credentials["endpoint_url"] = "https://qianfan.baidubce.com/v2"

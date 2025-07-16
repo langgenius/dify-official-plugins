@@ -1,0 +1,38 @@
+identity:
+  name: create_folder
+  author: langgenius
+  label:
+    en_US: Create Folder
+    ja_JP: フォルダ作成
+    zh_Hans: 创建文件夹
+    pt_BR: Criar Pasta
+    zh_Hant: 建立資料夾
+description:
+  human:
+    en_US: Create a new folder in NextCloud
+    ja_JP: NextCloud に新しいフォルダを作成します
+    zh_Hans: 在 NextCloud 中创建新文件夹
+    pt_BR: Criar uma nova pasta no NextCloud
+    zh_Hant: 在 NextCloud 中建立新資料夾
+  llm: Creates a new folder/directory at the specified path in NextCloud. The parent directories must already exist. Returns information about the created folder.
+parameters:
+  - name: folder_path
+    type: string
+    required: true
+    label:
+      en_US: Folder Path
+      ja_JP: フォルダパス
+      zh_Hans: 文件夹路径
+      pt_BR: Caminho da Pasta
+      zh_Hant: 資料夾路徑
+    human_description:
+      en_US: The full path where the new folder will be created (e.g. /Documents/NewFolder)
+      ja_JP: 新しいフォルダが作成される完全なパス（例 /Documents/NewFolder）
+      zh_Hans: 新文件夹将被创建的完整路径（例如 /Documents/NewFolder）
+      pt_BR: O caminho completo onde a nova pasta será criada (ex /Documents/NewFolder)
+      zh_Hant: 新資料夾將被建立的完整路徑（例如 /Documents/NewFolder）
+    llm_description: The complete path for the new folder including the folder name. Must start with "/" and be case-sensitive. Parent directories must already exist.
+    form: llm
+extra:
+  python:
+    source: tools/create_folder.py 

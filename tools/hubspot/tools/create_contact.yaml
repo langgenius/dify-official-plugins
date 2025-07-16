@@ -1,0 +1,123 @@
+identity:
+  name: create_contact
+  author: langgenius
+  label:
+    en_US: Create Contact
+    zh_Hans: 创建联系人
+    pt_BR: Criar Contato
+    ja_JP: 連絡先を作成
+    zh_Hant: 建立聯絡人
+description:
+  human:
+    en_US: Create a new contact in HubSpot CRM
+    zh_Hans: 在 HubSpot CRM 中创建新联系人
+    pt_BR: Criar um novo contato no HubSpot CRM
+    ja_JP: HubSpot CRM で新しい連絡先を作成します
+    zh_Hant: 在 HubSpot CRM 中建立新聯絡人
+  llm: Creates a new contact in HubSpot CRM with the provided information. Email is required as it serves as the unique identifier. You can optionally provide additional contact details like name, phone, company, and job title. The contact will be automatically added to your HubSpot database.
+parameters:
+  - name: email
+    type: string
+    required: true
+    label:
+      en_US: Email Address
+      zh_Hans: 电子邮件地址
+      pt_BR: Endereço de Email
+      ja_JP: メールアドレス
+      zh_Hant: 電子郵件地址
+    human_description:
+      en_US: The contact's email address (required)
+      zh_Hans: 联系人的电子邮件地址（必填）
+      pt_BR: O endereço de email do contato (obrigatório)
+      ja_JP: 連絡先のメールアドレス（必須）
+      zh_Hant: 聯絡人的電子郵件地址（必填）
+    llm_description: The email address of the contact. This is required and serves as the unique identifier for the contact in HubSpot.
+    form: llm
+  - name: firstname
+    type: string
+    required: false
+    label:
+      en_US: First Name
+      zh_Hans: 名字
+      pt_BR: Primeiro Nome
+      ja_JP: 名前
+      zh_Hant: 名字
+    human_description:
+      en_US: The contact's first name
+      zh_Hans: 联系人的名字
+      pt_BR: O primeiro nome do contato
+      ja_JP: 連絡先の名前
+      zh_Hant: 聯絡人的名字
+    llm_description: The first name of the contact.
+    form: llm
+  - name: lastname
+    type: string
+    required: false
+    label:
+      en_US: Last Name
+      zh_Hans: 姓氏
+      pt_BR: Sobrenome
+      ja_JP: 姓
+      zh_Hant: 姓氏
+    human_description:
+      en_US: The contact's last name
+      zh_Hans: 联系人的姓氏
+      pt_BR: O sobrenome do contato
+      ja_JP: 連絡先の姓
+      zh_Hant: 聯絡人的姓氏
+    llm_description: The last name of the contact.
+    form: llm
+  - name: phone
+    type: string
+    required: false
+    label:
+      en_US: Phone Number
+      zh_Hans: 电话号码
+      pt_BR: Número de Telefone
+      ja_JP: 電話番号
+      zh_Hant: 電話號碼
+    human_description:
+      en_US: The contact's phone number
+      zh_Hans: 联系人的电话号码
+      pt_BR: O número de telefone do contato
+      ja_JP: 連絡先の電話番号
+      zh_Hant: 聯絡人的電話號碼
+    llm_description: The phone number of the contact.
+    form: llm
+  - name: company
+    type: string
+    required: false
+    label:
+      en_US: Company
+      zh_Hans: 公司
+      pt_BR: Empresa
+      ja_JP: 会社
+      zh_Hant: 公司
+    human_description:
+      en_US: The contact's company name
+      zh_Hans: 联系人的公司名称
+      pt_BR: O nome da empresa do contato
+      ja_JP: 連絡先の会社名
+      zh_Hant: 聯絡人的公司名稱
+    llm_description: The company or organization the contact works for.
+    form: llm
+  - name: jobtitle
+    type: string
+    required: false
+    label:
+      en_US: Job Title
+      zh_Hans: 职位
+      pt_BR: Cargo
+      ja_JP: 役職
+      zh_Hant: 職位
+    human_description:
+      en_US: The contact's job title
+      zh_Hans: 联系人的职位
+      pt_BR: O cargo do contato
+      ja_JP: 連絡先の役職
+      zh_Hant: 聯絡人的職位
+    llm_description: The job title or position of the contact.
+    form: llm
+extra:
+  python:
+    source: tools/create_contact.py 

@@ -76,40 +76,46 @@ parameters:
   llm_description: "This parameter allows you to specify a set of conditions that\
     \ records must meet to be included in the result set. It is formatted as a JSON\
     \ array, with its structure defined as follows:\n```\ntype Filters = { // filter\
-    \ object array\n  controlId: string; // fieldId\n  dataType: number; // fieldTypeId\n\
+    \ object array\n  controlId: string; // fieldId\n  dataType: number; // fieldTypeId,\
+    \ All of DATE(15, 16, 38) MUST use `filterType` in date expression(17,18,31,32,33,34,35,36).\n\
     \  spliceType: number; // condition concatenation method, 1: And, 2: Or\n  filterType:\
-    \ number; // expression type, refer to the <FilterTypeEnum Reference> for enumerable\
+    \ number; // expression type, refer to the <FilterType Enum Reference> for enumerable\
     \ values\n  values?: string[]; // values in the condition, for option-type fields,\
     \ multiple values can be passed\n  value?: string; // value in the condition,\
     \ a single value can be passed according to the field type\n  dateRange?: number;\
-    \ // date range, mandatory when filterType is 17 or 18, refer to the <DateRangeEnum\
-    \ Reference> for enumerable values\n  minValue?: string; // minimum value for\
-    \ custom range\n  maxValue?: string; // maximum value for custom range\n  isAsc?:\
+    \ // date range, mandatory when filterType is 17 or 18, refer to the <DateRange\
+    \ Enum Reference> for enumerable values\n  minValue?: string; // minimum value\
+    \ for custom range\n  maxValue?: string; // maximum value for custom range\n  isAsc?:\
     \ boolean; // ascending order, false: descending, true: ascending\n}[];\n```\n\
-    For option-type fields, if this option field has `options`, then you need to get\
-    \ the corresponding `key` value from the `options` in the current field information\
-    \ via `value`, and pass it into `values` in array format. Do not use the `options`\
-    \ value of other fields as input conditions.\n\n### FilterTypeEnum Reference\n\
-    ```\nEnum Value, Enum Character, Description\n1, Like, Contains(Include)\n2, Eq,\
-    \ Is (Equal)\n3, Start, Starts With\n4, End, Ends With\n5, NotLike, Does Not Contain(Not\
-    \ Include)\n6, Ne, Is Not (Not Equal)\n7, IsEmpty, Empty\n8, HasValue, Not Empty\n\
-    11, Between, Within Range(Belong to)\n12, NotBetween, Outside Range(Not belong\
-    \ to)\n13, Gt, Greater Than\n14, Gte, Greater Than or Equal To\n15, Lt, Less Than\n\
-    16, Lte, Less Than or Equal To\n17, DateEnum, Date Is\n18, NotDateEnum, Date Is\
-    \ Not\n24, RCEq, Associated Field Is\n25, RCNe, Associated Field Is Not\n26, ArrEq,\
-    \ Array Equals\n27, ArrNe, Array Does Not Equal\n31, DateBetween, Date Within\
-    \ Range (can only be used with minValue and maxValue)\n32, DateNotBetween, Date\
-    \ Not Within Range (can only be used with minValue and maxValue)\n33, DateGt,\
-    \ Date Later Than\n34, DateGte, Date Later Than or Equal To\n35, DateLt, Date\
-    \ Earlier Than\n36, DateLte, Date Earlier Than or Equal To\n```\n\n### DateRangeEnum\
-    \ Reference\n```\nEnum Value, Enum Character, Description\n1, Today, Today\n2,\
-    \ Yesterday, Yesterday\n3, Tomorrow, Tomorrow\n4, ThisWeek, This Week\n5, LastWeek,\
-    \ Last Week\n6, NextWeek, Next Week\n7, ThisMonth, This Month\n8, LastMonth, Last\
-    \ Month\n9, NextMonth, Next Month\n12, ThisQuarter, This Quarter\n13, LastQuarter,\
-    \ Last Quarter\n14, NextQuarter, Next Quarter\n15, ThisYear, This Year\n16, LastYear,\
-    \ Last Year\n17, NextYear, Next Year\n18, Customize, Custom\n21, Last7Day, Past\
-    \ 7 Days\n22, Last14Day, Past 14 Days\n23, Last30Day, Past 30 Days\n31, Next7Day,\
-    \ Next 7 Days\n32, Next14Day, Next 14 Days\n33, Next33Day, Next 33 Days\n```\n"
+    For `Option-Single Choice` and `Option-Multiple Choices` fields, if this option\
+    \ field has `options`, then you need to get the corresponding `key` value from\
+    \ the `options` in the current field information via `value`, and pass it into\
+    \ `values` in array format. Do not use the `options` value of other fields as\
+    \ input conditions.\nFor fields of type `Option-Member/Option-Department/Option-Organizational\
+    \ Role/Option-Linked Record/Option-Region`, the `values` parameter must be in\
+    \ the format of a string array like `[\"uuid\"]`(uuid comes from `rowid`,`filterType`\
+    \ must be 24).If it is a string type value, you can pass it in using the `value`\
+    \ parameter(`filterType` must be 2).\n\n### FilterType Enum Reference\n```\n\
+    Enum Value, Enum Character, Description\n1, Like, Contains(Include)\n2, Eq, Is (Equal)\n\
+    3, Start, Starts With\n4, End, Ends With\n5, NotLike, Does Not Contain(Not Include)\n\
+    6, Ne, Is Not (Not Equal)\n7, IsEmpty, Empty\n8, HasValue, Not Empty\n11, Between,\
+    \ Within Range(Belong to)\n12, NotBetween, Outside Range(Not belong to)\n13, Gt,\
+    \ Greater Than\n14, Gte, Greater Than or Equal To\n15, Lt, Less Than\n16, Lte, Less\
+    \ Than or Equal To\n17, DateEnum, Date Is\n18, NotDateEnum, Date Is Not\n24, RCEq,\
+    \ Associated Field Is\n25, RCNe, Associated Field Is Not\n26, ArrEq, Array Equals\n\
+    27, ArrNe, Array Does Not Equal\n31, DateBetween, Date Within Range (can only be\
+    \ used with minValue and maxValue)\n32, DateNotBetween, Date Not Within Range\
+    \ (can only be used with minValue and maxValue)\n33, DateGt, Date Later Than\n34,\
+    \ DateGte, Date Later Than or Equal To\n35, DateLt, Date Earlier Than\n36, DateLte,\
+    \ Date Earlier Than or Equal To\n```\n\n### DateRange Enum Reference\n```\n\
+    Enum Value, Enum Character, Description\n1, Today, Today\n2, Yesterday, Yesterday\n\
+    3, Tomorrow, Tomorrow\n4, ThisWeek, This Week\n5, LastWeek, Last Week\n6, NextWeek,\
+    \ Next Week\n7, ThisMonth, This Month\n8, LastMonth, Last Month\n9, NextMonth, Next\
+    \ Month\n12, ThisQuarter, This Quarter\n13, LastQuarter, Last Quarter\n14, NextQuarter,\
+    \ Next Quarter\n15, ThisYear, This Year\n16, LastYear, Last Year\n17, NextYear, Next\
+    \ Year\n18, Customize, Custom\n21, Last7Day, Past 7 Days\n22, Last14Day, Past 14 Days\n\
+    23, Last30Day, Past 30 Days\n31, Next7Day, Next 7 Days\n32, Next14Day, Next 14 Days\n\
+    33, Next33Day, Next 33 Days\n```"
   name: filters
   required: false
   type: string

@@ -1,0 +1,245 @@
+description:
+  human:
+    en_US: Text to video model. Supports Wan2.1, LTXV, Mochi and Hunyuan.
+    ja_JP: テキストtoビデオ。Wan2.1 や LTXV, Mochi, Hunyuan をサポートしています。
+  llm: generates video from image
+extra:
+  python:
+    source: tools/txt2vid.py
+identity:
+  author: yt-koike
+  label:
+    en_US: Txt2Vid
+    pt_BR: Txt2Vid
+    zh_Hans: 文本到视频
+    ja_JP: テキストtoビデオ
+  name: txt2vid
+
+parameters:
+  - name: prompt
+    form: llm
+    human_description:
+      en_US:
+        Image prompt, you can check the official documentation of Stable Diffusion
+        or FLUX
+      pt_BR:
+        Image prompt, you can check the official documentation of Stable Diffusion
+        or FLUX
+      zh_Hans: 图像提示词，您可以查看 Stable Diffusion 或者 FLUX 的官方文档
+      ja_JP: プロンプト
+    label:
+      en_US: Prompt
+      pt_BR: Prompt
+      zh_Hans: 提示词
+      ja_JP: プロンプト
+    llm_description:
+      Image prompt of Stable Diffusion, you should describe the image
+      you want to generate as a list of words as possible as detailed, the prompt must
+      be written in English.
+    required: true
+    type: string
+
+  - name: negative_prompt
+    default: bad art, ugly, deformed, watermark, duplicated, discontinuous lines
+    form: llm
+    human_description:
+      en_US: Negative prompt
+      pt_BR: Negative prompt
+      zh_Hans: Negative prompt
+      ja_JP: ネガティブプロンプト
+    label:
+      en_US: Negative prompt
+      pt_BR: Negative prompt
+      zh_Hans: Negative prompt
+      ja_JP: ネガティブプロンプト
+    required: false
+    type: string
+
+  - name: model_name
+    form: llm
+    label:
+      en_US: Txt2Vid Model Name
+    human_description:
+      en_US: Txt2Vid Model Name. If omitted, default model will be downloaded.
+    required: false
+    type: string
+
+  - name: model_type
+    form: form
+    human_description:
+      en_US: Model
+      pt_BR: Modelo
+      zh_Hans: 模型
+      ja_JP: モデル
+    label:
+      en_US: Model
+      pt_BR: Modelo
+      zh_Hans: 模型
+      ja_JP: モデル
+    required: true
+    type: select
+    options:
+      - label:
+          en_US: WAN 2.1
+        value: wan2_1
+      - label:
+          en_US: LTXV
+        value: ltxv
+      - label:
+          en_US: Mochi
+        value: mochi
+      - label:
+          en_US: Hunyuan
+        value: hunyuan
+
+  #- name: memory_usage
+  #  form: form
+  #  human_description:
+  #    en_US:
+  #      Memory Usage
+  #  label:
+  #    en_US:
+  #      Memory Usage
+  #  required: true
+  #  type: select
+  #  options:
+  #    - label:
+  #        en_US: Default
+  #      value: default
+  #    - label:
+  #        en_US: Minimal
+  #      value: minimal
+
+  - name: fps
+    default: 6
+    form: llm
+    human_description:
+      en_US: FPS
+      pt_BR: FPS
+      zh_Hans: FPS
+    label:
+      en_US: FPS
+      pt_BR: FPS
+      zh_Hans: FPS
+    required: true
+    type: number
+
+  - name: frameN
+    default: 14
+    form: llm
+    human_description:
+      en_US: Number of frames
+      pt_BR: Number of frames
+      zh_Hans: 图像数量
+      ja_JP: フレーム合計数
+    label:
+      en_US: FrameN
+      pt_BR: FrameN
+      zh_Hans: FrameN
+      ja_JP: FrameN
+    required: true
+    type: number
+
+  - name: output_format
+    form: form
+    default: webm
+    human_description:
+      en_US: Output Format
+    label:
+      en_US: Output Format
+    required: true
+    type: select
+    options:
+      - label:
+          en_US: MP4
+        value: mp4
+      - label:
+          en_US: WEBM
+        value: webm
+
+  #- name: steps
+  #  form: llm
+  #  default: 20
+  #  human_description:
+  #    en_US: Steps
+  #    pt_BR: Steps
+  #    zh_Hans: Steps
+  #    ja_JP: ステップ数
+  #  label:
+  #    en_US: Steps
+  #    pt_BR: Steps
+  #    zh_Hans: Steps
+  #    ja_JP: ステップ数
+  #  required: false
+  #  type: number
+
+  - name: width
+    form: llm
+    human_description:
+      en_US: Width
+      pt_BR: Width
+      zh_Hans: Width
+      ja_JP: 画像幅
+    label:
+      en_US: Width
+      pt_BR: Width
+      zh_Hans: Width
+      ja_JP: 画像幅
+    required: true
+    type: number
+
+  - name: height
+    form: llm
+    human_description:
+      en_US: Height
+      pt_BR: Height
+      zh_Hans: Height
+      ja_JP: 画像高さ
+    label:
+      en_US: Height
+      pt_BR: Height
+      zh_Hans: Height
+      ja_JP: 画像高さ
+    required: true
+    type: number
+  #- name: cfg
+  #  default: 2.5
+  #  form: llm
+  #  human_description:
+  #    en_US: CFG Scale
+  #    pt_BR: CFG Scale
+  #    zh_Hans: 提示词相关性(CFG Scale)
+  #    ja_JP: CFG スケール
+  #  label:
+  #    en_US: CFG Scale
+  #    pt_BR: CFG Scale
+  #    zh_Hans: CFG Scale
+  #    ja_JP: CFG スケール
+  #  required: false
+  #  type: number
+
+  #- name: sampler_name
+  #  form: llm
+  #  human_description:
+  #    en_US: Sampling method
+  #    pt_BR: Sampling method
+  #    zh_Hans: Sampling method
+  #  label:
+  #    en_US: Sampling method
+  #    pt_BR: Sampling method
+  #    zh_Hans: Sampling method
+  #  required: false
+  #  type: string
+
+  #- name: scheduler
+  #  form: llm
+  #  human_description:
+  #    en_US: Scheduler
+  #    pt_BR: Scheduler
+  #    zh_Hans: Scheduler
+  #  label:
+  #    en_US: Scheduler
+  #    pt_BR: Scheduler
+  #    zh_Hans: Scheduler
+  #  required: false
+  #  type: string

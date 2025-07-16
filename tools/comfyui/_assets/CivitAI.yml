@@ -1,0 +1,827 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: advanced-chat
+  name: CivitAI Example
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: package
+  value:
+    plugin_unique_identifier: langgenius/comfyui:0.2.0@3ea2a8faf4da05e2759396504ef5a8b6313f25b8352c235cb80fe30511d69df8
+kind: app
+version: 0.3.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: tool
+      id: 1751507536138-source-1751507576396-target
+      source: '1751507536138'
+      sourceHandle: source
+      target: '1751507576396'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: tool
+        targetType: tool
+      id: 1751507576396-source-1751507583956-target
+      source: '1751507576396'
+      sourceHandle: source
+      target: '1751507583956'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: answer
+      id: 1751507583956-source-answer-target
+      source: '1751507583956'
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: Start
+        type: start
+        variables: []
+      height: 54
+      id: '1751507536138'
+      position:
+        x: 30
+        y: 252
+      positionAbsolute:
+        x: 30
+        y: 252
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#1751507583956.files#}}'
+        desc: ''
+        selected: false
+        title: Answer
+        type: answer
+        variables: []
+      height: 104
+      id: answer
+      position:
+        x: 942
+        y: 252
+      positionAbsolute:
+        x: 942
+        y: 252
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        is_team_authorization: true
+        output_schema:
+          properties:
+            air:
+              label:
+                en_US: AIR
+              type: string
+            ecosystem:
+              label:
+                en_US: Ecosystem
+                ja_JP: エコシステム
+              type: string
+            model_name:
+              label:
+                en_US: Model Name
+                ja_JP: モデル名
+                zh_Hans: 型号名称
+              type: string
+            model_name_human:
+              label:
+                en_US: Human-readable Model Name
+                ja_JP: Human-readable モデル名
+                zh_Hans: 可读型号名称
+              type: string
+            source:
+              label:
+                en_US: Source
+              type: string
+            type:
+              label:
+                en_US: Type
+              type: string
+          type: object
+        paramSchemas:
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: ID of Model
+            ja_JP: モデルの ID
+            pt_BR: ID of Model
+            zh_Hans: 模型的 ID
+          label:
+            en_US: Model ID
+            ja_JP: モデル ID
+            pt_BR: Model ID
+            zh_Hans: 模型 ID
+          llm_description: Model ID
+          max: null
+          min: null
+          name: model_id
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: number
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Version ID. If none, the latest model will be installed.
+            ja_JP: バージョン ID. 指定なしの場合は最新版をダウンロードします.
+            pt_BR: Version ID. If none, the latest model will be installed.
+            zh_Hans: 版本 ID. 如果没有，将安装最新的型号.
+          label:
+            en_US: Version ID
+            ja_JP: バージョン ID
+            pt_BR: Version ID
+            zh_Hans: 版本 ID
+          llm_description: Version ID
+          max: null
+          min: null
+          name: version_id
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: number
+        - auto_generate: null
+          default: null
+          form: form
+          human_description:
+            en_US: Directory to save the downloaded file in
+            ja_JP: ダウンロードしたファイルの保存先ディレクトリ
+            pt_BR: Directory to save the downloaded file in
+            zh_Hans: 保存下载文件的目录
+          label:
+            en_US: Save Directory
+            ja_JP: 保存先ディレクトリ
+            pt_BR: Save Directory
+            zh_Hans: 目的地目录
+          llm_description: Save Directory
+          max: null
+          min: null
+          name: save_dir
+          options:
+          - label:
+              en_US: checkpoints
+              ja_JP: checkpoints
+              pt_BR: checkpoints
+              zh_Hans: checkpoints
+            value: checkpoints
+          - label:
+              en_US: loras
+              ja_JP: loras
+              pt_BR: loras
+              zh_Hans: loras
+            value: loras
+          - label:
+              en_US: vae
+              ja_JP: vae
+              pt_BR: vae
+              zh_Hans: vae
+            value: vae
+          - label:
+              en_US: controlnet
+              ja_JP: controlnet
+              pt_BR: controlnet
+              zh_Hans: controlnet
+            value: controlnet
+          - label:
+              en_US: text_encoders
+              ja_JP: text_encoders
+              pt_BR: text_encoders
+              zh_Hans: text_encoders
+            value: text_encoders
+          - label:
+              en_US: upscale_models
+              ja_JP: upscale_models
+              pt_BR: upscale_models
+              zh_Hans: upscale_models
+            value: upscale_models
+          - label:
+              en_US: diffusion_models
+              ja_JP: diffusion_models
+              pt_BR: diffusion_models
+              zh_Hans: diffusion_models
+            value: diffusion_models
+          - label:
+              en_US: clip_vision
+              ja_JP: clip_vision
+              pt_BR: clip_vision
+              zh_Hans: clip_vision
+            value: clip_vision
+          - label:
+              en_US: style_models
+              ja_JP: style_models
+              pt_BR: style_models
+              zh_Hans: style_models
+            value: style_models
+          - label:
+              en_US: embeddings
+              ja_JP: embeddings
+              pt_BR: embeddings
+              zh_Hans: embeddings
+            value: embeddings
+          - label:
+              en_US: diffusers
+              ja_JP: diffusers
+              pt_BR: diffusers
+              zh_Hans: diffusers
+            value: diffusers
+          - label:
+              en_US: vae_approx
+              ja_JP: vae_approx
+              pt_BR: vae_approx
+              zh_Hans: vae_approx
+            value: vae_approx
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: select
+        params:
+          model_id: ''
+          save_dir: ''
+          version_id: ''
+        provider_id: langgenius/comfyui/comfyui
+        provider_name: langgenius/comfyui/comfyui
+        provider_type: builtin
+        selected: false
+        title: CivitAI Download
+        tool_configurations:
+          save_dir: checkpoints
+        tool_description: Download models from https://civitai.com/
+        tool_label: CivitAI Download
+        tool_name: download_civitai
+        tool_parameters:
+          model_id:
+            type: constant
+            value: 1162518
+        type: tool
+      height: 90
+      id: '1751507576396'
+      position:
+        x: 334
+        y: 252
+      positionAbsolute:
+        x: 334
+        y: 252
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        is_team_authorization: true
+        output_schema: null
+        paramSchemas:
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Image prompt, you can check the official documentation of Stable
+              Diffusion or FLUX
+            ja_JP: プロンプト
+            pt_BR: Image prompt, you can check the official documentation of Stable
+              Diffusion or FLUX
+            zh_Hans: 图像提示词，您可以查看 Stable Diffusion 或者 FLUX 的官方文档
+          label:
+            en_US: Prompt
+            ja_JP: プロンプト
+            pt_BR: Prompt
+            zh_Hans: 提示词
+          llm_description: Image prompt of Stable Diffusion, you should describe the
+            image you want to generate as a list of words as possible as detailed,
+            the prompt must be written in English.
+          max: null
+          min: null
+          name: prompt
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: bad art, ugly, deformed, watermark, duplicated, discontinuous lines
+          form: llm
+          human_description:
+            en_US: Negative prompt
+            ja_JP: ネガティブプロンプト
+            pt_BR: Negative prompt
+            zh_Hans: Negative prompt
+          label:
+            en_US: Negative prompt
+            ja_JP: ネガティブプロンプト
+            pt_BR: Negative prompt
+            zh_Hans: Negative prompt
+          llm_description: ''
+          max: null
+          min: null
+          name: negative_prompt
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Model Name. If omitted, the default model will be installed.
+            ja_JP: モデル名
+            pt_BR: Model Name
+            zh_Hans: 模型名称
+          label:
+            en_US: Model Name
+            ja_JP: モデル名
+            pt_BR: Model Name
+            zh_Hans: 模型名称
+          llm_description: ''
+          max: null
+          min: null
+          name: model
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Ecosystem of the model. For example, sdxl, flux1 and sd1.
+            ja_JP: Ecosystem of the model. For example, sdxl, flux1 and sd1.
+            pt_BR: Ecosystem of the model. For example, sdxl, flux1 and sd1.
+            zh_Hans: Ecosystem of the model. For example, sdxl, flux1 and sd1.
+          label:
+            en_US: Ecosystem
+            ja_JP: Ecosystem
+            pt_BR: Ecosystem
+            zh_Hans: Ecosystem
+          llm_description: ''
+          max: null
+          min: null
+          name: ecosystem
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Steps
+            ja_JP: ステップ数
+            pt_BR: Steps
+            zh_Hans: Steps
+          label:
+            en_US: Steps
+            ja_JP: ステップ数
+            pt_BR: Steps
+            zh_Hans: Steps
+          llm_description: ''
+          max: null
+          min: null
+          name: steps
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: number
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Width
+            ja_JP: 画像幅
+            pt_BR: Width
+            zh_Hans: Width
+          label:
+            en_US: Width
+            ja_JP: 画像幅
+            pt_BR: Width
+            zh_Hans: Width
+          llm_description: ''
+          max: null
+          min: null
+          name: width
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: number
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: Height
+            ja_JP: 画像高さ
+            pt_BR: Height
+            zh_Hans: Height
+          label:
+            en_US: Height
+            ja_JP: 画像高さ
+            pt_BR: Height
+            zh_Hans: Height
+          llm_description: ''
+          max: null
+          min: null
+          name: height
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: number
+        - auto_generate: null
+          default: 7
+          form: llm
+          human_description:
+            en_US: CFG Scale (7.0 by default)
+            ja_JP: CFG スケール (デフォルト値 7.0)
+            pt_BR: CFG Scale (7.0 by default)
+            zh_Hans: 提示词相关性(CFG Scale) (7.0 by default)
+          label:
+            en_US: CFG Scale
+            ja_JP: CFG スケール
+            pt_BR: CFG Scale
+            zh_Hans: CFG Scale
+          llm_description: ''
+          max: null
+          min: null
+          name: cfg
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: number
+        - auto_generate: null
+          default: euler
+          form: llm
+          human_description:
+            en_US: Sampling method
+            ja_JP: サンプリング手法
+            pt_BR: Sampling method
+            zh_Hans: Sampling method
+          label:
+            en_US: Sampling method
+            ja_JP: サンプリング手法
+            pt_BR: Sampling method
+            zh_Hans: Sampling method
+          llm_description: ''
+          max: null
+          min: null
+          name: sampler_name
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: normal
+          form: llm
+          human_description:
+            en_US: Scheduler
+            ja_JP: スケジューラー
+            pt_BR: Scheduler
+            zh_Hans: Scheduler
+          label:
+            en_US: Scheduler
+            ja_JP: スケジューラー
+            pt_BR: Scheduler
+            zh_Hans: Scheduler
+          llm_description: ''
+          max: null
+          min: null
+          name: scheduler
+          options: []
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: LORAs, put comma between each LORA name if multiple
+            ja_JP: LORA, 複数ある場合はコンマで区切ってください
+            pt_BR: LORAs, put comma between each LORA name if multiple
+            zh_Hans: LORA, 如果有多个 LORA 名称，请在名称之间加上逗号
+          label:
+            en_US: LORAs
+            ja_JP: LORA
+            pt_BR: LORAs
+            zh_Hans: LORA
+          llm_description: ''
+          max: null
+          min: null
+          name: lora_names
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: null
+          form: llm
+          human_description:
+            en_US: LORAs strength, put comma between each LORA strength if multiple
+            ja_JP: LORA 強度, 複数ある場合はコンマで区切ってください
+            pt_BR: LORAs strength, put comma between each LORA strength if multiple
+            zh_Hans: LORA 力量, 如果有多个 LORA 力量，请在名称之间加上逗号
+          label:
+            en_US: LORAs strength
+            ja_JP: LORA 強度
+            pt_BR: LORAs strength
+            zh_Hans: LORA 力量
+          llm_description: ''
+          max: null
+          min: null
+          name: lora_strengths
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: string
+        - auto_generate: null
+          default: 0.6
+          form: llm
+          human_description:
+            en_US: Denoise coefficient for HiresFix upscaling. Default=0.6
+            ja_JP: HiresFix 用 Denoise 係数. Default=0.6
+            pt_BR: Denoise coefficient for HiresFix upscaling. Default=0.6
+            zh_Hans: HiresFix 放大处理的降噪系数. Default=0.6
+          label:
+            en_US: HiresFix Denoise
+            ja_JP: HiresFix Denoise
+            pt_BR: HiresFix Denoise
+            zh_Hans: HiresFix Denoise
+          llm_description: ''
+          max: null
+          min: null
+          name: hiresfix_denoise
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: number
+        - auto_generate: null
+          default: 0.5
+          form: llm
+          human_description:
+            en_US: '0<(After Upscaling / Before Upscaling)<1: Bigger number generates
+              images faster but more poorly. Default=0.5'
+            ja_JP: '0<(アップスケーリング前 / アップスケーリング後)<1: 大きいほど速く生成されます。Default=0.5'
+            pt_BR: '0<(After Upscaling / Before Upscaling)<1: Bigger number generates
+              images faster but more poorly. Default=0.5'
+            zh_Hans: '0<(缩放前 / 缩放后)<1: 数值越大，生成速度越快。Default=0.5'
+          label:
+            en_US: HiresFix Size Ratio
+            ja_JP: HiresFix Size Ratio
+            pt_BR: HiresFix Size Ratio
+            zh_Hans: HiresFix Size Ratio
+          llm_description: ''
+          max: null
+          min: null
+          name: hiresfix_size_ratio
+          options: []
+          placeholder: null
+          precision: null
+          required: false
+          scope: null
+          template: null
+          type: number
+        - auto_generate: null
+          default: disabled
+          form: form
+          human_description:
+            en_US: HiresFix upscale method. If enabled, it generates large and consistent
+              images. Slow."
+            ja_JP: HiresFix メソッド．HiresFix 有効化すると大きく一貫性のある画像を出力できる分、生成時間が遅くなります
+            pt_BR: HiresFix upscale method. If enabled, it generates large and consistent
+              images. Slow."
+            zh_Hans: HiresFix 方法,HiresFix 启用由于能够输出更大且一致的图像，生成时间会变慢。
+          label:
+            en_US: HiresFix Method
+            ja_JP: HiresFix メソッド
+            pt_BR: HiresFix Method
+            zh_Hans: HiresFix 方法
+          llm_description: ''
+          max: null
+          min: null
+          name: hiresfix_upscale_method
+          options:
+          - label:
+              en_US: Disable HiresFix
+              ja_JP: Disable HiresFix
+              pt_BR: Disable HiresFix
+              zh_Hans: Disable HiresFix
+            value: disabled
+          - label:
+              en_US: Nearest Exact
+              ja_JP: Nearest Exact
+              pt_BR: Nearest Exact
+              zh_Hans: Nearest Exact
+            value: nearest-exact
+          - label:
+              en_US: Bilinear
+              ja_JP: Bilinear
+              pt_BR: Bilinear
+              zh_Hans: Bilinear
+            value: bilinear
+          - label:
+              en_US: Area
+              ja_JP: Area
+              pt_BR: Area
+              zh_Hans: Area
+            value: area
+          - label:
+              en_US: Bicubic
+              ja_JP: Bicubic
+              pt_BR: Bicubic
+              zh_Hans: Bicubic
+            value: bicubic
+          - label:
+              en_US: Bislerp
+              ja_JP: Bislerp
+              pt_BR: Bislerp
+              zh_Hans: Bislerp
+            value: bislerp
+          placeholder: null
+          precision: null
+          required: true
+          scope: null
+          template: null
+          type: select
+        params:
+          cfg: ''
+          ecosystem: ''
+          height: ''
+          hiresfix_denoise: ''
+          hiresfix_size_ratio: ''
+          hiresfix_upscale_method: ''
+          lora_names: ''
+          lora_strengths: ''
+          model: ''
+          negative_prompt: ''
+          prompt: ''
+          sampler_name: ''
+          scheduler: ''
+          steps: ''
+          width: ''
+        provider_id: langgenius/comfyui/comfyui
+        provider_name: langgenius/comfyui/comfyui
+        provider_type: builtin
+        selected: false
+        title: Txt2Img
+        tool_configurations:
+          hiresfix_upscale_method: disabled
+        tool_description: a pre-defined comfyui workflow that can use one model and
+          up to 3 loras to generate images. Support SD1.5, SDXL, SD3 and FLUX which
+          contain text encoders/clip, but does not support models that requires a
+          triple clip loader.
+        tool_label: Txt2Img
+        tool_name: txt2img
+        tool_parameters:
+          height:
+            type: constant
+            value: 512
+          model:
+            type: mixed
+            value: '{{#1751507576396.model_name#}}'
+          prompt:
+            type: mixed
+            value: beautiful scenery nature glass bottle landscape, purple galaxy
+              bottle,
+          sampler_name:
+            type: mixed
+            value: euler
+          scheduler:
+            type: mixed
+            value: normal
+          steps:
+            type: constant
+            value: 20
+          width:
+            type: constant
+            value: 512
+        type: tool
+      height: 90
+      id: '1751507583956'
+      position:
+        x: 638
+        y: 252
+      positionAbsolute:
+        x: 638
+        y: 252
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 23.240520391754217
+      y: -86.47492421852849
+      zoom: 1.218770788614574

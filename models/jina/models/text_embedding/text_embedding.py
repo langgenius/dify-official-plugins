@@ -6,9 +6,28 @@ from requests import post
 
 from dify_plugin import TextEmbeddingModel
 from dify_plugin.entities import I18nObject
-from dify_plugin.entities.model import AIModelEntity, EmbeddingInputType, FetchFrom, ModelPropertyKey, ModelType, PriceType
-from dify_plugin.entities.model.text_embedding import EmbeddingUsage, TextEmbeddingResult
-from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeAuthorizationError, InvokeBadRequestError, InvokeConnectionError, InvokeError, InvokeRateLimitError, InvokeServerUnavailableError
+from dify_plugin.entities.model import (
+    AIModelEntity,
+    EmbeddingInputType,
+    FetchFrom,
+    ModelPropertyKey,
+    ModelType,
+    PriceType,
+)
+from dify_plugin.entities.model.text_embedding import (
+    EmbeddingUsage,
+    TextEmbeddingResult,
+)
+from dify_plugin.errors.model import (
+    CredentialsValidateFailedError,
+    InvokeAuthorizationError,
+    InvokeBadRequestError,
+    InvokeConnectionError,
+    InvokeError,
+    InvokeRateLimitError,
+    InvokeServerUnavailableError,
+)
+from models.shared.input import transform_jina_input_text
 from models.text_embedding.jina_tokenizer import JinaTokenizer
 
 
@@ -50,20 +69,19 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
             "Content-Type": "application/json",
         }
 
-        def transform_jina_input_text(model, text):
-            if model == "jina-clip-v1" or model == "jina-clip-v2":
-                return {"text": text}
-            return text
-
         data = {
             "model": model,
             "input": [transform_jina_input_text(model, text) for text in texts],
         }
 
         # model specific parameters
-        if model == "jina-embeddings-v3" or model == "jina-clip-v2":
+        if model == "jina-embeddings-v3" or model == "jina-embeddings-v4":
             # set `task` type according to input type for the best performance
-            data["task"] = "retrieval.query" if input_type == EmbeddingInputType.QUERY else "retrieval.passage"
+            data["task"] = (
+                "retrieval.query"
+                if input_type == EmbeddingInputType.QUERY
+                else "retrieval.passage"
+            )
 
         try:
             response = post(url, headers=headers, data=dumps(data))
@@ -108,7 +126,9 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
 
         return result
 
-    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
+    def get_num_tokens(
+        self, model: str, credentials: dict, texts: list[str]
+    ) -> list[int]:
         """
         Get number of tokens for given prompt messages
 

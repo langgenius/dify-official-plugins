@@ -1,0 +1,2 @@
+dify_plugin>=0.2.0,<0.4.0
+webdavclient3~=3.14.6

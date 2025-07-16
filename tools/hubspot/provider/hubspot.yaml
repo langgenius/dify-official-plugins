@@ -1,0 +1,45 @@
+identity:
+  author: langgenius
+  name: hubspot
+  label:
+    en_US: HubSpot
+    zh_Hans: HubSpot
+    pt_BR: HubSpot
+    ja_JP: HubSpot
+    zh_Hant: HubSpot
+  description:
+    en_US: Connect to HubSpot to manage contacts, companies, deals, tickets, and more
+    zh_Hans: 连接 HubSpot 以管理联系人、公司、交易、工单等
+    pt_BR: Conecte-se ao HubSpot para gerenciar contatos, empresas, negócios, tickets e mais
+    ja_JP: HubSpot に接続して、連絡先、企業、取引、チケットなどを管理する
+    zh_Hant: 連接 HubSpot 以管理聯絡人、公司、交易、工單等
+  icon: icon.svg
+credentials_for_provider:
+  access_token:
+    type: secret-input
+    required: true
+    label:
+      en_US: API Access Token
+      zh_Hans: API 访问令牌
+      pt_BR: Token de Acesso da API
+      ja_JP: API アクセストークン
+      zh_Hant: API 存取權杖
+    placeholder:
+      en_US: Enter your HubSpot private app access token
+      zh_Hans: 输入您的 HubSpot 私有应用访问令牌
+      pt_BR: Insira seu token de acesso do aplicativo privado HubSpot
+      ja_JP: HubSpot プライベートアプリのアクセストークンを入力してください
+      zh_Hant: 輸入您的 HubSpot 私有應用存取權杖
+    help:
+      en_US: Create a private app in HubSpot. Required scopes - Read and Write for contacts and companies
+      zh_Hans: 在 HubSpot 中创建私有应用。必需的权限范围 - 联系人和公司的读写权限
+      pt_BR: Crie um aplicativo privado no HubSpot. Escopos necessários - Leitura e escrita para contatos e empresas
+      ja_JP: HubSpot でプライベートアプリを作成してください。必要なスコープ - 連絡先と会社の読み書き権限
+      zh_Hant: 在 HubSpot 中建立私有應用。必需的權限範圍 - 聯絡人和公司的讀寫權限
+    url: https://developers.hubspot.com/docs/api/private-apps
+tools:
+  - tools/get_companies.yaml
+  - tools/create_contact.yaml
+extra:
+  python:
+    source: provider/hubspot.py

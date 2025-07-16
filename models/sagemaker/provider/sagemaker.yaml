@@ -85,10 +85,10 @@ model_credential_schema:
         - variable: __model_type
           value: speech2text
       label:
-        zh_Hans: 音频缓存桶(s3 bucket)
-        en_US: audio cache bucket(s3 bucket)
+        zh_Hans: 音频缓存桶(s3 bucket, Whisper模型不填,FunASR模型需要填)
+        en_US: audio cache bucket(s3 bucket, Whisper模型不填,FunASR模型需要填)
       type: text-input
-      required: true
+      required: false
       placeholder:
         zh_Hans: sagemaker-us-east-1-******207838
         en_US: sagemaker-us-east-1-*******7838

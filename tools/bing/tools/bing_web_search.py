@@ -83,7 +83,41 @@ class BingWebSearchTool(Tool):
                     yield self.create_text_message(
                         text=f'{related.get("displayText", "")}{url}'
                     )
+        elif result_type == "json":
+            result = {}
+            if search_results:
+                result["organic"] = [
+                    {
+                        "title": item.get("name", ""),
+                        "snippet": item.get("snippet", ""),
+                        "url": item.get("url", ""),
+                        "siteName": item.get("siteName", ""),
+                    }
+                    for item in search_results
+                ]
 
+            if computation and "expression" in computation and "value" in computation:
+                result["computation"] = {"expression": computation["expression"], "value": computation["value"]}
+
+            if entities:
+                result["entities"] = [
+                    {
+                        "name": item.get("name", ""),
+                        "url": item.get("url", ""),
+                        "description": item.get("description", ""),
+                    }
+                    for item in entities
+                ]
+
+            if news:
+                result["news"] = [{"name": item.get("name", ""), "url": item.get("url", "")} for item in news]
+
+            if related_searches:
+                result["related searches"] = [
+                    {"displayText": item.get("displayText", ""), "url": item.get("webSearchUrl", "")} for item in news
+                ]
+
+            yield self.create_json_message(result)
         else:
             # construct text
             text = ""
@@ -136,7 +170,7 @@ class BingWebSearchTool(Tool):
         if not query:
             raise Exception("query is required")
 
-        limit = min(tool_parameters.get("limit", 5), 10)
+        limit = min(tool_parameters.get("limit", 5), 100)
         result_type = tool_parameters.get("result_type", "text") or "text"
 
         market = tool_parameters.get("market", "US")
@@ -193,7 +227,7 @@ class BingWebSearchTool(Tool):
         if not query:
             raise Exception("query is required")
 
-        limit = min(tool_parameters.get("limit", 5), 10)
+        limit = min(tool_parameters.get("limit", 5), 100)
         result_type = tool_parameters.get("result_type", "text") or "text"
 
         market = tool_parameters.get("market", "US")

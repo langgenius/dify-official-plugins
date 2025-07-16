@@ -1,0 +1,62 @@
+identity:
+  name: list_attributes
+  author: langgenius
+  label:
+    en_US: "List Attributes"
+    zh_Hans: "列出属性"
+    pt_BR: "Listar Atributos"
+    ja_JP: "属性の一覧"
+description:
+  human:
+    en_US: "List all attributes for a given Attio object or list"
+    zh_Hans: "列出指定 Attio 对象或列表的所有属性"
+    pt_BR: "Listar todos os atributos de um objeto ou lista Attio"
+    ja_JP: "指定したAttioオブジェクトまたはリストのすべての属性を一覧表示します"
+  llm: "Retrieve all attributes for a specified Attio object or list by providing the target type and slug."
+parameters:
+  - name: target_type
+    type: select
+    options:
+      - label:
+          en_US: "Objects"
+          zh_Hans: "对象"
+          pt_BR: "Objetos"
+          ja_JP: "オブジェクト"
+        value: "objects"
+      - label:
+          en_US: "Lists"
+          zh_Hans: "列表"
+          pt_BR: "Listas"
+          ja_JP: "リスト"
+        value: "lists"
+    required: true
+    label:
+      en_US: "Target Type"
+      zh_Hans: "目标类型"
+      pt_BR: "Tipo de Alvo"
+      ja_JP: "ターゲットタイプ"
+    human_description:
+      en_US: "Specify whether to list attributes for an 'objects' or 'lists' target"
+      zh_Hans: "指定是为 'objects' 还是 'lists' 列出属性"
+      pt_BR: "Especifique se deseja listar atributos para 'objects' ou 'lists'"
+      ja_JP: "'objects' または 'lists' のどちらの属性を一覧表示するか指定してください"
+    llm_description: "The type of target to list attributes for. Must be either 'objects' or 'lists'."
+    form: form
+  - name: slug
+    type: string
+    required: true
+    label:
+      en_US: "Slug"
+      zh_Hans: "Slug"
+      pt_BR: "Slug"
+      ja_JP: "スラッグ"
+    human_description:
+      en_US: "The slug of the object or list whose attributes you want to list"
+      zh_Hans: "要列出属性的对象或列表的 Slug"
+      pt_BR: "O slug do objeto ou lista cujos atributos você deseja listar"
+      ja_JP: "属性を一覧表示したいオブジェクトまたはリストのスラッグ"
+    llm_description: "The slug of the object or list to retrieve attributes from."
+    form: llm
+extra:
+  python:
+    source: tools/list_attributes.py

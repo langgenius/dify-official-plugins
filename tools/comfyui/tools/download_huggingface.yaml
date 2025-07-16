@@ -1,0 +1,101 @@
+description:
+  human:
+    en_US: Download from https://huggingface.co/
+    zh_Hans: 从 https://huggingface.co/ 下载模型
+    ja_JP: https://huggingface.co/ からモデルをダウンロード
+  llm: Download from Hugging Face
+extra:
+  python:
+    source: tools/download_huggingface.py
+identity:
+  author: yt-koike
+  label:
+    en_US: Hugging Face Download
+  name: download_huggingface
+parameters:
+  - name: repo_id
+    form: llm
+    label:
+      en_US: Repository ID
+      zh_Hans: 仓库ID
+      ja_JP: レポジトリ ID
+    llm_description: Repository ID
+    type: string
+    human_description:
+      en_US: Repository ID
+      zh_Hans: Repository ID
+      ja_JP: レポジトリ ID
+    required: true
+  - name: filename
+    form: llm
+    label:
+      en_US: Filename
+      zh_Hans: 文件名
+      ja_JP: ファイル名
+    llm_description: Filename
+    type: string
+    human_description:
+      en_US: Name of file to download
+      zh_Hans: 文件名
+      ja_JP: ファイル名
+    required: true
+  - name: save_dir
+    form: form
+    label:
+      en_US: Save Directory
+      zh_Hans: 目的地目录
+      ja_JP: 保存先ディレクトリ
+    llm_description: Save Directory
+    type: select
+    human_description:
+      en_US: Directory to save the downloaded file in
+      zh_Hans: 保存下载文件的目录
+      ja_JP: ダウンロードしたファイルの保存先ディレクトリ
+    options:
+      - value: checkpoints
+        label:
+          en_US: checkpoints
+      - value: loras
+        label:
+          en_US: loras
+      - value: vae
+        label:
+          en_US: vae
+      - value: controlnet
+        label:
+          en_US: controlnet
+      - value: text_encoders
+        label:
+          en_US: text_encoders
+      - value: upscale_models
+        label:
+          en_US: upscale_models
+      - value: diffusion_models
+        label:
+          en_US: diffusion_models
+      - value: clip_vision
+        label:
+          en_US: clip_vision
+      - value: style_models
+        label:
+          en_US: style_models
+      - value: embeddings
+        label:
+          en_US: embeddings
+      - value: diffusers
+        label:
+          en_US: diffusers
+      - value: vae_approx
+        label:
+          en_US: vae_approx
+    required: true
+
+output_schema:
+  type: object
+  properties:
+    filename:
+      type: string
+      label:
+        en_US: Filename
+        zh_Hans: 文件名
+        ja_JP: ファイル名

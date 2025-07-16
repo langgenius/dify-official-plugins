@@ -1,0 +1,56 @@
+identity:
+  name: get_rows
+  author: langgenuis
+  label:
+    en_US: Get Rows
+    zh_CN: 获取行
+    ja_JP: 行を取得
+description:
+  human:
+    en_US: Get rows from a specified table in Supabase.
+    zh_CN: 从 Supabase 的指定表中获取行。
+    ja_JP: Supabase の指定したテーブルから行を取得します。
+  llm: Get rows from a specified table in Supabase.
+parameters:
+- name: table
+  type: string
+  required: true
+  label:
+    en_US: Table Name
+    zh_CN: 表名
+    ja_JP: テーブル名
+  human_description:
+    en_US: The name of the table to query.
+    zh_CN: 要查询的表名。
+    ja_JP: クエリ対象のテーブル名。
+  llm_description: Provide the name of the table you want to query in Supabase.
+  form: llm
+- name: limit
+  type: number
+  required: false
+  label:
+    en_US: Limit
+    zh_CN: 限制
+    ja_JP: 上限
+  human_description:
+    en_US: Maximum number of rows to return.
+    zh_CN: 返回的最大行数。
+    ja_JP: 返される最大行数。
+  llm_description: Specify how many rows you want to retrieve. Default is 10.
+  form: llm
+- name: filter
+  type: string
+  required: false
+  label:
+    en_US: Filter
+    zh_CN: 过滤条件
+    ja_JP: フィルター
+  human_description:
+    en_US: Optional filter condition (e.g., 'status=active').
+    zh_CN: 可选的过滤条件（如 'status=active'）。
+    ja_JP: オプションのフィルター条件（例：'status=active'）。
+  llm_description: Provide a filter condition if needed. (e.g., 'status=active')
+  form: llm
+extra:
+  python:
+    source: tools/get_rows.py

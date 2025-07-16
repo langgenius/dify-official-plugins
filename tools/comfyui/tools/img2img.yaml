@@ -1,0 +1,195 @@
+description:
+  human:
+    en_US: Edits an given image with the prompt.
+    pt_BR: Edits an given image with the prompt.
+    zh_Hans: 按提示编辑给定图像。
+    ja_JP: プロンプトにもとづいて画像を編集します．
+  llm: edits an given image as you want based on your prompt.
+extra:
+  python:
+    source: tools/img2img.py
+identity:
+  author: yt-koike
+  label:
+    en_US: Img2Img
+    pt_BR: Img2Img
+    zh_Hans: 图像到图像
+    ja_JP: 画像to画像
+  name: img2img
+
+parameters:
+  - name: prompt
+    form: llm
+    human_description:
+      en_US:
+        Image prompt, you can check the official documentation of Stable Diffusion
+        or FLUX
+      pt_BR:
+        Image prompt, you can check the official documentation of Stable Diffusion
+        or FLUX
+      zh_Hans: 图像提示词，您可以查看 Stable Diffusion 或者 FLUX 的官方文档
+      ja_JP: プロンプト．Stable Diffusion や FLUX の公式ドキュメントをご参照ください。
+    label:
+      en_US: Prompt
+      pt_BR: Prompt
+      zh_Hans: 提示词
+      ja_JP: プロンプト
+    llm_description:
+      Image prompt of Stable Diffusion, you should describe the image
+      you want to generate as a list of words as possible as detailed, the prompt must
+      be written in English.
+    required: true
+    type: string
+
+  - name: negative_prompt
+    default: bad art, ugly, deformed, watermark, duplicated, discontinuous lines
+    form: llm
+    human_description:
+      en_US: Negative prompt
+      pt_BR: Negative prompt
+      zh_Hans: Negative prompt
+      ja_JP: ネガティブプロンプト
+    label:
+      en_US: Negative prompt
+      pt_BR: Negative prompt
+      zh_Hans: Negative prompt
+      ja_JP: ネガティブプロンプト
+    required: false
+    type: string
+
+  - name: images
+    form: llm
+    label:
+      en_US: Input Image
+      zh_Hans: 输入的图片
+      ja_JP: 入力画像
+    llm_description:
+      The input image, used to transfer to the comfyui workflow to generate
+      another image.
+      If input is array of image, the first one will be used.
+    human_description:
+      en_US: The input image. If input is array of image, the first one will be used.
+      zh_Hans: 输入的图片。如果输入是图像数组，将使用第一个图像。
+      ja_JP: 入力画像. もしファイル配列を与えた場合，最初の画像のみ読みます．
+    required: true
+    type: files
+
+  - name: model
+    form: llm
+    human_description:
+      en_US: Model Name
+      pt_BR: Model Name
+      zh_Hans: 模型名称
+      ja_JP: モデル名
+    label:
+      en_US: Model Name
+      pt_BR: Model Name
+      zh_Hans: 模型名称
+      ja_JP: モデル名
+    required: false
+    type: string
+
+  - name: steps
+    form: llm
+    human_description:
+      en_US: Steps
+      pt_BR: Steps
+      zh_Hans: Steps
+      ja_JP: ステップ数
+    label:
+      en_US: Steps
+      pt_BR: Steps
+      zh_Hans: Steps
+      ja_JP: ステップ数
+    required: true
+    type: number
+
+  - name: cfg
+    default: 7.0
+    form: llm
+    human_description:
+      en_US: CFG Scale
+      pt_BR: CFG Scale
+      zh_Hans: 提示词相关性(CFG Scale)
+      ja_JP: CFG スケール
+    label:
+      en_US: CFG Scale
+      pt_BR: CFG Scale
+      zh_Hans: CFG Scale
+      ja_JP: CFG スケール
+    required: false
+    type: number
+
+  - name: denoise
+    default: 0.8
+    form: llm
+    human_description:
+      en_US: Denoise Ratio (0.0~1.0)
+      pt_BR: Denoise Ratio (0.0~1.0)
+      zh_Hans: Denoise Ratio (0.0~1.0)
+      ja_JP: ノイズ除去比 (0.0~1.0)
+    label:
+      en_US: Denoise Ratio
+      pt_BR: Denoise Ratio
+      zh_Hans: Denoise Ratio
+      ja_JP: ノイズ除去比
+    required: false
+    type: number
+
+  - name: sampler_name
+    form: llm
+    default: euler
+    human_description:
+      en_US: Sampling method
+      pt_BR: Sampling method
+      zh_Hans: Sampling method
+      ja_JP: サンプリング手法
+    label:
+      en_US: Sampling method
+      pt_BR: Sampling method
+      zh_Hans: Sampling method
+      ja_JP: サンプリング手法
+    required: true
+    type: string
+
+  - name: scheduler
+    default: normal
+    form: llm
+    human_description:
+      en_US: Scheduler
+      pt_BR: Scheduler
+      zh_Hans: Scheduler
+      ja_JP: スケジューラー
+    label:
+      en_US: Scheduler
+      pt_BR: Scheduler
+      zh_Hans: Scheduler
+      ja_JP: スケジューラー
+    required: true
+    type: string
+
+  - name: lora_names
+    form: llm
+    human_description:
+      en_US: LORAs, put comma between each LORA name if multiple
+      zh_Hans: LORA, 如果有多个 LORA 名称，请在名称之间加上逗号
+      ja_JP: LORA, 複数ある場合はコンマで区切ってください
+    label:
+      en_US: LORAs
+      zh_Hans: LORA
+      ja_JP: LORA
+    required: false
+    type: string
+
+  - name: lora_strengths
+    form: llm
+    human_description:
+      en_US: LORAs strength, put comma between each LORA strength if multiple
+      zh_Hans: LORA 力量, 如果有多个 LORA 力量，请在名称之间加上逗号
+      ja_JP: LORA 強度, 複数ある場合はコンマで区切ってください
+    label:
+      en_US: LORAs strength
+      zh_Hans: LORA 力量
+      ja_JP: LORA 強度
+    required: false
+    type: string

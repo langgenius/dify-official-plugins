@@ -8,6 +8,8 @@ Based on AWS documentation:
 
 BEDROCK_MODEL_IDS = {
     'anthropic claude': {
+        'Claude 4.0 Sonnet': 'anthropic.claude-sonnet-4-20250514-v1:0',
+        'Claude 4.0 Opus': 'anthropic.claude-opus-4-20250514-v1:0',
         'Claude 3.7 Sonnet': 'anthropic.claude-3-7-sonnet-20250219-v1:0',
         'Claude 3.5 Sonnet': 'anthropic.claude-3-5-sonnet-20240620-v1:0',
         'Claude 3.5 Sonnet V2': 'anthropic.claude-3-5-sonnet-20241022-v2:0',
@@ -19,8 +21,9 @@ BEDROCK_MODEL_IDS = {
     'amazon nova': {
         'Nova Pro': 'amazon.nova-pro-v1:0',
         'Nova Lite': 'amazon.nova-lite-v1:0',
-        'Nova Micro': 'amazon.nova-micro-v1:0'
-    },
+        'Nova Micro': 'amazon.nova-micro-v1:0',
+        'Nova Premier': 'amazon.nova-premier-v1:0'
+},
     'meta': {
         'Llama 3 8B Instruct': 'meta.llama3-8b-instruct-v1:0',
         'Llama 3 70B Instruct': 'meta.llama3-70b-instruct-v1:0',
@@ -41,7 +44,7 @@ BEDROCK_MODEL_IDS = {
         'Jamba 1.5 Large': 'ai21.jamba-1-5-large-v1:0'
     },
     'deepseek': {
-        'DeepSeek-R1': 'deepseek.r1-v1:0'
+        'DeepSeek R1': 'deepseek.r1-v1:0'
     }
 }
 
@@ -57,20 +60,6 @@ def get_model_id(model_type, model_name):
         str: The corresponding Bedrock model ID, or None if not found
     """
     return BEDROCK_MODEL_IDS.get(model_type, {}).get(model_name)
-
-def get_first_model(model_type):
-    """
-    Get the Bedrock model ID for the specified model type and name.
-    
-    Args:
-        model_type (str): The type of model (e.g., 'claude', 'amazon nova')
-        model_name (str): The name of the model (e.g., 'Claude 3 Opus')
-        
-    Returns:
-        str: The corresponding Bedrock model ID, or None if not found
-    """
-    models = BEDROCK_MODEL_IDS.get(model_type, {})
-    return next(iter(models.values()))
 
 def get_region_area(region_name):
     """
