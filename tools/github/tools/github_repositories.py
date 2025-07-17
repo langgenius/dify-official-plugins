@@ -2,9 +2,10 @@ import json
 from datetime import datetime
 from typing import Any, Generator
 from urllib.parse import quote
+
 import requests
-from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
+from dify_plugin.entities.tool import ToolInvokeMessage
 
 
 class GithubRepositoriesTool(Tool):
@@ -30,40 +31,20 @@ class GithubRepositoriesTool(Tool):
                 "Authorization": f"Bearer {self.runtime.credentials.get('access_tokens')}",
                 "X-GitHub-Api-Version": api_version,
             }
-            s = requests.session()
-            api_domain = "https://api.github.com"
-            response = s.request(
-                method="GET",
-                headers=headers,
-                url=f"{api_domain}/search/repositories?q={quote(query)}&sort=stars&per_page={top_n}&order=desc",
-            )
-            response_data = response.json()
-            if response.status_code == 200 and isinstance(response_data.get("items"), list):
-                contents = []
-                if len(response_data.get("items")) > 0:
-                    for item in response_data.get("items"):
-                        content = {}
-                        updated_at_object = datetime.strptime(item["updated_at"], "%Y-%m-%dT%H:%M:%SZ")
-                        content["owner"] = item["owner"]["login"]
-                        content["name"] = item["name"]
-                        if item["description"] is not None:
-                            content["description"] = (
-                                item["description"][:100] + "..." if len(item["description"]) > 100 else item["description"]
-                            )
-                        else:
-                            content["description"] = ""
-                        content["url"] = item["html_url"]
-                        content["star"] = item["watchers"]
-                        content["forks"] = item["forks"]
-                        content["updated"] = updated_at_object.strftime("%Y-%m-%d")
-                        contents.append(content)
-                    s.close()
-                    yield self.create_text_message(
-                        self.session.model.summary(content=json.dumps(contents, ensure_ascii=False))
+            with requests.session() as s:
+                api_domain = "https://api.github.com"
+                response = s.request(
+                    method="GET",
+                    headers=headers,
+                    url=f"{api_domain}/search/repositories?q={quote(query)}&sort=stars&per_page={top_n}&order=desc",
+                )
+                response_text = response.text
+                if response.status_code == 200:
+                    response_data = json.loads(response_text) if response_text else {}
+                    yield self.create_json_message(
+                        json=response_data
                     )
                 else:
-                    yield self.create_text_message(f"No items related to {query} were found.")
-            else:
-                yield self.create_text_message(response.json().get("message"))
+                    yield self.create_text_message(response_text)
         except Exception as e:
-            yield self.create_text_message("GitHub API Key and Api Version is invalid. {}".format(e))
+            yield self.create_text_message(f"Failed to fetch GitHub repositories: {str(e)}")
