@@ -25,3 +25,5 @@ identity:
 tools:
 - tools/presentation_generator.yaml
 - tools/slide_by_slide_generator.yaml
+- tools/document_uploader.yaml
+- tools/template_lister.yaml
