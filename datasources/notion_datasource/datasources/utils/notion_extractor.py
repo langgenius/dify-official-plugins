@@ -1,5 +1,5 @@
-from typing import Any, Dict
-from functools import lru_cache
+from typing import Any
+
 from datasources.utils.notion_client import NotionClient
 
 # If user wants to split by headings, use the corresponding splitter
@@ -11,16 +11,14 @@ HEADING_SPLITTER = {
 
 
 class NotionExtractor:
-    def __init__(
-        self, access_token: str, page_id: str, page_type: str, workspace_id: str
-    ):
+    def __init__(self, access_token: str, page_id: str, page_type: str, workspace_id: str):
         self._notion_access_token = access_token
         self._page_id = page_id
         self._page_type = page_type
         self._workspace_id = workspace_id
         self._client = NotionClient(self._notion_access_token)
 
-    def extract(self) -> Dict[str, Any]:
+    def extract(self) -> dict[str, Any]:
         """Main entry point for invoking the tool."""
         extractor_result = self._load_data_as_documents(self._page_id, self._page_type)
         return {
@@ -39,9 +37,7 @@ class NotionExtractor:
             raise ValueError("Notion object type not supported")
         return extractor_result
 
-    def _get_notion_database_data(
-        self, database_id: str, query_dict: dict[str, Any] = {}
-    ) -> str:
+    def _get_notion_database_data(self, database_id: str) -> str:
         """Fetch all pages from a Notion database and return as a Markdown table."""
         assert self._notion_access_token is not None, "Notion access token is required"
 
@@ -50,11 +46,7 @@ class NotionExtractor:
 
         # Extract database title
         title = database_data.get("title", [])
-        database_title = (
-            "".join([text.get("plain_text", "") for text in title])
-            if title
-            else "Untitled Database"
-        )
+        database_title = "".join([text.get("plain_text", "") for text in title]) if title else "Untitled Database"
 
         # Query database content
         data = self._client.query_database(database_id=database_id)
@@ -134,16 +126,13 @@ class NotionExtractor:
 
                 cur_result_text = "\n".join(cur_result_text_arr)
                 if result_type in HEADING_SPLITTER:
-                    result_lines_arr.append(
-                        f"{HEADING_SPLITTER[result_type]}{cur_result_text}"
-                    )
+                    result_lines_arr.append(f"{HEADING_SPLITTER[result_type]}{cur_result_text}")
                 else:
                     result_lines_arr.append(cur_result_text + "\n\n")
 
         md_content = "\n".join(result_lines_arr)
         return md_content
 
-    @lru_cache(maxsize=128)
     def _read_block(self, block_id: str, num_tabs: int = 0) -> str:
         """Read a block and its children with caching."""
         data = self._paginate(self._client.retrieve_block_children, block_id=block_id)
@@ -170,16 +159,12 @@ class NotionExtractor:
                 has_children = result["has_children"]
                 block_type = result["type"]
                 if has_children and block_type != "child_page":
-                    children_text = self._read_block(
-                        result_block_id, num_tabs=num_tabs + 1
-                    )
+                    children_text = self._read_block(result_block_id, num_tabs=num_tabs + 1)
                     cur_result_text_arr.append(children_text)
 
                 cur_result_text = "\n".join(cur_result_text_arr)
                 if result_type in HEADING_SPLITTER:
-                    result_lines_arr.append(
-                        f"{HEADING_SPLITTER[result_type]}{cur_result_text}"
-                    )
+                    result_lines_arr.append(f"{HEADING_SPLITTER[result_type]}{cur_result_text}")
                 else:
                     result_lines_arr.append(cur_result_text + "\n\n")
 
@@ -207,32 +192,19 @@ class NotionExtractor:
         if column_type == "multi_select":
             return ", ".join(option["name"] for option in property_value[column_type])
         elif column_type in {"rich_text", "title"}:
-            return (
-                property_value[column_type][0]["plain_text"]
-                if property_value[column_type]
-                else ""
-            )
+            return property_value[column_type][0]["plain_text"] if property_value[column_type] else ""
         elif column_type in {"select", "status"}:
-            return (
-                property_value[column_type]["name"]
-                if property_value[column_type]
-                else ""
-            )
+            return property_value[column_type]["name"] if property_value[column_type] else ""
         elif column_type == "number":
             return property_value.get("number")
         elif column_type == "date":
             date_data = property_value.get("date", {})
-            return (
-                {"start": date_data.get("start"), "end": date_data.get("end")}
-                if date_data
-                else None
-            )
+            return {"start": date_data.get("start"), "end": date_data.get("end")} if date_data else None
         elif column_type == "formula":
             formula_value = property_value[column_type]
             return (
                 formula_value.get("number")
-                if isinstance(formula_value, dict)
-                and formula_value.get("type") == "number"
+                if isinstance(formula_value, dict) and formula_value.get("type") == "number"
                 else formula_value
             )
         elif column_type == "created_by":
@@ -248,18 +220,12 @@ class NotionExtractor:
             return ""
         return " ".join(text["text"]["content"] for text in cell if "text" in text)
 
-    def _generate_markdown_table(
-        self, headers: list[str], rows: list[list[str]]
-    ) -> str:
+    def _generate_markdown_table(self, headers: list[str], rows: list[list[str]]) -> str:
         """Generate a Markdown table from headers and rows."""
         markdown = ["| " + " | ".join(headers) + " |"]
         markdown.append("| " + " | ".join(["---"] * len(headers)) + " |")
         for row in rows:
-            markdown.append(
-                "| "
-                + " | ".join(str(cell) if cell is not None else "" for cell in row)
-                + " |"
-            )
+            markdown.append("| " + " | ".join(str(cell) if cell is not None else "" for cell in row) + " |")
         return "\n".join(markdown)
 
     def _paginate(self, fetch_function, **kwargs) -> list[dict]:
@@ -279,7 +245,7 @@ class NotionExtractor:
             start_cursor = data["next_cursor"]
         return results
 
-    def _format_page_data(self, page_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _format_page_data(self, page_data: dict[str, Any]) -> dict[str, Any]:
         """Format the page data for the response."""
         result = {
             "id": page_data.get("id", ""),
@@ -312,9 +278,7 @@ class NotionExtractor:
                 value = select_data.get("name") if select_data else None
             elif prop_type == "multi_select":
                 multi_select = prop_data.get("multi_select", [])
-                value = (
-                    [item.get("name") for item in multi_select] if multi_select else []
-                )
+                value = [item.get("name") for item in multi_select] if multi_select else []
             elif prop_type == "date":
                 date_data = prop_data.get("date", {})
                 start = date_data.get("start") if date_data else None

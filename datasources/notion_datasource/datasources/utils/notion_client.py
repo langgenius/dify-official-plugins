@@ -3,9 +3,10 @@ Notion API Client for Dify plugins
 This module provides a unified interface for interacting with the Notion API
 """
 
-import requests
 import time
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional
+
+import requests
 
 from dify_plugin.entities.datasource import OnlineDocumentPage
 
@@ -42,10 +43,10 @@ class NotionClient:
         self,
         method: str,
         endpoint: str,
-        params: Optional[Dict[str, Any]] = None,
-        json_data: Optional[Dict[str, Any]] = None,
+        params: Optional[dict[str, Any]] = None,
+        json_data: Optional[dict[str, Any]] = None,
         max_retries: int = 3,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Make an API request to Notion with retry logic for rate limits.
 
@@ -70,6 +71,7 @@ class NotionClient:
                     headers=self.headers,
                     params=params,
                     json=json_data,
+                    timeout=10,
                 )
 
                 # Handle rate limiting
@@ -98,7 +100,7 @@ class NotionClient:
                         pass
                 raise
 
-            except requests.exceptions.RequestException as e:
+            except requests.exceptions.RequestException:
                 if retries >= max_retries:
                     raise
                 retries += 1
@@ -112,9 +114,9 @@ class NotionClient:
         query: str,
         page_size: int = 10,
         start_cursor: Optional[str] = None,
-        filter_obj: Optional[Dict[str, Any]] = None,
-        sort: Optional[Dict[str, Any]] = None,
-    ) -> Dict[str, Any]:
+        filter_obj: Optional[dict[str, Any]] = None,
+        sort: Optional[dict[str, Any]] = None,
+    ) -> dict[str, Any]:
         """
         Search for pages and databases in a Notion workspace.
 
@@ -130,9 +132,7 @@ class NotionClient:
         """
         payload = {
             "query": query,
-            "page_size": min(
-                page_size, 100
-            ),  # Ensure page_size doesn't exceed API limit
+            "page_size": min(page_size, 100),  # Ensure page_size doesn't exceed API limit
         }
 
         if start_cursor:
@@ -149,11 +149,11 @@ class NotionClient:
     def query_database(
         self,
         database_id: str,
-        filter_obj: Optional[Dict[str, Any]] = None,
-        sorts: Optional[List[Dict[str, Any]]] = None,
+        filter_obj: Optional[dict[str, Any]] = None,
+        sorts: Optional[list[dict[str, Any]]] = None,
         page_size: int = 10,
         start_cursor: Optional[str] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Query a Notion database with optional filtering and sorting.
 
@@ -170,10 +170,8 @@ class NotionClient:
         # Clean database_id (remove dashes if present)
         database_id = database_id.replace("-", "")
 
-        payload = {
-            "page_size": min(
-                page_size, 100
-            )  # Ensure page_size doesn't exceed API limit
+        payload: dict[str, Any] = {
+            "page_size": min(page_size, 100)  # Ensure page_size doesn't exceed API limit
         }
 
         if filter_obj:
@@ -185,13 +183,11 @@ class NotionClient:
         if start_cursor:
             payload["start_cursor"] = start_cursor
 
-        return self._make_request(
-            "post", f"/databases/{database_id}/query", json_data=payload
-        )
+        return self._make_request("post", f"/databases/{database_id}/query", json_data=payload)
 
     def retrieve_block_children(
         self, block_id: str, page_size: int = 100, start_cursor: Optional[str] = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Retrieve the children blocks of a block.
 
@@ -205,10 +201,8 @@ class NotionClient:
         """
         block_id = block_id.replace("-", "")
 
-        params = {
-            "page_size": min(
-                page_size, 100
-            )  # Ensure page_size doesn't exceed API limit
+        params: dict[str, Any] = {
+            "page_size": min(page_size, 100)  # Ensure page_size doesn't exceed API limit
         }
 
         if start_cursor:
@@ -216,9 +210,7 @@ class NotionClient:
 
         return self._make_request("get", f"/blocks/{block_id}/children", params=params)
 
-    def append_block_children(
-        self, block_id: str, children: List[Dict[str, Any]]
-    ) -> Dict[str, Any]:
+    def append_block_children(self, block_id: str, children: list[dict[str, Any]]) -> dict[str, Any]:
         """
         Append children blocks to a block.
 
@@ -233,11 +225,9 @@ class NotionClient:
 
         payload = {"children": children}
 
-        return self._make_request(
-            "patch", f"/blocks/{block_id}/children", json_data=payload
-        )
+        return self._make_request("patch", f"/blocks/{block_id}/children", json_data=payload)
 
-    def retrieve_page(self, page_id: str) -> Dict[str, Any]:
+    def retrieve_page(self, page_id: str) -> dict[str, Any]:
         """
         Retrieve a page by its ID.
 
@@ -250,7 +240,7 @@ class NotionClient:
         page_id = page_id.replace("-", "")
         return self._make_request("get", f"/pages/{page_id}")
 
-    def retrieve_database(self, database_id: str) -> Dict[str, Any]:
+    def retrieve_database(self, database_id: str) -> dict[str, Any]:
         """
         Retrieve a database by its ID.
 
@@ -265,7 +255,7 @@ class NotionClient:
 
     def create_property_filter(
         self, property_name: str, property_type: str, condition: str, value: Any
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create a property filter for database queries.
 
@@ -282,7 +272,7 @@ class NotionClient:
 
     def create_simple_text_filter(
         self, property_name: str, filter_value: str, condition: str = "equals"
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Create a simple text filter for database queries.
 
@@ -294,9 +284,7 @@ class NotionClient:
         Returns:
             Filter object for use with query_database
         """
-        return self.create_property_filter(
-            property_name, "rich_text", condition, filter_value
-        )
+        return self.create_property_filter(property_name, "rich_text", condition, filter_value)
 
     def format_page_url(self, page_id: str) -> str:
         """
@@ -313,7 +301,7 @@ class NotionClient:
         formatted_id = f"{clean_id[0:8]}-{clean_id[8:12]}-{clean_id[12:16]}-{clean_id[16:20]}-{clean_id[20:]}"
         return f"https://notion.so/{formatted_id}"
 
-    def extract_plain_text(self, rich_text_array: List[Dict[str, Any]]) -> str:
+    def extract_plain_text(self, rich_text_array: list[dict[str, Any]]) -> str:
         """
         Extract plain text from a rich text array.
 
@@ -328,9 +316,7 @@ class NotionClient:
 
         return "".join([text.get("plain_text", "") for text in rich_text_array])
 
-    def create_rich_text(
-        self, content: str, annotations: Optional[Dict[str, Any]] = None
-    ) -> List[Dict[str, Any]]:
+    def create_rich_text(self, content: str, annotations: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
         """
         Create a rich text array with the specified content and optional annotations.
 
@@ -348,7 +334,7 @@ class NotionClient:
 
         return [rich_text]
 
-    def create_paragraph_block(self, text_content: str) -> Dict[str, Any]:
+    def create_paragraph_block(self, text_content: str) -> dict[str, Any]:
         """
         Create a paragraph block with the specified text content.
 
@@ -364,7 +350,7 @@ class NotionClient:
             "paragraph": {"rich_text": self.create_rich_text(text_content)},
         }
 
-    def create_heading_block(self, text_content: str, level: int = 1) -> Dict[str, Any]:
+    def create_heading_block(self, text_content: str, level: int = 1) -> dict[str, Any]:
         """
         Create a heading block with the specified text content and level.
 
@@ -386,7 +372,7 @@ class NotionClient:
             heading_type: {"rich_text": self.create_rich_text(text_content)},
         }
 
-    def create_bulleted_list_block(self, text_content: str) -> Dict[str, Any]:
+    def create_bulleted_list_block(self, text_content: str) -> dict[str, Any]:
         """
         Create a bulleted list item block with the specified text content.
 
@@ -402,7 +388,7 @@ class NotionClient:
             "bulleted_list_item": {"rich_text": self.create_rich_text(text_content)},
         }
 
-    def create_numbered_list_block(self, text_content: str) -> Dict[str, Any]:
+    def create_numbered_list_block(self, text_content: str) -> dict[str, Any]:
         """
         Create a numbered list item block with the specified text content.
 
@@ -420,7 +406,7 @@ class NotionClient:
 
     def retrieve_comments(
         self, block_id: str, page_size: int = 100, start_cursor: Optional[str] = None
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """
         Retrieve comments from a block or page.
 
@@ -432,7 +418,7 @@ class NotionClient:
         Returns:
             Comments data including results array
         """
-        endpoint = f"/comments"
+        endpoint = "/comments"
         params = {"block_id": block_id, "page_size": page_size}
 
         if start_cursor:
@@ -440,7 +426,7 @@ class NotionClient:
 
         return self._make_request("GET", endpoint, params=params)
 
-    def format_rich_text(self, content: str) -> List[Dict[str, Any]]:
+    def format_rich_text(self, content: str) -> list[dict[str, Any]]:
         """
         Format plain text into rich text array for Notion API.
         Wrapper around create_rich_text for simplified usage.
@@ -463,10 +449,7 @@ class NotionClient:
             page_id = page_result["id"]
             page_name = "Untitled"
             for key in page_result["properties"]:
-                if (
-                    "title" in page_result["properties"][key]
-                    and page_result["properties"][key]["title"]
-                ):
+                if "title" in page_result["properties"][key] and page_result["properties"][key]["title"]:
                     title_list = page_result["properties"][key]["title"]
                     if len(title_list) > 0 and "plain_text" in title_list[0]:
                         page_name = title_list[0]["plain_text"]
@@ -477,9 +460,7 @@ class NotionClient:
                     url = page_icon[icon_type]["url"]
                     icon = {
                         "type": "url",
-                        "url": url
-                        if url.startswith("http")
-                        else f"https://www.notion.so{url}",
+                        "url": url if url.startswith("http") else f"https://www.notion.so{url}",
                     }
                 else:
                     icon = {"type": "emoji", "emoji": page_icon[icon_type]}
@@ -488,9 +469,7 @@ class NotionClient:
             parent = page_result["parent"]
             parent_type = parent["type"]
             if parent_type == "block_id":
-                parent_id = self.notion_block_parent_page_id(
-                    access_token, parent[parent_type]
-                )
+                parent_id = self.notion_block_parent_page_id(access_token, parent[parent_type])
             elif parent_type == "workspace":
                 parent_id = "root"
             else:
@@ -507,10 +486,7 @@ class NotionClient:
             # get database detail
         for database_result in database_results:
             page_id = database_result["id"]
-            if len(database_result["title"]) > 0:
-                page_name = database_result["title"][0]["plain_text"]
-            else:
-                page_name = "Untitled"
+            page_name = database_result["title"][0]["plain_text"] if len(database_result["title"]) > 0 else "Untitled"
 
             page_icon = database_result["icon"]
             if page_icon:
@@ -519,9 +495,7 @@ class NotionClient:
                     url = page_icon[icon_type]["url"]
                     icon = {
                         "type": "url",
-                        "url": url
-                        if url.startswith("http")
-                        else f"https://www.notion.so{url}",
+                        "url": url if url.startswith("http") else f"https://www.notion.so{url}",
                     }
                 else:
                     icon = {"type": "emoji", "emoji": page_icon[icon_type]}
@@ -530,9 +504,7 @@ class NotionClient:
             parent = database_result["parent"]
             parent_type = parent["type"]
             if parent_type == "block_id":
-                parent_id = self.notion_block_parent_page_id(
-                    access_token, parent[parent_type]
-                )
+                parent_id = self.notion_block_parent_page_id(access_token, parent[parent_type])
             elif parent_type == "workspace":
                 parent_id = "root"
             else:
@@ -564,9 +536,7 @@ class NotionClient:
                 "Notion-Version": self._API_VERSION,
             }
 
-            response = requests.post(
-                url=self._NOTION_PAGE_SEARCH, json=data, headers=headers
-            )
+            response = requests.post(url=self._NOTION_PAGE_SEARCH, json=data, headers=headers, timeout=10)
             response_json = response.json()
 
             results.extend(response_json.get("results", []))
@@ -591,9 +561,7 @@ class NotionClient:
                 "Authorization": f"Bearer {access_token}",
                 "Notion-Version": self._API_VERSION,
             }
-            response = requests.post(
-                url=self._NOTION_PAGE_SEARCH, json=data, headers=headers
-            )
+            response = requests.post(url=self._NOTION_PAGE_SEARCH, json=data, headers=headers, timeout=10)
             response_json = response.json()
 
             results.extend(response_json.get("results", []))
@@ -608,9 +576,7 @@ class NotionClient:
             "Authorization": f"Bearer {access_token}",
             "Notion-Version": self._API_VERSION,
         }
-        response = requests.get(
-            url=f"{self._NOTION_BLOCK_SEARCH}/{block_id}", headers=headers
-        )
+        response = requests.get(url=f"{self._NOTION_BLOCK_SEARCH}/{block_id}", headers=headers, timeout=10)
         response_json = response.json()
         if response.status_code != 200:
             message = response_json.get("message", "unknown error")
