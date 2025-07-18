@@ -1,0 +1,56 @@
+identity:
+  name: search_files
+  author: lcandy
+  label:
+    en_US: Search Files
+    zh_Hans: 搜索文件
+    pt_BR: Pesquisar Arquivos
+    ja_JP: ファイル検索
+    zh_Hant: 搜尋檔案
+description:
+  human:
+    en_US: Search for files and folders in Dropbox
+    zh_Hans: 在 Dropbox 中搜索文件和文件夹
+    pt_BR: Procurar arquivos e pastas no Dropbox
+    ja_JP: Dropbox 内のファイルとフォルダを検索します
+    zh_Hant: 在 Dropbox 中搜尋檔案與資料夾
+  llm: Searches for files and folders in Dropbox that match the specified query. Returns detailed information about each matching item including path, type, size, and modification date.
+parameters:
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: Search Query
+      zh_Hans: 搜索关键词
+      pt_BR: Termo de Pesquisa
+      ja_JP: 検索クエリ
+      zh_Hant: 搜尋關鍵字
+    human_description:
+      en_US: Enter keywords to search for files and folders
+      zh_Hans: 输入关键词搜索文件和文件夹
+      pt_BR: Digite palavras-chave para pesquisar arquivos e pastas
+      ja_JP: ファイルとフォルダを検索するためのキーワードを入力してください
+      zh_Hant: 請輸入關鍵字以搜尋檔案與資料夾
+    llm_description: The search query to find files and folders in Dropbox. Can be a filename, part of a filename, or content within files.
+    form: llm
+  - name: max_results
+    type: number
+    required: false
+    default: 10
+    label:
+      en_US: Maximum Results
+      zh_Hans: 最大结果数
+      pt_BR: Resultados Máximos
+      ja_JP: 最大結果数
+      zh_Hant: 最大結果數
+    human_description:
+      en_US: Maximum number of results to return (default is 10)
+      zh_Hans: 返回的最大结果数（默认为10）
+      pt_BR: Número máximo de resultados a retornar (padrão é 10)
+      ja_JP: 返す結果の最大数（デフォルトは10）
+      zh_Hant: 傳回的最大結果數量（預設值為10）
+    llm_description: The maximum number of search results to return. Default is 10 if not specified.
+    form: llm
+extra:
+  python:
+    source: tools/search_files.py 

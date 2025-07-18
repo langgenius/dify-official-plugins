@@ -1,0 +1,53 @@
+model: grok-3
+label:
+  en_US: grok-3
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 131072
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    default: 1.0
+    min: 0.0
+    max: 2.0
+  - name: top_p
+    use_template: top_p
+  - name: frequency_penalty
+    use_template: frequency_penalty
+    min: -2.0
+    max: 2.0
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+  - name: search_parameters
+    label:
+      zh_Hans: 联网搜索参数
+      en_US: Live Search Parameters
+    type: text
+    default: "{\n  \"mode\": \"auto\"\n}"
+    help:
+      zh_Hans: 传递给联网搜索的参数，具体参数见 https://docs.x.ai/docs/api-reference#chat-completions
+      en_US: Parameters to pass to the live search, see https://docs.x.ai/docs/api-reference#chat-completions
+    required: false
+pricing:
+  input: "3.00"
+  output: "15.00"
+  unit: "0.000001"
+  currency: USD

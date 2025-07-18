@@ -2,12 +2,14 @@ background: '#FFFFFF'
 configurate_methods:
 - predefined-model
 description:
-  en_US: Models provided by MistralAI, such as open-mistral-7b and mistral-large-latest.
-  zh_Hans: MistralAI 提供的模型，例如 open-mistral-7b 和 mistral-large-latest。
+  en_US: Models provided by MistralAI, including Magistral models with prompt_mode support, Mistral Large/Medium/Small, Pixtral vision models, Codestral for coding, specialized embedding models, and content moderation services.
+  zh_Hans: MistralAI 提供的模型，包括支持 prompt_mode 的 Magistral 模型、Mistral Large/Medium/Small、Pixtral 视觉模型、Codestral 编程模型、专用嵌入模型和内容审核服务。
 extra:
   python:
     model_sources:
     - models/llm/llm.py
+    - models/text_embedding/text_embedding.py
+    - models/moderation/moderation.py
     provider_source: provider/mistralai.py
 help:
   title:
@@ -26,6 +28,14 @@ models:
     position: models/llm/_position.yaml
     predefined:
     - models/llm/*.yaml
+  text_embedding:
+    position: models/text_embedding/_position.yaml
+    predefined:
+    - models/text_embedding/*.yaml
+  moderation:
+    position: models/moderation/_position.yaml
+    predefined:
+    - models/moderation/*.yaml
 provider: mistralai
 provider_credential_schema:
   credential_form_schemas:
@@ -39,3 +49,5 @@ provider_credential_schema:
     variable: api_key
 supported_model_types:
 - llm
+- text-embedding
+- moderation

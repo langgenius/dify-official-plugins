@@ -1,0 +1,33 @@
+version: 0.0.2
+type: plugin
+author: langgenius
+name: confluence
+label:
+  en_US: Confluence
+  ja_JP: Confluence
+  zh_Hans: Confluence
+  pt_BR: Confluence
+description:
+  en_US: Confluence is a web-based corporate wiki developed by Atlassian.
+  ja_JP: Atlassianが開発したWebベースの企業Wikiです。
+  zh_Hans: Confluence 是一个基于 Web 的企业 Wiki，基于Atlassian开发。
+  pt_BR: Confluence é um wiki corporativo baseado na web desenvolvido pela Atlassian.
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission: {}
+plugins:
+  tools:
+    - provider/confluence.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+created_at: 2025-04-21T22:09:22.160377917+08:00
+privacy: PRIVACY.md
+verified: false

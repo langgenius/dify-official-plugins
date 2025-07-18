@@ -1,0 +1,74 @@
+identity:
+  name: linear_get_users
+  author: langgenius # Or your preferred author name
+  label:
+    en_US: Get Linear Users
+    zh_Hans: 获取 Linear 用户
+    pt_BR: Obter Usuários do Linear
+    ja_JP: Linear ユーザーを取得
+    zh_Hant: 獲取 Linear 用戶
+description:
+  human:
+    en_US: Search for users in Linear by name or email to retrieve their details, including user ID (UUID).
+    zh_Hans: 通过姓名或电子邮件在 Linear 中搜索用户，以检索其详细信息，包括用户 ID (UUID)。
+    pt_BR: Pesquise usuários no Linear por nome ou e-mail para recuperar seus detalhes, incluindo ID de usuário (UUID).
+    ja_JP: 名前またはメールアドレスで Linear のユーザーを検索し、ユーザーID（UUID）を含む詳細を取得します。
+    zh_Hant: 通過姓名或電子郵件在 Linear 中搜索用戶，以檢索其詳細信息，包括用戶 ID (UUID)。
+  llm: Searches for Linear users based on name (partial match) or email (exact match). Returns a list of matching users including their ID (UUID), name, email, display name, and active status. Useful for finding a user's UUID needed for other tools.
+parameters:
+  - name: name
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Name
+      zh_Hans: 名称
+      pt_BR: Nome
+      ja_JP: 名前
+      zh_Hant: 名稱
+    human_description:
+      en_US: Partial name to search for (case-insensitive).
+      zh_Hans: 要搜索的部分名称（不区分大小写）。
+      pt_BR: Nome parcial para pesquisar (sem distinção entre maiúsculas e minúsculas).
+      ja_JP: 検索する部分的な名前（大文字と小文字を区別しない）。
+      zh_Hant: 要搜索的部分名稱（不區分大小寫）。
+    llm_description: Optional. Partial name to search for (case-insensitive). Use this OR email.
+  - name: email
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Email
+      zh_Hans: 电子邮件
+      pt_BR: E-mail
+      ja_JP: メールアドレス
+      zh_Hant: 電子郵件
+    human_description:
+      en_US: Exact email address to search for.
+      zh_Hans: 要搜索的确切电子邮件地址。
+      pt_BR: Endereço de e-mail exato para pesquisar.
+      ja_JP: 検索する正確なメールアドレス。
+      zh_Hant: 要搜索的確切電子郵件地址。
+    llm_description: Optional. Exact email address to search for. Use this OR name.
+  - name: limit
+    type: number
+    required: false
+    default: 10
+    form: llm
+    label:
+      en_US: Result Limit
+      zh_Hans: 结果限制
+      pt_BR: Limite de Resultados
+      ja_JP: 結果制限
+      zh_Hant: 結果限制
+    human_description:
+      en_US: "Maximum number of users to return (default: 10, max: 50)."
+      zh_Hans: "最多返回的用户数量（默认：10，最大：50）。"
+      pt_BR: "Número máximo de usuários a retornar (padrão: 10, máx: 50)."
+      ja_JP: "返すユーザーの最大数（デフォルト：10、最大：50）。"
+      zh_Hant: "最多返回的用戶數量（默認：10，最大：50）。"
+    llm_description: "Max results to return (default: 10, max: 50)."
+extra:
+  python:
+    source: tools/linear_get_users.py
+    class: LinearGetUsersTool 

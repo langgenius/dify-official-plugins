@@ -1102,8 +1102,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             encoding = tiktoken.encoding_for_model(model)
         except KeyError:
             logger.warning("Warning: model not found. Using cl100k_base encoding.")
-            model = "cl100k_base"
-            encoding = tiktoken.get_encoding(model)
+            encoding_name = "cl100k_base"
+            encoding = tiktoken.get_encoding(encoding_name)
 
         if model.startswith("gpt-3.5-turbo-0301"):
             # every message follows <im_start>{role/name}\n{content}<im_end>\n

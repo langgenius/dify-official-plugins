@@ -1,0 +1,73 @@
+identity:
+  name: linear_get_user_issues
+  author: langgenius
+  label:
+    en_US: Get User Issues
+    zh_Hans: 获取用户问题
+    pt_BR: Obter Problemas do Usuário
+    ja_JP: ユーザーの課題を取得
+    zh_Hant: 獲取用戶問題
+description:
+  human:
+    en_US: Retrieve issues assigned to a specific user in Linear or the current authenticated user.
+    zh_Hans: 检索分配给 Linear 中特定用户或当前认证用户的问题。
+    pt_BR: Recuperar problemas atribuídos a um usuário específico no Linear ou ao usuário autenticado atual.
+    ja_JP: Linearの特定のユーザーまたは現在認証されているユーザーに割り当てられている課題を取得します。
+    zh_Hant: 檢索分配給 Linear 中特定用戶或當前認證用戶的問題。
+  llm: Retrieves issues assigned to a specific user or the authenticated user if no userId is provided. Returns issues sorted by last updated, including priority, status, and other metadata.
+parameters:
+  - name: userId
+    type: string
+    required: true
+    label:
+      en_US: User ID
+      zh_Hans: 用户 ID
+      pt_BR: ID do Usuário
+      ja_JP: ユーザーID
+      zh_Hant: 用戶 ID
+    human_description:
+      en_US: "UUID of the user whose issues to retrieve (e.g., '123e4567-e89b-12d3-a456-426614174000'). Required."
+      zh_Hans: "要检索其问题的用户的 UUID（例如，'123e4567-e89b-12d3-a456-426614174000'）。必填。"
+      pt_BR: "UUID do usuário cujos problemas serão recuperados (ex: '123e4567-e89b-12d3-a456-426614174000'). Obrigatório."
+      ja_JP: "課題を取得するユーザーのUUID（例：'123e4567-e89b-12d3-a456-426614174000'）。必須。"
+      zh_Hant: "要檢索其問題的用戶的 UUID（例如，'123e4567-e89b-12d3-a456-426614174000'）。必填。"
+    llm_description: Required user UUID (Universally Unique Identifier) to retrieve issues for. Must be in standard UUID format.
+    form: llm
+  - name: includeArchived
+    type: boolean
+    required: false
+    label:
+      en_US: Include Archived
+      zh_Hans: 包含已归档
+      pt_BR: Incluir Arquivados
+      ja_JP: アーカイブを含む
+      zh_Hant: 包含已歸檔
+    human_description:
+      en_US: Include archived issues in results
+      zh_Hans: 在结果中包含已归档的问题
+      pt_BR: Incluir problemas arquivados nos resultados
+      ja_JP: 結果にアーカイブされた課題を含める
+      zh_Hant: 在結果中包含已歸檔的問題
+    llm_description: Include archived issues in results
+    form: llm
+  - name: limit
+    type: number
+    required: false
+    label:
+      en_US: Result Limit
+      zh_Hans: 结果限制
+      pt_BR: Limite de Resultados
+      ja_JP: 結果制限
+      zh_Hant: 結果限制
+    human_description:
+      en_US: "Maximum number of issues to return (default: 50)"
+      zh_Hans: "最多返回的问题数量（默认：50）"
+      pt_BR: "Número máximo de problemas a retornar (padrão: 50)"
+      ja_JP: "返す課題の最大数（デフォルト：50）"
+      zh_Hant: "最多返回的問題數量（默認：50）"
+    llm_description: "Maximum number of issues to return (default: 50)"
+    form: llm
+extra:
+  python:
+    source: tools/linear_get_user_issues.py
+    class: LinearGetUserIssuesTool 

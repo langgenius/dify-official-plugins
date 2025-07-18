@@ -1,0 +1,126 @@
+identity:
+  name: retrieve_records
+  author: langgenius
+  label:
+    en_US: "Retrieve Records"
+    zh_Hans: "检索记录"
+    pt_BR: "Recuperar Registros"
+    ja_JP: "レコード取得"
+description:
+  human:
+    en_US: "Retrieve one or multiple records from a NocoDB table with filtering, sorting, and pagination options"
+    zh_Hans: "从 NocoDB 表中检索单个或多个记录，支持过滤、排序和分页选项"
+    pt_BR: "Recuperar um ou múltiplos registros de uma tabela NocoDB com opções de filtragem, ordenação e paginação"
+    ja_JP: "フィルタリング、ソート、ページネーション オプションを使用して NocoDB テーブルから 1 つまたは複数のレコードを取得します"
+  llm: "Retrieves records from a NocoDB table. Can fetch a specific record by ID or multiple records with optional filtering, sorting, and pagination. Supports various query options including filters using NocoDB format, sorting by columns, field selection, and pagination controls."
+parameters:
+  - name: table_name
+    type: string
+    required: true
+    label:
+      en_US: "Table Name"
+      zh_Hans: "表名"
+      pt_BR: "Nome da Tabela"
+      ja_JP: "テーブル名"
+    human_description:
+      en_US: "Name of the NocoDB table to query"
+      zh_Hans: "要查询的 NocoDB 表名"
+      pt_BR: "Nome da tabela NocoDB para consultar"
+      ja_JP: "クエリする NocoDB テーブルの名前"
+    llm_description: "The name of the table to retrieve records from. Should match the exact table name in your NocoDB base."
+    form: llm
+  - name: row_id
+    type: string
+    required: false
+    label:
+      en_US: "Row ID"
+      zh_Hans: "行 ID"
+      pt_BR: "ID da Linha"
+      ja_JP: "行 ID"
+    human_description:
+      en_US: "Specific row ID to retrieve a single record (optional)"
+      zh_Hans: "检索单个记录的特定行 ID（可选）"
+      pt_BR: "ID específico da linha para recuperar um único registro (opcional)"
+      ja_JP: "単一のレコードを取得するための特定の行 ID（オプション）"
+    llm_description: "Optional. If provided, retrieves only the record with this specific ID. If not provided, retrieves multiple records based on other parameters."
+    form: llm
+  - name: filters
+    type: string
+    required: false
+    label:
+      en_US: "Filters"
+      zh_Hans: "过滤器"
+      pt_BR: "Filtros"
+      ja_JP: "フィルター"
+    human_description:
+      en_US: "Filter conditions in NocoDB format (optional)"
+      zh_Hans: "NocoDB 格式的过滤条件（可选）"
+      pt_BR: "Condições de filtro no formato NocoDB (opcional)"
+      ja_JP: "NocoDB 形式のフィルター条件（オプション）"
+    llm_description: "Optional filter conditions in NocoDB format. Use format like '(column,eq,value)' for single conditions or '(column1,eq,value1)~and(column2,gt,value2)' for multiple conditions. Operators include: eq, neq, gt, lt, gte, lte, like, nlike, empty, notempty."
+    form: llm
+  - name: limit
+    type: number
+    required: false
+    default: 10
+    label:
+      en_US: "Limit"
+      zh_Hans: "限制数量"
+      pt_BR: "Limite"
+      ja_JP: "制限"
+    human_description:
+      en_US: "Maximum number of records to return (default: 10)"
+      zh_Hans: "返回的最大记录数（默认：10）"
+      pt_BR: "Número máximo de registros a retornar (padrão: 10)"
+      ja_JP: "返す最大レコード数（デフォルト：10）"
+    llm_description: "Maximum number of records to return. Default is 10 if not specified."
+    form: llm
+  - name: offset
+    type: number
+    required: false
+    default: 0
+    label:
+      en_US: "Offset"
+      zh_Hans: "偏移量"
+      pt_BR: "Deslocamento"
+      ja_JP: "オフセット"
+    human_description:
+      en_US: "Number of records to skip for pagination (default: 0)"
+      zh_Hans: "分页时跳过的记录数（默认：0）"
+      pt_BR: "Número de registros para pular na paginação (padrão: 0)"
+      ja_JP: "ページネーションでスキップするレコード数（デフォルト：0）"
+    llm_description: "Number of records to skip for pagination. Default is 0 if not specified."
+    form: llm
+  - name: sort
+    type: string
+    required: false
+    label:
+      en_US: "Sort"
+      zh_Hans: "排序"
+      pt_BR: "Ordenação"
+      ja_JP: "ソート"
+    human_description:
+      en_US: "Column to sort by, use '-' prefix for descending order (optional)"
+      zh_Hans: "排序的列名，使用 '-' 前缀表示降序（可选）"
+      pt_BR: "Coluna para ordenar, use prefixo '-' para ordem decrescente (opcional)"
+      ja_JP: "ソートする列、降順の場合は '-' プレフィックスを使用（オプション）"
+    llm_description: "Column name to sort by. Use '-' prefix for descending order (e.g., '-created_at' for newest first). Leave empty for no sorting."
+    form: llm
+  - name: fields
+    type: string
+    required: false
+    label:
+      en_US: "Fields"
+      zh_Hans: "字段"
+      pt_BR: "Campos"
+      ja_JP: "フィールド"
+    human_description:
+      en_US: "Comma-separated list of fields to include in response (optional)"
+      zh_Hans: "要包含在响应中的字段列表，用逗号分隔（可选）"
+      pt_BR: "Lista de campos separados por vírgula para incluir na resposta (opcional)"
+      ja_JP: "レスポンスに含めるフィールドのカンマ区切りリスト（オプション）"
+    llm_description: "Comma-separated list of field names to include in the response. If not specified, all fields are returned."
+    form: llm
+extra:
+  python:
+    source: tools/retrieve_records.py 

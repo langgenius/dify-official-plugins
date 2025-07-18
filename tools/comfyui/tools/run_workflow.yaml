@@ -1,0 +1,64 @@
+description:
+  human:
+    en_US: Run ComfyUI workflow.
+    zh_Hans: 运行ComfyUI工作流。
+    ja_JP: ComfyUI ワークフローを実行
+  llm: Run ComfyUI workflow.
+extra:
+  python:
+    source: tools/run_workflow.py
+identity:
+  author: hjlarry
+  label:
+    en_US: Workflow
+    zh_Hans: 工作流
+    ja_JP: ワークフロー
+  name: workflow
+parameters:
+  - form: llm
+    human_description:
+      en_US: exported from ComfyUI workflow
+      zh_Hans: 从ComfyUI的工作流中导出
+      ja_JP: ComfyUI よりエクスポートされたワークフロー
+    label:
+      en_US: Workflow JSON
+      ja_JP: ワークフロー JSON
+    name: workflow_json
+    required: true
+    type: string
+  - form: llm
+    label:
+      en_US: Input Images
+      zh_Hans: 输入的图片
+    llm_description:
+      The input images, used to transfer to the comfyui workflow to generate
+      another image.
+    human_description:
+      en_US: The input images
+      zh_Hans: 输入的图片
+      ja_JP: 入力画像
+    name: images
+    type: files
+  - form: llm
+    human_description:
+      en_US:
+        When the workflow has multiple image nodes, enter the ID list of these
+        nodes, and the images will be passed to ComfyUI in the order of the list.
+      zh_Hans: 当工作流有多个图片节点时，输入这些节点的ID列表，图片将按列表顺序传给ComfyUI
+    label:
+      en_US: Image Node ID List
+      zh_Hans: 图片节点ID列表
+    name: image_ids
+    placeholder:
+      en_US: Use commas to separate multiple node ID
+      zh_Hans: 多个节点ID时使用半角逗号分隔
+    type: string
+
+  - name: randomize_seed
+    form: form
+    human_description:
+      en_US: If enabled, all the seeds in the workflow will be randomized.
+    label:
+      en_US: Randomize seeds
+    type: boolean
+    default: true

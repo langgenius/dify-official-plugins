@@ -1,0 +1,12 @@
+model: mistral-moderation-latest
+label:
+  zh_Hans: Mistral Moderation (Latest)
+  en_US: Mistral Moderation (Latest)
+model_type: moderation
+model_properties:
+  context_size: 8192
+  max_chunks: 1
+pricing:
+  input: '0.1'
+  unit: '0.000001'
+  currency: USD

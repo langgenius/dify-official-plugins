@@ -1,0 +1,41 @@
+version: 0.0.4
+type: plugin
+author: langgenius
+name: aihubmix
+label:
+  en_US: Aihubmix
+  ja_JP: Aihubmix
+  zh_Hans: Aihubmix
+  pt_BR: Aihubmix
+description:
+  en_US: 'One Gateway, Infinite Models；one-stop request: OpenAI, Claude, Gemini, DeepSeek, Qwen, and over 500 AI models.'
+  ja_JP: '1つのAPIで無限のAIモデルを利用可能。OpenAI、Claude、Gemini、DeepSeek、Qwenなど、500種類以上のAIモデルにワンストップでアクセス。'
+  zh_Hans: '一个接口，无限模型；一站式请求：OpenAI、Claude、Gemini、DeepSeek、Qwen等 500+AI 模型'
+  pt_BR: 'Um Gateway, Modelos Infinitos; solicitação única: OpenAI, Claude, Gemini, DeepSeek, Qwen e mais de 500 modelos de IA.'
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true
+      text_embedding: true
+      rerank: true
+      tts: true
+      speech2text: true
+      moderation: false
+plugins:
+  models:
+    - provider/aihubmix.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: null
+created_at: 2025-05-15T02:27:12.287187+08:00
+verified: false

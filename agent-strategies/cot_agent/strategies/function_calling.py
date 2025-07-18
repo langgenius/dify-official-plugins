@@ -5,6 +5,7 @@ from copy import deepcopy
 from typing import Any, Optional, cast
 
 from dify_plugin.entities.agent import AgentInvokeMessage
+from dify_plugin.entities.model import ModelFeature
 from dify_plugin.entities.model.llm import (
     LLMModelConfig,
     LLMResult,
@@ -15,14 +16,24 @@ from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
     PromptMessageContentType,
-    PromptMessageRole,
     SystemPromptMessage,
     ToolPromptMessage,
     UserPromptMessage,
 )
 from dify_plugin.entities.tool import LogMetadata, ToolInvokeMessage, ToolProviderType
-from dify_plugin.interfaces.agent import AgentModelConfig, AgentStrategy, ToolEntity
-from pydantic import BaseModel, Field
+from dify_plugin.interfaces.agent import (
+    AgentModelConfig,
+    AgentStrategy,
+    ToolEntity,
+    ToolInvokeMeta,
+)
+from pydantic import BaseModel
+
+
+class ContextItem(BaseModel):
+    content: str
+    title: str
+    metadata: dict[str, Any]
 
 
 class FunctionCallingParams(BaseModel):
@@ -31,75 +42,65 @@ class FunctionCallingParams(BaseModel):
     model: AgentModelConfig
     tools: list[ToolEntity] | None
     maximum_iterations: int = 3
-
-
-class ToolInvokeMeta(BaseModel):
-    """
-    Tool invoke meta
-    """
-
-    time_cost: float = Field(..., description="The time cost of the tool invoke")
-    error: Optional[str] = None
-    tool_config: Optional[dict] = None
-
-    @classmethod
-    def empty(cls) -> "ToolInvokeMeta":
-        """
-        Get an empty instance of ToolInvokeMeta
-        """
-        return cls(time_cost=0.0, error=None, tool_config={})
-
-    @classmethod
-    def error_instance(cls, error: str) -> "ToolInvokeMeta":
-        """
-        Get an instance of ToolInvokeMeta with error
-        """
-        return cls(time_cost=0.0, error=error, tool_config={})
-
-    def to_dict(self) -> dict:
-        return {
-            "time_cost": self.time_cost,
-            "error": self.error,
-            "tool_config": self.tool_config,
-        }
+    context: list[ContextItem] | None = None
 
 
 class FunctionCallingAgentStrategy(AgentStrategy):
-    def __init__(self, session):
-        super().__init__(session)
-        self.query = ""
+    query: str = ""
+    instruction: str | None = ""
 
-    def _invoke(self, parameters: dict[str, Any]) -> Generator[AgentInvokeMessage]:
+    @property
+    def _user_prompt_message(self) -> UserPromptMessage:
+        return UserPromptMessage(content=self.query)
+
+    @property
+    def _system_prompt_message(self) -> SystemPromptMessage:
+        return SystemPromptMessage(content=self.instruction)
+
+    def _invoke(
+        self, parameters: dict[str, Any]
+    ) -> Generator[AgentInvokeMessage, None, None]:
         """
         Run FunctionCall agent application
         """
         fc_params = FunctionCallingParams(**parameters)
+
+        # init prompt messages
         query = fc_params.query
         self.query = query
-        instruction = fc_params.instruction
-        init_prompt_messages = [
-            PromptMessage(role=PromptMessageRole.SYSTEM, content=instruction)
-        ]
+        self.instruction = fc_params.instruction
+        history_prompt_messages = fc_params.model.history_prompt_messages
+        history_prompt_messages.insert(0, self._system_prompt_message)
+        history_prompt_messages.append(self._user_prompt_message)
+
+        # convert tool messages
         tools = fc_params.tools
         tool_instances = {tool.identity.name: tool for tool in tools} if tools else {}
+        prompt_messages_tools = self._init_prompt_tools(tools)
+
+        # init model parameters
+        stream = (
+            ModelFeature.STREAM_TOOL_CALL in fc_params.model.entity.features
+            if fc_params.model.entity and fc_params.model.entity.features
+            else False
+        )
         model = fc_params.model
         stop = (
             fc_params.model.completion_params.get("stop", [])
             if fc_params.model.completion_params
             else []
         )
-        # convert tools into ModelRuntime Tool format
-        prompt_messages_tools = self._init_prompt_tools(tools)
 
+        # init function calling state
         iteration_step = 1
         max_iteration_steps = fc_params.maximum_iterations
         current_thoughts: list[PromptMessage] = []
-        # continue to run until there is not any tool call
-        function_call_state = True
+        function_call_state = True  # continue to run until there is not any tool call
         llm_usage: dict[str, Optional[LLMUsage]] = {"usage": None}
         final_answer = ""
 
         while function_call_state and iteration_step <= max_iteration_steps:
+            # start a new round
             function_call_state = False
             round_started_at = time.perf_counter()
             round_log = self.create_log_message(
@@ -111,16 +112,18 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                 status=ToolInvokeMessage.LogMessage.LogStatus.START,
             )
             yield round_log
-            if iteration_step == max_iteration_steps:
+
+            # If max_iteration_steps=1, need to execute tool calls
+            if iteration_step == max_iteration_steps and max_iteration_steps > 1:
                 # the last iteration, remove all tools
                 prompt_messages_tools = []
 
             # recalc llm max tokens
             prompt_messages = self._organize_prompt_messages(
-                history_prompt_messages=init_prompt_messages,
+                history_prompt_messages=history_prompt_messages,
                 current_thoughts=current_thoughts,
             )
-            if model.completion_params:
+            if model.entity and model.completion_params:
                 self.recalc_llm_max_tokens(
                     model.entity, prompt_messages, model.completion_params
                 )
@@ -137,12 +140,13 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                 status=ToolInvokeMessage.LogMessage.LogStatus.START,
             )
             yield model_log
+            model_config = LLMModelConfig(**model.model_dump(mode="json"))
             chunks: Generator[LLMResultChunk, None, None] | LLMResult = (
                 self.session.model.llm.invoke(
-                    model_config=LLMModelConfig(**model.model_dump(mode="json")),
+                    model_config=model_config,
                     prompt_messages=prompt_messages,
-                    stream=True,
                     stop=stop,
+                    stream=stream,
                     tools=prompt_messages_tools,
                 )
             )
@@ -192,6 +196,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
 
             else:
                 result = chunks
+                result = cast(LLMResult, result)
                 # check if there is any tool call
                 if self.check_blocking_tool_calls(result):
                     function_call_state = True
@@ -213,14 +218,21 @@ class FunctionCallingAgentStrategy(AgentStrategy):
 
                 if not result.message.content:
                     result.message.content = ""
+                if isinstance(result.message.content, str):
+                    yield self.create_text_message(result.message.content)
+                elif isinstance(result.message.content, list):
+                    for content in result.message.content:
+                        yield self.create_text_message(content.data)
+
             yield self.finish_log_message(
                 log=model_log,
                 data={
                     "output": response,
                     "tool_name": tool_call_names,
-                    "tool_input": {
-                        tool_call[1]: tool_call[2] for tool_call in tool_calls
-                    },
+                    "tool_input": [
+                        {"name": tool_call[1], "args": tool_call[2]}
+                        for tool_call in tool_calls
+                    ],
                 },
                 metadata={
                     LogMetadata.STARTED_AT: model_started_at,
@@ -238,29 +250,35 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     else 0,
                 },
             )
-            assistant_message = AssistantPromptMessage(content="", tool_calls=[])
-            if tool_calls:
-                assistant_message.tool_calls = [
-                    AssistantPromptMessage.ToolCall(
-                        id=tool_call[0],
-                        type="function",
-                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                            name=tool_call[1],
-                            arguments=json.dumps(tool_call[2], ensure_ascii=False),
-                        ),
-                    )
-                    for tool_call in tool_calls
-                ]
-            else:
-                assistant_message.content = response
 
-            current_thoughts.append(assistant_message)
+            if response.strip():
+                assistant_message = AssistantPromptMessage(
+                    content=response, tool_calls=[]
+                )
+                current_thoughts.append(assistant_message)
 
             final_answer += response + "\n"
 
             # call tools
             tool_responses = []
             for tool_call_id, tool_call_name, tool_call_args in tool_calls:
+                current_thoughts.append(
+                    AssistantPromptMessage(
+                        content="",
+                        tool_calls=[
+                            AssistantPromptMessage.ToolCall(
+                                id=tool_call_id,
+                                type="function",
+                                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                    name=tool_call_name,
+                                    arguments=json.dumps(
+                                        tool_call_args, ensure_ascii=False
+                                    ),
+                                ),
+                            )
+                        ],
+                    )
+                )
                 tool_instance = tool_instances[tool_call_name]
                 tool_call_started_at = time.perf_counter()
                 tool_call_log = self.create_log_message(
@@ -295,37 +313,94 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                 **tool_call_args,
                             },
                         )
-                        result = ""
-                        for response in tool_invoke_responses:
-                            if response.type == ToolInvokeMessage.MessageType.TEXT:
-                                result += cast(
-                                    ToolInvokeMessage.TextMessage, response.message
+                        tool_result = ""
+                        for tool_invoke_response in tool_invoke_responses:
+                            if (
+                                tool_invoke_response.type
+                                == ToolInvokeMessage.MessageType.TEXT
+                            ):
+                                tool_result += cast(
+                                    ToolInvokeMessage.TextMessage,
+                                    tool_invoke_response.message,
                                 ).text
-                            elif response.type == ToolInvokeMessage.MessageType.LINK:
-                                result += (
-                                    f"result link: {cast(ToolInvokeMessage.TextMessage, response.message).text}."
+                            elif (
+                                tool_invoke_response.type
+                                == ToolInvokeMessage.MessageType.LINK
+                            ):
+                                tool_result += (
+                                    "result link: "
+                                    + cast(
+                                        ToolInvokeMessage.TextMessage,
+                                        tool_invoke_response.message,
+                                    ).text
+                                    + "."
                                     + " please tell user to check it."
                                 )
-                            elif response.type in {
+                            elif tool_invoke_response.type in {
                                 ToolInvokeMessage.MessageType.IMAGE_LINK,
                                 ToolInvokeMessage.MessageType.IMAGE,
                             }:
-                                result += (
+                                # Extract the file path or URL from the message
+                                if hasattr(tool_invoke_response.message, "text"):
+                                    file_info = cast(
+                                        ToolInvokeMessage.TextMessage,
+                                        tool_invoke_response.message,
+                                    ).text
+                                    # Try to create a blob message with the file content
+                                    try:
+                                        # If it's a local file path, try to read it
+                                        if file_info.startswith("/files/"):
+                                            import os
+
+                                            if os.path.exists(file_info):
+                                                with open(file_info, "rb") as f:
+                                                    file_content = f.read()
+                                                # Create a blob message with the file content
+                                                blob_response = self.create_blob_message(
+                                                    blob=file_content,
+                                                    meta={
+                                                        "mime_type": "image/png",
+                                                        "filename": os.path.basename(
+                                                            file_info
+                                                        ),
+                                                    },
+                                                )
+                                                yield blob_response
+                                    except Exception as e:
+                                        yield self.create_text_message(
+                                            f"Failed to create blob message: {e}"
+                                        )
+                                tool_result += (
                                     "image has been created and sent to user already, "
                                     + "you do not need to create it, just tell the user to check it now."
                                 )
-                            elif response.type == ToolInvokeMessage.MessageType.JSON:
+                                # TODO: convert to agent invoke message
+                                yield tool_invoke_response
+                            elif (
+                                tool_invoke_response.type
+                                == ToolInvokeMessage.MessageType.JSON
+                            ):
                                 text = json.dumps(
                                     cast(
-                                        ToolInvokeMessage.JsonMessage, response.message
+                                        ToolInvokeMessage.JsonMessage,
+                                        tool_invoke_response.message,
                                     ).json_object,
                                     ensure_ascii=False,
                                 )
-                                result += f"tool response: {text}."
+                                tool_result += f"tool response: {text}."
+                            elif (
+                                tool_invoke_response.type
+                                == ToolInvokeMessage.MessageType.BLOB
+                            ):
+                                tool_result += "Generated file ... "
+                                # TODO: convert to agent invoke message
+                                yield tool_invoke_response
                             else:
-                                result += f"tool response: {response.message!r}."
+                                tool_result += (
+                                    f"tool response: {tool_invoke_response.message!r}."
+                                )
                     except Exception as e:
-                        result = f"tool invoke error: {str(e)}"
+                        tool_result = f"tool invoke error: {e!s}"
                     tool_response = {
                         "tool_call_id": tool_call_id,
                         "tool_call_name": tool_call_name,
@@ -333,7 +408,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                             **tool_instance.runtime_parameters,
                             **tool_call_args,
                         },
-                        "tool_response": result,
+                        "tool_response": tool_result,
                     }
 
                 yield self.finish_log_message(
@@ -358,6 +433,10 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                             name=tool_call_name,
                         )
                     )
+            # After handling all tool calls, insert a blank line so the next assistant thought
+            # appears on a new line in the user interface.
+            if tool_calls:
+                yield self.create_text_message("\n")
 
             # update prompt tool
             for prompt_tool in prompt_messages_tools:
@@ -387,7 +466,38 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     else 0,
                 },
             )
+            # If max_iteration_steps=1, need to return tool responses
+            if tool_responses and max_iteration_steps == 1:
+                for resp in tool_responses:
+                    yield self.create_text_message(str(resp["tool_response"]))
             iteration_step += 1
+
+        # If context is a list of dict, create retriever resource message
+        if isinstance(fc_params.context, list):
+            yield self.create_retriever_resource_message(
+                retriever_resources=[
+                    ToolInvokeMessage.RetrieverResourceMessage.RetrieverResource(
+                        content=ctx.content,
+                        position=ctx.metadata.get("position"),
+                        dataset_id=ctx.metadata.get("dataset_id"),
+                        dataset_name=ctx.metadata.get("dataset_name"),
+                        document_id=ctx.metadata.get("document_id"),
+                        document_name=ctx.metadata.get("document_name"),
+                        data_source_type=ctx.metadata.get("document_data_source_type"),
+                        segment_id=ctx.metadata.get("segment_id"),
+                        retriever_from=ctx.metadata.get("retriever_from"),
+                        score=ctx.metadata.get("score"),
+                        hit_count=ctx.metadata.get("segment_hit_count"),
+                        word_count=ctx.metadata.get("segment_word_count"),
+                        segment_position=ctx.metadata.get("segment_position"),
+                        index_node_hash=ctx.metadata.get("segment_index_node_hash"),
+                        page=ctx.metadata.get("page"),
+                        doc_metadata=ctx.metadata.get("doc_metadata"),
+                    )
+                    for ctx in fc_params.context
+                ],
+                context="",
+            )
 
         yield self.create_json_message(
             {
@@ -487,17 +597,6 @@ class FunctionCallingAgentStrategy(AgentStrategy):
 
         return prompt_messages or []
 
-    def _organize_user_query(
-        self, query: str, prompt_messages: list[PromptMessage]
-    ) -> list[PromptMessage]:
-        """
-        Organize user query
-        """
-
-        prompt_messages.append(UserPromptMessage(content=query))
-
-        return prompt_messages
-
     def _clear_user_prompt_image_messages(
         self, prompt_messages: list[PromptMessage]
     ) -> list[PromptMessage]:
@@ -529,15 +628,8 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         current_thoughts: list[PromptMessage],
         history_prompt_messages: list[PromptMessage],
     ) -> list[PromptMessage]:
-        prompt_template = ""
-        history_prompt_messages = self._init_system_message(
-            prompt_template, history_prompt_messages
-        )
-        query_prompt_messages = self._organize_user_query(self.query or "", [])
-
         prompt_messages = [
             *history_prompt_messages,
-            *query_prompt_messages,
             *current_thoughts,
         ]
         if len(current_thoughts) != 0:

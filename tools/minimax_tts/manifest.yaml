@@ -1,0 +1,33 @@
+author: langgenius
+created_at: '2025-05-25T00:00:00Z'
+description:
+  en_US: TTS tools provided by Minimax.
+  zh_Hans: Minimax 提供的 TTS 工具。
+icon: minimax_tts.png
+label:
+  en_US: "Minimax TTS "
+  zh_Hans: "Minimax TTS "
+meta:
+  arch:
+    - amd64
+    - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: '3.12'
+  version: 0.0.1
+  minimum_dify_version: 1.3.1
+name: minimax_tts_tool
+plugins:
+  tools:
+    - provider/minimax_tts.yaml
+resource:
+  memory: 268435456  # 降低内存使用到 256MB
+  permission:
+    tool:
+      enabled: true
+tags:
+  - utilities
+type: plugin
+version: 0.0.1
+privacy: PRIVACY.md 

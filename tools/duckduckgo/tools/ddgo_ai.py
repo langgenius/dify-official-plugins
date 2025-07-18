@@ -18,5 +18,6 @@ class DuckDuckGoAITool(Tool):
             "keywords": tool_parameters.get("query"),
             "model": tool_parameters.get("model"),
         }
-        response = DDGS().chat(**query_dict)
+        proxy = tool_parameters.get("proxy_server", None)
+        response = DDGS(proxy=proxy).chat(**query_dict) if proxy else DDGS().chat(**query_dict)
         yield self.create_text_message(text=response)

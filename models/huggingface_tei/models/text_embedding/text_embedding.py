@@ -25,6 +25,9 @@ from dify_plugin.errors.model import (
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from models.helper import TeiHelper
 
+DEFAULT_MAX_RETRIES = 3
+DEFAULT_INVOKE_TIMEOUT = 60
+
 
 class HuggingfaceTeiTextEmbeddingModel(TextEmbeddingModel):
     """
@@ -57,8 +60,10 @@ class HuggingfaceTeiTextEmbeddingModel(TextEmbeddingModel):
         """
         server_url = credentials["server_url"]
         server_url = server_url.removesuffix("/")
+        max_retries = int(credentials.get("max_retries") or DEFAULT_MAX_RETRIES)
+        invoke_timeout = int(credentials.get("invoke_timeout") or DEFAULT_INVOKE_TIMEOUT)
         headers = {"Content-Type": "application/json"}
-        api_key = credentials["api_key"]
+        api_key = credentials.get("api_key")
         if api_key:
             headers["Authorization"] = f"Bearer {api_key}"
         context_size = self._get_context_size(model, credentials)
@@ -66,41 +71,28 @@ class HuggingfaceTeiTextEmbeddingModel(TextEmbeddingModel):
         inputs = []
         indices = []
         used_tokens = 0
-        batched_tokenize_result = TeiHelper.invoke_tokenize(server_url, texts, headers)
-        for i, (text, tokenize_result) in enumerate(
-            zip(texts, batched_tokenize_result)
-        ):
-            num_tokens = len(tokenize_result)
+        
+        # Use GPT2 tokenizer instead of server's /tokenize endpoint
+        for i, text in enumerate(texts):
+            num_tokens = self._get_num_tokens_by_gpt2(text)
             if num_tokens >= context_size:
-                pre_special_token_count = 0
-                for token in tokenize_result:
-                    if token["special"]:
-                        pre_special_token_count += 1
-                    else:
-                        break
-                rest_special_token_count = (
-                    len([token for token in tokenize_result if token["special"]])
-                    - pre_special_token_count
-                )
-                token_cutoff = context_size - rest_special_token_count - 20
-                cutpoint_token = tokenize_result[token_cutoff]
-                cutoff = cutpoint_token["start"]
+                # If text is too long, truncate it based on character length ratio
+                cutoff = int(len(text) * (context_size / num_tokens))
                 inputs.append(text[0:cutoff])
             else:
                 inputs.append(text)
             indices += [i]
+            used_tokens += num_tokens
+            
         batched_embeddings = []
         _iter = range(0, len(inputs), max_chunks)
         try:
-            used_tokens = 0
             for i in _iter:
                 iter_texts = inputs[i : i + max_chunks]
-                results = TeiHelper.invoke_embeddings(server_url, iter_texts, headers)
+                results = TeiHelper.invoke_embeddings(server_url, iter_texts, headers, invoke_timeout, max_retries)
                 embeddings = results["data"]
                 embeddings = [embedding["embedding"] for embedding in embeddings]
                 batched_embeddings.extend(embeddings)
-                usage = results["usage"]
-                used_tokens += usage["total_tokens"]
         except RuntimeError as e:
             raise InvokeServerUnavailableError(str(e))
         usage = self._calc_response_usage(
@@ -113,20 +105,16 @@ class HuggingfaceTeiTextEmbeddingModel(TextEmbeddingModel):
 
     def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
         """
-        Get number of tokens for given prompt messages
+        Get number of tokens for given prompt messages using GPT2 tokenizer
 
         :param model: model name
         :param credentials: model credentials
         :param texts: texts to embed
-        :return:
+        :return: list of token counts
         """
         tokens = []
-        server_url = credentials["server_url"]
-        server_url = server_url.removesuffix("/")
-        headers = {"Authorization": f"Bearer {credentials.get('api_key')}"}
-        batch_tokens = TeiHelper.invoke_tokenize(server_url, texts, headers)
-        for token in batch_tokens:
-            tokens.append(len(token))
+        for text in texts:
+            tokens.append(self._get_num_tokens_by_gpt2(text))
         return tokens
 
     def validate_credentials(self, model: str, credentials: dict) -> None:

@@ -64,15 +64,17 @@ class S3Operator(Tool):
 
             else:  # read operation
                 # Get object from S3
-                response = self.s3_client.get_object(Bucket=bucket, Key=key)
-                result = response["Body"].read().decode("utf-8")
-
-                # Generate presigned URL if requested
                 if generate_presign_url:
+                    # Generate presigned URL if requested
                     result = self.s3_client.generate_presigned_url(
                         "get_object", Params={"Bucket": bucket, "Key": key}, ExpiresIn=presign_expiry
                     )
+                else: 
+                    # Only for text
+                    response = self.s3_client.get_object(Bucket=bucket, Key=key)
+                    result = response["Body"].read().decode("utf-8")
 
+                # Generate presigned URL if requested
             yield self.create_text_message(text=result)
 
         except self.s3_client.exceptions.NoSuchBucket:

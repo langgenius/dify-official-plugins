@@ -1,0 +1,107 @@
+identity:
+  name: linear_create_issue
+  author: langgenius
+  label:
+    en_US: Create Linear Issue
+    zh_Hans: 创建 Linear 问题
+    pt_BR: Criar problema no Linear
+    ja_JP: Linear 課題を作成
+    zh_Hant: 創建 Linear 問題
+description:
+  human:
+    en_US: Create a new issue in Linear with specified title, description, team, priority, and status.
+    zh_Hans: 在 Linear 中创建一个具有指定标题、描述、团队、优先级和状态的新问题。
+    pt_BR: Criar um novo problema no Linear com título, descrição, equipe, prioridade e status especificados.
+    ja_JP: 指定されたタイトル、説明、チーム、優先度、ステータスを持つ新しい課題を Linear に作成します。
+    zh_Hant: 在 Linear 中創建一個具有指定標題、描述、團隊、優先級和狀態的新問題。
+  llm: Creates a new Linear issue with specified details. Required fields are title and teamId, with optional description, priority (0-4, where 0 is no priority and 1 is urgent), and status.
+parameters:
+  - name: title
+    type: string
+    required: true
+    label:
+      en_US: Title
+      zh_Hans: 标题
+      pt_BR: Título
+      ja_JP: タイトル
+      zh_Hant: 標題
+    human_description:
+      en_US: Title of the issue to create
+      zh_Hans: 要创建的问题的标题
+      pt_BR: Título do problema a ser criado
+      ja_JP: 作成する課題のタイトル
+      zh_Hant: 要創建的問題的標題
+    llm_description: Title of the issue to create in Linear
+    form: llm
+  - name: teamId
+    type: string
+    required: true
+    label:
+      en_US: Team ID
+      zh_Hans: 团队 ID
+      pt_BR: ID da Equipe
+      ja_JP: チームID
+      zh_Hant: 團隊 ID
+    human_description:
+      en_US: ID of the team this issue belongs to
+      zh_Hans: 此问题所属的团队的 ID
+      pt_BR: ID da equipe a qual este problema pertence
+      ja_JP: この課題が所属するチームのID
+      zh_Hant: 此問題所屬的團隊的 ID
+    llm_description: The unique identifier of the team in Linear where this issue should be created
+    form: llm
+  - name: description
+    type: string
+    required: false
+    label:
+      en_US: Description
+      zh_Hans: 描述
+      pt_BR: Descrição
+      ja_JP: 説明
+      zh_Hant: 描述
+    human_description:
+      en_US: Detailed description of the issue (Markdown supported)
+      zh_Hans: 问题的详细描述（支持 Markdown）
+      pt_BR: Descrição detalhada do problema (Markdown suportado)
+      ja_JP: 課題の詳細な説明（Markdown対応）
+      zh_Hant: 問題的詳細描述（支持 Markdown）
+    llm_description: A detailed description of the issue, supporting Markdown formatting
+    form: llm
+  - name: priority
+    type: number
+    required: false
+    label:
+      en_US: Priority
+      zh_Hans: 优先级
+      pt_BR: Prioridade
+      ja_JP: 優先度
+      zh_Hant: 優先級
+    human_description:
+      en_US: Priority of the issue (0-4, where 0 is no priority and 1 is urgent)
+      zh_Hans: 问题的优先级（0-4，其中 0 表示无优先级，1 表示紧急）
+      pt_BR: Prioridade do problema (0-4, onde 0 é sem prioridade e 1 é urgente)
+      ja_JP: 課題の優先度（0-4、0は優先度なし、1は緊急）
+      zh_Hant: 問題的優先級（0-4，其中 0 表示無優先級，1 表示緊急）
+    llm_description: The priority level of the issue (0=No priority, 1=Urgent, 2=High, 3=Normal, 4=Low)
+    form: llm
+  - name: status
+    type: string
+    required: false
+    label:
+      en_US: Status
+      zh_Hans: 状态
+      pt_BR: Status
+      ja_JP: ステータス
+      zh_Hant: 狀態
+    human_description:
+      en_US: "Status of the issue (e.g., \"Todo\", \"In Progress\", \"Done\")"
+      zh_Hans: "问题的状态（例如，\"待办\"，\"进行中\"，\"已完成\"）"
+      pt_BR: "Status do problema (ex: \"A fazer\", \"Em andamento\", \"Concluído\")"
+      ja_JP: "課題のステータス（例：「未着手」、「進行中」、「完了」）"
+      zh_Hant: "問題的狀態（例如，\"待辦\"，\"進行中\"，\"已完成\"）"
+    llm_description: The workflow state ID of the issue
+    form: llm
+extra:
+  python:
+    source: tools/linear_create_issue.py
+    class: LinearCreateIssueTool 

@@ -14,20 +14,82 @@ from dify_plugin.errors.model import (
 from dify_plugin.interfaces.model.rerank_model import RerankModel
 
 
+def base_rerank(model: str,
+                credentials: dict,
+                query: str,
+                docs: list[str],
+                score_threshold: Optional[float] = None,
+                top_n: Optional[int] = None,
+                user: Optional[str] = None, ):
+    base_url = credentials.get("base_url", "https://ai.gitee.com/v1")
+    base_url = base_url.removesuffix("/") + "/rerank"
+    try:
+        body = {"model": model, "query": query, "documents": docs}
+        if top_n is not None:
+            body["top_n"] = top_n
+        response = httpx.post(
+            base_url,
+            json=body,
+            headers={"Authorization": f"Bearer {credentials.get('api_key')}"},
+        )
+        response.raise_for_status()
+        results = response.json()
+        rerank_documents = []
+        for result in results["results"]:
+            rerank_document = RerankDocument(
+                index=result["index"], text=result["document"]["text"], score=result["relevance_score"]
+            )
+            if score_threshold is None or result["relevance_score"] >= score_threshold:
+                rerank_documents.append(rerank_document)
+        return RerankResult(model=model, docs=rerank_documents)
+    except httpx.HTTPStatusError as e:
+        raise InvokeServerUnavailableError(str(e))
+
+
+def multi_modal_rerank(model, credentials, query, docs, score_threshold, top_n, user):
+    base_url = credentials.get("base_url", "https://ai.gitee.com/v1")
+    base_url = base_url.removesuffix("/") + "/rerank/multimodal"
+    try:
+        # we should convert ["A", "B"] to [{"text": "A"}, {"text": "B"}]
+        documents = [{"text": item} for item in docs]
+        body = {"model": model, "query": {"text": query}, "documents": documents, "return_documents": True}
+        response = httpx.post(
+            base_url,
+            json=body,
+            headers={"Authorization": f"Bearer {credentials.get('api_key')}"},
+        )
+        response.raise_for_status()
+        results = response.json()
+        rerank_documents = []
+        for result in results:
+            index = int(result["index"]) - 1
+            rerank_document = RerankDocument(
+                index=index, text=result["document"]["text"], score=result["score"]
+            )
+            if score_threshold is None or result["score"] >= score_threshold:
+                rerank_documents.append(rerank_document)
+        return RerankResult(model=model, docs=rerank_documents)
+    except httpx.HTTPStatusError as e:
+        raise InvokeServerUnavailableError(str(e))
+
+
 class GiteeAIRerankModel(RerankModel):
+    # multiModals
+    multiModalModels = ['jina-reranker-m0']
+
     """
     Model class for rerank model.
     """
 
     def _invoke(
-        self,
-        model: str,
-        credentials: dict,
-        query: str,
-        docs: list[str],
-        score_threshold: Optional[float] = None,
-        top_n: Optional[int] = None,
-        user: Optional[str] = None,
+            self,
+            model: str,
+            credentials: dict,
+            query: str,
+            docs: list[str],
+            score_threshold: Optional[float] = None,
+            top_n: Optional[int] = None,
+            user: Optional[str] = None,
     ) -> RerankResult:
         """
         Invoke rerank model
@@ -43,29 +105,28 @@ class GiteeAIRerankModel(RerankModel):
         """
         if len(docs) == 0:
             return RerankResult(model=model, docs=[])
-        base_url = credentials.get("base_url", "https://ai.gitee.com/api/serverless")
-        base_url = base_url.removesuffix("/")
-        try:
-            body = {"model": model, "query": query, "documents": docs}
-            if top_n is not None:
-                body["top_n"] = top_n
-            response = httpx.post(
-                f"{base_url}/{model}/rerank",
-                json=body,
-                headers={"Authorization": f"Bearer {credentials.get('api_key')}"},
+
+        # use multi_modal_rerank if the model is multi-modal
+        if model in GiteeAIRerankModel.multiModalModels:
+            return multi_modal_rerank(
+                model=model,
+                credentials=credentials,
+                query=query,
+                docs=docs,
+                score_threshold=score_threshold,
+                top_n=top_n,
+                user=user,
             )
-            response.raise_for_status()
-            results = response.json()
-            rerank_documents = []
-            for result in results["results"]:
-                rerank_document = RerankDocument(
-                    index=result["index"], text=result["document"]["text"], score=result["relevance_score"]
-                )
-                if score_threshold is None or result["relevance_score"] >= score_threshold:
-                    rerank_documents.append(rerank_document)
-            return RerankResult(model=model, docs=rerank_documents)
-        except httpx.HTTPStatusError as e:
-            raise InvokeServerUnavailableError(str(e))
+        else:
+            return base_rerank(
+                model=model,
+                credentials=credentials,
+                query=query,
+                docs=docs,
+                score_threshold=score_threshold,
+                top_n=top_n,
+                user=user,
+            )
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """

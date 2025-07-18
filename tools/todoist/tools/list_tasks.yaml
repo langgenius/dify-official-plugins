@@ -1,0 +1,26 @@
+identity:
+  name: list_tasks
+  author: laboratory
+  label:
+    en_US: List Tasks
+    zh_Hans: 列出任务
+description:
+  human:
+    en_US: List all tasks in a Todoist project
+    zh_Hans: 列出 Todoist 项目中的所有任务
+  llm: Lists all tasks from a specified Todoist project. Returns task details including content, priority, due date, and completion status.
+parameters:
+  - name: project_id
+    type: string
+    required: true
+    label:
+      en_US: Project ID
+      zh_Hans: 项目 ID
+    human_description:
+      en_US: The ID of the project to list tasks from (optional)
+      zh_Hans: 要列出任务的项目 ID
+    llm_description: The ID of the project to list tasks from. If not provided, will list all tasks from all projects.
+    form: llm
+extra:
+  python:
+    source: tools/list_tasks.py

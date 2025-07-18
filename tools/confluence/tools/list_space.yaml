@@ -1,0 +1,14 @@
+identity:
+  name: list_space
+  author: langgenius
+  label:
+    en_US: List Confluence Spaces
+    zh_Hans: 列出 Confluence 空间
+description:
+  human:
+    en_US: Lists all Confluence spaces accessible to the user.
+    zh_Hans: 列出用户可访问的所有 Confluence 空间。
+  llm: Retrieves a list of all Confluence spaces that the authenticated user has permission to view. Returns a list of space summaries including ID, key, name, and type.
+extra:
+  python:
+    source: tools/list_space.py

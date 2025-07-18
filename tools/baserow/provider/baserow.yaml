@@ -1,0 +1,54 @@
+identity:
+  author: langgenius
+  name: baserow
+  label:
+    en_US: Baserow
+    zh_Hans: Baserow
+    pt_BR: Baserow
+  description:
+    en_US: Baserow is an open-source online database tool
+    zh_Hans: Baserow 是一个开源的在线数据库工具
+    pt_BR: Baserow é uma ferramenta de banco de dados online de código aberto
+  icon: icon.png
+credentials_for_provider:
+  token:
+    type: secret-input
+    required: true
+    label:
+      en_US: API Token
+      zh_Hans: API 令牌
+      pt_BR: Token da API
+    placeholder:
+      en_US: Enter your Baserow API token
+      zh_Hans: 输入您的 Baserow API 令牌
+      pt_BR: Digite seu token da API do Baserow
+    help:
+      en_US: Get your Baserow API token from Dashboard -> My Settings -> Database tokens.
+      zh_Hans: 从 Dashboard -> My Settings -> Database tokens 获取您的 Baserow API 令牌。
+      pt_BR: Obtenha seu token da API do Baserow em Dashboard -> My Settings -> Database tokens.
+    url: https://baserow.io/dashboard
+  url:
+    type: text-input
+    required: true
+    label:
+      en_US: API URL
+      zh_Hans: API 网址
+      pt_BR: URL da API
+    placeholder:
+      en_US: https://api.baserow.io
+      zh_Hans: https://api.baserow.io
+      pt_BR: https://api.baserow.io
+    help:
+      en_US: The Baserow API URL is the URL of your Baserow instance. If you are using the official service, it is https://api.baserow.io.
+      zh_Hans: Baserow API 地址为您的 Baserow 实例的 URL。如果您使用的是官方服务，则为 https://api.baserow.io。
+      pt_BR: A URL da API do Baserow é o URL da sua instância do Baserow. Se você estiver usando o serviço oficial, é https://api.baserow.io.
+    url: https://baserow.io/dashboard
+tools:
+  - tools/get_tables.yaml
+  - tools/get_rows.yaml
+  - tools/get_a_row.yaml
+  - tools/create_a_row.yaml
+  - tools/update_a_row.yaml
+extra:
+  python:
+    source: provider/baserow.py

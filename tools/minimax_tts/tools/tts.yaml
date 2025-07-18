@@ -1,0 +1,80 @@
+identity:
+  name: text_to_voice
+  author: devin
+  label:
+    en_US: Text to Voice
+    zh_Hans: 文本转语音
+description:
+  human:
+    en_US: Convert text to natural-sounding speech using Minimax TTS
+    zh_Hans: 使用 Minimax TTS 将文本转换为自然流畅的语音
+  llm: Convert text to natural-sounding speech using Minimax TTS
+parameters:
+ - name: text
+   type: string
+   required: true
+   label:
+       en_US: Text
+       zh_Hans: 文本
+   human_description:
+       en_US: Text content to synthesize into speech
+       zh_Hans: 需要转换为语音的文本内容
+   form: llm
+ - name: voice_id
+   type: string
+   required: false
+   label:
+       en_US: Voice ID
+       zh_Hans: 音色ID
+   human_description:
+       en_US: Voice model ID (see Minimax documentation for details)
+       zh_Hans: 音色ID（详见Minimax文档）
+   form: form
+   default: male-qn-qingse
+ - name: model
+   type: string
+   required: false
+   label:
+       en_US: Model
+       zh_Hans: 模型
+   human_description:
+       en_US: TTS model name (e.g. speech-02-hd)
+       zh_Hans: TTS模型名称（如 speech-02-hd）
+   form: form
+   default: speech-02-hd
+ - name: language_boost
+   type: string
+   required: false
+   label:
+       en_US: Language Boost
+       zh_Hans: 语言增强
+   human_description:
+       en_US: Language Boost (e.g. auto)
+       zh_Hans: 语言增强（如 auto）
+   form: form
+   default: auto
+ - name: emotion
+   type: string
+   required: false
+   label:
+       en_US: Emotion
+       zh_Hans: 情感
+   human_description:
+       en_US: Emotion (e.g. happy, sad, neutral)
+       zh_Hans: 情感（如 happy, sad, neutral）
+   form: form
+   default: happy
+ - name: vol
+   type: number
+   required: false
+   label:
+       en_US: Volume
+       zh_Hans: 音量
+   human_description:
+       en_US: Volume (e.g. 1)
+       zh_Hans: 音量（如 1）
+   form: form
+   default: 1
+extra:
+  python:
+    source: tools/tts.py 

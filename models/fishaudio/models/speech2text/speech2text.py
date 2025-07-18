@@ -4,8 +4,7 @@ from dify_plugin import Speech2TextModel
 import httpx
 from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeBadRequestError, InvokeError
 
-from ..common_fishaudio import FishAudio
-
+from fish_audio_sdk import Session, ASRRequest
 
 class FishAudioSpeech2TextModel(Speech2TextModel):
     """
@@ -52,10 +51,12 @@ class FishAudioSpeech2TextModel(Speech2TextModel):
         """
         api_key = credentials.get("api_key")
         api_base= credentials.get("api_base")
-
-        client = FishAudio(api_key=api_key, url_base=api_base)
-
-        return client.asr(file.read())
+        request = ASRRequest(
+            audio=file.read(),
+            ignore_timestamps=False
+        )
+        session = Session(api_key, base_url=api_base)
+        return session.asr(request).text
 
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:

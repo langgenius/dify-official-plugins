@@ -1,0 +1,38 @@
+identity:
+  name: delete_file
+  author: langgenius
+  label:
+    en_US: Delete File/Folder
+    ja_JP: ファイル/フォルダ削除
+    zh_Hans: 删除文件/文件夹
+    pt_BR: Excluir Arquivo/Pasta
+    zh_Hant: 刪除檔案/資料夾
+description:
+  human:
+    en_US: Delete a file or folder from NextCloud
+    ja_JP: NextCloud からファイルまたはフォルダを削除します
+    zh_Hans: 从 NextCloud 删除文件或文件夹
+    pt_BR: Excluir um arquivo ou pasta do NextCloud
+    zh_Hant: 從 NextCloud 刪除檔案或資料夾
+  llm: Permanently deletes a file or folder from NextCloud at the specified path. This action cannot be undone. Returns confirmation of the deletion.
+parameters:
+  - name: file_path
+    type: string
+    required: true
+    label:
+      en_US: File/Folder Path
+      ja_JP: ファイル/フォルダパス
+      zh_Hans: 文件/文件夹路径
+      pt_BR: Caminho do Arquivo/Pasta
+      zh_Hant: 檔案/資料夾路徑
+    human_description:
+      en_US: The full path to the file or folder to delete (e.g. /Documents/old_file.txt)
+      ja_JP: 削除するファイルまたはフォルダへの完全なパス（例 /Documents/old_file.txt）
+      zh_Hans: 要删除的文件或文件夹的完整路径（例如 /Documents/old_file.txt）
+      pt_BR: O caminho completo para o arquivo ou pasta a ser excluído (ex /Documents/old_file.txt)
+      zh_Hant: 要刪除的檔案或資料夾的完整路徑（例如 /Documents/old_file.txt）
+    llm_description: The complete path to the file or folder to delete. Must start with "/" and be case-sensitive. WARNING This operation permanently deletes the item and cannot be undone.
+    form: llm
+extra:
+  python:
+    source: tools/delete_file.py 

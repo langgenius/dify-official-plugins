@@ -1,0 +1,145 @@
+description:
+  human:
+    en_US: Upscale images with high fidelity using the Clarity Upscaler model.
+    zh_Hans: 使用 Clarity Upscaler 模型以高保真度提升图像分辨率。
+  llm: Upscale images with high fidelity using the Clarity Upscaler model.
+extra:
+  python:
+    source: tools/clarity_upscaler.py
+identity:
+  author: Kalo Chin
+  icon: icon.svg
+  label:
+    en_US: Clarity Upscaler
+    zh_Hans: Clarity Upscaler
+  name: clarity_upscaler
+parameters:
+- form: llm
+  human_description:
+    en_US: Upload an image file to upscale. Supports common image formats like jpeg, png, etc.
+    zh_Hans: 上传要提升分辨率的图像文件。支持常见图像格式如jpeg、png等。
+  label:
+    en_US: Image File
+    zh_Hans: 图像文件
+  llm_description: Image file to upscale. Supported formats include jpeg, png, etc.
+  name: image_file
+  required: false
+  type: file
+- form: llm
+  human_description:
+    en_US: URL of the image to upscale if you don't want to upload a file.
+    zh_Hans: 如果不想上传文件，可以提供要提升分辨率的图像URL。
+  label:
+    en_US: Image URL
+    zh_Hans: 图像URL
+  llm_description: URL of the image to upscale. Can be used instead of uploading a file.
+  name: image_url
+  required: false
+  type: string
+- default: "masterpiece, best quality, highres"
+  form: llm
+  human_description:
+    en_US: The prompt to guide image upscaling. Be as descriptive as possible for best results.
+    zh_Hans: 指导图像提升的提示词。尽可能详细描述以获得最佳效果。
+  label:
+    en_US: Prompt
+    zh_Hans: 提示词
+  llm_description: The prompt to use for generating the upscaled image. Be as descriptive as possible for best results.
+  name: prompt
+  required: false
+  type: string
+- default: 2
+  form: llm
+  human_description:
+    en_US: The factor by which to upscale the image.
+    zh_Hans: 图像放大的倍数。
+  label:
+    en_US: Upscale Factor
+    zh_Hans: 放大倍数
+  llm_description: The factor by which to upscale the image.
+  name: upscale_factor
+  required: false
+  type: number
+- default: "(worst quality, low quality, normal quality:2)"
+  form: llm
+  human_description:
+    en_US: The negative prompt to address details you don't want in the image.
+    zh_Hans: 负面提示词，用于指定您不希望在图像中出现的细节。
+  label:
+    en_US: Negative Prompt
+    zh_Hans: 负面提示词
+  llm_description: The negative prompt to use. Specify details that you don't want in the upscaled image.
+  name: negative_prompt
+  required: false
+  type: string
+- default: 0.35
+  form: llm
+  human_description:
+    en_US: The creativity level. Higher values allow the model to deviate more from the prompt.
+    zh_Hans: 创造力水平。较高的值允许模型更多地偏离提示词。
+  label:
+    en_US: Creativity
+    zh_Hans: 创造力
+  llm_description: The creativity level of the model (denoise strength). Higher values allow the model to deviate more from the prompt.
+  name: creativity
+  required: false
+  type: number
+- default: 0.6
+  form: llm
+  human_description:
+    en_US: The resemblance to the original image. Higher values make the model try to keep the original image.
+    zh_Hans: 与原始图像的相似度。较高的值使模型尝试保持原始图像的特征。
+  label:
+    en_US: Resemblance
+    zh_Hans: 相似度
+  llm_description: The resemblance of the upscaled image to the original image (ControlNet strength). Higher values make the model try to preserve the original image more.
+  name: resemblance
+  required: false
+  type: number
+- default: 4
+  form: llm
+  human_description:
+    en_US: The CFG scale. Controls how closely the model sticks to your prompt.
+    zh_Hans: CFG 比例。控制模型与提示词的贴合程度。
+  label:
+    en_US: Guidance Scale
+    zh_Hans: 引导比例
+  llm_description: The Classifier Free Guidance (CFG) scale. Controls how closely the model sticks to your prompt.
+  name: guidance_scale
+  required: false
+  type: number
+- default: 18
+  form: llm
+  human_description:
+    en_US: The number of inference steps to perform.
+    zh_Hans: 执行的推理步骤数量。
+  label:
+    en_US: Inference Steps
+    zh_Hans: 推理步骤
+  llm_description: The number of inference steps to perform. Higher values may improve quality but increase processing time.
+  name: num_inference_steps
+  required: false
+  type: number
+- form: llm
+  human_description:
+    en_US: The random seed for deterministic generation. Same seed with same parameters produces same result.
+    zh_Hans: 用于确定性生成的随机种子。相同的种子和参数会产生相同的结果。
+  label:
+    en_US: Seed
+    zh_Hans: 种子
+  llm_description: The random seed for deterministic generation. Same seed with same parameters produces same result.
+  name: seed
+  required: false
+  type: number
+- default: true
+  form: form
+  human_description:
+    en_US: Whether to enable the safety checker.
+    zh_Hans: 是否启用安全检查器。
+  label:
+    en_US: Enable Safety Checker
+    zh_Hans: 启用安全检查器
+  llm_description: If set to false, the safety checker will be disabled.
+  name: enable_safety_checker
+  required: false
+  type: boolean

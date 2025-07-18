@@ -1,0 +1,38 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: sqlite
+label:
+  en_US: SQLite
+  ja_JP: SQLite
+  zh_Hans: SQLite
+  pt_BR: SQLite
+  zh_Hant: SQLite
+description:
+  en_US: Universal SQLite database tool for AI agents to query and manage databases. Supports local files, cloud databases, and in-memory databases with comprehensive SQL operations.
+  ja_JP: AI エージェントがデータベースをクエリして管理するための汎用 SQLite データベースツール。ローカルファイル、クラウドデータベース、メモリデータベースをサポートし、包括的な SQL 操作を提供します。
+  zh_Hans: AI 代理查询和管理数据库的通用 SQLite 数据库工具。支持本地文件、云数据库和内存数据库，提供全面的 SQL 操作。
+  pt_BR: Ferramenta universal de banco de dados SQLite para agentes de IA consultarem e gerenciarem bancos de dados. Suporta arquivos locais, bancos de dados em nuvem e bancos de dados em memória com operações SQL abrangentes。
+  zh_Hant: AI 代理查詢和管理資料庫的通用 SQLite 資料庫工具。支援本地檔案、雲端資料庫和記憶體資料庫，提供全面的 SQL 操作。
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+plugins:
+  tools:
+    - provider/sqlite_plugin.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: null
+created_at: 2025-07-09T23:21:55.508726+09:00
+privacy: PRIVACY.md
+verified: true

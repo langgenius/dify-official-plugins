@@ -1,0 +1,33 @@
+version: 0.0.2
+type: plugin
+author: langgenius
+name: outlook
+label:
+  en_US: outlook (client credential flow)
+  ja_JP: outlook (client credential flow)
+  zh_Hans: outlook (client credential flow)
+  pt_BR: outlook (client credential flow)
+description:
+  en_US: Dify's integration with Microsoft Outlook that can help you read, send, list, delete Outlook Email.
+  ja_JP: Dify's integration with Microsoft Outlook that can help you read, send, list, delete Outlook Email.
+  zh_Hans: Dify's integration with Microsoft Outlook that can help you read, send, list, delete Outlook Email.
+  pt_BR: Dify's integration with Microsoft Outlook that can help you read, send, list, delete Outlook Email.
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission: {}
+plugins:
+  tools:
+    - provider/outlook.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+created_at: 2025-06-03T17:15:02.022093+08:00
+privacy: PRIVACY.md
+verified: false

@@ -55,4 +55,5 @@ class WolframAlphaTool(Tool):
                     result = response_data["queryresult"]["pods"][0]["subpods"][0]["plaintext"]
         if not finished or not result:
             yield self.create_text_message("No result found")
-        yield self.create_text_message(result)
+        else:
+            yield self.create_text_message(str(result))

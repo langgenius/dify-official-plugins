@@ -1,0 +1,38 @@
+model: ai21
+label:
+  en_US: AI21 Labs
+icon: icon_s_en.svg
+model_type: llm
+model_properties:
+  mode: completion
+  context_size: 256000
+parameter_rules:
+  - name: model_name
+    label:
+      zh_Hans: Bedrock 模型
+      en_US: Bedrock Model
+    type: string
+    help:
+      zh_Hans: 指定模型名称
+      en_US: specify model name
+    required: true
+    default: Jamba 1.5 Large
+    options:
+      - Jamba 1.5 Mini
+      - Jamba 1.5 Large
+
+  - name: temperature
+    use_template: temperature
+    default: 1
+    min: 0.0
+    max: 2.0
+
+  - name: top_p
+    use_template: top_p
+
+  - name: max_gen_len
+    use_template: max_tokens
+    required: true
+    default: 4096
+    min: 1
+    max: 4096

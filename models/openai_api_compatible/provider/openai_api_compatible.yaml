@@ -23,6 +23,15 @@ model_credential_schema:
       en_US: Enter full model name
       zh_Hans: 输入模型全称
   credential_form_schemas:
+    - variable: display_name
+      label:
+        en_US: Model display name
+        zh_Hans: 模型显示名称
+      type: text-input
+      required: false
+      placeholder:
+        zh_Hans: 模型在界面的显示名称
+        en_US: The display name of the model in the interface.
     - variable: api_key
       label:
         en_US: API Key
@@ -192,6 +201,24 @@ model_credential_schema:
             en_US: Support
             zh_Hans: 支持
         - value: no_support
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+    - variable: structured_output_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Structured Output
+      type: select
+      required: false
+      default: not_supported
+      options:
+        - value: supported
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: not_supported
           label:
             en_US: Not Support
             zh_Hans: 不支持

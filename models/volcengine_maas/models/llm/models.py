@@ -1,6 +1,7 @@
 from dify_plugin.entities.model import ModelFeature
 from dify_plugin.entities.model.llm import LLMMode
 from pydantic import BaseModel
+from volcenginesdkarkruntime.types.chat.completion_create_params import Thinking
 
 
 class ModelProperties(BaseModel):
@@ -15,21 +16,61 @@ class ModelConfig(BaseModel):
 
 
 configs: dict[str, ModelConfig] = {
+    "Doubao-Seed-1.6": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=16384, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+    ),
+    "Doubao-Seed-1.6-flash": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=16384, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+    ),
+    "Doubao-Seed-1.6-thinking": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=16384, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+    ),
+    "Doubao-1.5-thinking-vision-pro": ModelConfig(
+        properties=ModelProperties(context_size=131072, max_tokens=16384, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO],
+    ),
+    "Doubao-1.5-UI-TARS": ModelConfig(
+        properties=ModelProperties(context_size=32768, max_tokens=4096, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION],
+    ),
+    "Doubao-1.5-vision-lite": ModelConfig(
+        properties=ModelProperties(context_size=65536, max_tokens=16384, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION],
+    ),
+    "Doubao-1.5-vision-pro": ModelConfig(
+        properties=ModelProperties(context_size=131072, max_tokens=16384, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO],
+    ),
+    "Doubao-1.5-thinking-pro": ModelConfig(
+        properties=ModelProperties(context_size=131072, max_tokens=16384, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+    ),
+    "Doubao-1.5-thinking-pro-m": ModelConfig(
+        properties=ModelProperties(context_size=131072, max_tokens=16384, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+    ),
     "DeepSeek-R1-Distill-Qwen-32B": ModelConfig(
-        properties=ModelProperties(context_size=64000, max_tokens=8192, mode=LLMMode.CHAT),
+        properties=ModelProperties(context_size=65536, max_tokens=8192, mode=LLMMode.CHAT),
         features=[ModelFeature.AGENT_THOUGHT],
     ),
     "DeepSeek-R1-Distill-Qwen-7B": ModelConfig(
-        properties=ModelProperties(context_size=64000, max_tokens=8192, mode=LLMMode.CHAT),
+        properties=ModelProperties(context_size=65536, max_tokens=8192, mode=LLMMode.CHAT),
         features=[ModelFeature.AGENT_THOUGHT],
     ),
     "DeepSeek-R1": ModelConfig(
-        properties=ModelProperties(context_size=64000, max_tokens=8192, mode=LLMMode.CHAT),
-        features=[ModelFeature.AGENT_THOUGHT],
+        properties=ModelProperties(context_size=65536, max_tokens=16384, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
     ),
     "DeepSeek-V3": ModelConfig(
-        properties=ModelProperties(context_size=64000, max_tokens=8192, mode=LLMMode.CHAT),
-        features=[ModelFeature.AGENT_THOUGHT],
+        properties=ModelProperties(context_size=128000, max_tokens=16384, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
     ),
     "Doubao-1.5-vision-pro-32k": ModelConfig(
         properties=ModelProperties(context_size=32768, max_tokens=12288, mode=LLMMode.CHAT),
@@ -37,11 +78,11 @@ configs: dict[str, ModelConfig] = {
     ),
     "Doubao-1.5-pro-32k": ModelConfig(
         properties=ModelProperties(context_size=32768, max_tokens=12288, mode=LLMMode.CHAT),
-        features=[ModelFeature.AGENT_THOUGHT],
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
     ),
     "Doubao-1.5-lite-32k": ModelConfig(
         properties=ModelProperties(context_size=32768, max_tokens=12288, mode=LLMMode.CHAT),
-        features=[ModelFeature.AGENT_THOUGHT],
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
     ),
     "Doubao-1.5-pro-256k": ModelConfig(
         properties=ModelProperties(context_size=262144, max_tokens=12288, mode=LLMMode.CHAT),
@@ -69,7 +110,7 @@ configs: dict[str, ModelConfig] = {
     ),
     "Doubao-pro-32k": ModelConfig(
         properties=ModelProperties(context_size=32768, max_tokens=4096, mode=LLMMode.CHAT),
-        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL],
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
     ),
     "Doubao-lite-32k": ModelConfig(
         properties=ModelProperties(context_size=32768, max_tokens=4096, mode=LLMMode.CHAT),
@@ -161,6 +202,11 @@ def get_v2_req_params(credentials: dict, model_parameters: dict, stop: list[str]
         req_params["frequency_penalty"] = model_parameters.get("frequency_penalty")
     if stop:
         req_params["stop"] = stop
+    if model_parameters.get("skip_moderation"):
+        req_params["skip_moderation"] = model_parameters.get("skip_moderation")
+    if model_parameters.get("thinking"):
+        thinking: Thinking = {"type": model_parameters["thinking"]}
+        req_params["thinking"] = thinking
     return req_params
 
 
@@ -181,4 +227,9 @@ def get_v3_req_params(credentials: dict, model_parameters: dict, stop: list[str]
         req_params["frequency_penalty"] = model_parameters.get("frequency_penalty")
     if stop:
         req_params["stop"] = stop
+    if model_parameters.get("skip_moderation"):
+        req_params["skip_moderation"] = model_parameters.get("skip_moderation")
+    if model_parameters.get("thinking"):
+        thinking: Thinking = {"type": model_parameters["thinking"]}
+        req_params["thinking"] = thinking
     return req_params

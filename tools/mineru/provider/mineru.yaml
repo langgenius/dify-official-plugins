@@ -1,0 +1,67 @@
+credentials_for_provider:
+  base_url:
+    label:
+      en_US: Base URL
+      ja_JP: MinerUのBase URL
+      zh_Hans: MinerU服务的Base URL
+    placeholder:
+      en_US: Please input your MinerU server's Base URL
+      ja_JP: MinerUサーバのBase URLを入力してください
+      zh_Hans: 请输入你的 MinerU 服务的 Base URL
+    required: true
+    type: text-input
+  token:
+    label:
+      en_US: Token
+      ja_JP: トークン
+      zh_Hans: 令牌
+    placeholder:
+      en_US: Please input your MinerU server's token
+      ja_JP: MinerUサーバのトークンを入力してください
+      zh_Hans: 请输入你的 MinerU 服务的令牌
+    required: false
+    type: secret-input
+    url: https://mineru.net/apiManage/token
+  server_type:
+    label:
+      en_US: Server Type
+      ja_JP: サーバータイプ
+      zh_Hans: 服务类型
+    placeholder:
+      en_US: Please select MinerU service type, local deployment or official API
+      ja_JP: MinerUサービスのタイプを選択してください、ローカルデプロイまたは公式API
+      zh_Hans: 请选择MinerU服务类型,本地部署或官方API
+    required: true
+    type: select
+    options:
+      - value: local
+        label:
+          en_US: Local Deployment
+          ja_JP: ローカルデプロイ
+          zh_Hans: 本地部署
+      - value: remote
+        label:
+          en_US: MinerU Official API
+          ja_JP: MinerU公式API
+          zh_Hans: MinerU官方API
+
+identity:
+  author: langgenius
+  name: mineru
+  label:
+    en_US: MinerU
+    zh_Hans: MinerU
+    ja_JP: MinerU
+  description:
+    en_US: MinerU is a tool that converts FILES into machine-readable formats (e.g., markdown, JSON), allowing for easy extraction into any format. MinerU was born during the pre-training process of InternLM. We focus on solving symbol conversion issues in scientific literature and hope to contribute to technological development in the era of large models.https://github.com/opendatalab/MinerU
+    ja_JP: MinerU は、FILES を機械可読な形式（例えば、マークダウン、JSON）に変換するツールで、どんな形式にも簡単に抽出することができます。MinerU は InternLM の事前トレーニングプロセス中に生まれました。私たちは科学文献における記号変換の問題を解決することに集中し、大規模モデルの時代における技術開発に貢献することを目指しています。https://github.com/opendatalab/MinerU
+    zh_Hans: MinerU是一款可以在本地部署的将FILES转化为机器可读格式的工具（如markdown、json），可以很方便地抽取为任意格式。MinerU诞生于书生-浦语的预训练过程中，我们将会集中精力解决科技文献中的符号转化问题，希望在大模型时代为科技发展做出贡献。https://github.com/opendatalab/MinerU
+  icon: icon.svg
+
+extra:
+  python:
+    source: provider/mineru.py
+
+tools:
+- tools/parse.yaml
+

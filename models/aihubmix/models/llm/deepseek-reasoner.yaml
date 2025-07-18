@@ -1,0 +1,20 @@
+model: deepseek-reasoner
+label:
+  en_US: deepseek-reasoner
+model_type: llm
+features:
+  - agent-thought
+model_properties:
+  mode: chat
+  context_size: 128000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    min: 1
+    max: 8192
+    default: 4096
+pricing:
+  input: "0.60"
+  output: "2.40"
+  unit: "0.000001"
+  currency: USD

@@ -1,0 +1,172 @@
+description:
+  human:
+    en_US: Azure OpenAI Image Edit (gpt-image-1) is a tool to modify one or more images based on a prompt, generating a single edited result.
+    pt_BR: Azure OpenAI Image Edit (gpt-image-1) é uma ferramenta para modificar uma ou mais imagens com base em um prompt, gerando um único resultado editado.
+    zh_Hans: Azure OpenAI Image Edit (gpt-image-1) 是一个工具，可根据提示词修改一张或多张图像，生成单个编辑结果。
+  llm: A tool to edit one or more images using OpenAI's gpt-image-1 model, combining them based on a prompt to generate a single edited result.
+extra:
+  python:
+    source: tools/image_edit.py
+identity:
+  author: langgenius
+  description:
+    en_US: Edits one or more images based on a prompt using the Azure OpenAI Image model, generating a single combined result. Optionally use a mask for inpainting.
+    pt_BR: Edita uma ou mais imagens com base em um prompt usando o modelo Azure OpenAI Image, gerando um único resultado combinado. Opcionalmente, use uma máscara para inpainting.
+    zh_Hans: 使用 Azure OpenAI Image 模型根据提示词编辑一张或多张图像，生成单个组合结果。可选择使用蒙版进行图像修复。
+  label:
+    en_US: Azure OpenAI Image Edit
+    pt_BR: Azure OpenAI Image Edit
+    zh_Hans: Azure OpenAI 图像编辑
+  name: image_edit
+parameters:
+  - form: llm
+    human_description:
+      en_US: A text description of how to edit and combine the input image(s) (max 32000 chars).
+      pt_BR: Uma descrição em texto de como editar e combinar a(s) imagem(ns) de entrada (máx 32000 chars).
+      zh_Hans: 如何编辑和组合输入图像的文本描述（最多 32000 字符）。
+    label:
+      en_US: Prompt
+      pt_BR: Prompt
+      zh_Hans: 提示词
+    llm_description: A detailed text description of how the input images should be edited and combined into the final result.
+    name: prompt
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: One or more images to edit (PNG, JPEG, or WebP, each <25MB).
+      pt_BR: Uma ou mais imagens para editar (PNG, JPEG ou WebP, cada uma <25MB).
+      zh_Hans: 要编辑的一张或多张图像（PNG、JPEG 或 WebP，每张小于 25MB）。
+    label:
+      en_US: Image(s)
+      pt_BR: Imagem(ns)
+      zh_Hans: 图像
+    name: image
+    required: true
+    type: files
+    mime_types: [ "image/png", "image/jpeg" ]
+  - form: llm
+    human_description:
+      en_US: Optional mask (PNG, <4MB, same size as image) where transparent areas indicate where to edit.
+      pt_BR: Máscara opcional (PNG, <4MB, mesmo tamanho da imagem) onde áreas transparentes indicam onde editar.
+      zh_Hans: 可选蒙版（PNG，小于 4MB，与图像大小相同），透明区域指示编辑位置。
+    label:
+      en_US: Mask (Optional)
+      pt_BR: Máscara (Opcional)
+      zh_Hans: 蒙版（可选）
+    name: mask
+    required: false
+    type: file
+    mime_types: [ "image/png" ]
+  - default: "1024x1024"
+    form: form
+    human_description:
+      en_US: Select the image size
+      pt_BR: Selecione o tamanho da imagem
+      zh_Hans: 选择图像大小
+    label:
+      en_US: Image size
+      pt_BR: Tamanho da imagem
+      zh_Hans: 图像大小
+    name: size
+    options:
+      - label:
+          en_US: Square (1024x1024)
+          pt_BR: Quadrado (1024x1024)
+          zh_Hans: 方形 (1024x1024)
+        value: "1024x1024"
+      - label:
+          en_US: Portrait (1024x1536)
+          pt_BR: Retrato (1024x1536)
+          zh_Hans: 竖屏/肖像 (1024x1536)
+        value: "1024x1536"
+      - label:
+          en_US: Landscape (1536x1024)
+          pt_BR: Paisagem (1536x1024)
+          zh_Hans: 横屏/风景 (1536x1024)
+        value: "1536x1024"
+    required: false
+    type: select
+  - default: 1
+    form: form
+    human_description:
+      en_US: Number of images to generate (Must be less than 10).
+      pt_BR: Número de imagens a gerar (Deve ser menor que 10).
+      zh_Hans: 要生成的图像数量（必须小于 10）。
+    label:
+      en_US: Number of images
+      pt_BR: Número de imagens
+      zh_Hans: 图像数量
+    max: 10
+    min: 1
+    name: n
+    required: false
+    type: number
+  - default: high
+    form: form
+    human_description:
+      en_US: Select the image quality
+      pt_BR: Selecione a qualidade da imagem
+      zh_Hans: 选择图像质量
+    label:
+      en_US: Image quality
+      pt_BR: Qualidade da imagem
+      zh_Hans: 图像质量
+    name: quality
+    options:
+      - label:
+          en_US: Low
+          pt_BR: Baixa
+          zh_Hans: 低
+        value: low
+      - label:
+          en_US: Medium
+          pt_BR: Média
+          zh_Hans: 中
+        value: medium
+      - label:
+          en_US: High
+          pt_BR: Alta
+          zh_Hans: 高
+        value: high
+    required: false
+    type: select
+  - default: png
+    form: form
+    human_description:
+      en_US: Select the output image format.
+      pt_BR: Selecione o formato da imagem de saída.
+      zh_Hans: 选择输出图像格式。
+    label:
+      en_US: Output Format
+      pt_BR: Formato de Saída
+      zh_Hans: 输出格式
+    name: output_format
+    options:
+      - label:
+          en_US: PNG
+          pt_BR: PNG
+          zh_Hans: PNG
+        value: png
+      - label:
+          en_US: JPEG
+          pt_BR: JPEG
+          zh_Hans: JPEG
+        value: jpeg
+    required: false
+    type: select
+  - default: 100
+    form: form
+    human_description:
+      en_US: Set compression level (0-100) for JPEG/WebP formats.
+      pt_BR: Defina o nível de compressão (0-100) para formatos JPEG/WebP.
+      zh_Hans: 设置 JPEG/WebP 格式的压缩级别（0-100）。
+    label:
+      en_US: Output Compression
+      pt_BR: Compressão de Saída
+      zh_Hans: 输出压缩
+    name: output_compression
+    max: 100
+    min: 0
+    required: false
+    type: number

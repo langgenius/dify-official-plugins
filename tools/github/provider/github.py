@@ -7,7 +7,7 @@ class GithubProvider(ToolProvider):
     def _validate_credentials(self, credentials: dict) -> None:
         try:
             if "access_tokens" not in credentials or not credentials.get("access_tokens"):
-                raise ToolProviderCredentialValidationError("Github API Access Tokens is required.")
+                raise ToolProviderCredentialValidationError("GitHub API Access Tokens is required.")
             if "api_version" not in credentials or not credentials.get("api_version"):
                 api_version = "2022-11-28"
             else:
@@ -24,6 +24,6 @@ class GithubProvider(ToolProvider):
                 if response.status_code != 200:
                     raise ToolProviderCredentialValidationError(response.json().get("message"))
             except Exception as e:
-                raise ToolProviderCredentialValidationError("Github API Key and Api Version is invalid. {}".format(e))
+                raise ToolProviderCredentialValidationError("GitHub API Key and Api Version is invalid. {}".format(e))
         except Exception as e:
             raise ToolProviderCredentialValidationError(str(e))

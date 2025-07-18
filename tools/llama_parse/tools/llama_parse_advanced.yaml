@@ -1,0 +1,128 @@
+identity:
+  name: llama_parse_advanced
+  author: langgenius
+  label:
+    en_US: Llama Parse Advanced (LLM Mode)
+    zh_Hans: Llama Parse 高级版 (LLM模式)
+description:
+  human:
+    en_US: Advanced document parsing tool using LlamaIndex's LLM mode with features like target pages, max pages, system prompt, and user prompt. Supports parsing text, tables, and images from PDF, PPTX, DOCX, and other formats with enhanced LLM-powered layout reconstruction.
+    zh_Hans: 使用LlamaIndex LLM模式的高级文档解析工具，具有目标页面、最大页面数、系统提示和用户提示等功能。支持从PDF、PPTX、DOCX等格式解析文本、表格和图像，具有增强的LLM驱动的布局重建功能。
+  llm: Advanced document parsing tool using LlamaIndex's LLM mode with features like target pages, max pages, system prompt, and user prompt. Supports parsing text, tables, and images from PDF, PPTX, DOCX, and other formats with enhanced LLM-powered layout reconstruction.
+parameters:
+  - name: files
+    type: files
+    required: true
+    label:
+      en_US: upload file
+      zh_Hans: 上传文件
+    human_description:
+      en_US: upload the file to be parsed
+      zh_Hans: 上传用于解析的文件
+    llm_description: upload the file to be parsed
+    form: llm
+  - name: result_type
+    type: select
+    required: false
+    default: markdown
+    label:
+      en_US: result form type
+      zh_Hans: 结果格式类型
+    human_description:
+      en_US: the type of the result
+      zh_Hans: 选择结果的格式类型
+    options:
+      - label:
+          en_US: txt
+          zh_Hans: txt
+        value: text
+      - label:
+          en_US: md
+          zh_Hans: md
+        value: markdown
+    llm_description: the type of the result
+    form: form
+  - name: num_workers
+    type: number
+    required: false
+    default: 4
+    llm_description: the number of workers
+    label:
+      en_US: number of workers
+      zh_Hans: 工作线程数
+    human_description:
+      en_US: if multiple files passed, split in `num_workers` API calls
+      zh_Hans: 如果传递了多个文件，则在`num_workers` API调用中拆分
+    form: form
+  - name: verbose
+    type: boolean
+    required: false
+    default: false
+    llm_description: whether to output the verbose information
+    label:
+      en_US: verbose
+      zh_Hans: 详情
+    human_description:
+      en_US: whether to output the verbose information
+      zh_Hans: 是否输出详细信息
+    form: form
+  - name: language
+    type: string
+    required: false
+    default: en
+    llm_description: the language of the output file
+    label:
+      en_US: language
+      zh_Hans: 语言
+    human_description:
+      en_US: Optionally you can define a language, default=en
+      zh_Hans: 可选地，您可以定义一种语言，默认=en
+    form: form
+  - name: target_pages
+    type: string
+    required: false
+    llm_description: specific pages to parse (comma-separated, starting from 0)
+    label:
+      en_US: target pages
+      zh_Hans: 目标页面
+    human_description:
+      en_US: Specify which pages to parse (e.g., "0,2,7"). Page numbering starts at 0. Leave empty to parse all pages.
+      zh_Hans: 指定要解析的页面（例如："0,2,7"）。页面编号从0开始。留空以解析所有页面。
+    form: form
+  - name: max_pages
+    type: number
+    required: false
+    llm_description: maximum number of pages to parse
+    label:
+      en_US: max pages
+      zh_Hans: 最大页面数
+    human_description:
+      en_US: Maximum number of pages to parse from the document
+      zh_Hans: 从文档中解析的最大页面数
+    form: form
+  - name: system_prompt
+    type: string
+    required: false
+    llm_description: custom system prompt to override default LlamaParse behavior
+    label:
+      en_US: system prompt
+      zh_Hans: 系统提示
+    human_description:
+      en_US: Override the default system prompt. Be careful as this may impact formatting correction and table extraction.
+      zh_Hans: 覆盖默认系统提示。请谨慎使用，因为这可能会影响格式校正和表格提取。
+    form: form
+  - name: user_prompt
+    type: string
+    required: false
+    llm_description: custom user prompt to transform or modify the content
+    label:
+      en_US: user prompt
+      zh_Hans: 用户提示
+    human_description:
+      en_US: Custom prompt to transform or modify the parsed content (e.g., "If output is not in english, translate it in english.")
+      zh_Hans: 用于转换或修改解析内容的自定义提示.例如："如果输出不是英文，请翻译成英文。"
+    form: form
+
+extra:
+  python:
+    source: tools/llama_parse_advanced.py 

@@ -1,0 +1,151 @@
+model: speech-01-turbo
+model_type: tts
+model_properties:
+  default_voice: 'male-qn-qingse'
+  voices:
+    - name: "青涩青年音色"
+      mode: "male-qn-qingse"
+      language: ['zh-Hans']
+    - name: "精英青年音色"
+      mode: "male-qn-jingying"
+      language: ['zh-Hans']
+    - name: "霸道青年音色"
+      mode: "male-qn-badao"
+      language: ['zh-Hans']
+    - name: "青年大学生音色"
+      mode: "male-qn-daxuesheng"
+      language: ['zh-Hans']
+    - name: "少女音色"
+      mode: "female-shaonv"
+      language: ['zh-Hans']
+    - name: "御姐音色"
+      mode: "female-yujie"
+      language: ['zh-Hans']
+    - name: "成熟女性音色"
+      mode: "female-chengshu"
+      language: ['zh-Hans']
+    - name: "甜美女性音色"
+      mode: "female-tianmei"
+      language: ['zh-Hans']
+    - name: "男性主持人"
+      mode: "presenter_male"
+      language: ['zh-Hans']
+    - name: "女性主持人"
+      mode: "presenter_female"
+      language: ['zh-Hans']
+    - name: "男性有声书1"
+      mode: "audiobook_male_1"
+      language: ['zh-Hans']
+    - name: "男性有声书2"
+      mode: "audiobook_male_2"
+      language: ['zh-Hans']
+    - name: "女性有声书1"
+      mode: "audiobook_female_1"
+      language: ['zh-Hans']
+    - name: "女性有声书2"
+      mode: "audiobook_female_2"
+      language: ['zh-Hans']
+    - name: "青涩青年音色(精品版)"
+      mode: "male-qn-qingse-jingpin"
+      language: ['zh-Hans']
+    - name: "精英青年音色(精品版)"
+      mode: "male-qn-jingying-jingpin"
+      language: ['zh-Hans']
+    - name: "霸道青年音色(精品版)"
+      mode: "male-qn-badao-jingpin"
+      language: ['zh-Hans']
+    - name: "青年大学生音色(精品版)"
+      mode: "male-qn-daxuesheng-jingpin"
+      language: ['zh-Hans']
+    - name: "少女音色(精品版)"
+      mode: "female-shaonv-jingpin"
+      language: ['zh-Hans']
+    - name: "御姐音色(精品版)"
+      mode: "female-yujie-jingpin"
+      language: ['zh-Hans']
+    - name: "成熟女性音色(精品版)"
+      mode: "female-chengshu-jingpin"
+      language: ['zh-Hans']
+    - name: "甜美女性音色(精品版)"
+      mode: "female-tianmei-jingpin"
+      language: ['zh-Hans']
+    - name: "聪明男童"
+      mode: "clever_boy"
+      language: ['zh-Hans']
+    - name: "可爱男童"
+      mode: "cute_boy"
+      language: ['zh-Hans']
+    - name: "萌萌女童"
+      mode: "lovely_girl"
+      language: ['zh-Hans']
+    - name: "卡通猪小琪"
+      mode: "cartoon_pig"
+      language: ['zh-Hans']
+    - name: "病娇弟弟"
+      mode: "bingjiao_didi"
+      language: ['zh-Hans']
+    - name: "俊朗男友"
+      mode: "junlang_nanyou"
+      language: ['zh-Hans']
+    - name: "纯真学弟"
+      mode: "chunzhen_xuedi"
+      language: ['zh-Hans']
+    - name: "冷淡学长"
+      mode: "lengdan_xiongzhang"
+      language: ['zh-Hans']
+    - name: "霸道少爷"
+      mode: "badao_shaoye"
+      language: ['zh-Hans']
+    - name: "甜心小玲"
+      mode: "tianxin_xiaoling"
+      language: ['zh-Hans']
+    - name: "俏皮萌妹"
+      mode: "qiaopi_mengmei"
+      language: ['zh-Hans']
+    - name: "妩媚御姐"
+      mode: "wumei_yujie"
+      language: ['zh-Hans']
+    - name: "嗲嗲学妹"
+      mode: "diadia_xuemei"
+      language: ['zh-Hans']
+    - name: "淡雅学姐"
+      mode: "danya_xuejie"
+      language: ['zh-Hans']
+    - name: "Santa Claus"
+      mode: "Santa_Claus"
+      language: ['en-US']
+    - name: "Grinch"
+      mode: "Grinch"
+      language: ['en-US']
+    - name: "Rudolph"
+      mode: "Rudolph"
+      language: ['en-US']
+    - name: "Arnold"
+      mode: "Arnold"
+      language: ['en-US']
+    - name: "Charming Santa"
+      mode: "Charming_Santa"
+      language: ['en-US']
+    - name: "Charming Lady"
+      mode: "Charming_Lady"
+      language: ['en-US']
+    - name: "Sweet Girl"
+      mode: "Sweet_Girl"
+      language: ['en-US']
+    - name: "Cute Elf"
+      mode: "Cute_Elf"
+      language: ['en-US']
+    - name: "Attractive Girl"
+      mode: "Attractive_Girl"
+      language: ['en-US']
+    - name: "Serene Woman"
+      mode: "Serene_Woman"
+      language: ['en-US']
+  word_limit: 8000
+  audio_type: 'mp3'
+  max_workers: 5
+pricing:
+  input: '1'
+  output: '0'
+  unit: '0.0001'
+  currency: RMB

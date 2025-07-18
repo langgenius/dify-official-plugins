@@ -1,0 +1,174 @@
+identity:
+  name: parse-file
+  author: langgenius
+  label:
+    en_US: Parse File
+    zh_Hans: Parse File
+    ja_JP: Parse File
+description:
+  human:
+    en_US: a tool for parsing text, tables, and images, supporting multiple formats such as pdf, pptx, docx, etc. supporting multiple languages such as English, Chinese, etc.
+    zh_Hans: 一个用于解析文本，表格和图片的工具，支持pdf,pptx,docx等多种格式。支持英语，中文等多种语言
+    ja_JP: テキスト、テーブル、画像を解析するツールです。pdf、pptx、docxなどの複数の形式をサポートしています。英語、中国語などの複数の言語をサポートしています。
+  llm: a tool for parsing text, tables, and images, supporting multiple formats such as pdf, pptx, docx, etc. supporting multiple languages such as English, Chinese, etc.
+parameters:
+  - name: file
+    type: file
+    required: true
+    label:
+      en_US: file
+      zh_Hans: file
+      ja_JP: file
+    human_description:
+      en_US:  the file to be parsed(support pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
+      zh_Hans: 用于解析的文件(支持 pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
+      ja_JP: 解析するファイル(pdf、ppt、pptx、doc、docx、png、jpg、jpegをサポート)
+    llm_description: the file to be parsed (support pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
+    form: llm
+  - name: parse_method
+    type: select
+    required: false
+    default: auto
+    label:
+      en_US: parse method
+      zh_Hans: 解析方法
+      ja_JP: 解析方法
+    human_description:
+      en_US: (For local deployment service)Parsing method, can be auto, ocr, or txt. Default is auto. If results are not satisfactory, try ocr
+      zh_Hans: （用于本地部署服务）解析方法，可以是auto, ocr, 或 txt。默认是auto。如果结果不理想，请尝试ocr
+      ja_JP: （ローカルデプロイメントサービス用）解析方法は、auto、ocr、またはtxtのいずれかです。デフォルトはautoです。結果が満足できない場合は、ocrを試してください
+    llm_description: Parsing method, can be auto, ocr, or txt. Default is auto. If results are not satisfactory, try ocr
+    form: form
+    options:
+      - value: auto
+        label:
+          en_US: auto
+          zh_Hans: auto
+          ja_JP: auto
+      - value: ocr
+        label:
+          en_US: ocr
+          zh_Hans: ocr
+          ja_JP: ocr
+      - value: txt
+        label:
+          en_US: txt
+          zh_Hans: txt
+          ja_JP: txt
+    placeholder:
+      en_US: Please select a parse method
+      zh_Hans: 请选择解析方法
+      ja_JP: 解析方法を選択してください
+  - name: enable_formula
+    type: boolean
+    required: false
+    default: true
+    label:
+      zh_Hans: 开启公式识别
+      en_US: Enable formula recognition
+      ja_JP: 数式認識を有効にする
+    human_description:
+      zh_Hans: （用于官方API）是否开启公式识别
+      en_US: (For official API) Whether to enable formula recognition
+      ja_JP: （公式API用）数式認識を有効にするかどうか
+    llm_description: (For official API) Whether to enable formula recognition
+    form: form
+  - name: enable_table
+    type: boolean
+    required: false
+    default: true
+    label:
+      zh_Hans: 开启表格识别
+      en_US: Enable table recognition
+      ja_JP: 表認識を有効にする
+    human_description:
+      zh_Hans: （用于官方API）是否开启表格识别
+      en_US: (For official API) Whether to enable table recognition
+      ja_JP: （公式API用）表認識を有効にするかどうか
+    llm_description: (For official API) Whether to enable table recognition
+    form: form
+  - name: layout_model
+    type: select
+    required: false
+    default: doclayout_yolo
+    label:
+      en_US: Layout model
+      zh_Hans: 布局检测模型
+      ja_JP: レイアウト検出モデル
+    human_description:
+      zh_Hans: "（用于官方API）可选值：doclayout_yolo、layoutlmv3，默认值为 doclayout_yolo。doclayout_yolo 为自研模型，效果更好"
+      en_US: "(For official API) Optional values: doclayout_yolo, layoutlmv3, default value is doclayout_yolo. doclayout_yolo is a self-developed model with better effect"
+      ja_JP: "（公式API用）オプション値：doclayout_yolo、layoutlmv3、デフォルト値は doclayout_yolo。doclayout_yolo は自己開発モデルで、効果がより良い"
+    llm_description: "(For official API) Optional values: doclayout_yolo, layoutlmv3, default value is doclayout_yolo. doclayout_yolo is a self-developed model withbetter effect"
+    form: form
+    options:
+      - value: doclayout_yolo
+        label:
+          en_US: doclayout_yolo
+          zh_Hans: doclayout_yolo
+          ja_JP: doclayout_yolo
+      - value: layoutlmv3
+        label:
+          en_US: layoutlmv3
+          zh_Hans: layoutlmv3
+          ja_JP: layoutlmv3
+  - name: language
+    type: string
+    required: false
+    default: auto
+    label:
+      zh_Hans: 文档语言
+      en_US: Document language
+      ja_JP: ドキュメント言語
+    human_description:
+      zh_Hans: "（用于官方API）指定文档语言，默认 ch，可以设置为auto，当为auto时模型会自动识别文档语言，其他可选值列表详见：https://paddlepaddle.github.io/PaddleOCR/latest/ppocr/blog/multi_languages.html#5"
+      en_US: "(For official API) Specify document language, default ch, can be set to auto, when auto, the model will automatically identify document language, other optional value list see: https://paddlepaddle.github.io/PaddleOCR/latest/ppocr/blog/multi_languages.html#5"
+      ja_JP: "（公式API用）ドキュメント言語を指定します。デフォルトはchで、autoに設定できます。autoの場合、モデルはドキュメント言語を自動的に識別します。他のオプション値リストについては、次を参照してください：https://paddlepaddle.github.io/PaddleOCR/latest/ppocr/blog/multi_languages.html#5"
+    placeholder:
+      en_US: Please input document language
+      zh_Hans: 请输入文档语言
+      ja_JP: ドキュメント言語を入力してください
+    llm_description: "(For official API) Specify document language, default ch, can be set to auto, when auto, the model will automatically identify document language, other optional value list see: https://paddlepaddle.github.io/PaddleOCR/latest/ppocr/blog/multi_languages.html#5"
+    form: form
+  - name: enable_ocr
+    type: boolean
+    required: false
+    default: false
+    label:
+      zh_Hans: 开启OCR识别
+      en_US: Enable OCR recognition
+      ja_JP: OCR認識を有効にする
+    human_description:
+      zh_Hans: （用于官方API）是否开启OCR识别
+      en_US: (For official API) Whether to enable OCR recognition
+      ja_JP: （公式API用）OCR認識を有効にするかどうか
+    llm_description: (For official API) Whether to enable OCR recognition
+    form: form
+  - name: extra_formats
+    type: string
+    required: false
+    default: "[]"
+    label:
+      zh_Hans: 额外导出格式
+      en_US: Extra export formats
+      ja_JP: 追加のエクスポート形式
+    human_description:
+      zh_Hans: '（用于官方API）示例：["docx","html"],markdown、json为默认导出格式，无须设置，该参数仅支持docx、html、latex三种格式中的一个或多个'
+      en_US: '(For official API) Example: ["docx","html"], markdown, json are the default export formats, no need to set, this parameter only supports one or more of docx, html, latex'
+      ja_JP: '（公式API用）例：["docx","html"]、markdown、jsonはデフォルトのエクスポート形式であり、設定する必要はありません。このパラメータは、docx、html、latexの3つの形式のいずれかまたは複数のみをサポートします'
+    llm_description: '(For official API) Example: ["docx","html"], markdown, json are the default export formats, no need to set, this parameter only supports one or more of docx, html, latex'
+    form: form
+output_schema:
+    type: object
+    properties:
+      images:
+        type: array
+        items:
+          type: object
+        description: The images extracted from the file
+      full_zip_url:
+        type: string
+        description: The zip URL of the complete parsed result
+extra:
+  python:
+    source: tools/parse.py

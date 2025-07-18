@@ -1,0 +1,51 @@
+identity:
+  author: langgenius
+  name: pushover
+  label:
+    en_US: Pushover
+    zh_CN: 推送通知
+    ja_JP: プッシュ通知
+  description:
+    en_US: Pushover plugin for sending notifications
+    zh_CN: 使用 Pushover 发送通知
+    ja_JP: 通知送信用のPushoverプラグイン
+  icon: icon.png
+credentials_for_provider:
+  api_token:
+    type: secret-input
+    required: true
+    label:
+      en_US: API Token
+      zh_CN: API令牌
+      ja_JP: APIトークン
+    placeholder:
+      en_US: Enter your Pushover API Token
+      zh_CN: 输入您的 Pushover API 令牌
+      ja_JP: Pushover APIトークンを入力してください
+    help:
+      en_US: Your Pushover API Token
+      zh_CN: 您的 Pushover API 令牌
+      ja_JP: あなたのPushover APIトークン
+    url: https://pushover.net/apps
+  user_key:
+    type: secret-input
+    required: true
+    label:
+      en_US: User Key
+      zh_CN: 用户密钥
+      ja_JP: ユーザーキー
+    placeholder:
+      en_US: Enter your Pushover User Key
+      zh_CN: 输入您的 Pushover 用户密钥
+      ja_JP: Pushoverユーザーキーを入力してください
+    help:
+      en_US: Your Pushover User Key
+      zh_CN: 您的 Pushover 用户密钥
+      ja_JP: あなたのPushoverユーザーキー
+    url: https://pushover.net/
+tools:
+- tools/get_devices.yaml
+- tools/send_message.yaml
+extra:
+  python:
+    source: provider/pushover.py

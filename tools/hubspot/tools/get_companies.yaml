@@ -1,0 +1,39 @@
+identity:
+  name: get_companies
+  author: langgenius
+  label:
+    en_US: Get Companies
+    zh_Hans: 获取公司
+    pt_BR: Obter Empresas
+    ja_JP: 会社を取得
+    zh_Hant: 獲取公司
+description:
+  human:
+    en_US: Get a list of companies from HubSpot
+    zh_Hans: 从 HubSpot 获取公司列表
+    pt_BR: Obter uma lista de empresas do HubSpot
+    ja_JP: HubSpot から会社のリストを取得します
+    zh_Hant: 從 HubSpot 獲取公司列表
+  llm: Retrieves a list of companies from HubSpot CRM. You can specify the limit to control how many companies to return, with a default of 10. Results include company name, domain, created date, and other properties. Useful for getting an overview of companies in the HubSpot database.
+parameters:
+  - name: limit
+    type: string
+    required: false
+    default: "10"
+    label:
+      en_US: Maximum Results
+      zh_Hans: 最大结果数
+      pt_BR: Resultados Máximos
+      ja_JP: 最大結果数
+      zh_Hant: 最大結果數
+    human_description:
+      en_US: Maximum number of companies to return
+      zh_Hans: 要返回的最大公司数量
+      pt_BR: Número máximo de empresas a retornar
+      ja_JP: 返す会社の最大数
+      zh_Hant: 要返回的最大公司數量
+    llm_description: Maximum number of companies to return (1-100). Default is 10 if not specified. Must be a number.
+    form: llm
+extra:
+  python:
+    source: tools/get_companies.py 

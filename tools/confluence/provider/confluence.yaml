@@ -1,0 +1,48 @@
+identity:
+  author: langgenius
+  name: confluence
+  label:
+    en_US: Confluence
+    zh_Hans: Confluence
+    pt_BR: Confluence
+  description:
+    en_US: Interact with Confluence to manage pages and spaces.
+    zh_Hans: 连接到 Confluence 来管理页面和空间。
+    pt_BR: Interaja com o Confluence para gerenciar páginas e espaços.
+  icon: icon.svg
+credentials_for_provider:
+  url:
+    type: text-input
+    required: true
+    label:
+      en_US: Confluence URL
+      zh_Hans: Confluence URL
+    placeholder:
+      en_US: "https://your-domain.atlassian.net"
+      zh_Hans: "https://your-domain.atlassian.net"
+    help:
+      en_US: The base URL of your Confluence instance.
+      zh_Hans: 您的 Confluence 实例的基础 URL。
+  token:
+    type: secret-input
+    required: true
+    label:
+      en_US: Access Token
+      zh_Hans: 访问令牌
+    placeholder:
+      en_US: Please input your Confluence access token with auth method, like "Basic <token>"
+      zh_Hans: 请输入您的带有认证方法的 Confluence 访问令牌，如"Basic <token>"
+    help:
+      en_US: Create an API token from your Atlassian account settings.
+      zh_Hans: 从您的 Atlassian 帐户设置创建 API 令牌。
+    url: https://id.atlassian.com/manage-profile/security/api-tokens
+tools:
+  - tools/create_page.yaml
+  - tools/get_page.yaml
+  - tools/get_space.yaml
+  - tools/list_page_of_space.yaml
+  - tools/list_space.yaml
+  - tools/remove_page.yaml
+extra:
+  python:
+    source: provider/confluence.py

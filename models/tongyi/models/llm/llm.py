@@ -64,15 +64,15 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
     tokenizers = {}
 
     def _invoke(
-        self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
-        stream: bool = True,
-        user: Optional[str] = None,
+            self,
+            model: str,
+            credentials: dict,
+            prompt_messages: list[PromptMessage],
+            model_parameters: dict,
+            tools: Optional[list[PromptMessageTool]] = None,
+            stop: Optional[list[str]] = None,
+            stream: bool = True,
+            user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model
@@ -99,11 +99,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         )
 
     def get_num_tokens(
-        self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        tools: Optional[list[PromptMessageTool]] = None,
+            self,
+            model: str,
+            credentials: dict,
+            prompt_messages: list[PromptMessage],
+            tools: Optional[list[PromptMessageTool]] = None,
     ) -> int:
         """
         Get number of tokens for given prompt messages
@@ -148,15 +148,15 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             raise CredentialsValidateFailedError(str(ex))
 
     def _generate(
-        self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
-        stream: bool = True,
-        user: Optional[str] = None,
+            self,
+            model: str,
+            credentials: dict,
+            prompt_messages: list[PromptMessage],
+            model_parameters: dict,
+            tools: Optional[list[PromptMessageTool]] = None,
+            stop: Optional[list[str]] = None,
+            stream: bool = True,
+            user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model
@@ -171,6 +171,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
+        if credentials.get("use_international_endpoint", "false") == "true":
+            import dashscope
+            dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
         credentials_kwargs = self._to_credential_kwargs(credentials)
         mode = self.get_model_mode(model, credentials)
         if model in {"qwen-turbo-chat", "qwen-plus-chat"}:
@@ -187,11 +190,26 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             **extra_model_kwargs,
         }
         model_schema = self.get_model_schema(model, credentials)
+
+        incremental_output = False if tools else stream
+
+        thinking_business_qwen3 = model in ("qwen-plus-latest", "qwen-plus-2025-04-28",
+                                            "qwen-turbo-latest", "qwen-turbo-2025-04-28") \
+                                  and model_parameters.get("enable_thinking", False)
+
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition, QwQ, and QVQ models only supports streaming output.
+        if thinking_business_qwen3 or model.startswith(("qwen3-", "qwq-", "qvq-")):
+            stream = True
+
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition and QwQ models only supports incremental_output set to True.
+        if thinking_business_qwen3 or model.startswith(("qwen3-", "qwq-")):
+            incremental_output = True
+
         if ModelFeature.VISION in (model_schema.features or []):
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages, rich_content=True
             )
-            response = MultiModalConversation.call(**params, stream=stream)
+            response = MultiModalConversation.call(**params, stream=stream, incremental_output=incremental_output)
         else:
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages
@@ -200,22 +218,22 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 **params,
                 result_format="message",
                 stream=stream,
-                incremental_output=stream,
+                incremental_output=incremental_output,
             )
         if stream:
             return self._handle_generate_stream_response(
-                model, credentials, response, prompt_messages
+                model, credentials, response, prompt_messages, incremental_output,
             )
         return self._handle_generate_response(
             model, credentials, response, prompt_messages
         )
 
     def _handle_generate_response(
-        self,
-        model: str,
-        credentials: dict,
-        response: GenerationResponse,
-        prompt_messages: list[PromptMessage],
+            self,
+            model: str,
+            credentials: dict,
+            response: GenerationResponse,
+            prompt_messages: list[PromptMessage],
     ) -> LLMResult:
         """
         Handle llm response
@@ -247,12 +265,35 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         )
         return result
 
+    def _handle_tool_call_stream(self, response, tool_calls, incremental_output):
+        tool_calls_stream = response.output.choices[0].message["tool_calls"]
+        for tool_call_stream in tool_calls_stream:
+            idx = tool_call_stream.get('index')
+            if idx >= len(tool_calls):
+                tool_calls.append(tool_call_stream)
+            else:
+                if tool_call_stream.get('function'):
+                    func_name = tool_call_stream.get('function').get('name')
+                    tool_call_obj = tool_calls[idx]
+                    if func_name:
+                        if incremental_output:
+                            tool_call_obj['function']['name'] += func_name
+                        else:
+                            tool_call_obj['function']['name'] = func_name
+                    args = tool_call_stream.get('function').get('arguments')
+                    if args:
+                        if incremental_output:
+                            tool_call_obj['function']['arguments'] += args
+                        else:
+                            tool_call_obj['function']['arguments'] = args
+
     def _handle_generate_stream_response(
-        self,
-        model: str,
-        credentials: dict,
-        responses: Generator[GenerationResponse, None, None],
-        prompt_messages: list[PromptMessage],
+            self,
+            model: str,
+            credentials: dict,
+            responses: Generator[GenerationResponse, None, None],
+            prompt_messages: list[PromptMessage],
+            incremental_output: bool,
     ) -> Generator:
         """
         Handle llm stream response
@@ -261,9 +302,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param credentials: credentials
         :param responses: response
         :param prompt_messages: prompt messages
+        :param incremental_output: is incremental output
         :return: llm response chunk generator result
         """
         is_reasoning = False
+        # This is used to handle unincremental output correctly
         full_text = ""
         tool_calls = []
         for index, response in enumerate(responses):
@@ -276,14 +319,18 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 resp_content = response.output.choices[0].message.content
                 assistant_prompt_message = AssistantPromptMessage(content="")
                 if "tool_calls" in response.output.choices[0].message:
-                    tool_calls = response.output.choices[0].message["tool_calls"]
+                    self._handle_tool_call_stream(response, tool_calls, incremental_output)
                 elif resp_content:
                     if isinstance(resp_content, list):
                         resp_content = resp_content[0]["text"]
-                    assistant_prompt_message.content = resp_content.replace(
-                        full_text, "", 1
-                    )
-                    full_text = resp_content
+                    if incremental_output:
+                        assistant_prompt_message.content = resp_content
+                        full_text += resp_content
+                    else:
+                        assistant_prompt_message.content = resp_content.replace(
+                            full_text, "", 1
+                        )
+                        full_text = resp_content
                 if tool_calls:
                     message_tool_calls = []
                     for tool_call_obj in tool_calls:
@@ -319,14 +366,20 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 )
                 if not resp_content:
                     if "tool_calls" in response.output.choices[0].message:
-                        tool_calls = response.output.choices[0].message["tool_calls"]
+                        self._handle_tool_call_stream(response, tool_calls, incremental_output)
                     continue
                 if isinstance(resp_content, list):
                     resp_content = resp_content[0]["text"]
+                if incremental_output:
+                    delta = resp_content
+                    full_text += delta
+                else:
+                    delta = resp_content.replace(full_text, "", 1)
+                    full_text = resp_content
+                
                 assistant_prompt_message = AssistantPromptMessage(
-                    content=resp_content.replace(full_text, "", 1)
+                    content=delta
                 )
-                full_text = resp_content
                 yield LLMResultChunk(
                     model=model,
                     prompt_messages=prompt_messages,
@@ -358,12 +411,14 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         if isinstance(message, UserPromptMessage):
             if isinstance(content, str):
                 message_text = f"{human_prompt} {content}"
-            else:
+            elif isinstance(content, list):
                 message_text = ""
                 for sub_message in content:
                     if sub_message.type == PromptMessageContentType.TEXT:
                         message_text = f"{human_prompt} {sub_message.data}"
                         break
+            else:
+                raise TypeError(f"[convert_one_message_to_text] Unexpected content type: {type(content)}")
         elif isinstance(message, AssistantPromptMessage):
             message_text = f"{ai_prompt} {content}"
         elif isinstance(message, SystemPromptMessage | ToolPromptMessage):
@@ -386,10 +441,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         return text.rstrip()
 
     def _convert_prompt_messages_to_tongyi_messages(
-        self,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        rich_content: bool = False,
+            self,
+            credentials: dict,
+            prompt_messages: list[PromptMessage],
+            rich_content: bool = False,
     ) -> list[dict]:
         """
         Convert prompt messages to tongyi messages
@@ -450,7 +505,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             video_url = message_content.data
                             if message_content.data.startswith("data:"):
                                 raise InvokeError(
-                                    "not support base64, please set MULTIMODAL_SEND_VIDEO_FORMAT to url"
+                                    "not support base64, please set MULTIMODAL_SEND_FORMAT to url"
                                 )
                             sub_message_dict = {"video": video_url}
                             user_messages.append(sub_message_dict)
@@ -513,7 +568,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         return f"file://{file_path}"
 
     def _upload_file_to_tongyi(
-        self, credentials: dict, message_content: DocumentPromptMessageContent
+            self, credentials: dict, message_content: DocumentPromptMessageContent
     ) -> str:
         """
         Upload file to Tongyi
@@ -526,6 +581,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             api_key=credentials.dashscope_api_key,
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         )
+        if credentials.get("use_international_endpoint", "false") == "true":
+            client = OpenAI(
+                api_key=credentials.dashscope_api_key,
+                base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
+            )
         with tempfile.NamedTemporaryFile(delete=False) as temp_file:
             if message_content.base64_data:
                 file_content = base64.b64decode(message_content.base64_data)
@@ -571,6 +631,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             }
             tool_definitions.append(tool_definition)
         return tool_definitions
+
     def _wrap_thinking_by_reasoning_content(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
         """
         If the reasoning response is from delta.get("reasoning_content"), we wrap
@@ -582,17 +643,36 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
 
         content = delta.get("content") or ""
         reasoning_content = delta.get("reasoning_content")
+        try:
+            if reasoning_content:
+                try:
+                    if isinstance(reasoning_content, list):
+                        reasoning_content = "\n".join(map(str, reasoning_content))
+                    elif not isinstance(reasoning_content, str):
+                        reasoning_content = str(reasoning_content)
 
-        if reasoning_content:
-            if not is_reasoning:
-                content = "<think>\n" + reasoning_content
-                is_reasoning = True
-            else:
-                content = reasoning_content
-        elif is_reasoning and content:
-            content = "\n</think>" + content
-            is_reasoning = False
+                    if not is_reasoning:
+                        content = "<think>\n" + reasoning_content
+                        is_reasoning = True
+                    else:
+                        content = reasoning_content
+                except Exception as ex:
+                    raise ValueError(
+                        f"[wrap_thinking_by_reasoning_content-1] {ex}"
+                    ) from ex
+            elif is_reasoning and content:
+                if not isinstance(content, list):
+                    content = str(content)
+                else:
+                    content = ""
+                content = "\n</think>" + content
+                is_reasoning = False
+        except Exception as ex:
+            raise ValueError(
+                f"[wrap_thinking_by_reasoning_content-2] {ex}"
+            ) from ex
         return content, is_reasoning
+
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
         """
@@ -616,7 +696,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         }
 
     def get_customizable_model_schema(
-        self, model: str, credentials: dict
+            self, model: str, credentials: dict
     ) -> Optional[AIModelEntity]:
         """
         Architecture for defining customizable models

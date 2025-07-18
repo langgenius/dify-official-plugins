@@ -1,0 +1,74 @@
+identity:
+  name: search_files
+  author: langgenius
+  label:
+    en_US: Search Files
+    ja_JP: ファイル検索
+    zh_Hans: 搜索文件
+    pt_BR: Pesquisar Arquivos
+    zh_Hant: 搜尋檔案
+description:
+  human:
+    en_US: Search for files and folders in NextCloud by name pattern
+    ja_JP: NextCloud でファイル名のパターンによってファイルとフォルダを検索します
+    zh_Hans: 在 NextCloud 中按名称模式搜索文件和文件夹
+    pt_BR: Pesquisar arquivos e pastas no NextCloud por padrão de nome
+    zh_Hant: 在 NextCloud 中按名稱模式搜尋檔案和資料夾
+  llm: Searches for files and folders in NextCloud that match a specified name pattern. Searches recursively through directories starting from a base path. Returns matching items with their details.
+parameters:
+  - name: search_pattern
+    type: string
+    required: true
+    label:
+      en_US: Search Pattern
+      ja_JP: 検索パターン
+      zh_Hans: 搜索模式
+      pt_BR: Padrão de Pesquisa
+      zh_Hant: 搜尋模式
+    human_description:
+      en_US: The name pattern to search for (e.g. report.pdf or *.txt)
+      ja_JP: 検索する名前パターン（例 report.pdf または *.txt）
+      zh_Hans: 要搜索的名称模式（例如 report.pdf 或 *.txt）
+      pt_BR: O padrão de nome para pesquisar (ex report.pdf ou *.txt)
+      zh_Hant: 要搜尋的名稱模式（例如 report.pdf 或 *.txt）
+    llm_description: The file or folder name pattern to search for. Can be exact name (e.g. "report.pdf") or use wildcards (e.g. "*.txt" for all text files, "*report*" for files containing "report").
+    form: llm
+  - name: search_path
+    type: string
+    required: false
+    default: "/"
+    label:
+      en_US: Search Path
+      ja_JP: 検索パス
+      zh_Hans: 搜索路径
+      pt_BR: Caminho de Pesquisa
+      zh_Hant: 搜尋路徑
+    human_description:
+      en_US: The folder path to search in (default is root folder "/")
+      ja_JP: 検索するフォルダパス（デフォルトはルートフォルダ"/"）
+      zh_Hans: 要搜索的文件夹路径（默认为根文件夹"/"）
+      pt_BR: O caminho da pasta para pesquisar (padrão é a pasta raiz "/")
+      zh_Hant: 要搜尋的資料夾路徑（預設為根資料夾"/"）
+    llm_description: The starting directory path for the search. Use "/" to search from root, "/Documents" to search only in Documents folder, etc.
+    form: llm
+  - name: max_results
+    type: string
+    required: false
+    default: "50"
+    label:
+      en_US: Maximum Results
+      ja_JP: 最大結果数
+      zh_Hans: 最大结果数
+      pt_BR: Resultados Máximos
+      zh_Hant: 最大結果數
+    human_description:
+      en_US: Maximum number of results to return (default 50)
+      ja_JP: 返す結果の最大数（デフォルト 50）
+      zh_Hans: 返回结果的最大数量（默认 50）
+      pt_BR: Número máximo de resultados a retornar (padrão 50)
+      zh_Hant: 返回結果的最大數量（預設 50）
+    llm_description: Maximum number of matching files to return. Default is 50 to avoid overwhelming responses.
+    form: llm
+extra:
+  python:
+    source: tools/search_files.py 

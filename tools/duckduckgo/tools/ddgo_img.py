@@ -34,7 +34,8 @@ class DuckDuckGoImageSearchTool(Tool):
             "size": tool_parameters.get("size"),
             "max_results": tool_parameters.get("max_results"),
         }
-        response = DDGS().images(**query_dict)
+        proxy = tool_parameters.get("proxy_server", None)
+        response = DDGS(proxy=proxy).images(**query_dict) if proxy else DDGS().images(**query_dict)
         for res in response:
             res["transfer_method"] = FileTransferMethod.REMOTE_URL
             msg = ToolInvokeMessage(

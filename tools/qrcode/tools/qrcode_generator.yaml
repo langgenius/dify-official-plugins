@@ -79,3 +79,24 @@ parameters:
   name: border
   required: true
   type: number
+- name: embedded_image
+  type: file
+  required: false
+  label:
+    en_US: Embedded Image
+    zh_Hans: 嵌入的图片
+  human_description:
+    en_US: Embedded Image
+    zh_Hans: 输入的图片
+  llm_description: An image to be embedded in the QR code
+  form: llm
+- name: output_filename
+  type: string
+  required: false
+  label:
+    en_US: Filename of the output file
+    zh_Hans: 输出文件名
+  human_description:
+    en_US: Filename of the output file
+    zh_Hans: 输出文件名
+  form: llm

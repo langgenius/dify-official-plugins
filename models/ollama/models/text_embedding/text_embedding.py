@@ -113,6 +113,10 @@ class OllamaEmbeddingModel(TextEmbeddingModel):
             raise CredentialsValidateFailedError(
                 f"An error occurred during credentials validation: {ex.description}"
             )
+        except requests.HTTPError as ex:
+            raise CredentialsValidateFailedError(
+                f"An error occurred during credentials validation: status code {ex.response.status_code}: {ex.response.text}"
+            )
         except Exception as ex:
             raise CredentialsValidateFailedError(
                 f"An error occurred during credentials validation: {str(ex)}"

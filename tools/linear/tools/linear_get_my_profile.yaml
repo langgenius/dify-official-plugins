@@ -1,0 +1,22 @@
+identity:
+  name: linear_get_my_profile
+  author: langgenius # Or your preferred author name
+  label:
+    en_US: Get My Linear Profile
+    zh_Hans: 获取我的 Linear 个人资料
+    pt_BR: Obter Meu Perfil do Linear
+    ja_JP: 私の Linear プロフィールを取得
+    zh_Hant: 獲取我的 Linear 個人資料
+description:
+  human:
+    en_US: Retrieves the profile information (ID, name, email) of the currently authenticated Linear user.
+    zh_Hans: 检索当前认证的 Linear 用户的个人资料信息（ID、姓名、电子邮件）。
+    pt_BR: Recupera as informações do perfil (ID, nome, e-mail) do usuário Linear atualmente autenticado.
+    ja_JP: 現在認証されている Linear ユーザーのプロフィール情報（ID、名前、メールアドレス）を取得します。
+    zh_Hant: 檢索當前認證的 Linear 用戶的個人資料信息（ID、姓名、電子郵件）。
+  llm: Fetches the profile details (ID, name, email) for the user associated with the current Linear API key. Does not require any parameters.
+parameters: [] # No parameters needed for this tool
+extra:
+  python:
+    source: tools/linear_get_my_profile.py
+    class: LinearGetMyProfileTool 

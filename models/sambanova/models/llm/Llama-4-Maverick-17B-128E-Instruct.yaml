@@ -1,0 +1,28 @@
+model: Llama-4-Maverick-17B-128E-Instruct
+label:
+  zh_Hans: Llama-4-Maverick-17B-128E-Instruct
+  en_US: Llama-4-Maverick-17B-128E-Instruct
+model_type: llm
+features:
+  - agent-thought
+  - vision
+model_properties:
+  mode: chat
+  context_size: 65536
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: top_k
+    use_template: top_k
+  - name: max_tokens
+    use_template: max_tokens
+    default: 512
+    min: 1
+    max: 4096
+pricing:
+  input: '0.063'
+  output: '0.18'
+  unit: '0.00001'
+  currency: USD

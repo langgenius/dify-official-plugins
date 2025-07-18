@@ -1,0 +1,121 @@
+description:
+  human:
+    en_US: GPT Image Edit (gpt-image-1) is a tool to modify one or more images based on a prompt, generating a single edited result.
+    zh_Hans: GPT Image Edit (gpt-image-1) 是一个工具，可根据提示词修改一张或多张图像，生成单个编辑结果。
+  llm: A tool to edit one or more images using OpenAI's gpt-image-1 model, combining them based on a prompt to generate a single edited result.
+extra:
+  python:
+    source: tools/gpt_image_edit.py
+identity:
+  author: Kalo Chin
+  description:
+    en_US: Edits one or more images based on a prompt using the GPT Image model, generating a single combined result. Optionally use a mask for inpainting.
+    zh_Hans: 使用 GPT Image 模型根据提示词编辑一张或多张图像，生成单个组合结果。可选择使用蒙版进行图像修复。
+  label:
+    en_US: GPT Image Edit
+    zh_Hans: GPT 图像编辑
+  name: gpt_image_edit
+parameters:
+- form: llm
+  human_description:
+    en_US: A text description of how to edit and combine the input image(s) (max 32000 chars).
+    zh_Hans: 如何编辑和组合输入图像的文本描述（最多 32000 字符）。
+  label:
+    en_US: Prompt
+    zh_Hans: 提示词
+  llm_description: A detailed text description of how the input images should be edited and combined into the final result.
+  name: prompt
+  required: true
+  type: string
+- form: llm
+  human_description:
+    en_US: One or more images to edit (PNG, JPEG, or WebP, each <25MB).
+    zh_Hans: 要编辑的一张或多张图像（PNG、JPEG 或 WebP，每张小于 25MB）。
+  label:
+    en_US: Image(s)
+    zh_Hans: 图像
+  name: image
+  required: true
+  type: files
+  # Note: Need to specify accepted mime types if possible in Dify yaml
+  # mime_types: ["image/png", "image/jpeg", "image/webp"]
+- form: llm
+  human_description:
+    en_US: Optional mask (PNG, <4MB, same size as image) where transparent areas indicate where to edit.
+    zh_Hans: 可选蒙版（PNG，小于 4MB，与图像大小相同），透明区域指示编辑位置。
+  label:
+    en_US: Mask (Optional)
+    zh_Hans: 蒙版（可选）
+  name: mask
+  required: false
+  type: file
+  # mime_types: ["image/png"]
+- default: auto
+  form: form
+  human_description:
+    en_US: Select the output image size
+    zh_Hans: 选择输出图像大小
+  label:
+    en_US: Image size
+    zh_Hans: 图像大小
+  name: size
+  options:
+  - label:
+      en_US: Auto
+      zh_Hans: 自动
+    value: auto
+  - label:
+      en_US: Square (1024x1024)
+      zh_Hans: 方形 (1024x1024)
+    value: "1024x1024"
+  - label:
+      en_US: Portrait (1024x1536)
+      zh_Hans: 竖屏/肖像 (1024x1536)
+    value: "1024x1536"
+  - label:
+      en_US: Landscape (1536x1024)
+      zh_Hans: 横屏/风景 (1536x1024)
+    value: "1536x1024"
+  required: false
+  type: select
+- default: auto
+  form: form
+  human_description:
+    en_US: Select the output image quality.
+    zh_Hans: 选择输出图像质量。
+  label:
+    en_US: Image quality
+    zh_Hans: 图像质量
+  name: quality
+  options:
+  - label:
+      en_US: Auto
+      zh_Hans: 自动
+    value: auto
+  - label:
+      en_US: Low
+      zh_Hans: 低
+    value: low
+  - label:
+      en_US: Medium
+      zh_Hans: 中
+    value: medium
+  - label:
+      en_US: High
+      zh_Hans: 高
+    value: high
+  required: false
+  type: select
+- default: 1
+  form: form
+  human_description:
+    en_US: Number of images to generate (between 1 and 10).
+    zh_Hans: 要生成的图像数量（1到10之间）。
+  label:
+    en_US: Number of Images
+    zh_Hans: 图像数量
+  name: n
+  min: 1
+  max: 10
+  required: false
+  type: number 

@@ -52,7 +52,7 @@ jobs:
       - name: Get Changed Files from Push
         id: get_changed_files
         run: |
-          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | jq -R -s -c 'split("\n")[:-1] | map({path: .})')
+          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -v "^tests/" | jq -R -s -c 'split("\n")[:-1] | map({path: .})')
           echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
           echo "CHANGED_FILES=$CHANGED_FILES"
 

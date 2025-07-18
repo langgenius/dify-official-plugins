@@ -1,0 +1,35 @@
+identity:
+  author: langgenius
+  name: deepl
+  label:
+    en_US: DeepL
+    zh_CN: DeepL
+    ja_JP: DeepL
+  description:
+    en_US: Translate texts or rephrase text using DeepL
+    zh_CN: 使用 DeepL 翻译文本或改写文本
+    ja_JP: DeepL を使用してテキストを翻訳または言い換える
+  icon: icon.svg
+credentials_for_provider:
+  auth_key:
+    type: secret-input
+    required: true
+    label:
+      en_US: Auth Key
+      zh_CN: 认证密钥
+      ja_JP: 認証キー
+    placeholder:
+      en_US: Enter your DeepL Auth Key
+      zh_CN: 输入您的 DeepL 认证密钥
+      ja_JP: DeepL 認証キーを入力してください
+    help:
+      en_US: Your DeepL Auth Key
+      zh_CN: 您的 DeepL 认证密钥
+      ja_JP: あなたの DeepL 認証キー
+    url: https://www.deepl.com/en/your-account/keys
+tools:
+- tools/rephrase_text.yaml
+- tools/translate_text.yaml
+extra:
+  python:
+    source: provider/deepl.py

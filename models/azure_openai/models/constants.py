@@ -253,9 +253,9 @@ LLM_BASE_MODELS = [
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
-                    precision=2,
+                    precision=0,
                     min=0,
-                    max=1,
+                    max=2147483647,
                 ),
                 ParameterRule(
                     name="response_format",
@@ -319,9 +319,9 @@ LLM_BASE_MODELS = [
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
-                    precision=2,
+                    precision=0,
                     min=0,
-                    max=1,
+                    max=2147483647,
                 ),
                 ParameterRule(
                     name="response_format",
@@ -385,9 +385,9 @@ LLM_BASE_MODELS = [
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
-                    precision=2,
+                    precision=0,
                     min=0,
-                    max=1,
+                    max=2147483647,
                 ),
                 ParameterRule(
                     name="response_format",
@@ -451,9 +451,9 @@ LLM_BASE_MODELS = [
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
-                    precision=2,
+                    precision=0,
                     min=0,
-                    max=1,
+                    max=2147483647,
                 ),
                 ParameterRule(
                     name="response_format",
@@ -518,9 +518,9 @@ LLM_BASE_MODELS = [
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
-                    precision=2,
+                    precision=0,
                     min=0,
-                    max=1,
+                    max=2147483647,
                 ),
                 ParameterRule(
                     name="response_format",
@@ -531,7 +531,17 @@ LLM_BASE_MODELS = [
                         en_US="specifying the format that the model must output",
                     ),
                     required=False,
-                    options=["text", "json_object"],
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
                 ),
             ],
             pricing=PriceConfig(
@@ -555,6 +565,7 @@ LLM_BASE_MODELS = [
                 ModelFeature.VISION,
                 ModelFeature.MULTI_TOOL_CALL,
                 ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.STRUCTURED_OUTPUT,
             ],
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
@@ -585,9 +596,9 @@ LLM_BASE_MODELS = [
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
-                    precision=2,
+                    precision=0,
                     min=0,
-                    max=1,
+                    max=2147483647,
                 ),
                 ParameterRule(
                     name="response_format",
@@ -662,9 +673,9 @@ LLM_BASE_MODELS = [
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
-                    precision=2,
+                    precision=0,
                     min=0,
-                    max=1,
+                    max=2147483647,
                 ),
                 ParameterRule(
                     name="response_format",
@@ -675,12 +686,22 @@ LLM_BASE_MODELS = [
                         en_US="specifying the format that the model must output",
                     ),
                     required=False,
-                    options=["text", "json_object"],
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
                 ),
             ],
             pricing=PriceConfig(
-                input=5.00,
-                output=15.00,
+                input=2.50,
+                output=10.00,
                 unit=0.000001,
                 currency="USD",
             ),
@@ -729,9 +750,9 @@ LLM_BASE_MODELS = [
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
-                    precision=2,
+                    precision=0,
                     min=0,
-                    max=1,
+                    max=2147483647,
                 ),
                 ParameterRule(
                     name="response_format",
@@ -766,6 +787,7 @@ LLM_BASE_MODELS = [
                 ModelFeature.VISION,
                 ModelFeature.MULTI_TOOL_CALL,
                 ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.STRUCTURED_OUTPUT,
             ],
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
@@ -796,9 +818,9 @@ LLM_BASE_MODELS = [
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
-                    precision=2,
+                    precision=0,
                     min=0,
-                    max=1,
+                    max=2147483647,
                 ),
                 ParameterRule(
                     name="response_format",
@@ -823,8 +845,8 @@ LLM_BASE_MODELS = [
                 ),
             ],
             pricing=PriceConfig(
-                input=5.00,
-                output=15.00,
+                input=2.50,
+                output=10.00,
                 unit=0.000001,
                 currency="USD",
             ),
@@ -843,6 +865,7 @@ LLM_BASE_MODELS = [
                 ModelFeature.VISION,
                 ModelFeature.MULTI_TOOL_CALL,
                 ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.STRUCTURED_OUTPUT,
             ],
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
@@ -873,16 +896,17 @@ LLM_BASE_MODELS = [
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
-                    precision=2,
+                    precision=0,
                     min=0,
-                    max=1,
+                    max=2147483647,
                 ),
                 ParameterRule(
                     name="response_format",
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式", en_US="specifying the format that the model must output"
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
@@ -899,8 +923,320 @@ LLM_BASE_MODELS = [
                 ),
             ],
             pricing=PriceConfig(
-                input=5.00,
-                output=15.00,
+                input=2.50,
+                output=10.00,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-4.5-preview",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.VISION,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 128000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                ),
+                ParameterRule(
+                    name="presence_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.PRESENCE_PENALTY],
+                ),
+                ParameterRule(
+                    name="frequency_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.FREQUENCY_PENALTY],
+                ),
+                _get_max_tokens(default=512, min_val=1, max_val=16384),
+                ParameterRule(
+                    name="seed",
+                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    type="int",
+                    help=AZURE_DEFAULT_PARAM_SEED_HELP,
+                    required=False,
+                    precision=0,
+                    min=0,
+                    max=2147483647,
+                ),
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+            ],
+            pricing=PriceConfig(
+                input=75.00,
+                output=150.00,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-4.1",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.VISION,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 1047576,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                ),
+                ParameterRule(
+                    name="presence_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.PRESENCE_PENALTY],
+                ),
+                ParameterRule(
+                    name="frequency_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.FREQUENCY_PENALTY],
+                ),
+                _get_max_tokens(default=512, min_val=1, max_val=32768),
+                ParameterRule(
+                    name="seed",
+                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    type="int",
+                    help=AZURE_DEFAULT_PARAM_SEED_HELP,
+                    required=False,
+                    precision=0,
+                    min=0,
+                    max=2147483647,
+                ),
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+            ],
+            pricing=PriceConfig(
+                input=2.00,
+                output=8.00,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-4.1-mini",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.VISION,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 1047576,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                ),
+                ParameterRule(
+                    name="presence_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.PRESENCE_PENALTY],
+                ),
+                ParameterRule(
+                    name="frequency_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.FREQUENCY_PENALTY],
+                ),
+                _get_max_tokens(default=512, min_val=1, max_val=32768),
+                ParameterRule(
+                    name="seed",
+                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    type="int",
+                    help=AZURE_DEFAULT_PARAM_SEED_HELP,
+                    required=False,
+                    precision=0,
+                    min=0,
+                    max=2147483647,
+                ),
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+            ],
+            pricing=PriceConfig(
+                input=0.40,
+                output=1.60,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-4.1-nano",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.VISION,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 1047576,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                ),
+                ParameterRule(
+                    name="presence_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.PRESENCE_PENALTY],
+                ),
+                ParameterRule(
+                    name="frequency_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.FREQUENCY_PENALTY],
+                ),
+                _get_max_tokens(default=512, min_val=1, max_val=32768),
+                ParameterRule(
+                    name="seed",
+                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    type="int",
+                    help=AZURE_DEFAULT_PARAM_SEED_HELP,
+                    required=False,
+                    precision=0,
+                    min=0,
+                    max=2147483647,
+                ),
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+            ],
+            pricing=PriceConfig(
+                input=0.10,
+                output=0.40,
                 unit=0.000001,
                 currency="USD",
             ),
@@ -949,9 +1285,9 @@ LLM_BASE_MODELS = [
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
-                    precision=2,
+                    precision=0,
                     min=0,
-                    max=1,
+                    max=2147483647,
                 ),
                 ParameterRule(
                     name="response_format",
@@ -1016,9 +1352,9 @@ LLM_BASE_MODELS = [
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
-                    precision=2,
+                    precision=0,
                     min=0,
-                    max=1,
+                    max=2147483647,
                 ),
                 ParameterRule(
                     name="response_format",
@@ -1078,9 +1414,9 @@ LLM_BASE_MODELS = [
                     type="int",
                     help=AZURE_DEFAULT_PARAM_SEED_HELP,
                     required=False,
-                    precision=2,
+                    precision=0,
                     min=0,
-                    max=1,
+                    max=2147483647,
                 ),
                 ParameterRule(
                     name="response_format",
@@ -1199,27 +1535,6 @@ LLM_BASE_MODELS = [
                 ModelPropertyKey.CONTEXT_SIZE: 128000,
             },
             parameter_rules=[
-                ParameterRule(
-                    name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
-                    type="string",
-                    help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
-                    ),
-                    required=False,
-                    options=["text", "json_object", "json_schema"],
-                ),
-                ParameterRule(
-                    name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
-                    type="text",
-                    help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
-                    ),
-                    required=False,
-                ),
                 _get_o1_max_tokens(default=512, min_val=1, max_val=32768),
             ],
             pricing=PriceConfig(
@@ -1247,27 +1562,6 @@ LLM_BASE_MODELS = [
                 ModelPropertyKey.CONTEXT_SIZE: 128000,
             },
             parameter_rules=[
-                ParameterRule(
-                    name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
-                    type="string",
-                    help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
-                    ),
-                    required=False,
-                    options=["text", "json_object", "json_schema"],
-                ),
-                ParameterRule(
-                    name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
-                    type="text",
-                    help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
-                    ),
-                    required=False,
-                ),
                 _get_o1_max_tokens(default=512, min_val=1, max_val=65536),
             ],
             pricing=PriceConfig(
@@ -1291,6 +1585,7 @@ LLM_BASE_MODELS = [
                 ModelFeature.VISION,
                 ModelFeature.MULTI_TOOL_CALL,
                 ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.STRUCTURED_OUTPUT,
             ],
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
@@ -1352,6 +1647,7 @@ LLM_BASE_MODELS = [
                 ModelFeature.AGENT_THOUGHT,
                 ModelFeature.MULTI_TOOL_CALL,
                 ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.STRUCTURED_OUTPUT,
             ],
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
@@ -1396,6 +1692,132 @@ LLM_BASE_MODELS = [
             pricing=PriceConfig(
                 input=1.10,
                 output=4.40,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="o4-mini",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 200000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制推理模型的推理工作",
+                        en_US="constrains effort on reasoning for reasoning models",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                ),
+                _get_o1_max_tokens(default=512, min_val=1, max_val=100000),
+            ],
+            pricing=PriceConfig(
+                input=1.10,
+                output=4.40,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="o3",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 200000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制推理模型的推理工作",
+                        en_US="constrains effort on reasoning for reasoning models",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                ),
+                _get_o1_max_tokens(default=512, min_val=1, max_val=100000),
+            ],
+            pricing=PriceConfig(
+                input=10,
+                output=40,
                 unit=0.000001,
                 currency="USD",
             ),

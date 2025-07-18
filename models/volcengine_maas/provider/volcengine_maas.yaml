@@ -9,6 +9,7 @@ extra:
     model_sources:
     - models/llm/llm.py
     - models/text_embedding/text_embedding.py
+    - models/speech2text/speech2text.py
     provider_source: provider/volcengine_maas.py
 help:
   title:
@@ -110,6 +111,54 @@ model_credential_schema:
       en_US: Base Model
       zh_Hans: 基础模型
     options:
+    - label:
+        en_US: Doubao-Seed-1.6
+      value: Doubao-Seed-1.6
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
+        en_US: Doubao-Seed-1.6-flash
+      value: Doubao-Seed-1.6-flash
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
+        en_US: Doubao-Seed-1.6-thinking
+      value: Doubao-Seed-1.6-thinking
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
+        en_US: Doubao-1.5-thinking-vision-pro
+      value: Doubao-1.5-thinking-vision-pro
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
+        en_US: Doubao-1.5-UI-TARS
+      value: Doubao-1.5-UI-TARS
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
+        en_US: Doubao-1.5-vision-lite
+      value: Doubao-1.5-vision-lite
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
+        en_US: Doubao-1.5-vision-pro
+      value: Doubao-1.5-vision-pro
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
+        en_US: Doubao-1.5-thinking-pro
+      value: Doubao-1.5-thinking-pro
+      show_on:
+        - variable: __model_type
+          value: llm
     - label:
         en_US: DeepSeek-R1-Distill-Qwen-32B
       value: DeepSeek-R1-Distill-Qwen-32B
@@ -261,6 +310,12 @@ model_credential_schema:
         variable: __model_type
       value: Mistral-7B
     - label:
+        en_US: doubao-seed-asr
+      show_on:
+        - value: speech2text
+          variable: __model_type
+      value: doubao-seed-asr      
+    - label:
         en_US: Doubao-embedding
       show_on:
       - value: text-embedding
@@ -345,7 +400,11 @@ models:
   text_embedding:
     predefined:
     - models/text_embedding/*.yaml
+  speech2text:
+    predefined:
+      - models/speech2text/*.yaml    
 provider: volcengine_maas
 supported_model_types:
 - llm
 - text-embedding
+- speech2text

@@ -1,0 +1,38 @@
+identity:
+  name: update_sql
+  author: langgenius
+  label:
+    en_US: Update Rows
+    zh_Hans: 更新行
+    pt_BR: Atualizar Linhas
+    ja_JP: 行の更新
+    zh_Hant: 更新資料列
+description:
+  human:
+    en_US: Update rows in a table in the SQLite database using a provided SQL UPDATE statement
+    zh_Hans: 使用提供的 SQL UPDATE 语句更新 SQLite 数据库中表的行
+    pt_BR: Atualize linhas em uma tabela no banco de dados SQLite usando uma instrução SQL UPDATE fornecida
+    ja_JP: 指定された SQL UPDATE 文を使って SQLite データベースのテーブルの行を更新します
+    zh_Hant: 使用提供的 SQL UPDATE 陳述式更新 SQLite 資料庫中表格的資料列
+  llm: Update rows in a table in the SQLite database. Use this tool to execute a valid SQL UPDATE statement. The statement must start with UPDATE. Only UPDATE statements are allowed. Returns a success message or an error if the operation fails.
+parameters:
+  - name: update_sql
+    type: string
+    required: true
+    label:
+      en_US: UPDATE SQL Statement
+      zh_Hans: UPDATE SQL 语句
+      pt_BR: Instrução SQL UPDATE
+      ja_JP: UPDATE SQL 文
+      zh_Hant: UPDATE SQL 陳述式
+    human_description:
+      en_US: The SQL statement to update rows. It must start with UPDATE. Example, UPDATE users set name is Bob where id is 1
+      zh_Hans: 用于更新行的 SQL 语句。必须以 UPDATE 开头。例如,UPDATE users set name is Bob where id is 1
+      pt_BR: A instrução SQL para atualizar linhas. Deve começar com UPDATE. Exemplo,UPDATE users set name é Bob onde id é 1
+      ja_JP: 行を更新するための SQL 文。UPDATE で始まる必要があります。例,UPDATE users set name is Bob where id is 1
+      zh_Hant: 用於更新資料列的 SQL 陳述式。必須以 UPDATE 開頭。例如,UPDATE users set name is Bob where id is 1
+    llm_description: The SQL UPDATE statement to execute. It must start with UPDATE. Example,UPDATE users set name is Bob where id is 1
+    form: llm
+extra:
+  python:
+    source: tools/update_sql.py 

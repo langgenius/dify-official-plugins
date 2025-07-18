@@ -1,0 +1,26 @@
+identity:
+  name: remove_page
+  author: langgenius
+  label:
+    en_US: Remove Confluence Page
+    zh_Hans: 删除 Confluence 页面
+description:
+  human:
+    en_US: Deletes a specific Confluence page by its ID.
+    zh_Hans: 通过页面 ID 删除特定的 Confluence 页面。
+  llm: Permanently deletes a Confluence page identified by its unique page ID. Use with caution as this action cannot be undone. Returns confirmation upon successful deletion.
+parameters:
+  - name: page_id
+    type: string
+    required: true
+    label:
+      en_US: Page ID
+      zh_Hans: 页面 ID
+    human_description:
+      en_US: The unique ID of the Confluence page to delete.
+      zh_Hans: 要删除的 Confluence 页面的唯一 ID。
+    llm_description: The unique identifier for the Confluence page you want to permanently delete. WARNING - This action is irreversible.
+    form: llm
+extra:
+  python:
+    source: tools/remove_page.py

@@ -1,0 +1,55 @@
+identity:
+  name: insert_json
+  author: langgenius
+  label:
+    en_US: Insert Rows (JSON)
+    zh_Hans: 插入行（JSON）
+    pt_BR: Inserir Linhas (JSON)
+    ja_JP: 行の挿入（JSON）
+    zh_Hant: 插入資料列（JSON）
+description:
+  human:
+    en_US: Insert rows into a table in the SQLite database using JSON data. Provide the table name and a JSON string or stringified array of objects to insert.
+    zh_Hans: 使用 JSON 字符串向 SQLite 数据库中的表插入行。请提供表名和要插入的 JSON 字符串或字符串化的对象数组。
+    pt_BR: Insira linhas em uma tabela no banco de dados SQLite usando uma string JSON. Forneça o nome da tabela e uma string JSON ou uma matriz de objetos em formato de string para inserir.
+    ja_JP: JSON 文字列を使って SQLite データベースのテーブルに行を挿入します。テーブル名と挿入する JSON 文字列または文字列化されたオブジェクト配列を指定してください。
+    zh_Hant: 使用 JSON 字串向 SQLite 資料庫中的表格插入資料列。請提供表格名稱和要插入的 JSON 字串或字串化的物件陣列。
+  llm: Insert rows into a table in the SQLite database using JSON data. The table name and data must be provided. Data must be a JSON string representing a single object or an array of objects. Returns a success message or an error if the operation fails.
+parameters:
+  - name: table
+    type: string
+    required: true
+    label:
+      en_US: Table Name
+      zh_Hans: 表名
+      pt_BR: Nome da Tabela
+      ja_JP: テーブル名
+      zh_Hant: 表格名稱
+    human_description:
+      en_US: The name of the table to insert data into.
+      zh_Hans: 要插入数据的表名。
+      pt_BR: O nome da tabela para inserir dados.
+      ja_JP: データを挿入するテーブル名。
+      zh_Hant: 要插入資料的表格名稱。
+    llm_description: The name of the table to insert data into.
+    form: llm
+  - name: data
+    type: string
+    required: true
+    label:
+      en_US: Data to Insert (JSON String)
+      zh_Hans: 要插入的数据（JSON 字符串）
+      pt_BR: Dados para Inserir (String JSON)
+      ja_JP: 挿入するデータ（JSON 文字列）
+      zh_Hant: 要插入的資料（JSON 字串）
+    human_description:
+      en_US: The data to insert. Provide a JSON string for a single row or a stringified array of objects for multiple rows.
+      zh_Hans: 要插入的数据。对于单行，请提供一个 JSON 字符串；对于多行，请提供字符串化的对象数组。
+      pt_BR: Os dados a serem inseridos. Forneça uma string JSON para uma única linha ou uma matriz de objetos em formato de string para várias linhas.
+      ja_JP: 挿入するデータ。単一行の場合は JSON 文字列、複数行の場合は文字列化されたオブジェクト配列を指定してください。
+      zh_Hant: 要插入的資料。單一資料列請提供 JSON 字串，多筆資料請提供字串化的物件陣列。
+    llm_description: The data to insert. Provide a JSON string for a single row or a stringified array of objects for multiple rows.
+    form: llm
+extra:
+  python:
+    source: tools/insert_json.py 

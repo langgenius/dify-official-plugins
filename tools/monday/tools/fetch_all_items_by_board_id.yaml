@@ -1,0 +1,43 @@
+identity:
+  name: fetch_all_items_by_board_id
+  author: langgenius
+  label:
+    en_US: Fetch All Items by Board ID
+    zh_CN: 按看板ID获取所有项目
+    ja_JP: ボードIDで全アイテム取得
+description:
+  human:
+    en_US: Fetch all items from a specific board by its ID.
+    zh_CN: 根据看板ID获取该看板下的所有项目。
+    ja_JP: ボードIDでそのボードの全アイテムを取得します。
+  llm: Fetch all items from a specific board by its ID.
+parameters:
+- name: board_id
+  type: string
+  required: true
+  label:
+    en_US: Board ID
+    zh_CN: 看板ID
+    ja_JP: ボードID
+  human_description:
+    en_US: The ID of the board to fetch items from
+    zh_CN: 要获取项目的看板ID
+    ja_JP: アイテムを取得するボードのID
+  llm_description: 'The ID (string) of the board to fetch items from.'
+  form: llm
+- name: limit
+  type: number
+  required: false
+  label:
+    en_US: Limit
+    zh_CN: 数量限制
+    ja_JP: 上限
+  human_description:
+    en_US: The maximum number of items to fetch, defaults to 20
+    zh_CN: 获取的最大项目数，默认为20
+    ja_JP: 取得するアイテムの最大数（デフォルト20）
+  llm_description: 'The maximum number (number) of items to fetch. Defaults to 20.'
+  form: llm
+extra:
+  python:
+    source: tools/fetch_all_items_by_board_id.py

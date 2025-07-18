@@ -1,0 +1,126 @@
+description:
+  human:
+    en_US: Download models from https://civitai.com/
+    zh_Hans: 从 https://civitai.com/ 下载模型
+    ja_JP: https://civitai.com/ からモデルをダウンロード
+  llm: Download from CivitAI
+extra:
+  python:
+    source: tools/download_civitai.py
+identity:
+  author: yt-koike
+  label:
+    en_US: CivitAI Download
+    zh_Hans: CivitAI Download
+    ja_JP: CivitAI Download
+  name: download_civitai
+parameters:
+  - name: model_id
+    form: llm
+    label:
+      en_US: Model ID
+      zh_Hans: 模型 ID
+      ja_JP: モデル ID
+    llm_description: Model ID
+    type: number
+    human_description:
+      en_US: ID of Model
+      zh_Hans: 模型的 ID
+      ja_JP: モデルの ID
+    required: true
+  - name: version_id
+    form: llm
+    label:
+      en_US: Version ID
+      zh_Hans: 版本 ID
+      ja_JP: バージョン ID
+    llm_description: Version ID
+    type: number
+    human_description:
+      en_US: Version ID. If none, the latest model will be installed.
+      zh_Hans: 版本 ID. 如果没有，将安装最新的型号.
+      ja_JP: バージョン ID. 指定なしの場合は最新版をダウンロードします.
+    required: false
+  - name: save_dir
+    form: form
+    label:
+      en_US: Save Directory
+      zh_Hans: 目的地目录
+      ja_JP: 保存先ディレクトリ
+    llm_description: Save Directory
+    type: select
+    human_description:
+      en_US: Directory to save the downloaded file in
+      zh_Hans: 保存下载文件的目录
+      ja_JP: ダウンロードしたファイルの保存先ディレクトリ
+    options:
+      - value: checkpoints
+        label:
+          en_US: checkpoints
+      - value: loras
+        label:
+          en_US: loras
+      - value: vae
+        label:
+          en_US: vae
+      - value: controlnet
+        label:
+          en_US: controlnet
+      - value: text_encoders
+        label:
+          en_US: text_encoders
+      - value: upscale_models
+        label:
+          en_US: upscale_models
+      - value: diffusion_models
+        label:
+          en_US: diffusion_models
+      - value: clip_vision
+        label:
+          en_US: clip_vision
+      - value: style_models
+        label:
+          en_US: style_models
+      - value: embeddings
+        label:
+          en_US: embeddings
+      - value: diffusers
+        label:
+          en_US: diffusers
+      - value: vae_approx
+        label:
+          en_US: vae_approx
+    required: true
+
+output_schema:
+  type: object
+  properties:
+    model_name_human:
+      type: string
+      label:
+        en_US: Human-readable Model Name
+        zh_Hans: 可读型号名称
+        ja_JP: Human-readable モデル名
+    model_name:
+      type: string
+      label:
+        en_US: Model Name
+        zh_Hans: 型号名称
+        ja_JP: モデル名
+    air:
+      type: string
+      label:
+        en_US: AIR
+    ecosystem:
+      type: string
+      label:
+        en_US: Ecosystem
+        ja_JP: エコシステム
+    type:
+      type: string
+      label:
+        en_US: Type
+    source:
+      type: string
+      label:
+        en_US: Source

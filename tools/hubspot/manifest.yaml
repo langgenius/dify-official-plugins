@@ -1,0 +1,57 @@
+version: 0.0.2
+type: plugin
+author: langgenius
+name: hubspot
+label:
+  en_US: HubSpot
+  ja_JP: HubSpot
+  zh_Hans: HubSpot
+  pt_BR: HubSpot
+  zh_Hant: HubSpot
+description:
+  en_US: Connect to HubSpot CRM to manage contacts, companies, deals, tickets, and more
+  ja_JP: HubSpot CRM に接続して、連絡先、企業、取引、チケットなどを管理する
+  zh_Hans: 连接 HubSpot CRM 以管理联系人、公司、交易、工单等
+  pt_BR: Conecte-se ao HubSpot CRM para gerenciar contatos, empresas, negócios, tickets e mais
+  zh_Hant: 連接 HubSpot CRM 以管理聯絡人、公司、交易、工單等
+icon: icon.svg
+tags:
+  - business
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+    node:
+      enabled: false
+    endpoint:
+      enabled: true
+    app:
+      enabled: false
+    storage:
+      enabled: true
+      size: 1048576
+plugins:
+  tools:
+    - provider/hubspot.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: null
+created_at: 2025-05-10T20:58:29.649795+08:00
+privacy: PRIVACY.md
+verified: false

@@ -1,0 +1,56 @@
+identity:
+  name: download_file
+  author: langgenius
+  label:
+    en_US: Download File
+    ja_JP: ファイルダウンロード
+    zh_Hans: 下载文件
+    pt_BR: Baixar Arquivo
+    zh_Hant: 下載檔案
+description:
+  human:
+    en_US: Download a file from NextCloud and optionally read its content
+    ja_JP: NextCloud からファイルをダウンロードし、オプションでその内容を読み取ります
+    zh_Hans: 从 NextCloud 下载文件并可选择读取其内容
+    pt_BR: Baixar um arquivo do NextCloud e opcionalmente ler seu conteúdo
+    zh_Hant: 從 NextCloud 下載檔案並可選擇讀取其內容
+  llm: Downloads a file from NextCloud at the specified path. Can return file metadata only or include the actual file content. For text files, content is returned as readable text. For binary files, content is returned as base64 encoded string.
+parameters:
+  - name: file_path
+    type: string
+    required: true
+    label:
+      en_US: File Path
+      ja_JP: ファイルパス
+      zh_Hans: 文件路径
+      pt_BR: Caminho do Arquivo
+      zh_Hant: 檔案路徑
+    human_description:
+      en_US: The full path to the file in NextCloud (e.g. /Documents/report.pdf)
+      ja_JP: NextCloud 内のファイルへのフルパス（例 /Documents/report.pdf）
+      zh_Hans: NextCloud 中文件的完整路径（例如 /Documents/report.pdf）
+      pt_BR: O caminho completo para o arquivo no NextCloud (ex /Documents/report.pdf)
+      zh_Hant: NextCloud 中檔案的完整路徑（例如 /Documents/report.pdf）
+    llm_description: The complete path to the file in NextCloud, including filename and extension. Must start with "/" and be case-sensitive.
+    form: llm
+  - name: include_content
+    type: string
+    required: false
+    default: "false"
+    label:
+      en_US: Include File Content
+      ja_JP: ファイル内容を含める
+      zh_Hans: 包含文件内容
+      pt_BR: Incluir Conteúdo do Arquivo
+      zh_Hant: 包含檔案內容
+    human_description:
+      en_US: Whether to include the actual file content in the response (default false)
+      ja_JP: レスポンスに実際のファイル内容を含めるかどうか（デフォルト false）
+      zh_Hans: 是否在响应中包含实际文件内容（默认 false）
+      pt_BR: Se deve incluir o conteúdo real do arquivo na resposta (padrão false)
+      zh_Hant: 是否在回應中包含實際檔案內容（預設 false）
+    llm_description: Set to "true" to download and include the file content. For text files, content will be readable. For binary files, content will be base64 encoded. Default is "false" to return only metadata.
+    form: llm
+extra:
+  python:
+    source: tools/download_file.py 

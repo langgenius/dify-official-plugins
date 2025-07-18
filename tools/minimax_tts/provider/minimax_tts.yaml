@@ -1,0 +1,45 @@
+identity:
+  author: devin
+  name: minimax_tts
+  label:
+    en_US: Minimax TTS Tool
+    zh_Hans: Minimax TTS 工具
+  description:
+    en_US: TTS tools provided by Minimax.
+    zh_Hans: Minimax 提供的 TTS 工具。
+  icon: minimax_tts.png
+  tags:
+    - utilities
+    - productivity
+credentials_for_provider:
+  group_id:
+    type: text-input
+    required: true
+    label:
+      en_US: Minimax group_id
+      zh_Hans: Minimax group_id
+    placeholder:
+      en_US: Please input your Minimax group_id
+      zh_Hans: 请输入你的 Minimax group_id
+    help:
+      en_US: Get your group_id from Minimax
+      zh_Hans: 获取您的 Minimax group_id
+    url: https://api.minimax.chat/user-center/basic-information/interface-key
+  api_key:
+    type: secret-input
+    required: true
+    label:
+      en_US: Minimax api key
+      zh_Hans: Minimax api key
+    placeholder:
+      en_US: Please input your Minimax api key
+      zh_Hans: 请输入你的 Minimax api key
+    help:
+      en_US: Get your api key from Minimax
+      zh_Hans: 获取您的 Minimax api key
+    url: https://api.minimax.chat/user-center/basic-information/interface-key
+tools:
+  - tools/tts.yaml
+extra:
+  python:
+    source: provider/minimax_tts.py 

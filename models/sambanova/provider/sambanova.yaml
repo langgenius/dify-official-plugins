@@ -1,0 +1,61 @@
+provider: sambanova
+label:
+  en_US: SambaNova Cloud
+  zh_Hans: Sambanova Cloud
+description:
+  en_US: SambaNova Cloud provides access to the SambaNova Cloud API, which hosts
+    LLama4, Qwen and DeepSeek Models.
+  zh_Hans: Sambanova Cloud 提供的模型。
+icon_small:
+  en_US: icon_s_en.svg
+icon_large:
+  en_US: icon_l_en.svg
+background: "#E5E7EB"
+help:
+  title:
+    en_US: Get your API Key from sambanova Cloud
+    zh_Hans: 从 Sambanova Cloud 获取 API Key
+  url:
+    en_US: http://cloud.sambanova.ai?utm_source=dify&utm_medium=external&utm_campaign=cloud_signup
+supported_model_types:
+  - llm
+configurate_methods:
+  - predefined-model
+  - customizable-model
+model_credential_schema:
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: Enter your model name
+      zh_Hans: 输入模型名称
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        zh_Hans: 在此输入您的 API Key
+        en_US: Enter your API Key
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        zh_Hans: 在此输入您的 API Key
+        en_US: Enter your API Key
+models:
+  llm:
+    position: "models/llm/_position.yaml"
+    predefined:
+      - "models/llm/*.yaml"
+extra:
+  python:
+    provider_source: provider/sambanova.py
+    model_sources:
+      - "models/llm/llm.py"

@@ -1,0 +1,53 @@
+identity:
+  author: langgenuis
+  name: supabase
+  label:
+    en_US: Supabase
+    zh_CN: Supabase
+    ja_JP: Supabase
+  description:
+    en_US: Supabase is an open-source backend-as-a-service that provides a real-time database, authentication, and storage built on top of PostgreSQL.
+    zh_CN: Supabase 是一个开源的后端即服务（BaaS），提供基于 PostgreSQL 的实时数据库、身份验证和存储功能。
+    ja_JP: Supabase は、PostgreSQL を基盤としたリアルタイムデータベース、認証、ストレージを提供するオープンソースのバックエンドサービスです。
+  icon: icon.svg
+credentials_for_provider:
+  url:
+    type: text-input
+    required: true
+    label:
+      en_US: Supabase URL
+      zh_CN: Supabase 地址
+      ja_JP: Supabase URL
+    placeholder:
+      en_US: https://your-project.supabase.co
+      zh_CN: https://your-project.supabase.co
+      ja_JP: https://your-project.supabase.co
+    help:
+      en_US: Enter your Supabase project URL.
+      zh_CN: 输入你的 Supabase 项目地址。
+      ja_JP: Supabase プロジェクトの URL を入力してください。
+    url: https://supabase.com/dashboard/project/<project_id>/settings/api
+  key:
+    type: secret-input
+    required: true
+    label:
+      en_US: Supabase Key
+      zh_CN: Supabase 密钥
+      ja_JP: Supabase キー
+    placeholder:
+      en_US: Enter your Supabase key
+      zh_CN: 输入你的 Supabase 密钥
+      ja_JP: Supabase キーを入力してください
+    help:
+      en_US: Enter your Supabase API key.
+      zh_CN: 输入你的 Supabase API 密钥。
+      ja_JP: Supabase API キーを入力してください。
+    url: https://supabase.com/dashboard/project/<project_id>/settings/api-keys
+tools:
+- tools/create_a_row.yaml
+- tools/delete_row.yaml
+- tools/get_rows.yaml
+- tools/update_row.yaml
+extra:
+  python:
+    source: provider/supabase.py

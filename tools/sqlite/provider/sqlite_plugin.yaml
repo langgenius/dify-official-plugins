@@ -1,0 +1,38 @@
+identity:
+  author: langgenius
+  name: sqlite
+  label:
+    en_US: SQLite
+    zh_Hans: SQLite
+    pt_BR: SQLite
+    ja_JP: SQLite
+  description:
+    en_US: Universal SQLite database tool for AI agents to query and manage databases.
+    zh_Hans: 通用 SQLite 数据库工具，供 AI 代理查询和管理数据库。
+    pt_BR: Ferramenta universal de banco de dados SQLite para agentes de IA consultarem e gerenciarem bancos de dados.
+    ja_JP: AI エージェントがデータベースをクエリして管理するための汎用 SQLite データベースツールです。
+  icon: icon.svg
+credentials_for_provider:
+  database_path:
+    type: text-input
+    required: true
+    label:
+      en_US: Database File Path
+      ja_JP: データベースファイルパス
+    placeholder:
+      en_US: /absolute/path/to/database.db
+      ja_JP: /絶対/パス/データベース.db
+    help:
+      en_US: Enter the full path to your SQLite .db file. The file must be accessible from the environment where the plugin is running.
+      ja_JP: SQLite .db ファイルへのフルパスを入力してください。ファイルはプラグインが動作する環境からアクセス可能である必要があります。
+tools:
+  - tools/create_table.yaml
+  - tools/delete_sql.yaml
+  - tools/insert_sql.yaml
+  - tools/insert_json.yaml
+  - tools/select_sql.yaml
+  - tools/update_sql.yaml
+  - tools/update_json.yaml
+extra:
+  python:
+    source: provider/sqlite_plugin.py

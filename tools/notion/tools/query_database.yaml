@@ -1,0 +1,90 @@
+identity:
+  name: query_database
+  author: langgenius
+  label:
+    en_US: Query Notion Database
+    zh_Hans: 查询 Notion 数据库
+    pt_BR: Consultar Banco de Dados do Notion
+    ja_JP: Notion データベースを照会
+    zh_Hant: 查詢 Notion 資料庫
+description:
+  human:
+    en_US: Query and filter data from a Notion database
+    zh_Hans: 查询和筛选 Notion 数据库中的数据
+    pt_BR: Consultar e filtrar dados de um banco de dados do Notion
+    ja_JP: Notion データベースからデータを照会およびフィルタリングします
+    zh_Hant: 查詢和篩選 Notion 資料庫中的資料
+  llm: Query a specific Notion database by its ID, with optional filtering and sorting. Returns database records with their properties.
+parameters:
+  - name: database_id
+    type: string
+    required: true
+    label:
+      en_US: Database ID
+      zh_Hans: 数据库 ID
+      pt_BR: ID do Banco de Dados
+      ja_JP: データベース ID
+      zh_Hant: 資料庫 ID
+    human_description:
+      en_US: The ID of the Notion database to query
+      zh_Hans: 要查询的 Notion 数据库的 ID
+      pt_BR: O ID do banco de dados do Notion a ser consultado
+      ja_JP: 照会する Notion データベースの ID
+      zh_Hant: 要查詢的 Notion 資料庫的 ID
+    llm_description: The ID of the Notion database to query. This can be found in the database URL or page URL after the workspace name and slash.
+    form: llm
+  - name: filter_property
+    type: string
+    required: false
+    label:
+      en_US: Filter Property
+      zh_Hans: 筛选属性
+      pt_BR: Propriedade de Filtro
+      ja_JP: フィルタープロパティ
+      zh_Hant: 篩選屬性
+    human_description:
+      en_US: Property name to filter by (optional)
+      zh_Hans: 要筛选的属性名称（可选）
+      pt_BR: Nome da propriedade para filtrar (opcional)
+      ja_JP: フィルタリングするプロパティ名（オプション）
+      zh_Hant: 要篩選的屬性名稱（選填）
+    llm_description: Optional property name to filter by. If provided, filter_value must also be provided.
+    form: llm
+  - name: filter_value
+    type: string
+    required: false
+    label:
+      en_US: Filter Value
+      zh_Hans: 筛选值
+      pt_BR: Valor do Filtro
+      ja_JP: フィルター値
+      zh_Hant: 篩選值
+    human_description:
+      en_US: Value to filter by (optional)
+      zh_Hans: 要筛选的值（可选）
+      pt_BR: Valor para filtrar (opcional)
+      ja_JP: フィルタリングする値（オプション）
+      zh_Hant: 要篩選的值（選填）
+    llm_description: Optional value to filter by. Works with filter_property to create a simple equals filter.
+    form: llm
+  - name: limit
+    type: number
+    required: false
+    default: 10
+    label:
+      en_US: Maximum Results
+      zh_Hans: 最大结果数
+      pt_BR: Resultados Máximos
+      ja_JP: 最大結果数
+      zh_Hant: 最大結果數
+    human_description:
+      en_US: Maximum number of database records to return
+      zh_Hans: 返回的数据库记录的最大数量
+      pt_BR: Número máximo de registros do banco de dados a retornar
+      ja_JP: 返すデータベースレコードの最大数
+      zh_Hant: 返回的資料庫記錄最大數量
+    llm_description: The maximum number of database records to return. Default is 10.
+    form: llm
+extra:
+  python:
+    source: tools/query_database.py 

@@ -1,0 +1,54 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: attio
+label:
+  en_US: attio
+  ja_JP: attio
+  zh_Hans: attio
+  pt_BR: attio
+description:
+  en_US: Connect to Attio to manage database records and perform CRM operations
+  ja_JP: Attio に接続してデータベースレコードを管理し、CRM 操作を実行します
+  zh_Hans: 连接 Attio 以管理数据库记录并执行 CRM 操作
+  pt_BR: Conecte-se ao Attio para gerenciar registros de banco de dados e realizar operações de CRM
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+    node:
+      enabled: false
+    endpoint:
+      enabled: true
+    app:
+      enabled: false
+    storage:
+      enabled: true
+      size: 1048576
+plugins:
+  tools:
+    - provider/attio.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: null
+created_at: 2025-07-08T15:26:48.045391+08:00
+privacy: PRIVACY.md
+repo: https://github.com/langgenius/dify-official-plugins
+verified: false

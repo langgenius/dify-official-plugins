@@ -1,0 +1,38 @@
+identity:
+  name: get_sheet_info
+  author: langgenius
+  label:
+    en_US: Get Sheet Info
+    zh_Hans: 获取表格信息
+    pt_BR: Obter Informações da Planilha
+    ja_JP: シート情報を取得
+    zh_Hant: 獲取表格信息
+description:
+  human:
+    en_US: Retrieve information about a Smartsheet sheet, including columns and sample data.
+    zh_Hans: 检索 Smartsheet 表格的信息，包括列和示例数据。
+    pt_BR: Recuperar informações sobre uma planilha do Smartsheet, incluindo colunas e dados de amostra.
+    ja_JP: Smartsheetシートの列とサンプルデータを含む情報を取得します。
+    zh_Hant: 檢索 Smartsheet 表格的信息，包括列和示例數據。
+  llm: Retrieves detailed information about a specified Smartsheet sheet, including column definitions, column types, and a small sample of data rows. This is useful for understanding the structure of a sheet before performing operations on it.
+parameters:
+  - name: sheet_id
+    type: string
+    required: true
+    label:
+      en_US: Sheet ID
+      zh_Hans: 表格 ID
+      pt_BR: ID da Planilha
+      ja_JP: シートID
+      zh_Hant: 表格 ID
+    human_description:
+      en_US: The ID of the Smartsheet sheet to retrieve information about.
+      zh_Hans: 要检索信息的 Smartsheet 表格的 ID。
+      pt_BR: O ID da planilha do Smartsheet para recuperar informações.
+      ja_JP: 情報を取得するSmartsheetシートのID。
+      zh_Hant: 要檢索信息的 Smartsheet 表格的 ID。
+    llm_description: The unique identifier of the Smartsheet sheet to retrieve information about. This is a number that appears in the URL when viewing the sheet in a web browser (e.g., https://app.smartsheet.com/sheets/SHEET_ID).
+    form: llm
+extra:
+  python:
+    source: tools/get_sheet_info.py 

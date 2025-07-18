@@ -1,0 +1,35 @@
+version: 0.2.0
+type: plugin
+author: langgenius
+name: mineru
+label:
+  en_US: MinerU
+  ja_JP: MinerU
+  zh_Hans: MinerU
+description:
+  en_US: MinerU is a tool that converts FILES into machine-readable formats (e.g., markdown, JSON), allowing for easy extraction into any format. MinerU was born during the pre-training process of InternLM. We focus on solving symbol conversion issues in scientific literature and hope to contribute to technological development in the era of large models.https://github.com/opendatalab/MinerU
+  ja_JP: MinerU は、FILES を機械可読な形式（例えば、マークダウン、JSON）に変換するツールで、どんな形式にも簡単に抽出することができます。MinerU は InternLM の事前トレーニングプロセス中に生まれました。私たちは科学文献における記号変換の問題を解決することに集中し、大規模モデルの時代における技術開発に貢献することを目指しています。https://github.com/opendatalab/MinerU
+  zh_Hans: MinerU是一款可以在本地部署的将FILES转化为机器可读格式的工具（如markdown、json），可以很方便地抽取为任意格式。MinerU诞生于书生-浦语的预训练过程中，我们将会集中精力解决科技文献中的符号转化问题，希望在大模型时代为科技发展做出贡献。https://github.com/opendatalab/MinerU
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission:
+    storage:
+      enabled: true
+      size: 1048576
+    tool:
+      enabled: true
+plugins:
+  tools:
+    - provider/mineru.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+created_at: 2025-01-07T14:26:45.974322+08:00
+verified: false

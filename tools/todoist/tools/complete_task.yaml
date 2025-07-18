@@ -1,0 +1,26 @@
+identity:
+  name: complete_task
+  author: laboratory
+  label:
+    en_US: Complete Task
+    zh_Hans: 完成任务
+description:
+  human:
+    en_US: Mark a Todoist task as completed
+    zh_Hans: 将 Todoist 任务标记为已完成
+  llm: Marks a task as completed in Todoist using the task ID.
+parameters:
+  - name: task_id
+    type: string
+    required: true
+    label:
+      en_US: Task ID
+      zh_Hans: 任务 ID
+    human_description:
+      en_US: The ID of the task to mark as completed
+      zh_Hans: 要标记为已完成的任务 ID
+    llm_description: The ID of the task to mark as completed. This must be a valid task ID from Todoist.
+    form: llm
+extra:
+  python:
+    source: tools/complete_task.py
