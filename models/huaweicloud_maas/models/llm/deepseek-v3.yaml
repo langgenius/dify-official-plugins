@@ -20,6 +20,18 @@ parameter_rules:
     min: 1
     max: 16384
     default: 16384
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: Specifies the format that the model must output
+    required: false
+    options:
+      - text
+      - json_object
 pricing:
   input: "2"
   output: "8"
