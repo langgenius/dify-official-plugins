@@ -1,0 +1,17 @@
+identity:
+  name: get_tasks
+  author: langgenius
+  label:
+    en_US: Get Tasks
+    zh_CN: 获取任务
+    ja_JP: タスクを取得
+description:
+  human:
+    en_US: Get all tasks from the Microsoft To Do list
+    zh_CN: 获取 Microsoft To Do 列表中的所有任务
+    ja_JP: Microsoft To Do リストのすべてのタスクを取得
+  llm: Get all tasks from the Microsoft To Do list
+parameters: []
+extra:
+  python:
+    source: tools/get_tasks.py
