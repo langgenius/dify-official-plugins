@@ -1217,22 +1217,24 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                                 ]
                             )
 
+        # The system prompt will be converted to developer message so we don't need to do this
+        
         # o1, o3, o4 compatibility
-        if model.startswith(O_SERIES_COMPATIBILITY):
-            system_message_count = len(
-                [m for m in prompt_messages if isinstance(m, SystemPromptMessage)]
-            )
-            if system_message_count > 0:
-                new_prompt_messages = []
-                for prompt_message in prompt_messages:
-                    if isinstance(prompt_message, SystemPromptMessage):
-                        prompt_message = UserPromptMessage(
-                            content=prompt_message.content,
-                            name=prompt_message.name,
-                        )
+        # if model.startswith(O_SERIES_COMPATIBILITY):
+        #     system_message_count = len(
+        #         [m for m in prompt_messages if isinstance(m, SystemPromptMessage)]
+        #     )
+        #     if system_message_count > 0:
+        #         new_prompt_messages = []
+        #         for prompt_message in prompt_messages:
+        #             if isinstance(prompt_message, SystemPromptMessage):
+        #                 prompt_message = UserPromptMessage(
+        #                     content=prompt_message.content,
+        #                     name=prompt_message.name,
+        #                 )
 
-                    new_prompt_messages.append(prompt_message)
-                prompt_messages = new_prompt_messages
+        #             new_prompt_messages.append(prompt_message)
+        #         prompt_messages = new_prompt_messages
 
         return prompt_messages
 
