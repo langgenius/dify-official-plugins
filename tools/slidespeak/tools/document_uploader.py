@@ -36,7 +36,9 @@ class DocumentUploaderTool(Tool):
                 filename = file_param.split("/")[-1] or "uploaded_document"
                 download_url = file_param
             else:
-                yield self.create_text_message("Error: file must be a valid uploaded file or URL string")
+                yield self.create_text_message(
+                    "Error: file must be a valid uploaded file or URL string"
+                )
                 return
 
             # Fetch the file bytes
@@ -55,17 +57,19 @@ class DocumentUploaderTool(Tool):
             # Upload document using the centralized client method
             document_uuid = client.upload_document_and_get_uuid(file_bytes, filename)
 
-            yield self.create_text_message(f"Document uploaded successfully. Document UUID: {document_uuid}")
-            
+            yield self.create_text_message(
+                f"Document uploaded successfully. Document UUID: {document_uuid}"
+            )
+
             # Create JSON message with the response format
             response_data = {
                 "task_id": document_uuid,
                 "task_status": "SUCCESS",
                 "task_result": document_uuid,
-                "task_info": document_uuid
+                "task_info": document_uuid,
             }
             yield self.create_json_message(response_data)
-            
+
             # Return as variable so that downstream tools can reference it
             yield self.create_variable_message("document_uuid", document_uuid)
 
@@ -76,7 +80,7 @@ class DocumentUploaderTool(Tool):
                 "task_id": None,
                 "task_status": "FAILURE",
                 "task_result": None,
-                "task_info": str(e)
+                "task_info": str(e),
             }
             yield self.create_json_message(error_response)
-            yield self.create_text_message(f"An error occurred during upload: {str(e)}") 
+            yield self.create_text_message(f"An error occurred during upload: {str(e)}")

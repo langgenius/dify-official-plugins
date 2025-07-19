@@ -9,10 +9,10 @@ class SlideSpeakProvider(ToolProvider):
         api_key = credentials.get("slidespeak_api_key")
         if not api_key:
             raise ToolProviderCredentialValidationError("API key is missing")
-        
+
         # Use the same validation approach as the client
         headers = {"Content-Type": "application/json", "X-API-Key": api_key}
-        
+
         url = "https://api.slidespeak.co/api/v1/me"
         with httpx.Client() as client:
             response = client.get(url, headers=headers)

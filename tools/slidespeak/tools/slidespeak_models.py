@@ -6,6 +6,7 @@ from pydantic import BaseModel, field_validator
 
 class Template(str, Enum):
     """Supported presentation templates"""
+
     DEFAULT = "default"
     GRADIENT = "gradient"
     ADAM = "adam"
@@ -37,6 +38,7 @@ class Template(str, Enum):
 
 class Tone(str, Enum):
     """Supported presentation tones"""
+
     DEFAULT = "default"
     CASUAL = "casual"
     PROFESSIONAL = "professional"
@@ -57,6 +59,7 @@ class Tone(str, Enum):
 
 class Verbosity(str, Enum):
     """Supported presentation verbosity levels"""
+
     CONCISE = "concise"
     STANDARD = "standard"
     TEXT_HEAVY = "text-heavy"
@@ -74,6 +77,7 @@ class Verbosity(str, Enum):
 
 class ResponseFormat(str, Enum):
     """Supported response formats"""
+
     POWERPOINT = "powerpoint"
     PDF = "pdf"
 
@@ -90,6 +94,7 @@ class ResponseFormat(str, Enum):
 
 class TaskState(str, Enum):
     """Task states as defined by the SlideSpeak API"""
+
     FAILURE = "FAILURE"
     SUCCESS = "SUCCESS"
     SENT = "SENT"
@@ -107,6 +112,7 @@ class TaskState(str, Enum):
 
 class Layout(str, Enum):
     """Supported slide layouts as defined by the SlideSpeak API"""
+
     ITEMS = "items"
     STEPS = "steps"
     SUMMARY = "summary"
@@ -178,6 +184,7 @@ class SlideDefinition(BaseModel):
 
 class SlideBySlideRequest(BaseModel):
     """Request model for generating a presentation slide by slide"""
+
     slides: List[SlideDefinition]
     template: Template
     language: Optional[str] = None
@@ -185,12 +192,14 @@ class SlideBySlideRequest(BaseModel):
     include_cover: Optional[bool] = None
     include_table_of_contents: Optional[bool] = None
 
-    @field_validator('slides')
+    @field_validator("slides")
     def validate_slides_item_amount(cls, slides):
         for i, slide in enumerate(slides):
-            is_valid, error_message = validate_layout_item_amount(slide.layout, slide.item_amount)
+            is_valid, error_message = validate_layout_item_amount(
+                slide.layout, slide.item_amount
+            )
             if not is_valid:
-                raise ValueError(f"Error in slide {i+1}: {error_message}")
+                raise ValueError(f"Error in slide {i + 1}: {error_message}")
         return slides
 
 
@@ -200,12 +209,14 @@ class UploadRequest(BaseModel):
 
 class TemplateImages(BaseModel):
     """Image URLs for a presentation template"""
+
     cover: str
     content: str
 
 
 class PresentationTemplate(BaseModel):
     """A presentation template with its name and preview images"""
+
     name: str
     images: TemplateImages
 
@@ -213,25 +224,31 @@ class PresentationTemplate(BaseModel):
 def validate_layout_item_amount(layout: Layout, item_amount: int) -> tuple[bool, str]:
     """
     Validate the item_amount for a given layout.
-    
+
     Args:
         layout: The layout enum value
         item_amount: The number of items
-        
+
     Returns:
         A tuple of (is_valid, error_message). If valid, error_message will be empty.
     """
     constraint = LAYOUT_ITEM_AMOUNT_CONSTRAINTS.get(layout)
-    
+
     if constraint is None:
         return True, ""
-    
+
     if isinstance(constraint, int):
         if item_amount != constraint:
-            return False, f"item_amount must be exactly {constraint} for layout '{layout.value}'"
+            return (
+                False,
+                f"item_amount must be exactly {constraint} for layout '{layout.value}'",
+            )
     elif isinstance(constraint, tuple):
         min_allowed, max_allowed = constraint
         if not (min_allowed <= item_amount <= max_allowed):
-            return False, f"item_amount for layout '{layout.value}' must be between {min_allowed} and {max_allowed}"
-    
-    return True, "" 
+            return (
+                False,
+                f"item_amount for layout '{layout.value}' must be between {min_allowed} and {max_allowed}",
+            )
+
+    return True, ""
