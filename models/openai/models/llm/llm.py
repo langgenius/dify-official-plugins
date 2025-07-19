@@ -1,9 +1,8 @@
 from decimal import Decimal
 import json
-import re
 import logging
 from collections.abc import Generator
-from typing import Optional, Union, cast
+from typing import Optional, Union, cast, Any
 import tiktoken
 
 from openai import OpenAI
@@ -693,15 +692,27 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         extra_model_kwargs = {}
 
         if tools:
-            # extra_model_kwargs['tools'] = [helper.dump_model(PromptMessageFunction(function=tool)) for tool in tools]
-            extra_model_kwargs["functions"] = [
+            # Build new "tools" payload per 2024-06 API spec
+            extra_model_kwargs["tools"] = [
                 {
-                    "name": tool.name,
-                    "description": tool.description,
-                    "parameters": tool.parameters,
+                    "type": "function",
+                    "function": {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "parameters": tool.parameters,
+                    },
                 }
                 for tool in tools
             ]
+
+            # default behaviour is "auto" if tools present – keep current behaviour
+            # but allow the caller to override via model_parameters["tool_choice"]
+
+            if "tool_choice" not in model_parameters:
+                model_parameters["tool_choice"] = "auto"
+
+        else:
+            pass
 
         if stop:
             extra_model_kwargs["stop"] = stop
@@ -724,13 +735,6 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 ]
                 del model_parameters["max_tokens"]
 
-            if re.match(r"^(o1|o3)(-\d{4}-\d{2}-\d{2})?$", model) or "o3-pro" in model:
-                if stream:
-                    block_as_stream = True
-                    stream = False
-                    if "stream_options" in extra_model_kwargs:
-                        del extra_model_kwargs["stream_options"]
-
             if "stop" in extra_model_kwargs:
                 del extra_model_kwargs["stop"]
 
@@ -746,15 +750,21 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         else:
             # chat model
             messages: Any = [self._convert_prompt_message_to_dict(m) for m in prompt_messages]
-            response = client.chat.completions.create(
-                messages=messages,
-                model=model,
-                stream=stream,
-                **model_parameters,
-                **extra_model_kwargs,
-            )
+            
+            try:
+                response = client.chat.completions.create(
+                    messages=messages,
+                    model=model,
+                    stream=stream,
+                    **model_parameters,
+                    **extra_model_kwargs,
+                )
+                
+            except Exception as e:
+                raise
 
             if stream:
+                logger.info(f"OpenAI API Response - Stream response initiated for model: {model}")
                 return self._handle_chat_generate_stream_response(model, credentials, response, prompt_messages, tools)
 
             block_result = self._handle_chat_generate_response(model, credentials, response, prompt_messages, tools)
@@ -890,15 +900,16 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         :return: llm response
         """
         assistant_message = response.choices[0].message
-        # assistant_message_tool_calls = assistant_message.tool_calls
-        assistant_message_function_call = assistant_message.function_call
 
-        # extract tool calls from response
-        # tool_calls = self._extract_response_tool_calls(assistant_message_tool_calls)
-        function_call = self._extract_response_function_call(
-            assistant_message_function_call
-        )
-        tool_calls = [function_call] if function_call else []
+        # Prefer new tool_calls field, fallback to deprecated function_call
+        assistant_message_tool_calls = assistant_message.tool_calls
+        tool_calls: list[AssistantPromptMessage.ToolCall] = []
+        if assistant_message_tool_calls:
+            tool_calls = self._extract_response_tool_calls(assistant_message_tool_calls)  # type: ignore
+        elif assistant_message.function_call:
+            function_call = self._extract_response_function_call(assistant_message.function_call)
+            if function_call:
+                tool_calls = [function_call]
 
         # transform assistant message to prompt message
         assistant_prompt_message = AssistantPromptMessage(
@@ -957,6 +968,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         prompt_tokens = 0
         completion_tokens = 0
         final_tool_calls = []
+        aggregated_tool_calls: dict[int, ChoiceDeltaToolCall] = {}
         final_chunk = LLMResultChunk(
             model=model,
             prompt_messages=prompt_messages,
@@ -986,56 +998,88 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             if (
                 not has_finish_reason
                 and (delta.delta.content is None or delta.delta.content == "")
+                and delta.delta.tool_calls is None
                 and delta.delta.function_call is None
             ):
                 continue
 
-            # assistant_message_tool_calls = delta.delta.tool_calls
+            assistant_message_tool_calls = delta.delta.tool_calls
             assistant_message_function_call = delta.delta.function_call
 
-            # extract tool calls from response
-            if delta_assistant_message_function_call_storage is not None:
-                # handle process of stream function call
-                if assistant_message_function_call:
-                    # message has not ended ever
-                    assert isinstance(
-                        delta_assistant_message_function_call_storage.arguments, str
-                    )
-                    assert isinstance(assistant_message_function_call.arguments, str)
-
-                    delta_assistant_message_function_call_storage.arguments += (
-                        assistant_message_function_call.arguments
-                    )
-                    continue
-                else:
-                    # message has ended
-                    assistant_message_function_call = (
-                        delta_assistant_message_function_call_storage
-                    )
-                    delta_assistant_message_function_call_storage = None
+            # extract tool calls from response (new preferred path)
+            if assistant_message_tool_calls:
+                tool_calls = self._extract_response_tool_calls(assistant_message_tool_calls)  # type: ignore
             else:
-                if assistant_message_function_call:
-                    # start of stream function call
-                    delta_assistant_message_function_call_storage = (
-                        assistant_message_function_call
-                    )
-                    if delta_assistant_message_function_call_storage.arguments is None:
-                        delta_assistant_message_function_call_storage.arguments = ""
-                    if not has_finish_reason:
+                # legacy streaming via function_call
+                if delta_assistant_message_function_call_storage is not None:
+                    if assistant_message_function_call:
+                        # message continues
+                        assert isinstance(delta_assistant_message_function_call_storage.arguments, str)
+                        assert isinstance(assistant_message_function_call.arguments, str)
+                        delta_assistant_message_function_call_storage.arguments += assistant_message_function_call.arguments
                         continue
+                    else:
+                        assistant_message_function_call = delta_assistant_message_function_call_storage
+                        delta_assistant_message_function_call_storage = None
+                else:
+                    if assistant_message_function_call:
+                        # start of legacy stream
+                        delta_assistant_message_function_call_storage = assistant_message_function_call
+                        if delta_assistant_message_function_call_storage.arguments is None:
+                            delta_assistant_message_function_call_storage.arguments = ""
+                        if not has_finish_reason:
+                            continue
 
-            # tool_calls = self._extract_response_tool_calls(assistant_message_tool_calls)
-            function_call = self._extract_response_function_call(
-                assistant_message_function_call
-            )
-            tool_calls = [function_call] if function_call else []
+                function_call = self._extract_response_function_call(assistant_message_function_call)
+                tool_calls = [function_call] if function_call else []
+
             if tool_calls:
                 final_tool_calls.extend(tool_calls)
+            
+            # STATEFUL AGGREGATION OF TOOL CALLS
+            if assistant_message_tool_calls:
+                for tool_call_chunk in assistant_message_tool_calls:
+                    # new tool
+                    if tool_call_chunk.id and tool_call_chunk.index not in aggregated_tool_calls:
+                         aggregated_tool_calls[tool_call_chunk.index] = tool_call_chunk
+                    # existing tool
+                    elif tool_call_chunk.index in aggregated_tool_calls:
+                        existing_call = aggregated_tool_calls[tool_call_chunk.index]
+                        if tool_call_chunk.id:
+                            existing_call.id = tool_call_chunk.id
+                        if tool_call_chunk.type:
+                            existing_call.type = tool_call_chunk.type
+                        if tool_call_chunk.function:
+                            if tool_call_chunk.function.name:
+                                existing_call.function.name = tool_call_chunk.function.name
+                            if tool_call_chunk.function.arguments:
+                                existing_call.function.arguments += tool_call_chunk.function.arguments
+
+            if has_finish_reason and delta.finish_reason == "tool_calls":
+                # all tool calls are finished, yield them
+                tool_calls = self._extract_response_tool_calls(list(aggregated_tool_calls.values()))
+                final_tool_calls.extend(tool_calls)
+                assistant_prompt_message = AssistantPromptMessage(
+                    content="",
+                    tool_calls=tool_calls
+                )
+
+                yield LLMResultChunk(
+                    model=chunk.model,
+                    prompt_messages=prompt_messages,
+                    system_fingerprint=chunk.system_fingerprint,
+                    delta=LLMResultChunkDelta(
+                        index=delta.index,
+                        message=assistant_prompt_message,
+                        finish_reason="tool_calls" # forward the finish reason
+                    )
+                )
+                continue
 
             # transform assistant message to prompt message
             assistant_prompt_message = AssistantPromptMessage(
                 content=delta.delta.content if delta.delta.content else "",
-                tool_calls=tool_calls,
+                tool_calls=[],
             )
 
             full_assistant_content += delta.delta.content if delta.delta.content else ""
@@ -1173,22 +1217,24 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                                 ]
                             )
 
+        # The system prompt will be converted to developer message so we don't need to do this
+        
         # o1, o3, o4 compatibility
-        if model.startswith(O_SERIES_COMPATIBILITY):
-            system_message_count = len(
-                [m for m in prompt_messages if isinstance(m, SystemPromptMessage)]
-            )
-            if system_message_count > 0:
-                new_prompt_messages = []
-                for prompt_message in prompt_messages:
-                    if isinstance(prompt_message, SystemPromptMessage):
-                        prompt_message = UserPromptMessage(
-                            content=prompt_message.content,
-                            name=prompt_message.name,
-                        )
+        # if model.startswith(O_SERIES_COMPATIBILITY):
+        #     system_message_count = len(
+        #         [m for m in prompt_messages if isinstance(m, SystemPromptMessage)]
+        #     )
+        #     if system_message_count > 0:
+        #         new_prompt_messages = []
+        #         for prompt_message in prompt_messages:
+        #             if isinstance(prompt_message, SystemPromptMessage):
+        #                 prompt_message = UserPromptMessage(
+        #                     content=prompt_message.content,
+        #                     name=prompt_message.name,
+        #                 )
 
-                    new_prompt_messages.append(prompt_message)
-                prompt_messages = new_prompt_messages
+        #             new_prompt_messages.append(prompt_message)
+        #         prompt_messages = new_prompt_messages
 
         return prompt_messages
 
@@ -1241,33 +1287,34 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         elif isinstance(message, AssistantPromptMessage):
             message = cast(AssistantPromptMessage, message)
             message_dict = {"role": "assistant", "content": message.content}
+
+            # If assistant wants to call tools, attach tool_calls per new spec
             if message.tool_calls:
-                # message_dict["tool_calls"] = [tool_call.dict() for tool_call in
-                #                               message.tool_calls]
-                function_call = message.tool_calls[0]
-                message_dict["function_call"] = {
-                    "name": function_call.function.name,
-                    "arguments": function_call.function.arguments,
-                }
+                message_dict["tool_calls"] = [
+                    {
+                        "id": tool_call.id,
+                        "type": tool_call.type or "function",
+                        "function": {
+                            "name": tool_call.function.name,
+                            "arguments": tool_call.function.arguments,
+                        },
+                    }
+                    for tool_call in message.tool_calls
+                ]
         elif isinstance(message, SystemPromptMessage):
             message = cast(SystemPromptMessage, message)
             message_dict = {"role": "system", "content": message.content}
         elif isinstance(message, ToolPromptMessage):
             message = cast(ToolPromptMessage, message)
-            # message_dict = {
-            #     "role": "tool",
-            #     "content": message.content,
-            #     "tool_call_id": message.tool_call_id
-            # }
             message_dict = {
-                "role": "function",
+                "role": "tool",
                 "content": message.content,
-                "name": message.tool_call_id,
+                "tool_call_id": message.tool_call_id,
             }
         else:
             raise ValueError(f"Got unknown type {message}")
 
-        if message.name:
+        if message.name and message_dict.get("role") != "tool":
             message_dict["name"] = message.name
 
         return message_dict
