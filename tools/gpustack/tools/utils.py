@@ -1,11 +1,8 @@
-from base64 import b64decode
 from typing import Any
 import requests
 
-from dify_plugin.entities.tool import ToolInvokeMessage
-
 def get_base_url(base_url: str) -> str:
-    return base_url.rstrip("/").removesuffix("/v1-openai")
+    return base_url.rstrip("/").removesuffix("/v1").removesuffix("/v1-openai")
 
 def get_common_params(tool_parameters: dict[str, Any]) -> dict[str, Any]:
     return {
