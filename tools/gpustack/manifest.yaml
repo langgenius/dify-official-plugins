@@ -1,10 +1,10 @@
-version: 0.0.2
+version: 0.0.3
 type: plugin
 author: langgenius
 name: gpustack_tools
 label:
-  en_US: gpustack
-  zh_Hans: gpustack
+  en_US: GPUStack AI Tools
+  zh_Hans: GPUStack AI 工具集
 description:
   en_US: The GPUStack tools enables seamless interaction with local large models for rapid development of personalized AI applications.
   zh_Hans: GPUStack 工具集与本地大模型的无缝交互，用于快速构建个性化 AI 应用。
