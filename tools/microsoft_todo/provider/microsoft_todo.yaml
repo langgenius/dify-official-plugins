@@ -1,0 +1,81 @@
+# credentials_for_provider:
+#   token:
+#     type: secret-input
+#     required: true
+#     label:
+#       en_US: Token
+#     placeholder:
+#       en_US: Enter your Microsoft To Do Token
+#     help:
+#       en_US: Your Microsoft To Do Token
+#     url: https://learn.microsoft.com/en-us/graph/api/todo-list-tasks?view=graph-rest-1.0&tabs=http
+
+oauth_schema:
+  client_schema:
+    - name: "client_id"
+      type: "secret-input"
+      required: true
+      url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/CreateApplicationBlade/quickStartType~/null/isMSAApp~/false
+      placeholder:
+        en_US: "Please input your Client ID"
+        zh_CN: "请输入你的 Client ID"
+        ja_JP: "Client ID を入力してください"
+        pt_BR: "Insira seu Client ID"
+      help:
+        en_US: "Client ID is used to authenticate requests to the Microsoft API."
+        zh_CN: "Client ID 用于认证请求到 Microsoft API。"
+        ja_JP: "Client ID は Microsoft API へのリクエスト認証に使用されます。"
+        pt_BR: "Client ID é usado para autenticar solicitações à API do Microsoft."
+      label:
+        en_US: "Client ID"
+        zh_CN: "Client ID"
+        ja_JP: "Client ID"
+    - name: "client_secret"
+      type: "secret-input"
+      required: true
+      url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/CreateApplicationBlade/quickStartType~/null/isMSAApp~/false
+      placeholder:
+        en_US: "Please input your Client Secret"
+        zh_CN: "请输入你的 Client Secret"
+        ja_JP: "Client Secret を入力してください"
+        pt_BR: "Insira seu Client Secret"
+      help:
+        en_US: "Client Secret is used to authenticate requests to the Microsoft API."
+        zh_CN: "Client Secret 用于认证请求到 Microsoft API。"
+        ja_JP: "Client Secret は Microsoft API へのリクエスト認証に使用されます。"
+        pt_BR: "Client Secret é usado para autenticar solicitações à API do Microsoft."
+      label:
+        en_US: "Client Secret"
+        zh_CN: "Client Secret"
+        ja_JP: "Client Secret"
+  credentials_schema:
+    - name: "access_tokens"
+      type: "secret-input"
+      label:
+        en_US: "Access Token"
+        zh_CN: "访问令牌"
+        ja_JP: "アクセス トークン"
+identity:
+  author: langgenius
+  name: microsoft_todo
+  label:
+    en_US: Microsoft To Do
+    zh_CN: 微软待办
+    ja_JP: マイクロソフトToDo
+  description:
+    en_US: Access Microsoft To Do tasks and lists in Dify
+    zh_CN: 在 Dify 中访问微软待办任务和列表
+    ja_JP: DifyでMicrosoft To Doのタスクとリストにアクセス1
+  icon: icon.png
+tools:
+- tools/complete_task.yaml
+- tools/create_task.yaml
+- tools/get_all_tasks.yaml
+- tools/get_lists.yaml
+- tools/get_list_by_id.yaml
+- tools/get_task_by_id.yaml
+- tools/get_tasks.yaml
+- tools/get_tasks_by_list_id.yaml
+extra:
+  python:
+    source: provider/microsoft_todo.py

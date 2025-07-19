@@ -1,0 +1,30 @@
+identity:
+  name: get_tasks_by_list_id
+  author: langgenius
+  label:
+    en_US: Get Tasks By List Id
+    zh_CN: 根据列表ID获取任务
+    ja_JP: リストIDでタスクを取得
+description:
+  human:
+    en_US: Get all tasks from the Microsoft To Do list by list id
+    zh_CN: 根据列表ID从 Microsoft To Do 列表获取所有任务
+    ja_JP: Microsoft To Do リストからリストIDで全タスクを取得
+  llm: Get all tasks from the Microsoft To Do list by list id
+parameters:
+- name: list_id
+  type: string
+  required: true
+  label:
+    en_US: List Id
+    zh_CN: 列表ID
+    ja_JP: リストID
+  human_description:
+    en_US: The id of the list to get
+    zh_CN: 要获取的列表ID
+    ja_JP: 取得するリストのID
+  llm_description: The id of the list to get, type is string
+  form: llm
+extra:
+  python:
+    source: tools/get_tasks_by_list_id.py
