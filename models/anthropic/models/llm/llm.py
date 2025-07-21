@@ -943,18 +943,24 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         )
         system = caching_handler.get_system_prompt()
         
-        # Use a generator expression for lazy evaluation
-        non_system_messages = (
-            msg for msg in prompt_messages 
-            if not isinstance(msg, SystemPromptMessage)
-        )
+        # Find the last user message index
+        last_user_msg_index = -1
+        for i in range(len(prompt_messages) - 1, -1, -1):
+            if isinstance(prompt_messages[i], UserPromptMessage):
+                last_user_msg_index = i
+                break
+        
         
         # Process messages using list comprehension with dispatch
-        prompt_message_dicts = [
-            message_dict 
-            for message in non_system_messages
-            for message_dict in self._process_message(message, prompt_messages)
-        ]
+        prompt_message_dicts = []
+        for i, message in enumerate(prompt_messages):
+            if not isinstance(message, SystemPromptMessage):
+                is_last_user_message = (
+                    isinstance(message, UserPromptMessage) and 
+                    i == last_user_msg_index
+                )
+                for message_dict in self._process_message(message, prompt_messages, is_last_user_message):
+                    prompt_message_dicts.append(message_dict)
         
         # Merge consecutive assistant messages
         return system, self._merge_consecutive_assistant_messages(prompt_message_dicts)
@@ -962,7 +968,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     def _process_message(
         self, 
         message: PromptMessage, 
-        all_messages: Sequence[PromptMessage]
+        all_messages: Sequence[PromptMessage],
+        is_last_user_message: bool = False
     ) -> list[dict]:
         """Process a single message and return list of message dicts.
         
@@ -970,7 +977,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         """
         # Dispatch based on message type
         if isinstance(message, UserPromptMessage):
-            return [self._process_user_message(message)]
+            return [self._process_user_message(message, is_last_user_message)]
         elif isinstance(message, AssistantPromptMessage):
             return [self._process_assistant_message(message, all_messages)]
         elif isinstance(message, ToolPromptMessage):
@@ -978,13 +985,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         else:
             raise ValueError(f"Unknown message type: {type(message).__name__}")
     
-    def _process_user_message(self, message: UserPromptMessage) -> dict:
+    def _process_user_message(self, message: UserPromptMessage, is_last_user_message: bool = False) -> dict:
         """Process user message into API format."""
         if isinstance(message.content, str):
             return self._create_user_text_message(message.content)
         
         # Process content list
-        content_parts = self._process_user_content_list(message.content or [])
+        content_parts = self._process_user_content_list(message.content or [], is_last_user_message)
         return {"role": "user", "content": content_parts}
     
     def _create_user_text_message(self, text: str) -> dict:
@@ -1000,7 +1007,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             }
         return {"role": "user", "content": text}
     
-    def _process_user_content_list(self, content_list: list) -> list[dict]:
+    def _process_user_content_list(self, content_list: list, is_last_user_message: bool = False) -> list[dict]:
         """Process list of content items, maintaining order."""
         # Group content by type for proper ordering
         content_groups: dict[str, list[dict[str, Any]]] = {
@@ -1020,7 +1027,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 )
             elif isinstance(content, DocumentPromptMessageContent):
                 content_groups['document'].append(
-                    self._create_document_content(content)
+                    self._create_document_content(content, is_last_user_message)
                 )
         
         # Combine in the correct order: documents, images, text
@@ -1089,13 +1096,23 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         except Exception as ex:
             raise ValueError(f"Failed to fetch image from {data}: {ex}") from ex
     
-    def _create_document_content(self, content: DocumentPromptMessageContent) -> dict:
+    def _create_document_content(self, content: DocumentPromptMessageContent, is_last_user_message: bool = False) -> dict:
         """Create document content dict."""
         if content.mime_type != "application/pdf":
-            raise ValueError(
-                f"Unsupported document type {content.mime_type}. "
-                "Only application/pdf is supported."
-            )
+            # If this is from the last user message, raise an error
+            if is_last_user_message:
+                raise ValueError(
+                    f"Unsupported document type {content.mime_type}. "
+                    "Only application/pdf is supported."
+                )
+            # Otherwise, replace with a text description
+            else:
+                # Extract filename if available from content metadata
+                filename = getattr(content, 'filename', 'document')
+                return {
+                    "type": "text",
+                    "text": f"[Unsupported document: {filename} ({content.mime_type})]"
+                }
         
         result = {
             "type": "document",
