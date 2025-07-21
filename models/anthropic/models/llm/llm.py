@@ -932,150 +932,296 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     def _convert_prompt_messages(
         self, prompt_messages: Sequence[PromptMessage]
     ) -> tuple[Union[str, list[dict]], list[dict]]:
+        """Convert prompt messages to dict list and system.
+        
+        This method processes different message types using a dispatch pattern,
+        making the code more maintainable and following Fluent Python principles.
         """
-        Convert prompt messages to dict list and system
-        """
-        caching_handler = PromptCachingHandler(prompt_messages, enable_system_cache=getattr(self, "_system_cache_enabled", False))
+        caching_handler = PromptCachingHandler(
+            prompt_messages, 
+            enable_system_cache=self._system_cache_enabled
+        )
         system = caching_handler.get_system_prompt()
         
+        # Find the last user message index
+        last_user_msg_index = -1
+        for i in range(len(prompt_messages) - 1, -1, -1):
+            if isinstance(prompt_messages[i], UserPromptMessage):
+                last_user_msg_index = i
+                break
+        
+        
+        # Process messages using list comprehension with dispatch
         prompt_message_dicts = []
-        for message in prompt_messages:
+        for i, message in enumerate(prompt_messages):
             if not isinstance(message, SystemPromptMessage):
-                if isinstance(message, UserPromptMessage):
-                    message = cast(UserPromptMessage, message)
-                    if isinstance(message.content, str):
-                        if self._message_flow_cache_threshold and len(message.content.split()) >= self._message_flow_cache_threshold:
-                            message_dict = {
-                                "role": "user",
-                                "content": [{
-                                    "type": "text",
-                                    "text": message.content,
-                                    "cache_control": {"type": "ephemeral"}
-                                }]
-                            }
-                        else:
-                            message_dict = {"role": "user", "content": message.content}
-                        prompt_message_dicts.append(message_dict)
-                    else:
-                        # message.content is a list
-                        document_parts: list[dict] = []
-                        image_parts: list[dict] = []
-                        text_parts: list[dict] = []
-                        for message_content in message.content or []:
-                            if message_content.type == PromptMessageContentType.TEXT:
-                                text_content = cast(TextPromptMessageContent, message_content).data
-                                sub_message_dict = {
-                                    "type": "text",
-                                    "text": text_content,
-                                }
-                                if self._message_flow_cache_threshold and len(text_content.split()) >= self._message_flow_cache_threshold:
-                                    sub_message_dict["cache_control"] = {"type": "ephemeral"}
-                                text_parts.append(sub_message_dict)
-                            elif message_content.type == PromptMessageContentType.IMAGE:
-                                message_content = cast(ImagePromptMessageContent, message_content)
-                                if not message_content.data.startswith("data:"):
-                                    try:
-                                        image_content = requests.get(message_content.data).content
-                                        with Image.open(io.BytesIO(image_content)) as img:
-                                            mime_type = f"image/{img.format.lower()}"
-                                        base64_data = base64.b64encode(image_content).decode("utf-8")
-                                    except Exception as ex:
-                                        raise ValueError(
-                                            f"Failed to fetch image data from url {message_content.data}, {ex}"
-                                        )
-                                else:
-                                    data_split = message_content.data.split(";base64,")
-                                    mime_type = data_split[0].replace("data:", "")
-                                    base64_data = data_split[1]
-                                if mime_type not in {"image/jpeg", "image/png", "image/gif", "image/webp"}:
-                                    raise ValueError(
-                                        f"Unsupported image type {mime_type}, only support image/jpeg, image/png, image/gif, and image/webp"
-                                    )
-                                sub_message_dict = {
-                                    "type": "image",
-                                    "source": {
-                                        "type": "base64",
-                                        "media_type": mime_type,
-                                        "data": base64_data,
-                                    },
-                                }
-                                if getattr(self, "_image_cache_enabled", False):
-                                    sub_message_dict["cache_control"] = {"type": "ephemeral"}
-                                image_parts.append(sub_message_dict)
-                            elif isinstance(message_content, DocumentPromptMessageContent):
-                                if message_content.mime_type != "application/pdf":
-                                    raise ValueError(
-                                        f"Unsupported document type {message_content.mime_type}, only support application/pdf"
-                                    )
-                                sub_message_dict = {
-                                    "type": "document",
-                                    "source": {
-                                        "type": "base64",
-                                        "media_type": message_content.mime_type,
-                                        "data": message_content.base64_data,
-                                    },
-                                }
-                                if getattr(self, "_document_cache_enabled", False):
-                                    sub_message_dict["cache_control"] = {"type": "ephemeral"}
-                                document_parts.append(sub_message_dict)
-                        sub_messages = document_parts + image_parts + text_parts
-                        prompt_message_dicts.append({"role": "user", "content": sub_messages})
-                elif isinstance(message, AssistantPromptMessage):
-                    message = cast(AssistantPromptMessage, message)
-                    content = []
-                    
-                    if self.previous_thinking_blocks and any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
-                        content.extend(self.previous_thinking_blocks)
-                    
-                    if self.previous_redacted_thinking_blocks and any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
-                        content.extend(self.previous_redacted_thinking_blocks)
-                    
-                    if message.tool_calls:
-                        for tool_call in message.tool_calls:
-                            tool_use_dict = {
-                                "type": "tool_use",
-                                "id": tool_call.id,
-                                "name": tool_call.function.name,
-                                "input": json.loads(tool_call.function.arguments),
-                            }
-                            if getattr(self, "_tool_results_cache_enabled", False):
-                                tool_use_dict['cache_control'] = {'type': 'ephemeral'}
-                            content.append(tool_use_dict)
-                    elif message.content:
-                        if self._message_flow_cache_threshold and len(message.content.split()) >= self._message_flow_cache_threshold:
-                            content.append({
-                                "type": "text",
-                                "text": message.content,
-                                "cache_control": {"type": "ephemeral"}
-                            })
-                        else:
-                            content.append({"type": "text", "text": message.content})
-                    if prompt_message_dicts and prompt_message_dicts[-1]["role"] == "assistant":
-                        prompt_message_dicts[-1]["content"].extend(content)
-                    else:
-                        prompt_message_dicts.append(
-                            {"role": "assistant", "content": content}
-                        )
-                elif isinstance(message, ToolPromptMessage):
-                    message = cast(ToolPromptMessage, message)
-                    content = message.content
-                    tool_result_content = {
-                        "type": "tool_result",
-                        "tool_use_id": message.tool_call_id,
-                        "content": content,
-                    }
-                    if getattr(self, "_tool_results_cache_enabled", False):
-                        tool_result_content["cache_control"] = {"type": "ephemeral"}
-                    
-                    message_dict = {
-                        "role": "user",
-                        "content": [tool_result_content],
-                    }
+                is_last_user_message = (
+                    isinstance(message, UserPromptMessage) and 
+                    i == last_user_msg_index
+                )
+                for message_dict in self._process_message(message, prompt_messages, is_last_user_message):
                     prompt_message_dicts.append(message_dict)
-                else:
-                    raise ValueError(f"Got unknown type {message}")
-                    
-        return (system, prompt_message_dicts)
+        
+        # Merge consecutive assistant messages
+        return system, self._merge_consecutive_assistant_messages(prompt_message_dicts)
+    
+    def _process_message(
+        self, 
+        message: PromptMessage, 
+        all_messages: Sequence[PromptMessage],
+        is_last_user_message: bool = False
+    ) -> list[dict]:
+        """Process a single message and return list of message dicts.
+        
+        Uses single-dispatch pattern for extensibility.
+        """
+        # Dispatch based on message type
+        if isinstance(message, UserPromptMessage):
+            return [self._process_user_message(message, is_last_user_message)]
+        elif isinstance(message, AssistantPromptMessage):
+            return [self._process_assistant_message(message, all_messages)]
+        elif isinstance(message, ToolPromptMessage):
+            return [self._process_tool_message(message)]
+        else:
+            raise ValueError(f"Unknown message type: {type(message).__name__}")
+    
+    def _process_user_message(self, message: UserPromptMessage, is_last_user_message: bool = False) -> dict:
+        """Process user message into API format."""
+        if isinstance(message.content, str):
+            return self._create_user_text_message(message.content)
+        
+        # Process content list
+        content_parts = self._process_user_content_list(message.content or [], is_last_user_message)
+        return {"role": "user", "content": content_parts}
+    
+    def _create_user_text_message(self, text: str) -> dict:
+        """Create user message dict with optional caching."""
+        if self._should_cache_text(text):
+            return {
+                "role": "user",
+                "content": [{
+                    "type": "text",
+                    "text": text,
+                    "cache_control": {"type": "ephemeral"}
+                }]
+            }
+        return {"role": "user", "content": text}
+    
+    def _process_user_content_list(self, content_list: list, is_last_user_message: bool = False) -> list[dict]:
+        """Process list of content items, maintaining order."""
+        # Group content by type for proper ordering
+        content_groups: dict[str, list[dict[str, Any]]] = {
+            'document': [],
+            'image': [],
+            'text': []
+        }
+        
+        for content in content_list:
+            if content.type == PromptMessageContentType.TEXT:
+                content_groups['text'].append(
+                    self._create_text_content(cast(TextPromptMessageContent, content))
+                )
+            elif content.type == PromptMessageContentType.IMAGE:
+                content_groups['image'].append(
+                    self._create_image_content(cast(ImagePromptMessageContent, content))
+                )
+            elif isinstance(content, DocumentPromptMessageContent):
+                content_groups['document'].append(
+                    self._create_document_content(content, is_last_user_message)
+                )
+        
+        # Combine in the correct order: documents, images, text
+        return (
+            content_groups['document'] + 
+            content_groups['image'] + 
+            content_groups['text']
+        )
+    
+    def _create_text_content(self, content: TextPromptMessageContent) -> dict:
+        """Create text content dict with optional caching."""
+        result: dict[str, Any] = {
+            "type": "text",
+            "text": content.data
+        }
+        if self._should_cache_text(content.data):
+            result["cache_control"] = {"type": "ephemeral"}
+        return result
+    
+    def _create_image_content(self, content: ImagePromptMessageContent) -> dict:
+        """Create image content dict with base64 encoding."""
+        mime_type, base64_data = self._process_image_data(content.data)
+        
+        # Validate mime type
+        allowed_types = {"image/jpeg", "image/png", "image/gif", "image/webp"}
+        if mime_type not in allowed_types:
+            raise ValueError(
+                f"Unsupported image type {mime_type}. "
+                f"Allowed types: {', '.join(allowed_types)}"
+            )
+        
+        result = {
+            "type": "image",
+            "source": {
+                "type": "base64",
+                "media_type": mime_type,
+                "data": base64_data
+            }
+        }
+        
+        if self._image_cache_enabled:
+            result["cache_control"] = {"type": "ephemeral"}
+        
+        return result
+    
+    def _process_image_data(self, data: str) -> tuple[str, str]:
+        """Process image data from URL or data URI."""
+        if data.startswith("data:"):
+            # Extract from data URI
+            header, encoded = data.split(";base64,", 1)
+            mime_type = header.replace("data:", "")
+            return mime_type, encoded
+        
+        # Fetch from URL
+        try:
+            response = requests.get(data)
+            response.raise_for_status()
+            
+            with Image.open(io.BytesIO(response.content)) as img:
+                img_format = img.format or "jpeg"  # Default to jpeg if format is None
+                mime_type = f"image/{img_format.lower()}"
+            
+            base64_data = base64.b64encode(response.content).decode("utf-8")
+            return mime_type, base64_data
+            
+        except Exception as ex:
+            raise ValueError(f"Failed to fetch image from {data}: {ex}") from ex
+    
+    def _create_document_content(self, content: DocumentPromptMessageContent, is_last_user_message: bool = False) -> dict:
+        """Create document content dict."""
+        if content.mime_type != "application/pdf":
+            # If this is from the last user message, raise an error
+            if is_last_user_message:
+                raise ValueError(
+                    f"Unsupported document type {content.mime_type}. "
+                    "Only application/pdf is supported."
+                )
+            # Otherwise, replace with a text description
+            else:
+                # Extract filename if available from content metadata
+                filename = getattr(content, 'filename', 'document')
+                return {
+                    "type": "text",
+                    "text": f"[Unsupported document: {filename} ({content.mime_type})]"
+                }
+        
+        result = {
+            "type": "document",
+            "source": {
+                "type": "base64",
+                "media_type": content.mime_type,
+                "data": content.base64_data
+            }
+        }
+        
+        if self._document_cache_enabled:
+            result["cache_control"] = {"type": "ephemeral"}
+        
+        return result
+    
+    def _process_assistant_message(
+        self, 
+        message: AssistantPromptMessage,
+        all_messages: Sequence[PromptMessage]
+    ) -> dict:
+        """Process assistant message into API format."""
+        content = []
+        
+        # Check if we need to include thinking blocks
+        has_tool_messages = any(
+            isinstance(msg, ToolPromptMessage) for msg in all_messages
+        )
+        
+        if has_tool_messages:
+            content.extend(self.previous_thinking_blocks)
+            content.extend(self.previous_redacted_thinking_blocks)
+        
+        # Process tool calls or content
+        if message.tool_calls:
+            content.extend(
+                self._create_tool_use_content(tool_call)
+                for tool_call in message.tool_calls
+            )
+        elif message.content:
+            if isinstance(message.content, str):
+                content.append(self._create_assistant_text_content(message.content))
+        
+        return {"role": "assistant", "content": content}
+    
+    def _create_tool_use_content(self, tool_call: AssistantPromptMessage.ToolCall) -> dict:
+        """Create tool use content dict."""
+        result = {
+            "type": "tool_use",
+            "id": tool_call.id,
+            "name": tool_call.function.name,
+            "input": json.loads(tool_call.function.arguments)
+        }
+        
+        if self._tool_results_cache_enabled:
+            result["cache_control"] = {"type": "ephemeral"}
+        
+        return result
+    
+    def _create_assistant_text_content(self, text: str) -> dict:
+        """Create assistant text content with optional caching."""
+        if self._should_cache_text(text):
+            return {
+                "type": "text",
+                "text": text,
+                "cache_control": {"type": "ephemeral"}
+            }
+        return {"type": "text", "text": text}
+    
+    def _process_tool_message(self, message: ToolPromptMessage) -> dict:
+        """Process tool result message."""
+        tool_result_content = {
+            "type": "tool_result",
+            "tool_use_id": message.tool_call_id,
+            "content": message.content
+        }
+        
+        if self._tool_results_cache_enabled:
+            tool_result_content["cache_control"] = {"type": "ephemeral"}
+        
+        return {
+            "role": "user",
+            "content": [tool_result_content]
+        }
+    
+    def _should_cache_text(self, text: str) -> bool:
+        """Determine if text should be cached based on word count."""
+        return (
+            self._message_flow_cache_threshold > 0 and
+            len(text.split()) >= self._message_flow_cache_threshold
+        )
+    
+    def _merge_consecutive_assistant_messages(self, messages: list[dict]) -> list[dict]:
+        """Merge consecutive assistant messages to avoid API errors."""
+        if not messages:
+            return messages
+        
+        merged: list[dict] = []
+        for message in messages:
+            if (
+                merged and 
+                merged[-1]["role"] == "assistant" and 
+                message["role"] == "assistant"
+            ):
+                # Merge content
+                merged[-1]["content"].extend(message["content"])
+            else:
+                merged.append(message)
+        
+        return merged
 
     def _convert_one_message_to_text(self, message: PromptMessage) -> str:
         """
@@ -1099,17 +1245,20 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     elif sub_message.type == PromptMessageContentType.IMAGE:
                         message_text += f"{human_prompt} [IMAGE]"
         elif isinstance(message, AssistantPromptMessage):
-            if not isinstance(message.content, list):
-                message_text = f"{ai_prompt} {content}"
-            else:
+            if isinstance(message.content, list):
                 message_text = ""
                 for sub_message in message.content:
                     if sub_message.type == PromptMessageContentType.TEXT:
                         message_text += f"{ai_prompt} {sub_message.data}"
                     elif sub_message.type == PromptMessageContentType.IMAGE:
                         message_text += f"{ai_prompt} [IMAGE]"
+            else:
+                message_text = f"{ai_prompt} {content}"
         elif isinstance(message, SystemPromptMessage):
-            message_text = content
+            if isinstance(content, str):
+                message_text = content
+            else:
+                message_text = str(content)
         elif isinstance(message, ToolPromptMessage):
             message_text = f"{human_prompt} {message.content}"
         else:
