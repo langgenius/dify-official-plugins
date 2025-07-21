@@ -1,9 +1,9 @@
 author: langgenius
 created_at: '2024-09-20T00:13:50.29298939-04:00'
 description:
-  en_US: Models provided by Moonshot, such as moonshot-v1-8k, moonshot-v1-32k, and
+  en_US: Models provided by Moonshot, such as kimi-k2, moonshot-v1-8k, moonshot-v1-32k, and
     moonshot-v1-128k.
-  zh_Hans: Moonshot 提供的模型，例如 moonshot-v1-8k、moonshot-v1-32k 和 moonshot-v1-128k。
+  zh_Hans: Moonshot 提供的模型，例如 kimi-k2, moonshot-v1-8k、moonshot-v1-32k 和 moonshot-v1-128k。
 icon: icon_s_en.png
 label:
   en_US: Moonshot
@@ -35,4 +35,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.6
+version: 0.0.7
