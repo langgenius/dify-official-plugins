@@ -27,7 +27,7 @@ MinerU is a document parser that can parse complex document data for any downstr
 
 - Support the **official API of MinerU**
   ![](./_assets/mineru8.jpg)
-- Local Deplay corresponds to MinerU **release 1.3.6**
+- Local Deploy corresponds to MinerU **release 1.3.6**
 - The supported input file types have been increased to include **PDF, DOC, DOCX, PPT, PPTX, PNG, JPG, and JPEG.**
 - Remove the "Replace Markdown Image Path" tool. Now, the image paths in the Markdown will be automatically replaced with previewable URLs (the validity period of the URL is determined by the FILES_ACCESS_TIMEOUT in dify.env).If you want to use this feature, please update the Dify's core code.![](./_assets/mineru2.jpg)
 - Supports more export formats (HTML, DOC, LaTeX). The download links for the additional formats will be stored in the `files` of the output variables.
