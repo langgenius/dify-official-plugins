@@ -1,11 +1,13 @@
-# https://console.groq.com/docs/model/qwen-qwq-32b
-model: qwen-qwq-32b
+# https://console.groq.com/docs/model/qwen/qwen3-32b
+# https://huggingface.co/Qwen/Qwen3-32B
+model: qwen/qwen3-32b
 label:
-  zh_Hans: Qwen QwQ 32B (Preview) 128k
-  en_US: Qwen QwQ 32B (Preview) 128k
+  zh_Hans: Qwen3-32B
+  en_US: Qwen3-32B
 model_type: llm
 features:
   - agent-thought
+  - tool-call
   - multi-tool-call
   - stream-tool-call
 model_properties:
@@ -14,16 +16,16 @@ model_properties:
 parameter_rules:
   - name: temperature
     use_template: temperature
+    default: 0.7
   - name: top_p
     use_template: top_p
   - name: max_tokens
     use_template: max_tokens
-    default: 512
+    default: 32000
     min: 1
-    max: 8192
+    max: 40960
 pricing:
   input: "0.29"
-  output: "0.39"
+  output: "0.59"
   unit: "0.000001"
   currency: USD
-deprecated: true
