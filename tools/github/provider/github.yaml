@@ -15,31 +15,55 @@ credentials_for_provider:
     required: true
     type: secret-input
     url: https://github.com/settings/tokens?type=beta
-  api_version:
-    default: '2022-11-28'
-    help:
-      en_US: Get your API Version from GitHub
-      pt_BR: Obtenha sua versão da API do GitHub
-      zh_Hans: 从 GitHub 获取您的 API Version
-    label:
-      en_US: API Version
-      pt_BR: Versão da API
-      zh_Hans: API Version
-    placeholder:
-      en_US: Please input your GitHub API Version
-      pt_BR: Insira sua versão da API do GitHub
-      zh_Hans: 请输入你的 GitHub API Version
-    required: false
-    type: text-input
-    url: https://docs.github.com/en/rest/about-the-rest-api/api-versions?apiVersion=2022-11-28
+
+oauth_schema:
+  client_schema:
+    - name: "client_id"
+      type: "secret-input"
+      required: true
+      url: https://github.com/settings/applications/new
+      placeholder:
+        en_US: "Please input your Client ID"
+        zh_Hans: "请输入你的 Client ID"
+        pt_BR: "Insira seu Client ID"
+      help:
+        en_US: "Client ID is used to authenticate requests to the GitHub API."
+        zh_Hans: "Client ID 用于认证请求到 GitHub API。"
+        pt_BR: "Client ID é usado para autenticar solicitações à API do GitHub."
+      label:
+        zh_Hans: "Client ID"
+        en_US: "Client ID"
+    - name: "client_secret"
+      type: "secret-input"
+      required: true
+      url: https://github.com/settings/applications/new
+      placeholder:
+        en_US: "Please input your Client Secret"
+        zh_Hans: "请输入你的 Client Secret"
+        pt_BR: "Insira seu Client Secret"
+      help:
+        en_US: "Client Secret is used to authenticate requests to the GitHub API."
+        zh_Hans: "Client Secret 用于认证请求到 GitHub API。"
+        pt_BR: "Client Secret é usado para autenticar solicitações à API do GitHub."
+      label:
+        zh_Hans: "Client Secret"
+        en_US: "Client Secret"
+  credentials_schema:
+    - name: "access_tokens"
+      type: "secret-input"
+      label:
+        zh_Hans: "Access Token"
+        en_US: "Access Token"
+
 extra:
   python:
     source: provider/github.py
 identity:
-  author: CharlieWei
+  author: langgenius
   description:
     en_US: GitHub is an online software source code hosting service.
-    pt_BR: GitHub é uma plataforma online para serviços de hospedagem de código fonte
+    pt_BR:
+      GitHub é uma plataforma online para serviços de hospedagem de código fonte
       de software.
     zh_Hans: GitHub 是一个在线软件源代码托管服务平台。
   icon: icon.svg
@@ -49,7 +73,17 @@ identity:
     zh_Hans: GitHub
   name: github
   tags:
-  - utilities
+    - utilities
 tools:
-- tools/github_repositories.yaml
-- tools/github_repository_readme.yaml
+  - tools/github_repositories.yaml
+  - tools/github_repository_readme.yaml
+  - tools/github_repository_info.yaml
+  - tools/github_repository_issues.yaml
+  - tools/github_repository_pulls.yaml
+  - tools/github_repository_releases.yaml
+  - tools/github_repository_contributors.yaml
+  - tools/github_repository_commits.yaml
+  - tools/github_repository_contents.yaml
+  - tools/github_user_info.yaml
+  - tools/github_user_repos.yaml
+  - tools/github_search_code.yaml

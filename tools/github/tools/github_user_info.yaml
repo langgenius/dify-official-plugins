@@ -1,0 +1,31 @@
+description:
+  human:
+    en_US: Get detailed information about a GitHub user including profile, stats, and social links
+    pt_BR: Obter informações detalhadas sobre um usuário do GitHub, incluindo perfil, estatísticas e links sociais
+    zh_Hans: 获取GitHub用户的详细信息，包括个人资料、统计数据和社交链接
+  llm: A tool to get detailed information about a GitHub user including profile, stats, and social links
+extra:
+  python:
+    source: tools/github_user_info.py
+identity:
+  author: CharlieWei
+  icon: icon.svg
+  label:
+    en_US: User Info
+    pt_BR: Informações do Usuário
+    zh_Hans: 用户信息
+  name: github_user_info
+parameters:
+  - form: llm
+    human_description:
+      en_US: The GitHub username to get information for. The name is not case sensitive.
+      pt_BR: O nome de usuário do GitHub para obter informações. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 要获取信息的GitHub用户名。名称不区分大小写。
+    label:
+      en_US: Username
+      pt_BR: Nome de usuário
+      zh_Hans: 用户名
+    llm_description: The GitHub username to get information for. The name is not case sensitive.
+    name: username
+    required: true
+    type: string

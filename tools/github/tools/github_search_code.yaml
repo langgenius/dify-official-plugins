@@ -1,0 +1,72 @@
+description:
+  human:
+    en_US: Search for code across GitHub repositories using GitHub's code search API
+    pt_BR: Pesquisar código em repositórios do GitHub usando a API de pesquisa de código do GitHub
+    zh_Hans: 使用GitHub的代码搜索API在GitHub仓库中搜索代码
+  llm: A tool to search for code across GitHub repositories using GitHub's code search API
+extra:
+  python:
+    source: tools/github_search_code.py
+identity:
+  author: CharlieWei
+  icon: icon.svg
+  label:
+    en_US: Search Code
+    pt_BR: Pesquisar Código
+    zh_Hans: 搜索代码
+  name: github_search_code
+parameters:
+  - form: llm
+    human_description:
+      en_US: The query contains one or more search keywords and qualifiers. Qualifiers allow you to limit your search to specific areas of GitHub. The REST API supports the same qualifiers as the web interface for GitHub. Example "addClass in:file language:js repo:jquery/jquery"
+      pt_BR: A consulta contém uma ou mais palavras-chave de pesquisa e qualificadores. Os qualificadores permitem limitar sua pesquisa a áreas específicas do GitHub. A API REST suporta os mesmos qualificadores que a interface web do GitHub. Exemplo "addClass in:file language:js repo:jquery/jquery"
+      zh_Hans: 查询包含一个或多个搜索关键字和限定符。限定符允许您将搜索限制在GitHub的特定区域。REST API支持与GitHub Web界面相同的限定符。示例"addClass in:file language:js repo:jquery/jquery"
+    label:
+      en_US: Query
+      pt_BR: Consulta
+      zh_Hans: 查询
+    llm_description: The query contains one or more search keywords and qualifiers. Qualifiers allow you to limit your search to specific areas of GitHub. The REST API supports the same qualifiers as the web interface for GitHub. Example "addClass in:file language:js repo:jquery/jquery"
+    name: query
+    required: true
+    type: string
+  - default: 10
+    form: llm
+    human_description:
+      en_US: The number of results per page (max 100).
+      pt_BR: O número de resultados por página (máximo 100).
+      zh_Hans: 每页结果数量（最大100）。
+    label:
+      en_US: Per Page
+      pt_BR: Por Página
+      zh_Hans: 每页数量
+    llm_description: The number of results per page (max 100).
+    name: per_page
+    required: false
+    type: number
+  - form: llm
+    human_description:
+      en_US: Sorts the results of your query. Can only be indexed, which indicates how recently a file has been indexed by the GitHub search infrastructure.
+      pt_BR: Ordena os resultados da sua consulta. Pode ser apenas indexed, que indica quão recentemente um arquivo foi indexado pela infraestrutura de pesquisa do GitHub.
+      zh_Hans: 对查询结果进行排序。只能是 indexed，表示文件最近被GitHub搜索基础设施索引的时间。
+    label:
+      en_US: Sort
+      pt_BR: Ordenar
+      zh_Hans: 排序
+    llm_description: Sorts the results of your query. Can only be indexed, which indicates how recently a file has been indexed by the GitHub search infrastructure.
+    name: sort
+    required: false
+    type: string
+  - default: desc
+    form: llm
+    human_description:
+      en_US: Determines whether the first search result returned is the highest number of matches (desc) or lowest number of matches (asc).
+      pt_BR: Determina se o primeiro resultado de pesquisa retornado é o maior número de correspondências (desc) ou o menor número de correspondências (asc).
+      zh_Hans: 确定返回的第一个搜索结果是匹配数最高（desc）还是匹配数最低（asc）。
+    label:
+      en_US: Order
+      pt_BR: Ordem
+      zh_Hans: 顺序
+    llm_description: Determines whether the first search result returned is the highest number of matches (desc) or lowest number of matches (asc).
+    name: order
+    required: false
+    type: string
