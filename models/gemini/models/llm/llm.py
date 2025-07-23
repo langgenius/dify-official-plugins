@@ -483,8 +483,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
                 message = self._parse_parts(candidate.content.parts)
                 index += len(candidate.content.parts)
+
                 if chunk.usage_metadata:
-                    prompt_tokens += chunk.usage_metadata.prompt_token_count or 0
                     completion_tokens += (
                         chunk.usage_metadata.candidates_token_count or 0
                     )
@@ -501,6 +501,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     )
                 # if the stream is finished, yield the chunk and the finish reason
                 else:
+                    if chunk.usage_metadata:
+                        prompt_tokens = chunk.usage_metadata.prompt_token_count or 0
                     if prompt_tokens == 0 or completion_tokens == 0:
                         prompt_tokens = self.get_num_tokens(
                             model=model,
