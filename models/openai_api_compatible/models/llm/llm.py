@@ -9,7 +9,12 @@ from dify_plugin.entities.model import (
     ParameterType,
 )
 from dify_plugin.entities.model.llm import LLMResult
-from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool, SystemPromptMessage
+from dify_plugin.entities.model.message import (
+    PromptMessage,
+    PromptMessageRole,
+    PromptMessageTool,
+    SystemPromptMessage,
+)
 from dify_plugin.interfaces.model.openai_compatible.llm import (
     OAICompatLargeLanguageModel,
 )
@@ -105,7 +110,7 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     f"JSON Schema: ```json\n{json_schema_str}\n```"
                 )
 
-                existing_system_prompt = next((p for p in prompt_messages if p.role == 'system'), None)
+                existing_system_prompt = next((p for p in prompt_messages if p.role == PromptMessageRole.SYSTEM), None)
                 if existing_system_prompt:
                     existing_system_prompt.content = structured_output_prompt + "\n\n" + existing_system_prompt.content
                 else:
