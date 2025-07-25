@@ -12,18 +12,18 @@ description:
     ja_JP: テキスト、テーブル、画像を解析するツールです。pdf、pptx、docxなどの複数の形式をサポートしています。英語、中国語などの複数の言語をサポートしています。
   llm: a tool for parsing text, tables, and images, supporting multiple formats such as pdf, pptx, docx, etc. supporting multiple languages such as English, Chinese, etc.
 parameters:
-  - name: file
-    type: file
+  - name: file_list
+    type: files
     required: true
     label:
-      en_US: file
-      zh_Hans: file
-      ja_JP: file
+      en_US: file_list
+      zh_Hans: file_list
+      ja_JP: file_list
     human_description:
-      en_US:  the file to be parsed(support pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
+      en_US:  the file_list to be parsed(support pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
       zh_Hans: 用于解析的文件(支持 pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
       ja_JP: 解析するファイル(pdf、ppt、pptx、doc、docx、png、jpg、jpegをサポート)
-    llm_description: the file to be parsed (support pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
+    llm_description: the file_list to be parsed (support pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
     form: llm
   - name: parse_method
     type: select
