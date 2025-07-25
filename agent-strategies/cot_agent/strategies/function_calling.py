@@ -20,7 +20,7 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
 )
-from dify_plugin.entities.tool import LogMetadata, ToolInvokeMessage, ToolProviderType
+from dify_plugin.entities.tool import ToolInvokeMessage, ToolProviderType
 from dify_plugin.interfaces.agent import (
     AgentModelConfig,
     AgentStrategy,
@@ -29,6 +29,15 @@ from dify_plugin.interfaces.agent import (
 )
 from pydantic import BaseModel
 
+class LogMetadata:
+    """Metadata keys for logging"""
+    STARTED_AT = "started_at"
+    PROVIDER = "provider"
+    FINISHED_AT = "finished_at"
+    ELAPSED_TIME = "elapsed_time"
+    TOTAL_PRICE = "total_price"
+    CURRENCY = "currency"
+    TOTAL_TOKENS = "total_tokens"
 
 class ContextItem(BaseModel):
     content: str

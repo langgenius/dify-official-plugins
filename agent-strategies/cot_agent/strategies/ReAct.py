@@ -13,11 +13,11 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
 )
 from dify_plugin.entities.tool import (
-    LogMetadata,
     ToolInvokeMessage,
     ToolParameter,
     ToolProviderType,
 )
+
 from dify_plugin.interfaces.agent import (
     AgentModelConfig,
     AgentScratchpadUnit,
@@ -27,6 +27,16 @@ from dify_plugin.interfaces.agent import (
 from output_parser.cot_output_parser import CotAgentOutputParser
 from prompt.template import REACT_PROMPT_TEMPLATES
 from pydantic import BaseModel, Field
+
+class LogMetadata:
+    """Metadata keys for logging"""
+    STARTED_AT = "started_at"
+    PROVIDER = "provider"
+    FINISHED_AT = "finished_at"
+    ELAPSED_TIME = "elapsed_time"
+    TOTAL_PRICE = "total_price"
+    CURRENCY = "currency"
+    TOTAL_TOKENS = "total_tokens"
 
 ignore_observation_providers = ["wenxin"]
 
