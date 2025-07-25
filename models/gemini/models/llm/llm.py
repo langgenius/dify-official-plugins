@@ -490,11 +490,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 thinking_started = hasThought
                 index += len(candidate.content.parts)
 
-                if chunk.usage_metadata:
-                    completion_tokens += (
-                        chunk.usage_metadata.candidates_token_count or 0
-                    )
-
                 # if the stream is not finished, yield the chunk
                 if not candidate.finish_reason:
                     yield LLMResultChunk(
@@ -509,6 +504,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 else:
                     if chunk.usage_metadata:
                         prompt_tokens = chunk.usage_metadata.prompt_token_count or 0
+                        completion_tokens = chunk.usage_metadata.candidates_token_count or 0
                         if chunk.usage_metadata.thoughts_token_count:
                             completion_tokens = completion_tokens + chunk.usage_metadata.thoughts_token_count
                     if prompt_tokens == 0 or completion_tokens == 0:
