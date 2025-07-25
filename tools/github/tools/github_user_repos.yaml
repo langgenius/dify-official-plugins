@@ -1,0 +1,87 @@
+description:
+  human:
+    en_US: Get repositories from a GitHub user with filtering options for type, sorting, and pagination
+    pt_BR: Obter repositórios de um usuário do GitHub com opções de filtragem por tipo, ordenação e paginação
+    zh_Hans: 从GitHub用户获取仓库，支持类型过滤、排序和分页选项
+  llm: A tool to get repositories from a GitHub user with filtering and sorting options
+extra:
+  python:
+    source: tools/github_user_repos.py
+identity:
+  author: CharlieWei
+  icon: icon.svg
+  label:
+    en_US: User Repositories
+    pt_BR: Repositórios do Usuário
+    zh_Hans: 用户仓库
+  name: github_user_repos
+parameters:
+  - form: llm
+    human_description:
+      en_US: The GitHub username to get repositories for. The name is not case sensitive.
+      pt_BR: O nome de usuário do GitHub para obter repositórios. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 要获取仓库的GitHub用户名。名称不区分大小写。
+    label:
+      en_US: Username
+      pt_BR: Nome de usuário
+      zh_Hans: 用户名
+    llm_description: The GitHub username to get repositories for. The name is not case sensitive.
+    name: username
+    required: true
+    type: string
+  - default: 10
+    form: llm
+    human_description:
+      en_US: The number of results per page (max 100).
+      pt_BR: O número de resultados por página (máximo 100).
+      zh_Hans: 每页结果数量（最大100）。
+    label:
+      en_US: Per Page
+      pt_BR: Por Página
+      zh_Hans: 每页数量
+    llm_description: The number of results per page (max 100).
+    name: per_page
+    required: false
+    type: number
+  - default: updated
+    form: llm
+    human_description:
+      en_US: What to sort results by. Can be created, updated, pushed, full_name.
+      pt_BR: Como ordenar os resultados. Pode ser created, updated, pushed, full_name.
+      zh_Hans: 结果排序方式。可以是 created、updated、pushed、full_name。
+    label:
+      en_US: Sort
+      pt_BR: Ordenar
+      zh_Hans: 排序
+    llm_description: What to sort results by. Can be created, updated, pushed, full_name.
+    name: sort
+    required: false
+    type: string
+  - default: desc
+    form: llm
+    human_description:
+      en_US: The direction to sort the results. Can be asc or desc.
+      pt_BR: A direção para ordenar os resultados. Pode ser asc ou desc.
+      zh_Hans: 排序方向。可以是 asc 或 desc。
+    label:
+      en_US: Direction
+      pt_BR: Direção
+      zh_Hans: 方向
+    llm_description: The direction to sort the results. Can be asc or desc.
+    name: direction
+    required: false
+    type: string
+  - default: all
+    form: llm
+    human_description:
+      en_US: Can be one of all, owner, member. Default is all.
+      pt_BR: Pode ser um de all, owner, member. O padrão é all.
+      zh_Hans: 可以是 all、owner、member 之一。默认是 all。
+    label:
+      en_US: Type
+      pt_BR: Tipo
+      zh_Hans: 类型
+    llm_description: Can be one of all, owner, member. Default is all.
+    name: type
+    required: false
+    type: string

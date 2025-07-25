@@ -32,6 +32,17 @@ parameter_rules:
       zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
       en_US: Only sample from the top K options for each subsequent token.
     required: false
+  - name: thinking_budget
+    default: 8192
+    min: 128
+    max: 24576
+    label:
+      en_US: Thinking Budget
+      zh_Hans: 思考预算
+    type: int
+    help:
+      en_US: The token budget used for CoT of the model, if you don't need CoT then leave this parameter off
+      zh_Hans: 大模型用于思维链的Token预算，如果不需要思维链则保持该开关关闭
   - name: max_output_tokens
     use_template: max_tokens
     default: 65535

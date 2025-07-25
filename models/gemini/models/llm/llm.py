@@ -225,11 +225,15 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         if stop:
             config.stop_sequences = stop
-        
+        thinking_budget = model_parameters.get("thinking_budget", 0)
+        include_thoughts = thinking_budget > 0
+
         config.top_p = model_parameters.get("top_p", None)
         config.top_k = model_parameters.get("top_k", None)
         config.temperature = model_parameters.get("temperature", None)
         config.max_output_tokens = model_parameters.get("max_output_tokens", None)
+        if include_thoughts:
+            config.thinking_config = types.ThinkingConfig(include_thoughts=include_thoughts, thinking_budget=thinking_budget)
 
         config.tools = []
         if model_parameters.get("grounding"):
@@ -474,6 +478,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         index = -1
         prompt_tokens = 0
         completion_tokens = 0
+        thinking_started = False
         for chunk in response:
             if not chunk.candidates:
                 continue
@@ -481,10 +486,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 if not candidate.content or not candidate.content.parts:
                     continue
 
-                message = self._parse_parts(candidate.content.parts)
+                message,hasThought = self._parse_parts(thinking_started, candidate.content.parts)
+                thinking_started = hasThought
                 index += len(candidate.content.parts)
+
                 if chunk.usage_metadata:
-                    prompt_tokens += chunk.usage_metadata.prompt_token_count or 0
                     completion_tokens += (
                         chunk.usage_metadata.candidates_token_count or 0
                     )
@@ -501,6 +507,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     )
                 # if the stream is finished, yield the chunk and the finish reason
                 else:
+                    if chunk.usage_metadata:
+                        prompt_tokens = chunk.usage_metadata.prompt_token_count or 0
+                        if chunk.usage_metadata.thoughts_token_count:
+                            completion_tokens = completion_tokens + chunk.usage_metadata.thoughts_token_count
                     if prompt_tokens == 0 or completion_tokens == 0:
                         prompt_tokens = self.get_num_tokens(
                             model=model,
@@ -560,12 +570,25 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             ],
         }
 
-    def _parse_parts(self, parts: Sequence[types.Part], /) -> AssistantPromptMessage:
+    def _parse_parts(self, thought_started, parts: Sequence[types.Part], /) -> AssistantPromptMessage:
         contents: list[PromptMessageContent] = []
         function_calls = []
+        hasThought = thought_started
         for part in parts:
+            if part.thought:
+                if not hasThought:
+                    msg = "<thinking>" + part.text
+                else:
+                    msg = part.text                    
+                hasThought = True
+            else:
+                if hasThought:
+                    msg = "</thinking>" + part.text
+                else:
+                    msg = part.text
+                hasThought = False
             if part.text:
-                contents.append(TextPromptMessageContent(data=part.text))
+                contents.append(TextPromptMessageContent(data=msg))
             if part.function_call:
                 function_call = part.function_call
                 # Generate a unique ID since Gemini API doesn't provide one
@@ -614,7 +637,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         message = AssistantPromptMessage(
             content=contents, tool_calls=function_calls  # type: ignore
         )
-        return message
+        return message, hasThought
     
     def _convert_to_contents(self, prompt_messages: Sequence[PromptMessage]) -> list[types.ContentDict]:
         """_convert_to_content convert input prompt messages to contents sent to Google 

@@ -574,6 +574,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             model_properties=model_properties,
             parameter_rules=rules,
             features=model_config.features,
+            pricing=model_config.pricing,
         )
         return entity
 

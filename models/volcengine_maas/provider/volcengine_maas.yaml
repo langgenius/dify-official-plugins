@@ -112,6 +112,12 @@ model_credential_schema:
       zh_Hans: 基础模型
     options:
     - label:
+        en_US: Kimi-K2
+      value: Kimi-K2
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
         en_US: Doubao-Seed-1.6
       value: Doubao-Seed-1.6
       show_on:

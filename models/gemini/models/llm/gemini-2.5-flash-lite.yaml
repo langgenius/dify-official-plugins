@@ -1,0 +1,70 @@
+# https://ai.google.dev/gemini-api/docs/models?hl=zh-cn#gemini-2.5-flash-lite
+model: gemini-2.5-flash-lite
+label:
+  en_US: Gemini 2.5 Flash-Lite
+model_type: llm
+features:
+  - tool-call
+  - multi-tool-call
+  - agent-thought
+  - vision
+  - stream-tool-call
+  - document
+  - video
+  - audio
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    default: 1
+    min: 0
+    max: 2
+  - name: top_p
+    use_template: top_p
+  - name: top_k
+    label:
+      zh_Hans: 取样数量
+      en_US: Top k
+    type: int
+    help:
+      zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
+      en_US: Only sample from the top K options for each subsequent token.
+    required: false
+  - name: thinking_budget
+    default: 8192
+    min: 512
+    max: 24576
+    label:
+      en_US: Thinking Budget
+      zh_Hans: 思考预算
+    type: int
+    help:
+      en_US: The token budget used for CoT of the model, if you don't need CoT then leave this parameter off
+      zh_Hans: 大模型用于思维链的Token预算，如果不需要思维链则保持该开关关闭
+  - name: max_output_tokens
+    use_template: max_tokens
+    default: 65536
+    min: 1
+    max: 65536
+  - name: grounding
+    label:
+      en_US: Grounding
+      zh_Hans: 事实核查
+      ja_JP: 事実チェック
+    type: boolean
+    help:
+      en_US: Grounding with Google Search
+      zh_Hans: Google 事实核查
+      ja_JP: Google検索に基づいた応答をします。
+    required: true
+    default: false
+  - name: json_schema
+    use_template: json_schema
+# https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-2.5-flash-lite
+pricing:
+  input: '0.10'
+  output: '0.40'
+  unit: '0.000001'
+  currency: USD
