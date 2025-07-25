@@ -1,4 +1,4 @@
-version: 0.0.18
+version: 0.0.19
 type: plugin
 author: "langgenius"
 name: "openai_api_compatible"
