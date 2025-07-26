@@ -1,0 +1,18 @@
+identity:
+  name: "get_lists"
+  author: "langgenius"
+  label:
+    en_US: "Get Lists"
+    zh_CN: "获取 列表"
+    ja_JP: "リストを取得"
+    pt_BR: "Obter listas"
+description:
+  human:
+    en_US: "List your Microsoft To Do lists in Dify"
+    zh_CN: "列出您的 Microsoft To Do 列表"
+    ja_JP: "DifyでMicrosoft To Doリストを一覧表示"
+    pt_BR: "Liste suas tarefas do Microsoft To Do"
+  llm: "List your Microsoft To Do lists in Dify"
+extra:
+  python:
+    source: tools/get_lists.py
