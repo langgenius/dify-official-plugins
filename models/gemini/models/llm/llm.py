@@ -1,15 +1,13 @@
 import base64
-import logging
-import tempfile
 import json
-import time
+import logging
 import os
+import tempfile
+import time
 from collections.abc import Generator, Iterator, Sequence
 from typing import Optional, Union, Mapping, Any
 
 import requests
-from google import genai
-from google.genai import errors, types
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
@@ -35,9 +33,10 @@ from dify_plugin.errors.model import (
     InvokeServerUnavailableError,
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
+from google import genai
+from google.genai import errors, types
 
 from .utils import FileCache
-
 
 file_cache = FileCache()
 
@@ -203,17 +202,45 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         if stop:
             config.stop_sequences = stop
-        thinking_budget = model_parameters.get("thinking_budget", 0)
-        include_thoughts = thinking_budget > 0
 
         config.top_p = model_parameters.get("top_p", None)
         config.top_k = model_parameters.get("top_k", None)
         config.temperature = model_parameters.get("temperature", None)
         config.max_output_tokens = model_parameters.get("max_output_tokens", None)
-        if include_thoughts:
-            config.thinking_config = types.ThinkingConfig(
-                include_thoughts=include_thoughts, thinking_budget=thinking_budget
-            )
+
+        # == ThinkingConfig == #
+        # To reduce ambiguity, when both configurable parameters are not specified,
+        # this configuration should not be explicitly declared.
+
+        # For models that do not support the reasoning mode (such as gemini-2.0-flash),
+        # incorrectly setting include_thoughts to True will not cause a system error.
+
+        # When include_thoughts is True, thinking_budget must not be None to obtain valid thinking content.
+
+        # However, setting thinking_budget for models that do not support the thinking mode
+        # will result in a 400 INVALID_ARGUMENT error.
+
+        include_thoughts = model_parameters.get("include_thoughts", None)
+        thinking_budget = model_parameters.get("thinking_budget", None)
+        thinking_mode = model_parameters.get("thinking_mode", None)
+
+        # Must be explicitly handled here, where the three states True, False, and None each have specific meanings.
+        if thinking_mode is None:
+            if isinstance(thinking_budget, int) and thinking_budget == 0:
+                thinking_budget = -1
+        elif thinking_mode is False:
+            thinking_budget = 0
+        elif thinking_mode:
+            if (isinstance(thinking_budget, int) and thinking_budget == 0) or (
+                thinking_budget is None
+            ):
+                thinking_budget = -1
+
+        print(f"{thinking_mode=} {thinking_budget=} {include_thoughts=}")
+
+        config.thinking_config = types.ThinkingConfig(
+            include_thoughts=include_thoughts, thinking_budget=thinking_budget
+        )
 
         config.tools = []
         if model_parameters.get("grounding"):
@@ -464,7 +491,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         index = -1
         prompt_tokens = 0
         completion_tokens = 0
-        thinking_started = False
         for chunk in response:
             if not chunk.candidates:
                 continue
@@ -472,10 +498,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 if not candidate.content or not candidate.content.parts:
                     continue
 
-                message, hasThought = self._parse_parts(thinking_started, candidate.content.parts)
-                thinking_started = hasThought
+                message = self._parse_parts(candidate.content.parts)
                 index += len(candidate.content.parts)
-
                 if chunk.usage_metadata:
                     completion_tokens += chunk.usage_metadata.candidates_token_count or 0
 
@@ -543,27 +567,36 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             ],
         }
 
-    def _parse_parts(
-        self, thought_started, parts: Sequence[types.Part], /
-    ) -> AssistantPromptMessage:
+    def _parse_parts(self, parts: Sequence[types.Part], /) -> AssistantPromptMessage:
+        """
+
+        Args:
+            parts: [
+            {
+              "video_metadata": null,
+              "thought": null,
+              "inline_data": null,
+              "file_data": null,
+              "thought_signature": null,
+              "code_execution_result": null,
+              "executable_code": null,
+              "function_call": null,
+              "function_response": null,
+              "text": "<|CHUNK|>"
+            }
+          ]
+
+        Returns:
+
+        """
         contents: list[PromptMessageContent] = []
         function_calls = []
-        hasThought = thought_started
         for part in parts:
-            if part.thought:
-                if not hasThought:
-                    msg = "<thinking>" + part.text
-                else:
-                    msg = part.text
-                hasThought = True
-            else:
-                if hasThought:
-                    msg = "</thinking>" + part.text
-                else:
-                    msg = part.text
-                hasThought = False
             if part.text:
-                contents.append(TextPromptMessageContent(data=msg))
+                contents.append(TextPromptMessageContent(data=part.text))
+                print(part)
+
+            # A predicted [FunctionCall] returned from the model that contains a string representing the [FunctionDeclaration.name] with the parameters and their values.
             if part.function_call:
                 function_call = part.function_call
                 # Generate a unique ID since Gemini API doesn't provide one
@@ -583,6 +616,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     ),
                 )
                 function_calls.append(function_call)
+
+            # Inlined bytes data
             if part.inline_data:
                 inline_data = part.inline_data
                 mime_type = inline_data.mime_type
@@ -611,7 +646,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         message = AssistantPromptMessage(
             content=contents, tool_calls=function_calls  # type: ignore
         )
-        return message, hasThought
+        return message
 
     def _convert_to_contents(
         self, prompt_messages: Sequence[PromptMessage]
