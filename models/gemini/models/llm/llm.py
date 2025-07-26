@@ -42,6 +42,8 @@ file_cache = FileCache()
 
 
 class GoogleLargeLanguageModel(LargeLanguageModel):
+    is_thinking = None
+
     def _invoke(
         self,
         model: str,
@@ -491,6 +493,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         index = -1
         prompt_tokens = 0
         completion_tokens = 0
+        self.is_thinking = False
         for chunk in response:
             if not chunk.candidates:
                 continue
@@ -512,6 +515,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     )
                 # if the stream is finished, yield the chunk and the finish reason
                 else:
+                    # If we're still in thinking mode at the end, close it
+                    if self.is_thinking:
+                        message.content.append(TextPromptMessageContent(data="\n\n</think>"))
                     if chunk.usage_metadata:
                         prompt_tokens = chunk.usage_metadata.prompt_token_count or 0
                         if chunk.usage_metadata.thoughts_token_count:
@@ -593,8 +599,17 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         function_calls = []
         for part in parts:
             if part.text:
+                # Check if we need to start thinking mode
+                if part.thought is True and not self.is_thinking:
+                    contents.append(TextPromptMessageContent(data="<think>\n\n"))
+                    self.is_thinking = True
+
+                # Check if we need to end thinking mode
+                elif part.thought is None and self.is_thinking:
+                    contents.append(TextPromptMessageContent(data="\n\n</think>"))
+                    self.is_thinking = False
+
                 contents.append(TextPromptMessageContent(data=part.text))
-                print(part)
 
             # A predicted [FunctionCall] returned from the model that contains a string representing the [FunctionDeclaration.name] with the parameters and their values.
             if part.function_call:

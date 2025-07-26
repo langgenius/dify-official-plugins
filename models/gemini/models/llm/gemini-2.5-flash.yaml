@@ -55,8 +55,8 @@ parameter_rules:
       en_US: Thinking Mode
       zh_Hans: 思考模式
     help:
-      en_US: Enable or disable thinking for responses
-      zh_Hans: 是否开启思考模式
+      en_US: Whether to enable thinking mode. If true and thinking_budget is not set, turn on dynamic thinking.
+      zh_Hans: 是否开启思考模式。若为 true 且 thinking_budget 未设置，则开启动态预算推理。
   - name: thinking_budget
     type: int
     required: false
@@ -67,8 +67,8 @@ parameter_rules:
       en_US: Thinking Budget
       zh_Hans: 思考预算
     help:
-      en_US: Indicates the thinking budget in tokens. This value is valid only when thinking mode is enabled. The default values and allowed ranges are model dependent.
-      zh_Hans: 大模型的思考预算。仅在思考模式启动时该值有效。默认值和允许范围取决于模型。
+      en_US: Indicates the thinking budget in tokens. This value is valid only when thinking mode is enabled. The default values and allowed ranges are model dependent. When enabling the thinking mode, if the thinking budget is not set, the default is to enable dynamic budget reasoning.
+      zh_Hans: 大模型的思考预算。仅在思考模式启动时该值有效。默认值和允许范围取决于模型。开启思考模式时，若未设置思考预算，则默认开启动态预算推理。
   - name: grounding
     type: boolean
     required: true

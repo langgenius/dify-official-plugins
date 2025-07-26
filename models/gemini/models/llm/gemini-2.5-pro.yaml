@@ -57,8 +57,8 @@ parameter_rules:
       en_US: Thinking Budget
       zh_Hans: 思考预算
     help:
-      en_US: Indicates the thinking budget in tokens. This value is valid only when thinking mode is enabled. The default values and allowed ranges are model dependent.
-      zh_Hans: 大模型的思考预算。仅在思考模式启动时该值有效。默认值和允许范围取决于模型。
+      en_US: Indicates the thinking budget in tokens. This value is valid only when thinking mode is enabled. The default values and allowed ranges are model dependent. Ff the thinking budget is not set, the default is to enable dynamic budget reasoning.
+      zh_Hans: 大模型的思考预算。仅在思考模式启动时该值有效。默认值和允许范围取决于模型。若未设置思考预算，则默认开启动态预算推理。
   - name: grounding
     type: boolean
     required: true
