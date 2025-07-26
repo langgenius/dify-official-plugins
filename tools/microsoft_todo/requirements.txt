@@ -2,5 +2,6 @@
 # Please do not edit it manually.
 
 dify-easy>=0.1.0
-dify-plugin==0.4.2b1
+dify-plugin>=0.4.2,<0.5.0
 pymstodo>=0.2.0
+structlog>=25.4.0

@@ -20,7 +20,7 @@ This plugin integrates with Microsoft To Do, supporting operations such as retri
     - **Name**: Dify To Do Plugin
     - **Supported account types**: select `Accounts in any organizational directory (Any Microsoft Entra ID tenant - Multitenant) and personal Microsoft accounts (e.g. Skype, Xbox)`
     - **Redirect URI**: Choose `Web` and set the URI to:
-        - For SaaS (cloud.dify.ai) users: please use `https://cloud.dify.dev/console/api/oauth/plugin/langgenius/microsoft_todo/microsoft_todo/tool/callback`
+        - For SaaS (cloud.dify.ai) users: please use `https://cloud.dify.ai/console/api/oauth/plugin/langgenius/microsoft_todo/microsoft_todo/tool/callback`
         - For self-hosted users: please use `http://<YOUR LOCALHOST CONSOLE_API_URL>/console/api/oauth/plugin/langgenius/microsoft_todo/microsoft_todo/tool/callback`
         ***Due to the restrictions of the Microsoft OAuth2 flow, redirect URIs must start with `https://` or `http://localhost`.***
 

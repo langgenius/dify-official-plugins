@@ -12,10 +12,15 @@ class GetListsTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
 
         token: Token = Token(**json.loads(self.runtime.credentials["token"]))
+        # log.debug(f"Runtime credentials expires at: {token.get('expires_at')}")
         if not token:
             raise ValueError("Token is required to invoke this tool.")
 
-        todo_client = ToDoConnection(client_id="", client_secret="", token=token)
+        todo_client = ToDoConnection(
+            client_id="",
+            client_secret="",
+            token=token,
+        )
 
         lists = [
             {
