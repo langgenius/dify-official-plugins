@@ -24,7 +24,3 @@ BREAKING CHANGE:
   Requires Dify version `>=1.3.0`. Older version of Dify should use Gemini version 
   ">=0.1.0,<0.2.0", or dify will encounter error while using Gemini models with multimodal
   capability.
-
-```bash
-uv pip compile pyproject.toml -o ./requirements.txt
-```
