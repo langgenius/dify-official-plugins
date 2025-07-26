@@ -10,11 +10,7 @@ from typing import Optional, Union, Mapping, Any
 import requests
 from google import genai
 from google.genai import errors, types
-from dify_plugin.entities.model.llm import (
-    LLMResult,
-    LLMResultChunk,
-    LLMResultChunkDelta,
-)
+from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
@@ -22,7 +18,6 @@ from dify_plugin.entities.model.message import (
     PromptMessageContent,
     AudioPromptMessageContent,
     DocumentPromptMessageContent,
-    ImagePromptMessageContent,
     ImagePromptMessageContent,
     TextPromptMessageContent,
     PromptMessageContentType,
@@ -34,11 +29,9 @@ from dify_plugin.entities.model.message import (
 )
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
-    InvokeAuthorizationError,
     InvokeBadRequestError,
     InvokeConnectionError,
     InvokeError,
-    InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
@@ -76,14 +69,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         """
         _ = user
         return self._generate(
-            model,
-            credentials,
-            prompt_messages,
-            model_parameters,
-            tools,
-            stop,
-            stream,
-            user,
+            model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
         )
 
     def get_num_tokens(
@@ -113,9 +99,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: Combined string with necessary human_prompt and ai_prompt tags.
         """
         messages = messages.copy()
-        text = "".join(
-            (self._convert_one_message_to_text(message) for message in messages)
-        )
+        text = "".join((self._convert_one_message_to_text(message) for message in messages))
         return text.rstrip()
 
     def _convert_tools_to_glm_tool(self, tools: list[PromptMessageTool]) -> types.Tool:
@@ -129,10 +113,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         for tool in tools:
             properties = {}
             for key, value in tool.parameters.get("properties", {}).items():
-                property_def = {
-                    "type": "STRING",
-                    "description": value.get("description", ""),
-                }
+                property_def = {"type": "STRING", "description": value.get("description", "")}
                 if "enum" in value:
                     property_def["enum"] = value["enum"]
                 properties[key] = property_def
@@ -147,9 +128,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 parameters = None
 
             functions = types.FunctionDeclaration(
-                name=tool.name,
-                parameters=parameters,
-                description=tool.description,
+                name=tool.name, parameters=parameters, description=tool.description
             )
             function_declarations.append(functions)
 
@@ -174,20 +153,19 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             )
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
-        
+
     def _get_response_modalities(self, model: str) -> list[str]:
-        """_get_response_modalities returns response modalities supported 
+        """_get_response_modalities returns response modalities supported
         by the given model.
         """
-        # FIXME(QuantumGhost): Multimodal output is currently limited to 
+        # FIXME(QuantumGhost): Multimodal output is currently limited to
         # the gemini-2.0-flash-experiment and
-        # gemini-2.0-flash-preview-image-generationmodel. The model name is currently 
+        # gemini-2.0-flash-preview-image-generationmodel. The model name is currently
         # hardcoded for simplicity; consider revisiting this approach for flexibility.
-        if model != "gemini-2.0-flash-exp" and model != "gemini-2.0-flash-preview-image-generation" :
+        if model != "gemini-2.0-flash-exp" and model != "gemini-2.0-flash-preview-image-generation":
             return ["Text"]
-        
-        return ["Text", "Image"]
 
+        return ["Text", "Image"]
 
     def _generate(
         self,
@@ -233,7 +211,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         config.temperature = model_parameters.get("temperature", None)
         config.max_output_tokens = model_parameters.get("max_output_tokens", None)
         if include_thoughts:
-            config.thinking_config = types.ThinkingConfig(include_thoughts=include_thoughts, thinking_budget=thinking_budget)
+            config.thinking_config = types.ThinkingConfig(
+                include_thoughts=include_thoughts, thinking_budget=thinking_budget
+            )
 
         config.tools = []
         if model_parameters.get("grounding"):
@@ -247,9 +227,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         file_server_url_prefix = credentials.get("file_url") or None
         for msg in prompt_messages:  # makes message roles strictly alternating
             content = self._format_message_to_glm_content(
-                msg, 
-                genai_client=genai_client, 
-                file_server_url_prefix=file_server_url_prefix)
+                msg, genai_client=genai_client, file_server_url_prefix=file_server_url_prefix
+            )
             if history and history[-1].role == content.role:
                 history[-1].parts.extend(content.parts)
             else:
@@ -257,16 +236,14 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # contents = self._convert_to_contents(prompt_messages=prompt_messages)
         if stream:
             response = genai_client.models.generate_content_stream(
-                model=model,
-                contents=history,
-                config=config,
+                model=model, contents=history, config=config
             )
-            return self._handle_generate_stream_response(model, credentials, response, prompt_messages)
+            return self._handle_generate_stream_response(
+                model, credentials, response, prompt_messages
+            )
 
         response = genai_client.models.generate_content(
-            model=model,
-            contents=history,
-            config=config,
+            model=model, contents=history, config=config
         )
         return self._handle_generate_response(model, credentials, response, prompt_messages)
 
@@ -292,14 +269,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             raise ValueError(f"Got unknown type {message}")
         return message_text
 
-    def _get_system_instruction(
-        self, *, prompt_messages: Sequence[PromptMessage]
-    ) -> str:
-        # `prompt_messages` should be a sequence containing at least one 
+    def _get_system_instruction(self, *, prompt_messages: Sequence[PromptMessage]) -> str:
+        # `prompt_messages` should be a sequence containing at least one
         # `SystemPromptMessage`.
-        # If the sequence is empty or the first element is not a 
-        # `SystemPromptMessage`, 
-        # the method returns an empty string, effectively indicating the 
+        # If the sequence is empty or the first element is not a
+        # `SystemPromptMessage`,
+        # the method returns an empty string, effectively indicating the
         # absence of a system instruction.
         if len(prompt_messages) == 0:
             return ""
@@ -323,9 +298,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         return system_instruction
 
     def _format_message_to_glm_content(
-            self, message: PromptMessage, genai_client: genai.Client, 
-            file_server_url_prefix: str|None=None,
-        ) -> types.Content:
+        self,
+        message: PromptMessage,
+        genai_client: genai.Client,
+        file_server_url_prefix: str | None = None,
+    ) -> types.Content:
         """
         Format a single message into glm.Content for Google API
 
@@ -342,9 +319,13 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                         glm_content.parts.append(types.Part.from_text(text=c.data))
                     else:
                         uri, mime_type = self._upload_file_content_to_google(
-                            message_content=c, genai_client=genai_client, file_server_url_prefix=file_server_url_prefix
-                            )
-                        glm_content.parts.append(types.Part.from_uri(file_uri=uri, mime_type=mime_type))
+                            message_content=c,
+                            genai_client=genai_client,
+                            file_server_url_prefix=file_server_url_prefix,
+                        )
+                        glm_content.parts.append(
+                            types.Part.from_uri(file_uri=uri, mime_type=mime_type)
+                        )
 
             return glm_content
         elif isinstance(message, AssistantPromptMessage):
@@ -364,13 +345,18 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         elif isinstance(message, ToolPromptMessage):
             return types.Content(
                 role="function",
-                parts=[types.Part.from_function_response(name=message.name, response={"response": message.content})],
+                parts=[
+                    types.Part.from_function_response(
+                        name=message.name, response={"response": message.content}
+                    )
+                ],
             )
         else:
             raise ValueError(f"Got unknown type {message}")
 
     def _upload_file_content_to_google(
-        self, message_content: MultiModalPromptMessageContent,
+        self,
+        message_content: MultiModalPromptMessageContent,
         genai_client: genai.Client,
         file_server_url_prefix: str | None = None,
     ) -> types.File:
@@ -389,14 +375,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     if file_server_url_prefix:
                         file_url = f"{file_server_url_prefix.rstrip('/')}/files{message_content.url.split('/files')[-1]}"
                     if not file_url.startswith("https://") and not file_url.startswith("http://"):
-                        raise ValueError(f"Set FILES_URL env first!")
+                        raise ValueError("Set FILES_URL env first!")
                     response: requests.Response = requests.get(file_url)
                     response.raise_for_status()
                     temp_file.write(response.content)
                 except Exception as ex:
-                    raise ValueError(
-                        f"Failed to fetch data from url {file_url} {ex}"
-                    )
+                    raise ValueError(f"Failed to fetch data from url {file_url} {ex}")
             temp_file.flush()
         file = genai_client.files.upload(
             file=temp_file.name, config={"mime_type": message_content.mime_type}
@@ -415,11 +399,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         return file.uri, file.mime_type
 
     def _handle_generate_response(
-            self,
-            model: str,
-            credentials: dict,
-            response: types.GenerateContentResponse,
-            prompt_messages: list[PromptMessage],
+        self,
+        model: str,
+        credentials: dict,
+        response: types.GenerateContentResponse,
+        prompt_messages: list[PromptMessage],
     ) -> LLMResult:
         """
         Handle llm response
@@ -447,7 +431,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         # transform usage
         # copy credentials to avoid modifying the original dict
-        usage = self._calc_response_usage(model, dict(credentials), prompt_tokens, completion_tokens)
+        usage = self._calc_response_usage(
+            model, dict(credentials), prompt_tokens, completion_tokens
+        )
 
         # transform response
         result = LLMResult(
@@ -460,11 +446,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         return result
 
     def _handle_generate_stream_response(
-            self,
-            model: str,
-            credentials: dict,
-            response: Iterator[types.GenerateContentResponse],
-            prompt_messages: list[PromptMessage],
+        self,
+        model: str,
+        credentials: dict,
+        response: Iterator[types.GenerateContentResponse],
+        prompt_messages: list[PromptMessage],
     ) -> Generator[LLMResultChunk]:
         """
         Handle llm stream response
@@ -486,41 +472,34 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 if not candidate.content or not candidate.content.parts:
                     continue
 
-                message,hasThought = self._parse_parts(thinking_started, candidate.content.parts)
+                message, hasThought = self._parse_parts(thinking_started, candidate.content.parts)
                 thinking_started = hasThought
                 index += len(candidate.content.parts)
 
                 if chunk.usage_metadata:
-                    completion_tokens += (
-                        chunk.usage_metadata.candidates_token_count or 0
-                    )
+                    completion_tokens += chunk.usage_metadata.candidates_token_count or 0
 
                 # if the stream is not finished, yield the chunk
                 if not candidate.finish_reason:
                     yield LLMResultChunk(
                         model=model,
                         prompt_messages=list(prompt_messages),
-                        delta=LLMResultChunkDelta(
-                            index=index,
-                            message=message,
-                        ),
+                        delta=LLMResultChunkDelta(index=index, message=message),
                     )
                 # if the stream is finished, yield the chunk and the finish reason
                 else:
                     if chunk.usage_metadata:
                         prompt_tokens = chunk.usage_metadata.prompt_token_count or 0
                         if chunk.usage_metadata.thoughts_token_count:
-                            completion_tokens = completion_tokens + chunk.usage_metadata.thoughts_token_count
+                            completion_tokens = (
+                                completion_tokens + chunk.usage_metadata.thoughts_token_count
+                            )
                     if prompt_tokens == 0 or completion_tokens == 0:
                         prompt_tokens = self.get_num_tokens(
-                            model=model,
-                            credentials=credentials,
-                            prompt_messages=prompt_messages,
+                            model=model, credentials=credentials, prompt_messages=prompt_messages
                         )
                         completion_tokens = self.get_num_tokens(
-                            model=model,
-                            credentials=credentials,
-                            prompt_messages=[message],
+                            model=model, credentials=credentials, prompt_messages=[message]
                         )
                     usage = self._calc_response_usage(
                         model=model,
@@ -547,7 +526,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         for index, entry in enumerate(grounding_metadata.grounding_chunks, start=1):
             result += f"{index}. [{entry.web.title}]({entry.web.uri})\n"
         return result
-                
 
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
@@ -555,13 +533,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         Map model invoke error to unified error
         """
         return {
-            InvokeConnectionError: [
-                errors.APIError, 
-                errors.ClientError,
-            ],
-            InvokeServerUnavailableError: [
-                errors.ServerError,
-            ],
+            InvokeConnectionError: [errors.APIError, errors.ClientError],
+            InvokeServerUnavailableError: [errors.ServerError],
             InvokeBadRequestError: [
                 errors.ClientError,
                 errors.UnknownFunctionCallArgumentError,
@@ -570,7 +543,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             ],
         }
 
-    def _parse_parts(self, thought_started, parts: Sequence[types.Part], /) -> AssistantPromptMessage:
+    def _parse_parts(
+        self, thought_started, parts: Sequence[types.Part], /
+    ) -> AssistantPromptMessage:
         contents: list[PromptMessageContent] = []
         function_calls = []
         hasThought = thought_started
@@ -579,7 +554,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 if not hasThought:
                     msg = "<thinking>" + part.text
                 else:
-                    msg = part.text                    
+                    msg = part.text
                 hasThought = True
             else:
                 if hasThought:
@@ -604,8 +579,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     id=function_call_id,
                     type="function",
                     function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                        name=function_call_name,
-                        arguments=json.dumps(function_call_args),
+                        name=function_call_name, arguments=json.dumps(function_call_args)
                     ),
                 )
                 function_calls.append(function_call)
@@ -638,16 +612,18 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             content=contents, tool_calls=function_calls  # type: ignore
         )
         return message, hasThought
-    
-    def _convert_to_contents(self, prompt_messages: Sequence[PromptMessage]) -> list[types.ContentDict]:
-        """_convert_to_content convert input prompt messages to contents sent to Google 
+
+    def _convert_to_contents(
+        self, prompt_messages: Sequence[PromptMessage]
+    ) -> list[types.ContentDict]:
+        """_convert_to_content convert input prompt messages to contents sent to Google
         Gemini models.
         """
         contents: list[types.ContentDict] = []
 
         last_content: Optional[types.ContentDict] = None
         for prompt in prompt_messages:
-            # skip all `SystemPromptMessage` messages, since they are handled 
+            # skip all `SystemPromptMessage` messages, since they are handled
             # by `_get_system_instruction`.
             if isinstance(prompt, SystemPromptMessage):
                 continue
@@ -656,25 +632,22 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             if last_content is None:
                 last_content = content
                 continue
-            
-            if last_content.get('role') != content.get('role'):
+
+            if last_content.get("role") != content.get("role"):
                 contents.append(last_content)
                 last_content = content
                 continue
             # merge parts with the same role.
             parts = last_content.get("parts") or []
             parts.extend(content.get("parts") or [])
-            last_content = types.ContentDict(
-                parts=parts,
-                role=content.get("role"),
-            )
+            last_content = types.ContentDict(parts=parts, role=content.get("role"))
         # append the last content if exists
         if last_content is not None:
             contents.append(last_content)
         return contents
 
     def _convert_to_content_dict(self, prompt: PromptMessage) -> types.ContentDict:
-        
+
         role = "user" if isinstance(prompt, UserPromptMessage) else "model"
         parts = []
 
@@ -686,7 +659,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 parts.append(_content_to_part(content))
         else:
             raise InvokeError("prompt content must be a string or a list")
-        
+
         return types.ContentDict(parts=parts, role=role)
 
 
@@ -694,28 +667,25 @@ def _content_to_part(content: PromptMessageContent) -> types.Part:
     if isinstance(content, TextPromptMessageContent):
         return types.Part.from_text(text=content.data)
     elif isinstance(
-                    content,
-                    (ImagePromptMessageContent,
-                    DocumentPromptMessageContent,
-                    VideoPromptMessageContent,
-                    AudioPromptMessageContent,
-                    )
-                ):
+        content,
+        (
+            ImagePromptMessageContent,
+            DocumentPromptMessageContent,
+            VideoPromptMessageContent,
+            AudioPromptMessageContent,
+        ),
+    ):
         if content.url:
-            return types.Part.from_uri(
-                file_uri=content.url,
-                mime_type=content.mime_type,
-            )
+            return types.Part.from_uri(file_uri=content.url, mime_type=content.mime_type)
         else:
             return types.Part.from_bytes(
-                data=base64.b64decode(content.base64_data),
-                mime_type=content.mime_type,
+                data=base64.b64decode(content.base64_data), mime_type=content.mime_type
             )
     else:
         type_tag = getattr(content, "type", None)
-        # NOTE(QuantumGhost): The `PromptMessageContent` should be an ABC with an attribute named `type`. 
+        # NOTE(QuantumGhost): The `PromptMessageContent` should be an ABC with an attribute named `type`.
         # However, the current implementation does not include that attribute, so accessing `type` here will be flagged
         # by type checker.
-        # 
+        #
         # Ignore the error for now.
         raise InvokeError(f"unknown content type, type={type_tag}, python_type={type(content)}")  # type: ignore
