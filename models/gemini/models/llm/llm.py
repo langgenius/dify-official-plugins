@@ -191,6 +191,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         config = types.GenerateContentConfig()
         if system_instruction := self._get_system_instruction(prompt_messages=prompt_messages):
             config.system_instruction = system_instruction
+
+        # == ChatConfig == #
+
         if schema := model_parameters.get("json_schema"):
             try:
                 schema = json.loads(schema)
@@ -211,6 +214,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         config.max_output_tokens = model_parameters.get("max_output_tokens", None)
 
         # == ThinkingConfig == #
+
         # To reduce ambiguity, when both configurable parameters are not specified,
         # this configuration should not be explicitly declared.
 
@@ -244,6 +248,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         config.thinking_config = types.ThinkingConfig(
             include_thoughts=include_thoughts, thinking_budget=thinking_budget
         )
+
+        # == ToolUseConfig == #
 
         config.tools = []
         if model_parameters.get("grounding"):
