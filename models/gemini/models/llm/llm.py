@@ -238,6 +238,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             ):
                 thinking_budget = -1
 
+        # FIXME: remove log
         print(f"{thinking_mode=} {thinking_budget=} {include_thoughts=}")
 
         config.thinking_config = types.ThinkingConfig(
