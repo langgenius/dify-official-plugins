@@ -4,9 +4,10 @@ label:
   en_US: Gemini 2.5 Pro Experimental 03-25
 model_type: llm
 features:
+  - tool-call
+  - multi-tool-call
   - agent-thought
   - vision
-  - tool-call
   - stream-tool-call
   - document
   - video
@@ -31,23 +32,45 @@ parameter_rules:
       zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
       en_US: Only sample from the top K options for each subsequent token.
     required: false
+  - name: max_output_tokens
+    use_template: max_tokens
+    default: 65536
+    min: 1
+    max: 65536
+  - name: include_thoughts
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Include Thoughts
+      zh_Hans: 返回思考过程
+    help:
+      en_US: Indicates whether to include thoughts in the response. If true, thoughts are returned only if the model supports thought and thoughts are available.
+      zh_Hans: 是否返回思考过程。若为 true 则只有模型支持思考且启动思考模式时才返回思考过程。
   - name: thinking_budget
+    type: int
+    required: false
     default: 8192
     min: 128
     max: 32768
     label:
       en_US: Thinking Budget
       zh_Hans: 思考预算
-    type: int
     help:
-      en_US: The token budget used for CoT of the model, if you don't need CoT then leave this parameter off
-      zh_Hans: 大模型用于思维链的Token预算，如果不需要思维链则保持该开关关闭
+      en_US: Indicates the thinking budget in tokens. This value is valid only when thinking mode is enabled. The default values and allowed ranges are model dependent. If the thinking budget is not set, the default is to enable dynamic budget reasoning.
+      zh_Hans: 大模型的思考预算。仅在思考模式启动时该值有效。默认值和允许范围取决于模型。若未设置思考预算，则默认开启动态预算推理。
+  - name: grounding
+    type: boolean
     required: true
-  - name: max_output_tokens
-    use_template: max_tokens
-    default: 8192
-    min: 1
-    max: 64000
+    default: false
+    label:
+      en_US: Grounding
+      zh_Hans: 事实核查
+      ja_JP: 事実チェック
+    help:
+      en_US: Grounding with Google Search
+      zh_Hans: Google 事实核查
+      ja_JP: Google検索に基づいた応答をします。
   - name: json_schema
     use_template: json_schema
 pricing:
