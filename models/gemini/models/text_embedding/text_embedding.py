@@ -47,7 +47,10 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         max_chunks = self._get_max_chunks(model, credentials)
 
         # splitted texts in case the chunks are bigger than the context size
-        splitted_texts = [self._split_texts_to_fit_model_specs(client, model, [text], context_size) for text in texts]
+        splitted_texts = [
+            self._split_texts_to_fit_model_specs(client, model, [text], context_size)
+            for text in texts
+        ]
 
         # list batched texts of size <= max_chunks containing (text index, text)
         batched_texts: list[list[tuple[int, str]]] = [[]]
@@ -61,10 +64,7 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         splitted_embeddings: list[list[EmbeddingTokenPair]] = []
         for batch in batched_texts:
             embeddings_batch = self._embedding_invoke(
-                model=model,
-                client=client,
-                texts=[text for _, text in batch],
-                input_type=input_type,
+                model=model, client=client, texts=[text for _, text in batch], input_type=input_type
             )
             for i, (j, _) in enumerate(batch):
                 if j >= len(splitted_embeddings):
@@ -86,7 +86,10 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
             merged_embeddings.append(embedding)
             # sum up the number of tokens used if available or the count estimation from the text chunking
             used_tokens += sum(
-                [used_token or chunk_size for used_token, [_, chunk_size] in zip(num_tokens, splitted_texts[i])]
+                [
+                    used_token or chunk_size
+                    for used_token, [_, chunk_size] in zip(num_tokens, splitted_texts[i])
+                ]
             )
 
         # calc usage
@@ -117,10 +120,14 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
                         cutoff = context_size + match.start() + 1
                         break
                 splitted_text.extend(
-                    self._split_texts_to_fit_model_specs(client, model, [text[:cutoff]], context_size)
+                    self._split_texts_to_fit_model_specs(
+                        client, model, [text[:cutoff]], context_size
+                    )
                 )
                 splitted_text.extend(
-                    self._split_texts_to_fit_model_specs(client, model, [text[cutoff:]], context_size)
+                    self._split_texts_to_fit_model_specs(
+                        client, model, [text[cutoff:]], context_size
+                    )
                 )
             else:
                 splitted_text.append((text, num_tokens))
@@ -221,10 +228,7 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         """
         # get input price info
         input_price_info = self.get_price(
-            model=model,
-            credentials=credentials,
-            price_type=PriceType.INPUT,
-            tokens=tokens,
+            model=model, credentials=credentials, price_type=PriceType.INPUT, tokens=tokens
         )
 
         # transform usage

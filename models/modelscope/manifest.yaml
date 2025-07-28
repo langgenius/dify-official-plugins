@@ -1,9 +1,9 @@
-version: 0.0.4
+version: 0.0.5
 type: plugin
 author: langgenius
 name: modelscope
 label:
-  en_US: modelscope
+  en_US: ModelScope
   zh_Hans: 魔搭社区
 description:
   en_US: Models provided by ModelScope
