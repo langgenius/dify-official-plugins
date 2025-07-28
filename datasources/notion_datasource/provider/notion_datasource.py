@@ -58,7 +58,7 @@ class NotionDatasourceProvider(DatasourceProvider):
             name=workspace_name,
             avatar_url=workspace_icon,
             credentials={
-                "access_token": access_token,
+                "integration_secret": access_token,
                 "workspace_name": workspace_name,
                 "workspace_icon": workspace_icon,
                 "workspace_id": workspace_id,
