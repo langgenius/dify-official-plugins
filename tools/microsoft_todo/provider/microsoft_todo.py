@@ -127,7 +127,7 @@ class MicrosoftTodoProvider(ToolProvider):
             )
             expires_at = new_token["expires_at"]
 
-            log.debug(f"New token expires at: {expires_at}")
+            # log.debug(f"New token expires at: {expires_at}")
 
             token_str = json.dumps(new_token)
             return ToolOAuthCredentials(
