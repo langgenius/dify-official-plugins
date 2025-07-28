@@ -1,7 +1,7 @@
 from collections.abc import Generator
 from typing import Any
 import requests
-import msal
+import urllib.parse
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
@@ -14,15 +14,10 @@ class PrioritizeEmailTool(Tool):
         """
         try:
             # Get parameters
-            user_email = self.runtime.credentials.get("user_email")
             email_id = tool_parameters.get("email_id", "")
             priority_level = tool_parameters.get("priority_level", "normal")
             
             # Validate required parameters
-            if not user_email:
-                yield self.create_text_message("User email is required in credentials.")
-                return
-                
             if not email_id:
                 yield self.create_text_message("Email ID is required.")
                 return
@@ -31,24 +26,15 @@ class PrioritizeEmailTool(Tool):
                 yield self.create_text_message("Priority level must be 'low', 'normal', or 'high'.")
                 return
                 
-            # Get credentials
-            client_id = self.runtime.credentials.get("client_id")
-            client_secret = self.runtime.credentials.get("client_secret")
-            tenant_id = self.runtime.credentials.get("tenant_id")
-            
-            if not all([client_id, client_secret, tenant_id]):
-                yield self.create_text_message("Azure AD credentials are required.")
+            # Get access token from OAuth credentials
+            access_token = self.runtime.credentials.get("access_token")
+            if not access_token:
+                yield self.create_text_message("Access token is required in credentials.")
                 return
             
             try:
-                # Get access token
-                access_token = self._get_access_token(client_id, client_secret, tenant_id)
-                if not access_token:
-                    yield self.create_text_message("Failed to acquire access token.")
-                    return
-                
                 # Update email priority
-                result = self._update_email_priority(access_token, user_email, email_id, priority_level)
+                result = self._update_email_priority(access_token, email_id, priority_level)
                 
                 if isinstance(result, str):  # Error message
                     yield self.create_text_message(result)
@@ -66,44 +52,21 @@ class PrioritizeEmailTool(Tool):
             yield self.create_text_message(f"Error: {str(e)}")
             return
     
-    def _get_access_token(self, client_id: str, client_secret: str, tenant_id: str) -> str:
-        """
-        Get access token using client credentials flow
-        """
-        try:
-            app = msal.ConfidentialClientApplication(
-                client_id=client_id,
-                client_credential=client_secret,
-                authority=f"https://login.microsoftonline.com/{tenant_id}"
-            )
-            
-            result = app.acquire_token_for_client(
-                scopes=["https://graph.microsoft.com/.default"]
-            )
-            
-            if "access_token" in result:
-                return result["access_token"]
-            else:
-                error_desc = result.get("error_description", "Unknown error")
-                print(f"Token acquisition failed: {error_desc}")
-                return None
-                
-        except Exception as e:
-            print(f"Error getting access token: {str(e)}")
-            return None
-    
-    def _update_email_priority(self, access_token: str, user_email: str, email_id: str, priority_level: str):
+    def _update_email_priority(self, access_token: str, email_id: str, priority_level: str):
         """
         Update email priority using Microsoft Graph API
         """
         try:
+            # URL encode the email ID to handle special characters
+            encoded_email_id = urllib.parse.quote(email_id, safe='')
+            
             # Build the update payload
             update_data = {
                 "importance": priority_level
             }
             
-            # API endpoint
-            url = f"https://graph.microsoft.com/v1.0/users/{user_email}/messages/{email_id}"
+            # API endpoint using /me
+            url = f"https://graph.microsoft.com/v1.0/me/messages/{encoded_email_id}"
             
             # Headers
             headers = {

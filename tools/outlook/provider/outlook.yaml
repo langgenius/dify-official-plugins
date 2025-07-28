@@ -2,11 +2,10 @@ identity:
   author: langgenius
   name: outlook
   label:
-    en_US: Outlook (client credential flow)
-    zh_Hans: Outlook (client credential flow)
-    pt_BR: Outlook (client credential flow)
-    ja_JP: Outlook (client credential flow)
-    zh_Hant: Outlook (client credential flow)
+    en_US: Outlook 
+    zh_Hans: Outlook 
+    pt_BR: Outlook 
+    zh_Hant: Outlook
   description:
     en_US: Interact with Outlook emails
     zh_Hans: 与 Outlook 邮件交互
@@ -14,94 +13,95 @@ identity:
     ja_JP: Outlook メールと連携する
     zh_Hant: 與 Outlook 郵件互動
   icon: icon.svg
-credentials_for_provider:
-  client_id:
-    type: text-input
-    required: true
-    label:
-      en_US: Client ID
-      zh_Hans: 客户端 ID
-      pt_BR: ID do Cliente
-      ja_JP: クライアント ID
-      zh_Hant: 客戶端 ID
-    placeholder:
-      en_US: Please input your Azure AD application client ID
-      zh_Hans: 请输入您的 Azure AD 应用程序客户端 ID
-      pt_BR: Por favor, insira o ID do cliente do seu aplicativo Azure AD
-      ja_JP: Azure AD アプリケーションのクライアント ID を入力してください
-      zh_Hant: 請輸入您的 Azure AD 應用程式客戶端 ID
-    help:
-      en_US: Get your client ID from Azure Portal > App Registrations
-      zh_Hans: 从 Azure 门户 > 应用注册获取您的客户端 ID
-      pt_BR: Obtenha seu ID de cliente no Portal do Azure > Registros de Aplicativos
-      ja_JP: Azure ポータル > アプリの登録からクライアント ID を取得してください
-      zh_Hant: 請從 Azure 入口網站 > 應用程式註冊取得您的客戶端 ID
-    url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
-  client_secret:
-    type: secret-input
-    required: true
-    label:
-      en_US: Client Secret
-      zh_Hans: 客户端密钥
-      pt_BR: Segredo do Cliente
-      ja_JP: クライアントシークレット
-      zh_Hant: 客戶端密鑰
-    placeholder:
-      en_US: Please input your Azure AD application client secret
-      zh_Hans: 请输入您的 Azure AD 应用程序客户端密钥
-      pt_BR: Por favor, insira o segredo do cliente do seu aplicativo Azure AD
-      ja_JP: Azure AD アプリケーションのクライアントシークレットを入力してください
-      zh_Hant: 請輸入您的 Azure AD 應用程式客戶端密鑰
-    help:
-      en_US: Get your client secret from Azure Portal > App Registrations > Your App > Certificates & secrets
-      zh_Hans: 从 Azure 门户 > 应用注册 > 您的应用 > 证书和密码获取您的客户端密钥
-      pt_BR: Obtenha seu segredo de cliente no Portal do Azure > Registros de Aplicativos > Seu Aplicativo > Certificados e segredos
-      ja_JP: Azure ポータル > アプリの登録 > あなたのアプリ > 証明書とシークレットからクライアントシークレットを取得してください
-      zh_Hant: 請從 Azure 入口網站 > 應用程式註冊 > 您的應用程式 > 憑證和祕密取得您的客戶端密鑰
-    url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
-  tenant_id:
-    type: text-input
-    required: true
-    label:
-      en_US: Tenant ID
-      zh_Hans: 租户 ID
-      pt_BR: ID do Locatário
-      ja_JP: テナント ID
-      zh_Hant: 租戶 ID
-    placeholder:
-      en_US: Please input your Azure AD tenant ID
-      zh_Hans: 请输入您的 Azure AD 租户 ID
-      pt_BR: Por favor, insira o ID do locatário do seu Azure AD
-      ja_JP: Azure AD テナント ID を入力してください
-      zh_Hant: 請輸入您的 Azure AD 租戶 ID
-    help:
-      en_US: Get your tenant ID from Azure Portal > Azure Active Directory > Properties
-      zh_Hans: 从 Azure 门户 > Azure Active Directory > 属性获取您的租户 ID
-      pt_BR: Obtenha seu ID de locatário no Portal do Azure > Azure Active Directory > Propriedades
-      ja_JP: Azure ポータル > Azure Active Directory > プロパティからテナント ID を取得してください
-      zh_Hant: 請從 Azure 入口網站 > Azure Active Directory > 屬性取得您的租戶 ID
-    url: https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/Properties
-  user_email:
-    type: text-input
-    required: true
-    label:
-      en_US: User Email
-      zh_Hans: 用户邮箱
-      pt_BR: Email do Usuário
-      ja_JP: ユーザーメール
-      zh_Hant: 用戶郵箱
-    placeholder:
-      en_US: Please input the email address to access
-      zh_Hans: 请输入要访问的邮箱地址
-      pt_BR: Por favor, insira o endereço de email para acessar
-      ja_JP: アクセスするメールアドレスを入力してください
-      zh_Hant: 請輸入要訪問的郵箱地址
-    help:
-      en_US: The email address you want to access. This must be a valid email in your Azure AD tenant.
-      zh_Hans: 您要访问的邮箱地址。这必须是您的 Azure AD 租户中的有效邮箱。
-      pt_BR: O endereço de email que você deseja acessar. Deve ser um email válido no seu locatário Azure AD.
-      ja_JP: アクセスしたいメールアドレス。Azure AD テナント内の有効なメールアドレスである必要があります。
-      zh_Hant: 您要訪問的郵箱地址。這必須是您的 Azure AD 租戶中的有效郵箱。
+oauth_schema:
+  client_schema:
+    - name: "client_id"
+      type: "text-input"
+      required: true
+      label:
+        en_US: "Client ID"
+        zh_Hans: "客户端 ID"
+        pt_BR: "ID do Cliente"
+        ja_JP: "クライアント ID"
+        zh_Hant: "客戶端 ID"
+      placeholder:
+        en_US: "Please input your Azure AD application client ID"
+        zh_Hans: "请输入您的 Azure AD 应用程序客户端 ID"
+        pt_BR: "Por favor, insira o ID do cliente do seu aplicativo Azure AD"
+        ja_JP: "Azure AD アプリケーションのクライアント ID を入力してください"
+        zh_Hant: "請輸入您的 Azure AD 應用程式客戶端 ID"
+      help:
+        en_US: "Get your client ID from Azure Portal > App Registrations"
+        zh_Hans: "从 Azure 门户 > 应用注册获取您的客户端 ID"
+        pt_BR: "Obtenha seu ID de cliente no Portal do Azure > Registros de Aplicativos"
+        ja_JP: "Azure ポータル > アプリの登録からクライアント ID を取得してください"
+        zh_Hant: "請從 Azure 入口網站 > 應用程式註冊取得您的客戶端 ID"
+      url: "https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade"
+    - name: "client_secret"
+      type: "secret-input"
+      required: true
+      label:
+        en_US: "Client Secret"
+        zh_Hans: "客户端密钥"
+        pt_BR: "Segredo do Cliente"
+        ja_JP: "クライアントシークレット"
+        zh_Hant: "客戶端密鑰"
+      placeholder:
+        en_US: "Please input your Azure AD application client secret"
+        zh_Hans: "请输入您的 Azure AD 应用程序客户端密钥"
+        pt_BR: "Por favor, insira o segredo do cliente do seu aplicativo Azure AD"
+        ja_JP: "Azure AD アプリケーションのクライアントシークレットを入力してください"
+        zh_Hant: "請輸入您的 Azure AD 應用程式客戶端密鑰"
+      help:
+        en_US: "Get your client secret from Azure Portal > App Registrations > Your App > Certificates & secrets"
+        zh_Hans: "从 Azure 门户 > 应用注册 > 您的应用 > 证书和密码获取您的客户端密钥"
+        pt_BR: "Obtenha seu segredo de cliente no Portal do Azure > Registros de Aplicativos > Seu Aplicativo > Certificados e segredos"
+        ja_JP: "Azure ポータル > アプリの登録 > あなたのアプリ > 証明書とシークレットからクライアントシークレットを取得してください"
+        zh_Hant: "請從 Azure 入口網站 > 應用程式註冊 > 您的應用程式 > 憑證和祕密取得您的客戶端密鑰"
+      url: "https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade"
+    - name: "tenant_id"
+      type: "text-input"
+      required: true
+      label:
+        en_US: "Tenant ID"
+        zh_Hans: "租户 ID"
+        pt_BR: "ID do Locatário"
+        ja_JP: "テナント ID"
+        zh_Hant: "租戶 ID"
+      placeholder:
+        en_US: "Please input your Azure AD tenant ID"
+        zh_Hans: "请输入您的 Azure AD 租户 ID"
+        pt_BR: "Por favor, insira o ID do locatário do seu Azure AD"
+        ja_JP: "Azure AD テナント ID を入力してください"
+        zh_Hant: "請輸入您的 Azure AD 租戶 ID"
+      help:
+        en_US: "Get your tenant ID from Azure Portal > Azure Active Directory > Properties"
+        zh_Hans: "从 Azure 门户 > Azure Active Directory > 属性获取您的租户 ID"
+        pt_BR: "Obtenha seu ID de locatário no Portal do Azure > Azure Active Directory > Propriedades"
+        ja_JP: "Azure ポータル > Azure Active Directory > プロパティからテナント ID を取得してください"
+        zh_Hant: "請從 Azure 入口網站 > Azure Active Directory > 屬性取得您的租戶 ID"
+      url: "https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/Properties"
+  credentials_schema:
+    - name: "access_token"
+      type: "secret-input"
+      label:
+        en_US: "Access Token"
+        zh_Hans: "访问令牌"
+        pt_BR: "Token de Acesso"
+        ja_JP: "アクセストークン"
+        zh_Hant: "存取權杖"
+      placeholder:
+        en_US: "Please input your Microsoft Graph access token"
+        zh_Hans: "请输入您的 Microsoft Graph 访问令牌"
+        pt_BR: "Por favor, insira seu token de acesso do Microsoft Graph"
+        ja_JP: "Microsoft Graph アクセストークンを入力してください"
+        zh_Hant: "請輸入您的 Microsoft Graph 存取權杖"
+      help:
+        en_US: "Get your access token from Microsoft Graph API"
+        zh_Hans: "从 Microsoft Graph API 获取您的访问令牌"
+        pt_BR: "Obtenha seu token de acesso da API do Microsoft Graph"
+        ja_JP: "Microsoft Graph API からアクセストークンを取得してください"
+        zh_Hant: "從 Microsoft Graph API 取得您的存取權杖"
 tools:
   - tools/list_messages.yaml
   - tools/get_message.yaml
