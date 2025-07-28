@@ -29,7 +29,7 @@ oauth_schema:
         en_US: Get your integration token from the Notion Integrations page
       url: https://www.notion.so/profile/integrations
   credentials_schema:
-    - name: access_token
+    - name: integration_secret
       type: secret-input
       label:
         zh_Hans: Access Token
