@@ -13,6 +13,7 @@ import httpx
 from dify_plugin.invocations.file import UploadFileResponse
 from requests import post, get, put
 from dify_plugin import Tool
+from dify_plugin.file.file import File
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from yarl import URL
