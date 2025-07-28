@@ -88,7 +88,7 @@ The plugin provides five types of output for each processed file:
 
 ### 2. Using a Locally Deployed MinerU Service
 
-Version 0.3.0 of the plugin corresponds to MinerU release 2.1.1.
+Version 0.3.1 of the plugin corresponds to MinerU release 2.1.1.
 
 #### Prerequisites
 
