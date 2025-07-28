@@ -40,14 +40,11 @@ This plugin uses OAuth 2.0 authorization code flow for secure authentication wit
 1. Go to Azure Portal > App Registrations
 2. Create a new registration
    ![](./_assets/readme1.png)
-3. Add Microsoft Graph API permissions:
-   - Mail.Read
-   - Mail.Send
-   - Mail.ReadWrite
-   ![](./_assets/readme2.png)
-4. Create a client secret
+3. Create a client secret
    ![](./_assets/readme3.png)
-5. Note down the client ID, client secret, and tenant ID
+4. Note down the client ID, client secret, and tenant ID
+   
+   > **Note**: If you're not an enterprise user, you can leave Tenant ID blank.
    ![](./_assets/readme4.png)
 
 #### Step 2: Install the Plugin in Dify
@@ -60,7 +57,7 @@ This plugin uses OAuth 2.0 authorization code flow for secure authentication wit
 6. After OAuth setup, enter your Azure AD credentials:
    - Client ID
    - Client Secret
-   - Tenant ID
+   - Tenant ID (leave blank if not an enterprise user)
 
 7. Copy the redirect URI from the OAuth Client Settings dialog:
    - Look for the redirect URI with a copy icon in the dialog
@@ -205,14 +202,11 @@ The plugin requires the following Microsoft Graph API permissions:
 1. Azure Portal > アプリの登録に移動
 2. 新しい登録を作成
    ![](./_assets/readme1.png)
-3. Microsoft Graph APIのアクセス許可を追加：
-   - Mail.Read
-   - Mail.Send
-   - Mail.ReadWrite
-   ![](./_assets/readme2.png)
-4. クライアントシークレットを作成
+3. クライアントシークレットを作成
    ![](./_assets/readme3.png)
-5. クライアントID、クライアントシークレット、テナントIDを記録
+4. クライアントID、クライアントシークレット、テナントIDを記録
+   
+   > メモ: 企業ユーザーでない場合、テナントIDは空のままにできます。
    ![](./_assets/readme4.png)
 
 #### ステップ2: Difyにプラグインをインストール
@@ -225,7 +219,7 @@ The plugin requires the following Microsoft Graph API permissions:
 6. OAuth設定後、Azure AD認証情報を入力：
    - クライアントID
    - クライアントシークレット
-   - テナントID
+   - テナントID（企業ユーザーでない場合、空のままにできます）
 
 7. OAuthクライアント設定ダイアログからリダイレクトURIをコピー：
    - ダイアログ内のコピーアイコンのあるリダイレクトURIを探す
@@ -370,14 +364,11 @@ ID draft123のドラフトを送信
 1. 转到Azure Portal > 应用程序注册
 2. 创建新注册
    ![](./_assets/readme1.png)
-3. 添加Microsoft Graph API权限：
-   - Mail.Read
-   - Mail.Send
-   - Mail.ReadWrite
-   ![](./_assets/readme2.png)
-4. 创建客户端密钥
+3. 创建客户端密钥
    ![](./_assets/readme3.png)
-5. 记录客户端ID、客户端密钥和租户ID
+4. 记录客户端ID、客户端密钥和租户ID
+   
+   > **备注**：如果不是企业用户，可留空租户ID。
    ![](./_assets/readme4.png)
 
 #### 步骤2：在Dify中安装插件
@@ -390,7 +381,7 @@ ID draft123のドラフトを送信
 6. OAuth设置后，输入您的Azure AD凭据：
    - 客户端ID
    - 客户端密钥
-   - 租户ID
+   - 租户ID（如果不是企业用户，可留空）
 
 7. 从OAuth客户端设置对话框复制重定向URI：
    - 在对话框中查找带有复制图标的重定向URI

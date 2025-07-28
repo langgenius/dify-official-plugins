@@ -1,3 +1,4 @@
+import time
 from typing import Any, Mapping
 import requests
 import secrets
@@ -9,7 +10,7 @@ from dify_plugin.entities.oauth import ToolOAuthCredentials
 
 
 class OutlookProvider(ToolProvider):
-    _SCOPE = "Mail.Read Mail.Send Mail.ReadWrite"
+    _SCOPE = "Mail.Read Mail.Send Mail.ReadWrite offline_access"
 
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
         """Validate access token by calling Microsoft Graph API."""
@@ -63,10 +64,45 @@ class OutlookProvider(ToolProvider):
         
         token_data = response.json()
         access_token = token_data.get("access_token")
-        if not access_token:
-            raise ToolProviderCredentialValidationError("No access token in response")
+        refresh_token = token_data.get("refresh_token")
+
+        if not access_token or not refresh_token:
+            raise ToolProviderCredentialValidationError("No access token or refresh token in response")
         
         return ToolOAuthCredentials(
-            credentials={"access_token": access_token},
-            expires_at=-1
+            credentials={"access_token": access_token, "refresh_token": refresh_token},
+            expires_at= token_data.get("expires_in", 3599) + int(time.time())
+        )
+
+    def oauth_refresh_credentials(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
+    ) -> ToolOAuthCredentials:
+
+        """Refresh OAuth credentials."""
+        tenant_id = system_credentials.get("tenant_id", "common")
+        token_url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
+
+        data = {
+            "client_id": system_credentials["client_id"],
+            "client_secret": system_credentials["client_secret"],
+            "refresh_token": credentials.get("refresh_token"),
+            "redirect_uri": redirect_uri,
+            "grant_type": "refresh_token"
+        }
+        
+        response = requests.post(token_url, data=data, timeout=30)
+        if response.status_code != 200:
+            raise ToolProviderCredentialValidationError(f"Token exchange failed: {response.text}")
+        
+        token_data = response.json()
+
+        access_token = token_data.get("access_token")
+        refresh_token = token_data.get("refresh_token")
+
+        if not access_token or not refresh_token:
+            raise ToolProviderCredentialValidationError("No access token or refresh token in response")
+
+        return ToolOAuthCredentials(
+            credentials={"access_token": access_token, "refresh_token": refresh_token},
+            expires_at= token_data.get("expires_in", 3599) + int(time.time())
         )
