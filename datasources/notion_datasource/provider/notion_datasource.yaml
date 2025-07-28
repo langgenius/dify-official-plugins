@@ -24,17 +24,17 @@ oauth_schema:
       label:
         zh_Hans: Client Secret
         en_US: Client Secret
-    - name: redirect_uri
-      type: text-input
-      label:
-        zh_Hans: Redirect URI
-        en_US: Redirect URI
+      help:
+        zh_Hans: 从 Notion 集成页面获取您的接口令牌
+        en_US: Get your integration token from the Notion Integrations page
+      url: https://www.notion.so/profile/integrations
   credentials_schema:
-    - name: integration_secret
+    - name: access_token
       type: secret-input
       label:
-        zh_Hans: 接口密钥
-        en_US: Integration Secret
+        zh_Hans: Access Token
+        en_US: Access Token
+
 provider_type: online_document
 credentials_schema:
   - name: integration_secret
