@@ -18,9 +18,7 @@ class _CommonGemini:
         """
         return {
             InvokeConnectionError: [errors.APIError],
-            InvokeServerUnavailableError: [
-                errors.ServerError,
-            ],
+            InvokeServerUnavailableError: [errors.ServerError],
             InvokeRateLimitError: [],
             InvokeAuthorizationError: [],
             InvokeBadRequestError: [

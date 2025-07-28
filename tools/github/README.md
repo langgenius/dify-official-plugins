@@ -6,9 +6,9 @@ GitHub is a web-based platform for version control and collaboration, primarily 
 
 ## Configuration
 
-### 1. Apply for API Key and Version
+### 1. Apply for API Key or OAuth Access Token
 
-Please apply for an [API Key](https://github.com/settings/personal-access-tokens) and the [API version](https://docs.github.com/en/rest/about-the-rest-api/api-versions?apiVersion=2022-11-28).
+Please apply for an [API Key](https://github.com/settings/personal-access-tokens) or [OAuth Access Token](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/creating-a-personal-access-token).
 
 ### 2. Get GitHub tools from Plugin Marketplace
 
@@ -16,7 +16,7 @@ The GitHub tools can be found in the Plugin Marketplace. Please install it first
 
 ### 3. Fill in the configuration in Dify
 
-On the Dify navigation page, click `Tools > GitHub > Authorize` and fill in the API Key.
+On the Dify navigation page, click `Tools > GitHub > Authorize` and fill in the API Key or OAuth Access Token.
 
 ![](./_assets/github_1.PNG)
 

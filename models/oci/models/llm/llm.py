@@ -276,11 +276,18 @@ class OCILargeLanguageModel(LargeLanguageModel):
         request_args = copy.deepcopy(request_template)
         request_args["compartmentId"] = compartment_id
         request_args["servingMode"]["modelId"] = model
+        stop = model_parameters.pop("stop", None)
+        if stop:
+            if model.startswith("cohere"):
+                request_args["chatRequest"]["stop_sequences"] = stop  # Cohere: stop_sequences
+            elif model.startswith("meta") or model.startswith("xai"):
+                request_args["chatRequest"]["stop"] = stop  # Meta/XAI: stop
+            else:
+                logger.warning(f"Model '{model}' does not support stop sequences. Ignored.")
         chat_history = []
         system_prompts = []
         request_args["chatRequest"]["maxTokens"] = model_parameters.pop("maxTokens", 600)
-        # request_args["chatRequest"].update(model_parameters)
-        if model in ("xai.grok-3-mini-fast", "xai.grok-3-mini"):
+        if model in ("xai.grok-3-mini-fast", "xai.grok-3-mini", "xai.grok-4"):
             safe_model_parameters = {
                 "temperature": model_parameters.get("temperature", 1),
                 "topP": model_parameters.get("topP", 0.75),
