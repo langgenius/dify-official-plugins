@@ -47,7 +47,8 @@ class ComfyuiTxt2Img(Tool):
         if not base_url:
             yield self.create_text_message("Please input base_url")
         self.comfyui = ComfyUiClient(
-            base_url, self.runtime.credentials.get("comfyui_api_key")
+            base_url, self.runtime.credentials.get("comfyui_api_key"),
+            api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org")
         )
         self.model_manager = ModelManager(
             self.comfyui,

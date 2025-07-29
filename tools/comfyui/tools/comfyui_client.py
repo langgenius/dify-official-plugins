@@ -30,10 +30,12 @@ class FileType(StrEnum):
 
 class ComfyUiClient:
     def __init__(
-        self, base_url: str, api_key: str | None = None
+        self, base_url: str, api_key: str | None = None, api_key_comfy_org: str = ""
     ):  # Add api_key parameter
         self.base_url = URL(base_url)
         self.api_key = api_key  # Store api_key
+        # https://docs.comfy.org/development/comfyui-server/api-key-integration#integration-of-api-key-to-use-comfyui-api-nodes
+        self.api_key_comfy_org = api_key_comfy_org
 
     def _get_headers(self) -> dict:  # Helper method to get headers
         headers = {}
@@ -155,7 +157,9 @@ class ComfyUiClient:
     def queue_prompt(self, client_id: str, prompt: dict) -> str:
         res = httpx.post(
             str(self.base_url / "prompt"),
-            json={"client_id": client_id, "prompt": prompt},
+            data=json.dumps({"client_id": client_id, "prompt": prompt, "extra_data": {
+                "api_key_comfy_org": self.api_key_comfy_org
+            }}),
             headers=self._get_headers(),  # Add headers
         )
         try:
@@ -322,7 +326,9 @@ class ComfyUiClient:
             url = str(self.base_url / "prompt")
             respond = httpx.post(
                 url,
-                data=json.dumps({"client_id": client_id, "prompt": prompt}),
+                data=json.dumps({"client_id": client_id, "prompt": prompt, "extra_data": {
+                    "api_key_comfy_org": self.api_key_comfy_org
+                }}),
                 timeout=(2, 10),
                 headers=self._get_headers(),
             )

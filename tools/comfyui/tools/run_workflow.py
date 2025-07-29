@@ -18,7 +18,8 @@ class ComfyUIWorkflowTool(Tool):
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
-        self.comfyui = ComfyUiClient(self.runtime.credentials["base_url"])
+        self.comfyui = ComfyUiClient(
+            self.runtime.credentials["base_url"], api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"))
         images = tool_parameters.get("images") or []
         workflow = ComfyUiWorkflow(
             clean_json_string(tool_parameters.get("workflow_json"))

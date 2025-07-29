@@ -68,7 +68,8 @@ class ComfyuiImg2Vid(Tool):
         base_url = self.runtime.credentials.get("base_url", "")
         if not base_url:
             yield self.create_text_message("Please input base_url")
-        self.comfyui = ComfyUiClient(base_url)
+        self.comfyui = ComfyUiClient(
+            base_url, api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"))
         self.model_manager = ModelManager(
             self.comfyui,
             civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
