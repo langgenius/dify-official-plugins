@@ -193,3 +193,15 @@ parameters:
       ja_JP: LORA 強度
     required: false
     type: string
+
+  - name: batch_size
+    form: llm
+    default: 1
+    human_description:
+      en_US: Defines the number of output images
+      ja_JP: 出力画像の個数を指定します
+    label:
+      en_US: Batch Size
+      ja_JP: バッチサイズ
+    required: false
+    type: number
