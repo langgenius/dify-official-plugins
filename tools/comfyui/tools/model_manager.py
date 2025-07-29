@@ -41,7 +41,8 @@ class ModelManager:
         if model_name in self._comfyui_cli.get_model_dirs(save_dir):
             # model_name is the name for an existing model in ComfyUI
             return model_name
-        civit_patterns = re.findall("(civitai: *)?([0-9]+)(@([0-9]+))?", model_name)
+        civit_patterns = re.findall(
+            "^(civitai: *)?([0-9]+)(@([0-9]+))?", model_name)
         if len(civit_patterns) > 0:
             # model_name is CivitAI's AIR
             civit_pattern = civit_patterns[0]
@@ -54,7 +55,7 @@ class ModelManager:
             except:
                 version_id = None
             model_name_human, filenames = self.download_civitai(
-                model_id, version_id, save_dir, self.get_civitai_api_key()
+                model_id, version_id, save_dir
             )
             return filenames[0]
         if len(re.findall("https?://huggingface\.co/.*", model_name)) > 0:
@@ -104,6 +105,20 @@ class ModelManager:
 
         return filename
 
+    def fetch_version_ids(self, model_id):
+        try:
+            model_data = requests.get(
+                f"https://civitai.com/api/v1/models/{model_id}"
+            ).json()
+        except:
+            raise Exception(f"Model {model_id} not found.")
+        version_ids = [
+            v["id"]
+            for v in model_data["modelVersions"]
+            if v["availability"] == "Public"
+        ]
+        return version_ids
+
     def download_civitai(self, model_id, version_id, save_dir) -> tuple[str, list[str]]:
         try:
             model_data = requests.get(
@@ -116,12 +131,7 @@ class ModelManager:
         if "error" in model_data:
             raise Exception(model_data["error"])
         if version_id is None:
-            version_ids = [
-                v["id"]
-                for v in model_data["modelVersions"]
-                if v["availability"] == "Public"
-            ]
-            version_id = max(version_ids)
+            version_id = max(self.fetch_version_ids(model_id))
         model_detail = None
         for past_model in model_data["modelVersions"]:
             if past_model["id"] == version_id:

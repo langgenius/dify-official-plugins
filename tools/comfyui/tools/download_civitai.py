@@ -17,7 +17,8 @@ class DownloadCivitAI(Tool):
         """
         base_url = self.runtime.credentials.get("base_url")
         if base_url is None:
-            raise ToolProviderCredentialValidationError("Please input base_url")
+            raise ToolProviderCredentialValidationError(
+                "Please input base_url")
 
         self.comfyui = ComfyUiClient(base_url)
         self.model_manager = ModelManager(
@@ -29,6 +30,8 @@ class DownloadCivitAI(Tool):
         model_id = tool_parameters.get("model_id")
         version_id = tool_parameters.get("version_id")
         save_dir = tool_parameters.get("save_dir")
+        if version_id is None:
+            version_id = max(self.model_manager.fetch_version_ids(model_id))
         model_name_human, model_filenames = self.model_manager.download_civitai(
             model_id, version_id, save_dir
         )
