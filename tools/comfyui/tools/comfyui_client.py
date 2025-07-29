@@ -3,6 +3,7 @@ import json
 import mimetypes
 import os
 import random
+import re
 import uuid
 
 import httpx
@@ -29,7 +30,9 @@ class FileType(StrEnum):
 
 
 class ComfyUiClient:
-    def __init__(self, base_url: str, api_key: str | None = None):  # Add api_key parameter
+    def __init__(
+        self, base_url: str, api_key: str | None = None
+    ):  # Add api_key parameter
         self.base_url = URL(base_url)
         self.api_key = api_key  # Store api_key
 
@@ -45,9 +48,9 @@ class ComfyUiClient:
         """
         try:
             if path is None:
-                api_url = str(self.base_url/"models")
+                api_url = str(self.base_url / "models")
             else:
-                api_url = str(self.base_url/"models"/path)
+                api_url = str(self.base_url / "models" / path)
             response = httpx.get(
                 url=api_url, timeout=(2, 10), headers=self._get_headers()
             )  # Add headers
@@ -122,8 +125,7 @@ class ComfyUiClient:
     def get_image(self, filename: str, subfolder: str, folder_type: str) -> bytes:
         response = httpx.get(
             str(self.base_url / "view"),
-            params={"filename": filename,
-                    "subfolder": subfolder, "type": folder_type},
+            params={"filename": filename, "subfolder": subfolder, "type": folder_type},
             headers=self._get_headers(),  # Add headers
         )
         return response.content
@@ -183,8 +185,7 @@ class ComfyUiClient:
         self, origin_prompt: dict, positive_prompt: str, negative_prompt: str = ""
     ) -> dict:
         prompt = origin_prompt.copy()
-        id_to_class_type = {id: details["class_type"]
-                            for id, details in prompt.items()}
+        id_to_class_type = {id: details["class_type"] for id, details in prompt.items()}
         k_sampler = [
             key for key, value in id_to_class_type.items() if value == "KSampler"
         ][0]
@@ -209,8 +210,7 @@ class ComfyUiClient:
         self, origin_prompt: dict, image_names: list[str]
     ) -> dict:
         prompt = origin_prompt.copy()
-        id_to_class_type = {id: details["class_type"]
-                            for id, details in prompt.items()}
+        id_to_class_type = {id: details["class_type"] for id, details in prompt.items()}
         load_image_nodes = [
             key for key, value in id_to_class_type.items() if value == "LoadImage"
         ]
@@ -223,11 +223,9 @@ class ComfyUiClient:
         if seed_id not in prompt:
             raise Exception("Not a valid seed node")
         if "seed" in prompt[seed_id]["inputs"]:
-            prompt[seed_id]["inputs"]["seed"] = random.randint(
-                10**14, 10**15 - 1)
+            prompt[seed_id]["inputs"]["seed"] = random.randint(10**14, 10**15 - 1)
         elif "noise_seed" in prompt[seed_id]["inputs"]:
-            prompt[seed_id]["inputs"]["noise_seed"] = random.randint(
-                10**14, 10**15 - 1)
+            prompt[seed_id]["inputs"]["noise_seed"] = random.randint(10**14, 10**15 - 1)
         else:
             raise Exception("Not a valid seed node")
         return prompt
@@ -243,8 +241,7 @@ class ComfyUiClient:
                 if message["type"] == "progress":
                     data = message["data"]
                     current_step = data["value"]
-                    print("In K-Sampler -> Step: ",
-                          current_step, " of: ", data["max"])
+                    print("In K-Sampler -> Step: ", current_step, " of: ", data["max"])
                 if message["type"] == "execution_cached":
                     data = message["data"]
                     for itm in data["nodes"]:
@@ -279,8 +276,7 @@ class ComfyUiClient:
         url = str(self.base_url / "view")
         response = httpx.get(
             url,
-            params={"filename": filename,
-                    "subfolder": subfolder, "type": folder_type},
+            params={"filename": filename, "subfolder": subfolder, "type": folder_type},
             timeout=(2, 10),
             headers=self._get_headers(),  # Add headers
         )
@@ -378,48 +374,12 @@ class ComfyUiClient:
                     pass
         return output_images
 
-    def download_model(self, url, save_dir, filename=None, token=None) -> str:
-        headers = {}
-        if token is not None:
-            headers = {"Authorization": f"Bearer {token}"}
-        response = requests.head(url, headers=headers)
-        if response.status_code == 401:
-            raise ToolProviderCredentialValidationError(
-                f"401 Unauthorized. Please check the api_token."
-            )
-        elif response.status_code >= 400:
-            raise ToolProviderCredentialValidationError(
-                f"Download failed. Error {response.status_code}. Please check the URL."
-            )
-
-        current_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(current_dir, "json", "download.json")) as file:
-            workflow = ComfyUiWorkflow(file.read())
-        if filename is None:
-            filename = url.split("/")[-1].split("?")[0]
-        if token is None:
-            token = ""
-        workflow.set_asset_downloader(None, url, save_dir, filename, token)
-
-        try:
-            _ = self.generate(workflow.json())
-        except Exception as e:
-            error = f"Failed to download: {str(e)}."
-            if len(self.get_model_dirs(save_dir)) == 0:
-                error += f"Please make sure that https://github.com/ServiceStack/comfy-asset-downloader works on ComfyUI and the destination folder named models/{save_dir} exists."
-            else:
-                error += "Please make sure that https://github.com/ServiceStack/comfy-asset-downloader works on ComfyUI."
-            raise ToolProviderCredentialValidationError(error)
-
-        return filename
-
     def convert_webp2mp4(self, webp_blob, fps):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "webp2mp4.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
 
-        uploaded_image = self.upload_image(
-            "input.webp", webp_blob, "image/webp")
+        uploaded_image = self.upload_image("input.webp", webp_blob, "image/webp")
         workflow.set_property("25", "inputs/frame_rate", fps)
         workflow.set_image_names([uploaded_image])
 
