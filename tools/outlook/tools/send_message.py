@@ -1,7 +1,7 @@
 from collections.abc import Generator
 from typing import Any
 import requests
-import urllib.parse
+import json
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
@@ -10,16 +10,25 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 class SendMessageTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
-        Send a draft message through Outlook using Microsoft Graph API
-        This tool works with drafts created by the draft_message tool
+        Send an email message directly through Outlook using Microsoft Graph API
         """
         try:
             # Get parameters
-            draft_id = tool_parameters.get("draft_id")
+            to_recipients = tool_parameters.get("to", "")
+            subject = tool_parameters.get("subject", "")
+            message = tool_parameters.get("message", "")
             
-            # Validate parameters
-            if not draft_id:
-                yield self.create_text_message("Draft ID is required.")
+            # Validate required parameters
+            if not to_recipients:
+                yield self.create_text_message("To recipients are required.")
+                return
+            
+            if not subject:
+                yield self.create_text_message("Subject is required.")
+                return
+                
+            if not message:
+                yield self.create_text_message("Message content is required.")
                 return
                 
             # Get access token from OAuth credentials
@@ -29,30 +38,21 @@ class SendMessageTool(Tool):
                 return
             
             try:
-                # Get draft details first
-                draft_details = self._get_draft_details(access_token, draft_id)
-                if isinstance(draft_details, str):  # Error message
-                    yield self.create_text_message(draft_details)
-                    return
+                # Send the email directly
+                result = self._send_message(access_token, to_recipients, subject, message)
                 
-                # Send the draft
-                send_result = self._send_draft(access_token, draft_id)
-                if isinstance(send_result, str):  # Error message
-                    yield self.create_text_message(send_result)
+                if isinstance(result, str):  # Error message
+                    yield self.create_text_message(result)
                     return
                 
                 # Success
-                yield self.create_text_message(f"Message sent successfully: {draft_details['subject']}")
+                yield self.create_text_message(f"Message sent successfully: {subject}")
                 yield self.create_json_message({
                     "status": "sent",
-                    "draft_id": draft_id,
-                    "subject": draft_details["subject"],
-                    "to_recipients": draft_details["to_recipients"],
-                    "cc_recipients": draft_details["cc_recipients"],
-                    "bcc_recipients": draft_details.get("bcc_recipients", []),
-                    "body_type": draft_details["body_type"],
-                    "importance": draft_details.get("importance", "normal"),
-                    "sent_datetime": send_result.get("sent_datetime")
+                    "message_id": result.get("id"),
+                    "subject": subject,
+                    "to_recipients": self._parse_recipients(to_recipients),
+                    "sent_datetime": result.get("sentDateTime")
                 })
                 
             except Exception as e:
@@ -63,61 +63,35 @@ class SendMessageTool(Tool):
             yield self.create_text_message(f"Error: {str(e)}")
             return
     
-    def _get_draft_details(self, access_token: str, draft_id: str):
+    def _send_message(self, access_token: str, to_recipients: str, subject: str, message: str):
         """
-        Get details of a draft message
-        """
-        try:
-            # URL encode the draft ID to handle special characters
-            encoded_draft_id = urllib.parse.quote(draft_id, safe='')
-            
-            url = f"https://graph.microsoft.com/v1.0/me/messages/{encoded_draft_id}"
-            headers = {
-                "Authorization": f"Bearer {access_token}",
-                "Content-Type": "application/json"
-            }
-            
-            response = requests.get(url, headers=headers, timeout=30)
-            
-            # Handle response
-            if response.status_code == 401:
-                return "Authentication failed. Token may be expired."
-            elif response.status_code == 403:
-                return "Access denied. Check app permissions (Mail.Read required)."
-            elif response.status_code == 404:
-                return f"Draft with ID '{draft_id}' not found."
-            elif response.status_code != 200:
-                return f"API error {response.status_code}: {response.text}"
-            
-            draft_data = response.json()
-            
-            # Format response
-            return {
-                "id": draft_data.get("id"),
-                "subject": draft_data.get("subject", "No Subject"),
-                "to_recipients": [self._format_recipient(r) for r in draft_data.get("toRecipients", [])],
-                "cc_recipients": [self._format_recipient(r) for r in draft_data.get("ccRecipients", [])],
-                "bcc_recipients": [self._format_recipient(r) for r in draft_data.get("bccRecipients", [])],
-                "body_type": draft_data.get("body", {}).get("contentType", "text"),
-                "importance": draft_data.get("importance", "normal"),
-                "created_datetime": draft_data.get("createdDateTime")
-            }
-            
-        except requests.exceptions.RequestException as e:
-            return f"Network error: {str(e)}"
-        except Exception as e:
-            return f"Error getting draft details: {str(e)}"
-    
-    def _send_draft(self, access_token: str, draft_id: str):
-        """
-        Send a draft message using Microsoft Graph API
+        Send an email message using Microsoft Graph API
         """
         try:
-            # URL encode the draft ID to handle special characters
-            encoded_draft_id = urllib.parse.quote(draft_id, safe='')
+            # Parse recipients
+            recipient_list = self._parse_recipients(to_recipients)
             
-            # API endpoint using /me
-            url = f"https://graph.microsoft.com/v1.0/me/messages/{encoded_draft_id}/send"
+            # Prepare message body
+            message_body = {
+                "message": {
+                    "subject": subject,
+                    "body": {
+                        "contentType": "text",
+                        "content": message
+                    },
+                    "toRecipients": [
+                        {
+                            "emailAddress": {
+                                "address": email.strip()
+                            }
+                        }
+                        for email in recipient_list
+                    ]
+                }
+            }
+            
+            # API endpoint
+            url = "https://graph.microsoft.com/v1.0/me/sendMail"
             
             # Headers
             headers = {
@@ -126,61 +100,41 @@ class SendMessageTool(Tool):
             }
             
             # Make API request
-            response = requests.post(url, headers=headers, timeout=30)
+            response = requests.post(url, headers=headers, json=message_body, timeout=30)
             
             # Handle response
             if response.status_code == 401:
                 return "Authentication failed. Token may be expired."
             elif response.status_code == 403:
                 return "Access denied. Check app permissions (Mail.Send required)."
-            elif response.status_code == 404:
-                return f"Draft with ID '{draft_id}' not found."
-            elif response.status_code not in [200, 202]:
+            elif response.status_code == 400:
+                return f"Bad request: {response.text}"
+            elif response.status_code != 202:
                 return f"API error {response.status_code}: {response.text}"
             
-            # Get sent message details
-            sent_message = self._get_sent_message(access_token, draft_id)
-            
+            # For sendMail endpoint, successful response is 202 with empty body
+            # Return a success indicator with basic info
             return {
-                "status": "sent",
-                "sent_datetime": sent_message.get("sentDateTime") if sent_message else None
+                "id": None,  # sendMail doesn't return message ID
+                "sentDateTime": None,  # Not available from sendMail response
+                "status": "sent"
             }
             
         except requests.exceptions.RequestException as e:
             return f"Network error: {str(e)}"
         except Exception as e:
-            return f"Error sending draft: {str(e)}"
+            return f"Error sending message: {str(e)}"
     
-    def _get_sent_message(self, access_token: str, message_id: str):
+    def _parse_recipients(self, recipients_str: str) -> list:
         """
-        Get details of a sent message
+        Parse comma-separated email addresses
         """
-        try:
-            # URL encode the message ID to handle special characters
-            encoded_message_id = urllib.parse.quote(message_id, safe='')
-            
-            url = f"https://graph.microsoft.com/v1.0/me/messages/{encoded_message_id}"
-            headers = {
-                "Authorization": f"Bearer {access_token}",
-                "Content-Type": "application/json"
-            }
-            
-            response = requests.get(url, headers=headers, timeout=30)
-            
-            if response.status_code == 200:
-                return response.json()
-            return None
-            
-        except Exception as e:
-            print(f"Error getting sent message: {str(e)}")
-            return None
-    
-    def _format_recipient(self, recipient: dict) -> dict:
-        """
-        Format recipient for response
-        """
-        email_address = recipient.get("emailAddress", {})
-        return {
-            "name": email_address.get("name", "Unknown"),
-            "email": email_address.get("address", "Unknown")
-        } 
+        if not recipients_str:
+            return []
+        
+        # Split by comma and clean up whitespace
+        recipients = [email.strip() for email in recipients_str.split(",")]
+        # Filter out empty strings
+        recipients = [email for email in recipients if email]
+        
+        return recipients

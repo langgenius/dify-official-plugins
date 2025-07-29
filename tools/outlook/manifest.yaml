@@ -1,4 +1,4 @@
-version: 0.1.0
+version: 0.2.0
 type: plugin
 author: langgenius
 name: outlook
@@ -28,6 +28,7 @@ meta:
     language: python
     version: "3.12"
     entrypoint: main
+  minimum_dify_version: 1.7.0
 created_at: 2025-06-03T17:15:02.022093+08:00
 privacy: PRIVACY.md
 verified: false

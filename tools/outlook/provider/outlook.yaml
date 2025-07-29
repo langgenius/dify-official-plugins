@@ -61,7 +61,8 @@ oauth_schema:
       url: "https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade"
     - name: "tenant_id"
       type: "text-input"
-      required: true
+      required: false
+      default: common
       label:
         en_US: "Tenant ID"
         zh_Hans: "租户 ID"
@@ -69,11 +70,11 @@ oauth_schema:
         ja_JP: "テナント ID"
         zh_Hant: "租戶 ID"
       placeholder:
-        en_US: "Please input your Azure AD tenant ID"
-        zh_Hans: "请输入您的 Azure AD 租户 ID"
-        pt_BR: "Por favor, insira o ID do locatário do seu Azure AD"
-        ja_JP: "Azure AD テナント ID を入力してください"
-        zh_Hant: "請輸入您的 Azure AD 租戶 ID"
+        en_US: "Please input your Azure AD tenant ID; If you are not an enterprise user, leave it blank"
+        zh_Hans: "请输入您的 Azure AD 租户 ID；如果您不是企业版用户，请留空"
+        pt_BR: "Por favor, insira o ID do locatário do seu Azure AD; Se você não for um usuário corporativo, deixe em branco"
+        ja_JP: "Azure AD テナント ID を入力してください; 企業ユーザーでない場合は空白のままにしてください"
+        zh_Hant: "請輸入您的 Azure AD 租戶 ID；如果您不是企業用戶，請留空"
       help:
         en_US: "Get your tenant ID from Azure Portal > Azure Active Directory > Properties"
         zh_Hans: "从 Azure 门户 > Azure Active Directory > 属性获取您的租户 ID"
@@ -106,6 +107,7 @@ tools:
   - tools/list_messages.yaml
   - tools/get_message.yaml
   - tools/send_message.yaml
+  - tools/send_draft.yaml
   - tools/draft_message.yaml
   - tools/list_draft.yaml
   - tools/add_attachment_to_draft.yaml
