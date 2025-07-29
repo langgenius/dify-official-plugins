@@ -67,6 +67,17 @@ class NotionDatasourceProvider(DatasourceProvider):
             },
         )
 
+    def _oauth_refresh_credentials(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
+    ) -> DatasourceOAuthCredentials:
+        """
+        Refresh the credentials for the Notion OAuth.
+
+        Note: Notion OAuth API does not support refresh tokens.
+        When the access token expires, users need to re-authorize through the OAuth flow.
+        """
+        pass
+
     def _validate_credentials(self, credentials: Mapping[str, Any]):
         try:
             # Check if integration_token is provided
@@ -84,7 +95,9 @@ class NotionDatasourceProvider(DatasourceProvider):
                     "Content-Type": "application/json",
                 }
                 # Make a request to the users endpoint to validate the token
-                response = requests.get("https://api.notion.com/v1/users/me", headers=headers, timeout=__TIMEOUT_SECONDS__)
+                response = requests.get(
+                    "https://api.notion.com/v1/users/me", headers=headers, timeout=__TIMEOUT_SECONDS__
+                )
                 if response.status_code == 401:
                     raise ToolProviderCredentialValidationError("Invalid Notion Integration Token.")
                 elif response.status_code != 200:

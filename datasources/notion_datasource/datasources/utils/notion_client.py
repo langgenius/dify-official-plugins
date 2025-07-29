@@ -4,7 +4,7 @@ This module provides a unified interface for interacting with the Notion API
 """
 
 import time
-from typing import Any, Optional
+from typing import Any
 
 import requests
 
@@ -45,8 +45,8 @@ class NotionClient:
         self,
         method: str,
         endpoint: str,
-        params: Optional[dict[str, Any]] = None,
-        json_data: Optional[dict[str, Any]] = None,
+        params: dict[str, Any] | None = None,
+        json_data: dict[str, Any] | None = None,
         max_retries: int = 3,
     ) -> dict[str, Any]:
         """
@@ -115,9 +115,9 @@ class NotionClient:
         self,
         query: str,
         page_size: int = 10,
-        start_cursor: Optional[str] = None,
-        filter_obj: Optional[dict[str, Any]] = None,
-        sort: Optional[dict[str, Any]] = None,
+        start_cursor: str | None = None,
+        filter_obj: dict[str, Any] | None = None,
+        sort: dict[str, Any] | None = None,
     ) -> dict[str, Any]:
         """
         Search for pages and databases in a Notion workspace.
@@ -151,10 +151,10 @@ class NotionClient:
     def query_database(
         self,
         database_id: str,
-        filter_obj: Optional[dict[str, Any]] = None,
-        sorts: Optional[list[dict[str, Any]]] = None,
+        filter_obj: dict[str, Any] | None = None,
+        sorts: list[dict[str, Any]] | None = None,
         page_size: int = 10,
-        start_cursor: Optional[str] = None,
+        start_cursor: str | None = None,
     ) -> dict[str, Any]:
         """
         Query a Notion database with optional filtering and sorting.
@@ -188,7 +188,7 @@ class NotionClient:
         return self._make_request("post", f"/databases/{database_id}/query", json_data=payload)
 
     def retrieve_block_children(
-        self, block_id: str, page_size: int = 100, start_cursor: Optional[str] = None
+        self, block_id: str, page_size: int = 100, start_cursor: str | None = None
     ) -> dict[str, Any]:
         """
         Retrieve the children blocks of a block.
@@ -318,7 +318,7 @@ class NotionClient:
 
         return "".join([text.get("plain_text", "") for text in rich_text_array])
 
-    def create_rich_text(self, content: str, annotations: Optional[dict[str, Any]] = None) -> list[dict[str, Any]]:
+    def create_rich_text(self, content: str, annotations: dict[str, Any] | None = None) -> list[dict[str, Any]]:
         """
         Create a rich text array with the specified content and optional annotations.
 
@@ -406,9 +406,7 @@ class NotionClient:
             "numbered_list_item": {"rich_text": self.create_rich_text(text_content)},
         }
 
-    def retrieve_comments(
-        self, block_id: str, page_size: int = 100, start_cursor: Optional[str] = None
-    ) -> dict[str, Any]:
+    def retrieve_comments(self, block_id: str, page_size: int = 100, start_cursor: str | None = None) -> dict[str, Any]:
         """
         Retrieve comments from a block or page.
 
@@ -538,7 +536,9 @@ class NotionClient:
                 "Notion-Version": self._API_VERSION,
             }
 
-            response = requests.post(url=self._NOTION_PAGE_SEARCH, json=data, headers=headers, timeout=__TIMEOUT_SECONDS__)
+            response = requests.post(
+                url=self._NOTION_PAGE_SEARCH, json=data, headers=headers, timeout=__TIMEOUT_SECONDS__
+            )
             response_json = response.json()
 
             results.extend(response_json.get("results", []))
@@ -563,7 +563,9 @@ class NotionClient:
                 "Authorization": f"Bearer {access_token}",
                 "Notion-Version": self._API_VERSION,
             }
-            response = requests.post(url=self._NOTION_PAGE_SEARCH, json=data, headers=headers, timeout=__TIMEOUT_SECONDS__)
+            response = requests.post(
+                url=self._NOTION_PAGE_SEARCH, json=data, headers=headers, timeout=__TIMEOUT_SECONDS__
+            )
             response_json = response.json()
 
             results.extend(response_json.get("results", []))
@@ -578,7 +580,9 @@ class NotionClient:
             "Authorization": f"Bearer {access_token}",
             "Notion-Version": self._API_VERSION,
         }
-        response = requests.get(url=f"{self._NOTION_BLOCK_SEARCH}/{block_id}", headers=headers, timeout=__TIMEOUT_SECONDS__)
+        response = requests.get(
+            url=f"{self._NOTION_BLOCK_SEARCH}/{block_id}", headers=headers, timeout=__TIMEOUT_SECONDS__
+        )
         response_json = response.json()
         if response.status_code != 200:
             message = response_json.get("message", "unknown error")

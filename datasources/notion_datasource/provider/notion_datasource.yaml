@@ -1,6 +1,6 @@
 identity:
   author: langgenius
-  name: notion
+  name: notion_datasource
   label:
     en_US: Notion
     zh_Hans: Notion
