@@ -2,8 +2,6 @@ from typing import Any, Generator
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
 from tools.comfyui_client import ComfyUiClient
-from dify_plugin.errors.tool import ToolProviderCredentialValidationError
-
 from tools.model_manager import ModelManager
 
 
@@ -31,5 +29,6 @@ class DownloadHuggingFace(Tool):
         filepath = tool_parameters.get("filepath", "")
         save_dir = tool_parameters.get("save_dir", "")
 
-        filename = self.model_manager.download_hugging_face(repo_id, filepath, save_dir)
+        filename = self.model_manager.download_hugging_face(
+            repo_id, filepath, save_dir)
         yield self.create_variable_message("filename", filename)

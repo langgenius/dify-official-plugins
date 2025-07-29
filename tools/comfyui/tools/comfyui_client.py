@@ -3,7 +3,6 @@ import json
 import mimetypes
 import os
 import random
-import re
 import uuid
 
 import httpx
@@ -125,7 +124,8 @@ class ComfyUiClient:
     def get_image(self, filename: str, subfolder: str, folder_type: str) -> bytes:
         response = httpx.get(
             str(self.base_url / "view"),
-            params={"filename": filename, "subfolder": subfolder, "type": folder_type},
+            params={"filename": filename,
+                    "subfolder": subfolder, "type": folder_type},
             headers=self._get_headers(),  # Add headers
         )
         return response.content
@@ -185,7 +185,8 @@ class ComfyUiClient:
         self, origin_prompt: dict, positive_prompt: str, negative_prompt: str = ""
     ) -> dict:
         prompt = origin_prompt.copy()
-        id_to_class_type = {id: details["class_type"] for id, details in prompt.items()}
+        id_to_class_type = {id: details["class_type"]
+                            for id, details in prompt.items()}
         k_sampler = [
             key for key, value in id_to_class_type.items() if value == "KSampler"
         ][0]
@@ -210,7 +211,8 @@ class ComfyUiClient:
         self, origin_prompt: dict, image_names: list[str]
     ) -> dict:
         prompt = origin_prompt.copy()
-        id_to_class_type = {id: details["class_type"] for id, details in prompt.items()}
+        id_to_class_type = {id: details["class_type"]
+                            for id, details in prompt.items()}
         load_image_nodes = [
             key for key, value in id_to_class_type.items() if value == "LoadImage"
         ]
@@ -223,9 +225,11 @@ class ComfyUiClient:
         if seed_id not in prompt:
             raise Exception("Not a valid seed node")
         if "seed" in prompt[seed_id]["inputs"]:
-            prompt[seed_id]["inputs"]["seed"] = random.randint(10**14, 10**15 - 1)
+            prompt[seed_id]["inputs"]["seed"] = random.randint(
+                10**14, 10**15 - 1)
         elif "noise_seed" in prompt[seed_id]["inputs"]:
-            prompt[seed_id]["inputs"]["noise_seed"] = random.randint(10**14, 10**15 - 1)
+            prompt[seed_id]["inputs"]["noise_seed"] = random.randint(
+                10**14, 10**15 - 1)
         else:
             raise Exception("Not a valid seed node")
         return prompt
@@ -241,7 +245,8 @@ class ComfyUiClient:
                 if message["type"] == "progress":
                     data = message["data"]
                     current_step = data["value"]
-                    print("In K-Sampler -> Step: ", current_step, " of: ", data["max"])
+                    print("In K-Sampler -> Step: ",
+                          current_step, " of: ", data["max"])
                 if message["type"] == "execution_cached":
                     data = message["data"]
                     for itm in data["nodes"]:
@@ -276,7 +281,8 @@ class ComfyUiClient:
         url = str(self.base_url / "view")
         response = httpx.get(
             url,
-            params={"filename": filename, "subfolder": subfolder, "type": folder_type},
+            params={"filename": filename,
+                    "subfolder": subfolder, "type": folder_type},
             timeout=(2, 10),
             headers=self._get_headers(),  # Add headers
         )
@@ -379,7 +385,8 @@ class ComfyUiClient:
         with open(os.path.join(current_dir, "json", "webp2mp4.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
 
-        uploaded_image = self.upload_image("input.webp", webp_blob, "image/webp")
+        uploaded_image = self.upload_image(
+            "input.webp", webp_blob, "image/webp")
         workflow.set_property("25", "inputs/frame_rate", fps)
         workflow.set_image_names([uploaded_image])
 
