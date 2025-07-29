@@ -12,6 +12,7 @@ from dify_plugin import Tool
 from PIL import Image
 from tools.comfyui_client import ComfyUiClient, FileType
 from tools.comfyui_workflow import ComfyUiWorkflow
+from tools.model_manager import ModelManager
 LORA_NODE = {
     "inputs": {
         "lora_name": "",
@@ -67,7 +68,13 @@ class ComfyuiImg2Vid(Tool):
         base_url = self.runtime.credentials.get("base_url", "")
         if not base_url:
             yield self.create_text_message("Please input base_url")
-        self.comfyui = ComfyUiClient(base_url)
+        self.comfyui = ComfyUiClient(
+            base_url, api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"))
+        self.model_manager = ModelManager(
+            self.comfyui,
+            civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
+            hf_api_key=self.runtime.credentials.get("hf_api_key"),
+        )
 
         steps = tool_parameters.get("steps", 20)
         denoise = tool_parameters.get("denoise", 1.0)
@@ -133,7 +140,7 @@ class ComfyuiImg2Vid(Tool):
         elif model_type == "svd":
             output_images = self.img2vid_svd(config)
         elif model_type == "svd_xt":
-            config.model_name = self.comfyui.download_model(
+            config.model_name = self.model_manager.download_model(
                 "https://huggingface.co/stabilityai/stable-video-diffusion-img2vid-xt/resolve/main/svd_xt.safetensors",
                 "checkpoints",
                 token=self.get_hf_key(),
@@ -173,7 +180,7 @@ class ComfyuiImg2Vid(Tool):
         """
         if config.model_name == "":
             # download model
-            config.model_name = self.comfyui.download_model(
+            config.model_name = self.model_manager.download_model(
                 "https://huggingface.co/stabilityai/stable-video-diffusion-img2vid/resolve/main/svd.safetensors",
                 "checkpoints",
                 token=self.get_hf_key(),
@@ -208,23 +215,23 @@ class ComfyuiImg2Vid(Tool):
         """
         if config.model_name == "":
             # download model
-            config.model_name = self.comfyui.download_model(
+            config.model_name = self.model_manager.download_model(
                 "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_i2v_480p_14B_fp8_e4m3fn.safetensors",
                 "diffusion_models",
                 token=self.get_hf_key(),
             )
 
-        vae = self.comfyui.download_model(
+        vae = self.model_manager.download_model(
             "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors",
             "vae",
             token=self.get_hf_key(),
         )
-        clip_vision = self.comfyui.download_model(
+        clip_vision = self.model_manager.download_model(
             "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/clip_vision/clip_vision_h.safetensors",
             "clip_vision",
             token=self.get_hf_key(),
         )
-        text_encoder = self.comfyui.download_model(
+        text_encoder = self.model_manager.download_model(
             "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors",
             "text_encoders",
             token=self.get_hf_key(),
@@ -266,12 +273,12 @@ class ComfyuiImg2Vid(Tool):
             )
         if config.model_name == "":
             # download model
-            config.model_name = self.comfyui.download_model(
+            config.model_name = self.model_manager.download_model(
                 "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-2b-v0.9.safetensors",
                 "checkpoints",
                 token=self.get_hf_key(),
             )
-        text_encoder = self.comfyui.download_model(
+        text_encoder = self.model_manager.download_model(
             "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp16.safetensors",
             "text_encoders",
             token=self.get_hf_key(),

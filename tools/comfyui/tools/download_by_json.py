@@ -5,6 +5,8 @@ from dify_plugin import Tool
 from tools.comfyui_client import ComfyUiClient
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
+from tools.model_manager import ModelManager
+
 
 def clean_json_string(s):
     for char in ["\n", "\r", "\t", "\x08", "\x0c"]:
@@ -40,6 +42,11 @@ class DownloadByJson(Tool):
             raise ToolProviderCredentialValidationError(
                 "Please input base_url")
         self.comfyui = ComfyUiClient(base_url)
+        self.model_manager = ModelManager(
+            self.comfyui,
+            civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
+            hf_api_key=self.runtime.credentials.get("hf_api_key"),
+        )
 
         input_json = json.loads(clean_json_string(
             tool_parameters.get("workflow_json")))
@@ -55,7 +62,7 @@ class DownloadByJson(Tool):
             elif "://huggingface.co" in model["url"]:
                 token = self.get_hf_key()
 
-            self.comfyui.download_model(
+            self.model_manager.download_model(
                 model["url"], model["directory"], model["name"], token
             )
 
