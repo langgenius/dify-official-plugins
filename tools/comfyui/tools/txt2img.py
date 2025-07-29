@@ -58,11 +58,8 @@ class ComfyuiTxt2Img(Tool):
 
         model_raw = tool_parameters.get("model", "")
         if model_raw == "":
-            model = self.model_manager.download_model(
-                "https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive/resolve/main/v1-5-pruned-emaonly-fp16.safetensors",
-                "checkpoints",
-                token=self.get_hf_key(),
-            )
+            model = self.model_manager.download_hugging_face(
+                "Comfy-Org/stable-diffusion-v1-5-archive", "v1-5-pruned-emaonly-fp16.safetensors", "checkpoints")
         else:
             model = self.model_manager.decode_model_name(
                 model_raw, "checkpoints")
