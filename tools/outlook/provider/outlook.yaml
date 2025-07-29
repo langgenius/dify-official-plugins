@@ -107,6 +107,7 @@ tools:
   - tools/list_messages.yaml
   - tools/get_message.yaml
   - tools/send_message.yaml
+  - tools/send_draft.yaml
   - tools/draft_message.yaml
   - tools/list_draft.yaml
   - tools/add_attachment_to_draft.yaml
