@@ -5,6 +5,7 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
 from tools.comfyui_workflow import ComfyUiWorkflow
 from tools.comfyui_client import ComfyUiClient, FileType
+from tools.model_manager import ModelManager
 
 
 class ComfyuiDepthAnything(Tool):
@@ -20,6 +21,12 @@ class ComfyuiDepthAnything(Tool):
         self.comfyui = ComfyUiClient(
             base_url, self.runtime.credentials.get("comfyui_api_key")
         )
+        self.model_manager = ModelManager(
+            self.comfyui,
+            civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
+            hf_api_key=self.runtime.credentials.get("hf_api_key"),
+        )
+
         feature: str = tool_parameters.get("feature")
         images = tool_parameters.get("images", [])
         image_names = []
@@ -108,7 +115,7 @@ class ComfyuiDepthAnything(Tool):
         with open(os.path.join(current_dir, "json", "upscale.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
         if "esrgan" in feature:
-            model_name = self.comfyui.download_model(
+            model_name = self.model_manager.download_model(
                 "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth", "upscale_models")
         workflow.set_property("13", "inputs/model_name", model_name)
         for image_name in image_names:

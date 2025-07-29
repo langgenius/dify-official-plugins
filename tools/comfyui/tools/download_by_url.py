@@ -4,6 +4,8 @@ from dify_plugin import Tool
 from tools.comfyui_client import ComfyUiClient
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
+from tools.model_manager import ModelManager
+
 
 class DownloadByURL(Tool):
     def get_civit_key(self) -> str:
@@ -31,6 +33,11 @@ class DownloadByURL(Tool):
             raise ToolProviderCredentialValidationError(
                 "Please input base_url")
         self.comfyui = ComfyUiClient(base_url)
+        self.model_manager = ModelManager(
+            self.comfyui,
+            civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
+            hf_api_key=self.runtime.credentials.get("hf_api_key"),
+        )
 
         url = tool_parameters.get("url")
         name = tool_parameters.get("name")
@@ -45,5 +52,5 @@ class DownloadByURL(Tool):
         elif token_type == "hugging_face":
             token = self.get_hf_key()
 
-        self.comfyui.download_model(url, save_to, name, token)
+        self.model_manager.download_model(url, save_to, name, token)
         yield self.create_variable_message("model_name", name)
