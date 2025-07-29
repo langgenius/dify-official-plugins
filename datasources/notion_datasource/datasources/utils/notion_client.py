@@ -10,6 +10,8 @@ import requests
 
 from dify_plugin.entities.datasource import OnlineDocumentPage
 
+__TIMEOUT_SECONDS__ = 60 * 10
+
 
 class NotionClient:
     """
@@ -71,7 +73,7 @@ class NotionClient:
                     headers=self.headers,
                     params=params,
                     json=json_data,
-                    timeout=10,
+                    timeout=__TIMEOUT_SECONDS__,
                 )
 
                 # Handle rate limiting
@@ -536,7 +538,7 @@ class NotionClient:
                 "Notion-Version": self._API_VERSION,
             }
 
-            response = requests.post(url=self._NOTION_PAGE_SEARCH, json=data, headers=headers, timeout=10)
+            response = requests.post(url=self._NOTION_PAGE_SEARCH, json=data, headers=headers, timeout=__TIMEOUT_SECONDS__)
             response_json = response.json()
 
             results.extend(response_json.get("results", []))
@@ -561,7 +563,7 @@ class NotionClient:
                 "Authorization": f"Bearer {access_token}",
                 "Notion-Version": self._API_VERSION,
             }
-            response = requests.post(url=self._NOTION_PAGE_SEARCH, json=data, headers=headers, timeout=10)
+            response = requests.post(url=self._NOTION_PAGE_SEARCH, json=data, headers=headers, timeout=__TIMEOUT_SECONDS__)
             response_json = response.json()
 
             results.extend(response_json.get("results", []))
@@ -576,7 +578,7 @@ class NotionClient:
             "Authorization": f"Bearer {access_token}",
             "Notion-Version": self._API_VERSION,
         }
-        response = requests.get(url=f"{self._NOTION_BLOCK_SEARCH}/{block_id}", headers=headers, timeout=10)
+        response = requests.get(url=f"{self._NOTION_BLOCK_SEARCH}/{block_id}", headers=headers, timeout=__TIMEOUT_SECONDS__)
         response_json = response.json()
         if response.status_code != 200:
             message = response_json.get("message", "unknown error")
