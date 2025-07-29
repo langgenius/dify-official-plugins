@@ -1,4 +1,3 @@
-import re
 import os
 import random
 from enum import Enum
@@ -96,7 +95,7 @@ class ComfyuiImg2Img(Tool):
 
         lora_list = []
         try:
-            for lora_name in tool_parameters.get("lora_names").split(","):
+            for lora_name in tool_parameters.get("lora_names", "").split(","):
                 lora_name = lora_name.lstrip(" ").rstrip(" ")
                 if lora_name != "":
                     lora_list.append(
