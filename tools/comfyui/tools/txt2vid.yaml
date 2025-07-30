@@ -83,6 +83,9 @@ parameters:
           en_US: WAN 2.1
         value: wan2_1
       - label:
+          en_US: WAN 2.2
+        value: wan2_2
+      - label:
           en_US: LTXV
         value: ltxv
       - label:
