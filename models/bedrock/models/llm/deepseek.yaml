@@ -78,3 +78,8 @@ parameter_rules:
       en_US: The probability threshold in nucleus sampling. When reasoning is enabled, this parameter will be disabled.
   - name: response_format
     use_template: response_format
+pricing:
+  input: '0.00135'
+  output: '0.0054'
+  unit: '0.001'
+  currency: USD
