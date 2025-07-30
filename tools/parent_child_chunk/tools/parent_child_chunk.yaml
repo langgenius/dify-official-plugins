@@ -33,14 +33,14 @@ parameters:
     options:
       - value: paragraph
         label:
-          en_US: Paragraph
-          zh_Hans: 段落
-          pt_BR: Parágrafo
+          en_US: paragraph
+          zh_Hans: paragraph
+          pt_BR: paragraph
       - value: full_doc
         label:
-          en_US: Full Document
-          zh_Hans: 全文
-          pt_BR: Documento Completo
+          en_US: full_doc
+          zh_Hans: full_doc
+          pt_BR: full_doc
     label:
       en_US: Parent Mode
       zh_Hans: 父块模式

@@ -31,7 +31,7 @@ identity:
     en_US: Jina Reader
     pt_BR: Jina Reader
     zh_Hans: Jina Reader
-  name: jina
+  name: jinareader
 datasources:
   - datasources/jina_datasource.yaml
 provider_type: website_crawl
