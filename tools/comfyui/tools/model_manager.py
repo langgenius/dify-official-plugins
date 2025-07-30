@@ -1,3 +1,4 @@
+import json
 import os
 import re
 
@@ -170,3 +171,29 @@ class ModelManager:
             return ecosystem, model_type, source, id
         except:
             return "", "", "", ""
+
+    def download_from_json(self, workflow_json_str: str) -> list[str]:
+        def clean_json_string(string: str) -> str:
+            for char in ["\n", "\r", "\t", "\x08", "\x0c"]:
+                string = string.replace(char, "")
+            for char_id in range(0x007F, 0x00A1):
+                string = string.replace(chr(char_id), "")
+            return string
+        workflow_json = json.loads(clean_json_string(workflow_json_str))
+        models = []
+        for node in workflow_json["nodes"]:
+            if "properties" in node and "models" in node["properties"]:
+                models += node["properties"]["models"]
+
+        for model in models:
+            token = None
+            if "://civitai.com" in model["url"]:
+                token = self.get_civitai_api_key()
+            elif "://huggingface.co" in model["url"]:
+                token = self.get_hf_api_key()
+
+            self.download_model(
+                model["url"], model["directory"], model["name"], token
+            )
+        model_names = [m["name"] for m in models]
+        return model_names

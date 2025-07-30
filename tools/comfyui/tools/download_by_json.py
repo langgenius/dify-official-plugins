@@ -34,22 +34,7 @@ class DownloadByJson(Tool):
             hf_api_key=self.runtime.credentials.get("hf_api_key"),
         )
 
-        input_json = json.loads(clean_json_string(
-            tool_parameters.get("workflow_json")))
-        models = []
-        for node in input_json["nodes"]:
-            if "properties" in node and "models" in node["properties"]:
-                models += node["properties"]["models"]
+        model_names = self.model_manager.download_from_json(
+            tool_parameters.get("workflow_json", ""))
 
-        for model in models:
-            token = None
-            if "://civitai.com" in model["url"]:
-                token = self.model_manager.get_civitai_api_key()
-            elif "://huggingface.co" in model["url"]:
-                token = self.model_manager.get_hf_api_key()
-
-            self.model_manager.download_model(
-                model["url"], model["directory"], model["name"], token
-            )
-
-        yield self.create_variable_message("model_names", [m["name"] for m in models])
+        yield self.create_variable_message("model_names", model_names)
