@@ -140,10 +140,10 @@ class ComfyuiImg2Vid(Tool):
         elif model_type == "svd":
             output_images = self.img2vid_svd(config)
         elif model_type == "svd_xt":
-            config.model_name = self.model_manager.download_model(
-                "https://huggingface.co/stabilityai/stable-video-diffusion-img2vid-xt/resolve/main/svd_xt.safetensors",
+            config.model_name = self.model_manager.download_hugging_face(
+                "stabilityai/stable-video-diffusion-img2vid-xt",
+                "svd_xt.safetensors",
                 "checkpoints",
-                token=self.get_hf_key(),
             )
             output_images = self.img2vid_svd(config)
 
@@ -158,20 +158,6 @@ class ComfyuiImg2Vid(Tool):
                 },
             )
 
-    def get_civit_key(self) -> str:
-        civitai_api_key = self.runtime.credentials.get("civitai_api_key")
-        if civitai_api_key is None:
-            raise ToolProviderCredentialValidationError(
-                "Please input civitai_api_key")
-        return civitai_api_key
-
-    def get_hf_key(self) -> str:
-        hf_api_key = self.runtime.credentials.get("hf_api_key")
-        if hf_api_key is None:
-            raise ToolProviderCredentialValidationError(
-                "Please input hf_api_key")
-        return hf_api_key
-
     def img2vid_svd(
         self, config: ComfyuiImg2VidConfig
     ) -> Generator[ToolInvokeMessage, None, None]:
@@ -180,10 +166,10 @@ class ComfyuiImg2Vid(Tool):
         """
         if config.model_name == "":
             # download model
-            config.model_name = self.model_manager.download_model(
-                "https://huggingface.co/stabilityai/stable-video-diffusion-img2vid/resolve/main/svd.safetensors",
+            config.model_name = self.model_manager.download_hugging_face(
+                "stabilityai/stable-video-diffusion-img2vid",
+                "svd.safetensors",
                 "checkpoints",
-                token=self.get_hf_key(),
             )
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -213,28 +199,29 @@ class ComfyuiImg2Vid(Tool):
         """
         generate image
         """
+        wan_repo_id = "Comfy-Org/Wan_2.1_ComfyUI_repackaged"
         if config.model_name == "":
             # download model
-            config.model_name = self.model_manager.download_model(
-                "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_i2v_480p_14B_fp8_e4m3fn.safetensors",
+            config.model_name = self.model_manager.download_hugging_face(
+                wan_repo_id,
+                "split_files/diffusion_models/wan2.1_i2v_480p_14B_fp8_e4m3fn.safetensors",
                 "diffusion_models",
-                token=self.get_hf_key(),
             )
 
-        vae = self.model_manager.download_model(
-            "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors",
+        vae = self.model_manager.download_hugging_face(
+            wan_repo_id,
+            "split_files/vae/wan_2.1_vae.safetensors",
             "vae",
-            token=self.get_hf_key(),
         )
-        clip_vision = self.model_manager.download_model(
-            "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/clip_vision/clip_vision_h.safetensors",
+        clip_vision = self.model_manager.download_hugging_face(
+            wan_repo_id,
+            "split_files/clip_vision/clip_vision_h.safetensors",
             "clip_vision",
-            token=self.get_hf_key(),
         )
-        text_encoder = self.model_manager.download_model(
-            "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+        text_encoder = self.model_manager.download_hugging_face(
+            wan_repo_id,
+            "split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors",
             "text_encoders",
-            token=self.get_hf_key(),
         )
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "img2vid_wan2_1.json")) as file:
@@ -271,17 +258,18 @@ class ComfyuiImg2Vid(Tool):
             raise ToolProviderCredentialValidationError(
                 "FrameN must be 10 or more for LTXV"
             )
+        repo_id = "Lightricks/LTX-Video"
         if config.model_name == "":
             # download model
             config.model_name = self.model_manager.download_model(
-                "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-2b-v0.9.safetensors",
+                repo_id,
+                "ltx-video-2b-v0.9.safetensors",
                 "checkpoints",
-                token=self.get_hf_key(),
             )
         text_encoder = self.model_manager.download_model(
-            "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp16.safetensors",
+            repo_id,
+            "t5xxl_fp16.safetensors",
             "text_encoders",
-            token=self.get_hf_key(),
         )
 
         current_dir = os.path.dirname(os.path.realpath(__file__))

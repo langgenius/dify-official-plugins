@@ -107,42 +107,29 @@ class ComfyuiTxt2Vid(Tool):
                 },
             )
 
-    def get_civit_key(self) -> str:
-        civitai_api_key = self.runtime.credentials.get("civitai_api_key")
-        if civitai_api_key is None:
-            raise ToolProviderCredentialValidationError(
-                "Please input civitai_api_key")
-        return civitai_api_key
-
-    def get_hf_key(self) -> str:
-        hf_api_key = self.runtime.credentials.get("hf_api_key")
-        if hf_api_key is None:
-            raise ToolProviderCredentialValidationError(
-                "Please input hf_api_key")
-        return hf_api_key
-
     def txt2vid_mochi(
         self, config: ComfyuiTxt2VidConfig
     ) -> Generator[ToolInvokeMessage, None, None]:
         """
         generate image
         """
+        mochi_repo_id = "Comfy-Org/mochi_preview_repackaged"
         if config.model_name == "":
             # download model
-            config.model_name = self.model_manager.download_model(
-                "https://huggingface.co/Comfy-Org/mochi_preview_repackaged/resolve/main/split_files/diffusion_models/mochi_preview_fp8_scaled.safetensors",
+            config.model_name = self.model_manager.download_hugging_face(
+                mochi_repo_id,
+                "split_files/diffusion_models/mochi_preview_fp8_scaled.safetensors",
                 "diffusion_models",
-                token=self.get_hf_key(),
             )
-        clip_name = self.model_manager.download_model(
-            "https://huggingface.co/Comfy-Org/mochi_preview_repackaged/resolve/main/split_files/text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors",
+        clip_name = self.model_manager.download_hugging_face(
+            mochi_repo_id,
+            "split_files/text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors",
             "text_encoders",
-            token=self.get_hf_key(),
         )
-        vae_name = self.model_manager.download_model(
-            "https://huggingface.co/Comfy-Org/mochi_preview_repackaged/resolve/main/split_files/vae/mochi_vae.safetensors",
+        vae_name = self.model_manager.download_hugging_face(
+            mochi_repo_id,
+            "split_files/vae/mochi_vae.safetensors",
             "vae",
-            token=self.get_hf_key(),
         )
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -174,27 +161,28 @@ class ComfyuiTxt2Vid(Tool):
         """
         generate image
         """
+        hunyuan_repo_id = "Comfy-Org/HunyuanVideo_repackaged"
         if config.model_name == "":
             # download model
-            config.model_name = self.model_manager.download_model(
-                "https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/diffusion_models/hunyuan_video_t2v_720p_bf16.safetensors",
+            config.model_name = self.model_manager.download_hugging_face(
+                hunyuan_repo_id,
+                "split_files/diffusion_models/hunyuan_video_t2v_720p_bf16.safetensors",
                 "diffusion_models",
-                token=self.get_hf_key(),
             )
-        clip_name1 = self.model_manager.download_model(
-            "https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/text_encoders/clip_l.safetensors",
+        clip_name1 = self.model_manager.download_hugging_face(
+            hunyuan_repo_id,
+            "split_files/text_encoders/clip_l.safetensors",
             "text_encoders",
-            token=self.get_hf_key(),
         )
-        clip_name2 = self.model_manager.download_model(
-            "https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/text_encoders/llava_llama3_fp8_scaled.safetensors",
+        clip_name2 = self.model_manager.download_hugging_face(
+            hunyuan_repo_id,
+            "split_files/text_encoders/llava_llama3_fp8_scaled.safetensors",
             "text_encoders",
-            token=self.get_hf_key(),
         )
-        vae_name = self.model_manager.download_model(
-            "https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/vae/hunyuan_video_vae_bf16.safetensors",
+        vae_name = self.model_manager.download_hugging_face(
+            hunyuan_repo_id,
+            "split_files/vae/hunyuan_video_vae_bf16.safetensors",
             "vae",
-            token=self.get_hf_key(),
         )
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "txt2vid_hunyuan.json")) as file:
@@ -222,22 +210,23 @@ class ComfyuiTxt2Vid(Tool):
         """
         generate image
         """
+        wan_repo_id = "Comfy-Org/Wan_2.1_ComfyUI_repackaged"
         if config.model_name == "":
             # download model
-            config.model_name = self.model_manager.download_model(
-                "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_t2v_14B_fp8_e4m3fn.safetensors",
+            config.model_name = self.model_manager.download_hugging_face(
+                wan_repo_id,
+                "split_files/diffusion_models/wan2.1_t2v_14B_fp8_e4m3fn.safetensors",
                 "diffusion_models",
-                token=self.get_hf_key(),
             )
-        vae = self.model_manager.download_model(
-            "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors",
+        vae = self.model_manager.download_hugging_face(
+            wan_repo_id,
+            "split_files/vae/wan_2.1_vae.safetensors",
             "vae",
-            token=self.get_hf_key(),
         )
-        text_encoder = self.model_manager.download_model(
-            "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+        text_encoder = self.model_manager.download_hugging_face(
+            wan_repo_id,
+            "split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors",
             "text_encoders",
-            token=self.get_hf_key(),
         )
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "txt2vid_wan2_1.json")) as file:
@@ -268,17 +257,18 @@ class ComfyuiTxt2Vid(Tool):
         """
         generate image
         """
+        ltxv_repo_id = "Lightricks/LTX-Video"
         if config.model_name == "":
             # download model
-            config.model_name = self.model_manager.download_model(
-                "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-2b-v0.9.safetensors",
+            config.model_name = self.model_manager.download_hugging_face(
+                ltxv_repo_id,
+                "ltx-video-2b-v0.9.safetensors",
                 "checkpoints",
-                token=self.get_hf_key(),
             )
-        text_encoder = self.model_manager.download_model(
-            "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp16.safetensors",
+        text_encoder = self.model_manager.download_hugging_face(
+            ltxv_repo_id,
+            "t5xxl_fp16.safetensors",
             "text_encoders",
-            token=self.get_hf_key(),
         )
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
