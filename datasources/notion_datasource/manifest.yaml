@@ -1,4 +1,4 @@
-version: 0.1.0
+version: 0.1.8
 type: plugin
 author: langgenius
 name: notion_datasource
@@ -20,7 +20,7 @@ plugins:
   datasources:
     - provider/notion_datasource.yaml
 meta:
-  version: 0.1.0
+  version: 0.1.8
   arch:
     - amd64
     - arm64
