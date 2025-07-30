@@ -26,6 +26,7 @@ parameters:
     name: workflow_json
     required: true
     type: string
+
   - form: llm
     label:
       en_US: Input Images
