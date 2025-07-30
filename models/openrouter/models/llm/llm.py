@@ -16,6 +16,12 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         ):
             credentials["function_calling_type"] = "tool_call"
 
+        # Add OpenRouter specific headers for rankings on openrouter.ai
+        credentials["extra_headers"] = {
+            "HTTP-Referer": "https://dify.ai/",
+            "X-Title": "Dify"
+        }
+
     def _invoke(
         self,
         model: str,

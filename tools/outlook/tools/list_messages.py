@@ -1,7 +1,6 @@
 from collections.abc import Generator
 from typing import Any
 import requests
-import msal
 from datetime import datetime
 
 from dify_plugin import Tool
@@ -15,39 +14,25 @@ class ListEmailsTool(Tool):
         """
         try:
             # Get parameters
-            user_email = self.runtime.credentials.get("user_email")
             limit = int(tool_parameters.get("limit", 10))
             folder = tool_parameters.get("folder", "inbox")
             search_query = tool_parameters.get("search", "")
             include_body = tool_parameters.get("include_body", False)
             
             # Validate parameters
-            if not user_email:
-                yield self.create_text_message("User email is required in credentials.")
-                return
-                
             if limit < 1 or limit > 100:
                 yield self.create_text_message("Limit must be between 1 and 100.")
                 return
                 
-            # Get credentials
-            client_id = self.runtime.credentials.get("client_id")
-            client_secret = self.runtime.credentials.get("client_secret")
-            tenant_id = self.runtime.credentials.get("tenant_id")
-            
-            if not all([client_id, client_secret, tenant_id]):
-                yield self.create_text_message("Azure AD credentials are required.")
+            # Get access token from OAuth credentials
+            access_token = self.runtime.credentials.get("access_token")
+            if not access_token:
+                yield self.create_text_message("Access token is required in credentials.")
                 return
             
             try:
-                # Get access token
-                access_token = self._get_access_token(client_id, client_secret, tenant_id)
-                if not access_token:
-                    yield self.create_text_message("Failed to acquire access token.")
-                    return
-                
                 # Get emails
-                emails = self._get_emails(access_token, user_email, limit, folder, search_query, include_body)
+                emails = self._get_emails(access_token, limit, folder, search_query, include_body)
                 
                 if isinstance(emails, str):  # Error message
                     yield self.create_text_message(emails)
@@ -62,14 +47,13 @@ class ListEmailsTool(Tool):
                     return
                 
                 # Create summary
-                summary = f"Found {len(emails)} emails in {folder} for {user_email}"
+                summary = f"Found {len(emails)} emails in {folder}"
                 if search_query:
                     summary += f" matching '{search_query}'"
                 
                 yield self.create_text_message(summary)
                 yield self.create_json_message({
                     "total_count": len(emails),
-                    "user_email": user_email,
                     "folder": folder,
                     "search_query": search_query if search_query else None,
                     "emails": emails
@@ -83,48 +67,22 @@ class ListEmailsTool(Tool):
             yield self.create_text_message(f"Error: {str(e)}")
             return
     
-    def _get_access_token(self, client_id: str, client_secret: str, tenant_id: str) -> str:
-        """
-        Get access token using client credentials flow
-        """
-        try:
-            app = msal.ConfidentialClientApplication(
-                client_id=client_id,
-                client_credential=client_secret,
-                authority=f"https://login.microsoftonline.com/{tenant_id}"
-            )
-            
-            result = app.acquire_token_for_client(
-                scopes=["https://graph.microsoft.com/.default"]
-            )
-            
-            if "access_token" in result:
-                return result["access_token"]
-            else:
-                error_desc = result.get("error_description", "Unknown error")
-                print(f"Token acquisition failed: {error_desc}")
-                return None
-                
-        except Exception as e:
-            print(f"Error getting access token: {str(e)}")
-            return None
-    
-    def _get_emails(self, access_token: str, user_email: str, limit: int, 
+    def _get_emails(self, access_token: str, limit: int, 
                    folder: str, search_query: str, include_body: bool):
         """
         Get emails from Microsoft Graph API
         """
         try:
-            # Build base URL
+            # Build base URL using /me
             if folder.lower() == "inbox":
-                base_url = f"https://graph.microsoft.com/v1.0/users/{user_email}/mailFolders/inbox/messages"
+                base_url = "https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages"
             elif folder.lower() == "sent":
-                base_url = f"https://graph.microsoft.com/v1.0/users/{user_email}/mailFolders/sentitems/messages"
+                base_url = "https://graph.microsoft.com/v1.0/me/mailFolders/sentitems/messages"
             elif folder.lower() == "drafts":
-                base_url = f"https://graph.microsoft.com/v1.0/users/{user_email}/mailFolders/drafts/messages"
+                base_url = "https://graph.microsoft.com/v1.0/me/mailFolders/drafts/messages"
             else:
                 # For custom folders, search all messages
-                base_url = f"https://graph.microsoft.com/v1.0/users/{user_email}/messages"
+                base_url = "https://graph.microsoft.com/v1.0/me/messages"
             
             # Build select fields
             select_fields = [
@@ -139,13 +97,15 @@ class ListEmailsTool(Tool):
             # Build query parameters
             params = {
                 "$top": limit,
-                "$select": ",".join(select_fields),
-                "$orderby": "receivedDateTime desc"
+                "$select": ",".join(select_fields)
             }
             
             # Add search if specified
             if search_query:
                 params["$search"] = f'"{search_query}"'
+            else:
+                # Only add orderby when not searching
+                params["$orderby"] = "receivedDateTime desc"
             
             # Set headers
             headers = {
@@ -163,7 +123,7 @@ class ListEmailsTool(Tool):
             elif response.status_code == 403:
                 return "Access denied. Check app permissions and admin consent."
             elif response.status_code == 404:
-                return f"User '{user_email}' not found."
+                return f"Folder '{folder}' not found."
             elif response.status_code != 200:
                 return f"API error {response.status_code}: {response.text}"
             

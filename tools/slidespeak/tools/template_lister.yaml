@@ -1,0 +1,15 @@
+name: template_lister
+description:
+  human:
+    en_US: Get a list of all available presentation templates from the SlideSpeak API.
+    zh_Hans: 从 SlideSpeak API 获取所有可用的演示文稿模板列表。
+  llm: This tool retrieves a list of all available presentation templates from the SlideSpeak API, including their names and preview images. Use this to discover default templates for generating new presentations.
+extra:
+  python:
+    source: tools/template_lister.py
+identity:
+  author: Kalo Chin
+  label:
+    en_US: Template Lister
+    zh_Hans: 模板列表器
+  name: template_lister

@@ -1,3 +1,5 @@
 dify_plugin>=0.3.0,<0.5.0
 volcengine-python-sdk==3.0.11
 pytz==2024.2
+websockets==15.0.1
+websocket-client==1.8.0

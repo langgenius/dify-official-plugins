@@ -1,0 +1,38 @@
+identity:
+  name: create_table
+  author: langgenius
+  label:
+    en_US: Create Table
+    zh_Hans: 创建表
+    pt_BR: Criar Tabela
+    ja_JP: テーブル作成
+    zh_Hant: 建立表格
+description:
+  human:
+    en_US: Create a new table in the SQLite database using a provided SQL CREATE TABLE statement.
+    zh_Hans: 使用提供的 SQL CREATE TABLE 语句在 SQLite 数据库中创建新表。
+    pt_BR: Crie uma nova tabela no banco de dados SQLite usando uma instrução SQL CREATE TABLE fornecida.
+    ja_JP: 指定された SQL CREATE TABLE 文を使って SQLite データベースに新しいテーブルを作成します。
+    zh_Hant: 使用提供的 SQL CREATE TABLE 陳述式在 SQLite 資料庫中建立新表格。
+  llm: Create a new table in the SQLite database. Use this tool to execute a valid SQL CREATE TABLE statement. The statement must define the table name and columns. Only CREATE TABLE statements are allowed. Returns a success message or an error if the operation fails.
+parameters:
+  - name: create_table_sql
+    type: string
+    required: true
+    label:
+      en_US: CREATE TABLE SQL Statement
+      zh_Hans: CREATE TABLE SQL 语句
+      pt_BR: Instrução SQL CREATE TABLE
+      ja_JP: CREATE TABLE SQL 文
+      zh_Hant: CREATE TABLE SQL 陳述式
+    human_description:
+      en_US: The SQL statement to create a new table. It must start with CREATE TABLE and specify the table name and columns. Example, CREATE TABLE users with columns id as integer primary key, name as text, email as text.
+      zh_Hans: 用于创建新表的 SQL 语句。必须以 CREATE TABLE 开头，并指定表名和列。例如,CREATE TABLE users,列有 id 整数主键,name 文本,email 文本。
+      pt_BR: A instrução SQL para criar uma nova tabela. Deve começar com CREATE TABLE e especificar o nome da tabela e as colunas. Exemplo, CREATE TABLE users com colunas id como inteiro chave primária, name como texto, email como texto.
+      ja_JP: 新しいテーブルを作成するための SQL 文。CREATE TABLE で始まり、テーブル名とカラムを指定する必要があります。例, CREATE TABLE users カラム id 整数主キー、name テキスト、email テキスト。
+      zh_Hant: 用於建立新表格的 SQL 陳述式。必須以 CREATE TABLE 開頭，並指定表格名稱和欄位。例如,CREATE TABLE users,欄位有 id 為整數主鍵,name 為文字,email 為文字。
+    llm_description: The SQL CREATE TABLE statement to execute. It must start with CREATE TABLE and define the table name and columns. Example, CREATE TABLE users with columns id as integer primary key, name as text, email as text.
+    form: llm
+extra:
+  python:
+    source: tools/create_table.py

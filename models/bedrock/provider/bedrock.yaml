@@ -19,6 +19,7 @@ supported_model_types:
   - rerank
 configurate_methods:
   - predefined-model
+  - customizable-model
 provider_credential_schema:
   credential_form_schemas:
     - variable: aws_access_key_id
@@ -167,6 +168,130 @@ models:
   text_embedding:
     predefined:
       - "models/text_embedding/*.yaml"
+model_credential_schema:
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: Enter your custom model name
+      zh_Hans: 输入自定义模型名称
+  credential_form_schemas:
+    - variable: inference_profile_id
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Inference Profile ID
+        zh_Hans: 推理配置文件 ID
+      type: text-input
+      required: true
+      placeholder:
+        en_US: Enter your Bedrock Inference Profile ID (e.g., 0j6r4a8fn6ze)
+        zh_Hans: 输入您的 Bedrock 推理配置文件 ID
+      help:
+        text:
+          en_US: The unique identifier for your Bedrock Inference Profile
+          zh_Hans: Bedrock 推理配置文件的唯一标识符
+    - variable: context_length
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Model Context Length
+        zh_Hans: 模型上下文长度
+      type: text-input
+      required: false
+      default: "4096"
+      placeholder:
+        en_US: Enter model context length (default 4096)
+        zh_Hans: 输入模型上下文长度（默认4096）
+    - variable: aws_access_key_id
+      required: false
+      label:
+        en_US: Access Key (If not provided, credentials are obtained from the running environment.)
+        zh_Hans: Access Key (如果未提供，凭证将从运行环境中获取。)
+      type: secret-input
+      placeholder:
+        en_US: Enter your Access Key
+        zh_Hans: 在此输入您的 Access Key
+    - variable: aws_secret_access_key
+      required: false
+      label:
+        en_US: Secret Access Key
+        zh_Hans: Secret Access Key
+      type: secret-input
+      placeholder:
+        en_US: Enter your Secret Access Key
+        zh_Hans: 在此输入您的 Secret Access Key
+    - variable: aws_region
+      required: false
+      label:
+        en_US: AWS Region
+        zh_Hans: AWS 地区
+      type: select
+      default: us-east-1
+      options:
+        - value: us-east-1
+          label:
+            en_US: US East (N. Virginia)
+            zh_Hans: 美国东部 (弗吉尼亚北部)
+        - value: us-east-2
+          label:
+            en_US: US East (Ohio)
+            zh_Hans: 美国东部 (俄亥俄)
+        - value: us-west-2
+          label:
+            en_US: US West (Oregon)
+            zh_Hans: 美国西部 (俄勒冈州)
+        - value: ap-south-1
+          label:
+            en_US: Asia Pacific (Mumbai)
+            zh_Hans: 亚太地区（孟买）
+        - value: ap-southeast-1
+          label:
+            en_US: Asia Pacific (Singapore)
+            zh_Hans: 亚太地区 (新加坡)
+        - value: ap-southeast-2
+          label:
+            en_US: Asia Pacific (Sydney)
+            zh_Hans: 亚太地区 (悉尼)
+        - value: ap-northeast-1
+          label:
+            en_US: Asia Pacific (Tokyo)
+            zh_Hans: 亚太地区 (东京)
+        - value: ap-northeast-2
+          label:
+            en_US: Asia Pacific (Seoul)
+            zh_Hans: 亚太地区（首尔）
+        - value: ca-central-1
+          label:
+            en_US: Canada (Central)
+            zh_Hans: 加拿大（中部）
+        - value: eu-central-1
+          label:
+            en_US: Europe (Frankfurt)
+            zh_Hans: 欧洲 (法兰克福)
+        - value: eu-west-1
+          label:
+            en_US: Europe (Ireland)
+            zh_Hans: 欧洲（爱尔兰）
+        - value: eu-west-2
+          label:
+            en_US: Europe (London)
+            zh_Hans: 欧洲西部 (伦敦)
+        - value: eu-west-3
+          label:
+            en_US: Europe (Paris)
+            zh_Hans: 欧洲（巴黎）
+        - value: sa-east-1
+          label:
+            en_US: South America (São Paulo)
+            zh_Hans: 南美洲（圣保罗）
+        - value: us-gov-west-1
+          label:
+            en_US: AWS GovCloud (US-West)
+            zh_Hans: AWS GovCloud (US-West)
 extra:
   python:
     provider_source: provider/bedrock.py

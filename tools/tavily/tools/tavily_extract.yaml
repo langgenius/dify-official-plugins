@@ -13,47 +13,80 @@ identity:
     zh_Hans: Tavily Extract
   name: tavily_extract
 parameters:
-- form: llm
-  human_description:
-    en_US: One or more URLs to extract content from (comma-separated if multiple).
-    zh_Hans: 要从中提取内容的一个或多个 URL（如果有多个，请用逗号分隔）。
-  label:
-    en_US: URLs
-    zh_Hans: URLs
-  llm_description: One or more URLs to extract content from (comma-separated if multiple).
-  name: urls
-  required: true
-  type: string
-- form: form
-  human_description:
-    en_US: Include a list of images extracted from the URLs in the response.
-    zh_Hans: 在响应中包含从 URL 提取的图像列表。
-  label:
-    en_US: Include Images
-    zh_Hans: 包含图像
-  llm_description: Include images from the URLs in the response. Default is false.
-  name: include_images
-  required: false
-  type: boolean
-  default: false
-- form: llm
-  human_description:
-    en_US: The depth of the extraction process. 'advanced' retrieves more data but may increase latency and costs more credits.
-    zh_Hans: 提取过程的深度。"advanced"检索更多数据，但可能增加延迟和消耗更多积分。
-  label:
-    en_US: Extract Depth
-    zh_Hans: 提取深度
-  llm_description: Extraction depth - 'basic' (default, faster) or 'advanced' (more data, higher cost).
-  name: extract_depth
-  required: false
-  type: select
-  options:
-  - label:
-      en_US: Basic
-      zh_Hans: 基本
-    value: basic
-  - label:
-      en_US: Advanced
-      zh_Hans: 高级
-    value: advanced
-  default: basic
+  - name: urls
+    form: llm
+    human_description:
+      en_US: One or more URLs to extract content from (comma-separated if multiple).
+      zh_Hans: 要从中提取内容的一个或多个 URL（如果有多个，请用逗号分隔）。
+    label:
+      en_US: URLs
+      zh_Hans: URLs
+    llm_description: One or more URLs to extract content from (comma-separated if multiple).
+    required: true
+    type: string
+  - name: include_images
+    form: form
+    human_description:
+      en_US: Include a list of images extracted from the URLs in the response.
+      zh_Hans: 在响应中包含从 URL 提取的图像列表。
+    label:
+      en_US: Include Images
+      zh_Hans: 包含图像
+    llm_description: Include images from the URLs in the response. Default is false.
+    required: false
+    type: boolean
+    default: false
+  - name: include_favicon
+    form: form
+    human_description:
+      en_US: Include favicon URL for each result.
+      zh_Hans: 包含每个结果的favicon URL。
+    label:
+      en_US: Include Favicon
+      zh_Hans: 包含Favicon
+    llm_description: When set to true, includes the favicon URL for each result.
+    required: false
+    type: boolean
+    default: false
+  - name: extract_depth
+    form: llm
+    human_description:
+      en_US: The depth of the extraction process. 'advanced' retrieves more data but may increase latency and costs more credits.
+      zh_Hans: 提取过程的深度。"advanced"检索更多数据，但可能增加延迟和消耗更多积分。
+    label:
+      en_US: Extract Depth
+      zh_Hans: 提取深度
+    llm_description: Extraction depth - 'basic' (default, faster) or 'advanced' (more data, higher cost).
+    required: false
+    type: select
+    options:
+      - label:
+          en_US: Basic
+          zh_Hans: 基本
+        value: basic
+      - label:
+          en_US: Advanced
+          zh_Hans: 高级
+        value: advanced
+    default: basic
+  - name: format
+    form: form
+    human_description:
+      en_US: The format of extracted content.
+      zh_Hans: 提取内容的格式。
+    label:
+      en_US: Content Format
+      zh_Hans: 内容格式
+    llm_description: Format of extracted content - 'markdown' (default) or 'text' (plain text).
+    required: false
+    type: select
+    options:
+      - label:
+          en_US: Markdown
+          zh_Hans: Markdown
+        value: markdown
+      - label:
+          en_US: Text
+          zh_Hans: 文本
+        value: text
+    default: markdown

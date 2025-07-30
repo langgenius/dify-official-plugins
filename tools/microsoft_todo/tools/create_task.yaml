@@ -1,0 +1,69 @@
+identity:
+  name: create_task
+  author: langgenius
+  label:
+    en_US: Create Task
+    zh_CN: 创建任务
+    ja_JP: タスクを作成
+description:
+  human:
+    en_US: Create a task in the Microsoft To Do list
+    zh_CN: 在 Microsoft To Do 列表中创建任务
+    ja_JP: Microsoft To Do リストにタスクを作成
+  llm: Create a task in the Microsoft To Do list
+parameters:
+- name: list_id
+  type: string
+  required: true
+  label:
+    en_US: List Id
+    zh_CN: 列表ID
+    ja_JP: リストID
+  human_description:
+    en_US: The id of the list to create the task in
+    zh_CN: 要在其中创建任务的列表ID
+    ja_JP: タスクを作成するリストのID
+  llm_description: The id of the list to create the task in, type is string
+  form: llm
+- name: title
+  type: string
+  required: true
+  label:
+    en_US: Title
+    zh_CN: 标题
+    ja_JP: タイトル
+  human_description:
+    en_US: The title of the task to create
+    zh_CN: 要创建的任务标题
+    ja_JP: 作成するタスクのタイトル
+  llm_description: The title of the task to create, type is string
+  form: llm
+- name: due_date
+  type: string
+  required: false
+  label:
+    en_US: Due Date
+    zh_CN: 截止日期
+    ja_JP: 期限日
+  human_description:
+    en_US: The due date of the task to create
+    zh_CN: 要创建任务的截止日期
+    ja_JP: 作成するタスクの期限日
+  llm_description: The due date of the task to create, type is string, format is YYYY-MM-DD
+  form: llm
+- name: body_text
+  type: string
+  required: false
+  label:
+    en_US: Body Text
+    zh_CN: 正文
+    ja_JP: 本文
+  human_description:
+    en_US: The body text of the task to create
+    zh_CN: 要创建任务的正文内容
+    ja_JP: 作成するタスクの本文
+  llm_description: The body text of the task to create, type is string
+  form: llm
+extra:
+  python:
+    source: tools/create_task.py

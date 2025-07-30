@@ -1,0 +1,44 @@
+description:
+  human:
+    en_US: Get detailed information about a GitHub repository including stats, metadata, and owner information
+    pt_BR: Obter informações detalhadas sobre um repositório do GitHub, incluindo estatísticas, metadados e informações do proprietário
+    zh_Hans: 获取GitHub仓库的详细信息，包括统计数据、元数据和所有者信息
+  llm: A tool to get detailed information about a GitHub repository, including repository stats, metadata, owner information, and other details
+extra:
+  python:
+    source: tools/github_repository_info.py
+identity:
+  author: CharlieWei
+  icon: icon.svg
+  label:
+    en_US: Repository Info
+    pt_BR: Informações do Repositório
+    zh_Hans: 仓库信息
+  name: github_repository_info
+parameters:
+  - form: llm
+    human_description:
+      en_US: The account owner of the repository. The name is not case sensitive.
+      pt_BR: O proprietário da conta do repositório. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库的账户所有者。名称不区分大小写。
+    label:
+      en_US: Owner
+      pt_BR: Proprietário
+      zh_Hans: 所有者
+    llm_description: The account owner of the repository. The name is not case sensitive.
+    name: owner
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: The name of the repository without the .git extension. The name is not case sensitive.
+      pt_BR: O nome do repositório sem a extensão .git. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库名称不带.git扩展名。名称不区分大小写。
+    label:
+      en_US: Repository
+      pt_BR: Repositório
+      zh_Hans: 仓库
+    llm_description: The name of the repository without the .git extension. The name is not case sensitive.
+    name: repo
+    required: true
+    type: string

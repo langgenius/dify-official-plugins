@@ -1,0 +1,43 @@
+identity:
+  name: complete_task
+  author: langgenius
+  label:
+    en_US: Complete Task
+    zh_CN: 完成任务
+    ja_JP: タスクを完了
+description:
+  human:
+    en_US: Complete a task in the Microsoft To Do list
+    zh_CN: 在 Microsoft To Do 列表中完成任务
+    ja_JP: Microsoft To Do リストのタスクを完了する
+  llm: Complete a task in the Microsoft To Do list
+parameters:
+- name: task_id
+  type: string
+  required: true
+  label:
+    en_US: Task Id
+    zh_CN: 任务ID
+    ja_JP: タスクID
+  human_description:
+    en_US: The id of the task to complete
+    zh_CN: 要完成的任务ID
+    ja_JP: 完了するタスクのID
+  llm_description: The id of the task to complete, type is string
+  form: llm
+- name: list_id
+  type: string
+  required: true
+  label:
+    en_US: List Id
+    zh_CN: 列表ID
+    ja_JP: リストID
+  human_description:
+    en_US: The id of the list the task belongs to
+    zh_CN: 任务所属的列表ID
+    ja_JP: タスクが属するリストのID
+  llm_description: The id of the list the task belongs to, type is string
+  form: llm
+extra:
+  python:
+    source: tools/complete_task.py

@@ -10,30 +10,64 @@ identity:
     zh_Hant: 發送訊息
 description:
   human:
-    en_US: Send a draft email message
-    zh_Hans: 发送草稿电子邮件
-    pt_BR: Enviar uma mensagem de e-mail rascunho
-    ja_JP: 下書きメールを送信
-    zh_Hant: 發送草稿電子郵件
-  llm: Send a draft email message through Outlook using Microsoft Graph API, requires a draft ID from the draft_message tool
+    en_US: Send a message through Outlook using Microsoft Graph API
+    zh_Hans: 通过Outlook使用Microsoft Graph API发送消息
+    pt_BR: Envia uma mensagem através do Outlook usando a API do Microsoft Graph
+    ja_JP: Outlookを使用してMicrosoft Graph API経由でメッセージを送信する
+    zh_Hant: 通過Outlook使用Microsoft Graph API發送消息
+  llm: Send a message through Outlook using Microsoft Graph API
 
 parameters:
-  - name: draft_id
+  - name: to
     type: string
     required: true
     label:
-      en_US: Draft ID
-      zh_Hans: 草稿ID
-      pt_BR: ID do Rascunho
-      ja_JP: 下書きID
-      zh_Hant: 草稿ID
+      en_US: To
+      zh_Hans: 收件人
+      pt_BR: Para
+      ja_JP: 宛先
+      zh_Hant: 收件人
     human_description:
-      en_US: The unique identifier of the draft message to send
-      zh_Hans: 要发送的草稿消息的唯一标识符
-      pt_BR: O identificador único do rascunho para enviar
-      ja_JP: 送信する下書きの一意の識別子
-      zh_Hant: 要發送的草稿訊息的唯一識別符
-    llm_description: The unique identifier of the draft message to send, this ID can be obtained from the draft_message tool
+      en_US: The email address of the recipient
+      zh_Hans: 收件人的电子邮件地址
+      pt_BR: O endereço de e-mail do destinatário
+      ja_JP: 宛先の電子メールアドレス
+      zh_Hant: 收件人的電子郵件地址
+    llm_description: The email address of the recipient
+    form: llm
+  - name: subject
+    type: string
+    required: true
+    label:
+      en_US: Subject
+      zh_Hans: 主题
+      pt_BR: Assunto
+      ja_JP: 件名
+      zh_Hant: 主題
+    human_description:
+      en_US: The subject of the message
+      zh_Hans: 消息的主题
+      pt_BR: O assunto da mensagem
+      ja_JP: 件名
+      zh_Hant: 消息的主題
+    llm_description: The subject of the message
+    form: llm
+  - name: message
+    type: string
+    required: true
+    label:
+      en_US: Message
+      zh_Hans: 消息
+      pt_BR: Mensagem
+      ja_JP: メッセージ
+      zh_Hant: 訊息
+    human_description:
+      en_US: The content of the message
+      zh_Hans: 消息的内容
+      pt_BR: O conteúdo da mensagem
+      ja_JP: メッセージの内容
+      zh_Hant: 訊息的內容
+    llm_description: The content of the message
     form: llm
 extra:
   python:

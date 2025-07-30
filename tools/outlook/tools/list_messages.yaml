@@ -73,6 +73,24 @@ parameters:
       zh_Hant: 要返回的最大訊息數
     llm_description: Maximum number of messages to return, between 1 and 100, default is 10
     form: llm
+  - name: include_body
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Include Body
+      zh_Hans: 包含正文
+      pt_BR: Incluir Corpo
+      ja_JP: 本文を含める
+      zh_Hant: 包含內文
+    human_description:
+      en_US: Whether to include the full message body in the response
+      zh_Hans: 是否在响应中包含完整的消息正文
+      pt_BR: Se deve incluir o corpo completo da mensagem na resposta
+      ja_JP: レスポンスにメッセージの本文全体を含めるかどうか
+      zh_Hant: 是否在回應中包含完整的訊息內文
+    llm_description: Whether to include the full message body in the response, default is false to keep responses concise
+    form: llm
 extra:
   python:
     source: tools/list_messages.py 

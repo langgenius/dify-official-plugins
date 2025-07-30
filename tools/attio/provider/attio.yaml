@@ -1,0 +1,54 @@
+identity:
+  author: langgenius
+  name: attio
+  label:
+    en_US: Attio
+    zh_Hans: Attio
+    pt_BR: Attio
+    ja_JP: Attio
+  description:
+    en_US: "Connect to Attio to manage database records and perform CRUD operations"
+    zh_Hans: "连接到 Attio 以管理数据库记录并执行 CRUD 操作"
+    pt_BR: "Conecte-se ao Attio para gerenciar registros de banco de dados e executar operações CRUD"
+    ja_JP: "Attio に接続してデータベースレコードを管理し、CRUD操作を実行します"
+  icon: icon.svg
+  tags:
+    - business
+    - productivity
+
+credentials_for_provider:
+  attio_api_token:
+    type: secret-input
+    required: true
+    label:
+      en_US: "Attio API Token"
+      zh_Hans: "Attio API 令牌"
+      pt_BR: "Token da API Attio"
+      ja_JP: "Attio API トークン"
+    placeholder:
+      en_US: "Enter your Attio API token"
+      zh_Hans: "输入您的 Attio API 令牌"
+      pt_BR: "Digite seu token da API Attio"
+      ja_JP: "Attio API トークンを入力してください"
+    help:
+      en_US: "Get your API token from Attio Workspace Settings > Developers > New Access Token"
+      zh_Hans: "从 Attio 工作区设置 > 开发者 > 新建访问令牌 获取您的 API 令牌"
+      pt_BR: "Obtenha seu token da API em Attio Configurações do Espaço de Trabalho > Desenvolvedores > Novo Token de Acesso"
+      ja_JP: "Attio ワークスペース設定 > 開発者 > 新しいアクセストークン から API トークンを取得してください"
+    url: https://attio.com/help/apps/other-apps/generating-an-api-key # This URL likely needs to be updated for Attio
+
+tools:
+  - tools/list_objects.yaml
+  - tools/list_lists.yaml
+  - tools/list_records.yaml
+  - tools/list_entries.yaml
+  - tools/list_attributes.yaml
+  - tools/add_records.yaml
+  - tools/delete_records.yaml
+  - tools/add_entries.yaml
+  - tools/delete_entries.yaml
+  - tools/create_objects.yaml
+
+extra:
+  python:
+    source: provider/attio.py
