@@ -24,10 +24,54 @@ FluxGuidanceNode = {
 
 class ComfyUiWorkflow:
     def __init__(self, workflow_json_str: str):
-        self._workflow_json: dict = json.loads(workflow_json_str)
+        workflow_json: dict = json.loads(workflow_json_str)
+        if "nodes" in workflow_json:
+            try:
+                workflow_json = self.convert_to_api_ready(workflow_json)
+            except:
+                raise Exception("Failed to convert Workflow to API ready.")
+        self._workflow_json = workflow_json
 
     def __str__(self):
         return str(self._workflow_json).replace("'", '"')
+
+    def convert_to_api_ready(self, workflow_json: dict) -> dict:
+        result = {}
+        widgets_value_names = {"AssetDownloader": ["url", "save_to", "filename", "token"],
+                               "EmptyLatentImage": ["width", "height", "batch_size"],
+                               "CheckpointLoaderSimple": ["ckpt_name"],
+                               "KSampler": ["seed", "control", "steps", "cfg", "sampler_name", "scheduler", "denoise"],
+                               "CLIPTextEncode": ["text"],
+                               "VAEEncode": [],
+                               "VAEDecode": [],
+                               "SaveImage": ["filename_prefix"],
+                               "LatentUpscale": ["upscale_method", "width", "height", "crop"],
+                               "PreviewImage": [],
+                               "LoadImage": ["image"],
+                               "ImageScaleToTotalPixels": ["upscale_method", "megapixels"]
+                               }
+        nodes = workflow_json["nodes"]
+        links = workflow_json["links"]
+        for node in nodes:
+            inputs = {}
+            class_type = node["type"]
+            # Set input values
+            if class_type in widgets_value_names:
+                for i, value_name in enumerate(widgets_value_names[class_type]):
+                    inputs[value_name] = node["widgets_values"][i]
+            else:
+                raise Exception(f"{class_type} not found.")
+            # Set links
+            for input in node["inputs"]:
+                link_id = input["link"]
+                link = [l for l in links if l[0] == link_id][0]
+                link_id, source_id, port_idx, _, _, type = link
+                inputs[input["name"]] = [str(source_id), port_idx]
+            result[str(node["id"])] = {
+                "class_type": class_type, "_meta": {"title": "TITLE"}, "inputs": inputs}
+        result = {key: result[key]
+                  for key in sorted(result, key=lambda k: int(k))}
+        return result
 
     def json(self) -> dict:
         return self._workflow_json
@@ -257,12 +301,9 @@ class ComfyUiWorkflow:
 
 if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.realpath(__file__))
-    workflow_path = os.path.join(current_dir, "json", "txt2img.json")
-    wk = ComfyUiWorkflow(open(workflow_path, "r").read())
-    for ksamplerId in wk.get_node_ids_by_class_type("KSampler"):
-        wk.set_property(ksamplerId, "inputs/sampler_name", "sampleeer")
-    wk.add_lora_node("3", "6", "7", "hello", 0.5)
-    wk.add_lora_node("3", "6", "7", "world")
-    wk.add_lora_node("3", "6", "7", "!!!", 0.2, 2)
-    with open("a.json", "w") as f:
-        f.write(str(wk))
+    workflow_path = os.path.join(current_dir, "json", "webp2mp4.json")
+    workflow_outpath = os.path.join(current_dir, "json", "output.json")
+    txt = open(workflow_path, "r", encoding="utf-8").read()
+    workflow = ComfyUiWorkflow(txt)
+    print(workflow)
+    # open(workflow_outpath, "w").write(str(workflow))
