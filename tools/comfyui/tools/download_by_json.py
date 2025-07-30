@@ -8,14 +8,6 @@ from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from tools.model_manager import ModelManager
 
 
-def clean_json_string(s):
-    for char in ["\n", "\r", "\t", "\x08", "\x0c"]:
-        s = s.replace(char, "")
-    for char_id in range(0x007F, 0x00A1):
-        s = s.replace(chr(char_id), "")
-    return s
-
-
 class DownloadByJson(Tool):
     def _invoke(
         self, tool_parameters: dict[str, Any]

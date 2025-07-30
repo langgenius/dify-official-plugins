@@ -6,14 +6,6 @@ from tools.comfyui_workflow import ComfyUiWorkflow
 from dify_plugin import Tool
 
 
-def clean_json_string(s):
-    for char in ["\n", "\r", "\t", "\x08", "\x0c"]:
-        s = s.replace(char, "")
-    for char_id in range(0x007F, 0x00A1):
-        s = s.replace(chr(char_id), "")
-    return s
-
-
 class ComfyUIWorkflowTool(Tool):
     def _invoke(
         self, tool_parameters: dict[str, Any]
@@ -22,7 +14,7 @@ class ComfyUIWorkflowTool(Tool):
             self.runtime.credentials["base_url"], api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"))
         images = tool_parameters.get("images") or []
         workflow = ComfyUiWorkflow(
-            clean_json_string(tool_parameters.get("workflow_json"))
+            tool_parameters.get("workflow_json", "")
         )
         image_names = []
         for image in images:

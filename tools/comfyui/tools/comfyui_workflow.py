@@ -24,16 +24,24 @@ FluxGuidanceNode = {
 
 class ComfyUiWorkflow:
     def __init__(self, workflow_json_str: str):
-        workflow_json: dict = json.loads(workflow_json_str)
+        def clean_json_string(string: str) -> str:
+            for char in ["\n", "\r", "\t", "\x08", "\x0c"]:
+                string = string.replace(char, "")
+            for char_id in range(0x007F, 0x00A1):
+                string = string.replace(chr(char_id), "")
+            return string
+        workflow_json: dict = json.loads(clean_json_string(workflow_json_str))
+        self._workflow_original = workflow_json
         if "nodes" in workflow_json:
             try:
-                workflow_json = self.convert_to_api_ready(workflow_json)
+                self._workflow_api = self.convert_to_api_ready(workflow_json)
             except:
                 raise Exception("Failed to convert Workflow to API ready.")
-        self._workflow_json = workflow_json
+        else:
+            self._workflow_api = deepcopy(workflow_json)
 
     def __str__(self):
-        return str(self._workflow_json).replace("'", '"')
+        return str(self._workflow_api).replace("'", '"')
 
     def convert_to_api_ready(self, workflow_json: dict) -> dict:
         result = {}
@@ -74,11 +82,14 @@ class ComfyUiWorkflow:
         return result
 
     def json(self) -> dict:
-        return self._workflow_json
+        return self._workflow_api
+
+    def json_original(self) -> dict:
+        return self._workflow_original
 
     def get_property(self, node_id: str | None, path: str):
         try:
-            workflow_json = self._workflow_json[node_id]
+            workflow_json = self._workflow_api[node_id]
             for name in path.split("/")[:-1]:
                 workflow_json = workflow_json[name]
             return workflow_json[path.split("/")[-1]]
@@ -86,7 +97,7 @@ class ComfyUiWorkflow:
             return None
 
     def set_property(self, node_id: str | None, path: str, value, can_create=False):
-        workflow_json = self._workflow_json[node_id]
+        workflow_json = self._workflow_api[node_id]
         for name in path.split("/")[:-1]:
             if not can_create and name not in workflow_json:
                 raise Exception(f"Cannot create a new property.")
@@ -98,7 +109,7 @@ class ComfyUiWorkflow:
 
     def get_node_ids_by_class_type(self, class_type: str) -> list[str]:
         node_ids = []
-        for node_id in self._workflow_json:
+        for node_id in self._workflow_api:
             if self.get_class_type(node_id) == class_type:
                 node_ids.append(node_id)
         return node_ids
@@ -115,7 +126,7 @@ class ComfyUiWorkflow:
         return possible_node_ids[0]
 
     def randomize_seed(self):
-        for node_id in self._workflow_json:
+        for node_id in self._workflow_api:
             if self.get_property(node_id, "inputs/seed") is not None:
                 self.set_property(
                     node_id, "inputs/seed", random.randint(0, 10**8 - 1)
@@ -272,8 +283,8 @@ class ComfyUiWorkflow:
         strength_clip: float = 1,
     ):
         lora_id = str(max([int(node_id)
-                      for node_id in self._workflow_json]) + 1)
-        self._workflow_json[lora_id] = deepcopy(LORA_NODE)
+                      for node_id in self._workflow_api]) + 1)
+        self._workflow_api[lora_id] = deepcopy(LORA_NODE)
         model_src_id = self.get_property(sampler_node_id, "inputs/model")[0]
         clip_src_id = self.get_property(prompt_node_id, "inputs/clip")[0]
         self.set_property(lora_id, "inputs/lora_name", lora_name)
@@ -288,8 +299,8 @@ class ComfyUiWorkflow:
 
     def add_flux_guidance(self, sampler_node_id: str | None, guidance: float):
         new_node_id = str(max([int(node_id)
-                          for node_id in self._workflow_json]) + 1)
-        self._workflow_json[new_node_id] = deepcopy(FluxGuidanceNode)
+                          for node_id in self._workflow_api]) + 1)
+        self._workflow_api[new_node_id] = deepcopy(FluxGuidanceNode)
         self.set_property(new_node_id, "inputs/guidance", guidance)
         self.set_property(
             new_node_id,
@@ -301,7 +312,7 @@ class ComfyUiWorkflow:
 
 if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.realpath(__file__))
-    workflow_path = os.path.join(current_dir, "json", "webp2mp4.json")
+    workflow_path = os.path.join(current_dir, "json", "txt2img.json")
     workflow_outpath = os.path.join(current_dir, "json", "output.json")
     txt = open(workflow_path, "r", encoding="utf-8").read()
     workflow = ComfyUiWorkflow(txt)
