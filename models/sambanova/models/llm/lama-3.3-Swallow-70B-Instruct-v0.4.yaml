@@ -1,13 +1,13 @@
-model: Qwen2-Audio-7B-Instruct
+model: Llama-3.3-Swallow-70B-Instruct-v0.4
 label:
-  zh_Hans: Qwen2-Audio-7B-Instruct
-  en_US: Qwen2-Audio-7B-Instruct
+  zh_Hans: Llama-3.3-Swallow-70B-Instruct-v0.4
+  en_US: Llama-3.3-Swallow-70B-Instruct-v0.4
 model_type: llm
 features:
   - agent-thought
 model_properties:
   mode: chat
-  context_size: 4096
+  context_size: 16384
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -19,9 +19,9 @@ parameter_rules:
     use_template: max_tokens
     default: 512
     min: 1
-    max: 4096
+    max: 8192
 pricing:
-  input: '1.0'
-  output: '0.1'
+  input: '0.06'
+  output: '0.12'
   unit: '0.00001'
   currency: USD
