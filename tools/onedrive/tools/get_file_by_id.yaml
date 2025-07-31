@@ -1,0 +1,56 @@
+identity:
+  name: get_file_by_id
+  author: langgenius
+  label:
+    en_US: Get File or Folder by ID
+    zh_Hans: 根据ID获取文件或文件夹
+    pt_BR: Obter um arquivo ou pasta por ID
+description:
+  human:
+    en_US: Get a file or folder by ID
+    zh_Hans: 根据ID获取文件或文件夹
+    pt_BR: Obter um arquivo ou pasta por ID
+  llm: Get a file or folder by ID
+parameters:
+  - name: file_id
+    type: string
+    required: true
+    label:
+      en_US: File or Folder ID
+      zh_Hans: 文件或文件夹ID
+      pt_BR: ID do arquivo ou pasta a ser obtido
+    human_description:
+      en_US: The ID of the file or folder to get
+      zh_Hans: 要获取的文件或文件夹的ID
+      pt_BR: ID do arquivo ou pasta a ser obtido
+    llm_description: The ID of the file or folder to get
+    form: llm
+  # - name: drive_id
+  #   type: string
+  #   required: true
+  #   label:
+  #     en_US: Drive ID
+  #     zh_Hans: 盘符ID
+  #     pt_BR: ID do drive
+  #   human_description:
+  #     en_US: The ID of the drive to get
+  #     zh_Hans: 要获取的盘符ID
+  #     pt_BR: ID do drive a ser obtido
+  #   llm_description: The ID of the drive to get
+  #   form: llm
+  - name: download
+    type: boolean
+    required: false
+    label:
+      en_US: Download or Not
+      zh_Hans: 是否下载
+      pt_BR: Baixar ou não
+    human_description:
+      zh_Hans: 是否下载文件
+      en_US: Whether to download the file or not
+      pt_BR: Baixar o arquivo ou não
+    llm_description: Whether to download the file or not
+    form: llm
+extra:
+  python:
+    source: tools/get_file_by_id.py

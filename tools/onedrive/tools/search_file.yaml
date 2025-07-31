@@ -1,0 +1,43 @@
+identity:
+  name: search_file
+  author: langgenius
+  label:
+    en_US: Search File or Folder by Name
+    zh_Hans: 根据名称搜索文件或文件夹
+    pt_BR: Pesquisar arquivo por nome
+description:
+  human:
+    en_US: Search for files or folders by name
+    zh_Hans: 根据名称搜索文件或文件夹
+    pt_BR: Pesquisar arquivos ou pastas por nome
+  llm: Search for files or folders by name
+parameters:
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: File or Folder Name
+      zh_Hans: 文件或文件夹名称
+      pt_BR: Nome do arquivo ou pasta
+    human_description:
+      en_US: The name of the file or folder to search
+      zh_Hans: 要搜索的文件或文件夹名称
+      pt_BR: O nome do arquivo ou pasta a ser pesquisado
+    llm_description: The name of the file or folder to search
+    form: llm
+  - name: limit
+    type: number
+    required: false
+    label:
+      en_US: Count Limit
+      zh_Hans: 文件数量限制
+      pt_BR: Limite de contagem
+    human_description:
+      en_US: The maximum number of files to return, default is 10
+      zh_Hans: 要返回的最大文件数，默认为10
+      pt_BR: O número máximo de arquivos a serem retornados, padrão é 10
+    llm_description: The maximum number of files to return, default is 10
+    form: llm
+extra:
+  python:
+    source: tools/search_file.yaml

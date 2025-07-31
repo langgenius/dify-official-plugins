@@ -1,0 +1,30 @@
+identity:
+  name: delete_file_by_id
+  author: langgenius
+  label:
+    en_US: Delete File by ID
+    zh_Hans: 根据ID删除文件
+    pt_BR: Excluir arquivo por ID
+description:
+  human:
+    en_US: Delete a file by ID
+    zh_Hans: 根据ID删除文件
+    pt_BR: Excluir um arquivo por ID
+  llm: Delete a file by ID
+parameters:
+  - name: file_id
+    type: string
+    required: true
+    label:
+      en_US: File ID
+      zh_Hans: 文件ID
+      pt_BR: ID do arquivo
+    human_description:
+      en_US: The ID of the file to delete
+      zh_Hans: 要删除的文件的ID
+      pt_BR: ID do arquivo a ser excluído
+    llm_description: The ID of the file to delete
+    form: llm
+extra:
+  python:
+    source: tools/delete_file_by_id.py
