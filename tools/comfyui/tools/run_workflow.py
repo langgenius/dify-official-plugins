@@ -2,6 +2,7 @@ from typing import Any, Generator
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from tools.comfyui_client import ComfyUiClient, FileType
+from tools.model_manager import ModelManager
 from tools.comfyui_workflow import ComfyUiWorkflow
 from dify_plugin import Tool
 
@@ -12,10 +13,20 @@ class ComfyUIWorkflowTool(Tool):
     ) -> Generator[ToolInvokeMessage, None, None]:
         self.comfyui = ComfyUiClient(
             self.runtime.credentials["base_url"], api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"))
+        self.model_manager = ModelManager(
+            self.comfyui,
+            civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
+            hf_api_key=self.runtime.credentials.get("hf_api_key"),
+        )
+
         images = tool_parameters.get("images") or []
         workflow = ComfyUiWorkflow(
             tool_parameters.get("workflow_json", "")
         )
+        if tool_parameters.get("enable_download", False):
+            self.model_manager.download_from_json(
+                str(workflow.json_original()))
+
         image_names = []
         for image in images:
             if image.type != FileType.IMAGE:
@@ -38,6 +49,7 @@ class ComfyUIWorkflowTool(Tool):
 
         if tool_parameters.get("randomize_seed", False):
             workflow.randomize_seed()
+
         try:
             output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
