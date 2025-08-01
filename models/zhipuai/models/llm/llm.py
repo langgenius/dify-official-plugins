@@ -152,7 +152,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                 PromptMessageRole.TOOL,
             }:
                 if isinstance(copy_prompt_message.content, list):
-                    if model not in {"glm-4v", "glm-4v-plus", "glm-4v-flash"}:
+                    if model not in {"glm-4v", "glm-4v-plus", "glm-4v-flash","glm-4.1v-thinking-flash","glm-4.1v-thinking-flash","glm-4.1v-thinking-flashx"}:
                         continue
                     if not isinstance(copy_prompt_message, UserPromptMessage):
                         continue
@@ -223,7 +223,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
         elif "json_schema" in model_parameters:
             del model_parameters["json_schema"]
 
-        if model in {"glm-4v", "glm-4v-plus", "glm-4v-flash"}:
+        if model in {"glm-4v", "glm-4v-plus", "glm-4v-flash","glm-4.1v-thinking-flash","glm-4.1v-thinking-flash","glm-4.1v-thinking-flashx"}:
             params = self._construct_glm_4v_parameter(
                 model, new_prompt_messages, model_parameters
             )
@@ -372,7 +372,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
             model=model,
             prompt_messages=prompt_messages,
             message=AssistantPromptMessage(
-                content=text, tool_calls=assistant_tool_calls
+                content=text, reasoning_content=text,tool_calls=assistant_tool_calls
             ),
             usage=usage,
         )

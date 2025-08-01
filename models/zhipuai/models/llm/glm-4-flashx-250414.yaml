@@ -62,7 +62,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '0'
-  output: '0'
+  input: '0.0001'
+  output: '0.0001'
   unit: '0.001'
   currency: RMB

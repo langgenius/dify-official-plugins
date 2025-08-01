@@ -4,7 +4,7 @@ label:
 model_type: llm
 model_properties:
   mode: chat
-  context_size: 4096
+  context_size: 131072
 features:
   - vision
 parameter_rules:
