@@ -19,11 +19,18 @@ from dify_plugin.entities.model.message import (
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
-from zhipuai import ZhipuAI
-from zhipuai.types.chat.chat_completion import Completion
-from zhipuai.types.chat.chat_completion_chunk import ChatCompletionChunk
+from zai import ZhipuAiClient
+from zai.types.chat.chat_completion import Completion
+from zai.types.chat.chat_completion_chunk import ChatCompletionChunk
 from .._common import _CommonZhipuaiAI
+# 导入 logging 和自定义处理器
+import logging
+from dify_plugin.config.logger_format import plugin_logger_handler
 
+# 使用自定义处理器设置日志
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(plugin_logger_handler)
 
 class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
     def _invoke(
@@ -125,11 +132,12 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
+        logger.info(f"ZhipuAILargeLanguageModel._generate: model={model}, credentials_kwargs={credentials_kwargs}, prompt_messages={prompt_messages}, model_parameters={model_parameters}, tools={tools}, stop={stop}, stream={stream}, user={user}")
         extra_model_kwargs = {}
         # request to glm-4v-plus with stop words will always respond "finish_reason":"network_error"
         if stop and model != "glm-4v-plus":
             extra_model_kwargs["stop"] = stop
-        client = ZhipuAI(api_key=credentials_kwargs["api_key"])
+        client = ZhipuAiClient(api_key=credentials_kwargs["api_key"])
         if len(prompt_messages) == 0:
             raise ValueError("At least one message is required")
         if prompt_messages[0].role == PromptMessageRole.SYSTEM:
@@ -195,20 +203,20 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
 
         if "response_format" in model_parameters:
             response_format = model_parameters.get("response_format")
-            if response_format == "json_schema":
+            if response_format == "json_object":
                 json_schema = model_parameters.get("json_schema")
                 if not json_schema:
                     raise ValueError(
-                        "Must define JSON Schema when the response format is json_schema"
+                        "Must define JSON Schema when the response format is json_object"
                     )
                 try:
                     schema = json.loads(json_schema)
                 except:
-                    raise ValueError(f"not correct json_schema format: {json_schema}")
+                    raise ValueError(f"not correct json_object format: {json_schema}")
                 model_parameters.pop("json_schema")
                 model_parameters["response_format"] = {
-                    "type": "json_schema",
-                    "json_schema": schema,
+                    "type": "json_object",
+                    "json_object": schema,
                 }
             else:
                 model_parameters["response_format"] = {"type": response_format}
@@ -264,6 +272,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
             params["tools"] = [
                 {"type": "function", "function": tool.model_dump()} for tool in tools
             ]
+        logger.info(f"ZhipuAILargeLanguageModel._generate: params={params}")
         if stream:
             response = client.chat.completions.create(
                 stream=stream, **params, **extra_model_kwargs
