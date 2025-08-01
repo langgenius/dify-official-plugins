@@ -20,7 +20,9 @@ from dify_plugin.entities.model.message import (
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from zai import ZhipuAiClient
-from zai.types.chat import Completion, ChatCompletionChunk, ChoiceDelta
+from zai.core import StreamResponse
+from zai.types.chat import ChatCompletionChunk, Completion, ChoiceDelta
+
 from .._common import _CommonZhipuaiAI
 
 viso_models = [
@@ -373,10 +375,8 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                     "<think>\n"
                     + choice.message.reasoning_content
                     + "\n</think>"
-                    + choice.message.content
                 )
-            else:
-                text += choice.message.content or ""
+            text += choice.message.content or ""
         prompt_usage = response.usage.prompt_tokens
         completion_usage = response.usage.completion_tokens
         usage = self._calc_response_usage(
@@ -397,7 +397,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
         model: str,
         credentials: dict,
         tools: Optional[list[PromptMessageTool]],
-        responses: Generator[ChatCompletionChunk, None, None],
+        responses: StreamResponse[ChatCompletionChunk],
         prompt_messages: list[PromptMessage],
     ) -> Generator:
         """
@@ -461,6 +461,16 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                     ),
                 )
             else:
+                message = delta.delta
+
+                resp_content, is_reasoning = self._wrap_thinking_by_reasoning_content(
+                    message, is_reasoning
+                )
+
+                assistant_prompt_message = AssistantPromptMessage(
+                    content=resp_content
+                )
+                full_assistant_content += resp_content
                 yield LLMResultChunk(
                     model=chunk.model,
                     prompt_messages=prompt_messages,
