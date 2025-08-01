@@ -216,7 +216,7 @@ class Spider:
     def _handle_error(self, response, action):
         if response.status_code == 401:
             raise Exception(f"Not a valid API key")
-        if response.status_code === 402:
+        if response.status_code == 402:
             raise Exception(f"Not enough credits in account")
         
         if response.status_code in {409, 500}:
