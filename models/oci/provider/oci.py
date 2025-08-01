@@ -17,7 +17,7 @@ class OCIGENAIProvider(ModelProvider):
         """
         try:
             model_instance = self.get_model_instance(ModelType.LLM)
-            model_instance.validate_credentials(model="meta.llama-4-scout-17b-16e-instruct", credentials=credentials)
+            model_instance.validate_credentials(model="cohere.command-r-plus-08-2024", credentials=credentials)
         except CredentialsValidateFailedError as ex:
             raise ex
         except Exception as ex:
