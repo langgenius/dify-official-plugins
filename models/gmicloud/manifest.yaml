@@ -1,0 +1,45 @@
+version: 0.0.1
+type: plugin
+author: yijiehong
+name: gmicloud
+label:
+  en_US: gmicloud
+  ja_JP: gmicloud
+  zh_Hans: gmicloud
+  pt_BR: gmicloud
+description:
+  en_US: GMI Cloud AI
+  ja_JP: GMI Cloud AI
+  zh_Hans: GMI Cloud AI
+  pt_BR: GMI Cloud AI
+icon: icon.svg
+icon_dark: icon-dark.svg
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+plugins:
+  models:
+    - provider/gmicloud.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: 0.0.1
+created_at: 2025-08-02T22:47:15.265617-07:00
+privacy: PRIVACY.md
+verified: false

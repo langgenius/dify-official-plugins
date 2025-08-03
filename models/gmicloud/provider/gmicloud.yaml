@@ -1,0 +1,98 @@
+provider: gmicloud
+label:
+  en_US: "Gmicloud"
+description:
+  en_US: "Models provided by gmicloud."
+  zh_Hans: "Gmicloud 提供的模型。"
+icon_small:
+  en_US: "icon_s_en.svg"
+icon_large:
+  en_US: "icon_l_en.svg"
+background: "#E5E7EB"
+help:
+  title:
+    en_US: "Get your API Key from gmicloud"
+    zh_Hans: "从 Gmicloud 获取 API Key"
+  url:
+    en_US: "https://console.gmicloud.ai/user-setting/organization/api-key-management"
+supported_model_types:
+  - llm
+configurate_methods:
+  - predefined-model
+  - customizable-model
+model_credential_schema:
+  credential_form_schemas:
+  - label:
+      en_US: API Key
+    placeholder:
+      en_US: Enter your API Key
+      zh_Hans: 在此输入您的 API Key
+    required: true
+    type: secret-input
+    variable: api_key
+  - default: chat
+    label:
+      en_US: Completion mode
+    options:
+    - label:
+        en_US: Completion
+        zh_Hans: 补全
+      value: completion
+    - label:
+        en_US: Chat
+        zh_Hans: 对话
+      value: chat
+    placeholder:
+      en_US: Select completion mode
+      zh_Hans: 选择对话类型
+    required: false
+    show_on:
+    - value: llm
+      variable: __model_type
+    type: select
+    variable: mode
+  - default: '4096'
+    label:
+      en_US: Model context size
+      zh_Hans: 模型上下文长度
+    placeholder:
+      en_US: Enter your Model context size
+      zh_Hans: 在此输入您的模型上下文长度
+    required: true
+    type: text-input
+    variable: context_size
+  - default: '4096'
+    label:
+      en_US: Upper bound for max tokens
+      zh_Hans: 最大 token 上限
+    show_on:
+    - value: llm
+      variable: __model_type
+    type: text-input
+    variable: max_tokens_to_sample
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: Enter full model name
+      zh_Hans: 输入模型全称
+provider_credential_schema:
+  credential_form_schemas:
+  - label:
+      en_US: API Key
+    placeholder:
+      en_US: Enter your API Key
+      zh_Hans: 在此输入您的 API Key
+    required: true
+    type: secret-input
+    variable: fireworks_api_key
+models:
+  llm:
+    predefined:
+      - "models/llm/*.yaml"
+extra:
+  python:
+    model_sources:
+    - models/llm/llm.py
+    provider_source: provider/gmicloud.py
