@@ -132,7 +132,6 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
-        logger.info(f"ZhipuAILargeLanguageModel._generate: model={model}, credentials_kwargs={credentials_kwargs}, prompt_messages={prompt_messages}, model_parameters={model_parameters}, tools={tools}, stop={stop}, stream={stream}, user={user}")
         extra_model_kwargs = {}
         # request to glm-4v-plus with stop words will always respond "finish_reason":"network_error"
         if stop and model != "glm-4v-plus":
@@ -223,6 +222,12 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
         elif "json_schema" in model_parameters:
             del model_parameters["json_schema"]
 
+        if "thinking" in model_parameters:
+            thinking = model_parameters.pop("thinking")
+            if thinking:
+                model_parameters["thinking"] = {"type": "enabled"}
+            else:
+                model_parameters["thinking"] = {"type": "disabled"}
         if model in {"glm-4v", "glm-4v-plus", "glm-4v-flash", "glm-4.1v-thinking-flash", "glm-4.1v-thinking-flashx"}:
             params = self._construct_glm_4v_parameter(
                 model, new_prompt_messages, model_parameters
@@ -436,7 +441,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                         index=delta.index,
                         message=assistant_prompt_message,
                         finish_reason=delta.finish_reason,
-                        usage=usage
+                        usage=usage,
                     ),
                 )
             else:
