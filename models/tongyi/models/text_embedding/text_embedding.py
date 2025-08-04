@@ -122,7 +122,6 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
             # Check if response is an exception with rate limit info
             if hasattr(response, 'status_code') and response.status_code == 429:
                 print(f"Rate limit exceeded (429). Response: {response}")
-                import time
                 time.sleep(10)
                 # Retry once after sleeping
                 response = call_embedding_api(text)
