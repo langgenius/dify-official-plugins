@@ -203,20 +203,20 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
 
         if "response_format" in model_parameters:
             response_format = model_parameters.get("response_format")
-            if response_format == "json_object":
+            if response_format == "json_schema":
                 json_schema = model_parameters.get("json_schema")
                 if not json_schema:
                     raise ValueError(
-                        "Must define JSON Schema when the response format is json_object"
+                        "Must define JSON Schema when the response format is json_schema"
                     )
                 try:
                     schema = json.loads(json_schema)
                 except:
-                    raise ValueError(f"not correct json_object format: {json_schema}")
+                    raise ValueError(f"not correct json_schema format: {json_schema}")
                 model_parameters.pop("json_schema")
                 model_parameters["response_format"] = {
-                    "type": "json_object",
-                    "json_object": schema,
+                    "type": "json_schema",
+                    "json_schema": schema,
                 }
             else:
                 model_parameters["response_format"] = {"type": response_format}

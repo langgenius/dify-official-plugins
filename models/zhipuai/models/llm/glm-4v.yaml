@@ -57,8 +57,6 @@ parameter_rules:
     options:
       - text
       - json_object
-  - name: json_schema
-    use_template: json_schema
 pricing:
   input: '0.05'
   output: '0.05'
