@@ -23,14 +23,7 @@ from zai import ZhipuAiClient
 from zai.types.chat.chat_completion import Completion
 from zai.types.chat.chat_completion_chunk import ChatCompletionChunk
 from .._common import _CommonZhipuaiAI
-# 导入 logging 和自定义处理器
-import logging
-from dify_plugin.config.logger_format import plugin_logger_handler
 
-# 使用自定义处理器设置日志
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logger.addHandler(plugin_logger_handler)
 
 class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
     def _invoke(
@@ -277,7 +270,6 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
             params["tools"] = [
                 {"type": "function", "function": tool.model_dump()} for tool in tools
             ]
-        logger.info(f"ZhipuAILargeLanguageModel._generate: params={params}")
         if stream:
             response = client.chat.completions.create(
                 stream=stream, **params, **extra_model_kwargs
@@ -381,7 +373,6 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
             ),
             usage=usage,
         )
-        logger.info(f"result：{result}")
         return result
 
     def _handle_generate_stream_response(
@@ -432,7 +423,6 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                 usage = self._calc_response_usage(
                     model, credentials, prompt_tokens, completion_tokens
                 )
-                logger.info(f"ZhipuAILargeLanguageModel._generate: usage：{usage}")
                 yield LLMResultChunk(
                     model=chunk.model,
                     prompt_messages=prompt_messages,
