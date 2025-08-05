@@ -12,12 +12,12 @@ meta:
   arch:
   - amd64
   - arm64
-  minimum_dify_version: 1.7.0
+  minimum_dify_version: 1.7.1
   runner:
     entrypoint: main
     language: python
     version: '3.12'
-  version: 0.1.1
+  version: 0.0.1
 name: twitter
 plugins:
   tools:
@@ -33,4 +33,4 @@ resource:
 tags:
 - utilities
 type: plugin
-version: 0.1.1
+version: 0.1.0
