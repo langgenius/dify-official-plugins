@@ -856,7 +856,13 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 # Find matching predefined model based on underlying model ARN
                 default_pricing = None
                 matched_features = []
+                parameter_rules = []
                 underlying_models = profile_info.get("models", [])
+                
+                # Get the underlying model type and name from credentials
+                underlying_model_type = credentials.get("underlying_model_type")
+                underlying_model_name = credentials.get("underlying_model_name")
+                
                 if underlying_models:
                     first_model_arn = underlying_models[0].get("modelArn", "")
                     if "foundation-model/" in first_model_arn:
@@ -866,6 +872,11 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                             if self._model_id_matches_schema(underlying_model_id, model_schema):
                                 default_pricing = model_schema.pricing
                                 matched_features = model_schema.features or []
+                                # Load parameter rules from the matched model
+                                if underlying_model_type and underlying_model_name:
+                                    # Try to find the exact model match for parameter rules
+                                    if model_schema.model == underlying_model_type:
+                                        parameter_rules = model_schema.parameter_rules or []
                                 break
                 
                 # Fallback to first predefined model pricing if no match found
@@ -874,6 +885,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     if model_schemas:
                         default_pricing = model_schemas[0].pricing
                 
+                # Use the user-provided model name exactly as entered
                 # Create custom model entity based on inference profile
                 return AIModelEntity(
                     model=model,
@@ -885,16 +897,16 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                         "mode": LLMMode.CHAT,
                         "context_size": context_length,
                     },
-                    parameter_rules=[],
+                    parameter_rules=parameter_rules,
                     pricing=default_pricing
                 )
             except Exception as e:
                 logger.error(f"Failed to get inference profile schema: {str(e)}")
-                # Create fallback custom model entity with user's model name
+                # Create fallback custom model entity with inference profile name
                 context_length = int(credentials.get("context_length", 4096))
                 model_schemas = self.predefined_models()
                 default_pricing = model_schemas[0].pricing if model_schemas else None
-                
+                # Use the user-provided model name exactly as entered
                 return AIModelEntity(
                     model=model,
                     label=I18nObject(en_US=model),

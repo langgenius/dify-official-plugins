@@ -1,7 +1,12 @@
 from typing import Optional
+import logging
+
+from botocore.exceptions import ClientError
 
 from dify_plugin.entities.model.rerank import RerankDocument, RerankResult
 from dify_plugin.interfaces.model.rerank_model import RerankModel
+from dify_plugin.entities.model import AIModelEntity, FetchFrom, ModelType
+from dify_plugin.entities import I18nObject
 
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -14,6 +19,9 @@ from dify_plugin.errors.model import (
 )
 
 from provider.get_bedrock_client import get_bedrock_client
+from . import model_ids
+
+logger = logging.getLogger(__name__)
 
 
 class BedrockRerankModel(RerankModel):
@@ -63,12 +71,23 @@ class BedrockRerankModel(RerankModel):
                     },
                 }
             )
-        modelId = model
-        region = credentials.get("aws_region")
-        # region is a required field
-        if not region:
-            raise InvokeBadRequestError("aws_region is required in credentials")
-        model_package_arn = f"arn:aws:bedrock:{region}::foundation-model/{modelId}"
+        # Check if using inference profile
+        model_id = model
+        inference_profile_id = credentials.get("inference_profile_id")
+        if inference_profile_id:
+            # Get the full ARN from the profile ID
+            profile_info = self._get_inference_profile_info_direct(inference_profile_id, credentials)
+            model_package_arn = profile_info.get("inferenceProfileArn")
+            if not model_package_arn:
+                raise InvokeError(f"Could not get ARN for inference profile {inference_profile_id}")
+            logger.info(f"Using inference profile ARN: {model_package_arn}")
+        else:
+            # Traditional model - build ARN
+            region = credentials.get("aws_region")
+            # region is a required field
+            if not region:
+                raise InvokeBadRequestError("aws_region is required in credentials")
+            model_package_arn = f"arn:aws:bedrock:{region}::foundation-model/{model_id}"
         rerankingConfiguration = {
             "type": "BEDROCK_RERANKING_MODEL",
             "bedrockRerankingConfiguration": {
@@ -100,6 +119,158 @@ class BedrockRerankModel(RerankModel):
                 rerank_documents.append(rerank_document)
 
         return RerankResult(model=model, docs=rerank_documents)
+    
+    def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:
+        """
+        Get customizable model schema for inference profiles
+        
+        :param model: model name
+        :param credentials: model credentials
+        :return: AIModelEntity
+        """
+        inference_profile_id = credentials.get("inference_profile_id")
+        if inference_profile_id:
+            try:
+                # Get inference profile info from AWS directly
+                profile_info = self._get_inference_profile_info_direct(inference_profile_id, credentials)
+                
+                # Extract model name from profile
+                profile_name = profile_info.get("inferenceProfileName", model)
+                context_length = int(credentials.get("context_length", 5120))
+                
+                # Find matching predefined model based on underlying model ARN
+                default_pricing = None
+                underlying_models = profile_info.get("models", [])
+                if underlying_models:
+                    first_model_arn = underlying_models[0].get("modelArn", "")
+                    if "foundation-model/" in first_model_arn:
+                        underlying_model_id = first_model_arn.split("foundation-model/")[1]
+                        model_schemas = self.predefined_models()
+                        for model_schema in model_schemas:
+                            if model_schema.model == underlying_model_id:
+                                default_pricing = model_schema.pricing
+                                break
+                
+                # Fallback to first predefined model pricing if no match found
+                if not default_pricing:
+                    model_schemas = self.predefined_models()
+                    if model_schemas:
+                        default_pricing = model_schemas[0].pricing
+                
+                # Use the user-provided model name exactly as entered
+                # Create custom model entity based on inference profile
+                return AIModelEntity(
+                    model=model,
+                    label=I18nObject(en_US=model),
+                    model_type=ModelType.RERANK,
+                    features=[],
+                    fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+                    model_properties={
+                        "context_size": context_length,
+                    },
+                    parameter_rules=[],
+                    pricing=default_pricing
+                )
+            except Exception as e:
+                logger.error(f"Failed to get inference profile schema: {str(e)}")
+                # Create fallback custom model entity with inference profile name
+                context_length = int(credentials.get("context_length", 5120))
+                model_schemas = self.predefined_models()
+                default_pricing = model_schemas[0].pricing if model_schemas else None
+                # Use the user-provided model name exactly as entered
+                return AIModelEntity(
+                    model=model,
+                    label=I18nObject(en_US=model),
+                    model_type=ModelType.RERANK,
+                    features=[],
+                    fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+                    model_properties={
+                        "context_size": context_length,
+                    },
+                    parameter_rules=[],
+                    pricing=default_pricing
+                )
+        else:
+            # Not an inference profile, use regular model
+            return None
+    
+    def _get_inference_profile_info_direct(self, inference_profile_id: str, credentials: dict) -> dict:
+        """
+        Get inference profile information from Bedrock API directly
+        
+        :param inference_profile_id: inference profile identifier
+        :param credentials: credentials containing AWS access info
+        :return: inference profile information
+        """
+        try:
+            bedrock_client = get_bedrock_client("bedrock", credentials)
+            
+            # Call get-inference-profile API
+            response = bedrock_client.get_inference_profile(
+                inferenceProfileIdentifier=inference_profile_id
+            )
+            
+            return response
+            
+        except Exception as e:
+            logger.error(f"Failed to get inference profile info: {str(e)}")
+            raise e
+    
+    def validate_credentials(self, model: str, credentials: dict) -> None:
+        """
+        Validate model credentials
+
+        :param model: model name
+        :param credentials: model credentials
+        :return:
+        """
+        try:
+            # Check if this is an inference profile based custom model
+            inference_profile_id = credentials.get("inference_profile_id")
+            if inference_profile_id:
+                # Validate inference profile directly
+                self._validate_inference_profile_direct(inference_profile_id, credentials)
+                logger.info(f"Successfully validated inference profile: {inference_profile_id}")
+                return
+            
+            # Traditional model validation - check if we can get bedrock client
+            bedrock_runtime = get_bedrock_client("bedrock-agent-runtime", credentials)
+            # Just getting the client validates the credentials
+            logger.info(f"Successfully validated model: {model}")
+        except Exception as ex:
+            raise CredentialsValidateFailedError(str(ex))
+    
+    def _validate_inference_profile_direct(self, inference_profile_id: str, credentials: dict) -> None:
+        """
+        Validate inference profile by calling Bedrock API directly
+        
+        :param inference_profile_id: inference profile identifier
+        :param credentials: credentials containing AWS access info
+        """
+        try:
+            bedrock_client = get_bedrock_client("bedrock", credentials)
+            
+            # Call get-inference-profile API
+            response = bedrock_client.get_inference_profile(
+                inferenceProfileIdentifier=inference_profile_id
+            )
+            
+            # Check if profile is active
+            if response.get('status') != 'ACTIVE':
+                raise CredentialsValidateFailedError(f"Inference profile {inference_profile_id} is not active")
+                
+            logger.info(f"Successfully validated inference profile: {inference_profile_id}")
+            
+        except ClientError as e:
+            error_code = e.response['Error']['Code']
+            if error_code == 'ResourceNotFoundException':
+                raise CredentialsValidateFailedError(f"Inference profile {inference_profile_id} not found")
+            elif error_code == 'AccessDeniedException':
+                raise CredentialsValidateFailedError(f"Access denied to inference profile {inference_profile_id}")
+            else:
+                raise CredentialsValidateFailedError(f"Failed to validate inference profile: {str(e)}")
+        except Exception as e:
+            raise CredentialsValidateFailedError(f"Failed to validate inference profile: {str(e)}")
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
