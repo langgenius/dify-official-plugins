@@ -144,7 +144,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                 PromptMessageRole.TOOL,
             }:
                 if isinstance(copy_prompt_message.content, list):
-                    if model not in {"glm-4v", "glm-4v-plus", "glm-4v-flash", "glm-4.1v-thinking-flash", "glm-4.1v-thinking-flashx"}:
+                    if model not in {"glm-4v", "glm-4v-plus", "glm-4v-plus-0111", "glm-4v-flash", "glm-4.1v-thinking-flash", "glm-4.1v-thinking-flashx"}:
                         continue
                     if not isinstance(copy_prompt_message, UserPromptMessage):
                         continue
@@ -221,7 +221,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                 model_parameters["thinking"] = {"type": "enabled"}
             else:
                 model_parameters["thinking"] = {"type": "disabled"}
-        if model in {"glm-4v", "glm-4v-plus", "glm-4v-flash", "glm-4.1v-thinking-flash", "glm-4.1v-thinking-flashx"}:
+        if model in {"glm-4v", "glm-4v-plus","glm-4v-plus-0111", "glm-4v-flash", "glm-4.1v-thinking-flash", "glm-4.1v-thinking-flashx"}:
             params = self._construct_glm_4v_parameter(
                 model, new_prompt_messages, model_parameters
             )
