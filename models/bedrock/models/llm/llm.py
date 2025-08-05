@@ -877,6 +877,12 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                                     # Try to find the exact model match for parameter rules
                                     if model_schema.model == underlying_model_type:
                                         parameter_rules = model_schema.parameter_rules or []
+                                        # Filter out model_name parameter for inference profiles
+                                        # since the model is determined by the inference profile
+                                        parameter_rules = [
+                                            rule for rule in parameter_rules 
+                                            if rule.name != 'model_name'
+                                        ]
                                 break
                 
                 # Fallback to first predefined model pricing if no match found
