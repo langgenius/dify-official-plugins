@@ -461,16 +461,6 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                     ),
                 )
             else:
-                message = delta.delta
-
-                resp_content, is_reasoning = self._wrap_thinking_by_reasoning_content(
-                    message, is_reasoning
-                )
-
-                assistant_prompt_message = AssistantPromptMessage(
-                    content=resp_content
-                )
-                full_assistant_content += resp_content
                 yield LLMResultChunk(
                     model=chunk.model,
                     prompt_messages=prompt_messages,
