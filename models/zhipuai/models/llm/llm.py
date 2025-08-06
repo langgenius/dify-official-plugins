@@ -417,10 +417,11 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                                 ),
                             )
                         )
+                resp_content = delta.delta.content or ""
                 assistant_prompt_message = AssistantPromptMessage(
-                    content=delta.delta.content or "", tool_calls=assistant_tool_calls
+                    content=resp_content, tool_calls=assistant_tool_calls
                 )
-                full_assistant_content += delta.delta.content or ""
+                full_assistant_content += resp_content
                 completion_tokens = chunk.usage.completion_tokens
                 prompt_tokens = chunk.usage.prompt_tokens
                 usage = self._calc_response_usage(
@@ -507,7 +508,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
         :return: tuple of (processed_content, is_reasoning)
         """
 
-        content = delta.content
+        content = delta.content or ""
         reasoning_content = delta.reasoning_content
         try:
             if reasoning_content:
