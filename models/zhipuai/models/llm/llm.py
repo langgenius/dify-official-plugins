@@ -403,25 +403,27 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                 delta.delta.reasoning_content is None or delta.delta.reasoning_content == ""):
                 continue
             assistant_tool_calls: list[AssistantPromptMessage.ToolCall] = []
-
-            if delta.finish_reason is not None and chunk.usage is not None:
-                for tool_call in delta.delta.tool_calls or []:
-                    if tool_call.type == "function":
-                        assistant_tool_calls.append(
-                            AssistantPromptMessage.ToolCall(
-                                id=tool_call.id,
-                                type=tool_call.type,
-                                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                    name=tool_call.function.name,
-                                    arguments=tool_call.function.arguments,
-                                ),
-                            )
+            for tool_call in delta.delta.tool_calls or []:
+                if tool_call.type == "function":
+                    assistant_tool_calls.append(
+                        AssistantPromptMessage.ToolCall(
+                            id=tool_call.id,
+                            type=tool_call.type,
+                            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                name=tool_call.function.name,
+                                arguments=tool_call.function.arguments,
+                            ),
                         )
-                resp_content = delta.delta.content or ""
-                assistant_prompt_message = AssistantPromptMessage(
-                    content=resp_content, tool_calls=assistant_tool_calls
-                )
-                full_assistant_content += resp_content
+                    )
+
+            resp_content, is_reasoning = self._wrap_thinking_by_reasoning_content(
+                delta.delta, is_reasoning
+            )
+            assistant_prompt_message = AssistantPromptMessage(
+                content=resp_content, tool_calls=assistant_tool_calls
+            )
+            full_assistant_content += resp_content
+            if delta.finish_reason is not None and chunk.usage is not None:
                 completion_tokens = chunk.usage.completion_tokens
                 prompt_tokens = chunk.usage.prompt_tokens
                 usage = self._calc_response_usage(
@@ -439,16 +441,6 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                     ),
                 )
             else:
-                message = delta.delta
-
-                resp_content, is_reasoning = self._wrap_thinking_by_reasoning_content(
-                    message, is_reasoning
-                )
-
-                assistant_prompt_message = AssistantPromptMessage(
-                    content=resp_content
-                )
-                full_assistant_content += resp_content
                 yield LLMResultChunk(
                     model=chunk.model,
                     prompt_messages=prompt_messages,
