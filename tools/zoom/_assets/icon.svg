@@ -1,0 +1,26 @@
+<svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="zoomGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#2D8CFF;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1E40AF;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  <rect width="24" height="24" rx="4" fill="url(#zoomGradient)"/>
+  <!-- Camera lens outer ring -->
+  <circle cx="12" cy="12" r="8" fill="none" stroke="white" stroke-width="1.5" opacity="0.3"/>
+  <!-- Main camera body -->
+  <rect x="6" y="9" width="12" height="6" rx="2" fill="white"/>
+  <!-- Camera lens -->
+  <circle cx="12" cy="12" r="3" fill="url(#zoomGradient)"/>
+  <circle cx="12" cy="12" r="1.5" fill="white" opacity="0.8"/>
+  <!-- Video call indicators -->
+  <circle cx="8" cy="7" r="1" fill="white" opacity="0.9"/>
+  <circle cx="16" cy="7" r="1" fill="white" opacity="0.9"/>
+  <circle cx="8" cy="17" r="1" fill="white" opacity="0.9"/>
+  <circle cx="16" cy="17" r="1" fill="white" opacity="0.9"/>
+  <!-- Connection lines -->
+  <path d="M8 7 L12 9" stroke="white" stroke-width="0.8" opacity="0.6"/>
+  <path d="M16 7 L12 9" stroke="white" stroke-width="0.8" opacity="0.6"/>
+  <path d="M8 17 L12 15" stroke="white" stroke-width="0.8" opacity="0.6"/>
+  <path d="M16 17 L12 15" stroke="white" stroke-width="0.8" opacity="0.6"/>
+</svg>
