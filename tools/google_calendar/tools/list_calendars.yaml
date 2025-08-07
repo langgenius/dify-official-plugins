@@ -1,0 +1,67 @@
+identity:
+  name: list_calendars
+  author: langgenius
+  label:
+    en_US: List Calendars
+    zh_Hans: 列出日历
+    ja_JP: カレンダーを一覧表示
+  icon: icon.png
+
+description:
+  human:
+    en_US: List all calendars accessible to the user
+    zh_Hans: 列出用户可访问的所有日历
+    ja_JP: ユーザーがアクセス可能なすべてのカレンダーを一覧表示
+  llm: Retrieves a list of all calendars that the authenticated user has access to, including primary and secondary calendars
+
+parameters: []
+
+extra:
+  python:
+    source: tools/list_calendars.py
+
+output_schema:
+  type: object
+  properties:
+    success:
+      type: boolean
+      description: Whether the operation was successful
+    message:
+      type: string
+      description: Human-readable result message
+    calendars:
+      type: array
+      description: List of calendars
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Calendar ID
+          summary:
+            type: string
+            description: Calendar name/title
+          description:
+            type: string
+            description: Calendar description
+          primary:
+            type: boolean
+            description: Whether this is the primary calendar
+          access_role:
+            type: string
+            description: User's access level (owner, reader, writer, etc.)
+          time_zone:
+            type: string
+            description: Calendar time zone
+          background_color:
+            type: string
+            description: Calendar background color
+          foreground_color:
+            type: string
+            description: Calendar foreground color
+          selected:
+            type: boolean
+            description: Whether calendar is selected in UI
+    total_count:
+      type: integer
+      description: Total number of calendars found
