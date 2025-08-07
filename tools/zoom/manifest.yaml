@@ -16,7 +16,7 @@ meta:
     entrypoint: main
     language: python
     version: '3.12'
-  version: 0.1.2
+  version: 0.0.1
 name: zoom
 plugins:
   tools:
@@ -32,4 +32,4 @@ resource:
 tags:
 - utilities
 type: plugin
-version: 0.1.2
+version: 0.1.0
