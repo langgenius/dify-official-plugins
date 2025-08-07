@@ -1,0 +1,132 @@
+identity:
+  name: search_contacts
+  author: langgenius
+  label:
+    en_US: Search Contacts
+    zh_Hans: 搜索联系人
+    ja_JP: 連絡先検索
+
+description:
+  human:
+    en_US: Search for contacts in Google Contacts using a query string
+    zh_Hans: 使用查询字符串在谷歌通讯录中搜索联系人
+    ja_JP: クエリ文字列を使ってGoogle連絡先で連絡先を検索
+  llm: Search for contacts in Google Contacts by name, email, phone number, or other contact information. Returns matching contacts with their details.
+
+parameters:
+  - name: query
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Search Query
+      zh_Hans: 搜索查询
+      ja_JP: 検索クエリ
+    human_description:
+      en_US: Search term to find contacts (name, email, phone, etc.)
+      zh_Hans: 查找联系人的搜索词（姓名、邮箱、电话等）
+      ja_JP: 連絡先を検索する検索語（名前、メール、電話など）
+    llm_description: Search term to find contacts. Can be a name, email address, phone number, or any text that appears in contact information.
+
+  - name: page_size
+    type: number
+    required: false
+    default: 25
+    form: llm
+    label:
+      en_US: Page Size
+      zh_Hans: 页面大小
+      ja_JP: ページサイズ
+    human_description:
+      en_US: Number of search results to return (1-50)
+      zh_Hans: 返回的搜索结果数量（1-50）
+      ja_JP: 返す検索結果の数（1-50）
+    llm_description: Maximum number of search results to return (between 1 and 50, default is 25)
+    min: 1
+    max: 50
+
+output_schema:
+  type: object
+  properties:
+    query:
+      type: string
+      description: The search query that was used
+    contacts:
+      type: array
+      description: Array of matching contacts
+      items:
+        type: object
+        properties:
+          resource_name:
+            type: string
+            description: Google's unique identifier for this contact
+          display_name:
+            type: string
+            description: Full display name of the contact
+          given_name:
+            type: string
+            description: First name
+          family_name:
+            type: string
+            description: Last name
+          phone_numbers:
+            type: array
+            description: Phone numbers
+            items:
+              type: object
+              properties:
+                value:
+                  type: string
+                type:
+                  type: string
+                formatted_type:
+                  type: string
+          email_addresses:
+            type: array
+            description: Email addresses
+            items:
+              type: object
+              properties:
+                value:
+                  type: string
+                type:
+                  type: string
+                formatted_type:
+                  type: string
+          organization:
+            type: string
+            description: Company or organization name
+          job_title:
+            type: string
+            description: Job title or position
+          addresses:
+            type: array
+            description: Physical addresses
+            items:
+              type: object
+              properties:
+                formatted_value:
+                  type: string
+                type:
+                  type: string
+                city:
+                  type: string
+                region:
+                  type: string
+                postal_code:
+                  type: string
+                country:
+                  type: string
+    total_results:
+      type: integer
+      description: Number of contacts found matching the query
+    next_page_token:
+      type: string
+      description: Token to retrieve more search results
+    has_more_results:
+      type: boolean
+      description: Whether there are more search results available
+
+extra:
+  python:
+    source: tools/search_contacts.py
