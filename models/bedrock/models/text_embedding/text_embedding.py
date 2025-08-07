@@ -28,6 +28,11 @@ from dify_plugin.errors.model import (
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from provider.get_bedrock_client import get_bedrock_client
 from . import model_ids
+from utils.inference_profile import (
+    get_inference_profile_info,
+    validate_inference_profile,
+    extract_model_info_from_profile
+)
 
 logger = logging.getLogger(__name__)
 
@@ -59,7 +64,7 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
         inference_profile_id = credentials.get("inference_profile_id")
         if inference_profile_id:
             # Get the full ARN from the profile ID
-            profile_info = self._get_inference_profile_info_direct(inference_profile_id, credentials)
+            profile_info = get_inference_profile_info(inference_profile_id, credentials)
             model_id = profile_info.get("inferenceProfileArn")
             if not model_id:
                 raise InvokeError(f"Could not get ARN for inference profile {inference_profile_id}")
@@ -283,7 +288,7 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
         if inference_profile_id:
             try:
                 # Get inference profile info from AWS directly
-                profile_info = self._get_inference_profile_info_direct(inference_profile_id, credentials)
+                profile_info = get_inference_profile_info(inference_profile_id, credentials)
                 
                 # Extract model name from profile
                 profile_name = profile_info.get("inferenceProfileName", model)
@@ -345,27 +350,6 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
             # Not an inference profile, use regular model
             return None
     
-    def _get_inference_profile_info_direct(self, inference_profile_id: str, credentials: dict) -> dict:
-        """
-        Get inference profile information from Bedrock API directly
-        
-        :param inference_profile_id: inference profile identifier
-        :param credentials: credentials containing AWS access info
-        :return: inference profile information
-        """
-        try:
-            bedrock_client = get_bedrock_client("bedrock", credentials)
-            
-            # Call get-inference-profile API
-            response = bedrock_client.get_inference_profile(
-                inferenceProfileIdentifier=inference_profile_id
-            )
-            
-            return response
-            
-        except Exception as e:
-            logger.error(f"Failed to get inference profile info: {str(e)}")
-            raise e
     
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -380,7 +364,7 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
             inference_profile_id = credentials.get("inference_profile_id")
             if inference_profile_id:
                 # Validate inference profile directly
-                self._validate_inference_profile_direct(inference_profile_id, credentials)
+                validate_inference_profile(inference_profile_id, credentials)
                 logger.info(f"Successfully validated inference profile: {inference_profile_id}")
                 return
             
@@ -394,34 +378,3 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
     
-    def _validate_inference_profile_direct(self, inference_profile_id: str, credentials: dict) -> None:
-        """
-        Validate inference profile by calling Bedrock API directly
-        
-        :param inference_profile_id: inference profile identifier
-        :param credentials: credentials containing AWS access info
-        """
-        try:
-            bedrock_client = get_bedrock_client("bedrock", credentials)
-            
-            # Call get-inference-profile API
-            response = bedrock_client.get_inference_profile(
-                inferenceProfileIdentifier=inference_profile_id
-            )
-            
-            # Check if profile is active
-            if response.get('status') != 'ACTIVE':
-                raise CredentialsValidateFailedError(f"Inference profile {inference_profile_id} is not active")
-                
-            logger.info(f"Successfully validated inference profile: {inference_profile_id}")
-            
-        except ClientError as e:
-            error_code = e.response['Error']['Code']
-            if error_code == 'ResourceNotFoundException':
-                raise CredentialsValidateFailedError(f"Inference profile {inference_profile_id} not found")
-            elif error_code == 'AccessDeniedException':
-                raise CredentialsValidateFailedError(f"Access denied to inference profile {inference_profile_id}")
-            else:
-                raise CredentialsValidateFailedError(f"Failed to validate inference profile: {str(e)}")
-        except Exception as e:
-            raise CredentialsValidateFailedError(f"Failed to validate inference profile: {str(e)}")
