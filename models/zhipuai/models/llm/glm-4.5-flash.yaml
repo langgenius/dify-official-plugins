@@ -72,5 +72,6 @@ parameter_rules:
 pricing:
   input: '0.00'
   output: '0.00'
+  cached: '0.00'
   unit: '0.001'
   currency: RMB
