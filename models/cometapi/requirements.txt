@@ -1,0 +1,5 @@
+dify_plugin>=0.3.0,<0.5.0
+tiktoken~=0.8.0
+openai~=1.97.0
+numpy~=1.26.4
+pydub~=0.25.1
