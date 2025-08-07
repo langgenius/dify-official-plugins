@@ -1,0 +1,32 @@
+identity:
+  name: insert
+  author: langgenius
+  label:
+    en_US: Jina V4 Insert
+    zh_Hans: Jina V4 插入
+    pt_BR: Jina V4 Insert
+description:
+  human:
+    en_US: Insert text into Jina V4
+    zh_Hans: 将文本插入到 Jina V4
+    pt_BR: Inserir texto no Jina V4
+  llm: Insert text into Jina V4
+
+parameters:
+  - name: input_text
+    human_description:
+      en_US: The text you want to chunk.
+      zh_Hans: 输入文本
+      pt_BR: Conteúdo de Entrada
+    label:
+      en_US: Input Content
+      zh_Hans: 输入文本
+      pt_BR: Conteúdo de Entrada
+    llm_description: The text you want to chunk.
+    required: true
+    type: string
+    form: llm
+
+extra:
+  python:
+    source: tools/insert.py

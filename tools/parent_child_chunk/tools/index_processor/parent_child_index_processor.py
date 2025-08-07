@@ -42,7 +42,9 @@ class ParentChildIndexProcessor:
                 child_nodes = self._split_child_nodes(text_node, rules)
                 all_documents.parent_child_chunks.append(
                     ParentChildChunk(
-                        parent_content=text_node, child_contents=child_nodes
+                        parent_content=text_node,
+                        child_contents=child_nodes,
+                        parent_mode="paragraph",
                     )
                 )
         return all_documents
@@ -54,9 +56,11 @@ class ParentChildIndexProcessor:
         child_nodes = self._split_child_nodes(input_text, rules)
         input_text = self._clean_page_content(input_text)
         parent_child_chunk = ParentChildChunk(
-            parent_content=input_text, child_contents=child_nodes
+            parent_content=input_text, child_contents=child_nodes, parent_mode="full-doc"
         )
-        return ParentChildStructureChunk(parent_child_chunks=[parent_child_chunk])
+        return ParentChildStructureChunk(
+            parent_child_chunks=[parent_child_chunk], parent_mode="full-doc"
+        )
 
     def _split_child_nodes(self, input_text: str, rules: Rule) -> list[ChildDocument]:
         """Split a document node into child nodes."""

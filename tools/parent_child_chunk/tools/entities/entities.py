@@ -35,6 +35,7 @@ class ParentChildChunk(BaseModel):
 
     parent_content: str
     child_contents: list[str]
+    parent_mode: Literal["full-doc", "paragraph"] = "paragraph"
 
 
 class ParentChildStructureChunk(BaseModel):
@@ -43,3 +44,4 @@ class ParentChildStructureChunk(BaseModel):
     """
 
     parent_child_chunks: list[ParentChildChunk]
+    parent_mode: Literal["full-doc", "paragraph"] = "paragraph"

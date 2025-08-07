@@ -1,0 +1,24 @@
+identity:
+  name: google_drive
+  author: langgenius
+  label:
+    en_US: Google Drive
+    zh_Hans: Google Drive
+description:
+  en_US: Get files from your Google Drive
+  zh_Hans: 从您的 Google Drive 中获取文件
+
+parameters:
+
+output_schema:
+    type: object
+    properties:
+      result:
+        type: object
+        properties:
+          file:
+            type: file
+            description: file
+extra:
+  python:
+    source: datasources/google_drive.py

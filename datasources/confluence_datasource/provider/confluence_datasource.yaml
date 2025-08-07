@@ -1,0 +1,66 @@
+identity:
+  author: langgenius
+  name: confluence_datasource
+  label:
+    en_US: Confluence
+    zh_Hans: Confluence
+    pt_BR: Confluence
+    ja_JP: Confluence
+  description:
+    en_US: Confluence Datasource
+    zh_Hans: Confluence Datasource
+    pt_BR: Confluence Datasource
+    ja_JP: Confluence Datasource
+  icon: icon.svg
+oauth_schema:
+  client_schema:
+    - name: client_id
+      type: secret-input
+      label:
+        zh_Hans: Client ID
+        en_US: Client ID
+    - name: client_secret
+      type: secret-input
+      label:
+        zh_Hans: Client Secret
+        en_US: Client Secret
+      help:
+        zh_Hans: 从 Confluence 集成页面获取您的接口令牌
+        en_US: Get your integration token from the Confluence Integrations page
+      url: https://developer.atlassian.com/cloud/confluence/oauth-2-3lo-apps/
+  credentials_schema:
+    - name: access_token
+      type: secret-input
+      label:
+        zh_Hans: Access Token
+        en_US: Access Token
+
+provider_type: online_document
+credentials_schema:
+  - name: access_token
+    type: secret-input
+    required: true
+    label:
+      en_US: Access Token
+      zh_Hans: 接口密钥 (Access Token)
+      pt_BR: Segredo de Integração (Access Token)
+      ja_JP: 統合シークレット (Access Token)
+      zh_Hant: 整合密鑰 (Integration Secret)
+    placeholder:
+      en_US: Enter your Confluence Access Token
+      zh_Hans: 输入您的 Confluence Access Token
+      pt_BR: Digite sua Access Token do Confluence
+      ja_JP: Confluence Access Tokenを入力してください
+      zh_Hant: 輸入您的 Confluence API Key
+    help:
+      en_US: Get your Access Token from the Confluence Integrations page
+      zh_Hans: 从 Confluence 集成页面获取您的 Access Token
+      pt_BR: Obtenha sua Access Token na página de Integrações do Confluence
+      ja_JP: Confluence Access Tokenを取得してください
+      zh_Hant: 從 Notion 整合頁面獲取您的整合權杖
+    url: https://id.atlassian.com/manage-profile/security/api-tokens
+datasources:
+  - datasources/confluence_datasource.yaml
+extra:
+  python:
+    source: provider/confluence_datasource.py

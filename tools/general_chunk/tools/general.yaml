@@ -82,15 +82,6 @@ parameters:
   required: false
   type: boolean
 output_schema:
-  type: object
-  properties:
-    result:
-      type: object
-      description: The result of the general chunk tool.
-      properties:
-        general_chunks:
-          type: array
-          items:
-            type: string
-            description: The chunk of the text.
+  $ref: "#/$defs/general_structure_chunk"
+
 

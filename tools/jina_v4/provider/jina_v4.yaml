@@ -1,0 +1,18 @@
+identity:
+  author: langgenius
+  name: jina_v4
+  label:
+    en_US: Jina V4
+    zh_Hans: Jina V4
+    pt_BR: Jina V4
+  description:
+    en_US: Jina V4
+    zh_Hans: Jina V4
+    pt_BR: Jina V4
+  icon: icon.svg
+tools:
+- tools/retrieval.yaml
+- tools/insert.yaml
+extra:
+  python:
+    source: provider/jina_v4.py

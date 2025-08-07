@@ -143,13 +143,7 @@ parameters:
     form: llm
 
 output_schema:
-    type: object
-    properties:
-      result:
-        type: array
-        items:
-          type: object
-        description: Parent child chunks result
+    $ref: "#/$defs/parent_child_structure_chunk"
 extra:
   python:
     source: tools/parent_child_chunk.py

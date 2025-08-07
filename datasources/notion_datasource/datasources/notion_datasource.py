@@ -27,12 +27,11 @@ class NotionDataSource(OnlineDocumentDatasource):
         access_token = self.runtime.credentials.get("integration_secret")
         if not access_token:
             raise ValueError("Access token not found in credentials")
-        workspace_info = self.notion_workspace_info(access_token)
-        workspace_id = workspace_info.get("workspace_id", "")
-        workspace_name = workspace_info.get("workspace_name", "")
-        workspace_icon = workspace_info.get("workspace_icon", "")
+        workspace_name = self.notion_workspace_info(access_token).get("workspace_name", "")
+        workspace_icon = self.runtime.credentials.get("workspace_icon") or ""
         notion_client = NotionClient(access_token)
         pages = notion_client.get_authorized_pages()
+        workspace_id = self.runtime.credentials.get("workspace_id") or ""
         online_document_info = OnlineDocumentInfo(
             workspace_name=workspace_name,
             workspace_icon=workspace_icon,
@@ -74,8 +73,8 @@ class NotionDataSource(OnlineDocumentDatasource):
             user_type = response_json["type"]
             user_info = response_json[user_type]
             return {
-                "workspace_name": user_info.get("workspace_name"),
-                "workspace_icon": user_info.get("workspace_icon"),
-                "workspace_id": user_info.get("workspace_id"),
+                "workspace_name": user_info.get("workspace_name", ""),
+                "workspace_icon": user_info.get("workspace_icon", ""),
+                "workspace_id": user_info.get("workspace_id", ""),
             }
         return {}

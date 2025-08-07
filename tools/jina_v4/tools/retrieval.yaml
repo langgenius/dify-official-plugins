@@ -1,0 +1,38 @@
+identity:
+  name: retrieval
+  author: langgenius
+  label:
+    en_US: Jina V4 Retrieval
+    zh_Hans: Jina V4 检索
+    pt_BR: Jina V4 Retrieval
+description:
+  human:
+    en_US: Retrieve text from Jina V4
+    zh_Hans: 从 Jina V4 检索文本
+    pt_BR: Recuperar texto do Jina V4
+  llm: Retrieve text from Jina V4
+
+parameters:
+  - name: query
+    human_description:
+      en_US: The text you want to retrieve.
+      zh_Hans: 检索文本
+      pt_BR: Conteúdo de Recuperação
+    label:
+      en_US: Input Content
+      zh_Hans: 输入文本
+      pt_BR: Conteúdo de Entrada
+    llm_description: The text you want to retrieve.
+    required: true
+    type: string
+    form: llm
+
+output_schema:
+    type: object
+    properties:
+      result:
+        type: object
+
+extra:
+  python:
+    source: tools/retrieval.py
