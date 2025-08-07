@@ -62,8 +62,8 @@ if you are not sure about the structure.
 </instructions>
 """
 
-# o1, o3, o4 compatibility
-O_SERIES_COMPATIBILITY = ("o1", "o3", "o4")
+# thinking models compatibility for max_completion_tokens (all starting with "o" or "gpt-5")
+THINKING_SERIES_COMPATIBILITY = ("o", "gpt-5")
 
 class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
     """
@@ -728,7 +728,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         # o1, o3, o4 compatibility
         block_as_stream = False
-        if model.startswith(O_SERIES_COMPATIBILITY):
+        if model.startswith(THINKING_SERIES_COMPATIBILITY):
             if "max_tokens" in model_parameters:
                 model_parameters["max_completion_tokens"] = model_parameters[
                     "max_tokens"

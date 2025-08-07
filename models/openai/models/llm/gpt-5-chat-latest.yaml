@@ -5,9 +5,7 @@ label:
   en_US: gpt-5-chat-latest
 model_type: llm
 features:
-  - multi-tool-call
   - agent-thought
-  - stream-tool-call
   - vision
 model_properties:
   mode: chat
@@ -25,22 +23,7 @@ parameter_rules:
     use_template: max_tokens
     default: 8192
     min: 1
-    max: 128000
-  - name: response_format
-    label:
-      zh_Hans: 回复格式
-      en_US: Response Format
-    type: string
-    help:
-      zh_Hans: 指定模型必须输出的格式
-      en_US: specifying the format that the model must output
-    required: false
-    options:
-      - text
-      - json_object
-      - json_schema
-  - name: json_schema
-    use_template: json_schema
+    max: 16384
 pricing:
   input: '1.25'
   output: '10.00'
