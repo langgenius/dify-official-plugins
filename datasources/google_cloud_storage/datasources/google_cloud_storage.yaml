@@ -14,11 +14,7 @@ output_schema:
     type: object
     properties:
       result:
-        type: object
-        properties:
-          file:
-            type: file
-            description: file
+        $ref: "#/$defs/file"
 extra:
   python:
     source: datasources/google_cloud_storage.py
