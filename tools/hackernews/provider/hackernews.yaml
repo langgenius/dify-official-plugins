@@ -6,12 +6,12 @@ identity:
   description:
     en_US: Access Hacker News content including stories, users, and comments
     ja_JP: ハッカーニュースのコンテンツ（記事、ユーザー、コメント）にアクセス
-    zh_Hans: 访问黑客新闻内容，包括文章、用户和评论
+    zh_Hans: 访问 Hacker News 内容，包括文章、用户和评论
   icon: icon.svg
   label:
     en_US: Hacker News
     ja_JP: ハッカーニュース
-    zh_Hans: 黑客新闻
+    zh_Hans: Hacker News
   name: hackernews
   tags:
   - utilities
