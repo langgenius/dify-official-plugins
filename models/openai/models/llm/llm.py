@@ -1170,9 +1170,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         tool_call = None
         if response_function_call:
             # Avoid isinstance with possibly generic typing classes; use duck-typing instead
-            if not hasattr(response_function_call, "name") or not hasattr(
-                response_function_call, "arguments"
-            ):
+            if not hasattr(response_function_call, "name"):
                 return None
 
             function = AssistantPromptMessage.ToolCall.ToolCallFunction(
