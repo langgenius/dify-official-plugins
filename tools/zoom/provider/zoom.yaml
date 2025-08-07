@@ -1,0 +1,70 @@
+extra:
+  python:
+    source: provider/zoom.py
+identity:
+  author: langgenius
+  description:
+    en_US: Comprehensive Zoom video conferencing and meeting management tools
+    ja_JP: 包括的なZoomビデオ会議と会議管理ツール
+    zh_Hans: 全面的Zoom视频会议和会议管理工具
+  icon: icon.svg
+  label:
+    en_US: Zoom
+    ja_JP: Zoom
+    zh_Hans: Zoom
+  name: zoom
+  tags:
+  - utilities
+oauth_schema:
+  client_schema:
+  - help:
+      en_US: Obtain your Client ID from the Zoom App Marketplace developer portal
+      ja_JP: Zoomアプリマーケットプレイスの開発者ポータルからクライアントIDを取得
+      zh_Hans: 从Zoom应用市场开发者门户获取您的客户端ID
+    label:
+      en_US: Client ID
+      ja_JP: クライアントID
+      zh_Hans: 客户端ID
+    name: client_id
+    placeholder:
+      en_US: Enter your Zoom Client ID here
+      ja_JP: ZoomクライアントIDをここに入力
+      zh_Hans: 在此输入您的Zoom客户端ID
+    required: true
+    type: secret-input
+    url: https://marketplace.zoom.us/develop/create
+  - help:
+      en_US: Obtain your Client Secret from the Zoom App Marketplace developer portal
+      ja_JP: Zoomアプリマーケットプレイスの開発者ポータルからクライアントシークレットを取得
+      zh_Hans: 从Zoom应用市场开发者门户获取您的客户端密钥
+    label:
+      en_US: Client Secret
+      ja_JP: クライアントシークレット
+      zh_Hans: 客户端密钥
+    name: client_secret
+    placeholder:
+      en_US: Enter your Zoom Client Secret here
+      ja_JP: Zoomクライアントシークレットをここに入力
+      zh_Hans: 在此输入您的Zoom客户端密钥
+    required: true
+    type: secret-input
+    url: https://marketplace.zoom.us/develop/create
+  credentials_schema:
+  - label:
+      en_US: Access Token
+      ja_JP: アクセストークン
+      zh_Hans: 访问令牌
+    name: access_token
+    type: secret-input
+  - label:
+      en_US: Refresh Token
+      ja_JP: リフレッシュトークン
+      zh_Hans: 刷新令牌
+    name: refresh_token
+    type: secret-input
+tools:
+- tools/zoom_create_meeting.yaml
+- tools/zoom_get_meeting.yaml
+- tools/zoom_list_meetings.yaml
+- tools/zoom_delete_meeting.yaml
+- tools/zoom_update_meeting.yaml

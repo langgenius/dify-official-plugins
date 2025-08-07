@@ -1,0 +1,108 @@
+identity:
+  name: zoom_delete_meeting
+  author: langgenius
+  label:
+    en_US: Delete Zoom Meeting
+    zh_Hans: 删除Zoom会议
+    ja_JP: Zoom会議を削除
+
+description:
+  human:
+    en_US: Delete a Zoom meeting by meeting ID with notification options
+    zh_Hans: 通过会议ID删除Zoom会议，支持通知选项
+    ja_JP: 会議IDでZoom会議を削除、通知オプション付き
+  llm: Delete a Zoom meeting by meeting ID. Can delete entire meetings or specific occurrences of recurring meetings.
+
+parameters:
+  - name: meeting_id
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Meeting ID
+      zh_Hans: 会议ID
+      ja_JP: 会議ID
+    human_description:
+      en_US: The unique identifier of the Zoom meeting to delete
+      zh_Hans: 要删除的Zoom会议的唯一标识符
+      ja_JP: 削除するZoom会議の一意の識別子
+    llm_description: The unique meeting ID for the Zoom meeting to delete (required)
+
+  - name: occurrence_id
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Occurrence ID
+      zh_Hans: 发生ID
+      ja_JP: オカレンスID
+    human_description:
+      en_US: Occurrence ID to delete a specific occurrence of a recurring meeting (optional)
+      zh_Hans: 删除周期性会议特定发生的发生ID（可选）
+      ja_JP: 繰り返し会議の特定のオカレンスを削除するためのオカレンスID（オプション）
+    llm_description: Optional occurrence ID for deleting a specific occurrence of a recurring meeting instead of the entire series
+
+  - name: schedule_for_reminder
+    type: boolean
+    required: false
+    default: false
+    form: llm
+    label:
+      en_US: Schedule for Reminder
+      zh_Hans: 安排提醒
+      ja_JP: リマインダーをスケジュール
+    human_description:
+      en_US: Whether to send a reminder email to registrants about the meeting cancellation
+      zh_Hans: 是否向注册者发送有关会议取消的提醒邮件
+      ja_JP: 登録者に会議キャンセルのリマインダーメールを送信するかどうか
+    llm_description: Whether to schedule reminder emails to registrants about the meeting cancellation (true/false)
+
+  - name: cancel_meeting_reminder
+    type: boolean
+    required: false
+    default: false
+    form: llm
+    label:
+      en_US: Cancel Meeting Reminder
+      zh_Hans: 取消会议提醒
+      ja_JP: 会議リマインダーをキャンセル
+    human_description:
+      en_US: Whether to send cancellation email to registrants and panelists
+      zh_Hans: 是否向注册者和小组成员发送取消邮件
+      ja_JP: 登録者とパネリストにキャンセルメールを送信するかどうか
+    llm_description: Whether to send cancellation emails to all registrants and panelists (true/false)
+
+extra:
+  python:
+    source: tools/zoom_delete_meeting.py
+
+output_schema:
+  type: object
+  properties:
+    success:
+      type: boolean
+      description: Whether the deletion was successful
+    meeting_id:
+      type: string
+      description: The ID of the deleted meeting
+    occurrence_id:
+      type: string
+      description: The occurrence ID if a specific occurrence was deleted
+    deleted_meeting:
+      type: object
+      description: Information about the deleted meeting
+      properties:
+        topic:
+          type: string
+        type:
+          type: number
+        status:
+          type: string
+        start_time:
+          type: string
+        duration:
+          type: number
+    deletion_type:
+      type: string
+      description: Type of deletion performed (entire_meeting or occurrence)
+      enum: ["entire_meeting", "occurrence"]
