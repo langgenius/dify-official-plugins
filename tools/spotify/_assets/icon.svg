@@ -1,9 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-  <circle cx="12" cy="12" r="10" fill="#1DB954"/>
-  <path d="M8 12c0-2.21 1.79-4 4-4s4 1.79 4 4-1.79 4-4 4-4-1.79-4-4z" fill="white"/>
-  <path d="M16.24 7.76c-.46-.46-1.08-.76-1.76-.76-1.38 0-2.5 1.12-2.5 2.5s1.12 2.5 2.5 2.5c.68 0 1.3-.3 1.76-.76" stroke="#1DB954" stroke-width="0.5" fill="none"/>
-  <path d="M14.5 10.5c-.83 0-1.5-.67-1.5-1.5s.67-1.5 1.5-1.5 1.5.67 1.5 1.5-.67 1.5-1.5 1.5z" fill="#1DB954"/>
-  <path d="M9.5 14c.83 0 1.5.67 1.5 1.5s-.67 1.5-1.5 1.5-1.5-.67-1.5-1.5.67-1.5 1.5-1.5z" fill="#1DB954"/>
-  <path d="M15 13c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1z" fill="#1DB954"/>
-  <path d="M7.5 10c.28 0 .5.22.5.5s-.22.5-.5.5-.5-.22-.5-.5.22-.5.5-.5z" fill="#1DB954"/>
-</svg>
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Uploaded to: SVG Repo, www.svgrepo.com, Generator: SVG Repo Mixer Tools -->
+<svg xmlns="http://www.w3.org/2000/svg"
+aria-label="Spotify" role="img"
+viewBox="0 0 512 512">
+<rect
+width="512" height="512"
+rx="15%"
+fill="#3bd75f"/>
+<circle cx="256" cy="256" fill="#ffffff" r="192"/>
+<g fill="none" stroke="#3bd75f" stroke-linecap="round">
+<path d="m141 195c75-20 164-15 238 24" stroke-width="36"/>
+<path d="m152 257c61-17 144-13 203 24" stroke-width="31"/>
+<path d="m156 315c54-12 116-17 178 20" stroke-width="24"/>
+</g>
+</svg>
