@@ -1967,7 +1967,7 @@ LLM_BASE_MODELS = [
                         en_US="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
-                    options=["low", "high"],
+                    options=["medium", "high"],
                 ),
             ],
             pricing=PriceConfig(
