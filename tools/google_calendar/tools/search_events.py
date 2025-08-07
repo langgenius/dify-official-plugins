@@ -153,7 +153,7 @@ class SearchEventsTool(Tool):
                         if event.get("description"):
                             desc = event["description"]
                             # Highlight query matches in description
-                            if query.lower() in desc.lower():
+                            if desc and query.lower() in desc.lower():
                                 desc = self._highlight_text(desc, query)
                             desc = desc[:80] + "..." if len(desc) > 80 else desc
                             summary_text += f"   📝 {desc}\n"
@@ -354,26 +354,29 @@ class SearchEventsTool(Tool):
             relevance_score = 0
 
             # Check title match
-            title = event.get("title", "").lower()
-            if query_lower in title:
+            title = event.get("title") or ""
+            title_lower = title.lower()
+            if query_lower in title_lower:
                 relevance_score += 10
-                if title.startswith(query_lower):
+                if title_lower.startswith(query_lower):
                     relevance_score += 5
 
             # Check description match
-            description = event.get("description", "").lower()
-            if query_lower in description:
+            description = event.get("description") or ""
+            description_lower = description.lower()
+            if query_lower in description_lower:
                 relevance_score += 5
 
             # Check location match
-            location = event.get("location", "").lower()
-            if query_lower in location:
+            location = event.get("location") or ""
+            location_lower = location.lower()
+            if query_lower in location_lower:
                 relevance_score += 7
 
             # Check attendee names/emails
             for attendee in event.get("attendees", []):
-                attendee_email = attendee.get("email", "").lower()
-                attendee_name = attendee.get("display_name", "").lower()
+                attendee_email = (attendee.get("email") or "").lower()
+                attendee_name = (attendee.get("display_name") or "").lower()
                 if query_lower in attendee_email or query_lower in attendee_name:
                     relevance_score += 3
 
