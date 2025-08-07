@@ -1,8 +1,8 @@
-# https://platform.openai.com/docs/models/gpt-5-nano
-model: gpt-5-nano
+# https://platform.openai.com/docs/models/gpt-5-mini
+model: gpt-5-mini-2025-08-07
 label:
-  zh_Hans: gpt-5-nano
-  en_US: gpt-5-nano
+  zh_Hans: gpt-5-mini-2025-08-07
+  en_US: gpt-5-mini-2025-08-07
 model_type: llm
 features:
   - multi-tool-call
@@ -62,7 +62,7 @@ parameter_rules:
       - medium
       - high
 pricing:
-  input: '0.05'
-  output: '0.40'
+  input: '0.25'
+  output: '2.00'
   unit: '0.000001'
   currency: USD
