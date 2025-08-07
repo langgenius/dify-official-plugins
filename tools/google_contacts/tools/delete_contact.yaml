@@ -1,0 +1,63 @@
+identity:
+  name: delete_contact
+  author: langgenius
+  label:
+    en_US: Delete Contact
+    zh_Hans: 删除联系人
+    ja_JP: 連絡先削除
+
+description:
+  human:
+    en_US: Delete a contact from Google Contacts (CAUTION This action cannot be undone)
+    zh_Hans: 从谷歌通讯录中删除联系人（注意：此操作无法撤销）
+    ja_JP: Google連絡先から連絡先を削除（注意：この操作は元に戻すことができません）
+  llm: Delete a contact from Google Contacts. This action is permanent and cannot be undone. Use with caution and confirm the resource name before deletion.
+
+parameters:
+  - name: resource_name
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Resource Name
+      zh_Hans: 资源名称
+      ja_JP: リソース名
+    human_description:
+      en_US: Google's unique resource identifier for the contact to delete
+      zh_Hans: 要删除的联系人的Google唯一资源标识符
+      ja_JP: 削除する連絡先のGoogle固有リソース識別子
+    llm_description: The unique resource name of the contact to delete (format people/contactId). This is returned from other contact operations like list or search.
+
+  - name: confirm_delete
+    type: boolean
+    required: true
+    form: llm
+    label:
+      en_US: Confirm Delete
+      zh_Hans: 确认删除
+      ja_JP: 削除の確認
+    human_description:
+      en_US: Must be set to true to confirm the deletion. This action cannot be undone.
+      zh_Hans: 必须设置为true以确认删除。此操作无法撤销。
+      ja_JP: 削除を確認するためにtrueに設定する必要があります。この操作は元に戻すことができません。
+    llm_description: Must be explicitly set to true to confirm the deletion. This is a safety measure to prevent accidental deletions.
+
+output_schema:
+  type: object
+  properties:
+    success:
+      type: boolean
+      description: Whether the contact was deleted successfully
+    message:
+      type: string
+      description: Success or error message
+    resource_name:
+      type: string
+      description: The resource name of the deleted contact
+    deleted_contact_name:
+      type: string
+      description: The name of the deleted contact
+
+extra:
+  python:
+    source: tools/delete_contact.py

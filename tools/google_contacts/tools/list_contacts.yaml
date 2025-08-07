@@ -1,0 +1,129 @@
+identity:
+  name: list_contacts
+  author: langgenius
+  label:
+    en_US: List Contacts
+    zh_Hans: 列出联系人
+    ja_JP: 連絡先一覧
+
+description:
+  human:
+    en_US: Retrieve a list of contacts from Google Contacts with pagination support
+    zh_Hans: 从谷歌通讯录中检索联系人列表，支持分页
+    ja_JP: Google連絡先から連絡先リストを取得（ページネーション対応）
+  llm: Retrieve contacts from Google Contacts API with support for pagination and field selection. Returns contact names, phone numbers, email addresses, and other details.
+
+parameters:
+  - name: page_size
+    type: number
+    required: false
+    default: 25
+    form: llm
+    label:
+      en_US: Page Size
+      zh_Hans: 页面大小
+      ja_JP: ページサイズ
+    human_description:
+      en_US: Number of contacts to retrieve per page (1-2000)
+      zh_Hans: 每页检索的联系人数量（1-2000）
+      ja_JP: 1ページあたりの連絡先取得数（1-2000）
+    llm_description: Number of contacts to return in one request (between 1 and 2000, default is 25)
+    min: 1
+    max: 2000
+
+  - name: page_token
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Page Token
+      zh_Hans: 页面令牌
+      ja_JP: ページトークン
+    human_description:
+      en_US: Token for retrieving the next page of results
+      zh_Hans: 用于检索下一页结果的令牌
+      ja_JP: 次のページの結果を取得するためのトークン
+    llm_description: Page token returned from a previous request to get the next page of contacts (leave empty for first page)
+
+  - name: person_fields
+    type: string
+    required: false
+    default: "names,phoneNumbers,emailAddresses"
+    form: llm
+    label:
+      en_US: Person Fields
+      zh_Hans: 人员字段
+      ja_JP: 人物フィールド
+    human_description:
+      en_US: Comma-separated list of person fields to include in the response
+      zh_Hans: 要包含在响应中的人员字段的逗号分隔列表
+      ja_JP: レスポンスに含める人物フィールドのカンマ区切りリスト
+    llm_description: Fields to include in the response (e.g., names,phoneNumbers,emailAddresses,organizations,addresses)
+
+output_schema:
+  type: object
+  properties:
+    contacts:
+      type: array
+      description: Array of contact information
+      items:
+        type: object
+        properties:
+          resource_name:
+            type: string
+            description: Google's unique identifier for this contact
+          display_name:
+            type: string
+            description: Full display name of the contact
+          given_name:
+            type: string
+            description: First name
+          family_name:
+            type: string
+            description: Last name
+          phone_numbers:
+            type: array
+            description: Phone numbers
+            items:
+              type: object
+              properties:
+                value:
+                  type: string
+                type:
+                  type: string
+                formatted_type:
+                  type: string
+          email_addresses:
+            type: array
+            description: Email addresses
+            items:
+              type: object
+              properties:
+                value:
+                  type: string
+                type:
+                  type: string
+                formatted_type:
+                  type: string
+          organization:
+            type: string
+            description: Company or organization name
+          job_title:
+            type: string
+            description: Job title or position
+    total_contacts:
+      type: integer
+      description: Number of contacts returned in this request
+    next_page_token:
+      type: string
+      description: Token to retrieve the next page of results
+    total_people:
+      type: integer
+      description: Total number of people in the user's contacts
+    has_more_pages:
+      type: boolean
+      description: Whether there are more pages available
+
+extra:
+  python:
+    source: tools/list_contacts.py

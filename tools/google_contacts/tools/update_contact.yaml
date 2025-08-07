@@ -1,0 +1,192 @@
+identity:
+  name: update_contact
+  author: langgenius
+  label:
+    en_US: Update Contact
+    zh_Hans: 更新联系人
+    ja_JP: 連絡先更新
+
+description:
+  human:
+    en_US: Update an existing contact in Google Contacts
+    zh_Hans: 更新谷歌通讯录中的现有联系人
+    ja_JP: Google連絡先の既存の連絡先を更新
+  llm: Update an existing contact in Google Contacts. You can update name, phone number, email address, organization, job title, and notes. Only provided fields will be updated, other fields will remain unchanged.
+
+parameters:
+  - name: resource_name
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Resource Name
+      zh_Hans: 资源名称
+      ja_JP: リソース名
+    human_description:
+      en_US: Google's unique resource identifier for the contact to update
+      zh_Hans: 要更新的联系人的Google唯一资源标识符
+      ja_JP: 更新する連絡先のGoogle固有リソース識別子
+    llm_description: The unique resource name of the contact to update (format people/contactId). This is returned from other contact operations.
+
+  - name: given_name
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: First Name
+      zh_Hans: 名字
+      ja_JP: 名前
+    human_description:
+      en_US: Updated first name of the contact
+      zh_Hans: 联系人的更新名字
+      ja_JP: 連絡先の更新された名前
+    llm_description: The updated first name (given name) of the contact (optional)
+
+  - name: family_name
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Last Name
+      zh_Hans: 姓氏
+      ja_JP: 姓
+    human_description:
+      en_US: Updated last name of the contact
+      zh_Hans: 联系人的更新姓氏
+      ja_JP: 連絡先の更新された姓
+    llm_description: The updated last name (family name) of the contact (optional)
+
+  - name: middle_name
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Middle Name
+      zh_Hans: 中间名
+      ja_JP: ミドルネーム
+    human_description:
+      en_US: Updated middle name of the contact
+      zh_Hans: 联系人的更新中间名
+      ja_JP: 連絡先の更新されたミドルネーム
+    llm_description: The updated middle name of the contact (optional)
+
+  - name: phone_number
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Phone Number
+      zh_Hans: 电话号码
+      ja_JP: 電話番号
+    human_description:
+      en_US: Updated phone number of the contact
+      zh_Hans: 联系人的更新电话号码
+      ja_JP: 連絡先の更新された電話番号
+    llm_description: Updated phone number for the contact (optional)
+
+  - name: email_address
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Email Address
+      zh_Hans: 邮箱地址
+      ja_JP: メールアドレス
+    human_description:
+      en_US: Updated email address of the contact
+      zh_Hans: 联系人的更新邮箱地址
+      ja_JP: 連絡先の更新されたメールアドレス
+    llm_description: Updated email address for the contact (optional)
+
+  - name: organization
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Organization
+      zh_Hans: 组织机构
+      ja_JP: 組織
+    human_description:
+      en_US: Updated company or organization name
+      zh_Hans: 更新的公司或组织名称
+      ja_JP: 更新された会社または組織名
+    llm_description: Updated company or organization where the contact works (optional)
+
+  - name: job_title
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Job Title
+      zh_Hans: 职位
+      ja_JP: 役職
+    human_description:
+      en_US: Updated job title or position
+      zh_Hans: 更新的职位或职务
+      ja_JP: 更新された役職または職位
+    llm_description: Updated job title or position of the contact (optional)
+
+  - name: notes
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Notes
+      zh_Hans: 备注
+      ja_JP: メモ
+    human_description:
+      en_US: Updated notes or comments about the contact
+      zh_Hans: 关于联系人的更新备注或评论
+      ja_JP: 連絡先に関する更新されたメモやコメント
+    llm_description: Updated notes or comments about the contact (optional)
+
+output_schema:
+  type: object
+  properties:
+    success:
+      type: boolean
+      description: Whether the contact was updated successfully
+    message:
+      type: string
+      description: Success or error message
+    updated_fields:
+      type: array
+      description: List of fields that were updated
+    contact:
+      type: object
+      description: Updated contact information
+      properties:
+        resource_name:
+          type: string
+          description: Google's unique identifier for this contact
+        display_name:
+          type: string
+          description: Full display name of the contact
+        given_name:
+          type: string
+          description: First name
+        family_name:
+          type: string
+          description: Last name
+        middle_name:
+          type: string
+          description: Middle name
+        phone_numbers:
+          type: array
+          description: Phone numbers
+        email_addresses:
+          type: array
+          description: Email addresses
+        organization:
+          type: string
+          description: Company or organization name
+        job_title:
+          type: string
+          description: Job title or position
+        notes:
+          type: string
+          description: Notes about the contact
+
+extra:
+  python:
+    source: tools/update_contact.py
