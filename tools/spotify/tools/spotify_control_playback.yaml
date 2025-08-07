@@ -1,0 +1,258 @@
+identity:
+  name: spotify_control_playback
+  author: Dify Developer
+  label:
+    en_US: Control Spotify Playback
+    zh_Hans: 控制 Spotify 播放
+    ja_JP: Spotify 再生制御
+  icon: icon.svg
+
+description:
+  human:
+    en_US: Control Spotify playback including play, pause, skip, volume control, and device management
+    zh_Hans: 控制 Spotify 播放，包括播放、暂停、跳过、音量控制和设备管理
+    ja_JP: 再生、一時停止、スキップ、音量制御、デバイス管理を含む Spotify 再生を制御します
+  llm: Control various aspects of Spotify playback including play/pause, track navigation, volume, shuffle, repeat, and device transfer
+
+parameters:
+  - name: action
+    type: select
+    required: true
+    form: llm
+    label:
+      en_US: Action
+      zh_Hans: 操作
+      ja_JP: アクション
+    human_description:
+      en_US: Select the playback action to perform
+      zh_Hans: 选择要执行的播放操作
+      ja_JP: 実行する再生アクションを選択してください
+    llm_description: The playback control action to execute
+    options:
+      - value: play
+        label:
+          en_US: Play
+          zh_Hans: 播放
+          ja_JP: 再生
+      - value: pause
+        label:
+          en_US: Pause
+          zh_Hans: 暂停
+          ja_JP: 一時停止
+      - value: next
+        label:
+          en_US: Next Track
+          zh_Hans: 下一首
+          ja_JP: 次のトラック
+      - value: previous
+        label:
+          en_US: Previous Track
+          zh_Hans: 上一首
+          ja_JP: 前のトラック
+      - value: set_volume
+        label:
+          en_US: Set Volume
+          zh_Hans: 设置音量
+          ja_JP: 音量設定
+      - value: seek
+        label:
+          en_US: Seek Position
+          zh_Hans: 跳转位置
+          ja_JP: 位置シーク
+      - value: shuffle
+        label:
+          en_US: Toggle Shuffle
+          zh_Hans: 切换随机播放
+          ja_JP: シャッフル切替
+      - value: repeat
+        label:
+          en_US: Set Repeat Mode
+          zh_Hans: 设置重复模式
+          ja_JP: リピートモード設定
+      - value: transfer
+        label:
+          en_US: Transfer Playback
+          zh_Hans: 转移播放
+          ja_JP: 再生転送
+
+  - name: device_id
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Device ID
+      zh_Hans: 设备 ID
+      ja_JP: デバイス ID
+    human_description:
+      en_US: The ID of the device to control (optional, uses active device if not specified)
+      zh_Hans: 要控制的设备 ID（可选，如未指定则使用活动设备）
+      ja_JP: 制御するデバイスの ID（オプション、指定しない場合はアクティブデバイスを使用）
+    llm_description: Specific device ID to target for the action (get from list_devices tool)
+
+  - name: track_uri
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Track/Context URI
+      zh_Hans: 曲目/上下文 URI
+      ja_JP: トラック/コンテキスト URI
+    human_description:
+      en_US: Spotify URI for track, album, or playlist to play (only for play action)
+      zh_Hans: 要播放的曲目、专辑或播放列表的 Spotify URI（仅适用于播放操作）
+      ja_JP: 再生するトラック、アルバム、プレイリストの Spotify URI（再生アクションのみ）
+    llm_description: Spotify URI (spotify:track:xxx, spotify:album:xxx, etc.) to play
+
+  - name: volume
+    type: number
+    required: false
+    form: llm
+    label:
+      en_US: Volume
+      zh_Hans: 音量
+      ja_JP: 音量
+    human_description:
+      en_US: Volume level (0-100, only for set_volume action)
+      zh_Hans: 音量级别（0-100，仅适用于设置音量操作）
+      ja_JP: 音量レベル（0-100、音量設定アクションのみ）
+    llm_description: Volume percentage from 0 to 100 (required for set_volume action)
+    min: 0
+    max: 100
+
+  - name: position_ms
+    type: number
+    required: false
+    form: llm
+    label:
+      en_US: Position (ms)
+      zh_Hans: 位置（毫秒）
+      ja_JP: 位置（ミリ秒）
+    human_description:
+      en_US: Position in milliseconds (for seek action or play action)
+      zh_Hans: 位置（毫秒）（用于跳转操作或播放操作）
+      ja_JP: ミリ秒単位の位置（シークアクションまたは再生アクション用）
+    llm_description: Position in milliseconds to seek to (for seek action) or start position (for play action)
+    min: 0
+
+  - name: shuffle
+    type: boolean
+    required: false
+    default: true
+    form: llm
+    label:
+      en_US: Shuffle State
+      zh_Hans: 随机播放状态
+      ja_JP: シャッフル状態
+    human_description:
+      en_US: Enable or disable shuffle (only for shuffle action)
+      zh_Hans: 启用或禁用随机播放（仅适用于随机播放操作）
+      ja_JP: シャッフルの有効/無効（シャッフルアクションのみ）
+    llm_description: Whether to enable (true) or disable (false) shuffle mode
+
+  - name: repeat_state
+    type: select
+    required: false
+    default: "context"
+    form: llm
+    label:
+      en_US: Repeat Mode
+      zh_Hans: 重复模式
+      ja_JP: リピートモード
+    human_description:
+      en_US: Repeat mode setting (only for repeat action)
+      zh_Hans: 重复模式设置（仅适用于重复操作）
+      ja_JP: リピートモード設定（リピートアクションのみ）
+    llm_description: Repeat mode for playback (track, context, or off)
+    options:
+      - value: "off"
+        label:
+          en_US: "Off"
+          zh_Hans: "关闭"
+          ja_JP: "オフ"
+      - value: "track"
+        label:
+          en_US: "Repeat Track"
+          zh_Hans: "重复单曲"
+          ja_JP: "トラックリピート"
+      - value: "context"
+        label:
+          en_US: "Repeat Context"
+          zh_Hans: "重复上下文"
+          ja_JP: "コンテキストリピート"
+
+  - name: start_playing
+    type: boolean
+    required: false
+    default: false
+    form: llm
+    label:
+      en_US: Start Playing After Transfer
+      zh_Hans: 转移后开始播放
+      ja_JP: 転送後に再生開始
+    human_description:
+      en_US: Whether to start playing immediately after transferring to device (only for transfer action)
+      zh_Hans: 转移到设备后是否立即开始播放（仅适用于转移操作）
+      ja_JP: デバイスに転送後すぐに再生を開始するかどうか（転送アクションのみ）
+    llm_description: Whether to automatically start playback after transferring to the target device
+
+extra:
+  python:
+    source: tools/spotify_control_playback.py
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      description: The action that was performed
+    success:
+      type: boolean
+      description: Whether the action was successful
+    message:
+      type: string
+      description: Human-readable result message
+    current_state:
+      type: object
+      description: Current playback state after the action
+      properties:
+        is_playing:
+          type: boolean
+          description: Whether music is currently playing
+        device:
+          type: object
+          description: Current playback device
+          properties:
+            name:
+              type: string
+              description: Device name
+            type:
+              type: string
+              description: Device type
+            volume_percent:
+              type: integer
+              description: Current volume percentage
+        shuffle_state:
+          type: boolean
+          description: Current shuffle state
+        repeat_state:
+          type: string
+          description: Current repeat mode (off, track, context)
+        progress_ms:
+          type: integer
+          description: Current playback position in milliseconds
+        track:
+          type: object
+          description: Currently playing track (if any)
+          properties:
+            id:
+              type: string
+              description: Track Spotify ID
+            name:
+              type: string
+              description: Track name
+            artists:
+              type: array
+              description: Artist names
+            duration_ms:
+              type: integer
+              description: Track duration in milliseconds
