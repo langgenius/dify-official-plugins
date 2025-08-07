@@ -45,16 +45,20 @@ This plugin integrates with Google Calendar, supporting operations such as manag
     - **Expires**: Whatever duration you prefer (e.g., 1 year, 2 years, etc.)
     - Copy the generated **Value** of the client secret.
 
+5. Add a test user to the Google Calendar API:
+    - Go to "APIs & Services" > "Credentials" > "OAuth consent screen" > "Test Users"
+    - Add a test user with the email address you want to use for testing.
+
     <p align="center">
         <img src="_assets/add_test_user.png" alt="Add Test User" width="600" />
     </p>
 
-5. Configure the plugin in Dify:
+6. Configure the plugin in Dify:
     - Fill in the **Client ID** and **Client Secret** fields with the values you copied from the Google Cloud Console.
     - Make sure you have the same redirect URI as specified in the Google Cloud Console. If not, you will need to update it in the Google Cloud Console.
     - Click `Save and authorize` to initiate the OAuth flow.
 
-6. Enjoy using the Google Calendar plugin in Dify!
+7. Enjoy using the Google Calendar plugin in Dify!
 
 ## Tool Descriptions
 
