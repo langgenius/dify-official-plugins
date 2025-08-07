@@ -1,3 +1,4 @@
+# https://platform.openai.com/docs/models/gpt-5-nano
 model: gpt-5-nano
 label:
   zh_Hans: gpt-5-nano
