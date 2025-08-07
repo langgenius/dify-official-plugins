@@ -1,10 +1,10 @@
-version: 0.1.0
+version: 0.2.0
 type: plugin
 author: "langgenius"
 name: "openai"
 description:
-  en_US: Models provided by OpenAI, such as GPT-3.5-Turbo and GPT-4.
-  zh_Hans: OpenAI 提供的模型，例如 GPT-3.5-Turbo 和 GPT-4。
+  en_US: Models provided by OpenAI, such as GPT-3.5-Turbo, GPT-4, and GPT-5.
+  zh_Hans: OpenAI 提供的模型，例如 GPT-3.5-Turbo、GPT-4 和 GPT-5。
 label:
   en_US: "OpenAI"
 created_at: "2024-07-12T08:03:44.658609186Z"
