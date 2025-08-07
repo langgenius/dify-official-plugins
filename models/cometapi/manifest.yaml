@@ -4,10 +4,13 @@ author: cometapi
 name: cometapi
 label:
   en_US: CometAPI
+  zh_Hans: CometAPI
+  ja_JP: CometAPI
+  pt_BR: CometAPI
 description:
   en_US: "500+ AI Model API, All In One API. Just In CometAPI."
-  ja_JP: "500以上のAIモデルAPIを一括提供。すべてはCometAPIに。"
   zh_Hans: "500+ AI 模型 API，一站集成，尽在 CometAPI。"
+  ja_JP: "500以上のAIモデルAPIを一括提供。すべてはCometAPIに。"
   pt_BR: "500+ modelos de IA em uma única API. Tudo em um só lugar : CometAPI."
 icon: cometapi_small.png
 icon_dark: cometapi_small.png
