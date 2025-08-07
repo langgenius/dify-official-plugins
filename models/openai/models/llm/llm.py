@@ -99,6 +99,11 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         if model.startswith("ft:"):
             base_model = model.split(":")[1]
 
+        # GPT-5 series SOTA models require KYC validation for streaming output
+        # If you want to use the models without this limitation, please turn off streaming responses.
+        if model_parameters.pop("enable_stream", None) is False:  # noqa
+            stream = False
+
         # get model mode
         model_mode = self.get_model_mode(base_model, credentials)
 
