@@ -856,6 +856,11 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 # Find matching predefined model based on underlying model ARN
                 default_pricing = None
                 matched_features = []
+                matched_parameter_rules = []
+                matched_model_properties = {
+                    "mode": LLMMode.CHAT,
+                    "context_size": context_length,
+                }
                 underlying_models = profile_info.get("models", [])
                 if underlying_models:
                     first_model_arn = underlying_models[0].get("modelArn", "")
@@ -866,6 +871,13 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                             if self._model_id_matches_schema(underlying_model_id, model_schema):
                                 default_pricing = model_schema.pricing
                                 matched_features = model_schema.features or []
+                                matched_parameter_rules = [rule for rule in (model_schema.parameter_rules or [])
+                                                           if rule.name in ['max_tokens', 'temperature', 'top_p', 'top_k',
+                                                                            'reasoning_type', 'reasoning_budget']]
+                                if model_schema.model_properties:
+                                    matched_model_properties.update(model_schema.model_properties)
+                                    # Override context_size with user-specified value
+                                    matched_model_properties["context_size"] = context_length
                                 break
                 
                 # Fallback to first predefined model pricing if no match found
@@ -881,11 +893,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     model_type=ModelType.LLM,
                     features=matched_features,
                     fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
-                    model_properties={
-                        "mode": LLMMode.CHAT,
-                        "context_size": context_length,
-                    },
-                    parameter_rules=[],
+                    model_properties=matched_model_properties,
+                    parameter_rules=matched_parameter_rules,
                     pricing=default_pricing
                 )
             except Exception as e:
@@ -894,18 +903,27 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 context_length = int(credentials.get("context_length", 4096))
                 model_schemas = self.predefined_models()
                 default_pricing = model_schemas[0].pricing if model_schemas else None
+                fallback_parameter_rules = [rule for rule in (model_schemas[0].parameter_rules or [])
+                                            if rule.name in ['max_tokens', 'temperature', 'top_p', 'top_k',
+                                                            'reasoning_type', 'reasoning_budget']]
+                fallback_features = model_schemas[0].features if model_schemas else []
+                fallback_model_properties = {
+                    "mode": LLMMode.CHAT,
+                    "context_size": context_length,
+                }
+                # Use first model's properties as fallback, but keep user-specified context_size
+                if model_schemas and model_schemas[0].model_properties:
+                    fallback_model_properties.update(model_schemas[0].model_properties)
+                    fallback_model_properties["context_size"] = context_length
                 
                 return AIModelEntity(
                     model=model,
                     label=I18nObject(en_US=model),
                     model_type=ModelType.LLM,
-                    features=[],
+                    features=fallback_features,
                     fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
-                    model_properties={
-                        "mode": LLMMode.CHAT,
-                        "context_size": context_length,
-                    },
-                    parameter_rules=[],
+                    model_properties=fallback_model_properties,
+                    parameter_rules=fallback_parameter_rules,
                     pricing=default_pricing
                 )
         
