@@ -9,7 +9,10 @@ features:
   - vision
 model_properties:
   mode: chat
-  context_size: 400000
+  context_size: 128000
+  # 2025-08-08: Need to be confirmed. 
+  # Documentation shows 400,000 but since max tokens is 16,384, 
+  # the context size should be 128,000, like gpt-4o.
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -23,7 +26,7 @@ parameter_rules:
     use_template: max_tokens
     default: 8192
     min: 1
-    max: 16384
+    max: 16384 # 2025-08-08: Documentation shows 128,000 but API testing confirms 16,384 limit
 pricing:
   input: '1.25'
   output: '10.00'

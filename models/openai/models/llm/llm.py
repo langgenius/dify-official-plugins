@@ -1140,10 +1140,6 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         tool_calls = []
         if response_tool_calls:
             for response_tool_call in response_tool_calls:
-                assert isinstance(
-                    response_tool_call,
-                    (ChatCompletionMessageToolCall, ChoiceDeltaToolCall),
-                )
                 if response_tool_call.function:
                     function = AssistantPromptMessage.ToolCall.ToolCallFunction(
                         name=response_tool_call.function.name or "",
@@ -1170,9 +1166,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         """
         tool_call = None
         if response_function_call:
-            assert isinstance(
-                response_function_call, (FunctionCall, ChoiceDeltaFunctionCall)
-            )
+            # Avoid isinstance with possibly generic typing classes; use duck-typing instead
+            if not hasattr(response_function_call, "name"):
+                return None
 
             function = AssistantPromptMessage.ToolCall.ToolCallFunction(
                 name=response_function_call.name or "",
