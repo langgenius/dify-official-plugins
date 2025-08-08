@@ -1824,6 +1824,255 @@ LLM_BASE_MODELS = [
         ),
     ),
     AzureBaseModel(
+        base_model_name="gpt-5",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 400000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制推理模型的推理工作",
+                        en_US="constrains effort on reasoning for reasoning models",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                ),
+                _get_o1_max_tokens(default=512, min_val=1, max_val=128000),
+            ],
+            pricing=PriceConfig(
+                input=1.25,
+                output=10,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-5-mini",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 400000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制推理模型的推理工作",
+                        en_US="constrains effort on reasoning for reasoning models",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                ),
+                _get_o1_max_tokens(default=512, min_val=1, max_val=128000),
+            ],
+            pricing=PriceConfig(
+                input=0.25,
+                output=2,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-5-nano",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 400000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制推理模型的推理工作",
+                        en_US="constrains effort on reasoning for reasoning models",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                ),
+                _get_o1_max_tokens(default=512, min_val=1, max_val=128000),
+            ],
+            pricing=PriceConfig(
+                input=0.05,
+                output=0.4,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-5-chat",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.VISION,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 400000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制推理模型的推理工作",
+                        en_US="constrains effort on reasoning for reasoning models",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                ),
+                _get_o1_max_tokens(default=512, min_val=1, max_val=128000),
+            ],
+            pricing=PriceConfig(
+                input=1.25,
+                output=10,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
         base_model_name="grok-3",
         entity=AIModelEntity(
             model="fake-deployment-name",
