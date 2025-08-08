@@ -26,5 +26,5 @@ resource:
       enabled: true
       llm: true
 type: plugin
-version: 0.0.3
+version: 0.0.4
 created_at: 2025-06-04T12:32:17.824356+08:00
