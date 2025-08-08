@@ -364,9 +364,8 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                 text += choice.message.content or ""
         prompt_usage = response.usage.prompt_tokens
         completion_usage = response.usage.completion_tokens
-        cached_usage = response.usage.prompt_tokens_details.cached_tokens if response.usage.prompt_tokens_details else 0
         usage = self._calc_response_usage(
-            model, credentials, prompt_usage, completion_usage, cached_usage
+            model, credentials, prompt_usage, completion_usage
         )
         result = LLMResult(
             model=model,
@@ -424,12 +423,10 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
             )
             full_assistant_content += resp_content
             if delta.finish_reason is not None and chunk.usage is not None:
-                usage = chunk.usage
-                completion_tokens = usage.completion_tokens
-                prompt_tokens = usage.prompt_tokens
-                cached_tokens = usage.prompt_tokens_details.cached_tokens if usage.prompt_tokens_details else 0
+                completion_tokens = chunk.usage.completion_tokens
+                prompt_tokens = chunk.usage.prompt_tokens
                 usage = self._calc_response_usage(
-                    model, credentials, prompt_tokens, completion_tokens, cached_tokens
+                    model, credentials, prompt_tokens, completion_tokens
                 )
                 yield LLMResultChunk(
                     model=chunk.model,
