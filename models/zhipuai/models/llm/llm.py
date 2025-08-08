@@ -19,9 +19,8 @@ from dify_plugin.entities.model.message import (
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
-from zhipuai import ZhipuAI
-from zhipuai.types.chat.chat_completion import Completion
-from zhipuai.types.chat.chat_completion_chunk import ChatCompletionChunk
+from zai import ZhipuAiClient
+from zai.types.chat import Completion, ChatCompletionChunk, ChoiceDelta
 from .._common import _CommonZhipuaiAI
 
 
@@ -129,7 +128,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
         # request to glm-4v-plus with stop words will always respond "finish_reason":"network_error"
         if stop and model != "glm-4v-plus":
             extra_model_kwargs["stop"] = stop
-        client = ZhipuAI(api_key=credentials_kwargs["api_key"])
+        client = ZhipuAiClient(api_key=credentials_kwargs["api_key"])
         if len(prompt_messages) == 0:
             raise ValueError("At least one message is required")
         if prompt_messages[0].role == PromptMessageRole.SYSTEM:
@@ -144,7 +143,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                 PromptMessageRole.TOOL,
             }:
                 if isinstance(copy_prompt_message.content, list):
-                    if model not in {"glm-4v", "glm-4v-plus", "glm-4v-flash"}:
+                    if model not in {"glm-4v", "glm-4v-plus", "glm-4v-plus-0111", "glm-4v-flash", "glm-4.1v-thinking-flash", "glm-4.1v-thinking-flashx"}:
                         continue
                     if not isinstance(copy_prompt_message, UserPromptMessage):
                         continue
@@ -221,8 +220,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                 model_parameters["thinking"] = {"type": "enabled"}
             else:
                 model_parameters["thinking"] = {"type": "disabled"}
-
-        if model in {"glm-4v", "glm-4v-plus", "glm-4v-flash"}:
+        if model in {"glm-4v", "glm-4v-plus","glm-4v-plus-0111", "glm-4v-flash", "glm-4.1v-thinking-flash", "glm-4.1v-thinking-flashx"}:
             params = self._construct_glm_4v_parameter(
                 model, new_prompt_messages, model_parameters
             )
@@ -360,7 +358,10 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                                 ),
                             )
                         )
-            text += choice.message.content or ""
+            if choice.message.reasoning_content:
+                text += "<think>\n" + choice.message.reasoning_content + "\n</think>" + choice.message.content
+            else:
+                text += choice.message.content or ""
         prompt_usage = response.usage.prompt_tokens
         completion_usage = response.usage.completion_tokens
         usage = self._calc_response_usage(
@@ -392,14 +393,14 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
         :param prompt_messages: prompt messages
         :return: llm response chunk generator result
         """
+        is_reasoning = False
         full_assistant_content = ""
         for chunk in responses:
             if len(chunk.choices) == 0:
                 continue
             delta = chunk.choices[0]
-            if delta.finish_reason is None and (
-                delta.delta.content is None or delta.delta.content == ""
-            ):
+            if delta.finish_reason is None and (delta.delta.content is None or delta.delta.content == "") and (
+                delta.delta.reasoning_content is None or delta.delta.reasoning_content == ""):
                 continue
             assistant_tool_calls: list[AssistantPromptMessage.ToolCall] = []
             for tool_call in delta.delta.tool_calls or []:
@@ -414,10 +415,13 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                             ),
                         )
                     )
-            assistant_prompt_message = AssistantPromptMessage(
-                content=delta.delta.content or "", tool_calls=assistant_tool_calls
+            resp_content, is_reasoning = self._wrap_thinking_by_reasoning_content(
+                delta.delta, is_reasoning
             )
-            full_assistant_content += delta.delta.content or ""
+            assistant_prompt_message = AssistantPromptMessage(
+                content=resp_content, tool_calls=assistant_tool_calls
+            )
+            full_assistant_content += resp_content
             if delta.finish_reason is not None and chunk.usage is not None:
                 completion_tokens = chunk.usage.completion_tokens
                 prompt_tokens = chunk.usage.prompt_tokens
@@ -485,3 +489,35 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
             for tool in tools:
                 text += f"\n{tool.model_dump_json()}"
         return text.rstrip()
+
+    def _wrap_thinking_by_reasoning_content(self, delta: ChoiceDelta, is_reasoning: bool) -> tuple[str, bool]:
+        """
+        If the reasoning response is from delta.get("reasoning_content"), we wrap
+        it with HTML think tag.
+        :param delta: delta dictionary from LLM streaming response
+        :param is_reasoning: is reasoning
+        :return: tuple of (processed_content, is_reasoning)
+        """
+
+        content = delta.content or ""
+        reasoning_content = delta.reasoning_content
+        try:
+            if reasoning_content:
+                try:
+                    if not is_reasoning:
+                        content = "<think>\n" + reasoning_content
+                        is_reasoning = True
+                    else:
+                        content = reasoning_content
+                except Exception as ex:
+                    raise ValueError(
+                        f"[wrap_thinking_by_reasoning_content-1] {ex}"
+                    ) from ex
+            elif is_reasoning and content:
+                content = "\n</think>" + content
+                is_reasoning = False
+        except Exception as ex:
+            raise ValueError(
+                f"[wrap_thinking_by_reasoning_content-2] {ex}"
+            ) from ex
+        return content, is_reasoning

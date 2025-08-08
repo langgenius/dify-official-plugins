@@ -1,5 +1,5 @@
 type: plugin
-version: 0.0.11
+version: 0.0.12
 author: langgenius
 name: zhipuai
 created_at: '2024-09-20T00:13:50.29298939-04:00'
@@ -8,10 +8,10 @@ description:
   zh_Hans: 智谱 AI
 icon: icon_s_en.svg
 label:
-  en_US: "Zhipuai"
-  ja_JP: "Zhipuai"
-  zh_Hans: "Zhipuai"
-  pt_BR: "Zhipuai"
+  en_US: "ZHIPU AI"
+  ja_JP: "ZHIPU AI"
+  zh_Hans: "ZHIPU AI"
+  pt_BR: "ZHIPU AI"
 meta:
   arch:
     - "amd64"
@@ -25,7 +25,7 @@ plugins:
   models:
     - provider/zhipuai.yaml
 resource:
-  memory: 1048576
+  memory: 4194304
   permission:
     model:
       enabled: true

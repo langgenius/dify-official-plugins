@@ -70,7 +70,8 @@ parameter_rules:
       - text
       - json_object
 pricing:
-  input: '0.1'
-  output: '0.1'
+  input: '0.00'
+  output: '0.00'
+  cached: '0.00'
   unit: '0.001'
   currency: RMB
