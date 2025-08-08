@@ -150,11 +150,21 @@ parameters:
           zh_Hans: pipeline
           en_US: pipeline
           ja_JP: pipeline
-      - value: vlm
+      - value: vlm-transformers
         label:
-          zh_Hans: vlm
-          en_US: vlm
-          ja_JP: vlm
+          zh_Hans: vlm-transformers
+          en_US: vlm-transformers
+          ja_JP: vlm-transformers
+      - value: vlm-sglang-engine
+        label:
+          zh_Hans: vlm-sglang-engine
+          en_US: vlm-sglang-engine
+          ja_JP: vlm-sglang-engine
+      - value: vlm-sglang-client
+        label:
+          zh_Hans: vlm-sglang-client
+          en_US: vlm-sglang-client
+          ja_JP: vlm-sglang-client
     label:
       zh_Hans: 后端类型
       en_US: Backend type
