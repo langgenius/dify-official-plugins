@@ -1,0 +1,42 @@
+provider: gemini_cf
+label:
+  en_US: Gemini (Cloudflare Proxy)
+  zh_Hans: Gemini（Cloudflare 代理）
+description:
+  en_US: Use Google Gemini via your Cloudflare Worker reverse proxy.
+  zh_Hans: 通过 Cloudflare Worker 反向代理使用 Google Gemini。
+icon_small:
+  en_US: icon_s_en.svg
+supported_model_types:
+  - llm
+configurate_methods:
+  - predefined-model
+extra:
+  python:
+    # 复用 openai_compatible 的通用 LLM 逻辑需要不同实现；此处先声明为空，
+    # 如后续实现自定义 Python Provider，可在此填入 provider_source 与 model_sources。
+    model_sources: []
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: base_url
+      label:
+        en_US: Base URL
+        zh_Hans: 代理基地址
+      type: text-input
+      required: true
+      placeholder:
+        en_US: https://your-worker.example.workers.dev
+        zh_Hans: https://your-worker.example.workers.dev
+    - variable: api_key
+      label:
+        en_US: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        en_US: Enter your API Key
+        zh_Hans: 在此输入您的 API Key
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+      - models/llm/*.yaml
