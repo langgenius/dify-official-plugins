@@ -1,0 +1,31 @@
+version: 0.0.1
+type: model
+provider: gemini_cf
+name:
+  en_US: Gemini (Cloudflare Proxy)
+  zh_Hans: Gemini（Cloudflare 代理）
+author: local
+description:
+  en_US: Use Google Gemini via your Cloudflare Worker reverse proxy.
+  zh_Hans: 通过 Cloudflare Worker 反向代理使用 Google Gemini。
+
+# 供应商级别凭证（安装后在“设置-模型供应商”中填写）
+credentials:
+  - name: base_url
+    label:
+      en_US: Base URL
+      zh_Hans: 代理基地址
+    type: text-input
+    required: true
+    placeholder: https://your-worker.example.workers.dev
+  - name: api_key
+    label:
+      en_US: API Key
+      zh_Hans: 通信密钥
+    type: secret-input
+    required: true
+    placeholder: cf_xxx
+
+# 该插件提供的模型类型
+supported_model_types:
+  - llm
