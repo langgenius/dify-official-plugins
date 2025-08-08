@@ -1823,6 +1823,161 @@ LLM_BASE_MODELS = [
             ),
         ),
     ),
+    AzureBaseModel(
+        base_model_name="grok-3",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 131072,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                ),
+                ParameterRule(
+                    name="frequency_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.FREQUENCY_PENALTY],
+                ),
+                _get_o1_max_tokens(default=512, min_val=1, max_val=32768),
+                ParameterRule(
+                    name="seed",
+                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    type="int",
+                    help=AZURE_DEFAULT_PARAM_SEED_HELP,
+                    required=False,
+                    precision=2,
+                    min=0,
+                    max=1,
+                ),
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+            ],
+            pricing=PriceConfig(
+                input=3,
+                output=15,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="grok-3-mini",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 131072,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                ),
+                ParameterRule(
+                    name="frequency_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.FREQUENCY_PENALTY],
+                ),
+                _get_o1_max_tokens(default=512, min_val=1, max_val=32768),
+                ParameterRule(
+                    name="seed",
+                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    type="int",
+                    help=AZURE_DEFAULT_PARAM_SEED_HELP,
+                    required=False,
+                    precision=2,
+                    min=0,
+                    max=1,
+                ),
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制推理模型的推理工作",
+                        en_US="constrains effort on reasoning for reasoning models",
+                    ),
+                    required=False,
+                    options=["medium", "high"],
+                ),
+            ],
+            pricing=PriceConfig(
+                input=0.3,
+                output=0.5,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    )
 ]
 EMBEDDING_BASE_MODELS = [
     AzureBaseModel(
