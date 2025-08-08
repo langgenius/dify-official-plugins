@@ -1,0 +1,59 @@
+identity:
+  name: list_tasklists
+  author: langgenius
+  label:
+    en_US: List Task Lists
+    zh_Hans: 列出任务列表
+    ja_JP: タスクリストを一覧表示
+  icon: icon.svg
+
+description:
+  human:
+    en_US: List all task lists in your Google Tasks account
+    zh_Hans: 列出 Google Tasks 账号中的所有任务列表
+    ja_JP: Google タスクアカウントのすべてのタスクリストを一覧表示
+  llm: List all task lists from Google Tasks
+
+parameters:
+  - name: max_results
+    type: number
+    required: false
+    default: 100
+    form: llm
+    label:
+      en_US: Maximum Results
+      zh_Hans: 最大结果数
+      ja_JP: 最大結果数
+    human_description:
+      en_US: Maximum number of task lists to return (1-100)
+      zh_Hans: 返回的最大任务列表数（1-100）
+      ja_JP: 返すタスクリストの最大数 (1-100)
+    llm_description: Maximum number of task lists to return, default is 100
+    min: 1
+    max: 100
+
+output_schema:
+  type: object
+  properties:
+    task_lists:
+      type: array
+      description: List of task lists
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Task list ID
+          title:
+            type: string
+            description: Task list title
+          updated:
+            type: string
+            description: Last update time
+    count:
+      type: number
+      description: Total number of task lists
+
+extra:
+  python:
+    source: tools/list_tasklists.py
