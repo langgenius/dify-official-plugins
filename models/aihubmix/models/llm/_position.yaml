@@ -1,3 +1,7 @@
+- gpt-5
+- gpt-5-mini
+- gpt-5-nano
+- gpt-5-chat-latest
 - o3
 - o4-mini
 - gpt-4.1
@@ -8,6 +12,7 @@
 - o1
 - o1-pro
 - o1-preview
+- claude-opus-4-1-20250805
 - claude-opus-4-20250514
 - claude-sonnet-4-20250514
 - claude-3-7-sonnet-20250219
