@@ -1,6 +1,6 @@
 version: 0.0.1
 type: plugin
-author: cometapi
+author: langgenius
 name: cometapi
 label:
   en_US: CometAPI
