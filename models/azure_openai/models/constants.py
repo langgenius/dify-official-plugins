@@ -1841,7 +1841,7 @@ LLM_BASE_MODELS = [
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
                 ModelPropertyKey.MODE: LLMMode.CHAT.value,
-                ModelPropertyKey.CONTEXT_SIZE: 400000,
+                ModelPropertyKey.CONTEXT_SIZE: 272000,
             },
             parameter_rules=[
                 ParameterRule(
@@ -1876,7 +1876,7 @@ LLM_BASE_MODELS = [
                     required=False,
                     options=["low", "medium", "high"],
                 ),
-                _get_o1_max_tokens(default=512, min_val=1, max_val=128000),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
             ],
             pricing=PriceConfig(
                 input=1.25,
@@ -1904,7 +1904,7 @@ LLM_BASE_MODELS = [
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
                 ModelPropertyKey.MODE: LLMMode.CHAT.value,
-                ModelPropertyKey.CONTEXT_SIZE: 400000,
+                ModelPropertyKey.CONTEXT_SIZE: 272000,
             },
             parameter_rules=[
                 ParameterRule(
@@ -1939,7 +1939,7 @@ LLM_BASE_MODELS = [
                     required=False,
                     options=["low", "medium", "high"],
                 ),
-                _get_o1_max_tokens(default=512, min_val=1, max_val=128000),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
             ],
             pricing=PriceConfig(
                 input=0.25,
@@ -1967,7 +1967,7 @@ LLM_BASE_MODELS = [
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
                 ModelPropertyKey.MODE: LLMMode.CHAT.value,
-                ModelPropertyKey.CONTEXT_SIZE: 400000,
+                ModelPropertyKey.CONTEXT_SIZE: 272000,
             },
             parameter_rules=[
                 ParameterRule(
@@ -2002,7 +2002,7 @@ LLM_BASE_MODELS = [
                     required=False,
                     options=["low", "medium", "high"],
                 ),
-                _get_o1_max_tokens(default=512, min_val=1, max_val=128000),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
             ],
             pricing=PriceConfig(
                 input=0.05,
@@ -2022,12 +2022,11 @@ LLM_BASE_MODELS = [
             model_type=ModelType.LLM,
             features=[
                 ModelFeature.AGENT_THOUGHT,
-                ModelFeature.VISION,
             ],
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
                 ModelPropertyKey.MODE: LLMMode.CHAT.value,
-                ModelPropertyKey.CONTEXT_SIZE: 400000,
+                ModelPropertyKey.CONTEXT_SIZE: 128000,
             },
             parameter_rules=[
                 ParameterRule(
@@ -2062,7 +2061,7 @@ LLM_BASE_MODELS = [
                     required=False,
                     options=["low", "medium", "high"],
                 ),
-                _get_o1_max_tokens(default=512, min_val=1, max_val=128000),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=16384),
             ],
             pricing=PriceConfig(
                 input=1.25,
