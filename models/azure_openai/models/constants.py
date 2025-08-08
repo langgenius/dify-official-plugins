@@ -1829,31 +1829,51 @@ LLM_BASE_MODELS = [
             model="fake-deployment-name",
             label=I18nObject(
                 en_US="fake-deployment-name-label",
+                zh_Hans="fake-deployment-name-label",  # 如果需要中文
             ),
             model_type=ModelType.LLM,
             features=[
                 ModelFeature.AGENT_THOUGHT,
+                ModelFeature.VISION,
                 ModelFeature.MULTI_TOOL_CALL,
                 ModelFeature.STREAM_TOOL_CALL,
-                ModelFeature.VISION,
-                ModelFeature.STRUCTURED_OUTPUT,
             ],
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
                 ModelPropertyKey.MODE: LLMMode.CHAT.value,
-                ModelPropertyKey.CONTEXT_SIZE: 272000,
+                ModelPropertyKey.CONTEXT_SIZE: 400000,
             },
             parameter_rules=[
                 ParameterRule(
+                    name="max_completion_tokens",
+                    label=I18nObject(
+                        zh_Hans="最大生成 Token 数",
+                        en_US="Max Completion Tokens",
+                    ),
+                    type="int",
+                    help=I18nObject(
+                        zh_Hans="限制模型单次响应生成的最大 token 数。",
+                        en_US="Limit the maximum number of tokens generated in a single model response.",
+                    ),
+                    required=False,
+                    default=8192,
+                    precision=0,
+                    min=1,
+                    max=128000,
+                ),
+                ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(
+                        zh_Hans="回复格式",
+                        en_US="Response Format",
+                    ),
                     type="string",
                     help=I18nObject(
                         zh_Hans="指定模型必须输出的格式",
                         en_US="specifying the format that the model must output",
                     ),
                     required=False,
-                    options=["text", "json_object", "json_schema"],
+                    options=["text", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
@@ -1867,20 +1887,54 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(
+                        zh_Hans="推理努力程度",
+                        en_US="Reasoning Effort",
+                    ),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_Hans=(
+                            "约束推理模型的推理努力程度。支持的值包括minimal、low、medium和high。"
+                            "降低推理努力可以获得更快的响应和更少的推理token使用"
+                        ),
+                        en_US=(
+                            "Constrains effort on reasoning for reasoning models. "
+                            "Currently supported values are minimal, low, medium, and high. "
+                            "Reducing reasoning effort can result in faster responses and fewer tokens "
+                            "used on reasoning in a response"
+                        ),
                     ),
                     required=False,
+                    default="medium",
                     options=["minimal", "low", "medium", "high"],
                 ),
-                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(
+                        zh_Hans="详细程度",
+                        en_US="Verbosity",
+                    ),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans=(
+                            "约束模型响应的详细程度。较低的值将产生更简洁的响应，"
+                            "而较高的值将产生更详细的响应。支持的值包括low、medium和high"
+                        ),
+                        en_US=(
+                            "Constrains the verbosity of the model's response. "
+                            "Lower values will result in more concise responses, "
+                            "while higher values will result in more verbose responses. "
+                            "Currently supported values are low, medium, and high"
+                        ),
+                    ),
+                    required=False,
+                    default="medium",
+                    options=["low", "medium", "high"],
+                )
             ],
             pricing=PriceConfig(
                 input=1.25,
-                output=10,
+                output=10.00,
                 unit=0.000001,
                 currency="USD",
             ),
@@ -1892,31 +1946,51 @@ LLM_BASE_MODELS = [
             model="fake-deployment-name",
             label=I18nObject(
                 en_US="fake-deployment-name-label",
+                zh_Hans="fake-deployment-name-label",  # 如果需要中文
             ),
             model_type=ModelType.LLM,
             features=[
                 ModelFeature.AGENT_THOUGHT,
+                ModelFeature.VISION,
                 ModelFeature.MULTI_TOOL_CALL,
                 ModelFeature.STREAM_TOOL_CALL,
-                ModelFeature.VISION,
-                ModelFeature.STRUCTURED_OUTPUT,
             ],
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
                 ModelPropertyKey.MODE: LLMMode.CHAT.value,
-                ModelPropertyKey.CONTEXT_SIZE: 272000,
+                ModelPropertyKey.CONTEXT_SIZE: 400000,
             },
             parameter_rules=[
                 ParameterRule(
+                    name="max_completion_tokens",
+                    label=I18nObject(
+                        zh_Hans="最大生成 Token 数",
+                        en_US="Max Completion Tokens",
+                    ),
+                    type="int",
+                    help=I18nObject(
+                        zh_Hans="限制模型单次响应生成的最大 token 数。",
+                        en_US="Limit the maximum number of tokens generated in a single model response.",
+                    ),
+                    required=False,
+                    default=8192,
+                    precision=0,
+                    min=1,
+                    max=128000,
+                ),
+                ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(
+                        zh_Hans="回复格式",
+                        en_US="Response Format",
+                    ),
                     type="string",
                     help=I18nObject(
                         zh_Hans="指定模型必须输出的格式",
                         en_US="specifying the format that the model must output",
                     ),
                     required=False,
-                    options=["text", "json_object", "json_schema"],
+                    options=["text", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
@@ -1930,20 +2004,54 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(
+                        zh_Hans="推理努力程度",
+                        en_US="Reasoning Effort",
+                    ),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_Hans=(
+                            "约束推理模型的推理努力程度。支持的值包括minimal、low、medium和high。"
+                            "降低推理努力可以获得更快的响应和更少的推理token使用"
+                        ),
+                        en_US=(
+                            "Constrains effort on reasoning for reasoning models. "
+                            "Currently supported values are minimal, low, medium, and high. "
+                            "Reducing reasoning effort can result in faster responses and fewer tokens "
+                            "used on reasoning in a response"
+                        ),
                     ),
                     required=False,
+                    default="medium",
                     options=["minimal", "low", "medium", "high"],
                 ),
-                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(
+                        zh_Hans="详细程度",
+                        en_US="Verbosity",
+                    ),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans=(
+                            "约束模型响应的详细程度。较低的值将产生更简洁的响应，"
+                            "而较高的值将产生更详细的响应。支持的值包括low、medium和high"
+                        ),
+                        en_US=(
+                            "Constrains the verbosity of the model's response. "
+                            "Lower values will result in more concise responses, "
+                            "while higher values will result in more verbose responses. "
+                            "Currently supported values are low, medium, and high"
+                        ),
+                    ),
+                    required=False,
+                    default="medium",
+                    options=["low", "medium", "high"],
+                )
             ],
             pricing=PriceConfig(
-                input=0.25,
-                output=2,
+                input=1.25,
+                output=10.00,
                 unit=0.000001,
                 currency="USD",
             ),
@@ -1955,31 +2063,51 @@ LLM_BASE_MODELS = [
             model="fake-deployment-name",
             label=I18nObject(
                 en_US="fake-deployment-name-label",
+                zh_Hans="fake-deployment-name-label",  # 如果需要中文
             ),
             model_type=ModelType.LLM,
             features=[
                 ModelFeature.AGENT_THOUGHT,
+                ModelFeature.VISION,
                 ModelFeature.MULTI_TOOL_CALL,
                 ModelFeature.STREAM_TOOL_CALL,
-                ModelFeature.VISION,
-                ModelFeature.STRUCTURED_OUTPUT,
             ],
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
                 ModelPropertyKey.MODE: LLMMode.CHAT.value,
-                ModelPropertyKey.CONTEXT_SIZE: 272000,
+                ModelPropertyKey.CONTEXT_SIZE: 400000,
             },
             parameter_rules=[
                 ParameterRule(
+                    name="max_completion_tokens",
+                    label=I18nObject(
+                        zh_Hans="最大生成 Token 数",
+                        en_US="Max Completion Tokens",
+                    ),
+                    type="int",
+                    help=I18nObject(
+                        zh_Hans="限制模型单次响应生成的最大 token 数。",
+                        en_US="Limit the maximum number of tokens generated in a single model response.",
+                    ),
+                    required=False,
+                    default=8192,
+                    precision=0,
+                    min=1,
+                    max=128000,
+                ),
+                ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(
+                        zh_Hans="回复格式",
+                        en_US="Response Format",
+                    ),
                     type="string",
                     help=I18nObject(
                         zh_Hans="指定模型必须输出的格式",
                         en_US="specifying the format that the model must output",
                     ),
                     required=False,
-                    options=["text", "json_object", "json_schema"],
+                    options=["text", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
@@ -1993,20 +2121,54 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(
+                        zh_Hans="推理努力程度",
+                        en_US="Reasoning Effort",
+                    ),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_Hans=(
+                            "约束推理模型的推理努力程度。支持的值包括minimal、low、medium和high。"
+                            "降低推理努力可以获得更快的响应和更少的推理token使用"
+                        ),
+                        en_US=(
+                            "Constrains effort on reasoning for reasoning models. "
+                            "Currently supported values are minimal, low, medium, and high. "
+                            "Reducing reasoning effort can result in faster responses and fewer tokens "
+                            "used on reasoning in a response"
+                        ),
                     ),
                     required=False,
+                    default="medium",
                     options=["minimal", "low", "medium", "high"],
                 ),
-                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(
+                        zh_Hans="详细程度",
+                        en_US="Verbosity",
+                    ),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans=(
+                            "约束模型响应的详细程度。较低的值将产生更简洁的响应，"
+                            "而较高的值将产生更详细的响应。支持的值包括low、medium和high"
+                        ),
+                        en_US=(
+                            "Constrains the verbosity of the model's response. "
+                            "Lower values will result in more concise responses, "
+                            "while higher values will result in more verbose responses. "
+                            "Currently supported values are low, medium, and high"
+                        ),
+                    ),
+                    required=False,
+                    default="medium",
+                    options=["low", "medium", "high"],
+                )
             ],
             pricing=PriceConfig(
-                input=0.05,
-                output=0.4,
+                input=1.25,
+                output=10.00,
                 unit=0.000001,
                 currency="USD",
             ),
@@ -2018,27 +2180,51 @@ LLM_BASE_MODELS = [
             model="fake-deployment-name",
             label=I18nObject(
                 en_US="fake-deployment-name-label",
+                zh_Hans="fake-deployment-name-label",  # 如果需要中文
             ),
             model_type=ModelType.LLM,
             features=[
                 ModelFeature.AGENT_THOUGHT,
+                ModelFeature.VISION,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
             ],
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
                 ModelPropertyKey.MODE: LLMMode.CHAT.value,
-                ModelPropertyKey.CONTEXT_SIZE: 128000,
+                ModelPropertyKey.CONTEXT_SIZE: 400000,
             },
             parameter_rules=[
                 ParameterRule(
+                    name="max_completion_tokens",
+                    label=I18nObject(
+                        zh_Hans="最大生成 Token 数",
+                        en_US="Max Completion Tokens",
+                    ),
+                    type="int",
+                    help=I18nObject(
+                        zh_Hans="限制模型单次响应生成的最大 token 数。",
+                        en_US="Limit the maximum number of tokens generated in a single model response.",
+                    ),
+                    required=False,
+                    default=8192,
+                    precision=0,
+                    min=1,
+                    max=128000,
+                ),
+                ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    label=I18nObject(
+                        zh_Hans="回复格式",
+                        en_US="Response Format",
+                    ),
                     type="string",
                     help=I18nObject(
                         zh_Hans="指定模型必须输出的格式",
                         en_US="specifying the format that the model must output",
                     ),
                     required=False,
-                    options=["text", "json_object", "json_schema"],
+                    options=["text", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
@@ -2052,20 +2238,54 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    label=I18nObject(
+                        zh_Hans="推理努力程度",
+                        en_US="Reasoning Effort",
+                    ),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
+                        zh_Hans=(
+                            "约束推理模型的推理努力程度。支持的值包括minimal、low、medium和high。"
+                            "降低推理努力可以获得更快的响应和更少的推理token使用"
+                        ),
+                        en_US=(
+                            "Constrains effort on reasoning for reasoning models. "
+                            "Currently supported values are minimal, low, medium, and high. "
+                            "Reducing reasoning effort can result in faster responses and fewer tokens "
+                            "used on reasoning in a response"
+                        ),
                     ),
                     required=False,
+                    default="medium",
                     options=["minimal", "low", "medium", "high"],
                 ),
-                _get_o1_max_tokens(default=4096, min_val=1, max_val=16384),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(
+                        zh_Hans="详细程度",
+                        en_US="Verbosity",
+                    ),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans=(
+                            "约束模型响应的详细程度。较低的值将产生更简洁的响应，"
+                            "而较高的值将产生更详细的响应。支持的值包括low、medium和high"
+                        ),
+                        en_US=(
+                            "Constrains the verbosity of the model's response. "
+                            "Lower values will result in more concise responses, "
+                            "while higher values will result in more verbose responses. "
+                            "Currently supported values are low, medium, and high"
+                        ),
+                    ),
+                    required=False,
+                    default="medium",
+                    options=["low", "medium", "high"],
+                )
             ],
             pricing=PriceConfig(
                 input=1.25,
-                output=10,
+                output=10.00,
                 unit=0.000001,
                 currency="USD",
             ),
