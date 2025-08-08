@@ -170,10 +170,10 @@ parameters:
       en_US: Backend type
       ja_JP: バックエンドタイプ
     human_description:
-      zh_Hans: '（用于本地部署v2版本）示例：pipeline、vlm，默认值为pipeline'
-      en_US: '(For local deployment v2) Example: pipeline, vlm, default is pipeline'
-      ja_JP: '（ローカルデプロイメントv2用）例：pipeline、vlm、デフォルトはpipeline'
-    llm_description: '(For local deployment v2) Example: pipeline, vlm, default is pipeline'
+      zh_Hans: '（用于本地部署v2版本）示例：pipeline、vlm-transformers、vlm-sglang-engine、vlm-sglang-client，默认值为pipeline'
+      en_US: '(For local deployment v2) Example: pipeline, vlm-transformers, vlm-sglang-engine, vlm-sglang-client, default is pipeline'
+      ja_JP: '（ローカルデプロイメントv2用）例：pipeline、vlm-transformers、vlm-sglang-engine、vlm-sglang-client、デフォルトはpipeline'
+    llm_description: '(For local deployment v2) Example: pipeline, vlm-transformers, vlm-sglang-engine, vlm-sglang-client, default is pipeline'
     form: form
 
 output_schema:
