@@ -5,7 +5,7 @@ import json
 import logging
 import math
 from collections.abc import Generator, Sequence
-from typing import Optional, Union, cast
+from typing import Optional, Union, cast, Any
 
 import tiktoken
 from PIL import Image
@@ -43,6 +43,8 @@ from ..common import _CommonAzureOpenAI
 from ..constants import LLM_BASE_MODELS
 
 logger = logging.getLogger(__name__)
+
+THINKING_SERIES_COMPATIBILITY = ("o", "gpt-5")
 
 
 class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
@@ -124,7 +126,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
         try:
             client = AzureOpenAI(**self._to_credential_kwargs(credentials))
-            if base_model_name.startswith(("o1", "o3", "o4", "gpt-5")):
+            if base_model_name.startswith(THINKING_SERIES_COMPATIBILITY):
                 client.chat.completions.create(
                     messages=[{"role": "user", "content": "ping"}],
                     model=model,
@@ -335,7 +337,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             base_model_name, prompt_messages
         )
         block_as_stream = False
-        if base_model_name.startswith(("o1", "o3", "o4")):
+        if base_model_name.startswith(THINKING_SERIES_COMPATIBILITY):
             # o1 and o1-* do not support streaming
             # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/reasoning#api--feature-support
             if base_model_name.startswith("o1"):
@@ -347,8 +349,9 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             if "stop" in extra_model_kwargs:
                 del extra_model_kwargs["stop"]
 
+        messages: Any = [self._convert_prompt_message_to_dict(m) for m in prompt_messages]
         response = client.chat.completions.create(
-            messages=[self._convert_prompt_message_to_dict(m) for m in prompt_messages],
+            messages=messages,
             model=model,
             stream=stream,
             **model_parameters,
