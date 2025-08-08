@@ -1816,8 +1816,8 @@ LLM_BASE_MODELS = [
                 _get_o1_max_tokens(default=512, min_val=1, max_val=100000),
             ],
             pricing=PriceConfig(
-                input=10,
-                output=40,
+                input=2,
+                output=8,
                 unit=0.000001,
                 currency="USD",
             ),
