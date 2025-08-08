@@ -174,13 +174,14 @@ model_credential_schema:
       en_US: Model Name
       zh_Hans: 模型名称
     placeholder:
-      en_US: Enter your custom model name
-      zh_Hans: 输入自定义模型名称
+      en_US: Enter your custom model name (auto-populated for inference profiles)
+      zh_Hans: 输入自定义模型名称（推理配置文件将自动填充）
+    help:
+      text:
+        en_US: For inference profiles, this will be auto-populated based on the inference profile name
+        zh_Hans: 对于推理配置文件，此字段将根据推理配置文件名称自动填充
   credential_form_schemas:
     - variable: inference_profile_id
-      show_on:
-        - variable: __model_type
-          value: llm
       label:
         en_US: Inference Profile ID
         zh_Hans: 推理配置文件 ID

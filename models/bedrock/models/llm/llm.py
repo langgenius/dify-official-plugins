@@ -54,6 +54,11 @@ from dify_plugin.errors.model import (
 from provider.get_bedrock_client import get_bedrock_client
 from .cache_config import is_cache_supported, get_cache_config
 from . import model_ids
+from utils.inference_profile import (
+    get_inference_profile_info,
+    validate_inference_profile,
+    extract_model_info_from_profile
+)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 logger = logging.getLogger(__name__)
@@ -158,21 +163,36 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
-        try:
-            model_info = self._get_model_info(model, credentials, model_parameters)
-            if model_info:
-                return self._generate_with_converse(
-                    model_info, credentials, prompt_messages, model_parameters, stop, stream, user, tools, model
-                )
-        except Exception as e:
-            logger.error(f"Failed to get model info: {str(e)}")
-            if credentials.get("inference_profile_id"):
-                raise InvokeError(f"Failed to invoke inference profile: {str(e)}")
-
-        # Fallback to traditional model ID for non-converse API models
-        model_name = model_parameters.get('model_name')
-        if not model_name:
-            raise InvokeError("Model name is required for non-converse API models")
+        # Check if this is an inference profile model
+        inference_profile_id = credentials.get("inference_profile_id")
+        if inference_profile_id:
+            # For inference profiles, we must use the converse API
+            try:
+                model_info = self._get_model_info(model, credentials, model_parameters)
+                if model_info:
+                    return self._generate_with_converse(
+                        model_info, credentials, prompt_messages, model_parameters, stop, stream, user, tools, model
+                    )
+                else:
+                    raise InvokeError(f"Could not get model information for inference profile {inference_profile_id}")
+            except Exception as e:
+                logger.error(f"Failed to invoke inference profile: {str(e)}")
+                raise InvokeError(f"Failed to invoke inference profile {inference_profile_id}: {str(e)}")
+        else:
+            # Traditional model - try converse API first, then fall back if needed
+            try:
+                model_info = self._get_model_info(model, credentials, model_parameters)
+                if model_info:
+                    return self._generate_with_converse(
+                        model_info, credentials, prompt_messages, model_parameters, stop, stream, user, tools, model
+                    )
+            except Exception as e:
+                logger.error(f"Failed to get model info: {str(e)}")
+            
+            # Fallback to traditional model ID for non-converse API models
+            model_name = model_parameters.get('model_name')
+            if not model_name:
+                raise InvokeError("Model name is required for non-converse API models")
 
         model_id = model_ids.get_model_id(model, model_name)
         return self._generate(model_id, credentials, prompt_messages, model_parameters, stop, stream, user)
@@ -189,7 +209,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         inference_profile_id = credentials.get("inference_profile_id")
         if inference_profile_id:
             # Get the full ARN from the profile ID
-            profile_info = self._get_inference_profile_info_direct(inference_profile_id, credentials)
+            profile_info = get_inference_profile_info(inference_profile_id, credentials)
             profile_arn = profile_info.get("inferenceProfileArn")
 
             if not profile_arn:
@@ -847,7 +867,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         if inference_profile_id:
             try:
                 # Get inference profile info from AWS directly
-                profile_info = self._get_inference_profile_info_direct(inference_profile_id, credentials)
+                profile_info = get_inference_profile_info(inference_profile_id, credentials)
                 
                 # Extract model name from profile
                 profile_name = profile_info.get("inferenceProfileName", model)
@@ -862,6 +882,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     "context_size": context_length,
                 }
                 underlying_models = profile_info.get("models", [])
+                
                 if underlying_models:
                     first_model_arn = underlying_models[0].get("modelArn", "")
                     if "foundation-model/" in first_model_arn:
@@ -871,6 +892,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                             if self._model_id_matches_schema(underlying_model_id, model_schema):
                                 default_pricing = model_schema.pricing
                                 matched_features = model_schema.features or []
+                                # Load parameter rules, excluding model_name since it's determined by inference profile
                                 matched_parameter_rules = [rule for rule in (model_schema.parameter_rules or [])
                                                            if rule.name in ['max_tokens', 'temperature', 'top_p', 'top_k',
                                                                             'reasoning_type', 'reasoning_budget']]
@@ -886,6 +908,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     if model_schemas:
                         default_pricing = model_schemas[0].pricing
                 
+                # Use the user-provided model name exactly as entered
                 # Create custom model entity based on inference profile
                 return AIModelEntity(
                     model=model,
@@ -899,13 +922,13 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 )
             except Exception as e:
                 logger.error(f"Failed to get inference profile schema: {str(e)}")
-                # Create fallback custom model entity with user's model name
+                # Create fallback custom model entity with inference profile name
                 context_length = int(credentials.get("context_length", 4096))
                 model_schemas = self.predefined_models()
                 default_pricing = model_schemas[0].pricing if model_schemas else None
                 fallback_parameter_rules = [rule for rule in (model_schemas[0].parameter_rules or [])
                                             if rule.name in ['max_tokens', 'temperature', 'top_p', 'top_k',
-                                                            'reasoning_type', 'reasoning_budget']]
+                                                            'reasoning_type', 'reasoning_budget']] if model_schemas else []
                 fallback_features = model_schemas[0].features if model_schemas else []
                 fallback_model_properties = {
                     "mode": LLMMode.CHAT,
@@ -930,27 +953,6 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         # This should not be reached for inference profile models, but keep as final fallback
         return None
 
-    def _get_inference_profile_info_direct(self, inference_profile_id: str, credentials: dict) -> dict:
-        """
-        Get inference profile information from Bedrock API directly
-        
-        :param inference_profile_id: inference profile identifier
-        :param credentials: credentials containing AWS access info
-        :return: inference profile information
-        """
-        try:
-            bedrock_client = get_bedrock_client("bedrock", credentials)
-            
-            # Call get-inference-profile API
-            response = bedrock_client.get_inference_profile(
-                inferenceProfileIdentifier=inference_profile_id
-            )
-            
-            return response
-            
-        except Exception as e:
-            logger.error(f"Failed to get inference profile info: {str(e)}")
-            raise e
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -965,7 +967,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             inference_profile_id = credentials.get("inference_profile_id")
             if inference_profile_id:
                 # Validate inference profile directly
-                self._validate_inference_profile_direct(inference_profile_id, credentials)
+                validate_inference_profile(inference_profile_id, credentials)
                 logger.info(f"Successfully validated inference profile: {inference_profile_id}")
                 return
             
@@ -980,37 +982,6 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
-    def _validate_inference_profile_direct(self, inference_profile_id: str, credentials: dict) -> None:
-        """
-        Validate inference profile by calling Bedrock API directly
-        
-        :param inference_profile_id: inference profile identifier
-        :param credentials: credentials containing AWS access info
-        """
-        try:
-            bedrock_client = get_bedrock_client("bedrock", credentials)
-            
-            # Call get-inference-profile API
-            response = bedrock_client.get_inference_profile(
-                inferenceProfileIdentifier=inference_profile_id
-            )
-            
-            # Check if profile is active
-            if response.get('status') != 'ACTIVE':
-                raise CredentialsValidateFailedError(f"Inference profile {inference_profile_id} is not active")
-                
-            logger.info(f"Successfully validated inference profile: {inference_profile_id}")
-            
-        except ClientError as e:
-            error_code = e.response['Error']['Code']
-            if error_code == 'ResourceNotFoundException':
-                raise CredentialsValidateFailedError(f"Inference profile {inference_profile_id} not found")
-            elif error_code == 'AccessDeniedException':
-                raise CredentialsValidateFailedError(f"Access denied to inference profile {inference_profile_id}")
-            else:
-                raise CredentialsValidateFailedError(f"Failed to validate inference profile: {str(e)}")
-        except Exception as e:
-            raise CredentialsValidateFailedError(f"Failed to validate inference profile: {str(e)}")
 
     def _list_foundation_models(self, credentials: dict) -> list[str]:
         """
