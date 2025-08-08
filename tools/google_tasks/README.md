@@ -16,23 +16,53 @@ This plugin integrates with Google Tasks, enabling you to list task lists, fetch
 
 ## Setup
 
-1) Create credentials in the Google Cloud Console:
-- Open the Google Cloud Console (`https://console.cloud.google.com`), go to “APIs & Services” > “Library”, search for and enable “Google Tasks API”.
-- Go to “APIs & Services” > “Credentials” > “Create credentials” > “OAuth client ID”.
-- Application type: “Web application”.
-- Add an authorized redirect URI:
-  - For Dify SaaS: `https://cloud.dify.ai/console/api/oauth/plugin/langgenius/google_tasks/google_tasks/tool/callback`
-  - For self-hosted Dify: `https://<YOUR_CONSOLE_API_HOST>/console/api/oauth/plugin/langgenius/google_tasks/google_tasks/tool/callback`
-    - If you are developing locally, you may use `http://localhost:<PORT>` as your console API host.
+1. Register your application in the [Google Cloud Console](https://console.developers.google.com/).
 
-2) On the OAuth consent screen, add test users if your app is not published.
+2. Create a new application as follows:
+    - **Project Name**: Dify Google Tasks Plugin
+    - **Enable APIs**: Go to "APIs & Services" > "Library", search for and enable "Google Tasks API"
 
-3) Copy your Client ID and Client Secret for use in Dify.
+    <p align="center">
+        <img src="_assets/enable_api.png" alt="Enable Google Tasks API" width="600" />
+    </p>
 
-4) Configure the plugin in Dify:
-- Open the plugin settings and fill in Client ID and Client Secret.
-- Click “Save and authorize” to complete the OAuth flow. The plugin will request the following scope: `https://www.googleapis.com/auth/tasks` (offline access with refresh).
+    - **Create Credentials**: Select "OAuth 2.0 Client ID"
 
+    <p align="center">
+        <img src="_assets/create_oauth_client.png" alt="Create OAuth Client" width="600" />
+    </p>
+
+    - **Application Type**: Choose "Web application"
+    - **Redirect URI**: Set the redirect URI to:
+        - For SaaS (cloud.dify.ai) users: please use `https://cloud.dify.ai/console/api/oauth/plugin/langgenius/google_tasks/google_tasks/tool/callback`
+        - For self-hosted users: please use `http://<YOUR_LOCALHOST_CONSOLE_API_URL>/console/api/oauth/plugin/langgenius/google_tasks/google_tasks/tool/callback`
+        ***Due to the restrictions of the Google OAuth2 flow, redirect URIs must start with `https://` or `http://localhost`.***
+
+
+
+3. Copy your **Application (client) ID**
+
+    <p align="center">
+        <img src="_assets/get_client_id.png" alt="Get Client ID" width="600" />
+    </p>
+
+4. Create a new client secret:
+    - **Description**: Dify Google Tasks Plugin Secret
+    - **Expires**: Whatever duration you prefer (e.g., 1 year, 2 years, etc.)
+    - Copy the generated **Value** of the client secret.
+
+5. Add a test user to the Google Tasks API:
+    - Go to "APIs & Services" > "Credentials" > "OAuth consent screen" > "Test Users"
+    - Add a test user with the email address you want to use for testing.
+
+    <p align="center">
+        <img src="_assets/add_test_user.png" alt="Add Test User" width="600" />
+    </p>
+
+6. Configure the plugin in Dify:
+    - Fill in the **Client ID** and **Client Secret** fields with the values you copied from the Google Cloud Console.
+    - Make sure you have the same redirect URI as specified in the Google Cloud Console. If not, you will need to update it in the Google Cloud Console.
+    - Click `Save and authorize` to initiate the OAuth flow.
 ## Available Tools
 
 ### list_tasklists
