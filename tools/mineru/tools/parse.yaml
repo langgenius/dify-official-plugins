@@ -35,10 +35,10 @@ parameters:
       zh_Hans: 解析方法
       ja_JP: 解析方法
     human_description:
-      en_US: Parsing method, can be auto, ocr, or txt. Default is auto. If results are not satisfactory, try ocr
-      zh_Hans: 解析方法，可以是auto, ocr, 或 txt。默认是auto。如果结果不理想，请尝试ocr
-      ja_JP: 解析方法は、auto、ocr、またはtxtのいずれかです。デフォルトはautoです。結果が満足できない場合は、ocrを試してください
-    llm_description: Parsing method, can be auto, ocr, or txt. Default is auto. If results are not satisfactory, try ocr
+      en_US: (For local deployment v1 and v2) Parsing method, can be auto, ocr, or txt. Default is auto. If results are not satisfactory, try ocr
+      zh_Hans: （用于本地部署v1和v2版本）解析方法，可以是auto, ocr, 或 txt。默认是auto。如果结果不理想，请尝试ocr
+      ja_JP: （ローカルデプロイメントv1とv2用）解析方法は、auto、ocr、またはtxtのいずれかです。デフォルトはautoです。結果が満足できない場合は、ocrを試してください
+    llm_description: (For local deployment v1 and v2) Parsing method, can be auto, ocr, or txt. Default is auto. If results are not satisfactory, try ocr
     form: form
     options:
       - value: auto
