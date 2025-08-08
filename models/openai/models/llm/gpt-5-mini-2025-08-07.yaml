@@ -61,6 +61,16 @@ parameter_rules:
       - low
       - medium
       - high
+  - name: enable_stream
+    label:
+      zh_Hans: 流式响应
+      en_US: Streaming
+    type: boolean
+    help:
+      zh_Hans: GPT-5 系列模型流式输出需要 KYC 验证，若想跳过这个限制使用模型，请关闭流式响应。
+      en_US: GPT-5 series models require KYC validation for streaming output, if you want to use the models without this limitation, please turn off streaming responses.
+    required: true
+    default: true
 pricing:
   input: '0.25'
   output: '2.00'
