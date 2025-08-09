@@ -1,0 +1,151 @@
+identity:
+  name: update_task
+  author: langgenius
+  label:
+    en_US: Update Task
+    zh_Hans: 更新任务
+    ja_JP: タスクを更新
+  icon: icon.svg
+
+description:
+  human:
+    en_US: Update an existing task in Google Tasks
+    zh_Hans: 更新 Google Tasks 中的现有任务
+    ja_JP: Google タスクの既存のタスクを更新
+  llm: Update an existing task's properties in Google Tasks
+
+parameters:
+  - name: task_id
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Task ID
+      zh_Hans: 任务 ID
+      ja_JP: タスク ID
+    human_description:
+      en_US: ID of the task to update
+      zh_Hans: 要更新的任务 ID
+      ja_JP: 更新するタスクの ID
+    llm_description: The ID of the task to update (required)
+
+  - name: tasklist_id
+    type: string
+    required: false
+    default: "@default"
+    form: llm
+    label:
+      en_US: Task List ID
+      zh_Hans: 任务列表 ID
+      ja_JP: タスクリスト ID
+    human_description:
+      en_US: ID of the task list containing the task
+      zh_Hans: 包含任务的任务列表 ID
+      ja_JP: タスクを含むタスクリストの ID
+    llm_description: Task list ID containing the task, use @default for the default task list
+
+  - name: title
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: New Title
+      zh_Hans: 新标题
+      ja_JP: 新しいタイトル
+    human_description:
+      en_US: New title for the task
+      zh_Hans: 任务的新标题
+      ja_JP: タスクの新しいタイトル
+    llm_description: New title for the task (leave empty to keep current title)
+
+  - name: notes
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: New Notes
+      zh_Hans: 新备注
+      ja_JP: 新しいノート
+    human_description:
+      en_US: New notes or description for the task
+      zh_Hans: 任务的新备注或描述
+      ja_JP: タスクの新しいメモまたは説明
+    llm_description: New notes for the task (leave empty to keep current notes)
+
+  - name: due_date
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: New Due Date
+      zh_Hans: 新截止日期
+      ja_JP: 新しい期限日
+    human_description:
+      en_US: New due date (YYYY-MM-DD or RFC 3339, empty string to remove)
+      zh_Hans: 新截止日期（YYYY-MM-DD 或 RFC 3339，留空（空字符串）表示移除）
+      ja_JP: 新しい期限日（YYYY-MM-DD または RFC 3339、空文字列で削除）
+    llm_description: New due date in YYYY-MM-DD or RFC 3339 format, use empty string to remove due date
+
+  - name: completed
+    type: boolean
+    required: false
+    form: llm
+    label:
+      en_US: Mark as Completed
+      zh_Hans: 标记为已完成
+      ja_JP: 完了としてマーク
+    human_description:
+      en_US: Whether to mark the task as completed
+      zh_Hans: 是否将任务标记为已完成
+      ja_JP: タスクを完了としてマークするかどうか
+    llm_description: Set to true to mark task as completed, false to mark as incomplete
+
+  - name: deleted
+    type: boolean
+    required: false
+    form: llm
+    label:
+      en_US: Mark as Deleted
+      zh_Hans: 标记为已删除
+      ja_JP: 削除としてマーク
+    human_description:
+      en_US: Whether to mark the task as deleted
+      zh_Hans: 是否将任务标记为已删除
+      ja_JP: タスクを削除としてマークするかどうか
+    llm_description: Set to true to mark task as deleted
+
+output_schema:
+  type: object
+  properties:
+    task:
+      type: object
+      description: Updated task object
+      properties:
+        id:
+          type: string
+          description: Task ID
+        title:
+          type: string
+          description: Task title
+        status:
+          type: string
+          description: Task status
+        notes:
+          type: string
+          description: Task notes
+        due:
+          type: string
+          description: Due date
+        completed:
+          type: string
+          description: Completion date
+    success:
+      type: boolean
+      description: Whether the task was updated successfully
+    message:
+      type: string
+      description: Success or error message
+
+extra:
+  python:
+    source: tools/update_task.py
