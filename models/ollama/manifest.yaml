@@ -1,5 +1,5 @@
 author: langgenius
-created_at: "2024-09-20T00:13:50.29298939-04:00"
+created_at: "2025-08-09T00:00:00.29298939-04:00"
 description:
   en_US: Ollama
 icon: icon_s_en.svg
@@ -32,4 +32,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.6
+version: 0.0.7
