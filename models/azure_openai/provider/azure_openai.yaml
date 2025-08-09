@@ -326,6 +326,18 @@ model_credential_schema:
               variable: __model_type
           value: whisper-1
         - label:
+            en_US: gpt-4o-transcribe
+          show_on:
+            - value: speech2text
+              variable: __model_type
+          value: gpt-4o-transcribe
+        - label:
+            en_US: gpt-4o-mini-transcribe
+          show_on:
+            - value: speech2text
+              variable: __model_type
+          value: gpt-4o-mini-transcribe
+        - label:
             en_US: tts-1
           show_on:
             - value: tts
@@ -337,6 +349,12 @@ model_credential_schema:
             - value: tts
               variable: __model_type
           value: tts-1-hd
+        - label:
+            en_US: gpt-4o-mini-tts
+          show_on:
+            - value: tts
+              variable: __model_type
+          value: gpt-4o-mini-tts
       placeholder:
         en_US: Enter your model version
         zh_Hans: 在此输入您的模型版本
