@@ -1,9 +1,12 @@
 description:
   human:
-    en_US: Generate a podcast audio file from a script with two alternating voices
-      using OpenAI's TTS service.
-    zh_Hans: 使用 OpenAI 的 TTS 服务，从包含两个交替声音的脚本生成播客音频文件。
-  llm: This tool converts a prepared podcast script into an audio file using OpenAI's
+    en_US: >-
+      Generate a podcast audio file from a script with two alternating voices using
+      OpenAI-based TTS service.
+    zh_Hans: >-
+      使用 OpenAI 基于 TTS 服务从脚本生成包含两位交替主持人音色的播客音频文件。
+  llm: >-
+    This tool converts a prepared podcast script into an audio file using OpenAI-based
     Text-to-Speech service, with two specified voices for alternating hosts.
 extra:
   python:
@@ -15,19 +18,23 @@ identity:
     zh_Hans: 播客音频生成器
   name: podcast_audio_generator
 parameters:
+
 - form: llm
   human_description:
-    en_US: A string containing alternating lines for two hosts, separated by newline
+    en_US: >-
+      A string containing alternating lines for two hosts, separated by newline
       characters.
     zh_Hans: 包含两位主持人交替台词的字符串，每行用换行符分隔。
   label:
     en_US: Podcast Script
     zh_Hans: 播客脚本
-  llm_description: A string representing the script, with alternating lines for two
-    hosts separated by newline characters.
+  llm_description: >-
+    A string representing the script, with alternating lines for two hosts
+    separated by newline characters.
   name: script
   required: true
   type: string
+
 - form: form
   human_description:
     en_US: The voice for the first host.
@@ -43,6 +50,18 @@ parameters:
       zh_Hans: Alloy
     value: alloy
   - label:
+      en_US: Ash
+      zh_Hans: Ash
+    value: ash
+  - label:
+      en_US: Ballad
+      zh_Hans: Ballad
+    value: ballad
+  - label:
+      en_US: Coral
+      zh_Hans: Coral
+    value: coral
+  - label:
       en_US: Echo
       zh_Hans: Echo
     value: echo
@@ -51,19 +70,24 @@ parameters:
       zh_Hans: Fable
     value: fable
   - label:
+      en_US: Nova
+      zh_Hans: Nova
+    value: nova
+  - label:
       en_US: Onyx
       zh_Hans: Onyx
     value: onyx
   - label:
-      en_US: Nova
-      zh_Hans: Nova
-    value: nova
+      en_US: Sage
+      zh_Hans: Sage
+    value: sage
   - label:
       en_US: Shimmer
       zh_Hans: Shimmer
     value: shimmer
   required: true
   type: select
+
 - form: form
   human_description:
     en_US: The voice for the second host.
@@ -79,6 +103,18 @@ parameters:
       zh_Hans: Alloy
     value: alloy
   - label:
+      en_US: Ash
+      zh_Hans: Ash
+    value: ash
+  - label:
+      en_US: Ballad
+      zh_Hans: Ballad
+    value: ballad
+  - label:
+      en_US: Coral
+      zh_Hans: Coral
+    value: coral
+  - label:
       en_US: Echo
       zh_Hans: Echo
     value: echo
@@ -87,16 +123,44 @@ parameters:
       zh_Hans: Fable
     value: fable
   - label:
+      en_US: Nova
+      zh_Hans: Nova
+    value: nova
+  - label:
       en_US: Onyx
       zh_Hans: Onyx
     value: onyx
   - label:
-      en_US: Nova
-      zh_Hans: Nova
-    value: nova
+      en_US: Sage
+      zh_Hans: Sage
+    value: sage
   - label:
       en_US: Shimmer
       zh_Hans: Shimmer
     value: shimmer
   required: true
   type: select
+
+- form: llm
+  human_description:
+    en_US: Instructions for the voice of Host 1, such as emotion or tone.
+    zh_Hans: 主持人1 的语音指令，例如情感或语调。
+  label:
+    en_US: Host 1 Instructions
+    zh_Hans: 主持人1 指令
+  llm_description: Instructions for the voice of Host 1, such as emotion or tone.
+  name: host1_instructions
+  required: false
+  type: string
+
+- form: llm
+  human_description:
+    en_US: Instructions for the voice of Host 2, such as emotion or tone.
+    zh_Hans: 主持人2 的语音指令，例如情感或语调。
+  label:
+    en_US: Host 2 Instructions
+    zh_Hans: 主持人2 指令
+  llm_description: Instructions for the voice of Host 2, such as emotion or tone.
+  name: host2_instructions
+  required: false
+  type: string
