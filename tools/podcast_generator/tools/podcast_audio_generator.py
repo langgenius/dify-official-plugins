@@ -20,6 +20,14 @@ class ToolParameterValidationError(Exception):
 
 class PodcastAudioGeneratorTool(Tool):
     @staticmethod
+    def _get_mime_type(output_format: str) -> str:
+        mime_types = {
+            "wav": "audio/wav",
+            "mp3": "audio/mpeg",
+        }
+        return mime_types.get(output_format, "audio/wav")
+
+    @staticmethod
     def _generate_silence(duration: float):
         silence = AudioSegment.silent(duration=int(duration * 1000))
         return silence
@@ -29,7 +37,7 @@ class PodcastAudioGeneratorTool(Tool):
             client: openai.OpenAI,
             model: str,
             line: str,
-            voice: Literal["alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer"],
+            voice: Literal["alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer", "verse"],
             instructions: str,
             index: int,
     ) -> tuple[int, Union[AudioSegment, str], Optional[AudioSegment]]:
@@ -56,6 +64,8 @@ class PodcastAudioGeneratorTool(Tool):
         host2_voice = tool_parameters.get("host2_voice")
         host1_instructions = tool_parameters.get("host1_instructions", "")
         host2_instructions = tool_parameters.get("host2_instructions", "")
+        channel_mode = tool_parameters.get("channel_mode", "mono")
+        output_format = tool_parameters.get("output_format", "wav")
         script_lines = [line for line in script.split("\n") if line.strip()]
         if not host1_voice or not host2_voice:
             raise ToolParameterValidationError("Host voices are required")
@@ -100,17 +110,30 @@ class PodcastAudioGeneratorTool(Tool):
                 if isinstance(audio, str):
                     yield self.create_text_message(audio)
                 audio_segments[index] = (audio, silence)
+
+        # combine audio segments into a single audio file
         combined_audio = AudioSegment.empty()
-        for i, (audio, silence) in enumerate(audio_segments):
-            if audio:
-                combined_audio += audio
-                if i < len(audio_segments) - 1 and silence:
-                    combined_audio += silence
+        if channel_mode == "stereo":
+            for i, (audio, silence) in enumerate(audio_segments):
+                if audio:
+                    pan_value = -0.2 if i % 2 == 0 else 0.2
+                    stereo_audio = audio.set_channels(2).pan(pan_value)
+                    combined_audio += stereo_audio
+                    if i < len(audio_segments) - 1 and silence:
+                        combined_audio += silence.set_channels(2)
+        else:
+            for i, (audio, silence) in enumerate(audio_segments):
+                if audio:
+                    combined_audio += audio
+                    if i < len(audio_segments) - 1 and silence:
+                        combined_audio += silence
+
+        # export combined audio to bytes
         buffer = io.BytesIO()
-        combined_audio.export(buffer, format="wav")
-        wav_bytes = buffer.getvalue()
+        combined_audio.export(buffer, format=output_format)
+        blob_bytes = buffer.getvalue()
         for resp in [
             self.create_text_message("Audio generated successfully"),
-            self.create_blob_message(blob=wav_bytes, meta={"mime_type": "audio/x-wav"}),
+            self.create_blob_message(blob=blob_bytes, meta={"mime_type": self._get_mime_type(output_format)}),
         ]:
             yield resp

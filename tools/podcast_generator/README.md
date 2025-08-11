@@ -37,7 +37,10 @@ The **Podcast Audio Generator** action converts your text script into a podcast 
 2. **Select Host Voices**
    Choose a voice for **Host 1** and **Host 2** from the available options. These voices will be used to narrate the respective lines in the script.  
    Optionally, you can also specify the **Instructions** for each host to guide the tone or style of their narration.
-3. **Generate the Podcast Audio**
+3. **Select Output Format**
+   By default, the output format is monaural WAV audio. You can select `mono` or `stereo` in the **Channel Mode** field, and specify `WAV` or `MP3` as the output format in the **Output Format** field.  
+   If you select `stereo` mode, Host 1's voice is positioned slightly to the left, while Host 2's voice is positioned slightly to the right.
+4. **Generate the Podcast Audio**
    Once the script and voices are set, run the action to create your podcast audio file. The result will combine the two voices, alternating as per the script.
 
 ![](./_assets/podcast_generator-02.png)

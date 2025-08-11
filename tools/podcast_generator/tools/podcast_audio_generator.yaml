@@ -47,44 +47,37 @@ parameters:
   options:
   - label:
       en_US: Alloy
-      zh_Hans: Alloy
     value: alloy
   - label:
       en_US: Ash
-      zh_Hans: Ash
     value: ash
   - label:
       en_US: Ballad
-      zh_Hans: Ballad
     value: ballad
   - label:
       en_US: Coral
-      zh_Hans: Coral
     value: coral
   - label:
       en_US: Echo
-      zh_Hans: Echo
     value: echo
   - label:
       en_US: Fable
-      zh_Hans: Fable
     value: fable
   - label:
       en_US: Nova
-      zh_Hans: Nova
     value: nova
   - label:
       en_US: Onyx
-      zh_Hans: Onyx
     value: onyx
   - label:
       en_US: Sage
-      zh_Hans: Sage
     value: sage
   - label:
       en_US: Shimmer
-      zh_Hans: Shimmer
     value: shimmer
+  - label:
+      en_US: Verse
+    value: verse
   required: true
   type: select
 
@@ -100,44 +93,37 @@ parameters:
   options:
   - label:
       en_US: Alloy
-      zh_Hans: Alloy
     value: alloy
   - label:
       en_US: Ash
-      zh_Hans: Ash
     value: ash
   - label:
       en_US: Ballad
-      zh_Hans: Ballad
     value: ballad
   - label:
       en_US: Coral
-      zh_Hans: Coral
     value: coral
   - label:
       en_US: Echo
-      zh_Hans: Echo
     value: echo
   - label:
       en_US: Fable
-      zh_Hans: Fable
     value: fable
   - label:
       en_US: Nova
-      zh_Hans: Nova
     value: nova
   - label:
       en_US: Onyx
-      zh_Hans: Onyx
     value: onyx
   - label:
       en_US: Sage
-      zh_Hans: Sage
     value: sage
   - label:
       en_US: Shimmer
-      zh_Hans: Shimmer
     value: shimmer
+  - label:
+      en_US: Verse
+    value: verse
   required: true
   type: select
 
@@ -164,3 +150,43 @@ parameters:
   name: host2_instructions
   required: false
   type: string
+
+- form: form
+  human_description:
+    en_US: Mono or stereo output.
+    zh_Hans: 单声道或立体声输出。
+  label:
+    en_US: Channel Mode
+    zh_Hans: 声道模式
+  llm_description: The channel mode for the output audio file.
+  name: channel_mode
+  options:
+  - label:
+      en_US: Mono
+    value: mono
+  - label:
+      en_US: Stereo
+    value: stereo
+  required: false
+  default: mono
+  type: select
+
+- form: form
+  human_description:
+    en_US: The output audio format.
+    zh_Hans: 输出音频格式。
+  label:
+    en_US: Output Format
+    zh_Hans: 输出格式
+  llm_description: The format of the output audio file.
+  name: output_format
+  options:
+  - label:
+      en_US: WAV
+    value: wav
+  - label:
+      en_US: MP3
+    value: mp3
+  required: false
+  default: wav
+  type: select
