@@ -143,7 +143,10 @@ parameters:
     form: llm
 
 output_schema:
-    $ref: "#/$defs/parent_child_structure_chunk"
+  type: object
+  properties:
+    result:
+      $ref: "#/$defs/parent_child_structure_chunk"
 extra:
   python:
     source: tools/parent_child_chunk.py
