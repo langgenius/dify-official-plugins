@@ -7,7 +7,7 @@ identity:
     en_US: Connect to Front API to send emails and manage conversations
     ja_JP: Front API に接続してメールの送信と会話の管理を行います
     zh_Hans: 连接到 Front API 发送邮件和管理对话
-  icon: icon.svg
+  icon: icon.png
   label:
     en_US: Front
     ja_JP: Front

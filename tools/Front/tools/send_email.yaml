@@ -5,7 +5,7 @@ identity:
     en_US: Send Email
     zh_Hans: 发送邮件
     ja_JP: メール送信
-  icon: icon.svg
+  icon: icon.png
 
 description:
   human:

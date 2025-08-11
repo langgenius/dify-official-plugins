@@ -5,7 +5,7 @@ identity:
     en_US: Find Conversations
     zh_Hans: 查找对话
     ja_JP: 会話を検索
-  icon: icon.svg
+  icon: icon.png
 
 description:
   human:

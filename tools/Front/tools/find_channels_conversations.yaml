@@ -5,7 +5,7 @@ identity:
     en_US: Find Channels & Conversations
     zh_Hans: 查找频道和对话
     ja_JP: チャンネルと会話を検索
-  icon: icon.svg
+  icon: icon.png
 
 description:
   human:
