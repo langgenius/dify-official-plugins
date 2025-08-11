@@ -5,7 +5,7 @@ description:
   pt_BR: QA chunking mode.
   zh_Hans: QA 分块模式。
 
-icon: icon.png
+icon: icon.svg
 label:
   en_US: QAChunk
   pt_BR: QAChunk

@@ -1,35 +1,9 @@
-<?xml version="1.0"?>
-<svg width="40" height="40" xmlns="http://www.w3.org/2000/svg" xmlns:svg="http://www.w3.org/2000/svg">
- <defs>
-  <filter color-interpolation-filters="sRGB" filterUnits="userSpaceOnUse" height="40" id="filter0_dd_9200_31286" width="40" x="0" y="0">
-   <feFlood flood-opacity="0" result="BackgroundImageFix"/>
-   <feColorMatrix in="SourceAlpha" result="hardAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"/>
-   <feMorphology in="SourceAlpha" operator="erode" radius="2"/>
-   <feOffset dy="2"/>
-   <feGaussianBlur stdDeviation="2"/>
-   <feComposite in2="hardAlpha" operator="out"/>
-   <feColorMatrix type="matrix" values="0 0 0 0 0.0352941 0 0 0 0 0.0352941 0 0 0 0 0.0431373 0 0 0 0.06 0"/>
-   <feBlend in2="BackgroundImageFix"/>
-   <feColorMatrix in="SourceAlpha" result="hardAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0"/>
-   <feMorphology in="SourceAlpha" operator="erode" radius="2"/>
-   <feOffset dy="3"/>
-   <feGaussianBlur stdDeviation="5"/>
-   <feComposite in2="hardAlpha" operator="out"/>
-   <feColorMatrix type="matrix" values="0 0 0 0 0.0352941 0 0 0 0 0.0352941 0 0 0 0 0.0431373 0 0 0 0.08 0"/>
-   <feBlend in2="effect1_dropShadow_9200_31286"/>
-   <feBlend in="SourceGraphic" in2="effect2_dropShadow_9200_31286"/>
-  </filter>
- </defs>
- <g class="layer">
-  <title>Layer 1</title>
-  <g filter="url(#filter0_dd_9200_31286)" id="svg_1">
-   <rect fill="#444CE7" height="40" id="svg_2" rx="8" width="40" x="0" y="0"/>
-   <path clip-rule="evenodd" d="m25,12.22c0,-0.92 0.75,-1.67 1.67,-1.67l3.33,0c0.92,0 1.67,0.75 1.67,1.67c0,0.93 -0.75,1.67 -1.67,1.67l-3.33,0c-0.92,0 -1.67,-0.73 -1.67,-1.67z" fill="white" fill-rule="evenodd" id="svg_4"/>
-   <path clip-rule="evenodd" d="m8.33,12.22c0,-0.92 0.75,-1.67 1.67,-1.67l11.12,0c0.92,0 1.67,0.75 1.67,1.67c0,0.93 -0.75,1.67 -1.67,1.67l-11.12,0c-0.92,0 -1.67,-0.73 -1.67,-1.67z" fill="white" fill-rule="evenodd" id="svg_5"/>
-   <path clip-rule="evenodd" d="m8.33,20c0,-0.92 0.75,-1.67 1.67,-1.67l3.33,0c0.92,0 1.67,0.75 1.67,1.67c0,0.92 -0.75,1.67 -1.67,1.67l-3.33,0c-0.92,0 -1.67,-0.75 -1.67,-1.67z" fill="white" fill-rule="evenodd" id="svg_6"/>
-   <path clip-rule="evenodd" d="m17.22,20c0,-0.92 0.75,-1.67 1.67,-1.67l11.12,0c0.92,0 1.67,0.75 1.67,1.67c0,0.92 -0.75,1.67 -1.67,1.67l-11.12,0c-0.92,0 -1.67,-0.75 -1.67,-1.67z" fill="white" fill-rule="evenodd" id="svg_7"/>
-   <path clip-rule="evenodd" d="m25,27.78c0,-0.93 0.75,-1.67 1.67,-1.67l3.33,0c0.92,0 1.67,0.73 1.67,1.67c0,0.92 -0.75,1.67 -1.67,1.67l-3.33,0c-0.92,0 -1.67,-0.75 -1.67,-1.67z" fill="white" fill-rule="evenodd" id="svg_8"/>
-   <path clip-rule="evenodd" d="m8.33,27.78c0,-0.93 0.75,-1.67 1.67,-1.67l11.12,0c0.92,0 1.67,0.73 1.67,1.67c0,0.92 -0.75,1.67 -1.67,1.67l-11.12,0c-0.92,0 -1.67,-0.75 -1.67,-1.67z" fill="white" fill-rule="evenodd" id="svg_9"/>
-  </g>
- </g>
+<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+<rect width="40" height="40" fill="#444CE7"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M25 12.2221C25 11.3016 25.7462 10.5554 26.6667 10.5554H30C30.9205 10.5554 31.6667 11.3016 31.6667 12.2221C31.6667 13.1426 30.9205 13.8888 30 13.8888H26.6667C25.7462 13.8888 25 13.1426 25 12.2221Z" fill="white"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M8.33337 12.2221C8.33337 11.3016 9.07957 10.5554 10 10.5554H21.1112C22.0316 10.5554 22.7778 11.3016 22.7778 12.2221C22.7778 13.1426 22.0316 13.8888 21.1112 13.8888H10C9.07957 13.8888 8.33337 13.1426 8.33337 12.2221Z" fill="white"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M8.33337 19.9999C8.33337 19.0794 9.07957 18.3332 10 18.3332H13.3334C14.2538 18.3332 15 19.0794 15 19.9999C15 20.9203 14.2538 21.6665 13.3334 21.6665H10C9.07957 21.6665 8.33337 20.9203 8.33337 19.9999Z" fill="white"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M17.2223 19.9999C17.2223 19.0794 17.9685 18.3332 18.8889 18.3332H30C30.9205 18.3332 31.6667 19.0794 31.6667 19.9999C31.6667 20.9203 30.9205 21.6665 30 21.6665H18.8889C17.9685 21.6665 17.2223 20.9203 17.2223 19.9999Z" fill="white"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M25 27.7776C25 26.8572 25.7462 26.111 26.6667 26.111H30C30.9205 26.111 31.6667 26.8572 31.6667 27.7776C31.6667 28.6981 30.9205 29.4443 30 29.4443H26.6667C25.7462 29.4443 25 28.6981 25 27.7776Z" fill="white"/>
+<path fill-rule="evenodd" clip-rule="evenodd" d="M8.33337 27.7776C8.33337 26.8572 9.07957 26.111 10 26.111H21.1112C22.0316 26.111 22.7778 26.8572 22.7778 27.7776C22.7778 28.6981 22.0316 29.4443 21.1112 29.4443H10C9.07957 29.4443 8.33337 28.6981 8.33337 27.7776Z" fill="white"/>
 </svg>
