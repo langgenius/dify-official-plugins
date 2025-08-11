@@ -1816,8 +1816,8 @@ LLM_BASE_MODELS = [
                 _get_o1_max_tokens(default=512, min_val=1, max_val=100000),
             ],
             pricing=PriceConfig(
-                input=10,
-                output=40,
+                input=2,
+                output=8,
                 unit=0.000001,
                 currency="USD",
             ),
@@ -1841,7 +1841,7 @@ LLM_BASE_MODELS = [
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
                 ModelPropertyKey.MODE: LLMMode.CHAT.value,
-                ModelPropertyKey.CONTEXT_SIZE: 400000,
+                ModelPropertyKey.CONTEXT_SIZE: 272000,
             },
             parameter_rules=[
                 ParameterRule(
@@ -1874,9 +1874,9 @@ LLM_BASE_MODELS = [
                         en_US="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
-                    options=["low", "medium", "high"],
+                    options=["minimal", "low", "medium", "high"],
                 ),
-                _get_o1_max_tokens(default=512, min_val=1, max_val=128000),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
             ],
             pricing=PriceConfig(
                 input=1.25,
@@ -1904,7 +1904,7 @@ LLM_BASE_MODELS = [
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
                 ModelPropertyKey.MODE: LLMMode.CHAT.value,
-                ModelPropertyKey.CONTEXT_SIZE: 400000,
+                ModelPropertyKey.CONTEXT_SIZE: 272000,
             },
             parameter_rules=[
                 ParameterRule(
@@ -1937,9 +1937,9 @@ LLM_BASE_MODELS = [
                         en_US="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
-                    options=["low", "medium", "high"],
+                    options=["minimal", "low", "medium", "high"],
                 ),
-                _get_o1_max_tokens(default=512, min_val=1, max_val=128000),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
             ],
             pricing=PriceConfig(
                 input=0.25,
@@ -1967,7 +1967,7 @@ LLM_BASE_MODELS = [
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
                 ModelPropertyKey.MODE: LLMMode.CHAT.value,
-                ModelPropertyKey.CONTEXT_SIZE: 400000,
+                ModelPropertyKey.CONTEXT_SIZE: 272000,
             },
             parameter_rules=[
                 ParameterRule(
@@ -2000,9 +2000,9 @@ LLM_BASE_MODELS = [
                         en_US="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
-                    options=["low", "medium", "high"],
+                    options=["minimal", "low", "medium", "high"],
                 ),
-                _get_o1_max_tokens(default=512, min_val=1, max_val=128000),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
             ],
             pricing=PriceConfig(
                 input=0.05,
@@ -2022,12 +2022,11 @@ LLM_BASE_MODELS = [
             model_type=ModelType.LLM,
             features=[
                 ModelFeature.AGENT_THOUGHT,
-                ModelFeature.VISION,
             ],
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
                 ModelPropertyKey.MODE: LLMMode.CHAT.value,
-                ModelPropertyKey.CONTEXT_SIZE: 400000,
+                ModelPropertyKey.CONTEXT_SIZE: 128000,
             },
             parameter_rules=[
                 ParameterRule(
@@ -2060,9 +2059,9 @@ LLM_BASE_MODELS = [
                         en_US="constrains effort on reasoning for reasoning models",
                     ),
                     required=False,
-                    options=["low", "medium", "high"],
+                    options=["minimal", "low", "medium", "high"],
                 ),
-                _get_o1_max_tokens(default=512, min_val=1, max_val=128000),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=16384),
             ],
             pricing=PriceConfig(
                 input=1.25,
@@ -2297,7 +2296,33 @@ SPEECH2TEXT_BASE_MODELS = [
                 ModelPropertyKey.SUPPORTED_FILE_EXTENSIONS: "flac,mp3,mp4,mpeg,mpga,m4a,ogg,wav,webm",
             },
         ),
-    )
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-4o-transcribe",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(en_US="fake-deployment-name-label"),
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_type=ModelType.SPEECH2TEXT,
+            model_properties={
+                ModelPropertyKey.FILE_UPLOAD_LIMIT: 25,
+                ModelPropertyKey.SUPPORTED_FILE_EXTENSIONS: "flac,mp3,mp4,mpeg,mpga,m4a,ogg,wav,webm",
+            },
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-4o-mini-transcribe",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(en_US="fake-deployment-name-label"),
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_type=ModelType.SPEECH2TEXT,
+            model_properties={
+                ModelPropertyKey.FILE_UPLOAD_LIMIT: 25,
+                ModelPropertyKey.SUPPORTED_FILE_EXTENSIONS: "flac,mp3,mp4,mpeg,mpga,m4a,ogg,wav,webm",
+            },
+        ),
+    ),
 ]
 TTS_BASE_MODELS = [
     AzureBaseModel(
@@ -2507,6 +2532,179 @@ TTS_BASE_MODELS = [
             },
             pricing=PriceConfig(
                 input=0.03,
+                unit=0.001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-4o-mini-tts",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(en_US="fake-deployment-name-label"),
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_type=ModelType.TTS,
+            model_properties={
+                ModelPropertyKey.DEFAULT_VOICE: "alloy",
+                ModelPropertyKey.VOICES: [
+                    {
+                        "mode": "alloy",
+                        "name": "Alloy",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "ash",
+                        "name": "Ash",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "ballad",
+                        "name": "Ballad",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "coral",
+                        "name": "Coral",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "echo",
+                        "name": "Echo",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "fable",
+                        "name": "Fable",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "nova",
+                        "name": "Nova",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "onyx",
+                        "name": "Onyx",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "sage",
+                        "name": "Sage",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "shimmer",
+                        "name": "Shimmer",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                ],
+                ModelPropertyKey.WORD_LIMIT: 120,
+                ModelPropertyKey.AUDIO_TYPE: "mp3",
+                ModelPropertyKey.MAX_WORKERS: 5,
+            },
+            pricing=PriceConfig(
+                input=0.0006,
+                output=0.012,
                 unit=0.001,
                 currency="USD",
             ),

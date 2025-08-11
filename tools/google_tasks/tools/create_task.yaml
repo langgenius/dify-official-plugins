@@ -1,0 +1,134 @@
+identity:
+  name: create_task
+  author: langgenius
+  label:
+    en_US: Create Task
+    zh_Hans: 创建任务
+    ja_JP: タスクを作成
+  icon: icon.svg
+
+description:
+  human:
+    en_US: Create a new task in Google Tasks
+    zh_Hans: 在 Google Tasks 中创建新任务
+    ja_JP: Google タスクで新しいタスクを作成
+  llm: Create a new task in a specific Google Tasks list
+
+parameters:
+  - name: title
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Task Title
+      zh_Hans: 任务标题
+      ja_JP: タスクタイトル
+    human_description:
+      en_US: Title of the task
+      zh_Hans: 任务的标题
+      ja_JP: タスクのタイトル
+    llm_description: The title of the task to create (required)
+
+  - name: tasklist_id
+    type: string
+    required: false
+    default: "@default"
+    form: llm
+    label:
+      en_US: Task List ID
+      zh_Hans: 任务列表 ID
+      ja_JP: タスクリスト ID
+    human_description:
+      en_US: ID of the task list (use @default for default list)
+      zh_Hans: 任务列表的 ID（使用 @default 表示默认列表）
+      ja_JP: タスクリストの ID（デフォルトリストには @default を使用）
+    llm_description: Task list ID where to create the task, use @default for the default task list
+
+  - name: notes
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Task Notes
+      zh_Hans: 任务备注
+      ja_JP: タスクノート
+    human_description:
+      en_US: Additional notes or description for the task
+      zh_Hans: 任务的附加备注或描述
+      ja_JP: タスクの追加メモまたは説明
+    llm_description: Optional notes or description for the task
+
+  - name: due_date
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Due Date
+      zh_Hans: 截止日期
+      ja_JP: 期限日
+    human_description:
+      en_US: Due date for the task (YYYY-MM-DD or RFC 3339 format)
+      zh_Hans: 任务的截止日期（YYYY-MM-DD 或 RFC 3339 格式）
+      ja_JP: タスクの期限日（YYYY-MM-DD または RFC 3339 形式）
+    llm_description: Due date for the task in YYYY-MM-DD or RFC 3339 format
+
+  - name: parent_task_id
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Parent Task ID
+      zh_Hans: 父任务 ID
+      ja_JP: 親タスク ID
+    human_description:
+      en_US: ID of the parent task (for creating subtasks)
+      zh_Hans: 父任务的 ID（用于创建子任务）
+      ja_JP: 親タスクの ID（サブタスクを作成する場合）
+    llm_description: Parent task ID if creating a subtask
+
+  - name: previous_task_id
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Previous Task ID
+      zh_Hans: 前一个任务 ID
+      ja_JP: 前のタスク ID
+    human_description:
+      en_US: ID of the task to insert this task after
+      zh_Hans: 用于指定插入位置的前一个任务 ID（新任务将插入在其后）
+      ja_JP: この新しいタスクを挿入する位置の前のタスク ID
+    llm_description: ID of the task to insert this new task after
+
+output_schema:
+  type: object
+  properties:
+    task:
+      type: object
+      description: Created task object
+      properties:
+        id:
+          type: string
+          description: Task ID
+        title:
+          type: string
+          description: Task title
+        status:
+          type: string
+          description: Task status
+        notes:
+          type: string
+          description: Task notes
+        due:
+          type: string
+          description: Due date
+    success:
+      type: boolean
+      description: Whether the task was created successfully
+    message:
+      type: string
+      description: Success or error message
+
+extra:
+  python:
+    source: tools/create_task.py
