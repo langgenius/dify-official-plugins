@@ -1,15 +1,16 @@
-model: gpt-3.5-turbo-16k-0613
+model: gpt-4o
 label:
-  zh_Hans: gpt-3.5-turbo-16k-0613
-  en_US: gpt-3.5-turbo-16k-0613
+  zh_Hans: GPT-4o
+  en_US: GPT-4o
 model_type: llm
 features:
   - multi-tool-call
   - agent-thought
   - stream-tool-call
+  - vision
 model_properties:
   mode: chat
-  context_size: 16385
+  context_size: 128000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -21,13 +22,13 @@ parameter_rules:
     use_template: frequency_penalty
   - name: max_tokens
     use_template: max_tokens
-    default: 512
+    default: 4096
     min: 1
-    max: 16385
+    max: 16384
   - name: response_format
     use_template: response_format
 pricing:
-  input: '0.003'
-  output: '0.004'
+  input: '0.005'
+  output: '0.015'
   unit: '0.001'
   currency: USD

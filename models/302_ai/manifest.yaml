@@ -1,7 +1,7 @@
 version: 0.0.1
 type: plugin
 author: 302ai
-name: 302_ai
+name: ai_302
 label:
   en_US: 302_ai
   ja_JP: 302_ai
@@ -27,7 +27,7 @@ resource:
       moderation: false
 plugins:
   models:
-    - provider/302_ai.yaml
+    - provider/ai_302.yaml
 meta:
   version: 0.0.1
   arch:

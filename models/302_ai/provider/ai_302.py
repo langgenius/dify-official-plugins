@@ -8,7 +8,7 @@ from dify_plugin.errors.model import CredentialsValidateFailedError
 logger = logging.getLogger(__name__)
 
 
-class 302AiModelProvider(ModelProvider):
+class Ai302ModelProvider(ModelProvider):
     def validate_provider_credentials(self, credentials: Mapping) -> None:
         """
         Validate provider credentials
@@ -17,11 +17,15 @@ class 302AiModelProvider(ModelProvider):
         :param credentials: provider credentials, credentials form defined in `provider_credential_schema`.
         """
         try:
-            pass
+            model_instance = self.get_model_instance(ModelType.LLM)
+            model_instance.validate_credentials(
+                model="deepseek-chat",
+                credentials=credentials
+            )
         except CredentialsValidateFailedError as ex:
             raise ex
         except Exception as ex:
             logger.exception(
                 f"{self.get_provider_schema().provider} credentials validate failed"
             )
-            raise ex
+            raise CredentialsValidateFailedError(str(ex))
