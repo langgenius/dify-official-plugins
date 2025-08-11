@@ -41,6 +41,12 @@ parameter_rules:
     label:
       zh_Hans: 推理模式
       en_US: Thinking Mode
+    type: boolean
+    default: false
+    required: false
+    help:
+      zh_Hans: 控制模型的推理能力。
+      en_US: Controls the model's thinking capability.
   - name: response_format
     label:
       zh_Hans: 回复格式
