@@ -27,12 +27,20 @@ class PodcastAudioGeneratorTool(Tool):
     @staticmethod
     def _generate_audio_segment(
             client: openai.OpenAI,
+            model: str,
             line: str,
-            voice: Literal["alloy", "echo", "fable", "onyx", "nova", "shimmer"],
+            voice: Literal["alloy", "ash", "ballad", "coral", "echo", "fable", "nova", "onyx", "sage", "shimmer"],
+            instructions: str,
             index: int,
     ) -> tuple[int, Union[AudioSegment, str], Optional[AudioSegment]]:
         try:
-            response = client.audio.speech.create(model="tts-1", voice=voice, input=line.strip(), response_format="wav")
+            response = client.audio.speech.create(
+                model=model,
+                voice=voice,
+                instructions=instructions,
+                input=line.strip(),
+                response_format="wav"
+            )
             audio = AudioSegment.from_wav(io.BytesIO(response.content))
             silence_duration = random.uniform(0.1, 1.5)
             silence = PodcastAudioGeneratorTool._generate_silence(silence_duration)
@@ -46,23 +54,45 @@ class PodcastAudioGeneratorTool(Tool):
         script = tool_parameters.get("script", "")
         host1_voice = tool_parameters.get("host1_voice")
         host2_voice = tool_parameters.get("host2_voice")
+        host1_instructions = tool_parameters.get("host1_instructions", "")
+        host2_instructions = tool_parameters.get("host2_instructions", "")
         script_lines = [line for line in script.split("\n") if line.strip()]
         if not host1_voice or not host2_voice:
             raise ToolParameterValidationError("Host voices are required")
         if not self.runtime or not self.runtime.credentials:
             raise ToolProviderCredentialValidationError("Tool runtime or credentials are missing")
+
+        # initialize client based on TTS service
+        tts_service = self.runtime.credentials.get("tts_service")
+        if not tts_service:
+            raise ToolProviderCredentialValidationError("TTS service is not specified")
         api_key = self.runtime.credentials.get("api_key")
-        if not api_key:
-            raise ToolProviderCredentialValidationError("OpenAI API key is missing")
         openai_base_url = self.runtime.credentials.get("openai_base_url", None)
-        openai_base_url = str(URL(openai_base_url) / "v1") if openai_base_url else None
-        client = openai.OpenAI(api_key=api_key, base_url=openai_base_url)
+        model = self.runtime.credentials.get("model", None)
+        if tts_service == "openai":
+            if not api_key:
+                raise ToolProviderCredentialValidationError("OpenAI API key is missing")
+            openai_base_url = str(URL(openai_base_url) / "v1") if openai_base_url else None
+            if not model:
+                model = "tts-1"
+            client = openai.OpenAI(api_key=api_key, base_url=openai_base_url)
+        elif tts_service == "azure_openai":
+            if not api_key:
+                raise ToolProviderCredentialValidationError("Azure OpenAI API key is missing")
+            if not openai_base_url:
+                raise ToolProviderCredentialValidationError("API Base URL is required for Azure OpenAI")
+            if not model:
+                raise ToolProviderCredentialValidationError("Model is required for Azure OpenAI")
+            client = openai.AzureOpenAI(api_key=api_key, api_version="2025-04-01-preview", azure_endpoint=openai_base_url)
+
+        # generate audio segments for each line in the script
         max_workers = 5
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
             for i, line in enumerate(script_lines):
                 voice = host1_voice if i % 2 == 0 else host2_voice
-                future = executor.submit(self._generate_audio_segment, client, line, voice, i)
+                instructions = host1_instructions if i % 2 == 0 else host2_instructions
+                future = executor.submit(self._generate_audio_segment, client, model, line, voice, instructions, i)
                 futures.append(future)
             audio_segments: list[Any] = [None] * len(script_lines)
             for future in concurrent.futures.as_completed(futures):
