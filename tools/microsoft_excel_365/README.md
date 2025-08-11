@@ -1,56 +1,68 @@
-# Microsoft Excel 365 Dify Plugin
+# Microsoft Excel 365 Plugin
 
-This Dify plugin provides integration with Microsoft Excel 365 through OAuth authentication, enabling spreadsheet operations via Microsoft Graph API.
+**Author**: langgenius  
+**Version**: 0.1.0  
+**Type**: tool  
+
+## Introduction
+
+This plugin integrates with Microsoft Excel 365, supporting comprehensive spreadsheet operations through Microsoft Graph API. It enables automated management of Excel workbooks and worksheets in platforms like Dify, allowing you to read, write, and manipulate Excel data seamlessly.
 
 ## Features
 
-The plugin supports the following Excel operations:
+This plugin supports comprehensive Excel 365 operations including:
 
-### 📊 Workbook Operations
-- **List Workbooks**: Browse all Excel workbooks in OneDrive/SharePoint
-- **Search Workbooks**: Filter workbooks by name or folder
+- **File Management**: List all files and folders in OneDrive with filtering options
+- **Workbook Management**: List, browse and search Excel workbooks in OneDrive/SharePoint
+- **Worksheet Operations**: Create, list and manage worksheets within workbooks
+- **Data Reading**: Read cell values from specified ranges with flexible range selection
+- **Data Writing**: Update or insert data into cells with 2D array support
+- **Data Clearing**: Remove content from specified cell ranges
+- **Data Search**: Find specific values within worksheets and get their locations
 
-### 📋 Worksheet Operations  
-- **List Worksheets**: Get all worksheets in a workbook
-- **Create Worksheet**: Add new worksheets to existing workbooks
-- **Read Data**: Read cell values from specified ranges
-- **Write Data**: Update or insert data into cells
-- **Clear Data**: Remove content from cell ranges
-- **Search Data**: Find specific values within worksheets
+## Setup
 
-## Setup Instructions
+1. Register your application in the [Microsoft Azure Portal](https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade).
 
-### 1. Azure App Registration
 
-1. Go to [Azure Portal](https://portal.azure.com)
-2. Navigate to "App registrations" 
-3. Click "New registration"
-4. Configure your app:
-   - Name: Your app name (e.g., "Dify Excel Plugin")
-   - Supported account types: Choose based on your needs
-   - Redirect URI: Add `https://your-dify-instance.com/api/oauth/callback/excel365`
-5. After creation, note down:
-   - **Application (client) ID**
-   - Go to "Certificates & secrets" → "New client secret" → Copy the **Value**
+<img src="_assets/azure_portal.png" alt="Azure App Registration" width="300">
 
-### 2. Configure API Permissions
+2. Create a new application as follows:
+    - **Name**: Dify Excel 365 Plugin
+    - **Supported account types**: select `Accounts in any organizational directory (Any Microsoft Entra ID tenant - Multitenant) and personal Microsoft accounts (e.g. Skype, Xbox)`
+    - **Redirect URI**: Choose `Web` and set the URI to:
+        - For SaaS (cloud.dify.ai) users: please use `https://cloud.dify.ai/console/api/oauth/plugin/langgenius/microsoft_excel365/excel365/tool/callback`
+        - For self-hosted users: please use `http://<YOUR LOCALHOST CONSOLE_API_URL>/console/api/oauth/plugin/langgenius/microsoft_excel365/excel365/tool/callback`
+        ***Due to the restrictions of the Microsoft OAuth2 flow, redirect URIs must start with `https://` or `http://localhost`.***
+        - Enable "Access tokens" and "ID tokens" under "Implicit grant and hybrid flows"
 
-In your Azure app registration:
-1. Go to "API permissions"
-2. Click "Add a permission" → "Microsoft Graph"
-3. Add the following permissions:
-   - `Files.ReadWrite` (Delegated)
-   - `offline_access` (Delegated)
-4. Grant admin consent if required
+<img src="_assets/redirect_uri.png" alt="Redirect URI" width="300">
 
-### 3. Install in Dify
+3. Copy your **Application (client) ID**
 
-1. Upload this plugin to your Dify instance
-2. Configure OAuth credentials:
-   - Client ID: Your Azure app's Application ID
-   - Client Secret: Your Azure app's client secret
-3. Authenticate with your Microsoft account
-4. Start using the Excel tools!
+4. Create a new client secret:
+    - **Description**: Dify Excel 365 Plugin Secret
+    - **Expires**: Whatever duration you prefer (e.g., 1 year, 2 years, etc.)
+    - Copy the generated **Value** of the client secret.
+
+<img src="_assets/client_secret.png" alt="Generate Client Secret" width="300">
+
+5. Configure API Permissions:
+    - Go to "API permissions"
+    - Click "Add a permission" → "Microsoft Graph"
+    - Add the following permissions:
+        - `Files.ReadWrite` (Delegated)
+        - `offline_access` (Delegated)
+    - Grant admin consent if required
+
+6. Configure the plugin in Dify:
+    - Fill in the **Client ID** and **Client Secret** fields with the values you copied from the Azure Portal.
+    - Make sure you have the same redirect URI as specified in the Azure Portal. If not, you will need to update it in the Azure Portal.
+    - Click `Save and authorize` to initiate the OAuth flow.
+
+<img src="_assets/setup.png" alt="Setup" width="300">
+
+7. Enjoy using the Microsoft Excel 365 plugin in Dify!
 
 ## Scopes (Hard-coded)
 
@@ -58,77 +70,73 @@ The plugin uses the following Microsoft Graph scopes (hard-coded in the provider
 - `Files.ReadWrite`: Read and write user's files
 - `offline_access`: Maintain access to data you have given it access to
 
-## Tool Usage Examples
+## Tool Descriptions
 
-### List all Excel workbooks
-```
-Tool: list_workbooks
-Parameters:
-  - folder_id: (optional)
-  - search_query: (optional)
-  - max_results: 20
-```
+### list_all_files
+List all files and folders in OneDrive with optional filtering.
 
-### Read data from a worksheet
-```
-Tool: read_worksheet_data
-Parameters:
-  - workbook_id: "ABC123..."
-  - worksheet_name: "Sheet1"
-  - range: "A1:D10"
-```
+**Parameters:**
+- folder_path (string, optional): The folder path to list (use 'root' for root folder, 'recent' for recent files, or 'id:FOLDER_ID' for specific folder). Default is "root".
+- file_type (select, optional): Filter by file type. Options: "all", "excel", "folders". Default is "all".
+- max_results (number, optional): Maximum number of items to return (default: 50, max: 200).
 
-### Write data to cells
-```
-Tool: write_worksheet_data
-Parameters:
-  - workbook_id: "ABC123..."
-  - worksheet_name: "Sheet1"  
-  - range: "A1:B2"
-  - values: [["Header1", "Header2"], ["Value1", "Value2"]]
-```
+### list_workbooks
+List all Excel workbooks accessible to the user in OneDrive or SharePoint.
 
-### Search for values
-```
-Tool: search_worksheet_data
-Parameters:
-  - workbook_id: "ABC123..."
-  - worksheet_name: "Sheet1"
-  - search_value: "Revenue"
-  - range: "A1:Z1000"
-```
+**Parameters:**
+- folder_id (string, optional): The ID of the folder to list workbooks from.
+- search_query (string, optional): Search for workbooks by name.
+- max_results (number, optional): Maximum number of workbooks to return (default: 20, max: 100).
 
-## Important Notes
+### list_worksheets
+List all worksheets in a specified Excel workbook.
 
-- The plugin requires active Microsoft 365 subscription with Excel access
-- Files must be stored in OneDrive or SharePoint
-- Large ranges may impact performance - use specific ranges when possible
-- The OAuth token auto-refreshes using the refresh token
+**Parameters:**
+- workbook_id (string): The ID of the Excel workbook.
 
-## Troubleshooting
+### read_worksheet_data
+Read data from a specified range in an Excel worksheet.
 
-### Authentication Issues
-- Ensure redirect URI matches exactly in Azure app settings
-- Check that all required permissions are granted
-- Try re-authenticating if token expires
+**Parameters:**
+- workbook_id (string): The ID of the Excel workbook.
+- worksheet_name (string): The name of the worksheet to read from.
+- range (string, optional): The cell range to read (e.g., A1:D10). Default is A1:Z100.
 
-### Access Issues  
-- Verify the user has access to the target workbooks
-- Ensure files are in OneDrive/SharePoint (not local)
-- Check file isn't locked by another user
+### write_worksheet_data
+Write data to a specified range in an Excel worksheet.
 
-### Data Format Issues
-- Values must be provided as 2D arrays for write operations
-- Use proper Excel A1 notation for ranges (e.g., "A1:D10")
-- Worksheet names are case-sensitive
+**Parameters:**
+- workbook_id (string): The ID of the Excel workbook.
+- worksheet_name (string): The name of the worksheet to write to.
+- range (string): The cell range to write to (e.g., A1:D10).
+- values (string): The values to write as a 2D array in JSON format.
 
-## Support
+### clear_worksheet_data
+Clear data from a specified range in an Excel worksheet.
 
-For issues or questions:
-- Check Azure app configuration
-- Verify Microsoft Graph API status
-- Review Dify plugin logs for detailed error messages
+**Parameters:**
+- workbook_id (string): The ID of the Excel workbook.
+- worksheet_name (string): The name of the worksheet to clear data from.
+- range (string): The cell range to clear (e.g., A1:D10).
 
-## License
+### create_worksheet
+Create a new worksheet in an Excel workbook.
 
-This plugin is provided as-is for use with Dify platform.
+**Parameters:**
+- workbook_id (string): The ID of the Excel workbook.
+- worksheet_name (string): The name for the new worksheet.
+
+### search_worksheet_data
+Search for specific values in an Excel worksheet.
+
+**Parameters:**
+- workbook_id (string): The ID of the Excel workbook.
+- worksheet_name (string): The name of the worksheet to search in.
+- search_value (string): The value to search for.
+- range (string, optional): The cell range to search in (e.g., A1:Z1000). Default is A1:Z1000.
+
+## PRIVACY
+
+Please refer to the [Privacy Policy](PRIVACY.md) for information on how your data is handled when using this plugin.
+
+Last updated: August 11, 2025

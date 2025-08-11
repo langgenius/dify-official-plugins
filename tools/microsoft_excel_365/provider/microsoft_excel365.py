@@ -4,23 +4,27 @@ from collections.abc import Mapping
 from typing import Any
 
 import requests
-from werkzeug import Request
-
 from dify_plugin import ToolProvider
 from dify_plugin.entities.oauth import ToolOAuthCredentials
-from dify_plugin.errors.tool import ToolProviderCredentialValidationError, ToolProviderOAuthError
+from dify_plugin.errors.tool import (
+    ToolProviderCredentialValidationError,
+    ToolProviderOAuthError,
+)
+from werkzeug import Request
 
 
 class Excel365Provider(ToolProvider):
     """Microsoft Excel 365 provider with OAuth authentication"""
-    
+
     _AUTH_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
     _TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
     _API_BASE_URL = "https://graph.microsoft.com/v1.0"
     # Hardcoded SCOPE - includes file read/write and offline access permissions
     _SCOPES = "Files.ReadWrite offline_access"
 
-    def _oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
+    def _oauth_get_authorization_url(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any]
+    ) -> str:
         """
         Generate the authorization URL for Microsoft OAuth.
         """
@@ -53,23 +57,28 @@ class Excel365Provider(ToolProvider):
             "grant_type": "authorization_code",
             "scope": self._SCOPES,  # Use hardcoded SCOPE
         }
-        
+
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        response = requests.post(self._TOKEN_URL, data=data, headers=headers, timeout=30)
-        
+        response = requests.post(
+            self._TOKEN_URL, data=data, headers=headers, timeout=30
+        )
+
         if response.status_code != 200:
             raise ToolProviderOAuthError(f"Failed to get access token: {response.text}")
-        
+
         response_json = response.json()
         access_token = response_json.get("access_token")
         refresh_token = response_json.get("refresh_token")
         expires_in = response_json.get("expires_in", 3600)
-        
+
         if not access_token:
-            raise ToolProviderOAuthError(f"No access token in response: {response_json}")
+            raise ToolProviderOAuthError(
+                f"No access token in response: {response_json}"
+            )
 
         # Calculate expiration time
         import time
+
         expires_at = int(time.time()) + expires_in
 
         return ToolOAuthCredentials(
@@ -77,11 +86,14 @@ class Excel365Provider(ToolProvider):
                 "access_token": access_token,
                 "refresh_token": refresh_token,
             },
-            expires_at=expires_at
+            expires_at=expires_at,
         )
 
     def _oauth_refresh_credentials(
-        self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
+        self,
+        redirect_uri: str,
+        system_credentials: Mapping[str, Any],
+        credentials: Mapping[str, Any],
     ) -> ToolOAuthCredentials:
         """
         Refresh the access token using refresh token.
@@ -97,23 +109,28 @@ class Excel365Provider(ToolProvider):
             "grant_type": "refresh_token",
             "scope": self._SCOPES,  # Use hardcoded SCOPE
         }
-        
+
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        response = requests.post(self._TOKEN_URL, data=data, headers=headers, timeout=30)
-        
+        response = requests.post(
+            self._TOKEN_URL, data=data, headers=headers, timeout=30
+        )
+
         if response.status_code != 200:
             raise ToolProviderOAuthError(f"Failed to refresh token: {response.text}")
-        
+
         response_json = response.json()
         new_access_token = response_json.get("access_token")
         new_refresh_token = response_json.get("refresh_token", refresh_token)
         expires_in = response_json.get("expires_in", 3600)
-        
+
         if not new_access_token:
-            raise ToolProviderOAuthError(f"No access token in refresh response: {response_json}")
+            raise ToolProviderOAuthError(
+                f"No access token in refresh response: {response_json}"
+            )
 
         # Calculate expiration time
         import time
+
         expires_at = int(time.time()) + expires_in
 
         return ToolOAuthCredentials(
@@ -121,7 +138,7 @@ class Excel365Provider(ToolProvider):
                 "access_token": new_access_token,
                 "refresh_token": new_refresh_token,
             },
-            expires_at=expires_at
+            expires_at=expires_at,
         )
 
     def _validate_credentials(self, credentials: dict) -> None:
@@ -131,21 +148,29 @@ class Excel365Provider(ToolProvider):
         try:
             if "access_token" not in credentials or not credentials.get("access_token"):
                 raise ToolProviderCredentialValidationError("Access token is required.")
-            
+
             headers = {
                 "Authorization": f"Bearer {credentials['access_token']}",
                 "Accept": "application/json",
             }
-            
+
             # Test API call - get user information
-            response = requests.get(f"{self._API_BASE_URL}/me", headers=headers, timeout=10)
-            
+            response = requests.get(
+                f"{self._API_BASE_URL}/me", headers=headers, timeout=10
+            )
+
             if response.status_code == 401:
-                raise ToolProviderCredentialValidationError("Invalid or expired access token.")
+                raise ToolProviderCredentialValidationError(
+                    "Invalid or expired access token."
+                )
             elif response.status_code != 200:
-                raise ToolProviderCredentialValidationError(f"API validation failed: {response.text}")
-                
+                raise ToolProviderCredentialValidationError(
+                    f"API validation failed: {response.text}"
+                )
+
         except requests.RequestException as e:
-            raise ToolProviderCredentialValidationError(f"Network error: {str(e)}") from e
+            raise ToolProviderCredentialValidationError(
+                f"Network error: {str(e)}"
+            ) from e
         except Exception as e:
             raise ToolProviderCredentialValidationError(str(e)) from e

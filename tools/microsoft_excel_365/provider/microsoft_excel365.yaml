@@ -63,6 +63,7 @@ oauth_schema:
     name: refresh_token
     type: secret-input
 tools:
+- tools/list_all_files.yaml
 - tools/list_workbooks.yaml
 - tools/list_worksheets.yaml
 - tools/read_worksheet_data.yaml
