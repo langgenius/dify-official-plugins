@@ -665,6 +665,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         additional_model_fields = {}
         if "max_tokens" in model_parameters:
             inference_config["maxTokens"] = model_parameters["max_tokens"]
+        elif "max_new_tokens" in model_parameters:
+            inference_config["maxTokens"] = model_parameters["max_new_tokens"]
 
         if "temperature" in model_parameters:
             inference_config["temperature"] = model_parameters["temperature"]
@@ -926,19 +928,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                             if self._model_id_matches_schema(underlying_model_id, model_schema):
                                 default_pricing = model_schema.pricing
                                 matched_features = model_schema.features or []
-                                # Load parameter rules, excluding model_name since it's determined by inference profile
-                                base_allowed_params = ['max_tokens', 'temperature', 'top_p', 'top_k', 'reasoning_type', 'reasoning_budget']
-                                
-                                # Add model-specific parameters
-                                if "anthropic.claude" in underlying_model_id:
-                                    base_allowed_params.append('response_format')
-                                elif "amazon.nova" in underlying_model_id:
-                                    base_allowed_params.extend(['max_new_tokens', 'cross-region', 'system_cache_checkpoint', 'latest_two_messages_cache_checkpoint'])
-                                elif "meta.llama" in underlying_model_id:
-                                    base_allowed_params.extend(['max_gen_len'])
-                                
-                                matched_parameter_rules = [rule for rule in (model_schema.parameter_rules or [])
-                                                           if rule.name in base_allowed_params]
+                                # Extract allowed parameters from model schema, excluding model_name since it's determined by inference profile
+                                matched_parameter_rules = self._get_inference_profile_parameter_rules(model_schema, underlying_model_id)
                                 if model_schema.model_properties:
                                     matched_model_properties.update(model_schema.model_properties)
                                     # Override context_size with user-specified value
@@ -969,19 +960,11 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 context_length = int(credentials.get("context_length", 4096))
                 model_schemas = self.predefined_models()
                 default_pricing = model_schemas[0].pricing if model_schemas else None
-                # For fallback, include model-specific parameters based on first model
-                fallback_allowed_params = ['max_tokens', 'temperature', 'top_p', 'top_k', 'reasoning_type', 'reasoning_budget']
-                if model_schemas and hasattr(model_schemas[0], 'model'):
-                    first_model_name = model_schemas[0].model
-                    if first_model_name == "anthropic claude":
-                        fallback_allowed_params.append('response_format')
-                    elif first_model_name == "amazon nova":
-                        fallback_allowed_params.extend(['max_new_tokens', 'cross-region', 'system_cache_checkpoint', 'latest_two_messages_cache_checkpoint'])
-                    elif first_model_name == "meta":
-                        fallback_allowed_params.extend(['max_gen_len'])
-                        
-                fallback_parameter_rules = [rule for rule in (model_schemas[0].parameter_rules or [])
-                                            if rule.name in fallback_allowed_params] if model_schemas else []
+                # For fallback, extract parameters from first model schema
+                fallback_parameter_rules = []
+                if model_schemas:
+                    # For fallback, we don't have underlying_model_id, so pass None to get all params except model_name
+                    fallback_parameter_rules = self._get_inference_profile_parameter_rules(model_schemas[0], None)
                 fallback_features = model_schemas[0].features if model_schemas else []
                 fallback_model_properties = {
                     "mode": LLMMode.CHAT,
@@ -1391,6 +1374,39 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             return InvokeConnectionError(error_msg)
 
         return InvokeError(error_msg)
+
+    def _get_inference_profile_parameter_rules(self, model_schema, underlying_model_id: str = None) -> list:
+        """
+        Extract allowed parameter rules from model schema for inference profiles
+        
+        :param model_schema: The predefined model schema
+        :param underlying_model_id: The underlying model ID (for model-specific filtering)
+        :return: List of parameter rules suitable for inference profiles
+        """
+        if not model_schema.parameter_rules:
+            return []
+        
+        # Always exclude model_name since it's determined by inference profile
+        excluded_params = ['model_name']
+        
+        # Apply model-specific filtering if underlying_model_id is available
+        allowed_parameter_rules = []
+        for rule in model_schema.parameter_rules:
+            if rule.name in excluded_params:
+                continue
+                
+            # For Anthropic models, include response_format only if it's an Anthropic model
+            if rule.name == 'response_format':
+                if underlying_model_id and "anthropic.claude" not in underlying_model_id:
+                    continue  # Skip response_format for non-Anthropic models
+                elif not underlying_model_id:
+                    # Fallback case: only include if this is an Anthropic schema
+                    if not (hasattr(model_schema, 'model') and model_schema.model == "anthropic claude"):
+                        continue
+            
+            allowed_parameter_rules.append(rule)
+        
+        return allowed_parameter_rules
 
     def _model_id_matches_schema(self, model_id: str, model_schema) -> bool:
         """
