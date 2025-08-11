@@ -1,7 +1,6 @@
 from collections.abc import Generator
 from typing import Any, List, Dict
 import requests
-import msal
 import json
 
 from dify_plugin import Tool
@@ -15,7 +14,6 @@ class DraftEmailTool(Tool):
         """
         try:
             # Get parameters
-            user_email = self.runtime.credentials.get("user_email")
             to_recipients = tool_parameters.get("to_recipients", "")
             cc_recipients = tool_parameters.get("cc_recipients", "")
             bcc_recipients = tool_parameters.get("bcc_recipients", "")
@@ -23,43 +21,13 @@ class DraftEmailTool(Tool):
             body_content = tool_parameters.get("body", "")
             body_type = tool_parameters.get("body_type", "text")  # text or html
             importance = tool_parameters.get("importance", "normal")  # low, normal, high
-            
-            # Validate required parameters
-            if not user_email:
-                yield self.create_text_message("User email is required in credentials.")
-                return
-                
-            if not to_recipients:
-                yield self.create_text_message("To recipients are required.")
-                return
-            
-            if not subject:
-                yield self.create_text_message("Subject is required.")
-                return
-            
-            if not body_content:
-                yield self.create_text_message("Email body is required.")
-                return
-                
-            # Get credentials
-            client_id = self.runtime.credentials.get("client_id")
-            client_secret = self.runtime.credentials.get("client_secret")
-            tenant_id = self.runtime.credentials.get("tenant_id")
-            
-            if not all([client_id, client_secret, tenant_id]):
-                yield self.create_text_message("Azure AD credentials are required.")
-                return
-            
+            # Get access token from OAuth credentials
+            access_token = self.runtime.credentials.get("access_token")
+
             try:
-                # Get access token
-                access_token = self._get_access_token(client_id, client_secret, tenant_id)
-                if not access_token:
-                    yield self.create_text_message("Failed to acquire access token.")
-                    return
-                
                 # Create draft email
                 result = self._create_draft_email(
-                    access_token, user_email, to_recipients, cc_recipients, bcc_recipients,
+                    access_token, to_recipients, cc_recipients, bcc_recipients,
                     subject, body_content, body_type, importance
                 )
                 
@@ -83,33 +51,7 @@ class DraftEmailTool(Tool):
             yield self.create_text_message(f"Error: {str(e)}")
             return
     
-    def _get_access_token(self, client_id: str, client_secret: str, tenant_id: str) -> str:
-        """
-        Get access token using client credentials flow
-        """
-        try:
-            app = msal.ConfidentialClientApplication(
-                client_id=client_id,
-                client_credential=client_secret,
-                authority=f"https://login.microsoftonline.com/{tenant_id}"
-            )
-            
-            result = app.acquire_token_for_client(
-                scopes=["https://graph.microsoft.com/.default"]
-            )
-            
-            if "access_token" in result:
-                return result["access_token"]
-            else:
-                error_desc = result.get("error_description", "Unknown error")
-                print(f"Token acquisition failed: {error_desc}")
-                return None
-                
-        except Exception as e:
-            print(f"Error getting access token: {str(e)}")
-            return None
-    
-    def _create_draft_email(self, access_token: str, user_email: str, to_recipients: str,
+    def _create_draft_email(self, access_token: str, to_recipients: str,
                            cc_recipients: str, bcc_recipients: str, subject: str,
                            body_content: str, body_type: str, importance: str):
         """
@@ -143,8 +85,8 @@ class DraftEmailTool(Tool):
             if bcc_list:
                 message["bccRecipients"] = bcc_list
             
-            # API endpoint
-            url = f"https://graph.microsoft.com/v1.0/users/{user_email}/messages"
+            # API endpoint using /me
+            url = "https://graph.microsoft.com/v1.0/me/messages"
             
             # Headers
             headers = {
@@ -160,8 +102,6 @@ class DraftEmailTool(Tool):
                 return "Authentication failed. Token may be expired."
             elif response.status_code == 403:
                 return "Access denied. Check app permissions (Mail.ReadWrite required)."
-            elif response.status_code == 404:
-                return f"User '{user_email}' not found."
             elif response.status_code not in [200, 201]:
                 return f"API error {response.status_code}: {response.text}"
             
@@ -173,7 +113,6 @@ class DraftEmailTool(Tool):
                 "id": draft_data.get("id"),
                 "subject": draft_data.get("subject"),
                 "created_datetime": draft_data.get("createdDateTime"),
-                "sender": user_email,
                 "to_recipients": [self._format_recipient(r) for r in draft_data.get("toRecipients", [])],
                 "cc_recipients": [self._format_recipient(r) for r in draft_data.get("ccRecipients", [])],
                 "bcc_recipients": [self._format_recipient(r) for r in draft_data.get("bccRecipients", [])],

@@ -214,5 +214,24 @@ parameters:
       en_US: Vietnamese
       zh_Hans: 越南语
     value: vi
+  - label:
+      en_US: Bangla
+      zh_Hans: 孟加拉
+    value: bn
+  - label:
+      en_US: Custom
+      zh_Hans: 自定义
+    value: custom
   required: true
   type: select
+- form: form
+  human_description:
+    en_US: Enter a language code or variable (e.g. en, es, fr) if you selected Custom above.
+    zh_Hans: 如果你选择了自定义，请输入语言代码或变量（例如 en, es, fr）
+  label:
+    en_US: Custom destination language
+    zh_Hans: 自定义目标语言
+  name: custom_dest
+  required: false
+  type: string
+  show_if: dest=custom

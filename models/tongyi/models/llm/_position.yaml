@@ -44,6 +44,9 @@
 - qwen-turbo-0624
 - qwen-turbo-chat
 - qwen-turbo
+- qwen3-235b-a22b-thinking-2507
+- qwen3-235b-a22b-instruct-2507
+- qwen3-30b-a3b-instruct-2507
 - qwen3-235b-a22b
 - qwen3-30b-a3b
 - qwen3-32b
@@ -52,6 +55,7 @@
 - qwen3-4b
 - qwen3-1.7b
 - qwen3-0.6b
+- qwen3-coder-plus
 - qwen2.5-72b-instruct
 - qwen2.5-32b-instruct
 - qwen2.5-14b-instruct-1m

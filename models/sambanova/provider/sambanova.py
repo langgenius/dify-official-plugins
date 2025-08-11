@@ -19,7 +19,7 @@ class SambanovaModelProvider(ModelProvider):
         try:
             model_instance = self.get_model_instance(ModelType.LLM)
             model_instance.validate_credentials(
-                model="Llama-4-Scout-17B-16E-Instruct", credentials=credentials
+                model="Llama-4-Maverick-17B-128E-Instruct", credentials=credentials
             )
         except CredentialsValidateFailedError as ex:
             raise ex

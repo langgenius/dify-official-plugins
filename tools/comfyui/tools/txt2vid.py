@@ -9,6 +9,7 @@ from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin import Tool
 from tools.comfyui_client import ComfyUiClient
 from tools.comfyui_workflow import ComfyUiWorkflow
+from tools.model_manager import ModelManager
 
 
 @dataclasses.dataclass(frozen=False)
@@ -38,7 +39,13 @@ class ComfyuiTxt2Vid(Tool):
         base_url = self.runtime.credentials.get("base_url", "")
         if not base_url:
             yield self.create_text_message("Please input base_url")
-        self.comfyui = ComfyUiClient(base_url)
+        self.comfyui = ComfyUiClient(
+            base_url, api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"))
+        self.model_manager = ModelManager(
+            self.comfyui,
+            civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
+            hf_api_key=self.runtime.credentials.get("hf_api_key"),
+        )
 
         steps = tool_parameters.get("steps", 20)
         width = tool_parameters.get("width")
@@ -122,17 +129,17 @@ class ComfyuiTxt2Vid(Tool):
         """
         if config.model_name == "":
             # download model
-            config.model_name = self.comfyui.download_model(
+            config.model_name = self.model_manager.download_model(
                 "https://huggingface.co/Comfy-Org/mochi_preview_repackaged/resolve/main/split_files/diffusion_models/mochi_preview_fp8_scaled.safetensors",
                 "diffusion_models",
                 token=self.get_hf_key(),
             )
-        clip_name = self.comfyui.download_model(
+        clip_name = self.model_manager.download_model(
             "https://huggingface.co/Comfy-Org/mochi_preview_repackaged/resolve/main/split_files/text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors",
             "text_encoders",
             token=self.get_hf_key(),
         )
-        vae_name = self.comfyui.download_model(
+        vae_name = self.model_manager.download_model(
             "https://huggingface.co/Comfy-Org/mochi_preview_repackaged/resolve/main/split_files/vae/mochi_vae.safetensors",
             "vae",
             token=self.get_hf_key(),
@@ -169,22 +176,22 @@ class ComfyuiTxt2Vid(Tool):
         """
         if config.model_name == "":
             # download model
-            config.model_name = self.comfyui.download_model(
+            config.model_name = self.model_manager.download_model(
                 "https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/diffusion_models/hunyuan_video_t2v_720p_bf16.safetensors",
                 "diffusion_models",
                 token=self.get_hf_key(),
             )
-        clip_name1 = self.comfyui.download_model(
+        clip_name1 = self.model_manager.download_model(
             "https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/text_encoders/clip_l.safetensors",
             "text_encoders",
             token=self.get_hf_key(),
         )
-        clip_name2 = self.comfyui.download_model(
+        clip_name2 = self.model_manager.download_model(
             "https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/text_encoders/llava_llama3_fp8_scaled.safetensors",
             "text_encoders",
             token=self.get_hf_key(),
         )
-        vae_name = self.comfyui.download_model(
+        vae_name = self.model_manager.download_model(
             "https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/vae/hunyuan_video_vae_bf16.safetensors",
             "vae",
             token=self.get_hf_key(),
@@ -217,17 +224,17 @@ class ComfyuiTxt2Vid(Tool):
         """
         if config.model_name == "":
             # download model
-            config.model_name = self.comfyui.download_model(
+            config.model_name = self.model_manager.download_model(
                 "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_t2v_14B_fp8_e4m3fn.safetensors",
                 "diffusion_models",
                 token=self.get_hf_key(),
             )
-        vae = self.comfyui.download_model(
+        vae = self.model_manager.download_model(
             "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors",
             "vae",
             token=self.get_hf_key(),
         )
-        text_encoder = self.comfyui.download_model(
+        text_encoder = self.model_manager.download_model(
             "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors",
             "text_encoders",
             token=self.get_hf_key(),
@@ -263,12 +270,12 @@ class ComfyuiTxt2Vid(Tool):
         """
         if config.model_name == "":
             # download model
-            config.model_name = self.comfyui.download_model(
+            config.model_name = self.model_manager.download_model(
                 "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-2b-v0.9.safetensors",
                 "checkpoints",
                 token=self.get_hf_key(),
             )
-        text_encoder = self.comfyui.download_model(
+        text_encoder = self.model_manager.download_model(
             "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp16.safetensors",
             "text_encoders",
             token=self.get_hf_key(),

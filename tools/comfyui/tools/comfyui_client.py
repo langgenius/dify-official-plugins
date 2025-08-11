@@ -29,9 +29,13 @@ class FileType(StrEnum):
 
 
 class ComfyUiClient:
-    def __init__(self, base_url: str, api_key: str | None = None):  # Add api_key parameter
+    def __init__(
+        self, base_url: str, api_key: str | None = None, api_key_comfy_org: str = ""
+    ):  # Add api_key parameter
         self.base_url = URL(base_url)
         self.api_key = api_key  # Store api_key
+        # https://docs.comfy.org/development/comfyui-server/api-key-integration#integration-of-api-key-to-use-comfyui-api-nodes
+        self.api_key_comfy_org = api_key_comfy_org
 
     def _get_headers(self) -> dict:  # Helper method to get headers
         headers = {}
@@ -45,9 +49,9 @@ class ComfyUiClient:
         """
         try:
             if path is None:
-                api_url = str(self.base_url/"models")
+                api_url = str(self.base_url / "models")
             else:
-                api_url = str(self.base_url/"models"/path)
+                api_url = str(self.base_url / "models" / path)
             response = httpx.get(
                 url=api_url, timeout=(2, 10), headers=self._get_headers()
             )  # Add headers
@@ -153,7 +157,9 @@ class ComfyUiClient:
     def queue_prompt(self, client_id: str, prompt: dict) -> str:
         res = httpx.post(
             str(self.base_url / "prompt"),
-            json={"client_id": client_id, "prompt": prompt},
+            data=json.dumps({"client_id": client_id, "prompt": prompt, "extra_data": {
+                "api_key_comfy_org": self.api_key_comfy_org
+            }}),
             headers=self._get_headers(),  # Add headers
         )
         try:
@@ -320,7 +326,9 @@ class ComfyUiClient:
             url = str(self.base_url / "prompt")
             respond = httpx.post(
                 url,
-                data=json.dumps({"client_id": client_id, "prompt": prompt}),
+                data=json.dumps({"client_id": client_id, "prompt": prompt, "extra_data": {
+                    "api_key_comfy_org": self.api_key_comfy_org
+                }}),
                 timeout=(2, 10),
                 headers=self._get_headers(),
             )
@@ -377,41 +385,6 @@ class ComfyUiClient:
                 except:
                     pass
         return output_images
-
-    def download_model(self, url, save_dir, filename=None, token=None) -> str:
-        headers = {}
-        if token is not None:
-            headers = {"Authorization": f"Bearer {token}"}
-        response = requests.head(url, headers=headers)
-        if response.status_code == 401:
-            raise ToolProviderCredentialValidationError(
-                f"401 Unauthorized. Please check the api_token."
-            )
-        elif response.status_code >= 400:
-            raise ToolProviderCredentialValidationError(
-                f"Download failed. Error {response.status_code}. Please check the URL."
-            )
-
-        current_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(current_dir, "json", "download.json")) as file:
-            workflow = ComfyUiWorkflow(file.read())
-        if filename is None:
-            filename = url.split("/")[-1].split("?")[0]
-        if token is None:
-            token = ""
-        workflow.set_asset_downloader(None, url, save_dir, filename, token)
-
-        try:
-            _ = self.generate(workflow.json())
-        except Exception as e:
-            error = f"Failed to download: {str(e)}."
-            if len(self.get_model_dirs(save_dir)) == 0:
-                error += f"Please make sure that https://github.com/ServiceStack/comfy-asset-downloader works on ComfyUI and the destination folder named models/{save_dir} exists."
-            else:
-                error += "Please make sure that https://github.com/ServiceStack/comfy-asset-downloader works on ComfyUI."
-            raise ToolProviderCredentialValidationError(error)
-
-        return filename
 
     def convert_webp2mp4(self, webp_blob, fps):
         current_dir = os.path.dirname(os.path.realpath(__file__))

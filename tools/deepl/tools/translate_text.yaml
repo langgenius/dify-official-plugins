@@ -1,0 +1,62 @@
+identity:
+  name: translate_text
+  author: langgenius
+  label:
+    en_US: Translate Text
+    zh_CN: 翻译文本
+    ja_JP: テキスト翻訳
+description:
+  human:
+    en_US: Translate text from one language to another
+    zh_CN: 将文本从一种语言翻译为另一种语言
+    ja_JP: テキストをある言語から別の言語に翻訳する
+  llm: Translate text from one language to another
+parameters:
+- name: text
+  type: string
+  required: true
+  label:
+    en_US: Text
+    zh_CN: 文本
+    ja_JP: テキスト
+  human_description:
+    en_US: The text to translate
+    zh_CN: 要翻译的文本
+    ja_JP: 翻訳するテキスト
+  llm_description: The text to translate
+  form: llm
+- name: source_lang
+  type: string
+  required: false
+  label:
+    en_US: Source Language
+    zh_CN: 源语言
+    ja_JP: 元の言語
+  human_description:
+    en_US: The source language of the text. Follow the ISO 639-1 language codes. For
+      example, 'EN' for English, 'DE' for German, 'FR' for French, etc.
+    zh_CN: 文本的源语言。遵循 ISO 639-1 语言代码。例如，'EN' 表示英语，'DE' 表示德语，'FR' 表示法语等。
+    ja_JP: テキストの元の言語。ISO 639-1 言語コードに従ってください。例えば、'EN' は英語、'DE' はドイツ語、'FR' はフランス語などを表します。
+  llm_description: The source language of the text. If not provided, DeepL will detect
+    the source language automatically. Follow the ISO 639-1 language codes. For example,
+    'EN' for English, 'DE' for German, 'FR' for French, etc.
+  form: llm
+- name: target_lang
+  type: string
+  required: true
+  label:
+    en_US: Target Language
+    zh_CN: 目标语言
+    ja_JP: 翻訳先言語
+  human_description:
+    en_US: The target language of the text. Follow the ISO 639-1 language codes. For
+      example, 'EN' for English, 'DE' for German, 'FR' for French, etc.
+    zh_CN: 文本的目标语言。遵循 ISO 639-1 语言代码。例如，'EN' 表示英语，'DE' 表示德语，'FR' 表示法语等。
+    ja_JP: テキストの翻訳先言語。ISO 639-1 言語コードに従ってください。例えば、'EN' は英語、'DE' はドイツ語、'FR' はフランス語などを表します。
+  llm_description: The target language of the text. Follow the ISO 639-1 language
+    codes. Required. For example, 'EN' for English, 'DE' for German, 'FR' for French,
+    etc.
+  form: llm
+extra:
+  python:
+    source: tools/translate_text.py

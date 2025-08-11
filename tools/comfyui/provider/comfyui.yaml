@@ -18,6 +18,17 @@ credentials_for_provider:
       zh_Hans: 请输入你的 ComfyUI API Token
     required: false
     type: secret-input # It's better to use secret-input for API keys
+
+  api_key_comfy_org: # Add this section
+    label:
+      en_US: comfy.org API Key
+      zh_Hans: comfy.org API Key
+    placeholder:
+      en_US: Please input your comfy.org API Key
+      zh_Hans: 请输入你的 comfy.org API Key
+    required: false
+    type: secret-input # It's better to use secret-input for API keys
+
   civitai_api_key:
     label:
       en_US: CivitAI API Key

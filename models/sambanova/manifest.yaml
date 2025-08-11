@@ -1,20 +1,20 @@
-version: 0.0.2
+version: 0.0.3
 type: plugin
 author: langgenius
 name: sambanova
 label:
-  en_US: SambaNovaCloud
-  ja_JP: SambaNovaCloud
-  zh_Hans: SambaNovaCloud
-  pt_BR: SambaNovaCloud
+  en_US: SambaCloud
+  ja_JP: SambaCloud
+  zh_Hans: SambaCloud
+  pt_BR: SambaCloud
 description:
-  en_US: SambaNova Cloud provides access to the SambaNova Cloud API, which hosts
+  en_US: SambaCloud provides access to the SambaCloud API, which hosts
     LLama4, Qwen and DeepSeek Models.
-  ja_JP: SambaNova Cloud provides access to the SambaNova Cloud API, which hosts
+  ja_JP: SambaCloud provides access to the SambaCloud API, which hosts
     LLama4, Qwen and DeepSeek Models.
-  zh_Hans: SambaNova Cloud provides access to the SambaNova Cloud API, which hosts
+  zh_Hans: SambaCloud provides access to the SambaCloud API, which hosts
     LLama4, Qwen and DeepSeek Models.
-  pt_BR: SambaNova Cloud provides access to the SambaNova Cloud API, which hosts
+  pt_BR: SambaCloud provides access to the SambaCloud API, which hosts
     LLama4, Qwen and DeepSeek Models.
 icon: icon_s_en.svg
 resource:

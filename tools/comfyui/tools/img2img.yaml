@@ -77,10 +77,8 @@ parameters:
   - name: model
     form: llm
     human_description:
-      en_US: Model Name
-      pt_BR: Model Name
-      zh_Hans: 模型名称
-      ja_JP: モデル名
+      en_US: Model Name. If omitted, the default model will be downloaded. If you input a Civitai AIR like "civitai:000000@000000", the model will be downloaded.
+      ja_JP: モデル名. 省略時はデフォルトモデルがダウンロードされます．civitai:000000@000000 のように Civitai AIR 入力すると civitai からダウンロードします．
     label:
       en_US: Model Name
       pt_BR: Model Name
@@ -171,9 +169,9 @@ parameters:
   - name: lora_names
     form: llm
     human_description:
-      en_US: LORAs, put comma between each LORA name if multiple
-      zh_Hans: LORA, 如果有多个 LORA 名称，请在名称之间加上逗号
-      ja_JP: LORA, 複数ある場合はコンマで区切ってください
+      en_US: LORAs, put comma between each LORA name if multiple. If you input a Civitai AIR like "civitai:000000@000000", the model will be downloaded.
+      zh_Hans: LORA, 如果有多个 LORA 名称，请在名称之间加上逗号。输入 Civitai AIR，如 civitai:000000@000000，即可从 civitai 下载。
+      ja_JP: LORA, 複数ある場合はコンマで区切ってください. civitai:000000@000000 のように Civitai AIR 入力すると civitai からダウンロードします．
     label:
       en_US: LORAs
       zh_Hans: LORA
@@ -193,3 +191,15 @@ parameters:
       ja_JP: LORA 強度
     required: false
     type: string
+
+  - name: batch_size
+    form: llm
+    default: 1
+    human_description:
+      en_US: Defines the number of output images
+      ja_JP: 出力画像の個数を指定します
+    label:
+      en_US: Batch Size
+      ja_JP: バッチサイズ
+    required: false
+    type: number

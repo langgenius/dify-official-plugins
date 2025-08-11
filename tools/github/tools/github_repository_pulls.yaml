@@ -1,0 +1,100 @@
+description:
+  human:
+    en_US: Get pull requests from a GitHub repository with filtering options for state, sorting, and pagination
+    pt_BR: Obter pull requests de um repositório do GitHub com opções de filtragem por estado, ordenação e paginação
+    zh_Hans: 从GitHub仓库获取Pull Requests，支持状态过滤、排序和分页选项
+  llm: A tool to get pull requests from a GitHub repository with filtering and sorting options
+extra:
+  python:
+    source: tools/github_repository_pulls.py
+identity:
+  author: CharlieWei
+  icon: icon.svg
+  label:
+    en_US: Repository Pull Requests
+    pt_BR: Pull Requests do Repositório
+    zh_Hans: 仓库Pull Requests
+  name: github_repository_pulls
+parameters:
+  - form: llm
+    human_description:
+      en_US: The account owner of the repository. The name is not case sensitive.
+      pt_BR: O proprietário da conta do repositório. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库的账户所有者。名称不区分大小写。
+    label:
+      en_US: Owner
+      pt_BR: Proprietário
+      zh_Hans: 所有者
+    llm_description: The account owner of the repository. The name is not case sensitive.
+    name: owner
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: The name of the repository without the .git extension. The name is not case sensitive.
+      pt_BR: O nome do repositório sem a extensão .git. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库名称不带.git扩展名。名称不区分大小写。
+    label:
+      en_US: Repository
+      pt_BR: Repositório
+      zh_Hans: 仓库
+    llm_description: The name of the repository without the .git extension. The name is not case sensitive.
+    name: repo
+    required: true
+    type: string
+  - default: open
+    form: llm
+    human_description:
+      en_US: The state of the pull requests to return. Can be open, closed, or all.
+      pt_BR: O estado dos pull requests a serem retornados. Pode ser open, closed ou all.
+      zh_Hans: 要返回的pull request状态。可以是 open、closed 或 all。
+    label:
+      en_US: State
+      pt_BR: Estado
+      zh_Hans: 状态
+    llm_description: The state of the pull requests to return. Can be open, closed, or all.
+    name: state
+    required: false
+    type: string
+  - default: 10
+    form: llm
+    human_description:
+      en_US: The number of results per page (max 100).
+      pt_BR: O número de resultados por página (máximo 100).
+      zh_Hans: 每页结果数量（最大100）。
+    label:
+      en_US: Per Page
+      pt_BR: Por Página
+      zh_Hans: 每页数量
+    llm_description: The number of results per page (max 100).
+    name: per_page
+    required: false
+    type: number
+  - default: created
+    form: llm
+    human_description:
+      en_US: What to sort results by. Can be created, updated, popularity, or long-running.
+      pt_BR: Como ordenar os resultados. Pode ser created, updated, popularity ou long-running.
+      zh_Hans: 结果排序方式。可以是 created、updated、popularity 或 long-running。
+    label:
+      en_US: Sort
+      pt_BR: Ordenar
+      zh_Hans: 排序
+    llm_description: What to sort results by. Can be created, updated, popularity, or long-running.
+    name: sort
+    required: false
+    type: string
+  - default: desc
+    form: llm
+    human_description:
+      en_US: The direction to sort the results. Can be asc or desc.
+      pt_BR: A direção para ordenar os resultados. Pode ser asc ou desc.
+      zh_Hans: 排序方向。可以是 asc 或 desc。
+    label:
+      en_US: Direction
+      pt_BR: Direção
+      zh_Hans: 方向
+    llm_description: The direction to sort the results. Can be asc or desc.
+    name: direction
+    required: false
+    type: string

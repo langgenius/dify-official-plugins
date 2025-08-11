@@ -1,0 +1,71 @@
+extra:
+  python:
+    source: provider/google_contacts.py
+identity:
+  author: langgenius
+  description:
+    en_US: Access and manage Google Contacts through the People API
+    ja_JP: People API を通じて Google 連絡先にアクセスして管理
+    zh_Hans: 通过 People API 访问和管理谷歌通讯录
+  icon: icon.svg
+  label:
+    en_US: Google Contacts
+    ja_JP: Google連絡先
+    zh_Hans: 谷歌通讯录
+  name: google_contacts
+  tags:
+  - utilities
+oauth_schema:
+  client_schema:
+  - help:
+      en_US: Get your client ID from Google Cloud Console. Enable the People API in your project.
+      ja_JP: Google Cloud Console からクライアント ID を取得。プロジェクトで People API を有効にしてください。
+      zh_Hans: 从 Google Cloud Console 获取客户端 ID。请在项目中启用 People API。
+    label:
+      en_US: Client ID
+      ja_JP: クライアント ID
+      zh_Hans: 客户端 ID
+    name: client_id
+    placeholder:
+      en_US: Enter your Google OAuth Client ID
+      ja_JP: Google OAuth クライアント ID を入力
+      zh_Hans: 输入您的 Google OAuth 客户端 ID
+    required: true
+    type: secret-input
+    url: https://console.cloud.google.com/apis/credentials
+  - help:
+      en_US: Get your client secret from Google Cloud Console. Make sure to enable the People API.
+      ja_JP: Google Cloud Console からクライアントシークレットを取得。People API を有効にしてください。
+      zh_Hans: 从 Google Cloud Console 获取客户端密钥。请确保启用 People API。
+    label:
+      en_US: Client Secret
+      ja_JP: クライアントシークレット
+      zh_Hans: 客户端密钥
+    name: client_secret
+    placeholder:
+      en_US: Enter your Google OAuth Client Secret
+      ja_JP: Google OAuth クライアントシークレットを入力
+      zh_Hans: 输入您的 Google OAuth 客户端密钥
+    required: true
+    type: secret-input
+    url: https://console.cloud.google.com/apis/credentials
+  credentials_schema:
+  - label:
+      en_US: Access Token
+      ja_JP: アクセストークン
+      zh_Hans: 访问令牌
+    name: access_token
+    type: secret-input
+  - label:
+      en_US: Refresh Token
+      ja_JP: リフレッシュトークン
+      zh_Hans: 刷新令牌
+    name: refresh_token
+    type: secret-input
+tools:
+- tools/list_contacts.yaml
+- tools/search_contacts.yaml
+- tools/create_contact.yaml
+- tools/get_contact.yaml
+- tools/update_contact.yaml
+- tools/delete_contact.yaml

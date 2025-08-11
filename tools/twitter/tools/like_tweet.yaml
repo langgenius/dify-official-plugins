@@ -1,0 +1,41 @@
+description:
+  human:
+    en_US: Like a tweet on Twitter
+    zh_Hans: 在推特上点赞推文
+  llm: A tool that allows liking tweets on Twitter by providing the tweet ID
+extra:
+  python:
+    source: tools/like_tweet.py
+identity:
+  author: langgenius
+  icon: icon.jpg
+  label:
+    en_US: Like Tweet
+    zh_Hans: 点赞推文
+  name: like_tweet
+parameters:
+- form: llm
+  human_description:
+    en_US: The ID of the tweet to like
+    zh_Hans: 要点赞的推文ID
+  label:
+    en_US: Tweet ID
+    zh_Hans: 推文ID
+  llm_description: The ID of the tweet to like
+  name: tweet_id
+  required: true
+  type: string
+
+# output_schema:
+#   type: object
+#   properties:
+#     success:
+#       type: boolean
+#     tweet_id:
+#       type: string
+#     liked:
+#       type: boolean
+#     message:
+#       type: string
+#     error:
+#       type: string

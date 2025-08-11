@@ -222,32 +222,6 @@ parameters:
     min: 1
     required: false
     type: number
-  - name: include_domains
-    form: form
-    human_description:
-      en_US:
-        A comma-separated list of domains to specifically include in the search
-        results.
-      zh_Hans: 要在搜索结果中特别包含的域的逗号分隔列表。
-    label:
-      en_US: Include Domains
-      zh_Hans: 包含域
-    llm_description: A comma-separated list of domains to specifically include in the search results.
-    required: false
-    type: string
-  - name: exclude_domains
-    form: form
-    human_description:
-      en_US:
-        A comma-separated list of domains to specifically exclude from the search
-        results.
-      zh_Hans: 要从搜索结果中特别排除的域的逗号分隔列表。
-    label:
-      en_US: Exclude Domains
-      zh_Hans: 排除域
-    llm_description: A comma-separated list of domains to specifically exclude from the search results.
-    required: false
-    type: string
   - name: country
     form: llm
     human_description:
@@ -925,3 +899,29 @@ parameters:
           zh_Hans: 津巴布韦
         value: zimbabwe
     default: united states
+  - name: include_domains
+    form: llm
+    human_description:
+      en_US:
+        A comma-separated list of domains to specifically include in the search
+        results.
+      zh_Hans: 要在搜索结果中特别包含的域的逗号分隔列表。
+    label:
+      en_US: Include Domains
+      zh_Hans: 包含域
+    llm_description: A comma-separated list of domains to specifically include in the search results.
+    required: false
+    type: string
+  - name: exclude_domains
+    form: llm
+    human_description:
+      en_US:
+        A comma-separated list of domains to specifically exclude from the search
+        results.
+      zh_Hans: 要从搜索结果中特别排除的域的逗号分隔列表。
+    label:
+      en_US: Exclude Domains
+      zh_Hans: 排除域
+    llm_description: A comma-separated list of domains to specifically exclude from the search results.
+    required: false
+    type: string

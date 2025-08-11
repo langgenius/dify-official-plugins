@@ -32,6 +32,8 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         :param input_type: input type
         :return: embeddings result
         """
+        if credentials.get("use_international_endpoint", "false") == "true":
+            dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
         credentials_kwargs = self._to_credential_kwargs(credentials)
         context_size = self._get_context_size(model, credentials)
         max_chunks = self._get_max_chunks(model, credentials)
@@ -122,7 +124,6 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
             # Check if response is an exception with rate limit info
             if hasattr(response, 'status_code') and response.status_code == 429:
                 print(f"Rate limit exceeded (429). Response: {response}")
-                import time
                 time.sleep(10)
                 # Retry once after sleeping
                 response = call_embedding_api(text)

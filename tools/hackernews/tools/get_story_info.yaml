@@ -1,0 +1,107 @@
+identity:
+  name: get_story_info
+  author: langgenius
+  label:
+    en_US: Get Story Info
+    zh_Hans: 获取文章信息
+    ja_JP: 記事情報を取得
+
+description:
+  human:
+    en_US: Get detailed information about a Hacker News story including title, content, author, score, and comments
+    zh_Hans: 获取 Hacker News 文章的详细信息，包括标题、内容、作者、评分和评论
+    ja_JP: Hacker News 記事の詳細情報（タイトル、内容、著者、スコア、コメント）を取得
+  llm: Retrieve comprehensive information about a Hacker News story by ID, including extracted content from linked articles and top comments
+
+parameters:
+  - name: story_id
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Story ID
+      zh_Hans: 文章ID
+      ja_JP: 記事ID
+    human_description:
+      en_US: The Hacker News story ID to retrieve
+      zh_Hans: 要获取的 Hacker News 文章ID
+      ja_JP: 取得する Hacker News 記事ID
+    llm_description: The numerical ID of the Hacker News story to fetch detailed information for
+
+  - name: include_comments
+    type: boolean
+    required: false
+    default: false
+    form: llm
+    label:
+      en_US: Include Comments
+      zh_Hans: 包含评论
+      ja_JP: コメントを含む
+    human_description:
+      en_US: Whether to include top comments in the response
+      zh_Hans: 是否在响应中包含热门评论
+      ja_JP: レスポンスにトップコメントを含むかどうか
+    llm_description: Whether to fetch and include the top comments for the story
+
+  - name: max_comments
+    type: number
+    required: false
+    default: 5
+    form: llm
+    label:
+      en_US: Max Comments
+      zh_Hans: 最大评论数
+      ja_JP: 最大コメント数
+    human_description:
+      en_US: Maximum number of comments to include (1-20)
+      zh_Hans: 要包含的最大评论数量 (1-20)
+      ja_JP: 含めるコメントの最大数 (1-20)
+    llm_description: Maximum number of top comments to retrieve (between 1 and 20)
+    min: 1
+    max: 20
+
+extra:
+  python:
+    source: tools/get_story_info.py
+
+output_schema:
+  type: object
+  properties:
+    id:
+      type: number
+      description: The story ID
+    title:
+      type: string
+      description: The story title
+    author:
+      type: string
+      description: The story author
+    score:
+      type: number
+      description: The story score/points
+    time:
+      type: number
+      description: Unix timestamp when posted
+    created:
+      type: string
+      description: Human-readable creation date
+    url:
+      type: string
+      description: External URL if available
+    text:
+      type: string
+      description: Raw story text
+    content:
+      type: string
+      description: Extracted content from URL or story text
+    type:
+      type: string
+      description: Item type (story, job, poll)
+    descendants:
+      type: number
+      description: Number of comments
+    kids:
+      type: array
+      description: Comment IDs
+      items:
+        type: number

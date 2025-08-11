@@ -1,0 +1,38 @@
+identity:
+  name: select_sql
+  author: langgenius
+  label:
+    en_US: Select Rows
+    zh_Hans: 查询行
+    pt_BR: Selecionar Linhas
+    ja_JP: 行の選択
+    zh_Hant: 查詢資料列
+description:
+  human:
+    en_US: Select rows from a table in the SQLite database using a provided SQL SELECT statement
+    zh_Hans: 使用提供的 SQL SELECT 语句从 SQLite 数据库中的表查询行
+    pt_BR: Selecione linhas de uma tabela no banco de dados SQLite usando uma instrução SQL SELECT fornecida
+    ja_JP: 指定された SQL SELECT 文を使って SQLite データベースのテーブルから行を選択します
+    zh_Hant: 使用提供的 SQL SELECT 陳述式從 SQLite 資料庫中的表格查詢資料列
+  llm: Select rows from a table in the SQLite database. Use this tool to execute a valid SQL SELECT statement. The statement must start with SELECT. Only SELECT statements are allowed. Returns the selected rows, columns, and a summary message.
+parameters:
+  - name: select_sql
+    type: string
+    required: true
+    label:
+      en_US: SELECT SQL Statement
+      zh_Hans: SELECT SQL 语句
+      pt_BR: Instrução SQL SELECT
+      ja_JP: SELECT SQL 文
+      zh_Hant: SELECT SQL 陳述式
+    human_description:
+      en_US: The SQL statement to select rows. It must start with SELECT. Example, SELECT id, name from users where name is Alice
+      zh_Hans: 用于查询行的 SQL 语句。必须以 SELECT 开头。例如,SELECT id, name from users where name is Alice
+      pt_BR: A instrução SQL para selecionar linhas. Deve começar com SELECT. Exemplo,SELECT id, name from users onde name é Alice
+      ja_JP: 行を選択するための SQL 文。SELECT で始まる必要があります。例,SELECT id, name from users where name is Alice
+      zh_Hant: 用於查詢資料列的 SQL 陳述式。必須以 SELECT 開頭。例如,SELECT id, name from users where name is Alice
+    llm_description: The SQL SELECT statement to execute. It must start with SELECT. Example,SELECT id, name from users where name is Alice
+    form: llm
+extra:
+  python:
+    source: tools/select_sql.py 

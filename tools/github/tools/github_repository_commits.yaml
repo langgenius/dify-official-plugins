@@ -1,0 +1,84 @@
+description:
+  human:
+    en_US: Get commits from a GitHub repository with filtering options for branch, path, and pagination
+    pt_BR: Obter commits de um repositório do GitHub com opções de filtragem por branch, caminho e paginação
+    zh_Hans: 从GitHub仓库获取提交记录，支持分支、路径过滤和分页选项
+  llm: A tool to get commits from a GitHub repository with filtering options for branch, path, and pagination
+extra:
+  python:
+    source: tools/github_repository_commits.py
+identity:
+  author: CharlieWei
+  icon: icon.svg
+  label:
+    en_US: Repository Commits
+    pt_BR: Commits do Repositório
+    zh_Hans: 仓库提交记录
+  name: github_repository_commits
+parameters:
+  - form: llm
+    human_description:
+      en_US: The account owner of the repository. The name is not case sensitive.
+      pt_BR: O proprietário da conta do repositório. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库的账户所有者。名称不区分大小写。
+    label:
+      en_US: Owner
+      pt_BR: Proprietário
+      zh_Hans: 所有者
+    llm_description: The account owner of the repository. The name is not case sensitive.
+    name: owner
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: The name of the repository without the .git extension. The name is not case sensitive.
+      pt_BR: O nome do repositório sem a extensão .git. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库名称不带.git扩展名。名称不区分大小写。
+    label:
+      en_US: Repository
+      pt_BR: Repositório
+      zh_Hans: 仓库
+    llm_description: The name of the repository without the .git extension. The name is not case sensitive.
+    name: repo
+    required: true
+    type: string
+  - default: 10
+    form: llm
+    human_description:
+      en_US: The number of results per page (max 100).
+      pt_BR: O número de resultados por página (máximo 100).
+      zh_Hans: 每页结果数量（最大100）。
+    label:
+      en_US: Per Page
+      pt_BR: Por Página
+      zh_Hans: 每页数量
+    llm_description: The number of results per page (max 100).
+    name: per_page
+    required: false
+    type: number
+  - form: llm
+    human_description:
+      en_US: SHA or branch to start listing commits from. Default is the repository's default branch.
+      pt_BR: SHA ou branch para começar a listar commits. O padrão é o branch padrão do repositório.
+      zh_Hans: 开始列出提交的SHA或分支。默认是仓库的默认分支。
+    label:
+      en_US: SHA/Branch
+      pt_BR: SHA/Branch
+      zh_Hans: SHA/分支
+    llm_description: SHA or branch to start listing commits from. Default is the repository's default branch.
+    name: sha
+    required: false
+    type: string
+  - form: llm
+    human_description:
+      en_US: Only commits containing this file path will be returned.
+      pt_BR: Apenas commits contendo este caminho de arquivo serão retornados.
+      zh_Hans: 只返回包含此文件路径的提交。
+    label:
+      en_US: Path
+      pt_BR: Caminho
+      zh_Hans: 路径
+    llm_description: Only commits containing this file path will be returned.
+    name: path
+    required: false
+    type: string

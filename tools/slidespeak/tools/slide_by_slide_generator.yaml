@@ -1,0 +1,164 @@
+description:
+  human:
+    en_US: Generate presentation slides by defining each slide individually using SlideSpeak API.
+    zh_Hans: 使用 SlideSpeak API 通过单独定义每张幻灯片来生成演示文稿。
+  llm: This tool allows you to generate a presentation by defining each slide individually, specifying the title, layout, content, and other properties for each slide using the SlideSpeak API.
+extra:
+  python:
+    source: tools/slide_by_slide_generator.py
+identity:
+  author: Kalo Chin
+  label:
+    en_US: Slide-by-Slide Generator
+    zh_Hans: 逐页幻灯片生成器
+  name: slide_by_slide_generator
+parameters:
+- name: slides
+  form: llm
+  type: string
+  required: true
+  label:
+    en_US: Slides
+    zh_Hans: 幻灯片
+  human_description:
+    en_US: >-
+      A list of slides, each defined with title, layout, item amount, content, and optional images.
+      Note: item_amount must be an integer value.
+      Example: '[{"title":"Introduction","layout":"items","item_amount":2,"content":"Welcome to our presentation about AI technology"},{"title":"Key Benefits","layout":"steps","item_amount":3,"content":"Increased efficiency, cost reduction, improved decision making"},{"title":"Thank You","layout":"thanks","item_amount":0,"content":"Questions welcome"}]'
+    zh_Hans: >-
+      幻灯片列表，每张幻灯片都定义了标题、布局、项目数量、内容以及可选的图片链接。
+      注意: item_amount 必须是整数值。
+      示例：'[{"title":"Introduction","layout":"items","item_amount":2,"content":"Welcome to our presentation about AI technology"},{"title":"Key Benefits","layout":"steps","item_amount":3,"content":"Increased efficiency, cost reduction, improved decision making"},{"title":"Thank You","layout":"thanks","item_amount":0,"content":"Questions welcome"}]'
+  llm_description: >-
+    A list of slides, each defined as a dictionary with title, layout, item_amount, content, and optional images. 
+    Important: item_amount must be an integer value, not a string.
+    Provide as a JSON string array. 
+    Example: '[{"title":"Introduction","layout":"items","item_amount":2,"content":"Welcome to our presentation about AI technology"},{"title":"Key Benefits","layout":"steps","item_amount":3,"content":"Increased efficiency, cost reduction, improved decision making"},{"title":"Thank You","layout":"thanks","item_amount":0,"content":"Questions welcome"}]'
+- name: template
+  form: llm
+  type: select
+  required: true
+  label:
+    en_US: Presentation Template
+    zh_Hans: 演示模板
+  human_description:
+    en_US: The visual template for the presentation.
+    zh_Hans: 演示文稿的视觉模板。
+  llm_description: Required parameter specifying the presentation template.
+  options:
+  - label:
+      en_US: Default
+      zh_Hans: Default
+    value: default
+  - label:
+      en_US: Gradient
+      zh_Hans: Gradient
+    value: gradient
+  - label:
+      en_US: Adam
+      zh_Hans: Adam
+    value: adam
+  - label:
+      en_US: Bruno
+      zh_Hans: Bruno
+    value: bruno
+  - label:
+      en_US: Clyde
+      zh_Hans: Clyde
+    value: clyde
+  - label:
+      en_US: Daniel
+      zh_Hans: Daniel
+    value: daniel
+  - label:
+      en_US: Eddy
+      zh_Hans: Eddy
+    value: eddy
+  - label:
+      en_US: Felix
+      zh_Hans: Felix
+    value: felix
+  - label:
+      en_US: Iris
+      zh_Hans: Iris
+    value: iris
+  - label:
+      en_US: Monolith
+      zh_Hans: Monolith
+    value: monolith
+  - label:
+      en_US: Nexus
+      zh_Hans: Nexus
+    value: nexus
+  - label:
+      en_US: Aurora
+      zh_Hans: Aurora
+    value: aurora
+  - label:
+      en_US: Lavender
+      zh_Hans: Lavender
+    value: lavender
+  - label:
+      en_US: Nebula
+      zh_Hans: Nebula
+    value: nebula
+  - label:
+      en_US: Marina
+      zh_Hans: Marina
+    value: marina
+  - label:
+      en_US: Monarch
+      zh_Hans: Monarch
+    value: monarch
+  - label:
+      en_US: Serene
+      zh_Hans: Serene
+    value: serene
+- name: language
+  form: llm
+  type: string
+  required: false
+  label:
+    en_US: Language
+    zh_Hans: 语言
+  human_description:
+    en_US: The language to use in the presentation (default is "ORIGINAL").
+    zh_Hans: 演示文稿中使用的语言（默认为"ORIGINAL"）。
+  llm_description: Optional parameter specifying the language to use in the presentation.
+- name: fetch_images
+  form: llm
+  type: boolean
+  required: false
+  label:
+    en_US: Include Images
+    zh_Hans: 包含图片
+  human_description:
+    en_US: Whether to include stock images in the presentation (default is true).
+    zh_Hans: 是否在演示文稿中包含图片（默认为true）。
+  llm_description: Optional boolean parameter specifying whether to include stock images.
+
+# New optional parameter: include_cover
+- name: include_cover
+  form: llm
+  type: boolean
+  required: false
+  label:
+    en_US: Include Cover Slide
+    zh_Hans: 包含封面幻灯片
+  human_description:
+    en_US: Whether to include the cover slide in the presentation (default is true).
+    zh_Hans: 是否在演示文稿中包含封面幻灯片（默认为 true）。
+  llm_description: Optional boolean parameter specifying whether to include the cover slide.
+
+# New optional parameter: include_table_of_contents
+- name: include_table_of_contents
+  form: llm
+  type: boolean
+  required: false
+  label:
+    en_US: Include Table of Contents
+    zh_Hans: 包含目录
+  human_description:
+    en_US: Whether to include the table of contents slides (default is true).
+    zh_Hans: 是否在演示文稿中包含目录幻灯片（默认为 true）。
+  llm_description: Optional boolean parameter specifying whether to include table of contents slides. 

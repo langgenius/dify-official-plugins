@@ -1,0 +1,111 @@
+oauth_schema:
+  client_schema:
+    - name: "client_id"
+      type: "text-input"
+      required: true
+      label:
+        en_US: "Client ID"
+        zh_Hans: "客户端 ID"
+        pt_BR: "ID do Cliente"
+        ja_JP: "クライアント ID"
+        zh_Hant: "客戶端 ID"
+      placeholder:
+        en_US: "Please input your OAuth application client ID"
+        zh_Hans: "请输入您的 OAuth 应用程序客户端 ID"
+        pt_BR: "Por favor, insira o ID do cliente do seu aplicativo OAuth"
+        ja_JP: "OAuth アプリケーションのクライアント ID を入力してください"
+        zh_Hant: "請輸入您的 OAuth 應用程式客戶端 ID"
+      help:
+        en_US: "Get your client ID from Twitter Developer Portal > Projects & Apps > Your App > Keys and tokens"
+        zh_Hans: "从 Twitter 开发者门户 > 项目和应用 > 您的应用 > 密钥和令牌中获取客户端 ID"
+        pt_BR: "Obtenha seu ID de cliente do Portal do Desenvolvedor do Twitter > Projetos e Apps > Seu App > Chaves e tokens"
+        ja_JP: "Twitter Developer Portal > プロジェクトとアプリ > あなたのアプリ > キーとトークンからクライアント ID を取得してください"
+        zh_Hant: "從 Twitter 開發者入口網站 > 專案和應用程式 > 您的應用程式 > 金鑰和權杖中取得客戶端 ID"
+      url: "https://developer.twitter.com/"
+    - name: "client_secret"
+      type: "secret-input"
+      required: true
+      label:
+        en_US: "Client Secret"
+        zh_Hans: "客户端密钥"
+        pt_BR: "Segredo do Cliente"
+        ja_JP: "クライアントシークレット"
+        zh_Hant: "客戶端密鑰"
+      placeholder:
+        en_US: "Please input your OAuth application client secret"
+        zh_Hans: "请输入您的 OAuth 应用程序客户端密钥"
+        pt_BR: "Por favor, insira o segredo do cliente do seu aplicativo OAuth"
+        ja_JP: "OAuth アプリケーションのクライアントシークレットを入力してください"
+        zh_Hant: "請輸入您的 OAuth 應用程式客戶端密鑰"
+      help:
+        en_US: "Get your client secret from Twitter Developer Portal > Projects & Apps > Your App > Keys and tokens"
+        zh_Hans: "从 Twitter 开发者门户 > 项目和应用 > 您的应用 > 密钥和令牌中获取客户端密钥"
+        pt_BR: "Obtenha seu segredo de cliente do Portal do Desenvolvedor do Twitter > Projetos e Apps > Seu App > Chaves e tokens"
+        ja_JP: "Twitter Developer Portal > プロジェクトとアプリ > あなたのアプリ > キーとトークンからクライアントシークレットを取得してください"
+        zh_Hant: "從 Twitter 開發者入口網站 > 專案和應用程式 > 您的應用程式 > 金鑰和權杖中取得客戶端密鑰"
+      url: "https://developer.twitter.com/"
+  credentials_schema:
+    - name: "access_token"
+      type: "secret-input"
+      label:
+        en_US: "Access Token"
+        zh_Hans: "访问令牌"
+        pt_BR: "Token de Acesso"
+        ja_JP: "アクセストークン"
+        zh_Hant: "存取權杖"
+      placeholder:
+        en_US: "Please input your OAuth access token"
+        zh_Hans: "请输入您的 OAuth 访问令牌"
+        pt_BR: "Por favor, insira seu token de acesso OAuth"
+        ja_JP: "OAuth アクセストークンを入力してください"
+        zh_Hant: "請輸入您的 OAuth 存取權杖"
+      help:
+        en_US: "Access token will be automatically obtained through OAuth authorization flow"
+        zh_Hans: "访问令牌将通过 OAuth 授权流程自动获取"
+        pt_BR: "O token de acesso será obtido automaticamente através do fluxo de autorização OAuth"
+        ja_JP: "アクセストークンは OAuth 認証フローを通じて自動的に取得されます"
+        zh_Hant: "存取權杖將透過 OAuth 授權流程自動取得"
+    - name: "refresh_token"
+      type: "secret-input"
+      label:
+        en_US: "Refresh Token"
+        zh_Hans: "刷新令牌"
+        pt_BR: "Token de Renovação"
+        ja_JP: "リフレッシュトークン"
+        zh_Hant: "重新整理權杖"
+      placeholder:
+        en_US: "Refresh token will be automatically obtained"
+        zh_Hans: "刷新令牌将自动获取"
+        pt_BR: "O token de renovação será obtido automaticamente"
+        ja_JP: "リフレッシュトークンは自動的に取得されます"
+        zh_Hant: "重新整理權杖將自動取得"
+      help:
+        en_US: "Refresh token will be automatically obtained through OAuth authorization flow"
+        zh_Hans: "刷新令牌将通过 OAuth 授权流程自动获取"
+        pt_BR: "O token de renovação será obtido automaticamente através do fluxo de autorização OAuth"
+        ja_JP: "リフレッシュトークンは OAuth 認証フローを通じて自動的に取得されます"
+        zh_Hant: "重新整理權杖將透過 OAuth 授權流程自動取得"
+identity:
+  author: langgenius
+  name: twitter
+  label:
+    en_US: Twitter
+    zh_Hans: 推特
+    pt_BR: Twitter
+    ja_JP: ツイッター
+    zh_Hant: 推特
+  description:
+    en_US: Twitter social media platform integration for posting tweets, liking posts, and managing Twitter interactions
+    zh_Hans: 推特社交媒体平台集成，用于发布推文、点赞帖子和管理推特互动
+    pt_BR: Integração da plataforma de mídia social Twitter para postar tweets, curtir posts e gerenciar interações do Twitter
+    ja_JP: ツイートの投稿、投稿へのいいね、Twitter インタラクションの管理のための Twitter ソーシャルメディアプラットフォーム統合
+    zh_Hant: 推特社群媒體平台整合，用於發布推文、按讚貼文和管理推特互動
+  icon: icon.jpg
+tools:
+  - tools/delete_tweet.yaml
+  - tools/get_user_info.yaml
+  - tools/like_tweet.yaml
+  - tools/send_tweet.yaml
+extra:
+  python:
+    source: provider/twitter.py

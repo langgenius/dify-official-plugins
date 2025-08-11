@@ -209,7 +209,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages, rich_content=True
             )
-            response = MultiModalConversation.call(**params, stream=stream)
+            response = MultiModalConversation.call(**params, stream=stream, incremental_output=incremental_output)
         else:
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages

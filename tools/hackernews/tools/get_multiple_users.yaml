@@ -1,0 +1,110 @@
+identity:
+  name: get_multiple_users
+  author: langgenius
+  label:
+    en_US: Get Multiple Users
+    zh_Hans: 获取多个用户
+    ja_JP: 複数ユーザーを取得
+
+description:
+  human:
+    en_US: Get information about multiple Hacker News users at once, including their profiles and recent submissions
+    zh_Hans: 一次获取多个 Hacker News 用户的信息，包括个人资料和最近提交的内容
+    ja_JP: 複数の Hacker News ユーザーの情報（プロフィールや最近の投稿を含む）を一度に取得
+  llm: Retrieve comprehensive information about multiple Hacker News users simultaneously, with optional details about their recent submissions
+
+parameters:
+  - name: usernames
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Usernames
+      zh_Hans: 用户名列表
+      ja_JP: ユーザー名
+    human_description:
+      en_US: Comma-separated list of Hacker News usernames to look up (max 10)
+      zh_Hans: 要查找的 Hacker News 用户名列表，用逗号分隔（最多10个）
+      ja_JP: 検索する Hacker News ユーザー名のカンマ区切りリスト（最大10個）
+    llm_description: Comma-separated list of Hacker News usernames to retrieve information for (maximum 10 users)
+
+  - name: include_submissions
+    type: boolean
+    required: false
+    default: false
+    form: llm
+    label:
+      en_US: Include Submissions
+      zh_Hans: 包含提交内容
+      ja_JP: 投稿を含む
+    human_description:
+      en_US: Whether to include details about users' recent submissions
+      zh_Hans: 是否包含用户最近提交内容的详细信息
+      ja_JP: ユーザーの最近の投稿の詳細を含めるかどうか
+    llm_description: Whether to fetch and include details about each user's recent submissions
+
+  - name: max_submissions
+    type: number
+    required: false
+    default: 5
+    form: llm
+    label:
+      en_US: Max Submissions
+      zh_Hans: 最大提交数
+      ja_JP: 最大投稿数
+    human_description:
+      en_US: Maximum number of recent submissions to include per user (1-10)
+      zh_Hans: 每个用户包含的最大最近提交数量 (1-10)
+      ja_JP: 各ユーザーに含める最近の投稿の最大数 (1-10)
+    llm_description: Maximum number of recent submissions to fetch per user (between 1 and 10)
+    min: 1
+    max: 10
+
+extra:
+  python:
+    source: tools/get_multiple_users.py
+
+output_schema:
+  type: object
+  properties:
+    total_requested:
+      type: number
+      description: Total number of users requested
+    successfully_fetched:
+      type: number
+      description: Number of users successfully fetched
+    failed_count:
+      type: number
+      description: Number of users that failed to fetch
+    users:
+      type: array
+      description: List of user information
+      items:
+        type: object
+        properties:
+          username:
+            type: string
+          created:
+            type: number
+          created_formatted:
+            type: string
+          karma:
+            type: number
+          about:
+            type: string
+          submitted_count:
+            type: number
+          submitted_items:
+            type: array
+          submission_details:
+            type: array
+    failed_users:
+      type: array
+      description: List of users that failed to fetch
+      items:
+        type: object
+        properties:
+          username:
+            type: string
+          error:
+            type: string

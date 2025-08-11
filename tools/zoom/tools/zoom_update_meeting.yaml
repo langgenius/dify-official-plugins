@@ -1,0 +1,280 @@
+identity:
+  name: zoom_update_meeting
+  author: langgenius
+  label:
+    en_US: Update Zoom Meeting
+    zh_Hans: 更新Zoom会议
+    ja_JP: Zoom会議を更新
+
+description:
+  human:
+    en_US: Update an existing Zoom meeting with new settings and configurations
+    zh_Hans: 使用新设置和配置更新现有的Zoom会议
+    ja_JP: 新しい設定と構成で既存のZoom会議を更新
+  llm: Update an existing Zoom meeting's settings, including topic, time, duration, and meeting options.
+
+parameters:
+  - name: meeting_id
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Meeting ID
+      zh_Hans: 会议ID
+      ja_JP: 会議ID
+    human_description:
+      en_US: The unique identifier of the Zoom meeting to update
+      zh_Hans: 要更新的Zoom会议的唯一标识符
+      ja_JP: 更新するZoom会議の一意の識別子
+    llm_description: The unique meeting ID for the Zoom meeting to update (required)
+
+  - name: topic
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: New Meeting Topic
+      zh_Hans: 新会议主题
+      ja_JP: 新しい会議トピック
+    human_description:
+      en_US: Update the meeting topic or title
+      zh_Hans: 更新会议主题或标题
+      ja_JP: 会議トピックまたはタイトルを更新
+    llm_description: New topic or title for the meeting (optional)
+
+  - name: type
+    type: select
+    required: false
+    form: llm
+    label:
+      en_US: Meeting Type
+      zh_Hans: 会议类型
+      ja_JP: 会議の種類
+    human_description:
+      en_US: Update the meeting type
+      zh_Hans: 更新会议类型
+      ja_JP: 会議タイプを更新
+    llm_description: Update the meeting type (1=instant, 2=scheduled, 3=recurring no fixed time, 8=recurring with fixed time)
+    options:
+      - value: 1
+        label:
+          en_US: Instant Meeting
+          zh_Hans: 即时会议
+          ja_JP: インスタント会議
+      - value: 2
+        label:
+          en_US: Scheduled Meeting
+          zh_Hans: 预定会议
+          ja_JP: スケジュール会議
+      - value: 3
+        label:
+          en_US: Recurring (No Fixed Time)
+          zh_Hans: 周期性会议（无固定时间）
+          ja_JP: 繰り返し（固定時間なし）
+      - value: 8
+        label:
+          en_US: Recurring (Fixed Time)
+          zh_Hans: 周期性会议（固定时间）
+          ja_JP: 繰り返し（固定時間あり）
+
+  - name: start_time
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: New Start Time
+      zh_Hans: 新开始时间
+      ja_JP: 新しい開始時間
+    human_description:
+      en_US: Update meeting start time in ISO 8601 format (e.g., 2024-12-25T10:00:00Z)
+      zh_Hans: 更新会议开始时间，ISO 8601格式（例如：2024-12-25T10:00:00Z）
+      ja_JP: 会議開始時間を更新、ISO 8601形式（例：2024-12-25T10:00:00Z）
+    llm_description: New start time for the meeting in ISO 8601 format (YYYY-MM-DDTHH:mm:ssZ)
+
+  - name: duration
+    type: number
+    required: false
+    form: llm
+    label:
+      en_US: Duration (minutes)
+      zh_Hans: 持续时间（分钟）
+      ja_JP: 継続時間（分）
+    human_description:
+      en_US: Update meeting duration in minutes
+      zh_Hans: 更新会议持续时间（分钟）
+      ja_JP: 会議継続時間を更新（分）
+    llm_description: New duration of the meeting in minutes
+    min: 1
+    max: 1440
+
+  - name: timezone
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Timezone
+      zh_Hans: 时区
+      ja_JP: タイムゾーン
+    human_description:
+      en_US: Update the meeting timezone (e.g., UTC, Asia/Shanghai, America/New_York)
+      zh_Hans: 更新会议时区（例如：UTC、Asia/Shanghai、America/New_York）
+      ja_JP: 会議のタイムゾーンを更新（例：UTC、Asia/Tokyo、America/New_York）
+    llm_description: New timezone identifier for the meeting
+
+  - name: password
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Meeting Password
+      zh_Hans: 会议密码
+      ja_JP: 会議パスワード
+    human_description:
+      en_US: Update or set meeting password for security
+      zh_Hans: 更新或设置会议安全密码
+      ja_JP: セキュリティのための会議パスワードを更新または設定
+    llm_description: New password for the meeting (optional)
+
+  - name: agenda
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Meeting Agenda
+      zh_Hans: 会议议程
+      ja_JP: 会議アジェンダ
+    human_description:
+      en_US: Update meeting agenda or detailed description
+      zh_Hans: 更新会议议程或详细描述
+      ja_JP: 会議アジェンダまたは詳細な説明を更新
+    llm_description: New agenda or description for the meeting
+
+  - name: waiting_room
+    type: boolean
+    required: false
+    form: llm
+    label:
+      en_US: Enable Waiting Room
+      zh_Hans: 启用等候室
+      ja_JP: 待機室を有効にする
+    human_description:
+      en_US: Update waiting room setting for participants
+      zh_Hans: 更新参与者的等候室设置
+      ja_JP: 参加者の待機室設定を更新
+    llm_description: Whether to enable waiting room (true/false)
+
+  - name: join_before_host
+    type: boolean
+    required: false
+    form: llm
+    label:
+      en_US: Allow Join Before Host
+      zh_Hans: 允许主持人之前加入
+      ja_JP: ホスト前の参加を許可
+    human_description:
+      en_US: Update join before host setting
+      zh_Hans: 更新主持人之前加入设置
+      ja_JP: ホスト前参加設定を更新
+    llm_description: Whether participants can join before the host (true/false)
+
+  - name: mute_upon_entry
+    type: boolean
+    required: false
+    form: llm
+    label:
+      en_US: Mute Upon Entry
+      zh_Hans: 进入时静音
+      ja_JP: 入室時にミュート
+    human_description:
+      en_US: Update mute upon entry setting
+      zh_Hans: 更新进入时静音设置
+      ja_JP: 入室時ミュート設定を更新
+    llm_description: Whether to mute participants when they join (true/false)
+
+  - name: auto_recording
+    type: select
+    required: false
+    form: llm
+    label:
+      en_US: Auto Recording
+      zh_Hans: 自动录制
+      ja_JP: 自動録画
+    human_description:
+      en_US: Update automatic recording setting for the meeting
+      zh_Hans: 更新会议的自动录制设置
+      ja_JP: 会議の自動録画設定を更新
+    llm_description: New automatic recording setting (none, local, cloud)
+    options:
+      - value: "none"
+        label:
+          en_US: No Recording
+          zh_Hans: 不录制
+          ja_JP: 録画なし
+      - value: "local"
+        label:
+          en_US: Local Recording
+          zh_Hans: 本地录制
+          ja_JP: ローカル録画
+      - value: "cloud"
+        label:
+          en_US: Cloud Recording
+          zh_Hans: 云端录制
+          ja_JP: クラウド録画
+
+  - name: occurrence_id
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Occurrence ID
+      zh_Hans: 发生ID
+      ja_JP: オカレンスID
+    human_description:
+      en_US: Occurrence ID to update a specific occurrence of a recurring meeting (optional)
+      zh_Hans: 更新周期性会议特定发生的发生ID（可选）
+      ja_JP: 繰り返し会議の特定のオカレンスを更新するためのオカレンスID（オプション）
+    llm_description: Optional occurrence ID for updating a specific occurrence of a recurring meeting
+
+extra:
+  python:
+    source: tools/zoom_update_meeting.py
+
+output_schema:
+  type: object
+  properties:
+    success:
+      type: boolean
+      description: Whether the update was successful
+    meeting_id:
+      type: string
+      description: The ID of the updated meeting
+    occurrence_id:
+      type: string
+      description: The occurrence ID if a specific occurrence was updated
+    updated_meeting:
+      type: object
+      description: The updated meeting information
+      properties:
+        topic:
+          type: string
+        type:
+          type: number
+        status:
+          type: string
+        start_time:
+          type: string
+        duration:
+          type: number
+        timezone:
+          type: string
+        join_url:
+          type: string
+        password:
+          type: string
+    changes_made:
+      type: object
+      description: The changes that were applied to the meeting
+    update_type:
+      type: string
+      description: Type of update performed (entire_meeting or occurrence)
+      enum: ["entire_meeting", "occurrence"]

@@ -286,6 +286,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             for chunk in chunks:
                 chunk_index += 1
                 if chunk:
+                    delta_content = ""
                     if chunk.usage:
                         usage = self._calc_response_usage(
                             model=model,
@@ -574,6 +575,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             model_properties=model_properties,
             parameter_rules=rules,
             features=model_config.features,
+            pricing=model_config.pricing,
         )
         return entity
 

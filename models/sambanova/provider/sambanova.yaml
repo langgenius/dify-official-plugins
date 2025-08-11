@@ -1,11 +1,11 @@
 provider: sambanova
 label:
-  en_US: SambaNova Cloud
-  zh_Hans: Sambanova Cloud
+  en_US: SambaCloud
+  zh_Hans: SambaCloud
 description:
-  en_US: SambaNova Cloud provides access to the SambaNova Cloud API, which hosts
-    LLama4, Qwen and DeepSeek Models.
-  zh_Hans: Sambanova Cloud 提供的模型。
+  en_US: SambaCloud provides access to the SambaCloud API, which hosts
+    Llama4, Qwen and DeepSeek Models.
+  zh_Hans: SambaCloud 提供的模型。
 icon_small:
   en_US: icon_s_en.svg
 icon_large:
@@ -13,8 +13,8 @@ icon_large:
 background: "#E5E7EB"
 help:
   title:
-    en_US: Get your API Key from sambanova Cloud
-    zh_Hans: 从 Sambanova Cloud 获取 API Key
+    en_US: Get your API Key from SambaCloud
+    zh_Hans: 从 SambaCloud 获取 API Key
   url:
     en_US: http://cloud.sambanova.ai?utm_source=dify&utm_medium=external&utm_campaign=cloud_signup
 supported_model_types:

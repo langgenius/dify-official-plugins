@@ -12,6 +12,7 @@ from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin import Tool
 from tools.comfyui_workflow import ComfyUiWorkflow
 from tools.comfyui_client import ComfyUiClient
+from tools.model_manager import ModelManager
 
 LORA_NODE = {
     "inputs": {
@@ -39,13 +40,6 @@ class ModelType(Enum):
 
 
 class ComfyuiTxt2Img(Tool):
-    def get_hf_key(self) -> str:
-        hf_api_key = self.runtime.credentials.get("hf_api_key")
-        if hf_api_key is None:
-            raise ToolProviderCredentialValidationError(
-                "Please input hf_api_key")
-        return hf_api_key
-
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
@@ -53,20 +47,23 @@ class ComfyuiTxt2Img(Tool):
         if not base_url:
             yield self.create_text_message("Please input base_url")
         self.comfyui = ComfyUiClient(
-            base_url, self.runtime.credentials.get("comfyui_api_key")
+            base_url, self.runtime.credentials.get("comfyui_api_key"),
+            api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org")
         )
-        if tool_parameters.get("model"):
-            self.runtime.credentials["model"] = tool_parameters["model"]
-        model = self.runtime.credentials.get("model", "")
-        if model == "":
-            model = self.comfyui.download_model(
-                "https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive/resolve/main/v1-5-pruned-emaonly-fp16.safetensors",
-                "checkpoints",
-                token=self.get_hf_key()
-            )
-        if model not in self.comfyui.get_checkpoints():
-            raise ToolProviderCredentialValidationError(
-                f"model {model} does not exist")
+        self.model_manager = ModelManager(
+            self.comfyui,
+            civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
+            hf_api_key=self.runtime.credentials.get("hf_api_key"),
+        )
+
+        model_raw = tool_parameters.get("model", "")
+        if model_raw == "":
+            model = self.model_manager.download_hugging_face(
+                "Comfy-Org/stable-diffusion-v1-5-archive", "v1-5-pruned-emaonly-fp16.safetensors", "checkpoints")
+        else:
+            model = self.model_manager.decode_model_name(
+                model_raw, "checkpoints")
+
         prompt = tool_parameters.get("prompt", "")
         if not prompt:
             yield self.create_text_message("Please input prompt")
@@ -90,20 +87,23 @@ class ComfyuiTxt2Img(Tool):
         ecosystem = tool_parameters.get("ecosystem", ModelType.SD15.name)
 
         lora_list = []
-        if len(tool_parameters.get("lora_names", "")) > 0:
-            lora_list = tool_parameters.get("lora_names").split(",")
-        valid_loras = self.comfyui.get_loras()
-        for lora in lora_list:
-            if lora not in valid_loras:
-                raise ToolProviderCredentialValidationError(
-                    f"LORA {lora} does not exist."
-                )
+        try:
+            for lora_name in tool_parameters.get("lora_names", "").split(","):
+                lora_name = lora_name.lstrip(" ").rstrip(" ")
+                if lora_name != "":
+                    lora_list.append(
+                        self.model_manager.decode_model_name(
+                            lora_name, "loras")
+                    )
+        except Exception as e:
+            raise ToolProviderCredentialValidationError(str(e))
 
         lora_strength_list = []
         if len(tool_parameters.get("lora_strengths", "")) > 0:
             lora_strength_list = [
                 float(x) for x in tool_parameters.get("lora_strengths").split(",")
             ]
+        batch_size = int(tool_parameters.get("batch_size", 1))
 
         # make workflow json
         current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -149,6 +149,7 @@ class ComfyuiTxt2Img(Tool):
                 workflow.identify_node_by_class_type("EmptyLatentImage"),
                 round(width * hiresfix_size_ratio),
                 round(height * hiresfix_size_ratio),
+                batch_size
             )
 
             workflow.set_property("10", "inputs/width", width)
@@ -159,7 +160,7 @@ class ComfyuiTxt2Img(Tool):
                 tool_parameters.get("hiresfix_upscale_method", "bilinear"),
             )
         else:
-            workflow.set_empty_latent_image(None, width, height)
+            workflow.set_empty_latent_image(None, width, height, batch_size)
 
         if ecosystem in {ModelType.SD3.name, ModelType.FLUX1.name}:
             workflow.set_property("5", "class_type", "EmptySD3LatentImage")

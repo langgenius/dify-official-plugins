@@ -27,6 +27,7 @@ from dify_plugin.errors.model import (
     InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
+from models.shared.input import transform_jina_input_text
 from models.text_embedding.jina_tokenizer import JinaTokenizer
 
 
@@ -68,18 +69,13 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
             "Content-Type": "application/json",
         }
 
-        def transform_jina_input_text(model, text):
-            if model == "jina-clip-v1" or model == "jina-clip-v2":
-                return {"text": text}
-            return text
-
         data = {
             "model": model,
             "input": [transform_jina_input_text(model, text) for text in texts],
         }
 
         # model specific parameters
-        if model == "jina-embeddings-v3" or model == "jina-clip-v2":
+        if model == "jina-embeddings-v3" or model == "jina-embeddings-v4":
             # set `task` type according to input type for the best performance
             data["task"] = (
                 "retrieval.query"

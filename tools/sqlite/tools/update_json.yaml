@@ -1,0 +1,72 @@
+identity:
+  name: update_json
+  author: langgenius
+  label:
+    en_US: Update Rows (JSON)
+    zh_Hans: 更新行（JSON）
+    pt_BR: Atualizar Linhas (JSON)
+    ja_JP: 行の更新（JSON）
+    zh_Hant: 更新資料列（JSON）
+description:
+  human:
+    en_US: Update rows in a table in the SQLite database using JSON data. Provide the table name, the data to update, and the conditions for selecting rows as JSON strings.
+    zh_Hans: 使用 JSON 字符串更新 SQLite 数据库中表的行。请提供表名、要更新的数据和选择行的条件，均为 JSON 字符串。
+    pt_BR: Atualize linhas em uma tabela no banco de dados SQLite usando strings JSON. Forneça o nome da tabela, os dados a serem atualizados e as condições para selecionar as linhas, todos como strings JSON.
+    ja_JP: JSON 文字列を使って SQLite データベースのテーブルの行を更新します。テーブル名、更新するデータ、および行を選択する条件をすべて JSON 文字列で指定してください。
+    zh_Hant: 使用 JSON 字串更新 SQLite 資料庫中表格的資料列。請提供表格名稱、要更新的資料和選擇資料列的條件，皆為 JSON 字串。
+  llm: Update rows in a table in the SQLite database using JSON data. The table name, data to update, and where conditions must be provided as JSON strings. Returns a success message or an error if the operation fails.
+parameters:
+  - name: table
+    type: string
+    required: true
+    label:
+      en_US: Table Name
+      zh_Hans: 表名
+      pt_BR: Nome da Tabela
+      ja_JP: テーブル名
+      zh_Hant: 表格名稱
+    human_description:
+      en_US: The name of the table to update data in.
+      zh_Hans: 要更新数据的表名。
+      pt_BR: O nome da tabela para atualizar dados。
+      ja_JP: データを更新するテーブル名。
+      zh_Hant: 要更新資料的表格名稱。
+    llm_description: The name of the table to update data in.
+    form: llm
+  - name: data
+    type: string
+    required: true
+    label:
+      en_US: Data to Update (JSON String)
+      zh_Hans: 要更新的数据（JSON 字符串）
+      pt_BR: Dados para Atualizar (String JSON)
+      ja_JP: 更新するデータ（JSON 文字列）
+      zh_Hant: 要更新的資料（JSON 字串）
+    human_description:
+      en_US: The data to update. Provide a JSON string with columns and new values.
+      zh_Hans: 要更新的数据。请提供包含列和新值的 JSON 字符串。
+      pt_BR: Os dados a serem atualizados. Forneça uma string JSON com colunas e novos valores.
+      ja_JP: 更新するデータ。カラムと新しい値を含む JSON 文字列を指定してください。
+      zh_Hant: 要更新的資料。請提供包含欄位和新值的 JSON 字串。
+    llm_description: The data to update. Provide a JSON string with columns and new values.
+    form: llm
+  - name: where
+    type: string
+    required: true
+    label:
+      en_US: Where Conditions (JSON String)
+      zh_Hans: 条件（JSON 字符串）
+      pt_BR: Condições (String JSON)
+      ja_JP: 条件（JSON 文字列）
+      zh_Hant: 條件（JSON 字串）
+    human_description:
+      en_US: The conditions for selecting rows to update. Provide a JSON string with columns and values to match.
+      zh_Hans: 用于选择要更新行的条件。请提供包含列和值的 JSON 字符串。
+      pt_BR: As condições para selecionar as linhas a serem atualizadas. Forneça uma string JSON com colunas e valores para corresponder.
+      ja_JP: 更新する行を選択するための条件。カラムと値を含む JSON 文字列を指定してください。
+      zh_Hant: 用於選擇要更新資料列的條件。請提供包含欄位和值的 JSON 字串。
+    llm_description: The conditions for selecting rows to update. Provide a JSON string with columns and values to match.
+    form: llm
+extra:
+  python:
+    source: tools/update_json.py 

@@ -1,7 +1,7 @@
 from collections.abc import Generator
 from typing import Any
 import requests
-import msal
+import urllib.parse
 from datetime import datetime, timedelta
 
 from dify_plugin import Tool
@@ -15,44 +15,17 @@ class FlagEmailTool(Tool):
         """
         try:
             # Get parameters
-            user_email = self.runtime.credentials.get("user_email")
             email_id = tool_parameters.get("email_id", "")
             flag_status = tool_parameters.get("flag_status", "flagged")
             due_date_days = tool_parameters.get("due_date_days", 0)
-            flag_message = tool_parameters.get("flag_message", "")
-            
-            # Validate required parameters
-            if not user_email:
-                yield self.create_text_message("User email is required in credentials.")
-                return
-                
-            if not email_id:
-                yield self.create_text_message("Email ID is required.")
-                return
-            
-            if flag_status not in ["notFlagged", "flagged", "complete"]:
-                yield self.create_text_message("Flag status must be 'notFlagged', 'flagged', or 'complete'.")
-                return
-                
-            # Get credentials
-            client_id = self.runtime.credentials.get("client_id")
-            client_secret = self.runtime.credentials.get("client_secret")
-            tenant_id = self.runtime.credentials.get("tenant_id")
-            
-            if not all([client_id, client_secret, tenant_id]):
-                yield self.create_text_message("Azure AD credentials are required.")
-                return
+            flag_message = tool_parameters.get("flag_message", "")         
+            # Get access token from OAuth credentials
+            access_token = self.runtime.credentials.get("access_token")
             
             try:
-                # Get access token
-                access_token = self._get_access_token(client_id, client_secret, tenant_id)
-                if not access_token:
-                    yield self.create_text_message("Failed to acquire access token.")
-                    return
-                
                 # Update email flag
                 result = self._update_email_flag(
-                    access_token, user_email, email_id, flag_status, 
+                    access_token, email_id, flag_status, 
                     due_date_days, flag_message
                 )
                 
@@ -78,38 +51,15 @@ class FlagEmailTool(Tool):
             yield self.create_text_message(f"Error: {str(e)}")
             return
     
-    def _get_access_token(self, client_id: str, client_secret: str, tenant_id: str) -> str:
-        """
-        Get access token using client credentials flow
-        """
-        try:
-            app = msal.ConfidentialClientApplication(
-                client_id=client_id,
-                client_credential=client_secret,
-                authority=f"https://login.microsoftonline.com/{tenant_id}"
-            )
-            
-            result = app.acquire_token_for_client(
-                scopes=["https://graph.microsoft.com/.default"]
-            )
-            
-            if "access_token" in result:
-                return result["access_token"]
-            else:
-                error_desc = result.get("error_description", "Unknown error")
-                print(f"Token acquisition failed: {error_desc}")
-                return None
-                
-        except Exception as e:
-            print(f"Error getting access token: {str(e)}")
-            return None
-    
-    def _update_email_flag(self, access_token: str, user_email: str, email_id: str, 
+    def _update_email_flag(self, access_token: str, email_id: str, 
                           flag_status: str, due_date_days: int, flag_message: str):
         """
         Update email flag using Microsoft Graph API
         """
         try:
+            # URL encode the email ID to handle special characters
+            encoded_email_id = urllib.parse.quote(email_id, safe='')
+            
             # Build the flag object
             flag_data = {
                 "flagStatus": flag_status
@@ -142,8 +92,8 @@ class FlagEmailTool(Tool):
                 # Clear categories when unflagging
                 update_data["categories"] = []
             
-            # API endpoint
-            url = f"https://graph.microsoft.com/v1.0/users/{user_email}/messages/{email_id}"
+            # API endpoint using /me
+            url = f"https://graph.microsoft.com/v1.0/me/messages/{encoded_email_id}"
             
             # Headers
             headers = {

@@ -214,7 +214,12 @@ class Spider:
         return requests.delete(url, headers=headers, stream=stream)
 
     def _handle_error(self, response, action):
-        if response.status_code in {402, 409, 500}:
+        if response.status_code == 401:
+            raise Exception(f"Not a valid API key")
+        if response.status_code == 402:
+            raise Exception(f"Not enough credits in account")
+        
+        if response.status_code in {409, 500}:
             error_message = response.json().get("error", "Unknown error occurred")
             raise Exception(f"Failed to {action}. Status code: {response.status_code}. Error: {error_message}")
         else:

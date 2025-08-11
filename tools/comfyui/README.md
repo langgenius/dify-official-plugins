@@ -131,7 +131,7 @@ Download By JSON node can download models specified by ComfyUI's workflow json.
 More specifically, it downloads all the models listed in "properties":{"models": [...]} in every node.
 It needs a JSON file exported with "Export", not "Export (API)".
 
-## Prebuild Docker Image
+## Prebuilt Docker Image
 
 If you don't know how to host ComfyUI, a [prebuilt docker image](https://hub.docker.com/r/l125/comfyui-for-dify) would help you.
 It has [ComfyUI](https://github.com/comfyanonymous/ComfyUI) itself and all the required packages for this plugin.

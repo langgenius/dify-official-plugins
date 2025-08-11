@@ -74,12 +74,11 @@ class ComfyUiWorkflow:
         for node_id in self._workflow_json:
             if self.get_property(node_id, "inputs/seed") is not None:
                 self.set_property(
-                    node_id, "inputs/seed", random.randint(10**14, 10**15 - 1)
+                    node_id, "inputs/seed", random.randint(0, 10**8 - 1)
                 )
             if self.get_property(node_id, "inputs/noise_seed") is not None:
                 self.set_property(
-                    node_id, "inputs/noise_seed", random.randint(
-                        10**14, 10**15 - 1)
+                    node_id, "inputs/noise_seed", random.randint(0, 10**8 - 1)
                 )
 
     def set_image_names(

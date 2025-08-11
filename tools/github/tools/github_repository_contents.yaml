@@ -1,0 +1,70 @@
+description:
+  human:
+    en_US: Get contents from a GitHub repository directory or file with optional branch specification
+    pt_BR: Obter conteúdo de um diretório ou arquivo de repositório do GitHub com especificação opcional de branch
+    zh_Hans: 从GitHub仓库目录或文件获取内容，支持可选的分支指定
+  llm: A tool to get contents from a GitHub repository directory or file with optional branch specification
+extra:
+  python:
+    source: tools/github_repository_contents.py
+identity:
+  author: CharlieWei
+  icon: icon.svg
+  label:
+    en_US: Repository Contents
+    pt_BR: Conteúdo do Repositório
+    zh_Hans: 仓库内容
+  name: github_repository_contents
+parameters:
+  - form: llm
+    human_description:
+      en_US: The account owner of the repository. The name is not case sensitive.
+      pt_BR: O proprietário da conta do repositório. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库的账户所有者。名称不区分大小写。
+    label:
+      en_US: Owner
+      pt_BR: Proprietário
+      zh_Hans: 所有者
+    llm_description: The account owner of the repository. The name is not case sensitive.
+    name: owner
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: The name of the repository without the .git extension. The name is not case sensitive.
+      pt_BR: O nome do repositório sem a extensão .git. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库名称不带.git扩展名。名称不区分大小写。
+    label:
+      en_US: Repository
+      pt_BR: Repositório
+      zh_Hans: 仓库
+    llm_description: The name of the repository without the .git extension. The name is not case sensitive.
+    name: repo
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: The content path. Leave empty to get root directory contents.
+      pt_BR: O caminho do conteúdo. Deixe vazio para obter o conteúdo do diretório raiz.
+      zh_Hans: 内容路径。留空以获取根目录内容。
+    label:
+      en_US: Path
+      pt_BR: Caminho
+      zh_Hans: 路径
+    llm_description: The content path. Leave empty to get root directory contents.
+    name: path
+    required: false
+    type: string
+  - form: llm
+    human_description:
+      en_US: The name of the commit/branch/tag. Default is the repository's default branch.
+      pt_BR: O nome do commit/branch/tag. O padrão é o branch padrão do repositório.
+      zh_Hans: commit/branch/tag的名称。默认是仓库的默认分支。
+    label:
+      en_US: Ref
+      pt_BR: Ref
+      zh_Hans: 引用
+    llm_description: The name of the commit/branch/tag. Default is the repository's default branch.
+    name: ref
+    required: false
+    type: string

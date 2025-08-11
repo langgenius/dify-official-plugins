@@ -1,0 +1,253 @@
+identity:
+  name: zoom_create_meeting
+  author: langgenius
+  label:
+    en_US: Create Zoom Meeting
+    zh_Hans: 创建Zoom会议
+    ja_JP: Zoom会議を作成
+
+description:
+  human:
+    en_US: Create a new Zoom meeting with customizable settings and obtain meeting links
+    zh_Hans: 创建新的Zoom会议，支持自定义设置并获取会议链接
+    ja_JP: カスタマイズ可能な設定で新しいZoom会議を作成し、会議リンクを取得
+  llm: Create a new Zoom meeting with specified topic, duration, and settings. Returns meeting ID, join URL, and host URL.
+
+parameters:
+  - name: topic
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Meeting Topic
+      zh_Hans: 会议主题
+      ja_JP: 会議のトピック
+    human_description:
+      en_US: The topic or title of the meeting
+      zh_Hans: 会议的主题或标题
+      ja_JP: 会議のトピックまたはタイトル
+    llm_description: The topic or title for the Zoom meeting (required)
+
+  - name: type
+    type: select
+    required: false
+    default: 2
+    form: llm
+    label:
+      en_US: Meeting Type
+      zh_Hans: 会议类型
+      ja_JP: 会議の種類
+    human_description:
+      en_US: Type of meeting to create
+      zh_Hans: 要创建的会议类型
+      ja_JP: 作成する会議の種類
+    llm_description: Type of meeting (1=instant, 2=scheduled, 3=recurring no fixed time, 8=recurring with fixed time)
+    options:
+      - value: 1
+        label:
+          en_US: Instant Meeting
+          zh_Hans: 即时会议
+          ja_JP: インスタント会議
+      - value: 2
+        label:
+          en_US: Scheduled Meeting
+          zh_Hans: 预定会议
+          ja_JP: スケジュール会議
+      - value: 3
+        label:
+          en_US: Recurring (No Fixed Time)
+          zh_Hans: 周期性会议（无固定时间）
+          ja_JP: 繰り返し（固定時間なし）
+      - value: 8
+        label:
+          en_US: Recurring (Fixed Time)
+          zh_Hans: 周期性会议（固定时间）
+          ja_JP: 繰り返し（固定時間あり）
+
+  - name: start_time
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Start Time
+      zh_Hans: 开始时间
+      ja_JP: 開始時間
+    human_description:
+      en_US: Meeting start time in ISO 8601 format (e.g., 2024-12-25T10:00:00Z)
+      zh_Hans: 会议开始时间，ISO 8601格式（例如：2024-12-25T10:00:00Z）
+      ja_JP: 会議開始時間、ISO 8601形式（例：2024-12-25T10:00:00Z）
+    llm_description: Start time for scheduled meetings in ISO 8601 format (YYYY-MM-DDTHH:mm:ssZ)
+
+  - name: duration
+    type: number
+    required: false
+    default: 60
+    form: llm
+    label:
+      en_US: Duration (minutes)
+      zh_Hans: 持续时间（分钟）
+      ja_JP: 継続時間（分）
+    human_description:
+      en_US: Meeting duration in minutes
+      zh_Hans: 会议持续时间（分钟）
+      ja_JP: 会議継続時間（分）
+    llm_description: Duration of the meeting in minutes (default is 60)
+    min: 1
+    max: 1440
+
+  - name: password
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Meeting Password
+      zh_Hans: 会议密码
+      ja_JP: 会議パスワード
+    human_description:
+      en_US: Optional password to secure the meeting
+      zh_Hans: 会议的可选安全密码
+      ja_JP: 会議を保護するためのオプションパスワード
+    llm_description: Optional password to secure the meeting
+
+  - name: waiting_room
+    type: boolean
+    required: false
+    default: true
+    form: llm
+    label:
+      en_US: Enable Waiting Room
+      zh_Hans: 启用等候室
+      ja_JP: 待機室を有効にする
+    human_description:
+      en_US: Enable waiting room for participants to join
+      zh_Hans: 为参与者启用等候室功能
+      ja_JP: 参加者の参加のための待機室を有効にする
+    llm_description: Whether to enable waiting room (true/false)
+
+  - name: join_before_host
+    type: boolean
+    required: false
+    default: false
+    form: llm
+    label:
+      en_US: Allow Join Before Host
+      zh_Hans: 允许主持人之前加入
+      ja_JP: ホスト前の参加を許可
+    human_description:
+      en_US: Allow participants to join before the host arrives
+      zh_Hans: 允许参与者在主持人到达前加入
+      ja_JP: ホストが到着する前に参加者の参加を許可
+    llm_description: Whether participants can join before the host (true/false)
+
+  - name: mute_upon_entry
+    type: boolean
+    required: false
+    default: true
+    form: llm
+    label:
+      en_US: Mute Upon Entry
+      zh_Hans: 进入时静音
+      ja_JP: 入室時にミュート
+    human_description:
+      en_US: Automatically mute participants when they join
+      zh_Hans: 参与者加入时自动静音
+      ja_JP: 参加者が参加時に自動的にミュート
+    llm_description: Whether to mute participants when they join (true/false)
+
+  - name: auto_recording
+    type: select
+    required: false
+    default: "none"
+    form: llm
+    label:
+      en_US: Auto Recording
+      zh_Hans: 自动录制
+      ja_JP: 自動録画
+    human_description:
+      en_US: Automatic recording setting for the meeting
+      zh_Hans: 会议的自动录制设置
+      ja_JP: 会議の自動録画設定
+    llm_description: Automatic recording setting (none, local, cloud)
+    options:
+      - value: "none"
+        label:
+          en_US: No Recording
+          zh_Hans: 不录制
+          ja_JP: 録画なし
+      - value: "local"
+        label:
+          en_US: Local Recording
+          zh_Hans: 本地录制
+          ja_JP: ローカル録画
+      - value: "cloud"
+        label:
+          en_US: Cloud Recording
+          zh_Hans: 云端录制
+          ja_JP: クラウド録画
+
+  - name: timezone
+    type: string
+    required: false
+    default: "UTC"
+    form: llm
+    label:
+      en_US: Timezone
+      zh_Hans: 时区
+      ja_JP: タイムゾーン
+    human_description:
+      en_US: Timezone for the meeting (e.g., UTC, Asia/Shanghai, America/New_York)
+      zh_Hans: 会议时区（例如：UTC、Asia/Shanghai、America/New_York）
+      ja_JP: 会議のタイムゾーン（例：UTC、Asia/Tokyo、America/New_York）
+    llm_description: Timezone identifier for the meeting start time
+
+  - name: agenda
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Meeting Agenda
+      zh_Hans: 会议议程
+      ja_JP: 会議アジェンダ
+    human_description:
+      en_US: Meeting agenda or detailed description
+      zh_Hans: 会议议程或详细描述
+      ja_JP: 会議アジェンダまたは詳細な説明
+    llm_description: Optional agenda or description for the meeting
+
+extra:
+  python:
+    source: tools/zoom_create_meeting.py
+
+output_schema:
+  type: object
+  properties:
+    meeting_id:
+      type: string
+      description: Unique meeting ID
+    topic:
+      type: string
+      description: Meeting topic
+    start_url:
+      type: string
+      description: URL for the host to start the meeting
+    join_url:
+      type: string
+      description: URL for participants to join the meeting
+    password:
+      type: string
+      description: Meeting password
+    start_time:
+      type: string
+      description: Scheduled start time
+    duration:
+      type: number
+      description: Meeting duration in minutes
+    timezone:
+      type: string
+      description: Meeting timezone
+    status:
+      type: string
+      description: Meeting status
+    created_at:
+      type: string
+      description: Meeting creation timestamp

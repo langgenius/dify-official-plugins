@@ -1,0 +1,35 @@
+author: langgenius
+created_at: '2025-08-08T08:03:44.658609186Z'
+description:
+  en_US: Manage your tasks with Google Tasks API
+  zh_Hans: 使用 Google Tasks API 管理任务
+icon: icon.svg
+label:
+  en_US: Google Tasks
+  zh_Hans: Google Tasks
+meta:
+  arch:
+  - amd64
+  - arm64
+  minimum_dify_version: 1.7.1
+  runner:
+    entrypoint: main
+    language: python
+    version: '3.12'
+  version: 0.0.1
+name: google_tasks
+plugins:
+  tools:
+  - provider/google_tasks.yaml
+resource:
+  memory: 1048576
+  permission:
+    model:
+      enabled: true
+      llm: true
+    tool:
+      enabled: true
+tags:
+- utilities
+type: plugin
+version: 0.1.0

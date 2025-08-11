@@ -23,7 +23,6 @@ class DallE3Tool(Tool):
         if not prompt:
             yield self.create_text_message("Please input prompt")
         size = SIZE_MAPPING[tool_parameters.get("size", "square")]
-        n = tool_parameters.get("n", 1)
         quality = tool_parameters.get("quality", "standard")
         if quality not in {"standard", "hd"}:
             yield self.create_text_message("Invalid quality")
@@ -37,7 +36,7 @@ class DallE3Tool(Tool):
             prompt=prompt,
             model=model,
             size=size, # type: ignore
-            n=n,
+            n=1,
             extra_body=extra_body,
             style=style,
             quality=quality,

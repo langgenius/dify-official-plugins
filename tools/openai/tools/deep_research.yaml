@@ -1,0 +1,184 @@
+description:
+  human:
+    en_US: Use deep research models for complex analysis and research tasks.
+    zh_Hans: 使用深度研究模型执行复杂的分析和研究任务。
+  llm: A tool for running complex analysis and research tasks using OpenAI's deep research models (o3-deep-research, o4-mini-deep-research). It can find, analyze, and synthesize hundreds of sources to create a comprehensive report.
+extra:
+  python:
+    source: tools/deep_research.py
+identity:
+  author: Kalo Chin
+  description:
+    en_US: Runs a deep research task using OpenAI models to generate a comprehensive report from web searches and data analysis.
+    zh_Hans: 使用 OpenAI 模型运行深度研究任务，通过网络搜索和数据分析生成综合报告。
+  label:
+    en_US: Deep Research
+    zh_Hans: 深度研究
+  name: deep_research
+parameters:
+- name: action
+  default: start
+  form: llm
+  human_description:
+    en_US: The action to perform. 'start' initiates a new task, 'cancel' stops it, and 'retrieve' checks its status or fetches the result.
+    zh_Hans: 要执行的操作。“start”启动一个新任务，“cancel”停止它，“retrieve”检查其状态或获取结果。
+  label:
+    en_US: Action
+    zh_Hans: 操作
+  options:
+  - label:
+      en_US: Start Research
+      zh_Hans: 开始研究
+    value: start
+  - label:
+      en_US: Cancel Research
+      zh_Hans: 取消研究
+    value: cancel
+  - label:
+      en_US: Retrieve Result
+      zh_Hans: 获取结果
+    value: retrieve
+  required: true
+  type: select
+- name: model
+  default: o3-deep-research
+  form: form
+  human_description:
+    en_US: The model to use for the research task. o3-deep-research is more powerful, while o4-mini-deep-research is faster. Required only for 'start' action.
+    zh_Hans: 用于研究任务的模型。o3-deep-research 功能更强大，而 o4-mini-deep-research 速度更快。仅在操作为“开始”时需要。
+  label:
+    en_US: Model
+    zh_Hans: 模型
+  options:
+  - label:
+      en_US: o3-deep-research
+      zh_Hans: o3-deep-research
+    value: o3-deep-research
+  - label:
+      en_US: o4-mini-deep-research
+      zh_Hans: o4-mini-deep-research
+    value: o4-mini-deep-research
+  required: false
+  type: select
+- name: temperature
+  default: 1
+  form: form
+  human_description:
+    en_US: "What sampling temperature to use, between 0 and 2. Higher values like 0.8 will make the output more random, while lower values like 0.2 will make it more focused and deterministic. Generally alter this or top_p but not both."
+    zh_Hans: "要使用的采样温度，介于 0 到 2 之间。较高值 (如 0.8) 使输出更随机，而较低值 (如 0.2) 使其更集中、更确定。通常建议修改此参数或 top_p，但不要两者同时修改。"
+  label:
+    en_US: Temperature
+    zh_Hans: 温度
+  required: false
+  type: number
+- name: reasoning_effort
+  default: medium
+  form: form
+  human_description:
+    en_US: "Constrains reasoning effort for o-series models. Supported values: low, medium, high. Reducing effort can speed up responses and reduce tokens."
+    zh_Hans: "约束 o 系列模型的推理努力。支持的值：low、medium、high。降低推理努力可以加快响应速度并减少 token 使用量。"
+  label:
+    en_US: Reasoning Effort
+    zh_Hans: 推理努力
+  options:
+    - label:
+        en_US: Low
+        zh_Hans: 低
+      value: low
+    - label:
+        en_US: Medium
+        zh_Hans: 中
+      value: medium
+    - label:
+        en_US: High
+        zh_Hans: 高
+      value: high
+  required: false
+  type: select
+- name: summary
+  default: auto
+  form: form
+  human_description:
+    en_US: "Summary style of the model's reasoning. One of auto, concise, detailed. Useful for understanding the model's thinking."
+    zh_Hans: "模型推理摘要样式，可选 auto、concise、detailed，用于了解模型思考过程。"
+  label:
+    en_US: Summary Style
+    zh_Hans: 摘要样式
+  options:
+    - label:
+        en_US: Auto
+        zh_Hans: 自动
+      value: auto
+    - label:
+        en_US: Concise
+        zh_Hans: 简洁
+      value: concise
+    - label:
+        en_US: Detailed
+        zh_Hans: 详细
+      value: detailed
+  required: false
+  type: select 
+- name: prompt
+  form: llm
+  human_description:
+    en_US: A detailed prompt for the research task, including what to do, sources to prioritize, and the desired output format (max 32000 chars). Required only for 'start' action.
+    zh_Hans: 研究任务的详细提示，包括操作内容、优先来源和期望的输出格式（最多 32000 字符）。仅在操作为“开始”时需要。
+  label:
+    en_US: Research Prompt  (for start)
+    zh_Hans: 研究提示 (用于开始)
+  llm_description: A detailed text description of the research to be performed. It should be analytical, ask for data-backed reasoning, and specify the desired structure of the output. Required for 'start' action.
+  required: false
+  type: string
+- name: response_id
+  form: llm
+  human_description:
+    en_US: The ID of the task to cancel or retrieve. Required for 'cancel' and 'retrieve' actions.
+    zh_Hans: 要取消或检索的任务的 ID。对于“取消”和“检索”操作是必需的。
+  label:
+    en_US: Response ID (for cancel/retrieve)
+    zh_Hans: 响应 ID（用于取消/检索）
+  required: false
+  type: string
+- name: use_web_search
+  default: true
+  form: form
+  human_description:
+    en_US: Allow the model to use web search to find and analyze sources. At least one data source (web search or code interpreter) is required.
+    zh_Hans: 允许模型使用网络搜索来查找和分析来源。至少需要一个数据源（网络搜索或代码解释器）。
+  label:
+    en_US: Use Web Search
+    zh_Hans: 使用网络搜索
+  required: false
+  type: boolean
+- name: use_code_interpreter
+  default: true
+  form: form
+  human_description:
+    en_US: Allow the model to perform complex analysis by writing and running code. At least one data source (web search or code interpreter) is required.
+    zh_Hans: 允许模型通过编写和运行代码来执行复杂分析。至少需要一个数据源（网络搜索或代码解释器）。
+  label:
+    en_US: Use Code Interpreter
+    zh_Hans: 使用代码解释器
+  required: false
+  type: boolean
+- name: max_tool_calls
+  form: form
+  human_description:
+    en_US: The maximum number of tool calls (e.g., web searches) the model can make. This helps control cost and latency.
+    zh_Hans: 模型可以进行的最大工具调用次数（例如，网络搜索）。这有助于控制成本和延迟。
+  label:
+    en_US: Max Tool Calls
+    zh_Hans: 最大工具调用次数
+  required: false
+  type: number
+- name: timeout
+  form: form
+  human_description:
+    en_US: The timeout in seconds for API requests.
+    zh_Hans: API 请求的超时时间（秒）。
+  label:
+    en_US: Timeout (seconds)
+    zh_Hans: 超时（秒）
+  required: false
+  type: number

@@ -1,0 +1,58 @@
+description:
+  human:
+    en_US: Get contributors from a GitHub repository with pagination options
+    pt_BR: Obter contribuidores de um repositório do GitHub com opções de paginação
+    zh_Hans: 从GitHub仓库获取贡献者，支持分页选项
+  llm: A tool to get contributors from a GitHub repository with pagination options
+extra:
+  python:
+    source: tools/github_repository_contributors.py
+identity:
+  author: CharlieWei
+  icon: icon.svg
+  label:
+    en_US: Repository Contributors
+    pt_BR: Contribuidores do Repositório
+    zh_Hans: 仓库贡献者
+  name: github_repository_contributors
+parameters:
+  - form: llm
+    human_description:
+      en_US: The account owner of the repository. The name is not case sensitive.
+      pt_BR: O proprietário da conta do repositório. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库的账户所有者。名称不区分大小写。
+    label:
+      en_US: Owner
+      pt_BR: Proprietário
+      zh_Hans: 所有者
+    llm_description: The account owner of the repository. The name is not case sensitive.
+    name: owner
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: The name of the repository without the .git extension. The name is not case sensitive.
+      pt_BR: O nome do repositório sem a extensão .git. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库名称不带.git扩展名。名称不区分大小写。
+    label:
+      en_US: Repository
+      pt_BR: Repositório
+      zh_Hans: 仓库
+    llm_description: The name of the repository without the .git extension. The name is not case sensitive.
+    name: repo
+    required: true
+    type: string
+  - default: 10
+    form: llm
+    human_description:
+      en_US: The number of results per page (max 100).
+      pt_BR: O número de resultados por página (máximo 100).
+      zh_Hans: 每页结果数量（最大100）。
+    label:
+      en_US: Per Page
+      pt_BR: Por Página
+      zh_Hans: 每页数量
+    llm_description: The number of results per page (max 100).
+    name: per_page
+    required: false
+    type: number

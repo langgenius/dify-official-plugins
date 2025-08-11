@@ -1,5 +1,4 @@
 import json
-import logging
 import time
 from collections.abc import Generator
 from copy import deepcopy
@@ -21,7 +20,7 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
 )
-from dify_plugin.entities.tool import LogMetadata, ToolInvokeMessage, ToolProviderType
+from dify_plugin.entities.tool import ToolInvokeMessage, ToolProviderType
 from dify_plugin.interfaces.agent import (
     AgentModelConfig,
     AgentStrategy,
@@ -30,6 +29,21 @@ from dify_plugin.interfaces.agent import (
 )
 from pydantic import BaseModel
 
+class LogMetadata:
+    """Metadata keys for logging"""
+    STARTED_AT = "started_at"
+    PROVIDER = "provider"
+    FINISHED_AT = "finished_at"
+    ELAPSED_TIME = "elapsed_time"
+    TOTAL_PRICE = "total_price"
+    CURRENCY = "currency"
+    TOTAL_TOKENS = "total_tokens"
+
+class ContextItem(BaseModel):
+    content: str
+    title: str
+    metadata: dict[str, Any]
+
 
 class FunctionCallingParams(BaseModel):
     query: str
@@ -37,6 +51,7 @@ class FunctionCallingParams(BaseModel):
     model: AgentModelConfig
     tools: list[ToolEntity] | None
     maximum_iterations: int = 3
+    context: list[ContextItem] | None = None
 
 
 class FunctionCallingAgentStrategy(AgentStrategy):
@@ -244,10 +259,11 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     else 0,
                 },
             )
-            
-            # Regardless of whether there is a tool call, if there is a response, it is sent to the model as context
+
             if response.strip():
-                assistant_message = AssistantPromptMessage(content=response, tool_calls=[])
+                assistant_message = AssistantPromptMessage(
+                    content=response, tool_calls=[]
+                )
                 current_thoughts.append(assistant_message)
 
             final_answer += response + "\n"
@@ -359,9 +375,9 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                                     },
                                                 )
                                                 yield blob_response
-                                    except Exception:
-                                        logging.exception(
-                                            "Failed to create blob message"
+                                    except Exception as e:
+                                        yield self.create_text_message(
+                                            f"Failed to create blob message: {e}"
                                         )
                                 tool_result += (
                                     "image has been created and sent to user already, "
@@ -426,6 +442,10 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                             name=tool_call_name,
                         )
                     )
+            # After handling all tool calls, insert a blank line so the next assistant thought
+            # appears on a new line in the user interface.
+            if tool_calls:
+                yield self.create_text_message("\n")
 
             # update prompt tool
             for prompt_tool in prompt_messages_tools:
@@ -460,6 +480,34 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                 for resp in tool_responses:
                     yield self.create_text_message(str(resp["tool_response"]))
             iteration_step += 1
+
+        # If context is a list of dict, create retriever resource message
+        if isinstance(fc_params.context, list):
+            yield self.create_retriever_resource_message(
+                retriever_resources=[
+                    ToolInvokeMessage.RetrieverResourceMessage.RetrieverResource(
+                        content=ctx.content,
+                        position=ctx.metadata.get("position"),
+                        dataset_id=ctx.metadata.get("dataset_id"),
+                        dataset_name=ctx.metadata.get("dataset_name"),
+                        document_id=ctx.metadata.get("document_id"),
+                        document_name=ctx.metadata.get("document_name"),
+                        data_source_type=ctx.metadata.get("document_data_source_type"),
+                        segment_id=ctx.metadata.get("segment_id"),
+                        retriever_from=ctx.metadata.get("retriever_from"),
+                        score=ctx.metadata.get("score"),
+                        hit_count=ctx.metadata.get("segment_hit_count"),
+                        word_count=ctx.metadata.get("segment_word_count"),
+                        segment_position=ctx.metadata.get("segment_position"),
+                        index_node_hash=ctx.metadata.get("segment_index_node_hash"),
+                        page=ctx.metadata.get("page"),
+                        doc_metadata=ctx.metadata.get("doc_metadata"),
+                    )
+                    for ctx in fc_params.context
+                ],
+                context="",
+            )
+
         yield self.create_json_message(
             {
                 "execution_metadata": {

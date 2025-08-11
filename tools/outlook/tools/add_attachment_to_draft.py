@@ -1,7 +1,7 @@
 from collections.abc import Generator
 from typing import Any
 import requests
-import msal
+import urllib.parse
 import base64
 import mimetypes
 import os
@@ -17,40 +17,14 @@ class AddAttachmentToDraftTool(Tool):
         """
         try:
             # Get parameters
-            user_email = self.runtime.credentials.get("user_email")
             draft_id = tool_parameters.get("draft_id", "")
             files_to_attach = tool_parameters.get("file_to_attach")  # This is now a list of files
-            attachment_name = tool_parameters.get("attachment_name", "")
-            
-            # Validate required parameters
-            if not user_email:
-                yield self.create_text_message("User email is required in credentials.")
-                return
-                
-            if not draft_id:
-                yield self.create_text_message("Draft ID is required.")
-                return
-            
-            if not files_to_attach or not isinstance(files_to_attach, list):
-                yield self.create_text_message("Files to attach are required.")
-                return
-                
-            # Get credentials
-            client_id = self.runtime.credentials.get("client_id")
-            client_secret = self.runtime.credentials.get("client_secret")
-            tenant_id = self.runtime.credentials.get("tenant_id")
-            
-            if not all([client_id, client_secret, tenant_id]):
-                yield self.create_text_message("Azure AD credentials are required.")
-                return
+            attachment_name = tool_parameters.get("attachment_name", "")  
+            # Get access token from OAuth credentials
+            access_token = self.runtime.credentials.get("access_token")
+
             
             try:
-                # Get access token
-                access_token = self._get_access_token(client_id, client_secret, tenant_id)
-                if not access_token:
-                    yield self.create_text_message("Failed to acquire access token.")
-                    return
-                
                 results = []
                 for file_obj in files_to_attach:
                     # Read and encode file
@@ -60,7 +34,7 @@ class AddAttachmentToDraftTool(Tool):
                         continue
                     # Add attachment to draft
                     result = self._add_attachment_to_draft(
-                        access_token, user_email, draft_id, file_data, 
+                        access_token, draft_id, file_data, 
                         attachment_name or file_data.get('name', 'attachment')
                     )
                     if isinstance(result, str):  # Error message
@@ -82,32 +56,6 @@ class AddAttachmentToDraftTool(Tool):
         except Exception as e:
             yield self.create_text_message(f"Error: {str(e)}")
             return
-    
-    def _get_access_token(self, client_id: str, client_secret: str, tenant_id: str) -> str:
-        """
-        Get access token using client credentials flow
-        """
-        try:
-            app = msal.ConfidentialClientApplication(
-                client_id=client_id,
-                client_credential=client_secret,
-                authority=f"https://login.microsoftonline.com/{tenant_id}"
-            )
-            
-            result = app.acquire_token_for_client(
-                scopes=["https://graph.microsoft.com/.default"]
-            )
-            
-            if "access_token" in result:
-                return result["access_token"]
-            else:
-                error_desc = result.get("error_description", "Unknown error")
-                print(f"Token acquisition failed: {error_desc}")
-                return None
-                
-        except Exception as e:
-            print(f"Error getting access token: {str(e)}")
-            return None
     
     def _read_and_encode_file(self, file_obj) -> dict:
         """
@@ -146,12 +94,15 @@ class AddAttachmentToDraftTool(Tool):
         except Exception as e:
             return f"Error processing file: {str(e)}"
     
-    def _add_attachment_to_draft(self, access_token: str, user_email: str, 
-                                draft_id: str, file_data: dict, attachment_name: str):
+    def _add_attachment_to_draft(self, access_token: str, draft_id: str, 
+                                file_data: dict, attachment_name: str):
         """
         Add attachment to draft email using Microsoft Graph API
         """
         try:
+            # URL encode the draft ID to handle special characters
+            encoded_draft_id = urllib.parse.quote(draft_id, safe='')
+            
             # Build attachment object
             attachment = {
                 "@odata.type": "#microsoft.graph.fileAttachment",
@@ -161,8 +112,8 @@ class AddAttachmentToDraftTool(Tool):
                 "size": file_data['size']
             }
             
-            # API endpoint
-            url = f"https://graph.microsoft.com/v1.0/users/{user_email}/messages/{draft_id}/attachments"
+            # API endpoint using /me
+            url = f"https://graph.microsoft.com/v1.0/me/messages/{encoded_draft_id}/attachments"
             
             # Headers
             headers = {
