@@ -7,7 +7,7 @@ identity:
   description:
     en_US: Google Drive Datasource
     zh_Hans: Google Drive 数据源
-  icon: icon.png
+  icon: icon.svg
 provider_type: online_drive
 help:
   title:
@@ -58,7 +58,7 @@ oauth_schema:
       label:
         zh_Hans: User Email
         en_US: User Email
-
+provider_type: online_drive
 datasources:
   - datasources/google_drive.yaml
 extra:

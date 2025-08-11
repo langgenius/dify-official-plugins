@@ -7,7 +7,7 @@ identity:
   description:
     en_US: AWS S3 Storage Datasource
     zh_Hans: AWS S3 Storage 数据源
-  icon: icon.png
+  icon: icon.svg
 provider_type: online_drive
 help:
   title:

@@ -7,7 +7,7 @@ identity:
   description:
     en_US: Google Cloud Storage Datasource
     zh_Hans: Google Cloud Storage 数据源
-  icon: icon.png
+  icon: icon.svg
 provider_type: online_drive
 help:
   title:

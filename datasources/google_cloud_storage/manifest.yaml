@@ -8,7 +8,7 @@ label:
 description:
   en_US: Google Cloud Storage Datasource
   zh_Hans: Google Cloud Storage 数据源
-icon: icon.png
+icon: icon.svg
 resource:
   memory: 268435456
   permission: {}

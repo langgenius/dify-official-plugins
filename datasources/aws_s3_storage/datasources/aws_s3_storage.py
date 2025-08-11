@@ -1,19 +1,17 @@
-from calendar import c
-import json
+import os
 from collections.abc import Generator
-from typing import Any, Mapping
 
+import boto3  # type: ignore
+from botocore.client import Config  # type: ignore
 from dify_plugin.entities.datasource import (
     DatasourceMessage,
     OnlineDriveBrowseFilesRequest,
-    OnlineDriveFileBucket,
+    OnlineDriveBrowseFilesResponse,
     OnlineDriveDownloadFileRequest,
     OnlineDriveFile,
-    OnlineDriveBrowseFilesResponse,
+    OnlineDriveFileBucket,
 )
 from dify_plugin.interfaces.datasource.online_drive import OnlineDriveDatasource
-import boto3  # type: ignore
-from botocore.client import Config  # type: ignore
 
 
 class AWSS3StorageDataSource(OnlineDriveDatasource):
@@ -24,7 +22,7 @@ class AWSS3StorageDataSource(OnlineDriveDatasource):
         bucket_name = request.bucket
         prefix = request.prefix or ""
         max_keys = request.max_keys or 100
-        start_after = request.start_after or ""
+        next_page_parameters = request.next_page_parameters or {}
         print(credentials)
 
         if not credentials:
@@ -40,24 +38,30 @@ class AWSS3StorageDataSource(OnlineDriveDatasource):
         )
         if not bucket_name:
             response = client.list_buckets()
-            file_buckets = [OnlineDriveFileBucket(bucket=bucket["Name"], files=[], is_truncated=False) for bucket in response["Buckets"]]
+            file_buckets = [OnlineDriveFileBucket(bucket=bucket["Name"], files=[], is_truncated=False, next_page_parameters={}) for bucket in response["Buckets"]]
             return OnlineDriveBrowseFilesResponse(result=file_buckets)
         else:
-            if not start_after and prefix:
+            if not next_page_parameters and prefix:
                 max_keys = max_keys + 1
-            response = client.list_objects_v2(Bucket=bucket_name, Prefix=prefix, MaxKeys=max_keys, StartAfter=start_after, Delimiter="/")
+            continuation_token = next_page_parameters.get("continuation_token")
+            if continuation_token:
+                response = client.list_objects_v2(Bucket=bucket_name, Prefix=prefix, MaxKeys=max_keys, ContinuationToken=continuation_token, Delimiter="/")
+            else:
+                response = client.list_objects_v2(Bucket=bucket_name, Prefix=prefix, MaxKeys=max_keys, Delimiter="/")
             is_truncated = response.get("IsTruncated", False)
+            next_continuation_token = response.get("NextContinuationToken")
+            next_page_parameters = {"continuation_token": next_continuation_token} if next_continuation_token else {}
             files = []
-            files.extend([OnlineDriveFile(key=blob["Key"], size=blob["Size"]) for blob in response.get("Contents", []) if blob["Key"]!=prefix])
+            files.extend([OnlineDriveFile(id=blob["Key"], name=os.path.basename(blob["Key"]), size=blob["Size"], type="file") for blob in response.get("Contents", []) if blob["Key"]!=prefix])
             for prefix in response.get("CommonPrefixes", []):
-                files.append(OnlineDriveFile(key=prefix["Prefix"], size=0))
-            file_bucket = OnlineDriveFileBucket(bucket=bucket_name, files=sorted(files, key=lambda x: x.key), is_truncated=is_truncated)
+                files.append(OnlineDriveFile(id=prefix["Prefix"], name=os.path.basename(prefix["Prefix"].rstrip('/')), size=0, type="folder"))
+            file_bucket = OnlineDriveFileBucket(bucket=bucket_name, files=sorted(files, key=lambda x: x.id), is_truncated=is_truncated, next_page_parameters=next_page_parameters)
             return OnlineDriveBrowseFilesResponse(result=[file_bucket])
 
     def _download_file(self, request: OnlineDriveDownloadFileRequest) -> Generator[DatasourceMessage, None, None]:
         credentials = self.runtime.credentials
         bucket_name = request.bucket
-        key = request.key
+        key = request.id
 
         if not credentials:
             raise ValueError("Credentials not found")
