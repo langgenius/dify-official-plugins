@@ -1,0 +1,58 @@
+provider: 302ai
+label:
+  en_US: "302.AI"
+description:
+  en_US: "Models provided by 302.AI."
+  zh_Hans: "302.AI 提供的模型。"
+icon_small:
+  en_US: "icon_s_en.svg"
+icon_large:
+  en_US: "icon_l_en.svg"
+background: "#E5E7EB"
+help:
+  title:
+    en_US: "Get your API Key from 302.AI"
+    zh_Hans: "从 302.AI 获取 API Key"
+  url:
+    en_US: "https://302.ai/apis/list
+supported_model_types:
+  - llm
+configurate_methods:
+  - predefined-model
+  - customizable-model
+model_credential_schema:
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: Enter your model name
+      zh_Hans: 输入模型名称
+  credential_form_schemas:
+    - variable: 302ai_api_key
+      label:
+        en_US: 302.AI API Key
+      type: secret-input
+      required: true
+      placeholder:
+        zh_Hans: 在此输入您的 302.AI API Key
+        en_US: Enter your 302.AI API Key
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: 302ai_api_key
+      label:
+        en_US: 302.AI API Key
+      type: secret-input
+      required: true
+      placeholder:
+        zh_Hans: 在此输入您的 302.AI API Key
+        en_US: Enter your 302.AI API Key
+models:
+  llm:
+    predefined:
+      - "models/llm/*.yaml"
+extra:
+  python:
+    provider_source: provider/302_ai.py
+    model_sources:
+      - "models/llm/llm.py"
