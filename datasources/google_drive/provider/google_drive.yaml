@@ -58,7 +58,6 @@ oauth_schema:
       label:
         zh_Hans: User Email
         en_US: User Email
-provider_type: online_drive
 datasources:
   - datasources/google_drive.yaml
 extra:
