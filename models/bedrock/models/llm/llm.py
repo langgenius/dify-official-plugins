@@ -170,6 +170,40 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             try:
                 model_info = self._get_model_info(model, credentials, model_parameters)
                 if model_info:
+                    # Handle response_format for inference profiles only if underlying model is Anthropic
+                    if model_parameters.get("response_format"):
+                        # Check if the underlying model is Anthropic based
+                        profile_info = get_inference_profile_info(inference_profile_id, credentials)
+                        underlying_models = profile_info.get("models", [])
+                        is_anthropic = False
+                        
+                        if underlying_models:
+                            first_model_arn = underlying_models[0].get("modelArn", "")
+                            if "foundation-model/" in first_model_arn:
+                                underlying_model_id = first_model_arn.split("foundation-model/")[1]
+                                is_anthropic = "anthropic.claude" in underlying_model_id
+                        
+                        if is_anthropic:
+                            stop = stop or []
+                            if "```\n" not in stop:
+                                stop.append("```\n")
+                            if "\n```" not in stop:
+                                stop.append("\n```")
+                            response_format = model_parameters.pop("response_format")
+                            format_prompt = SystemPromptMessage(
+                                content=ANTHROPIC_BLOCK_MODE_PROMPT.replace("{{instructions}}", prompt_messages[0].content).replace(
+                                    "{{block}}", response_format
+                                )
+                            )
+                            if len(prompt_messages) > 0 and isinstance(prompt_messages[0], SystemPromptMessage):
+                                prompt_messages[0] = format_prompt
+                            else:
+                                prompt_messages.insert(0, format_prompt)
+                            prompt_messages.append(AssistantPromptMessage(content=f"\n```{response_format}"))
+                        else:
+                            # For non-Anthropic models, just remove response_format parameter
+                            model_parameters.pop("response_format", None)
+                    
                     return self._generate_with_converse(
                         model_info, credentials, prompt_messages, model_parameters, stop, stream, user, tools, model
                     )
@@ -631,6 +665,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         additional_model_fields = {}
         if "max_tokens" in model_parameters:
             inference_config["maxTokens"] = model_parameters["max_tokens"]
+        elif "max_new_tokens" in model_parameters:
+            inference_config["maxTokens"] = model_parameters["max_new_tokens"]
 
         if "temperature" in model_parameters:
             inference_config["temperature"] = model_parameters["temperature"]
@@ -892,10 +928,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                             if self._model_id_matches_schema(underlying_model_id, model_schema):
                                 default_pricing = model_schema.pricing
                                 matched_features = model_schema.features or []
-                                # Load parameter rules, excluding model_name since it's determined by inference profile
-                                matched_parameter_rules = [rule for rule in (model_schema.parameter_rules or [])
-                                                           if rule.name in ['max_tokens', 'temperature', 'top_p', 'top_k',
-                                                                            'reasoning_type', 'reasoning_budget']]
+                                # Extract allowed parameters from model schema, excluding model_name since it's determined by inference profile
+                                matched_parameter_rules = self._get_inference_profile_parameter_rules(model_schema, underlying_model_id)
                                 if model_schema.model_properties:
                                     matched_model_properties.update(model_schema.model_properties)
                                     # Override context_size with user-specified value
@@ -926,9 +960,11 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 context_length = int(credentials.get("context_length", 4096))
                 model_schemas = self.predefined_models()
                 default_pricing = model_schemas[0].pricing if model_schemas else None
-                fallback_parameter_rules = [rule for rule in (model_schemas[0].parameter_rules or [])
-                                            if rule.name in ['max_tokens', 'temperature', 'top_p', 'top_k',
-                                                            'reasoning_type', 'reasoning_budget']] if model_schemas else []
+                # For fallback, extract parameters from first model schema
+                fallback_parameter_rules = []
+                if model_schemas:
+                    # For fallback, we don't have underlying_model_id, so pass None to get all params except model_name
+                    fallback_parameter_rules = self._get_inference_profile_parameter_rules(model_schemas[0], None)
                 fallback_features = model_schemas[0].features if model_schemas else []
                 fallback_model_properties = {
                     "mode": LLMMode.CHAT,
@@ -1338,6 +1374,39 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             return InvokeConnectionError(error_msg)
 
         return InvokeError(error_msg)
+
+    def _get_inference_profile_parameter_rules(self, model_schema, underlying_model_id: str = None) -> list:
+        """
+        Extract allowed parameter rules from model schema for inference profiles
+        
+        :param model_schema: The predefined model schema
+        :param underlying_model_id: The underlying model ID (for model-specific filtering)
+        :return: List of parameter rules suitable for inference profiles
+        """
+        if not model_schema.parameter_rules:
+            return []
+        
+        # Always exclude model_name since it's determined by inference profile
+        excluded_params = ['model_name']
+        
+        # Apply model-specific filtering if underlying_model_id is available
+        allowed_parameter_rules = []
+        for rule in model_schema.parameter_rules:
+            if rule.name in excluded_params:
+                continue
+                
+            # For Anthropic models, include response_format only if it's an Anthropic model
+            if rule.name == 'response_format':
+                if underlying_model_id and "anthropic.claude" not in underlying_model_id:
+                    continue  # Skip response_format for non-Anthropic models
+                elif not underlying_model_id:
+                    # Fallback case: only include if this is an Anthropic schema
+                    if not (hasattr(model_schema, 'model') and model_schema.model == "anthropic claude"):
+                        continue
+            
+            allowed_parameter_rules.append(rule)
+        
+        return allowed_parameter_rules
 
     def _model_id_matches_schema(self, model_id: str, model_schema) -> bool:
         """
