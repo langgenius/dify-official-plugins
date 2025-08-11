@@ -170,6 +170,40 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             try:
                 model_info = self._get_model_info(model, credentials, model_parameters)
                 if model_info:
+                    # Handle response_format for inference profiles only if underlying model is Anthropic
+                    if model_parameters.get("response_format"):
+                        # Check if the underlying model is Anthropic based
+                        profile_info = get_inference_profile_info(inference_profile_id, credentials)
+                        underlying_models = profile_info.get("models", [])
+                        is_anthropic = False
+                        
+                        if underlying_models:
+                            first_model_arn = underlying_models[0].get("modelArn", "")
+                            if "foundation-model/" in first_model_arn:
+                                underlying_model_id = first_model_arn.split("foundation-model/")[1]
+                                is_anthropic = "anthropic.claude" in underlying_model_id
+                        
+                        if is_anthropic:
+                            stop = stop or []
+                            if "```\n" not in stop:
+                                stop.append("```\n")
+                            if "\n```" not in stop:
+                                stop.append("\n```")
+                            response_format = model_parameters.pop("response_format")
+                            format_prompt = SystemPromptMessage(
+                                content=ANTHROPIC_BLOCK_MODE_PROMPT.replace("{{instructions}}", prompt_messages[0].content).replace(
+                                    "{{block}}", response_format
+                                )
+                            )
+                            if len(prompt_messages) > 0 and isinstance(prompt_messages[0], SystemPromptMessage):
+                                prompt_messages[0] = format_prompt
+                            else:
+                                prompt_messages.insert(0, format_prompt)
+                            prompt_messages.append(AssistantPromptMessage(content=f"\n```{response_format}"))
+                        else:
+                            # For non-Anthropic models, just remove response_format parameter
+                            model_parameters.pop("response_format", None)
+                    
                     return self._generate_with_converse(
                         model_info, credentials, prompt_messages, model_parameters, stop, stream, user, tools, model
                     )
@@ -893,9 +927,18 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                                 default_pricing = model_schema.pricing
                                 matched_features = model_schema.features or []
                                 # Load parameter rules, excluding model_name since it's determined by inference profile
+                                base_allowed_params = ['max_tokens', 'temperature', 'top_p', 'top_k', 'reasoning_type', 'reasoning_budget']
+                                
+                                # Add model-specific parameters
+                                if "anthropic.claude" in underlying_model_id:
+                                    base_allowed_params.append('response_format')
+                                elif "amazon.nova" in underlying_model_id:
+                                    base_allowed_params.extend(['max_new_tokens', 'cross-region', 'system_cache_checkpoint', 'latest_two_messages_cache_checkpoint'])
+                                elif "meta.llama" in underlying_model_id:
+                                    base_allowed_params.extend(['max_gen_len'])
+                                
                                 matched_parameter_rules = [rule for rule in (model_schema.parameter_rules or [])
-                                                           if rule.name in ['max_tokens', 'temperature', 'top_p', 'top_k',
-                                                                            'reasoning_type', 'reasoning_budget']]
+                                                           if rule.name in base_allowed_params]
                                 if model_schema.model_properties:
                                     matched_model_properties.update(model_schema.model_properties)
                                     # Override context_size with user-specified value
@@ -926,9 +969,19 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 context_length = int(credentials.get("context_length", 4096))
                 model_schemas = self.predefined_models()
                 default_pricing = model_schemas[0].pricing if model_schemas else None
+                # For fallback, include model-specific parameters based on first model
+                fallback_allowed_params = ['max_tokens', 'temperature', 'top_p', 'top_k', 'reasoning_type', 'reasoning_budget']
+                if model_schemas and hasattr(model_schemas[0], 'model'):
+                    first_model_name = model_schemas[0].model
+                    if first_model_name == "anthropic claude":
+                        fallback_allowed_params.append('response_format')
+                    elif first_model_name == "amazon nova":
+                        fallback_allowed_params.extend(['max_new_tokens', 'cross-region', 'system_cache_checkpoint', 'latest_two_messages_cache_checkpoint'])
+                    elif first_model_name == "meta":
+                        fallback_allowed_params.extend(['max_gen_len'])
+                        
                 fallback_parameter_rules = [rule for rule in (model_schemas[0].parameter_rules or [])
-                                            if rule.name in ['max_tokens', 'temperature', 'top_p', 'top_k',
-                                                            'reasoning_type', 'reasoning_budget']] if model_schemas else []
+                                            if rule.name in fallback_allowed_params] if model_schemas else []
                 fallback_features = model_schemas[0].features if model_schemas else []
                 fallback_model_properties = {
                     "mode": LLMMode.CHAT,
