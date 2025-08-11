@@ -1,4 +1,4 @@
-author: dap
+author: langgenius
 created_at: '2024-09-20T08:03:44.658609186Z'
 description:
   en_US: Connect to Front API to send emails and manage conversations
@@ -16,7 +16,7 @@ meta:
     entrypoint: main
     language: python
     version: '3.12'
-  version: 0.1.1
+  version: 0.1.2
 name: front
 plugins:
   tools:

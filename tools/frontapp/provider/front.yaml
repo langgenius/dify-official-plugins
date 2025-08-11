@@ -2,7 +2,7 @@ extra:
   python:
     source: provider/front.py
 identity:
-  author: dap
+  author: langgenius
   description:
     en_US: Connect to Front API to send emails and manage conversations
     ja_JP: Front API に接続してメールの送信と会話の管理を行います
