@@ -6,10 +6,9 @@ import re
 import tempfile
 import time
 from collections.abc import Generator, Iterator, Sequence
-from typing import Optional, Union, Mapping, Any, Tuple
+from typing import Optional, Union, Mapping, Any, Tuple, List, TypeVar
 
 import requests
-from annotated_types import IsNan
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
@@ -26,6 +25,7 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
     VideoPromptMessageContent,
+    PromptMessageContentUnionTypes,
 )
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -41,6 +41,9 @@ from google.genai import errors, types
 from .utils import FileCache
 
 file_cache = FileCache()
+
+
+_MMC = TypeVar("_MMC", bound=MultiModalPromptMessageContent)
 
 
 class GoogleLargeLanguageModel(LargeLanguageModel):
@@ -202,8 +205,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         print(f"{json.dumps(model_parameters, indent=2, ensure_ascii=False)}")
 
         print(f"{len(prompt_messages)=}")
-        for p in prompt_messages:
-            print(p)
+        for i, p in enumerate(prompt_messages):
+            print(i, p)
 
         if schema := model_parameters.get("json_schema"):
             try:
@@ -212,9 +215,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 raise InvokeError("Invalid JSON Schema") from exc
             config.response_schema = schema
             config.response_mime_type = "application/json"
-        # else:
-        #     # Enable multimodal support only if JSON schema is not provided.
-        #     config.response_modalities = self._get_response_modalities(model)
 
         if stop:
             config.stop_sequences = stop
@@ -224,38 +224,22 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         config.temperature = model_parameters.get("temperature", None)
         config.max_output_tokens = model_parameters.get("max_output_tokens", None)
 
-        # Set instructions
-        if system_instruction := self._get_system_instruction(prompt_messages=prompt_messages):
-            config.system_instruction = system_instruction
-        print(f"{system_instruction=}")
-
-        # Set history
-        # TODO: 改变 _format_message_to_gemini_content 的写法， 能够优雅地做对象协议的映射
-        history = []
+        # Build contents from prompt messages
         file_server_url_prefix = credentials.get("file_url") or None
-        for msg in prompt_messages:
-            content = self._format_message_to_gemini_content(
-                msg, genai_client=genai_client, config=config, file_server_url_prefix=file_server_url_prefix
-            )
-            if not content:
-                continue
-            # makes message roles strictly alternating
-            if history and history[-1].role == content.role:
-                history[-1].parts.extend(content.parts)
-            else:
-                history.append(content)
+        contents = self._build_gemini_contents(
+            prompt_messages=prompt_messages,
+            genai_client=genai_client,
+            config=config,
+            file_server_url_prefix=file_server_url_prefix,
+        )
 
         print("----------------------------")
-        print(f"{len(history)=}")
-        for i in history:
+        print(f"{len(contents)=}")
+        for i in contents:
             print(f"[ role={i.role} ]")
             for p in i.parts:
                 print(f">> Content: {p}")
-            print(f"[ role={i.role} ]")
         print("----------------------------")
-
-        # fixme: What's this?
-        # contents = self._convert_to_contents(prompt_messages=prompt_messages)
 
         # == ThinkingConfig == #
 
@@ -302,14 +286,14 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         if stream:
             response = genai_client.models.generate_content_stream(
-                model=model, contents=history, config=config
+                model=model, contents=contents, config=config
             )
             return self._handle_generate_stream_response(
                 model, credentials, response, prompt_messages
             )
 
         response = genai_client.models.generate_content(
-            model=model, contents=history, config=config
+            model=model, contents=contents, config=config
         )
         return self._handle_generate_response(model, credentials, response, prompt_messages)
 
@@ -336,40 +320,45 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             raise ValueError(f"Got unknown type {message}")
         return message_text
 
-    @staticmethod
-    def _get_system_instruction(*, prompt_messages: Sequence[PromptMessage]) -> str:
-        # `prompt_messages` should be a sequence containing at least one
-        # `SystemPromptMessage`.
-        # If the sequence is empty or the first element is not a
-        # `SystemPromptMessage`,
-        # the method returns an empty string, effectively indicating the
-        # absence of a system instruction.
-        if len(prompt_messages) == 0:
-            return ""
-        if not isinstance(prompt_messages[0], SystemPromptMessage):
-            return ""
-        system_instruction = ""
-        prompt = prompt_messages[0]
-        if isinstance(prompt.content, str):
-            system_instruction = prompt.content
-        elif isinstance(prompt.content, list):
-            system_instruction = ""
-            for content in prompt.content:
-                if isinstance(content, TextPromptMessageContent):
-                    system_instruction += content.data
-                else:
-                    raise InvokeError(
-                        "system prompt content does not support image, document, video, audio"
-                    )
-        else:
-            raise InvokeError("system prompt content must be a string or a list of strings")
-        return system_instruction
+    def _build_gemini_contents(
+        self,
+        prompt_messages: list[PromptMessage],
+        genai_client: genai.Client,
+        config: types.GenerateContentConfig,
+        file_server_url_prefix: str | None = None,
+    ) -> List[types.Content]:
+        """
+        Build Gemini contents from prompt messages with proper role alternation
+
+        :param prompt_messages: list of prompt messages
+        :param genai_client: Google GenAI client
+        :param config: GenerateContentConfig object
+        :param file_server_url_prefix: optional file server URL prefix
+        :return: list of Gemini Content objects ready for use
+        """
+        contents = []
+
+        for msg in prompt_messages:
+            content = self._format_message_to_gemini_content(
+                msg, genai_client, config, file_server_url_prefix
+            )
+
+            if not content:
+                continue
+
+            # Merge consecutive messages with same role for proper alternation
+            if contents and contents[-1].role == content.role:
+                contents[-1].parts.extend(content.parts)
+            else:
+                contents.append(content)
+
+        return contents
 
     def _format_message_to_gemini_content(
         self,
         message: PromptMessage,
         genai_client: genai.Client,
-            config: types.GenerateContentConfig,
+        config: types.GenerateContentConfig,
         file_server_url_prefix: str | None = None,
     ) -> types.Content | None:
         """
@@ -378,70 +367,78 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :param message: one PromptMessage
         :return: Gemini Content representation of message
         """
+
+        # Helper function to build parts from content
+        def build_parts(content: str | List[PromptMessageContentUnionTypes]) -> List[types.Part]:
+            if isinstance(content, str):
+                return [types.Part.from_text(text=content)]
+
+            parts_ = []
+            for obj in content:
+                if obj.type == PromptMessageContentType.TEXT:
+                    parts_.append(types.Part.from_text(text=obj.data))
+                else:
+                    uri, mime_type = self._upload_file_content_to_google(
+                        obj, genai_client, file_server_url_prefix
+                    )
+                    parts_.append(types.Part.from_uri(file_uri=uri, mime_type=mime_type))
+            return parts_
+
+        # Process different message types
         if isinstance(message, UserPromptMessage):
-            gemini_content = types.Content(role="user", parts=[])
-            if isinstance(message.content, str):
-                gemini_content.parts.append(types.Part.from_text(text=message.content))
-            else:
-                for c in message.content:
-                    if c.type == PromptMessageContentType.TEXT:
-                        gemini_content.parts.append(types.Part.from_text(text=c.data))
-                    else:
-                        uri, mime_type = self._upload_file_content_to_google(
-                            message_content=c,
-                            genai_client=genai_client,
-                            file_server_url_prefix=file_server_url_prefix,
-                        )
-                        gemini_content.parts.append(
-                            types.Part.from_uri(file_uri=uri, mime_type=mime_type)
-                        )
-            return gemini_content
+            return types.Content(role="user", parts=build_parts(message.content))
+
         elif isinstance(message, AssistantPromptMessage):
-            gemini_content = types.Content(role="model", parts=[])
+            parts = []
+
+            # Handle text content (remove thinking tags)
             if message.content:
-                # Remove the first <think>...</think> tag if content starts with <think>
                 content_text = re.sub(
                     r"^<think>.*?</think>\s*", "", message.content, count=1, flags=re.DOTALL
                 )
-                # Only add if there's content left after removing think tag
                 if content_text:
-                    gemini_content.parts.append(types.Part.from_text(text=content_text))
+                    parts.append(types.Part.from_text(text=content_text))
+
+            # Handle tool calls
+            # https://ai.google.dev/gemini-api/docs/function-calling?hl=zh-cn&example=chart#how-it-works
             if message.tool_calls:
-                gemini_content.parts.append(
+                call = message.tool_calls[0]
+                parts.append(
                     types.Part.from_function_call(
-                        name=message.tool_calls[0].function.name,
-                        args=json.loads(message.tool_calls[0].function.arguments),
+                        name=call.function.name, args=json.loads(call.function.arguments)
                     )
                 )
-            return gemini_content
+
+            return types.Content(role="model", parts=parts)
+
         elif isinstance(message, SystemPromptMessage):
-            # for p in prompt_messages:
-            #     if not isinstance(p, SystemPromptMessage):
-            #         continue
-            #     system_prompt = p.content
-            #     if isinstance(system_prompt, str):
-            #         return system_prompt
-            #     if isinstance(system_prompt, list):
-            #         for part_ in p.content:
-            # System prompt have been set through config.system_instructions, no duplicate tokens are required
-            return None
+            # String content -> system instruction
+            if isinstance(message.content, str):
+                config.system_instruction = message.content
+                return None
+
+            # List content -> convert to user message (Files[] compatibility)
+            if isinstance(message.content, list):
+                return types.Content(role="user", parts=build_parts(message.content))
+
         elif isinstance(message, ToolPromptMessage):
             return types.Content(
-                role="function",
+                # The role `function` does not exist.
+                # https://googleapis.github.io/python-genai/genai.html#genai.types.Content.role
+                role="user",
                 parts=[
                     types.Part.from_function_response(
                         name=message.name, response={"response": message.content}
                     )
                 ],
             )
+
         else:
-            raise ValueError(f"Got unknown type {message}")
+            raise ValueError(f"Unknown message type: {type(message).__name__}")
 
     @staticmethod
     def _upload_file_content_to_google(
-        message_content: MultiModalPromptMessageContent,
-        genai_client: genai.Client,
-        file_server_url_prefix: str | None = None,
+        message_content: _MMC, genai_client: genai.Client, file_server_url_prefix: str | None = None
     ) -> Tuple[str, str]:
 
         key = f"{message_content.type.value}:{hash(message_content.data)}"
@@ -671,26 +668,27 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
                 contents.append(TextPromptMessageContent(data=part.text))
 
-            # A predicted [FunctionCall] returned from the model that contains a string representing the [FunctionDeclaration.name] with the parameters and their values.
+            # A predicted [FunctionCall] returned from the model that contains a string
+            # representing the [FunctionDeclaration.name] with the parameters and their values.
             if part.function_call:
-                function_call = part.function_call
+                function_call_part: types.FunctionCall = part.function_call
                 # Generate a unique ID since Gemini API doesn't provide one
-                function_call_id = f"gemini_call_{function_call.name}_{time.time_ns()}"
+                function_call_id = f"gemini_call_{function_call_part.name}_{time.time_ns()}"
                 logging.info(f"Generated function call ID: {function_call_id}")
-                function_call_name = function_call.name
-                function_call_args = function_call.args
+                function_call_name = function_call_part.name
+                function_call_args = function_call_part.args
                 if not isinstance(function_call_name, str):
                     raise InvokeError("function_call_name received is not a string")
                 if not isinstance(function_call_args, dict):
                     raise InvokeError("function_call_args received is not a dict")
-                function_call = AssistantPromptMessage.ToolCall(
+                tool_call = AssistantPromptMessage.ToolCall(
                     id=function_call_id,
                     type="function",
                     function=AssistantPromptMessage.ToolCall.ToolCallFunction(
                         name=function_call_name, arguments=json.dumps(function_call_args)
                     ),
                 )
-                function_calls.append(function_call)
+                function_calls.append(tool_call)
 
             # Inlined bytes data
             if part.inline_data:
