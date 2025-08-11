@@ -1,0 +1,62 @@
+identity:
+  name: clear_worksheet_data
+  author: langgenius
+  label:
+    en_US: Clear Worksheet Data
+    zh_Hans: 清除工作表数据
+    ja_JP: ワークシートデータのクリア
+  icon: icon.svg
+
+description:
+  human:
+    en_US: Clear data from a specified range in an Excel worksheet
+    zh_Hans: 清除 Excel 工作表指定范围的数据
+    ja_JP: Excelワークシートの指定範囲からデータをクリアする
+  llm: Clear cell contents from a specified range in an Excel worksheet
+
+parameters:
+  - name: workbook_id
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Workbook ID
+      zh_Hans: 工作簿 ID
+      ja_JP: ワークブックID
+    human_description:
+      en_US: The ID of the Excel workbook
+      zh_Hans: Excel 工作簿的 ID
+      ja_JP: ExcelワークブックのID
+    llm_description: The unique identifier of the Excel workbook
+
+  - name: worksheet_name
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Worksheet Name
+      zh_Hans: 工作表名称
+      ja_JP: ワークシート名
+    human_description:
+      en_US: The name of the worksheet to clear data from
+      zh_Hans: 要清除数据的工作表名称
+      ja_JP: データをクリアするワークシートの名前
+    llm_description: The name of the worksheet to clear data from
+
+  - name: range
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Range
+      zh_Hans: 范围
+      ja_JP: 範囲
+    human_description:
+      en_US: The cell range to clear (e.g., A1:D10)
+      zh_Hans: 要清除的单元格范围（例如 A1:D10）
+      ja_JP: クリアするセル範囲（例：A1:D10）
+    llm_description: The range of cells to clear in A1 notation (e.g., A1:D10)
+
+extra:
+  python:
+    source: tools/clear_worksheet_data.py
