@@ -43,21 +43,6 @@ oauth_schema:
       label:
         zh_Hans: Refresh Token
         en_US: Refresh Token
-    - name: client_id
-      type: secret-input
-      label:
-        zh_Hans: Client ID
-        en_US: Client ID
-    - name: client_secret
-      type: secret-input
-      label:
-        zh_Hans: Client Secret
-        en_US: Client Secret
-    - name: user_email
-      type: secret-input
-      label:
-        zh_Hans: User Email
-        en_US: User Email
 datasources:
   - datasources/google_drive.yaml
 extra:
