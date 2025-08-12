@@ -15,8 +15,6 @@ from dify_plugin.entities.model.message import (
     PromptMessage,
     MultiModalPromptMessageContent,
     PromptMessageContent,
-    AudioPromptMessageContent,
-    DocumentPromptMessageContent,
     ImagePromptMessageContent,
     TextPromptMessageContent,
     PromptMessageContentType,
@@ -24,7 +22,6 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     ToolPromptMessage,
     UserPromptMessage,
-    VideoPromptMessageContent,
     PromptMessageContentUnionTypes,
 )
 from dify_plugin.errors.model import (
@@ -41,7 +38,6 @@ from google.genai import errors, types
 from .utils import FileCache
 
 file_cache = FileCache()
-
 
 _MMC = TypeVar("_MMC", bound=MultiModalPromptMessageContent)
 
@@ -95,6 +91,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return:md = genai.GenerativeModel(model)
         """
         prompt = self._convert_messages_to_prompt(prompt_messages)
+
+        # TODO(QIN2DIM): Fix the issue of inaccurate counting of Gemini Tokens
         return self._get_num_tokens_by_gpt2(prompt)
 
     def _convert_messages_to_prompt(self, messages: list[PromptMessage]) -> str:
@@ -141,6 +139,102 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         return types.Tool(function_declarations=function_declarations)
 
+    @staticmethod
+    def _convert_one_message_to_text(message: PromptMessage) -> str:
+        """
+        Convert a single message to a string.
+
+        :param message: PromptMessage to convert.
+        :return: String representation of the message.
+        """
+        human_prompt = "\n\nuser:"
+        ai_prompt = "\n\nmodel:"
+        content = message.content
+        if isinstance(content, list):
+            content = "".join((c.data for c in content if c.type != PromptMessageContentType.IMAGE))
+        if isinstance(message, UserPromptMessage):
+            message_text = f"{human_prompt} {content}"
+        elif isinstance(message, AssistantPromptMessage):
+            message_text = f"{ai_prompt} {content}"
+        elif isinstance(message, SystemPromptMessage | ToolPromptMessage):
+            message_text = f"{human_prompt} {content}"
+        else:
+            raise ValueError(f"Got unknown type {message}")
+        return message_text
+
+    @staticmethod
+    def _upload_file_content_to_google(
+        message_content: _MMC, genai_client: genai.Client, file_server_url_prefix: str | None = None
+    ) -> Tuple[str, str]:
+
+        key = f"{message_content.type.value}:{hash(message_content.data)}"
+        if file_cache.exists(key):
+            value = file_cache.get(key).split(";")
+            return value[0], value[1]
+
+        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+            if message_content.base64_data:
+                file_content = base64.b64decode(message_content.base64_data)
+                temp_file.write(file_content)
+            else:
+                try:
+                    file_url = message_content.url
+                    if file_server_url_prefix:
+                        file_url = f"{file_server_url_prefix.rstrip('/')}/files{message_content.url.split('/files')[-1]}"
+                    if not file_url.startswith("https://") and not file_url.startswith("http://"):
+                        raise ValueError("Set FILES_URL env first!")
+                    response: requests.Response = requests.get(file_url)
+                    response.raise_for_status()
+                    temp_file.write(response.content)
+                except Exception as ex:
+                    raise ValueError(f"Failed to fetch data from url {file_url} {ex}")
+            temp_file.flush()
+
+        file = genai_client.files.upload(
+            file=temp_file.name, config=types.UploadFileConfig(mime_type=message_content.mime_type)
+        )
+
+        while file.state.name == "PROCESSING":
+            time.sleep(5)
+            file = genai_client.files.get(name=file.name)
+
+        # google will delete your upload files in 2 days.
+        file_cache.setex(key, 47 * 60 * 60, f"{file.uri};{file.mime_type}")
+
+        try:
+            os.unlink(temp_file.name)
+        except PermissionError:
+            # windows may raise permission error
+            pass
+
+        return file.uri, file.mime_type
+
+    @staticmethod
+    def _render_grounding_source(grounding_metadata: types.GroundingMetadata) -> str:
+        """
+        Render google search source links
+        """
+        result = "\n\n**Search Sources:**\n"
+        for index, entry in enumerate(grounding_metadata.grounding_chunks, start=1):
+            result += f"{index}. [{entry.web.title}]({entry.web.uri})\n"
+        return result
+
+    @property
+    def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
+        """
+        Map model invoke error to unified error
+        """
+        return {
+            InvokeConnectionError: [errors.APIError, errors.ClientError],
+            InvokeServerUnavailableError: [errors.ServerError],
+            InvokeBadRequestError: [
+                errors.ClientError,
+                errors.UnknownFunctionCallArgumentError,
+                errors.UnsupportedFunctionError,
+                errors.FunctionInvocationError,
+            ],
+        }
+
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
         Validate model credentials
@@ -160,22 +254,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             )
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
-
-    @staticmethod
-    def _get_response_modalities(model: str) -> list[str]:
-        """_get_response_modalities returns response modalities supported
-        by the given model.
-        """
-        # FIXME(QuantumGhost): Multimodal output is currently limited to
-        # the gemini-2.0-flash-experiment and
-        # gemini-2.0-flash-preview-image-generationmodel. The model name is currently
-        # hardcoded for simplicity; consider revisiting this approach for flexibility.
-        if model != "gemini-2.0-flash-exp" and model != "gemini-2.0-flash-preview-image-generation":
-            return ["Text"]
-
-        # Multimodal output: Gemini supports full modal tokens return, the module should be removed
-        # https://googleapis.github.io/python-genai/genai.html#genai.live.AsyncSession.start_stream
-        return ["Text", "Image"]
 
     def _generate(
         self,
@@ -197,6 +275,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             raise InvokeError(
                 "gemini not support use multiple features at same time: json_schema, grounding, tools+knowledge"
             )
+
+        # == InitConfig == #
 
         config = types.GenerateContentConfig()
         genai_client = genai.Client(api_key=credentials["google_api_key"])
@@ -296,29 +376,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             model=model, contents=contents, config=config
         )
         return self._handle_generate_response(model, credentials, response, prompt_messages)
-
-    @staticmethod
-    def _convert_one_message_to_text(message: PromptMessage) -> str:
-        """
-        Convert a single message to a string.
-
-        :param message: PromptMessage to convert.
-        :return: String representation of the message.
-        """
-        human_prompt = "\n\nuser:"
-        ai_prompt = "\n\nmodel:"
-        content = message.content
-        if isinstance(content, list):
-            content = "".join((c.data for c in content if c.type != PromptMessageContentType.IMAGE))
-        if isinstance(message, UserPromptMessage):
-            message_text = f"{human_prompt} {content}"
-        elif isinstance(message, AssistantPromptMessage):
-            message_text = f"{ai_prompt} {content}"
-        elif isinstance(message, SystemPromptMessage | ToolPromptMessage):
-            message_text = f"{human_prompt} {content}"
-        else:
-            raise ValueError(f"Got unknown type {message}")
-        return message_text
 
     def _build_gemini_contents(
         self,
@@ -436,53 +493,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         else:
             raise ValueError(f"Unknown message type: {type(message).__name__}")
 
-    @staticmethod
-    def _upload_file_content_to_google(
-        message_content: _MMC, genai_client: genai.Client, file_server_url_prefix: str | None = None
-    ) -> Tuple[str, str]:
-
-        key = f"{message_content.type.value}:{hash(message_content.data)}"
-        if file_cache.exists(key):
-            value = file_cache.get(key).split(";")
-            return value[0], value[1]
-
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            if message_content.base64_data:
-                file_content = base64.b64decode(message_content.base64_data)
-                temp_file.write(file_content)
-            else:
-                try:
-                    file_url = message_content.url
-                    if file_server_url_prefix:
-                        file_url = f"{file_server_url_prefix.rstrip('/')}/files{message_content.url.split('/files')[-1]}"
-                    if not file_url.startswith("https://") and not file_url.startswith("http://"):
-                        raise ValueError("Set FILES_URL env first!")
-                    response: requests.Response = requests.get(file_url)
-                    response.raise_for_status()
-                    temp_file.write(response.content)
-                except Exception as ex:
-                    raise ValueError(f"Failed to fetch data from url {file_url} {ex}")
-            temp_file.flush()
-
-        file = genai_client.files.upload(
-            file=temp_file.name, config=types.UploadFileConfig(mime_type=message_content.mime_type)
-        )
-
-        while file.state.name == "PROCESSING":
-            time.sleep(5)
-            file = genai_client.files.get(name=file.name)
-
-        # google will delete your upload files in 2 days.
-        file_cache.setex(key, 47 * 60 * 60, f"{file.uri};{file.mime_type}")
-
-        try:
-            os.unlink(temp_file.name)
-        except PermissionError:
-            # windows may raise permission error
-            pass
-
-        return file.uri, file.mime_type
-
     def _handle_generate_response(
         self,
         model: str,
@@ -559,6 +569,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
                 message = self._parse_parts(candidate.content.parts)
                 index += len(candidate.content.parts)
+
+                # TODO(QIN2DIM): Fix the issue of inaccurate counting of Gemini Tokens
                 if chunk.usage_metadata:
                     completion_tokens += chunk.usage_metadata.candidates_token_count or 0
 
@@ -603,32 +615,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                             usage=usage,
                         ),
                     )
-
-    @staticmethod
-    def _render_grounding_source(grounding_metadata: types.GroundingMetadata) -> str:
-        """
-        Render google search source links
-        """
-        result = "\n\n**Search Sources:**\n"
-        for index, entry in enumerate(grounding_metadata.grounding_chunks, start=1):
-            result += f"{index}. [{entry.web.title}]({entry.web.uri})\n"
-        return result
-
-    @property
-    def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
-        """
-        Map model invoke error to unified error
-        """
-        return {
-            InvokeConnectionError: [errors.APIError, errors.ClientError],
-            InvokeServerUnavailableError: [errors.ServerError],
-            InvokeBadRequestError: [
-                errors.ClientError,
-                errors.UnknownFunctionCallArgumentError,
-                errors.UnsupportedFunctionError,
-                errors.FunctionInvocationError,
-            ],
-        }
 
     def _parse_parts(self, parts: Sequence[types.Part], /) -> AssistantPromptMessage:
         """
@@ -720,81 +706,3 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             content=contents, tool_calls=function_calls  # type: ignore
         )
         return message
-
-    def _convert_to_contents(
-        self, prompt_messages: Sequence[PromptMessage]
-    ) -> list[types.ContentDict]:
-        """_convert_to_content convert input prompt messages to contents sent to Google
-        Gemini models.
-        """
-        contents: list[types.ContentDict] = []
-
-        last_content: Optional[types.ContentDict] = None
-        for prompt in prompt_messages:
-            # skip all `SystemPromptMessage` messages, since they are handled
-            # by `_get_system_instruction`.
-            if isinstance(prompt, SystemPromptMessage):
-                continue
-
-            content = self._convert_to_content_dict(prompt)
-            if last_content is None:
-                last_content = content
-                continue
-
-            if last_content.get("role") != content.get("role"):
-                contents.append(last_content)
-                last_content = content
-                continue
-            # merge parts with the same role.
-            parts = last_content.get("parts") or []
-            parts.extend(content.get("parts") or [])
-            last_content = types.ContentDict(parts=parts, role=content.get("role"))
-        # append the last content if exists
-        if last_content is not None:
-            contents.append(last_content)
-        return contents
-
-    @staticmethod
-    def _convert_to_content_dict(prompt: PromptMessage) -> types.ContentDict:
-
-        role = "user" if isinstance(prompt, UserPromptMessage) else "model"
-        parts = []
-
-        prompt_contents = prompt.content
-        if isinstance(prompt_contents, str):
-            parts.append(types.Part.from_text(text=prompt_contents))
-        elif isinstance(prompt_contents, list):
-            for content in prompt_contents:
-                parts.append(_content_to_part(content))
-        else:
-            raise InvokeError("prompt content must be a string or a list")
-
-        return types.ContentDict(parts=parts, role=role)
-
-
-def _content_to_part(content: PromptMessageContent) -> types.Part:
-    if isinstance(content, TextPromptMessageContent):
-        return types.Part.from_text(text=content.data)
-    elif isinstance(
-        content,
-        (
-            ImagePromptMessageContent,
-            DocumentPromptMessageContent,
-            VideoPromptMessageContent,
-            AudioPromptMessageContent,
-        ),
-    ):
-        if content.url:
-            return types.Part.from_uri(file_uri=content.url, mime_type=content.mime_type)
-        else:
-            return types.Part.from_bytes(
-                data=base64.b64decode(content.base64_data), mime_type=content.mime_type
-            )
-    else:
-        type_tag = getattr(content, "type", None)
-        # NOTE(QuantumGhost): The `PromptMessageContent` should be an ABC with an attribute named `type`.
-        # However, the current implementation does not include that attribute, so accessing `type` here will be flagged
-        # by type checker.
-        #
-        # Ignore the error for now.
-        raise InvokeError(f"unknown content type, type={type_tag}, python_type={type(content)}")  # type: ignore
