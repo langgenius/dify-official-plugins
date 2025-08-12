@@ -162,6 +162,7 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         if enable_thinking is not None:
             model_parameters["chat_template_kwargs"] = {"enable_thinking": bool(enable_thinking)}
 
+        # Remove thinking content from assistant messages for better performance.
         with suppress(Exception):
             self._drop_analyze_channel(prompt_messages)
 
