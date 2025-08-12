@@ -14,6 +14,8 @@
 - openai/gpt-4
 - openai/gpt-4-32k
 - openai/gpt-3.5-turbo
+- anthropic/claude-opus-4
+- anthropic/claude-opus-4.1
 - anthropic/claude-sonnet-4
 - anthropic/claude-3.7-sonnet:thinking
 - anthropic/claude-3.7-sonnet
@@ -45,6 +47,18 @@
 - qwen/qwen-2.5-72b-instruct
 - qwen/qwen-2-72b-instruct
 - deepseek/deepseek-chat
+- deepseek/deepseek-chat-v3-0324
 - deepseek/deepseek-coder
+- deepseek/deepseek-prover-v2
+- deepseek/deepseek-r1
+- deepseek/deepseek-r1-0528
+- deepseek/deepseek-r1-0528-qwen3-8b
+- deepseek/deepseek-r1-distill-llama-70b
+- deepseek/deepseek-r1-distill-qwen-32b
+- deepseek/deepseek-r1-distill-qwen-14b
+- deepseek/deepseek-r1-distill-llama-8b
+- deepseek/deepseek-r1-distill-qwen-7b
+- deepseek/deepseek-r1-distill-qwen-1.5b
+- deepseek/deepseek-v3-base
 - x-ai/grok-3-beta
 - x-ai/grok-3-mini-beta
