@@ -282,11 +282,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         genai_client = genai.Client(api_key=credentials["google_api_key"])
 
         # == ChatConfig == #
-        print(f"{json.dumps(model_parameters, indent=2, ensure_ascii=False)}")
-
-        print(f"{len(prompt_messages)=}")
-        for i, p in enumerate(prompt_messages):
-            print(i, p)
 
         if schema := model_parameters.get("json_schema"):
             try:
@@ -312,14 +307,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             config=config,
             file_server_url_prefix=file_server_url_prefix,
         )
-
-        print("----------------------------")
-        print(f"{len(contents)=}")
-        for i in contents:
-            print(f"[ role={i.role} ]")
-            for p in i.parts:
-                print(f">> Content: {p}")
-        print("----------------------------")
 
         # == ThinkingConfig == #
 
