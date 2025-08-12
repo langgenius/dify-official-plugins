@@ -1,3 +1,5 @@
+import re
+from contextlib import suppress
 from typing import Mapping, Optional, Union, Generator
 
 from dify_plugin.entities.model import (
@@ -14,15 +16,18 @@ from dify_plugin.entities.model.message import (
     PromptMessageRole,
     PromptMessageTool,
     SystemPromptMessage,
+    AssistantPromptMessage,
 )
-from dify_plugin.interfaces.model.openai_compatible.llm import (
-    OAICompatLargeLanguageModel,
-)
+from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLanguageModel
+from typing import List
 
 
 class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
+    # Pre-compiled regex for better performance
+    _THINK_PATTERN = re.compile(r"^<think>.*?</think>\s*", re.DOTALL)
+
     def get_customizable_model_schema(
-        self, model: str, credentials: Mapping
+        self, model: str, credentials: Mapping | dict
     ) -> AIModelEntity:
         entity = super().get_customizable_model_schema(model, credentials)
 
@@ -46,21 +51,25 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             # except ValueError:
             #     entity.features.append(ModelFeature.STRUCTURED_OUTPUT)
 
-            entity.parameter_rules.append(ParameterRule(
-                name=DefaultParameterName.RESPONSE_FORMAT.value,
-                label=I18nObject(en_US="Response Format", zh_Hans="回复格式"),
-                help=I18nObject(
-                    en_US="Specifying the format that the model must output.",
-                    zh_Hans="指定模型必须输出的格式。",
-                ),
-                type=ParameterType.STRING,
-                options=["text", "json_object", "json_schema"],
-                required=False,
-            ))
-            entity.parameter_rules.append(ParameterRule(
-                name=DefaultParameterName.JSON_SCHEMA.value,
-                use_template=DefaultParameterName.JSON_SCHEMA.value
-            ))
+            entity.parameter_rules.append(
+                ParameterRule(
+                    name=DefaultParameterName.RESPONSE_FORMAT.value,
+                    label=I18nObject(en_US="Response Format", zh_Hans="回复格式"),
+                    help=I18nObject(
+                        en_US="Specifying the format that the model must output.",
+                        zh_Hans="指定模型必须输出的格式。",
+                    ),
+                    type=ParameterType.STRING,
+                    options=["text", "json_object", "json_schema"],
+                    required=False,
+                )
+            )
+            entity.parameter_rules.append(
+                ParameterRule(
+                    name=DefaultParameterName.JSON_SCHEMA.value,
+                    use_template=DefaultParameterName.JSON_SCHEMA.value,
+                )
+            )
 
         if "display_name" in credentials and credentials["display_name"] != "":
             entity.label = I18nObject(
@@ -80,6 +89,34 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             )
         ]
         return entity
+
+    @classmethod
+    def _drop_analyze_channel(cls, prompt_messages: List[PromptMessage]) -> None:
+        """
+        Remove thinking content from assistant messages for better performance.
+
+        Uses early exit and pre-compiled regex to minimize overhead.
+        Args:
+            prompt_messages:
+
+        Returns:
+
+        """
+        for p in prompt_messages:
+            # Early exit conditions
+            if not isinstance(p, AssistantPromptMessage):
+                continue
+            if not isinstance(p.content, str):
+                continue
+            # Quick check to avoid regex if not needed
+            if not p.content.startswith("<think>"):
+                continue
+
+            # Only perform regex substitution when necessary
+            new_content = cls._THINK_PATTERN.sub("", p.content, count=1)
+            # Only update if changed
+            if new_content != p.content:
+                p.content = new_content
 
     def _invoke(
         self,
@@ -102,7 +139,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         # other potential OpenAI-compatible models that might handle it differently.
         if model_parameters.get("response_format") == "json_schema":
             model_parameters["response_format"] = "json_object"
-            json_schema_str = model_parameters.get("json_schema")  # Use .get() instead of .pop() for safety
+            # Use .get() instead of .pop() for safety
+            json_schema_str = model_parameters.get("json_schema")
 
             if json_schema_str:
                 structured_output_prompt = (
@@ -110,9 +148,13 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     f"JSON Schema: ```json\n{json_schema_str}\n```"
                 )
 
-                existing_system_prompt = next((p for p in prompt_messages if p.role == PromptMessageRole.SYSTEM), None)
+                existing_system_prompt = next(
+                    (p for p in prompt_messages if p.role == PromptMessageRole.SYSTEM), None
+                )
                 if existing_system_prompt:
-                    existing_system_prompt.content = structured_output_prompt + "\n\n" + existing_system_prompt.content
+                    existing_system_prompt.content = (
+                        structured_output_prompt + "\n\n" + existing_system_prompt.content
+                    )
                 else:
                     prompt_messages.insert(0, SystemPromptMessage(content=structured_output_prompt))
 
@@ -120,13 +162,10 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         if enable_thinking is not None:
             model_parameters["chat_template_kwargs"] = {"enable_thinking": bool(enable_thinking)}
 
+        # Remove thinking content from assistant messages for better performance.
+        with suppress(Exception):
+            self._drop_analyze_channel(prompt_messages)
+
         return super()._invoke(
-            model,
-            credentials,
-            prompt_messages,
-            model_parameters,
-            tools,
-            stop,
-            stream,
-            user,
+            model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
         )
