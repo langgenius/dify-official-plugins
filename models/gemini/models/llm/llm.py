@@ -392,6 +392,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             config.tools.append(self._convert_tools_to_gemini_tool(tools))
 
         # == InvokeModel == #
+
         if stream:
             response = genai_client.models.generate_content_stream(
                 model=model, contents=contents, config=config
