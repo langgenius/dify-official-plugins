@@ -1,0 +1,273 @@
+identity:
+  name: find_conversations
+  author: Dify Developer
+  label:
+    en_US: Find Conversations
+    zh_Hans: 查找对话
+    ja_JP: 会話を検索
+  icon: icon.png
+
+description:
+  human:
+    en_US: Search and filter conversations in Front with various criteria like status, inbox, tags, and date range
+    zh_Hans: 在 Front 中按状态、收件箱、标签和日期范围等各种条件搜索和过滤对话
+    ja_JP: ステータス、受信箱、タグ、日付範囲などの様々な基準で Front の会話を検索・フィルタリング
+  llm: Search and filter Front conversations using text queries, status filters, inbox filters, tag filters, assignee filters, and date ranges
+
+parameters:
+  - name: search_query
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Search Query
+      zh_Hans: 搜索查询
+      ja_JP: 検索クエリ
+    human_description:
+      en_US: Text to search for in conversation subjects and content
+      zh_Hans: 在对话主题和内容中搜索的文本
+      ja_JP: 会話の件名と内容で検索するテキスト
+    llm_description: Text query to search within conversation subjects and message content
+
+  - name: status_filter
+    type: select
+    required: false
+    form: llm
+    label:
+      en_US: Status Filter
+      zh_Hans: 状态筛选
+      ja_JP: ステータスフィルタ
+    human_description:
+      en_US: Filter conversations by their current status
+      zh_Hans: 按当前状态筛选对话
+      ja_JP: 現在のステータスで会話をフィルタリング
+    llm_description: Filter conversations by status (open, archived, deleted, etc.)
+    options:
+      - value: ""
+        label:
+          en_US: All Statuses
+          zh_Hans: 所有状态
+          ja_JP: 全てのステータス
+      - value: open
+        label:
+          en_US: Open
+          zh_Hans: 打开
+          ja_JP: オープン
+      - value: archived
+        label:
+          en_US: Archived
+          zh_Hans: 已归档
+          ja_JP: アーカイブ済み
+      - value: deleted
+        label:
+          en_US: Deleted
+          zh_Hans: 已删除
+          ja_JP: 削除済み
+
+  - name: inbox_id
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Inbox ID
+      zh_Hans: 收件箱 ID
+      ja_JP: 受信箱 ID
+    human_description:
+      en_US: Filter conversations by specific inbox ID
+      zh_Hans: 按特定收件箱 ID 筛选对话
+      ja_JP: 特定の受信箱 ID で会話をフィルタリング
+    llm_description: Front inbox ID to filter conversations by specific inbox
+
+  - name: tag_ids
+    type: array
+    required: false
+    form: llm
+    label:
+      en_US: Tag IDs
+      zh_Hans: 标签 ID
+      ja_JP: タグ ID
+    human_description:
+      en_US: List of tag IDs to filter conversations
+      zh_Hans: 用于筛选对话的标签 ID 列表
+      ja_JP: 会話をフィルタリングするためのタグ ID のリスト
+    llm_description: Array of Front tag IDs to filter conversations that have these tags
+
+  - name: assignee_id
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Assignee ID
+      zh_Hans: 受让人 ID
+      ja_JP: 担当者 ID
+    human_description:
+      en_US: Filter conversations by assignee user ID
+      zh_Hans: 按受让人用户 ID 筛选对话
+      ja_JP: 担当者のユーザー ID で会話をフィルタリング
+    llm_description: Front user ID to filter conversations assigned to specific person
+
+  - name: date_after
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Date After
+      zh_Hans: 日期之后
+      ja_JP: 以降の日付
+    human_description:
+      en_US: Show conversations created after this date (YYYY-MM-DD format)
+      zh_Hans: 显示在此日期之后创建的对话（YYYY-MM-DD 格式）
+      ja_JP: この日付以降に作成された会話を表示（YYYY-MM-DD形式）
+    llm_description: ISO date string (YYYY-MM-DD) to show conversations created after this date
+
+  - name: date_before
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Date Before
+      zh_Hans: 日期之前
+      ja_JP: 以前の日付
+    human_description:
+      en_US: Show conversations created before this date (YYYY-MM-DD format)
+      zh_Hans: 显示在此日期之前创建的对话（YYYY-MM-DD 格式）
+      ja_JP: この日付以前に作成された会話を表示（YYYY-MM-DD形式）
+    llm_description: ISO date string (YYYY-MM-DD) to show conversations created before this date
+
+  - name: limit
+    type: number
+    required: false
+    default: 50
+    form: llm
+    label:
+      en_US: Limit Results
+      zh_Hans: 限制结果数量
+      ja_JP: 結果数を制限
+    human_description:
+      en_US: Maximum number of conversations to return (1-100)
+      zh_Hans: 返回的最大对话数量（1-100）
+      ja_JP: 返される会話の最大数（1-100）
+    llm_description: Maximum number of conversations to return (between 1 and 100)
+    min: 1
+    max: 100
+
+  - name: sort_by
+    type: select
+    required: false
+    default: "date"
+    form: llm
+    label:
+      en_US: Sort By
+      zh_Hans: 排序方式
+      ja_JP: ソート方法
+    human_description:
+      en_US: Field to sort conversations by
+      zh_Hans: 对话排序的字段
+      ja_JP: 会話をソートするフィールド
+    llm_description: Field to sort the conversation results by
+    options:
+      - value: date
+        label:
+          en_US: Date
+          zh_Hans: 日期
+          ja_JP: 日付
+      - value: subject
+        label:
+          en_US: Subject
+          zh_Hans: 主题
+          ja_JP: 件名
+      - value: status
+        label:
+          en_US: Status
+          zh_Hans: 状态
+          ja_JP: ステータス
+
+  - name: sort_order
+    type: select
+    required: false
+    default: "desc"
+    form: llm
+    label:
+      en_US: Sort Order
+      zh_Hans: 排序顺序
+      ja_JP: ソート順序
+    human_description:
+      en_US: Order to sort results (ascending or descending)
+      zh_Hans: 结果排序顺序（升序或降序）
+      ja_JP: 結果をソートする順序（昇順または降順）
+    llm_description: Sort order for the results (asc for ascending, desc for descending)
+    options:
+      - value: asc
+        label:
+          en_US: Ascending
+          zh_Hans: 升序
+          ja_JP: 昇順
+      - value: desc
+        label:
+          en_US: Descending
+          zh_Hans: 降序
+          ja_JP: 降順
+
+extra:
+  python:
+    source: tools/find_conversations.py
+
+output_schema:
+  type: object
+  properties:
+    total_found:
+      type: integer
+      description: Total number of conversations found
+    search_query:
+      type: string
+      description: The search query used
+    filters_applied:
+      type: object
+      description: Summary of filters that were applied
+      properties:
+        status:
+          type: string
+        inbox_id:
+          type: string
+        assignee_id:
+          type: string
+        tags:
+          type: array
+        date_range:
+          type: string
+    conversations:
+      type: array
+      description: Array of found conversations
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Conversation ID
+          subject:
+            type: string
+            description: Conversation subject
+          status:
+            type: string
+            description: Current status
+          created_at:
+            type: string
+            description: Creation timestamp
+          last_message_at:
+            type: string
+            description: Last message timestamp
+          assignee:
+            type: string
+            description: Assigned user name
+          tags:
+            type: array
+            description: List of tag names
+          inbox:
+            type: string
+            description: Inbox name
+          recipient:
+            type: string
+            description: Main recipient
+          message_count:
+            type: integer
+            description: Number of messages

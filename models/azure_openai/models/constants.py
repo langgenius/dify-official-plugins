@@ -1876,6 +1876,22 @@ LLM_BASE_MODELS = [
                     required=False,
                     options=["minimal", "low", "medium", "high"],
                 ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                                "支持的值包括low、medium和high",
+                        en_US="Constrains the verbosity of the model's response. "
+                              "Lower values will result in more concise responses, "
+                              "while higher values will result in more verbose responses. "
+                              "Currently supported values are low, medium, and high",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
+                ),
                 _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
             ],
             pricing=PriceConfig(
@@ -1939,6 +1955,22 @@ LLM_BASE_MODELS = [
                     required=False,
                     options=["minimal", "low", "medium", "high"],
                 ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                                "支持的值包括low、medium和high",
+                        en_US="Constrains the verbosity of the model's response. "
+                              "Lower values will result in more concise responses, "
+                              "while higher values will result in more verbose responses. "
+                              "Currently supported values are low, medium, and high",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
+                ),
                 _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
             ],
             pricing=PriceConfig(
@@ -2001,6 +2033,22 @@ LLM_BASE_MODELS = [
                     ),
                     required=False,
                     options=["minimal", "low", "medium", "high"],
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                                "支持的值包括low、medium和high",
+                        en_US="Constrains the verbosity of the model's response. "
+                              "Lower values will result in more concise responses, "
+                              "while higher values will result in more verbose responses. "
+                              "Currently supported values are low, medium, and high",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
                 ),
                 _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
             ],

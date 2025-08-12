@@ -1,0 +1,48 @@
+identity:
+  name: create_worksheet
+  author: langgenius
+  label:
+    en_US: Create Worksheet
+    zh_Hans: 创建工作表
+    ja_JP: ワークシートの作成
+  icon: icon.svg
+
+description:
+  human:
+    en_US: Create a new worksheet in an Excel workbook
+    zh_Hans: 在 Excel 工作簿中创建新工作表
+    ja_JP: Excelワークブックに新しいワークシートを作成する
+  llm: Create a new worksheet with a specified name in an Excel workbook
+
+parameters:
+  - name: workbook_id
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Workbook ID
+      zh_Hans: 工作簿 ID
+      ja_JP: ワークブックID
+    human_description:
+      en_US: The ID of the Excel workbook
+      zh_Hans: Excel 工作簿的 ID
+      ja_JP: ExcelワークブックのID
+    llm_description: The unique identifier of the Excel workbook to add the worksheet to
+
+  - name: worksheet_name
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Worksheet Name
+      zh_Hans: 工作表名称
+      ja_JP: ワークシート名
+    human_description:
+      en_US: The name for the new worksheet
+      zh_Hans: 新工作表的名称
+      ja_JP: 新しいワークシートの名前
+    llm_description: The name for the new worksheet to be created
+
+extra:
+  python:
+    source: tools/create_worksheet.py

@@ -1,0 +1,34 @@
+identity:
+  name: list_worksheets
+  author: langgenius
+  label:
+    en_US: List Worksheets
+    zh_Hans: 列出工作表
+    ja_JP: ワークシートのリスト
+  icon: icon.svg
+
+description:
+  human:
+    en_US: List all worksheets in a specified Excel workbook
+    zh_Hans: 列出指定 Excel 工作簿中的所有工作表
+    ja_JP: 指定されたExcelワークブック内のすべてのワークシートをリストする
+  llm: List all worksheets within a specified Excel workbook, showing their names, positions, and visibility status
+
+parameters:
+  - name: workbook_id
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Workbook ID
+      zh_Hans: 工作簿 ID
+      ja_JP: ワークブックID
+    human_description:
+      en_US: The ID of the Excel workbook
+      zh_Hans: Excel 工作簿的 ID
+      ja_JP: ExcelワークブックのID
+    llm_description: The unique identifier of the Excel workbook to list worksheets from
+
+extra:
+  python:
+    source: tools/list_worksheets.py

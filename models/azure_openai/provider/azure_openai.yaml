@@ -46,6 +46,9 @@ model_credential_schema:
         zh_Hans: API 版本
       options:
         - label:
+            en_US: 2025-04-01-preview
+          value: 2025-04-01-preview
+        - label:
             en_US: 2025-03-01-preview
           value: 2025-03-01-preview
         - label:
