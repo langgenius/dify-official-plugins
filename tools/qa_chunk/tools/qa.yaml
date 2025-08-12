@@ -51,4 +51,7 @@ parameters:
   required: true
   type: number
 output_schema:
-  $ref: "#/$defs/qa_structure_chunk"
+  type: object
+  properties:
+    result:
+      $ref: "#/$defs/qa_structure_chunk"

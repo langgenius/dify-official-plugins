@@ -82,6 +82,9 @@ parameters:
   required: false
   type: boolean
 output_schema:
-  $ref: "#/$defs/general_structure_chunk"
+  type: object
+  properties:
+    result:
+      $ref: "#/$defs/general_structure_chunk"
 
 
