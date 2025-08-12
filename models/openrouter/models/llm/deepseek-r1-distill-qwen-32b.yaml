@@ -1,14 +1,12 @@
-model: deepseek/deepseek-chat
+model: deepseek/deepseek-r1-distill-qwen-32b
 label:
-  en_US: deepseek-chat (DeepSeek V3)
+  en_US: deepseek-r1-distill-qwen-32b
 model_type: llm
 features:
   - agent-thought
-  - multi-tool-call
-  - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 163840
+  context_size: 131072
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -24,7 +22,7 @@ parameter_rules:
     type: int
     default: 4096
     min: 1
-    max: 4096
+    max: 8192
     help:
       zh_Hans: 指定生成结果长度的上限。如果生成结果截断，可以调大该参数。
       en_US: Specifies the upper limit on the length of generated results. If the generated results are truncated, you can increase this parameter.
@@ -46,16 +44,18 @@ parameter_rules:
       zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
       en_US: Only sample from the top K options for each subsequent token.
     required: false
-  - name: frequency_penalty
-    use_template: frequency_penalty
-    default: 0
-    min: -2.0
-    max: 2.0
+  - name: exclude_reasoning_tokens
+    label:
+      zh_Hans: 隐藏思考过程
+      en_US: Hide the thought process
+    type: boolean
+    default: false
     help:
-      zh_Hans: 介于 -2.0 和 2.0 之间的数字。如果该值为正，那么新 token 会根据其在已有文本中的出现频率受到相应的惩罚，降低模型重复相同内容的可能性。
-      en_US: A number between -2.0 and 2.0. If the value is positive, new tokens are penalized based on their frequency of occurrence in existing text, reducing the likelihood that the model will repeat the same content.
+      zh_Hans: 是否隐藏思考过程。
+      en_US: Whether to hide the thought process.
+    required: false
 pricing:
-  input: "0.18"
-  output: "0.72"
+  input: "0.075"
+  output: "0.15"
   unit: "0.000001"
   currency: USD
