@@ -1,6 +1,9 @@
+import base64
 import dataclasses
 import time
+from unittest.mock import Mock, patch
 
+import pytest
 
 from .llm import GoogleLargeLanguageModel
 from dify_plugin.entities.model.message import (
@@ -10,9 +13,11 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     PromptMessageContent,
     MultiModalPromptMessageContent,
+    AudioPromptMessageContent,
     DocumentPromptMessageContent,
     ImagePromptMessageContent,
     TextPromptMessageContent,
+    VideoPromptMessageContent,
 )
 from google.genai import types
 
@@ -21,6 +26,266 @@ from google.genai import types
 class TestCase:
     message: PromptMessageContent
     expected: types.Part
+
+
+class TestContentConversion:
+    """Test suite for content conversion following the original test design philosophy"""
+
+    def setup_method(self):
+        """Setup test fixtures"""
+        self.llm = GoogleLargeLanguageModel([])
+        self.mock_config = types.GenerateContentConfig()
+
+        # Setup mock client for file uploads
+        self.mock_client = Mock()
+        self.mock_file = Mock()
+        self.mock_file.uri = "gs://test-bucket/test-file"
+        self.mock_file.mime_type = "image/jpeg"
+        self.mock_file.state.name = "ACTIVE"
+        self.mock_client.files.upload.return_value = self.mock_file
+        self.mock_client.files.get.return_value = self.mock_file
+
+    def test_text_content(self):
+        """Test that TextPromptMessageContent is converted to text Part"""
+        message = UserPromptMessage(content=[TextPromptMessageContent(data="Test text content")])
+
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=[message], genai_client=self.mock_client, config=self.mock_config
+        )
+
+        assert len(contents) == 1
+        assert contents[0].role == "user"
+        assert len(contents[0].parts) == 1
+        assert contents[0].parts[0].text == "Test text content"
+        assert contents[0].parts[0] == types.Part.from_text(text="Test text content")
+
+    def test_multimodal_contents_with_url(self):
+        """Test multimodal content types with URLs"""
+        # Using localhost URLs that would be typical in a Dify deployment
+        cases = [
+            TestCase(
+                message=ImagePromptMessageContent(
+                    format="jpeg",
+                    url="http://localhost:5001/files/images/test.jpg",
+                    mime_type="image/jpeg",
+                ),
+                expected=types.Part.from_uri(
+                    file_uri="gs://test-bucket/test-file", mime_type="image/jpeg"
+                ),
+            ),
+            TestCase(
+                message=AudioPromptMessageContent(
+                    format="mp3",
+                    url="http://localhost:5001/files/audio/test.mp3",
+                    mime_type="audio/mpeg",
+                ),
+                expected=types.Part.from_uri(
+                    file_uri="gs://test-bucket/test-file", mime_type="audio/mpeg"
+                ),
+            ),
+            TestCase(
+                message=VideoPromptMessageContent(
+                    format="mp4",
+                    url="http://localhost:5001/files/video/test.mp4",
+                    mime_type="video/mp4",
+                ),
+                expected=types.Part.from_uri(
+                    file_uri="gs://test-bucket/test-file", mime_type="video/mp4"
+                ),
+            ),
+            TestCase(
+                message=DocumentPromptMessageContent(
+                    format="pdf",
+                    url="http://localhost:5001/files/documents/test.pdf",
+                    mime_type="application/pdf",
+                ),
+                expected=types.Part.from_uri(
+                    file_uri="gs://test-bucket/test-file", mime_type="application/pdf"
+                ),
+            ),
+        ]
+
+        for idx, c in enumerate(cases):
+            # Update mock for correct mime type
+            self.mock_file.mime_type = c.message.mime_type
+
+            with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"), patch(
+                "requests.get"
+            ) as mock_get:
+                mock_response = Mock()
+                mock_response.content = b"test content"
+                mock_response.raise_for_status = Mock()
+                mock_get.return_value = mock_response
+
+                user_message = UserPromptMessage(content=[c.message])
+                contents = self.llm._build_gemini_contents(
+                    prompt_messages=[user_message],
+                    genai_client=self.mock_client,
+                    config=self.mock_config,
+                )
+
+                assert len(contents) == 1, f"Test case {idx + 1} failed, type: {type(c.message)}"
+                assert contents[0].role in ["user"]
+                assert len(contents[0].parts) == 1
+                assert contents[0].parts[0].file_data.file_uri == c.expected.file_data.file_uri
+                assert contents[0].parts[0].file_data.mime_type == c.expected.file_data.mime_type
+
+    def test_multimodal_contents_with_base64(self):
+        """Test multimodal content types with base64 data"""
+        binary_data = b"Test base64"
+        base64_data = base64.b64encode(binary_data).decode()
+
+        cases = [
+            TestCase(
+                message=ImagePromptMessageContent(
+                    format="jpeg", base64_data=base64_data, mime_type="image/jpeg"
+                ),
+                expected=types.Part.from_uri(
+                    file_uri="gs://test-bucket/test-file", mime_type="image/jpeg"
+                ),
+            ),
+            TestCase(
+                message=AudioPromptMessageContent(
+                    format="mp3", base64_data=base64_data, mime_type="audio/mpeg"
+                ),
+                expected=types.Part.from_uri(
+                    file_uri="gs://test-bucket/test-file", mime_type="audio/mpeg"
+                ),
+            ),
+            TestCase(
+                message=VideoPromptMessageContent(
+                    format="mp4", base64_data=base64_data, mime_type="video/mp4"
+                ),
+                expected=types.Part.from_uri(
+                    file_uri="gs://test-bucket/test-file", mime_type="video/mp4"
+                ),
+            ),
+            TestCase(
+                message=DocumentPromptMessageContent(
+                    format="pdf", base64_data=base64_data, mime_type="application/pdf"
+                ),
+                expected=types.Part.from_uri(
+                    file_uri="gs://test-bucket/test-file", mime_type="application/pdf"
+                ),
+            ),
+        ]
+
+        for idx, c in enumerate(cases, start=1):
+            # Update mock for correct mime type
+            self.mock_file.mime_type = c.message.mime_type
+
+            with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
+                user_message = UserPromptMessage(content=[c.message])
+                contents = self.llm._build_gemini_contents(
+                    prompt_messages=[user_message],
+                    genai_client=self.mock_client,
+                    config=self.mock_config,
+                )
+
+                assert len(contents) == 1, f"Test case {idx} failed, type: {type(c.message)}"
+                assert contents[0].role == "user"
+                assert len(contents[0].parts) == 1
+                # After upload, content becomes a file URI part
+                assert contents[0].parts[0].file_data.file_uri == c.expected.file_data.file_uri
+                assert contents[0].parts[0].file_data.mime_type == c.expected.file_data.mime_type
+
+    def test_mixed_content_types(self):
+        """Test message with mixed text and multimodal content"""
+        binary_data = b"Test image"
+        base64_data = base64.b64encode(binary_data).decode()
+
+        user_message = UserPromptMessage(
+            content=[
+                TextPromptMessageContent(data="Look at this image:"),
+                ImagePromptMessageContent(
+                    format="png", base64_data=base64_data, mime_type="image/png"
+                ),
+                TextPromptMessageContent(data="What do you see?"),
+            ]
+        )
+
+        self.mock_file.mime_type = "image/png"
+
+        with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
+            contents = self.llm._build_gemini_contents(
+                prompt_messages=[user_message],
+                genai_client=self.mock_client,
+                config=self.mock_config,
+            )
+
+        assert len(contents) == 1
+        assert contents[0].role == "user"
+        assert len(contents[0].parts) == 3
+        assert contents[0].parts[0].text == "Look at this image:"
+        assert contents[0].parts[1].file_data.file_uri == "gs://test-bucket/test-file"
+        assert contents[0].parts[2].text == "What do you see?"
+
+    def test_invalid_message_type(self):
+        """Test that invalid message types raise appropriate errors"""
+        # Create a mock invalid message type
+        invalid_message = Mock(spec=[])
+        invalid_message.content = "test"
+
+        with pytest.raises(ValueError, match="Unknown message type"):
+            self.llm._format_message_to_gemini_content(
+                message=invalid_message, genai_client=self.mock_client, config=self.mock_config
+            )
+
+    def test_file_upload_with_caching(self):
+        """Test that file uploads are cached properly"""
+        binary_data = b"Test data for caching"
+        base64_data = base64.b64encode(binary_data).decode()
+
+        message_content = ImagePromptMessageContent(
+            format="jpeg", base64_data=base64_data, mime_type="image/jpeg"
+        )
+
+        with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
+            # First upload
+            uri1, mime1 = self.llm._upload_file_content_to_google(message_content, self.mock_client)
+
+            # Second upload (should use cache)
+            uri2, mime2 = self.llm._upload_file_content_to_google(message_content, self.mock_client)
+
+            assert uri1 == uri2 == "gs://test-bucket/test-file"
+            assert mime1 == mime2 == "image/jpeg"
+            # File upload should only be called once due to caching
+            assert self.mock_client.files.upload.call_count == 1
+
+    def test_file_url_with_prefix(self):
+        """Test file URL handling with server prefix"""
+        message_content = DocumentPromptMessageContent(
+            format="pdf", url="/files/doc.pdf", mime_type="application/pdf"
+        )
+
+        self.mock_file.mime_type = "application/pdf"
+
+        with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"), patch(
+            "requests.get"
+        ) as mock_get:
+            mock_response = Mock()
+            mock_response.content = b"PDF content"
+            mock_response.raise_for_status = Mock()
+            mock_get.return_value = mock_response
+
+            uri, mime = self.llm._upload_file_content_to_google(
+                message_content, self.mock_client, file_server_url_prefix="https://api.example.com"
+            )
+
+            # Check that the URL was constructed correctly
+            mock_get.assert_called_once_with("https://api.example.com/files/doc.pdf")
+            assert uri == "gs://test-bucket/test-file"
+            assert mime == "application/pdf"
+
+    def test_invalid_url_without_prefix(self):
+        """Test that invalid URLs without proper prefix raise errors"""
+        message_content = ImagePromptMessageContent(
+            format="jpeg", url="/relative/path/image.jpg", mime_type="image/jpeg"
+        )
+
+        with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
+            with pytest.raises(ValueError, match="Set FILES_URL env first!"):
+                self.llm._upload_file_content_to_google(message_content, self.mock_client)
 
 
 def test_file_url():
