@@ -89,9 +89,6 @@ class OneDriveDatasourceProvider(DatasourceProvider):
         token_data = {
             "client_id": client_id,
             "client_secret": client_secret,
-            "grant_type": "refresh_token",
-            "refresh_token": refresh_token,
-            "scope": "offline_access User.Read Files.Read Files.Read.All",
         }
         headers = {
             "Accept": "application/json",
