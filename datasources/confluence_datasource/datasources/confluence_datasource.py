@@ -1,7 +1,11 @@
+import logging
+import re
+import urllib.parse
 from collections.abc import Generator
 from typing import Any
 
 import requests
+from bs4 import BeautifulSoup
 from dify_plugin.entities.datasource import (
     DatasourceGetPagesResponse,
     DatasourceMessage,
@@ -10,65 +14,128 @@ from dify_plugin.entities.datasource import (
     OnlineDocumentPage,
 )
 from dify_plugin.interfaces.datasource.online_document import OnlineDocumentDatasource
-from bs4 import BeautifulSoup
+
+logger = logging.getLogger(__name__)
+
 
 class ConfluenceDataSource(OnlineDocumentDatasource):
-    _BASE_URL = "https://your-domain.atlassian.net/wiki/rest/api"
-    _API_VERSION = "v2"
+    _API_BASE = "https://api.atlassian.com/ex/confluence"
 
     def _get_pages(self, datasource_parameters: dict[str, Any]) -> DatasourceGetPagesResponse:
-        access_token = self.runtime.credentials.get("integration_secret")
-        space_key = datasource_parameters.get("space_key")  
+        access_token = self.runtime.credentials.get("access_token")
+        workspace_id = self.runtime.credentials.get("workspace_id")
+        space_key = datasource_parameters.get("space_key")
+        
         if not access_token:
             raise ValueError("Access token not found in credentials")
 
+        # Log token info for debugging (first few chars only for security)
+        print(f"Using workspace_id: {workspace_id}")
+        print(f"Access token starts with: {access_token[:10] if access_token else 'None'}...")
+        
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Accept": "application/json",
         }
 
-        url = f"{self._BASE_URL}/content"
+        # Use Confluence API v2 for better performance and cleaner structure
+        url = f"{self._API_BASE}/{workspace_id}/wiki/api/v2/pages"
         params = {
-            "type": "page",
-            "expand": "space,version",
-            "limit": 100,
+            "limit": 100,  
+            "sort": "-modified-date",
         }
+        
+        # Add space filter if specified
         if space_key:
-            params["spaceKey"] = space_key
+            # In v2, we need to get the space ID first
+            space_url = f"{self._API_BASE}/{workspace_id}/wiki/api/v2/spaces"
+            space_params = {"keys": space_key}
+            try:
+                space_response = requests.get(space_url, headers=headers, params=space_params, timeout=10)
+                space_response.raise_for_status()
+                space_data = space_response.json()
+                if space_data.get("results"):
+                    space_id = space_data["results"][0]["id"]
+                    params["space-id"] = space_id
+                else:
+                    print(f"Space key '{space_key}' not found")
+            except Exception as e:
+                print(f"Failed to get space ID for key '{space_key}': {e}")
 
-        response = requests.get(url, headers=headers, params=params, timeout=10)
-        response.raise_for_status()
-        data = response.json()
+        print(f"Fetching Confluence pages from: {url}")
+        all_pages = []
+        next_cursor = None
+        
+        # Handle pagination
+        while True:
+            if next_cursor:
+                params["cursor"] = next_cursor
+                
+            try:
+                response = requests.get(url, headers=headers, params=params, timeout=30)
+                response.raise_for_status()
+                data = response.json()
+            except requests.exceptions.HTTPError as e:
+                if response.status_code == 401:
+                    print(f"Authentication failed with 401. URL: {url}")
+                    print(f"Response: {response.text[:200]}")
+                    raise ValueError(
+                        "Authentication failed (401 Unauthorized). The access token may have expired. "
+                        "Please refresh the connection or reauthorize. If the problem persists, "
+                        "the OAuth app may need reconfiguration."
+                    ) from e
+                else:
+                    print(f"Request failed: {response.status_code} - {response.text[:200]}")
+                    raise ValueError(f"Failed to fetch pages: {response.status_code} {response.text[:200]}") from e
 
-        pages = [
-            OnlineDocumentPage(
-                page_name=item.get("title", ""),
-                page_id=item.get("id", ""),
-                type=item.get("type", ""),
-                last_edited_time=item.get("version", {}).get("createdAt"),
-                parent_id=item.get("parentId", ""),
-                page_icon=item.get("icon", {}),
-            )
-            for item in data.get("results", [])
-        ]
+            # Parse v2 response structure
+            for item in data.get("results", []):
+                # Extract relevant fields from v2 response
+                page = OnlineDocumentPage(
+                    page_name=item.get("title", ""),
+                    page_id=item.get("id", ""),
+                    type="page",  # v2 only returns pages in this endpoint
+                    last_edited_time=item.get("version", {}).get("createdAt", ""),
+                    parent_id=item.get("parentId", ""),
+                    page_icon=None,  # v2 doesn't provide icon in list response
+                )
+                all_pages.append(page)
+            
+            # Check if there are more pages
+            links = data.get("_links", {})
+            if links.get("next"):
+                # Extract cursor from next link
+                next_url = links["next"]
+                parsed = urllib.parse.urlparse(next_url)
+                query_params = urllib.parse.parse_qs(parsed.query)
+                next_cursor = query_params.get("cursor", [None])[0]
+                if not next_cursor:
+                    break
+            else:
+                break
 
-        workspace_name = data["results"][0]["space"]["name"] if data["results"] else "Confluence"
-        workspace_id = data["results"][0]["space"]["id"] if data["results"] else "unknown"
+        # Get workspace info from credentials
+        workspace_name = self.runtime.credentials.get("workspace_name", "Confluence")
+        workspace_id = self.runtime.credentials.get("workspace_id", "unknown")
         workspace_icon = self.runtime.credentials.get("workspace_icon", "")
 
         online_document_info = OnlineDocumentInfo(
             workspace_name=workspace_name,
             workspace_icon=workspace_icon,
             workspace_id=workspace_id,
-            pages=pages,
-            total=len(pages),
+            pages=all_pages,
+            total=len(all_pages),
         )
         return DatasourceGetPagesResponse(result=[online_document_info])
 
     def _get_content(self, page: GetOnlineDocumentPageContentRequest) -> Generator[DatasourceMessage, None, None]:
         access_token = self.runtime.credentials.get("access_token")
+        workspace_id = self.runtime.credentials.get("workspace_id")
+        
         if not access_token:
             raise ValueError("Access token not found in credentials")
+        if not workspace_id:
+            raise ValueError("Workspace ID not found in credentials")
 
         headers = {
             "Authorization": f"Bearer {access_token}",
@@ -76,33 +143,157 @@ class ConfluenceDataSource(OnlineDocumentDatasource):
         }
 
         page_id = page.page_id
-        url = f"{self._BASE_URL}/content/{page_id}?expand=body.storage"
+        # Use API v2 endpoint for getting page content
+        url = f"{self._API_BASE}/{workspace_id}/wiki/api/v2/pages/{page_id}"
+        
+        # v2 allows specifying body format and other details
+        params = {
+            "body-format": "storage",  # Get the storage format (HTML)
+        }
 
         try:
-            response = requests.get(url, headers=headers, timeout=10)
+            logger.debug(f"Fetching page content from: {url}")
+            response = requests.get(url, headers=headers, params=params, timeout=30)
             response.raise_for_status()
             data = response.json()
 
-            content_html = data["body"]["storage"]["value"]
-            page_title = data["title"]
-            workspace_id = page.workspace_id or "unknown"
-
-            yield self.create_variable_message("content", self._html_to_text(content_html))
+            # v2 response structure is different
+            page_title = data.get("title", "")
+            page_status = data.get("status", "current")
+            page_version = data.get("version", {}).get("number", 1)
+            
+            # Get the body content - v2 structure
+            body = data.get("body", {})
+            content_html = ""
+            
+            # v2 can have multiple body representations
+            if "storage" in body:
+                content_html = body["storage"].get("value", "")
+            elif "atlas_doc_format" in body:
+                # Handle Atlas Doc Format if present (newer format)
+                content_html = body["atlas_doc_format"].get("value", "")
+            else:
+                logger.warning(f"No body content found for page {page_id}")
+                content_html = "<p>No content available</p>"
+            
+            # Get additional metadata from v2
+            space_info = data.get("spaceId", "")
+            created_at = data.get("createdAt", "")
+            author_id = data.get("authorId", "")
+            
+            # Convert HTML to text
+            content_text = self._html_to_text(content_html)
+            
+            # Add metadata about the page
+            metadata = {
+                "page_id": page_id,
+                "title": page_title,
+                "status": page_status,
+                "version": page_version,
+                "space_id": space_info,
+                "created_at": created_at,
+                "author_id": author_id,
+                "workspace_id": page.workspace_id or workspace_id,
+            }
+            
+            # Return content and metadata
+            yield self.create_variable_message("content", content_text)
             yield self.create_variable_message("page_id", page_id)
-            yield self.create_variable_message("workspace_id", workspace_id)
+            yield self.create_variable_message("workspace_id", page.workspace_id or workspace_id)
             yield self.create_variable_message("title", page_title)
+            yield self.create_variable_message("metadata", str(metadata))
+            
+        except requests.exceptions.HTTPError as e:
+            if response.status_code == 404:
+                logger.error(f"Page not found: {page_id}")
+                raise ValueError(f"Page with ID '{page_id}' not found") from e
+            elif response.status_code == 401:
+                logger.error(f"Authentication failed for page: {page_id}")
+                raise ValueError("Authentication failed. Please refresh or reauthorize the connection.") from e
+            else:
+                logger.error(f"Failed to fetch page content: {response.status_code}")
+                raise ValueError(f"Failed to fetch page content: {response.status_code} {response.text[:200]}") from e
         except Exception as e:
-            raise ValueError(str(e)) from e
+            logger.error(f"Unexpected error fetching page content: {e}")
+            raise ValueError(f"Error fetching page content: {str(e)}") from e
         
     
     def _html_to_text(self, html: str) -> str:
+        """Convert Confluence HTML to plain text with improved formatting."""
+        if not html:
+            return ""
+            
         soup = BeautifulSoup(html, "html.parser")
 
-        for tag in soup(["script", "style", "meta", "noscript"]):
+        # Remove unwanted tags
+        for tag in soup(["script", "style", "meta", "noscript", "link"]):
             tag.decompose()
 
-        text_parts = []
-        for block in soup.find_all(["h1", "h2", "h3", "p", "li"]):
-            text_parts.append(block.get_text(strip=True))
+        # Handle Confluence-specific elements
+        # Convert ac:structured-macro to readable format
+        for macro in soup.find_all("ac:structured-macro"):
+            macro_name = macro.get("ac:name", "")  # type: ignore
+            if macro_name == "code":
+                # Extract code content
+                code_body = macro.find("ac:plain-text-body")  # type: ignore
+                if code_body:
+                    code_text = code_body.get_text()  # type: ignore
+                    new_tag = soup.new_tag("p")
+                    new_tag.string = f"\n```\n{code_text}\n```\n"
+                    macro.replace_with(new_tag)  # type: ignore
+            elif macro_name == "info" or macro_name == "note":
+                # Extract info/note content
+                rich_body = macro.find("ac:rich-text-body")  # type: ignore
+                if rich_body:
+                    note_text = rich_body.get_text(strip=True)  # type: ignore
+                    new_tag = soup.new_tag("p")
+                    new_tag.string = f"\n[{str(macro_name).upper()}]: {note_text}\n"
+                    macro.replace_with(new_tag)  # type: ignore
+            else:
+                macro.decompose()  # type: ignore
 
-        return "\n".join(text_parts).strip()
+        # Handle tables
+        for table in soup.find_all("table"):
+            rows = []
+            for tr in table.find_all("tr"):  # type: ignore
+                cells = [td.get_text(strip=True) for td in tr.find_all(["td", "th"])]  # type: ignore
+                if cells:
+                    rows.append(" | ".join(cells))
+            if rows:
+                table_text = "\n".join(rows)
+                new_tag = soup.new_tag("p")
+                new_tag.string = f"\n{table_text}\n"
+                table.replace_with(new_tag)  # type: ignore
+
+        # Extract text with better formatting
+        text_parts = []
+        
+        # Process different block elements with appropriate spacing
+        for element in soup.find_all(["h1", "h2", "h3", "h4", "h5", "h6", "p", "li", "div", "blockquote", "pre"]):
+            text = element.get_text(strip=True)  # type: ignore
+            if text:
+                # Add appropriate formatting based on tag
+                element_name = element.name  # type: ignore
+                if element_name and element_name.startswith("h"):
+                    level = int(element_name[1])
+                    text = f"\n{'#' * level} {text}\n"
+                elif element_name == "li":
+                    # Check if it's part of ordered or unordered list
+                    parent = element.parent  # type: ignore
+                    if parent and hasattr(parent, 'name') and parent.name == "ol":
+                        text = f"  * {text}"
+                    else:
+                        text = f"  - {text}"
+                elif element_name == "blockquote":
+                    text = f"\n> {text}\n"
+                elif element_name == "pre":
+                    text = f"\n```\n{text}\n```\n"
+                    
+                text_parts.append(text)
+
+        # Join and clean up excessive whitespace
+        result = "\n".join(text_parts)
+        # Remove multiple consecutive newlines
+        result = re.sub(r'\n{3,}', '\n\n', result)
+        
+        return result.strip()

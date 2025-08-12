@@ -1,16 +1,18 @@
-import base64
 import urllib.parse
+import time
 from collections.abc import Mapping
 from typing import Any
 
 import requests
+from dify_plugin.entities.datasource import DatasourceOAuthCredentials
+from dify_plugin.errors.tool import (
+    DatasourceOAuthError,
+    ToolProviderCredentialValidationError,
+)
+from dify_plugin.interfaces.datasource import DatasourceProvider
 from werkzeug import Request
 
-from dify_plugin.entities.datasource import DatasourceOAuthCredentials
-from dify_plugin.errors.tool import DatasourceOAuthError, ToolProviderCredentialValidationError
-from dify_plugin.interfaces.datasource import DatasourceProvider
-
-__TIMEOUT_SECONDS__ = 60 * 10
+__TIMEOUT_SECONDS__ = 60 * 60
 
 
 class ConfluenceDatasourceProvider(DatasourceProvider):
@@ -23,7 +25,7 @@ class ConfluenceDatasourceProvider(DatasourceProvider):
         params = {
             "audience": "api.atlassian.com",
             "client_id": system_credentials["client_id"],
-            "scope": "read:confluence-content.all read:confluence-space.summary read:confluence-user.account.readonly",
+            "scope": "offline_access read:confluence-content.all read:confluence-space.summary read:confluence-props read:confluence-user read:page:confluence",
             "redirect_uri": redirect_uri,
             "response_type": "code",
             "prompt": "consent",
@@ -44,9 +46,15 @@ class ConfluenceDatasourceProvider(DatasourceProvider):
             "code": code,
             "redirect_uri": redirect_uri,
         }
-        response = requests.post(self._TOKEN_URL, json=data, timeout=__TIMEOUT_SECONDS__)
+        response = requests.post(self._TOKEN_URL, data=data, timeout=__TIMEOUT_SECONDS__)
+        if response.status_code != 200:
+            raise DatasourceOAuthError(f"Token request failed: {response.status_code} {response.text}")
+        
         response_json = response.json()
         access_token = response_json.get("access_token")
+        refresh_token = response_json.get("refresh_token")
+        expires_in = response_json.get("expires_in")
+        print(f"Expires in: {expires_in}")
         if not access_token:
             raise DatasourceOAuthError(f"OAuth failed: {response_json}")
 
@@ -55,8 +63,11 @@ class ConfluenceDatasourceProvider(DatasourceProvider):
             "Accept": "application/json",
         }
         res = requests.get(self._RESOURCE_URL, headers=headers, timeout=10)
+        if res.status_code != 200:
+            raise DatasourceOAuthError(f"Failed to get resources: {res.status_code} {res.text}")
+        
         resources = res.json()
-        if not resources:
+        if not resources or len(resources) == 0:
             raise DatasourceOAuthError("No Confluence workspace found for this account.")
 
         resource = resources[0]
@@ -69,28 +80,68 @@ class ConfluenceDatasourceProvider(DatasourceProvider):
             avatar_url=workspace_url,
             credentials={
                 "access_token": access_token,
+                "refresh_token": refresh_token,
                 "workspace_id": cloud_id,
                 "workspace_name": workspace_name,
                 "workspace_icon": workspace_url,
             },
+            expires_at=int(time.time()) + expires_in if expires_in else -1,
         )
 
     def _oauth_refresh_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
     ):
-        raise DatasourceOAuthError("Confluence does not support token refreshing in this plugin. Please reauthorize.")
+        refresh_token = credentials.get("refresh_token")
+        if not refresh_token:
+            raise DatasourceOAuthError("No refresh token available. Please reauthorize.")
+        
+        data = {
+            "grant_type": "refresh_token",
+            "client_id": system_credentials["client_id"],
+            "client_secret": system_credentials["client_secret"],
+            "refresh_token": refresh_token,
+        }
+        
+        response = requests.post(self._TOKEN_URL, data=data, timeout=__TIMEOUT_SECONDS__)
+        if response.status_code != 200:
+            raise DatasourceOAuthError(f"Token refresh failed: {response.status_code} {response.text}")
+        
+        response_json = response.json()
+        new_access_token = response_json.get("access_token")
+        new_refresh_token = response_json.get("refresh_token", refresh_token)  # Some providers return new refresh token
+        
+        if not new_access_token:
+            raise DatasourceOAuthError(f"Token refresh failed: {response_json}")
+        
+        # Keep existing workspace info
+        return DatasourceOAuthCredentials(
+            name=credentials.get("workspace_name", "Confluence"),
+            avatar_url=credentials.get("workspace_icon"),
+            credentials={
+                "access_token": new_access_token,
+                "refresh_token": new_refresh_token,
+                "workspace_id": credentials.get("workspace_id"),
+                "workspace_name": credentials.get("workspace_name"),
+                "workspace_icon": credentials.get("workspace_icon"),
+            },
+        )
 
     def _validate_credentials(self, credentials: Mapping[str, Any]):
         try:
-            api_key = credentials.get("api_key")
-            if not api_key:
-                raise ToolProviderCredentialValidationError("API key missing")
+            access_token = credentials.get("access_token")
+            workspace_id = credentials.get("workspace_id")
+            
+            if not access_token:
+                raise ToolProviderCredentialValidationError("Access token missing")
+            if not workspace_id:
+                raise ToolProviderCredentialValidationError("Workspace ID missing")
 
             headers = {
-                "Authorization": f"Bearer {api_key}",
+                "Authorization": f"Bearer {access_token}",
                 "Accept": "application/json",
             }
-            test_url = f"{self._API_BASE}/wiki/api/v2/spaces"
+            # Use the correct Confluence Cloud API endpoint with workspace ID
+            test_url = f"{self._API_BASE}/{workspace_id}/wiki/api/v2/spaces"
             res = requests.get(test_url, headers=headers, timeout=10)
             if res.status_code != 200:
                 raise ToolProviderCredentialValidationError(f"Validation failed: {res.status_code} {res.text}")
