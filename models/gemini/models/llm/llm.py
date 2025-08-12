@@ -235,6 +235,48 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             ],
         }
 
+    @staticmethod
+    def _calculate_tokens_from_usage_metadata(
+        usage_metadata: types.GenerateContentResponseUsageMetadata | None,
+    ) -> tuple[int, int]:
+        """
+        Calculate prompt and completion tokens from usage metadata.
+
+        :param usage_metadata: Usage metadata from Gemini response
+        :return: Tuple of (prompt_tokens, completion_tokens)
+        """
+        if not usage_metadata:
+            return 0, 0
+
+        # The pricing of tokens varies depending on the input modality.
+        prompt_tokens_standard = 0
+
+        # [ Pricing ]
+        # https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-2.5-pro
+        # FIXME: Currently, Dify's pricing model cannot cover the tokens of multimodal resources
+        # FIXME: Unable to track caching, Grounding, Live API
+        for _mtc in usage_metadata.prompt_tokens_details:
+            if _mtc.modality in [
+                types.MediaModality.TEXT,
+                types.MediaModality.IMAGE,
+                types.MediaModality.VIDEO,
+                types.MediaModality.MODALITY_UNSPECIFIED,
+                types.MediaModality.AUDIO,
+                types.MediaModality.DOCUMENT,
+            ]:
+                prompt_tokens_standard += _mtc.token_count
+
+        # Number of tokens present in thoughts output.
+        thoughts_token_count = usage_metadata.thoughts_token_count or 0
+        # Number of tokens in the response(s).
+        candidates_token_count = usage_metadata.candidates_token_count or 0
+        # The reasoning content and final answer of the Gemini model are priced using the same standard.
+        completion_tokens = thoughts_token_count + candidates_token_count
+        # The `prompt_tokens` includes the historical conversation QA plus the current input.
+        prompt_tokens = prompt_tokens_standard
+
+        return prompt_tokens, completion_tokens
+
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
         Validate model credentials
@@ -500,32 +542,31 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         assistant_prompt_message = AssistantPromptMessage(content=response.text)
 
         # calculate num tokens
-        if response.usage_metadata:
-            prompt_tokens = response.usage_metadata.prompt_token_count
-            if prompt_tokens is None:
-                raise ValueError("prompt_tokens is None")
-            completion_tokens = response.usage_metadata.candidates_token_count
-            if completion_tokens is None:
-                raise ValueError("completion_tokens is None")
-        else:
+        prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
+            response.usage_metadata
+        )
+
+        # Fallback to manual calculation if tokens are not available
+        if prompt_tokens == 0 or completion_tokens == 0:
             prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
             completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
 
         # transform usage
         # copy credentials to avoid modifying the original dict
         usage = self._calc_response_usage(
-            model, dict(credentials), prompt_tokens, completion_tokens
+            model=model,
+            credentials=dict(credentials),
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
         )
 
         # transform response
-        result = LLMResult(
+        return LLMResult(
             model=model,
             prompt_messages=prompt_messages,
             message=assistant_prompt_message,
             usage=usage,
         )
-
-        return result
 
     def _handle_generate_stream_response(
         self,
@@ -537,6 +578,20 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         """
         Handle llm stream response
 
+        # -- Usage Sample -- #
+        chunk.usage_metadata=GenerateContentResponseUsageMetadata(
+          candidates_token_count=58,
+          prompt_token_count=24,
+          prompt_tokens_details=[
+            ModalityTokenCount(
+              modality=<MediaModality.TEXT: 'TEXT'>,
+              token_count=24
+            ),
+          ],
+          thoughts_token_count=862,
+          total_token_count=944
+        )
+
         :param model: model name
         :param credentials: credentials
         :param response: response
@@ -547,6 +602,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         prompt_tokens = 0
         completion_tokens = 0
         self.is_thinking = False
+
         for chunk in response:
             if not chunk.candidates:
                 continue
@@ -556,10 +612,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
                 message = self._parse_parts(candidate.content.parts)
                 index += len(candidate.content.parts)
-
-                # TODO(QIN2DIM): Fix the issue of inaccurate counting of Gemini Tokens
-                if chunk.usage_metadata:
-                    completion_tokens += chunk.usage_metadata.candidates_token_count or 0
 
                 # if the stream is not finished, yield the chunk
                 if not candidate.finish_reason:
@@ -573,12 +625,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     # If we're still in thinking mode at the end, close it
                     if self.is_thinking:
                         message.content.append(TextPromptMessageContent(data="\n\n</think>"))
-                    if chunk.usage_metadata:
-                        prompt_tokens = chunk.usage_metadata.prompt_token_count or 0
-                        if chunk.usage_metadata.thoughts_token_count:
-                            completion_tokens = (
-                                completion_tokens + chunk.usage_metadata.thoughts_token_count
-                            )
+
+                    prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
+                        chunk.usage_metadata
+                    )
+
+                    # Fallback to manual calculation if tokens are not available
                     if prompt_tokens == 0 or completion_tokens == 0:
                         prompt_tokens = self.get_num_tokens(
                             model=model, credentials=credentials, prompt_messages=prompt_messages
