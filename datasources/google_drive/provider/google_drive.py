@@ -135,9 +135,6 @@ class GoogleDriveDatasourceProvider(DatasourceProvider):
             credentials={
                 "access_token": access_token,
                 "refresh_token": refresh_token,
-                "client_id": system_credentials["client_id"],
-                "client_secret": system_credentials["client_secret"],
-                "user_email": user_email,
             },
         )
 
