@@ -235,6 +235,48 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             ],
         }
 
+    @staticmethod
+    def _calculate_tokens_from_usage_metadata(
+        usage_metadata: types.GenerateContentResponseUsageMetadata | None,
+    ) -> tuple[int, int]:
+        """
+        Calculate prompt and completion tokens from usage metadata.
+
+        :param usage_metadata: Usage metadata from Gemini response
+        :return: Tuple of (prompt_tokens, completion_tokens)
+        """
+        if not usage_metadata:
+            return 0, 0
+
+        # The pricing of tokens varies depending on the input modality.
+        prompt_tokens_standard = 0
+
+        # [ Pricing ]
+        # https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-2.5-pro
+        # FIXME: Currently, Dify's pricing model cannot cover the tokens of multimodal resources
+        # FIXME: Unable to track caching, Grounding, Live API
+        for _mtc in usage_metadata.prompt_tokens_details:
+            if _mtc.modality in [
+                types.MediaModality.TEXT,
+                types.MediaModality.IMAGE,
+                types.MediaModality.VIDEO,
+                types.MediaModality.MODALITY_UNSPECIFIED,
+                types.MediaModality.AUDIO,
+                types.MediaModality.DOCUMENT,
+            ]:
+                prompt_tokens_standard += _mtc.token_count
+
+        # Number of tokens present in thoughts output.
+        thoughts_token_count = usage_metadata.thoughts_token_count or 0
+        # Number of tokens in the response(s).
+        candidates_token_count = usage_metadata.candidates_token_count or 0
+        # The reasoning content and final answer of the Gemini model are priced using the same standard.
+        completion_tokens = thoughts_token_count + candidates_token_count
+        # The `prompt_tokens` includes the historical conversation QA plus the current input.
+        prompt_tokens = prompt_tokens_standard
+
+        return prompt_tokens, completion_tokens
+
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
         Validate model credentials
@@ -499,34 +541,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         assistant_prompt_message = AssistantPromptMessage(content=response.text)
 
         # calculate num tokens
-        prompt_tokens = 0
-        completion_tokens = 0
+        prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
+            response.usage_metadata
+        )
 
-        if usage_metadata := response.usage_metadata:
-            # The pricing of tokens varies depending on the input modality.
-            prompt_tokens_standard = 0
-            for _mtc in usage_metadata.prompt_tokens_details:
-                if _mtc.modality in [
-                    types.MediaModality.TEXT,
-                    types.MediaModality.IMAGE,
-                    types.MediaModality.VIDEO,
-                    types.MediaModality.MODALITY_UNSPECIFIED,
-                ]:
-                    prompt_tokens_standard += _mtc.token_count
-                elif _mtc.modality == types.MediaModality.AUDIO:
-                    prompt_tokens_standard += _mtc.token_count
-                elif _mtc.modality == types.MediaModality.DOCUMENT:
-                    prompt_tokens_standard += _mtc.token_count
-
-            # Number of tokens present in thoughts output.
-            thoughts_token_count = usage_metadata.thoughts_token_count or 0
-            # Number of tokens in the response(s).
-            candidates_token_count = usage_metadata.candidates_token_count or 0
-            # The reasoning content and final answer of the Gemini model are priced using the same standard.
-            completion_tokens = thoughts_token_count + candidates_token_count
-            # The `prompt_tokens` includes the historical conversation QA plus the current input.
-            prompt_tokens = prompt_tokens_standard
-
+        # Fallback to manual calculation if tokens are not available
         if prompt_tokens == 0 or completion_tokens == 0:
             prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
             completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
@@ -605,36 +624,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     # If we're still in thinking mode at the end, close it
                     if self.is_thinking:
                         message.content.append(TextPromptMessageContent(data="\n\n</think>"))
-                    # [ Pricing ]
-                    # https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-2.5-pro
-                    # FIXME: Currently, Dify's pricing model cannot cover the tokens of multimodal resources
-                    # FIXME: Unable to track caching, Grounding, Live API
-                    if usage_metadata := chunk.usage_metadata:
-                        # The pricing of tokens varies depending on the input modality.
-                        prompt_tokens_standard = 0
-                        for _mtc in usage_metadata.prompt_tokens_details:
-                            if _mtc.modality in [
-                                types.MediaModality.TEXT,
-                                types.MediaModality.IMAGE,
-                                types.MediaModality.VIDEO,
-                                types.MediaModality.MODALITY_UNSPECIFIED,
-                            ]:
-                                prompt_tokens_standard += _mtc.token_count
-                            elif _mtc.modality == types.MediaModality.AUDIO:
-                                prompt_tokens_standard += _mtc.token_count
-                            elif _mtc.modality == types.MediaModality.DOCUMENT:
-                                prompt_tokens_standard += _mtc.token_count
 
-                        # Number of tokens present in thoughts output.
-                        thoughts_token_count = usage_metadata.thoughts_token_count or 0
-                        # Number of tokens in the response(s).
-                        candidates_token_count = usage_metadata.candidates_token_count or 0
-                        # The reasoning content and final answer of the Gemini model are priced using the same standard.
-                        completion_tokens = thoughts_token_count + candidates_token_count
-                        # The `prompt_tokens` includes the historical conversation QA plus the current input.
-                        prompt_tokens = prompt_tokens_standard
+                    prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
+                        chunk.usage_metadata
+                    )
 
-                    # Fallback to the number of tokens in the prompt if the completion tokens are not available.
+                    # Fallback to manual calculation if tokens are not available
                     if prompt_tokens == 0 or completion_tokens == 0:
                         prompt_tokens = self.get_num_tokens(
                             model=model, credentials=credentials, prompt_messages=prompt_messages
