@@ -18,15 +18,6 @@ BEDROCK_MODEL_IDS = {
         'Claude 3 Haiku': 'anthropic.claude-3-haiku-20240307-v1:0',
         'Claude 3 Opus': 'anthropic.claude-3-opus-20240229-v1:0',
     },
-    'nova-pro': {
-        'Nova Pro': 'amazon.nova-pro-v1:0'
-    },
-    'nova-lite': {
-        'Nova Lite': 'amazon.nova-lite-v1:0'
-    },
-    'nova-micro': {
-        'Nova Micro': 'amazon.nova-micro-v1:0'
-    },
     'amazon nova': {
         'Nova Pro': 'amazon.nova-pro-v1:0',
         'Nova Lite': 'amazon.nova-lite-v1:0',
@@ -55,16 +46,10 @@ BEDROCK_MODEL_IDS = {
     'deepseek': {
         'DeepSeek R1': 'deepseek.r1-v1:0'
     },
-    'cohere-command': {
-        'Command': 'cohere.command-text-v14'
-    },
-    'cohere-command-light': {
-        'Command-Light': 'cohere.command-light-text-v14'
-    },
-    'cohere-command-r': {
-        'Command R': 'cohere.command-r-v1:0'
-    },
-    'cohere-command-rplus': {
+    'cohere': {
+        'Command': 'cohere.command-text-v14',
+        'Command Light': 'cohere.command-light-text-v14',
+        'Command R': 'cohere.command-r-v1:0',
         'Command R+': 'cohere.command-r-plus-v1:0'
     }
 }

@@ -1447,6 +1447,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         elif "amazon.nova" in model_id:
             return (model_schema.model == "amazon nova" or 
                    model_schema.model.startswith("nova-"))
+        elif "cohere.command" in model_id:
+            return (model_schema.model == "cohere" or 
+                   model_schema.model.startswith("cohere-"))
         elif "ai21" in model_id:
             return model_schema.model == "ai21"
         elif "meta.llama" in model_id:
@@ -1484,9 +1487,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
     def _get_model_specific_pricing(self, model: str, model_name: str, model_schemas: list):
         """
         Get model-specific pricing based on model name.
-        First tries to find exact model match, then falls back to family pricing.
+        First tries to find exact model match from model_configurations directory, then falls back to family pricing.
         
-        :param model: The model family (e.g., 'anthropic claude')
+        :param model: The model family (e.g., 'anthropic-claude')
         :param model_name: The specific model name (e.g., 'Claude 3.5 Sonnet')
         :param model_schemas: List of predefined model schemas
         :return: Pricing configuration or None
@@ -1496,6 +1499,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             # Claude models
             'Claude 4.0 Sonnet': 'claude-4-sonnet',
             'Claude 4.0 Opus': 'claude-4-opus',
+            'Claude 3.7 Sonnet': 'claude-3-7-sonnet',
             'Claude 3.5 Haiku': 'claude-3-5-haiku',
             'Claude 3.5 Sonnet': 'claude-3-5-sonnet', 
             'Claude 3.5 Sonnet V2': 'claude-3-5-sonnet',
@@ -1508,13 +1512,31 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             'Nova Pro': 'nova-pro',
             # Cohere models
             'Command': 'cohere-command',
-            'Command-Light': 'cohere-command-light',
+            'Command Light': 'cohere-command-light',
             'Command R': 'cohere-command-r',
             'Command R+': 'cohere-command-rplus'
         }
         
-        # First, try to find individual model schema
+        # First, try to load individual model pricing from model_configurations subdirectory
         individual_model_name = model_name_mapping.get(model_name)
+        if individual_model_name:
+            try:
+                import os
+                import yaml
+                # Get the directory of this file
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                individual_model_path = os.path.join(current_dir, 'model_configurations', f'{individual_model_name}.yaml')
+                
+                if os.path.exists(individual_model_path):
+                    with open(individual_model_path, 'r', encoding='utf-8') as f:
+                        model_config = yaml.safe_load(f)
+                        if 'pricing' in model_config:
+                            return model_config['pricing']
+            except Exception as e:
+                # If individual model file loading fails, continue to fallback
+                pass
+        
+        # Fallback: try to find individual model in existing schemas (for backward compatibility)
         if individual_model_name:
             for schema in model_schemas:
                 if schema.model == individual_model_name:
@@ -1525,21 +1547,26 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             return None
         
         # If no individual model found, try family pricing
-        for schema in model_schemas:
-            if schema.model == model:
-                # Check if this schema has model_name in parameter_rules
-                if schema.parameter_rules:
-                    for rule in schema.parameter_rules:
-                        if rule.name == 'model_name' and hasattr(rule, 'options'):
-                            if model_name in rule.options:
-                                # This is the family schema, return family pricing
-                                return schema.pricing
-        
-        # Final fallback to any family schema
+        # Look for exact model match first
         for schema in model_schemas:
             if schema.model == model:
                 return schema.pricing
-                
+        
+        # If exact match not found, try with different formats
+        # Sometimes model might be passed as 'anthropic claude' vs 'anthropic-claude'
+        model_variants = [
+            model.replace('-', ' '),  # 'anthropic-claude' -> 'anthropic claude'
+            model.replace(' ', '-'),  # 'anthropic claude' -> 'anthropic-claude'
+            model.lower(),
+            model.lower().replace('-', ' '),
+            model.lower().replace(' ', '-')
+        ]
+        
+        for schema in model_schemas:
+            for variant in model_variants:
+                if schema.model == variant:
+                    return schema.pricing
+                    
         return None
     
     def _calc_response_usage(self, model: str, credentials: dict, prompt_tokens: int, completion_tokens: int):
@@ -1565,9 +1592,22 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 # Use model-specific pricing
                 from dify_plugin.entities.model.llm import LLMUsage
                 
+                # Handle both dict and object pricing formats
+                if isinstance(model_pricing, dict):
+                    input_price = float(model_pricing['input'])
+                    output_price = float(model_pricing['output'])
+                    unit_price = float(model_pricing['unit'])
+                    currency = model_pricing.get('currency', 'USD')
+                else:
+                    # Object with attributes
+                    input_price = float(model_pricing.input)
+                    output_price = float(model_pricing.output)
+                    unit_price = float(model_pricing.unit)
+                    currency = model_pricing.currency
+                
                 # Calculate costs correctly: (tokens × price) ÷ unit_tokens
-                input_cost = (prompt_tokens * float(model_pricing.input)) / (1.0 / float(model_pricing.unit))
-                output_cost = (completion_tokens * float(model_pricing.output)) / (1.0 / float(model_pricing.unit))
+                input_cost = (prompt_tokens * input_price) / (1.0 / unit_price)
+                output_cost = (completion_tokens * output_price) / (1.0 / unit_price)
                 
                 # Round to avoid floating point precision issues
                 input_cost = round(input_cost, 8)
@@ -1579,16 +1619,16 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 
                 return LLMUsage(
                     prompt_tokens=prompt_tokens,
-                    prompt_unit_price=float(model_pricing.input),
-                    prompt_price_unit=float(model_pricing.unit),
+                    prompt_unit_price=input_price,
+                    prompt_price_unit=unit_price,
                     prompt_price=input_cost,
                     completion_tokens=completion_tokens,
-                    completion_unit_price=float(model_pricing.output),
-                    completion_price_unit=float(model_pricing.unit),
+                    completion_unit_price=output_price,
+                    completion_price_unit=unit_price,
                     completion_price=output_cost,
                     total_tokens=prompt_tokens + completion_tokens,
                     total_price=total_cost,
-                    currency=model_pricing.currency,
+                    currency=currency,
                     latency=parent_usage.latency,  # Use parent's latency calculation
                 )
         
