@@ -17,6 +17,9 @@ help:
     en_US: "https://302.ai/apis/list"
 supported_model_types:
   - llm
+  - text-embedding
+  - rerank
+  - tts
 configurate_methods:
   - predefined-model
   - customizable-model
@@ -49,10 +52,25 @@ provider_credential_schema:
         en_US: Enter your 302.AI API Key
 models:
   llm:
+    position: "models/llm/_position.yaml"
     predefined:
       - "models/llm/*.yaml"
+  text_embedding:
+    predefined:
+      - "models/text_embedding/*.yaml"
+    position: "models/text_embedding/_position.yaml"
+  rerank:
+    predefined:
+      - "models/rerank/*.yaml"
+    position: "models/rerank/_position.yaml"
+  tts:
+    predefined:
+      - "models/tts/*.yaml"
 extra:
   python:
     provider_source: provider/ai_302.py
     model_sources:
       - "models/llm/llm.py"
+      - "models/text_embedding/text_embedding.py"
+      - "models/rerank/rerank.py"
+      - "models/tts/tts.py"
