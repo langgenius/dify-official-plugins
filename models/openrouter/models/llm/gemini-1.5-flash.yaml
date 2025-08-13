@@ -1,4 +1,4 @@
-model: google/gemini-flash-1.5
+model: google/gst
 label:
   en_US: gemini-flash-1.5
 model_type: llm

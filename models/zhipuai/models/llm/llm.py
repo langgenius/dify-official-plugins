@@ -23,6 +23,16 @@ from zai import ZhipuAiClient
 from zai.types.chat import Completion, ChatCompletionChunk, ChoiceDelta
 from .._common import _CommonZhipuaiAI
 
+viso_models = [
+    "glm-4.5v",
+    "glm-4v",
+    "glm-4v-plus",
+    "glm-4v-plus-0111",
+    "glm-4v-flash",
+    "glm-4.1v-thinking-flash",
+    "glm-4.1v-thinking-flashx",
+]
+
 
 class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
     def _invoke(
@@ -143,7 +153,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                 PromptMessageRole.TOOL,
             }:
                 if isinstance(copy_prompt_message.content, list):
-                    if model not in {"glm-4v", "glm-4v-plus", "glm-4v-plus-0111", "glm-4v-flash", "glm-4.1v-thinking-flash", "glm-4.1v-thinking-flashx"}:
+                    if model not in viso_models:
                         continue
                     if not isinstance(copy_prompt_message, UserPromptMessage):
                         continue
@@ -202,7 +212,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                     )
                 try:
                     schema = json.loads(json_schema)
-                except:
+                except Exception:
                     raise ValueError(f"not correct json_schema format: {json_schema}")
                 model_parameters.pop("json_schema")
                 model_parameters["response_format"] = {
@@ -220,7 +230,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                 model_parameters["thinking"] = {"type": "enabled"}
             else:
                 model_parameters["thinking"] = {"type": "disabled"}
-        if model in {"glm-4v", "glm-4v-plus","glm-4v-plus-0111", "glm-4v-flash", "glm-4.1v-thinking-flash", "glm-4.1v-thinking-flashx"}:
+        if model in viso_models:
             params = self._construct_glm_4v_parameter(
                 model, new_prompt_messages, model_parameters
             )
@@ -359,7 +369,12 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                             )
                         )
             if choice.message.reasoning_content:
-                text += "<think>\n" + choice.message.reasoning_content + "\n</think>" + choice.message.content
+                text += (
+                    "<think>\n"
+                    + choice.message.reasoning_content
+                    + "\n</think>"
+                    + choice.message.content
+                )
             else:
                 text += choice.message.content or ""
         prompt_usage = response.usage.prompt_tokens
@@ -399,8 +414,14 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
             if len(chunk.choices) == 0:
                 continue
             delta = chunk.choices[0]
-            if delta.finish_reason is None and (delta.delta.content is None or delta.delta.content == "") and (
-                delta.delta.reasoning_content is None or delta.delta.reasoning_content == ""):
+            if (
+                delta.finish_reason is None
+                and (delta.delta.content is None or delta.delta.content == "")
+                and (
+                    delta.delta.reasoning_content is None
+                    or delta.delta.reasoning_content == ""
+                )
+            ):
                 continue
             assistant_tool_calls: list[AssistantPromptMessage.ToolCall] = []
             for tool_call in delta.delta.tool_calls or []:
@@ -490,7 +511,9 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                 text += f"\n{tool.model_dump_json()}"
         return text.rstrip()
 
-    def _wrap_thinking_by_reasoning_content(self, delta: ChoiceDelta, is_reasoning: bool) -> tuple[str, bool]:
+    def _wrap_thinking_by_reasoning_content(
+        self, delta: ChoiceDelta, is_reasoning: bool
+    ) -> tuple[str, bool]:
         """
         If the reasoning response is from delta.get("reasoning_content"), we wrap
         it with HTML think tag.
@@ -517,7 +540,5 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                 content = "\n</think>" + content
                 is_reasoning = False
         except Exception as ex:
-            raise ValueError(
-                f"[wrap_thinking_by_reasoning_content-2] {ex}"
-            ) from ex
+            raise ValueError(f"[wrap_thinking_by_reasoning_content-2] {ex}") from ex
         return content, is_reasoning
