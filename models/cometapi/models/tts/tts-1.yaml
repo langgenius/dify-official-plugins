@@ -39,8 +39,3 @@ model_properties:
   word_limit: 3500
   audio_type: 'mp3'
   max_workers: 5
-pricing:
-  input: '0.015'
-  output: '0'
-  unit: '0.001'
-  currency: USD

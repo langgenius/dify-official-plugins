@@ -27,7 +27,7 @@ from dify_plugin.errors.model import (
     InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
-from models.jina.models.shared.input import transform_jina_input_text
+from models.shared.input import transform_jina_input_text
 from models.text_embedding.jina_tokenizer import JinaTokenizer
 
 class Ai302TextEmbeddingModel(TextEmbeddingModel):
