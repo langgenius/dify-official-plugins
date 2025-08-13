@@ -24,15 +24,10 @@ class ConfluenceDataSource(OnlineDocumentDatasource):
     def _get_pages(self, datasource_parameters: dict[str, Any]) -> DatasourceGetPagesResponse:
         access_token = self.runtime.credentials.get("access_token")
         workspace_id = self.runtime.credentials.get("workspace_id")
-        space_key = datasource_parameters.get("space_key")
         
         if not access_token:
             raise ValueError("Access token not found in credentials")
 
-        # Log token info for debugging (first few chars only for security)
-        print(f"Using workspace_id: {workspace_id}")
-        print(f"Access token starts with: {access_token[:10] if access_token else 'None'}...")
-        
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Accept": "application/json",
@@ -45,22 +40,6 @@ class ConfluenceDataSource(OnlineDocumentDatasource):
             "sort": "-modified-date",
         }
         
-        # Add space filter if specified
-        if space_key:
-            # In v2, we need to get the space ID first
-            space_url = f"{self._API_BASE}/{workspace_id}/wiki/api/v2/spaces"
-            space_params = {"keys": space_key}
-            try:
-                space_response = requests.get(space_url, headers=headers, params=space_params, timeout=10)
-                space_response.raise_for_status()
-                space_data = space_response.json()
-                if space_data.get("results"):
-                    space_id = space_data["results"][0]["id"]
-                    params["space-id"] = space_id
-                else:
-                    print(f"Space key '{space_key}' not found")
-            except Exception as e:
-                print(f"Failed to get space ID for key '{space_key}': {e}")
 
         print(f"Fetching Confluence pages from: {url}")
         all_pages = []
@@ -175,33 +154,15 @@ class ConfluenceDataSource(OnlineDocumentDatasource):
             else:
                 logger.warning(f"No body content found for page {page_id}")
                 content_html = "<p>No content available</p>"
-            
-            # Get additional metadata from v2
-            space_info = data.get("spaceId", "")
-            created_at = data.get("createdAt", "")
-            author_id = data.get("authorId", "")
-            
+                 
             # Convert HTML to text
             content_text = self._html_to_text(content_html)
-            
-            # Add metadata about the page
-            metadata = {
-                "page_id": page_id,
-                "title": page_title,
-                "status": page_status,
-                "version": page_version,
-                "space_id": space_info,
-                "created_at": created_at,
-                "author_id": author_id,
-                "workspace_id": page.workspace_id or workspace_id,
-            }
             
             # Return content and metadata
             yield self.create_variable_message("content", content_text)
             yield self.create_variable_message("page_id", page_id)
             yield self.create_variable_message("workspace_id", page.workspace_id or workspace_id)
             yield self.create_variable_message("title", page_title)
-            yield self.create_variable_message("metadata", str(metadata))
             
         except requests.exceptions.HTTPError as e:
             if response.status_code == 404:
