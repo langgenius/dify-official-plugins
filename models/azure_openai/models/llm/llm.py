@@ -18,6 +18,7 @@ from dify_plugin.entities.model.llm import (
 )
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    AudioPromptMessageContent,
     ImagePromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
@@ -26,7 +27,7 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     TextPromptMessageContent,
     ToolPromptMessage,
-    UserPromptMessage, AudioPromptMessageContent,
+    UserPromptMessage,
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
