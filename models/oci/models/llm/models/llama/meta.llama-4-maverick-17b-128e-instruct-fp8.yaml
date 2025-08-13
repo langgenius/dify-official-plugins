@@ -1,10 +1,12 @@
-model: cohere.command-r-08-2024
+model: meta.llama-4-maverick-17b-128e-instruct-fp8
 label:
-  en_US: cohere.command-r-08-2024 v1.7
+  zh_Hans: meta.llama-4-maverick-17b-128e-instruct-fp8
+  en_US: meta.llama-4-maverick-17b-128e-instruct-fp8
 model_type: llm
 features:
-  - multi-tool-call
   - agent-thought
+  - vision
+  - tool-call
   - stream-tool-call
 model_properties:
   mode: chat
@@ -13,7 +15,8 @@ parameter_rules:
   - name: temperature
     use_template: temperature
     default: 1
-    max: 1.0
+    min: 0
+    max: 2.0
   - name: topP
     use_template: top_p
     default: 0.75
@@ -28,25 +31,26 @@ parameter_rules:
       zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
       en_US: Only sample from the top K options for each subsequent token.
     required: false
-    default: 0
-    min: 0
+    default: -1
+    min: -1
     max: 500
   - name: presencePenalty
     use_template: presence_penalty
-    min: 0
-    max: 1
+    min: -2
+    max: 2
     default: 0
   - name: frequencyPenalty
     use_template: frequency_penalty
-    min: 0
-    max: 1
+    min: -2
+    max: 2
     default: 0
   - name: maxTokens
     use_template: max_tokens
-    default: 600
+    default: 4000
+    min: 1
     max: 4000
 pricing:
-  input: '0.0009'
-  output: '0.0009'
+  input: '0.0018'
+  output: '0.0018'
   unit: '0.0001'
   currency: USD

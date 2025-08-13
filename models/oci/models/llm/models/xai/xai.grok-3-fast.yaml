@@ -1,7 +1,7 @@
-model: xai.grok-3
+model: xai.grok-3-fast
 label:
-  zh_Hans: xai.grok-3
-  en_US: xai.grok-3
+  zh_Hans: xai.grok-3-fast
+  en_US: xai.grok-3-fast
 model_type: llm
 features:
   - agent-thought
@@ -34,10 +34,10 @@ parameter_rules:
     default: 0
   - name: maxTokens
     use_template: max_tokens
-    default: 600
+    default: 4000
     max: 16000
 pricing:
-  input: '3.00'
-  output: '15.00'
+  input: '5.00'
+  output: '25.00'
   unit: '0.000001'
   currency: USD
