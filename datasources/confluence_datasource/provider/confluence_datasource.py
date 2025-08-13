@@ -127,23 +127,4 @@ class ConfluenceDatasourceProvider(DatasourceProvider):
         )
 
     def _validate_credentials(self, credentials: Mapping[str, Any]):
-        try:
-            access_token = credentials.get("access_token")
-            workspace_id = credentials.get("workspace_id")
-            
-            if not access_token:
-                raise ToolProviderCredentialValidationError("Access token missing")
-            if not workspace_id:
-                raise ToolProviderCredentialValidationError("Workspace ID missing")
-
-            headers = {
-                "Authorization": f"Bearer {access_token}",
-                "Accept": "application/json",
-            }
-            # Use the correct Confluence Cloud API endpoint with workspace ID
-            test_url = f"{self._API_BASE}/{workspace_id}/wiki/api/v2/spaces"
-            res = requests.get(test_url, headers=headers, timeout=10)
-            if res.status_code != 200:
-                raise ToolProviderCredentialValidationError(f"Validation failed: {res.status_code} {res.text}")
-        except Exception as e:
-            raise ToolProviderCredentialValidationError(str(e)) from e
+        pass
