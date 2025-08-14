@@ -202,7 +202,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             stream = True
 
         # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition and QwQ models only supports incremental_output set to True.
-        if thinking_business_qwen3 or model.startswith(("qwen3-", "qwq-")):
+        if thinking_business_qwen3 or model.startswith(("qwen3-", "qwq-", "qvq-")):
             incremental_output = True
 
         if ModelFeature.VISION in (model_schema.features or []):

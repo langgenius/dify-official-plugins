@@ -10,7 +10,7 @@ features:
   - document
 model_properties:
   mode: chat
-  context_size: 200000
+  context_size: 1000000
 parameter_rules:
   - name: thinking
     label:
@@ -115,6 +115,16 @@ parameter_rules:
     help:
       zh_Hans: 启用工具结果的提示缓存。
       en_US: Enable prompt caching for tool results.
+  - name: context_1m
+    label:
+      zh_Hans: 1M上下文窗口
+      en_US: 1M Context Window
+    type: boolean
+    default: true
+    required: false
+    help:
+      zh_Hans: 启用1M令牌上下文窗口。需要使用层级4或自定义速率限制的组织。注意, 超过200K令牌的请求将按高级费率收费（输入2倍，输出1.5倍定价）, Dify显示的价格计算可能不准确。
+      en_US: Enable 1M token context window. Requires organizations in usage tier 4 or with custom rate limits. Note, Requests exceeding 200K tokens are charged at premium rates (2x input, 1.5x output pricing), Dify's displayed pricing calculations may be inaccurate. 
 pricing:
   input: '3.00'
   output: '15.00'

@@ -1,18 +1,19 @@
-model: meta.llama-3.1-405b-instruct
+model: cohere.command-a-03-2025
 label:
-  zh_Hans: meta.llama-3.1-405b-instruct
-  en_US: meta.llama-3.1-405b-instruct
+  en_US: cohere.command-a-03-2025
 model_type: llm
 features:
+  - tool-call
   - agent-thought
+  - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 131072
+  context_size: 256000
 parameter_rules:
   - name: temperature
     use_template: temperature
     default: 1
-    max: 2.0
+    max: 1.0
   - name: topP
     use_template: top_p
     default: 0.75
@@ -32,20 +33,20 @@ parameter_rules:
     max: 500
   - name: presencePenalty
     use_template: presence_penalty
-    min: -2
-    max: 2
+    min: 0
+    max: 1
     default: 0
   - name: frequencyPenalty
     use_template: frequency_penalty
-    min: -2
-    max: 2
+    min: 0
+    max: 1
     default: 0
   - name: maxTokens
     use_template: max_tokens
-    default: 600
+    default: 4000
     max: 4000
 pricing:
-  input: '0.0267'
-  output: '0.0267'
-  unit: '0.0001'
+  input: '6.24'
+  output: '6.24'
+  unit: '0.000001'
   currency: USD
