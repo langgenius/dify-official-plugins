@@ -183,6 +183,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             extra_model_kwargs["tools"] = self._convert_tools(tools)
         if stop:
             extra_model_kwargs["stop"] = stop
+
+        response_format = model_parameters.get("response_format")
+        if response_format:
+            model_parameters["response_format"] = {"type": response_format}
         params = {
             "model": model,
             **model_parameters,
