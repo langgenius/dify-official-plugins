@@ -8,14 +8,13 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 from .util import simplify_issue
 
 
-class ListIssueTool(Tool):
+class GetIssueProjectTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
-
         jira_url = self.runtime.credentials.get("jira_url")
         username = self.runtime.credentials.get("username")
         api_token = self.runtime.credentials.get("api_token")
 
-        board_id = tool_parameters.get("board_id")
+        project_key = tool_parameters.get("project_key")
 
         jira = Jira(
             url=jira_url,
@@ -24,23 +23,15 @@ class ListIssueTool(Tool):
         )
 
         try:
-            yield self.create_json_message(
-                {
-                    "issues": [
-                        simplify_issue(issue)
-                        for issue in jira.get_issues_for_board(
-                            board_id=board_id,
-                            start=0,
-                            limit=50,  # Note: limit is 50 by default
-                            jql=None,
-                        )["issues"]
-                    ]
-                }
-            )
+            issues = jira.jql(f"project = {project_key} ORDER BY issuekey")
+
+            simplified_issues = [simplify_issue(issue) for issue in issues["issues"]]
+
+            yield self.create_json_message({"issues": simplified_issues})
 
         except Exception as e:
             yield self.create_json_message(
                 {
-                    "error": f"Error occurred while fetching issues for board with ID {board_id}: {str(e)}",
+                    "error": f"Error occurred while fetching issues for project {project_key}: {str(e)}",
                 }
             )
