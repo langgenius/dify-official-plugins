@@ -100,5 +100,21 @@ class Ai302LargeLanguageModel(OAICompatLargeLanguageModel):
                     label=I18nObject(en_US="Frequency Penalty", zh_Hans="重复惩罚"),
                     type=ParameterType.FLOAT,
                 ),
+                ParameterRule(
+                    name="enable_thinking",
+                    use_template="enable_thinking",
+                    default=True,
+                    label=I18nObject(en_US="Thinking mode", zh_Hans="启用思考模式"),
+                    type=ParameterType.BOOLEAN,
+                ),
+                ParameterRule(
+                    name="thinking_budget",
+                    use_template="thinking_budget",
+                    default=512,
+                    min=1,
+                    max=int(credentials.get("thinking_budget", 8192)),
+                    label=I18nObject(en_US="Thinking budget", zh_Hans="思考长度限制"),
+                    type=ParameterType.INT,
+                ),
             ],
         )

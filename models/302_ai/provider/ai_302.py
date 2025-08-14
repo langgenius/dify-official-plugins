@@ -19,7 +19,7 @@ class Ai302ModelProvider(ModelProvider):
         try:
             model_instance = self.get_model_instance(ModelType.LLM)
             model_instance.validate_credentials(
-                model="deepseek-chat",
+                model="gpt-5",
                 credentials=credentials
             )
         except CredentialsValidateFailedError as ex:

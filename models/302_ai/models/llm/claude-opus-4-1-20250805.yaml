@@ -1,6 +1,6 @@
-model: claude-sonnet-4-20250514
+model: claude-opus-4-1-20250805
 label:
-  en_US: claude-sonnet-4-20250514
+  en_US: claude-opus-4-1-20250805
 model_type: llm
 features:
   - agent-thought
@@ -29,7 +29,7 @@ parameter_rules:
     type: int
     default: 1024
     min: 0
-    max: 64000
+    max: 32000
     required: false
     help:
       zh_Hans: 推理的预算限制（最小1024），必须小于max_tokens。仅在推理模式启用时可用。
@@ -50,9 +50,9 @@ parameter_rules:
   - name: max_tokens
     use_template: max_tokens
     required: true
-    default: 64000
+    default: 32000
     min: 1
-    max: 64000
+    max: 32000
   - name: response_format
     use_template: response_format
   - name: prompt_caching_message_flow
@@ -116,7 +116,8 @@ parameter_rules:
       zh_Hans: 启用工具结果的提示缓存。
       en_US: Enable prompt caching for tool results.
 pricing:
-  input: '3.30'
-  output: '16.50'
+  input: '16.50'
+  output: '82.50'
   unit: '0.000001'
   currency: USD
+

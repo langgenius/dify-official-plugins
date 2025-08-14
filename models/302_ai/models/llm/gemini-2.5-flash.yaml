@@ -1,16 +1,24 @@
-model: gemini-2.0-flash
+model: gemini-2.5-flash
 label:
-  en_US: gemini-2.0-flash
+  en_US: gemini-2.5-flash
 model_type: llm
 features:
-  - multi-tool-call
+  - agent-thought
+  - vision
+  - tool-call
   - stream-tool-call
+  - document
+  - video
+  - audio
 model_properties:
   mode: chat
   context_size: 1048576
 parameter_rules:
   - name: temperature
     use_template: temperature
+    default: 1
+    min: 0
+    max: 2
   - name: top_p
     use_template: top_p
   - name: top_k
@@ -22,24 +30,25 @@ parameter_rules:
       zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
       en_US: Only sample from the top K options for each subsequent token.
     required: false
-  - name: presence_penalty
-    use_template: presence_penalty
-  - name: frequency_penalty
-    use_template: frequency_penalty
-  - name: max_tokens
+  - name: max_output_tokens
     use_template: max_tokens
     default: 8192
     min: 1
     max: 8192
-  - name: response_format
+  - name: json_schema
+    use_template: json_schema
+  - name: grounding
     label:
-      zh_Hans: 回复格式
-      en_US: Response Format
-    type: string
+      en_US: Grounding
+      zh_Hans: 事实核查
+    type: boolean
     help:
-      zh_Hans: 指定模型必须输出的格式
-      en_US: specifying the format that the model must output
-    required: false
-    options:
-      - text
-      - json_object
+      en_US: Grounding with Google Search
+      zh_Hans: Google 事实核查
+    required: true
+    default: false
+pricing:
+  input: '0.30'
+  output: '2.50'
+  unit: '0.000001'
+  currency: USD

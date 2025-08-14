@@ -2,8 +2,8 @@ provider: ai_302
 label:
   en_US: "302.AI"
 description:
-  en_US: "Models provided by 302.AI."
-  zh_Hans: "302.AI 提供的模型。"
+  en_US: "302.AI is a pay-as-you-go AI application platform that offers the most comprehensive AI APIs and online applications available."
+  zh_Hans: "302.AI 是一个按需付费的AI应用平台，提供市面上最全的AI API和AI在线应用。"
 icon_small:
   en_US: "icon.svg"
 icon_large:
@@ -66,6 +66,7 @@ models:
   tts:
     predefined:
       - "models/tts/*.yaml"
+    position: "models/tts/_position.yaml"
 extra:
   python:
     provider_source: provider/ai_302.py
