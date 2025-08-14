@@ -1,18 +1,20 @@
-model: meta.llama-3.2-90b-vision-instruct
+model: meta.llama-4-scout-17b-16e-instruct
 label:
-  zh_Hans: meta.llama-3.2-90b-vision-instruct
-  en_US: meta.llama-3.2-90b-vision-instruct
+  zh_Hans: meta.llama-4-scout-17b-16e-instruct
+  en_US: meta.llama-4-scout-17b-16e-instruct
 model_type: llm
 features:
   - agent-thought
   - vision
+  - tool-call
 model_properties:
   mode: chat
-  context_size: 131072
+  context_size: 128000
 parameter_rules:
   - name: temperature
     use_template: temperature
     default: 1
+    min: 0
     max: 2.0
   - name: topP
     use_template: top_p
@@ -28,8 +30,8 @@ parameter_rules:
       zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
       en_US: Only sample from the top K options for each subsequent token.
     required: false
-    default: 0
-    min: 0
+    default: -1
+    min: -1
     max: 500
   - name: presencePenalty
     use_template: presence_penalty
@@ -43,10 +45,11 @@ parameter_rules:
     default: 0
   - name: maxTokens
     use_template: max_tokens
-    default: 600
+    default: 4000
+    min: 1
     max: 4000
 pricing:
-  input: '0.005'
-  output: '0.005'
+  input: '0.0018'
+  output: '0.0018'
   unit: '0.0001'
   currency: USD

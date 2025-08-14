@@ -1,8 +1,9 @@
-model: cohere.command-r-plus-08-2024
+model: cohere.command-r-08-2024
 label:
-  en_US: cohere.command-r-plus v1.6
+  en_US: cohere.command-r-08-2024 v1.7
 model_type: llm
 features:
+  - tool-call
   - multi-tool-call
   - agent-thought
   - stream-tool-call
@@ -43,10 +44,10 @@ parameter_rules:
     default: 0
   - name: maxTokens
     use_template: max_tokens
-    default: 600
+    default: 4000
     max: 4000
 pricing:
-  input: '0.0156'
-  output: '0.0156'
+  input: '0.0009'
+  output: '0.0009'
   unit: '0.0001'
   currency: USD

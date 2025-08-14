@@ -4,6 +4,10 @@
 
 ## Configure
 
-After installing the plugin, configure the API key and API base within the Model Provider settings. Obtain your API key from [here](https://docs.cloud.oracle.com/Content/API/Concepts/sdkconfig.htm). Once saved, you can begin using OCI Generative AI to build your AI agents and agentic workflows.
+After installing the plugin, configure the API key and API information within the Model Provider settings. 
 
-![](./_assets/oci_config.PNG)
+Obtain your API key from [here](https://docs.cloud.oracle.com/Content/API/Concepts/sdkconfig.htm). 
+
+Once saved, you can begin using OCI Generative AI to build your AI agents and agentic workflows.
+
+![](./_assets/oci_config.png)

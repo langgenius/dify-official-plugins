@@ -1,0 +1,43 @@
+model: xai.grok-3
+label:
+  zh_Hans: xai.grok-3
+  en_US: xai.grok-3
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 131072
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    default: 1
+    min: 0
+    max: 2.0
+  - name: topP
+    use_template: top_p
+    default: 1
+    min: 0.05
+    max: 1
+  - name: presencePenalty
+    use_template: presence_penalty
+    min: -2
+    max: 2
+    default: 0
+  - name: frequencyPenalty
+    use_template: frequency_penalty
+    min: -2
+    max: 2
+    default: 0
+  - name: maxTokens
+    use_template: max_tokens
+    default: 4000
+    max: 16000
+pricing:
+  input: '3.00'
+  output: '15.00'
+  unit: '0.000001'
+  currency: USD
