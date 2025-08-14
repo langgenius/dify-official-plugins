@@ -80,8 +80,6 @@ parameter_rules:
     help:
       zh_Hans: 思考过程的最大长度，只在思考模式为true时生效。
       en_US: The maximum length of the thinking process, only effective when thinking mode is true.
-  - name: response_format
-    use_template: response_format
 pricing:
   input: '0.004'
   output: '0.02'
