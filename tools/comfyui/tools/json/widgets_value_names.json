@@ -20,7 +20,7 @@
         "cfg",
         "sampler_name",
         "scheduler",
-        "denoise",
+        "denoise"
     ],
     "CLIPTextEncode": [
         "text"
@@ -92,6 +92,6 @@
         "scheduler",
         "start_at_step",
         "end_at_step",
-        "return_with_leftover_noise",
-    ],
+        "return_with_leftover_noise"
+    ]
 }
