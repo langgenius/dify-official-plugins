@@ -40,7 +40,9 @@ class ComfyuiTxt2Vid(Tool):
         if not base_url:
             yield self.create_text_message("Please input base_url")
         self.comfyui = ComfyUiClient(
-            base_url, api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"))
+            base_url,
+            api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"),
+        )
         self.model_manager = ModelManager(
             self.comfyui,
             civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
@@ -138,11 +140,17 @@ class ComfyuiTxt2Vid(Tool):
         with open(os.path.join(current_dir, "json", "txt2vid_mochi.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
 
-        workflow.set_Ksampler(None, config.steps, config.sampler_name,
-                              config.scheduler_name, config.cfg, 1.0, random.randint(0, 100000000))
+        workflow.set_Ksampler(
+            None,
+            config.steps,
+            config.sampler_name,
+            config.scheduler_name,
+            config.cfg,
+            1.0,
+            random.randint(0, 100000000),
+        )
         workflow.set_property("28", "inputs/fps", config.fps)
-        workflow.set_empty_mochi(
-            None, config.width, config.height, config.frameN)
+        workflow.set_empty_mochi(None, config.width, config.height, config.frameN)
         workflow.set_unet(None, config.model_name)
         workflow.set_clip(None, clip_name)
         workflow.set_vae(None, vae_name)
@@ -189,13 +197,19 @@ class ComfyuiTxt2Vid(Tool):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "txt2vid_hunyuan.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
-        workflow.set_Ksampler(None, config.steps, config.sampler_name,
-                              config.scheduler_name, config.cfg, 1.0, random.randint(0, 100000000))
+        workflow.set_Ksampler(
+            None,
+            config.steps,
+            config.sampler_name,
+            config.scheduler_name,
+            config.cfg,
+            1.0,
+            random.randint(0, 100000000),
+        )
         workflow.set_dual_clip(None, clip_name1, clip_name2)
         workflow.set_unet(None, config.model_name)
         workflow.set_vae(None, vae_name)
-        workflow.set_empty_hunyuan(
-            None, config.width, config.height, config.frameN)
+        workflow.set_empty_hunyuan(None, config.width, config.height, config.frameN)
         workflow.set_prompt(None, config.prompt)
 
         try:
@@ -242,8 +256,7 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_unet(None, config.model_name)
         workflow.set_clip(None, text_encoder)
         workflow.set_vae(None, vae)
-        workflow.set_empty_hunyuan(
-            None, config.width, config.height, config.frameN)
+        workflow.set_empty_hunyuan(None, config.width, config.height, config.frameN)
 
         try:
             output_images = self.comfyui.generate(workflow.json())
@@ -259,39 +272,18 @@ class ComfyuiTxt2Vid(Tool):
         """
         generate image
         """
-        wan_repo_id = "Comfy-Org/Wan_2.2_ComfyUI_Repackaged"
-        if config.model_name == "":
-            # download model
-            config.model_name = self.model_manager.download_hugging_face(
-                wan_repo_id,
-                "split_files/diffusion_models/wan2.2_ti2v_5B_fp16.safetensors",
-                "diffusion_models",
-            )
-        vae = self.model_manager.download_hugging_face(
-            wan_repo_id,
-            "split_files/vae/wan2.2_vae.safetensors",
-            "vae",
-        )
-        text_encoder = self.model_manager.download_hugging_face(
-            wan_repo_id,
-            "split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors",
-            "text_encoders",
-        )
         current_dir = os.path.dirname(os.path.realpath(__file__))
-        with open(os.path.join(current_dir, "json", "txt2vid_wan2_2_5B.json")) as file:
+        with open(
+            os.path.join(current_dir, "json", "txt2vid_wan2_2_5B.json"),
+            encoding="UTF-8",
+        ) as file:
             workflow = ComfyUiWorkflow(file.read())
+            self.model_manager.download_from_json(workflow.json_original_str())
 
         workflow.set_prompt("6", config.prompt)
         workflow.set_prompt("7", config.negative_prompt)
 
-        webp_node_id = workflow.identify_node_by_class_type("SaveAnimatedWEBP")
-        workflow.set_property(webp_node_id, "inputs/fps", config.fps)
-        workflow.set_unet(None, config.model_name)
-        workflow.set_clip(None, text_encoder)
-        workflow.set_vae(None, vae)
-
-        wan2_2 = workflow.identify_node_by_class_type(
-            "Wan22ImageToVideoLatent")
+        wan2_2 = workflow.identify_node_by_class_type("Wan22ImageToVideoLatent")
         workflow.set_property(wan2_2, "inputs/width", config.width)
         workflow.set_property(wan2_2, "inputs/height", config.height)
         workflow.set_property(wan2_2, "inputs/length", config.frameN)
@@ -334,10 +326,8 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_prompt("6", config.prompt)
         workflow.set_prompt("7", config.negative_prompt)
         workflow.set_property("38", "inputs/clip_name", text_encoder)
-        workflow.set_property("72", "inputs/noise_seed",
-                              random.randint(0, 100000000))
-        ltxv_node_id = workflow.identify_node_by_class_type(
-            "EmptyLTXVLatentVideo")
+        workflow.set_property("72", "inputs/noise_seed", random.randint(0, 100000000))
+        ltxv_node_id = workflow.identify_node_by_class_type("EmptyLTXVLatentVideo")
         workflow.set_property(ltxv_node_id, "inputs/width", config.width)
         workflow.set_property(ltxv_node_id, "inputs/height", config.height)
         workflow.set_property(ltxv_node_id, "inputs/length", config.frameN)

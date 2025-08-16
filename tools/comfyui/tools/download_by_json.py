@@ -1,4 +1,3 @@
-import json
 from typing import Any, Generator
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
@@ -17,8 +16,7 @@ class DownloadByJson(Tool):
         """
         base_url = self.runtime.credentials.get("base_url")
         if base_url is None:
-            raise ToolProviderCredentialValidationError(
-                "Please input base_url")
+            raise ToolProviderCredentialValidationError("Please input base_url")
         self.comfyui = ComfyUiClient(base_url)
         self.model_manager = ModelManager(
             self.comfyui,
@@ -27,6 +25,7 @@ class DownloadByJson(Tool):
         )
 
         model_names = self.model_manager.download_from_json(
-            tool_parameters.get("workflow_json", ""))
+            tool_parameters.get("workflow_json", "")
+        )
 
         yield self.create_variable_message("model_names", model_names)

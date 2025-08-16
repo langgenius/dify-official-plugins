@@ -18,6 +18,5 @@ class Convert2API(Tool):
         try:
             workflow = ComfyUiWorkflow(workflow_json_str)
         except Exception as e:
-            raise ToolProviderCredentialValidationError(
-                f"Failed to convert. {e}")
-        yield self.create_text_message(str(workflow))
+            raise ToolProviderCredentialValidationError(f"Failed to convert. {e}")
+        yield self.create_text_message(workflow.json_str())

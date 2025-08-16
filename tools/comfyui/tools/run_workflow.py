@@ -12,7 +12,9 @@ class ComfyUIWorkflowTool(Tool):
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
         self.comfyui = ComfyUiClient(
-            self.runtime.credentials["base_url"], api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"))
+            self.runtime.credentials["base_url"],
+            api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"),
+        )
         self.model_manager = ModelManager(
             self.comfyui,
             civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
@@ -20,19 +22,17 @@ class ComfyUIWorkflowTool(Tool):
         )
 
         images = tool_parameters.get("images") or []
-        workflow = ComfyUiWorkflow(
-            tool_parameters.get("workflow_json", "")
-        )
+        workflow = ComfyUiWorkflow(tool_parameters.get("workflow_json", ""))
         if tool_parameters.get("enable_download", False):
-            self.model_manager.download_from_json(
-                str(workflow.json_original()))
+            self.model_manager.download_from_json(workflow.json_original_str())
 
         image_names = []
         for image in images:
             if image.type != FileType.IMAGE:
                 continue
             image_name = self.comfyui.upload_image(
-                image.filename, image.blob, image.mime_type)
+                image.filename, image.blob, image.mime_type
+            )
             image_names.append(image_name)
         if len(image_names) > 0:
             image_ids = tool_parameters.get("image_ids")

@@ -23,14 +23,23 @@ FluxGuidanceNode = {
 
 
 class ComfyUiWorkflow:
-    def __init__(self, workflow_json_str: str):
+    def __init__(self, workflow_json: str | dict):
         def clean_json_string(string: str) -> str:
             for char in ["\n", "\r", "\t", "\x08", "\x0c"]:
                 string = string.replace(char, "")
             for char_id in range(0x007F, 0x00A1):
                 string = string.replace(chr(char_id), "")
+            string = string.replace("'", '"')
             return string
-        workflow_json: dict = json.loads(clean_json_string(workflow_json_str))
+
+        if type(workflow_json) is str:
+            workflow_json: dict = json.loads(clean_json_string(workflow_json))
+        elif type(workflow_json) is dict:
+            pass
+        else:
+            raise Exception(
+                "workflow_json has unsupported format. Please convert it to str or dict"
+            )
         self._workflow_original = workflow_json
         if "nodes" in workflow_json:
             try:
@@ -41,28 +50,46 @@ class ComfyUiWorkflow:
             self._workflow_api = deepcopy(workflow_json)
 
     def __str__(self):
-        return str(self._workflow_api).replace("'", '"')
+        return json.dumps(self._workflow_api)
 
     def convert_to_api_ready(self, workflow_json: dict) -> dict:
         result = {}
-        widgets_value_names = {"AssetDownloader": ["url", "save_to", "filename", "token"],
-                               "EmptyLatentImage": ["width", "height", "batch_size"],
-                               "CheckpointLoaderSimple": ["ckpt_name"],
-                               "KSampler": ["seed", "control", "steps", "cfg", "sampler_name", "scheduler", "denoise"],
-                               "CLIPTextEncode": ["text"],
-                               "VAEEncode": [],
-                               "VAEDecode": [],
-                               "SaveImage": ["filename_prefix"],
-                               "LatentUpscale": ["upscale_method", "width", "height", "crop"],
-                               "PreviewImage": [],
-                               "LoadImage": ["image"],
-                               "ImageScaleToTotalPixels": ["upscale_method", "megapixels"]
-                               }
+        widgets_value_names = {
+            "AssetDownloader": ["url", "save_to", "filename", "token"],
+            "EmptyLatentImage": ["width", "height", "batch_size"],
+            "CheckpointLoaderSimple": ["ckpt_name"],
+            "KSampler": [
+                "seed",
+                "control",
+                "steps",
+                "cfg",
+                "sampler_name",
+                "scheduler",
+                "denoise",
+            ],
+            "CLIPTextEncode": ["text"],
+            "VAEEncode": [],
+            "VAEDecode": [],
+            "SaveImage": ["filename_prefix"],
+            "LatentUpscale": ["upscale_method", "width", "height", "crop"],
+            "PreviewImage": [],
+            "LoadImage": ["image"],
+            "ImageScaleToTotalPixels": ["upscale_method", "megapixels"],
+            "UNETLoader": ["unet_name", "weight_dtype"],
+            "CLIPLoader": ["clip_name", "type", "device"],
+            "VAELoader": ["vae_name"],
+            "CreateVideo": ["fps"],
+            "SaveVideo": ["filename_prefix", "format", "codec"],
+            "Wan22ImageToVideoLatent": ["width", "height", "length", "batch_size"],
+            "ModelSamplingSD3": ["shift"],
+        }
         nodes = workflow_json["nodes"]
         links = workflow_json["links"]
         for node in nodes:
             inputs = {}
             class_type = node["type"]
+            if class_type in ["MarkdownNote"]:
+                continue
             # Set input values
             if class_type in widgets_value_names:
                 for i, value_name in enumerate(widgets_value_names[class_type]):
@@ -72,20 +99,31 @@ class ComfyUiWorkflow:
             # Set links
             for input in node["inputs"]:
                 link_id = input["link"]
-                link = [l for l in links if l[0] == link_id][0]
+                link = [l for l in links if l[0] == link_id]
+                if len(link) == 0:
+                    continue
+                link = link[0]
                 link_id, source_id, port_idx, _, _, type = link
                 inputs[input["name"]] = [str(source_id), port_idx]
             result[str(node["id"])] = {
-                "class_type": class_type, "_meta": {"title": "TITLE"}, "inputs": inputs}
-        result = {key: result[key]
-                  for key in sorted(result, key=lambda k: int(k))}
+                "class_type": class_type,
+                "_meta": {"title": "TITLE"},
+                "inputs": inputs,
+            }
+        result = {key: result[key] for key in sorted(result, key=lambda k: int(k))}
         return result
 
     def json(self) -> dict:
         return self._workflow_api
 
+    def json_str(self) -> str:
+        return json.dumps(self._workflow_api)
+
     def json_original(self) -> dict:
         return self._workflow_original
+
+    def json_original_str(self) -> str:
+        return json.dumps(self._workflow_original)
 
     def get_property(self, node_id: str | None, path: str):
         try:
@@ -118,19 +156,15 @@ class ComfyUiWorkflow:
         # Returns the node_id of the only node with a given class_type
         possible_node_ids = self.get_node_ids_by_class_type(class_type)
         if len(possible_node_ids) == 0:
-            raise Exception(
-                f"There are no nodes with the class_name '{class_type}'.")
+            raise Exception(f"There are no nodes with the class_name '{class_type}'.")
         elif len(possible_node_ids) > 1:
-            raise Exception(
-                f"There are some nodes with the class_name '{class_type}'.")
+            raise Exception(f"There are some nodes with the class_name '{class_type}'.")
         return possible_node_ids[0]
 
     def randomize_seed(self):
         for node_id in self._workflow_api:
             if self.get_property(node_id, "inputs/seed") is not None:
-                self.set_property(
-                    node_id, "inputs/seed", random.randint(0, 10**8 - 1)
-                )
+                self.set_property(node_id, "inputs/seed", random.randint(0, 10**8 - 1))
             if self.get_property(node_id, "inputs/noise_seed") is not None:
                 self.set_property(
                     node_id, "inputs/noise_seed", random.randint(0, 10**8 - 1)
@@ -146,8 +180,7 @@ class ComfyUiWorkflow:
 
     def set_model_loader(self, node_id: str | None, ckpt_name: str):
         if node_id is None:
-            node_id = self.identify_node_by_class_type(
-                "CheckpointLoaderSimple")
+            node_id = self.identify_node_by_class_type("CheckpointLoaderSimple")
         if self.get_property(node_id, "class_type") != "CheckpointLoaderSimple":
             raise Exception(f"Node {node_id} is not CheckpointLoaderSimple")
         self.set_property(node_id, "inputs/ckpt_name", ckpt_name)
@@ -231,10 +264,16 @@ class ComfyUiWorkflow:
             raise Exception(f"Node {node_id} is not UNETLoader")
         self.set_property(node_id, "inputs/unet_name", unet_name)
 
-    def set_empty_hunyuan(self, node_id: str | None, width: int, height: int, length: int, batch_size: int = 1):
+    def set_empty_hunyuan(
+        self,
+        node_id: str | None,
+        width: int,
+        height: int,
+        length: int,
+        batch_size: int = 1,
+    ):
         if node_id is None:
-            node_id = self.identify_node_by_class_type(
-                "EmptyHunyuanLatentVideo")
+            node_id = self.identify_node_by_class_type("EmptyHunyuanLatentVideo")
         if self.get_class_type(node_id) != "EmptyHunyuanLatentVideo":
             raise Exception(f"Node {node_id} is not EmptyHunyuanLatentVideo")
         self.set_property(node_id, "inputs/width", width)
@@ -242,10 +281,16 @@ class ComfyUiWorkflow:
         self.set_property(node_id, "inputs/length", length)
         self.set_property(node_id, "inputs/batch_size", batch_size)
 
-    def set_empty_mochi(self, node_id: str | None, width: int, height: int, length: int, batch_size: int = 1):
+    def set_empty_mochi(
+        self,
+        node_id: str | None,
+        width: int,
+        height: int,
+        length: int,
+        batch_size: int = 1,
+    ):
         if node_id is None:
-            node_id = self.identify_node_by_class_type(
-                "EmptyMochiLatentVideo")
+            node_id = self.identify_node_by_class_type("EmptyMochiLatentVideo")
         if self.get_class_type(node_id) != "EmptyMochiLatentVideo":
             raise Exception(f"Node {node_id} is not EmptyMochiLatentVideo")
         self.set_property(node_id, "inputs/width", width)
@@ -259,10 +304,11 @@ class ComfyUiWorkflow:
         if self.get_class_type(node_id) != "SaveAnimatedWEBP":
             raise Exception(f"Node {node_id} is not SaveAnimatedWEBP")
         self.set_property(node_id, "inputs/fps", fps)
-        self.set_property(node_id, "inputs/lossless",
-                          "true" if lossless else "false")
+        self.set_property(node_id, "inputs/lossless", "true" if lossless else "false")
 
-    def set_asset_downloader(self, node_id: str | None, url: str, save_to: str, filename: str, token: str):
+    def set_asset_downloader(
+        self, node_id: str | None, url: str, save_to: str, filename: str, token: str
+    ):
         # This node is downloadable from https://github.com/ServiceStack/comfy-asset-downloader.
         if node_id is None:
             node_id = self.identify_node_by_class_type("AssetDownloader")
@@ -282,8 +328,7 @@ class ComfyUiWorkflow:
         strength_model: float = 1,
         strength_clip: float = 1,
     ):
-        lora_id = str(max([int(node_id)
-                      for node_id in self._workflow_api]) + 1)
+        lora_id = str(max([int(node_id) for node_id in self._workflow_api]) + 1)
         self._workflow_api[lora_id] = deepcopy(LORA_NODE)
         model_src_id = self.get_property(sampler_node_id, "inputs/model")[0]
         clip_src_id = self.get_property(prompt_node_id, "inputs/clip")[0]
@@ -298,8 +343,7 @@ class ComfyUiWorkflow:
         self.set_property(negative_prompt_node_id, "inputs/clip", [lora_id, 1])
 
     def add_flux_guidance(self, sampler_node_id: str | None, guidance: float):
-        new_node_id = str(max([int(node_id)
-                          for node_id in self._workflow_api]) + 1)
+        new_node_id = str(max([int(node_id) for node_id in self._workflow_api]) + 1)
         self._workflow_api[new_node_id] = deepcopy(FluxGuidanceNode)
         self.set_property(new_node_id, "inputs/guidance", guidance)
         self.set_property(
@@ -312,9 +356,7 @@ class ComfyUiWorkflow:
 
 if __name__ == "__main__":
     current_dir = os.path.dirname(os.path.realpath(__file__))
-    workflow_path = os.path.join(current_dir, "json", "txt2img.json")
-    workflow_outpath = os.path.join(current_dir, "json", "output.json")
+    workflow_path = os.path.join(current_dir, "json", "txt2vid_wan2_2_5B.json")
     txt = open(workflow_path, "r", encoding="utf-8").read()
     workflow = ComfyUiWorkflow(txt)
     print(workflow)
-    # open(workflow_outpath, "w").write(str(workflow))
