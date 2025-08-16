@@ -71,6 +71,8 @@ class ComfyUiWorkflow:
             if class_type in widgets_value_names:
                 for i, value_name in enumerate(widgets_value_names[class_type]):
                     inputs[value_name] = node["widgets_values"][i]
+            elif class_type in ["Note"]:
+                continue
             else:
                 raise Exception(f"{class_type} not found in widgets_value_names.")
             # Set links

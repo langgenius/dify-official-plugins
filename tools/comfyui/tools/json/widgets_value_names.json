@@ -93,5 +93,13 @@
         "start_at_step",
         "end_at_step",
         "return_with_leftover_noise"
+    ],
+    "EmptySD3LatentImage": [
+        "width",
+        "height",
+        "batch_size"
+    ],
+    "FluxGuidance": [
+        "guidance"
     ]
 }
