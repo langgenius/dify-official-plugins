@@ -71,4 +71,4 @@ parameters:
     label:
       en_US: Download models
     type: boolean
-    default: false
+    default: true
