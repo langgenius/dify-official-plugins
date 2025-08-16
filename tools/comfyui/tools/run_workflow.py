@@ -54,7 +54,7 @@ class ComfyUIWorkflowTool(Tool):
             output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
             raise ToolProviderCredentialValidationError(
-                f"Failed to generate image: {str(e)}. Please check if the workflow JSON works on ComfyUI."
+                f"Failed to generate image: {str(e)}."
             )
 
         for img in output_images:

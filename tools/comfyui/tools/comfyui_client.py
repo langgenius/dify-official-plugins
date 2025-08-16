@@ -126,8 +126,7 @@ class ComfyUiClient:
     def get_image(self, filename: str, subfolder: str, folder_type: str) -> bytes:
         response = httpx.get(
             str(self.base_url / "view"),
-            params={"filename": filename,
-                    "subfolder": subfolder, "type": folder_type},
+            params={"filename": filename, "subfolder": subfolder, "type": folder_type},
             headers=self._get_headers(),  # Add headers
         )
         return response.content
@@ -157,17 +156,21 @@ class ComfyUiClient:
     def queue_prompt(self, client_id: str, prompt: dict) -> str:
         res = httpx.post(
             str(self.base_url / "prompt"),
-            data=json.dumps({"client_id": client_id, "prompt": prompt, "extra_data": {
-                "api_key_comfy_org": self.api_key_comfy_org
-            }}),
+            data=json.dumps(
+                {
+                    "client_id": client_id,
+                    "prompt": prompt,
+                    "extra_data": {"api_key_comfy_org": self.api_key_comfy_org},
+                }
+            ),
             headers=self._get_headers(),  # Add headers
         )
+        if "error" in res.json():
+            raise Exception("ComfyUI error: " + json.dumps(res.json()))
         try:
             prompt_id = res.json()["prompt_id"]
         except:
-            raise ToolProviderCredentialValidationError(
-                "Error queuing the prompt. Please check the workflow JSON."
-            )
+            raise Exception("Error queuing the prompt. Please check the workflow JSON.")
         return prompt_id
 
     def open_websocket_connection(self) -> tuple[WebSocket, str]:
@@ -189,8 +192,7 @@ class ComfyUiClient:
         self, origin_prompt: dict, positive_prompt: str, negative_prompt: str = ""
     ) -> dict:
         prompt = origin_prompt.copy()
-        id_to_class_type = {id: details["class_type"]
-                            for id, details in prompt.items()}
+        id_to_class_type = {id: details["class_type"] for id, details in prompt.items()}
         k_sampler = [
             key for key, value in id_to_class_type.items() if value == "KSampler"
         ][0]
@@ -215,8 +217,7 @@ class ComfyUiClient:
         self, origin_prompt: dict, image_names: list[str]
     ) -> dict:
         prompt = origin_prompt.copy()
-        id_to_class_type = {id: details["class_type"]
-                            for id, details in prompt.items()}
+        id_to_class_type = {id: details["class_type"] for id, details in prompt.items()}
         load_image_nodes = [
             key for key, value in id_to_class_type.items() if value == "LoadImage"
         ]
@@ -229,11 +230,9 @@ class ComfyUiClient:
         if seed_id not in prompt:
             raise Exception("Not a valid seed node")
         if "seed" in prompt[seed_id]["inputs"]:
-            prompt[seed_id]["inputs"]["seed"] = random.randint(
-                10**14, 10**15 - 1)
+            prompt[seed_id]["inputs"]["seed"] = random.randint(10**14, 10**15 - 1)
         elif "noise_seed" in prompt[seed_id]["inputs"]:
-            prompt[seed_id]["inputs"]["noise_seed"] = random.randint(
-                10**14, 10**15 - 1)
+            prompt[seed_id]["inputs"]["noise_seed"] = random.randint(10**14, 10**15 - 1)
         else:
             raise Exception("Not a valid seed node")
         return prompt
@@ -249,8 +248,7 @@ class ComfyUiClient:
                 if message["type"] == "progress":
                     data = message["data"]
                     current_step = data["value"]
-                    print("In K-Sampler -> Step: ",
-                          current_step, " of: ", data["max"])
+                    print("In K-Sampler -> Step: ", current_step, " of: ", data["max"])
                 if message["type"] == "execution_cached":
                     data = message["data"]
                     for itm in data["nodes"]:
@@ -285,8 +283,7 @@ class ComfyUiClient:
         url = str(self.base_url / "view")
         response = httpx.get(
             url,
-            params={"filename": filename,
-                    "subfolder": subfolder, "type": folder_type},
+            params={"filename": filename, "subfolder": subfolder, "type": folder_type},
             timeout=(2, 10),
             headers=self._get_headers(),  # Add headers
         )
@@ -326,9 +323,13 @@ class ComfyUiClient:
             url = str(self.base_url / "prompt")
             respond = httpx.post(
                 url,
-                data=json.dumps({"client_id": client_id, "prompt": prompt, "extra_data": {
-                    "api_key_comfy_org": self.api_key_comfy_org
-                }}),
+                data=json.dumps(
+                    {
+                        "client_id": client_id,
+                        "prompt": prompt,
+                        "extra_data": {"api_key_comfy_org": self.api_key_comfy_org},
+                    }
+                ),
                 timeout=(2, 10),
                 headers=self._get_headers(),
             )
@@ -391,8 +392,7 @@ class ComfyUiClient:
         with open(os.path.join(current_dir, "json", "webp2mp4.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
 
-        uploaded_image = self.upload_image(
-            "input.webp", webp_blob, "image/webp")
+        uploaded_image = self.upload_image("input.webp", webp_blob, "image/webp")
         workflow.set_property("25", "inputs/frame_rate", fps)
         workflow.set_image_names([uploaded_image])
 
