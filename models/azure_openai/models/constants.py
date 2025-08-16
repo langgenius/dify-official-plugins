@@ -2462,6 +2462,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2476,6 +2477,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2490,6 +2492,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2504,6 +2507,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2518,6 +2522,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2532,6 +2537,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                 ],
@@ -2568,6 +2574,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2582,6 +2589,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2596,6 +2604,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2610,6 +2619,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2624,6 +2634,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2638,6 +2649,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                 ],
@@ -2800,6 +2812,21 @@ TTS_BASE_MODELS = [
                     {
                         "mode": "shimmer",
                         "name": "Shimmer",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "verse",
+                        "name": "Verse",
                         "language": [
                             "zh-Hans",
                             "en-US",
