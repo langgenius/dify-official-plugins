@@ -63,6 +63,8 @@ class ComfyUiWorkflow:
         nodes = workflow_json["nodes"]
         links = workflow_json["links"]
         for node in nodes:
+            if node["mode"] == 4:  # Disabled node
+                continue
             inputs = {}
             class_type = node["type"]
             if class_type in ["MarkdownNote"]:
