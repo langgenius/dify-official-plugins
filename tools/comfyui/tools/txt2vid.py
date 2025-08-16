@@ -91,8 +91,10 @@ class ComfyuiTxt2Vid(Tool):
         model_type = tool_parameters.get("model_type")
         if model_type == "wan2_1":
             output_images = self.txt2vid_svd_wan2_1(config)
-        elif model_type == "wan2_2":
-            output_images = self.txt2vid_svd_wan2_2(config)
+        elif model_type == "wan2_2_5B":
+            output_images = self.txt2vid_svd_wan2_2_5B(config)
+        elif model_type == "wan2_2_14B":
+            output_images = self.txt2vid_svd_wan2_2_14B(config)
         elif model_type == "ltxv":
             output_images = self.txt2vid_ltxv(config)
         elif model_type == "mochi":
@@ -266,7 +268,34 @@ class ComfyuiTxt2Vid(Tool):
             )
         return output_images
 
-    def txt2vid_svd_wan2_2(
+    def txt2vid_svd_wan2_2_14B(
+        self, config: ComfyuiTxt2VidConfig
+    ) -> Generator[ToolInvokeMessage, None, None]:
+        """
+        generate image
+        """
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        with open(
+            os.path.join(current_dir, "json", "txt2vid_wan2_2_14B.json"),
+            encoding="UTF-8",
+        ) as file:
+            workflow = ComfyUiWorkflow(file.read())
+            self.model_manager.download_from_json(workflow.json_original_str())
+
+        workflow.set_prompt("89", config.prompt)
+        workflow.set_prompt("72", config.negative_prompt)
+
+        workflow.set_empty_hunyuan(None, config.width, config.height, config.frameN)
+
+        try:
+            output_images = self.comfyui.generate(workflow.json())
+        except Exception as e:
+            raise ToolProviderCredentialValidationError(
+                f"Failed to generate image: {str(e)}"
+            )
+        return output_images
+
+    def txt2vid_svd_wan2_2_5B(
         self, config: ComfyuiTxt2VidConfig
     ) -> Generator[ToolInvokeMessage, None, None]:
         """
