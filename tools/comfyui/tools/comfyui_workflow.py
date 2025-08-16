@@ -44,8 +44,8 @@ class ComfyUiWorkflow:
         if "nodes" in workflow_json:
             try:
                 self._workflow_api = self.convert_to_api_ready(workflow_json)
-            except:
-                raise Exception("Failed to convert Workflow to API ready.")
+            except Exception as e:
+                raise Exception(f"Failed to convert Workflow to API ready. {str(e)}")
         else:
             self._workflow_api = deepcopy(workflow_json)
 
@@ -54,35 +54,12 @@ class ComfyUiWorkflow:
 
     def convert_to_api_ready(self, workflow_json: dict) -> dict:
         result = {}
-        widgets_value_names = {
-            "AssetDownloader": ["url", "save_to", "filename", "token"],
-            "EmptyLatentImage": ["width", "height", "batch_size"],
-            "CheckpointLoaderSimple": ["ckpt_name"],
-            "KSampler": [
-                "seed",
-                "control",
-                "steps",
-                "cfg",
-                "sampler_name",
-                "scheduler",
-                "denoise",
-            ],
-            "CLIPTextEncode": ["text"],
-            "VAEEncode": [],
-            "VAEDecode": [],
-            "SaveImage": ["filename_prefix"],
-            "LatentUpscale": ["upscale_method", "width", "height", "crop"],
-            "PreviewImage": [],
-            "LoadImage": ["image"],
-            "ImageScaleToTotalPixels": ["upscale_method", "megapixels"],
-            "UNETLoader": ["unet_name", "weight_dtype"],
-            "CLIPLoader": ["clip_name", "type", "device"],
-            "VAELoader": ["vae_name"],
-            "CreateVideo": ["fps"],
-            "SaveVideo": ["filename_prefix", "format", "codec"],
-            "Wan22ImageToVideoLatent": ["width", "height", "length", "batch_size"],
-            "ModelSamplingSD3": ["shift"],
-        }
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        widgets_value_path = os.path.join(
+            current_dir, "json", "widgets_value_names.json"
+        )
+        with open(widgets_value_path, "r", encoding="UTF-8") as f:
+            widgets_value_names = json.loads(f.read())
         nodes = workflow_json["nodes"]
         links = workflow_json["links"]
         for node in nodes:
@@ -95,7 +72,7 @@ class ComfyUiWorkflow:
                 for i, value_name in enumerate(widgets_value_names[class_type]):
                     inputs[value_name] = node["widgets_values"][i]
             else:
-                raise Exception(f"{class_type} not found.")
+                raise Exception(f"{class_type} not found in widgets_value_names.")
             # Set links
             for input in node["inputs"]:
                 link_id = input["link"]
