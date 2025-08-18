@@ -35,6 +35,9 @@ viso_models = [
     "glm-4.1v-thinking-flashx",
 ]
 
+TOKEN_BEGIN_OF_BOX = "<|begin_of_box|>"
+TOKEN_END_OF_BOX = "<|end_of_box|>"
+
 
 class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
     def _invoke(
@@ -423,6 +426,13 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                 )
             ):
                 continue
+
+            # Remove BOX_TOKEN from the channel of the `glm-4.5v`
+            # In final_answer, the model will not directly output the complete `TOKEN_BEGIN_OF_BOX` or `TOKEN_END_OF_BOX` within a single chunk.
+            # Therefore, there's no need to worry about contaminating the integrity of the response.
+            if delta.delta.content == TOKEN_BEGIN_OF_BOX or delta.delta.content == TOKEN_END_OF_BOX:
+                continue
+
             assistant_tool_calls: list[AssistantPromptMessage.ToolCall] = []
             for tool_call in delta.delta.tool_calls or []:
                 if tool_call.type == "function":
