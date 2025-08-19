@@ -40,6 +40,7 @@ from dify_plugin.entities.model.message import (
     ImagePromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
+    PromptMessageRole,
     PromptMessageTool,
     SystemPromptMessage,
     TextPromptMessageContent,
@@ -64,15 +65,15 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
     tokenizers = {}
 
     def _invoke(
-            self,
-            model: str,
-            credentials: dict,
-            prompt_messages: list[PromptMessage],
-            model_parameters: dict,
-            tools: Optional[list[PromptMessageTool]] = None,
-            stop: Optional[list[str]] = None,
-            stream: bool = True,
-            user: Optional[str] = None,
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model
@@ -99,11 +100,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         )
 
     def get_num_tokens(
-            self,
-            model: str,
-            credentials: dict,
-            prompt_messages: list[PromptMessage],
-            tools: Optional[list[PromptMessageTool]] = None,
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        tools: Optional[list[PromptMessageTool]] = None,
     ) -> int:
         """
         Get number of tokens for given prompt messages
@@ -148,15 +149,15 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             raise CredentialsValidateFailedError(str(ex))
 
     def _generate(
-            self,
-            model: str,
-            credentials: dict,
-            prompt_messages: list[PromptMessage],
-            model_parameters: dict,
-            tools: Optional[list[PromptMessageTool]] = None,
-            stop: Optional[list[str]] = None,
-            stream: bool = True,
-            user: Optional[str] = None,
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model
@@ -187,6 +188,23 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         response_format = model_parameters.get("response_format")
         if response_format:
             model_parameters["response_format"] = {"type": response_format}
+
+        if model.startswith("qwen-mt"):
+            source_lang = model_parameters.pop("source_lang", None)
+            target_lang = model_parameters.pop("target_lang", None)
+            domains = model_parameters.pop("domains", None)
+            model_parameters["translation_options"] = {
+                "source_lang": source_lang,
+                "target_lang": target_lang,
+                "domains": domains,
+            }
+            # The Qwen-MT model does not support incremental streaming output at this time.
+            stream = False
+            if len(prompt_messages) > 1:
+                prompt_messages = prompt_messages[-1:]
+            if prompt_messages[-1].role != PromptMessageRole.USER:
+                raise ValueError("There is one and only one User Message in the messages array.")
+
         params = {
             "model": model,
             **model_parameters,
@@ -233,11 +251,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         )
 
     def _handle_generate_response(
-            self,
-            model: str,
-            credentials: dict,
-            response: GenerationResponse,
-            prompt_messages: list[PromptMessage],
+        self,
+        model: str,
+        credentials: dict,
+        response: GenerationResponse,
+        prompt_messages: list[PromptMessage],
     ) -> LLMResult:
         """
         Handle llm response
@@ -292,12 +310,12 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             tool_call_obj['function']['arguments'] = args
 
     def _handle_generate_stream_response(
-            self,
-            model: str,
-            credentials: dict,
-            responses: Generator[GenerationResponse, None, None],
-            prompt_messages: list[PromptMessage],
-            incremental_output: bool,
+        self,
+        model: str,
+        credentials: dict,
+        responses: Generator[GenerationResponse, None, None],
+        prompt_messages: list[PromptMessage],
+        incremental_output: bool,
     ) -> Generator:
         """
         Handle llm stream response
@@ -380,7 +398,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 else:
                     delta = resp_content.replace(full_text, "", 1)
                     full_text = resp_content
-                
+
                 assistant_prompt_message = AssistantPromptMessage(
                     content=delta
                 )
@@ -445,10 +463,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         return text.rstrip()
 
     def _convert_prompt_messages_to_tongyi_messages(
-            self,
-            credentials: dict,
-            prompt_messages: list[PromptMessage],
-            rich_content: bool = False,
+        self,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        rich_content: bool = False,
     ) -> list[dict]:
         """
         Convert prompt messages to tongyi messages
@@ -572,7 +590,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         return f"file://{file_path}"
 
     def _upload_file_to_tongyi(
-            self, credentials: dict, message_content: DocumentPromptMessageContent
+        self, credentials: dict, message_content: DocumentPromptMessageContent
     ) -> str:
         """
         Upload file to Tongyi
@@ -700,7 +718,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         }
 
     def get_customizable_model_schema(
-            self, model: str, credentials: dict
+        self, model: str, credentials: dict
     ) -> Optional[AIModelEntity]:
         """
         Architecture for defining customizable models
