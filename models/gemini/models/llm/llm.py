@@ -377,14 +377,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return:
         """
         try:
-            ping_message = UserPromptMessage(content="ping")
-            self._generate(
-                model=model,
-                credentials=credentials,
-                prompt_messages=[ping_message],
-                stream=False,
-                model_parameters={"max_output_tokens": 5},
-            )
+            genai_client = genai.Client(api_key=credentials["google_api_key"])
+            genai_client.models.count_tokens(model=model, contents="ping")
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
