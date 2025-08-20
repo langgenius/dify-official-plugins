@@ -277,6 +277,62 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         return prompt_tokens, completion_tokens
 
+    @staticmethod
+    def _set_thinking_config(
+        *, config: types.GenerateContentConfig, model_parameters: Mapping[str, Any], model_name: str
+    ) -> None:
+        # FIXME: 2025-08-21
+        # This blacklist is a temporary workaround. A more robust solution is needed
+        # to handle how `thinking_config` is applied to different models.
+        #
+        # The final solution should:
+        # 1. Clearly define which models are incompatible with dynamic `thinking_config` changes,
+        #    improving on the current prefix-based blacklist.
+        # 2. Prevent errors for upcoming mixed-mode models (e.g., `nano-banana`) when
+        #    `thinking_config` is set.
+        # 3. Gracefully handle models that either don't support thinking mode switching
+        #    (e.g., `gemini-2.5-pro`) or lack thinking mode entirely (e.g., `gemini-2.0-flash`),
+        #    instead of causing an immediate error.
+        blacklist_thinking_prefix = {"gemini-2.0-flash-preview-image-generation", "nano-banana"}
+        for _prefix in blacklist_thinking_prefix:
+            if model_name.startswith(_prefix):
+                return
+
+        include_thoughts = model_parameters.get("include_thoughts", None)
+        thinking_budget = model_parameters.get("thinking_budget", None)
+        thinking_mode = model_parameters.get("thinking_mode", None)
+
+        # Must be explicitly handled here, where the three states True, False, and None each have specific meanings.
+        if thinking_mode is None:
+            if isinstance(thinking_budget, int) and thinking_budget == 0:
+                thinking_budget = -1
+        elif thinking_mode is False:
+            thinking_budget = 0
+        elif thinking_mode:
+            if (isinstance(thinking_budget, int) and thinking_budget == 0) or (
+                thinking_budget is None
+            ):
+                thinking_budget = -1
+
+        config.thinking_config = types.ThinkingConfig(
+            include_thoughts=include_thoughts, thinking_budget=thinking_budget
+        )
+
+    @staticmethod
+    def _set_response_modalities(*, config: types.GenerateContentConfig, model_name: str) -> None:
+        if model_name in ["gemini-2.0-flash-preview-image-generation", "nano-banana"]:
+            config.response_modalities = [
+                types.MediaModality.TEXT.value,
+                types.MediaModality.IMAGE.value,
+            ]
+        elif model_name in [
+            "models/gemini-2.5-flash-preview-native-audio-dialog",
+            "models/gemini-2.5-flash-exp-native-audio-thinking-dialog",
+            "models/gemini-2.5-flash-live-preview",
+            "models/gemini-2.0-flash-live-001",
+        ]:
+            config.response_modalities = [types.MediaModality.AUDIO.value]
+
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
         Validate model credentials
@@ -363,25 +419,16 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # However, setting thinking_budget for models that do not support the thinking mode
         # will result in a 400 INVALID_ARGUMENT error.
 
-        include_thoughts = model_parameters.get("include_thoughts", None)
-        thinking_budget = model_parameters.get("thinking_budget", None)
-        thinking_mode = model_parameters.get("thinking_mode", None)
-
-        # Must be explicitly handled here, where the three states True, False, and None each have specific meanings.
-        if thinking_mode is None:
-            if isinstance(thinking_budget, int) and thinking_budget == 0:
-                thinking_budget = -1
-        elif thinking_mode is False:
-            thinking_budget = 0
-        elif thinking_mode:
-            if (isinstance(thinking_budget, int) and thinking_budget == 0) or (
-                thinking_budget is None
-            ):
-                thinking_budget = -1
-
-        config.thinking_config = types.ThinkingConfig(
-            include_thoughts=include_thoughts, thinking_budget=thinking_budget
+        self._set_thinking_config(
+            config=config, model_parameters=model_parameters, model_name=model
         )
+
+        # == ResponseModalitiesConfig == #
+
+        # The Gemini part of the model can output mixed-modal responses,
+        # e.g. generate images, generate audio.
+
+        self._set_response_modalities(config=config, model_name=model)
 
         # == ToolUseConfig == #
 
