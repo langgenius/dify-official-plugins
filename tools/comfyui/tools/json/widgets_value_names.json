@@ -101,5 +101,10 @@
     ],
     "FluxGuidance": [
         "guidance"
+    ],
+    "LoraLoader":[
+        "lora_name",
+        "strength_model",
+        "strength_clip"
     ]
 }
