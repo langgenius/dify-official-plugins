@@ -278,6 +278,29 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         return prompt_tokens, completion_tokens
 
     @staticmethod
+    def _set_chat_parameters(
+        *,
+        config: types.GenerateContentConfig,
+        model_parameters: Mapping[str, Any],
+        stop: List[str] | None = None,
+    ) -> None:
+        if schema := model_parameters.get("json_schema"):
+            try:
+                schema = json.loads(schema)
+            except (TypeError, ValueError) as exc:
+                raise InvokeError("Invalid JSON Schema") from exc
+            config.response_schema = schema
+            config.response_mime_type = "application/json"
+
+        if stop:
+            config.stop_sequences = stop
+
+        config.top_p = model_parameters.get("top_p", None)
+        config.top_k = model_parameters.get("top_k", None)
+        config.temperature = model_parameters.get("temperature", None)
+        config.max_output_tokens = model_parameters.get("max_output_tokens", None)
+
+    @staticmethod
     def _set_thinking_config(
         *, config: types.GenerateContentConfig, model_parameters: Mapping[str, Any], model_name: str
     ) -> None:
@@ -330,6 +353,21 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         ]:
             config.response_modalities = [types.Modality.AUDIO.value]
 
+    def _set_tool_calling(
+        self,
+        *,
+        config: types.GenerateContentConfig,
+        model_parameters: Mapping[str, Any],
+        tools: List[PromptMessageTool] | None = None,
+    ) -> None:
+        config.tools = []
+
+        if model_parameters.get("grounding"):
+            config.tools.append(types.Tool(google_search=types.GoogleSearch()))
+
+        if tools:
+            config.tools.append(self._convert_tools_to_gemini_tool(tools))
+
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
         Validate model credentials
@@ -378,21 +416,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         # == ChatConfig == #
 
-        if schema := model_parameters.get("json_schema"):
-            try:
-                schema = json.loads(schema)
-            except (TypeError, ValueError) as exc:
-                raise InvokeError("Invalid JSON Schema") from exc
-            config.response_schema = schema
-            config.response_mime_type = "application/json"
-
-        if stop:
-            config.stop_sequences = stop
-
-        config.top_p = model_parameters.get("top_p", None)
-        config.top_k = model_parameters.get("top_k", None)
-        config.temperature = model_parameters.get("temperature", None)
-        config.max_output_tokens = model_parameters.get("max_output_tokens", None)
+        self._set_chat_parameters(config=config, model_parameters=model_parameters, stop=stop)
 
         # Build contents from prompt messages
         file_server_url_prefix = credentials.get("file_url") or None
@@ -429,11 +453,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         # == ToolUseConfig == #
 
-        config.tools = []
-        if model_parameters.get("grounding"):
-            config.tools.append(types.Tool(google_search=types.GoogleSearch()))
-        if tools:
-            config.tools.append(self._convert_tools_to_gemini_tool(tools))
+        self._set_tool_calling(config=config, model_parameters=model_parameters, tools=tools)
 
         # == InvokeModel == #
 
