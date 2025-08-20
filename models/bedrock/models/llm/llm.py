@@ -689,6 +689,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         if "top_k" in model_parameters:
             additional_model_fields["top_k"] = model_parameters["top_k"]
 
+        if "anthropic_beta" in model_parameters:
+            additional_model_fields["anthropic_beta"] = list(map(lambda v:v.strip(), model_parameters["anthropic_beta"].strip().split(",")))
+
         # process reasoning related parameters, construct nested reasoning_config structure
         if "reasoning_type" in model_parameters:
             reasoning_type = model_parameters["reasoning_type"]
