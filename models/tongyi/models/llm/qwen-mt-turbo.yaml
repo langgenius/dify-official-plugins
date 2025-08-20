@@ -1,0 +1,226 @@
+# for more details, please refer to https://help.aliyun.com/zh/model-studio/machine-translation#dd13aa32a1b4u
+model: qwen-mt-turbo
+label:
+  en_US: qwen-mt-turbo
+model_type: llm
+features:
+  - agent-thought
+model_properties:
+  mode: chat
+  context_size: 4096
+parameter_rules:
+  - name: source_lang
+    label:
+      zh_Hans: 源语言
+      en_US: source language
+    type: string
+    required: true
+    default: auto
+    options:
+      - English
+      - Chinese
+      - Traditional Chinese
+      - Russian
+      - Japanese
+      - Korean
+      - Spanish
+      - French
+      - Portuguese
+      - German
+      - Italian
+      - Thai
+      - Vietnamese
+      - Indonesian
+      - Malay
+      - Arabic
+      - Hindi
+      - Hebrew
+      - Burmese
+      - Tamil
+      - Urdu
+      - Bengali
+      - Polish
+      - Dutch
+      - Romanian
+      - Turkish
+      - Khmer
+      - Lao
+      - Cantonese
+      - Czech
+      - Greek
+      - Swedish
+      - Hungarian
+      - Danish
+      - Finnish
+      - Ukrainian
+      - Bulgarian
+      - Serbian
+      - Telugu
+      - Afrikaans
+      - Armenian
+      - Assamese
+      - Asturian
+      - Basque
+      - Belarusian
+      - Bosnian
+      - Catalan
+      - Cebuano
+      - Croatian
+      - Egyptian Arabic
+      - Estonian
+      - Galician
+      - Georgian
+      - Gujarati
+      - Icelandic
+      - Javanese
+      - Kannada
+      - Kazakh
+      - Latvian
+      - Lithuanian
+      - Luxembourgish
+      - Macedonian
+      - Maithili
+      - Maltese
+      - Marathi
+      - Mesopotamian Arabic
+      - Moroccan Arabic
+      - Najdi Arabic
+      - Nepali
+      - North Azerbaijani
+      - North Levantine Arabic
+      - Northern Uzbek
+      - Norwegian Bokmål
+      - Norwegian Nynorsk
+      - Occitan
+      - Odia
+      - Pangasinan
+      - Sicilian
+      - Sindhi
+      - Sinhala
+      - Slovak
+      - Slovenian
+      - South Levantine Arabic
+      - Swahili
+      - Tagalog
+      - Ta’izzi-Adeni Arabic
+      - Tosk Albanian
+      - Tunisian Arabic
+      - Venetian
+      - Waray
+      - Welsh
+      - Western Persian
+      - auto
+  - name: target_lang
+    label:
+      zh_Hans: 目标语言
+      en_US: target language
+    type: string
+    required: true
+    default: Chinese
+    options:
+      - English
+      - Chinese
+      - Traditional Chinese
+      - Russian
+      - Japanese
+      - Korean
+      - Spanish
+      - French
+      - Portuguese
+      - German
+      - Italian
+      - Thai
+      - Vietnamese
+      - Indonesian
+      - Malay
+      - Arabic
+      - Hindi
+      - Hebrew
+      - Burmese
+      - Tamil
+      - Urdu
+      - Bengali
+      - Polish
+      - Dutch
+      - Romanian
+      - Turkish
+      - Khmer
+      - Lao
+      - Cantonese
+      - Czech
+      - Greek
+      - Swedish
+      - Hungarian
+      - Danish
+      - Finnish
+      - Ukrainian
+      - Bulgarian
+      - Serbian
+      - Telugu
+      - Afrikaans
+      - Armenian
+      - Assamese
+      - Asturian
+      - Basque
+      - Belarusian
+      - Bosnian
+      - Catalan
+      - Cebuano
+      - Croatian
+      - Egyptian Arabic
+      - Estonian
+      - Galician
+      - Georgian
+      - Gujarati
+      - Icelandic
+      - Javanese
+      - Kannada
+      - Kazakh
+      - Latvian
+      - Lithuanian
+      - Luxembourgish
+      - Macedonian
+      - Maithili
+      - Maltese
+      - Marathi
+      - Mesopotamian Arabic
+      - Moroccan Arabic
+      - Najdi Arabic
+      - Nepali
+      - North Azerbaijani
+      - North Levantine Arabic
+      - Northern Uzbek
+      - Norwegian Bokmål
+      - Norwegian Nynorsk
+      - Occitan
+      - Odia
+      - Pangasinan
+      - Sicilian
+      - Sindhi
+      - Sinhala
+      - Slovak
+      - Slovenian
+      - South Levantine Arabic
+      - Swahili
+      - Tagalog
+      - Ta’izzi-Adeni Arabic
+      - Tosk Albanian
+      - Tunisian Arabic
+      - Venetian
+      - Waray
+      - Welsh
+      - Western Persian
+  - name: domains
+    label:
+      zh_Hans: 领域提示(只支持英文)
+      en_US: Domain Tips
+    help:
+      en_US: If you want the style of the translation to be more in line with the characteristics of a particular domain, you can describe your domain in a piece of natural language text and provide it to the big model as a hint.
+      zh_Hans: 如果您希望翻译的风格更符合某个领域的特性，如法律、政务领域翻译用语应当严肃正式，社交领域用语应当口语化，可以用一段自然语言文本描述您的领域，将其提供给大模型作为提示。
+    type: text
+    required: false
+pricing:
+  input: '0.0007'
+  output: '0.00195'
+  unit: '0.001'
+  currency: RMB

@@ -1,4 +1,5 @@
 import json
+import time
 import logging
 import re
 from collections.abc import Generator, Iterator
@@ -91,9 +92,10 @@ class SageMakerLargeLanguageModel(LargeLanguageModel):
     sagemaker_session: Any = None
     predictor: Any = None
     sagemaker_endpoint: str | None = None
-    access_key: str = None 
-    secret_key : str = None 
-    aws_region : str = None 
+    access_key: str = None
+    secret_key : str = None
+    aws_region : str = None
+    assume_role_arn : str = None 
 
     def _handle_chat_generate_response(
         self,
@@ -215,6 +217,28 @@ class SageMakerLargeLanguageModel(LargeLanguageModel):
                 logger.info("json parse exception, content: {}".format(buffer))
                 pass
 
+    def _refresh_token(self):
+        " Refresh tokens by calling assume_role again "
+        params = {
+            "RoleArn": self.assume_role_arn,
+            "DurationSeconds": 3600,
+            "RoleSessionName": f"gain-sagemaker-session-{int(time.time())}"
+        }
+
+        boto_session = boto3.Session(region_name=self.aws_region)
+        sts_client = boto_session.client("sts")
+
+        response = sts_client.assume_role(**params).get("Credentials")
+
+        credentials = {
+            "access_key": response.get("AccessKeyId"),
+            "secret_key": response.get("SecretAccessKey"),
+            "token": response.get("SessionToken"),
+            "expiry_time": response.get("Expiration").isoformat(),
+        }
+
+        return credentials
+
     def _invoke(
         self,
         model: str,
@@ -239,13 +263,17 @@ class SageMakerLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
-        if self.access_key != credentials.get("aws_access_key_id") or self.secret_key != credentials.get("aws_secret_access_key") or \
-            self.aws_region != credentials.get("aws_region") or self.sagemaker_endpoint != credentials.get("sagemaker_endpoint"):
+        if self.access_key != credentials.get("aws_access_key_id") or \
+            self.secret_key != credentials.get("aws_secret_access_key") or \
+            self.aws_region != credentials.get("aws_region") or \
+            self.assume_role_arn != credentials.get("assume_role_arn") or \
+            self.sagemaker_endpoint != credentials.get("sagemaker_endpoint"):
 
             # All settings are not changed
             self.access_key = credentials.get("aws_access_key_id")
             self.secret_key = credentials.get("aws_secret_access_key")
             self.aws_region = credentials.get("aws_region")
+            self.assume_role_arn = credentials.get("assume_role_arn")
             self.sagemaker_endpoint = credentials.get("sagemaker_endpoint")
 
             boto_session = None
@@ -258,6 +286,24 @@ class SageMakerLargeLanguageModel(LargeLanguageModel):
                     boto_session = boto3.Session(region_name=self.aws_region)
             else:
                 boto_session = boto3.Session()
+
+            # If assume role arn is specified, assume the role
+            if self.assume_role_arn:
+
+                from botocore.credentials import RefreshableCredentials
+                from botocore.session import get_session
+
+                session_credentials = RefreshableCredentials.create_from_metadata(
+                    metadata=self._refresh_token(),
+                    refresh_using=self._refresh_token,
+                    method="sts-assume-role"
+                )
+
+                session = get_session()
+                session._credentials = session_credentials
+                session.set_config_variable("region", self.aws_region)
+
+                boto_session = boto3.Session(botocore_session=session)
 
             sagemaker_client = boto_session.client("sagemaker")
             self.sagemaker_session = Session(boto_session=boto_session, sagemaker_client=sagemaker_client)

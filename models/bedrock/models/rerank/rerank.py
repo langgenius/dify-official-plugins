@@ -96,7 +96,7 @@ class BedrockRerankModel(RerankModel):
         rerankingConfiguration = {
             "type": "BEDROCK_RERANKING_MODEL",
             "bedrockRerankingConfiguration": {
-                "numberOfResults": min(top_n, len(text_sources)),
+                "numberOfResults": min(len(text_sources) if top_n is None else top_n, len(text_sources)),
                 "modelConfiguration": {
                     "modelArn": model_package_arn,
                 },
