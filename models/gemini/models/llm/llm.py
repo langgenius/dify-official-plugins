@@ -321,17 +321,14 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
     @staticmethod
     def _set_response_modalities(*, config: types.GenerateContentConfig, model_name: str) -> None:
         if model_name in ["gemini-2.0-flash-preview-image-generation", "nano-banana"]:
-            config.response_modalities = [
-                types.MediaModality.TEXT.value,
-                types.MediaModality.IMAGE.value,
-            ]
+            config.response_modalities = [types.Modality.TEXT.value, types.Modality.IMAGE.value]
         elif model_name in [
             "models/gemini-2.5-flash-preview-native-audio-dialog",
             "models/gemini-2.5-flash-exp-native-audio-thinking-dialog",
             "models/gemini-2.5-flash-live-preview",
             "models/gemini-2.0-flash-live-001",
         ]:
-            config.response_modalities = [types.MediaModality.AUDIO.value]
+            config.response_modalities = [types.Modality.AUDIO.value]
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
