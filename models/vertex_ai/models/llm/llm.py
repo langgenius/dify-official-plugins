@@ -597,7 +597,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             assistant_prompt_message.content = part.text
 
         prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
-        completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
+        completion_tokens = response.usage_metadata.candidates_token_count
         usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
         result = LLMResult(model=model, prompt_messages=prompt_messages, message=assistant_prompt_message, usage=usage)
         return result
