@@ -459,7 +459,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         # Rule 3: url_context and code_execution cannot be used together
         if features["url_context"] and features["code_execution"]:
-            raise InvokeError("url_context and code_execution cannot be enabled simultaneously")
+            raise InvokeError("`url_context` and `code_execution` cannot be enabled simultaneously")
 
         # Log enabled features for debugging
         if enabled_features:
@@ -740,56 +740,58 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         self.is_thinking = False
 
         for chunk in response:
-            if not chunk.candidates:
+            if (
+                not chunk.candidates
+                or not chunk.candidates[0].content
+                or not chunk.candidates[0].content.parts
+            ):
                 continue
-            for candidate in chunk.candidates:
-                if not candidate.content or not candidate.content.parts:
-                    continue
+            candidate = chunk.candidates[0]
+            message = self._parse_parts(candidate.content.parts)
 
-                message = self._parse_parts(candidate.content.parts)
-                index += len(candidate.content.parts)
+            index += len(candidate.content.parts)
 
-                # if the stream is not finished, yield the chunk
-                if not candidate.finish_reason:
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=list(prompt_messages),
-                        delta=LLMResultChunkDelta(index=index, message=message),
-                    )
-                # if the stream is finished, yield the chunk and the finish reason
-                else:
-                    # If we're still in thinking mode at the end, close it
-                    if self.is_thinking:
-                        message.content.append(TextPromptMessageContent(data="\n\n</think>"))
+            # if the stream is not finished, yield the chunk
+            if not candidate.finish_reason:
+                yield LLMResultChunk(
+                    model=model,
+                    prompt_messages=list(prompt_messages),
+                    delta=LLMResultChunkDelta(index=index, message=message),
+                )
+            # if the stream is finished, yield the chunk and the finish reason
+            else:
+                # If we're still in thinking mode at the end, close it
+                if self.is_thinking:
+                    message.content.append(TextPromptMessageContent(data="\n\n</think>"))
 
-                    prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
-                        chunk.usage_metadata
-                    )
+                prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
+                    chunk.usage_metadata
+                )
 
-                    # Fallback to manual calculation if tokens are not available
-                    if prompt_tokens == 0 or completion_tokens == 0:
-                        prompt_tokens = self.get_num_tokens(
-                            model=model, credentials=credentials, prompt_messages=prompt_messages
-                        )
-                        completion_tokens = self.get_num_tokens(
-                            model=model, credentials=credentials, prompt_messages=[message]
-                        )
-                    usage = self._calc_response_usage(
-                        model=model,
-                        credentials=dict(credentials),
-                        prompt_tokens=prompt_tokens,
-                        completion_tokens=completion_tokens,
+                # Fallback to manual calculation if tokens are not available
+                if prompt_tokens == 0 or completion_tokens == 0:
+                    prompt_tokens = self.get_num_tokens(
+                        model=model, credentials=credentials, prompt_messages=prompt_messages
                     )
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=list(prompt_messages),
-                        delta=LLMResultChunkDelta(
-                            index=index,
-                            message=message,
-                            finish_reason=candidate.finish_reason,
-                            usage=usage,
-                        ),
+                    completion_tokens = self.get_num_tokens(
+                        model=model, credentials=credentials, prompt_messages=[message]
                     )
+                usage = self._calc_response_usage(
+                    model=model,
+                    credentials=dict(credentials),
+                    prompt_tokens=prompt_tokens,
+                    completion_tokens=completion_tokens,
+                )
+                yield LLMResultChunk(
+                    model=model,
+                    prompt_messages=list(prompt_messages),
+                    delta=LLMResultChunkDelta(
+                        index=index,
+                        message=message,
+                        finish_reason=candidate.finish_reason,
+                        usage=usage,
+                    ),
+                )
 
     def _parse_parts(self, parts: Sequence[types.Part], /) -> AssistantPromptMessage:
         """
@@ -828,6 +830,20 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     self.is_thinking = False
 
                 contents.append(TextPromptMessageContent(data=part.text))
+
+            # TODO:
+            #  Upstream needs to provide a new type of PromptMessageContent for tracking the code executor's behavior.
+            #  executable_code and code_execution_result should not be used as user messages from protocol implementation standards
+            if part.executable_code:
+                with suppress(Exception):
+                    code = part.executable_code.code
+                    language = part.executable_code.language.lower()
+                    code_block = f"\n```{language}\n{code}\n```\n"
+                    contents.append(TextPromptMessageContent(data=code_block))
+            if part.code_execution_result:
+                with suppress(Exception):
+                    result_tpl = f"\n```\n{part.code_execution_result.output}\n```\n"
+                    contents.append(TextPromptMessageContent(data=result_tpl))
 
             # A predicted [FunctionCall] returned from the model that contains a string
             # representing the [FunctionDeclaration.name] with the parameters and their values.

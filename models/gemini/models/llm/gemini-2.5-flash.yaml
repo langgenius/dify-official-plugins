@@ -93,6 +93,18 @@ parameter_rules:
       en_US: Browse the url context
       zh_Hans: 获取并分析该链接的详细信息，为回答提供参考依据。
       ja_JP: リンク先の詳細情報を取得し、文脈を理解します。
+  - name: code_execution
+    type:  boolean
+    required: true
+    default: false
+    label:
+        en_US: Code execution
+        zh_Hans: 代码执行
+        ja_JP: コード実行
+    help:
+      en_US: Lets Gemini use code to solve complex tasks
+      zh_Hans: 让 Gemini 使用代码来解决复杂任务。
+      ja_JP: Gemini にコードを使って複雑なタスクを解決させましょう。
   - name: json_schema
     use_template: json_schema
 # https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-2.5-flash

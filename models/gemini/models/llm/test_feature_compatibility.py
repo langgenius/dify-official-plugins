@@ -192,7 +192,7 @@ class TestFeatureCompatibility:
     def test_url_context_code_execution_conflicts(self, llm, model_params):
         """Test that url_context + code_execution is invalid (Rule 3)"""
         with pytest.raises(
-            InvokeError, match="url_context and code_execution cannot be enabled simultaneously"
+            InvokeError, match="`url_context` and `code_execution` cannot be enabled simultaneously"
         ):
             llm._validate_feature_compatibility(model_params, None)
 
