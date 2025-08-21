@@ -12,6 +12,7 @@ from tools.markdown_extractor import MarkdownExtractor
 from tools.pdf_extractor import PdfExtractor
 from tools.text_extractor import TextExtractor
 from tools.word_extractor import WordExtractor
+from tools.pptx_extractor import PPTXExtractor
 
 
 class DifyExtractorTool(Tool):
@@ -32,6 +33,8 @@ class DifyExtractorTool(Tool):
             extractor = HtmlExtractor(file_bytes, file_name)
         elif file_extension == ".docx":
             extractor = WordExtractor(self, file_bytes, file_name)
+        elif file_extension == ".pptx":
+            extractor = PPTXExtractor(self, file_bytes, file_name)
         elif file_extension == ".csv":
             extractor = CSVExtractor(file_bytes, file_name, autodetect_encoding=True)
         else:

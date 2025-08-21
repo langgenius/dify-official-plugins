@@ -20,10 +20,10 @@ parameters:
       zh_Hans: file
       pt_BR: file
     human_description:
-      en_US:  the file to be parsed(support pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
-      zh_Hans: 用于解析的文件(支持 pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
-      pt_BR:  o arquivo a ser analisado (suporta pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
-    llm_description: the file to be parsed (support pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
+      en_US:  the file to be parsed (support pdf, xls, xlsx, md, markdown, mdx, htm, html, pptx, docx, csv)
+      zh_Hans: 用于解析的文件 (支持 pdf, xls, xlsx, md, markdown, mdx, htm, html, pptx, docx, csv)
+      pt_BR:  o arquivo a ser analisado (suporta pdf, xls, xlsx, md, markdown, mdx, htm, html, pptx, docx, csv)
+    llm_description: the file to be parsed (support pdf, xls, xlsx, md, markdown, mdx, htm, html, pptx, docx, csv)
     form: llm
 output_schema:
     type: object
