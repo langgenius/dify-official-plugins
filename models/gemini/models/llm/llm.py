@@ -6,6 +6,7 @@ import re
 import tempfile
 import time
 from collections.abc import Generator, Iterator, Sequence
+from contextlib import suppress
 from typing import Optional, Union, Mapping, Any, Tuple, List, TypeVar
 
 import requests
@@ -190,8 +191,17 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     raise ValueError(f"Failed to fetch data from url {file_url} {ex}")
             temp_file.flush()
 
+        pending_mime_type = message_content.mime_type
+
+        with suppress(Exception):
+            if (
+                message_content.type == PromptMessageContentType.DOCUMENT
+                and message_content.format in ["md"]
+            ):
+                pending_mime_type = "text/markdown"
+
         file = genai_client.files.upload(
-            file=temp_file.name, config=types.UploadFileConfig(mime_type=message_content.mime_type)
+            file=temp_file.name, config=types.UploadFileConfig(mime_type=pending_mime_type)
         )
 
         while file.state.name == "PROCESSING":
@@ -277,6 +287,97 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         return prompt_tokens, completion_tokens
 
+    @staticmethod
+    def _set_chat_parameters(
+        *,
+        config: types.GenerateContentConfig,
+        model_parameters: Mapping[str, Any],
+        stop: List[str] | None = None,
+    ) -> None:
+        if schema := model_parameters.get("json_schema"):
+            try:
+                schema = json.loads(schema)
+            except (TypeError, ValueError) as exc:
+                raise InvokeError("Invalid JSON Schema") from exc
+            config.response_schema = schema
+            config.response_mime_type = "application/json"
+
+        if stop:
+            config.stop_sequences = stop
+
+        config.top_p = model_parameters.get("top_p", None)
+        config.top_k = model_parameters.get("top_k", None)
+        config.temperature = model_parameters.get("temperature", None)
+        config.max_output_tokens = model_parameters.get("max_output_tokens", None)
+
+    @staticmethod
+    def _set_thinking_config(
+        *, config: types.GenerateContentConfig, model_parameters: Mapping[str, Any], model_name: str
+    ) -> None:
+        # FIXME: 2025-08-21
+        # This blacklist is a temporary workaround. A more robust solution is needed
+        # to handle how `thinking_config` is applied to different models.
+        #
+        # The final solution should:
+        # 1. Clearly define which models are incompatible with dynamic `thinking_config` changes,
+        #    improving on the current prefix-based blacklist.
+        # 2. Prevent errors for upcoming mixed-mode models (e.g., `nano-banana`) when
+        #    `thinking_config` is set.
+        # 3. Gracefully handle models that either don't support thinking mode switching
+        #    (e.g., `gemini-2.5-pro`) or lack thinking mode entirely (e.g., `gemini-2.0-flash`),
+        #    instead of causing an immediate error.
+        blacklist_thinking_prefix = {"gemini-2.0-flash-preview-image-generation", "nano-banana"}
+        for _prefix in blacklist_thinking_prefix:
+            if model_name.startswith(_prefix):
+                return
+
+        include_thoughts = model_parameters.get("include_thoughts", None)
+        thinking_budget = model_parameters.get("thinking_budget", None)
+        thinking_mode = model_parameters.get("thinking_mode", None)
+
+        # Must be explicitly handled here, where the three states True, False, and None each have specific meanings.
+        if thinking_mode is None:
+            if isinstance(thinking_budget, int) and thinking_budget == 0:
+                thinking_budget = -1
+        elif thinking_mode is False:
+            thinking_budget = 0
+        elif thinking_mode:
+            if (isinstance(thinking_budget, int) and thinking_budget == 0) or (
+                thinking_budget is None
+            ):
+                thinking_budget = -1
+
+        config.thinking_config = types.ThinkingConfig(
+            include_thoughts=include_thoughts, thinking_budget=thinking_budget
+        )
+
+    @staticmethod
+    def _set_response_modalities(*, config: types.GenerateContentConfig, model_name: str) -> None:
+        if model_name in ["gemini-2.0-flash-preview-image-generation", "nano-banana"]:
+            config.response_modalities = [types.Modality.TEXT.value, types.Modality.IMAGE.value]
+        elif model_name in [
+            "models/gemini-2.5-flash-preview-native-audio-dialog",
+            "models/gemini-2.5-flash-exp-native-audio-thinking-dialog",
+            "models/gemini-2.5-flash-live-preview",
+            "models/gemini-2.0-flash-live-001",
+        ]:
+            config.response_modalities = [types.Modality.AUDIO.value]
+
+    def _set_tool_calling(
+        self,
+        *,
+        config: types.GenerateContentConfig,
+        model_parameters: Mapping[str, Any],
+        tools: List[PromptMessageTool] | None = None,
+    ) -> None:
+        config.tools = []
+
+        if model_parameters.get("grounding"):
+            config.tools.append(types.Tool(google_search=types.GoogleSearch()))
+
+        if tools:
+            config.tools.append(self._convert_tools_to_gemini_tool(tools))
+
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
         Validate model credentials
@@ -286,14 +387,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return:
         """
         try:
-            ping_message = UserPromptMessage(content="ping")
-            self._generate(
-                model=model,
-                credentials=credentials,
-                prompt_messages=[ping_message],
-                stream=False,
-                model_parameters={"max_output_tokens": 5},
-            )
+            genai_client = genai.Client(api_key=credentials["google_api_key"])
+            genai_client.models.count_tokens(model=model, contents="ping")
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
@@ -325,21 +420,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         # == ChatConfig == #
 
-        if schema := model_parameters.get("json_schema"):
-            try:
-                schema = json.loads(schema)
-            except (TypeError, ValueError) as exc:
-                raise InvokeError("Invalid JSON Schema") from exc
-            config.response_schema = schema
-            config.response_mime_type = "application/json"
-
-        if stop:
-            config.stop_sequences = stop
-
-        config.top_p = model_parameters.get("top_p", None)
-        config.top_k = model_parameters.get("top_k", None)
-        config.temperature = model_parameters.get("temperature", None)
-        config.max_output_tokens = model_parameters.get("max_output_tokens", None)
+        self._set_chat_parameters(config=config, model_parameters=model_parameters, stop=stop)
 
         # Build contents from prompt messages
         file_server_url_prefix = credentials.get("file_url") or None
@@ -363,33 +444,20 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # However, setting thinking_budget for models that do not support the thinking mode
         # will result in a 400 INVALID_ARGUMENT error.
 
-        include_thoughts = model_parameters.get("include_thoughts", None)
-        thinking_budget = model_parameters.get("thinking_budget", None)
-        thinking_mode = model_parameters.get("thinking_mode", None)
-
-        # Must be explicitly handled here, where the three states True, False, and None each have specific meanings.
-        if thinking_mode is None:
-            if isinstance(thinking_budget, int) and thinking_budget == 0:
-                thinking_budget = -1
-        elif thinking_mode is False:
-            thinking_budget = 0
-        elif thinking_mode:
-            if (isinstance(thinking_budget, int) and thinking_budget == 0) or (
-                thinking_budget is None
-            ):
-                thinking_budget = -1
-
-        config.thinking_config = types.ThinkingConfig(
-            include_thoughts=include_thoughts, thinking_budget=thinking_budget
+        self._set_thinking_config(
+            config=config, model_parameters=model_parameters, model_name=model
         )
+
+        # == ResponseModalitiesConfig == #
+
+        # The Gemini part of the model can output mixed-modal responses,
+        # e.g. generate images, generate audio.
+
+        self._set_response_modalities(config=config, model_name=model)
 
         # == ToolUseConfig == #
 
-        config.tools = []
-        if model_parameters.get("grounding"):
-            config.tools.append(types.Tool(google_search=types.GoogleSearch()))
-        if tools:
-            config.tools.append(self._convert_tools_to_gemini_tool(tools))
+        self._set_tool_calling(config=config, model_parameters=model_parameters, tools=tools)
 
         # == InvokeModel == #
 
