@@ -375,6 +375,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         if model_parameters.get("grounding"):
             config.tools.append(types.Tool(google_search=types.GoogleSearch()))
 
+        if model_parameters.get("url_context"):
+            config.tools.append(types.Tool(url_context=types.UrlContext()))
+
+        if model_parameters.get("code_execution"):
+            config.tools.append(types.Tool(code_execution=types.ToolCodeExecution()))
+
         if tools:
             config.tools.append(self._convert_tools_to_gemini_tool(tools))
 
@@ -392,6 +398,75 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
+    @staticmethod
+    def _validate_feature_compatibility(
+        model_parameters: Mapping[str, Any], tools: Optional[list[PromptMessageTool]] = None
+    ) -> dict[str, Any]:
+        """
+        Validate that the requested features are compatible with each other.
+
+        Feature compatibility rules:
+        1. Structured output (json_schema) is exclusive - cannot be used with any other feature
+        2. url_context and grounding can be used together
+        3. url_context and code_execution cannot be used together
+        4. grounding and code_execution can be used together
+        5. When custom tools (function calling) are provided, automatically disable
+           tool-use features (grounding, url_context, code_execution) to avoid conflicts
+
+        :param model_parameters: Model parameters containing feature flags
+        :param tools: Custom tools defined by the user
+        :return: Adjusted model parameters dictionary
+        :raises InvokeError: If incompatible features are enabled
+        """
+        # Create a mutable copy of model_parameters
+        adjusted_params = dict(model_parameters)
+
+        # Rule 5: When custom tools are provided, disable tool-use features
+        # to prevent "Tool use with function calling is unsupported" error
+        if tools:
+            if adjusted_params.get("grounding"):
+                logging.debug("Disabling grounding due to custom tools presence")
+                adjusted_params["grounding"] = False
+            if adjusted_params.get("url_context"):
+                logging.debug("Disabling url_context due to custom tools presence")
+                adjusted_params["url_context"] = False
+            if adjusted_params.get("code_execution"):
+                logging.debug("Disabling code_execution due to custom tools presence")
+                adjusted_params["code_execution"] = False
+
+        # Extract feature flags for validation
+        features = {
+            "json_schema": bool(adjusted_params.get("json_schema")),
+            "grounding": bool(adjusted_params.get("grounding")),
+            "url_context": bool(adjusted_params.get("url_context")),
+            "code_execution": bool(adjusted_params.get("code_execution")),
+            "tools": bool(tools),
+        }
+
+        # Get list of enabled features for logging
+        enabled_features = [name for name, enabled in features.items() if enabled]
+
+        # Early return if no features are enabled
+        if not enabled_features:
+            return adjusted_params
+
+        # Rule 1: json_schema is mutually exclusive with all other features
+        if features["json_schema"] and len(enabled_features) > 1:
+            other_features = [f for f in enabled_features if f != "json_schema"]
+            raise InvokeError(
+                f"Structured output (json_schema) cannot be used with: {', '.join(other_features)}"
+            )
+
+        # Rule 3: url_context and code_execution cannot be used together
+        if features["url_context"] and features["code_execution"]:
+            raise InvokeError("url_context and code_execution cannot be enabled simultaneously")
+
+        # Log enabled features for debugging
+        if enabled_features:
+            logging.debug(f"Enabled Gemini features: {', '.join(enabled_features)}")
+
+        return adjusted_params
+
     def _generate(
         self,
         model: str,
@@ -403,15 +478,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator[LLMResultChunk]]:
-        conditions: list[bool] = [
-            bool(model_parameters.get("json_schema")),
-            bool(model_parameters.get("grounding")),
-            bool(tools),
-        ]
-        if sum(conditions) >= 2:
-            raise InvokeError(
-                "gemini not support use multiple features at same time: json_schema, grounding, tools+knowledge"
-            )
+
+        # Validate and adjust feature compatibility
+        model_parameters = self._validate_feature_compatibility(model_parameters, tools)
 
         # == InitConfig == #
 
@@ -457,6 +526,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         # == ToolUseConfig == #
 
+        # Must be executed after `_validate_feature_compatibility`
         self._set_tool_calling(config=config, model_parameters=model_parameters, tools=tools)
 
         # == InvokeModel == #
@@ -667,8 +737,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: llm response chunk generator result
         """
         index = -1
-        prompt_tokens = 0
-        completion_tokens = 0
         self.is_thinking = False
 
         for chunk in response:
