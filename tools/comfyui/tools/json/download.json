@@ -1,14 +1,54 @@
 {
-  "1": {
-    "inputs": {
-      "url": "",
-      "save_to": "",
-      "filename": "",
-      "token": ""
-    },
-    "class_type": "AssetDownloader",
-    "_meta": {
-      "title": "Requires Asset"
+  "id": "7cb6261d-3b03-4171-bbd1-a4b256b42404",
+  "revision": 0,
+  "last_node_id": 20,
+  "last_link_id": 19,
+  "nodes": [
+    {
+      "id": 20,
+      "type": "AssetDownloader",
+      "pos": [
+        484.7151184082031,
+        474.1998291015625
+      ],
+      "size": [
+        270,
+        130
+      ],
+      "flags": {},
+      "order": 0,
+      "mode": 0,
+      "inputs": [],
+      "outputs": [],
+      "properties": {
+        "cnr_id": "comfy-asset-downloader",
+        "ver": "40c8468aae66740733b3ee456979b4b655b0e764",
+        "Node name for S&R": "AssetDownloader"
+      },
+      "widgets_values": [
+        "https://huggingface.co/ByteDance/SDXL-Lightning/resolve/main/sdxl_lightning_4step.safetensors",
+        "checkpoints",
+        "sdxl_lightning_4step.safetensors",
+        ""
+      ]
     }
-  }
+  ],
+  "links": [],
+  "groups": [],
+  "config": {},
+  "extra": {
+    "ds": {
+      "scale": 0.7645513519917131,
+      "offset": [
+        88.1698747625766,
+        -55.653706091197435
+      ]
+    },
+    "frontendVersion": "1.23.4",
+    "VHS_latentpreview": false,
+    "VHS_latentpreviewrate": 0,
+    "VHS_MetadataImage": true,
+    "VHS_KeepIntermediate": true
+  },
+  "version": 0.4
 }

@@ -1,0 +1,25 @@
+description:
+  human:
+    en_US: Converts workflow to API ready format.
+  llm: Converts workflow to API ready format.
+extra:
+  python:
+    source: tools/convert_to_api.py
+identity:
+  author: yt-koike
+  label:
+    en_US: Convert2API
+  name: convert_to_api
+
+parameters:
+  - name: workflow_json
+    form: llm
+    human_description:
+      en_US: exported from ComfyUI workflow
+      zh_Hans: 从ComfyUI的工作流中导出
+      ja_JP: ComfyUI よりエクスポートされたワークフロー
+    label:
+      en_US: Workflow JSON
+      ja_JP: ワークフロー JSON
+    required: true
+    type: string
