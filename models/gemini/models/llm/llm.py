@@ -6,6 +6,7 @@ import re
 import tempfile
 import time
 from collections.abc import Generator, Iterator, Sequence
+from contextlib import suppress
 from typing import Optional, Union, Mapping, Any, Tuple, List, TypeVar
 
 import requests
@@ -190,8 +191,17 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     raise ValueError(f"Failed to fetch data from url {file_url} {ex}")
             temp_file.flush()
 
+        pending_mime_type = message_content.mime_type
+
+        with suppress(Exception):
+            if (
+                message_content.type == PromptMessageContentType.DOCUMENT
+                and message_content.format in ["md"]
+            ):
+                pending_mime_type = "text/markdown"
+
         file = genai_client.files.upload(
-            file=temp_file.name, config=types.UploadFileConfig(mime_type=message_content.mime_type)
+            file=temp_file.name, config=types.UploadFileConfig(mime_type=pending_mime_type)
         )
 
         while file.state.name == "PROCESSING":
