@@ -20,20 +20,6 @@ class ModelType(Enum):
 
 
 class ComfyuiImg2Img(Tool):
-    def get_civitai_api_key(self) -> str:
-        civitai_api_key = self.runtime.credentials.get("civitai_api_key")
-        if civitai_api_key is None:
-            raise ToolProviderCredentialValidationError(
-                "Please input civitai_api_key")
-        return civitai_api_key
-
-    def get_hf_key(self) -> str:
-        hf_api_key = self.runtime.credentials.get("hf_api_key")
-        if hf_api_key is None:
-            raise ToolProviderCredentialValidationError(
-                "Please input hf_api_key")
-        return hf_api_key
-
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
@@ -53,10 +39,10 @@ class ComfyuiImg2Img(Tool):
 
         model_raw = tool_parameters.get("model", "")
         if model_raw == "":
-            model = self.model_manager.download_model(
-                "https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive/resolve/main/v1-5-pruned-emaonly-fp16.safetensors",
+            model = self.model_manager.download_hugging_face(
+                "Comfy-Org/stable-diffusion-v1-5-archive",
+                "v1-5-pruned-emaonly-fp16.safetensors",
                 "checkpoints",
-                token=self.get_hf_key(),
             )
         else:
             model = self.model_manager.decode_model_name(
