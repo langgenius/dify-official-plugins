@@ -9,33 +9,19 @@ description:
   en_US: Access Azure Blob Storage containers and blobs with support for multiple authentication methods
   zh_Hans: 访问 Azure Blob 存储容器和 Blob，支持多种认证方式
 
-parameters:
-
 output_schema:
   type: object
   properties:
     result:
-      type: object
-      properties:
-        file_name:
-          type: string
-          description: blob file name
-        container_name:
-          type: string
-          description: container name
-        blob_path:
-          type: string
-          description: blob path in container
-        size:
-          type: integer
-          description: blob size in bytes
-        content_type:
-          type: string
-          description: blob content type
-        last_modified:
-          type: string
-          description: last modified timestamp
+      $ref: "#/$defs/file"
 
 extra:
   python:
     source: datasources/azure_blob.py
+
+
+
+
+
+
+

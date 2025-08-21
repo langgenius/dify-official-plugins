@@ -370,24 +370,8 @@ class AzureBlobDatasourceProvider(DatasourceProvider):
             raise ValueError("刷新令牌所需的凭证不完整")
         
         # 这里需要获取 client_secret，但不能从用户凭证中获取
-        # 可能需要从系统配置或其他安全存储中获取
-        # 暂时抛出异常，提示需要重新授权
         raise ValueError("访问令牌已过期，请重新进行 OAuth 授权")
-        
-        # 如果有办法安全获取 client_secret，可以实现以下逻辑：
-        """
-        token_url = f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
-        
-        token_data = {
-            "client_id": client_id,
-            "client_secret": client_secret,  # 需要安全获取
-            "refresh_token": refresh_token,
-            "grant_type": "refresh_token",
-            "scope": "https://storage.azure.com/user_impersonation"
-        }
-        
-        # ... 实现令牌刷新逻辑
-        """
+
 
     def _oauth_refresh_credentials(self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]) -> DatasourceOAuthCredentials:
         """OAuth 刷新凭证方法 - Dify 框架要求的接口"""
@@ -436,8 +420,7 @@ class AzureBlobDatasourceProvider(DatasourceProvider):
             if not new_access_token:
                 raise DatasourceOAuthError("未能获取新的访问令牌")
             
-            # 返回更新后的凭证（不包含 client_secret）
-            # 保持与 _oauth_get_credentials 相同的结构
+
             return DatasourceOAuthCredentials(
                 credentials={
                     "access_token": new_access_token,

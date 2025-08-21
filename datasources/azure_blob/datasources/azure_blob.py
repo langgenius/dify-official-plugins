@@ -1,10 +1,16 @@
 from collections.abc import Generator
 from typing import Dict, List, Optional, Any
 import mimetypes
+import os
+import logging
 from datetime import datetime
+import requests
 from azure.storage.blob import BlobServiceClient, ContainerClient
 from azure.core.exceptions import AzureError, ResourceNotFoundError
-import os
+
+# 设置日志
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
 
 from dify_plugin.entities.datasource import (
     DatasourceMessage,
@@ -18,7 +24,11 @@ from dify_plugin.interfaces.datasource.online_drive import OnlineDriveDatasource
 
 
 class AzureBlobDataSource(OnlineDriveDatasource):
-        
+    
+    def invoke(self, request: Any) -> Generator[DatasourceMessage, None, None]:
+        """仅使用 OnlineDrive 标准浏览/下载流程。"""
+        yield from super().invoke(request)
+
     def _get_blob_service_client(self) -> BlobServiceClient:
         """获取 Blob 服务客户端"""
         if not hasattr(self, '_blob_service_client') or self._blob_service_client is None:
@@ -201,12 +211,6 @@ class AzureBlobDataSource(OnlineDriveDatasource):
         
         try:
             container_client = blob_service_client.get_container_client(container_name)
-            
-            # 只有当明确要浏览目录时才在前缀后加 /
-            # 这里保持原始前缀，让用户明确指定是否要浏览目录
-            
-            
-            # 使用 walk_blobs 以层级方式列出（等价于 S3 的 Delimiter="/")
             items_iter = container_client.walk_blobs(
                 name_starts_with=prefix if prefix else None
             )
@@ -285,7 +289,6 @@ class AzureBlobDataSource(OnlineDriveDatasource):
                             "metadata": metadata_val,
                         }
                     ))
-            
             # 检查是否有更多页面
             new_continuation_token = getattr(page, 'continuation_token', None)
             is_truncated = new_continuation_token is not None
@@ -326,6 +329,7 @@ class AzureBlobDataSource(OnlineDriveDatasource):
         blob_path = parts[1]
         
         try:
+            logger.info(f"[Azure Blob] Starting download process for file: {file_id}")
             blob_service_client = self._get_blob_service_client()
             blob_client = blob_service_client.get_blob_client(
                 container=container_name, 
@@ -334,45 +338,138 @@ class AzureBlobDataSource(OnlineDriveDatasource):
             
             # 获取 Blob 属性
             blob_properties = blob_client.get_blob_properties()
+            logger.info(f"[Azure Blob] Blob properties retrieved: size={blob_properties.size}, container={container_name}")
             
             # 检查 Blob 层级，如果是归档层需要特殊处理
             blob_tier = getattr(blob_properties, 'blob_tier', '')
             if blob_tier and blob_tier.lower() == 'archive':
+                logger.error(f"[Azure Blob] Blob is in archive tier: {blob_path}")
                 raise ValueError(f"Blob '{blob_path}' is in Archive tier and needs to be rehydrated before download")
             
-            # 下载 Blob 内容
+            # 验证文件是否存在且有效
             blob_size = blob_properties.size
-            content_type = self._get_content_type(blob_path, blob_properties.content_settings)
+            if blob_size is None or blob_size < 0:
+                raise ValueError(f"Invalid blob size: {blob_size}")
             
-            # 对于大文件，使用流式下载
-            if blob_size > 50 * 1024 * 1024:  # 50MB
-                yield from self._download_large_blob(blob_client, blob_path, content_type, blob_size)
+            content_type = self._get_content_type(blob_path, blob_properties.content_settings)
+            logger.info(f"[Azure Blob] Blob metadata: size={blob_size}, type={content_type}, tier={blob_tier}")
+            
+            # 优先使用 SAS 直连 HTTP 下载（避免 SDK 受限场景）
+            credentials = self.runtime.credentials
+            auth_method = (credentials or {}).get("auth_method", "account_key")
+            if auth_method == "sas_token":
+                logger.info("[Azure Blob] Using SAS HTTP download path")
+                yield from self._download_via_sas_http(container_name, blob_path)
             else:
-                yield from self._download_small_blob(blob_client, blob_path, content_type, blob_size)
+                # 对于大文件，使用流式下载（SDK）
+                if blob_size > 50 * 1024 * 1024:  # 50MB
+                    logger.info(f"[Azure Blob] Using large file download for {blob_size} bytes")
+                    yield from self._download_large_blob(blob_client, blob_path, content_type, blob_size)
+                else:
+                    logger.info(f"[Azure Blob] Using small file download for {blob_size} bytes")
+                    yield from self._download_small_blob(blob_client, blob_path, content_type, blob_size)
+                
+            logger.info(f"[Azure Blob] Download process completed successfully for: {file_id}")
                 
         except ResourceNotFoundError:
+            logger.error(f"[Azure Blob] Blob not found: {blob_path} in container {container_name}")
             raise ValueError(f"Blob '{blob_path}' not found in container '{container_name}'")
         except AzureError as e:
+            logger.error(f"[Azure Blob] Azure error during download: {str(e)}")
             raise ValueError(f"Failed to download blob '{blob_path}': {str(e)}")
         except Exception as e:
+            logger.error(f"[Azure Blob] Unexpected error during download: {str(e)}")
             raise ValueError(f"Error downloading file: {str(e)}")
+
+    def _download_via_sas_http(self, container_name: str, blob_path: str) -> Generator[DatasourceMessage, None, None]:
+        """使用 SAS URL 通过 HTTP 下载（不依赖 SDK 的数据流）。"""
+        credentials = self.runtime.credentials or {}
+        account = credentials.get("account_name")
+        suffix = credentials.get("endpoint_suffix", "core.windows.net")
+        sas = credentials.get("sas_token") or ""
+        if not account:
+            raise ValueError("account_name not configured")
+        if not sas:
+            raise ValueError("sas_token not configured for SAS HTTP download")
+        if not sas.startswith("?"):
+            sas = "?" + sas
+        url = f"https://{account}.blob.{suffix}/{container_name}/{blob_path}{sas}"
+
+        with requests.get(url, stream=True, timeout=60) as resp:
+            resp.raise_for_status()
+            content_type = resp.headers.get("Content-Type", "application/octet-stream")
+            file_name = os.path.basename(blob_path)
+            content_length_header = resp.headers.get("Content-Length")
+            try:
+                content_length = int(content_length_header) if content_length_header else 0
+            except Exception:
+                content_length = 0
+
+            # 小文件一次性返回
+            if 0 < content_length <= 50 * 1024 * 1024:
+                data = resp.content
+                yield self.create_blob_message(data, meta={
+                    "file_name": file_name,
+                    "mime_type": content_type,
+                    "size": len(data),
+                })
+                return
+
+            # 大文件分块返回
+            chunk_size = 8 * 1024 * 1024
+            buffer = bytearray()
+            for chunk in resp.iter_content(chunk_size=chunk_size):
+                if not chunk:
+                    continue
+                buffer.extend(chunk)
+                if len(buffer) >= 100 * 1024 * 1024:  # 100MB 批量输出
+                    yield self.create_blob_message(bytes(buffer), meta={
+                        "file_name": file_name,
+                        "mime_type": content_type,
+                        "is_partial": True,
+                    })
+                    buffer = bytearray()
+
+            if buffer:
+                yield self.create_blob_message(bytes(buffer), meta={
+                    "file_name": file_name,
+                    "mime_type": content_type,
+                    "is_partial": False,
+                })
     
     def _download_small_blob(self, blob_client, blob_path: str, content_type: str, 
                            blob_size: int) -> Generator[DatasourceMessage, None, None]:
         """下载小文件"""
         try:
+            logger.info(f"[Azure Blob] Starting download of small file: {blob_path}")
             download_stream = blob_client.download_blob()
             content = download_stream.readall()
             
+            # 验证下载是否成功
+            actual_size = len(content)
+            if actual_size != blob_size:
+                logger.warning(f"[Azure Blob] Size mismatch for {blob_path}: expected {blob_size}, got {actual_size}")
+            else:
+                logger.info(f"[Azure Blob] Successfully downloaded {blob_path}: {actual_size} bytes")
+            
+            # 验证内容不为空
+            if not content:
+                raise ValueError(f"Downloaded content is empty for blob: {blob_path}")
+            
+            # 提取文件名和 MIME 类型
+            file_name = os.path.basename(blob_path)
+            
+            logger.info(f"[Azure Blob] Creating blob message for {file_name} with {actual_size} bytes")
             yield self.create_blob_message(
                 blob=content,
                 meta={
-                    "file_name": os.path.basename(blob_path),
-                    "blob_path": blob_path,
-                    "content_type": content_type,
-                    "size": blob_size
+                    "file_name": file_name,
+                    "mime_type": content_type,
+                    "size": actual_size,
+                    "download_success": True
                 }
             )
+            logger.info(f"[Azure Blob] Successfully yielded blob message for {file_name}")
             
         except Exception as e:
             raise ValueError(f"Failed to download blob content: {str(e)}")
@@ -381,8 +478,13 @@ class AzureBlobDataSource(OnlineDriveDatasource):
                            blob_size: int) -> Generator[DatasourceMessage, None, None]:
         """分块下载大文件"""
         try:
+            logger.info(f"[Azure Blob] Starting download of large file: {blob_path} ({blob_size} bytes)")
+            # 提取文件名
+            file_name = os.path.basename(blob_path)
+            
             chunk_size = 8 * 1024 * 1024  # 8MB chunks
             downloaded_content = bytearray()
+            total_downloaded = 0
             
             # 分块下载
             for i in range(0, blob_size, chunk_size):
@@ -391,30 +493,39 @@ class AzureBlobDataSource(OnlineDriveDatasource):
                 download_stream = blob_client.download_blob(offset=i, length=end_range - i + 1)
                 chunk = download_stream.readall()
                 downloaded_content.extend(chunk)
+                total_downloaded += len(chunk)
+                
+                logger.debug(f"[Azure Blob] Downloaded chunk {i//chunk_size + 1}: {len(chunk)} bytes (total: {total_downloaded}/{blob_size})")
                 
                 # 如果累积的内容过大，可以分批yield
                 if len(downloaded_content) > 100 * 1024 * 1024:  # 100MB
                     yield self.create_blob_message(
                         blob=bytes(downloaded_content),
                         meta={
-                            "file_name": os.path.basename(blob_path),
-                            "blob_path": blob_path,
-                            "content_type": content_type,
-                            "size": blob_size,
+                            "file_name": file_name,
+                            "mime_type": content_type,
+                            "size": len(downloaded_content),
                             "is_partial": True
                         }
                     )
                     downloaded_content = bytearray()
+            
+            # 验证下载完整性
+            if total_downloaded != blob_size:
+                logger.error(f"[Azure Blob] Download incomplete: expected {blob_size}, got {total_downloaded}")
+                raise ValueError(f"Download incomplete: expected {blob_size}, got {total_downloaded}")
+            
+            logger.info(f"[Azure Blob] Large file download completed: {total_downloaded} bytes")
             
             # 输出剩余内容
             if downloaded_content:
                 yield self.create_blob_message(
                     blob=bytes(downloaded_content),
                     meta={
-                        "file_name": os.path.basename(blob_path),
-                        "blob_path": blob_path,
-                        "content_type": content_type,
-                        "size": blob_size,
+                        "file_name": file_name,
+                        "mime_type": content_type,
+                        "size": len(downloaded_content),
+                        "download_success": True,
                         "is_partial": False
                     }
                 )
