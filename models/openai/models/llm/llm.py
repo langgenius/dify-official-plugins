@@ -41,6 +41,7 @@ from dify_plugin.entities.model.llm import (
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     AudioPromptMessageContent,
+    DeveloperPromptMessage,
     ImagePromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
@@ -64,6 +65,8 @@ if you are not sure about the structure.
 
 # thinking models compatibility for max_completion_tokens (all starting with "o" or "gpt-5")
 THINKING_SERIES_COMPATIBILITY = ("o", "gpt-5")
+NOT_SUPPORT_SYSTEM_DEVELOPER_PROMPT_MODELS = {"o1-mini"}
+
 
 class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
     """
@@ -731,6 +734,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         # clear illegal prompt messages
         prompt_messages = self._clear_illegal_prompt_messages(model, prompt_messages)
 
+        # preprocess system messages for model-specific role requirements
+        prompt_messages = self._preprocess_system_messages(prompt_messages, model)
+
         # o1, o3, o4 compatibility
         block_as_stream = False
         if model.startswith(THINKING_SERIES_COMPATIBILITY):
@@ -1305,6 +1311,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         elif isinstance(message, SystemPromptMessage):
             message = cast(SystemPromptMessage, message)
             message_dict = {"role": "system", "content": message.content}
+        elif isinstance(message, DeveloperPromptMessage):
+            message = cast(DeveloperPromptMessage, message)
+            message_dict = {"role": "developer", "content": message.content}
         elif isinstance(message, ToolPromptMessage):
             message = cast(ToolPromptMessage, message)
             message_dict = {
@@ -1519,3 +1528,132 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         )
 
         return entity
+
+    def _preprocess_system_messages(
+        self, prompt_messages: list[PromptMessage], model_name: str
+    ) -> list[PromptMessage]:
+        """
+        Preprocess system messages based on model requirements.
+
+        :param prompt_messages: original prompt messages
+        :param model_name: model name
+        :return: processed prompt messages
+        """
+        # Handle models that don't support system/developer prompts at all
+        if model_name in NOT_SUPPORT_SYSTEM_DEVELOPER_PROMPT_MODELS:
+            return self._merge_system_to_user_messages(prompt_messages)
+
+        # Handle models that don't support thinking series
+        if not model_name.startswith(THINKING_SERIES_COMPATIBILITY):
+            return prompt_messages
+
+        # Convert SystemPromptMessage to DeveloperPromptMessage for thinking series models
+        return self._convert_system_to_developer_messages(prompt_messages)
+
+    def _extract_text_content_from_message(
+        self, message: SystemPromptMessage
+    ) -> str | None:
+        """
+        Extract text content from a system message, handling different content types.
+
+        :param message: system prompt message
+        :return: extracted text content or None
+        """
+        if isinstance(message.content, str):
+            return message.content
+        elif isinstance(message.content, list):
+            text_contents = []
+            for content in message.content:
+                if (
+                    hasattr(content, "data")
+                    and hasattr(content, "type")
+                    and content.type == "text"
+                ):
+                    text_contents.append(content.data)
+            return " ".join(text_contents) if text_contents else None
+        return None
+
+    def _merge_system_to_user_messages(
+        self, prompt_messages: list[PromptMessage]
+    ) -> list[PromptMessage]:
+        """
+        Merge system prompt contents into user messages for models that don't support system prompts.
+
+        :param prompt_messages: original prompt messages
+        :return: processed prompt messages with system content merged into user messages
+        """
+        processed_messages: list[PromptMessage] = []
+        system_contents: list[str] = []
+
+        # Collect system prompt contents and filter out system messages
+        for message in prompt_messages:
+            if isinstance(message, SystemPromptMessage):
+                content = self._extract_text_content_from_message(message)
+                if content:
+                    system_contents.append(content)
+            else:
+                processed_messages.append(message)
+
+        # If we have system contents to merge
+        if system_contents:
+            merged_system_content = "\n\n".join(system_contents)
+            self._merge_content_to_last_user_message(
+                processed_messages, merged_system_content
+            )
+
+        return processed_messages
+
+    def _merge_content_to_last_user_message(
+        self, messages: list[PromptMessage], content_to_merge: str
+    ) -> None:
+        """
+        Merge content into the last user message, or create a new user message if none exists.
+
+        :param messages: list of messages to modify in place
+        :param content_to_merge: content to merge into user message
+        """
+        # Find the last user message
+        last_user_index = -1
+        for i in range(len(messages) - 1, -1, -1):
+            if isinstance(messages[i], UserPromptMessage):
+                last_user_index = i
+                break
+
+        if last_user_index >= 0:
+            # Merge content into the last user message
+            last_user_message = messages[last_user_index]
+            if isinstance(last_user_message.content, str):
+                new_content = f"{content_to_merge}\n\n{last_user_message.content}"
+            else:
+                new_content = f"{content_to_merge}\n\n{last_user_message.content!s}"
+            messages[last_user_index] = UserPromptMessage(content=new_content)
+        else:
+            # No user message found, append a new user message with system content
+            messages.append(UserPromptMessage(content=content_to_merge))
+
+    def _convert_system_to_developer_messages(
+        self, prompt_messages: list[PromptMessage]
+    ) -> list[PromptMessage]:
+        """
+        Convert SystemPromptMessage to DeveloperPromptMessage for thinking series models.
+
+        :param prompt_messages: original prompt messages
+        :return: processed prompt messages with system messages converted to developer messages
+        """
+        processed_messages: list[PromptMessage] = []
+        for message in prompt_messages:
+            if isinstance(message, SystemPromptMessage):
+                processed_messages.append(
+                    DeveloperPromptMessage(content=message.content, name=message.name)
+                )
+            else:
+                processed_messages.append(message)
+        return processed_messages
+
+    def convert_system_prompt_to_developer_prompt(
+        self, system_prompt: SystemPromptMessage
+    ) -> DeveloperPromptMessage:
+        """
+        Convert system prompt to developer prompt
+        """
+        return DeveloperPromptMessage(content=system_prompt.content)
