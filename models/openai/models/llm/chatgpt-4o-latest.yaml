@@ -4,9 +4,6 @@ label:
   en_US: chatgpt-4o-latest
 model_type: llm
 features:
-  - multi-tool-call
-  - agent-thought
-  - stream-tool-call
   - vision
 model_properties:
   mode: chat
