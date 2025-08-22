@@ -1,0 +1,81 @@
+identity:
+  author: langgenius
+  name: dropbox
+  label:
+    en_US: Dropbox
+    zh_Hans: Dropbox
+  description:
+    en_US: Dropbox Datasource
+    zh_Hans: Dropbox 数据源
+  icon: icon.svg
+provider_type: online_drive
+help:
+  title:
+    en_US: Get your credentials from Dropbox App Console
+    zh_Hans: 从 Dropbox 应用控制台获取您的凭证
+  url:
+    en_US: https://www.dropbox.com/developers/apps
+    zh_Hans: https://www.dropbox.com/developers/apps
+oauth_schema:
+  client_schema:
+    - name: client_id
+      type: secret-input
+      required: true
+      label:
+        zh_Hans: Client ID
+        en_US: Client ID
+      placeholder:
+        en_US: Please input your Client ID
+        zh_Hans: 请输入你的 Client ID
+      help:
+        en_US: Client ID is used to authenticate requests to the Dropbox API.
+        zh_Hans: Client ID 用于认证请求到 Dropbox API。
+      url: https://www.dropbox.com/developers/apps
+    - name: client_secret
+      type: secret-input
+      required: true
+      label:
+        zh_Hans: Client Secret
+        en_US: Client Secret
+      placeholder:
+        en_US: Please input your Client Secret
+        zh_Hans: 请输入你的 Client Secret
+      help:
+        zh_Hans: 从 Dropbox 应用控制台获取您的客户端密钥
+        en_US: Get your client secret from the Dropbox App Console
+      url: https://www.dropbox.com/developers/apps
+  credentials_schema:
+    - name: access_token
+      type: secret-input
+      label:
+        zh_Hans: Access Token
+        en_US: Access Token
+    - name: client_id
+      type: secret-input
+      label:
+        zh_Hans: Client ID
+        en_US: Client ID
+    - name: client_secret
+      type: secret-input
+      label:
+        zh_Hans: Client Secret
+        en_US: Client Secret
+credentials_schema:
+  - name: access_token
+    type: secret-input
+    required: true
+    label:
+      en_US: Access Token
+      zh_Hans: 访问令牌
+    placeholder:
+      en_US: Please input your Dropbox access token
+      zh_Hans: 请输入您的 Dropbox 访问令牌
+    help:
+      en_US: Get your access token from Dropbox App Console
+      zh_Hans: 从 Dropbox 应用控制台获取您的访问令牌
+    url: https://www.dropbox.com/developers/apps
+datasources:
+  - datasources/dropbox.yaml
+extra:
+  python:
+    source: provider/dropbox.py
