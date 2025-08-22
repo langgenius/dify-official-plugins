@@ -1,0 +1,110 @@
+identity:
+  author: langgenius
+  name: gitlab
+  label:
+    en_US: GitLab
+    zh_Hans: GitLab
+  description:
+    en_US: GitLab Project Datasource - Access projects, issues, merge requests, and files
+    zh_Hans: GitLab 项目数据源 - 访问项目、问题、合并请求和文件
+  icon: icon.svg
+provider_type: online_document
+help:
+  title:
+    en_US: Get your GitLab credentials
+    zh_Hans: 获取您的 GitLab 凭证
+  url:
+    en_US: https://gitlab.com/-/profile/applications
+    zh_Hans: https://gitlab.com/-/profile/applications
+oauth_schema:
+  client_schema:
+    - name: client_id
+      type: secret-input
+      label:
+        zh_Hans: Client ID
+        en_US: Client ID
+    - name: client_secret
+      type: secret-input
+      label:
+        zh_Hans: Client Secret
+        en_US: Client Secret
+      help:
+        zh_Hans: 从 GitLab Applications 页面获取您的客户端凭证
+        en_US: Get your client credentials from GitLab Applications page
+      url: https://gitlab.com/-/profile/applications
+    - name: gitlab_url
+      type: text-input
+      label:
+        zh_Hans: GitLab URL
+        en_US: GitLab URL
+      placeholder:
+        zh_Hans: https://gitlab.com
+        en_US: https://gitlab.com
+      default: https://gitlab.com
+      help:
+        zh_Hans: 您的 GitLab 实例 URL（对于 gitlab.com 使用默认值）
+        en_US: Your GitLab instance URL (use default for gitlab.com)
+  credentials_schema:
+    - name: access_token
+      type: secret-input
+      label:
+        zh_Hans: Access Token
+        en_US: Access Token
+    - name: refresh_token
+      type: secret-input
+      label:
+        zh_Hans: Refresh Token
+        en_US: Refresh Token
+    - name: client_id
+      type: secret-input
+      label:
+        zh_Hans: Client ID
+        en_US: Client ID
+    - name: client_secret
+      type: secret-input
+      label:
+        zh_Hans: Client Secret
+        en_US: Client Secret
+    - name: gitlab_url
+      type: text-input
+      label:
+        zh_Hans: GitLab URL
+        en_US: GitLab URL
+    - name: user_login
+      type: secret-input
+      label:
+        zh_Hans: User Login
+        en_US: User Login
+credentials_schema:
+  - name: access_token
+    type: secret-input
+    required: true
+    label:
+      en_US: Personal Access Token
+      zh_Hans: 个人访问令牌
+    placeholder:
+      en_US: glpat-xxxxxxxxxxxxxxxxxxxx
+      zh_Hans: glpat-xxxxxxxxxxxxxxxxxxxx
+    help:
+      en_US: Create a personal access token in GitLab Settings > Access Tokens
+      zh_Hans: 在 GitLab 设置 > 访问令牌中创建个人访问令牌
+    url: https://gitlab.com/-/profile/personal_access_tokens
+  - name: gitlab_url
+    type: text-input
+    required: false
+    label:
+      en_US: GitLab URL
+      zh_Hans: GitLab URL
+    placeholder:
+      en_US: https://gitlab.com
+      zh_Hans: https://gitlab.com
+    default: https://gitlab.com
+    help:
+      en_US: Your GitLab instance URL (use default for gitlab.com)
+      zh_Hans: 您的 GitLab 实例 URL（对于 gitlab.com 使用默认值）
+datasources:
+  - datasources/gitlab.yaml
+extra:
+  python:
+    source: provider/gitlab.py
+
