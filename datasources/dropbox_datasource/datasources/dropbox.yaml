@@ -1,0 +1,20 @@
+identity:
+  name: dropbox
+  author: langgenius
+  label:
+    en_US: Dropbox
+    zh_Hans: Dropbox
+description:
+  en_US: Get files from your Dropbox
+  zh_Hans: 从您的 Dropbox 中获取文件
+
+parameters:
+
+output_schema:
+    type: object
+    properties:
+      result:
+        $ref: "#/$defs/file"
+extra:
+  python:
+    source: datasources/dropbox.py
