@@ -326,7 +326,7 @@ model_credential_schema:
       show_on:
         - value: speech2text
           variable: __model_type
-      value: doubao-seed-asr      
+      value: doubao-seed-asr
     - label:
         en_US: Doubao-embedding
       show_on:
@@ -414,7 +414,7 @@ models:
     - models/text_embedding/*.yaml
   speech2text:
     predefined:
-      - models/speech2text/*.yaml    
+      - models/speech2text/*.yaml
 provider: volcengine_maas
 supported_model_types:
 - llm

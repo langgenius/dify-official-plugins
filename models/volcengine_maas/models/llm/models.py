@@ -1,5 +1,5 @@
-from typing import Optional
 from decimal import Decimal
+from typing import Optional
 
 from dify_plugin.entities.model import (
     ModelFeature,
