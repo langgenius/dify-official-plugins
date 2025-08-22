@@ -515,9 +515,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             )
                             image_url = message_content.data
                             if message_content.data.startswith("data:"):
-                                image_url = self._save_base64_image_to_file(
-                                    message_content.data
-                                )
+                                image_url = self._save_base64_to_file(message_content.data)
                             sub_message_dict = {"image": image_url}
                             user_messages.append(sub_message_dict)
                         elif message_content.type == PromptMessageContentType.VIDEO:
@@ -526,9 +524,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             )
                             video_url = message_content.data
                             if message_content.data.startswith("data:"):
-                                raise InvokeError(
-                                    "not support base64, please set MULTIMODAL_SEND_FORMAT to url"
-                                )
+                                video_url = self._save_base64_to_file(message_content.data)
                             sub_message_dict = {"video": video_url}
                             user_messages.append(sub_message_dict)
                         elif message_content.type == PromptMessageContentType.DOCUMENT:
@@ -572,17 +568,17 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 raise ValueError(f"Got unknown type {prompt_message}")
         return tongyi_messages
 
-    def _save_base64_image_to_file(self, base64_image: str) -> str:
+    def _save_base64_to_file(self, base64_data: str) -> str:
         """
-        Save base64 image to file
+        Save base64 data to file
         'data:{upload_file.mime_type};base64,{encoded_string}'
-
-        :param base64_image: base64 image data
-        :return: image file path
+        
+        :param base64_data: base64 data
+        :return: file path
         """
         (mime_type, encoded_string) = (
-            base64_image.split(",")[0].split(";")[0].split(":")[1],
-            base64_image.split(",")[1],
+            base64_data.split(",")[0].split(";")[0].split(":")[1],
+            base64_data.split(",")[1],
         )
         temp_dir = tempfile.gettempdir()
         file_path = os.path.join(temp_dir, f"{uuid.uuid4()}.{mime_type.split('/')[1]}")
