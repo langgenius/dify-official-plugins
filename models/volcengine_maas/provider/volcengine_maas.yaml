@@ -112,8 +112,14 @@ model_credential_schema:
       zh_Hans: 基础模型
     options:
     - label:
-        en_US: Kimi-K2
-      value: Kimi-K2
+        en_US: DeepSeek-V3.1
+      value: DeepSeek-V3.1
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
+        en_US: DeepSeek-V3.1
+      value: DeepSeek-V3.1
       show_on:
         - variable: __model_type
           value: llm
