@@ -1,0 +1,32 @@
+credentials_schema:
+  - name: tavily_api_key
+    help:
+      en_US: Get your Tavily API key from your Tavily account settings.
+      zh_Hans: 从您的 Tavily 账户设置中获取 Tavily API 密钥。
+    label:
+      en_US: Tavily API Key
+      zh_Hans: Tavily API 密钥
+    placeholder:
+      en_US: Please input your Tavily API key
+      zh_Hans: 请输入您的 Tavily API 密钥
+    required: true
+    type: secret-input
+    url: https://app.tavily.com/
+identity:
+  author: langgenius
+  name: tavily_datasource
+  label:
+    en_US: Tavily
+    zh_Hans: Tavily
+    pt_BR: Tavily
+  description:
+    en_US: Tavily Search & Extract Datasource
+    zh_Hans: Tavily 搜索提取数据源
+    pt_BR: Tavily Search & Extract Datasource
+  icon: icon.svg
+provider_type: website_crawl
+datasources:
+  - datasources/search_extract.yaml
+extra:
+  python:
+    source: provider/tavily_datasource.py
