@@ -468,7 +468,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                         if obj.mime_type in UNSUPPORTED_DOCUMENT_TYPES:
                             should_upload = False
                         # Additional check by file extension
-                        if obj.format and obj.format.lower() not in UNSUPPORTED_EXTENSIONS:
+                        if obj.format and obj.format.lower() in UNSUPPORTED_EXTENSIONS:
                             should_upload = False
 
                     # Upload only if the file type is supported
