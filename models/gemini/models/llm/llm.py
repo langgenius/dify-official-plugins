@@ -36,7 +36,7 @@ from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from google import genai
 from google.genai import errors, types
 
-from .utils import FileCache
+from .utils import FileCache, UNSUPPORTED_DOCUMENT_TYPES, UNSUPPORTED_EXTENSIONS
 
 file_cache = FileCache()
 
@@ -434,7 +434,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 contents[-1].parts.extend(content.parts)
             else:
                 contents.append(content)
-
         return contents
 
     def _format_message_to_gemini_content(
@@ -461,10 +460,29 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 if obj.type == PromptMessageContentType.TEXT:
                     parts_.append(types.Part.from_text(text=obj.data))
                 else:
-                    uri, mime_type = self._upload_file_content_to_google(
-                        obj, genai_client, file_server_url_prefix
-                    )
-                    parts_.append(types.Part.from_uri(file_uri=uri, mime_type=mime_type))
+                    # Filter files based on type and supported formats
+                    should_upload = True
+
+                    if obj.type == PromptMessageContentType.DOCUMENT:
+                        # For documents: use blacklist (skip unsupported types)
+                        if obj.mime_type in UNSUPPORTED_DOCUMENT_TYPES:
+                            should_upload = False
+                        # Additional check by file extension
+                        if obj.format and obj.format.lower() not in UNSUPPORTED_EXTENSIONS:
+                            should_upload = False
+
+                    # Upload only if the file type is supported
+                    if should_upload:
+                        uri, mime_type = self._upload_file_content_to_google(
+                            obj, genai_client, file_server_url_prefix
+                        )
+                        parts_.append(types.Part.from_uri(file_uri=uri, mime_type=mime_type))
+                    else:
+                        # Log skipped files for debugging
+                        logging.debug(
+                            f"Skipping unsupported file: type={obj.type}, "
+                            f"mime_type={obj.mime_type}, format={obj.format}"
+                        )
             return parts_
 
         # Process different message types
