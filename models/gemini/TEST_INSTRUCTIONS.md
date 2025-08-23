@@ -41,22 +41,22 @@ You can modify these settings in the `GEMINI_TEST_CONFIG` dictionary in the test
 uv run pytest
 
 # Run with detailed output
-uv run pytest models/llm/test_document_filtering.py -v -s
+uv run pytest models/tests/test_document_filtering.py -v -s
 ```
 
 ### Unit Tests Only (No API Key Required)
 ```bash
-uv run pytest models/llm/test_document_filtering.py::TestDocumentFilteringUnit -v
+uv run pytest models/tests/test_document_filtering.py::TestDocumentFilteringUnit -v
 ```
 
 ### Integration Tests Only (API Key Required)
 ```bash
-uv run pytest models/llm/test_document_filtering.py::TestDocumentFilteringIntegration -v -m integration
+uv run pytest models/tests/test_document_filtering.py::TestDocumentFilteringIntegration -v -m integration
 ```
 
 ### Skip Integration Tests
 ```bash
-uv run pytest models/llm/test_document_filtering.py -v -m "not integration"
+uv run pytest models/tests/test_document_filtering.py -v -m "not integration"
 ```
 
 ## Test Features
@@ -127,5 +127,5 @@ The test architecture supports easy extension for:
 ### Debug Mode
 ```bash
 # Run with debug logging
-uv run pytest models/llm/test_document_filtering.py -v -s --log-cli-level=DEBUG
+uv run pytest models/tests/test_document_filtering.py -v -s --log-cli-level=DEBUG
 ```

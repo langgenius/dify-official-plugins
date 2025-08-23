@@ -30,7 +30,7 @@ python_classes = ["Test*"]
 python_functions = ["test_*"]
 
 # Test discovery paths
-testpaths = ["models/llm"]
+testpaths = ["models/tests/"]
 
 # Markers
 markers = [
@@ -47,7 +47,8 @@ log_cli_date_format = "%Y-%m-%d %H:%M:%S"
 # Warnings
 filterwarnings = [
     "ignore::DeprecationWarning",
-    "ignore::PendingDeprecationWarning"
+    "ignore::PendingDeprecationWarning",
+    "ignore:Monkey-patching ssl after ssl has already been imported:gevent.monkey.MonkeyPatchWarning"
 ]
 
 # Coverage options (if using pytest-cov)

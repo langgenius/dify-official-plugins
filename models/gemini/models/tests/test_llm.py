@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from .llm import GoogleLargeLanguageModel
+from models.llm.llm import GoogleLargeLanguageModel
 from dify_plugin.entities.model.message import (
     UserPromptMessage,
     ToolPromptMessage,

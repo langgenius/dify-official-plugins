@@ -26,7 +26,7 @@ from google import genai
 from google.genai import types
 
 try:
-    from .llm import GoogleLargeLanguageModel
+    from models.llm.llm import GoogleLargeLanguageModel
 except ImportError:
     import sys
     import os
@@ -44,17 +44,22 @@ GEMINI_TEST_CONFIG = {"model": "gemini-2.5-flash-lite", "max_output_tokens": 5, 
 class MemoryFileCache:
     """In-memory file cache for testing (no persistence)."""
 
-    def __init__(self):
+    def __init__(self, namespace: str = "default"):
         self._cache: Dict[str, Dict] = {}
+        self.namespace = namespace
+
+    def _namespaced_key(self, key: str) -> str:
+        """Add namespace to cache key to prevent conflicts between test classes."""
+        return f"{self.namespace}:{key}"
 
     def exists(self, key: str) -> bool:
-        return key in self._cache
+        return self._namespaced_key(key) in self._cache
 
     def get(self, key: str) -> Optional[str]:
-        return self._cache.get(key, {}).get("value")
+        return self._cache.get(self._namespaced_key(key), {}).get("value")
 
     def setex(self, key: str, expires_in_seconds: int, value: str) -> None:
-        self._cache[key] = {"value": value}
+        self._cache[self._namespaced_key(key)] = {"value": value}
 
     def clear(self):
         """Clear cache for test cleanup."""
@@ -117,8 +122,8 @@ class TestDocumentFilteringUnit:
         self.mock_client = Mock(spec=genai.Client)
         self.config = types.GenerateContentConfig()
 
-        # Create memory cache for testing
-        self.memory_cache = MemoryFileCache()
+        # Create memory cache for testing with unit test namespace
+        self.memory_cache = MemoryFileCache(namespace="unit_test")
 
         # Mock file upload response
         self.mock_file = Mock()
@@ -159,6 +164,7 @@ class TestDocumentFilteringUnit:
 
             llm.file_cache = self.original_file_cache
 
+        # Clear cache before resetting mocks to prevent cache pollution
         self.memory_cache.clear()
 
         # Reset mock states to prevent pollution between tests
@@ -422,17 +428,26 @@ class TestDocumentFilteringUnit:
             ]
         )
 
-        # Mock different responses for each upload
+        # Mock different responses for each upload using separate mock objects
         upload_count = 0
 
         def upload_side_effect(*args, **kwargs):
             nonlocal upload_count
             upload_count += 1
+
+            # Create separate mock file objects to avoid shared state
+            mock_file = Mock()
+            mock_file.uri = "gs://test-bucket/test-file"
+            mock_file.state.name = "ACTIVE"
+
             if upload_count == 1:
-                self.mock_file.mime_type = "application/pdf"
+                mock_file.mime_type = "application/pdf"
             elif upload_count == 2:
-                self.mock_file.mime_type = "text/plain"
-            return self.mock_file
+                mock_file.mime_type = "text/plain"
+            else:
+                mock_file.mime_type = "application/octet-stream"
+
+            return mock_file
 
         self.mock_client.files.upload.side_effect = upload_side_effect
 
@@ -494,8 +509,13 @@ class TestDocumentFilteringUnit:
 
     def test_file_caching_mechanism(self):
         """Test that file uploads are cached properly."""
-        # Clear cache to ensure clean state
+        # Clear cache and reset mock to ensure clean state
         self.memory_cache.clear()
+        self.mock_client.reset_mock()
+
+        # Reset mock file upload response
+        self.mock_client.files.upload.return_value = self.mock_file
+        self.mock_client.files.upload.side_effect = None  # Clear any side effects
 
         pdf_bytes = DocumentGenerator.create_pdf_bytes()
         base64_data = base64.b64encode(pdf_bytes).decode()
@@ -504,13 +524,21 @@ class TestDocumentFilteringUnit:
             format="pdf", base64_data=base64_data, mime_type="application/pdf"
         )
 
+        # Debug: Check if cache is truly empty
+        cache_key = f"{content.type.value}:{hash(content.data)}"
+        print(f"Cache key: {cache_key}")
+        print(f"Cache exists before: {self.memory_cache.exists(cache_key)}")
+
         with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
 
             # First upload - should call mock
             uri1, mime1 = self.llm._upload_file_content_to_google(content, self.mock_client)
+            print(f"After first upload - call count: {self.mock_client.files.upload.call_count}")
+            print(f"Cache exists after first: {self.memory_cache.exists(cache_key)}")
 
             # Second upload (should use cache)
             uri2, mime2 = self.llm._upload_file_content_to_google(content, self.mock_client)
+            print(f"After second upload - call count: {self.mock_client.files.upload.call_count}")
 
         assert uri1 == uri2 == "gs://test-bucket/test-file"
         assert mime1 == mime2 == "application/pdf"
@@ -556,8 +584,8 @@ class TestDocumentFilteringIntegration:
             temperature=GEMINI_TEST_CONFIG["temperature"],
         )
 
-        # Use memory cache for testing
-        self.memory_cache = MemoryFileCache()
+        # Use memory cache for testing with integration test namespace
+        self.memory_cache = MemoryFileCache(namespace="integration_test")
 
         # Patch the file cache for integration tests
         # Try different patch paths to handle different execution contexts
