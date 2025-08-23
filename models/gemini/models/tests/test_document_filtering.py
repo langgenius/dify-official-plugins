@@ -644,7 +644,13 @@ class TestDocumentFilteringIntegration:
         assert len(contents) == 1
         assert len(contents[0].parts) == 2
         assert contents[0].parts[0].text == "Describe briefly:"
-        assert contents[0].parts[1].file_data.file_uri.startswith("gs://")
+        assert (
+            contents[0]
+            .parts[1]
+            .file_data.file_uri.startswith(
+                "https://generativelanguage.googleapis.com/v1beta/files/"
+            )
+        )
         assert contents[0].parts[1].file_data.mime_type == "application/pdf"
 
         # Test actual generation
