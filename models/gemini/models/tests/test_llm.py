@@ -294,7 +294,7 @@ def test_file_url():
         format="png", mime_type="image/png", url="http://127.0.0.1:5001/files/foo/bar.png"
     )
     file_url = (
-        f"{credentials["file_url"].rstrip('/')}/files{message_content.url.split("/files")[-1]}"
+        f"{credentials['file_url'].rstrip('/')}/files{message_content.url.split('/files')[-1]}"
     )
     assert file_url == "http://127.0.0.1/static/files/foo/bar.png"
 
