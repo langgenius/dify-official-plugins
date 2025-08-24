@@ -132,13 +132,9 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         # Compatibility adapter for Dify's 'json_schema' structured output mode.
         # The base class does not natively handle the 'json_schema' parameter. This block
         # translates it into a standard OpenAI-compatible request by:
-        # 1. Forcing the response format to 'json_object'.
-        # 2. Injecting the JSON schema directly into the system prompt to guide the model.
+        # 1. Injecting the JSON schema directly into the system prompt to guide the model.
         # This ensures models like gpt-4o produce the correct structured output.
-        # The original 'json_schema' parameter is intentionally not removed to support
-        # other potential OpenAI-compatible models that might handle it differently.
         if model_parameters.get("response_format") == "json_schema":
-            model_parameters["response_format"] = "json_object"
             # Use .get() instead of .pop() for safety
             json_schema_str = model_parameters.get("json_schema")
 
