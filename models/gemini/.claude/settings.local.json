@@ -6,7 +6,7 @@
       "Bash(mkdir:*)",
       "Bash(find:*)",
       "Bash(grep:*)",
-      "Bash(uv:*)",
+      "Bash(uv run pytest:*)",
       "WebSearch"
     ],
     "deny": [
