@@ -28,6 +28,8 @@ class ComfyuiDepthAnything(Tool):
         )
 
         feature: str = tool_parameters.get("feature")
+        prompt: str = tool_parameters.get("prompt", "")
+        negative_prompt: str = tool_parameters.get("negative_prompt", "")
         images = tool_parameters.get("images", [])
         image_names = []
         for image in images:
@@ -47,6 +49,9 @@ class ComfyuiDepthAnything(Tool):
             output_images = self.face_swap(image_names[0], image_names[1])
         elif feature.startswith("upscale"):
             output_images = self.upscale(feature, image_names)
+        elif feature == "qwen_image_edit":
+            output_images = self.qwen_image_edit(
+                prompt, negative_prompt, image_names)
 
         for img in output_images:
             yield self.create_blob_message(
@@ -127,4 +132,15 @@ class ComfyuiDepthAnything(Tool):
                 raise ToolProviderCredentialValidationError(
                     f"Failed to generate image: {str(e)}. Maybe install https://github.com/kijai/ComfyUI-DepthAnythingV2 on ComfyUI"
                 )
+        return output_images
+
+    def qwen_image_edit(self, prompt, negative_prompt, image_names):
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        filepath = os.path.join(current_dir, "json", "qwen.json")
+        workflow = ComfyUiWorkflow(filepath=filepath)
+        workflow.set_prompt("6", prompt)
+        workflow.set_prompt("7", negative_prompt)
+        workflow.set_image_names(image_names)
+        self.model_manager.download_from_json(workflow.json_original_str())
+        output_images = self.comfyui.generate(workflow.json())
         return output_images
