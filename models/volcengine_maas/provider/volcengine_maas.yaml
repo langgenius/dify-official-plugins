@@ -118,8 +118,8 @@ model_credential_schema:
         - variable: __model_type
           value: llm
     - label:
-        en_US: DeepSeek-V3.1
-      value: DeepSeek-V3.1
+        en_US: Kimi-K2
+      value: Kimi-K2
       show_on:
         - variable: __model_type
           value: llm
