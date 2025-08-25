@@ -11,10 +11,8 @@ description:
 parameters:
 
 output_schema:
-    type: object
-    properties:
-      result:
-        $ref: "#/$defs/file"
+  $ref: "#/$defs/file"
+        
 extra:
   python:
     source: datasources/google_drive.py

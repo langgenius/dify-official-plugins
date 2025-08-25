@@ -134,48 +134,20 @@ parameters:
   default: true
 
 output_schema:
-  type: object
-  properties:
-    result:
-      type: object
-      properties:
-        status:
-          type: string
-          description: search job status
-        web_info_list:
-          type: array
-          items:
-            type: object
-            properties:
-              source_url:
-                type: string
-                description: The URL of the website
-              content:
-                type: string
-                description: The content of the website
-              title:
-                type: string
-                description: The title of the website
-              description:
-                type: string
-                description: The description of the website
-              published_date:
-                type: string
-                description: The published date (for news articles)
-              score:
-                type: number
-                description: Relevance score
-          description: List of website info details
-        total:
-          type: number
-          description: The total number of websites found
-        completed:
-          type: number
-          description: The number of processed websites
-        answer:
-          type: string
-          description: AI-generated answer based on search results
-      description: Website search and extract result
+    type: object
+    properties:
+      source_url:
+        type: string
+        description: the source url of the website
+      content:
+        type: string
+        description: the content from the website
+      title:
+        type: string
+        description: the title of the website
+      "description":
+        type: string
+        description: the description of the website
 provider_type: website_crawl
 extra:
   python:
