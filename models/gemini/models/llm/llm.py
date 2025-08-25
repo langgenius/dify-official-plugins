@@ -36,7 +36,7 @@ from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from google import genai
 from google.genai import errors, types
 
-from .utils import FileCache
+from .utils import FileCache, UNSUPPORTED_DOCUMENT_TYPES, UNSUPPORTED_EXTENSIONS
 
 file_cache = FileCache()
 
@@ -45,56 +45,6 @@ _MMC = TypeVar("_MMC", bound=MultiModalPromptMessageContent)
 
 class GoogleLargeLanguageModel(LargeLanguageModel):
     is_thinking = None
-
-    def _invoke(
-        self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        model_parameters: dict,
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
-        stream: bool = True,
-        user: Optional[str] = None,
-    ) -> Union[LLMResult, Generator[LLMResultChunk]]:
-        """
-        Invoke large language model
-
-        :param model: model name
-        :param credentials: model credentials
-        :param prompt_messages: prompt messages
-        :param model_parameters: model parameters
-        :param tools: tools for tool calling
-        :param stop: stop words
-        :param stream: is stream response
-        :param user: unique user id
-        :return: full response or stream response chunk generator result
-        """
-        _ = user
-        return self._generate(
-            model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
-        )
-
-    def get_num_tokens(
-        self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
-        tools: Optional[list[PromptMessageTool]] = None,
-    ) -> int:
-        """
-        Get number of tokens for given prompt messages
-
-        :param model: model name
-        :param credentials: model credentials
-        :param prompt_messages: prompt messages
-        :param tools: tools for tool calling
-        :return:md = genai.GenerativeModel(model)
-        """
-        prompt = self._convert_messages_to_prompt(prompt_messages)
-
-        # TODO(QIN2DIM): Fix the issue of inaccurate counting of Gemini Tokens
-        return self._get_num_tokens_by_gpt2(prompt)
 
     def _convert_messages_to_prompt(self, messages: list[PromptMessage]) -> str:
         """
@@ -363,41 +313,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         ]:
             config.response_modalities = [types.Modality.AUDIO.value]
 
-    def _set_tool_calling(
-        self,
-        *,
-        config: types.GenerateContentConfig,
-        model_parameters: Mapping[str, Any],
-        tools: List[PromptMessageTool] | None = None,
-    ) -> None:
-        config.tools = []
-
-        if model_parameters.get("grounding"):
-            config.tools.append(types.Tool(google_search=types.GoogleSearch()))
-
-        if model_parameters.get("url_context"):
-            config.tools.append(types.Tool(url_context=types.UrlContext()))
-
-        if model_parameters.get("code_execution"):
-            config.tools.append(types.Tool(code_execution=types.ToolCodeExecution()))
-
-        if tools:
-            config.tools.append(self._convert_tools_to_gemini_tool(tools))
-
-    def validate_credentials(self, model: str, credentials: dict) -> None:
-        """
-        Validate model credentials
-
-        :param model: model name
-        :param credentials: model credentials
-        :return:
-        """
-        try:
-            genai_client = genai.Client(api_key=credentials["google_api_key"])
-            genai_client.models.count_tokens(model=model, contents="ping")
-        except Exception as ex:
-            raise CredentialsValidateFailedError(str(ex))
-
     @staticmethod
     def _validate_feature_compatibility(
         model_parameters: Mapping[str, Any], tools: Optional[list[PromptMessageTool]] = None
@@ -467,82 +382,26 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         return adjusted_params
 
-    def _generate(
+    def _set_tool_calling(
         self,
-        model: str,
-        credentials: dict,
-        prompt_messages: list[PromptMessage],
+        *,
+        config: types.GenerateContentConfig,
         model_parameters: Mapping[str, Any],
-        tools: Optional[list[PromptMessageTool]] = None,
-        stop: Optional[list[str]] = None,
-        stream: bool = True,
-        user: Optional[str] = None,
-    ) -> Union[LLMResult, Generator[LLMResultChunk]]:
+        tools: List[PromptMessageTool] | None = None,
+    ) -> None:
+        config.tools = []
 
-        # Validate and adjust feature compatibility
-        model_parameters = self._validate_feature_compatibility(model_parameters, tools)
+        if model_parameters.get("grounding"):
+            config.tools.append(types.Tool(google_search=types.GoogleSearch()))
 
-        # == InitConfig == #
+        if model_parameters.get("url_context"):
+            config.tools.append(types.Tool(url_context=types.UrlContext()))
 
-        config = types.GenerateContentConfig()
-        genai_client = genai.Client(api_key=credentials["google_api_key"])
+        if model_parameters.get("code_execution"):
+            config.tools.append(types.Tool(code_execution=types.ToolCodeExecution()))
 
-        # == ChatConfig == #
-
-        self._set_chat_parameters(config=config, model_parameters=model_parameters, stop=stop)
-
-        # Build contents from prompt messages
-        file_server_url_prefix = credentials.get("file_url") or None
-        contents = self._build_gemini_contents(
-            prompt_messages=prompt_messages,
-            genai_client=genai_client,
-            config=config,
-            file_server_url_prefix=file_server_url_prefix,
-        )
-
-        # == ThinkingConfig == #
-
-        # To reduce ambiguity, when both configurable parameters are not specified,
-        # this configuration should not be explicitly declared.
-
-        # For models that do not support the reasoning mode (such as gemini-2.0-flash),
-        # incorrectly setting include_thoughts to True will not cause a system error.
-
-        # When include_thoughts is True, thinking_budget must not be None to obtain valid thinking content.
-
-        # However, setting thinking_budget for models that do not support the thinking mode
-        # will result in a 400 INVALID_ARGUMENT error.
-
-        self._set_thinking_config(
-            config=config, model_parameters=model_parameters, model_name=model
-        )
-
-        # == ResponseModalitiesConfig == #
-
-        # The Gemini part of the model can output mixed-modal responses,
-        # e.g. generate images, generate audio.
-
-        self._set_response_modalities(config=config, model_name=model)
-
-        # == ToolUseConfig == #
-
-        # Must be executed after `_validate_feature_compatibility`
-        self._set_tool_calling(config=config, model_parameters=model_parameters, tools=tools)
-
-        # == InvokeModel == #
-
-        if stream:
-            response = genai_client.models.generate_content_stream(
-                model=model, contents=contents, config=config
-            )
-            return self._handle_generate_stream_response(
-                model, credentials, response, prompt_messages
-            )
-
-        response = genai_client.models.generate_content(
-            model=model, contents=contents, config=config
-        )
-        return self._handle_generate_response(model, credentials, response, prompt_messages)
+        if tools:
+            config.tools.append(self._convert_tools_to_gemini_tool(tools))
 
     def _build_gemini_contents(
         self,
@@ -575,7 +434,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 contents[-1].parts.extend(content.parts)
             else:
                 contents.append(content)
-
         return contents
 
     def _format_message_to_gemini_content(
@@ -602,10 +460,29 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 if obj.type == PromptMessageContentType.TEXT:
                     parts_.append(types.Part.from_text(text=obj.data))
                 else:
-                    uri, mime_type = self._upload_file_content_to_google(
-                        obj, genai_client, file_server_url_prefix
-                    )
-                    parts_.append(types.Part.from_uri(file_uri=uri, mime_type=mime_type))
+                    # Filter files based on type and supported formats
+                    should_upload = True
+
+                    if obj.type == PromptMessageContentType.DOCUMENT:
+                        # For documents: use blacklist (skip unsupported types)
+                        if obj.mime_type in UNSUPPORTED_DOCUMENT_TYPES:
+                            should_upload = False
+                        # Additional check by file extension
+                        if obj.format and obj.format.lower() in UNSUPPORTED_EXTENSIONS:
+                            should_upload = False
+
+                    # Upload only if the file type is supported
+                    if should_upload:
+                        uri, mime_type = self._upload_file_content_to_google(
+                            obj, genai_client, file_server_url_prefix
+                        )
+                        parts_.append(types.Part.from_uri(file_uri=uri, mime_type=mime_type))
+                    else:
+                        # Log skipped files for debugging
+                        logging.debug(
+                            f"Skipping unsupported file: type={obj.type}, "
+                            f"mime_type={obj.mime_type}, format={obj.format}"
+                        )
             return parts_
 
         # Process different message types
@@ -897,3 +774,144 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             content=contents, tool_calls=function_calls  # type: ignore
         )
         return message
+
+    def _invoke(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
+    ) -> Union[LLMResult, Generator[LLMResultChunk]]:
+        """
+        Invoke large language model
+
+        :param model: model name
+        :param credentials: model credentials
+        :param prompt_messages: prompt messages
+        :param model_parameters: model parameters
+        :param tools: tools for tool calling
+        :param stop: stop words
+        :param stream: is stream response
+        :param user: unique user id
+        :return: full response or stream response chunk generator result
+        """
+        _ = user
+        return self._generate(
+            model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
+        )
+
+    def _generate(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: Mapping[str, Any],
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
+    ) -> Union[LLMResult, Generator[LLMResultChunk]]:
+
+        # Validate and adjust feature compatibility
+        model_parameters = self._validate_feature_compatibility(model_parameters, tools)
+
+        # == InitConfig == #
+
+        config = types.GenerateContentConfig()
+        genai_client = genai.Client(api_key=credentials["google_api_key"])
+
+        # == ChatConfig == #
+
+        self._set_chat_parameters(config=config, model_parameters=model_parameters, stop=stop)
+
+        # Build contents from prompt messages
+        file_server_url_prefix = credentials.get("file_url") or None
+        contents = self._build_gemini_contents(
+            prompt_messages=prompt_messages,
+            genai_client=genai_client,
+            config=config,
+            file_server_url_prefix=file_server_url_prefix,
+        )
+
+        # == ThinkingConfig == #
+
+        # To reduce ambiguity, when both configurable parameters are not specified,
+        # this configuration should not be explicitly declared.
+
+        # For models that do not support the reasoning mode (such as gemini-2.0-flash),
+        # incorrectly setting include_thoughts to True will not cause a system error.
+
+        # When include_thoughts is True, thinking_budget must not be None to obtain valid thinking content.
+
+        # However, setting thinking_budget for models that do not support the thinking mode
+        # will result in a 400 INVALID_ARGUMENT error.
+
+        self._set_thinking_config(
+            config=config, model_parameters=model_parameters, model_name=model
+        )
+
+        # == ResponseModalitiesConfig == #
+
+        # The Gemini part of the model can output mixed-modal responses,
+        # e.g. generate images, generate audio.
+
+        self._set_response_modalities(config=config, model_name=model)
+
+        # == ToolUseConfig == #
+
+        # Must be executed after `_validate_feature_compatibility`
+        self._set_tool_calling(config=config, model_parameters=model_parameters, tools=tools)
+
+        # == InvokeModel == #
+
+        if stream:
+            response = genai_client.models.generate_content_stream(
+                model=model, contents=contents, config=config
+            )
+            return self._handle_generate_stream_response(
+                model, credentials, response, prompt_messages
+            )
+
+        response = genai_client.models.generate_content(
+            model=model, contents=contents, config=config
+        )
+        return self._handle_generate_response(model, credentials, response, prompt_messages)
+
+    def get_num_tokens(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        tools: Optional[list[PromptMessageTool]] = None,
+    ) -> int:
+        """
+        Get number of tokens for given prompt messages
+
+        :param model: model name
+        :param credentials: model credentials
+        :param prompt_messages: prompt messages
+        :param tools: tools for tool calling
+        :return:md = genai.GenerativeModel(model)
+        """
+        prompt = self._convert_messages_to_prompt(prompt_messages)
+
+        # TODO(QIN2DIM): Fix the issue of inaccurate counting of Gemini Tokens
+        return self._get_num_tokens_by_gpt2(prompt)
+
+    def validate_credentials(self, model: str, credentials: dict) -> None:
+        """
+        Validate model credentials
+
+        :param model: model name
+        :param credentials: model credentials
+        :return:
+        """
+        try:
+            genai_client = genai.Client(api_key=credentials["google_api_key"])
+            genai_client.models.count_tokens(model=model, contents="ping")
+        except Exception as ex:
+            raise CredentialsValidateFailedError(str(ex))

@@ -19,4 +19,37 @@ dev = [
     "black>=25.1.0",
     "pytest>=8.4.1",
     "ruff>=0.12.5",
+    "python-dotenv>=1.0.0",
+    "Pillow>=10.0.0",
 ]
+
+[tool.pytest.ini_options]
+# Pytest configuration for Gemini plugin tests
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
+python_functions = ["test_*"]
+
+# Test discovery paths
+testpaths = ["models/tests/"]
+
+# Markers
+markers = [
+    "integration: marks tests as integration tests (requires API key)",
+    "unit: marks tests as unit tests (no API key required)"
+]
+
+# Logging configuration
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)8s] %(name)s: %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+
+# Warnings
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+    "ignore:Monkey-patching ssl after ssl has already been imported:gevent.monkey.MonkeyPatchWarning"
+]
+
+# Coverage options (if using pytest-cov)
+# addopts = ["--cov=models/llm", "--cov-report=term-missing", "--cov-report=html"]

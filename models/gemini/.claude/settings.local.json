@@ -6,13 +6,13 @@
       "Bash(mkdir:*)",
       "Bash(find:*)",
       "Bash(grep:*)",
+      "Bash(uv run pytest:*)",
       "WebSearch"
     ],
     "deny": [
       "Bash(rm:*)",
       "Bash(black:*)",
       "Bash(python:*)",
-      "Bash(uv:*)",
       "Bash(ruff check:*)",
       "Bash(grep:*.env*)",
       "Bash(grep:*secret*)",
