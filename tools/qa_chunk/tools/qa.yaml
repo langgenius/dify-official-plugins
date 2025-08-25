@@ -51,4 +51,7 @@ parameters:
   required: true
   type: number
 output_schema:
-  $ref: "https://dify.ai/schemas/v1/qa_structure.json"
+  type: object
+  properties:
+    result:
+      $ref: "https://dify.ai/schemas/v1/qa_structure.json"
