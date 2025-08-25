@@ -41,7 +41,8 @@ class ModelManager:
         if model_name in self._comfyui_cli.get_model_dirs(save_dir):
             # model_name is the name for an existing model in ComfyUI
             return model_name
-        civit_patterns = re.findall("^(civitai: *)?([0-9]+)(@([0-9]+))?", model_name)
+        civit_patterns = re.findall(
+            "^(civitai: *)?([0-9]+)(@([0-9]+))?", model_name)
         if len(civit_patterns) > 0:
             # model_name is CivitAI's AIR
             civit_pattern = civit_patterns[0]
@@ -71,7 +72,7 @@ class ModelManager:
             f"Model {model_name} does not exist in the local folder {save_dir}/ or online."
         )
 
-    def download_model(self, url, save_dir, filename=None, token=None) -> str:
+    def download_model(self, url: str, save_dir: str, filename: str | None = None, token=None) -> str:
         headers = {}
         if token is not None:
             headers = {"Authorization": f"Bearer {token}"}
@@ -184,6 +185,7 @@ class ModelManager:
             elif "://huggingface.co" in model["url"]:
                 token = self.get_hf_api_key()
 
-            self.download_model(model["url"], model["directory"], model["name"], token)
+            self.download_model(
+                model["url"], model["directory"], model["name"], token)
         model_names = [m["name"] for m in models]
         return model_names

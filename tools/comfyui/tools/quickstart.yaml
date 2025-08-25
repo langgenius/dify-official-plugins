@@ -13,7 +13,7 @@ identity:
     en_US: Quick Start
     zh_Hans: 快速入门
     ja_JP: クイックスタート
-  name: workflow
+  name: quickstart
 
 parameters:
   - name: images
@@ -40,44 +40,11 @@ parameters:
     type: select
     options:
       - label:
-          en_US: Depth Anything S FP16
-        value: depth_anything_v2_vits_fp16.safetensors
-      - label:
-          en_US: Depth Anything S FP32
-        value: depth_anything_v2_vits_fp32.safetensors
-      - label:
-          en_US: Depth Anything B FP16
-        value: depth_anything_v2_vitb_fp16.safetensors
-      - label:
-          en_US: Depth Anything B FP32
-        value: depth_anything_v2_vitb_fp32.safetensors
-      - label:
-          en_US: Depth Anything L FP16
-        value: depth_anything_v2_vitl_fp16.safetensors
-      - label:
-          en_US: Depth Anything L FP32
-        value: depth_anything_v2_vitl_fp32.safetensors
-      - label:
-          en_US: Depth Anything Hypersim
-        value: depth_anything_v2_metric_hypersim_vitl_fp32.safetensors
-      - label:
-          en_US: Depth Anything VKITTI
-        value: depth_anything_v2_metric_vkitti_vitl_fp32.safetensors
-      - label:
-          en_US: Depth Pro FP16
-        value: depth_pro_fp16
-      - label:
-          en_US: Depth Pro FP32
-        value: depth_pro_fp32
-      - label:
-          en_US: FaceSwap
-        value: face_swap
-      - label:
-          en_US: Upscale ESRGAN x4
-        value: upscale_esrgan_x4
-      - label:
           en_US: Qwen Image Edit
         value: qwen_image_edit
+      - label:
+          en_US: Flux Schnell fp8
+        value: flux_schnell_fp8
 
   - name: prompt
     form: llm
@@ -122,5 +89,21 @@ parameters:
       Image prompt of Stable Diffusion, you should describe the image
       you want to generate as a list of words as possible as detailed, the prompt must
       be written in English.
+    required: false
+    type: string
+
+  - name: loras
+    form: llm
+    human_description:
+      en_US: LORAs
+      pt_BR: LORA
+      zh_Hans: LORAs
+      ja_JP: LORA
+    label:
+      en_US: LORA
+      pt_BR: LORA
+      zh_Hans: LORA
+      ja_JP: LORA
+    llm_description: LORAs
     required: false
     type: string
