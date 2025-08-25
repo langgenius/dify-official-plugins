@@ -2,7 +2,14 @@ from collections.abc import Generator
 from typing import Optional, Union
 from dify_plugin.entities.model import AIModelEntity, ModelFeature
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
-from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
+from dify_plugin.entities.model.message import (
+    PromptMessage, 
+    PromptMessageTool, 
+    UserPromptMessage,
+    TextPromptMessageContent,
+    ImagePromptMessageContent,
+    PromptMessageContentType
+)
 from dify_plugin import OAICompatLargeLanguageModel
 
 
@@ -22,6 +29,47 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
             "X-Title": "Dify"
         }
 
+    def _convert_files_to_text(self, messages: list[PromptMessage]) -> list[PromptMessage]:
+        """
+        Convert any file content in messages to text descriptions to avoid validation issues
+        """
+        converted_messages = []
+        
+        for message in messages:
+            if isinstance(message, UserPromptMessage) and isinstance(message.content, list):
+                # Process multimodal content
+                text_parts = []
+                for content in message.content:
+                    if isinstance(content, TextPromptMessageContent):
+                        text_parts.append(content.data)
+                    elif isinstance(content, ImagePromptMessageContent):
+                        # Convert image to text description
+                        if hasattr(content, 'url') and content.url:
+                            text_parts.append(f"[Image file uploaded]: {content.url}")
+                        else:
+                            text_parts.append("[Image file uploaded]")
+                    elif hasattr(content, 'type') and content.type == PromptMessageContentType.DOCUMENT:
+                        # Handle document files like PDF
+                        if hasattr(content, 'url') and content.url:
+                            text_parts.append(f"[Document file uploaded]: {content.url}")
+                        else:
+                            text_parts.append("[Document file uploaded]")
+                    else:
+                        # Handle any other content types
+                        if hasattr(content, 'url'):
+                            text_parts.append(f"[File uploaded]: {content.url}")
+                        else:
+                            text_parts.append(str(content))
+                
+                # Create new text-only message
+                converted_message = UserPromptMessage(content=" ".join(text_parts))
+                converted_messages.append(converted_message)
+            else:
+                # Keep non-multimodal messages as is
+                converted_messages.append(message)
+        
+        return converted_messages
+
     def _invoke(
         self,
         model: str,
@@ -34,6 +82,9 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._update_credential(model, credentials)
+        
+        # Convert any file content to text descriptions
+        prompt_messages = self._convert_files_to_text(prompt_messages)
         # reasoning
         reasoning_params = {}
         reasoning_budget = model_parameters.pop('reasoning_budget', None)

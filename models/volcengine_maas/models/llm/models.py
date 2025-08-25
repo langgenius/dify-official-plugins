@@ -23,6 +23,11 @@ class ModelConfig(BaseModel):
 
 
 configs: dict[str, ModelConfig] = {
+    "DeepSeek-V3.1": ModelConfig(
+        properties=ModelProperties(context_size=131072, max_tokens=32768, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+        pricing=PriceConfig(input=Decimal("0.0040"), output=Decimal("0.0120"), unit=Decimal("0.001"), currency="RMB"),
+    ),
     "Kimi-K2": ModelConfig(
         properties=ModelProperties(context_size=131072, max_tokens=32768, mode=LLMMode.CHAT),
         features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],

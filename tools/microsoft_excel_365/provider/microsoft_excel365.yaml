@@ -1,0 +1,73 @@
+extra:
+  python:
+    source: provider/microsoft_excel365.py
+identity:
+  author: langgenius
+  description:
+    en_US: Connect to Microsoft Excel 365 for spreadsheet operations
+    ja_JP: Microsoft Excel 365に接続してスプレッドシート操作を実行
+    zh_Hans: 连接 Microsoft Excel 365 进行电子表格操作
+  icon: icon.svg
+  label:
+    en_US: Microsoft Excel 365
+    ja_JP: Microsoft Excel 365
+    zh_Hans: Microsoft Excel 365
+  name: excel365
+  tags:
+  - utilities
+oauth_schema:
+  client_schema:
+  - help:
+      en_US: Get your Client ID from Azure Portal
+      ja_JP: Azure ポータルからクライアント ID を取得
+      zh_Hans: 从 Azure 门户获取您的客户端 ID
+    label:
+      en_US: Client ID
+      ja_JP: クライアント ID
+      zh_Hans: 客户端 ID
+    name: client_id
+    placeholder:
+      en_US: Enter your Azure App Client ID
+      ja_JP: Azure アプリクライアント ID を入力
+      zh_Hans: 输入您的 Azure 应用客户端 ID
+    required: true
+    type: secret-input
+    url: https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+  - help:
+      en_US: Get your Client Secret from Azure Portal
+      ja_JP: Azure ポータルからクライアントシークレットを取得
+      zh_Hans: 从 Azure 门户获取您的客户端密钥
+    label:
+      en_US: Client Secret
+      ja_JP: クライアントシークレット
+      zh_Hans: 客户端密钥
+    name: client_secret
+    placeholder:
+      en_US: Enter your Azure App Client Secret
+      ja_JP: Azure アプリクライアントシークレットを入力
+      zh_Hans: 输入您的 Azure 应用客户端密钥
+    required: true
+    type: secret-input
+    url: https://portal.azure.com/#blade/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+  credentials_schema:
+  - label:
+      en_US: Access Token
+      ja_JP: アクセストークン
+      zh_Hans: 访问令牌
+    name: access_token
+    type: secret-input
+  - label:
+      en_US: Refresh Token
+      ja_JP: リフレッシュトークン
+      zh_Hans: 刷新令牌
+    name: refresh_token
+    type: secret-input
+tools:
+- tools/list_all_files.yaml
+- tools/list_workbooks.yaml
+- tools/list_worksheets.yaml
+- tools/read_worksheet_data.yaml
+- tools/write_worksheet_data.yaml
+- tools/clear_worksheet_data.yaml
+- tools/create_worksheet.yaml
+- tools/search_worksheet_data.yaml

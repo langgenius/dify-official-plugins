@@ -55,6 +55,73 @@ class AzureBaseModel(BaseModel):
 
 LLM_BASE_MODELS = [
     AzureBaseModel(
+        base_model_name="gpt-4o-audio-preview",
+        entity=AIModelEntity(
+            model="gpt-4o-audio-preview",
+            label=I18nObject(
+                zh_Hans="gpt-4o-audio-preview",
+                en_US="gpt-4o-audio-preview",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.AUDIO,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 128000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="temperature",
+                    use_template="temperature",
+                ),
+                ParameterRule(
+                    name="top_p",
+                    use_template="top_p",
+                ),
+                ParameterRule(
+                    name="presence_penalty",
+                    use_template="presence_penalty",
+                ),
+                ParameterRule(
+                    name="frequency_penalty",
+                    use_template="frequency_penalty",
+                ),
+                ParameterRule(
+                    name="max_tokens",
+                    use_template="max_tokens",
+                    default=4096,
+                    min=1,
+                    max=16384,
+                ),
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(
+                        zh_Hans="回复格式",
+                        en_US="Response Format",
+                    ),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object"],
+                ),
+            ],
+            pricing=PriceConfig(
+                input=2.75,
+                output=11.00,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
         base_model_name="gpt-35-turbo",
         entity=AIModelEntity(
             model="fake-deployment-name",
@@ -1876,6 +1943,22 @@ LLM_BASE_MODELS = [
                     required=False,
                     options=["minimal", "low", "medium", "high"],
                 ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                                "支持的值包括low、medium和high",
+                        en_US="Constrains the verbosity of the model's response. "
+                              "Lower values will result in more concise responses, "
+                              "while higher values will result in more verbose responses. "
+                              "Currently supported values are low, medium, and high",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
+                ),
                 _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
             ],
             pricing=PriceConfig(
@@ -1939,6 +2022,22 @@ LLM_BASE_MODELS = [
                     required=False,
                     options=["minimal", "low", "medium", "high"],
                 ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                                "支持的值包括low、medium和high",
+                        en_US="Constrains the verbosity of the model's response. "
+                              "Lower values will result in more concise responses, "
+                              "while higher values will result in more verbose responses. "
+                              "Currently supported values are low, medium, and high",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
+                ),
                 _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
             ],
             pricing=PriceConfig(
@@ -2001,6 +2100,22 @@ LLM_BASE_MODELS = [
                     ),
                     required=False,
                     options=["minimal", "low", "medium", "high"],
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                                "支持的值包括low、medium和high",
+                        en_US="Constrains the verbosity of the model's response. "
+                              "Lower values will result in more concise responses, "
+                              "while higher values will result in more verbose responses. "
+                              "Currently supported values are low, medium, and high",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
                 ),
                 _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
             ],
@@ -2347,6 +2462,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2361,6 +2477,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2375,6 +2492,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2389,6 +2507,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2403,6 +2522,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2417,6 +2537,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                 ],
@@ -2453,6 +2574,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2467,6 +2589,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2481,6 +2604,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2495,6 +2619,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2509,6 +2634,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2523,6 +2649,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                 ],
@@ -2685,6 +2812,21 @@ TTS_BASE_MODELS = [
                     {
                         "mode": "shimmer",
                         "name": "Shimmer",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "verse",
+                        "name": "Verse",
                         "language": [
                             "zh-Hans",
                             "en-US",

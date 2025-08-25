@@ -10,14 +10,14 @@ credentials_for_provider:
     type: secret-input
   openai_base_url:
     help:
-      en_US: Please input your OpenAI base URL
-      zh_Hans: 请输入你的 OpenAI base URL
+      en_US: Please input your API base URL
+      zh_Hans: 请输入你的 API base URL
     label:
-      en_US: OpenAI base URL
-      zh_Hans: OpenAI base URL
+      en_US: API Base URL
+      zh_Hans: API Base URL
     placeholder:
-      en_US: Please input your OpenAI base URL
-      zh_Hans: 请输入你的 OpenAI base URL
+      en_US: Please input your API base URL
+      zh_Hans: 请输入你的 API base URL
     required: false
     type: text-input
   tts_service:
@@ -29,11 +29,27 @@ credentials_for_provider:
         en_US: OpenAI TTS
         zh_Hans: OpenAI TTS
       value: openai
+    - label:
+        en_US: Azure OpenAI TTS
+        zh_Hans: Azure OpenAI TTS
+      value: azure_openai
     placeholder:
       en_US: Select a TTS service
       zh_Hans: 选择一个 TTS 服务
     required: true
     type: select
+  model:
+    help:
+      en_US: Enter your model name (OpenAI TTS) or deployment name (Azure OpenAI TTS)
+      zh_Hans: 输入你的模型名称 (OpenAI TTS) 或部署名称 (Azure OpenAI TTS)
+    label:
+      en_US: Model Name or Deployment Name
+      zh_Hans: 模型名称或部署名称
+    placeholder:
+      en_US: Please input your model name or deployment name
+      zh_Hans: 请输入你的模型名称或部署名称
+    required: false
+    type: text-input
 extra:
   python:
     source: provider/podcast_generator.py

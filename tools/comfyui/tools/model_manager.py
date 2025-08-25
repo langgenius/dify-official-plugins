@@ -41,8 +41,7 @@ class ModelManager:
         if model_name in self._comfyui_cli.get_model_dirs(save_dir):
             # model_name is the name for an existing model in ComfyUI
             return model_name
-        civit_patterns = re.findall(
-            "^(civitai: *)?([0-9]+)(@([0-9]+))?", model_name)
+        civit_patterns = re.findall("^(civitai: *)?([0-9]+)(@([0-9]+))?", model_name)
         if len(civit_patterns) > 0:
             # model_name is CivitAI's AIR
             civit_pattern = civit_patterns[0]
@@ -170,3 +169,21 @@ class ModelManager:
             return ecosystem, model_type, source, id
         except:
             return "", "", "", ""
+
+    def download_from_json(self, workflow_json: str) -> list[str]:
+        workflow = ComfyUiWorkflow(workflow_json)
+        models = []
+        for node in workflow.json_original()["nodes"]:
+            if "properties" in node and "models" in node["properties"]:
+                models += node["properties"]["models"]
+
+        for model in models:
+            token = None
+            if "://civitai.com" in model["url"]:
+                token = self.get_civitai_api_key()
+            elif "://huggingface.co" in model["url"]:
+                token = self.get_hf_api_key()
+
+            self.download_model(model["url"], model["directory"], model["name"], token)
+        model_names = [m["name"] for m in models]
+        return model_names

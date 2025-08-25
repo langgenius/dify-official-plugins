@@ -8,20 +8,6 @@ from tools.model_manager import ModelManager
 
 
 class DownloadByURL(Tool):
-    def get_civit_key(self) -> str:
-        civitai_api_key = self.runtime.credentials.get("civitai_api_key")
-        if civitai_api_key is None:
-            raise ToolProviderCredentialValidationError(
-                "Please input civitai_api_key")
-        return civitai_api_key
-
-    def get_hf_key(self) -> str:
-        hf_api_key = self.runtime.credentials.get("hf_api_key")
-        if hf_api_key is None:
-            raise ToolProviderCredentialValidationError(
-                "Please input hf_api_key")
-        return hf_api_key
-
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
@@ -48,9 +34,9 @@ class DownloadByURL(Tool):
 
         token = None
         if token_type == "civitai":
-            token = self.get_civit_key()
+            token = self.model_manager.get_civitai_api_key()
         elif token_type == "hugging_face":
-            token = self.get_hf_key()
+            token = self.model_manager.get_hf_api_key()
 
         self.model_manager.download_model(url, save_to, name, token)
         yield self.create_variable_message("model_name", name)

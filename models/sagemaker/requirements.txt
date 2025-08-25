@@ -1,2 +1,2 @@
-dify_plugin~=0.0.1b73
+dify_plugin~=0.4.0
 sagemaker~=2.231.0

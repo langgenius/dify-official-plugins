@@ -1,0 +1,62 @@
+model: cohere-command-r
+label:
+  en_US: Cohere Command R
+icon: icon_s_en.svg
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 128000
+parameter_rules:
+  - name: cross-region
+    label:
+      zh_Hans: 使用跨区域推理
+      en_US: Use Cross-Region Inference
+    type: boolean
+    required: true
+    default: true
+    help:
+      zh_Hans: 跨区域推理会自动选择您所在地理区域 AWS 区域 内的最佳位置来处理您的推理请求。
+      en_US: Cross-Region inference automatically selects the optimal AWS Region within your geography to process your inference request.
+  - name: max_new_tokens
+    use_template: max_tokens
+    required: true
+    default: 2048
+    min: 1
+    max: 4000
+  - name: temperature
+    use_template: temperature
+    required: false
+    type: float
+    default: 0.75
+    min: 0.0
+    max: 1.0
+    help:
+      zh_Hans: 生成内容的随机性。
+      en_US: The amount of randomness injected into the response.
+  - name: top_p
+    required: false
+    type: float
+    default: 0.75
+    min: 0.000
+    max: 1.000
+    help:
+      zh_Hans: 在核采样中的概率阈值。
+      en_US: The probability threshold in nucleus sampling.
+  - name: top_k
+    required: false
+    type: int
+    default: 0
+    min: 0
+    max: 500
+    help:
+      zh_Hans: 对于每个后续标记，仅从前 K 个选项中进行采样。使用 top_k 删除长尾低概率响应。
+      en_US: Only sample from the top K options for each subsequent token. Use top_k to remove long tail low probability responses.
+pricing:
+  input: '0.0005'
+  output: '0.0015'
+  unit: '0.001'
+  currency: USD

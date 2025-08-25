@@ -1,12 +1,19 @@
+version: 0.0.8
+type: plugin
 author: langgenius
+privacy: PRIVACY.md
+verified: false
+name: oci
 created_at: '2024-09-20T00:13:50.29298939-04:00'
 description:
-  en_US: Models provided by OCI, such as Cohere Command R and Cohere Command R+.
-  zh_Hans: OCI 提供的模型，例如 Cohere Command R 和 Cohere Command R+。
-icon: icon_s_en.svg
+  en_US: Models provided by OCI, such as Grok 3/4, Llama, Cohere Command, etc.
+  zh_Hans: OCI上提供的模型，例如 Grok 3/4、Llama、Cohere Command 等。
+icon: icon_s_en.png
 label:
   en_US: OCI Generative AI
 meta:
+  version: 0.0.8
+  minimum_dify_version: null
   arch:
     - amd64
     - arm64
@@ -14,8 +21,6 @@ meta:
     entrypoint: main
     language: python
     version: '3.12'
-  version: 0.0.1
-name: oci
 plugins:
   models:
     - provider/oci.yaml
@@ -26,11 +31,9 @@ resource:
       enabled: true
       llm: true
       moderation: false
-      rerank: true
+      rerank: false
       speech2text: false
       text_embedding: true
       tts: false
     tool:
       enabled: true
-type: plugin
-version: 0.0.7

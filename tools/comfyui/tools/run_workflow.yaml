@@ -26,6 +26,7 @@ parameters:
     name: workflow_json
     required: true
     type: string
+
   - form: llm
     label:
       en_US: Input Images
@@ -60,5 +61,14 @@ parameters:
       en_US: If enabled, all the seeds in the workflow will be randomized.
     label:
       en_US: Randomize seeds
+    type: boolean
+    default: true
+
+  - name: enable_download
+    form: form
+    human_description:
+      en_US: If enabled, all the models in the workflow will be downloaded.
+    label:
+      en_US: Download models
     type: boolean
     default: true

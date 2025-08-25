@@ -138,12 +138,12 @@ It has [ComfyUI](https://github.com/comfyanonymous/ComfyUI) itself and all the r
 
 All you need to start a ComfyUI server is to type the following command on a server with docker and a GPU installed.
 ```
-docker run --gpus all -p 8188:8188 l125/comfyui-for-dify:v0.2.0
+docker run --gpus all -p 8188:8188 l125/comfyui-for-dify:v0.2.3-cu129
 ```
 
 If you want to save large models to somewhere other than the system disk, say "/mnt/hdd/models", you can use -v option.
 ```
-docker run -v /mnt/hdd/models:/ComfyUI/models --gpus all -p 8188:8188 l125/comfyui-for-dify:v0.2.0
+docker run -v /mnt/hdd/models:/ComfyUI/models --gpus all -p 8188:8188 l125/comfyui-for-dify:v0.2.3-cu129
 ```
 
 Specifically, the docker image contains the following packages.

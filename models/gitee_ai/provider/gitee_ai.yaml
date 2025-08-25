@@ -98,7 +98,7 @@ model_credential_schema:
     - label:
         en_US: Support
         zh_Hans: 支持
-      value: function_call
+      value: tool_call
     required: false
     show_on:
     - value: llm

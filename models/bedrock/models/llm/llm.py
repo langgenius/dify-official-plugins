@@ -229,7 +229,10 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 raise InvokeError("Model name is required for non-converse API models")
 
         model_id = model_ids.get_model_id(model, model_name)
-        return self._generate(model_id, credentials, prompt_messages, model_parameters, stop, stream, user)
+        # Store model_name in credentials for pricing calculation
+        credentials_with_model = credentials.copy()
+        credentials_with_model['model_parameters'] = {'model_name': model_name}
+        return self._generate(model_id, credentials_with_model, prompt_messages, model_parameters, stop, stream, user)
 
     def _get_model_info(self, model: str, credentials: dict, model_parameters: dict) -> dict:
         """
@@ -280,6 +283,12 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             # Use traditional model ID resolution
             model_name = model_parameters.pop('model_name')
             model_id = model_ids.get_model_id(model, model_name)
+            
+            # Store model_name in credentials for pricing calculation
+            if 'model_parameters' not in credentials:
+                credentials['model_parameters'] = {}
+            credentials['model_parameters']['model_name'] = model_name
+            
             if model_parameters.pop('cross-region', False):
                 region_name = credentials['aws_region']
                 region_prefix = model_ids.get_region_area(region_name)
@@ -680,6 +689,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         if "top_k" in model_parameters:
             additional_model_fields["top_k"] = model_parameters["top_k"]
 
+        if "anthropic_beta" in model_parameters:
+            additional_model_fields["anthropic_beta"] = list(map(lambda v:v.strip(), model_parameters["anthropic_beta"].strip().split(",")))
+
         # process reasoning related parameters, construct nested reasoning_config structure
         if "reasoning_type" in model_parameters:
             reasoning_type = model_parameters["reasoning_type"]
@@ -924,9 +936,24 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     if "foundation-model/" in first_model_arn:
                         underlying_model_id = first_model_arn.split("foundation-model/")[1]
                         model_schemas = self.predefined_models()
+                        
+                        # Try to get model-specific pricing based on the underlying model ID
+                        # Map model ID to model name for pricing lookup
+                        model_name_for_pricing = self._map_model_id_to_name(underlying_model_id)
+                        
+                        # First try to find individual model schema for pricing
+                        if model_name_for_pricing:
+                            individual_pricing = self._get_model_specific_pricing("", model_name_for_pricing, model_schemas)
+                            if individual_pricing:
+                                default_pricing = individual_pricing
+                        
+                        # Then find matching schema for features and parameters
                         for model_schema in model_schemas:
                             if self._model_id_matches_schema(underlying_model_id, model_schema):
-                                default_pricing = model_schema.pricing
+                                # Use individual pricing if found, otherwise fall back to schema pricing
+                                if not default_pricing:
+                                    default_pricing = model_schema.pricing
+                                    
                                 matched_features = model_schema.features or []
                                 # Extract allowed parameters from model schema, excluding model_name since it's determined by inference profile
                                 matched_parameter_rules = self._get_inference_profile_parameter_rules(model_schema, underlying_model_id)
@@ -1416,11 +1443,16 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :param model_schema: The predefined model schema
         :return: True if the model ID matches the schema
         """
-        # Extract the model family from the model ID
+        # Extract the model family from the model ID and check individual models first
         if "anthropic.claude" in model_id:
-            return model_schema.model == "anthropic claude"
+            return (model_schema.model == "anthropic claude" or 
+                   model_schema.model.startswith("claude-"))
         elif "amazon.nova" in model_id:
-            return model_schema.model == "amazon nova"
+            return (model_schema.model == "amazon nova" or 
+                   model_schema.model.startswith("nova-"))
+        elif "cohere.command" in model_id:
+            return (model_schema.model == "cohere" or 
+                   model_schema.model.startswith("cohere-"))
         elif "ai21" in model_id:
             return model_schema.model == "ai21"
         elif "meta.llama" in model_id:
@@ -1431,3 +1463,178 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             return model_schema.model == "deepseek"
         
         return False
+    
+    def _map_model_id_to_name(self, model_id: str) -> Optional[str]:
+        """
+        Map a Bedrock model ID to a model name for pricing lookup.
+        
+        :param model_id: The Bedrock model ID (e.g., 'anthropic.claude-3-5-sonnet-20241022-v2:0')
+        :return: The model name or None
+        """
+        # Reverse lookup from model_ids
+        from . import model_ids
+        
+        # Remove version suffix if present
+        base_model_id = model_id.split(':')[0] if ':' in model_id else model_id
+        
+        # Search through all model families
+        for family, models in model_ids.BEDROCK_MODEL_IDS.items():
+            for name, id_value in models.items():
+                # Compare base IDs without version
+                base_id_value = id_value.split(':')[0] if ':' in id_value else id_value
+                if base_id_value == base_model_id or id_value == model_id:
+                    return name
+        
+        return None
+    
+    def _get_model_specific_pricing(self, model: str, model_name: str, model_schemas: list):
+        """
+        Get model-specific pricing based on model name.
+        First tries to find exact model match from model_configurations directory, then falls back to family pricing.
+        
+        :param model: The model family (e.g., 'anthropic-claude')
+        :param model_name: The specific model name (e.g., 'Claude 3.5 Sonnet')
+        :param model_schemas: List of predefined model schemas
+        :return: Pricing configuration or None
+        """
+        # Create model name mapping for individual model files
+        model_name_mapping = {
+            # Claude models
+            'Claude 4.0 Sonnet': 'claude-4-sonnet',
+            'Claude 4.0 Opus': 'claude-4-opus',
+            'Claude 3.7 Sonnet': 'claude-3-7-sonnet',
+            'Claude 3.5 Haiku': 'claude-3-5-haiku',
+            'Claude 3.5 Sonnet': 'claude-3-5-sonnet', 
+            'Claude 3.5 Sonnet V2': 'claude-3-5-sonnet',
+            'Claude 3 Haiku': 'claude-3-haiku',
+            'Claude 3 Sonnet': 'claude-3-sonnet',
+            'Claude 3 Opus': 'claude-3-opus',
+            # Nova models
+            'Nova Micro': 'nova-micro',
+            'Nova Lite': 'nova-lite',
+            'Nova Pro': 'nova-pro',
+            # Cohere models
+            'Command': 'cohere-command',
+            'Command Light': 'cohere-command-light',
+            'Command R': 'cohere-command-r',
+            'Command R+': 'cohere-command-rplus'
+        }
+        
+        # First, try to load individual model pricing from model_configurations subdirectory
+        individual_model_name = model_name_mapping.get(model_name)
+        if individual_model_name:
+            try:
+                import os
+                import yaml
+                # Get the directory of this file
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                individual_model_path = os.path.join(current_dir, 'model_configurations', f'{individual_model_name}.yaml')
+                
+                if os.path.exists(individual_model_path):
+                    with open(individual_model_path, 'r', encoding='utf-8') as f:
+                        model_config = yaml.safe_load(f)
+                        if 'pricing' in model_config:
+                            return model_config['pricing']
+            except Exception as e:
+                # If individual model file loading fails, continue to fallback
+                pass
+        
+        # Fallback: try to find individual model in existing schemas (for backward compatibility)
+        if individual_model_name:
+            for schema in model_schemas:
+                if schema.model == individual_model_name:
+                    return schema.pricing
+        
+        # If no model family provided, skip family pricing lookup
+        if not model:
+            return None
+        
+        # If no individual model found, try family pricing
+        # Look for exact model match first
+        for schema in model_schemas:
+            if schema.model == model:
+                return schema.pricing
+        
+        # If exact match not found, try with different formats
+        # Sometimes model might be passed as 'anthropic claude' vs 'anthropic-claude'
+        model_variants = [
+            model.replace('-', ' '),  # 'anthropic-claude' -> 'anthropic claude'
+            model.replace(' ', '-'),  # 'anthropic claude' -> 'anthropic-claude'
+            model.lower(),
+            model.lower().replace('-', ' '),
+            model.lower().replace(' ', '-')
+        ]
+        
+        for schema in model_schemas:
+            for variant in model_variants:
+                if schema.model == variant:
+                    return schema.pricing
+                    
+        return None
+    
+    def _calc_response_usage(self, model: str, credentials: dict, prompt_tokens: int, completion_tokens: int):
+        """
+        Calculate response usage with per-model pricing support.
+        
+        :param model: model name
+        :param credentials: model credentials
+        :param prompt_tokens: number of prompt tokens
+        :param completion_tokens: number of completion tokens
+        :return: LLMUsage
+        """
+        # Get model-specific pricing if available
+        model_parameters = credentials.get('model_parameters', {})
+        model_name = model_parameters.get('model_name')
+        
+        if model_name:
+            # Try to get model-specific pricing
+            model_schemas = self.predefined_models()
+            model_pricing = self._get_model_specific_pricing(model, model_name, model_schemas)
+            
+            if model_pricing:
+                # Use model-specific pricing
+                from dify_plugin.entities.model.llm import LLMUsage
+                
+                # Handle both dict and object pricing formats
+                if isinstance(model_pricing, dict):
+                    input_price = float(model_pricing['input'])
+                    output_price = float(model_pricing['output'])
+                    unit_price = float(model_pricing['unit'])
+                    currency = model_pricing.get('currency', 'USD')
+                else:
+                    # Object with attributes
+                    input_price = float(model_pricing.input)
+                    output_price = float(model_pricing.output)
+                    unit_price = float(model_pricing.unit)
+                    currency = model_pricing.currency
+                
+                # Calculate costs correctly: (tokens × price) ÷ unit_tokens
+                input_cost = (prompt_tokens * input_price) / (1.0 / unit_price)
+                output_cost = (completion_tokens * output_price) / (1.0 / unit_price)
+                
+                # Round to avoid floating point precision issues
+                input_cost = round(input_cost, 8)
+                output_cost = round(output_cost, 8)
+                total_cost = round(input_cost + output_cost, 8)
+                
+                # Get latency from parent class by calling it first
+                parent_usage = super()._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+                
+                return LLMUsage(
+                    prompt_tokens=prompt_tokens,
+                    prompt_unit_price=input_price,
+                    prompt_price_unit=unit_price,
+                    prompt_price=input_cost,
+                    completion_tokens=completion_tokens,
+                    completion_unit_price=output_price,
+                    completion_price_unit=unit_price,
+                    completion_price=output_cost,
+                    total_tokens=prompt_tokens + completion_tokens,
+                    total_price=total_cost,
+                    currency=currency,
+                    latency=parent_usage.latency,  # Use parent's latency calculation
+                )
+        
+        # Fallback to parent class implementation
+        return super()._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+    

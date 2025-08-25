@@ -1,0 +1,65 @@
+identity:
+  name: list_workbooks
+  author: langgenius
+  label:
+    en_US: List Workbooks
+    zh_Hans: 列出工作簿
+    ja_JP: ワークブックのリスト
+  icon: icon.svg
+
+description:
+  human:
+    en_US: List all Excel workbooks accessible to the user in OneDrive or SharePoint
+    zh_Hans: 列出用户在 OneDrive 或 SharePoint 中可访问的所有 Excel 工作簿
+    ja_JP: OneDriveまたはSharePointでユーザーがアクセス可能なすべてのExcelワークブックをリストする
+  llm: List all Excel workbooks that the user has access to, with optional filtering by folder or search query
+
+parameters:
+  - name: folder_id
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Folder ID
+      zh_Hans: 文件夹 ID
+      ja_JP: フォルダID
+    human_description:
+      en_US: The ID of the folder to list workbooks from (optional)
+      zh_Hans: 要列出工作簿的文件夹 ID（可选）
+      ja_JP: ワークブックをリストするフォルダのID（オプション）
+    llm_description: The ID of a specific folder to list workbooks from. If not provided, lists from root folder.
+
+  - name: search_query
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Search Query
+      zh_Hans: 搜索查询
+      ja_JP: 検索クエリ
+    human_description:
+      en_US: Search for workbooks by name (optional)
+      zh_Hans: 按名称搜索工作簿（可选）
+      ja_JP: 名前でワークブックを検索（オプション）
+    llm_description: Optional search query to filter workbooks by name
+
+  - name: max_results
+    type: number
+    required: false
+    default: 20
+    form: llm
+    label:
+      en_US: Maximum Results
+      zh_Hans: 最大结果数
+      ja_JP: 最大結果数
+    human_description:
+      en_US: Maximum number of workbooks to return
+      zh_Hans: 返回的最大工作簿数量
+      ja_JP: 返すワークブックの最大数
+    llm_description: Maximum number of workbooks to return (default is 20)
+    min: 1
+    max: 100
+
+extra:
+  python:
+    source: tools/list_workbooks.py
