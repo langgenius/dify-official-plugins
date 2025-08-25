@@ -35,6 +35,7 @@ from dify_plugin.errors.model import (
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from google import genai
 from google.genai import errors, types
+from google.genai.types import HttpOptions
 
 from .utils import FileCache, UNSUPPORTED_DOCUMENT_TYPES, UNSUPPORTED_EXTENSIONS
 
@@ -822,7 +823,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # == InitConfig == #
 
         config = types.GenerateContentConfig()
-        genai_client = genai.Client(api_key=credentials["google_api_key"])
+        genai_client = genai.Client(
+            api_key=credentials["google_api_key"],
+            http_options=HttpOptions(base_url=credentials["google_base_url"]),
+        )
 
         # == ChatConfig == #
 
@@ -911,7 +915,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return:
         """
         try:
-            genai_client = genai.Client(api_key=credentials["google_api_key"])
+            genai_client = genai.Client(
+                api_key=credentials["google_api_key"],
+                http_options=HttpOptions(base_url=credentials["google_base_url"]),
+            )
             genai_client.models.count_tokens(model=model, contents="ping")
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
