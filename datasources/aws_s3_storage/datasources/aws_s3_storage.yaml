@@ -11,8 +11,10 @@ description:
 parameters:
 
 output_schema:
-    $ref: "#/$defs/file"
-        
+    type: object
+    properties:
+      file:
+        $ref: "#/$defs/file"
 extra:
   python:
     source: datasources/aws_s3_storage.py

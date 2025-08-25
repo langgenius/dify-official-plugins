@@ -1,8 +1,7 @@
 import os
 from collections.abc import Generator
-
-import boto3  # type: ignore
-from botocore.client import Config  # type: ignore
+import boto3
+from botocore.client import Config
 from dify_plugin.entities.datasource import (
     DatasourceMessage,
     OnlineDriveBrowseFilesRequest,

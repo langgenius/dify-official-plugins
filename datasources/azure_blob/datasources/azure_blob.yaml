@@ -10,7 +10,10 @@ description:
   zh_Hans: 访问 Azure Blob 存储容器和 Blob，支持多种认证方式
 
 output_schema:
-  $ref: "#/$defs/file"
+  type: object
+  properties:
+    file:
+      $ref: "#/$defs/file"
       
 
 extra:
