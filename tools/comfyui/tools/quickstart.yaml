@@ -1,17 +1,19 @@
 description:
   human:
-    en_US:
-      A highly practical solution for robust monocular depth estimation by training on a combination of 1.5M labeled images and 62M+ unlabeled images.
-      https://github.com/kijai/ComfyUI-DepthAnythingV2
-  llm: estimates the depth of a regular RGB image
+    en_US: Quick Start
+    zh_Hans: 快速入门
+    ja_JP: クイックスタート
+  llm: Run a basic process of ComfyUI.
 extra:
   python:
-    source: tools/image_edit.py
+    source: tools/quickstart.py
 identity:
   author: yt-koike
   label:
-    en_US: Image Edit
-  name: image_edit
+    en_US: Quick Start
+    zh_Hans: 快速入门
+    ja_JP: クイックスタート
+  name: workflow
 
 parameters:
   - name: images
@@ -73,6 +75,9 @@ parameters:
       - label:
           en_US: Upscale ESRGAN x4
         value: upscale_esrgan_x4
+      - label:
+          en_US: Qwen Image Edit
+        value: qwen_image_edit
 
   - name: prompt
     form: llm

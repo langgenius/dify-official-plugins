@@ -8,7 +8,7 @@ from tools.comfyui_client import ComfyUiClient, FileType
 from tools.model_manager import ModelManager
 
 
-class ComfyuiDepthAnything(Tool):
+class QuickStart(Tool):
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
@@ -41,14 +41,9 @@ class ComfyuiDepthAnything(Tool):
             image_names.append(image_name)
 
         output_images = []
-        if feature.startswith("depth_anything_"):
-            output_images = self.depth_anything(feature, image_names)
-        elif feature.startswith("depth_pro"):
-            output_images = self.depth_pro(feature, image_names)
-        elif feature == "face_swap":
-            output_images = self.face_swap(image_names[0], image_names[1])
-        elif feature.startswith("upscale"):
-            output_images = self.upscale(feature, image_names)
+        if feature == "qwen_image_edit":
+            output_images = self.qwen_image_edit(
+                prompt, negative_prompt, image_names)
 
         for img in output_images:
             yield self.create_blob_message(
@@ -129,4 +124,35 @@ class ComfyuiDepthAnything(Tool):
                 raise ToolProviderCredentialValidationError(
                     f"Failed to generate image: {str(e)}. Maybe install https://github.com/kijai/ComfyUI-DepthAnythingV2 on ComfyUI"
                 )
+        return output_images
+
+    def qwen_image_edit(self, prompt, negative_prompt, image_names):
+        models = [
+            {
+                "name": "qwen_image_fp8_e4m3fn.safetensors",
+                "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_fp8_e4m3fn.safetensors",
+                "directory": "diffusion_models"
+            },
+            {
+                "name": "qwen_image_vae.safetensors",
+                "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/vae/qwen_image_vae.safetensors",
+                "directory": "vae"
+            },
+            {
+                "name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+                "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors",
+                "directory": "text_encoders"
+            },
+        ]
+        for model in models:
+            self.model_manager.download_model(model["url"], model["directory"])
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+
+        workflow = ComfyUiWorkflow()
+        workflow.load_from_file(os.path.join(current_dir, "json", "qwen.json"))
+        workflow.set_prompt("6", prompt)
+        workflow.set_prompt("7", negative_prompt)
+        workflow.set_image_names(image_names)
+        self.model_manager.download_from_json(workflow.json_original_str())
+        output_images = self.comfyui.generate(workflow.json())
         return output_images
