@@ -96,39 +96,20 @@ parameters:
   default: false
 
 output_schema:
-  type: object
-  properties:
-    result:
-      type: object
-      properties:
-        status:
-          type: string
-          description: crawl job status
-        web_info_list:
-          type: array
-          items:
-            type: object
-            properties:
-              source_url:
-                type: string
-                description: The url of the website
-              content:
-                type: string
-                description: The content of the website
-              title:
-                type: string
-                description: The title of the website
-              description:
-                type: string
-                description: The description of the website
-          description: List of website info details
-        total:
-          type: number
-          description: The total number of websites
-        completed:
-          type: number
-          description: The number of completed websites
-      description: Website crawl result
+    type: object
+    properties:
+      source_url:
+        type: string
+        description: the source url of the website
+      content:
+        type: string
+        description: the content from the website
+      title:
+        type: string
+        description: the title of the website
+      "description":
+        type: string
+        description: the description of the website
 provider_type: website_crawl
 extra:
   python:
