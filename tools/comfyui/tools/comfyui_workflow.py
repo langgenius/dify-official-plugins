@@ -23,13 +23,25 @@ FluxGuidanceNode = {
 
 
 class ComfyUiWorkflow:
-    def __init__(self, workflow_json: str | dict | None = None, filepath: str | None = None):
-        if filepath is not None:
-            with open(filepath, "r", encoding="utf-8") as f:
-                workflow_json = json.load(f)
-        if workflow_json is None:
-            return
+    def __init__(self, workflow_json: str | dict | None):
+        if type(workflow_json) is str:
+            self.load_from_json_str(workflow_json)
+        elif type(workflow_json) is dict:
+            self.load_from_json_dict(workflow_json)
+        else:
+            raise Exception(
+                "workflow_json has unsupported format. Please convert it to str or dict"
+            )
 
+    def __str__(self):
+        return json.dumps(self._workflow_api)
+
+    def load_from_file(self, filepath: str):
+        with open(filepath, "r", encoding="utf-8") as f:
+            workflow_json: dict = json.load(f)
+        self.load_from_json_dict(workflow_json)
+
+    def load_from_json_str(self, workflow_json_str: str):
         def clean_json_string(string: str) -> str:
             for char in ["\n", "\r", "\t", "\x08", "\x0c"]:
                 string = string.replace(char, "")
@@ -37,15 +49,10 @@ class ComfyUiWorkflow:
                 string = string.replace(chr(char_id), "")
             string = string.replace("'", '"')
             return string
+        workflow_json: dict = json.loads(clean_json_string(workflow_json_str))
+        self.load_from_json_dict(workflow_json)
 
-        if type(workflow_json) is str:
-            workflow_json: dict = json.loads(clean_json_string(workflow_json))
-        elif type(workflow_json) is dict:
-            pass
-        else:
-            raise Exception(
-                "workflow_json has unsupported format. Please convert it to str or dict"
-            )
+    def load_from_json_dict(self, workflow_json: dict):
         self._workflow_original = workflow_json
         if "nodes" in workflow_json:
             try:
@@ -55,9 +62,6 @@ class ComfyUiWorkflow:
                     f"Failed to convert Workflow to API ready. {str(e)}")
         else:
             self._workflow_api = deepcopy(workflow_json)
-
-    def __str__(self):
-        return json.dumps(self._workflow_api)
 
     def convert_to_api_ready(self, workflow_json: dict) -> dict:
         result = {}
