@@ -83,8 +83,10 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
     ) -> Union[LLMResult, Generator]:
         self._update_credential(model, credentials)
         
-        # Convert any file content to text descriptions
-        prompt_messages = self._convert_files_to_text(prompt_messages)
+        # Only convert file content to text descriptions for models that don't support vision
+        model_schema = self.get_model_schema(model, credentials)
+        if not (model_schema and ModelFeature.VISION in (model_schema.features or [])):
+            prompt_messages = self._convert_files_to_text(prompt_messages)
         # reasoning
         reasoning_params = {}
         reasoning_budget = model_parameters.pop('reasoning_budget', None)
