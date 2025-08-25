@@ -85,6 +85,6 @@ output_schema:
   type: object
   properties:
     result:
-      $ref: "#/$defs/general_structure_chunk"
+      $ref: "https://dify.ai/schemas/v1/general_structure.json"
 
 

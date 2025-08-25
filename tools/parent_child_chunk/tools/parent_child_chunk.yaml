@@ -146,7 +146,7 @@ output_schema:
   type: object
   properties:
     result:
-      $ref: "#/$defs/parent_child_structure_chunk"
+      $ref: "https://dify.ai/schemas/v1/parent_child_structure.json"
 extra:
   python:
     source: tools/parent_child_chunk.py

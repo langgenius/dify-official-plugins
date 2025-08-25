@@ -1,4 +1,4 @@
-version: 0.2.3
+version: 0.2.4
 type: plugin
 author: langgenius
 name: google_cloud_storage
@@ -26,5 +26,5 @@ meta:
     entrypoint: main
   minimum_dify_version: 1.0.0
 created_at: 2025-05-13T14:54:47.062188+08:00
-privacy: 
+privacy:
 verified: false

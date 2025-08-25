@@ -51,7 +51,4 @@ parameters:
   required: true
   type: number
 output_schema:
-  type: object
-  properties:
-    result:
-      $ref: "#/$defs/qa_structure_chunk"
+  $ref: "https://dify.ai/schemas/v1/qa_structure.json"
