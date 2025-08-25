@@ -176,14 +176,14 @@ parameters:
     llm_description: '(For local deployment v2) Example: pipeline, vlm-transformers, vlm-sglang-engine, vlm-sglang-client, default is pipeline'
     form: form
 
-  - name: sglang_client_url
+  - name: sglang_server_url
     type: string
     required: false
     default: ""
     label:
-      zh_Hans: sglang-client地址
-      en_US: sglang-client address
-      ja_JP: sglang-clientアドレス
+      zh_Hans: sglang-server地址
+      en_US: sglang-server url
+      ja_JP: sglang-serverアドレス
     human_description:
       zh_Hans: '（用于本地部署v2版本 解析后端为vlm-sglang-client时）示例：http://127.0.0.1:8000，默认值为空'
       en_US: '(For local deployment v2 when backend is vlm-sglang-client) Example: http://127.0.0.1:8000, default is empty'

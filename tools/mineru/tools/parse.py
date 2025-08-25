@@ -209,7 +209,7 @@ class MineruTool(Tool):
             'backend': tool_parameters.get('backend', 'pipeline'),
             'formula_enable': tool_parameters.get('formula_enable', True),
             'table_enable': tool_parameters.get('table_enable', True),
-            'server_url': tool_parameters.get('sglang_client_url', ""),
+            'server_url': tool_parameters.get('sglang_server_url', ""),
             'return_middle_json': False,
         }
 
