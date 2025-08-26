@@ -112,6 +112,12 @@ model_credential_schema:
       zh_Hans: 基础模型
     options:
     - label:
+        en_US: Doubao-Seed-1.6-vision
+      value: Doubao-Seed-1.6-vision
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
         en_US: DeepSeek-V3.1
       value: DeepSeek-V3.1
       show_on:
