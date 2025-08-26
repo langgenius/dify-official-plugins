@@ -13,7 +13,7 @@ output_schema:
   type: object
   properties:
     file:
-      $ref: "#/$defs/file"
+      $ref: "https://dify.ai/schemas/v1/file.json"
       
 
 extra:
