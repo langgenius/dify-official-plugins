@@ -8,11 +8,13 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 from tools.csv_extractor import CSVExtractor
 from tools.excel_extractor import ExcelExtractor
 from tools.html_extractor import HtmlExtractor
+from tools.json_extractor import JSONExtractor
 from tools.markdown_extractor import MarkdownExtractor
 from tools.pdf_extractor import PdfExtractor
 from tools.text_extractor import TextExtractor
 from tools.word_extractor import WordExtractor
 from tools.pptx_extractor import PPTXExtractor
+from tools.yaml_extractor import YAMLExtractor
 
 
 class DifyExtractorTool(Tool):
@@ -37,6 +39,10 @@ class DifyExtractorTool(Tool):
             extractor = PPTXExtractor(self, file_bytes, file_name)
         elif file_extension == ".csv":
             extractor = CSVExtractor(file_bytes, file_name, autodetect_encoding=True)
+        elif file_extension == ".json":
+            extractor = JSONExtractor(file_bytes, file_name, autodetect_encoding=True)
+        elif file_extension in {".yaml", ".yml"}:
+            extractor = YAMLExtractor(file_bytes, file_name, autodetect_encoding=True)
         else:
             # txt
             extractor = TextExtractor(file_bytes, file_name, autodetect_encoding=True)
