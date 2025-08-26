@@ -276,7 +276,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # 3. Gracefully handle models that either don't support thinking mode switching
         #    (e.g., `gemini-2.5-pro`) or lack thinking mode entirely (e.g., `gemini-2.0-flash`),
         #    instead of causing an immediate error.
-        blacklist_thinking_prefix = {"gemini-2.0-flash-preview-image-generation", "nano-banana"}
+        blacklist_thinking_prefix = {
+            "gemini-2.0-flash-preview-image-generation",
+            "gemini-2.5-flash-image-preview",
+        }
         for _prefix in blacklist_thinking_prefix:
             if model_name.startswith(_prefix):
                 return
@@ -303,7 +306,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
     @staticmethod
     def _set_response_modalities(*, config: types.GenerateContentConfig, model_name: str) -> None:
-        if model_name in ["gemini-2.0-flash-preview-image-generation", "nano-banana"]:
+        if model_name in [
+            "gemini-2.0-flash-preview-image-generation",
+            "gemini-2.5-flash-image-preview",
+        ]:
             config.response_modalities = [types.Modality.TEXT.value, types.Modality.IMAGE.value]
         elif model_name in [
             "models/gemini-2.5-flash-preview-native-audio-dialog",
