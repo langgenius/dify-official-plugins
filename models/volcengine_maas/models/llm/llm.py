@@ -556,7 +556,8 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     options=["enabled", "disabled", "auto"],
                 )
             )
-        elif base_model.lower() in ("doubao-1.5-thinking-vision-pro", "doubao-seed-1.6-flash", "deepseek-v3.1"):
+        elif base_model.lower() in ("doubao-1.5-thinking-vision-pro", "doubao-seed-1.6-flash", "deepseek-v3.1",
+                                    "doubao-seed-1.6-vision"):
             rules.append(
                 ParameterRule(
                     name="thinking",
