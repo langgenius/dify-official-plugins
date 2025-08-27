@@ -32,7 +32,7 @@ from dify_plugin.errors.model import (
     InvokeError,
     InvokeServerUnavailableError,
 )
-from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
+from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel, logger
 from google import genai
 from google.genai import errors, types
 
@@ -41,6 +41,11 @@ from .utils import FileCache, UNSUPPORTED_DOCUMENT_TYPES, UNSUPPORTED_EXTENSIONS
 file_cache = FileCache()
 
 _MMC = TypeVar("_MMC", bound=MultiModalPromptMessageContent)
+
+IMAGE_GENERATION_MODELS = {
+    "gemini-2.0-flash-preview-image-generation",
+    "gemini-2.5-flash-image-preview",
+}
 
 
 class GoogleLargeLanguageModel(LargeLanguageModel):
@@ -276,10 +281,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # 3. Gracefully handle models that either don't support thinking mode switching
         #    (e.g., `gemini-2.5-pro`) or lack thinking mode entirely (e.g., `gemini-2.0-flash`),
         #    instead of causing an immediate error.
-        blacklist_thinking_prefix = {
-            "gemini-2.0-flash-preview-image-generation",
-            "gemini-2.5-flash-image-preview",
-        }
+        blacklist_thinking_prefix = IMAGE_GENERATION_MODELS
         for _prefix in blacklist_thinking_prefix:
             if model_name.startswith(_prefix):
                 return
@@ -306,10 +308,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
     @staticmethod
     def _set_response_modalities(*, config: types.GenerateContentConfig, model_name: str) -> None:
-        if model_name in [
-            "gemini-2.0-flash-preview-image-generation",
-            "gemini-2.5-flash-image-preview",
-        ]:
+        if model_name in IMAGE_GENERATION_MODELS:
             config.response_modalities = [types.Modality.TEXT.value, types.Modality.IMAGE.value]
         elif model_name in [
             "models/gemini-2.5-flash-preview-native-audio-dialog",
@@ -560,6 +559,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: llm response
         """
         # transform assistant message to prompt message
+        # FIXME: assistant contents (parts)
         assistant_prompt_message = AssistantPromptMessage(content=response.text)
 
         # calculate num tokens
@@ -834,7 +834,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         self._set_chat_parameters(config=config, model_parameters=model_parameters, stop=stop)
 
+        # TODO: REMOVE LOGGER
         # Build contents from prompt messages
+        print("Building contents from prompt messages...")
+        for p in prompt_messages:
+            logger.warning(p)
+
         file_server_url_prefix = credentials.get("file_url") or None
         contents = self._build_gemini_contents(
             prompt_messages=prompt_messages,
@@ -871,6 +876,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         # Must be executed after `_validate_feature_compatibility`
         self._set_tool_calling(config=config, model_parameters=model_parameters, tools=tools)
+
+        # TODO: REMOVE LOGGER
+        logger.warning(f"{len(contents)=}")
+        for c in contents:
+            logger.warning(f"{c=}")
 
         # == InvokeModel == #
 
