@@ -1,3 +1,4 @@
+import json
 import logging
 from collections.abc import Generator
 from typing import Optional
@@ -9,7 +10,7 @@ from dify_plugin.entities.model import (
     ModelPropertyKey,
     ModelType,
     ParameterRule,
-    ParameterType,
+    ParameterType, ModelFeature,
 )
 from dify_plugin.entities.model.llm import (
     LLMResult,
@@ -273,6 +274,30 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         user: str | None = None,
     ) -> LLMResult | Generator:
         client = ArkClientV3.from_credentials(credentials)
+
+        # Process structured output parameters
+        if "response_format" in model_parameters:
+            response_format = model_parameters.get("response_format")
+            if response_format == "json_schema":
+                json_schema = model_parameters.get("json_schema")
+                if not json_schema:
+                    raise ValueError(
+                        "Must define JSON Schema when the response format is json_schema"
+                    )
+                try:
+                    schema = json.loads(json_schema)
+                except Exception:
+                    raise ValueError(f"not correct json_schema format: {json_schema}")
+                model_parameters.pop("json_schema")
+                model_parameters["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": schema,
+                }
+            else:
+                model_parameters["response_format"] = {"type": response_format}
+        elif "json_schema" in model_parameters:
+            del model_parameters["json_schema"]
+
         req_params = get_v3_req_params(credentials, model_parameters, stop)
         if tools:
             req_params["tools"] = tools
@@ -567,6 +592,26 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     options=["enabled", "disabled"],
                 )
             )
+
+        # Add structured output parameters for supported models
+        if ModelFeature.STRUCTURED_OUTPUT in model_config.features:
+            rules.extend([
+                ParameterRule(
+                    name="response_format",
+                    type=ParameterType.STRING,
+                    default="text",
+                    label=I18nObject(zh_Hans="响应格式", en_US="Response Format"),
+                    help=I18nObject(zh_Hans="指定模型响应的格式", en_US="Specify the format of model response"),
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    type=ParameterType.STRING,
+                    label=I18nObject(zh_Hans="JSON Schema", en_US="JSON Schema"),
+                    help=I18nObject(zh_Hans="当response_format为json_schema时必需，定义JSON响应的结构",
+                                    en_US="Required when response_format is json_schema, defines the structure of JSON response"),
+                ),
+            ])
 
         model_properties = {}
         model_properties[ModelPropertyKey.CONTEXT_SIZE] = (
