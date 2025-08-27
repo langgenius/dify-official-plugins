@@ -1,0 +1,83 @@
+identity:
+  name: "get_message"
+  display_name: "Get Message"
+  author: "langgenius"
+  label:
+    en_US: "Get Gmail Message Details"
+    zh_Hans: "获取Gmail邮件详情"
+    pt_BR: "Obter Detalhes da Mensagem do Gmail"
+    ja_JP: "Gmailメッセージの詳細を取得"
+description:
+  human:
+    en_US: "Get detailed information about a specific Gmail message including headers, body, and attachments"
+    zh_Hans: "获取特定Gmail邮件的详细信息，包括邮件头、正文和附件"
+    pt_BR: "Obter informações detalhadas sobre uma mensagem específica do Gmail, incluindo cabeçalhos, corpo e anexos"
+    ja_JP: "特定のGmailメッセージの詳細情報を取得し、ヘッダー、本文、添付ファイルを含む"
+  llm: "Retrieve detailed information about a specific Gmail message by its ID. Returns complete message data including headers, body content, attachments, and metadata."
+parameters:
+  - name: message_id
+    type: string
+    required: true
+    label:
+      en_US: "Message ID"
+      zh_Hans: "邮件ID"
+      pt_BR: "ID da Mensagem"
+      ja_JP: "メッセージID"
+    human_description:
+      en_US: "The unique identifier of the Gmail message to retrieve"
+      zh_Hans: "要检索的Gmail邮件的唯一标识符"
+      pt_BR: "Identificador único da mensagem do Gmail a ser recuperada"
+      ja_JP: "取得するGmailメッセージの一意の識別子"
+    llm_description: "The unique message ID of the Gmail message to retrieve. This ID can be obtained from the list_messages tool or other Gmail operations."
+    form: llm
+  - name: include_body
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: "Include Email Body"
+      zh_Hans: "包含邮件正文"
+      pt_BR: "Incluir Corpo do Email"
+      ja_JP: "メール本文を含める"
+    human_description:
+      en_US: "Whether to include the full email body content in the results"
+      zh_Hans: "是否在结果中包含完整的邮件正文内容"
+      pt_BR: "Se deve incluir o conteúdo completo do corpo do email nos resultados"
+      ja_JP: "結果にメール本文の完全な内容を含めるかどうか"
+    llm_description: "Set to true to include full email body content, false to include only headers and metadata"
+    form: llm
+  - name: include_attachments
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: "Include Attachment Details"
+      zh_Hans: "包含附件详情"
+      pt_BR: "Incluir Detalhes dos Anexos"
+      ja_JP: "添付ファイルの詳細を含める"
+    human_description:
+      en_US: "Whether to include detailed information about attachments (names, sizes, types)"
+      zh_Hans: "是否包含关于附件的详细信息（名称、大小、类型）"
+      pt_BR: "Se deve incluir informações detalhadas sobre anexos (nomes, tamanhos, tipos)"
+      ja_JP: "添付ファイルに関する詳細情報（名前、サイズ、タイプ）を含めるかどうか"
+    llm_description: "Set to true to include detailed attachment information, false to include only basic attachment metadata"
+    form: llm
+output_schema:
+  type: object
+  properties:
+    message:
+      type: object
+      description: "Complete message information"
+      properties:
+        id:
+          type: string
+          description: "Unique identifier of the message"
+        thread_id:
+          type: string
+          description: "Unique identifier of the email thread"
+    message_id:
+      type: string
+      description: "The message ID that was requested"
+extra:
+  python:
+    source: tools/get_message.py 
