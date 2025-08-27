@@ -837,6 +837,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         self._set_chat_parameters(config=config, model_parameters=model_parameters, stop=stop)
 
+        # Build contents from prompt messages
         file_server_url_prefix = credentials.get("file_url") or None
         contents = self._build_gemini_contents(
             prompt_messages=prompt_messages,
