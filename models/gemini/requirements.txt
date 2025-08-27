@@ -52,7 +52,7 @@ google-auth==2.40.3
     #   google-generativeai
 google-auth-httplib2==0.2.0
     # via google-api-python-client
-google-genai==1.29.0
+google-genai==1.31.0
     # via gemini-g9cie8 (pyproject.toml)
 google-generativeai==0.8.5
     # via gemini-g9cie8 (pyproject.toml)
