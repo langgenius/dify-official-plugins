@@ -32,7 +32,7 @@ from dify_plugin.errors.model import (
     InvokeError,
     InvokeServerUnavailableError,
 )
-from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel, logger
+from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from google import genai
 from google.genai import errors, types
 
@@ -559,8 +559,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: llm response
         """
         # transform assistant message to prompt message
-        # FIXME: assistant contents (parts)
-        assistant_prompt_message = AssistantPromptMessage(content=response.text)
+        if model in IMAGE_GENERATION_MODELS:
+            assistant_prompt_message = self._parse_parts(response.candidates[0].content.parts)
+        else:
+            assistant_prompt_message = AssistantPromptMessage(content=response.text)
 
         # calculate num tokens
         prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
@@ -768,6 +770,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                             format=mime_subtype,
                             base64_data=base64.b64encode(data).decode(),
                             mime_type=mime_type,
+                            detail=ImagePromptMessageContent.DETAIL.HIGH,
                         )
                     )
                 else:
@@ -834,12 +837,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         self._set_chat_parameters(config=config, model_parameters=model_parameters, stop=stop)
 
-        # TODO: REMOVE LOGGER
-        # Build contents from prompt messages
-        print("Building contents from prompt messages...")
-        for p in prompt_messages:
-            logger.warning(p)
-
         file_server_url_prefix = credentials.get("file_url") or None
         contents = self._build_gemini_contents(
             prompt_messages=prompt_messages,
@@ -876,11 +873,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         # Must be executed after `_validate_feature_compatibility`
         self._set_tool_calling(config=config, model_parameters=model_parameters, tools=tools)
-
-        # TODO: REMOVE LOGGER
-        logger.warning(f"{len(contents)=}")
-        for c in contents:
-            logger.warning(f"{c=}")
 
         # == InvokeModel == #
 
