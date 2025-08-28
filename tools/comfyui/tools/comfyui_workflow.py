@@ -23,7 +23,7 @@ FluxGuidanceNode = {
 
 
 class ComfyUiWorkflow:
-    def __init__(self, workflow_json: str | dict | None):
+    def __init__(self, workflow_json: str | dict):
         if type(workflow_json) is str:
             self.load_from_json_str(workflow_json)
         elif type(workflow_json) is dict:
@@ -35,11 +35,6 @@ class ComfyUiWorkflow:
 
     def __str__(self):
         return json.dumps(self._workflow_api)
-
-    def load_from_file(self, filepath: str):
-        with open(filepath, "r", encoding="utf-8") as f:
-            workflow_json: dict = json.load(f)
-        self.load_from_json_dict(workflow_json)
 
     def load_from_json_str(self, workflow_json_str: str):
         def clean_json_string(string: str) -> str:
@@ -203,6 +198,21 @@ class ComfyUiWorkflow:
         self.set_property(node_id, "inputs/cfg", cfg)
         self.set_property(node_id, "inputs/denoise", denoise)
         self.set_property(node_id, "inputs/seed", seed)
+
+    def set_SD3_latent_image(
+        self,
+        node_id: str | None,
+        width: int,
+        height: int,
+        batch_size: int = 1,
+    ):
+        if node_id is None:
+            node_id = self.identify_node_by_class_type("EmptySD3LatentImage")
+        if self.get_class_type(node_id) != "EmptySD3LatentImage":
+            raise Exception(f"Node {node_id} is not EmptySD3LatentImage")
+        self.set_property(node_id, "inputs/width", width)
+        self.set_property(node_id, "inputs/height", height)
+        self.set_property(node_id, "inputs/batch_size", batch_size)
 
     def set_empty_latent_image(
         self,
