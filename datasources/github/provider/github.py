@@ -12,12 +12,12 @@ class GitHubDatasourceProvider(DatasourceProvider):
     _USERINFO_URL = "https://api.github.com/user"
 
     def _validate_credentials(self, credentials: Mapping[str, Any]) -> None:
-        """验证凭证有效性"""
+        """Validate credentials"""
         access_token = credentials.get("access_token")
         if not access_token:
             raise ValueError("Access token is required")
         
-        # 验证 token 有效性
+        # Validate token validity
         headers = {
             "Authorization": f"token {access_token}",
             "Accept": "application/vnd.github.v3+json",
@@ -34,11 +34,11 @@ class GitHubDatasourceProvider(DatasourceProvider):
             raise ValueError(f"Failed to validate GitHub token: {str(e)}")
 
     def _oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
-        """获取 OAuth 授权 URL"""
+        """Get OAuth authorization URL"""
         scopes = [
-            "repo",  # 访问私有和公共仓库
-            "user:email",  # 获取用户邮箱
-            "read:user",  # 读取用户信息
+            "repo",  # Access private and public repositories
+            "user:email",  # Get user email
+            "read:user",  # Read user information
         ]
         params = {
             "client_id": system_credentials["client_id"],
@@ -51,12 +51,12 @@ class GitHubDatasourceProvider(DatasourceProvider):
     def _oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
     ) -> DatasourceOAuthCredentials:
-        """处理 OAuth 回调并获取凭证"""
+        """Handle OAuth callback and get credentials"""
         code = request.args.get("code")
         if not code:
             raise ValueError("No authorization code provided")
 
-        # 交换 access token
+        # Exchange access token
         token_data = {
             "client_id": system_credentials["client_id"],
             "client_secret": system_credentials["client_secret"],
@@ -77,7 +77,7 @@ class GitHubDatasourceProvider(DatasourceProvider):
         if not access_token:
             raise ValueError(f"Error in GitHub OAuth token exchange: {token_json}")
 
-        # 获取用户信息
+        # Get user information
         userinfo_headers = {
             "Authorization": f"token {access_token}",
             "Accept": "application/vnd.github.v3+json",
@@ -101,7 +101,7 @@ class GitHubDatasourceProvider(DatasourceProvider):
         )
 
     def _refresh_access_token(self, credentials: Mapping[str, Any]) -> Mapping[str, Any]:
-        """刷新访问令牌 - GitHub 不支持 refresh token，返回原凭证"""
-        # GitHub 的 OAuth token 不会过期，无需刷新
-        # 如果 token 失效，需要重新授权
+        """Refresh access token - GitHub doesn't support refresh token, return original credentials"""
+        # GitHub OAuth tokens don't expire, no need to refresh
+        # If token is invalid, re-authorization is required
         return credentials

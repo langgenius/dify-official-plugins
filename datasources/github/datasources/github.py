@@ -22,7 +22,7 @@ class GitHubDataSource(OnlineDocumentDatasource):
         self.base_url = "https://api.github.com"
         
     def _get_headers(self) -> Dict[str, str]:
-        """获取 API 请求头"""
+        """Get API request headers"""
         credentials = self.runtime.credentials
         access_token = credentials.get("access_token")
         
@@ -33,7 +33,7 @@ class GitHubDataSource(OnlineDocumentDatasource):
         }
     
     def _handle_rate_limit(self, response: requests.Response) -> None:
-        """处理 API 限流"""
+        """Handle API rate limiting"""
         if response.status_code == 403:
             rate_limit_remaining = response.headers.get("X-RateLimit-Remaining", "0")
             if rate_limit_remaining == "0":
@@ -47,19 +47,19 @@ class GitHubDataSource(OnlineDocumentDatasource):
             raise ValueError(f"GitHub API error: {response.status_code} - {response.text}")
     
     def _make_request(self, url: str, params: Optional[Dict] = None) -> Dict:
-        """发起 API 请求并处理错误"""
+        """Make API request and handle errors"""
         headers = self._get_headers()
         response = requests.get(url, headers=headers, params=params, timeout=30)
         self._handle_rate_limit(response)
         return response.json()
     
     def _get_pages(self, datasource_parameters: dict[str, Any]) -> DatasourceGetPagesResponse:
-        """获取 GitHub 页面列表（仓库、Issues、PRs）"""
+        """Get GitHub page list (repositories, Issues, PRs)"""
         access_token = self.runtime.credentials.get("access_token")
         if not access_token:
             raise ValueError("Access token not found in credentials")
         
-        # 获取用户信息
+        # Get user information
         user_info = self._make_request(f"{self.base_url}/user")
         workspace_name = f"{user_info.get('name', user_info.get('login'))}'s GitHub"
         workspace_icon = user_info.get('avatar_url', '')
@@ -67,10 +67,10 @@ class GitHubDataSource(OnlineDocumentDatasource):
         
         pages = []
         
-        # 获取用户仓库
+        # Get user repositories
         repos = self._get_repositories()
         for repo in repos:
-            # 添加仓库作为页面
+            # Add repository as page
             pages.append({
                 "page_id": f"repo:{repo['full_name']}",
                 "page_name": repo['name'],
@@ -86,7 +86,7 @@ class GitHubDataSource(OnlineDocumentDatasource):
                 }
             })
             
-            # 添加 README 文件（如果存在）
+            # Add README file (if exists)
             try:
                 readme_info = self._make_request(f"{self.base_url}/repos/{repo['full_name']}/readme")
                 pages.append({
@@ -102,16 +102,16 @@ class GitHubDataSource(OnlineDocumentDatasource):
                     }
                 })
             except ValueError:
-                pass  # README 不存在
+                pass  # README doesn't exist
             
-            # 添加热门 Issues
+            # Add popular Issues
             try:
                 issues = self._make_request(
                     f"{self.base_url}/repos/{repo['full_name']}/issues",
                     params={"state": "all", "per_page": 5, "sort": "updated"}
                 )
                 for issue in issues:
-                    if "pull_request" not in issue:  # 排除 PR
+                    if "pull_request" not in issue:  # Exclude PRs
                         pages.append({
                             "page_id": f"issue:{repo['full_name']}:{issue['number']}",
                             "page_name": f"Issue #{issue['number']}: {issue['title']}",
@@ -127,9 +127,9 @@ class GitHubDataSource(OnlineDocumentDatasource):
                             }
                         })
             except ValueError:
-                pass  # Issues 访问失败
+                pass  # Issues access failed
             
-            # 添加热门 PRs
+            # Add popular PRs
             try:
                 prs = self._make_request(
                     f"{self.base_url}/repos/{repo['full_name']}/pulls",
@@ -152,7 +152,7 @@ class GitHubDataSource(OnlineDocumentDatasource):
                         }
                     })
             except ValueError:
-                pass  # PRs 访问失败
+                pass  # PRs access failed
         
         online_document_info = OnlineDocumentInfo(
             workspace_name=workspace_name,
@@ -165,13 +165,13 @@ class GitHubDataSource(OnlineDocumentDatasource):
         return DatasourceGetPagesResponse(result=[online_document_info])
     
     def _get_repositories(self, max_repos: int = 20) -> List[Dict]:
-        """获取用户仓库列表"""
+        """Get user repository list"""
         params = {"per_page": max_repos, "sort": "updated", "direction": "desc"}
         repos = self._make_request(f"{self.base_url}/user/repos", params)
         return repos
     
     def _get_content(self, page: GetOnlineDocumentPageContentRequest) -> Generator[DatasourceMessage, None, None]:
-        """获取页面内容"""
+        """Get page content"""
         access_token = self.runtime.credentials.get("access_token")
         if not access_token:
             raise ValueError("Access token not found in credentials")
@@ -179,23 +179,23 @@ class GitHubDataSource(OnlineDocumentDatasource):
         page_id = page.page_id
         
         if page_id.startswith("repo:"):
-            # 获取仓库信息
+            # Get repository information
             yield from self._get_repository_content(page_id)
         elif page_id.startswith("file:"):
-            # 获取文件内容
+            # Get file content
             yield from self._get_file_content(page_id)
         elif page_id.startswith("issue:"):
-            # 获取 Issue 内容
+            # Get Issue content
             yield from self._get_issue_content(page_id)
         elif page_id.startswith("pr:"):
-            # 获取 PR 内容
+            # Get PR content
             yield from self._get_pr_content(page_id)
         else:
             raise ValueError(f"Unsupported page type: {page_id}")
     
     def _get_repository_content(self, page_id: str) -> Generator[DatasourceMessage, None, None]:
-        """获取仓库信息内容"""
-        repo_name = page_id[5:]  # 移除 "repo:" 前缀
+        """Get repository information content"""
+        repo_name = page_id[5:]  # Remove "repo:" prefix
         
         repo_info = self._make_request(f"{self.base_url}/repos/{repo_name}")
         
@@ -213,7 +213,7 @@ class GitHubDataSource(OnlineDocumentDatasource):
             topics = ", ".join(repo_info['topics'])
             content += f"**Topics:** {topics}\n\n"
         
-        # 尝试获取 README
+        # Try to get README
         try:
             readme_info = self._make_request(f"{self.base_url}/repos/{repo_name}/readme")
             if readme_info.get("encoding") == "base64":
@@ -229,7 +229,7 @@ class GitHubDataSource(OnlineDocumentDatasource):
         yield self.create_variable_message("type", "repository")
     
     def _get_file_content(self, page_id: str) -> Generator[DatasourceMessage, None, None]:
-        """获取文件内容"""
+        """Get file content"""
         # page_id format: "file:owner/repo:path"
         parts = page_id.split(":", 2)
         repo_name = parts[1]
@@ -240,7 +240,7 @@ class GitHubDataSource(OnlineDocumentDatasource):
         if file_info.get("type") != "file":
             raise ValueError("Can only get content for files, not directories")
         
-        # 获取文件内容
+        # Get file content
         if file_info.get("encoding") == "base64":
             content = base64.b64decode(file_info["content"]).decode("utf-8")
         else:
@@ -252,7 +252,7 @@ class GitHubDataSource(OnlineDocumentDatasource):
             else:
                 content = file_info.get("content", "")
         
-        # 如果是 Markdown 文件，添加标题
+        # If it's a Markdown file, add title
         file_name = file_info["name"]
         if file_name.lower().endswith(('.md', '.markdown')):
             content = f"# {file_name}\n\n{content}"
@@ -265,7 +265,7 @@ class GitHubDataSource(OnlineDocumentDatasource):
         yield self.create_variable_message("type", "file")
     
     def _get_issue_content(self, page_id: str) -> Generator[DatasourceMessage, None, None]:
-        """获取 Issue 内容"""
+        """Get Issue content"""
         # page_id format: "issue:owner/repo:number"
         parts = page_id.split(":", 2)
         repo_name = parts[1]
@@ -289,7 +289,7 @@ class GitHubDataSource(OnlineDocumentDatasource):
             content += "## Description\n\n"
             content += issue['body'] + "\n\n"
         
-        # 获取评论
+        # Get comments
         try:
             comments = self._make_request(f"{self.base_url}/repos/{repo_name}/issues/{issue_number}/comments")
             if comments:
@@ -308,7 +308,7 @@ class GitHubDataSource(OnlineDocumentDatasource):
         yield self.create_variable_message("type", "issue")
     
     def _get_pr_content(self, page_id: str) -> Generator[DatasourceMessage, None, None]:
-        """获取 PR 内容"""
+        """Get PR content"""
         # page_id format: "pr:owner/repo:number"
         parts = page_id.split(":", 2)
         repo_name = parts[1]
@@ -330,7 +330,7 @@ class GitHubDataSource(OnlineDocumentDatasource):
             content += "## Description\n\n"
             content += pr['body'] + "\n\n"
         
-        # 获取评论
+        # Get comments
         try:
             comments = self._make_request(f"{self.base_url}/repos/{repo_name}/issues/{pr_number}/comments")
             if comments:
