@@ -13,7 +13,8 @@ class ComfyUIWorkflowTool(Tool):
     ) -> Generator[ToolInvokeMessage, None, None]:
         self.comfyui = ComfyUiClient(
             self.runtime.credentials["base_url"],
-            api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"),
+            api_key_comfy_org=self.runtime.credentials.get(
+                "api_key_comfy_org"),
         )
         self.model_manager = ModelManager(
             self.comfyui,
@@ -59,9 +60,9 @@ class ComfyUIWorkflowTool(Tool):
 
         for img in output_images:
             yield self.create_blob_message(
-                blob=img["data"],
+                blob=img.blob,
                 meta={
-                    "filename": img["filename"],
-                    "mime_type": img["mime_type"],
+                    "filename": img.filename,
+                    "mime_type": img.mime_type,
                 },
             )

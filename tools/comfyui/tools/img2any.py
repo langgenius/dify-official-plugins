@@ -4,7 +4,7 @@ from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
 from tools.comfyui_workflow import ComfyUiWorkflow
-from tools.comfyui_client import ComfyUiClient, FileType
+from tools.comfyui_client import ComfyUiClient, ComfyUiFile, FileType
 from tools.model_manager import ModelManager
 
 
@@ -52,14 +52,14 @@ class ComfyuiImg2Any(Tool):
 
         for img in output_images:
             yield self.create_blob_message(
-                blob=img["data"],
+                blob=img.blob,
                 meta={
-                    "filename": img["filename"],
-                    "mime_type": img["mime_type"],
+                    "filename": img.filename,
+                    "mime_type": img.mime_type,
                 },
             )
 
-    def depth_pro(self, feature, image_names):
+    def depth_pro(self, feature, image_names) -> list[ComfyUiFile]:
         output_images = []
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "depth_pro.json")) as file:
@@ -80,7 +80,7 @@ class ComfyuiImg2Any(Tool):
                 )
         return output_images
 
-    def depth_anything(self, feature, image_names):
+    def depth_anything(self, feature, image_names) -> list[ComfyUiFile]:
         output_images = []
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "depth_anything.json")) as file:
@@ -97,7 +97,7 @@ class ComfyuiImg2Any(Tool):
                 )
         return output_images
 
-    def face_swap(self, image_name1, image_name2):
+    def face_swap(self, image_name1, image_name2) -> list[ComfyUiFile]:
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "face_swap.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
@@ -111,7 +111,7 @@ class ComfyuiImg2Any(Tool):
             )
         return output_images
 
-    def upscale(self, feature, image_names):
+    def upscale(self, feature, image_names) -> list[ComfyUiFile]:
         output_images = []
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "upscale.json")) as file:

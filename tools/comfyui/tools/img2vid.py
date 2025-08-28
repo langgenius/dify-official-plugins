@@ -155,10 +155,10 @@ class ComfyuiImg2Vid(Tool):
             if config.output_format == "mp4":
                 img = self.comfyui.convert_webp2mp4(img["data"], config.fps)
             yield self.create_blob_message(
-                blob=img["data"],
+                blob=img.blob,
                 meta={
-                    "filename": img["filename"],
-                    "mime_type": img["mime_type"],
+                    "filename": img.filename,
+                    "mime_type": img.mime_type,
                 },
             )
 
@@ -316,7 +316,8 @@ class ComfyuiImg2Vid(Tool):
         workflow.set_prompt("6", config.prompt)
         workflow.set_prompt("7", config.negative_prompt)
 
-        wan2_2 = workflow.identify_node_by_class_type("Wan22ImageToVideoLatent")
+        wan2_2 = workflow.identify_node_by_class_type(
+            "Wan22ImageToVideoLatent")
         workflow.set_property(wan2_2, "inputs/width", config.width)
         workflow.set_property(wan2_2, "inputs/height", config.height)
         workflow.set_property(wan2_2, "inputs/length", config.frameN)
@@ -330,7 +331,7 @@ class ComfyuiImg2Vid(Tool):
                 f"Failed to generate image: {str(e)}"
             )
         return output_images
-    
+
     def img2vid_svd_wan2_2_14B(
         self, config: ComfyuiImg2VidConfig
     ) -> Generator[ToolInvokeMessage, None, None]:
@@ -348,11 +349,12 @@ class ComfyuiImg2Vid(Tool):
         workflow.set_prompt("6", config.prompt)
         workflow.set_prompt("7", config.negative_prompt)
 
-        wan2_2 = workflow.identify_node_by_class_type("Wan22ImageToVideoLatent")
+        wan2_2 = workflow.identify_node_by_class_type(
+            "Wan22ImageToVideoLatent")
         workflow.set_property(wan2_2, "inputs/width", config.width)
         workflow.set_property(wan2_2, "inputs/height", config.height)
         workflow.set_property(wan2_2, "inputs/length", config.frameN)
-        
+
         workflow.set_image_names([config.image_name])
 
         try:
