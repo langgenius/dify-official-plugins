@@ -1,3 +1,3 @@
-dify_plugin==0.5.0b11
+dify_plugin==0.5.0b14
 yfinance==0.2.51
 pandas==2.2.3
