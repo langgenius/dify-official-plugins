@@ -36,14 +36,13 @@ class ModelManager:
         if not re.match("([A-Za-z0-9\.]+|(civitai:[0-9]+(@[0-9]+)?))(:[0-9]+(\.[0-9])?)?", lora_info):
             raise Exception(f"Invalid lora_info")
 
-        strength_pattern = ":([0-9]+(\.[0-9]+)?)$"
-        strength_list = re.findall(strength_pattern, lora_info)
-        if len(strength_list) > 0:
-            lora_strength = float(strength_list[0][0])
+        if len(lora_info.split(":")) == 3 or (lora_info.split(":")[0] != "civitai" and len(lora_info.split(":")) == 2):
+            lora_name = self.decode_model_name(
+                ":".join(lora_info.split(":")[:-1]), save_dir)
+            lora_strength = float(lora_info.split(":")[-1])
         else:
+            lora_name = self.decode_model_name(lora_info, save_dir)
             lora_strength = 1.0
-        lora_name = re.sub(strength_pattern, "", lora_info)
-        lora_name = self.decode_model_name(lora_name, save_dir)
         return lora_name, lora_strength
 
     def decode_model_name(

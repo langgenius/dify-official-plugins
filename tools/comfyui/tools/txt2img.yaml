@@ -176,7 +176,7 @@ parameters:
     required: true
     type: string
 
-  - name: lora_names
+  - name: loras
     form: llm
     human_description:
       en_US: LORAs, put comma between each LORA name if multiple. If you input a Civitai AIR like "civitai:000000@000000", the model will be downloaded.
