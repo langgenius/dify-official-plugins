@@ -23,6 +23,8 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
         :return: text for given audio file
         """
         try:
+            if credentials.get("use_international_endpoint", "false") == "true":
+                dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
             dashscope.api_key = credentials["dashscope_api_key"]
             file.seek(0)
             audio = AudioSegment.from_file(file)

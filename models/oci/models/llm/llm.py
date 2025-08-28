@@ -1,6 +1,6 @@
 import os
 import base64
-import copy
+import uuid
 import json
 import logging
 import mimetypes
@@ -28,118 +28,53 @@ from dify_plugin.errors.model import (
     InvokeServerUnavailableError,
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
-from oci.generative_ai_inference.models.base_chat_response import BaseChatResponse
+from .call_api import patched_call_api
+from oci.base_client import BaseClient 
+BaseClient.call_api = patched_call_api
 
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
-request_template = {
-    "compartmentId": "",
-    "servingMode": {"modelId": "cohere.command-r-plus-08-2024", "servingType": "ON_DEMAND"},
-    "chatRequest": {
-        "apiFormat": "COHERE",
-        "maxTokens": 600,
-        "isStream": False,
-        "temperature": 1,
-        "topP": 0.75,
-    },
-}
-oci_config_template = {
-    "user": "",
-    "fingerprint": "",
-    "tenancy": "",
-    "region": "",
-    "compartment_id": "",
-    "key_content": "",
-}
-
 
 class OCILargeLanguageModel(LargeLanguageModel):
-    CONTEXT_TOKEN_LIMIT: int = int(os.getenv("OCI_LLM_CONTEXT_TOKENS", 2000))
-    _supported_models = {
-        "meta.llama-3.1-405b-instruct": {
-            "system": True,
-            "multimodal": False,
-            "tool_call": False,
-            "stream_tool_call": False,
-        },
-        "meta.llama-3.2-90b-vision-instruct": {
-            "system": True,
-            "multimodal": True,
-            "tool_call": False,
-            "stream_tool_call": False,
-        },
-        "meta.llama-3.3-70b-instruct": {
-            "system": True,
-            "multimodal": False,
-            "tool_call": False,
-            "stream_tool_call": False,
-        },
-        "meta.llama-4-maverick-17b-128e-instruct-fp8": {
-            "system": True,
-            "multimodal": True,
-            "tool_call": True,
-            "stream_tool_call": True,
-        },
-        "meta.llama-4-scout-17b-16e-instruct": {
-            "system": True,
-            "multimodal": True,
-            "tool_call": True,
-            "stream_tool_call": True,
-        },
-        "cohere.command-r-08-2024": {
-            "system": True,
-            "multimodal": False,
-            "tool_call": True,
-            "stream_tool_call": False,
-        },
-        "cohere.command-r-plus-08-2024": {
-            "system": True,
-            "multimodal": False,
-            "tool_call": True,
-            "stream_tool_call": False,
-        },
-        "xai.grok-3": {
-            "system": True,
-            "multimodal": False,
-            "tool_call": True,
-            "stream_tool_call": True,
-        },
-       "xai.grok-3-mini": {
-            "system": True,
-            "multimodal": False,
-            "tool_call": True,
-            "stream_tool_call": True,
-        },
-       "xai.grok-3-fast": {
-            "system": True,
-            "multimodal": False,
-            "tool_call": True,
-            "stream_tool_call": True,
-        },
-       "xai.grok-3-mini-fast": {
-            "system": True,
-            "multimodal": False,
-            "tool_call": True,
-            "stream_tool_call": True,
-        },
-    }
+    def _get_oci_credentials(self, credentials: dict) -> dict:
+        if credentials.get("authentication_method") == "instance_principal_authentication":
+            signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
+            oci_credentials = {"config": {}, "signer": signer}
+        elif credentials.get("authentication_method") == "api_key_authentication":
+            if "key_content" not in credentials:
+                raise CredentialsValidateFailedError("need to set key_content in credentials ")
+            if "tenancy_ocid" not in credentials:
+                raise CredentialsValidateFailedError("need to set tenancy_ocid in credentials ")
+            if "user_ocid" not in credentials:
+                raise CredentialsValidateFailedError("need to set user_ocid in credentials ")
+            if "fingerprint" not in credentials:
+                raise CredentialsValidateFailedError("need to set fingerprint in credentials ")
+            if "default_region" not in credentials:
+                raise CredentialsValidateFailedError("need to set default_region in credentials ")
+            if "compartment_ocid" not in credentials:
+                raise CredentialsValidateFailedError("need to set compartment_ocid in credentials ")
 
-    def _is_tool_call_supported(self, model_id: str, stream: bool = False) -> bool:
-        feature = self._supported_models.get(model_id)
-        if not feature:
-            return False
-        return feature["stream_tool_call"] if stream else feature["tool_call"]
+            pem_prefix = '-----BEGIN RSA PRIVATE KEY-----\n'
+            pem_suffix = '\n-----END RSA PRIVATE KEY-----'
+            key_string = credentials.get("key_content")
+            for part in key_string.split("-"):
+                if len(part.strip()) > 64:
+                    key_b64 = part.strip()
+            key_content = pem_prefix + "\n".join(key_b64.split(" "))+ pem_suffix
+            
+            config = {
+                "tenancy": credentials.get("tenancy_ocid"),
+                "user": credentials.get("user_ocid"),
+                "fingerprint": credentials.get("fingerprint"),
+                "key_content": key_content,
+                "region": credentials.get("default_region"),
+                "pass_phrase": None
+            }                
+            
+            oci.config.validate_config(config)
+            oci_credentials = {"config": config}
+        return oci_credentials
 
-    def _is_multimodal_supported(self, model_id: str) -> bool:
-        feature = self._supported_models.get(model_id)
-        if not feature:
-            return False
-        return feature["multimodal"]
-
-    def _is_system_prompt_supported(self, model_id: str) -> bool:
-        feature = self._supported_models.get(model_id)
-        if not feature:
-            return False
-        return feature["system"]
 
     def _invoke(
         self,
@@ -164,7 +99,7 @@ class OCILargeLanguageModel(LargeLanguageModel):
         :param stream: is stream response
         :param user: unique user id
         :return: full response or stream response chunk generator result
-        """
+        """        
         return self._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 
     def get_num_tokens(
@@ -214,20 +149,36 @@ class OCILargeLanguageModel(LargeLanguageModel):
         text = "".join((self._convert_one_message_to_text(message) for message in messages))
         return text.rstrip()
 
-    def validate_credentials(self, model: str, credentials: dict) -> None:
+    def validate_credentials(self, credentials: dict) -> None:
         """
-        Validate model credentials
+        Validate model credentials through list model
 
-        :param model: model name
         :param credentials: model credentials
         :return:
         """
         try:
-            ping_message = SystemPromptMessage(content="ping")
-            self._generate(model, credentials, [ping_message], {"maxTokens": 5})
+            self._list_models(credentials,limit=1)
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
+    def _list_models(self, credentials: dict, limit: int = None) -> list[str]:
+        """
+        List models
+
+        :param credentials: model credentials
+        :return: list of model names
+        """
+        oci_credentials = self._get_oci_credentials(credentials)
+        generative_ai_client = oci.generative_ai.GenerativeAiClient(**oci_credentials)            
+        list_models_response = generative_ai_client.list_models(
+                    compartment_id=credentials.get("compartment_ocid"),
+                    capability=["TEXT_GENERATION"],
+                    limit = limit
+                    )
+
+        # Get the data from response
+        return [model.display_name for model in list_models_response.data.items]
+    
     def _generate(
         self,
         model: str,
@@ -251,195 +202,111 @@ class OCILargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
-        oci_config = copy.deepcopy(oci_config_template)
-        if "oci_config_content" in credentials:
-            oci_config_content = base64.b64decode(credentials.get("oci_config_content")).decode("utf-8")
-            config_items = oci_config_content.split("/")
-            if len(config_items) != 5:
-                raise CredentialsValidateFailedError(
-                    "oci_config_content should be base64.b64encode('user_ocid/fingerprint/tenancy_ocid/region/compartment_ocid'.encode('utf-8'))"
-                )
-            oci_config["user"] = config_items[0]
-            oci_config["fingerprint"] = config_items[1]
-            oci_config["tenancy"] = config_items[2]
-            oci_config["region"] = config_items[3]
-            oci_config["compartment_id"] = config_items[4]
-        else:
-            raise CredentialsValidateFailedError("need to set oci_config_content in credentials ")
-        if "oci_key_content" in credentials:
-            oci_key_content = base64.b64decode(credentials.get("oci_key_content")).decode("utf-8")
-            oci_config["key_content"] = oci_key_content.encode(encoding="utf-8")
-        else:
-            raise CredentialsValidateFailedError("need to set oci_config_content in credentials ")
-        compartment_id = oci_config["compartment_id"]
-        client = oci.generative_ai_inference.GenerativeAiInferenceClient(config=oci_config)
-        request_args = copy.deepcopy(request_template)
-        request_args["compartmentId"] = compartment_id
-        request_args["servingMode"]["modelId"] = model
-        stop = model_parameters.pop("stop", None)
-        if stop:
-            if model.startswith("cohere"):
-                request_args["chatRequest"]["stop_sequences"] = stop  # Cohere: stop_sequences
-            elif model.startswith("meta") or model.startswith("xai"):
-                request_args["chatRequest"]["stop"] = stop  # Meta/XAI: stop
-            else:
-                logger.warning(f"Model '{model}' does not support stop sequences. Ignored.")
-        chat_history = []
-        system_prompts = []
-        request_args["chatRequest"]["maxTokens"] = model_parameters.pop("maxTokens", 600)
-        if model in ("xai.grok-3-mini-fast", "xai.grok-3-mini", "xai.grok-4"):
-            safe_model_parameters = {
-                "temperature": model_parameters.get("temperature", 1),
-                "topP": model_parameters.get("topP", 0.75),
-            }
-            frequency_penalty = 0
-            presence_penalty = 0
-        else:
-            safe_model_parameters = {
-                "frequencyPenalty": model_parameters.get("frequencyPenalty", 0),
-                "presencePenalty": model_parameters.get("presencePenalty", 0),
-                "temperature": model_parameters.get("temperature", 1),
-                "topP": model_parameters.get("topP", 0.75),
-            }
-            frequency_penalty = safe_model_parameters["frequencyPenalty"]
-            presence_penalty = safe_model_parameters["presencePenalty"]
+        model_schema = self.get_model_schema(model=model)
 
-        request_args["chatRequest"].update(safe_model_parameters)
-        if frequency_penalty > 0 and presence_penalty > 0:
+        if model_parameters.get("frequency_penalty",0) > 0 and model_parameters.get("presence_penalty",0) > 0:
             raise InvokeBadRequestError("Cannot set both frequency penalty and presence penalty")
-        valid_value = self._is_tool_call_supported(model, stream)
-        if tools is not None and len(tools) > 0:
-            if not valid_value:
-                raise InvokeBadRequestError("Does not support function calling")
-        if model.startswith("cohere"):
-            for message in prompt_messages[:-1]:
-                text = ""
-                if isinstance(message.content, str):
-                    text = message.content
-                if isinstance(message, UserPromptMessage):
-                    chat_history.append({"role": "USER", "message": text})
+
+        
+        if "tool-call" in model_schema.features and tools is not None and len(tools) > 0:
+            raise InvokeBadRequestError("Does not support function calling")        
+
+        oci_credentials = self._get_oci_credentials(credentials)
+        client = oci.generative_ai_inference.GenerativeAiInferenceClient(**oci_credentials)
+
+        vendor = model.split(".")[0].lower()
+
+        compartment_id = credentials.get("compartment_ocid")
+        serving_mode = oci.generative_ai_inference.models.OnDemandServingMode(
+                serving_type = "ON_DEMAND",
+                model_id = model
+                )
+
+        chat_detail = oci.generative_ai_inference.models.ChatDetails(
+            compartment_id=compartment_id,
+            serving_mode=serving_mode
+        )
+
+        infer_params = {
+            "is_stream": stream,
+            "temperature": model_parameters.get("temperature"),
+            "top_p": model_parameters.get("topP"),
+            "max_tokens": model_parameters.get("maxTokens"),
+            "frequency_penalty": model_parameters.get("frequencyPenalty"),
+            "presence_penalty": model_parameters.get("presencePenalty"),
+        }
+        
+        # Cohere model call
+        if vendor == "cohere":
+            chat_request = oci.generative_ai_inference.models.CohereChatRequest(
+                stop_sequences = stop,
+                **infer_params
+            ) 
+
+            chat_history = []
+            for idx, message in enumerate(prompt_messages, start=1):                
+                if idx < len(prompt_messages):
+                    message = Convertor()._parse_prompt_message_to_cohere(message)
+                    chat_history.append(message)
                 else:
-                    chat_history.append({"role": "CHATBOT", "message": text})
-                if isinstance(message, SystemPromptMessage):
-                    if isinstance(message.content, str):
-                        system_prompts.append(message.content)
-            args = {
-                "apiFormat": "COHERE",
-                "preambleOverride": " ".join(system_prompts),
-                "message": prompt_messages[-1].content,
-                "chatHistory": chat_history,
-            }
-            request_args["chatRequest"].update(args)
-        elif model.startswith("meta"):
-            from typing import cast
-            from dify_plugin.entities.model.message import (
-                PromptMessageContentType,
-                TextPromptMessageContent,
-                ImagePromptMessageContent,
+                    if isinstance(message, ToolPromptMessage):
+                        chat_request.tool_results = Convertor()._parse_prompt_message_to_cohere(message).tool_results
+                        chat_request.message = ""
+                    else:
+                        chat_request.message = Convertor()._get_message_content_text(message.content)
+            chat_request.chat_history = chat_history
+
+            if tools:
+                chat_request.tools = Convertor().convert_tools_to_cohere(tools)
+        
+        # Generic model call
+        else:
+            chat_request = oci.generative_ai_inference.models.GenericChatRequest(                
+                stop = stop,
+                **infer_params
             )
-
-            # まず全ての画像 URL を集めて「最後の画像」を選定
-            all_images = []
-            for msg in prompt_messages:
-                if isinstance(msg.content, list):
-                    for mc in msg.content:
-                        if mc.type == PromptMessageContentType.IMAGE:
-                            all_images.append(cast(ImagePromptMessageContent, mc).data)
-            last_image_url = all_images[-1] if all_images else None
-            used_image = False  # 画像使用フラグ
-
-            meta_messages = []
+            oci_messages = []
             for message in prompt_messages:
-                sub_messages = []
+                oci_messages.append(Convertor()._parse_prompt_message_to_generic(message))
+            chat_request.messages = oci_messages
 
-                # (A) もし content が list なら、その中身をループ
-                if isinstance(message.content, list):
-                    for mc in message.content:
-                        if mc.type == PromptMessageContentType.TEXT:
-                            txt = cast(TextPromptMessageContent, mc).data
-                            sub_messages.append({"type": "TEXT", "text": txt})
-
-                        elif mc.type == PromptMessageContentType.IMAGE:
-                            img_data = cast(ImagePromptMessageContent, mc).data
-
-                            # 1枚目の画像のみ処理、以降はスキップ
-                            if used_image or img_data != last_image_url:
-                                continue
-                            used_image = True
-
-                            # data URI ならそのまま、そうでなければダウンロード／Base64
-                            if img_data.startswith("data:"):
-                                img_url = img_data
-                            else:
-                                try:
-                                    if img_data.startswith(("http://", "https://")):
-                                        resp = requests.get(img_data)
-                                        resp.raise_for_status()
-                                        mime_type = (
-                                            resp.headers.get("Content-Type")
-                                            or mimetypes.guess_type(img_data)[0]
-                                            or "image/png"
-                                        )
-                                        img_bytes = resp.content
-                                    else:
-                                        with open(img_data, "rb") as f:
-                                            img_bytes = f.read()
-                                        mime_type = mimetypes.guess_type(img_data)[0] or "image/png"
-                                    base64_data = base64.b64encode(img_bytes).decode("utf-8")
-                                    img_url = f"data:{mime_type};base64,{base64_data}"
-                                except Exception as exc:
-                                    raise InvokeBadRequestError(f"Failed to load image: {exc}")
-
-                            sub_messages.append({
-                                "type": "IMAGE",
-                                "imageUrl": {"url": img_url, "detail": mc.detail.value},
-                            })
-
-                # (B) content が文字列（TEXT）の場合
-                else:
-                    sub_messages.append({"type": "TEXT", "text": message.content})
-
-                # TEXT／IMAGE が１つも入っていないメッセージはスキップ
-                if not sub_messages:
-                    continue
-
-                # ロール名とともに配列に追加
-                meta_messages.append({
-                    "role": message.role.name,
-                    "content": sub_messages,
-                })
-
-            # それでも空になってしまったら、最後のテキストだけを強制的に入れるフォールバック
-            if not meta_messages and prompt_messages:
-                last = prompt_messages[-1]
-                meta_messages.append({
-                    "role": last.role.name,
-                    "content": [{"type": "TEXT", "text": last.content}],
-                })
-
-            args = {
-                "apiFormat": "GENERIC",
-                "messages": meta_messages,
-                "numGenerations": 1,
-                "topK": -1,
-            }
-            request_args["chatRequest"].update(args)
-        elif model.startswith("xai"):
-            xai_messages = []
-            for message in prompt_messages:
-                text = message.content
-                xai_messages.append({"role": message.role.name, "content": [{"type": "TEXT", "text": text}]})
-            args = {"apiFormat": "GENERIC","messages": xai_messages,"numGenerations": 1,"topK": -1,}
-            request_args["chatRequest"].update(args)
-        if stream:
-            request_args["chatRequest"]["isStream"] = True
-        response = client.chat(request_args)
+            if tools:
+                chat_request.tools = Convertor().convert_tools_to_generic(tools)
+        
+        chat_detail.chat_request = chat_request
+        body = client.base_client.sanitize_for_serialization(chat_detail) 
+        
+        if "isStream" in body["chatRequest"]:
+            if body["chatRequest"]["isStream"]:
+                body["chatRequest"]["streamOptions"] = {"isIncludeUsage": True}
+        if model_parameters.get("reasoning_effort"):
+            body["chatRequest"]["reasoning_effort"] = model_parameters.get("reasoning_effort")
+        body = json.dumps(body)
+        logging.debug("Request body:  "+body)
+        
+        response = client.base_client.call_api(
+            resource_path="/actions/chat",
+            method="POST",
+            operation_name="chat",
+            header_params={
+                "accept": "application/json, text/event-stream",
+                "content-type": "application/json"
+            },
+            body=body,
+            #response_type="ChatResult"
+            )
         if stream:
             return self._handle_generate_stream_response(model, credentials, response, prompt_messages)
-        return self._handle_generate_response(model, credentials, response, prompt_messages)
+        else:
+            json_response = json.loads(response.data.text)
+            return self._handle_generate_response(model, credentials, json_response, prompt_messages)
 
     def _handle_generate_response(
-        self, model: str, credentials: dict, response: BaseChatResponse, prompt_messages: list[PromptMessage]
+        self, 
+        model: str,
+        credentials: dict,
+        response: oci.generative_ai_inference.models.BaseChatResponse,
+        prompt_messages: list[PromptMessage]
     ) -> LLMResult:
         """
         Handle llm response
@@ -450,16 +317,45 @@ class OCILargeLanguageModel(LargeLanguageModel):
         :param prompt_messages: prompt messages
         :return: llm response
         """
-        assistant_prompt_message = AssistantPromptMessage(content=response.data.chat_response.text)
-        prompt_tokens = self.get_num_characters(model, credentials, prompt_messages)
-        completion_tokens = self.get_num_characters(model, credentials, [assistant_prompt_message])
+        model_id = response["modelId"]
+        vendor = model_id.split(".")[0].lower()        
+        logging.debug("OCI Response:  "+response)
+        chat_response = response["chatResponse"]
+        assistant_prompt_message = AssistantPromptMessage(content = "")
+        # Cohere response
+        if vendor == "cohere":            
+            response_tool_calls = chat_response["toolCalls"]
+            if response_tool_calls:
+                tool_calls = Convertor().convert_response_tool_calls(response_tool_calls,vendor)
+                assistant_prompt_message.tool_calls = tool_calls
+            else:
+                assistant_prompt_message.content = chat_response["text"]
+        # Generic response
+        else:
+            choice = response["choices"][0]
+            finish_reason = choice["finishReason"]
+            response_tool_calls = choice["message"]["toolCalls"]
+            assistant_prompt_message = AssistantPromptMessage()
+            if finish_reason == "tool_calls" or response_tool_calls:
+                assistant_prompt_message.tool_calls = Convertor().convert_response_tool_calls(response_tool_calls,vendor)
+            else:
+                assistant_prompt_message.content = choice["message"]["content"][0]["text"]
+        
+        prompt_tokens = response["usage"]["promptTokens"]
+        total_tokens = response["usage"]["totalTokens"]
+        completion_tokens = total_tokens - prompt_tokens
         usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
         result = LLMResult(model=model, prompt_messages=prompt_messages, message=assistant_prompt_message, usage=usage)
+        logging.debug("OCI Response to Dify:  "+result)
         return result
 
     def _handle_generate_stream_response(
-            self, model: str, credentials: dict, response: BaseChatResponse, prompt_messages: list[PromptMessage]
-        ) -> Generator:
+        self, 
+        model: str,
+        credentials: dict,
+        response,
+        prompt_messages: list[PromptMessage]
+    ) -> Generator:
             """
             Handle llm stream response
 
@@ -470,48 +366,75 @@ class OCILargeLanguageModel(LargeLanguageModel):
             :return: llm response chunk generator result
             """
             index = -1
-            events = response.data.events()
-            full_text = ""
-            
-            for stream in events:
+            vendor = model.split(".")[0].lower()
+            finish_reason = None
+            usage = None
+            for stream in response.data.events():
                 chunk = json.loads(stream.data)
-                
+                    
                 if "finishReason" not in chunk:
-                    assistant_prompt_message = AssistantPromptMessage(content="")
-                    
-                    if model.startswith("cohere"):
-                        if chunk.get("text"):
+                    assistant_prompt_message = AssistantPromptMessage()
+                    if vendor == "cohere":
+                        assistant_prompt_message.content = ""      
+                        if chunk.get("toolCalls"):
+                            tool_calls = Convertor().convert_response_tool_calls(chunk["toolCalls"],vendor)
+                            assistant_prompt_message.tool_calls = tool_calls
+                        elif chunk.get("text"):
                             assistant_prompt_message.content = chunk["text"]
-                            full_text += chunk["text"]
-                    elif model.startswith("meta"):
+                            #logging.debug(chunk["text"])
+                    else:
                         if chunk.get("message", {}).get("content", [{}])[0].get("text"):
                             text = chunk["message"]["content"][0]["text"]
                             assistant_prompt_message.content = text
-                            full_text += text
-                    elif model.startswith("xai"):
-                        if chunk.get("message", {}).get("content", [{}])[0].get("text"):
-                            text = chunk["message"]["content"][0]["text"]
-                            assistant_prompt_message.content = text
-                            full_text += text
+                            #logging.debug(text)
+                        if chunk.get("message", {}).get("toolCalls"):
+                            tool_calls = Convertor().convert_response_tool_calls(chunk["message"]["toolCalls"],vendor)
+                            assistant_prompt_message.tool_calls = tool_calls
                     
-                    if assistant_prompt_message.content:
+                    if assistant_prompt_message:
                         index += 1
                         yield LLMResultChunk(
                             model=model,
                             prompt_messages=prompt_messages,
                             delta=LLMResultChunkDelta(index=index, message=assistant_prompt_message),
                         )
-                else:
-                    prompt_tokens = self.get_num_characters(model, credentials, prompt_messages)
-                    completion_tokens = self.get_num_characters(model, credentials, [AssistantPromptMessage(content=full_text)])
-                    usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+                if "finishReason" in chunk:
+                    finish_reason = chunk["finishReason"]
+                    logging.debug("Stream finishReason:  "+ str(chunk))
+                if "usage" in chunk:
+                    logging.debug("Stream usage:  "+ str(chunk))
+                    prompt_tokens = chunk["usage"]["promptTokens"]
+                    total_tokens = chunk["usage"]["totalTokens"]
+                    completion_tokens = total_tokens - prompt_tokens
+                    usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)              
+                if finish_reason and usage:
                     yield LLMResultChunk(
                         model=model,
                         prompt_messages=prompt_messages,
                         delta=LLMResultChunkDelta(
                             index=index,
                             message=AssistantPromptMessage(content=""),
-                            finish_reason=str(chunk["finishReason"]),
+                            finish_reason=str(finish_reason),
+                            usage=usage,
+                        ),
+                    )
+                elif finish_reason:
+                    yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=index,
+                                message=AssistantPromptMessage(content=""),
+                                finish_reason=str(finish_reason),
+                            ),
+                        )
+                elif usage:
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(
+                            index=index,
+                            message=AssistantPromptMessage(content=""),
                             usage=usage,
                         ),
                     )
@@ -555,3 +478,232 @@ class OCILargeLanguageModel(LargeLanguageModel):
             InvokeAuthorizationError: [],
             InvokeBadRequestError: [],
         }
+
+        
+
+class Convertor:
+    def __init__(self):        
+        self.type_mapping = {
+            "array": "list",
+            "boolean": "bool",
+            "null": "NoneType",
+            "integer": "int",
+            "number": "float",
+            "object": "dict",
+            "regular expressions": "str",
+            "string": "str"
+        }
+
+    def _get_message_content_text(self, content) :
+        if isinstance(content, str):
+            text = content
+        elif isinstance(content, list):
+            text = ""
+            images = []
+            for c in content:
+                if c.type == PromptMessageContentType.TEXT:
+                    text += "\n"+c.data
+                elif c.type == PromptMessageContentType.IMAGE:
+                    images.append(c.data)                        
+        else:
+            raise ValueError(f"Got unknown message type {message}")
+        return text
+
+    ## convert prompt message to cohere message
+    def _parse_prompt_message_to_cohere(self,message: PromptMessage) :
+        text = self._get_message_content_text(message.content)
+        if isinstance(message, SystemPromptMessage):
+            oci_message = oci.generative_ai_inference.models.CohereSystemMessage(
+                message = text
+            )
+        elif isinstance(message, UserPromptMessage):
+            oci_message = oci.generative_ai_inference.models.CohereUserMessage(
+                message = text
+            )
+        
+        elif isinstance(message, ToolPromptMessage):
+            oci_message = oci.generative_ai_inference.models.CohereToolMessage(
+                tool_results = [
+                    oci.generative_ai_inference.models.CohereToolResult(
+                        call = oci.generative_ai_inference.models.CohereToolCall(
+                                name = message.tool_call_id,
+                                parameters = {}
+                            ),
+                        outputs = [{"tool_results": text}]
+                    )
+                ]
+            )
+            
+        elif isinstance(message, AssistantPromptMessage):
+            oci_message = oci.generative_ai_inference.models.CohereChatBotMessage(
+                message = text
+            )
+            if message.tool_calls:
+                oci_tool_calls = []
+                for tool in message.tool_calls:
+                    oci_tool_calls.append(
+                        oci.generative_ai_inference.models.CohereToolCall(
+                            name = tool.function.name,
+                            parameters = json.loads(tool.function.arguments)
+                        )
+                    )
+                oci_message.tool_calls = oci_tool_calls          
+        else:
+            raise ValueError(f"Got unknown message type {message}")        
+        return oci_message 
+
+    ## convert prompt message to generic message
+    def _parse_prompt_message_to_generic(self,message: PromptMessage) :
+        content = []
+        if isinstance(message.content, str):
+            content.append(
+                oci.generative_ai_inference.models.TextContent(text = message.content)
+            )
+        elif isinstance(message.content, list):
+            for c in message.content:
+                if c.type == PromptMessageContentType.TEXT:
+                    content.append(
+                        oci.generative_ai_inference.models.TextContent(text = c.data)
+                    )
+                elif c.type == PromptMessageContentType.IMAGE:
+                    image_url = self._process_image_url(c.data)
+                    image_url = oci.generative_ai_inference.models.ImageUrl(url = image_url)                    
+                    content.append(
+                        oci.generative_ai_inference.models.ImageContent(image_url = image_url)
+                    )
+
+        if isinstance(message, SystemPromptMessage):
+            oci_message = oci.generative_ai_inference.models.SystemMessage(
+                content = content
+            )
+        elif isinstance(message, UserPromptMessage):
+            oci_message = oci.generative_ai_inference.models.UserMessage(
+                content = content
+            )
+        
+        elif isinstance(message, ToolPromptMessage):
+            oci_message = oci.generative_ai_inference.models.ToolMessage(
+                tool_call_id =  message.name,
+                content = content
+            )
+        elif isinstance(message, AssistantPromptMessage):
+            oci_message = oci.generative_ai_inference.models.AssistantMessage(
+                content = content
+            )
+            if message.tool_calls:
+                oci_tool_calls = []
+                for tool in message.tool_calls:
+                    oci_tool_calls.append(
+                        oci.generative_ai_inference.models.FunctionCall(
+                            type = "FUNCTION",
+                            id = tool.function.name,
+                            name = tool.function.name,
+                            arguments = tool.function.arguments
+                        )
+                    )
+                oci_message.tool_calls = oci_tool_calls   
+                    
+        else:
+            raise ValueError(f"Got unknown message type {message}")        
+        return oci_message
+
+    def convert_tools_to_cohere(self, tools: list) -> list[oci.generative_ai_inference.models.CohereTool]:
+        """
+        Convert a list of Dify tool definitions into OCI Cohere tool objects.
+        """
+        cohere_tools = []    
+        
+        for tool in tools:
+            name = tool.name.replace("-","_")
+            description = tool.description
+            parameters_schema = tool.parameters
+                
+            properties = parameters_schema.get("properties", {})
+            required = parameters_schema.get("required", [])
+
+            # Iterate through each property to build parameter definitions
+            parameter_definitions = {}
+            for param_name, param_schema in properties.items():
+                is_required = param_name in required
+                # Map the OpenAI JSON schema type to the Python type using type_mapping
+                openai_type = param_schema.get("type", "string")
+                mapped_type = self.type_mapping.get(openai_type, "str")
+                param_description = param_schema.get("description", "")
+                parameter_definitions[param_name] = oci.generative_ai_inference.models.CohereParameterDefinition(
+                    is_required = is_required,
+                    type = mapped_type,
+                    description = param_description
+                    )
+            
+            cohere_tool = oci.generative_ai_inference.models.CohereTool(
+                name = name,
+                description = description,
+                parameter_definitions = parameter_definitions
+                )
+            cohere_tools.append(cohere_tool)
+        
+        return cohere_tools
+
+    def convert_tools_to_generic(self, tools: list) -> list[oci.generative_ai_inference.models.FunctionDefinition]:
+        """
+        Convert a list of OpenAI tool definitions into OCI Generic tool objects.
+        """
+        generic_tools = []
+        for tool in tools:
+            generic_tool = oci.generative_ai_inference.models.FunctionDefinition(
+                type = "FUNCTION",
+                name = tool.name,
+                description = tool.description,
+                parameters = tool.parameters
+            )
+            generic_tools.append(generic_tool)     
+        return generic_tools
+
+    # Convert OCI response tool calls to Dify tool calls
+    def convert_response_tool_calls(self, tool_calls: list, vendor: str) -> list[AssistantPromptMessage.ToolCall]:
+        """
+        Convert a list of cohere tool calls into a list of Dify tool calls.        
+        Returns: list: List of Dify tool call dictionaries.
+        """
+        dify_tool_calls = []
+        for call in tool_calls:  
+            name = call["name"]
+            if vendor == "cohere":
+                arguments = str(call["parameters"])
+            else:
+                arguments = call["arguments"]
+            
+            dify_call = AssistantPromptMessage.ToolCall(
+                id = name,
+                type = "function",
+                function = AssistantPromptMessage.ToolCall.ToolCallFunction  (
+                    name = name,
+                    arguments = arguments
+                    )
+                )
+            dify_tool_calls.append(dify_call)
+        return dify_tool_calls
+
+    
+    def _process_image_url(self, image_url: str) -> str:
+        try:
+            if image_url.startswith("http"):
+                resp = requests.get(image_url)
+                resp.raise_for_status()
+                mime_type = (
+                    resp.headers.get("Content-Type")
+                    or mimetypes.guess_type(image_url)[0]
+                    or "image/png"
+                )
+                img_bytes = resp.content
+            elif os.path.exists(image_url):
+                with open(image_url, "rb") as f:
+                    img_bytes = f.read()
+                mime_type = mimetypes.guess_type(image_url)[0] or "image/png"
+            else:
+                return image_url
+            base64_data = base64.b64encode(img_bytes).decode("utf-8")
+            img_url = f"data:{mime_type};base64,{base64_data}"
+            return img_url
+        except Exception as exc:
+            raise InvokeBadRequestError(f"Failed to load image: {exc}")

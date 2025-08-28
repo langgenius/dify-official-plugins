@@ -49,3 +49,45 @@ class FileCache:
         cache = self._load_cache()
         cache[key] = {"value": value, "expires_at": time.time() + expires_in_seconds}
         self._save_cache(cache)
+
+
+# Gemini API File Type Support Constants
+# Based on official Gemini API documentation for multimodal models
+
+# Supported image MIME types
+
+# Unsupported document MIME types (blacklist for documents)
+# Microsoft Office formats are not supported by Gemini API
+UNSUPPORTED_DOCUMENT_TYPES = {
+    # Microsoft Word
+    "application/msword",  # .doc
+    "application/vnd.openxmlformats-officedocument.wordprocessingml.document",  # .docx
+    # Microsoft Excel
+    "application/vnd.ms-excel",  # .xls
+    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",  # .xlsx
+    # Microsoft PowerPoint
+    "application/vnd.ms-powerpoint",  # .ppt
+    "application/vnd.openxmlformats-officedocument.presentationml.presentation",  # .pptx
+    # OpenDocument formats
+    "application/vnd.oasis.opendocument.text",  # .odt
+    "application/vnd.oasis.opendocument.spreadsheet",  # .ods
+    "application/vnd.oasis.opendocument.presentation",  # .odp
+}
+
+# File extensions that are not supported (for additional validation)
+UNSUPPORTED_EXTENSIONS = {
+    "doc",
+    "docx",
+    "xls",
+    "xlsx",
+    "ppt",
+    "pptx",
+    "odt",
+    "ods",
+    "odp",
+    "rtf",
+    "wps",
+    "epub",
+    "mdx",
+    "markdown",
+}

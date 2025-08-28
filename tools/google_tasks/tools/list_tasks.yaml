@@ -1,0 +1,187 @@
+identity:
+  name: list_tasks
+  author: langgenius
+  label:
+    en_US: List Tasks
+    zh_Hans: 列出任务
+    ja_JP: タスクを一覧表示
+  icon: icon.svg
+
+description:
+  human:
+    en_US: List all tasks in a specific task list
+    zh_Hans: 列出特定任务列表中的所有任务
+    ja_JP: 特定のタスクリスト内のすべてのタスクを一覧表示
+  llm: List tasks from a specific Google Tasks list
+
+parameters:
+  - name: tasklist_id
+    type: string
+    required: false
+    default: "@default"
+    form: llm
+    label:
+      en_US: Task List ID
+      zh_Hans: 任务列表 ID
+      ja_JP: タスクリスト ID
+    human_description:
+      en_US: ID of the task list (use @default for default list)
+      zh_Hans: 任务列表的 ID（使用 @default 表示默认列表）
+      ja_JP: タスクリストの ID（デフォルトリストには @default を使用）
+    llm_description: Task list ID, use @default for the default task list
+
+  - name: max_results
+    type: number
+    required: false
+    default: 100
+    form: llm
+    label:
+      en_US: Maximum Results
+      zh_Hans: 最大结果数
+      ja_JP: 最大結果数
+    human_description:
+      en_US: Maximum number of tasks to return (1-100)
+      zh_Hans: 返回的最大任务数（1-100）
+      ja_JP: 返すタスクの最大数 (1-100)
+    llm_description: Maximum number of tasks to return, default is 100
+    min: 1
+    max: 100
+
+  - name: show_completed
+    type: boolean
+    required: false
+    default: true
+    form: llm
+    label:
+      en_US: Show Completed Tasks
+      zh_Hans: 显示已完成任务
+      ja_JP: 完了したタスクを表示
+    human_description:
+      en_US: Whether to include completed tasks
+      zh_Hans: 是否包含已完成的任务
+      ja_JP: 完了したタスクを含めるかどうか
+    llm_description: Whether to include completed tasks in the results
+
+  - name: show_deleted
+    type: boolean
+    required: false
+    default: false
+    form: llm
+    label:
+      en_US: Show Deleted Tasks
+      zh_Hans: 显示已删除任务
+      ja_JP: 削除されたタスクを表示
+    human_description:
+      en_US: Whether to include deleted tasks
+      zh_Hans: 是否包含已删除的任务
+      ja_JP: 削除されたタスクを含めるかどうか
+    llm_description: Whether to include deleted tasks in the results
+
+  - name: show_hidden
+    type: boolean
+    required: false
+    default: false
+    form: llm
+    label:
+      en_US: Show Hidden Tasks
+      zh_Hans: 显示隐藏任务
+      ja_JP: 非表示のタスクを表示
+    human_description:
+      en_US: Whether to include hidden tasks
+      zh_Hans: 是否包含隐藏的任务
+      ja_JP: 非表示のタスクを含めるかどうか
+    llm_description: Whether to include hidden tasks in the results
+
+  - name: due_min
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Minimum Due Date
+      zh_Hans: 最早截止日期
+      ja_JP: 最小期限日
+    human_description:
+      en_US: RFC 3339 timestamp for minimum due date filter
+      zh_Hans: 最早截止日期的 RFC 3339 时间戳
+      ja_JP: 最小期限日のRFC 3339タイムスタンプ
+    llm_description: Filter for tasks due after this date (RFC 3339 format)
+
+  - name: due_max
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Maximum Due Date
+      zh_Hans: 最晚截止日期
+      ja_JP: 最大期限日
+    human_description:
+      en_US: RFC 3339 timestamp for maximum due date filter
+      zh_Hans: 最晚截止日期的 RFC 3339 时间戳
+      ja_JP: 最大期限日のRFC 3339タイムスタンプ
+    llm_description: Filter for tasks due before this date (RFC 3339 format)
+
+  - name: completed_min
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Minimum Completion Date
+      zh_Hans: 最早完成日期
+      ja_JP: 最小完了日
+    human_description:
+      en_US: RFC 3339 timestamp for minimum completion date filter
+      zh_Hans: 最早完成日期的 RFC 3339 时间戳
+      ja_JP: 最小完了日のRFC 3339タイムスタンプ
+    llm_description: Filter for tasks completed after this date (RFC 3339 format)
+
+  - name: completed_max
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Maximum Completion Date
+      zh_Hans: 最晚完成日期
+      ja_JP: 最大完了日
+    human_description:
+      en_US: RFC 3339 timestamp for maximum completion date filter
+      zh_Hans: 最晚完成日期的 RFC 3339 时间戳
+      ja_JP: 最大完了日のRFC 3339タイムスタンプ
+    llm_description: Filter for tasks completed before this date (RFC 3339 format)
+
+output_schema:
+  type: object
+  properties:
+    tasks:
+      type: array
+      description: List of tasks
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Task ID
+          title:
+            type: string
+            description: Task title
+          status:
+            type: string
+            description: Task status (needsAction or completed)
+          notes:
+            type: string
+            description: Task notes
+          due:
+            type: string
+            description: Due date
+          completed:
+            type: string
+            description: Completion date
+    count:
+      type: number
+      description: Total number of tasks
+    tasklist_id:
+      type: string
+      description: Task list ID
+
+extra:
+  python:
+    source: tools/list_tasks.py

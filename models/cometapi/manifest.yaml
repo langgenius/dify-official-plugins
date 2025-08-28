@@ -1,0 +1,41 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: cometapi
+label:
+  en_US: CometAPI
+  zh_Hans: CometAPI
+  ja_JP: CometAPI
+  pt_BR: CometAPI
+description:
+  en_US: "500+ AI Model API, All In One API. Just In CometAPI."
+  zh_Hans: "500+ AI 模型 API，一站集成，尽在 CometAPI。"
+  ja_JP: "500以上のAIモデルAPIを一括提供。すべてはCometAPIに。"
+  pt_BR: "500+ modelos de IA em uma única API. Tudo em um só lugar : CometAPI."
+icon: cometapi_small.png
+icon_dark: cometapi_small.png
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true
+      text_embedding: true
+      tts: true
+      speech2text: true
+plugins:
+  models:
+    - provider/cometapi.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: 1.0.0
+created_at: 2025-08-05T11:06:28.002855+08:00
+privacy: PRIVACY.md
+verified: false

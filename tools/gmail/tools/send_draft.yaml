@@ -1,0 +1,44 @@
+identity:
+  name: "send_draft"
+  display_name: "Send Draft"
+  author: "langgenius"
+  label:
+    en_US: "Send Gmail Draft"
+    zh_Hans: "发送Gmail草稿"
+    pt_BR: "Enviar Rascunho do Gmail"
+    ja_JP: "Gmail下書きを送信"
+description:
+  human:
+    en_US: "Send a draft email message that was previously created in Gmail"
+    zh_Hans: "发送之前在Gmail中创建的草稿邮件"
+    pt_BR: "Enviar uma mensagem de email rascunho que foi previamente criada no Gmail"
+    ja_JP: "以前にGmailで作成された下書きメールを送信"
+  llm: "Send a draft email message that was previously created using the draft_message tool. This tool sends the draft immediately without further editing."
+parameters:
+  - name: draft_id
+    type: string
+    required: true
+    label:
+      en_US: "Draft ID"
+      zh_Hans: "草稿ID"
+      pt_BR: "ID do Rascunho"
+      ja_JP: "下書きID"
+    human_description:
+      en_US: "The unique identifier of the draft email to send"
+      zh_Hans: "要发送的草稿邮件的唯一标识符"
+      pt_BR: "Identificador único do rascunho de email a ser enviado"
+      ja_JP: "送信する下書きメールの一意の識別子"
+    llm_description: "The unique draft ID of the Gmail draft to send. This ID can be obtained from the list_drafts tool or draft_message tool."
+    form: llm
+output_schema:
+  type: object
+  properties:
+    message_id:
+      type: string
+      description: "Unique identifier of the sent message"
+    thread_id:
+      type: string
+      description: "Unique identifier of the email thread"
+extra:
+  python:
+    source: tools/send_draft.py 

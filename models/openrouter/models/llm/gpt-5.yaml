@@ -1,0 +1,67 @@
+model: openai/gpt-5
+label:
+  en_US: gpt-5
+model_type: llm
+features:
+  - multi-tool-call
+  - agent-thought
+  - stream-tool-call
+  - vision
+  - document
+  - audio
+model_properties:
+  mode: chat
+  context_size: 400000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: presence_penalty
+    use_template: presence_penalty
+  - name: frequency_penalty
+    use_template: frequency_penalty
+  - name: max_tokens
+    use_template: max_tokens
+    default: 16384
+    min: 1
+    max: 16384
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - text
+      - json_object
+  - name: logprobs
+    label:
+      zh_Hans: 返回对数概率
+      en_US: Return log probabilities
+    type: boolean
+    default: false
+    help:
+      zh_Hans: 是否返回输出token的对数概率
+      en_US: Whether to return log probabilities of the output tokens
+    required: false
+  - name: top_logprobs
+    label:
+      zh_Hans: 返回最高概率的token数量
+      en_US: Number of most likely tokens to return
+    type: int
+    default: 0
+    min: 0
+    max: 20
+    help:
+      zh_Hans: 为每个token位置返回最有可能的token数量
+      en_US: Number of most likely tokens to return at each token position
+    required: false
+pricing:
+  input: "1.25"
+  output: "10.00"
+  unit: "0.000001"
+  currency: USD

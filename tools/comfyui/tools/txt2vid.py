@@ -41,8 +41,7 @@ class ComfyuiTxt2Vid(Tool):
             yield self.create_text_message("Please input base_url")
         self.comfyui = ComfyUiClient(
             base_url,
-            api_key_comfy_org=self.runtime.credentials.get(
-                "api_key_comfy_org"),
+            api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"),
         )
         self.model_manager = ModelManager(
             self.comfyui,
@@ -153,8 +152,7 @@ class ComfyuiTxt2Vid(Tool):
             random.randint(0, 100000000),
         )
         workflow.set_property("28", "inputs/fps", config.fps)
-        workflow.set_empty_mochi(
-            None, config.width, config.height, config.frameN)
+        workflow.set_empty_mochi(None, config.width, config.height, config.frameN)
         workflow.set_unet(None, config.model_name)
         workflow.set_clip(None, clip_name)
         workflow.set_vae(None, vae_name)
@@ -210,8 +208,7 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_dual_clip(None, clip_name1, clip_name2)
         workflow.set_unet(None, config.model_name)
         workflow.set_vae(None, vae_name)
-        workflow.set_empty_hunyuan(
-            None, config.width, config.height, config.frameN)
+        workflow.set_empty_hunyuan(None, config.width, config.height, config.frameN)
         workflow.set_prompt(None, config.prompt)
 
         try:
@@ -255,8 +252,64 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_unet(None, config.model_name)
         workflow.set_clip(None, text_encoder)
         workflow.set_vae(None, vae)
-        workflow.set_empty_hunyuan(
-            None, config.width, config.height, config.frameN)
+        workflow.set_empty_hunyuan(None, config.width, config.height, config.frameN)
+
+        try:
+            output_images = self.comfyui.generate(workflow.json())
+        except Exception as e:
+            raise ToolProviderCredentialValidationError(
+                f"Failed to generate image: {str(e)}"
+            )
+        return output_images
+
+    def txt2vid_svd_wan2_2_14B(
+        self, config: ComfyuiTxt2VidConfig
+    ) -> Generator[ToolInvokeMessage, None, None]:
+        """
+        generate image
+        """
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        with open(
+            os.path.join(current_dir, "json", "txt2vid_wan2_2_14B.json"),
+            encoding="UTF-8",
+        ) as file:
+            workflow = ComfyUiWorkflow(file.read())
+            self.model_manager.download_from_json(workflow.json_original_str())
+
+        workflow.set_prompt("89", config.prompt)
+        workflow.set_prompt("72", config.negative_prompt)
+
+        workflow.set_empty_hunyuan(None, config.width, config.height, config.frameN)
+
+        try:
+            output_images = self.comfyui.generate(workflow.json())
+        except Exception as e:
+            raise ToolProviderCredentialValidationError(
+                f"Failed to generate image: {str(e)}"
+            )
+        return output_images
+
+    def txt2vid_svd_wan2_2_5B(
+        self, config: ComfyuiTxt2VidConfig
+    ) -> Generator[ToolInvokeMessage, None, None]:
+        """
+        generate image
+        """
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        with open(
+            os.path.join(current_dir, "json", "txt2vid_wan2_2_5B.json"),
+            encoding="UTF-8",
+        ) as file:
+            workflow = ComfyUiWorkflow(file.read())
+            self.model_manager.download_from_json(workflow.json_original_str())
+
+        workflow.set_prompt("6", config.prompt)
+        workflow.set_prompt("7", config.negative_prompt)
+
+        wan2_2 = workflow.identify_node_by_class_type("Wan22ImageToVideoLatent")
+        workflow.set_property(wan2_2, "inputs/width", config.width)
+        workflow.set_property(wan2_2, "inputs/height", config.height)
+        workflow.set_property(wan2_2, "inputs/length", config.frameN)
 
         try:
             output_images = self.comfyui.generate(workflow.json())
@@ -346,10 +399,8 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_prompt("6", config.prompt)
         workflow.set_prompt("7", config.negative_prompt)
         workflow.set_property("38", "inputs/clip_name", text_encoder)
-        workflow.set_property("72", "inputs/noise_seed",
-                              random.randint(0, 100000000))
-        ltxv_node_id = workflow.identify_node_by_class_type(
-            "EmptyLTXVLatentVideo")
+        workflow.set_property("72", "inputs/noise_seed", random.randint(0, 100000000))
+        ltxv_node_id = workflow.identify_node_by_class_type("EmptyLTXVLatentVideo")
         workflow.set_property(ltxv_node_id, "inputs/width", config.width)
         workflow.set_property(ltxv_node_id, "inputs/height", config.height)
         workflow.set_property(ltxv_node_id, "inputs/length", config.frameN)

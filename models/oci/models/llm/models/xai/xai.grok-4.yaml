@@ -1,0 +1,35 @@
+model: xai.grok-4
+label:
+  zh_Hans: xai.grok-4
+  en_US: xai.grok-4
+model_type: llm
+features:
+  - vision
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 128000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    default: 1
+    min: 0
+    max: 2.0
+  - name: topP
+    use_template: top_p
+    default: 1
+    min: 0.05
+    max: 1
+  - name: maxTokens
+    use_template: max_tokens
+    default: 4000
+    max: 16000
+    
+pricing:
+  input: '3.00'
+  output: '15.00'
+  unit: '0.000001'
+  currency: USD

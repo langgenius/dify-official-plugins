@@ -1,0 +1,33 @@
+version: 0.2.0
+type: plugin
+author: langgenius
+name: dify-gmail
+label:
+  en_US: Gmail
+  ja_JP: Gmail
+  zh_Hans: Gmail
+  pt_BR: Gmail
+description:
+  en_US: Dify's integration with Gmail that can help you read, send, list, draft, and manage Gmail emails with OAuth2.0 authentication.
+  ja_JP: Dify's integration with Gmail that can help you read, send, list, draft, and manage Gmail emails with OAuth2.0 authentication.
+  zh_Hans: Dify与Gmail的集成，可以帮助您通过OAuth2.0认证读取、发送、列出、草拟和管理Gmail邮件。
+  pt_BR: Dify's integration with Gmail that can help you read, send, list, draft, and manage Gmail emails with OAuth2.0 authentication.
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission: {}
+plugins:
+  tools:
+    - provider/dify-gmail.yaml
+meta:
+  version: 0.2.0
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: 1.7.1
+created_at: 2025-01-27T00:00:00.000000+00:00
+verified: false 

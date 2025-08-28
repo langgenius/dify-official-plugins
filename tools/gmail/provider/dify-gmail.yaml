@@ -1,0 +1,100 @@
+identity:
+  author: "langgenius"
+  name: "dify-gmail"
+  label:
+    en_US: "Gmail"
+    zh_Hans: "Gmail"
+    pt_BR: "Gmail"
+    ja_JP: "Gmail"
+  description:
+    en_US: "Connect Gmail inbox in Dify with OAuth2.0 authentication for comprehensive email management"
+    zh_Hans: "通过OAuth2.0认证连接Gmail收件箱到Dify，实现全面的邮件管理"
+    pt_BR: "Conecte a caixa de entrada do Gmail no Dify com autenticação OAuth2.0 para gerenciamento completo de emails"
+    ja_JP: "OAuth2.0認証を使用してGmailの受信トレイをDifyに接続し、包括的なメール管理を実現"
+  icon: "icon.svg"
+  tags:
+    - productivity
+    - utilities
+oauth_schema:
+  scopes:
+    - "https://www.googleapis.com/auth/gmail.readonly"
+    - "https://www.googleapis.com/auth/gmail.send"
+    - "https://www.googleapis.com/auth/gmail.compose"
+    - "https://www.googleapis.com/auth/gmail.modify"
+    - "https://www.googleapis.com/auth/gmail.labels"
+  client_schema:
+    - name: "client_id"
+      type: "secret-input"
+      required: true
+      url: "https://console.cloud.google.com/apis/credentials"
+      label:
+        zh_Hans: "Google客户端ID"
+        en_US: "Google Client ID"
+        pt_BR: "ID do Cliente Google"
+        ja_JP: "GoogleクライアントID"
+      placeholder:
+        zh_Hans: "请输入Google客户端ID"
+        en_US: "Please input your Google Client ID"
+        pt_BR: "Insira seu ID de cliente do Google"
+        ja_JP: "GoogleクライアントIDを入力してください"
+      help:
+        en_US: "Get your client ID from Google Cloud Console > APIs & Services > Credentials"
+        zh_Hans: "从Google Cloud Console > API和服务 > 凭据获取您的客户端ID"
+        pt_BR: "Obtenha seu ID de cliente no Google Cloud Console > APIs e Serviços > Credenciais"
+        ja_JP: "Google Cloud Console > APIとサービス > 認証情報からクライアントIDを取得してください"
+    - name: "client_secret"
+      type: "secret-input"
+      required: true
+      url: "https://console.cloud.google.com/apis/credentials"
+      label:
+        zh_Hans: "Google客户端密钥"
+        en_US: "Google Client Secret"
+        pt_BR: "Segredo do Cliente Google"
+        ja_JP: "Googleクライアントシークレット"
+      placeholder:
+        zh_Hans: "请输入Google客户端密钥"
+        en_US: "Please input your Google Client Secret"
+        pt_BR: "Insira seu segredo de cliente do Google"
+        ja_JP: "Googleクライアントシークレットを入力してください"
+      help:
+        en_US: "Get your client secret from Google Cloud Console > APIs & Services > Credentials"
+        zh_Hans: "从Google Cloud Console > API和服务 > 凭据获取您的客户端密钥"
+        pt_BR: "Obtenha seu segredo de cliente no Google Cloud Console > APIs e Serviços > Credenciais"
+        ja_JP: "Google Cloud Console > APIとサービス > 認証情報からクライアントシークレットを取得してください"
+  credentials_schema:
+    - name: "access_token"
+      type: "secret-input"
+      label:
+        zh_Hans: "访问令牌"
+        en_US: "Access Token"
+        pt_BR: "Token de Acesso"
+        ja_JP: "アクセストークン"
+      placeholder:
+        zh_Hans: "请输入访问令牌"
+        en_US: "Please input your access token"
+        pt_BR: "Insira seu token de acesso"
+        ja_JP: "アクセストークンを入力してください"
+    - name: "refresh_token"
+      type: "secret-input"
+      label:
+        zh_Hans: "刷新令牌"
+        en_US: "Refresh Token"
+        pt_BR: "Token de Atualização"
+        ja_JP: "リフレッシュトークン"
+      placeholder:
+        zh_Hans: "请输入刷新令牌"
+        en_US: "Please input your refresh token"
+        pt_BR: "Insira seu token de atualização"
+        ja_JP: "リフレッシュトークンを入力してください"
+tools:
+  - tools/get_message.yaml
+  - tools/send_message.yaml
+  - tools/draft_message.yaml
+  - tools/list_drafts.yaml
+  - tools/send_draft.yaml
+  - tools/add_attachment_to_draft.yaml
+  - tools/flag_message.yaml
+  - tools/search_messages.yaml
+extra:
+  python:
+    source: provider/dify-gmail.py 

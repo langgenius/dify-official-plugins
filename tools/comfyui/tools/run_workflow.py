@@ -13,8 +13,7 @@ class ComfyUIWorkflowTool(Tool):
     ) -> Generator[ToolInvokeMessage, None, None]:
         self.comfyui = ComfyUiClient(
             self.runtime.credentials["base_url"],
-            api_key_comfy_org=self.runtime.credentials.get(
-                "api_key_comfy_org"),
+            api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"),
         )
         self.model_manager = ModelManager(
             self.comfyui,

@@ -1,0 +1,88 @@
+extra:
+  python:
+    source: provider/spotify.py
+identity:
+  author: langgenius
+  description:
+    en_US: Connect to Spotify to search music, control playback, and manage your music
+      library
+    ja_JP: Spotify に接続して音楽を検索し、再生を制御し、音楽ライブラリを管理します
+    zh_Hans: 连接到 Spotify 以搜索音乐、控制播放和管理您的音乐库
+  icon: icon.svg
+  label:
+    en_US: Spotify
+    ja_JP: Spotify
+    zh_Hans: Spotify
+  name: spotify
+  tags:
+  - utilities
+oauth_schema:
+  client_schema:
+  - help:
+      en_US: Get your Client ID from Spotify Developer Dashboard
+      ja_JP: Spotify Developer Dashboard からクライアント ID を取得してください
+      zh_Hans: 从 Spotify 开发者控制台获取您的客户端 ID
+    label:
+      en_US: Client ID
+      ja_JP: クライアント ID
+      zh_Hans: 客户端 ID
+    name: client_id
+    placeholder:
+      en_US: Enter your Spotify Client ID
+      ja_JP: Spotify クライアント ID を入力してください
+      zh_Hans: 输入您的 Spotify 客户端 ID
+    required: true
+    type: text-input
+    url: https://developer.spotify.com/dashboard
+  - help:
+      en_US: Get your Client Secret from Spotify Developer Dashboard
+      ja_JP: Spotify Developer Dashboard からクライアントシークレットを取得してください
+      zh_Hans: 从 Spotify 开发者控制台获取您的客户端密钥
+    label:
+      en_US: Client Secret
+      ja_JP: クライアントシークレット
+      zh_Hans: 客户端密钥
+    name: client_secret
+    placeholder:
+      en_US: Enter your Spotify Client Secret
+      ja_JP: Spotify クライアントシークレットを入力してください
+      zh_Hans: 输入您的 Spotify 客户端密钥
+    required: true
+    type: secret-input
+    url: https://developer.spotify.com/dashboard
+  # - help:
+  #     en_US: OAuth scopes for accessing Spotify features (leave empty for default)
+  #     ja_JP: Spotify 機能にアクセスするための OAuth スコープ（空白でデフォルト使用）
+  #     zh_Hans: 访问 Spotify 功能的 OAuth 范围（留空使用默认值）
+  #   label:
+  #     en_US: OAuth Scopes
+  #     ja_JP: OAuth スコープ
+  #     zh_Hans: OAuth 范围
+  #   name: scope
+  #   placeholder:
+  #     en_US: user-read-playback-state user-modify-playback-state...
+  #     ja_JP: user-read-playback-state user-modify-playback-state...
+  #     zh_Hans: user-read-playback-state user-modify-playback-state...
+  #   required: false
+  #   type: text-input
+  #   url: null
+  credentials_schema:
+  - label:
+      en_US: Access Token
+      ja_JP: アクセストークン
+      zh_Hans: 访问令牌
+    name: access_token
+    type: secret-input
+  - label:
+      en_US: Refresh Token
+      ja_JP: リフレッシュトークン
+      zh_Hans: 刷新令牌
+    name: refresh_token
+    type: secret-input
+tools:
+- tools/spotify_search.yaml
+- tools/spotify_get_album.yaml
+- tools/spotify_get_track.yaml
+- tools/spotify_get_artist.yaml
+- tools/spotify_list_devices.yaml
+- tools/spotify_control_playback.yaml

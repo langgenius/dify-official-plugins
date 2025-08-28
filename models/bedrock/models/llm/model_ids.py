@@ -45,6 +45,12 @@ BEDROCK_MODEL_IDS = {
     },
     'deepseek': {
         'DeepSeek R1': 'deepseek.r1-v1:0'
+    },
+    'cohere': {
+        'Command': 'cohere.command-text-v14',
+        'Command Light': 'cohere.command-light-text-v14',
+        'Command R': 'cohere.command-r-v1:0',
+        'Command R+': 'cohere.command-r-plus-v1:0'
     }
 }
 

@@ -42,7 +42,7 @@ parameter_rules:
     required: false
     default: false
     label:
-      en_US: Include Thoughts
+      en_US: Include thoughts
       zh_Hans: 返回思考过程
     help:
       en_US: Indicates whether to include thoughts in the response. If true, thoughts are returned only if the model supports thought and thoughts are available.
@@ -54,7 +54,7 @@ parameter_rules:
     min: 128
     max: 32768
     label:
-      en_US: Thinking Budget
+      en_US: Set thinking budget
       zh_Hans: 思考预算
     help:
       en_US: Indicates the thinking budget in tokens. This value is valid only when thinking mode is enabled. The default values and allowed ranges are model dependent. If the thinking budget is not set, the default is to enable dynamic budget reasoning.
@@ -71,6 +71,30 @@ parameter_rules:
       en_US: Grounding with Google Search
       zh_Hans: Google 事实核查
       ja_JP: Google検索に基づいた応答をします。
+  - name: url_context
+    type: boolean
+    required: true
+    default: false
+    label:
+        en_US: URL context
+        zh_Hans: 链接详情
+        ja_JP: 網羅閲覧
+    help:
+      en_US: Browse the url context
+      zh_Hans: 获取并分析该链接的详细信息，为回答提供参考依据。
+      ja_JP: リンク先の詳細情報を取得し、文脈を理解します。
+  - name: code_execution
+    type:  boolean
+    required: true
+    default: false
+    label:
+        en_US: Code execution
+        zh_Hans: 代码执行
+        ja_JP: コード実行
+    help:
+      en_US: Lets Gemini use code to solve complex tasks
+      zh_Hans: 让 Gemini 使用代码来解决复杂任务。
+      ja_JP: Gemini にコードを使って複雑なタスクを解決させましょう。
   - name: json_schema
     use_template: json_schema
 # https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-2.5-pro

@@ -61,8 +61,7 @@ class ModelManager:
         if model_name in self._comfyui_cli.get_model_dirs(save_dir):
             # model_name is the name for an existing model in ComfyUI
             return model_name
-        civit_patterns = re.findall(
-            "^(civitai: *)?([0-9]+)(@([0-9]+))?", model_name)
+        civit_patterns = re.findall("^(civitai: *)?([0-9]+)(@([0-9]+))?", model_name)
         if len(civit_patterns) > 0:
             # model_name is CivitAI's AIR
             civit_pattern = civit_patterns[0]
@@ -205,7 +204,6 @@ class ModelManager:
             elif "://huggingface.co" in model["url"]:
                 token = self.get_hf_api_key()
 
-            self.download_model(
-                model["url"], model["directory"], model["name"], token)
+            self.download_model(model["url"], model["directory"], model["name"], token)
         model_names = [m["name"] for m in models]
         return model_names

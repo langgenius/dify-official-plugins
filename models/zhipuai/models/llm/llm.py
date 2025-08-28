@@ -19,10 +19,24 @@ from dify_plugin.entities.model.message import (
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
-from zhipuai import ZhipuAI
-from zhipuai.types.chat.chat_completion import Completion
-from zhipuai.types.chat.chat_completion_chunk import ChatCompletionChunk
+from zai import ZhipuAiClient
+from zai.core import StreamResponse
+from zai.types.chat import ChatCompletionChunk, Completion, ChoiceDelta
+
 from .._common import _CommonZhipuaiAI
+
+viso_models = [
+    "glm-4.5v",
+    "glm-4v",
+    "glm-4v-plus",
+    "glm-4v-plus-0111",
+    "glm-4v-flash",
+    "glm-4.1v-thinking-flash",
+    "glm-4.1v-thinking-flashx",
+]
+
+TOKEN_BEGIN_OF_BOX = "<|begin_of_box|>"
+TOKEN_END_OF_BOX = "<|end_of_box|>"
 
 
 class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
@@ -129,7 +143,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
         # request to glm-4v-plus with stop words will always respond "finish_reason":"network_error"
         if stop and model != "glm-4v-plus":
             extra_model_kwargs["stop"] = stop
-        client = ZhipuAI(api_key=credentials_kwargs["api_key"])
+        client = ZhipuAiClient(api_key=credentials_kwargs["api_key"])
         if len(prompt_messages) == 0:
             raise ValueError("At least one message is required")
         if prompt_messages[0].role == PromptMessageRole.SYSTEM:
@@ -144,7 +158,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                 PromptMessageRole.TOOL,
             }:
                 if isinstance(copy_prompt_message.content, list):
-                    if model not in {"glm-4v", "glm-4v-plus", "glm-4v-flash"}:
+                    if model not in viso_models:
                         continue
                     if not isinstance(copy_prompt_message, UserPromptMessage):
                         continue
@@ -203,7 +217,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                     )
                 try:
                     schema = json.loads(json_schema)
-                except:
+                except Exception:
                     raise ValueError(f"not correct json_schema format: {json_schema}")
                 model_parameters.pop("json_schema")
                 model_parameters["response_format"] = {
@@ -215,7 +229,13 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
         elif "json_schema" in model_parameters:
             del model_parameters["json_schema"]
 
-        if model in {"glm-4v", "glm-4v-plus", "glm-4v-flash"}:
+        if "thinking" in model_parameters:
+            thinking = model_parameters.pop("thinking")
+            if thinking:
+                model_parameters["thinking"] = {"type": "enabled"}
+            else:
+                model_parameters["thinking"] = {"type": "disabled"}
+        if model in viso_models:
             params = self._construct_glm_4v_parameter(
                 model, new_prompt_messages, model_parameters
             )
@@ -353,6 +373,12 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                                 ),
                             )
                         )
+            if choice.message.reasoning_content:
+                text += (
+                    "<think>\n"
+                    + choice.message.reasoning_content
+                    + "\n</think>"
+                )
             text += choice.message.content or ""
         prompt_usage = response.usage.prompt_tokens
         completion_usage = response.usage.completion_tokens
@@ -374,7 +400,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
         model: str,
         credentials: dict,
         tools: Optional[list[PromptMessageTool]],
-        responses: Generator[ChatCompletionChunk, None, None],
+        responses: StreamResponse[ChatCompletionChunk],
         prompt_messages: list[PromptMessage],
     ) -> Generator:
         """
@@ -385,15 +411,28 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
         :param prompt_messages: prompt messages
         :return: llm response chunk generator result
         """
+        is_reasoning = False
         full_assistant_content = ""
         for chunk in responses:
             if len(chunk.choices) == 0:
                 continue
             delta = chunk.choices[0]
-            if delta.finish_reason is None and (
-                delta.delta.content is None or delta.delta.content == ""
+            if (
+                delta.finish_reason is None
+                and (delta.delta.content is None or delta.delta.content == "")
+                and (
+                    delta.delta.reasoning_content is None
+                    or delta.delta.reasoning_content == ""
+                )
             ):
                 continue
+
+            # Remove BOX_TOKEN from the channel of the `glm-4.5v`
+            # In final_answer, the model will not directly output the complete `TOKEN_BEGIN_OF_BOX` or `TOKEN_END_OF_BOX` within a single chunk.
+            # Therefore, there's no need to worry about contaminating the integrity of the response.
+            if delta.delta.content == TOKEN_BEGIN_OF_BOX or delta.delta.content == TOKEN_END_OF_BOX:
+                continue
+
             assistant_tool_calls: list[AssistantPromptMessage.ToolCall] = []
             for tool_call in delta.delta.tool_calls or []:
                 if tool_call.type == "function":
@@ -407,10 +446,13 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                             ),
                         )
                     )
-            assistant_prompt_message = AssistantPromptMessage(
-                content=delta.delta.content or "", tool_calls=assistant_tool_calls
+            resp_content, is_reasoning = self._wrap_thinking_by_reasoning_content(
+                delta.delta, is_reasoning
             )
-            full_assistant_content += delta.delta.content or ""
+            assistant_prompt_message = AssistantPromptMessage(
+                content=resp_content, tool_calls=assistant_tool_calls
+            )
+            full_assistant_content += resp_content
             if delta.finish_reason is not None and chunk.usage is not None:
                 completion_tokens = chunk.usage.completion_tokens
                 prompt_tokens = chunk.usage.prompt_tokens
@@ -478,3 +520,35 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
             for tool in tools:
                 text += f"\n{tool.model_dump_json()}"
         return text.rstrip()
+
+    def _wrap_thinking_by_reasoning_content(
+        self, delta: ChoiceDelta, is_reasoning: bool
+    ) -> tuple[str, bool]:
+        """
+        If the reasoning response is from delta.get("reasoning_content"), we wrap
+        it with HTML think tag.
+        :param delta: delta dictionary from LLM streaming response
+        :param is_reasoning: is reasoning
+        :return: tuple of (processed_content, is_reasoning)
+        """
+
+        content = delta.content or ""
+        reasoning_content = delta.reasoning_content
+        try:
+            if reasoning_content:
+                try:
+                    if not is_reasoning:
+                        content = "<think>\n" + reasoning_content
+                        is_reasoning = True
+                    else:
+                        content = reasoning_content
+                except Exception as ex:
+                    raise ValueError(
+                        f"[wrap_thinking_by_reasoning_content-1] {ex}"
+                    ) from ex
+            elif is_reasoning and content:
+                content = "\n</think>" + content
+                is_reasoning = False
+        except Exception as ex:
+            raise ValueError(f"[wrap_thinking_by_reasoning_content-2] {ex}") from ex
+        return content, is_reasoning

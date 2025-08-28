@@ -1,0 +1,235 @@
+identity:
+  name: search_events
+  author: langgenius
+  label:
+    en_US: Search Events
+    zh_Hans: 搜索事件
+    ja_JP: イベントを検索
+  icon: icon.png
+
+description:
+  human:
+    en_US: Search for events in Google Calendar using text queries
+    zh_Hans: 使用文本查询在Google日历中搜索事件
+    ja_JP: テキストクエリを使用してGoogleカレンダーのイベントを検索
+  llm: Search for calendar events using text queries that match event titles, descriptions, locations, or attendee information
+
+parameters:
+  - name: query
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Search Query
+      zh_Hans: 搜索查询
+      ja_JP: 検索クエリ
+    human_description:
+      en_US: Text to search for in event titles, descriptions, locations, or attendees
+      zh_Hans: 在事件标题、描述、地点或参加者中搜索的文本
+      ja_JP: イベントのタイトル、説明、場所、または出席者で検索するテキスト
+    llm_description: Search query text to match against event titles, descriptions, locations, and attendee information
+
+  - name: calendar_id
+    type: string
+    required: false
+    default: "primary"
+    form: llm
+    label:
+      en_US: Calendar ID
+      zh_Hans: 日历ID
+      ja_JP: カレンダーID
+    human_description:
+      en_US: The calendar ID to search in (use 'primary' for main calendar)
+      zh_Hans: 要搜索的日历ID（使用'primary'表示主日历）
+      ja_JP: 検索するカレンダーID（メインカレンダーは'primary'を使用）
+    llm_description: Calendar identifier or 'primary' for the user's primary calendar
+
+  - name: time_min
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Start Time Filter
+      zh_Hans: 开始时间过滤
+      ja_JP: 開始時間フィルター
+    human_description:
+      en_US: Lower bound for event start time (ISO format, e.g., 2024-01-01T00:00:00Z)
+      zh_Hans: 事件开始时间的下限（ISO格式，如：2024-01-01T00:00:00Z）
+      ja_JP: イベント開始時間の下限（ISO形式、例：2024-01-01T00:00:00Z）
+    llm_description: Only search for events starting after this time (RFC3339 format)
+
+  - name: time_max
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: End Time Filter
+      zh_Hans: 结束时间过滤
+      ja_JP: 終了時間フィルター
+    human_description:
+      en_US: Upper bound for event start time (ISO format, e.g., 2024-12-31T23:59:59Z)
+      zh_Hans: 事件开始时间的上限（ISO格式，如：2024-12-31T23:59:59Z）
+      ja_JP: イベント開始時間の上限（ISO形式、例：2024-12-31T23:59:59Z）
+    llm_description: Only search for events starting before this time (RFC3339 format)
+
+  - name: max_results
+    type: number
+    required: false
+    default: 25
+    form: llm
+    label:
+      en_US: Maximum Results
+      zh_Hans: 最大结果数
+      ja_JP: 最大結果数
+    human_description:
+      en_US: Maximum number of events to return (1-250)
+      zh_Hans: 返回的最大事件数量（1-250）
+      ja_JP: 返す最大イベント数（1-250）
+    llm_description: Maximum number of search results to return (between 1 and 250)
+    min: 1
+    max: 250
+
+  - name: order_by
+    type: select
+    required: false
+    default: "startTime"
+    form: llm
+    label:
+      en_US: Order By
+      zh_Hans: 排序方式
+      ja_JP: 並び順
+    human_description:
+      en_US: How to order the search results
+      zh_Hans: 搜索结果的排序方式
+      ja_JP: 検索結果の並び順
+    llm_description: Order search results by start time or last update time
+    options:
+      - value: startTime
+        label:
+          en_US: Start Time
+          zh_Hans: 开始时间
+          ja_JP: 開始時間
+      - value: updated
+        label:
+          en_US: Last Updated
+          zh_Hans: 最后更新时间
+          ja_JP: 最終更新時間
+
+  - name: show_deleted
+    type: boolean
+    required: false
+    default: false
+    form: llm
+    label:
+      en_US: Include Deleted Events
+      zh_Hans: 包含已删除事件
+      ja_JP: 削除されたイベントを含む
+    human_description:
+      en_US: Whether to include deleted events in search results
+      zh_Hans: 是否在搜索结果中包含已删除的事件
+      ja_JP: 検索結果に削除されたイベントを含めるかどうか
+    llm_description: Include deleted events in the search results (true/false)
+
+  - name: single_events
+    type: boolean
+    required: false
+    default: true
+    form: llm
+    label:
+      en_US: Expand Recurring Events
+      zh_Hans: 展开重复事件
+      ja_JP: 繰り返しイベントを展開
+    human_description:
+      en_US: Whether to expand recurring events into individual instances
+      zh_Hans: 是否将重复事件展开为单独的实例
+      ja_JP: 繰り返しイベントを個別のインスタンスに展開するかどうか
+    llm_description: Expand recurring events into individual instances for better search results
+
+extra:
+  python:
+    source: tools/search_events.py
+
+output_schema:
+  type: object
+  properties:
+    success:
+      type: boolean
+      description: Whether the search was successful
+    message:
+      type: string
+      description: Human-readable result message
+    events:
+      type: array
+      description: List of matching events
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Event ID
+          title:
+            type: string
+            description: Event title/summary
+          description:
+            type: string
+            description: Event description
+          location:
+            type: string
+            description: Event location
+          start_time:
+            type: string
+            description: Event start time
+          end_time:
+            type: string
+            description: Event end time
+          all_day:
+            type: boolean
+            description: Whether this is an all-day event
+          status:
+            type: string
+            description: Event status
+          created:
+            type: string
+            description: Event creation time
+          updated:
+            type: string
+            description: Event last update time
+          creator:
+            type: object
+            description: Event creator information
+          organizer:
+            type: object
+            description: Event organizer information
+          attendees:
+            type: array
+            description: List of attendees
+          html_link:
+            type: string
+            description: Link to event in Google Calendar
+          visibility:
+            type: string
+            description: Event visibility
+          recurring_event_id:
+            type: string
+            description: ID of recurring event if applicable
+          recurrence:
+            type: array
+            description: Recurrence rules
+          relevance_score:
+            type: number
+            description: Search relevance score
+    total_count:
+      type: integer
+      description: Number of matching events found
+    query:
+      type: string
+      description: The search query used
+    calendar_id:
+      type: string
+      description: Calendar ID searched
+    next_page_token:
+      type: string
+      description: Token for retrieving next page of results
+    search_time_zone:
+      type: string
+      description: Time zone used for search

@@ -1,0 +1,62 @@
+extra:
+  python:
+    source: provider/front.py
+identity:
+  author: langgenius
+  description:
+    en_US: Connect to Front API to send emails and manage conversations
+    ja_JP: Front API に接続してメールの送信と会話の管理を行います
+    zh_Hans: 连接到 Front API 发送邮件和管理对话
+  icon: icon.png
+  label:
+    en_US: Front
+    ja_JP: Front
+    zh_Hans: Front
+  name: front
+  tags:
+  - utilities
+oauth_schema:
+  client_schema:
+  - help:
+      en_US: Get your Client ID from Front Settings > API & Webhooks
+      ja_JP: Front 設定 > API & Webhooks からクライアント ID を取得してください
+      zh_Hans: 从 Front 设置 > API & Webhooks 获取你的客户端 ID
+    label:
+      en_US: Client ID
+      ja_JP: クライアント ID
+      zh_Hans: 客户端 ID
+    name: client_id
+    placeholder:
+      en_US: Your Front OAuth Client ID
+      ja_JP: あなたの Front OAuth クライアント ID
+      zh_Hans: 你的 Front OAuth 客户端 ID
+    required: true
+    type: secret-input
+    url: https://app.frontapp.com/settings/tools-and-integrations/api-and-webhooks
+  - help:
+      en_US: Get your Client Secret from Front Settings > API & Webhooks
+      ja_JP: Front 設定 > API & Webhooks からクライアントシークレットを取得してください
+      zh_Hans: 从 Front 设置 > API & Webhooks 获取你的客户端密钥
+    label:
+      en_US: Client Secret
+      ja_JP: クライアントシークレット
+      zh_Hans: 客户端密钥
+    name: client_secret
+    placeholder:
+      en_US: Your Front OAuth Client Secret
+      ja_JP: あなたの Front OAuth クライアントシークレット
+      zh_Hans: 你的 Front OAuth 客户端密钥
+    required: true
+    type: secret-input
+    url: https://app.frontapp.com/settings/tools-and-integrations/api-and-webhooks
+  credentials_schema:
+  - label:
+      en_US: Access Token
+      ja_JP: アクセストークン
+      zh_Hans: 访问令牌
+    name: access_token
+    type: secret-input
+tools:
+- tools/send_email.yaml
+- tools/find_conversations.yaml
+- tools/find_channels_conversations.yaml

@@ -1,0 +1,52 @@
+description:
+  human:
+    en_US: Send a tweet to Twitter
+    zh_Hans: 发送推文到推特
+  llm: A tool that allows sending tweets to Twitter with optional reply functionality
+extra:
+  python:
+    source: tools/send_tweet.py
+identity:
+  author: langgenius
+  icon: icon.jpg
+  label:
+    en_US: Send Tweet
+    zh_Hans: 发送推文
+  name: send_tweet
+parameters:
+- form: llm
+  human_description:
+    en_US: The text content of the tweet to send
+    zh_Hans: 要发送的推文内容
+  label:
+    en_US: Tweet Text
+    zh_Hans: 推文内容
+  llm_description: The text content of the tweet to send (max 280 characters)
+  name: text
+  required: true
+  type: string
+- form: llm
+  human_description:
+    en_US: The ID of the tweet to reply to (optional)
+    zh_Hans: 要回复的推文ID（可选）
+  label:
+    en_US: Reply To Tweet ID
+    zh_Hans: 回复推文ID
+  llm_description: Optional tweet ID to reply to
+  name: reply_to_tweet_id
+  required: false
+  type: string
+
+# output_schema:
+#   type: object
+#   properties:
+#     success:
+#       type: boolean
+#     tweet_id:
+#       type: string
+#     text:
+#       type: string
+#     url:
+#       type: string
+#     error:
+#       type: string

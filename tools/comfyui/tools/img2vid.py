@@ -304,8 +304,7 @@ class ComfyuiImg2Vid(Tool):
         workflow.set_prompt("6", config.prompt)
         workflow.set_prompt("7", config.negative_prompt)
 
-        wan2_2 = workflow.identify_node_by_class_type(
-            "Wan22ImageToVideoLatent")
+        wan2_2 = workflow.identify_node_by_class_type("Wan22ImageToVideoLatent")
         workflow.set_property(wan2_2, "inputs/width", config.width)
         workflow.set_property(wan2_2, "inputs/height", config.height)
         workflow.set_property(wan2_2, "inputs/length", config.frameN)
@@ -334,12 +333,11 @@ class ComfyuiImg2Vid(Tool):
         workflow.set_prompt("6", config.prompt)
         workflow.set_prompt("7", config.negative_prompt)
 
-        wan2_2 = workflow.identify_node_by_class_type(
-            "Wan22ImageToVideoLatent")
+        wan2_2 = workflow.identify_node_by_class_type("Wan22ImageToVideoLatent")
         workflow.set_property(wan2_2, "inputs/width", config.width)
         workflow.set_property(wan2_2, "inputs/height", config.height)
         workflow.set_property(wan2_2, "inputs/length", config.frameN)
-
+        
         workflow.set_image_names([config.image_name])
 
         try:
