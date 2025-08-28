@@ -13,8 +13,8 @@ parameters:
 output_schema:
     type: object
     properties:
-      result:
-        $ref: "#/$defs/file"
+      file:
+        $ref: "https://dify.ai/schemas/v1/file.json"
 extra:
   python:
     source: datasources/box.py

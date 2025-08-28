@@ -17,81 +17,7 @@ logger = logging.getLogger(__name__)
 
 class BoxDataSource(OnlineDriveDatasource):
     _BASE_URL = "https://api.box.com/2.0"
-    
-    def _resolve_folder_path_to_id(self, folder_path: str, access_token: str) -> str:
-        """
-        Resolve a folder path (e.g., "myfolder/subfolder/") to a Box folder ID.
-        
-        Args:
-            folder_path: The folder path to resolve (e.g., "myfolder/subfolder/")
-            access_token: The Box access token
-            
-        Returns:
-            The Box folder ID for the specified path
-            
-        Raises:
-            ValueError: If the folder path cannot be resolved
-        """
-        if not folder_path or folder_path.strip() == "":
-            return "0"  # Root folder ID
-            
-        # Remove leading/trailing slashes and split the path
-        folder_path = folder_path.strip("/")
-        if not folder_path:
-            return "0"  # Root folder ID
-            
-        path_parts = folder_path.split("/")
-        current_folder_id = "0"  # Start from root
 
-        headers = {
-            "Authorization": f"Bearer {access_token}",
-            "Accept": "application/json"
-        }
-        
-        for folder_name in path_parts:
-            if not folder_name.strip():
-                continue
-                
-            # Search for the folder in the current directory
-            search_url = f"{self._BASE_URL}/search"
-            search_params = {
-                "query": folder_name,
-                "type": "folder",
-                "ancestor_folder_ids": current_folder_id,
-                "limit": 100,
-                "fields": "id,name,type"
-            }
-            
-            try:
-                response = requests.get(search_url, headers=headers, params=search_params, timeout=30)
-                
-                if response.status_code == 401:
-                    raise ValueError(
-                        "Authentication failed (401 Unauthorized). The access token may have expired. "
-                        "Please refresh or reauthorize the connection."
-                    )
-                elif response.status_code != 200:
-                    raise ValueError(f"Failed to search for folder '{folder_name}': {response.status_code}")
-                
-                search_results = response.json()
-                entries = search_results.get("entries", [])
-                
-                # Find exact match for folder name
-                folder_found = False
-                for entry in entries:
-                    if entry.get("type") == "folder" and entry.get("name") == folder_name:
-                        current_folder_id = entry.get("id")
-                        folder_found = True
-                        break
-
-                if not folder_found:
-                    raise ValueError(f"Folder '{folder_name}' not found in path '{folder_path}'")
-                    
-            except requests.exceptions.RequestException as e:
-                raise ValueError(f"Network error when resolving folder path: {str(e)}") from e
-        
-        return current_folder_id
-    
     def _browse_files(
         self, request: OnlineDriveBrowseFilesRequest
     ) -> OnlineDriveBrowseFilesResponse:
@@ -110,8 +36,12 @@ class BoxDataSource(OnlineDriveDatasource):
         
         # Resolve prefix to folder ID if it's a path
         try:
-            folder_id = self._resolve_folder_path_to_id(prefix, access_token)
-            logger.debug(f"Resolved prefix '{prefix}' to folder ID: {folder_id}")
+            # folder_id = self._resolve_folder_path_to_id(prefix, access_token)
+            # logger.debug(f"Resolved prefix '{prefix}' to folder ID: {folder_id}")
+            if not prefix or prefix.strip() == "":
+                folder_id = "0"
+            else:
+                folder_id = prefix
         except Exception as e:
             logger.error(f"Failed to resolve folder path '{prefix}': {str(e)}")
             raise ValueError(f"Failed to resolve folder path '{prefix}': {str(e)}")
