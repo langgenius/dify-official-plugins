@@ -1,0 +1,173 @@
+identity:
+  name: "linuxdo_checkin"
+  author: "frederick"
+  label:
+    en_US: "LinuxDo Check-in"
+    zh_Hans: "LinuxDo自动签到"
+    pt_BR: "Check-in LinuxDo"
+
+description:
+  human:
+    en_US: "Automatic check-in and activity tracking for LinuxDo forum to maintain account activity"
+    zh_Hans: "LinuxDo论坛自动签到和活动跟踪，维持账户活跃状态"
+    pt_BR: "Check-in automático e rastreamento de atividade para o fórum LinuxDo para manter a atividade da conta"
+  llm: "A tool to perform automatic check-in, track daily activity, and maintain account engagement in LinuxDo forum"
+
+parameters:
+  - name: action_type
+    type: select
+    required: false
+    default: "checkin"
+    options:
+      - value: "checkin"
+        label:
+          en_US: "Daily Check-in"
+          zh_Hans: "每日签到"
+          pt_BR: "Check-in Diário"
+      - value: "status"
+        label:
+          en_US: "Check-in Status"
+          zh_Hans: "签到状态"
+          pt_BR: "Status do Check-in"
+      - value: "history"
+        label:
+          en_US: "Check-in History"
+          zh_Hans: "签到历史"
+          pt_BR: "Histórico de Check-in"
+      - value: "streak"
+        label:
+          en_US: "Check-in Streak"
+          zh_Hans: "连续签到"
+          pt_BR: "Sequência de Check-in"
+    label:
+      en_US: "Action Type"
+      zh_Hans: "操作类型"
+      pt_BR: "Tipo de Ação"
+    human_description:
+      en_US: "Type of check-in action to perform"
+      zh_Hans: "要执行的签到操作类型"
+      pt_BR: "Tipo de ação de check-in a ser executada"
+    llm_description: "Specify the check-in action: daily check-in, status check, history, or streak info"
+    form: llm
+
+  - name: auto_activity
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: "Auto Activity"
+      zh_Hans: "自动活动"
+      pt_BR: "Atividade Automática"
+    human_description:
+      en_US: "Perform additional activities to maintain account engagement (view topics, etc.)"
+      zh_Hans: "执行额外活动以维持账户活跃度（浏览主题等）"
+      pt_BR: "Realizar atividades adicionais para manter o engajamento da conta (visualizar tópicos, etc.)"
+    llm_description: "Whether to perform additional activities beyond basic check-in"
+    form: llm
+
+  - name: notification_enabled
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: "Enable Notifications"
+      zh_Hans: "启用通知"
+      pt_BR: "Habilitar Notificações"
+    human_description:
+      en_US: "Send notifications about check-in results and streaks"
+      zh_Hans: "发送关于签到结果和连续记录的通知"
+      pt_BR: "Enviar notificações sobre resultados de check-in e sequências"
+    llm_description: "Whether to send notifications about check-in activities"
+    form: llm
+
+  - name: days_to_check
+    type: number
+    required: false
+    default: 7
+    label:
+      en_US: "History Days"
+      zh_Hans: "历史天数"
+      pt_BR: "Dias de Histórico"
+    human_description:
+      en_US: "Number of days to retrieve for history check (1-30, default: 7)"
+      zh_Hans: "检索历史记录的天数（1-30，默认：7）"
+      pt_BR: "Número de dias para recuperar no histórico (1-30, padrão: 7)"
+    llm_description: "Number of days to retrieve for check-in history, between 1 and 30"
+    form: llm
+
+output_schema:
+  type: object
+  properties:
+    checkin_result:
+      type: object
+      description: Check-in operation result
+      properties:
+        success:
+          type: boolean
+          description: Whether the check-in was successful
+        action_type:
+          type: string
+          description: Type of action performed
+        timestamp:
+          type: string
+          description: Check-in timestamp
+        points_earned:
+          type: integer
+          description: Points earned from check-in
+        consecutive_days:
+          type: integer
+          description: Consecutive check-in days
+        total_checkins:
+          type: integer
+          description: Total number of check-ins
+        message:
+          type: string
+          description: Check-in result message
+    activity_summary:
+      type: object
+      description: Account activity summary
+      properties:
+        last_checkin:
+          type: string
+          description: Last check-in date
+        current_streak:
+          type: integer
+          description: Current consecutive check-in streak
+        longest_streak:
+          type: integer
+          description: Longest check-in streak ever
+        total_points:
+          type: integer
+          description: Total points accumulated
+        monthly_checkins:
+          type: integer
+          description: Check-ins this month
+        activities_performed:
+          type: array
+          description: Additional activities performed
+          items:
+            type: string
+    checkin_history:
+      type: array
+      description: Recent check-in history
+      items:
+        type: object
+        properties:
+          date:
+            type: string
+            description: Check-in date
+          success:
+            type: boolean
+            description: Whether check-in was successful
+          points:
+            type: integer
+            description: Points earned
+          activities:
+            type: array
+            description: Activities performed
+            items:
+              type: string
+
+extra:
+  python:
+    source: tools/checkin.py

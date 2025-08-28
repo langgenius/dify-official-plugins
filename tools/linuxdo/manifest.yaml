@@ -1,0 +1,52 @@
+version: 0.0.1
+type: plugin
+author: frederick
+name: linuxdo
+label:
+  en_US: linuxdo
+  ja_JP: linuxdo
+  zh_Hans: linuxdo
+  pt_BR: linuxdo
+description:
+  en_US: Connect to LinuxDo forum with authentication, user verification, content search, personalized recommendations, and auto check-in via LinuxDo Connect API
+  ja_JP: LinuxDo Connect APIを介してLinuxDoフォーラムに認証、ユーザー検証、コンテンツ検索、パーソナライズされた推奨、自動チェックインで接続
+  zh_Hans: 通过LinuxDo Connect API连接LinuxDo论坛，支持身份验证、用户信息获取、内容搜索、个性化推荐和自动签到
+  pt_BR: Conectar ao fórum LinuxDo com autenticação, verificação de usuário, busca de conteúdo, recomendações personalizadas e check-in automático via LinuxDo Connect API
+icon: icon.svg
+icon_dark: icon-dark.svg
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+    endpoint:
+      enabled: true
+    app:
+      enabled: true
+    storage:
+      enabled: true
+      size: 1048576
+plugins:
+  tools:
+    - provider/linuxdo.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: null
+created_at: 2025-08-07T13:43:06.851365+08:00
+privacy: PRIVACY.md
+verified: false

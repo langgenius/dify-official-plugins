@@ -1,0 +1,99 @@
+identity:
+  name: "linuxdo_user_info"
+  author: "frederick"
+  label:
+    en_US: "LinuxDo User Info"
+    zh_Hans: "LinuxDo用户信息"
+    pt_BR: "Informações do Usuário LinuxDo"
+description:
+  human:
+    en_US: "Get LinuxDo user information and verify API key status"
+    zh_Hans: "获取LinuxDo用户信息并验证API Key状态"
+    pt_BR: "Obter informações do usuário LinuxDo e verificar o status da API Key"
+  llm: "A tool to retrieve LinuxDo user information and verify API key authentication status"
+parameters:
+  - name: include_extra_info
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: Include Extra Information
+      zh_Hans: 包含额外信息
+      pt_BR: Incluir Informações Extras
+    human_description:
+      en_US: "Whether to include detailed user information (slower but more complete)"
+      zh_Hans: "是否包含详细的用户信息（较慢但更完整）"
+      pt_BR: "Se deve incluir informações detalhadas do usuário (mais lento, mas mais completo)"
+    llm_description: "Whether to fetch detailed user information including profile data"
+    form: llm
+  - name: verify_only
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Verify Only
+      zh_Hans: 仅验证
+      pt_BR: Apenas Verificar
+    human_description:
+      en_US: "Only verify API key status without fetching user details (faster)"
+      zh_Hans: "仅验证API Key状态，不获取用户详情（更快）"
+      pt_BR: "Apenas verificar o status da API Key sem buscar detalhes do usuário (mais rápido)"
+    llm_description: "Only verify the API key status without retrieving user information"
+    form: llm
+
+output_schema:
+  type: object
+  properties:
+    user_info:
+      type: object
+      description: Complete LinuxDo user information (when not in verify_only mode)
+      properties:
+        user_id:
+          type: string
+          description: User ID in LinuxDo
+        api_key_valid:
+          type: boolean
+          description: Whether the API key is valid
+        username:
+          type: string
+          description: Username in LinuxDo
+        name:
+          type: string
+          description: Display name
+        trust_level:
+          type: integer
+          description: User trust level
+        active:
+          type: boolean
+          description: Whether the account is active
+        admin:
+          type: boolean
+          description: Whether the user is an admin
+        moderator:
+          type: boolean
+          description: Whether the user is a moderator
+        created_at:
+          type: string
+          description: Account creation date
+        last_seen_at:
+          type: string
+          description: Last activity date
+    verification_result:
+      type: object
+      description: API key verification result
+      properties:
+        status:
+          type: string
+          description: Verification status (success/error)
+        user_id:
+          type: string
+          description: User ID if verification successful
+        api_key_valid:
+          type: boolean
+          description: Whether the API key is valid
+        message:
+          type: string
+          description: Status message
+extra:
+  python:
+    source: tools/linuxdo.py

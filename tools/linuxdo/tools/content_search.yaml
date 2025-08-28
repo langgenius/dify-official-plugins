@@ -1,0 +1,195 @@
+identity:
+  name: "linuxdo_content_search"
+  author: "frederick"
+  label:
+    en_US: "LinuxDo Content Search"
+    zh_Hans: "LinuxDo内容搜索"
+    pt_BR: "Busca de Conteúdo LinuxDo"
+
+description:
+  human:
+    en_US: "Search for topics, posts, and discussions in LinuxDo forum with advanced filtering options"
+    zh_Hans: "在LinuxDo论坛中搜索主题、帖子和讨论，支持高级过滤选项"
+    pt_BR: "Buscar tópicos, posts e discussões no fórum LinuxDo com opções avançadas de filtro"
+  llm: "A tool to search LinuxDo forum content including topics, posts, categories with keyword matching and filtering"
+
+parameters:
+  - name: search_query
+    type: string
+    required: true
+    label:
+      en_US: "Search Query"
+      zh_Hans: "搜索关键词"
+      pt_BR: "Consulta de Pesquisa"
+    human_description:
+      en_US: "Keywords to search for in LinuxDo forum content"
+      zh_Hans: "在LinuxDo论坛内容中搜索的关键词"
+      pt_BR: "Palavras-chave para pesquisar no conteúdo do fórum LinuxDo"
+    llm_description: "Search keywords for finding relevant content in LinuxDo forum"
+    form: llm
+
+  - name: search_type
+    type: select
+    required: false
+    default: "all"
+    options:
+      - value: "all"
+        label:
+          en_US: "All Content"
+          zh_Hans: "所有内容"
+          pt_BR: "Todo Conteúdo"
+      - value: "topics"
+        label:
+          en_US: "Topics Only"
+          zh_Hans: "仅主题"
+          pt_BR: "Apenas Tópicos"
+      - value: "posts"
+        label:
+          en_US: "Posts Only"
+          zh_Hans: "仅帖子"
+          pt_BR: "Apenas Posts"
+      - value: "categories"
+        label:
+          en_US: "Categories"
+          zh_Hans: "分类"
+          pt_BR: "Categorias"
+    label:
+      en_US: "Search Type"
+      zh_Hans: "搜索类型"
+      pt_BR: "Tipo de Busca"
+    human_description:
+      en_US: "Type of content to search for"
+      zh_Hans: "要搜索的内容类型"
+      pt_BR: "Tipo de conteúdo a pesquisar"
+    llm_description: "Specify the type of content to search: all, topics, posts, or categories"
+    form: llm
+
+  - name: category_filter
+    type: string
+    required: false
+    label:
+      en_US: "Category Filter"
+      zh_Hans: "分类筛选"
+      pt_BR: "Filtro de Categoria"
+    human_description:
+      en_US: "Filter results by specific category (optional)"
+      zh_Hans: "按特定分类筛选结果（可选）"
+      pt_BR: "Filtrar resultados por categoria específica (opcional)"
+    llm_description: "Optional category name to filter search results"
+    form: llm
+
+  - name: limit
+    type: number
+    required: false
+    default: 20
+    label:
+      en_US: "Result Limit"
+      zh_Hans: "结果限制"
+      pt_BR: "Limite de Resultados"
+    human_description:
+      en_US: "Maximum number of results to return (1-100, default: 20)"
+      zh_Hans: "返回结果的最大数量（1-100，默认：20）"
+      pt_BR: "Número máximo de resultados a retornar (1-100, padrão: 20)"
+    llm_description: "Maximum number of search results to return, between 1 and 100"
+    form: llm
+
+  - name: sort_by
+    type: select
+    required: false
+    default: "relevance"
+    options:
+      - value: "relevance"
+        label:
+          en_US: "Relevance"
+          zh_Hans: "相关性"
+          pt_BR: "Relevância"
+      - value: "date"
+        label:
+          en_US: "Date"
+          zh_Hans: "日期"
+          pt_BR: "Data"
+      - value: "views"
+        label:
+          en_US: "Views"
+          zh_Hans: "浏览量"
+          pt_BR: "Visualizações"
+      - value: "replies"
+        label:
+          en_US: "Replies"
+          zh_Hans: "回复数"
+          pt_BR: "Respostas"
+    label:
+      en_US: "Sort By"
+      zh_Hans: "排序方式"
+      pt_BR: "Ordenar Por"
+    human_description:
+      en_US: "Sort search results by relevance, date, views, or replies"
+      zh_Hans: "按相关性、日期、浏览量或回复数排序搜索结果"
+      pt_BR: "Ordenar resultados por relevância, data, visualizações ou respostas"
+    llm_description: "Sorting criteria for search results"
+    form: llm
+
+output_schema:
+  type: object
+  properties:
+    search_results:
+      type: array
+      description: Array of search results from LinuxDo forum
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Content ID
+          title:
+            type: string
+            description: Content title
+          content:
+            type: string
+            description: Content excerpt or full text
+          author:
+            type: string
+            description: Author username
+          category:
+            type: string
+            description: Content category
+          url:
+            type: string
+            description: Direct URL to the content
+          created_at:
+            type: string
+            description: Creation timestamp
+          views:
+            type: integer
+            description: Number of views
+          replies:
+            type: integer
+            description: Number of replies
+          relevance_score:
+            type: number
+            description: Search relevance score
+    search_summary:
+      type: object
+      description: Search summary and statistics
+      properties:
+        total_results:
+          type: integer
+          description: Total number of results found
+        search_query:
+          type: string
+          description: The search query used
+        search_type:
+          type: string
+          description: Type of search performed
+        processing_time:
+          type: number
+          description: Search processing time in seconds
+        filters_applied:
+          type: array
+          description: List of filters applied
+          items:
+            type: string
+
+extra:
+  python:
+    source: tools/content_search.py

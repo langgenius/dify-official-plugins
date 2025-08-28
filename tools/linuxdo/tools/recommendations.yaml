@@ -1,0 +1,197 @@
+identity:
+  name: "linuxdo_recommendations"
+  author: "frederick"
+  label:
+    en_US: "LinuxDo Recommendations"
+    zh_Hans: "LinuxDo个性化推荐"
+    pt_BR: "Recomendações LinuxDo"
+
+description:
+  human:
+    en_US: "Get personalized content recommendations based on user activity and interests in LinuxDo forum"
+    zh_Hans: "基于用户活动和兴趣获取LinuxDo论坛的个性化内容推荐"
+    pt_BR: "Obter recomendações de conteúdo personalizadas baseadas na atividade e interesses do usuário no fórum LinuxDo"
+  llm: "A tool to provide personalized recommendations for LinuxDo forum content based on user behavior and preferences"
+
+parameters:
+  - name: recommendation_type
+    type: select
+    required: false
+    default: "mixed"
+    options:
+      - value: "mixed"
+        label:
+          en_US: "Mixed Content"
+          zh_Hans: "混合内容"
+          pt_BR: "Conteúdo Misto"
+      - value: "topics"
+        label:
+          en_US: "Topic Recommendations"
+          zh_Hans: "主题推荐"
+          pt_BR: "Recomendações de Tópicos"
+      - value: "users"
+        label:
+          en_US: "User Recommendations"
+          zh_Hans: "用户推荐"
+          pt_BR: "Recomendações de Usuários"
+      - value: "categories"
+        label:
+          en_US: "Category Recommendations"
+          zh_Hans: "分类推荐"
+          pt_BR: "Recomendações de Categorias"
+    label:
+      en_US: "Recommendation Type"
+      zh_Hans: "推荐类型"
+      pt_BR: "Tipo de Recomendação"
+    human_description:
+      en_US: "Type of content to recommend"
+      zh_Hans: "要推荐的内容类型"
+      pt_BR: "Tipo de conteúdo a recomendar"
+    llm_description: "Specify the type of recommendations: mixed, topics, users, or categories"
+    form: llm
+
+  - name: limit
+    type: number
+    required: false
+    default: 10
+    label:
+      en_US: "Number of Recommendations"
+      zh_Hans: "推荐数量"
+      pt_BR: "Número de Recomendações"
+    human_description:
+      en_US: "Maximum number of recommendations to return (1-50, default: 10)"
+      zh_Hans: "返回推荐的最大数量（1-50，默认：10）"
+      pt_BR: "Número máximo de recomendações a retornar (1-50, padrão: 10)"
+    llm_description: "Maximum number of recommendations to return, between 1 and 50"
+    form: llm
+
+  - name: include_trending
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: "Include Trending Content"
+      zh_Hans: "包含热门内容"
+      pt_BR: "Incluir Conteúdo em Tendência"
+    human_description:
+      en_US: "Include currently trending content in recommendations"
+      zh_Hans: "在推荐中包含当前热门内容"
+      pt_BR: "Incluir conteúdo atualmente em tendência nas recomendações"
+    llm_description: "Whether to include trending/popular content in the recommendations"
+    form: llm
+
+  - name: personalization_level
+    type: select
+    required: false
+    default: "balanced"
+    options:
+      - value: "high"
+        label:
+          en_US: "High Personalization"
+          zh_Hans: "高度个性化"
+          pt_BR: "Alta Personalização"
+      - value: "balanced"
+        label:
+          en_US: "Balanced"
+          zh_Hans: "平衡"
+          pt_BR: "Equilibrado"
+      - value: "discovery"
+        label:
+          en_US: "Discovery Mode"
+          zh_Hans: "探索模式"
+          pt_BR: "Modo Descoberta"
+    label:
+      en_US: "Personalization Level"
+      zh_Hans: "个性化程度"
+      pt_BR: "Nível de Personalização"
+    human_description:
+      en_US: "Level of personalization vs. content discovery"
+      zh_Hans: "个性化与内容探索的平衡程度"
+      pt_BR: "Nível de personalização vs. descoberta de conteúdo"
+    llm_description: "Balance between personalized content and content discovery"
+    form: llm
+
+output_schema:
+  type: object
+  properties:
+    recommendations:
+      type: array
+      description: Array of personalized recommendations
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Content ID
+          type:
+            type: string
+            description: Content type (topic, user, category)
+          title:
+            type: string
+            description: Content title or name
+          description:
+            type: string
+            description: Content description or excerpt
+          url:
+            type: string
+            description: Direct URL to the content
+          author:
+            type: string
+            description: Content author (for topics)
+          category:
+            type: string
+            description: Content category
+          recommendation_score:
+            type: number
+            description: Recommendation relevance score (0-1)
+          recommendation_reason:
+            type: string
+            description: Why this content is recommended
+          metadata:
+            type: object
+            description: Additional metadata
+            properties:
+              views:
+                type: integer
+                description: Number of views
+              replies:
+                type: integer
+                description: Number of replies
+              created_at:
+                type: string
+                description: Creation timestamp
+              is_trending:
+                type: boolean
+                description: Whether content is currently trending
+    recommendation_summary:
+      type: object
+      description: Summary of recommendations
+      properties:
+        total_recommendations:
+          type: integer
+          description: Total number of recommendations
+        recommendation_type:
+          type: string
+          description: Type of recommendations provided
+        personalization_level:
+          type: string
+          description: Level of personalization applied
+        user_interests:
+          type: array
+          description: Detected user interests
+          items:
+            type: string
+        trending_included:
+          type: boolean
+          description: Whether trending content was included
+        generation_time:
+          type: number
+          description: Time taken to generate recommendations
+
+extra:
+  python:
+    source: tools/recommendations.py
+ 
+ 
+ 
+ 
