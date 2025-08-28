@@ -10,10 +10,8 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
     def get_customizable_model_schema(
         self, model: str, credentials: Mapping | dict
     ) -> AIModelEntity:
+        credentials = credentials or {}
         entity = super().get_customizable_model_schema(model, credentials)
-
-        # add this line
-        entity.context_size = credentials.get("context_size")  # required integer
 
         if "display_name" in credentials and credentials["display_name"] != "":
             entity.label = I18nObject(
@@ -21,4 +19,3 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
             )
 
         return entity
-
