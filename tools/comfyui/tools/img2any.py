@@ -8,7 +8,7 @@ from tools.comfyui_client import ComfyUiClient, FileType
 from tools.model_manager import ModelManager
 
 
-class ComfyuiDepthAnything(Tool):
+class ComfyuiImg2Any(Tool):
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
