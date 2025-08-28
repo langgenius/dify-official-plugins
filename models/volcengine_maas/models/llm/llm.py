@@ -1,3 +1,4 @@
+import json
 import logging
 from collections.abc import Generator
 from typing import Optional
@@ -10,6 +11,7 @@ from dify_plugin.entities.model import (
     ModelType,
     ParameterRule,
     ParameterType,
+    DefaultParameterName,
 )
 from dify_plugin.entities.model.llm import (
     LLMResult,
@@ -161,6 +163,27 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                 num_tokens += self._get_num_tokens_by_gpt2(str(value))
         return num_tokens
 
+    def _handle_response_format(self, model_parameters: dict) -> None:
+        """
+        Handle response_format and json_schema parameters processing
+        """
+        response_format = model_parameters.get("response_format")
+        if response_format:
+            if response_format == "json_schema":
+                json_schema = model_parameters.get("json_schema")
+                if not json_schema:
+                    raise ValueError("Must define JSON Schema when the response format is json_schema")
+                try:
+                    schema = json.loads(json_schema)
+                except Exception:
+                    raise ValueError(f"not correct json_schema format: {json_schema}")
+                model_parameters.pop("json_schema")
+                model_parameters["response_format"] = {"type": "json_schema", "json_schema": schema}
+            else:
+                model_parameters["response_format"] = {"type": response_format}
+        elif "json_schema" in model_parameters:
+            model_parameters.pop("json_schema")
+
     def _generate_v2(
         self,
         model: str,
@@ -172,6 +195,9 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         stream: bool = True,
         user: str | None = None,
     ) -> LLMResult | Generator:
+        # Handle response_format and json_schema parameters
+        self._handle_response_format(model_parameters)
+
         client = MaaSClient.from_credential(credentials)
         req_params = get_v2_req_params(credentials, model_parameters, stop)
         extra_model_kwargs = {}
@@ -272,6 +298,9 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         stream: bool = True,
         user: str | None = None,
     ) -> LLMResult | Generator:
+        # Handle response_format and json_schema parameters
+        self._handle_response_format(model_parameters)
+
         client = ArkClientV3.from_credentials(credentials)
         req_params = get_v3_req_params(credentials, model_parameters, stop)
         if tools:
@@ -470,7 +499,8 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         used to define customizable model schema
         """
         model_config = get_model_config(credentials)
-        if model.lower().startswith("deepseek-r1"):
+        base_model = credentials.get("base_model_name", "")
+        if base_model.lower().startswith("deepseek-r1"):
             rules = [
                 ParameterRule(
                     name="max_tokens",
@@ -545,7 +575,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                                     en_US="Skip Moderation, please contact Volcengine to enable this feature first"),
                 ),
             ]
-        base_model = credentials.get("base_model_name", "")
+        # thinking parameter
         if base_model.lower() in ("doubao-1.5-thinking-pro", "doubao-seed-1.6"):
             rules.append(
                 ParameterRule(
@@ -565,6 +595,36 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     default="enabled",
                     label=I18nObject(zh_Hans="深度思考模式", en_US="thinking"),
                     options=["enabled", "disabled"],
+                )
+            )
+
+        if base_model.lower() in (
+            "doubao-seed-1.6-vision",
+            "doubao-seed-1.6",
+            "doubao-seed-1.6-flash",
+            "doubao-seed-1.6-thinking",
+            "doubao-1.5-thinking-pro",
+            "doubao-1.5-thinking-vision-pro",
+            "deepseek-r1",
+        ):
+            rules.append(
+                ParameterRule(
+                    name=DefaultParameterName.RESPONSE_FORMAT.value,
+                    label=I18nObject(en_US="Response Format", zh_Hans="回复格式"),
+                    help=I18nObject(
+                        en_US="Specifying the format that the model must output.",
+                        zh_Hans="指定模型必须输出的格式。",
+                    ),
+                    type=ParameterType.STRING,
+                    options=["text", "json_object", "json_schema"],
+                    default="text",
+                    required=False,
+                )
+            )
+            rules.append(
+                ParameterRule(
+                    name=DefaultParameterName.JSON_SCHEMA.value,
+                    use_template=DefaultParameterName.JSON_SCHEMA.value,
                 )
             )
 

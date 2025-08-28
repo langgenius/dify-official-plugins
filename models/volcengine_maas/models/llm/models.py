@@ -254,6 +254,8 @@ def get_v2_req_params(credentials: dict, model_parameters: dict, stop: list[str]
     if model_parameters.get("thinking"):
         thinking: Thinking = {"type": model_parameters["thinking"]}
         req_params["thinking"] = thinking
+    if model_parameters.get("response_format"):
+        req_params["response_format"] = model_parameters.get("response_format")
     return req_params
 
 
@@ -279,4 +281,6 @@ def get_v3_req_params(credentials: dict, model_parameters: dict, stop: list[str]
     if model_parameters.get("thinking"):
         thinking: Thinking = {"type": model_parameters["thinking"]}
         req_params["thinking"] = thinking
+    if model_parameters.get("response_format"):
+        req_params["response_format"] = model_parameters.get("response_format")
     return req_params
