@@ -1,0 +1,9 @@
+model: Qwen/Qwen3-Embedding-0.6B
+model_type: text-embedding
+model_properties:
+  context_size: 32768
+  max_chunks: 1
+pricing:
+  input: '0.07'
+  unit: '0.000001'
+  currency: RMB
