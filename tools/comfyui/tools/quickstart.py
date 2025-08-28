@@ -78,6 +78,8 @@ class QuickStart(Tool):
             output_images = self.qwen_image(ui)
         elif ui.feature == "qwen_image_edit":
             output_images = self.qwen_image_edit(ui)
+        elif ui.feature == "flux_dev_fp8":
+            output_images = self.flux_dev_fp8(ui)
         elif ui.feature == "flux_schnell_fp8":
             output_images = self.flux_schnell_fp8(ui)
         elif ui.feature == "pony_v6_xl":
@@ -180,6 +182,31 @@ class QuickStart(Tool):
         workflow.set_image_names(ui.image_names)
         workflow.set_Ksampler(None, 4, "euler", "simple",
                               1.0, 1.0, random.randint(0, 10**8))
+
+        output_images = self.comfyui.generate(workflow.json())
+        return output_images
+
+    def flux_dev_fp8(self, ui: QuickStartConfig):
+        models = [
+            {
+                "name": "flux1-dev-fp8.safetensors",
+                "url": "https://huggingface.co/Comfy-Org/flux1-dev/resolve/main/flux1-dev-fp8.safetensors?download=true",
+                "directory": "checkpoints"
+            }
+        ]
+        for model in models:
+            self.model_manager.download_model(model["url"], model["directory"])
+
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        filepath = os.path.join(current_dir, "json", "flux_schnell_fp8.json")
+        with open(filepath, "r", encoding="utf-8") as f:
+            workflow = ComfyUiWorkflow(json.load(f))
+
+        workflow.set_prompt("6", ui.prompt)
+        workflow.set_prompt("33", ui.negative_prompt)
+        for i, lora_name in enumerate(ui.lora_names):
+            workflow.add_lora_node(
+                "31", "6", "33", lora_name, ui.lora_strengths[i])
 
         output_images = self.comfyui.generate(workflow.json())
         return output_images

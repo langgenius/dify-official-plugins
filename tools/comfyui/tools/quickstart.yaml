@@ -46,6 +46,9 @@ parameters:
           en_US: Qwen Image Edit
         value: qwen_image_edit
       - label:
+          en_US: Flux Dev fp8
+        value: flux_dev_fp8
+      - label:
           en_US: Flux Schnell fp8
         value: flux_schnell_fp8
       - label:
