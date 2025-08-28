@@ -1,8 +1,8 @@
 # this model corresponds to qwen-plus-latest, for more details
 # please refer to (https://help.aliyun.com/zh/model-studio/getting-started/models#bb0ffee88bwnk)
-model: qwen-plus-latest
+model: qwen-plus-2025-07-28
 label:
-  en_US: qwen-plus-latest(Qwen3)
+  en_US: qwen-plus-2025-07-28(Qwen3)
 model_type: llm
 features:
   - multi-tool-call
@@ -91,7 +91,7 @@ parameter_rules:
   - name: thinking_budget
     required: false
     type: int
-    default: 2048
+    default: 512
     min: 1
     max: 81920
     label:
