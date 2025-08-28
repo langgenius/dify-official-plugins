@@ -198,12 +198,14 @@ class QuickStart(Tool):
             self.model_manager.download_model(model["url"], model["directory"])
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
-        filepath = os.path.join(current_dir, "json", "flux_schnell_fp8.json")
+        filepath = os.path.join(current_dir, "json", "flux_dev_fp8.json")
         with open(filepath, "r", encoding="utf-8") as f:
             workflow = ComfyUiWorkflow(json.load(f))
 
         workflow.set_prompt("6", ui.prompt)
         workflow.set_prompt("33", ui.negative_prompt)
+        workflow.set_Ksampler(None, 20, "euler", "simple",
+                              1.0, 1.0, random.randint(0, 10**8))
         for i, lora_name in enumerate(ui.lora_names):
             workflow.add_lora_node(
                 "31", "6", "33", lora_name, ui.lora_strengths[i])
@@ -229,6 +231,8 @@ class QuickStart(Tool):
 
         workflow.set_prompt("6", ui.prompt)
         workflow.set_prompt("33", ui.negative_prompt)
+        workflow.set_Ksampler(None, 4, "euler", "simple",
+                              1.0, 1.0, random.randint(0, 10**8))
         for i, lora_name in enumerate(ui.lora_names):
             workflow.add_lora_node(
                 "31", "6", "33", lora_name, ui.lora_strengths[i])
