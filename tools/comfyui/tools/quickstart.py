@@ -260,7 +260,7 @@ class QuickStart(Tool):
         workflow.set_model_loader(None, filenames[0])
         workflow.set_prompt("6", ui.prompt)
         workflow.set_prompt("7", ui.negative_prompt)
-        workflow.set_Ksampler(None, 30, "euler_ancestral",
+        workflow.set_Ksampler(None, 25, "euler_ancestral",
                               "normal", 8.5, 1.0, random.randint(0, 10**8))
         for i, lora_name in enumerate(ui.lora_names):
             workflow.add_lora_node(
@@ -303,7 +303,7 @@ class QuickStart(Tool):
         workflow.set_prompt("6", ui.prompt)
         workflow.set_prompt("7", ui.negative_prompt)
         workflow.set_Ksampler(None, 30, "euler_ancestral",
-                              "normal", 8.5, 1.0, random.randint(0, 10**8))
+                              "normal", 6.0, 1.0, random.randint(0, 10**8))
         for i, lora_name in enumerate(ui.lora_names):
             workflow.add_lora_node(
                 "3", "6", "7", lora_name, ui.lora_strengths[i])
