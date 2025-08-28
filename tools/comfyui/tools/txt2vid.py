@@ -105,7 +105,7 @@ class ComfyuiTxt2Vid(Tool):
 
         for img in output_images:
             if config.output_format == "mp4":
-                img = self.comfyui.convert_webp2mp4(img["data"], config.fps)
+                img = self.comfyui.convert_webp2mp4(img.blob, config.fps)
             yield self.create_blob_message(
                 blob=img.blob,
                 meta={
@@ -171,10 +171,7 @@ class ComfyuiTxt2Vid(Tool):
 
     def txt2vid_hunyuan(
         self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    ):
         hunyuan_repo_id = "Comfy-Org/HunyuanVideo_repackaged"
         if config.model_name == "":
             # download model
@@ -227,10 +224,7 @@ class ComfyuiTxt2Vid(Tool):
 
     def txt2vid_svd_wan2_1(
         self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    ):
         wan_repo_id = "Comfy-Org/Wan_2.1_ComfyUI_repackaged"
         if config.model_name == "":
             # download model
@@ -274,10 +268,7 @@ class ComfyuiTxt2Vid(Tool):
 
     def txt2vid_svd_wan2_2_14B(
         self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    ):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(
             os.path.join(current_dir, "json", "txt2vid_wan2_2_14B.json"),
@@ -302,10 +293,7 @@ class ComfyuiTxt2Vid(Tool):
 
     def txt2vid_svd_wan2_2_5B(
         self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    ):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(
             os.path.join(current_dir, "json", "txt2vid_wan2_2_5B.json"),
@@ -333,10 +321,7 @@ class ComfyuiTxt2Vid(Tool):
 
     def txt2vid_ltxv(
         self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    ):
         ltxv_repo_id = "Lightricks/LTX-Video"
         if config.model_name == "":
             # download model
