@@ -1,4 +1,7 @@
+import dataclasses
+import json
 import os
+import random
 from typing import Any, Generator
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin.entities.tool import ToolInvokeMessage
@@ -6,6 +9,18 @@ from dify_plugin import Tool
 from tools.comfyui_workflow import ComfyUiWorkflow
 from tools.comfyui_client import ComfyUiClient, FileType
 from tools.model_manager import ModelManager
+
+
+@dataclasses.dataclass
+class QuickStartConfig:
+    image_names: list[str]
+    prompt: str | None
+    negative_prompt: str | None
+    width: int | None
+    height: int | None
+    lora_names: list[str]
+    lora_strengths: list[float]
+    feature: str
 
 
 class QuickStart(Tool):
@@ -26,27 +41,48 @@ class QuickStart(Tool):
             civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
             hf_api_key=self.runtime.credentials.get("hf_api_key"),
         )
-
-        feature: str = tool_parameters.get("feature")
-        prompt: str = tool_parameters.get("prompt", "")
-        negative_prompt: str = tool_parameters.get("negative_prompt", "")
-        images = tool_parameters.get("images", [])
         image_names = []
-        for image in images:
+        for image in tool_parameters.get("images", []):
             if image.type != FileType.IMAGE:
                 continue
             image_name = self.comfyui.upload_image(
                 image.filename, image.blob, image.mime_type
             )
             image_names.append(image_name)
+        lora_names = []
+        lora_strengths = []
+        try:
+            loras: str = tool_parameters.get("loras", "")
+            for lora_info in loras.split(","):
+                if lora_info == "":
+                    continue
+                lora_name, lora_strength = self.model_manager.decode_lora(
+                    lora_info)
+                lora_names.append(lora_name)
+                lora_strengths.append(lora_strength)
+        except Exception as e:
+            raise ToolProviderCredentialValidationError(str(e))
+
+        ui = QuickStartConfig(image_names=image_names,
+                              prompt=tool_parameters.get("prompt"),
+                              negative_prompt=tool_parameters.get(
+                                  "negative_prompt"),
+                              width=tool_parameters.get("width"),
+                              height=tool_parameters.get("height"),
+                              lora_names=lora_names,
+                              lora_strengths=lora_strengths,
+                              feature=tool_parameters.get("feature"))
 
         output_images = []
-        if feature == "qwen_image_edit":
-            output_images = self.qwen_image_edit(
-                prompt, negative_prompt, image_names)
-        elif feature == "flux_schnell_fp8":
-            output_images = self.flux_schnell_fp8(
-                prompt, negative_prompt)
+        if ui.feature == "qwen_image":
+            output_images = self.qwen_image(ui)
+        elif ui.feature == "qwen_image_edit":
+            output_images = self.qwen_image_edit(ui)
+        elif ui.feature == "flux_schnell_fp8":
+            output_images = self.flux_schnell_fp8(ui)
+        elif ui.feature == "pony_v6_xl":
+            # The highest rated and most liked model on https://civitai.com/models so far.
+            output_images = self.pony_v6_xl(ui)
 
         for img in output_images:
             yield self.create_blob_message(
@@ -57,7 +93,7 @@ class QuickStart(Tool):
                 },
             )
 
-    def qwen_image_edit(self, prompt: str, negative_prompt: str, image_names: list[str]):
+    def qwen_image(self, ui: QuickStartConfig):
         models = [
             {
                 "name": "qwen_image_fp8_e4m3fn.safetensors",
@@ -73,7 +109,8 @@ class QuickStart(Tool):
                 "name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
                 "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors",
                 "directory": "text_encoders"
-            }, {
+            },
+            {
                 "name": "Qwen-Image-Lightning-8steps-V1.0.safetensors",
                 "url": "https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Lightning-8steps-V1.0.safetensors",
                 "directory": "loras"
@@ -83,16 +120,71 @@ class QuickStart(Tool):
             self.model_manager.download_model(model["url"], model["directory"])
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
-        workflow = ComfyUiWorkflow()
-        workflow.load_from_file(os.path.join(current_dir, "json", "qwen.json"))
-        workflow.set_prompt("6", prompt)
-        workflow.set_prompt("7", negative_prompt)
-        workflow.set_image_names(image_names)
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        filepath = os.path.join(current_dir, "json", "qwen_image.json")
+        with open(filepath, "r", encoding="utf-8") as f:
+            workflow = ComfyUiWorkflow(json.load(f))
+
+        workflow.set_prompt("6", ui.prompt)
+        workflow.set_prompt("7", ui.negative_prompt)
+        if ui.width is None or ui.height is None:
+            raise ToolProviderCredentialValidationError(
+                "Please input width and height")
+        workflow.set_SD3_latent_image(None, ui.width, ui.height)
+        workflow.set_Ksampler(None, 8, "euler", "simple",
+                              2.5, 1.0, random.randint(0, 10**8))
+        for i, lora_name in enumerate(ui.lora_names):
+            workflow.add_lora_node(
+                "3", "6", "7", lora_name, ui.lora_strengths[i])
 
         output_images = self.comfyui.generate(workflow.json())
         return output_images
 
-    def flux_schnell_fp8(self, prompt: str, negative_prompt: str):
+    def qwen_image_edit(self, ui: QuickStartConfig):
+        models = [
+            {
+                "name": "qwen_image_edit_fp8_e4m3fn.safetensors",
+                "url": "https://huggingface.co/Comfy-Org/Qwen-Image-Edit_ComfyUI/resolve/main/split_files/diffusion_models/qwen_image_edit_fp8_e4m3fn.safetensors",
+                "directory": "diffusion_models"
+            },
+            {
+                "name": "qwen_image_vae.safetensors",
+                "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/vae/qwen_image_vae.safetensors",
+                "directory": "vae"
+            },
+            {
+                "name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+                "url": "https://huggingface.co/Comfy-Org/Qwen-Image_ComfyUI/resolve/main/split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors",
+                "directory": "text_encoders"
+            },
+            {
+                "name": "Qwen-Image-Lightning-4steps-V1.0.safetensors",
+                "url": "https://huggingface.co/lightx2v/Qwen-Image-Lightning/resolve/main/Qwen-Image-Lightning-4steps-V1.0.safetensors",
+                "directory": "loras"
+            }
+        ]
+        for model in models:
+            self.model_manager.download_model(model["url"], model["directory"])
+
+        if len(ui.image_names) == 0:
+            raise ToolProviderCredentialValidationError(
+                "Please input an image")
+
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        filepath = os.path.join(current_dir, "json", "qwen_image_edit.json")
+        with open(filepath, "r", encoding="utf-8") as f:
+            workflow = ComfyUiWorkflow(json.load(f))
+
+        workflow.set_property("76", "inputs/prompt", ui.prompt)
+        workflow.set_property("77", "inputs/prompt", ui.negative_prompt)
+        workflow.set_image_names(ui.image_names)
+        workflow.set_Ksampler(None, 4, "euler", "simple",
+                              1.0, 1.0, random.randint(0, 10**8))
+
+        output_images = self.comfyui.generate(workflow.json())
+        return output_images
+
+    def flux_schnell_fp8(self, ui: QuickStartConfig):
         models = [
             {
                 "name": "flux1-schnell-fp8.safetensors",
@@ -104,10 +196,36 @@ class QuickStart(Tool):
             self.model_manager.download_model(model["url"], model["directory"])
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
-        workflow = ComfyUiWorkflow()
-        workflow.load_from_file(os.path.join(
-            current_dir, "json", "flux_schnell_fp8.json"))
-        workflow.set_prompt("6", prompt)
-        workflow.set_prompt("33", negative_prompt)
+        filepath = os.path.join(current_dir, "json", "flux_schnell_fp8.json")
+        with open(filepath, "r", encoding="utf-8") as f:
+            workflow = ComfyUiWorkflow(json.load(f))
+
+        workflow.set_prompt("6", ui.prompt)
+        workflow.set_prompt("33", ui.negative_prompt)
+        for i, lora_name in enumerate(ui.lora_names):
+            workflow.add_lora_node(
+                "31", "6", "33", lora_name, ui.lora_strengths[i])
+
+        output_images = self.comfyui.generate(workflow.json())
+        return output_images
+
+    def pony_v6_xl(self, ui: QuickStartConfig):
+        model_name_human, filenames = self.model_manager.download_civitai(
+            257749, 290640, "checkpoints")
+
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        filepath = os.path.join(current_dir, "json", "txt2img.json")
+        with open(filepath, "r", encoding="utf-8") as f:
+            workflow = ComfyUiWorkflow(json.load(f))
+
+        workflow.set_model_loader(None, filenames[0])
+        workflow.set_prompt("6", ui.prompt)
+        workflow.set_prompt("7", ui.negative_prompt)
+        workflow.set_Ksampler(None, 30, "euler_ancestral",
+                              "normal", 8.5, 1.0, random.randint(0, 10**8))
+        for i, lora_name in enumerate(ui.lora_names):
+            workflow.add_lora_node(
+                "3", "6", "7", lora_name, ui.lora_strengths[i])
+        workflow.set_empty_latent_image(None, ui.width, ui.height)
         output_images = self.comfyui.generate(workflow.json())
         return output_images
