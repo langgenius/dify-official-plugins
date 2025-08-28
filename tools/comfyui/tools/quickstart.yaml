@@ -54,6 +54,12 @@ parameters:
       - label:
           en_US: Pony Diffusion V6 XL
         value: pony_v6_xl
+      - label:
+          en_US: majicMIX realistic
+        value: majicmix_realistic
+      - label:
+          en_US: WAI-NSFW-illustrious-SDXL
+        value: wai_illustrious
 
   - name: prompt
     form: llm

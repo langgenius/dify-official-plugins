@@ -73,25 +73,33 @@ class QuickStart(Tool):
                               lora_strengths=lora_strengths,
                               feature=tool_parameters.get("feature"))
 
+        workflow = ""
         output_images = []
         if ui.feature == "qwen_image":
-            output_images = self.qwen_image(ui)
+            workflow, output_images = self.qwen_image(ui)
         elif ui.feature == "qwen_image_edit":
-            output_images = self.qwen_image_edit(ui)
+            workflow, output_images = self.qwen_image_edit(ui)
         elif ui.feature == "flux_dev_fp8":
-            output_images = self.flux_dev_fp8(ui)
+            workflow, output_images = self.flux_dev_fp8(ui)
         elif ui.feature == "flux_schnell_fp8":
-            output_images = self.flux_schnell_fp8(ui)
+            workflow, output_images = self.flux_schnell_fp8(ui)
         elif ui.feature == "pony_v6_xl":
             # The highest rated and most liked model on https://civitai.com/models so far.
-            output_images = self.pony_v6_xl(ui)
+            workflow, output_images = self.pony_v6_xl(ui)
+        elif ui.feature == "majicmix_realistic":
+            # the most liked SD1.5-based model on CivitAI
+            workflow, output_images = self.majicmix_realistic(ui)
+        elif ui.feature == "wai_illustrious":
+            # the most liked Illustrious-based model on CivitAI
+            workflow, output_images = self.wai_illustrious(ui)
 
+        yield self.create_text_message(workflow)
         for img in output_images:
             yield self.create_blob_message(
-                blob=img["data"],
+                blob=img.blob,
                 meta={
-                    "filename": img["filename"],
-                    "mime_type": img["mime_type"],
+                    "filename": img.filename,
+                    "mime_type": img.mime_type,
                 },
             )
 
@@ -140,7 +148,7 @@ class QuickStart(Tool):
                 "3", "6", "7", lora_name, ui.lora_strengths[i])
 
         output_images = self.comfyui.generate(workflow.json())
-        return output_images
+        return workflow.json_str(), output_images
 
     def qwen_image_edit(self, ui: QuickStartConfig):
         models = [
@@ -184,7 +192,7 @@ class QuickStart(Tool):
                               1.0, 1.0, random.randint(0, 10**8))
 
         output_images = self.comfyui.generate(workflow.json())
-        return output_images
+        return workflow.json_str(), output_images
 
     def flux_dev_fp8(self, ui: QuickStartConfig):
         models = [
@@ -211,7 +219,7 @@ class QuickStart(Tool):
                 "31", "6", "33", lora_name, ui.lora_strengths[i])
 
         output_images = self.comfyui.generate(workflow.json())
-        return output_images
+        return workflow.json_str(), output_images
 
     def flux_schnell_fp8(self, ui: QuickStartConfig):
         models = [
@@ -238,7 +246,7 @@ class QuickStart(Tool):
                 "31", "6", "33", lora_name, ui.lora_strengths[i])
 
         output_images = self.comfyui.generate(workflow.json())
-        return output_images
+        return workflow.json_str(), output_images
 
     def pony_v6_xl(self, ui: QuickStartConfig):
         model_name_human, filenames = self.model_manager.download_civitai(
@@ -259,4 +267,46 @@ class QuickStart(Tool):
                 "3", "6", "7", lora_name, ui.lora_strengths[i])
         workflow.set_empty_latent_image(None, ui.width, ui.height)
         output_images = self.comfyui.generate(workflow.json())
-        return output_images
+        return workflow.json_str(), output_images
+
+    def majicmix_realistic(self, ui: QuickStartConfig):
+        model_name_human, filenames = self.model_manager.download_civitai(
+            257749, 290640, "checkpoints")
+
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        filepath = os.path.join(current_dir, "json", "txt2img.json")
+        with open(filepath, "r", encoding="utf-8") as f:
+            workflow = ComfyUiWorkflow(json.load(f))
+
+        workflow.set_model_loader(None, filenames[0])
+        workflow.set_prompt("6", ui.prompt)
+        workflow.set_prompt("7", ui.negative_prompt)
+        workflow.set_Ksampler(None, 30, "euler_ancestral",
+                              "normal", 8.5, 1.0, random.randint(0, 10**8))
+        for i, lora_name in enumerate(ui.lora_names):
+            workflow.add_lora_node(
+                "3", "6", "7", lora_name, ui.lora_strengths[i])
+        workflow.set_empty_latent_image(None, ui.width, ui.height)
+        output_images = self.comfyui.generate(workflow.json())
+        return workflow.json_str(), output_images
+
+    def wai_illustrious(self, ui: QuickStartConfig):
+        model_name_human, filenames = self.model_manager.download_civitai(
+            257749, 290640, "checkpoints")
+
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        filepath = os.path.join(current_dir, "json", "txt2img.json")
+        with open(filepath, "r", encoding="utf-8") as f:
+            workflow = ComfyUiWorkflow(json.load(f))
+
+        workflow.set_model_loader(None, filenames[0])
+        workflow.set_prompt("6", ui.prompt)
+        workflow.set_prompt("7", ui.negative_prompt)
+        workflow.set_Ksampler(None, 30, "euler_ancestral",
+                              "normal", 8.5, 1.0, random.randint(0, 10**8))
+        for i, lora_name in enumerate(ui.lora_names):
+            workflow.add_lora_node(
+                "3", "6", "7", lora_name, ui.lora_strengths[i])
+        workflow.set_empty_latent_image(None, ui.width, ui.height)
+        output_images = self.comfyui.generate(workflow.json())
+        return workflow.json_str(), output_images
