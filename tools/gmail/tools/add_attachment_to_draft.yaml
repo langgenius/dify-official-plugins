@@ -1,0 +1,74 @@
+identity:
+  name: "add_attachment_to_draft"
+  display_name: "Add Attachment to Draft"
+  author: "langgenius"
+  label:
+    en_US: "Add Attachment to Gmail Draft"
+    zh_Hans: "向Gmail草稿添加附件"
+    pt_BR: "Adicionar Anexo ao Rascunho do Gmail"
+    ja_JP: "Gmail下書きに添付ファイルを追加"
+description:
+  human:
+    en_US: "Add a file attachment to an existing Gmail draft message"
+    zh_Hans: "向现有的Gmail草稿邮件添加文件附件"
+    pt_BR: "Adicionar um anexo de arquivo a uma mensagem de rascunho existente do Gmail"
+    ja_JP: "既存のGmail下書きメッセージにファイル添付を追加"
+  llm: "Add a file attachment to an existing Gmail draft. The attachment will be uploaded and attached to the specified draft message. Note: This tool requires the draft to exist and the file to be accessible."
+parameters:
+  - name: draft_id
+    type: string
+    required: true
+    label:
+      en_US: "Draft ID"
+      zh_Hans: "草稿ID"
+      pt_BR: "ID do Rascunho"
+      ja_JP: "下書きID"
+    human_description:
+      en_US: "The unique identifier of the Gmail draft to add the attachment to"
+      zh_Hans: "要添加附件的Gmail草稿的唯一标识符"
+      pt_BR: "Identificador único do rascunho do Gmail ao qual adicionar o anexo"
+      ja_JP: "添付ファイルを追加するGmail下書きの一意の識別子"
+    llm_description: "The unique draft ID of the Gmail draft to add the attachment to. This ID can be obtained from the list_drafts tool or draft_message tool."
+    form: llm
+  - name: file_to_attach
+    type: files
+    required: true
+    label:
+      en_US: Files to Attach
+      zh_Hans: 要附加的文件
+      pt_BR: Arquivos para Anexar
+      ja_JP: 添付するファイル
+      zh_Hant: 要附加的檔案
+    human_description:
+      en_US: The files to attach to the draft email
+      zh_Hans: 要附加到草稿邮件的文件
+      pt_BR: Os arquivos para anexar ao rascunho de e-mail
+      ja_JP: 下書きメールに添付するファイル
+      zh_Hant: 要附加到草稿郵件的檔案
+    llm_description: The files to attach to the draft email, you can upload multiple files
+    form: llm
+  - name: attachment_name
+    type: string
+    required: false
+    default: ""
+    label:
+      en_US: "Attachment Name"
+      zh_Hans: "附件名称"
+      pt_BR: "Nome do Anexo"
+      ja_JP: "添付ファイル名"
+    human_description:
+      en_US: "Custom name for the attachment (if different from the original filename)"
+      zh_Hans: "附件的自定义名称（如果与原始文件名不同）"
+      pt_BR: "Nome personalizado para o anexo (se diferente do nome do arquivo original)"
+      ja_JP: "添付ファイルのカスタム名（元のファイル名と異なる場合）"
+    llm_description: "Custom name for the attachment. If not specified, the original filename will be used."
+    form: llm
+output_schema:
+  type: object
+  properties:
+    draft_id:
+      type: string
+      description: "Unique identifier of the draft that was modified"
+extra:
+  python:
+    source: tools/add_attachment_to_draft.py 

@@ -1,0 +1,83 @@
+identity:
+  name: "search_messages"
+  display_name: "Search Messages"
+  author: "langgenius"
+  label:
+    en_US: "Search Gmail Messages"
+    zh_Hans: "搜索Gmail邮件"
+    pt_BR: "Pesquisar Mensagens do Gmail"
+    ja_JP: "Gmailメッセージを検索"
+description:
+  human:
+    en_US: "Search Gmail messages using advanced Gmail search operators and filters"
+    zh_Hans: "使用高级Gmail搜索操作符和过滤器搜索Gmail邮件"
+    pt_BR: "Pesquisar mensagens do Gmail usando operadores de pesquisa avançados e filtros do Gmail"
+    ja_JP: "高度なGmail検索演算子とフィルターを使用してGmailメッセージを検索"
+  llm: "Search Gmail messages using Gmail's powerful search syntax. Supports advanced operators like date ranges, sender/recipient filters, attachment filters, and more. Returns detailed message information with optional body content."
+parameters:
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: "Search Query"
+      zh_Hans: "搜索查询"
+      pt_BR: "Consulta de Pesquisa"
+      ja_JP: "検索クエリ"
+    human_description:
+      en_US: "Gmail search query using Gmail search syntax (e.g., 'from:example@gmail.com subject:meeting after:2024/01/01 has:attachment')"
+      zh_Hans: "使用Gmail搜索语法的Gmail搜索查询（例如：'from:example@gmail.com subject:meeting after:2024/01/01 has:attachment'）"
+      pt_BR: "Consulta de pesquisa do Gmail usando sintaxe de pesquisa do Gmail (ex: 'from:example@gmail.com subject:meeting after:2024/01/01 has:attachment')"
+      ja_JP: "Gmail検索構文を使用したGmail検索クエリ（例：'from:example@gmail.com subject:meeting after:2024/01/01 has:attachment'）"
+    llm_description: "Gmail search query string. Use Gmail search operators like 'from:', 'to:', 'subject:', 'is:unread', 'has:attachment', 'after:2024/01/01', 'before:2024/12/31', 'label:inbox', 'larger:10M', 'smaller:1M', etc."
+    form: llm
+  - name: max_results
+    type: number
+    required: false
+    default: 20
+    label:
+      en_US: "Maximum Results"
+      zh_Hans: "最大结果数"
+      pt_BR: "Resultados Máximos"
+      ja_JP: "最大結果数"
+    human_description:
+      en_US: "Maximum number of messages to retrieve (1-100)"
+      zh_Hans: "要检索的最大邮件数量（1-100）"
+      pt_BR: "Número máximo de mensagens a recuperar (1-100)"
+      ja_JP: "取得するメッセージの最大数（1-100）"
+    llm_description: "Maximum number of messages to return (between 1 and 100, default is 20)"
+    form: llm
+  - name: include_body
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: "Include Email Body"
+      zh_Hans: "包含邮件正文"
+      pt_BR: "Incluir Corpo do Email"
+      ja_JP: "メール本文を含める"
+    human_description:
+      en_US: "Whether to include the full email body content in the results (may increase response time)"
+      zh_Hans: "是否在结果中包含完整的邮件正文内容（可能会增加响应时间）"
+      pt_BR: "Se deve incluir o conteúdo completo do corpo do email nos resultados (pode aumentar o tempo de resposta)"
+      ja_JP: "結果にメール本文の完全な内容を含めるかどうか（応答時間が増加する可能性があります）"
+    llm_description: "Set to true to include full email body content, false to include only headers and metadata. Including body content will increase response time."
+    form: llm
+  - name: sort_by
+    type: string
+    required: false
+    default: "date"
+    label:
+      en_US: "Sort By"
+      zh_Hans: "排序方式"
+      pt_BR: "Ordenar Por"
+      ja_JP: "並び替え"
+    human_description:
+      en_US: "How to sort the search results ('date' for newest first, 'from' for sender, 'subject' for subject line)"
+      zh_Hans: "如何对搜索结果进行排序（'date'按日期最新优先，'from'按发件人，'subject'按主题行）"
+      pt_BR: "Como ordenar os resultados da pesquisa ('date' para mais recente primeiro, 'from' para remetente, 'subject' para linha de assunto)"
+      ja_JP: "検索結果の並び替え方法（'date'で最新順、'from'で送信者順、'subject'で件名順）"
+    llm_description: "Sort order for search results. Options: 'date' (newest first), 'from' (sender), 'subject' (alphabetical). Default is 'date'."
+    form: llm
+extra:
+  python:
+    source: tools/search_messages.py 
