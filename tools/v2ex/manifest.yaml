@@ -1,0 +1,52 @@
+version: 0.0.1
+type: plugin
+author: frederick
+name: v2ex
+label:
+  en_US: v2ex
+  ja_JP: v2ex
+  zh_Hans: v2ex
+  pt_BR: v2ex
+description:
+  en_US: Search and retrieve content from V2EX forum including hot topics, latest topics, node information and user profiles
+  ja_JP: V2EXフォーラムからホットトピック、最新トピック、ノード情報、ユーザープロフィールを検索・取得
+  zh_Hans: 搜索和获取V2EX论坛内容，包括热门主题、最新主题、节点信息和用户资料
+  pt_BR: Buscar e recuperar conteúdo do fórum V2EX incluindo tópicos quentes, tópicos mais recentes, informações de nós e perfis de usuários
+icon: icon.svg
+icon_dark: icon-dark.svg
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+    endpoint:
+      enabled: true
+    app:
+      enabled: true
+    storage:
+      enabled: true
+      size: 1048576
+plugins:
+  tools:
+    - provider/v2ex.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: null
+created_at: 2025-08-07T11:35:55.794261+08:00
+privacy: PRIVACY.md
+verified: false

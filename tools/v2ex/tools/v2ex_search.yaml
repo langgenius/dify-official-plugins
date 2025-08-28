@@ -1,0 +1,78 @@
+identity:
+  name: "v2ex_search"
+  author: "frederick"
+  label:
+    en_US: "V2EX Content Search"
+    zh_Hans: "V2EX内容搜索"
+    pt_BR: "Busca de Conteúdo V2EX"
+description:
+  human:
+    en_US: "Search and retrieve content from V2EX forum, including hot topics, latest topics, node information, and user profiles"
+    zh_Hans: "搜索和获取V2EX论坛内容，包括热门主题、最新主题、节点信息和用户资料"
+    pt_BR: "Buscar e recuperar conteúdo do fórum V2EX, incluindo tópicos quentes, tópicos mais recentes, informações de nós e perfis de usuários"
+  llm: "A tool to search and retrieve various types of content from V2EX forum including topics, nodes, and user information"
+parameters:
+  - name: search_type
+    type: select
+    required: true
+    options:
+      - value: "hot_topics"
+        label:
+          en_US: "Hot Topics"
+          zh_Hans: "热门主题"
+          pt_BR: "Tópicos Quentes"
+      - value: "latest_topics"
+        label:
+          en_US: "Latest Topics"
+          zh_Hans: "最新主题"
+          pt_BR: "Tópicos Mais Recentes"
+      - value: "node_info"
+        label:
+          en_US: "Node Information"
+          zh_Hans: "节点信息"
+          pt_BR: "Informações do Nó"
+      - value: "user_info"
+        label:
+          en_US: "User Information"
+          zh_Hans: "用户信息"
+          pt_BR: "Informações do Usuário"
+    label:
+      en_US: "Search Type"
+      zh_Hans: "搜索类型"
+      pt_BR: "Tipo de Busca"
+    human_description:
+      en_US: "Select the type of content to search for"
+      zh_Hans: "选择要搜索的内容类型"
+      pt_BR: "Selecione o tipo de conteúdo a ser pesquisado"
+    llm_description: "Type of V2EX content to retrieve: hot topics, latest topics, node info, or user info"
+    form: llm
+  - name: search_query
+    type: string
+    required: false
+    label:
+      en_US: "Search Query"
+      zh_Hans: "搜索关键词"
+      pt_BR: "Consulta de Pesquisa"
+    human_description:
+      en_US: "Search query (node name for node info, username/id for user info, leave empty for hot/latest topics)"
+      zh_Hans: "搜索关键词（节点信息需要节点名，用户信息需要用户名/ID，热门/最新主题可留空）"
+      pt_BR: "Consulta de pesquisa (nome do nó para informações do nó, nome de usuário/ID para informações do usuário, deixe vazio para tópicos quentes/mais recentes)"
+    llm_description: "Optional search query: node name for node information, username or user ID for user information"
+    form: llm
+  - name: limit
+    type: number
+    required: false
+    default: 10
+    label:
+      en_US: "Result Limit"
+      zh_Hans: "结果限制"
+      pt_BR: "Limite de Resultados"
+    human_description:
+      en_US: "Maximum number of results to return (default: 10, max: 50)"
+      zh_Hans: "返回结果的最大数量（默认：10，最大：50）"
+      pt_BR: "Número máximo de resultados a retornar (padrão: 10, máximo: 50)"
+    llm_description: "Maximum number of results to return, between 1 and 50"
+    form: llm
+extra:
+  python:
+    source: tools/v2ex.py
