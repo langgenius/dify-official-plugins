@@ -248,65 +248,49 @@ class QuickStart(Tool):
         output_images = self.comfyui.generate(workflow.json())
         return workflow.json_str(), output_images
 
-    def pony_v6_xl(self, ui: QuickStartConfig):
-        model_name_human, filenames = self.model_manager.download_civitai(
-            257749, 290640, "checkpoints")
-
+    def get_civitai_workflow(self, ui: QuickStartConfig) -> ComfyUiWorkflow:
         current_dir = os.path.dirname(os.path.realpath(__file__))
         filepath = os.path.join(current_dir, "json", "txt2img.json")
         with open(filepath, "r", encoding="utf-8") as f:
             workflow = ComfyUiWorkflow(json.load(f))
 
-        workflow.set_model_loader(None, filenames[0])
         workflow.set_prompt("6", ui.prompt)
         workflow.set_prompt("7", ui.negative_prompt)
-        workflow.set_Ksampler(None, 25, "euler_ancestral",
-                              "normal", 8.5, 1.0, random.randint(0, 10**8))
         for i, lora_name in enumerate(ui.lora_names):
             workflow.add_lora_node(
                 "3", "6", "7", lora_name, ui.lora_strengths[i])
         workflow.set_empty_latent_image(None, ui.width, ui.height)
+        return workflow
+
+    def pony_v6_xl(self, ui: QuickStartConfig):
+        model_name_human, filenames = self.model_manager.download_civitai(
+            257749, 290640, "checkpoints")
+        workflow = self.get_civitai_workflow(ui)
+        workflow.set_model_loader(None, filenames[0])
+        workflow.set_Ksampler(None, 25, "euler_ancestral",
+                              "normal", 8.5, 1.0, random.randint(0, 10**8))
         output_images = self.comfyui.generate(workflow.json())
         return workflow.json_str(), output_images
 
     def majicmix_realistic(self, ui: QuickStartConfig):
         model_name_human, filenames = self.model_manager.download_civitai(
-            257749, 290640, "checkpoints")
-
-        current_dir = os.path.dirname(os.path.realpath(__file__))
-        filepath = os.path.join(current_dir, "json", "txt2img.json")
-        with open(filepath, "r", encoding="utf-8") as f:
-            workflow = ComfyUiWorkflow(json.load(f))
-
+            43331, 176425, "checkpoints")
+        workflow = self.get_civitai_workflow(ui)
         workflow.set_model_loader(None, filenames[0])
-        workflow.set_prompt("6", ui.prompt)
-        workflow.set_prompt("7", ui.negative_prompt)
         workflow.set_Ksampler(None, 30, "euler_ancestral",
                               "normal", 8.5, 1.0, random.randint(0, 10**8))
-        for i, lora_name in enumerate(ui.lora_names):
-            workflow.add_lora_node(
-                "3", "6", "7", lora_name, ui.lora_strengths[i])
-        workflow.set_empty_latent_image(None, ui.width, ui.height)
+
         output_images = self.comfyui.generate(workflow.json())
         return workflow.json_str(), output_images
 
     def wai_illustrious(self, ui: QuickStartConfig):
         model_name_human, filenames = self.model_manager.download_civitai(
-            257749, 290640, "checkpoints")
+            827184, 1761560, "checkpoints")
 
-        current_dir = os.path.dirname(os.path.realpath(__file__))
-        filepath = os.path.join(current_dir, "json", "txt2img.json")
-        with open(filepath, "r", encoding="utf-8") as f:
-            workflow = ComfyUiWorkflow(json.load(f))
-
+        workflow = self.get_civitai_workflow(ui)
         workflow.set_model_loader(None, filenames[0])
-        workflow.set_prompt("6", ui.prompt)
-        workflow.set_prompt("7", ui.negative_prompt)
         workflow.set_Ksampler(None, 30, "euler_ancestral",
                               "normal", 6.0, 1.0, random.randint(0, 10**8))
-        for i, lora_name in enumerate(ui.lora_names):
-            workflow.add_lora_node(
-                "3", "6", "7", lora_name, ui.lora_strengths[i])
-        workflow.set_empty_latent_image(None, ui.width, ui.height)
+
         output_images = self.comfyui.generate(workflow.json())
         return workflow.json_str(), output_images
