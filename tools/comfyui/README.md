@@ -65,7 +65,7 @@ You can set any ComfyUI node settings by inputting JSON to this node.
 
 ### Quick Start
 
-Quick Start node supports some functions of ComfyUI including the following ones.
+Quick Start node supports some functions of ComfyUI including the following ones. Best for beginners.
 
 * [Qwen Image](https://comfyanonymous.github.io/ComfyUI_examples/qwen_image/)
 * [Qwen Image Edit](https://comfyanonymous.github.io/ComfyUI_examples/qwen_image/)
