@@ -838,7 +838,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # == InitConfig == #
 
         config = types.GenerateContentConfig()
-        genai_client = genai.Client(api_key=credentials["google_api_key"])
+        genai_client = genai.Client(
+            api_key=credentials["google_api_key"],
+            http_options=types.HttpOptions(base_url=credentials.get("google_base_url", None)),
+        )
 
         # == ChatConfig == #
 
@@ -927,7 +930,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return:
         """
         try:
-            genai_client = genai.Client(api_key=credentials["google_api_key"])
+            genai_client = genai.Client(
+                api_key=credentials["google_api_key"],
+                http_options=types.HttpOptions(base_url=credentials.get("google_base_url", None)),
+            )
             genai_client.models.count_tokens(model=model, contents="ping")
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))

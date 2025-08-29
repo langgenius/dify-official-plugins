@@ -43,6 +43,14 @@ provider_credential_schema:
     type: secret-input
     variable: google_api_key
   - label:
+      en_US: Base URL
+    placeholder:
+      en_US: Enter your Base URL
+      zh_Hans: 在此输入您的 Base URL
+    required: false
+    type: text-input
+    variable: google_base_url
+  - label:
       en_US: Files URL
     placeholder:
       en_US: Enter the Local FILES URL prefix to get better upload performance
