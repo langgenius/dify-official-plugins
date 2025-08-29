@@ -1,0 +1,50 @@
+identity:
+  author: langgenius
+  name: box
+  label:
+    en_US: Box
+    zh_Hans: Box
+  description:
+    en_US: Box Datasource
+    zh_Hans: Box 数据源
+  icon: icon.svg
+provider_type: online_drive
+help:
+  title:
+    en_US: Get your credentials from Box OAuth
+    zh_Hans: 从 Box OAuth 获取您的凭证
+  url:
+    en_US: https://app.box.com/developers
+    zh_Hans: https://app.box.com/developers
+oauth_schema:
+  client_schema:
+    - name: client_id
+      type: secret-input
+      label:
+        zh_Hans: Client ID
+        en_US: Client ID
+    - name: client_secret
+      type: secret-input
+      label:
+        zh_Hans: Client Secret
+        en_US: Client Secret
+      help:
+        zh_Hans: 从 Box OAuth 集成页面获取您的接口令牌
+        en_US: Get your integration token from the Box OAuth Integrations page
+      url: https://app.box.com/developers
+  credentials_schema:
+    - name: access_token
+      type: secret-input
+      label:
+        zh_Hans: Access Token
+        en_US: Access Token
+    - name: refresh_token
+      type: secret-input
+      label:
+        zh_Hans: Refresh Token
+        en_US: Refresh Token
+datasources:
+  - datasources/box.yaml
+extra:
+  python:
+    source: provider/box.py

@@ -1,0 +1,20 @@
+identity:
+  name: box
+  author: langgenius
+  label:
+    en_US: Box
+    zh_Hans: Box
+description:
+  en_US: Get files from your Box
+  zh_Hans: 从您的 Box 中获取文件
+
+parameters:
+
+output_schema:
+    type: object
+    properties:
+      file:
+        $ref: "https://dify.ai/schemas/v1/file.json"
+extra:
+  python:
+    source: datasources/box.py
