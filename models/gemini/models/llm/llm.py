@@ -24,6 +24,7 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
     PromptMessageContentUnionTypes,
+    PromptMessageRole,
 )
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -41,6 +42,11 @@ from .utils import FileCache, UNSUPPORTED_DOCUMENT_TYPES, UNSUPPORTED_EXTENSIONS
 file_cache = FileCache()
 
 _MMC = TypeVar("_MMC", bound=MultiModalPromptMessageContent)
+
+IMAGE_GENERATION_MODELS = {
+    "gemini-2.0-flash-preview-image-generation",
+    "gemini-2.5-flash-image-preview",
+}
 
 
 class GoogleLargeLanguageModel(LargeLanguageModel):
@@ -276,7 +282,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # 3. Gracefully handle models that either don't support thinking mode switching
         #    (e.g., `gemini-2.5-pro`) or lack thinking mode entirely (e.g., `gemini-2.0-flash`),
         #    instead of causing an immediate error.
-        blacklist_thinking_prefix = {"gemini-2.0-flash-preview-image-generation", "nano-banana"}
+        blacklist_thinking_prefix = IMAGE_GENERATION_MODELS
         for _prefix in blacklist_thinking_prefix:
             if model_name.startswith(_prefix):
                 return
@@ -303,7 +309,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
     @staticmethod
     def _set_response_modalities(*, config: types.GenerateContentConfig, model_name: str) -> None:
-        if model_name in ["gemini-2.0-flash-preview-image-generation", "nano-banana"]:
+        if model_name in IMAGE_GENERATION_MODELS:
             config.response_modalities = [types.Modality.TEXT.value, types.Modality.IMAGE.value]
         elif model_name in [
             "models/gemini-2.5-flash-preview-native-audio-dialog",
@@ -450,15 +456,25 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: Gemini Content representation of message
         """
 
+        def _build_text_parts(_content: str | TextPromptMessageContent) -> List[types.Part]:
+            text_parts = []
+            if isinstance(_content, TextPromptMessageContent):
+                _content = _content.data
+            if message.role == PromptMessageRole.ASSISTANT:
+                _content = re.sub(r"^<think>.*?</think>\s*", "", _content, count=1, flags=re.DOTALL)
+            if _content:
+                text_parts.append(types.Part.from_text(text=_content))
+            return text_parts
+
         # Helper function to build parts from content
         def build_parts(content: str | List[PromptMessageContentUnionTypes]) -> List[types.Part]:
             if isinstance(content, str):
-                return [types.Part.from_text(text=content)]
+                return _build_text_parts(content)
 
             parts_ = []
             for obj in content:
                 if obj.type == PromptMessageContentType.TEXT:
-                    parts_.append(types.Part.from_text(text=obj.data))
+                    parts_.extend(_build_text_parts(obj))
                 else:
                     # Filter files based on type and supported formats
                     should_upload = True
@@ -494,11 +510,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
             # Handle text content (remove thinking tags)
             if message.content:
-                content_text = re.sub(
-                    r"^<think>.*?</think>\s*", "", message.content, count=1, flags=re.DOTALL
-                )
-                if content_text:
-                    parts.append(types.Part.from_text(text=content_text))
+                parts.extend(build_parts(message.content))
 
             # Handle tool calls
             # https://ai.google.dev/gemini-api/docs/function-calling?hl=zh-cn&example=chart#how-it-works
@@ -554,7 +566,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: llm response
         """
         # transform assistant message to prompt message
-        assistant_prompt_message = AssistantPromptMessage(content=response.text)
+        if model in IMAGE_GENERATION_MODELS:
+            assistant_prompt_message = self._parse_parts(response.candidates[0].content.parts)
+        else:
+            assistant_prompt_message = AssistantPromptMessage(content=response.text)
 
         # calculate num tokens
         prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
@@ -762,6 +777,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                             format=mime_subtype,
                             base64_data=base64.b64encode(data).decode(),
                             mime_type=mime_type,
+                            detail=ImagePromptMessageContent.DETAIL.HIGH,
                         )
                     )
                 else:

@@ -10,6 +10,7 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
     def get_customizable_model_schema(
         self, model: str, credentials: Mapping | dict
     ) -> AIModelEntity:
+        credentials = credentials or {}
         entity = super().get_customizable_model_schema(model, credentials)
 
         if "display_name" in credentials and credentials["display_name"] != "":
