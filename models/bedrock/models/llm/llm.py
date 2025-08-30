@@ -270,6 +270,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                         # Use the inference profile ARN but with underlying model capabilities
                         model_info = model_info.copy()
                         model_info["model"] = model_id  # Use inference profile ARN for actual API call
+                        model_info["underlying_model_id"] = underlying_model_id  # Store underlying model ID for cache support
                         logger.info(f"Using inference profile {model_id} with capabilities from {underlying_model_id}")
                         return model_info
             if not model_info:
@@ -329,7 +330,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         bedrock_client = get_bedrock_client("bedrock-runtime", credentials)
 
         # Get cache checkpoint settings from model parameters
-        system_cache_checkpoint = model_parameters.pop("system_cache_checkpoint", True)
+        # Log the incoming parameters for debugging
+        logger.info(f"[CACHE PARAMS] Received model_parameters: {model_parameters}")
+        system_cache_checkpoint = model_parameters.pop("system_cache_checkpoint", False)  # Default to False
         latest_two_messages_cache_checkpoint = model_parameters.pop("latest_two_messages_cache_checkpoint", False)
         logger.info(f"---cache_checkpoints--- system: {system_cache_checkpoint}, penultimate: {latest_two_messages_cache_checkpoint}")
         model_id = model_info["model"]
@@ -337,17 +340,21 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         logger.info(f"[CACHE DEBUG] Model: {model_id}, Cache checkpoints - System: {system_cache_checkpoint}, Penultimate: {latest_two_messages_cache_checkpoint}")
 
         # Enable cache if either checkpoint is enabled
-        cache_supported = is_cache_supported(model_id)
-        print(f"[CACHE DEBUG] Model: {model_id}, Cache supported: {cache_supported}")
-        logger.info(f"[CACHE DEBUG] Model: {model_id}, Cache supported: {cache_supported}")
+        # For inference profiles, use underlying model ID for cache support check
+        cache_check_model_id = model_info.get("underlying_model_id", model_id)
+        cache_supported = is_cache_supported(cache_check_model_id)
+        print(f"[CACHE DEBUG] Model: {model_id}, Underlying: {cache_check_model_id}, Cache supported: {cache_supported}")
+        logger.info(f"[CACHE DEBUG] Model: {model_id}, Underlying: {cache_check_model_id}, Cache supported: {cache_supported}")
         if cache_supported == False:
             system_cache_checkpoint = False
             latest_two_messages_cache_checkpoint = False
 
         # Convert messages with cache points if enabled
+        # For inference profiles, use underlying model ID for cache configuration
+        cache_config_model_id = model_info.get("underlying_model_id", model_id)
         system, prompt_message_dicts = self._convert_converse_prompt_messages(
             prompt_messages,
-            model_id=model_id,
+            model_id=cache_config_model_id,
             system_cache_checkpoint=system_cache_checkpoint,
             latest_two_messages_cache_checkpoint=latest_two_messages_cache_checkpoint
         )
