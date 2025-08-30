@@ -8,9 +8,7 @@ from tools.model_manager import ModelManager
 
 
 class DownloadByJson(Tool):
-    def _invoke(
-        self, tool_parameters: dict[str, Any]
-    ) -> Generator[ToolInvokeMessage, None, None]:
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         invoke tools
         """
@@ -24,8 +22,6 @@ class DownloadByJson(Tool):
             hf_api_key=self.runtime.credentials.get("hf_api_key"),
         )
 
-        model_names = self.model_manager.download_from_json(
-            tool_parameters.get("workflow_json", "")
-        )
+        model_names = self.model_manager.download_from_json(tool_parameters.get("workflow_json", ""))
 
         yield self.create_variable_message("model_names", model_names)

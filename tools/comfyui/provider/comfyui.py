@@ -15,7 +15,7 @@ class ComfyUIProvider(ToolProvider):
         if base_url.scheme == "https":
             ws_protocol = "wss"
         ws_address = f"{ws_protocol}://{base_url.authority}/ws?clientId=test123"
-        
+
         headers = []
         if comfyui_api_key:
             headers.append(f"Authorization: Bearer {comfyui_api_key}")
@@ -23,8 +23,6 @@ class ComfyUIProvider(ToolProvider):
         try:
             ws.connect(ws_address, header=headers)
         except Exception as e:
-            raise ToolProviderCredentialValidationError(
-                f"can not connect to {ws_address}. Error: {str(e)}"
-            )
+            raise ToolProviderCredentialValidationError(f"can not connect to {ws_address}. Error: {str(e)}")
         finally:
             ws.close()

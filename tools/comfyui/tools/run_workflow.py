@@ -8,9 +8,7 @@ from dify_plugin import Tool
 
 
 class ComfyUIWorkflowTool(Tool):
-    def _invoke(
-        self, tool_parameters: dict[str, Any]
-    ) -> Generator[ToolInvokeMessage, None, None]:
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         self.comfyui = ComfyUiClient(
             self.runtime.credentials["base_url"],
             api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"),
@@ -30,9 +28,7 @@ class ComfyUIWorkflowTool(Tool):
         for image in images:
             if image.type != FileType.IMAGE:
                 continue
-            image_name = self.comfyui.upload_image(
-                image.filename, image.blob, image.mime_type
-            )
+            image_name = self.comfyui.upload_image(image.filename, image.blob, image.mime_type)
             image_names.append(image_name)
         if len(image_names) > 0:
             image_ids = tool_parameters.get("image_ids")
@@ -53,9 +49,7 @@ class ComfyUIWorkflowTool(Tool):
         try:
             output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
-            raise ToolProviderCredentialValidationError(
-                f"Failed to generate image: {str(e)}."
-            )
+            raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}.")
 
         for img in output_images:
             yield self.create_blob_message(
