@@ -20,17 +20,14 @@ class ModelType(Enum):
 
 
 class ComfyuiImg2Img(Tool):
-    def _invoke(
-        self, tool_parameters: dict[str, Any]
-    ) -> Generator[ToolInvokeMessage, None, None]:
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         invoke tools
         """
         base_url = self.runtime.credentials.get("base_url", "")
         if not base_url:
             yield self.create_text_message("Please input base_url")
-        self.comfyui = ComfyUiClient(
-            base_url, api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"))
+        self.comfyui = ComfyUiClient(base_url, api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"))
         self.model_manager = ModelManager(
             self.comfyui,
             civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
@@ -45,8 +42,7 @@ class ComfyuiImg2Img(Tool):
                 "checkpoints",
             )
         else:
-            model = self.model_manager.decode_model_name(
-                model_raw, "checkpoints")
+            model = self.model_manager.decode_model_name(model_raw, "checkpoints")
 
         prompt = tool_parameters.get("prompt", "")
         if not prompt:
@@ -73,9 +69,7 @@ class ComfyuiImg2Img(Tool):
         for image in images:
             if image.type != FileType.IMAGE:
                 continue
-            image_name = self.comfyui.upload_image(
-                image.filename, image.blob, image.mime_type
-            )
+            image_name = self.comfyui.upload_image(image.filename, image.blob, image.mime_type)
             image_names.append(image_name)
         if len(image_names) == 0:
             raise ToolProviderCredentialValidationError("Please input images")
@@ -86,9 +80,7 @@ class ComfyuiImg2Img(Tool):
                 lora_info = lora_info.lstrip(" ").rstrip(" ")
                 if lora_info == "":
                     continue
-                lora_list.append(
-                    self.model_manager.decode_lora(lora_info)
-                )
+                lora_list.append(self.model_manager.decode_lora(lora_info))
         except Exception as e:
             raise ToolProviderCredentialValidationError(str(e))
         batch_size = int(tool_parameters.get("batch_size", 1))
@@ -96,8 +88,7 @@ class ComfyuiImg2Img(Tool):
         lora_strength_list = []
         if len(tool_parameters.get("lora_strengths", "")) > 0:
             lora_strength_list = [
-                float(x.lstrip(" ").rstrip(" "))
-                for x in tool_parameters.get("lora_strengths").split(",")
+                float(x.lstrip(" ").rstrip(" ")) for x in tool_parameters.get("lora_strengths").split(",")
             ]
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -122,17 +113,14 @@ class ComfyuiImg2Img(Tool):
                 strength = lora_strength_list[i]
             except:
                 strength = 1.0
-            workflow.add_lora_node(
-                "3", "6", "7", lora_name, strength, strength)
+            workflow.add_lora_node("3", "6", "7", lora_name, strength, strength)
 
         for _ in range(batch_size):
             workflow.randomize_seed()
             try:
                 output_images = self.comfyui.generate(workflow.json())
             except Exception as e:
-                raise ToolProviderCredentialValidationError(
-                    f"Failed to generate image: {str(e)}"
-                )
+                raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
             for img in output_images:
                 yield self.create_blob_message(
                     blob=img.blob,

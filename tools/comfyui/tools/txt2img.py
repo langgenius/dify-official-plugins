@@ -40,15 +40,14 @@ class ModelType(Enum):
 
 
 class ComfyuiTxt2Img(Tool):
-    def _invoke(
-        self, tool_parameters: dict[str, Any]
-    ) -> Generator[ToolInvokeMessage, None, None]:
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         base_url = self.runtime.credentials.get("base_url", "")
         if not base_url:
             yield self.create_text_message("Please input base_url")
         self.comfyui = ComfyUiClient(
-            base_url, self.runtime.credentials.get("comfyui_api_key"),
-            api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org")
+            base_url,
+            self.runtime.credentials.get("comfyui_api_key"),
+            api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"),
         )
         self.model_manager = ModelManager(
             self.comfyui,
@@ -59,10 +58,10 @@ class ComfyuiTxt2Img(Tool):
         model_raw = tool_parameters.get("model", "")
         if model_raw == "":
             model = self.model_manager.download_hugging_face(
-                "Comfy-Org/stable-diffusion-v1-5-archive", "v1-5-pruned-emaonly-fp16.safetensors", "checkpoints")
+                "Comfy-Org/stable-diffusion-v1-5-archive", "v1-5-pruned-emaonly-fp16.safetensors", "checkpoints"
+            )
         else:
-            model = self.model_manager.decode_model_name(
-                model_raw, "checkpoints")
+            model = self.model_manager.decode_model_name(model_raw, "checkpoints")
 
         prompt = tool_parameters.get("prompt", "")
         if not prompt:
@@ -92,30 +91,21 @@ class ComfyuiTxt2Img(Tool):
                 lora_info = lora_info.lstrip(" ").rstrip(" ")
                 if lora_info == "":
                     continue
-                lora_list.append(
-                    self.model_manager.decode_lora(lora_info)
-                )
+                lora_list.append(self.model_manager.decode_lora(lora_info))
         except Exception as e:
             raise ToolProviderCredentialValidationError(str(e))
 
         lora_strength_list = []
         if len(tool_parameters.get("lora_strengths", "")) > 0:
-            lora_strength_list = [
-                float(x) for x in tool_parameters.get("lora_strengths").split(",")
-            ]
+            lora_strength_list = [float(x) for x in tool_parameters.get("lora_strengths").split(",")]
         batch_size = int(tool_parameters.get("batch_size", 1))
 
         # make workflow json
         current_dir = os.path.dirname(os.path.realpath(__file__))
-        workflow_template_path = os.path.join(
-            current_dir, "json", "txt2img.json")
-        is_hiresfix_enabled: bool = (
-            tool_parameters.get("hiresfix_upscale_method") != "disabled"
-        )
+        workflow_template_path = os.path.join(current_dir, "json", "txt2img.json")
+        is_hiresfix_enabled: bool = tool_parameters.get("hiresfix_upscale_method") != "disabled"
         if is_hiresfix_enabled:
-            workflow_template_path = os.path.join(
-                current_dir, "json", "txt2img_hiresfix.json"
-            )
+            workflow_template_path = os.path.join(current_dir, "json", "txt2img_hiresfix.json")
         with open(workflow_template_path) as file:
             workflow = ComfyUiWorkflow(file.read())
 
@@ -143,13 +133,12 @@ class ComfyuiTxt2Img(Tool):
                 random.randint(0, 100000000),
             )
 
-            hiresfix_size_ratio = tool_parameters.get(
-                "hiresfix_size_ratio", 0.5)
+            hiresfix_size_ratio = tool_parameters.get("hiresfix_size_ratio", 0.5)
             workflow.set_empty_latent_image(
                 workflow.identify_node_by_class_type("EmptyLatentImage"),
                 round(width * hiresfix_size_ratio),
                 round(height * hiresfix_size_ratio),
-                batch_size
+                batch_size,
             )
 
             workflow.set_property("10", "inputs/width", width)
@@ -171,8 +160,7 @@ class ComfyuiTxt2Img(Tool):
                 strength = lora_strength_list[i]
             except:
                 strength = 1.0
-            workflow.add_lora_node(
-                "3", "6", "7", lora_info, strength, strength)
+            workflow.add_lora_node("3", "6", "7", lora_info, strength, strength)
 
         if ecosystem == ModelType.FLUX1.name:
             workflow.add_flux_guidance("3", 3.5)
@@ -181,9 +169,7 @@ class ComfyuiTxt2Img(Tool):
         try:
             output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
-            raise ToolProviderCredentialValidationError(
-                f"Failed to generate image: {str(e)}"
-            )
+            raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         for img in output_images:
             yield self.create_blob_message(
                 blob=img.blob,
@@ -227,11 +213,7 @@ class ComfyuiTxt2Img(Tool):
                             required=True,
                             default=models[0],
                             options=[
-                                ToolParameterOption(
-                                    value=i, label=I18nObject(
-                                        en_US=i, zh_Hans=i)
-                                )
-                                for i in models
+                                ToolParameterOption(value=i, label=I18nObject(en_US=i, zh_Hans=i)) for i in models
                             ],
                         )
                     )
@@ -241,9 +223,7 @@ class ComfyuiTxt2Img(Tool):
                         parameters.append(
                             ToolParameter(
                                 name=f"lora_{n}",
-                                label=I18nObject(
-                                    en_US=f"Lora {n}", zh_Hans=f"Lora {n}"
-                                ),
+                                label=I18nObject(en_US=f"Lora {n}", zh_Hans=f"Lora {n}"),
                                 human_description=I18nObject(
                                     en_US="Lora of Stable Diffusion, you can check the official documentation of Stable Diffusion",
                                     zh_Hans="Stable Diffusion 的 Lora 模型，您可以查看 Stable Diffusion 的官方文档",
@@ -253,11 +233,7 @@ class ComfyuiTxt2Img(Tool):
                                 llm_description="Lora of Stable Diffusion, you can check the official documentation of Stable Diffusion",
                                 required=False,
                                 options=[
-                                    ToolParameterOption(
-                                        value=i, label=I18nObject(
-                                            en_US=i, zh_Hans=i)
-                                    )
-                                    for i in loras
+                                    ToolParameterOption(value=i, label=I18nObject(en_US=i, zh_Hans=i)) for i in loras
                                 ],
                             )
                         )
@@ -267,9 +243,7 @@ class ComfyuiTxt2Img(Tool):
                     parameters.append(
                         ToolParameter(
                             name="sampler_name",
-                            label=I18nObject(
-                                en_US="Sampling method", zh_Hans="Sampling method"
-                            ),
+                            label=I18nObject(en_US="Sampling method", zh_Hans="Sampling method"),
                             human_description=I18nObject(
                                 en_US="Sampling method of Stable Diffusion, you can check the official documentation of Stable Diffusion",
                                 zh_Hans="Stable Diffusion 的Sampling method，您可以查看 Stable Diffusion 的官方文档",
@@ -280,10 +254,7 @@ class ComfyuiTxt2Img(Tool):
                             required=True,
                             default=sample_methods[0],
                             options=[
-                                ToolParameterOption(
-                                    value=i, label=I18nObject(
-                                        en_US=i, zh_Hans=i)
-                                )
+                                ToolParameterOption(value=i, label=I18nObject(en_US=i, zh_Hans=i))
                                 for i in sample_methods
                             ],
                         )
@@ -292,8 +263,7 @@ class ComfyuiTxt2Img(Tool):
                     parameters.append(
                         ToolParameter(
                             name="scheduler",
-                            label=I18nObject(
-                                en_US="Scheduler", zh_Hans="Scheduler"),
+                            label=I18nObject(en_US="Scheduler", zh_Hans="Scheduler"),
                             human_description=I18nObject(
                                 en_US="Scheduler of Stable Diffusion, you can check the official documentation of Stable Diffusion",
                                 zh_Hans="Stable Diffusion 的Scheduler，您可以查看 Stable Diffusion 的官方文档",
@@ -304,19 +274,14 @@ class ComfyuiTxt2Img(Tool):
                             required=True,
                             default=schedulers[0],
                             options=[
-                                ToolParameterOption(
-                                    value=i, label=I18nObject(
-                                        en_US=i, zh_Hans=i)
-                                )
-                                for i in schedulers
+                                ToolParameterOption(value=i, label=I18nObject(en_US=i, zh_Hans=i)) for i in schedulers
                             ],
                         )
                     )
                 parameters.append(
                     ToolParameter(
                         name="model_type",
-                        label=I18nObject(en_US="Model Type",
-                                         zh_Hans="Model Type"),
+                        label=I18nObject(en_US="Model Type", zh_Hans="Model Type"),
                         human_description=I18nObject(
                             en_US="Model Type of Stable Diffusion or Flux, you can check the official documentation of Stable Diffusion or Flux",
                             zh_Hans="Stable Diffusion 或 FLUX 的模型类型，您可以查看 Stable Diffusion 或 Flux 的官方文档",
@@ -327,9 +292,7 @@ class ComfyuiTxt2Img(Tool):
                         required=True,
                         default=ModelType.SD15.name,
                         options=[
-                            ToolParameterOption(
-                                value=i, label=I18nObject(en_US=i, zh_Hans=i)
-                            )
+                            ToolParameterOption(value=i, label=I18nObject(en_US=i, zh_Hans=i))
                             for i in ModelType.__members__
                         ],
                     )

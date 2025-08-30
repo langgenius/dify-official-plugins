@@ -8,9 +8,7 @@ from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
 
 class Convert2API(Tool):
-    def _invoke(
-        self, tool_parameters: dict[str, Any]
-    ) -> Generator[ToolInvokeMessage, None, None]:
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         invoke tools
         """
