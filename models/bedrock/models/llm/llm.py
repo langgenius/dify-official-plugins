@@ -412,7 +412,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                         model_info["model"] = (
                             model_id  # Use inference profile ARN for actual API call
                         )
-                        model_info["underlying_model_id"] = underlying_model_id  # Store underlying model ID for cache support
+                        model_info["underlying_model_id"] = (
+                            underlying_model_id  # Store underlying model ID for cache support
+                        )
                         logger.info(
                             f"Using inference profile {model_id} with capabilities from {underlying_model_id}"
                         )
@@ -478,7 +480,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         bedrock_client = get_bedrock_client("bedrock-runtime", credentials)
 
         # Get cache checkpoint settings from model parameters
-        system_cache_checkpoint = model_parameters.pop("system_cache_checkpoint", True)
+        # Log the incoming parameters for debugging
+        logger.info(f"[CACHE PARAMS] Received model_parameters: {model_parameters}")
+        system_cache_checkpoint = model_parameters.pop("system_cache_checkpoint", False)  # Default to False
         latest_two_messages_cache_checkpoint = model_parameters.pop(
             "latest_two_messages_cache_checkpoint", False
         )
@@ -497,7 +501,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         # For inference profiles, use underlying model ID for cache support check
         cache_check_model_id = model_info.get("underlying_model_id", model_id)
         cache_supported = is_cache_supported(cache_check_model_id)
-        print(f"[CACHE DEBUG] Model: {model_id}, Underlying: {cache_check_model_id}, Cache supported: {cache_supported}")
+        print(
+            f"[CACHE DEBUG] Model: {model_id}, Underlying: {cache_check_model_id}, Cache supported: {cache_supported}"
+        )
         logger.info(
             f"[CACHE DEBUG] Model: {model_id}, Underlying: {cache_check_model_id}, Cache supported: {cache_supported}"
         )
@@ -661,8 +667,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             completion_tokens = response["usage"]["outputTokens"]
 
             # Log cache metrics if available
-            cache_read_tokens = response["usage"].get("cacheReadInputTokens", 0)
-            cache_write_tokens = response["usage"].get("cacheWriteInputTokens", 0)
+            cache_read_tokens = response["usage"].get("cacheReadInputTokensCount", 0)
+            cache_write_tokens = response["usage"].get("cacheWriteInputTokensCount", 0)
 
             if cache_read_tokens > 0 or cache_write_tokens > 0:
                 logger.info(
