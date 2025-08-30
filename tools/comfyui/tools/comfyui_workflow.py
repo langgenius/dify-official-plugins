@@ -42,7 +42,6 @@ class ComfyUiWorkflow:
                 string = string.replace(char, "")
             for char_id in range(0x007F, 0x00A1):
                 string = string.replace(chr(char_id), "")
-            string = string.replace("'", '"')
             return string
         workflow_json: dict = json.loads(clean_json_string(workflow_json_str))
         self.load_from_json_dict(workflow_json)
