@@ -1,6 +1,6 @@
-model: grok-2-1212
+model: grok-code-fast-1-0825
 label:
-  en_US: grok-2-1212
+  en_US: grok-code-fast-1-0825
 model_type: llm
 features:
   - agent-thought
@@ -9,7 +9,7 @@ features:
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 131072
+  context_size: 256000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -18,14 +18,6 @@ parameter_rules:
     max: 2.0
   - name: top_p
     use_template: top_p
-  - name: presence_penalty
-    use_template: presence_penalty
-    min: -2.0
-    max: 2.0
-  - name: frequency_penalty
-    use_template: frequency_penalty
-    min: -2.0
-    max: 2.0
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -41,8 +33,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: "2.00"
-  output: "10.00"
+  input: "0.20"
+  output: "1.50"
   unit: "0.000001"
   currency: USD
-deprecated: true
