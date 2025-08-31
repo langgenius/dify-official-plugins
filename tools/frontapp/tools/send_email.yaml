@@ -1,0 +1,123 @@
+identity:
+  name: send_email
+  author: Dify Developer
+  label:
+    en_US: Send Email
+    zh_Hans: 发送邮件
+    ja_JP: メール送信
+  icon: icon.png
+
+description:
+  human:
+    en_US: Send emails through Front API using available email channels
+    zh_Hans: 通过 Front API 使用可用的邮件频道发送邮件
+    ja_JP: Front API を使用して利用可能なメールチャンネル経由でメールを送信
+  llm: Send emails through Front API to specified recipients with subject and body content
+
+parameters:
+  - name: recipient_email
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Recipient Email
+      zh_Hans: 收件人邮箱
+      ja_JP: 受信者メール
+    human_description:
+      en_US: The email address of the recipient
+      zh_Hans: 收件人的邮箱地址
+      ja_JP: 受信者のメールアドレス
+    llm_description: The email address where the message should be sent
+
+  - name: subject
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Email Subject
+      zh_Hans: 邮件主题
+      ja_JP: メール件名
+    human_description:
+      en_US: The subject line of the email
+      zh_Hans: 邮件的主题行
+      ja_JP: メールの件名
+    llm_description: The subject line for the email message
+
+  - name: body
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Email Body
+      zh_Hans: 邮件正文
+      ja_JP: メール本文
+    human_description:
+      en_US: The main content/body of the email
+      zh_Hans: 邮件的主要内容/正文
+      ja_JP: メールの主な内容/本文
+    llm_description: The main content of the email message
+
+  - name: sender_email
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Sender Email
+      zh_Hans: 发件人邮箱
+      ja_JP: 送信者メール
+    human_description:
+      en_US: The email address to use as sender (optional)
+      zh_Hans: 用作发件人的邮箱地址（可选）
+      ja_JP: 送信者として使用するメールアドレス（オプション）
+    llm_description: Optional sender email address (will use default channel sender if not specified)
+
+  - name: cc_emails
+    type: array
+    required: false
+    form: llm
+    label:
+      en_US: CC Email Addresses
+      zh_Hans: 抄送邮箱地址
+      ja_JP: CC メールアドレス
+    human_description:
+      en_US: List of email addresses to CC on the message
+      zh_Hans: 邮件抄送的邮箱地址列表
+      ja_JP: メッセージにCCするメールアドレスのリスト
+    llm_description: Array of email addresses to include in CC
+
+  - name: bcc_emails
+    type: array
+    required: false
+    form: llm
+    label:
+      en_US: BCC Email Addresses
+      zh_Hans: 密送邮箱地址
+      ja_JP: BCC メールアドレス
+    human_description:
+      en_US: List of email addresses to BCC on the message
+      zh_Hans: 邮件密送的邮箱地址列表
+      ja_JP: メッセージにBCCするメールアドレスのリスト
+    llm_description: Array of email addresses to include in BCC
+
+extra:
+  python:
+    source: tools/send_email.py
+
+output_schema:
+  type: object
+  properties:
+    success:
+      type: boolean
+      description: Whether the email was sent successfully
+    message_id:
+      type: string
+      description: The ID of the sent message in Front
+    recipient:
+      type: string
+      description: The email address of the recipient
+    subject:
+      type: string
+      description: The subject of the sent email
+    channel_used:
+      type: string
+      description: The name of the Front channel used to send the email

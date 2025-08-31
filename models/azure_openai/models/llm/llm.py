@@ -1,10 +1,14 @@
+import base64
 import copy
+import io
 import json
 import logging
-from collections.abc import Generator, Sequence
 import math
-from typing import Optional, Union, cast
+from collections.abc import Generator, Sequence
+from typing import Optional, Union, cast, Any
+
 import tiktoken
+from PIL import Image
 from dify_plugin.entities.model import AIModelEntity, ModelPropertyKey
 from dify_plugin.entities.model.llm import (
     LLMMode,
@@ -14,6 +18,7 @@ from dify_plugin.entities.model.llm import (
 )
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    AudioPromptMessageContent,
     ImagePromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
@@ -33,14 +38,14 @@ from openai.types.chat import (
     ChatCompletionChunk,
     ChatCompletionMessageToolCall,
 )
-from openai.types.chat.chat_completion_chunk import ChoiceDeltaToolCall
+from openai.types.chat.chat_completion_chunk import ChoiceDeltaToolCall, ChoiceDelta
+
 from ..common import _CommonAzureOpenAI
 from ..constants import LLM_BASE_MODELS
-from PIL import Image
-import base64
-import io
 
 logger = logging.getLogger(__name__)
+
+THINKING_SERIES_COMPATIBILITY = ("o", "gpt-5")
 
 
 class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
@@ -116,16 +121,13 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         if "base_model_name" not in credentials:
             raise CredentialsValidateFailedError("Base Model Name is required")
         base_model_name = self._get_base_model_name(credentials)
-        ai_model_entity = self._get_ai_model_entity(
-            base_model_name=base_model_name, model=model
-        )
+        ai_model_entity = self._get_ai_model_entity(base_model_name=base_model_name, model=model)
         if not ai_model_entity:
-            raise CredentialsValidateFailedError(
-                f"Base Model Name {credentials['base_model_name']} is invalid"
-            )
+            raise CredentialsValidateFailedError(f"Base Model Name {credentials['base_model_name']} is invalid")
+
         try:
             client = AzureOpenAI(**self._to_credential_kwargs(credentials))
-            if base_model_name.startswith(("o1", "o3", "o4")):
+            if base_model_name.startswith(THINKING_SERIES_COMPATIBILITY):
                 client.chat.completions.create(
                     messages=[{"role": "user", "content": "ping"}],
                     model=model,
@@ -180,6 +182,10 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             extra_model_kwargs["stop"] = stop
         if user:
             extra_model_kwargs["user"] = user
+
+        # client.completions does not support reasoning_effort
+        if "reasoning_effort" in model_parameters:
+            model_parameters.pop("reasoning_effort")
         response = client.completions.create(
             prompt=prompt_messages[0].content,
             model=model,
@@ -187,6 +193,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             **model_parameters,
             **extra_model_kwargs,
         )
+
         if stream:
             return self._handle_generate_stream_response(
                 model, credentials, response, prompt_messages
@@ -234,12 +241,14 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         prompt_messages: list[PromptMessage],
     ) -> Generator:
         full_text = ""
+
         for chunk in response:
             if len(chunk.choices) == 0:
                 continue
             delta = chunk.choices[0]
             if delta.finish_reason is None and (delta.text is None or delta.text == ""):
                 continue
+
             text = delta.text or ""
             assistant_prompt_message = AssistantPromptMessage(content=text)
             full_text += text
@@ -257,6 +266,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 usage = self._calc_response_usage(
                     model, credentials, prompt_tokens, completion_tokens
                 )
+
                 yield LLMResultChunk(
                     model=chunk.model,
                     prompt_messages=prompt_messages,
@@ -328,7 +338,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             base_model_name, prompt_messages
         )
         block_as_stream = False
-        if base_model_name.startswith(("o1", "o3", "o4")):
+        if base_model_name.startswith(THINKING_SERIES_COMPATIBILITY):
             # o1 and o1-* do not support streaming
             # https://learn.microsoft.com/en-us/azure/ai-services/openai/how-to/reasoning#api--feature-support
             if base_model_name.startswith("o1"):
@@ -339,13 +349,16 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                         del extra_model_kwargs["stream_options"]
             if "stop" in extra_model_kwargs:
                 del extra_model_kwargs["stop"]
+
+        messages: Any = [self._convert_prompt_message_to_dict(m) for m in prompt_messages]
         response = client.chat.completions.create(
-            messages=[self._convert_prompt_message_to_dict(m) for m in prompt_messages],
+            messages=messages,
             model=model,
             stream=stream,
             **model_parameters,
             **extra_model_kwargs,
         )
+
         if stream:
             return self._handle_chat_generate_stream_response(
                 model, credentials, response, prompt_messages, tools
@@ -354,9 +367,8 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             model, credentials, response, prompt_messages, tools
         )
         if block_as_stream:
-            return self._handle_chat_block_as_stream_response(
-                block_result, prompt_messages, stop
-            )
+            return self._handle_chat_block_as_stream_response(block_result, prompt_messages, stop)
+
         return block_result
 
     def _handle_chat_block_as_stream_response(
@@ -454,8 +466,13 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         self._update_tool_calls(
             tool_calls=tool_calls, tool_calls_response=assistant_message_tool_calls
         )
+        content = ""
+        if hasattr(assistant_message, "model_extra") and assistant_message.model_extra.get("reasoning_content"):
+            content += "<think>\n" + assistant_message.model_extra["reasoning_content"] + "\n</think>"
+        content += assistant_message.content
+
         assistant_prompt_message = AssistantPromptMessage(
-            content=assistant_message.content, tool_calls=tool_calls
+            content=content, tool_calls=tool_calls
         )
         if response.usage:
             prompt_tokens = response.usage.prompt_tokens
@@ -487,8 +504,8 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         prompt_messages: list[PromptMessage],
         tools: Optional[list[PromptMessageTool]] = None,
     ):
+        is_reasoning = False
         index = 0
-        full_assistant_content = ""
         real_model = model
         system_fingerprint = None
         completion = ""
@@ -509,15 +526,21 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             self._update_tool_calls(
                 tool_calls=tool_calls, tool_calls_response=delta.delta.tool_calls
             )
-            if delta.finish_reason is None and (not delta.delta.content):
+            if (
+                delta.finish_reason is None
+                and not delta.delta.content
+                and not hasattr(delta.delta, "reasoning_content")
+            ):
                 continue
-            assistant_prompt_message = AssistantPromptMessage(
-                content=delta.delta.content or "", tool_calls=tool_calls
+            content, is_reasoning = self._azure_wrap_thinking_by_reasoning_content(
+                delta.delta, is_reasoning
             )
-            full_assistant_content += delta.delta.content or ""
+            assistant_prompt_message = AssistantPromptMessage(
+                content=content, tool_calls=tool_calls
+            )
             real_model = chunk.model
             system_fingerprint = chunk.system_fingerprint
-            completion += delta.delta.content or ""
+            completion += content
             yield LLMResultChunk(
                 model=real_model,
                 prompt_messages=prompt_messages,
@@ -538,6 +561,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         usage = self._calc_response_usage(
             model, credentials, prompt_tokens, completion_tokens
         )
+
         yield LLMResultChunk(
             model=real_model,
             prompt_messages=prompt_messages,
@@ -635,6 +659,18 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                             },
                         }
                         sub_messages.append(sub_message_dict)
+                    elif message_content.type == PromptMessageContentType.AUDIO:
+                        message_content = cast(
+                            AudioPromptMessageContent, message_content
+                        )
+                        sub_message_dict = {
+                            "type": "input_audio",
+                            "input_audio": {
+                                "data": message_content.base64_data,
+                                "format": message_content.format,
+                            },
+                        }
+                        sub_messages.append(sub_message_dict)
                 message_dict = {"role": "user", "content": sub_messages}
         elif isinstance(message, AssistantPromptMessage):
             message_dict = {"role": "assistant", "content": message.content}
@@ -686,7 +722,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         Official documentation: https://github.com/openai/openai-cookbook/blob/
         main/examples/How_to_format_inputs_to_ChatGPT_models.ipynb"""
         model = credentials["base_model_name"]
-        if model.startswith(("o1", "o3", "o4", "gpt-4.1", "gpt-4.5")):
+        if model.startswith(("o1", "o3", "o4", "gpt-4.1", "gpt-4.5", "gpt-5")):
             model = "gpt-4o"
         try:
             encoding = tiktoken.encoding_for_model(model)
@@ -701,6 +737,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             model.startswith("gpt-35-turbo")
             or model.startswith("gpt-4")
             or model.startswith(("o1", "o3", "o4"))
+            or model.startswith("grok")
         ):
             tokens_per_message = 3
             tokens_per_name = 1
@@ -840,7 +877,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 tokens = width_patches * height_patches
 
                 if tokens > cap:
-                    shrink_factor = math.sqrt(cap * 32**2 / (width * height))
+                    shrink_factor = math.sqrt(cap * 32 ** 2 / (width * height))
 
                     new_width = width * shrink_factor
                     new_height = height * shrink_factor
@@ -883,3 +920,35 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     num_tokens += base_tokens + total_tiles * tile_tokens
 
         return num_tokens
+
+    @staticmethod
+    def _azure_wrap_thinking_by_reasoning_content(
+        delta: ChoiceDelta,
+        is_reasoning: bool
+    ) -> tuple[str, bool]:
+        """
+        If the reasoning response is from delta.get("reasoning_content"), we wrap
+        it with HTML think tag.
+        :param delta: delta dictionary from LLM streaming response
+        :param is_reasoning: is reasoning
+        :return: tuple of (processed_content, is_reasoning)
+        """
+
+        content = delta.content or ""
+        reasoning_content = delta.reasoning_content if hasattr(delta, "reasoning_content") else ""
+        try:
+            if reasoning_content:
+                try:
+                    if not is_reasoning:
+                        content = "<think>\n" + reasoning_content
+                        is_reasoning = True
+                    else:
+                        content = reasoning_content
+                except Exception as ex:
+                    raise ValueError(f"[_azure_wrap_thinking_by_reasoning_content-1] {ex}") from ex
+            elif is_reasoning and content:
+                content = "\n</think>" + content
+                is_reasoning = False
+        except Exception as ex:
+            raise ValueError(f"[_azure_wrap_thinking_by_reasoning_content-2] {ex}") from ex
+        return content, is_reasoning

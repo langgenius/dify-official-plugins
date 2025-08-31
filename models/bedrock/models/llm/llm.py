@@ -54,6 +54,11 @@ from dify_plugin.errors.model import (
 from provider.get_bedrock_client import get_bedrock_client
 from .cache_config import is_cache_supported, get_cache_config
 from . import model_ids
+from utils.inference_profile import (
+    get_inference_profile_info,
+    validate_inference_profile,
+    extract_model_info_from_profile
+)
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 
 logger = logging.getLogger(__name__)
@@ -158,24 +163,76 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
-        try:
-            model_info = self._get_model_info(model, credentials, model_parameters)
-            if model_info:
-                return self._generate_with_converse(
-                    model_info, credentials, prompt_messages, model_parameters, stop, stream, user, tools, model
-                )
-        except Exception as e:
-            logger.error(f"Failed to get model info: {str(e)}")
-            if credentials.get("inference_profile_id"):
-                raise InvokeError(f"Failed to invoke inference profile: {str(e)}")
-
-        # Fallback to traditional model ID for non-converse API models
-        model_name = model_parameters.get('model_name')
-        if not model_name:
-            raise InvokeError("Model name is required for non-converse API models")
+        # Check if this is an inference profile model
+        inference_profile_id = credentials.get("inference_profile_id")
+        if inference_profile_id:
+            # For inference profiles, we must use the converse API
+            try:
+                model_info = self._get_model_info(model, credentials, model_parameters)
+                if model_info:
+                    # Handle response_format for inference profiles only if underlying model is Anthropic
+                    if model_parameters.get("response_format"):
+                        # Check if the underlying model is Anthropic based
+                        profile_info = get_inference_profile_info(inference_profile_id, credentials)
+                        underlying_models = profile_info.get("models", [])
+                        is_anthropic = False
+                        
+                        if underlying_models:
+                            first_model_arn = underlying_models[0].get("modelArn", "")
+                            if "foundation-model/" in first_model_arn:
+                                underlying_model_id = first_model_arn.split("foundation-model/")[1]
+                                is_anthropic = "anthropic.claude" in underlying_model_id
+                        
+                        if is_anthropic:
+                            stop = stop or []
+                            if "```\n" not in stop:
+                                stop.append("```\n")
+                            if "\n```" not in stop:
+                                stop.append("\n```")
+                            response_format = model_parameters.pop("response_format")
+                            format_prompt = SystemPromptMessage(
+                                content=ANTHROPIC_BLOCK_MODE_PROMPT.replace("{{instructions}}", prompt_messages[0].content).replace(
+                                    "{{block}}", response_format
+                                )
+                            )
+                            if len(prompt_messages) > 0 and isinstance(prompt_messages[0], SystemPromptMessage):
+                                prompt_messages[0] = format_prompt
+                            else:
+                                prompt_messages.insert(0, format_prompt)
+                            prompt_messages.append(AssistantPromptMessage(content=f"\n```{response_format}"))
+                        else:
+                            # For non-Anthropic models, just remove response_format parameter
+                            model_parameters.pop("response_format", None)
+                    
+                    return self._generate_with_converse(
+                        model_info, credentials, prompt_messages, model_parameters, stop, stream, user, tools, model
+                    )
+                else:
+                    raise InvokeError(f"Could not get model information for inference profile {inference_profile_id}")
+            except Exception as e:
+                logger.error(f"Failed to invoke inference profile: {str(e)}")
+                raise InvokeError(f"Failed to invoke inference profile {inference_profile_id}: {str(e)}")
+        else:
+            # Traditional model - try converse API first, then fall back if needed
+            try:
+                model_info = self._get_model_info(model, credentials, model_parameters)
+                if model_info:
+                    return self._generate_with_converse(
+                        model_info, credentials, prompt_messages, model_parameters, stop, stream, user, tools, model
+                    )
+            except Exception as e:
+                logger.error(f"Failed to get model info: {str(e)}")
+            
+            # Fallback to traditional model ID for non-converse API models
+            model_name = model_parameters.get('model_name')
+            if not model_name:
+                raise InvokeError("Model name is required for non-converse API models")
 
         model_id = model_ids.get_model_id(model, model_name)
-        return self._generate(model_id, credentials, prompt_messages, model_parameters, stop, stream, user)
+        # Store model_name in credentials for pricing calculation
+        credentials_with_model = credentials.copy()
+        credentials_with_model['model_parameters'] = {'model_name': model_name}
+        return self._generate(model_id, credentials_with_model, prompt_messages, model_parameters, stop, stream, user)
 
     def _get_model_info(self, model: str, credentials: dict, model_parameters: dict) -> dict:
         """
@@ -189,7 +246,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         inference_profile_id = credentials.get("inference_profile_id")
         if inference_profile_id:
             # Get the full ARN from the profile ID
-            profile_info = self._get_inference_profile_info_direct(inference_profile_id, credentials)
+            profile_info = get_inference_profile_info(inference_profile_id, credentials)
             profile_arn = profile_info.get("inferenceProfileArn")
 
             if not profile_arn:
@@ -226,6 +283,12 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             # Use traditional model ID resolution
             model_name = model_parameters.pop('model_name')
             model_id = model_ids.get_model_id(model, model_name)
+            
+            # Store model_name in credentials for pricing calculation
+            if 'model_parameters' not in credentials:
+                credentials['model_parameters'] = {}
+            credentials['model_parameters']['model_name'] = model_name
+            
             if model_parameters.pop('cross-region', False):
                 region_name = credentials['aws_region']
                 region_prefix = model_ids.get_region_area(region_name)
@@ -611,6 +674,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         additional_model_fields = {}
         if "max_tokens" in model_parameters:
             inference_config["maxTokens"] = model_parameters["max_tokens"]
+        elif "max_new_tokens" in model_parameters:
+            inference_config["maxTokens"] = model_parameters["max_new_tokens"]
 
         if "temperature" in model_parameters:
             inference_config["temperature"] = model_parameters["temperature"]
@@ -623,6 +688,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         if "top_k" in model_parameters:
             additional_model_fields["top_k"] = model_parameters["top_k"]
+
+        if "anthropic_beta" in model_parameters:
+            additional_model_fields["anthropic_beta"] = list(map(lambda v:v.strip(), model_parameters["anthropic_beta"].strip().split(",")))
 
         # process reasoning related parameters, construct nested reasoning_config structure
         if "reasoning_type" in model_parameters:
@@ -847,7 +915,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         if inference_profile_id:
             try:
                 # Get inference profile info from AWS directly
-                profile_info = self._get_inference_profile_info_direct(inference_profile_id, credentials)
+                profile_info = get_inference_profile_info(inference_profile_id, credentials)
                 
                 # Extract model name from profile
                 profile_name = profile_info.get("inferenceProfileName", model)
@@ -856,16 +924,43 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 # Find matching predefined model based on underlying model ARN
                 default_pricing = None
                 matched_features = []
+                matched_parameter_rules = []
+                matched_model_properties = {
+                    "mode": LLMMode.CHAT,
+                    "context_size": context_length,
+                }
                 underlying_models = profile_info.get("models", [])
+                
                 if underlying_models:
                     first_model_arn = underlying_models[0].get("modelArn", "")
                     if "foundation-model/" in first_model_arn:
                         underlying_model_id = first_model_arn.split("foundation-model/")[1]
                         model_schemas = self.predefined_models()
+                        
+                        # Try to get model-specific pricing based on the underlying model ID
+                        # Map model ID to model name for pricing lookup
+                        model_name_for_pricing = self._map_model_id_to_name(underlying_model_id)
+                        
+                        # First try to find individual model schema for pricing
+                        if model_name_for_pricing:
+                            individual_pricing = self._get_model_specific_pricing("", model_name_for_pricing, model_schemas)
+                            if individual_pricing:
+                                default_pricing = individual_pricing
+                        
+                        # Then find matching schema for features and parameters
                         for model_schema in model_schemas:
                             if self._model_id_matches_schema(underlying_model_id, model_schema):
-                                default_pricing = model_schema.pricing
+                                # Use individual pricing if found, otherwise fall back to schema pricing
+                                if not default_pricing:
+                                    default_pricing = model_schema.pricing
+                                    
                                 matched_features = model_schema.features or []
+                                # Extract allowed parameters from model schema, excluding model_name since it's determined by inference profile
+                                matched_parameter_rules = self._get_inference_profile_parameter_rules(model_schema, underlying_model_id)
+                                if model_schema.model_properties:
+                                    matched_model_properties.update(model_schema.model_properties)
+                                    # Override context_size with user-specified value
+                                    matched_model_properties["context_size"] = context_length
                                 break
                 
                 # Fallback to first predefined model pricing if no match found
@@ -874,6 +969,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     if model_schemas:
                         default_pricing = model_schemas[0].pricing
                 
+                # Use the user-provided model name exactly as entered
                 # Create custom model entity based on inference profile
                 return AIModelEntity(
                     model=model,
@@ -881,58 +977,45 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     model_type=ModelType.LLM,
                     features=matched_features,
                     fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
-                    model_properties={
-                        "mode": LLMMode.CHAT,
-                        "context_size": context_length,
-                    },
-                    parameter_rules=[],
+                    model_properties=matched_model_properties,
+                    parameter_rules=matched_parameter_rules,
                     pricing=default_pricing
                 )
             except Exception as e:
                 logger.error(f"Failed to get inference profile schema: {str(e)}")
-                # Create fallback custom model entity with user's model name
+                # Create fallback custom model entity with inference profile name
                 context_length = int(credentials.get("context_length", 4096))
                 model_schemas = self.predefined_models()
                 default_pricing = model_schemas[0].pricing if model_schemas else None
+                # For fallback, extract parameters from first model schema
+                fallback_parameter_rules = []
+                if model_schemas:
+                    # For fallback, we don't have underlying_model_id, so pass None to get all params except model_name
+                    fallback_parameter_rules = self._get_inference_profile_parameter_rules(model_schemas[0], None)
+                fallback_features = model_schemas[0].features if model_schemas else []
+                fallback_model_properties = {
+                    "mode": LLMMode.CHAT,
+                    "context_size": context_length,
+                }
+                # Use first model's properties as fallback, but keep user-specified context_size
+                if model_schemas and model_schemas[0].model_properties:
+                    fallback_model_properties.update(model_schemas[0].model_properties)
+                    fallback_model_properties["context_size"] = context_length
                 
                 return AIModelEntity(
                     model=model,
                     label=I18nObject(en_US=model),
                     model_type=ModelType.LLM,
-                    features=[],
+                    features=fallback_features,
                     fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
-                    model_properties={
-                        "mode": LLMMode.CHAT,
-                        "context_size": context_length,
-                    },
-                    parameter_rules=[],
+                    model_properties=fallback_model_properties,
+                    parameter_rules=fallback_parameter_rules,
                     pricing=default_pricing
                 )
         
         # This should not be reached for inference profile models, but keep as final fallback
         return None
 
-    def _get_inference_profile_info_direct(self, inference_profile_id: str, credentials: dict) -> dict:
-        """
-        Get inference profile information from Bedrock API directly
-        
-        :param inference_profile_id: inference profile identifier
-        :param credentials: credentials containing AWS access info
-        :return: inference profile information
-        """
-        try:
-            bedrock_client = get_bedrock_client("bedrock", credentials)
-            
-            # Call get-inference-profile API
-            response = bedrock_client.get_inference_profile(
-                inferenceProfileIdentifier=inference_profile_id
-            )
-            
-            return response
-            
-        except Exception as e:
-            logger.error(f"Failed to get inference profile info: {str(e)}")
-            raise e
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -947,7 +1030,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             inference_profile_id = credentials.get("inference_profile_id")
             if inference_profile_id:
                 # Validate inference profile directly
-                self._validate_inference_profile_direct(inference_profile_id, credentials)
+                validate_inference_profile(inference_profile_id, credentials)
                 logger.info(f"Successfully validated inference profile: {inference_profile_id}")
                 return
             
@@ -962,37 +1045,6 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
-    def _validate_inference_profile_direct(self, inference_profile_id: str, credentials: dict) -> None:
-        """
-        Validate inference profile by calling Bedrock API directly
-        
-        :param inference_profile_id: inference profile identifier
-        :param credentials: credentials containing AWS access info
-        """
-        try:
-            bedrock_client = get_bedrock_client("bedrock", credentials)
-            
-            # Call get-inference-profile API
-            response = bedrock_client.get_inference_profile(
-                inferenceProfileIdentifier=inference_profile_id
-            )
-            
-            # Check if profile is active
-            if response.get('status') != 'ACTIVE':
-                raise CredentialsValidateFailedError(f"Inference profile {inference_profile_id} is not active")
-                
-            logger.info(f"Successfully validated inference profile: {inference_profile_id}")
-            
-        except ClientError as e:
-            error_code = e.response['Error']['Code']
-            if error_code == 'ResourceNotFoundException':
-                raise CredentialsValidateFailedError(f"Inference profile {inference_profile_id} not found")
-            elif error_code == 'AccessDeniedException':
-                raise CredentialsValidateFailedError(f"Access denied to inference profile {inference_profile_id}")
-            else:
-                raise CredentialsValidateFailedError(f"Failed to validate inference profile: {str(e)}")
-        except Exception as e:
-            raise CredentialsValidateFailedError(f"Failed to validate inference profile: {str(e)}")
 
     def _list_foundation_models(self, credentials: dict) -> list[str]:
         """
@@ -1350,6 +1402,39 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         return InvokeError(error_msg)
 
+    def _get_inference_profile_parameter_rules(self, model_schema, underlying_model_id: str = None) -> list:
+        """
+        Extract allowed parameter rules from model schema for inference profiles
+        
+        :param model_schema: The predefined model schema
+        :param underlying_model_id: The underlying model ID (for model-specific filtering)
+        :return: List of parameter rules suitable for inference profiles
+        """
+        if not model_schema.parameter_rules:
+            return []
+        
+        # Always exclude model_name since it's determined by inference profile
+        excluded_params = ['model_name']
+        
+        # Apply model-specific filtering if underlying_model_id is available
+        allowed_parameter_rules = []
+        for rule in model_schema.parameter_rules:
+            if rule.name in excluded_params:
+                continue
+                
+            # For Anthropic models, include response_format only if it's an Anthropic model
+            if rule.name == 'response_format':
+                if underlying_model_id and "anthropic.claude" not in underlying_model_id:
+                    continue  # Skip response_format for non-Anthropic models
+                elif not underlying_model_id:
+                    # Fallback case: only include if this is an Anthropic schema
+                    if not (hasattr(model_schema, 'model') and model_schema.model == "anthropic claude"):
+                        continue
+            
+            allowed_parameter_rules.append(rule)
+        
+        return allowed_parameter_rules
+
     def _model_id_matches_schema(self, model_id: str, model_schema) -> bool:
         """
         Check if a model ID matches a predefined model schema
@@ -1358,11 +1443,16 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :param model_schema: The predefined model schema
         :return: True if the model ID matches the schema
         """
-        # Extract the model family from the model ID
+        # Extract the model family from the model ID and check individual models first
         if "anthropic.claude" in model_id:
-            return model_schema.model == "anthropic claude"
+            return (model_schema.model == "anthropic claude" or 
+                   model_schema.model.startswith("claude-"))
         elif "amazon.nova" in model_id:
-            return model_schema.model == "amazon nova"
+            return (model_schema.model == "amazon nova" or 
+                   model_schema.model.startswith("nova-"))
+        elif "cohere.command" in model_id:
+            return (model_schema.model == "cohere" or 
+                   model_schema.model.startswith("cohere-"))
         elif "ai21" in model_id:
             return model_schema.model == "ai21"
         elif "meta.llama" in model_id:
@@ -1373,3 +1463,178 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             return model_schema.model == "deepseek"
         
         return False
+    
+    def _map_model_id_to_name(self, model_id: str) -> Optional[str]:
+        """
+        Map a Bedrock model ID to a model name for pricing lookup.
+        
+        :param model_id: The Bedrock model ID (e.g., 'anthropic.claude-3-5-sonnet-20241022-v2:0')
+        :return: The model name or None
+        """
+        # Reverse lookup from model_ids
+        from . import model_ids
+        
+        # Remove version suffix if present
+        base_model_id = model_id.split(':')[0] if ':' in model_id else model_id
+        
+        # Search through all model families
+        for family, models in model_ids.BEDROCK_MODEL_IDS.items():
+            for name, id_value in models.items():
+                # Compare base IDs without version
+                base_id_value = id_value.split(':')[0] if ':' in id_value else id_value
+                if base_id_value == base_model_id or id_value == model_id:
+                    return name
+        
+        return None
+    
+    def _get_model_specific_pricing(self, model: str, model_name: str, model_schemas: list):
+        """
+        Get model-specific pricing based on model name.
+        First tries to find exact model match from model_configurations directory, then falls back to family pricing.
+        
+        :param model: The model family (e.g., 'anthropic-claude')
+        :param model_name: The specific model name (e.g., 'Claude 3.5 Sonnet')
+        :param model_schemas: List of predefined model schemas
+        :return: Pricing configuration or None
+        """
+        # Create model name mapping for individual model files
+        model_name_mapping = {
+            # Claude models
+            'Claude 4.0 Sonnet': 'claude-4-sonnet',
+            'Claude 4.0 Opus': 'claude-4-opus',
+            'Claude 3.7 Sonnet': 'claude-3-7-sonnet',
+            'Claude 3.5 Haiku': 'claude-3-5-haiku',
+            'Claude 3.5 Sonnet': 'claude-3-5-sonnet', 
+            'Claude 3.5 Sonnet V2': 'claude-3-5-sonnet',
+            'Claude 3 Haiku': 'claude-3-haiku',
+            'Claude 3 Sonnet': 'claude-3-sonnet',
+            'Claude 3 Opus': 'claude-3-opus',
+            # Nova models
+            'Nova Micro': 'nova-micro',
+            'Nova Lite': 'nova-lite',
+            'Nova Pro': 'nova-pro',
+            # Cohere models
+            'Command': 'cohere-command',
+            'Command Light': 'cohere-command-light',
+            'Command R': 'cohere-command-r',
+            'Command R+': 'cohere-command-rplus'
+        }
+        
+        # First, try to load individual model pricing from model_configurations subdirectory
+        individual_model_name = model_name_mapping.get(model_name)
+        if individual_model_name:
+            try:
+                import os
+                import yaml
+                # Get the directory of this file
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                individual_model_path = os.path.join(current_dir, 'model_configurations', f'{individual_model_name}.yaml')
+                
+                if os.path.exists(individual_model_path):
+                    with open(individual_model_path, 'r', encoding='utf-8') as f:
+                        model_config = yaml.safe_load(f)
+                        if 'pricing' in model_config:
+                            return model_config['pricing']
+            except Exception as e:
+                # If individual model file loading fails, continue to fallback
+                pass
+        
+        # Fallback: try to find individual model in existing schemas (for backward compatibility)
+        if individual_model_name:
+            for schema in model_schemas:
+                if schema.model == individual_model_name:
+                    return schema.pricing
+        
+        # If no model family provided, skip family pricing lookup
+        if not model:
+            return None
+        
+        # If no individual model found, try family pricing
+        # Look for exact model match first
+        for schema in model_schemas:
+            if schema.model == model:
+                return schema.pricing
+        
+        # If exact match not found, try with different formats
+        # Sometimes model might be passed as 'anthropic claude' vs 'anthropic-claude'
+        model_variants = [
+            model.replace('-', ' '),  # 'anthropic-claude' -> 'anthropic claude'
+            model.replace(' ', '-'),  # 'anthropic claude' -> 'anthropic-claude'
+            model.lower(),
+            model.lower().replace('-', ' '),
+            model.lower().replace(' ', '-')
+        ]
+        
+        for schema in model_schemas:
+            for variant in model_variants:
+                if schema.model == variant:
+                    return schema.pricing
+                    
+        return None
+    
+    def _calc_response_usage(self, model: str, credentials: dict, prompt_tokens: int, completion_tokens: int):
+        """
+        Calculate response usage with per-model pricing support.
+        
+        :param model: model name
+        :param credentials: model credentials
+        :param prompt_tokens: number of prompt tokens
+        :param completion_tokens: number of completion tokens
+        :return: LLMUsage
+        """
+        # Get model-specific pricing if available
+        model_parameters = credentials.get('model_parameters', {})
+        model_name = model_parameters.get('model_name')
+        
+        if model_name:
+            # Try to get model-specific pricing
+            model_schemas = self.predefined_models()
+            model_pricing = self._get_model_specific_pricing(model, model_name, model_schemas)
+            
+            if model_pricing:
+                # Use model-specific pricing
+                from dify_plugin.entities.model.llm import LLMUsage
+                
+                # Handle both dict and object pricing formats
+                if isinstance(model_pricing, dict):
+                    input_price = float(model_pricing['input'])
+                    output_price = float(model_pricing['output'])
+                    unit_price = float(model_pricing['unit'])
+                    currency = model_pricing.get('currency', 'USD')
+                else:
+                    # Object with attributes
+                    input_price = float(model_pricing.input)
+                    output_price = float(model_pricing.output)
+                    unit_price = float(model_pricing.unit)
+                    currency = model_pricing.currency
+                
+                # Calculate costs correctly: (tokens × price) ÷ unit_tokens
+                input_cost = (prompt_tokens * input_price) / (1.0 / unit_price)
+                output_cost = (completion_tokens * output_price) / (1.0 / unit_price)
+                
+                # Round to avoid floating point precision issues
+                input_cost = round(input_cost, 8)
+                output_cost = round(output_cost, 8)
+                total_cost = round(input_cost + output_cost, 8)
+                
+                # Get latency from parent class by calling it first
+                parent_usage = super()._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+                
+                return LLMUsage(
+                    prompt_tokens=prompt_tokens,
+                    prompt_unit_price=input_price,
+                    prompt_price_unit=unit_price,
+                    prompt_price=input_cost,
+                    completion_tokens=completion_tokens,
+                    completion_unit_price=output_price,
+                    completion_price_unit=unit_price,
+                    completion_price=output_cost,
+                    total_tokens=prompt_tokens + completion_tokens,
+                    total_price=total_cost,
+                    currency=currency,
+                    latency=parent_usage.latency,  # Use parent's latency calculation
+                )
+        
+        # Fallback to parent class implementation
+        return super()._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+    

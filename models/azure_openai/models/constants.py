@@ -55,6 +55,73 @@ class AzureBaseModel(BaseModel):
 
 LLM_BASE_MODELS = [
     AzureBaseModel(
+        base_model_name="gpt-4o-audio-preview",
+        entity=AIModelEntity(
+            model="gpt-4o-audio-preview",
+            label=I18nObject(
+                zh_Hans="gpt-4o-audio-preview",
+                en_US="gpt-4o-audio-preview",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.AUDIO,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 128000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="temperature",
+                    use_template="temperature",
+                ),
+                ParameterRule(
+                    name="top_p",
+                    use_template="top_p",
+                ),
+                ParameterRule(
+                    name="presence_penalty",
+                    use_template="presence_penalty",
+                ),
+                ParameterRule(
+                    name="frequency_penalty",
+                    use_template="frequency_penalty",
+                ),
+                ParameterRule(
+                    name="max_tokens",
+                    use_template="max_tokens",
+                    default=4096,
+                    min=1,
+                    max=16384,
+                ),
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(
+                        zh_Hans="回复格式",
+                        en_US="Response Format",
+                    ),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object"],
+                ),
+            ],
+            pricing=PriceConfig(
+                input=2.75,
+                output=11.00,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
         base_model_name="gpt-35-turbo",
         entity=AIModelEntity(
             model="fake-deployment-name",
@@ -666,7 +733,7 @@ LLM_BASE_MODELS = [
                     name="frequency_penalty",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.FREQUENCY_PENALTY],
                 ),
-                _get_max_tokens(default=512, min_val=1, max_val=4096),
+                _get_max_tokens(default=512, min_val=1, max_val=16384),
                 ParameterRule(
                     name="seed",
                     label=I18nObject(zh_Hans="种子", en_US="Seed"),
@@ -1816,13 +1883,464 @@ LLM_BASE_MODELS = [
                 _get_o1_max_tokens(default=512, min_val=1, max_val=100000),
             ],
             pricing=PriceConfig(
-                input=10,
-                output=40,
+                input=2,
+                output=8,
                 unit=0.000001,
                 currency="USD",
             ),
         ),
     ),
+    AzureBaseModel(
+        base_model_name="gpt-5",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 272000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制推理模型的推理工作",
+                        en_US="constrains effort on reasoning for reasoning models",
+                    ),
+                    required=False,
+                    options=["minimal", "low", "medium", "high"],
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                                "支持的值包括low、medium和high",
+                        en_US="Constrains the verbosity of the model's response. "
+                              "Lower values will result in more concise responses, "
+                              "while higher values will result in more verbose responses. "
+                              "Currently supported values are low, medium, and high",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
+                ),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
+            ],
+            pricing=PriceConfig(
+                input=1.25,
+                output=10,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-5-mini",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 272000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制推理模型的推理工作",
+                        en_US="constrains effort on reasoning for reasoning models",
+                    ),
+                    required=False,
+                    options=["minimal", "low", "medium", "high"],
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                                "支持的值包括low、medium和high",
+                        en_US="Constrains the verbosity of the model's response. "
+                              "Lower values will result in more concise responses, "
+                              "while higher values will result in more verbose responses. "
+                              "Currently supported values are low, medium, and high",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
+                ),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
+            ],
+            pricing=PriceConfig(
+                input=0.25,
+                output=2,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-5-nano",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 272000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制推理模型的推理工作",
+                        en_US="constrains effort on reasoning for reasoning models",
+                    ),
+                    required=False,
+                    options=["minimal", "low", "medium", "high"],
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                                "支持的值包括low、medium和high",
+                        en_US="Constrains the verbosity of the model's response. "
+                              "Lower values will result in more concise responses, "
+                              "while higher values will result in more verbose responses. "
+                              "Currently supported values are low, medium, and high",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
+                ),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
+            ],
+            pricing=PriceConfig(
+                input=0.05,
+                output=0.4,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-5-chat",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 128000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制推理模型的推理工作",
+                        en_US="constrains effort on reasoning for reasoning models",
+                    ),
+                    required=False,
+                    options=["minimal", "low", "medium", "high"],
+                ),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=16384),
+            ],
+            pricing=PriceConfig(
+                input=1.25,
+                output=10,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="grok-3",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 131072,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                ),
+                ParameterRule(
+                    name="frequency_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.FREQUENCY_PENALTY],
+                ),
+                _get_o1_max_tokens(default=512, min_val=1, max_val=32768),
+                ParameterRule(
+                    name="seed",
+                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    type="int",
+                    help=AZURE_DEFAULT_PARAM_SEED_HELP,
+                    required=False,
+                    precision=2,
+                    min=0,
+                    max=1,
+                ),
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+            ],
+            pricing=PriceConfig(
+                input=3,
+                output=15,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="grok-3-mini",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 131072,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                ),
+                ParameterRule(
+                    name="frequency_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.FREQUENCY_PENALTY],
+                ),
+                _get_o1_max_tokens(default=512, min_val=1, max_val=32768),
+                ParameterRule(
+                    name="seed",
+                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    type="int",
+                    help=AZURE_DEFAULT_PARAM_SEED_HELP,
+                    required=False,
+                    precision=2,
+                    min=0,
+                    max=1,
+                ),
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制推理模型的推理工作",
+                        en_US="constrains effort on reasoning for reasoning models",
+                    ),
+                    required=False,
+                    options=["medium", "high"],
+                ),
+            ],
+            pricing=PriceConfig(
+                input=0.3,
+                output=0.5,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    )
 ]
 EMBEDDING_BASE_MODELS = [
     AzureBaseModel(
@@ -1893,7 +2411,33 @@ SPEECH2TEXT_BASE_MODELS = [
                 ModelPropertyKey.SUPPORTED_FILE_EXTENSIONS: "flac,mp3,mp4,mpeg,mpga,m4a,ogg,wav,webm",
             },
         ),
-    )
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-4o-transcribe",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(en_US="fake-deployment-name-label"),
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_type=ModelType.SPEECH2TEXT,
+            model_properties={
+                ModelPropertyKey.FILE_UPLOAD_LIMIT: 25,
+                ModelPropertyKey.SUPPORTED_FILE_EXTENSIONS: "flac,mp3,mp4,mpeg,mpga,m4a,ogg,wav,webm",
+            },
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-4o-mini-transcribe",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(en_US="fake-deployment-name-label"),
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_type=ModelType.SPEECH2TEXT,
+            model_properties={
+                ModelPropertyKey.FILE_UPLOAD_LIMIT: 25,
+                ModelPropertyKey.SUPPORTED_FILE_EXTENSIONS: "flac,mp3,mp4,mpeg,mpga,m4a,ogg,wav,webm",
+            },
+        ),
+    ),
 ]
 TTS_BASE_MODELS = [
     AzureBaseModel(
@@ -1918,6 +2462,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -1932,6 +2477,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -1946,6 +2492,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -1960,6 +2507,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -1974,6 +2522,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -1988,6 +2537,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                 ],
@@ -2024,6 +2574,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2038,6 +2589,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2052,6 +2604,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2066,6 +2619,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2080,6 +2634,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                     {
@@ -2094,6 +2649,7 @@ TTS_BASE_MODELS = [
                             "it-IT",
                             "th-TH",
                             "id-ID",
+                            "ja-JP",
                         ],
                     },
                 ],
@@ -2103,6 +2659,194 @@ TTS_BASE_MODELS = [
             },
             pricing=PriceConfig(
                 input=0.03,
+                unit=0.001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-4o-mini-tts",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(en_US="fake-deployment-name-label"),
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_type=ModelType.TTS,
+            model_properties={
+                ModelPropertyKey.DEFAULT_VOICE: "alloy",
+                ModelPropertyKey.VOICES: [
+                    {
+                        "mode": "alloy",
+                        "name": "Alloy",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "ash",
+                        "name": "Ash",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "ballad",
+                        "name": "Ballad",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "coral",
+                        "name": "Coral",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "echo",
+                        "name": "Echo",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "fable",
+                        "name": "Fable",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "nova",
+                        "name": "Nova",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "onyx",
+                        "name": "Onyx",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "sage",
+                        "name": "Sage",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "shimmer",
+                        "name": "Shimmer",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                    {
+                        "mode": "verse",
+                        "name": "Verse",
+                        "language": [
+                            "zh-Hans",
+                            "en-US",
+                            "de-DE",
+                            "fr-FR",
+                            "es-ES",
+                            "it-IT",
+                            "th-TH",
+                            "id-ID",
+                            "ja-JP",
+                        ],
+                    },
+                ],
+                ModelPropertyKey.WORD_LIMIT: 120,
+                ModelPropertyKey.AUDIO_TYPE: "mp3",
+                ModelPropertyKey.MAX_WORKERS: 5,
+            },
+            pricing=PriceConfig(
+                input=0.0006,
+                output=0.012,
                 unit=0.001,
                 currency="USD",
             ),

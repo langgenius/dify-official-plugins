@@ -1,0 +1,65 @@
+identity:
+  name: delete_task
+  author: langgenius
+  label:
+    en_US: Delete Task
+    zh_Hans: 删除任务
+    ja_JP: タスクを削除
+  icon: icon.svg
+
+description:
+  human:
+    en_US: Delete a task from Google Tasks
+    zh_Hans: 从 Google Tasks 中删除任务
+    ja_JP: Google タスクからタスクを削除
+  llm: Permanently delete a task from Google Tasks
+
+parameters:
+  - name: task_id
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Task ID
+      zh_Hans: 任务 ID
+      ja_JP: タスク ID
+    human_description:
+      en_US: ID of the task to delete
+      zh_Hans: 要删除的任务 ID
+      ja_JP: 削除するタスクの ID
+    llm_description: The ID of the task to delete (required)
+
+  - name: tasklist_id
+    type: string
+    required: false
+    default: "@default"
+    form: llm
+    label:
+      en_US: Task List ID
+      zh_Hans: 任务列表 ID
+      ja_JP: タスクリスト ID
+    human_description:
+      en_US: ID of the task list containing the task
+      zh_Hans: 包含任务的任务列表 ID
+      ja_JP: タスクを含むタスクリストの ID
+    llm_description: Task list ID containing the task, use @default for the default task list
+
+output_schema:
+  type: object
+  properties:
+    success:
+      type: boolean
+      description: Whether the task was deleted successfully
+    message:
+      type: string
+      description: Success or error message
+    deleted_task_id:
+      type: string
+      description: ID of the deleted task
+    deleted_task_title:
+      type: string
+      description: Title of the deleted task
+
+extra:
+  python:
+    source: tools/delete_task.py

@@ -1,0 +1,57 @@
+identity:
+  name: get_user_info
+  author: langgenius
+  label:
+    en_US: Get User Info
+    zh_Hans: 获取用户信息
+    ja_JP: ユーザー情報を取得
+
+description:
+  human:
+    en_US: Get detailed information about a Hacker News user including their karma, creation date, bio, and recent submissions
+    zh_Hans: 获取 Hacker News 用户的详细信息，包括karma值、创建日期、简介和最近提交的内容
+    ja_JP: Hacker News ユーザーの詳細情報（カルマ、作成日、経歴、最近の投稿）を取得
+  llm: Retrieve comprehensive information about a Hacker News user by username, including account stats, bio, and submission history
+
+parameters:
+  - name: username
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Username
+      zh_Hans: 用户名
+      ja_JP: ユーザー名
+    human_description:
+      en_US: The Hacker News username to look up
+      zh_Hans: 要查找的 Hacker News 用户名
+      ja_JP: 検索する Hacker News ユーザー名
+    llm_description: The username of the Hacker News user to retrieve information for
+
+extra:
+  python:
+    source: tools/get_user_info.py
+
+output_schema:
+  type: object
+  properties:
+    username:
+      type: string
+      description: The user's username
+    created:
+      type: number
+      description: Unix timestamp when the account was created
+    karma:
+      type: number
+      description: The user's karma score
+    about:
+      type: string
+      description: User's bio/about section
+    submitted_count:
+      type: number
+      description: Total number of submissions by the user
+    submitted_items:
+      type: array
+      description: List of recent submission IDs
+      items:
+        type: number

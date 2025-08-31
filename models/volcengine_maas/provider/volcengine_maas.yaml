@@ -112,6 +112,18 @@ model_credential_schema:
       zh_Hans: 基础模型
     options:
     - label:
+        en_US: Doubao-Seed-1.6-vision
+      value: Doubao-Seed-1.6-vision
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
+        en_US: DeepSeek-V3.1
+      value: DeepSeek-V3.1
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
         en_US: Kimi-K2
       value: Kimi-K2
       show_on:
@@ -320,7 +332,7 @@ model_credential_schema:
       show_on:
         - value: speech2text
           variable: __model_type
-      value: doubao-seed-asr      
+      value: doubao-seed-asr
     - label:
         en_US: Doubao-embedding
       show_on:
@@ -408,7 +420,7 @@ models:
     - models/text_embedding/*.yaml
   speech2text:
     predefined:
-      - models/speech2text/*.yaml    
+      - models/speech2text/*.yaml
 provider: volcengine_maas
 supported_model_types:
 - llm

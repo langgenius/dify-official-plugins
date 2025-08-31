@@ -20,20 +20,6 @@ class ModelType(Enum):
 
 
 class ComfyuiImg2Img(Tool):
-    def get_civitai_api_key(self) -> str:
-        civitai_api_key = self.runtime.credentials.get("civitai_api_key")
-        if civitai_api_key is None:
-            raise ToolProviderCredentialValidationError(
-                "Please input civitai_api_key")
-        return civitai_api_key
-
-    def get_hf_key(self) -> str:
-        hf_api_key = self.runtime.credentials.get("hf_api_key")
-        if hf_api_key is None:
-            raise ToolProviderCredentialValidationError(
-                "Please input hf_api_key")
-        return hf_api_key
-
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
@@ -53,10 +39,10 @@ class ComfyuiImg2Img(Tool):
 
         model_raw = tool_parameters.get("model", "")
         if model_raw == "":
-            model = self.model_manager.download_model(
-                "https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive/resolve/main/v1-5-pruned-emaonly-fp16.safetensors",
+            model = self.model_manager.download_hugging_face(
+                "Comfy-Org/stable-diffusion-v1-5-archive",
+                "v1-5-pruned-emaonly-fp16.safetensors",
                 "checkpoints",
-                token=self.get_hf_key(),
             )
         else:
             model = self.model_manager.decode_model_name(
@@ -96,13 +82,13 @@ class ComfyuiImg2Img(Tool):
 
         lora_list = []
         try:
-            for lora_name in tool_parameters.get("lora_names", "").split(","):
-                lora_name = lora_name.lstrip(" ").rstrip(" ")
-                if lora_name != "":
-                    lora_list.append(
-                        self.model_manager.decode_model_name(
-                            lora_name, "loras")
-                    )
+            for lora_info in tool_parameters.get("loras", "").split(","):
+                lora_info = lora_info.lstrip(" ").rstrip(" ")
+                if lora_info == "":
+                    continue
+                lora_list.append(
+                    self.model_manager.decode_lora(lora_info)
+                )
         except Exception as e:
             raise ToolProviderCredentialValidationError(str(e))
         batch_size = int(tool_parameters.get("batch_size", 1))
@@ -149,10 +135,10 @@ class ComfyuiImg2Img(Tool):
                 )
             for img in output_images:
                 yield self.create_blob_message(
-                    blob=img["data"],
+                    blob=img.blob,
                     meta={
-                        "filename": img["filename"],
-                        "mime_type": img["mime_type"],
+                        "filename": img.filename,
+                        "mime_type": img.mime_type,
                     },
                 )
         yield self.create_json_message(workflow.json())

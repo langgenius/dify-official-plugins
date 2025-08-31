@@ -1,0 +1,98 @@
+identity:
+  name: batch_get_tasks
+  author: langgenius
+  label:
+    en_US: Batch Get Tasks
+    zh_Hans: 批量获取任务
+    ja_JP: タスクを一括取得
+  icon: icon.svg
+
+description:
+  human:
+    en_US: Get multiple tasks from Google Tasks by their IDs
+    zh_Hans: 通过 ID 从 Google Tasks 批量获取任务
+    ja_JP: ID で Google タスクから複数のタスクを一括取得
+  llm: Retrieve multiple tasks at once by providing their task IDs
+
+parameters:
+  - name: task_ids
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Task IDs
+      zh_Hans: 任务 ID 列表
+      ja_JP: タスク ID リスト
+    human_description:
+      en_US: List of task IDs to retrieve (comma, semicolon, or newline separated)
+      zh_Hans: 要获取的任务 ID 列表（用逗号、分号或换行符分隔）
+      ja_JP: 取得するタスク ID のリスト（カンマ、セミコロン、または改行で区切る）
+    llm_description: Task IDs to retrieve, separated by comma, semicolon, or newline (required)
+
+  - name: tasklist_id
+    type: string
+    required: false
+    default: "@default"
+    form: llm
+    label:
+      en_US: Task List ID
+      zh_Hans: 任务列表 ID
+      ja_JP: タスクリスト ID
+    human_description:
+      en_US: ID of the task list containing the tasks
+      zh_Hans: 包含任务的任务列表 ID
+      ja_JP: タスクを含むタスクリストの ID
+    llm_description: Task list ID containing the tasks, use @default for the default task list
+
+output_schema:
+  type: object
+  properties:
+    tasks:
+      type: array
+      description: List of retrieved tasks
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Task ID
+          title:
+            type: string
+            description: Task title
+          status:
+            type: string
+            description: Task status
+          notes:
+            type: string
+            description: Task notes
+          due:
+            type: string
+            description: Due date
+          completed:
+            type: string
+            description: Completion date
+    count:
+      type: number
+      description: Number of successfully retrieved tasks
+    requested:
+      type: number
+      description: Number of tasks requested
+    success:
+      type: boolean
+      description: Whether all tasks were retrieved successfully
+    errors:
+      type: array
+      description: List of errors for tasks that couldn't be retrieved
+      items:
+        type: object
+        properties:
+          task_id:
+            type: string
+            description: Task ID that failed
+          error:
+            type: string
+            description: Error message
+
+extra:
+  python:
+    source: tools/batch_get_tasks.py

@@ -1,0 +1,22 @@
+extra:
+  python:
+    source: provider/hackernews.py
+identity:
+  author: langgenius
+  description:
+    en_US: Access Hacker News content including stories, users, and comments
+    ja_JP: ハッカーニュースのコンテンツ（記事、ユーザー、コメント）にアクセス
+    zh_Hans: 访问 Hacker News 内容，包括文章、用户和评论
+  icon: icon.svg
+  label:
+    en_US: Hacker News
+    ja_JP: ハッカーニュース
+    zh_Hans: Hacker News
+  name: hackernews
+  tags:
+  - utilities
+tools:
+- tools/get_user_info.yaml
+- tools/get_story_info.yaml
+- tools/get_top_stories.yaml
+- tools/get_multiple_users.yaml

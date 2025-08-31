@@ -22,6 +22,7 @@
 - qwen-max
 - qwen-max-longcontext
 - qwen-plus-latest
+- qwen-plus-2025-07-28
 - qwen-plus-2025-04-28
 - qwen-plus-0125
 - qwen-plus-0112
@@ -74,6 +75,8 @@
 - qwen-math-turbo-latest
 - qwen-math-turbo-0919
 - qwen-math-turbo
+- qwen-mt-plus
+- qwen-mt-turbo
 - qwen-coder-turbo-latest
 - qwen-coder-turbo-0919
 - qwen-coder-turbo

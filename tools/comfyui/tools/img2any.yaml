@@ -1,0 +1,76 @@
+description:
+  human:
+    en_US:
+      A highly practical solution for robust monocular depth estimation by training on a combination of 1.5M labeled images and 62M+ unlabeled images.
+      https://github.com/kijai/ComfyUI-DepthAnythingV2
+  llm: estimates the depth of a regular RGB image
+extra:
+  python:
+    source: tools/img2any.py
+identity:
+  author: yt-koike
+  label:
+    en_US: Img2Any
+  # TODO: change image_edit to img2any
+  name: image_edit
+
+parameters:
+  - name: images
+    form: llm
+    label:
+      en_US: Input Images
+      zh_Hans: 输入的图片
+      ja_JP: 入力画像
+    llm_description: input image
+    human_description:
+      en_US: Input images
+      zh_Hans: 输入的图片
+      ja_JP: 入力画像
+    required: true
+    type: files
+
+  - name: feature
+    form: form
+    human_description:
+      en_US: Feature
+    label:
+      en_US: Feature
+    required: true
+    type: select
+    options:
+      - label:
+          en_US: Depth Anything S FP16
+        value: depth_anything_v2_vits_fp16.safetensors
+      - label:
+          en_US: Depth Anything S FP32
+        value: depth_anything_v2_vits_fp32.safetensors
+      - label:
+          en_US: Depth Anything B FP16
+        value: depth_anything_v2_vitb_fp16.safetensors
+      - label:
+          en_US: Depth Anything B FP32
+        value: depth_anything_v2_vitb_fp32.safetensors
+      - label:
+          en_US: Depth Anything L FP16
+        value: depth_anything_v2_vitl_fp16.safetensors
+      - label:
+          en_US: Depth Anything L FP32
+        value: depth_anything_v2_vitl_fp32.safetensors
+      - label:
+          en_US: Depth Anything Hypersim
+        value: depth_anything_v2_metric_hypersim_vitl_fp32.safetensors
+      - label:
+          en_US: Depth Anything VKITTI
+        value: depth_anything_v2_metric_vkitti_vitl_fp32.safetensors
+      - label:
+          en_US: Depth Pro FP16
+        value: depth_pro_fp16
+      - label:
+          en_US: Depth Pro FP32
+        value: depth_pro_fp32
+      - label:
+          en_US: FaceSwap
+        value: face_swap
+      - label:
+          en_US: Upscale ESRGAN x4
+        value: upscale_esrgan_x4

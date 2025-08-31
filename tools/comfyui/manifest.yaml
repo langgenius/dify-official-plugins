@@ -31,4 +31,4 @@ resource:
 tags:
   - image
 type: plugin
-version: 0.2.2
+version: 0.2.4

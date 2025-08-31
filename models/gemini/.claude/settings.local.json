@@ -1,0 +1,26 @@
+{
+  "permissions": {
+    "allow": [
+      "mcp__context7__resolve-library-id",
+      "mcp__context7__get-library-docs",
+      "Bash(mkdir:*)",
+      "Bash(find:*)",
+      "Bash(grep:*)",
+      "Bash(uv run pytest:*)",
+      "WebSearch"
+    ],
+    "deny": [
+      "Bash(rm:*)",
+      "Bash(black:*)",
+      "Bash(python:*)",
+      "Bash(ruff check:*)",
+      "Bash(grep:*.env*)",
+      "Bash(grep:*secret*)",
+      "Bash(grep:*token*)",
+      "Bash(grep:*key*)",
+      "Bash(grep:*password*)"
+    ],
+    "ask": [],
+    "defaultMode": "acceptEdits"
+  }
+}
