@@ -747,6 +747,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         # and system_cache_checkpoint is enabled
         if system and cache_config and "system" in cache_config["supported_fields"] and system_cache_checkpoint:
             system.append({"cachePoint": {"type": "default"}})
+            logger.debug(f"[CACHE DEBUG] Added cache point to system messages for model: {model_id}")
 
             # Process other messages
         for message in other_messages:
@@ -762,17 +763,21 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             if len(user_message_indices) > 0:
                 # Get indices for the latest messages (either one or two depending on availability)
                 indices_to_cache = user_message_indices[-min(2, len(user_message_indices)):]
+                logger.debug(f"[CACHE DEBUG] indices_to_cache is {indices_to_cache}")
                 for idx in indices_to_cache:
                     message = prompt_message_dicts[idx]
+                    logger.debug(f"[CACHE DEBUG] current idx is {idx}")
 
                     # Check if content is a list
                     if isinstance(message["content"], list):
                         # Add cache point to the content array
                         message["content"].append({"cachePoint": {"type": "default"}})
+                        logger.debug(f"[CACHE DEBUG] Added cache point to user message content list at index {idx} for model: {model_id}")
                     else:
                         # If content is not a list, convert it to a list with the original content and add cache point
                         original_content = message["content"]
                         message["content"] = [{"text": original_content}, {"cachePoint": {"type": "default"}}]
+                        logger.debug(f"[CACHE DEBUG] Converted user message content to list and added cache point at index {idx} for model: {model_id}")
 
                     prompt_message_dicts[idx] = message
         # Print the final system and messages for debugging
