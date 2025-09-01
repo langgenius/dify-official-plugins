@@ -1,10 +1,56 @@
 import json
 import traceback
+import re
 from typing import Mapping
 from werkzeug import Request, Response
 from dify_plugin import Endpoint
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
+
+
+def convert_markdown_to_mrkdwn(text: str) -> str:
+    """
+    Convert standard markdown to Slack mrkdwn format.
+    """
+    if not text:
+        return text
+    
+    # Convert bold: **text** to *text*
+    text = re.sub(r'\*\*(.*?)\*\*', r'*\1*', text)
+    
+    # Convert italic: *text* to _text_, but avoid conflicts with bold
+    # First protect already converted bold
+    bold_placeholder = "___BOLD_PLACEHOLDER___"
+    bold_parts = re.findall(r'\*(.*?)\*', text)
+    for i, part in enumerate(bold_parts):
+        text = text.replace(f'*{part}*', f'{bold_placeholder}{i}', 1)
+    
+    # Now convert remaining *text* to _text_
+    text = re.sub(r'\*(.*?)\*', r'_\1_', text)
+    
+    # Restore bold parts
+    for i, part in enumerate(bold_parts):
+        text = text.replace(f'{bold_placeholder}{i}', f'*{part}*')
+    
+    # Convert strikethrough: ~~text~~ to ~text~
+    text = re.sub(r'~~(.*?)~~', r'~\1~', text)
+    
+    # Convert inline code: `code` stays the same
+    # Already compatible with Slack
+    
+    # Convert links: [text](url) to <url|text>
+    text = re.sub(r'\[(.*?)\]\((.*?)\)', r'<\2|\1>', text)
+    
+    # Convert code blocks: ```code``` to ```code``` (mostly compatible)
+    # Slack supports code blocks with ```
+    
+    # Convert unordered lists: - item or * item to • item
+    text = re.sub(r'^[\s]*[-*]\s+(.*)$', r'• \1', text, flags=re.MULTILINE)
+    
+    # Convert numbered lists: 1. item to 1. item (keep as is, but ensure proper formatting)
+    text = re.sub(r'^[\s]*(\d+)\.\s+(.*)$', r'\1. \2', text, flags=re.MULTILINE)
+    
+    return text
 
 
 class SlackEndpoint(Endpoint):
@@ -32,8 +78,6 @@ class SlackEndpoint(Endpoint):
                 if message.startswith("<@"):
                     message = message.split("> ", 1)[1] if "> " in message else message
                     channel = event.get("channel", "")
-                    blocks = event.get("blocks", [])
-                    blocks[0]["elements"][0]["elements"] = blocks[0].get("elements")[0].get("elements")[1:]
                     token = settings.get("bot_token")
                     client = WebClient(token=token)
                     try: 
@@ -44,11 +88,23 @@ class SlackEndpoint(Endpoint):
                             response_mode="blocking",
                         )
                         try:
-                            blocks[0]["elements"][0]["elements"][0]["text"] = response.get("answer")
+                            answer = response.get("answer", "")
+                            formatted_answer = convert_markdown_to_mrkdwn(answer)
+                            
+                            # Create proper mrkdwn block structure
+                            blocks = [{
+                                "type": "section",
+                                "text": {
+                                    "type": "mrkdwn",
+                                    "text": formatted_answer
+                                }
+                            }]
+                            
                             result = client.chat_postMessage(
                                 channel=channel,
-                                text=response.get("answer"),
-                                blocks=blocks
+                                text=formatted_answer,  # Fallback text
+                                blocks=blocks,
+                                mrkdwn=True
                             )
                             return Response(
                                 status=200,
