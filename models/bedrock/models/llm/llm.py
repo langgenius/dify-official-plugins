@@ -776,7 +776,6 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                         logger.debug(f"Converted user message content to list and added cache point at index {idx} for model: {model_id}")
 
                     prompt_message_dicts[idx] = message
-        # Print the final system and messages for debugging
 
         return system, prompt_message_dicts
 
