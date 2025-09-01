@@ -331,7 +331,10 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         # Log only cache-related parameters to avoid exposing sensitive configuration
         cache_params = {k: v for k, v in model_parameters.items() if 'cache' in k.lower()}
         logger.info(f"[CACHE PARAMS] Received cache-related parameters: {cache_params}")
-        system_cache_checkpoint = model_parameters.pop("system_cache_checkpoint", False)  # Default to False
+        # The default for 'system_cache_checkpoint' is now set to False (was previously True).
+        # This change ensures that cache checkpoints are only enabled if explicitly set by the user in the UI.
+        # This prevents unintended caching behavior and aligns with updated UI settings where the default is unchecked.
+        system_cache_checkpoint = model_parameters.pop("system_cache_checkpoint", False)
         latest_two_messages_cache_checkpoint = model_parameters.pop("latest_two_messages_cache_checkpoint", False)
         logger.info(f"---cache_checkpoints--- system: {system_cache_checkpoint}, penultimate: {latest_two_messages_cache_checkpoint}")
         model_id = model_info["model"]
@@ -775,7 +778,6 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
                     prompt_message_dicts[idx] = message
         # Print the final system and messages for debugging
-        # print(f"[CACHE DEBUG] System messages: {json.dumps(system, default=str)}")
 
         return system, prompt_message_dicts
 
