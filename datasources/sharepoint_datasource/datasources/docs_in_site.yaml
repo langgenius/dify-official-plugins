@@ -1,0 +1,20 @@
+identity:
+  name: docs_in_site
+  author: langgenius
+  label:
+    en_US: Documents in Site
+    zh_Hans: 按站点获取文档库
+description:
+  en_US: Get files from your Document Library in SharePoint, organized by sites.
+  zh_Hans: 从 SharePoint 中按站点获取您的文档库中的文件。
+
+parameters:
+
+output_schema:
+    type: object
+    properties:
+      file:
+        $ref: "https://dify.ai/schemas/v1/file.json"
+extra:
+  python:
+    source: datasources/docs_in_site.py

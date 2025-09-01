@@ -64,9 +64,8 @@ oauth_schema:
         zh_Hans: SharePoint 子域名
         en_US: SharePoint Subdomain
 datasources:
-  - datasources/sharepoint.yaml
+  - datasources/docs_in_site.yaml
+  - datasources/docs_in_group.yaml
 extra:
   python:
     source: provider/sharepoint.py
-
-

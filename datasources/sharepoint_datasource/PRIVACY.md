@@ -25,6 +25,7 @@ The plugin requires the following permissions to function:
 - `User.Read`: To access basic user information
 - `Sites.Read.All`: To access SharePoint sites
 - `Files.Read.All`: To read files from SharePoint document libraries
+- `Group.Read.All`: To access group information
 
 These permissions are used solely for the intended functionality and no additional data is accessed.
 

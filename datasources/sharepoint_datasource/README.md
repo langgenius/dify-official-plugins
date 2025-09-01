@@ -8,6 +8,13 @@
 
 This plugin integrates with Microsoft SharePoint, supporting operations such as retrieving files and documents from your SharePoint sites. It enables automated access to your SharePoint content in platforms like Dify.
 
+## Datasources
+
+- **Documents in Site**
+  - Get files from your Document Library in SharePoint sites.
+- **Documents in Group**
+  - Get files from your Document Library in SharePoint sites, organized by groups, such as Teams-connected sites.
+
 ## Setup
 
 > **IMPORTANT**: Only Microsoft Enterprise users can use Sharepoint. To use this plugin, you need the approval of your organization administrator.
@@ -36,6 +43,7 @@ This plugin integrates with Microsoft SharePoint, supporting operations such as 
         - `User.Read` (delegated)
         - `Sites.Read.All` (delegated)
         - `Files.Read.All` (delegated)
+        - `Group.Read.All` (delegated, required if you want to access files in groups)
     - Grant admin consent for these permissions
 
 6. Configure the plugin in Dify:
@@ -63,4 +71,4 @@ Retrieve files and documents from your SharePoint sites. The plugin supports:
 
 Please refer to the [Privacy Policy](PRIVACY.md) for information on how your data is handled when using this plugin.
 
-Last updated: July 18, 2025
+Last updated: September 1, 2025
