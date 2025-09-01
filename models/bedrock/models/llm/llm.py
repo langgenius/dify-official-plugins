@@ -568,8 +568,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                                 logger.debug(f"[STREAM CACHE WRITE] {cache_write_tokens} tokens written to cache")
                     else:
                         # Log if usage data is missing
-                        logger.warning(f"[STREAM WARNING] No usage data in metadata")
-                        logger.warning(f"No usage data in metadata chunk")
+                        logger.warning(f"[STREAM WARNING] No usage data found in metadata chunk")
 
                     usage = self._calc_response_usage(model, credentials, input_tokens, output_tokens)
                     yield LLMResultChunk(
