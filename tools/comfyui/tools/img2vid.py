@@ -153,21 +153,18 @@ class ComfyuiImg2Vid(Tool):
 
         for img in output_images:
             if config.output_format == "mp4":
-                img = self.comfyui.convert_webp2mp4(img["data"], config.fps)
+                img = self.comfyui.convert_webp2mp4(img.blob, config.fps)
             yield self.create_blob_message(
-                blob=img["data"],
+                blob=img.blob,
                 meta={
-                    "filename": img["filename"],
-                    "mime_type": img["mime_type"],
+                    "filename": img.filename,
+                    "mime_type": img.mime_type,
                 },
             )
 
     def img2vid_svd(
         self, config: ComfyuiImg2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    ):
         if config.model_name == "":
             # download model
             config.model_name = self.model_manager.download_hugging_face(
@@ -199,10 +196,7 @@ class ComfyuiImg2Vid(Tool):
 
     def img2vid_svd_wan2_1(
         self, config: ComfyuiImg2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    ):
         wan_repo_id = "Comfy-Org/Wan_2.1_ComfyUI_repackaged"
         if config.model_name == "":
             # download model
@@ -254,10 +248,7 @@ class ComfyuiImg2Vid(Tool):
 
     def img2vid_ltxv(
         self, config: ComfyuiImg2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    ):
         if config.frameN < 10:
             raise ToolProviderCredentialValidationError(
                 "FrameN must be 10 or more for LTXV"
@@ -301,10 +292,7 @@ class ComfyuiImg2Vid(Tool):
 
     def img2vid_svd_wan2_2_5B(
         self, config: ComfyuiImg2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    ):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(
             os.path.join(current_dir, "json", "img2vid_wan2_2_5B.json"),
@@ -330,13 +318,10 @@ class ComfyuiImg2Vid(Tool):
                 f"Failed to generate image: {str(e)}"
             )
         return output_images
-    
+
     def img2vid_svd_wan2_2_14B(
         self, config: ComfyuiImg2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    ):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(
             os.path.join(current_dir, "json", "img2vid_wan2_2_14B.json"),

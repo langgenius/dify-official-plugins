@@ -64,11 +64,12 @@ identity:
     - image
 tools:
   - tools/run_workflow.yaml
+  - tools/quickstart.yaml
   - tools/txt2img.yaml
   - tools/txt2vid.yaml
   - tools/img2img.yaml
   - tools/img2vid.yaml
-  - tools/image_edit.yaml
+  - tools/img2any.yaml
   - tools/list_models.yaml
   - tools/list_samplers.yaml
   - tools/image_info.yaml

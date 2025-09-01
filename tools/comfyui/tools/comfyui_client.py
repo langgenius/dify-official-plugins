@@ -1,3 +1,4 @@
+import dataclasses
 from enum import StrEnum
 import json
 import mimetypes
@@ -26,6 +27,14 @@ class FileType(StrEnum):
             if member.value == value:
                 return member
         raise ValueError(f"No matching enum found for value '{value}'")
+
+
+@dataclasses.dataclass
+class ComfyUiFile:
+    blob: bytes
+    filename: str
+    mime_type: str
+    type: str
 
 
 class ComfyUiClient:
@@ -289,7 +298,7 @@ class ComfyUiClient:
         )
         return response.content
 
-    def generate(self, workflow_json: dict) -> list[dict]:
+    def generate(self, workflow_json: dict) -> list[ComfyUiFile]:
         try:
             ws, client_id = self.open_websocket_connection()
         except Exception as e:
@@ -301,20 +310,18 @@ class ComfyUiClient:
             raise Exception("Error occured during image generation:" + str(e))
         ws.close()
         history = self.get_history(prompt_id)
-        images = []
+        images: list[ComfyUiFile] = []
         for output in history["outputs"].values():
             for img in output.get("images", []) + output.get("gifs", []):
                 image_data = self.get_image(
                     img["filename"], img["subfolder"], img["type"]
                 )
-                images.append(
-                    {
-                        "data": image_data,
-                        "filename": img["filename"],
-                        "mime_type": mimetypes.guess_type(img["filename"])[0],
-                        "type": img["type"],
-                    }
-                )
+                generated_img = ComfyUiFile(blob=image_data,
+                                            filename=img["filename"],
+                                            mime_type=mimetypes.guess_type(
+                                                img["filename"])[0],
+                                            type=img["type"])
+                images.append(generated_img)
         return images
 
     def queue_prompt_image(self, client_id, prompt):
@@ -387,7 +394,7 @@ class ComfyUiClient:
                     pass
         return output_images
 
-    def convert_webp2mp4(self, webp_blob, fps):
+    def convert_webp2mp4(self, webp_blob: bytes, fps: int):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "webp2mp4.json")) as file:
             workflow = ComfyUiWorkflow(file.read())

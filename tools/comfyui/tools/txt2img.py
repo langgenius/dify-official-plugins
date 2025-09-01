@@ -88,13 +88,13 @@ class ComfyuiTxt2Img(Tool):
 
         lora_list = []
         try:
-            for lora_name in tool_parameters.get("lora_names", "").split(","):
-                lora_name = lora_name.lstrip(" ").rstrip(" ")
-                if lora_name != "":
-                    lora_list.append(
-                        self.model_manager.decode_model_name(
-                            lora_name, "loras")
-                    )
+            for lora_info in tool_parameters.get("loras", "").split(","):
+                lora_info = lora_info.lstrip(" ").rstrip(" ")
+                if lora_info == "":
+                    continue
+                lora_list.append(
+                    self.model_manager.decode_lora(lora_info)
+                )
         except Exception as e:
             raise ToolProviderCredentialValidationError(str(e))
 
@@ -166,13 +166,13 @@ class ComfyuiTxt2Img(Tool):
             workflow.set_property("5", "class_type", "EmptySD3LatentImage")
 
         # add loras to workflow json
-        for i, lora_name in enumerate(lora_list):
+        for i, lora_info in enumerate(lora_list):
             try:
                 strength = lora_strength_list[i]
             except:
                 strength = 1.0
             workflow.add_lora_node(
-                "3", "6", "7", lora_name, strength, strength)
+                "3", "6", "7", lora_info, strength, strength)
 
         if ecosystem == ModelType.FLUX1.name:
             workflow.add_flux_guidance("3", 3.5)
@@ -186,10 +186,10 @@ class ComfyuiTxt2Img(Tool):
             )
         for img in output_images:
             yield self.create_blob_message(
-                blob=img["data"],
+                blob=img.blob,
                 meta={
-                    "filename": img["filename"],
-                    "mime_type": img["mime_type"],
+                    "filename": img.filename,
+                    "mime_type": img.mime_type,
                 },
             )
         yield self.create_json_message(workflow.json())

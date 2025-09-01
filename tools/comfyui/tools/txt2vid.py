@@ -41,7 +41,8 @@ class ComfyuiTxt2Vid(Tool):
             yield self.create_text_message("Please input base_url")
         self.comfyui = ComfyUiClient(
             base_url,
-            api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"),
+            api_key_comfy_org=self.runtime.credentials.get(
+                "api_key_comfy_org"),
         )
         self.model_manager = ModelManager(
             self.comfyui,
@@ -89,12 +90,14 @@ class ComfyuiTxt2Vid(Tool):
         )
 
         model_type = tool_parameters.get("model_type")
+
+        output_images = []
         if model_type == "wan2_1":
-            output_images = self.txt2vid_svd_wan2_1(config)
+            output_images = self.txt2vid_wan2_1(config)
         elif model_type == "wan2_2_5B":
-            output_images = self.txt2vid_svd_wan2_2_5B(config)
+            output_images = self.txt2vid_wan2_2_5B(config)
         elif model_type == "wan2_2_14B":
-            output_images = self.txt2vid_svd_wan2_2_14B(config)
+            output_images = self.txt2vid_wan2_2_14B(config)
         elif model_type == "ltxv":
             output_images = self.txt2vid_ltxv(config)
         elif model_type == "mochi":
@@ -104,21 +107,18 @@ class ComfyuiTxt2Vid(Tool):
 
         for img in output_images:
             if config.output_format == "mp4":
-                img = self.comfyui.convert_webp2mp4(img["data"], config.fps)
+                img = self.comfyui.convert_webp2mp4(img.blob, config.fps)
             yield self.create_blob_message(
-                blob=img["data"],
+                blob=img.blob,
                 meta={
-                    "filename": img["filename"],
-                    "mime_type": img["mime_type"],
+                    "filename": img.filename,
+                    "mime_type": img.mime_type,
                 },
             )
 
     def txt2vid_mochi(
         self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    ):
         mochi_repo_id = "Comfy-Org/mochi_preview_repackaged"
         if config.model_name == "":
             # download model
@@ -152,7 +152,8 @@ class ComfyuiTxt2Vid(Tool):
             random.randint(0, 100000000),
         )
         workflow.set_property("28", "inputs/fps", config.fps)
-        workflow.set_empty_mochi(None, config.width, config.height, config.frameN)
+        workflow.set_empty_mochi(
+            None, config.width, config.height, config.frameN)
         workflow.set_unet(None, config.model_name)
         workflow.set_clip(None, clip_name)
         workflow.set_vae(None, vae_name)
@@ -169,10 +170,7 @@ class ComfyuiTxt2Vid(Tool):
 
     def txt2vid_hunyuan(
         self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    ):
         hunyuan_repo_id = "Comfy-Org/HunyuanVideo_repackaged"
         if config.model_name == "":
             # download model
@@ -211,7 +209,8 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_dual_clip(None, clip_name1, clip_name2)
         workflow.set_unet(None, config.model_name)
         workflow.set_vae(None, vae_name)
-        workflow.set_empty_hunyuan(None, config.width, config.height, config.frameN)
+        workflow.set_empty_hunyuan(
+            None, config.width, config.height, config.frameN)
         workflow.set_prompt(None, config.prompt)
 
         try:
@@ -222,12 +221,9 @@ class ComfyuiTxt2Vid(Tool):
             )
         return output_images
 
-    def txt2vid_svd_wan2_1(
+    def txt2vid_wan2_1(
         self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    ):
         wan_repo_id = "Comfy-Org/Wan_2.1_ComfyUI_repackaged"
         if config.model_name == "":
             # download model
@@ -258,7 +254,8 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_unet(None, config.model_name)
         workflow.set_clip(None, text_encoder)
         workflow.set_vae(None, vae)
-        workflow.set_empty_hunyuan(None, config.width, config.height, config.frameN)
+        workflow.set_empty_hunyuan(
+            None, config.width, config.height, config.frameN)
 
         try:
             output_images = self.comfyui.generate(workflow.json())
@@ -268,12 +265,9 @@ class ComfyuiTxt2Vid(Tool):
             )
         return output_images
 
-    def txt2vid_svd_wan2_2_14B(
+    def txt2vid_wan2_2_14B(
         self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    ):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(
             os.path.join(current_dir, "json", "txt2vid_wan2_2_14B.json"),
@@ -285,7 +279,8 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_prompt("89", config.prompt)
         workflow.set_prompt("72", config.negative_prompt)
 
-        workflow.set_empty_hunyuan(None, config.width, config.height, config.frameN)
+        workflow.set_empty_hunyuan(
+            None, config.width, config.height, config.frameN)
 
         try:
             output_images = self.comfyui.generate(workflow.json())
@@ -295,12 +290,9 @@ class ComfyuiTxt2Vid(Tool):
             )
         return output_images
 
-    def txt2vid_svd_wan2_2_5B(
+    def txt2vid_wan2_2_5B(
         self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    ):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(
             os.path.join(current_dir, "json", "txt2vid_wan2_2_5B.json"),
@@ -312,7 +304,8 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_prompt("6", config.prompt)
         workflow.set_prompt("7", config.negative_prompt)
 
-        wan2_2 = workflow.identify_node_by_class_type("Wan22ImageToVideoLatent")
+        wan2_2 = workflow.identify_node_by_class_type(
+            "Wan22ImageToVideoLatent")
         workflow.set_property(wan2_2, "inputs/width", config.width)
         workflow.set_property(wan2_2, "inputs/height", config.height)
         workflow.set_property(wan2_2, "inputs/length", config.frameN)
@@ -327,10 +320,7 @@ class ComfyuiTxt2Vid(Tool):
 
     def txt2vid_ltxv(
         self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    ):
         ltxv_repo_id = "Lightricks/LTX-Video"
         if config.model_name == "":
             # download model
@@ -355,8 +345,10 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_prompt("6", config.prompt)
         workflow.set_prompt("7", config.negative_prompt)
         workflow.set_property("38", "inputs/clip_name", text_encoder)
-        workflow.set_property("72", "inputs/noise_seed", random.randint(0, 100000000))
-        ltxv_node_id = workflow.identify_node_by_class_type("EmptyLTXVLatentVideo")
+        workflow.set_property("72", "inputs/noise_seed",
+                              random.randint(0, 100000000))
+        ltxv_node_id = workflow.identify_node_by_class_type(
+            "EmptyLTXVLatentVideo")
         workflow.set_property(ltxv_node_id, "inputs/width", config.width)
         workflow.set_property(ltxv_node_id, "inputs/height", config.height)
         workflow.set_property(ltxv_node_id, "inputs/length", config.frameN)

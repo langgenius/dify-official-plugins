@@ -1,0 +1,146 @@
+description:
+  human:
+    en_US: Quick Start
+    zh_Hans: 快速入门
+    ja_JP: クイックスタート
+  llm: Run a basic process of ComfyUI.
+extra:
+  python:
+    source: tools/quickstart.py
+identity:
+  author: yt-koike
+  label:
+    en_US: Quick Start
+    zh_Hans: 快速入门
+    ja_JP: クイックスタート
+  name: quickstart
+
+parameters:
+  - name: images
+    form: llm
+    label:
+      en_US: Input Images
+      zh_Hans: 输入的图片
+      ja_JP: 入力画像
+    llm_description: input image
+    human_description:
+      en_US: Input images
+      zh_Hans: 输入的图片
+      ja_JP: 入力画像
+    required: false
+    type: files
+
+  - name: feature
+    form: form
+    human_description:
+      en_US: Feature
+    label:
+      en_US: Feature
+    required: true
+    type: select
+    options:
+      - label:
+          en_US: Qwen Image
+        value: qwen_image
+      - label:
+          en_US: Qwen Image Edit
+        value: qwen_image_edit
+      - label:
+          en_US: Flux Dev fp8
+        value: flux_dev_fp8
+      - label:
+          en_US: Flux Schnell fp8
+        value: flux_schnell_fp8
+      - label:
+          en_US: Pony Diffusion V6 XL
+        value: pony_v6_xl
+      - label:
+          en_US: majicMIX realistic
+        value: majicmix_realistic
+      - label:
+          en_US: WAI-NSFW-illustrious-SDXL
+        value: wai_illustrious
+
+  - name: prompt
+    form: llm
+    human_description:
+      en_US:
+        Image prompt, you can check the official documentation of Stable Diffusion
+        or FLUX
+      pt_BR:
+        Image prompt, you can check the official documentation of Stable Diffusion
+        or FLUX
+      zh_Hans: 图像提示词，您可以查看 Stable Diffusion 或者 FLUX 的官方文档
+      ja_JP: プロンプト
+    label:
+      en_US: Prompt
+      pt_BR: Prompt
+      zh_Hans: 提示词
+      ja_JP: プロンプト
+    llm_description:
+      Image prompt of Stable Diffusion, you should describe the image
+      you want to generate as a list of words as possible as detailed, the prompt must
+      be written in English.
+    required: false
+    type: string
+
+  - name: negative_prompt
+    default: bad art, ugly, deformed, watermark, duplicated, discontinuous lines
+    form: llm
+    human_description:
+      en_US: Negative prompt
+      pt_BR: Negative prompt
+      zh_Hans: Negative prompt
+      ja_JP: ネガティブプロンプト
+    label:
+      en_US: Negative prompt
+      pt_BR: Negative prompt
+      zh_Hans: Negative prompt
+      ja_JP: ネガティブプロンプト
+    required: false
+    type: string
+
+  - name: width
+    form: llm
+    human_description:
+      en_US: Width
+      pt_BR: Width
+      zh_Hans: Width
+      ja_JP: 画像幅
+    label:
+      en_US: Width
+      pt_BR: Width
+      zh_Hans: Width
+      ja_JP: 画像幅
+    required: false
+    default: 1024
+    type: number
+
+  - name: height
+    form: llm
+    human_description:
+      en_US: Height
+      pt_BR: Height
+      zh_Hans: Height
+      ja_JP: 画像高さ
+    label:
+      en_US: Height
+      pt_BR: Height
+      zh_Hans: Height
+      ja_JP: 画像高さ
+    required: false
+    default: 1024
+    type: number
+
+  - name: loras
+    form: llm
+    human_description:
+      en_US: LORAs, put comma between each LORA name if multiple. If you input a Civitai AIR like "civitai:000000@000000", the model will be downloaded. You can set the strength by putting ":0.8" on the end of each LORA.
+      zh_Hans: LORA, 如果有多个 LORA 名称，请在名称之间加上逗号。输入 Civitai AIR，如 civitai:000000@000000，即可从 civitai 下载。通过在末尾添加如“:0.8”等标记，也可设置强度参数。
+      ja_JP: LORA, 複数ある場合はコンマで区切ってください. civitai:000000@000000 のように Civitai AIR 入力すると civitai からダウンロードします．":0.8" などと末尾に付けることで強度設定もできます．
+    label:
+      en_US: LORAs
+      zh_Hans: LORA
+      ja_JP: LORA
+    required: false
+    type: string

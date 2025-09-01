@@ -82,13 +82,13 @@ class ComfyuiImg2Img(Tool):
 
         lora_list = []
         try:
-            for lora_name in tool_parameters.get("lora_names", "").split(","):
-                lora_name = lora_name.lstrip(" ").rstrip(" ")
-                if lora_name != "":
-                    lora_list.append(
-                        self.model_manager.decode_model_name(
-                            lora_name, "loras")
-                    )
+            for lora_info in tool_parameters.get("loras", "").split(","):
+                lora_info = lora_info.lstrip(" ").rstrip(" ")
+                if lora_info == "":
+                    continue
+                lora_list.append(
+                    self.model_manager.decode_lora(lora_info)
+                )
         except Exception as e:
             raise ToolProviderCredentialValidationError(str(e))
         batch_size = int(tool_parameters.get("batch_size", 1))
@@ -135,10 +135,10 @@ class ComfyuiImg2Img(Tool):
                 )
             for img in output_images:
                 yield self.create_blob_message(
-                    blob=img["data"],
+                    blob=img.blob,
                     meta={
-                        "filename": img["filename"],
-                        "mime_type": img["mime_type"],
+                        "filename": img.filename,
+                        "mime_type": img.mime_type,
                     },
                 )
         yield self.create_json_message(workflow.json())
