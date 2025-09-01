@@ -70,3 +70,5 @@ Retrieve files and documents from your SharePoint sites. The plugin supports:
 ## PRIVACY
 
 Please refer to the [Privacy Policy](PRIVACY.md) for information on how your data is handled when using this plugin.
+
+Last updated: September 1, 2025
