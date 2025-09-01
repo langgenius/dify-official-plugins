@@ -1,56 +1,13 @@
 import json
 import traceback
-import re
 from typing import Mapping
 from werkzeug import Request, Response
 from dify_plugin import Endpoint
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
+from markdown_to_mrkdwn import SlackMarkdownConverter
 
-
-def convert_markdown_to_mrkdwn(text: str) -> str:
-    """
-    Convert standard markdown to Slack mrkdwn format.
-    """
-    if not text:
-        return text
-    
-    # Convert bold: **text** to *text*
-    text = re.sub(r'\*\*(.*?)\*\*', r'*\1*', text)
-    
-    # Convert italic: *text* to _text_, but avoid conflicts with bold
-    # First protect already converted bold
-    bold_placeholder = "___BOLD_PLACEHOLDER___"
-    bold_parts = re.findall(r'\*(.*?)\*', text)
-    for i, part in enumerate(bold_parts):
-        text = text.replace(f'*{part}*', f'{bold_placeholder}{i}', 1)
-    
-    # Now convert remaining *text* to _text_
-    text = re.sub(r'\*(.*?)\*', r'_\1_', text)
-    
-    # Restore bold parts
-    for i, part in enumerate(bold_parts):
-        text = text.replace(f'{bold_placeholder}{i}', f'*{part}*')
-    
-    # Convert strikethrough: ~~text~~ to ~text~
-    text = re.sub(r'~~(.*?)~~', r'~\1~', text)
-    
-    # Convert inline code: `code` stays the same
-    # Already compatible with Slack
-    
-    # Convert links: [text](url) to <url|text>
-    text = re.sub(r'\[(.*?)\]\((.*?)\)', r'<\2|\1>', text)
-    
-    # Convert code blocks: ```code``` to ```code``` (mostly compatible)
-    # Slack supports code blocks with ```
-    
-    # Convert unordered lists: - item or * item to • item
-    text = re.sub(r'^[\s]*[-*]\s+(.*)$', r'• \1', text, flags=re.MULTILINE)
-    
-    # Convert numbered lists: 1. item to 1. item (keep as is, but ensure proper formatting)
-    text = re.sub(r'^[\s]*(\d+)\.\s+(.*)$', r'\1. \2', text, flags=re.MULTILINE)
-    
-    return text
+converter = SlackMarkdownConverter()
 
 
 class SlackEndpoint(Endpoint):
@@ -89,7 +46,7 @@ class SlackEndpoint(Endpoint):
                         )
                         try:
                             answer = response.get("answer", "")
-                            formatted_answer = convert_markdown_to_mrkdwn(answer)
+                            formatted_answer = converter.convert(answer)
                             
                             # Create proper mrkdwn block structure
                             blocks = [{
