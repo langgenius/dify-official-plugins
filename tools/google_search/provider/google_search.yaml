@@ -1,0 +1,52 @@
+identity:
+  author: Dify
+  name: google_search
+  label:
+    en_US: GoogleSearch
+    zh_Hans: GoogleSearch
+    pt_BR: GoogleSearch
+  description:
+    en_US: GoogleSearch
+    zh_Hans: GoogleSearch
+    pt_BR: GoogleSearch
+  icon: icon.svg
+  tags:
+    - search
+credentials_for_provider:
+  key:
+    type: secret-input
+    required: true
+    label:
+      en_US: Google Search key
+      zh_Hans: Google Search key
+      pt_BR: Google Search key
+    placeholder:
+      en_US: Please input your Google Search key
+      zh_Hans: 请输入你的 Google Search key
+      pt_BR: Please input your Google Search key
+    help:
+      en_US: Get your Google Search key from GoogleSearch
+      zh_Hans: 从 GoogleSearch 获取您的 Google Search key
+      pt_BR: Get your Google Search key from GoogleSearch
+    url: https://programmablesearchengine.google.com/controlpanel/all
+  cx:
+    type: secret-input
+    required: true
+    label:
+      en_US: Google Search cx
+      zh_Hans: cx(搜索引擎 ID)
+      pt_BR: Google Search cx
+    placeholder:
+      en_US: Please input your Google Search cx
+      zh_Hans: 请输入你的 Google Search cx
+      pt_BR: Please input your Google Search cx
+    help:
+      en_US: Get your Google Search cx from GoogleSearch
+      zh_Hans: 从 GoogleSearch 获取您的 Google Search cx
+      pt_BR: Get your Google Search cx from GoogleSearch
+    url: https://programmablesearchengine.google.com/controlpanel/all
+tools:
+  - tools/google_search.yaml
+extra:
+  python:
+    source: provider/google_search.py
