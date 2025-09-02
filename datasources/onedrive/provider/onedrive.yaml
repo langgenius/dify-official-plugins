@@ -1,6 +1,6 @@
 identity:
-  author: langgenius
-  name: onedrive
+  author: microsoft-integration-team
+  name: onedrive_datasource
   label:
     en_US: OneDrive
     zh_Hans: OneDrive

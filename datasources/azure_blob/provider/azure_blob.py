@@ -30,29 +30,29 @@ class AzureBlobDatasourceProvider(DatasourceProvider):
         if auth_method == "account_key":
             account_key = credentials.get("account_key")
             if not account_key or account_key.strip() == "":
-                raise ValueError("使用账户密钥认证时，请填写账户密钥字段")
+                raise ValueError("Account key is required when using account key authentication")
             self._validate_account_key_access(account_name, account_key, endpoint_suffix)
             
         elif auth_method == "sas_token":
             sas_token = credentials.get("sas_token")
             if not sas_token or sas_token.strip() == "":
-                raise ValueError("使用 SAS 令牌认证时，请填写 SAS 令牌字段")
+                raise ValueError("SAS token is required when using SAS token authentication")
             self._validate_sas_token_access(account_name, sas_token, endpoint_suffix)
             
         elif auth_method == "connection_string":
             connection_string = credentials.get("connection_string")
             if not connection_string or connection_string.strip() == "":
-                raise ValueError("使用连接字符串认证时，请填写连接字符串字段")
+                raise ValueError("Connection string is required when using connection string authentication")
             self._validate_connection_string_access(connection_string)
             
         elif auth_method == "oauth":
             access_token = credentials.get("access_token")
             if not access_token or access_token.strip() == "":
-                raise ValueError("使用 OAuth 认证时，请先完成 OAuth 授权")
+                raise ValueError("Access token is required. Please complete OAuth authorization first")
             self._validate_oauth_access(credentials)
             
         else:
-            raise ValueError(f"不支持的认证方式: {auth_method}")
+            raise ValueError(f"Unsupported authentication method: {auth_method}")
 
     def _is_valid_account_name(self, account_name: str) -> bool:
         """验证 Azure 存储账户名称格式"""
@@ -188,12 +188,15 @@ class AzureBlobDatasourceProvider(DatasourceProvider):
             from datetime import datetime, timezone
             
             class SimpleTokenCredential:
-                def __init__(self, token):
+                def __init__(self, token, expires_in=3600):
                     self.token = token
+                    self.expires_at = int(datetime.now(timezone.utc).timestamp()) + expires_in
                 
                 def get_token(self, *scopes, **kwargs):
-                    # 返回一个 token（实际使用中应该处理过期）
-                    return AccessToken(self.token, int(datetime.now(timezone.utc).timestamp()) + 3600)
+                    current_time = int(datetime.now(timezone.utc).timestamp())
+                    if current_time >= self.expires_at - 300:  # 提前5分钟刷新
+                        raise ClientAuthenticationError("Access token has expired, refresh required")
+                    return AccessToken(self.token, self.expires_at)
             
             credential = SimpleTokenCredential(access_token)
             return BlobServiceClient(account_url=account_url, credential=credential)
@@ -228,7 +231,7 @@ class AzureBlobDatasourceProvider(DatasourceProvider):
             access_token = credentials.get("access_token")
             
             if not account_name:
-                raise ValueError("OAuth 认证时需要提供存储账户名称")
+                raise ValueError("Storage account name is required for OAuth authentication")
             
             # 使用 access token 创建 BlobServiceClient
             account_url = f"https://{account_name}.blob.{endpoint_suffix}"
@@ -240,12 +243,15 @@ class AzureBlobDatasourceProvider(DatasourceProvider):
             
             # 创建一个简单的 token credential
             class SimpleTokenCredential:
-                def __init__(self, token):
+                def __init__(self, token, expires_in=3600):
                     self.token = token
+                    self.expires_at = int(datetime.now(timezone.utc).timestamp()) + expires_in
                 
                 def get_token(self, *scopes, **kwargs):
-                    # 返回一个永不过期的 token（实际使用中应该处理过期）
-                    return AccessToken(self.token, int(datetime.now(timezone.utc).timestamp()) + 3600)
+                    current_time = int(datetime.now(timezone.utc).timestamp())
+                    if current_time >= self.expires_at - 300:  # 提前5分钟刷新
+                        raise ClientAuthenticationError("Access token has expired, refresh required")
+                    return AccessToken(self.token, self.expires_at)
             
             credential = SimpleTokenCredential(access_token)
             blob_service_client = BlobServiceClient(account_url=account_url, credential=credential)
@@ -259,14 +265,14 @@ class AzureBlobDatasourceProvider(DatasourceProvider):
                 break  # 只获取一个用于验证
                 
         except ClientAuthenticationError as e:
-            raise ValueError(f"OAuth 令牌无效或权限不足: {str(e)}")
+            raise ValueError(f"Invalid OAuth token or insufficient permissions: {str(e)}")
         except AzureError as e:
             if "AuthenticationFailed" in str(e):
-                raise ValueError("OAuth 认证失败。请检查访问令牌的有效性")
+                raise ValueError("OAuth authentication failed. Please check access token validity")
             else:
-                raise ValueError(f"OAuth 验证错误: {str(e)}")
+                raise ValueError(f"OAuth validation error: {str(e)}")
         except Exception as e:
-            raise ValueError(f"验证 OAuth 访问时出错: {str(e)}")
+            raise ValueError(f"Error validating OAuth access: {str(e)}")
 
     def _oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
         """获取 OAuth 授权 URL"""
@@ -275,7 +281,7 @@ class AzureBlobDatasourceProvider(DatasourceProvider):
         cloud_environment = system_credentials.get("cloud_environment", "global")
         
         if not client_id or not tenant_id:
-            raise ValueError("OAuth 配置不完整：缺少 client_id 或 tenant_id")
+            raise ValueError("Incomplete OAuth configuration: missing client_id or tenant_id")
         
         # 根据云环境获取登录端点和 scope
         login_endpoint, storage_scope = self._get_cloud_endpoints(cloud_environment)
@@ -299,7 +305,7 @@ class AzureBlobDatasourceProvider(DatasourceProvider):
         """获取 OAuth 凭证"""
         code = request.args.get("code")
         if not code:
-            raise ValueError("授权码不存在")
+            raise ValueError("Authorization code not found")
         
         client_id = system_credentials.get("client_id")
         client_secret = system_credentials.get("client_secret")
@@ -307,7 +313,7 @@ class AzureBlobDatasourceProvider(DatasourceProvider):
         cloud_environment = system_credentials.get("cloud_environment", "global")
         
         if not all([client_id, client_secret, tenant_id]):
-            raise ValueError("OAuth 配置不完整")
+            raise ValueError("Incomplete OAuth configuration")
         
         # 根据云环境获取登录端点
         login_endpoint, storage_scope = self._get_cloud_endpoints(cloud_environment)
@@ -334,14 +340,14 @@ class AzureBlobDatasourceProvider(DatasourceProvider):
             
             if response.status_code != 200:
                 error_detail = response.text
-                raise ValueError(f"获取访问令牌失败: {error_detail}")
+                raise ValueError(f"Failed to obtain access token: {error_detail}")
             
             token_json = response.json()
             access_token = token_json.get("access_token")
             refresh_token = token_json.get("refresh_token")
             
             if not access_token:
-                raise ValueError("未能获取访问令牌")
+                raise ValueError("Failed to obtain access token")
             
             # 注意：这里不返回 client_secret
             return DatasourceOAuthCredentials(
@@ -354,9 +360,9 @@ class AzureBlobDatasourceProvider(DatasourceProvider):
             )
             
         except requests.RequestException as e:
-            raise ValueError(f"请求访问令牌时出错: {str(e)}")
+            raise ValueError(f"Error requesting access token: {str(e)}")
         except Exception as e:
-            raise ValueError(f"OAuth 认证过程出错: {str(e)}")
+            raise ValueError(f"Error in OAuth authentication process: {str(e)}")
 
     def _refresh_access_token(self, credentials: Mapping[str, Any]) -> Mapping[str, Any]:
         """刷新访问令牌"""
@@ -367,10 +373,10 @@ class AzureBlobDatasourceProvider(DatasourceProvider):
         # 注意：这里需要从系统配置中获取 client_secret，而不是从 credentials 中
         # 在实际实现中，可能需要通过其他方式获取 client_secret
         if not refresh_token or not client_id or not tenant_id:
-            raise ValueError("刷新令牌所需的凭证不完整")
+            raise ValueError("Incomplete credentials required for token refresh")
         
         # 这里需要获取 client_secret，但不能从用户凭证中获取
-        raise ValueError("访问令牌已过期，请重新进行 OAuth 授权")
+        raise ValueError("Access token has expired, please re-authorize OAuth")
 
 
     def _oauth_refresh_credentials(self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]) -> DatasourceOAuthCredentials:
@@ -382,10 +388,10 @@ class AzureBlobDatasourceProvider(DatasourceProvider):
         cloud_environment = system_credentials.get("cloud_environment", "global")
         
         if not refresh_token:
-            raise DatasourceOAuthError("没有刷新令牌，请重新进行 OAuth 授权")
+            raise DatasourceOAuthError("No refresh token available, please re-authorize OAuth")
         
         if not all([client_id, client_secret, tenant_id]):
-            raise DatasourceOAuthError("OAuth 刷新配置不完整")
+            raise DatasourceOAuthError("Incomplete OAuth refresh configuration")
         
         # 根据云环境获取登录端点
         login_endpoint, storage_scope = self._get_cloud_endpoints(cloud_environment)
@@ -411,14 +417,14 @@ class AzureBlobDatasourceProvider(DatasourceProvider):
             
             if response.status_code != 200:
                 error_detail = response.text
-                raise DatasourceOAuthError(f"刷新访问令牌失败: {error_detail}")
+                raise DatasourceOAuthError(f"Failed to refresh access token: {error_detail}")
             
             token_json = response.json()
             new_access_token = token_json.get("access_token")
             new_refresh_token = token_json.get("refresh_token", refresh_token)  # 使用新的或保留原有的
             
             if not new_access_token:
-                raise DatasourceOAuthError("未能获取新的访问令牌")
+                raise DatasourceOAuthError("Failed to obtain new access token")
             
 
             return DatasourceOAuthCredentials(
@@ -431,9 +437,9 @@ class AzureBlobDatasourceProvider(DatasourceProvider):
             )
             
         except requests.RequestException as e:
-            raise DatasourceOAuthError(f"刷新令牌请求失败: {str(e)}")
+            raise DatasourceOAuthError(f"Token refresh request failed: {str(e)}")
         except Exception as e:
-            raise DatasourceOAuthError(f"OAuth 刷新过程出错: {str(e)}")
+            raise DatasourceOAuthError(f"Error in OAuth refresh process: {str(e)}")
 
     def _get_cloud_endpoints(self, cloud_environment: str) -> tuple[str, str]:
         """获取不同云环境的端点和 scope"""

@@ -69,12 +69,16 @@ class AzureBlobDataSource(OnlineDriveDatasource):
                 from datetime import datetime, timezone
                 
                 class SimpleTokenCredential:
-                    def __init__(self, token):
+                    def __init__(self, token, expires_in=3600):
                         self.token = token
+                        self.expires_at = int(datetime.now(timezone.utc).timestamp()) + expires_in
                     
                     def get_token(self, *scopes, **kwargs):
-                        # 返回一个 token（实际使用中应该处理过期）
-                        return AccessToken(self.token, int(datetime.now(timezone.utc).timestamp()) + 3600)
+                        current_time = int(datetime.now(timezone.utc).timestamp())
+                        if current_time >= self.expires_at - 300:  # 提前5分钟刷新
+                            from azure.core.exceptions import ClientAuthenticationError
+                            raise ClientAuthenticationError("Access token has expired, refresh required")
+                        return AccessToken(self.token, self.expires_at)
                 
                 credential = SimpleTokenCredential(access_token)
                 self._blob_service_client = BlobServiceClient(

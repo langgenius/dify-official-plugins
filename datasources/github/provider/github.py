@@ -94,8 +94,6 @@ class GitHubDatasourceProvider(DatasourceProvider):
             avatar_url=user.get("avatar_url"),
             credentials={
                 "access_token": access_token,
-                "client_id": system_credentials["client_id"],
-                "client_secret": system_credentials["client_secret"],
                 "user_login": user.get("login"),
             },
         )

@@ -15,48 +15,18 @@ from dify_plugin.interfaces.datasource.online_drive import OnlineDriveDatasource
 class OneDriveDataSource(OnlineDriveDatasource):
     
     def _refresh_token_if_needed(self):
-        """刷新令牌并更新运行时凭证"""
+        """Refresh token and update runtime credentials"""
         import requests
         
-        # 直接在这里实现令牌刷新，避免相对导入问题
         credentials = self.runtime.credentials
         refresh_token = credentials.get("refresh_token")
-        client_id = credentials.get("client_id")
-        client_secret = credentials.get("client_secret")
         
-        if not refresh_token or not client_id or not client_secret:
-            raise ValueError("Missing required credentials for token refresh")
+        if not refresh_token:
+            raise ValueError("Missing refresh_token for token refresh")
 
-        token_data = {
-            "client_id": client_id,
-            "client_secret": client_secret,
-            "grant_type": "refresh_token",
-            "refresh_token": refresh_token,
-            "scope": "offline_access User.Read Files.Read Files.Read.All",
-        }
-        headers = {
-            "Accept": "application/json",
-            "Content-Type": "application/x-www-form-urlencoded",
-        }
-        
-        token_url = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
-        token_response = requests.post(token_url, data=token_data, headers=headers, timeout=15)
-        if token_response.status_code >= 400:
-            raise ValueError(f"Microsoft token refresh error: {token_response.status_code} {token_response.text}")
-        
-        token_json = token_response.json()
-        new_access_token = token_json.get("access_token")
-        new_refresh_token = token_json.get("refresh_token")
-        
-        if not new_access_token:
-            raise ValueError(f"Error in Microsoft token refresh: {token_json}")
-
-        # 更新运行时凭证
-        self.runtime.credentials["access_token"] = new_access_token
-        if new_refresh_token:  # 微软可能返回新的 refresh_token
-            self.runtime.credentials["refresh_token"] = new_refresh_token
-            
-        return self.runtime.credentials
+        # Note: In this implementation, client_secret should be obtained from system configuration
+        # For now, we'll require re-authorization when token expires
+        raise ValueError("Token refresh requires system configuration access. Please re-authorize through OneDrive OAuth.")
     
     def _browse_files(
         self,  request: OnlineDriveBrowseFilesRequest

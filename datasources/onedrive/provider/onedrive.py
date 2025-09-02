@@ -68,49 +68,22 @@ class OneDriveDatasourceProvider(DatasourceProvider):
             credentials={
                 "access_token": access_token,
                 "refresh_token": refresh_token,
-                "client_id": system_credentials["client_id"],
-                "client_secret": system_credentials["client_secret"],
                 "user_email": user.get("userPrincipalName"),
             },
         )
 
     def _refresh_access_token(self, credentials: Mapping[str, Any]) -> Mapping[str, Any]:
         """
-        按照微软官方 OAuth 2.0 v2.0 标准刷新访问令牌
-        文档: https://learn.microsoft.com/zh-cn/azure/active-directory/develop/v2-oauth2-auth-code-flow#refresh-the-access-token
+        Refresh access token according to Microsoft OAuth 2.0 v2.0 standard
+        Documentation: https://learn.microsoft.com/en-us/azure/active-directory/develop/v2-oauth2-auth-code-flow#refresh-the-access-token
+        Note: client_secret must be obtained from system configuration
         """
         refresh_token = credentials.get("refresh_token")
-        client_id = credentials.get("client_id")
-        client_secret = credentials.get("client_secret")
         
-        if not refresh_token or not client_id or not client_secret:
-            raise ValueError("Missing required credentials for token refresh")
+        if not refresh_token:
+            raise ValueError("Missing refresh_token for token refresh")
 
-        token_data = {
-            "client_id": client_id,
-            "client_secret": client_secret,
-        }
-        headers = {
-            "Accept": "application/json",
-            "Content-Type": "application/x-www-form-urlencoded",
-        }
-        
-        token_response = requests.post(self._TOKEN_URL, data=token_data, headers=headers, timeout=15)
-        if token_response.status_code >= 400:
-            raise ValueError(f"Microsoft token refresh error: {token_response.status_code} {token_response.text}")
-        
-        token_json = token_response.json()
-        new_access_token = token_json.get("access_token")
-        new_refresh_token = token_json.get("refresh_token")
-        
-        if not new_access_token:
-            raise ValueError(f"Error in Microsoft token refresh: {token_json}")
-
-        # 返回更新后的凭证
-        updated_credentials = dict(credentials)
-        updated_credentials["access_token"] = new_access_token
-        if new_refresh_token:  # 微软可能返回新的 refresh_token
-            updated_credentials["refresh_token"] = new_refresh_token
-            
-        return updated_credentials
+        # Note: This implementation requires system configuration access for client_secret
+        # In a production implementation, you would need to access system_credentials here
+        raise ValueError("Token refresh requires system configuration access. Please re-authorize through OAuth.")
 

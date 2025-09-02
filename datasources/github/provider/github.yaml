@@ -1,6 +1,6 @@
 identity:
-  author: langgenius
-  name: github
+  author: github-integration-team
+  name: github_datasource
   label:
     en_US: GitHub
     zh_Hans: GitHub

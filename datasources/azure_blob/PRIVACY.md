@@ -1,158 +1,158 @@
-# Azure Blob Storage 数据源插件隐私政策
+# Azure Blob Storage Datasource Plugin Privacy Policy
 
-## 数据收集和使用
+## Data Collection and Usage
 
-### 收集的信息
-本插件需要收集以下信息来提供服务：
+### Information Collected
+This plugin requires the following information to provide services:
 
-#### 必需的认证信息
-- **存储账户名称**: 用于标识您的 Azure 存储账户
-- **认证凭证**（以下之一）：
-  - 账户访问密钥
-  - SAS（共享访问签名）令牌
-  - 连接字符串
-- **端点配置**: 云环境端点后缀
+#### Required Authentication Information
+- **Storage Account Name**: Used to identify your Azure storage account
+- **Authentication Credentials** (one of the following):
+  - Account access key
+  - SAS (Shared Access Signature) token
+  - Connection string
+- **Endpoint Configuration**: Cloud environment endpoint suffix
 
-#### 可选配置信息
-- 默认容器名称
-- 自定义端点设置
+#### Optional Configuration Information
+- Default container name
+- Custom endpoint settings
 
-### 信息使用目的
-收集的信息仅用于：
-- 建立与您的 Azure Blob Storage 的安全连接
-- 验证访问权限
-- 浏览和获取存储的文件内容
-- 提供数据源服务功能
+### Purpose of Information Usage
+The collected information is only used for:
+- Establishing secure connections to your Azure Blob Storage
+- Verifying access permissions
+- Browsing and retrieving stored file content
+- Providing datasource service functionality
 
-## 数据存储和安全
+## Data Storage and Security
 
-### 本地存储
-- 认证凭证安全加密存储在 Dify 平台中
-- 不会存储您的实际文件内容
-- 仅缓存必要的元数据信息
+### Local Storage
+- Authentication credentials are securely encrypted and stored in the Dify platform
+- Your actual file content is not stored
+- Only necessary metadata information is cached
 
-### 传输安全
-- 所有与 Azure 的通信使用 HTTPS 加密
-- 支持 Azure 的企业级安全标准
-- 遵循 Azure 数据传输最佳实践
+### Transmission Security
+- All communications with Azure use HTTPS encryption
+- Supports Azure enterprise-grade security standards
+- Follows Azure data transmission best practices
 
-### 访问控制
-- 仅授权的 Dify 用户可以访问配置的数据源
-- 支持基于角色的访问控制
-- 遵循最小权限原则
+### Access Control
+- Only authorized Dify users can access configured datasources
+- Supports role-based access control
+- Follows the principle of least privilege
 
-## 数据访问范围
+## Data Access Scope
 
-### 我们访问的内容
-- 存储容器列表
-- Blob 文件列表和元数据
-- 文件内容（仅在明确请求时）
-- 基本存储账户信息
+### Content We Access
+- Storage container lists
+- Blob file lists and metadata
+- File content (only when explicitly requested)
+- Basic storage account information
 
-### 我们不会访问的内容
-- 未授权的容器或文件
-- 超出配置范围的存储账户
-- 任何个人身份信息（除非存储在文件中）
+### Content We Do Not Access
+- Unauthorized containers or files
+- Storage accounts outside the configured scope
+- Any personal identification information (unless stored in files)
 
-## 第三方服务
+## Third-Party Services
 
 ### Microsoft Azure
-- 本插件直接与 Microsoft Azure Blob Storage 服务通信
-- 遵循 Microsoft Azure 的服务条款和隐私政策
-- Azure 的隐私政策：https://privacy.microsoft.com/privacystatement
+- This plugin communicates directly with Microsoft Azure Blob Storage service
+- Follows Microsoft Azure's terms of service and privacy policy
+- Azure privacy policy: https://privacy.microsoft.com/privacystatement
 
-### 数据位置
-- 数据保持在您选择的 Azure 区域内
-- 不会将数据传输到其他地理位置
-- 遵循 Azure 的数据驻留政策
+### Data Location
+- Data remains within your selected Azure region
+- No data transfer to other geographic locations
+- Follows Azure data residency policies
 
-## 用户权利
+## User Rights
 
-### 数据控制
-- 您保持对所有存储在 Azure Blob Storage 中数据的完全控制
-- 可以随时撤销插件的访问权限
-- 可以删除或修改存储的认证信息
+### Data Control
+- You retain full control over all data stored in Azure Blob Storage
+- Can revoke plugin access permissions at any time
+- Can delete or modify stored authentication information
 
-### 访问和删除
-- 可以查看插件访问的数据范围
-- 可以随时停用或删除数据源配置
-- 删除配置将清除所有相关的认证信息
+### Access and Deletion
+- Can view the scope of data accessed by the plugin
+- Can disable or delete datasource configuration at any time
+- Deleting configuration will clear all related authentication information
 
-## 合规性
+## Compliance
 
-### 数据保护法规
-- 支持 GDPR（欧盟通用数据保护条例）合规
-- 遵循适用的数据保护法律
-- 支持数据主体权利请求
+### Data Protection Regulations
+- Supports GDPR (General Data Protection Regulation) compliance
+- Follows applicable data protection laws
+- Supports data subject rights requests
 
-### 行业标准
-- 遵循 ISO 27001 信息安全管理标准
-- 符合 SOC 2 Type II 控制要求
-- 支持 Azure 的合规性认证
+### Industry Standards
+- Follows ISO 27001 information security management standards
+- Meets SOC 2 Type II control requirements
+- Supports Azure compliance certifications
 
-## 安全最佳实践
+## Security Best Practices
 
-### 认证安全
-- 使用 SAS 令牌而非账户密钥（推荐）
-- 设置适当的令牌过期时间
-- 定期轮换访问凭证
-- 启用访问日志和监控
+### Authentication Security
+- Use SAS tokens instead of account keys (recommended)
+- Set appropriate token expiration times
+- Regularly rotate access credentials
+- Enable access logs and monitoring
 
-### 权限管理
-- 仅授予必需的读取和列表权限
-- 避免使用过度宽泛的权限
-- 定期审核访问权限
-- 使用 Azure RBAC 进行细粒度控制
+### Permission Management
+- Grant only necessary read and list permissions
+- Avoid using overly broad permissions
+- Regularly audit access permissions
+- Use Azure RBAC for fine-grained control
 
-### 监控和审计
-- 启用 Azure 存储账户日志
-- 监控异常访问模式
-- 设置安全警报
-- 定期检查访问日志
+### Monitoring and Auditing
+- Enable Azure storage account logs
+- Monitor abnormal access patterns
+- Set security alerts
+- Regularly check access logs
 
-## 事件响应
+## Incident Response
 
-### 安全事件
-如发现安全事件，我们将：
-- 立即调查并评估影响
-- 及时通知受影响的用户
-- 采取措施防止进一步的数据暴露
-- 配合相关部门进行调查
+### Security Incidents
+If security incidents are discovered, we will:
+- Immediately investigate and assess impact
+- Promptly notify affected users
+- Take measures to prevent further data exposure
+- Cooperate with relevant authorities for investigation
 
-### 数据泄露通知
-- 在发现数据泄露后 72 小时内通知
-- 提供事件详情和影响评估
-- 说明已采取的补救措施
-- 提供保护建议
+### Data Breach Notification
+- Notify within 72 hours of discovering a data breach
+- Provide incident details and impact assessment
+- Explain remedial measures taken
+- Provide protection recommendations
 
-## 联系信息
+## Contact Information
 
-### 隐私问题
-如有隐私相关问题，请联系：
-- 邮箱：privacy@dify.ai
-- 地址：Dify 数据保护官
+### Privacy Issues
+For privacy-related questions, please contact:
+- Email: privacy@dify.ai
+- Address: Dify Data Protection Officer
 
-### 技术支持
-技术相关问题，请联系：
-- 邮箱：support@dify.ai
-- 文档：https://docs.dify.ai
+### Technical Support
+For technical issues, please contact:
+- Email: support@dify.ai
+- Documentation: https://docs.dify.ai
 
-## 政策更新
+## Policy Updates
 
-### 更新通知
-- 隐私政策变更将提前通知用户
-- 重大变更需要用户明确同意
-- 更新历史记录在此文档中维护
+### Update Notifications
+- Privacy policy changes will be notified to users in advance
+- Major changes require explicit user consent
+- Update history is maintained in this document
 
-### 版本历史
-- **v1.0** (2025-01-27): 初始版本
-- 支持三种认证方式的隐私保护
-- 明确数据收集和使用范围
+### Version History
+- **v1.0** (2025-01-27): Initial version
+- Privacy protection support for three authentication methods
+- Clear scope of data collection and usage
 
 ---
 
-最后更新：2025年1月27日  
-版本：1.0
+Last Updated: January 27, 2025  
+Version: 1.0
 
 
 
