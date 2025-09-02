@@ -1,0 +1,65 @@
+model: deepseek-v3.1
+label:
+  zh_Hans: DeepSeek-V3.1
+  en_US: DeepSeek-V3.1
+model_type: llm
+features:
+  - agent-thought
+model_properties:
+  mode: chat
+  context_size: 131072
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    default: 0.6
+  - name: max_tokens
+    use_template: max_tokens
+    type: int
+    default: 4096
+    min: 1
+    max: 65536
+    help:
+      zh_Hans: 指定生成结果长度的上限。如果生成结果截断，可以调大该参数。
+      en_US: Specifies the upper limit on the length of generated results. If the generated results are truncated, you can increase this parameter.
+  - name: top_p
+    use_template: top_p
+    default: 0.95
+  - name: top_k
+    label:
+      zh_Hans: 取样数量
+      en_US: Top k
+    type: int
+    help:
+      zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
+      en_US: Only sample from the top K options for each subsequent token.
+    required: false
+  - name: repetition_penalty
+    required: false
+    type: float
+    default: 1.0
+    label:
+      zh_Hans: 重复惩罚
+      en_US: Repetition penalty
+    help:
+      zh_Hans: 用于控制模型生成时的重复度。提高repetition_penalty时可以降低模型生成的重复度。1.0表示不做惩罚。
+      en_US: Used to control the repeatability when generating models. Increasing repetition_penalty can reduce the duplication of model generation. 1.0 means no punishment.
+  - name: frequency_penalty
+    use_template: frequency_penalty
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - text
+pricing:
+  input: "0.004"
+  output: "0.012"
+  unit: "0.001"
+  currency: RMB
+
+

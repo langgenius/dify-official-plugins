@@ -1,3 +1,4 @@
+import dataclasses
 from enum import StrEnum
 import json
 import mimetypes
@@ -28,10 +29,16 @@ class FileType(StrEnum):
         raise ValueError(f"No matching enum found for value '{value}'")
 
 
+@dataclasses.dataclass
+class ComfyUiFile:
+    blob: bytes
+    filename: str
+    mime_type: str
+    type: str
+
+
 class ComfyUiClient:
-    def __init__(
-        self, base_url: str, api_key: str | None = None, api_key_comfy_org: str = ""
-    ):  # Add api_key parameter
+    def __init__(self, base_url: str, api_key: str | None = None, api_key_comfy_org: str = ""):  # Add api_key parameter
         self.base_url = URL(base_url)
         self.api_key = api_key  # Store api_key
         # https://docs.comfy.org/development/comfyui-server/api-key-integration#integration-of-api-key-to-use-comfyui-api-nodes
@@ -52,9 +59,7 @@ class ComfyUiClient:
                 api_url = str(self.base_url / "models")
             else:
                 api_url = str(self.base_url / "models" / path)
-            response = httpx.get(
-                url=api_url, timeout=(2, 10), headers=self._get_headers()
-            )  # Add headers
+            response = httpx.get(url=api_url, timeout=(2, 10), headers=self._get_headers())  # Add headers
             if response.status_code != 200:
                 return []
             else:
@@ -86,9 +91,7 @@ class ComfyUiClient:
         """
         try:
             api_url = str(self.base_url / "object_info" / "KSampler")
-            response = httpx.get(
-                url=api_url, timeout=(2, 10), headers=self._get_headers()
-            )  # Add headers
+            response = httpx.get(url=api_url, timeout=(2, 10), headers=self._get_headers())  # Add headers
             if response.status_code != 200:
                 return []
             else:
@@ -103,9 +106,7 @@ class ComfyUiClient:
         """
         try:
             api_url = str(self.base_url / "object_info" / "KSampler")
-            response = httpx.get(
-                url=api_url, timeout=(2, 10), headers=self._get_headers()
-            )  # Add headers
+            response = httpx.get(url=api_url, timeout=(2, 10), headers=self._get_headers())  # Add headers
             if response.status_code != 200:
                 return []
             else:
@@ -179,23 +180,17 @@ class ComfyUiClient:
         ws_protocol = "ws"
         if self.base_url.scheme == "https":
             ws_protocol = "wss"
-        ws_address = (
-            f"{ws_protocol}://{self.base_url.authority}/ws?clientId={client_id}"
-        )
+        ws_address = f"{ws_protocol}://{self.base_url.authority}/ws?clientId={client_id}"
         headers = []
         if self.api_key:
             headers.append(f"Authorization: Bearer {self.api_key}")
         ws.connect(ws_address, header=headers)
         return ws, client_id
 
-    def set_prompt_by_ksampler(
-        self, origin_prompt: dict, positive_prompt: str, negative_prompt: str = ""
-    ) -> dict:
+    def set_prompt_by_ksampler(self, origin_prompt: dict, positive_prompt: str, negative_prompt: str = "") -> dict:
         prompt = origin_prompt.copy()
         id_to_class_type = {id: details["class_type"] for id, details in prompt.items()}
-        k_sampler = [
-            key for key, value in id_to_class_type.items() if value == "KSampler"
-        ][0]
+        k_sampler = [key for key, value in id_to_class_type.items() if value == "KSampler"][0]
         positive_input_id = prompt.get(k_sampler)["inputs"]["positive"][0]
         prompt.get(positive_input_id)["inputs"]["text"] = positive_prompt
 
@@ -205,22 +200,16 @@ class ComfyUiClient:
 
         return prompt
 
-    def set_prompt_images_by_ids(
-        self, origin_prompt: dict, image_names: list[str], image_ids: list[str]
-    ) -> dict:
+    def set_prompt_images_by_ids(self, origin_prompt: dict, image_names: list[str], image_ids: list[str]) -> dict:
         prompt = origin_prompt.copy()
         for index, image_node_id in enumerate(image_ids):
             prompt[image_node_id]["inputs"]["image"] = image_names[index]
         return prompt
 
-    def set_prompt_images_by_default(
-        self, origin_prompt: dict, image_names: list[str]
-    ) -> dict:
+    def set_prompt_images_by_default(self, origin_prompt: dict, image_names: list[str]) -> dict:
         prompt = origin_prompt.copy()
         id_to_class_type = {id: details["class_type"] for id, details in prompt.items()}
-        load_image_nodes = [
-            key for key, value in id_to_class_type.items() if value == "LoadImage"
-        ]
+        load_image_nodes = [key for key, value in id_to_class_type.items() if value == "LoadImage"]
         for load_image, image_name in zip(load_image_nodes, image_names):
             prompt.get(load_image)["inputs"]["image"] = image_name
         return prompt
@@ -289,7 +278,7 @@ class ComfyUiClient:
         )
         return response.content
 
-    def generate(self, workflow_json: dict) -> list[dict]:
+    def generate(self, workflow_json: dict) -> list[ComfyUiFile]:
         try:
             ws, client_id = self.open_websocket_connection()
         except Exception as e:
@@ -301,20 +290,17 @@ class ComfyUiClient:
             raise Exception("Error occured during image generation:" + str(e))
         ws.close()
         history = self.get_history(prompt_id)
-        images = []
+        images: list[ComfyUiFile] = []
         for output in history["outputs"].values():
             for img in output.get("images", []) + output.get("gifs", []):
-                image_data = self.get_image(
-                    img["filename"], img["subfolder"], img["type"]
+                image_data = self.get_image(img["filename"], img["subfolder"], img["type"])
+                generated_img = ComfyUiFile(
+                    blob=image_data,
+                    filename=img["filename"],
+                    mime_type=mimetypes.guess_type(img["filename"])[0],
+                    type=img["type"],
                 )
-                images.append(
-                    {
-                        "data": image_data,
-                        "filename": img["filename"],
-                        "mime_type": mimetypes.guess_type(img["filename"])[0],
-                        "type": img["type"],
-                    }
-                )
+                images.append(generated_img)
         return images
 
     def queue_prompt_image(self, client_id, prompt):
@@ -359,9 +345,7 @@ class ComfyUiClient:
                             break
                     elif message["type"] == "status":
                         data = message["data"]
-                        if data["status"]["exec_info"][
-                            "queue_remaining"
-                        ] == 0 and data.get("sid"):
+                        if data["status"]["exec_info"]["queue_remaining"] == 0 and data.get("sid"):
                             break
                     else:
                         continue
@@ -387,7 +371,7 @@ class ComfyUiClient:
                     pass
         return output_images
 
-    def convert_webp2mp4(self, webp_blob, fps):
+    def convert_webp2mp4(self, webp_blob: bytes, fps: int):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "webp2mp4.json")) as file:
             workflow = ComfyUiWorkflow(file.read())

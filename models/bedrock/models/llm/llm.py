@@ -254,7 +254,6 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
             # Use inference profile ARN as model ID
             model_id = profile_arn
-            logger.info(f"Using inference profile ARN: {model_id}")
 
             # Determine model capabilities from underlying models
             underlying_models = profile_info.get("models", [])
@@ -270,10 +269,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                         # Use the inference profile ARN but with underlying model capabilities
                         model_info = model_info.copy()
                         model_info["model"] = model_id  # Use inference profile ARN for actual API call
-                        logger.info(f"Using inference profile {model_id} with capabilities from {underlying_model_id}")
+                        model_info["underlying_model_id"] = underlying_model_id  # Store underlying model ID for cache support
                         return model_info
             if not model_info:
-                logger.info(f"Using inference profile {model_id} with default capabilities")
                 return {
                     "model": model_id,
                     "support_system_prompts": True,
@@ -329,25 +327,31 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         bedrock_client = get_bedrock_client("bedrock-runtime", credentials)
 
         # Get cache checkpoint settings from model parameters
-        system_cache_checkpoint = model_parameters.pop("system_cache_checkpoint", True)
+        # Log the incoming parameters for debugging
+        # The default for 'system_cache_checkpoint' is now set to False (was previously True).
+        # This change ensures that cache checkpoints are only enabled if explicitly set by the user in the UI.
+        # This prevents unintended caching behavior and aligns with updated UI settings where the default is unchecked.
+        system_cache_checkpoint = model_parameters.pop("system_cache_checkpoint", False)
         latest_two_messages_cache_checkpoint = model_parameters.pop("latest_two_messages_cache_checkpoint", False)
         logger.info(f"---cache_checkpoints--- system: {system_cache_checkpoint}, penultimate: {latest_two_messages_cache_checkpoint}")
         model_id = model_info["model"]
-        print(f"[CACHE DEBUG] Model: {model_id}, Cache checkpoints - System: {system_cache_checkpoint}, Penultimate: {latest_two_messages_cache_checkpoint}")
-        logger.info(f"[CACHE DEBUG] Model: {model_id}, Cache checkpoints - System: {system_cache_checkpoint}, Penultimate: {latest_two_messages_cache_checkpoint}")
+        logger.debug(f"Model: {model_id}, Cache checkpoints - System: {system_cache_checkpoint}, Penultimate: {latest_two_messages_cache_checkpoint}")
 
         # Enable cache if either checkpoint is enabled
-        cache_supported = is_cache_supported(model_id)
-        print(f"[CACHE DEBUG] Model: {model_id}, Cache supported: {cache_supported}")
-        logger.info(f"[CACHE DEBUG] Model: {model_id}, Cache supported: {cache_supported}")
+        # For inference profiles, use underlying model ID for cache support check
+        cache_check_model_id = model_info.get("underlying_model_id", model_id)
+        cache_supported = is_cache_supported(cache_check_model_id)
+        logger.debug(f"Model: {model_id}, Underlying: {cache_check_model_id}, Cache supported: {cache_supported}")
         if cache_supported == False:
             system_cache_checkpoint = False
             latest_two_messages_cache_checkpoint = False
 
         # Convert messages with cache points if enabled
+        # For inference profiles, use underlying model ID for cache configuration
+        cache_config_model_id = model_info.get("underlying_model_id", model_id)
         system, prompt_message_dicts = self._convert_converse_prompt_messages(
             prompt_messages,
-            model_id=model_id,
+            model_id=cache_config_model_id,
             system_cache_checkpoint=system_cache_checkpoint,
             latest_two_messages_cache_checkpoint=latest_two_messages_cache_checkpoint
         )
@@ -393,25 +397,21 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     cache_write_tokens = response["usage"].get("cacheWriteInputTokens", 0)
 
                     # Always log the metrics for debugging
-                    print(f"[CACHE METRICS] Model: {model_id}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
                     logger.info(f"[CACHE METRICS] Model: {model_id}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
 
                     # Print the full response usage for debugging
-                    print(f"[CACHE DEBUG] Response usage: {json.dumps(response['usage'], default=str)}")
 
                     # Log cache usage if any tokens were read or written
                     if cache_read_tokens > 0 or cache_write_tokens > 0:
                         logger.info(f"Cache metrics - Model: {model_id}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
                         # If tokens were read from cache, log the savings
                         if cache_read_tokens > 0:
-                            print(f"[CACHE HIT] {cache_read_tokens} tokens read from cache")
-                            logger.info(f"Cache hit detected - {cache_read_tokens} tokens read from cache")
+                            logger.debug(f"[CACHE HIT] {cache_read_tokens} tokens read from cache")
                         elif cache_write_tokens > 0:
-                            print(f"[CACHE WRITE] {cache_write_tokens} tokens written to cache")
-                            logger.info(f"Cache write detected - {cache_write_tokens} tokens written to cache")
+                            logger.debug(f"[CACHE WRITE] {cache_write_tokens} tokens written to cache")
                 else:
                     # Log if usage data is missing
-                    print(f"[WARNING] No usage data in response")
+                    logger.warning(f"[WARNING] No usage data in response")
                     logger.warning(f"No usage data in response")
 
                 return self._handle_converse_response(model_info["model"], credentials, response, prompt_messages)
@@ -551,26 +551,21 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                         cache_write_tokens = chunk["metadata"]["usage"].get("cacheWriteInputTokens", 0)
 
                         # Always log the metrics for debugging
-                        print(f"[STREAM CACHE METRICS] Model: {model}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
                         logger.info(f"[STREAM CACHE METRICS] Model: {model}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
 
                         # Print the full usage data for debugging
-                        print(f"[STREAM USAGE DATA] {json.dumps(chunk['metadata']['usage'], default=str)}")
 
                         # Log cache usage if any tokens were read or written
                         if cache_read_tokens > 0 or cache_write_tokens > 0:
                             logger.info(f"Cache metrics - Model: {model}, Read: {cache_read_tokens} tokens, Write: {cache_write_tokens} tokens")
                             # If tokens were read from cache, log the savings
                             if cache_read_tokens > 0:
-                                print(f"[STREAM CACHE HIT] {cache_read_tokens} tokens read from cache")
-                                logger.info(f"Cache hit detected - {cache_read_tokens} tokens read from cache")
+                                logger.debug(f"[STREAM CACHE HIT] {cache_read_tokens} tokens read from cache")
                             elif cache_write_tokens > 0:
-                                print(f"[STREAM CACHE WRITE] {cache_write_tokens} tokens written to cache")
-                                logger.info(f"Cache write detected - {cache_write_tokens} tokens written to cache")
+                                logger.debug(f"[STREAM CACHE WRITE] {cache_write_tokens} tokens written to cache")
                     else:
                         # Log if usage data is missing
-                        print(f"[STREAM WARNING] No usage data in metadata: {json.dumps(chunk['metadata'], default=str)}")
-                        logger.warning(f"No usage data in metadata chunk: {json.dumps(chunk['metadata'], default=str)}")
+                        logger.warning(f"[STREAM WARNING] No usage data found in metadata chunk")
 
                     usage = self._calc_response_usage(model, credentials, input_tokens, output_tokens)
                     yield LLMResultChunk(
@@ -745,7 +740,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         # and system_cache_checkpoint is enabled
         if system and cache_config and "system" in cache_config["supported_fields"] and system_cache_checkpoint:
             system.append({"cachePoint": {"type": "default"}})
-            print(f"[CACHE DEBUG] Added cache point to system messages for model: {model_id}")
+            logger.debug(f"Added cache point to system messages for model: {model_id}")
 
             # Process other messages
         for message in other_messages:
@@ -761,26 +756,23 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             if len(user_message_indices) > 0:
                 # Get indices for the latest messages (either one or two depending on availability)
                 indices_to_cache = user_message_indices[-min(2, len(user_message_indices)):]
-                print(f"[CACHE DEBUG] indices_to_cacheis {indices_to_cache}")
+                logger.debug(f"indices_to_cache is {indices_to_cache}")
                 for idx in indices_to_cache:
                     message = prompt_message_dicts[idx]
-                    print(f"[CACHE DEBUG] current idx is {idx}")
+                    logger.debug(f"current idx is {idx}")
 
                     # Check if content is a list
                     if isinstance(message["content"], list):
                         # Add cache point to the content array
                         message["content"].append({"cachePoint": {"type": "default"}})
-                        print(f"[CACHE DEBUG] Added cache point to user message content list at index {idx} for model: {model_id}")
+                        logger.debug(f"Added cache point to user message content list at index {idx} for model: {model_id}")
                     else:
                         # If content is not a list, convert it to a list with the original content and add cache point
                         original_content = message["content"]
                         message["content"] = [{"text": original_content}, {"cachePoint": {"type": "default"}}]
-                        print(f"[CACHE DEBUG] Converted user message content to list and added cache point at index {idx} for model: {model_id}")
+                        logger.debug(f"Converted user message content to list and added cache point at index {idx} for model: {model_id}")
 
                     prompt_message_dicts[idx] = message
-        # Print the final system and messages for debugging
-        # print(f"[CACHE DEBUG] System messages: {json.dumps(system, default=str)}")
-        print(f"[CACHE DEBUG] Prompt messages: {json.dumps(prompt_message_dicts, default=str)}")
 
         return system, prompt_message_dicts
 

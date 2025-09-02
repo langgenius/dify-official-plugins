@@ -5,7 +5,7 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from .llm import GoogleLargeLanguageModel
+from models.llm.llm import GoogleLargeLanguageModel
 from dify_plugin.entities.model.message import (
     UserPromptMessage,
     ToolPromptMessage,
@@ -23,7 +23,7 @@ from google.genai import types
 
 
 @dataclasses.dataclass(frozen=True)
-class TestCase:
+class ContentCase:
     message: PromptMessageContent
     expected: types.Part
 
@@ -63,7 +63,7 @@ class TestContentConversion:
         """Test multimodal content types with URLs"""
         # Using localhost URLs that would be typical in a Dify deployment
         cases = [
-            TestCase(
+            ContentCase(
                 message=ImagePromptMessageContent(
                     format="jpeg",
                     url="http://localhost:5001/files/images/test.jpg",
@@ -73,7 +73,7 @@ class TestContentConversion:
                     file_uri="gs://test-bucket/test-file", mime_type="image/jpeg"
                 ),
             ),
-            TestCase(
+            ContentCase(
                 message=AudioPromptMessageContent(
                     format="mp3",
                     url="http://localhost:5001/files/audio/test.mp3",
@@ -83,7 +83,7 @@ class TestContentConversion:
                     file_uri="gs://test-bucket/test-file", mime_type="audio/mpeg"
                 ),
             ),
-            TestCase(
+            ContentCase(
                 message=VideoPromptMessageContent(
                     format="mp4",
                     url="http://localhost:5001/files/video/test.mp4",
@@ -93,7 +93,7 @@ class TestContentConversion:
                     file_uri="gs://test-bucket/test-file", mime_type="video/mp4"
                 ),
             ),
-            TestCase(
+            ContentCase(
                 message=DocumentPromptMessageContent(
                     format="pdf",
                     url="http://localhost:5001/files/documents/test.pdf",
@@ -136,7 +136,7 @@ class TestContentConversion:
         base64_data = base64.b64encode(binary_data).decode()
 
         cases = [
-            TestCase(
+            ContentCase(
                 message=ImagePromptMessageContent(
                     format="jpeg", base64_data=base64_data, mime_type="image/jpeg"
                 ),
@@ -144,7 +144,7 @@ class TestContentConversion:
                     file_uri="gs://test-bucket/test-file", mime_type="image/jpeg"
                 ),
             ),
-            TestCase(
+            ContentCase(
                 message=AudioPromptMessageContent(
                     format="mp3", base64_data=base64_data, mime_type="audio/mpeg"
                 ),
@@ -152,7 +152,7 @@ class TestContentConversion:
                     file_uri="gs://test-bucket/test-file", mime_type="audio/mpeg"
                 ),
             ),
-            TestCase(
+            ContentCase(
                 message=VideoPromptMessageContent(
                     format="mp4", base64_data=base64_data, mime_type="video/mp4"
                 ),
@@ -160,7 +160,7 @@ class TestContentConversion:
                     file_uri="gs://test-bucket/test-file", mime_type="video/mp4"
                 ),
             ),
-            TestCase(
+            ContentCase(
                 message=DocumentPromptMessageContent(
                     format="pdf", base64_data=base64_data, mime_type="application/pdf"
                 ),
@@ -294,7 +294,7 @@ def test_file_url():
         format="png", mime_type="image/png", url="http://127.0.0.1:5001/files/foo/bar.png"
     )
     file_url = (
-        f"{credentials["file_url"].rstrip('/')}/files{message_content.url.split("/files")[-1]}"
+        f"{credentials['file_url'].rstrip('/')}/files{message_content.url.split('/files')[-1]}"
     )
     assert file_url == "http://127.0.0.1/static/files/foo/bar.png"
 

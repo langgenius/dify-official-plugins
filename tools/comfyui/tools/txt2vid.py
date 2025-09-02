@@ -30,9 +30,7 @@ class ComfyuiTxt2VidConfig:
 
 
 class ComfyuiTxt2Vid(Tool):
-    def _invoke(
-        self, tool_parameters: dict[str, Any]
-    ) -> Generator[ToolInvokeMessage, None, None]:
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         invoke tools
         """
@@ -89,12 +87,14 @@ class ComfyuiTxt2Vid(Tool):
         )
 
         model_type = tool_parameters.get("model_type")
+
+        output_images = []
         if model_type == "wan2_1":
-            output_images = self.txt2vid_svd_wan2_1(config)
+            output_images = self.txt2vid_wan2_1(config)
         elif model_type == "wan2_2_5B":
-            output_images = self.txt2vid_svd_wan2_2_5B(config)
+            output_images = self.txt2vid_wan2_2_5B(config)
         elif model_type == "wan2_2_14B":
-            output_images = self.txt2vid_svd_wan2_2_14B(config)
+            output_images = self.txt2vid_wan2_2_14B(config)
         elif model_type == "ltxv":
             output_images = self.txt2vid_ltxv(config)
         elif model_type == "mochi":
@@ -104,21 +104,16 @@ class ComfyuiTxt2Vid(Tool):
 
         for img in output_images:
             if config.output_format == "mp4":
-                img = self.comfyui.convert_webp2mp4(img["data"], config.fps)
+                img = self.comfyui.convert_webp2mp4(img.blob, config.fps)
             yield self.create_blob_message(
-                blob=img["data"],
+                blob=img.blob,
                 meta={
-                    "filename": img["filename"],
-                    "mime_type": img["mime_type"],
+                    "filename": img.filename,
+                    "mime_type": img.mime_type,
                 },
             )
 
-    def txt2vid_mochi(
-        self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    def txt2vid_mochi(self, config: ComfyuiTxt2VidConfig):
         mochi_repo_id = "Comfy-Org/mochi_preview_repackaged"
         if config.model_name == "":
             # download model
@@ -162,17 +157,10 @@ class ComfyuiTxt2Vid(Tool):
         try:
             output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
-            raise ToolProviderCredentialValidationError(
-                f"Failed to generate image: {str(e)}"
-            )
+            raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
 
-    def txt2vid_hunyuan(
-        self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    def txt2vid_hunyuan(self, config: ComfyuiTxt2VidConfig):
         hunyuan_repo_id = "Comfy-Org/HunyuanVideo_repackaged"
         if config.model_name == "":
             # download model
@@ -217,17 +205,10 @@ class ComfyuiTxt2Vid(Tool):
         try:
             output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
-            raise ToolProviderCredentialValidationError(
-                f"Failed to generate image: {str(e)}"
-            )
+            raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
 
-    def txt2vid_svd_wan2_1(
-        self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    def txt2vid_wan2_1(self, config: ComfyuiTxt2VidConfig):
         wan_repo_id = "Comfy-Org/Wan_2.1_ComfyUI_repackaged"
         if config.model_name == "":
             # download model
@@ -263,17 +244,10 @@ class ComfyuiTxt2Vid(Tool):
         try:
             output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
-            raise ToolProviderCredentialValidationError(
-                f"Failed to generate image: {str(e)}"
-            )
+            raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
 
-    def txt2vid_svd_wan2_2_14B(
-        self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    def txt2vid_wan2_2_14B(self, config: ComfyuiTxt2VidConfig):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(
             os.path.join(current_dir, "json", "txt2vid_wan2_2_14B.json"),
@@ -290,17 +264,10 @@ class ComfyuiTxt2Vid(Tool):
         try:
             output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
-            raise ToolProviderCredentialValidationError(
-                f"Failed to generate image: {str(e)}"
-            )
+            raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
 
-    def txt2vid_svd_wan2_2_5B(
-        self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    def txt2vid_wan2_2_5B(self, config: ComfyuiTxt2VidConfig):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(
             os.path.join(current_dir, "json", "txt2vid_wan2_2_5B.json"),
@@ -320,17 +287,10 @@ class ComfyuiTxt2Vid(Tool):
         try:
             output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
-            raise ToolProviderCredentialValidationError(
-                f"Failed to generate image: {str(e)}"
-            )
+            raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
 
-    def txt2vid_ltxv(
-        self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    def txt2vid_ltxv(self, config: ComfyuiTxt2VidConfig):
         ltxv_repo_id = "Lightricks/LTX-Video"
         if config.model_name == "":
             # download model
@@ -364,7 +324,5 @@ class ComfyuiTxt2Vid(Tool):
         try:
             output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
-            raise ToolProviderCredentialValidationError(
-                f"Failed to generate image: {str(e)}"
-            )
+            raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images

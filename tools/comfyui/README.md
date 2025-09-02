@@ -63,6 +63,18 @@ There are some example workflows to show what this plugin can do for you.
 Workflow node is a basic node for ComfyUI.
 You can set any ComfyUI node settings by inputting JSON to this node.
 
+### Quick Start
+
+Quick Start node supports some functions of ComfyUI including the following ones. Best for beginners.
+
+* [Qwen Image](https://comfyanonymous.github.io/ComfyUI_examples/qwen_image/)
+* [Qwen Image Edit](https://comfyanonymous.github.io/ComfyUI_examples/qwen_image/)
+* [Flux Dev fp8](https://comfyanonymous.github.io/ComfyUI_examples/flux/)
+* [Flux Schnell fp8](https://comfyanonymous.github.io/ComfyUI_examples/flux/)
+* [Pony Diffusion V6 XL](https://civitai.com/models/257749/pony-diffusion-v6-xl): the most liked Pony-based model on CivitAI
+* [majicMIX realistic](https://civitai.com/models/43331/majicmix-realistic): the most liked SD1.5-based model on CivitAI
+* [WAI-NSFW-illustrious-SDXL](https://civitai.com/models/827184/wai-nsfw-illustrious-sdxl): the most liked Illustrious-based model on CivitAI
+
 ### Txt2Img
 
 Txt2Img node can generate an image from texts(prompt and negative prompt).
@@ -82,9 +94,9 @@ Img2Img node can edit an given image according to prompt and negative prompt.
 
 Img2Vid node can generate an video from an given image.
 
-### Image Edit
+### Img2Any
 
-Image Edit node takes images and edits them in a various way.
+Img2Any node takes only images and edits them in a various way.
 
 The following features are supported.
 * Depth Anything: Performs monocular depth estimation.

@@ -1,6 +1,8 @@
+import json
 import logging
 from collections.abc import Generator
 from typing import Optional
+
 from dify_plugin.entities.model import (
     AIModelEntity,
     FetchFrom,
@@ -8,7 +10,7 @@ from dify_plugin.entities.model import (
     ModelPropertyKey,
     ModelType,
     ParameterRule,
-    ParameterType,
+    ParameterType, ModelFeature,
 )
 from dify_plugin.entities.model.llm import (
     LLMResult,
@@ -31,8 +33,6 @@ from dify_plugin.errors.model import (
     InvokeServerUnavailableError,
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
-from volcenginesdkarkruntime.types.chat import ChatCompletion, ChatCompletionChunk
-from models.client import ArkClientV3
 from legacy.client import MaaSClient
 from legacy.errors import (
     AuthErrors,
@@ -42,11 +42,13 @@ from legacy.errors import (
     RateLimitErrors,
     ServerUnavailableErrors,
 )
+from models.client import ArkClientV3
 from models.llm.models import (
     get_model_config,
     get_v2_req_params,
     get_v3_req_params,
 )
+from volcenginesdkarkruntime.types.chat import ChatCompletion, ChatCompletionChunk
 
 logger = logging.getLogger(__name__)
 
@@ -272,6 +274,30 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         user: str | None = None,
     ) -> LLMResult | Generator:
         client = ArkClientV3.from_credentials(credentials)
+
+        # Process structured output parameters
+        if "response_format" in model_parameters:
+            response_format = model_parameters.get("response_format")
+            if response_format == "json_schema":
+                json_schema = model_parameters.get("json_schema")
+                if not json_schema:
+                    raise ValueError(
+                        "Must define JSON Schema when the response format is json_schema"
+                    )
+                try:
+                    schema = json.loads(json_schema)
+                except Exception:
+                    raise ValueError(f"not correct json_schema format: {json_schema}")
+                model_parameters.pop("json_schema")
+                model_parameters["response_format"] = {
+                    "type": "json_schema",
+                    "json_schema": schema,
+                }
+            else:
+                model_parameters["response_format"] = {"type": response_format}
+        elif "json_schema" in model_parameters:
+            del model_parameters["json_schema"]
+
         req_params = get_v3_req_params(credentials, model_parameters, stop)
         if tools:
             req_params["tools"] = tools
@@ -320,8 +346,8 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     model=model,
                     prompt_messages=prompt_messages,
                     delta=LLMResultChunkDelta(
-                    index=chunk_index,
-                    message=AssistantPromptMessage(tool_calls=tools_calls, content=""),
+                        index=chunk_index,
+                        message=AssistantPromptMessage(tool_calls=tools_calls, content=""),
                     ),
                 )
 
@@ -402,6 +428,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             prompt_messages=prompt_messages,
             delta=LLMResultChunkDelta(index=index, message=message, finish_reason=finish_reason, usage=usage),
         )
+
     def _extract_response_tool_calls(self, response_tool_calls: list[dict]) -> list[AssistantPromptMessage.ToolCall]:
         """
         Extract tool calls from response
@@ -423,6 +450,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                 tool_calls.append(tool_call)
 
         return tool_calls
+
     def _increase_tool_call(
         self, new_tool_calls: list[AssistantPromptMessage.ToolCall], tools_calls: list[AssistantPromptMessage.ToolCall]
     ) -> list[AssistantPromptMessage.ToolCall]:
@@ -461,6 +489,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             tools_calls.append(tool_call)
 
         return tool_call, tools_calls
+
     def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:
         """
         used to define customizable model schema
@@ -482,7 +511,8 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     type=ParameterType.BOOLEAN,
                     default=False,
                     label=I18nObject(zh_Hans="跳过内容审核", en_US="Skip Moderation"),
-                    help=I18nObject(zh_Hans="跳过内容审核，需要先联系火山引擎开通此功能", en_US="Skip Moderation, please contact Volcengine to enable this feature first"),
+                    help=I18nObject(zh_Hans="跳过内容审核，需要先联系火山引擎开通此功能",
+                                    en_US="Skip Moderation, please contact Volcengine to enable this feature first"),
                 ),
             ]
         else:
@@ -536,7 +566,8 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     type=ParameterType.BOOLEAN,
                     default=False,
                     label=I18nObject(zh_Hans="跳过内容审核", en_US="Skip Moderation"),
-                    help=I18nObject(zh_Hans="跳过内容审核，需要先联系火山引擎开通此功能", en_US="Skip Moderation, please contact Volcengine to enable this feature first"),
+                    help=I18nObject(zh_Hans="跳过内容审核，需要先联系火山引擎开通此功能",
+                                    en_US="Skip Moderation, please contact Volcengine to enable this feature first"),
                 ),
             ]
         base_model = credentials.get("base_model_name", "")
@@ -550,7 +581,8 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     options=["enabled", "disabled", "auto"],
                 )
             )
-        elif base_model.lower() in ("doubao-1.5-thinking-vision-pro", "doubao-seed-1.6-flash"):
+        elif base_model.lower() in ("doubao-1.5-thinking-vision-pro", "doubao-seed-1.6-flash", "deepseek-v3.1",
+                                    "doubao-seed-1.6-vision"):
             rules.append(
                 ParameterRule(
                     name="thinking",
@@ -561,6 +593,25 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                 )
             )
 
+        # Add structured output parameters for supported models
+        if ModelFeature.STRUCTURED_OUTPUT in model_config.features:
+            rules.extend([
+                ParameterRule(
+                    name="response_format",
+                    type=ParameterType.STRING,
+                    default="text",
+                    label=I18nObject(zh_Hans="响应格式", en_US="Response Format"),
+                    help=I18nObject(zh_Hans="指定模型响应的格式", en_US="Specify the format of model response"),
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    type=ParameterType.STRING,
+                    label=I18nObject(zh_Hans="JSON Schema", en_US="JSON Schema"),
+                    help=I18nObject(zh_Hans="当response_format为json_schema时必需，定义JSON响应的结构",
+                                    en_US="Required when response_format is json_schema, defines the structure of JSON response"),
+                ),
+            ])
 
         model_properties = {}
         model_properties[ModelPropertyKey.CONTEXT_SIZE] = (

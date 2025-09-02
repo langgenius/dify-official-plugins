@@ -4,23 +4,19 @@ from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
 from tools.comfyui_workflow import ComfyUiWorkflow
-from tools.comfyui_client import ComfyUiClient, FileType
+from tools.comfyui_client import ComfyUiClient, ComfyUiFile, FileType
 from tools.model_manager import ModelManager
 
 
-class ComfyuiDepthAnything(Tool):
-    def _invoke(
-        self, tool_parameters: dict[str, Any]
-    ) -> Generator[ToolInvokeMessage, None, None]:
+class ComfyuiImg2Any(Tool):
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         invoke tools
         """
         base_url = self.runtime.credentials.get("base_url")
         if base_url is None:
             yield self.create_text_message("Please input base_url")
-        self.comfyui = ComfyUiClient(
-            base_url, self.runtime.credentials.get("comfyui_api_key")
-        )
+        self.comfyui = ComfyUiClient(base_url, self.runtime.credentials.get("comfyui_api_key"))
         self.model_manager = ModelManager(
             self.comfyui,
             civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
@@ -28,14 +24,14 @@ class ComfyuiDepthAnything(Tool):
         )
 
         feature: str = tool_parameters.get("feature")
+        prompt: str = tool_parameters.get("prompt", "")
+        negative_prompt: str = tool_parameters.get("negative_prompt", "")
         images = tool_parameters.get("images", [])
         image_names = []
         for image in images:
             if image.type != FileType.IMAGE:
                 continue
-            image_name = self.comfyui.upload_image(
-                image.filename, image.blob, image.mime_type
-            )
+            image_name = self.comfyui.upload_image(image.filename, image.blob, image.mime_type)
             image_names.append(image_name)
 
         output_images = []
@@ -50,14 +46,14 @@ class ComfyuiDepthAnything(Tool):
 
         for img in output_images:
             yield self.create_blob_message(
-                blob=img["data"],
+                blob=img.blob,
                 meta={
-                    "filename": img["filename"],
-                    "mime_type": img["mime_type"],
+                    "filename": img.filename,
+                    "mime_type": img.mime_type,
                 },
             )
 
-    def depth_pro(self, feature, image_names):
+    def depth_pro(self, feature, image_names) -> list[ComfyUiFile]:
         output_images = []
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "depth_pro.json")) as file:
@@ -70,15 +66,14 @@ class ComfyuiDepthAnything(Tool):
         for image_name in image_names:
             workflow.set_property("8", "inputs/image", image_name)
             try:
-                output_images.append(
-                    self.comfyui.generate(workflow.json())[0])
+                output_images.append(self.comfyui.generate(workflow.json())[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
                     f"Failed to generate image: {str(e)}. Maybe install https://github.com/spacepxl/ComfyUI-Depth-Pro on ComfyUI"
                 )
         return output_images
 
-    def depth_anything(self, feature, image_names):
+    def depth_anything(self, feature, image_names) -> list[ComfyUiFile]:
         output_images = []
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "depth_anything.json")) as file:
@@ -87,15 +82,14 @@ class ComfyuiDepthAnything(Tool):
         for image_name in image_names:
             workflow.set_property("3", "inputs/image", image_name)
             try:
-                output_images.append(
-                    self.comfyui.generate(workflow.json())[0])
+                output_images.append(self.comfyui.generate(workflow.json())[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
                     f"Failed to generate image: {str(e)}. Maybe install https://github.com/kijai/ComfyUI-DepthAnythingV2 on ComfyUI"
                 )
         return output_images
 
-    def face_swap(self, image_name1, image_name2):
+    def face_swap(self, image_name1, image_name2) -> list[ComfyUiFile]:
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "face_swap.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
@@ -109,20 +103,21 @@ class ComfyuiDepthAnything(Tool):
             )
         return output_images
 
-    def upscale(self, feature, image_names):
+    def upscale(self, feature, image_names) -> list[ComfyUiFile]:
         output_images = []
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "upscale.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
         if "esrgan" in feature:
             model_name = self.model_manager.download_model(
-                "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth", "upscale_models")
+                "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth",
+                "upscale_models",
+            )
         workflow.set_property("13", "inputs/model_name", model_name)
         for image_name in image_names:
             workflow.set_property("16", "inputs/image", image_name)
             try:
-                output_images.append(
-                    self.comfyui.generate(workflow.json())[0])
+                output_images.append(self.comfyui.generate(workflow.json())[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
                     f"Failed to generate image: {str(e)}. Maybe install https://github.com/kijai/ComfyUI-DepthAnythingV2 on ComfyUI"

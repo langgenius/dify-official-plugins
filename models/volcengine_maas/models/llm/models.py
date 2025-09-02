@@ -1,5 +1,5 @@
-from typing import Optional
 from decimal import Decimal
+from typing import Optional
 
 from dify_plugin.entities.model import (
     ModelFeature,
@@ -23,6 +23,17 @@ class ModelConfig(BaseModel):
 
 
 configs: dict[str, ModelConfig] = {
+    "Doubao-Seed-1.6-vision": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=32768, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL, ModelFeature.STRUCTURED_OUTPUT],
+        pricing=PriceConfig(input=Decimal("0.0008"), output=Decimal("0.0080"), unit=Decimal("0.001"), currency="RMB"),
+    ),
+    "DeepSeek-V3.1": ModelConfig(
+        properties=ModelProperties(context_size=131072, max_tokens=32768, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+        pricing=PriceConfig(input=Decimal("0.0040"), output=Decimal("0.0120"), unit=Decimal("0.001"), currency="RMB"),
+    ),
     "Kimi-K2": ModelConfig(
         properties=ModelProperties(context_size=131072, max_tokens=32768, mode=LLMMode.CHAT),
         features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
@@ -31,13 +42,13 @@ configs: dict[str, ModelConfig] = {
     "Doubao-Seed-1.6": ModelConfig(
         properties=ModelProperties(context_size=262144, max_tokens=16384, mode=LLMMode.CHAT),
         features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
-                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL, ModelFeature.STRUCTURED_OUTPUT],
         pricing=PriceConfig(input=Decimal("0.0024"), output=Decimal("0.0240"), unit=Decimal("0.001"), currency="RMB"),
     ),
     "Doubao-Seed-1.6-flash": ModelConfig(
         properties=ModelProperties(context_size=262144, max_tokens=16384, mode=LLMMode.CHAT),
         features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
-                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL, ModelFeature.STRUCTURED_OUTPUT],
         pricing=PriceConfig(input=Decimal("0.0006"), output=Decimal("0.0060"), unit=Decimal("0.001"), currency="RMB"),
     ),
     "Doubao-Seed-1.6-thinking": ModelConfig(
@@ -268,4 +279,6 @@ def get_v3_req_params(credentials: dict, model_parameters: dict, stop: list[str]
     if model_parameters.get("thinking"):
         thinking: Thinking = {"type": model_parameters["thinking"]}
         req_params["thinking"] = thinking
+    if model_parameters.get("response_format"):
+        req_params["response_format"] = model_parameters.get("response_format")
     return req_params

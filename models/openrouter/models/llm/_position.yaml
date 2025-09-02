@@ -29,6 +29,8 @@
 - anthropic/claude-3-sonnet
 - google/gemini-2.5-pro
 - google/gemini-2.5-flash
+- google/gemini-2.5-flash-image-preview
+- google/gemini-2.5-flash-image-preview:free
 - google/gemini-2.5-flash-lite
 - google/gemini-2.5-flash-lite-preview-06-17
 - google/gemini-2.0-flash-lite-001
@@ -53,6 +55,7 @@
 - qwen/qwen-2.5-72b-instruct
 - qwen/qwen-2-72b-instruct
 - deepseek/deepseek-chat
+- deepseek/deepseek-chat-v3.1
 - deepseek/deepseek-chat-v3-0324
 - deepseek/deepseek-coder
 - deepseek/deepseek-prover-v2
