@@ -1,0 +1,26 @@
+description:
+  human:
+    en_US: Find departments by exact name match. Returns department id, name and path.
+    zh_Hans: 按名称精确匹配查找部门，返回部门ID、名称与路径。
+  llm: Find departments by exact name match. Returns department id, name, and path. 
+extra:
+  python:
+    source: tools/public_find_department.py
+identity:
+  author: langgenius
+  label:
+    en_US: Find Department
+    zh_Hans: 查找部门
+  name: public_find_department
+parameters:
+  - form: llm
+    name: name
+    label:
+      en_US: Department Name (exact)
+      zh_Hans: 部门名称（精确）
+    human_description:
+      en_US: Exact department name to lookup
+      zh_Hans: 需要匹配的部门名称
+    llm_description: Exact department name to lookup
+    required: true
+    type: string

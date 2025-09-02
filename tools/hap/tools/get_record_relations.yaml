@@ -1,0 +1,81 @@
+description:
+  human:
+    en_US: Get related records for a specific field in a record
+    zh_Hans: 获取记录中指定字段的关联记录
+  llm: Get related records for a specific relation field in a record with pagination and system field options.
+extra:
+  python:
+    source: tools/get_record_relations.py
+identity:
+  author: langgenius
+  label:
+    en_US: Get Record Relations
+    zh_Hans: 获取记录关联
+  name: get_record_relations
+parameters:
+- form: llm
+  name: worksheet_id
+  label:
+    en_US: Worksheet ID
+    zh_Hans: 工作表 ID
+  human_description:
+    en_US: The worksheet ID containing the record
+    zh_Hans: 包含记录的工作表 ID
+  llm_description: The worksheet ID that contains the record
+  required: true
+  type: string
+- form: llm
+  name: row_id
+  label:
+    en_US: Row ID
+    zh_Hans: 行记录 ID
+  human_description:
+    en_US: The row record ID to get relations for
+    zh_Hans: 需要获取关联的行记录 ID
+  llm_description: The row record ID to retrieve related records for
+  required: true
+  type: string
+- form: llm
+  name: field
+  label:
+    en_US: Relation Field ID
+    zh_Hans: 关联字段 ID
+  human_description:
+    en_US: The relation field ID to get related records from
+    zh_Hans: 需要获取关联记录的字段 ID
+  llm_description: The relation field ID/alias to retrieve related records from
+  required: true
+  type: string
+- form: llm
+  name: page_index
+  label:
+    en_US: Page Index
+    zh_Hans: 页码
+  human_description:
+    en_US: Page number for pagination
+    zh_Hans: 分页页码
+  llm_description: Page number for pagination, starting from 1
+  required: false
+  type: number
+- form: llm
+  name: page_size
+  label:
+    en_US: Page Size
+    zh_Hans: 每页数量
+  human_description:
+    en_US: Number of related records per page
+    zh_Hans: 每页关联记录数量
+  llm_description: Number of related records per page
+  required: false
+  type: number
+- form: llm
+  name: is_return_system_fields
+  label:
+    en_US: Return System Fields
+    zh_Hans: 返回系统字段
+  human_description:
+    en_US: Whether to return system fields (true/false)
+    zh_Hans: 是否返回系统字段 (true/false)
+  llm_description: Whether to include system fields in related records, default is false
+  required: false
+  type: string

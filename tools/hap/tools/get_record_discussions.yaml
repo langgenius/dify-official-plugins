@@ -1,0 +1,81 @@
+description:
+  human:
+    en_US: Get discussions for a specific record
+    zh_Hans: 获取指定记录的讨论信息
+  llm: Get discussion messages for a specific record with pagination and search capabilities.
+extra:
+  python:
+    source: tools/get_record_discussions.py
+identity:
+  author: langgenius
+  label:
+    en_US: Get Record Discussions
+    zh_Hans: 获取记录讨论
+  name: get_record_discussions
+parameters:
+- form: llm
+  name: worksheet_id
+  label:
+    en_US: Worksheet ID
+    zh_Hans: 工作表 ID
+  human_description:
+    en_US: The worksheet ID containing the record
+    zh_Hans: 包含记录的工作表 ID
+  llm_description: The worksheet ID that contains the record
+  required: true
+  type: string
+- form: llm
+  name: row_id
+  label:
+    en_US: Row ID
+    zh_Hans: 行记录 ID
+  human_description:
+    en_US: The row record ID to get discussions for
+    zh_Hans: 需要获取讨论的行记录 ID
+  llm_description: The row record ID to retrieve discussions for
+  required: true
+  type: string
+- form: llm
+  name: page_index
+  label:
+    en_US: Page Index
+    zh_Hans: 页码
+  human_description:
+    en_US: Page number for pagination
+    zh_Hans: 分页页码
+  llm_description: Page number for pagination, starting from 1
+  required: false
+  type: number
+- form: llm
+  name: page_size
+  label:
+    en_US: Page Size
+    zh_Hans: 每页数量
+  human_description:
+    en_US: Number of discussions per page
+    zh_Hans: 每页讨论数量
+  llm_description: Number of discussions per page
+  required: false
+  type: number
+- form: llm
+  name: search
+  label:
+    en_US: Search Keyword
+    zh_Hans: 搜索关键词
+  human_description:
+    en_US: Search keyword to filter discussions
+    zh_Hans: 搜索讨论的关键词
+  llm_description: Keyword to search within discussion messages
+  required: false
+  type: string
+- form: llm
+  name: only_with_attachments
+  label:
+    en_US: Only With Attachments
+    zh_Hans: 仅包含附件的讨论
+  human_description:
+    en_US: Only return discussions with attachments (true/false)
+    zh_Hans: 是否仅返回包含附件的讨论 (true/false)
+  llm_description: Whether to only return discussions that contain attachments, default is false
+  required: false
+  type: string

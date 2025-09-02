@@ -1,25 +1,88 @@
+credentials_for_provider:
+  appkey:
+    help:
+      en_US: Get your appkey and sign from HAP application authorization
+      zh_Hans: 从 HAP 应用授权中获取 appkey 和 sign
+    label:
+      en_US: Application Appkey
+      zh_Hans: 应用 Appkey
+    placeholder:
+      en_US: Please input your HAP application Appkey
+      zh_Hans: 请输入您的 HAP 应用 Appkey
+    required: true
+    type: text-input
+  sign:
+    label:
+      en_US: Application Sign
+      zh_Hans: 应用 Sign
+    placeholder:
+      en_US: Please input your HAP application Sign
+      zh_Hans: 请输入您的 HAP 应用 Sign
+    required: true
+    type: secret-input
+  api_base:
+    help:
+      en_US: API base URL, default https://api2.mingdao.com
+      zh_Hans: API 基础域名，默认 https://api2.mingdao.com
+    label:
+      en_US: API Base URL (Optional, required for private deployment)
+      zh_Hans: API 基础域名 (可选，私有部署必填)
+    placeholder:
+      en_US: https://api.mingdao.com or https://www.nocoly.com/api
+      zh_Hans: https://api.mingdao.com or https://www.nocoly.com/api
+    required: false
+    type: text-input
+
 extra:
   python:
     source: provider/hap.py
+
 identity:
-  author: Mingdao
+  author: langgenius
   description:
-    en_US: Hyper application platform that is particularly friendly to AI
-    pt_BR: Plataforma de aplicação hiper que é particularmente amigável à IA
-    zh_Hans: 对 AI 特别友好的超级应用平台
+    en_US: AI-friendly hyper application platform for no-code enterprise applications and hyper-automation workflows
+    zh_Hans: 对 AI 特别友好的超级应用平台，专注于零代码搭建企业级应用与超自动化工作流
   icon: icon.svg
   label:
-    en_US: HAP
-    pt_BR: HAP
-    zh_Hans: HAP
+    en_US: HAP Application Tool
+    zh_Hans: HAP 应用工具
   name: hap
   tags:
-  - productivity
+    - productivity
+
 tools:
-- tools/get_worksheet_fields.yaml
-- tools/list_worksheet_records.yaml
-- tools/delete_worksheet_record.yaml
-- tools/add_worksheet_record.yaml
-- tools/list_worksheets.yaml
-- tools/update_worksheet_record.yaml
-- tools/get_worksheet_pivot_data.yaml
+  - tools/get_app_info.yaml
+  - tools/get_worksheet_structure.yaml
+  - tools/list_records.yaml
+  - tools/get_record_pivot.yaml
+  - tools/create_record.yaml
+  - tools/update_record.yaml
+  - tools/delete_record.yaml
+  - tools/get_record.yaml
+  - tools/public_find_member.yaml
+  - tools/public_find_department.yaml
+  - tools/public_get_regions.yaml
+  - tools/batch_create_records.yaml
+  - tools/batch_update_records.yaml
+  - tools/batch_delete_records.yaml
+  - tools/get_record_discussions.yaml
+  - tools/get_record_logs.yaml
+  - tools/get_record_relations.yaml
+  - tools/get_record_share_link.yaml
+  - tools/create_worksheet.yaml
+  - tools/update_worksheet.yaml
+  - tools/delete_worksheet.yaml
+  - tools/list_workflows.yaml
+  - tools/get_workflow.yaml
+  - tools/trigger_workflow.yaml
+  - tools/list_roles.yaml
+  - tools/get_role.yaml
+  - tools/create_role.yaml
+  - tools/delete_role.yaml
+  - tools/add_role_members.yaml
+  - tools/remove_role_members.yaml
+  - tools/user_leave_all_roles.yaml
+  - tools/list_optionsets.yaml
+  - tools/create_optionset.yaml
+  - tools/update_optionset.yaml
+  - tools/delete_optionset.yaml

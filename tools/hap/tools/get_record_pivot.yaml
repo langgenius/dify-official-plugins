@@ -1,0 +1,270 @@
+description:
+  human:
+    en_US: Get pivot table data for worksheet records
+    zh_Hans: 获取工作表记录的透视表汇总数据
+  llm: Get pivot table aggregated data from worksheet records with configurable dimensions, values, filter, and sorting.
+extra:
+  python:
+    source: tools/get_record_pivot.py
+identity:
+  author: langgenius
+  label:
+    en_US: Get Record Pivot Data
+    zh_Hans: 获取记录透视数据
+  name: get_record_pivot
+parameters:
+- form: llm
+  name: worksheet_id
+  label:
+    en_US: Worksheet ID
+    zh_Hans: 工作表 ID
+  human_description:
+    en_US: The worksheet ID to get pivot data from
+    zh_Hans: 需要获取透视数据的工作表 ID
+  llm_description: The worksheet ID to retrieve pivot table data from
+  required: true
+  type: string
+- form: llm
+  name: values
+  label:
+    en_US: Values Fields
+    zh_Hans: 值字段
+  human_description:
+    en_US: JSON array of value fields with field, displayName, aggregation, and includeEmpty properties
+    zh_Hans: 值字段的 JSON 数组，包含 field、displayName、aggregation 和 includeEmpty 属性
+  llm_description: JSON array of value fields with `field`, `displayName`, `aggregation`, and `includeEmpty` properties for pivot table aggregation (COUNT, DISTINCTCOUNT, SUM, MIN, MAX, AVG). When only counting the number of records, use `record_count` as the field ID. To count empty values, set `includeEmpty` to true, default is false.
+  required: true
+  type: string
+- form: llm
+  name: columns
+  label:
+    en_US: Column Dimensions
+    zh_Hans: 列维度字段
+  human_description:
+    en_US: JSON array of column dimension fields with field, displayName, granularity, and includeEmpty properties
+    zh_Hans: 列维度字段的 JSON 数组，包含 field、displayName、granularity 和 includeEmpty 属性
+  llm_description: >
+    JSON array of column dimension fields with field, displayName, granularity, and includeEmpty properties for pivot table columns(y-axis). When field type is `Date`, `DateTime` or `Region`, use `granularity` parameter to set statistical grouping granularity:
+      - `Date`/`DateTime`: 1-day, 2-week, 3-month;
+      - `Region`: 1-province, 2-province/city, 3-province/city/county (district)'
+  required: false
+  type: string
+- form: llm
+  name: rows
+  label:
+    en_US: Row Dimensions
+    zh_Hans: 行维度字段
+  human_description:
+    en_US: JSON array of row dimension fields with field, displayName, granularity, and includeEmpty properties
+    zh_Hans: 行维度字段的 JSON 数组，包含 field、displayName、granularity 和 includeEmpty 属性
+  llm_description: >
+    JSON array of row dimension fields with field, displayName, granularity, and includeEmpty properties for pivot table rows(x-axis). When field type is `Date`, `DateTime` or `Region`, use `granularity` parameter to set statistical grouping granularity:
+      - `Date`/`DateTime`: 1-day, 2-week, 3-month;
+      - `Region`: 1-province, 2-province/city, 3-province/city/county (district)
+  required: false
+  type: string
+- form: llm
+  name: filter
+  label:
+    en_US: Filter Conditions
+    zh_Hans: 筛选条件
+  human_description:
+    en_US: JSON object for filter conditions with type, logic, and children properties
+    zh_Hans: 筛选条件的 JSON 对象，包含 type、logic 和 children 属性
+  llm_description:  > 
+      ## Filter Structure
+      
+      ```typescript
+      Filter = {
+        type: 'group' | 'condition'; // first level is always 'group'
+        // Fields when type is 'group'
+        logic?: 'AND' | 'OR';
+        children?: Filter[]; // Must be all group or all condition, cannot be mixed. Only two levels of children are allowed
+        // Fields when type is 'condition'
+        field?: string; // Field ID or alias
+        operator?: FilterOperator; // Operator, see <Operator Enum>. Operators other than <Operator Enum> cannot be used.
+        value?: any; // Value (string, number, array)
+      }
+      ```
+
+      ## Operator Enum
+
+      | Operator        | Example Value                                            |
+      | --------------- | -------------------------------------------------------- |
+      | `eq`            | `"Beijing"` or `["<targetid>"]`                          |
+      | `ne`            | `"London"` or `["<targetid>"]`                           |
+      | `gt`            | `20` or `"2025-02-06 00:00:00"`                          |
+      | `ge`            | `10`                                                     |
+      | `lt`            | `20`                                                     |
+      | `le`            | `100`                                                    |
+      | `in`            | `["value1", "value2"]`                                   |
+      | `notin`         | `["value1", "value2"]`                                   |
+      | `contains`      | `"Ch"` or `["Sales", "Marketing"]` |
+      | `notcontains`   | `"Ch"` or `["Sales", "Marketing"]` |
+      | `concurrent`    | `["<id1>", "<id2>"]`                                     |
+      | `belongsto`     | `["<departmentid>"]`                                     |
+      | `notbelongsto`  | `["<departmentid>"]`                                     |
+      | `startswith`    | `"Zhang"`                                                |
+      | `notstartswith` | `"Li"`                                                   |
+      | `endswith`      | `"Company"`                                              |
+      | `notendswith`   | `"Limited Company"`                                      |
+      | `between`       | `["2025-01-01", "2025-01-31"]`                           |
+      | `notbetween`    | `["10", "20"]`                                           |
+      | `isempty`       | No value field required                                  |
+      | `isnotempty`    | No value field required                                  |
+
+      ## Usage Examples
+
+      ### Example 1: Condition
+
+      Query all employees whose surname is "Zhang":
+
+      ```json
+      {
+        "type": "group",
+        "logic": "AND",
+        "children": [
+          {
+            "type": "condition",
+            "field": "name",
+            "operator": "startswith",
+            "value": "Zhang"
+          }
+        ]
+      }
+      ```
+
+      ### Example 2: Condition Group
+
+      Query all employees from the North region's marketing and sales departments whose surname is "Zhang" and who joined in January:
+
+      ```json
+      {
+        "type": "group",
+        "logic": "AND",
+        "children": [
+          {
+            "type": "group", 
+            "logic": "AND",
+            "children": [
+              {
+                "type": "condition",
+                "field": "name",
+                "operator": "startswith",
+                "value": "Zhang"
+              },
+              {
+                "type": "condition",
+                "field": "onboard_date",
+                "operator": "between",
+                "value": ["2025-01-01", "2025-01-31"]
+              }
+            ]
+          },
+          {
+            "type": "group",
+            "logic": "OR",
+            "children": [
+              {
+                "type": "condition",
+                "field": "department_name",
+                "operator": "contains",
+                "value": ["Sales", "Marketing"]
+              },
+              {
+                "type": "condition",
+                "field": "department_id",
+                "operator": "belongsto",
+                "value": ["North Region ID"]
+              }
+            ]
+          }
+        ]
+      }
+      ```
+
+      ## Notes
+
+      1. **Nesting Limit**: A maximum of two nesting levels is supported (group -> group -> condition)
+      2. **Children Type Consistency**: All children in a group must be either all groups or all conditions, cannot be mixed
+      3. **Logic Required**: When type is group, the logic field must be specified as "AND" or "OR"
+      4. **Empty Value Operators**: When using isempty and isnotempty, the value field is not required
+      5. **Array Values**: Some operators require array values (e.g., between, in, contains, concurrent, belongsto, etc.)
+      6. **Field Identifier**: The field should use the field’s ID value, and the field must exist in the queried table structure
+      7. **Option Fields**: All option fields (single choice, multiple choice) require the corresponding option’s key value to be placed in the array as the value, using array-value operators
+      8. **Related Records**: Filtering related records requires first querying the corresponding `record_id`, then filtering according to the array value rules
+      9. **Time Filtering**: If there is no specific time field, use the creation time field for filtering, with the operator between
+
+  required: false
+  type: string
+- form: llm
+  name: sorts
+  label:
+    en_US: Sort Fields
+    zh_Hans: 排序字段
+  human_description:
+    en_US: JSON array of sort fields with field and isAsc properties
+    zh_Hans: 排序字段的 JSON 数组，包含 field 和 isAsc 属性
+  llm_description: >
+    JSON array of sort configuration, e.g. [{"field": "name", "isAsc": true}]
+  required: false
+  type: string
+- form: llm
+  name: view_id
+  label:
+    en_US: View ID
+    zh_Hans: 视图 ID
+  human_description:
+    en_US: View ID to apply view-specific filters
+    zh_Hans: 用于应用视图特定筛选的视图 ID
+  llm_description: View ID to apply specific view filters to the pivot data
+  required: false
+  type: string
+- form: llm
+  name: page_index
+  label:
+    en_US: Page Index
+    zh_Hans: 页码
+  human_description:
+    en_US: Page number for pagination
+    zh_Hans: 分页页码
+  llm_description: Page number for pagination, starting from 1
+  required: false
+  type: number
+- form: llm
+  name: page_size
+  label:
+    en_US: Page Size
+    zh_Hans: 每页数量
+  human_description:
+    en_US: Number of records per page (max 1000)
+    zh_Hans: 每页记录数量（最大 1000）
+  llm_description: Number of records per page, maximum 1000
+  required: false
+  type: number
+- form: llm
+  name: include_summary
+  label:
+    en_US: Include Summary
+    zh_Hans: 包含汇总数据
+  human_description:
+    en_US: Whether to include summary data (true/false)
+    zh_Hans: 是否包含汇总数据 (true/false)
+  llm_description: Whether to include summary aggregation data in response, default is false
+  required: false
+  type: string
+- form: llm
+  name: query_description
+  label:
+    en_US: Query Description
+    zh_Hans: 查询说明
+  human_description:
+    en_US: The description of this query
+    zh_Hans: 查询筛选器的文字说明
+  llm_description: >
+    Discribe the content of tool parameters use user's language(e.g. Chinese) with this format:
+
+    Worksheet: `worksheet_name`, View: `view_name`(if has), Columns(X): `user_type`, Rows(Y): `user_gender`, Values: `id(COUNT)`,  Filter: (name starts with zhang and onboard_date between 2023-01-01 and 2023-01-31) and (department_name contains (Sales, Marketing) or department_id belongsto (a,b,c))
+    
+  required: false
+  type: string

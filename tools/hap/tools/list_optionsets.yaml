@@ -1,0 +1,15 @@
+description:
+  human:
+    en_US: Get option set list for the application
+    zh_Hans: 获取应用下选项集列表
+  llm: Get option set list for the application, including option set details like ID, name, options, colors, and scores.
+extra:
+  python:
+    source: tools/list_optionsets.py
+identity:
+  author: langgenius
+  label:
+    en_US: List Option Sets
+    zh_Hans: 获取选项集列表
+  name: list_optionsets
+parameters: []

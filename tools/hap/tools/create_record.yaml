@@ -1,0 +1,62 @@
+description:
+  human:
+    en_US: Create a new record in a worksheet by field ID/value mapping. Default triggers workflow.
+    zh_Hans: 通过字段ID与值映射在工作表中创建一条新记录。默认会触发工作流。
+  llm: >
+    Create a new record.
+    Input "body" is a JSON object mapping field id/alias to value, e.g. {"name":"Alice","age":18}.
+extra:
+  python:
+    source: tools/create_record.py
+identity:
+  author: langgenius
+  label:
+    en_US: Create Record
+    zh_Hans: 新建记录
+  name: create_record
+parameters:
+  - form: llm
+    name: worksheet_id
+    label:
+      en_US: Worksheet ID
+      zh_Hans: 工作表 ID
+    human_description:
+      en_US: The worksheet ID to create the record in
+      zh_Hans: 要创建记录的工作表 ID
+    llm_description: The worksheet ID to create the record in
+    required: true
+    type: string
+
+  - form: llm
+    name: body
+    label:
+      en_US: Record Fields (object)
+      zh_Hans: 记录字段（对象）
+    human_description:
+      en_US: JSON object mapping field id/alias to value, e.g. {"name":"Alice","age":18}
+      zh_Hans: 将字段 ID/别名映射为值的 JSON 对象，例如 {"name":"Alice","age":18}
+    llm_description: >
+      JSON object mapping field id/alias to value, e.g. {"name":"Alice","age":18}
+      There are certain types of field values that need to be provided in a specified format, for example:
+      - Region: {"fieldId": "1430300"}. The value can be obtained from the `public_find_region` tool.
+      - SingleSelect/MultipleSelect: {"fieldId": ["Option key1"]}, {"MultipleSelectFieldId": ["Option key1", "Option key2"]}
+      - Collaborator: {"fieldId": ["user_accountId1"]}. The accountId can be obtained from the `public_find_member` tool.
+      - Department: {"fieldId": ["department_id1"]}. The departmentId can be obtained from the `public_find_department` tool.
+      - Relation/SubTable/CascadingSelect: {"fieldId": ["record_rowId1"]}
+      - Attachment: {"fieldId": [{"name": "file1.txt", "url": "https://example.com/file1.txt or base64 encoded string}"}]}
+      - Location: {"fieldId": "{\"x\":114.072825,\"y\":22.655475,\"address\":\"Yunhui Center, Xiangjiaotang Village, Bantian Street, Longgang District, Shenzhen City, Guangdong Province\",\"title\":\"Building A, Phase 1, Yunhui Center\"}"}
+      - Checkbox: {"fieldId": 1}. 1 for true, 0 for false
+    required: true
+    type: string
+
+  - form: form
+    name: do_not_trigger_workflow
+    label:
+      en_US: Do Not Trigger Workflow
+      zh_Hans: 不触发工作流
+    human_description:
+      en_US: If true, do NOT trigger workflows; default false
+      zh_Hans: 若为 true，则不触发工作流；默认 false
+    llm_description: If true, do NOT trigger workflows; default false
+    required: false
+    type: boolean
