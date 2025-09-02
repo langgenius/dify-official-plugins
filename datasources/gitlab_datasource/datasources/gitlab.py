@@ -3,8 +3,11 @@ import requests
 import time
 import base64
 import markdown
+import certifi
 from typing import Dict, List, Optional, Any
 from urllib.parse import urlparse
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 from dify_plugin.entities.datasource import (
     DatasourceGetPagesResponse,
@@ -22,14 +25,52 @@ class GitLabDataSource(OnlineDocumentDatasource):
         # GitLab URL will be set from credentials, default to gitlab.com
         self.gitlab_url = None
         self.base_url = None
+    
+    def _get_requests_session(self) -> requests.Session:
+        """Create a requests session with retry strategy and SSL verification"""
+        session = requests.Session()
+        retry_strategy = Retry(
+            total=3,
+            backoff_factor=1,
+            status_forcelist=[429, 500, 502, 503, 504],
+            allowed_methods=["HEAD", "GET", "PUT", "DELETE", "OPTIONS", "TRACE", "POST"],
+        )
+
+        adapter = HTTPAdapter(max_retries=retry_strategy)
+        session.mount("http://", adapter)
+        session.mount("https://", adapter)
+        session.verify = certifi.where()
+        return session
+    
+    def _safe_json_response(self, response: requests.Response) -> dict:
+        """Safely parse JSON response with validation"""
+        if response.status_code >= 400:
+            self._handle_rate_limit(response)
+        
+        try:
+            data = response.json()
+            if not isinstance(data, dict) and not isinstance(data, list):
+                raise ValueError(f"Invalid response format: expected dict or list, got {type(data)}")
+            return data
+        except ValueError as e:
+            raise ValueError(f"Invalid JSON response: {str(e)}")
+        except Exception as e:
+            raise ValueError(f"Failed to parse response: {str(e)}")
         
     def _get_headers(self) -> Dict[str, str]:
         """获取 API 请求头"""
         credentials = self.runtime.credentials
         access_token = credentials.get("access_token")
         
+        if not access_token:
+            raise ValueError("Access token not found in credentials")
+        
+        # Validate access token format (basic check)
+        if not isinstance(access_token, str) or len(access_token.strip()) == 0:
+            raise ValueError("Invalid access token format")
+        
         return {
-            "Authorization": f"Bearer {access_token}",
+            "Authorization": f"Bearer {access_token.strip()}",
             "User-Agent": "Dify-GitLab-Datasource"
         }
     
@@ -37,7 +78,18 @@ class GitLabDataSource(OnlineDocumentDatasource):
         """获取 GitLab URL"""
         if self.gitlab_url is None:
             credentials = self.runtime.credentials
-            self.gitlab_url = credentials.get("gitlab_url", "https://gitlab.com").rstrip("/")
+            gitlab_url = credentials.get("gitlab_url", "https://gitlab.com")
+            
+            # Validate URL format
+            if not isinstance(gitlab_url, str):
+                raise ValueError("Invalid GitLab URL: must be a string")
+            
+            gitlab_url = gitlab_url.strip().rstrip("/")
+            
+            if not gitlab_url.startswith(("http://", "https://")):
+                raise ValueError(f"Invalid GitLab URL format: {gitlab_url}")
+            
+            self.gitlab_url = gitlab_url
             self.base_url = f"{self.gitlab_url}/api/v4"
         return self.gitlab_url
     
@@ -63,9 +115,17 @@ class GitLabDataSource(OnlineDocumentDatasource):
         # Ensure GitLab URL is set
         self._get_gitlab_url()
         headers = self._get_headers()
-        response = requests.get(url, headers=headers, params=params, timeout=30)
-        self._handle_rate_limit(response)
-        return response.json()
+        
+        # Validate URL to prevent SSRF
+        if not url.startswith(("http://", "https://")):
+            raise ValueError(f"Invalid URL format: {url}")
+        
+        try:
+            session = self._get_requests_session()
+            response = session.get(url, headers=headers, params=params, timeout=30)
+            return self._safe_json_response(response)
+        except requests.exceptions.RequestException as e:
+            raise ValueError(f"Network error when accessing GitLab API: {str(e)}")
     
     def _get_pages(self, datasource_parameters: dict[str, Any]) -> DatasourceGetPagesResponse:
         """获取 GitLab 页面列表（项目、Issues、MRs）"""
@@ -247,8 +307,11 @@ class GitLabDataSource(OnlineDocumentDatasource):
             project_id = project_info['id']
             readme_info = self._make_request(f"{self.base_url}/projects/{project_id}/repository/files/README.md")
             if readme_info.get("encoding") == "base64":
-                readme_content = base64.b64decode(readme_info["content"]).decode("utf-8")
-                content += "## README\n\n" + readme_content
+                try:
+                    readme_content = base64.b64decode(readme_info["content"]).decode("utf-8")
+                    content += "## README\n\n" + readme_content
+                except (ValueError, UnicodeDecodeError) as e:
+                    content += "## README\n\nError decoding README content."
         except ValueError:
             content += "## README\n\nNo README file found."
         
@@ -262,8 +325,14 @@ class GitLabDataSource(OnlineDocumentDatasource):
         """获取文件内容"""
         # page_id format: "file:namespace/project:path"
         parts = page_id.split(":", 2)
+        if len(parts) != 3:
+            raise ValueError(f"Invalid file page_id format: {page_id}")
         project_path = parts[1]
         file_path = parts[2]
+        
+        # Basic input validation
+        if not project_path or not file_path:
+            raise ValueError(f"Invalid project path or file path in page_id: {page_id}")
         
         # URL encode the project path for GitLab API
         encoded_project = project_path.replace('/', '%2F')
@@ -273,9 +342,15 @@ class GitLabDataSource(OnlineDocumentDatasource):
         
         # 获取文件内容
         if file_info.get("encoding") == "base64":
-            content = base64.b64decode(file_info["content"]).decode("utf-8")
+            try:
+                content = base64.b64decode(file_info["content"]).decode("utf-8")
+            except (ValueError, UnicodeDecodeError) as e:
+                raise ValueError(f"Failed to decode file content: {str(e)}")
         else:
             content = file_info.get("content", "")
+            # Validate that content is a string
+            if not isinstance(content, str):
+                content = str(content)
         
         # 如果是 Markdown 文件，添加标题
         file_name = file_path.split('/')[-1]  # 获取文件名
@@ -293,8 +368,14 @@ class GitLabDataSource(OnlineDocumentDatasource):
         """获取 Issue 内容"""
         # page_id format: "issue:namespace/project:iid"
         parts = page_id.split(":", 2)
+        if len(parts) != 3:
+            raise ValueError(f"Invalid issue page_id format: {page_id}")
         project_path = parts[1]
         issue_iid = parts[2]
+        
+        # Basic input validation
+        if not project_path or not issue_iid:
+            raise ValueError(f"Invalid project path or issue IID in page_id: {page_id}")
         
         # URL encode the project path for GitLab API
         encoded_project = project_path.replace('/', '%2F')
@@ -340,8 +421,14 @@ class GitLabDataSource(OnlineDocumentDatasource):
         """获取 MR 内容"""
         # page_id format: "mr:namespace/project:iid"
         parts = page_id.split(":", 2)
+        if len(parts) != 3:
+            raise ValueError(f"Invalid merge request page_id format: {page_id}")
         project_path = parts[1]
         mr_iid = parts[2]
+        
+        # Basic input validation
+        if not project_path or not mr_iid:
+            raise ValueError(f"Invalid project path or MR IID in page_id: {page_id}")
         
         # URL encode the project path for GitLab API
         encoded_project = project_path.replace('/', '%2F')
