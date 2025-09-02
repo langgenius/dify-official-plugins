@@ -1,7 +1,7 @@
 [project]
 name = "lemonade"
 version = "0.1.0"
-description = "Lemonade AI model provider compatible with OpenAI's API standard"
+description = "Lemonade lets you run local models with NPU and GPU acceleration"
 readme = "README.md"
 requires-python = ">=3.12"
 

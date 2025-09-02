@@ -2,8 +2,8 @@ provider: lemonade
 label:
   en_US: Lemonade
 description:
-  en_US: Lemonade AI model provider compatible with OpenAI's API standard.
-  zh_Hans: Lemonade AI 模型供应商，兼容 OpenAI API 标准。
+  en_US: Lemonade lets you run local models with NPU and GPU acceleration.
+  zh_Hans: Lemonade 让你在 NPU 和 GPU 上运行本地模型。
 icon_small:
   en_US: icon.svg
 supported_model_types:

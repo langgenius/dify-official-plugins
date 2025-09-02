@@ -1,10 +1,10 @@
 version: 0.0.1
 type: plugin
-author: "lemonade-ai"
+author: "lemonade-sdk"
 name: "lemonade"
 description:
-  en_US: Lemonade AI model provider compatible with OpenAI's API standard.
-  zh_Hans: Lemonade AI 模型供应商，兼容 OpenAI API 标准。
+  en_US: Lemonade lets you run local models with NPU and GPU acceleration.
+  zh_Hans: Lemonade 让你在 NPU 和 GPU 上运行本地模型。
 label:
   en_US: "Lemonade"
 created_at: "2025-09-02T17:22:00.000000000Z"
