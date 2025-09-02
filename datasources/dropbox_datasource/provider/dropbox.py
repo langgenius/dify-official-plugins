@@ -127,6 +127,6 @@ class DropboxDatasourceProvider(DatasourceProvider):
         return DatasourceOAuthCredentials(
             name=user_name or user_email or "Dropbox User",
             avatar_url=user_avatar,
-            credentials=credentials,
+            credentials={"access_token": access_token},
             expires_at=-1  # Dropbox tokens don't expire
         )
