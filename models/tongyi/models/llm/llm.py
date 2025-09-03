@@ -267,7 +267,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :return: llm response
         """
         if response.status_code not in {200, HTTPStatus.OK}:
-            raise ServiceUnavailableError(response.message)
+            self._handle_error_response(response.status_code, response.message)
         resp_content = response.output.choices[0].message.content
         # special for qwen-vl
         if isinstance(resp_content, list):
@@ -333,9 +333,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         tool_calls = []
         for index, response in enumerate(responses):
             if response.status_code not in {200, HTTPStatus.OK}:
-                raise ServiceUnavailableError(
-                    f"Failed to invoke model {model}, status code: {response.status_code}, message: {response.message}"
-                )
+                self._handle_error_response(response.status_code, response.message, model)
             resp_finish_reason = response.output.choices[0].finish_reason
             if resp_finish_reason is not None and resp_finish_reason != "null":
                 resp_content = response.output.choices[0].message.content
@@ -690,6 +688,37 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 f"[wrap_thinking_by_reasoning_content-2] {ex}"
             ) from ex
         return content, is_reasoning
+
+    def _handle_error_response(self, status_code: int, message: str, model: str = None) -> None:
+        """
+        Handle error response based on HTTP status code
+        
+        :param status_code: HTTP status code
+        :param message: error message
+        :param model: model name (optional, for more detailed error messages)
+        :raises: Appropriate InvokeError based on status code
+        """
+        error_msg = f"Failed to invoke model {model}, status code: {status_code}, message: {message}" if model else message
+        
+        if status_code == 400:
+            raise InvokeBadRequestError(error_msg)
+        elif status_code == 401:
+            raise InvokeAuthorizationError(error_msg)
+        elif status_code == 403:
+            raise InvokeAuthorizationError(error_msg)
+        elif status_code == 422:
+            raise InvokeBadRequestError(error_msg)
+        elif status_code == 429:
+            raise InvokeRateLimitError(error_msg)
+        elif status_code >= 500:
+            raise InvokeServerUnavailableError(error_msg)
+        else:
+            # For any other 4xx errors, treat as bad request
+            if 400 <= status_code < 500:
+                raise InvokeBadRequestError(error_msg)
+            # For any other status codes, treat as server unavailable
+            else:
+                raise InvokeServerUnavailableError(error_msg)
 
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
