@@ -26,10 +26,7 @@ class GeneralChunkTool(Tool):
         )
 
         chunks = character_splitter.split_text(input_variable)
-        result = {
-            "general_chunks": chunks,
-        }
         try:
-            yield self.create_variable_message("result", result)
+            yield self.create_variable_message("result", chunks)
         except Exception as e:
             yield self.create_text_message(f"Error: {e}")
