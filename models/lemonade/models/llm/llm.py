@@ -29,7 +29,14 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
     def get_customizable_model_schema(
         self, model: str, credentials: Mapping | dict
     ) -> AIModelEntity:
-        entity = super().get_customizable_model_schema(model, credentials)
+        # Overwrite some parameters
+        customized_credentials = dict(credentials)
+        customized_credentials["max_tokens_to_sample"] = 4096
+        customized_credentials["stream_mode_delimiter"] = '\n\n'
+        customized_credentials["stream_mode_auth"] = "not_use"
+        customized_credentials["mode"] = "chat"
+        
+        entity = super().get_customizable_model_schema(model, customized_credentials)
 
         agent_though_support = credentials.get("agent_though_support", "not_supported")
         if agent_though_support == "supported":
@@ -69,11 +76,6 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
                     name=DefaultParameterName.JSON_SCHEMA.value,
                     use_template=DefaultParameterName.JSON_SCHEMA.value,
                 )
-            )
-
-        if "display_name" in credentials and credentials["display_name"] != "":
-            entity.label = I18nObject(
-                en_US=credentials["display_name"], zh_Hans=credentials["display_name"]
             )
 
         entity.parameter_rules += [

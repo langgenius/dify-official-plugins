@@ -21,16 +21,6 @@ model_credential_schema:
       en_US: Enter full model name
       zh_Hans: 输入模型全称
   credential_form_schemas:
-    - variable: display_name
-      label:
-        en_US: Model display name
-        zh_Hans: 模型显示名称
-      type: text-input
-      required: false
-      placeholder:
-        zh_Hans: 模型在界面的显示名称
-        en_US: The display name of the model in the interface.
-
     - variable: endpoint_url
       label:
         zh_Hans: API endpoint URL
@@ -40,36 +30,6 @@ model_credential_schema:
       placeholder:
         zh_Hans: Base URL, e.g. http://127.0.0.1:8000
         en_US: Base URL, e.g. http://127.0.0.1:8000
-    - variable: endpoint_model_name
-      label:
-        zh_Hans: API endpoint中的模型名称
-        en_US: model name for API endpoint
-      type: text-input
-      required: false
-      placeholder:
-        zh_Hans: endpoint model name, e.g. lemonade-4.0
-        en_US: endpoint model name, e.g. lemonade-4.0
-    - variable: mode
-      show_on:
-        - variable: __model_type
-          value: llm
-      label:
-        en_US: Completion mode
-      type: select
-      required: false
-      default: chat
-      placeholder:
-        zh_Hans: 选择对话类型
-        en_US: Select completion mode
-      options:
-        - value: completion
-          label:
-            en_US: Completion
-            zh_Hans: 补全
-        - value: chat
-          label:
-            en_US: Chat
-            zh_Hans: 对话
     - variable: context_size
       label:
         zh_Hans: 模型上下文长度
@@ -83,41 +43,6 @@ model_credential_schema:
       placeholder:
         zh_Hans: 在此输入您的模型上下文长度
         en_US: Enter your Model context size
-    - variable: context_size
-      label:
-        zh_Hans: 模型上下文长度
-        en_US: Model context size
-      required: true
-      show_on:
-        - variable: __model_type
-          value: text-embedding
-      type: text-input
-      default: "4096"
-      placeholder:
-        zh_Hans: 在此输入您的模型上下文长度
-        en_US: Enter your Model context size
-    - variable: context_size
-      label:
-        zh_Hans: 模型上下文长度
-        en_US: Model context size
-      required: true
-      show_on:
-        - variable: __model_type
-          value: rerank
-      type: text-input
-      default: "4096"
-      placeholder:
-        zh_Hans: 在此输入您的模型上下文长度
-        en_US: Enter your Model context size
-    - variable: max_tokens_to_sample
-      label:
-        zh_Hans: 最大 token 上限
-        en_US: Upper bound for max tokens
-      show_on:
-        - variable: __model_type
-          value: llm
-      default: "4096"
-      type: text-input
     - variable: agent_though_support
       show_on:
         - variable: __model_type
@@ -195,51 +120,6 @@ model_credential_schema:
           label:
             en_US: Not Support
             zh_Hans: 不支持
-    - variable: structured_output_support
-      show_on:
-        - variable: __model_type
-          value: llm
-      label:
-        en_US: Structured Output
-      type: select
-      required: false
-      default: not_supported
-      options:
-        - value: supported
-          label:
-            en_US: Support
-            zh_Hans: 支持
-        - value: not_supported
-          label:
-            en_US: Not Support
-            zh_Hans: 不支持
-    - variable: stream_mode_auth
-      show_on:
-        - variable: __model_type
-          value: llm
-      label:
-        en_US: Stream mode auth
-      type: select
-      required: false
-      default: not_use
-      options:
-        - value: use
-          label:
-            en_US: Use
-            zh_Hans: 使用
-        - value: not_use
-          label:
-            en_US: Not Use
-            zh_Hans: 不使用
-    - variable: stream_mode_delimiter
-      label:
-        zh_Hans: 流模式返回结果的分隔符
-        en_US: Delimiter for streaming results
-      show_on:
-        - variable: __model_type
-          value: llm
-      default: '\n\n'
-      type: text-input
 extra:
   python:
     provider_source: provider/lemonade.py
