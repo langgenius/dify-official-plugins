@@ -35,6 +35,8 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
         customized_credentials["stream_mode_delimiter"] = '\n\n'
         customized_credentials["stream_mode_auth"] = "not_use"
         customized_credentials["mode"] = "chat"
+        customized_credentials["function_calling_type"] = "tool_call"
+        customized_credentials["stream_function_calling"] = "supported"
         
         entity = super().get_customizable_model_schema(model, customized_credentials)
 
