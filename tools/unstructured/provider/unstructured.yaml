@@ -57,11 +57,10 @@ identity:
     zh_Hans: unstructured
     pt_BR: unstructured
   icon: icon.svg
+  tags:
+    - rag
 tools:
   - tools/partition.yaml
 extra:
   python:
     source: provider/unstructured.py
-
-tags:
-  - rag

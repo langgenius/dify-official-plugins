@@ -10,10 +10,11 @@ identity:
     zh_Hans: Parent-child Chunk Structure
     pt_BR: Parent-child Chunk Structure
   icon: icon.svg
+  tags:
+    - rag
 tools:
   - tools/parent_child_chunk.yaml
 extra:
   python:
     source: provider/parent_child_chunk.py
-tags:
-  - rag
+
