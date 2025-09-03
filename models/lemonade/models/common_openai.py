@@ -22,7 +22,7 @@ class _CommonOpenAI:
         :return:
         """
         credentials_kwargs = {
-            "api_key": credentials["api_key"],
+            "api_key": "lemonade",
             "timeout": Timeout(315.0, read=300.0, write=10.0, connect=5.0),
             "max_retries": 1,
         }
