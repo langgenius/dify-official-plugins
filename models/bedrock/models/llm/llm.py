@@ -279,7 +279,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 }
         else:
             # Use traditional model ID resolution
-            model_name = model_parameters.pop('model_name')
+            model_name = model_parameters.get('model_name')
             model_id = model_ids.get_model_id(model, model_name)
             
             # Store model_name in credentials for pricing calculation
