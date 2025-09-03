@@ -51,7 +51,7 @@ class OneDriveDataSource(OnlineDriveDatasource):
 
         resp = requests.get(url, headers=headers, params=params, timeout=10)
         if resp.status_code == 401:
-            # 令牌可能已过期，尝试刷新
+            # Token may have expired, try to refresh
             try:
                 updated_credentials = self._refresh_token_if_needed()
                 headers["Authorization"] = f"Bearer {updated_credentials['access_token']}"
@@ -100,7 +100,7 @@ class OneDriveDataSource(OnlineDriveDatasource):
 
         content_resp = requests.get(f"{base_url}/{file_id}/content", headers=headers, timeout=30)
         if content_resp.status_code == 401:
-            # 令牌可能已过期，尝试刷新
+            # Token may have expired, try to refresh
             try:
                 updated_credentials = self._refresh_token_if_needed()
                 headers["Authorization"] = f"Bearer {updated_credentials['access_token']}"
