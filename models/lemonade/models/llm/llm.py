@@ -1,6 +1,9 @@
 import re
 from contextlib import suppress
 from typing import Mapping, Optional, Union, Generator
+import json
+import requests
+from urllib.parse import urljoin
 
 from dify_plugin.entities.model import (
     AIModelEntity,
@@ -10,7 +13,7 @@ from dify_plugin.entities.model import (
     ParameterRule,
     ParameterType,
 )
-from dify_plugin.entities.model.llm import LLMResult
+from dify_plugin.entities.model.llm import LLMResult, LLMMode
 from dify_plugin.entities.model.message import (
     PromptMessage,
     PromptMessageRole,
@@ -19,6 +22,7 @@ from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
 )
 from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLanguageModel
+from dify_plugin.errors.model import CredentialsValidateFailedError
 from typing import List
 
 
@@ -169,3 +173,52 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
         return super()._invoke(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
         )
+
+    def validate_credentials(self, model: str, credentials: dict) -> None:
+        """
+        Validate model credentials using requests to ensure compatibility with Lemonade API.
+
+        :param model: model name
+        :param credentials: model credentials
+        :return:
+        """
+        try:
+            headers = {"Content-Type": "application/json"}
+
+            # Lemonade provider uses a fixed API key
+            headers["Authorization"] = "Bearer lemonade"
+
+            endpoint_url = credentials.get("endpoint_url")
+            if not endpoint_url:
+                raise CredentialsValidateFailedError("endpoint_url is required")
+            
+            if not endpoint_url.endswith("/"):
+                endpoint_url += "/"
+
+            # Use health endpoint to validate the server status
+            endpoint_url = urljoin(endpoint_url, "health")
+
+            # send a get request to check health endpoint
+            response = requests.get(endpoint_url, headers=headers, timeout=(10, 300))
+
+            if response.status_code != 200:
+                raise CredentialsValidateFailedError(
+                    f"Credentials validation failed with status code {response.status_code} when checking {endpoint_url}"
+                )
+
+            try:
+                json_result = response.json()
+            except json.JSONDecodeError as e:
+                raise CredentialsValidateFailedError("Credentials validation failed: JSON decode error")
+
+            # Basic check for valid health response structure
+            if "status" not in json_result:
+                raise CredentialsValidateFailedError("Credentials validation failed: invalid response format")
+            
+            if json_result.get("status") != "ok":
+                raise CredentialsValidateFailedError("Credentials validation failed: server status is not ok")
+
+        except CredentialsValidateFailedError:
+            raise
+        except Exception as ex:
+            raise CredentialsValidateFailedError(str(ex))
