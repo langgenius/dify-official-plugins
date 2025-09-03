@@ -65,5 +65,6 @@ extra:
 
 tools:
 - tools/parse.yaml
+- tools/replace_md_img_path.yaml
 
 
