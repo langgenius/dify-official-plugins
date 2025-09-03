@@ -1,4 +1,4 @@
-version: 0.0.1
+version: 0.0.2
 type: plugin
 author: langgenius
 name: unstructured
@@ -35,3 +35,5 @@ meta:
 created_at: 2025-04-23T17:46:21.256715+08:00
 privacy: PRIVACY.md
 verified: false
+tags:
+  - rag

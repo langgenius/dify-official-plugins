@@ -15,5 +15,6 @@ identity:
   name: qa_chunk
   tags:
   - utilities
+  - rag
 tools:
 - tools/qa.yaml

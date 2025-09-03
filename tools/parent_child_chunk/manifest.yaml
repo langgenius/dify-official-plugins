@@ -1,4 +1,4 @@
-version: 0.0.4
+version: 0.0.5
 type: plugin
 author: langgenius
 name: parentchild_chunker
@@ -32,3 +32,5 @@ meta:
 created_at: 2025-05-20T16:54:07.682646+08:00
 privacy: PRIVACY.md
 verified: false
+tags:
+  - rag

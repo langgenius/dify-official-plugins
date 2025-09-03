@@ -15,3 +15,5 @@ tools:
 extra:
   python:
     source: provider/parent_child_chunk.py
+tags:
+  - rag

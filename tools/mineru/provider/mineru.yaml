@@ -64,4 +64,6 @@ extra:
 
 tools:
 - tools/parse.yaml
+tags:
+  - rag
 

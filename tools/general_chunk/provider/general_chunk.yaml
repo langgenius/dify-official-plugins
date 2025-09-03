@@ -14,6 +14,6 @@ identity:
     zh_Hans: 通用文本分块
   name: general_chunker
   tags:
-  - utilities
+  - rag
 tools:
 - tools/general.yaml

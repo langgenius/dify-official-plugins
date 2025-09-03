@@ -15,3 +15,5 @@ tools:
 extra:
   python:
     source: provider/dify_extractor.py
+tags:
+  - rag

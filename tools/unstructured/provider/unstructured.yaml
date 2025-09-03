@@ -62,3 +62,6 @@ tools:
 extra:
   python:
     source: provider/unstructured.py
+
+tags:
+  - rag
