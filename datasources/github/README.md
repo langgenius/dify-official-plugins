@@ -116,7 +116,7 @@ config:
 # provider/github.yaml
 identity:
   name: github_datasource
-  author: github-integration-team
+  author: langgenius
   label:
     en_US: GitHub
 provider_type: online_document

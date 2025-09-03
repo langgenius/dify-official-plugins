@@ -1,6 +1,6 @@
 version: 0.3.1
 type: plugin
-author: github-integration-team
+author: langgenius
 name: github_datasource
 label:
   en_US: GitHub
