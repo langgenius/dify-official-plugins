@@ -1,7 +1,7 @@
 # Google Drive Datasource Plugin
 
 **Author**: langgenius  
-**Version**: 0.1.3  
+**Version**: 0.1.4  
 **Type**: datasource
 
 ## Introduction

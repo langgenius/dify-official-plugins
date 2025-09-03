@@ -1,7 +1,7 @@
 # Firecrawl Datasource Plugin
 
 **Author**: langgenius  
-**Version**: 0.2.2  
+**Version**: 0.2.3 
 **Type**: datasource (website_crawl)
 
 ## Introduction

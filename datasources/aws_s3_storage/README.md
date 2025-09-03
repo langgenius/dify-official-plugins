@@ -1,7 +1,7 @@
 # AWS S3 Storage Datasource Plugin
 
 **Author**: langgenius  
-**Version**: 0.3.2  
+**Version**: 0.3.3 
 **Type**: datasource
 
 ## Introduction

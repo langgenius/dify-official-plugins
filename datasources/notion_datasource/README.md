@@ -1,7 +1,7 @@
 # Notion Datasource Plugin
 
 **Author**: langgenius  
-**Version**: 0.1.10  
+**Version**: 0.1.11 
 **Type**: datasource (online_document)
 
 ## Introduction

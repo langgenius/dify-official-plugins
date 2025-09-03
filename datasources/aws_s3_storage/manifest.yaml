@@ -1,4 +1,4 @@
-version: 0.3.2
+version: 0.3.3
 type: plugin
 author: langgenius
 name: aws_s3_storage
@@ -24,7 +24,7 @@ meta:
     language: python
     version: "3.12"
     entrypoint: main
-  minimum_dify_version: 1.0.0
+  minimum_dify_version: 1.7.2
 created_at: 2025-05-13T14:54:47.062188+08:00
 privacy: 
 verified: false
