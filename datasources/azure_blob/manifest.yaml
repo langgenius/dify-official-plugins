@@ -1,6 +1,6 @@
-version: 0.2.3
+version: 0.2.4
 type: plugin
-author: azure-storage-team
+author: langgenius
 name: azure_blob_datasource
 label:
   en_US: Azure Blob Storage

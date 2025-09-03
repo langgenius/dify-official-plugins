@@ -1,6 +1,6 @@
-version: 0.1.3
+version: 0.1.4
 type: plugin
-author: microsoft-integration-team
+author: langgenius
 name: onedrive_datasource
 label:
   en_US: OneDrive
