@@ -1,13 +1,13 @@
-# QA Chunk
+# Q&A processor
 
 ## Overview
 
-The QA Chunk is a service that provides question&answer chunking mode, the chunks retrieved and recalled are the same.
+The QA processor is a service that provides question&answer chunking mode, the chunks retrieved and recalled are the same.
 ## Configuration
 
-### 1. Get QA Chunk tools from Plugin Marketplace
+### 1. Get Q&A processor tools from Plugin Marketplace
 
-The QA Chunk tools could be found at the Plugin Marketplace, please install it.
+The Q&A processor tools could be found at the Plugin Marketplace, please install it.
 
 ![](./_assets/qa_chunk_1.png)
 

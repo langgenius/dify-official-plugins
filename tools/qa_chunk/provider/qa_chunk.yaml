@@ -9,9 +9,9 @@ identity:
     zh_Hans: QA 分块模式。
   icon: icon.svg
   label:
-    en_US: QAChunk
-    pt_BR: QAChunk
-    zh_Hans: QA 分块
+    en_US: Q&A Processor
+    pt_BR: Q&A Processor
+    zh_Hans: Q&A 处理器
   name: qa_chunk
   tags:
   - utilities
