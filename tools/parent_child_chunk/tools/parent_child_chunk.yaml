@@ -95,7 +95,7 @@ parameters:
       zh_Hans: 用于子分块的分隔符
       pt_BR: Separador usado para subdivisão
     llm_description: The separator used to split subchunks
-    default: ". "
+    default: "\n"
     form: llm
 
   - name: subchunk_max_length
