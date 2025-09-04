@@ -19,6 +19,7 @@ meta:
     language: python
     version: '3.12'
   version: 0.0.1
+  minimum_dify_version: 2.0.0-beta1
 name: qa_chunk
 plugins:
   tools:
@@ -32,7 +33,6 @@ resource:
     tool:
       enabled: true
 tags:
-  - utilities
-  - rag
+- utilities
 type: plugin
 version: 0.0.6

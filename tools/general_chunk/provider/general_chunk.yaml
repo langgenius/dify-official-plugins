@@ -8,12 +8,11 @@ identity:
     pt_BR: General text chunking mode, the chunks retrieved and recalled are the same.
     zh_Hans: 通用文本分块模式，检索和召回的块是相同的。
   icon: icon.svg
+  tags: []
   label:
     en_US: General Chunker
     pt_BR: General Chunker
     zh_Hans: 通用文本分块
   name: general_chunker
-  tags:
-  - rag
 tools:
 - tools/general.yaml

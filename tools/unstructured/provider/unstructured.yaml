@@ -57,8 +57,7 @@ identity:
     zh_Hans: unstructured
     pt_BR: unstructured
   icon: icon.svg
-  tags:
-    - rag
+  tags: []
 tools:
   - tools/partition.yaml
 extra:
