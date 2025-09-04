@@ -1,0 +1,20 @@
+identity:
+  author: langgenius
+  name: parentchild_chunker
+  label:
+    en_US: Parent-child Chunker
+    zh_Hans: 父子文本分块
+    pt_BR: Parent-child Chunker
+  description:
+    en_US: Parent-child Chunk Structure
+    zh_Hans: Parent-child Chunk Structure
+    pt_BR: Parent-child Chunk Structure
+  icon: icon.svg
+  tags:
+    - rag
+tools:
+  - tools/parent_child_chunk.yaml
+extra:
+  python:
+    source: provider/parent_child_chunk.py
+
