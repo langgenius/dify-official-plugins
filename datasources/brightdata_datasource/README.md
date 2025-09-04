@@ -1,7 +1,7 @@
-## jina_datasource
+## brightdata_datasource
 
 **Author:** langgenius
-**Version:** 0.1.0
+**Version:** 0.1.3
 **Type:** datasource
 
 # Bright Data Web Scraper
