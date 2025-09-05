@@ -477,7 +477,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     parts_.extend(_build_text_parts(obj))
                 else:
                     # Filter files based on type and supported formats
-                    should_upload = True
+                    should_upload = False
 
                     if obj.type == PromptMessageContentType.DOCUMENT:
                         # For documents: use blacklist (skip unsupported types)
