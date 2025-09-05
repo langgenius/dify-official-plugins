@@ -1,0 +1,39 @@
+model: deepseek-v3-0324
+label:
+  en_US: deepseek-v3-0324
+model_type: llm
+features:
+  - agent-thought
+model_properties:
+  mode: chat
+  context_size: 128000
+parameter_rules:
+
+
+  - name: temperature
+    use_template: temperature
+    required: false
+    default: 0.7
+    min: 0
+    max: 1
+
+  - name: top_p
+    use_template: top_p
+    required: false
+    default: 0.9
+    min: 0
+    max: 1
+
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 8192
+    min: 1
+    max: 128000   # 根据你模型的 context_size 来设置
+
+
+pricing:
+  input: '2.00'
+  output: '8.00'
+  unit: '0.000001' # 每百万 token
+  currency: CNY
