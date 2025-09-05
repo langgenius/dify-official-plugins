@@ -1,0 +1,103 @@
+description:
+  human:
+    en_US: Create a new role with permissions configuration
+    zh_Hans: 创建角色，包含权限配置信息
+  llm: Create a new role with specified permissions including global permissions, worksheet permissions, and page permissions.
+extra:
+  python:
+    source: tools/create_role.py
+identity:
+  author: langgenius
+  label:
+    en_US: Create Role
+    zh_Hans: 创建角色
+  name: create_role
+parameters:
+- form: llm
+  name: name
+  label:
+    en_US: Role Name
+    zh_Hans: 角色名称
+  human_description:
+    en_US: The name of the role
+    zh_Hans: 角色名称
+  llm_description: The name of the role to create
+  required: true
+  type: string
+- form: llm
+  name: description
+  label:
+    en_US: Role Description
+    zh_Hans: 角色描述
+  human_description:
+    en_US: Description of the role
+    zh_Hans: 角色描述
+  llm_description: Description of the role and its purpose
+  required: true
+  type: string
+- form: llm
+  name: permission_scope
+  label:
+    en_US: Permission Scope
+    zh_Hans: 权限范围
+  human_description:
+    en_US: Permission scope (80=full access, 60=view all/edit own, 30=view joined/edit own, 20=view only, 0=custom)
+    zh_Hans: 权限范围 (80=完全权限, 60=查看全部/编辑自己, 30=查看加入/编辑自己, 20=仅查看, 0=自定义权限)
+  llm_description: Permission scope level - 80 for full access, 60 for view all but edit own only, 30 for view joined and edit own only, 20 for view only, 0 for custom permissions
+  required: true
+  type: string
+- form: llm
+  name: role_type
+  label:
+    en_US: Role Type
+    zh_Hans: 角色类型
+  human_description:
+    en_US: Role type (0=custom role)
+    zh_Hans: 角色类型 (0=自定义角色)
+  llm_description: Role type, 0 for custom role
+  required: false
+  type: string
+- form: llm
+  name: hide_app_for_members
+  label:
+    en_US: Hide App for Members
+    zh_Hans: 对成员隐藏应用
+  human_description:
+    en_US: Whether to hide app from members (true/false)
+    zh_Hans: 是否对成员隐藏应用 (true/false)
+  llm_description: Whether to hide the application from role members, true to hide, false to show
+  required: false
+  type: string
+- form: llm
+  name: global_permissions
+  label:
+    en_US: Global Permissions
+    zh_Hans: 全局权限
+  human_description:
+    en_US: Global permissions JSON object (addRecord, share, import, export, log, attachmentDownload, systemPrint, discuss)
+    zh_Hans: 全局权限 JSON 对象 (addRecord, share, import, export, log, attachmentDownload, systemPrint, discuss)
+  llm_description: Global permissions as JSON object with boolean values for addRecord, share, import, export, log, attachmentDownload, systemPrint, discuss
+  required: false
+  type: string
+- form: llm
+  name: worksheet_permissions
+  label:
+    en_US: Worksheet Permissions
+    zh_Hans: 工作表权限
+  human_description:
+    en_US: Worksheet permissions JSON array for specific worksheet permissions
+    zh_Hans: 工作表权限 JSON 数组，用于特定工作表权限设置
+  llm_description: Worksheet permissions as JSON array containing detailed worksheet-level permissions
+  required: false
+  type: string
+- form: llm
+  name: page_permissions
+  label:
+    en_US: Page Permissions
+    zh_Hans: 自定义页面权限
+  human_description:
+    en_US: Custom page permissions JSON array
+    zh_Hans: 自定义页面权限 JSON 数组
+  llm_description: Custom page permissions as JSON array for page-level access control
+  required: false
+  type: string

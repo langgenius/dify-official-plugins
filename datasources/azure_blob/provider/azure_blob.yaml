@@ -1,0 +1,221 @@
+identity:
+  author: langgenius
+  name: azure_blob
+  label:
+    en_US: Azure Blob Storage
+    zh_Hans: Azure Blob 存储
+  description:
+    en_US: Azure Blob Storage Datasource - Access containers and blobs with multiple authentication methods
+    zh_Hans: Azure Blob 存储数据源 - 支持多种认证方式访问容器和 Blob
+  icon: icon.svg
+provider_type: online_drive
+help:
+  title:
+    en_US: Configure Azure Blob Storage credentials
+    zh_Hans: 配置 Azure Blob 存储凭证
+  url:
+    en_US: https://portal.azure.com/#view/Microsoft_Azure_Storage/StorageMenuBlade/~/AccessKeys
+    zh_Hans: https://portal.azure.com/#view/Microsoft_Azure_Storage/StorageMenuBlade/~/AccessKeys
+oauth_schema:
+  client_schema:
+    - name: client_id
+      type: secret-input
+      required: true
+      label:
+        en_US: Application (Client) ID
+        zh_Hans: 应用程序（客户端）ID
+      placeholder:
+        en_US: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        zh_Hans: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      help:
+        en_US: Azure AD Application (Client) ID from app registration
+        zh_Hans: 来自应用注册的 Azure AD 应用程序（客户端）ID
+      url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+    - name: client_secret
+      type: secret-input
+      required: true
+      label:
+        en_US: Client Secret
+        zh_Hans: 客户端密钥
+      placeholder:
+        en_US: Client secret value
+        zh_Hans: 客户端密钥值
+      help:
+        en_US: Client secret from Azure AD app registration
+        zh_Hans: 来自 Azure AD 应用注册的客户端密钥
+      url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+    - name: tenant_id
+      type: secret-input
+      required: true
+      label:
+        en_US: Tenant ID
+        zh_Hans: 租户 ID
+      placeholder:
+        en_US: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+        zh_Hans: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+      help:
+        en_US: Azure AD Tenant ID
+        zh_Hans: Azure AD 租户 ID
+      url: https://portal.azure.com/#view/Microsoft_AAD_IAM/ActiveDirectoryMenuBlade/~/Properties
+    - name: cloud_environment
+      type: select
+      required: false
+      label:
+        en_US: Cloud Environment
+        zh_Hans: 云环境
+      options:
+        - value: global
+          label:
+            en_US: Global Azure (login.microsoftonline.com)
+            zh_Hans: 全球 Azure (login.microsoftonline.com)
+        - value: china
+          label:
+            en_US: Azure China (login.chinacloudapi.cn)
+            zh_Hans: Azure 中国 (login.chinacloudapi.cn)
+        - value: government
+          label:
+            en_US: Azure Government (login.microsoftonline.us)
+            zh_Hans: Azure 政府 (login.microsoftonline.us)
+        - value: germany
+          label:
+            en_US: Azure Germany (login.microsoftonline.de)
+            zh_Hans: Azure 德国 (login.microsoftonline.de)
+      default: global
+      help:
+        en_US: Select the correct Azure cloud environment for your tenant
+        zh_Hans: 选择租户所在的正确 Azure 云环境
+  credentials_schema:
+    - name: access_token
+      type: secret-input
+      label:
+        en_US: Access Token
+        zh_Hans: 访问令牌
+    - name: refresh_token
+      type: secret-input
+      label:
+        en_US: Refresh Token
+        zh_Hans: 刷新令牌
+    - name: client_id
+      type: secret-input
+      label:
+        en_US: Application (Client) ID
+        zh_Hans: 应用程序（客户端）ID
+    - name: client_secret
+      type: secret-input
+      label:
+        en_US: Client Secret
+        zh_Hans: 客户端密钥
+    - name: tenant_id
+      type: secret-input
+      label:
+        en_US: Tenant ID
+        zh_Hans: 租户 ID
+credentials_schema:
+  - name: auth_method
+    type: select
+    required: true
+    label:
+      en_US: Authentication Method
+      zh_Hans: 认证方式
+    options:
+      - value: account_key
+        label:
+          en_US: Account Key
+          zh_Hans: 账户密钥
+      - value: sas_token
+        label:
+          en_US: SAS Token
+          zh_Hans: SAS 令牌
+      - value: connection_string
+        label:
+          en_US: Connection String
+          zh_Hans: 连接字符串
+      - value: oauth
+        label:
+          en_US: Azure AD OAuth
+          zh_Hans: Azure AD OAuth
+    default: account_key
+    help:
+      en_US: Choose your preferred authentication method
+      zh_Hans: 选择您偏好的认证方式
+  - name: account_name
+    type: text-input
+    required: true
+    label:
+      en_US: Storage Account Name
+      zh_Hans: 存储账户名称
+    placeholder:
+      en_US: mystorageaccount
+      zh_Hans: mystorageaccount
+    help:
+      en_US: Your Azure Storage account name
+      zh_Hans: 您的 Azure 存储账户名称
+  - name: account_key
+    type: secret-input
+    required: false
+    label:
+      en_US: Account Key
+      zh_Hans: 账户密钥
+    placeholder:
+      en_US: Primary or secondary access key
+      zh_Hans: 主要或次要访问密钥
+    help:
+      en_US: Required when using "Account Key" authentication method. Leave empty for other methods.
+      zh_Hans: 选择"账户密钥"认证方式时必填。使用其他认证方式时请留空。
+    url: https://portal.azure.com/#view/Microsoft_Azure_Storage/StorageMenuBlade/~/AccessKeys
+  - name: sas_token
+    type: secret-input
+    required: false
+    label:
+      en_US: SAS Token
+      zh_Hans: SAS 令牌
+    placeholder:
+      en_US: ?sv=2022-11-02&ss=b&srt=co&sp=rl&se=...
+      zh_Hans: ?sv=2022-11-02&ss=b&srt=co&sp=rl&se=...
+    help:
+      en_US: Required when using "SAS Token" authentication method. SAS token with read and list permissions for blob service.
+      zh_Hans: 选择"SAS 令牌"认证方式时必填。需要具有 Blob 服务读取和列表权限的 SAS 令牌。
+    url: https://docs.microsoft.com/azure/storage/common/storage-sas-overview
+  - name: connection_string
+    type: secret-input
+    required: false
+    label:
+      en_US: Connection String
+      zh_Hans: 连接字符串
+    placeholder:
+      en_US: DefaultEndpointsProtocol=https;AccountName=...
+      zh_Hans: DefaultEndpointsProtocol=https;AccountName=...
+    help:
+      en_US: Required when using "Connection String" authentication method. Complete connection string for the storage account.
+      zh_Hans: 选择"连接字符串"认证方式时必填。存储账户的完整连接字符串。
+    url: https://portal.azure.com/#view/Microsoft_Azure_Storage/StorageMenuBlade/~/AccessKeys
+  - name: endpoint_suffix
+    type: text-input
+    required: false
+    label:
+      en_US: Endpoint Suffix
+      zh_Hans: 端点后缀
+    placeholder:
+      en_US: core.windows.net
+      zh_Hans: core.windows.net
+    default: core.windows.net
+    help:
+      en_US: 'Endpoint suffix: core.windows.net (Global), core.chinacloudapi.cn (China), core.usgovcloudapi.net (Government)'
+      zh_Hans: '端点后缀：core.windows.net（全球）、core.chinacloudapi.cn（中国）、core.usgovcloudapi.net（政府）'
+  - name: default_container
+    type: text-input
+    required: false
+    label:
+      en_US: Default Container
+      zh_Hans: 默认容器
+    placeholder:
+      en_US: my-container
+      zh_Hans: my-container
+    help:
+      en_US: Optional default container to browse (leave empty to list all containers)
+      zh_Hans: 可选的默认浏览容器（留空则列出所有容器）
+datasources:
+  - datasources/azure_blob.yaml
+extra:
+  python:
+    source: provider/azure_blob.py

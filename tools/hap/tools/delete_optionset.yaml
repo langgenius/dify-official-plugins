@@ -1,0 +1,26 @@
+description:
+  human:
+    en_US: Delete an option set by option set ID
+    zh_Hans: 通过选项集 ID 删除选项集
+  llm: Delete a specific option set from the application using its option set ID.
+extra:
+  python:
+    source: tools/delete_optionset.py
+identity:
+  author: langgenius
+  label:
+    en_US: Delete Option Set
+    zh_Hans: 删除选项集
+  name: delete_optionset
+parameters:
+- form: llm
+  name: optionset_id
+  label:
+    en_US: Option Set ID
+    zh_Hans: 选项集 ID
+  human_description:
+    en_US: The option set ID to delete
+    zh_Hans: 需要删除的选项集 ID
+  llm_description: The option set ID to delete from the application
+  required: true
+  type: string

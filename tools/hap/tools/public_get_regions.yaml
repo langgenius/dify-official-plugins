@@ -1,0 +1,42 @@
+description:
+  human:
+    en_US: Get regions information. Supports optional region id and fuzzy search.
+    zh_Hans: 获取地区信息，支持指定地区ID与模糊搜索。
+  llm: >
+    Get regions. Optional query params:
+    - id: region id to get current region and its children
+    - search: fuzzy search keyword
+    Returns currentRegion and regions list with id/name/path.
+extra:
+  python:
+    source: tools/public_get_regions.py
+identity:
+  author: langgenius
+  label:
+    en_US: Get Regions/Citys
+    zh_Hans: 获取地区/城市
+  name: public_get_regions
+parameters:
+  - form: llm
+    name: id
+    label:
+      en_US: Region ID
+      zh_Hans: 地区ID
+    human_description:
+      en_US: Optional region id to query
+      zh_Hans: 可选的地区ID用于查询
+    llm_description: Optional region id to query
+    required: false
+    type: string
+
+  - form: llm
+    name: search
+    label:
+      en_US: Search Keyword
+      zh_Hans: 搜索关键词
+    human_description:
+      en_US: Optional fuzzy search keyword
+      zh_Hans: 可选的模糊搜索关键词
+    llm_description: Optional fuzzy search keyword
+    required: false
+    type: string

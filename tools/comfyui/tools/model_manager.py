@@ -37,8 +37,7 @@ class ModelManager:
             raise Exception(f"Invalid lora_info")
 
         if len(lora_info.split(":")) == 3 or (lora_info.split(":")[0] != "civitai" and len(lora_info.split(":")) == 2):
-            lora_name = self.decode_model_name(
-                ":".join(lora_info.split(":")[:-1]), save_dir)
+            lora_name = self.decode_model_name(":".join(lora_info.split(":")[:-1]), save_dir)
             lora_strength = float(lora_info.split(":")[-1])
         else:
             lora_name = self.decode_model_name(lora_info, save_dir)
@@ -73,23 +72,17 @@ class ModelManager:
                 version_id = int(civit_pattern[3])
             except:
                 version_id = None
-            model_name_human, filenames = self.download_civitai(
-                model_id, version_id, save_dir
-            )
+            model_name_human, filenames = self.download_civitai(model_id, version_id, save_dir)
             return filenames[0]
         if len(re.findall("https?://huggingface\.co/.*", model_name)) > 0:
             # model_name is a URL for huggingface.co
             url = model_name
-            return self.download_model(
-                url, save_dir, model_name.split("/")[-1], self.get_hf_api_key()
-            )
+            return self.download_model(url, save_dir, model_name.split("/")[-1], self.get_hf_api_key())
         if len(re.findall("https?://.*", model_name)) > 0:
             # model_name is a general URL
             url = model_name
             return self.download_model(url, save_dir, model_name.split("/")[-1], None)
-        raise Exception(
-            f"Model {model_name} does not exist in the local folder {save_dir}/ or online."
-        )
+        raise Exception(f"Model {model_name} does not exist in the local folder {save_dir}/ or online.")
 
     def download_model(self, url: str, save_dir: str, filename: str | None = None, token=None) -> str:
         headers = {}
@@ -99,9 +92,7 @@ class ModelManager:
         if response.status_code == 401:
             raise Exception(f"401 Unauthorized. Please check the api_token.")
         elif response.status_code >= 400:
-            raise Exception(
-                f"Download failed. Error {response.status_code}. Please check the URL."
-            )
+            raise Exception(f"Download failed. Error {response.status_code}. Please check the URL.")
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "download.json")) as file:
@@ -119,30 +110,24 @@ class ModelManager:
             if len(self._comfyui_cli.get_model_dirs(save_dir)) == 0:
                 error += f"Please make sure that https://github.com/ServiceStack/comfy-asset-downloader works on ComfyUI and the destination folder named models/{save_dir} exists."
             else:
-                error += "Please make sure that https://github.com/ServiceStack/comfy-asset-downloader works on ComfyUI."
+                error += (
+                    "Please make sure that https://github.com/ServiceStack/comfy-asset-downloader works on ComfyUI."
+                )
             raise Exception(error)
 
         return filename
 
     def fetch_version_ids(self, model_id: int):
         try:
-            model_data = requests.get(
-                f"https://civitai.com/api/v1/models/{model_id}"
-            ).json()
+            model_data = requests.get(f"https://civitai.com/api/v1/models/{model_id}").json()
         except:
             raise Exception(f"Model {model_id} not found.")
-        version_ids = [
-            v["id"]
-            for v in model_data["modelVersions"]
-            if v["availability"] == "Public"
-        ]
+        version_ids = [v["id"] for v in model_data["modelVersions"] if v["availability"] == "Public"]
         return version_ids
 
     def download_civitai(self, model_id: int, version_id: int, save_dir: str) -> tuple[str, list[str]]:
         try:
-            model_data = requests.get(
-                f"https://civitai.com/api/v1/models/{model_id}"
-            ).json()
+            model_data = requests.get(f"https://civitai.com/api/v1/models/{model_id}").json()
 
             model_name_human = model_data["name"]
         except:
@@ -157,9 +142,7 @@ class ModelManager:
                 model_detail = past_model
                 break
         if model_detail is None:
-            raise Exception(
-                f"Version {version_id} of model {model_name_human} not found."
-            )
+            raise Exception(f"Version {version_id} of model {model_name_human} not found.")
         model_filenames = [file["name"] for file in model_detail["files"]]
 
         self.download_model(
@@ -182,9 +165,7 @@ class ModelManager:
 
     def fetch_civitai_air(self, version_id: int) -> tuple[str, str, str, str]:
         try:
-            air_str: str = requests.get(
-                f"https://civitai.com/api/v1/model-versions/{version_id}"
-            ).json()["air"]
+            air_str: str = requests.get(f"https://civitai.com/api/v1/model-versions/{version_id}").json()["air"]
             urn, air, ecosystem, model_type, source, id = air_str.split(":")
             return ecosystem, model_type, source, id
         except:

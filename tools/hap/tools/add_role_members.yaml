@@ -1,0 +1,81 @@
+description:
+  human:
+    en_US: Add members to a role (users, departments, jobs, org roles)
+    zh_Hans: 添加角色成员（用户、部门、职位、组织角色）
+  llm: Add members to a role including users, departments, department trees, jobs, and organization roles.
+extra:
+  python:
+    source: tools/add_role_members.py
+identity:
+  author: langgenius
+  label:
+    en_US: Add Role Members
+    zh_Hans: 添加角色成员
+  name: add_role_members
+parameters:
+- form: llm
+  name: role_id
+  label:
+    en_US: Role ID
+    zh_Hans: 角色 ID
+  human_description:
+    en_US: The role ID to add members to
+    zh_Hans: 需要添加成员的角色 ID
+  llm_description: The role ID to add members to
+  required: true
+  type: string
+- form: llm
+  name: user_ids
+  label:
+    en_US: User IDs
+    zh_Hans: 用户 ID 列表
+  human_description:
+    en_US: User IDs to add (comma-separated or JSON array)
+    zh_Hans: 需要添加的用户 ID 列表（逗号分隔或 JSON 数组）
+  llm_description: User IDs to add to the role, can be comma-separated string or JSON array
+  required: false
+  type: string
+- form: llm
+  name: department_ids
+  label:
+    en_US: Department IDs
+    zh_Hans: 部门 ID 列表
+  human_description:
+    en_US: Department IDs to add (comma-separated or JSON array)
+    zh_Hans: 需要添加的部门 ID 列表（逗号分隔或 JSON 数组）
+  llm_description: Department IDs to add to the role, can be comma-separated string or JSON array
+  required: false
+  type: string
+- form: llm
+  name: department_tree_ids
+  label:
+    en_US: Department Tree IDs
+    zh_Hans: 部门树 ID 列表
+  human_description:
+    en_US: Department tree IDs to add (comma-separated or JSON array)
+    zh_Hans: 需要添加的部门树 ID 列表（逗号分隔或 JSON 数组）
+  llm_description: Department tree IDs to add to the role, can be comma-separated string or JSON array
+  required: false
+  type: string
+- form: llm
+  name: job_ids
+  label:
+    en_US: Job IDs
+    zh_Hans: 职位 ID 列表
+  human_description:
+    en_US: Job IDs to add (comma-separated or JSON array)
+    zh_Hans: 需要添加的职位 ID 列表（逗号分隔或 JSON 数组）
+  llm_description: Job IDs to add to the role, can be comma-separated string or JSON array
+  required: false
+  type: string
+- form: llm
+  name: org_role_ids
+  label:
+    en_US: Organization Role IDs
+    zh_Hans: 组织角色 ID 列表
+  human_description:
+    en_US: Organization role IDs to add (comma-separated or JSON array)
+    zh_Hans: 需要添加的组织角色 ID 列表（逗号分隔或 JSON 数组）
+  llm_description: Organization role IDs to add to the role, can be comma-separated string or JSON array
+  required: false
+  type: string

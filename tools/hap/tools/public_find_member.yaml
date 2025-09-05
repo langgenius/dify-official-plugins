@@ -1,0 +1,28 @@
+description:
+  human:
+    en_US: Find members by exact name match. Returns user account id, name, masked mobile and email.
+    zh_Hans: 按名称精确匹配查找成员，返回用户账号ID、姓名、已脱敏手机号与邮箱。
+  llm: >
+    Find members by exact name match.
+    Returns user account id, fullname, masked mobile/email.
+extra:
+  python:
+    source: tools/public_find_member.py
+identity:
+  author: langgenius
+  label:
+    en_US: Find Member
+    zh_Hans: 查找成员
+  name: public_find_member
+parameters:
+  - form: llm
+    name: name
+    label:
+      en_US: Member Name (exact)
+      zh_Hans: 成员名称（精确）
+    human_description:
+      en_US: Exact member name to lookup
+      zh_Hans: 需要匹配的成员名称
+    llm_description: Exact member name to lookup
+    required: true
+    type: string

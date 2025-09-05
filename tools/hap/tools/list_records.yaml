@@ -1,0 +1,287 @@
+description:
+  human:
+    en_US: List worksheet records with pagination, filtering and sorting.
+    zh_Hans: 按分页、筛选与排序列出工作表记录
+  llm: >
+    List worksheet records with the specified worksheet ID.
+    Supports pagination (pageSize/pageIndex), fields projection, filter, sorts,
+    and flags like tableView/useFieldIdAsKey/includeTotalCount/includeSystemFields. Default result is JSON; set result_type="table" to return a Markdown table.
+extra:
+  python:
+    source: tools/list_records.py
+identity:
+  author: langgenius
+  label:
+    en_US: List Records
+    zh_Hans: 查询工作表行记录列表
+  name: list_records
+parameters:
+  - form: llm
+    name: worksheet_id
+    label:
+      en_US: Worksheet ID
+      zh_Hans: 工作表 ID
+    human_description:
+      en_US: The worksheet ID to query
+      zh_Hans: 需要查询的工作表 ID
+    llm_description: The worksheet ID to query
+    required: true
+    type: string
+
+  - form: llm
+    name: page_size
+    label:
+      en_US: Page Size
+      zh_Hans: 每页数量
+    human_description:
+      en_US: Page size (1-1000), default 50
+      zh_Hans: 每页数量（1-1000），默认 50
+    llm_description: Page size (1-1000), default 50
+    required: false
+    type: number
+    default: 50
+
+  - form: llm
+    name: page_index
+    label:
+      en_US: Page Index
+      zh_Hans: 页码
+    human_description:
+      en_US: Page index starting from 1, default 1
+      zh_Hans: 页码起始为 1，默认 1
+    llm_description: Page index starting from 1, default 1
+    required: false
+    type: number
+    default: 1
+
+  - form: llm
+    name: field_ids
+    label:
+      en_US: Fields (JSON array)
+      zh_Hans: 返回字段（JSON 数组）
+    human_description:
+      en_US: JSON array string of field IDs to include, e.g. ["name","age","city"]
+      zh_Hans: 需要返回的字段 ID 列表（JSON 字符串数组），例如 ["name","age","city"]
+    llm_description: JSON array string of field IDs to include, e.g. ["name","age","city"]
+    required: false
+    type: string
+
+  - form: llm
+    name: filter
+    label:
+      en_US: Filter (JSON object)
+      zh_Hans: 筛选器（JSON 对象）
+    human_description:
+      en_US: JSON object string of filter
+      zh_Hans: 筛选器 JSON 对象字符串。结构、运算符与限制
+    llm_description: > 
+      ## Filter Structure
+      
+      ```typescript
+      Filter = {
+        type: 'group' | 'condition'; // first level is always 'group'
+        // Fields when type is 'group'
+        logic?: 'AND' | 'OR';
+        children?: Filter[]; // Must be all group or all condition, cannot be mixed. Only two levels of children are allowed
+        // Fields when type is 'condition'
+        field?: string; // Field ID or alias
+        operator?: FilterOperator; // Operator, see <Operator Enum>. Operators other than <Operator Enum> cannot be used.
+        value?: any; // Value (string, number, array)
+      }
+      ```
+
+      ## Operator Enum
+
+      | Operator        | Example Value                                            |
+      | --------------- | -------------------------------------------------------- |
+      | `eq`            | `"Beijing"` or `["<targetid>"]`                          |
+      | `ne`            | `"London"` or `["<targetid>"]`                           |
+      | `gt`            | `20` or `"2025-02-06 00:00:00"`                          |
+      | `ge`            | `10`                                                     |
+      | `lt`            | `20`                                                     |
+      | `le`            | `100`                                                    |
+      | `in`            | `["value1", "value2"]`                                   |
+      | `notin`         | `["value1", "value2"]`                                   |
+      | `contains`      | `"Ch"` or `["Sales", "Marketing"]` |
+      | `notcontains`   | `"Ch"` or `["Sales", "Marketing"]` |
+      | `concurrent`    | `["<id1>", "<id2>"]`                                     |
+      | `belongsto`     | `["<departmentid>"]`                                     |
+      | `notbelongsto`  | `["<departmentid>"]`                                     |
+      | `startswith`    | `"Zhang"`                                                |
+      | `notstartswith` | `"Li"`                                                   |
+      | `endswith`      | `"Company"`                                              |
+      | `notendswith`   | `"Limited Company"`                                      |
+      | `between`       | `["2025-01-01", "2025-01-31"]`                           |
+      | `notbetween`    | `["10", "20"]`                                           |
+      | `isempty`       | No value field required                                  |
+      | `isnotempty`    | No value field required                                  |
+
+      ## Usage Examples
+
+      ### Example 1: Condition
+
+      Query all employees whose surname is "Zhang":
+
+      ```json
+      {
+        "type": "group",
+        "logic": "AND",
+        "children": [
+          {
+            "type": "condition",
+            "field": "name",
+            "operator": "startswith",
+            "value": "Zhang"
+          }
+        ]
+      }
+      ```
+
+      ### Example 2: Condition Group
+
+      Query all employees from the North region's marketing and sales departments whose surname is "Zhang" and who joined in January:
+
+      ```json
+      {
+        "type": "group",
+        "logic": "AND",
+        "children": [
+          {
+            "type": "group", 
+            "logic": "AND",
+            "children": [
+              {
+                "type": "condition",
+                "field": "name",
+                "operator": "startswith",
+                "value": "Zhang"
+              },
+              {
+                "type": "condition",
+                "field": "onboard_date",
+                "operator": "between",
+                "value": ["2025-01-01", "2025-01-31"]
+              }
+            ]
+          },
+          {
+            "type": "group",
+            "logic": "OR",
+            "children": [
+              {
+                "type": "condition",
+                "field": "department_name",
+                "operator": "contains",
+                "value": ["Sales", "Marketing"]
+              },
+              {
+                "type": "condition",
+                "field": "department_id",
+                "operator": "belongsto",
+                "value": ["North Region ID"]
+              }
+            ]
+          }
+        ]
+      }
+      ```
+
+      ## Notes
+
+      1. **Nesting Limit**: A maximum of two nesting levels is supported (group -> group -> condition)
+      2. **Children Type Consistency**: All children in a group must be either all groups or all conditions, cannot be mixed
+      3. **Logic Required**: When type is group, the logic field must be specified as "AND" or "OR"
+      4. **Empty Value Operators**: When using isempty and isnotempty, the value field is not required
+      5. **Array Values**: Some operators require array values (e.g., between, in, contains, concurrent, belongsto, etc.)
+      6. **Field Identifier**: The field should use the field’s ID value, and the field must exist in the queried table structure
+      7. **Option Fields**: All option fields (single choice, multiple choice) require the corresponding option’s key value to be placed in the array as the value, using array-value operators
+      8. **Related Records**: Filtering related records requires first querying the corresponding `record_id`, then filtering according to the array value rules
+      9. **Time Filtering**: If there is no specific time field, use the creation time field for filtering, with the operator between
+
+    required: false
+    type: string
+
+  - form: llm
+    name: query_description
+    label:
+      en_US: Query Description
+      zh_Hans: 查询说明
+    human_description:
+      en_US: The description of this query
+      zh_Hans: 查询筛选器的文字说明
+    llm_description: >
+      Discribe the content of `filter` parameter use user's language(e.g. Chinese) with this format:
+
+      Worksheet: `worksheet_name`, View: `view_name`(if has), Filter: (name starts with zhang and onboard_date between 2023-01-01 and 2023-01-31) and (department_name contains (Sales, Marketing) or department_id belongsto (a,b,c))
+      
+    required: false
+    type: string
+
+  - form: llm
+    name: sorts
+    label:
+      en_US: Sorts (JSON array)
+      zh_Hans: 排序字段（JSON 数组）
+    human_description:
+      en_US: JSON array string of sort objects, e.g. [{"field":"createdAt","isAsc":false}]
+      zh_Hans: 排序对象的 JSON 数组字符串，如 [{"field":"createdAt","isAsc":false}]
+    llm_description: JSON array string of {field:string, isAsc:boolean}, e.g. [{"field":"createdAt","isAsc":false}]
+    required: false
+    type: string
+
+  - form: llm
+    name: include_system_fields
+    label:
+      en_US: Include System Fields
+      zh_Hans: 包含系统字段
+    human_description:
+      en_US: Whether to include system fields in the response, including approval fields
+      zh_Hans: 是否在返回中包含系统字段（含审批字段）
+    llm_description: Whether to include system fields in the response, including approval fields
+    required: false
+    type: boolean
+
+  - form: llm
+    name: search
+    label:
+      en_US: Search Keyword
+      zh_Hans: 关键字搜索
+    human_description:
+      en_US: Fuzzy search keyword
+      zh_Hans: 模糊搜索关键字
+    llm_description: Fuzzy search keyword
+    required: false
+    type: string
+
+  - form: llm
+    name: view_id
+    label:
+      en_US: View ID
+      zh_Hans: 视图 ID
+    human_description:
+      en_US: Query data in a specified view
+      zh_Hans: 指定视图查询
+    llm_description: Query data in a specified view
+    required: false
+    type: string
+
+  - form: form
+    human_description:
+      en_US: used for selecting the result type, table styled text or json text
+      zh_Hans: 用于选择结果类型，使用表格格式文本还是JSON格式文本
+    label:
+      en_US: Result type
+      zh_Hans: 结果类型
+    name: result_type
+    options:
+      - label:
+          en_US: table text
+          zh_Hans: 表格文本
+        value: table
+      - label:
+          en_US: json text
+          zh_Hans: JSON文本
+        value: json
+    required: true
+    type: select
+    default: table

@@ -8,7 +8,6 @@ features:
   - stream-tool-call
   - vision
   - document
-  - audio
 model_properties:
   mode: chat
   context_size: 400000
@@ -21,11 +20,6 @@ parameter_rules:
     use_template: presence_penalty
   - name: frequency_penalty
     use_template: frequency_penalty
-  - name: max_tokens
-    use_template: max_tokens
-    default: 16384
-    min: 1
-    max: 16384
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -38,6 +32,33 @@ parameter_rules:
     options:
       - text
       - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理程度
+      en_US: Reasoning Effort
+    type: string
+    help:
+      zh_Hans: 指定模型推理的难度
+      en_US: specifying the difficulty of the model's reasoning
+    required: false
+    options:
+      - high
+      - medium
+      - low
+      - minimal
+  - name: exclude_reasoning_tokens
+    label:
+      zh_Hans: 隐藏思考过程
+      en_US: Hide the thought process
+    type: boolean
+    default: false
+    help:
+      zh_Hans: 是否隐藏思考过程。
+      en_US: Whether to hide the thought process.
+    required: false
   - name: logprobs
     label:
       zh_Hans: 返回对数概率

@@ -1,29 +1,28 @@
 author: langgenius
-created_at: '2024-09-20T08:03:44.658609186Z'
+created_at: "2025-08-13T00:00:00Z"
+
 description:
-  en_US: Hyper application platform that is particularly friendly to AI
-  pt_BR: Plataforma de aplicação hiper que é particularmente amigável à IA
-  zh_Hans: 对 AI 特别友好的超级应用平台
+  en_US: AI-friendly hyper application platform for no-code enterprise applications and hyper-automation workflows
+  zh_Hans: 对 AI 特别友好的超级应用平台，专注于零代码搭建企业级应用与超自动化工作流
 icon: icon.svg
 label:
-  en_US: HAP
-  pt_BR: HAP
-  zh_Hans: HAP
+  en_US: HAP Application Tool
+  zh_Hans: HAP 应用工具
 meta:
   arch:
-  - amd64
-  - arm64
+    - amd64
+    - arm64
   runner:
     entrypoint: main
     language: python
-    version: '3.12'
+    version: "3.12"
   version: 0.0.1
 name: hap
 plugins:
   tools:
-  - provider/hap.yaml
+    - provider/hap.yaml
 resource:
-  memory: 1048576
+  memory: 3145728
   permission:
     model:
       enabled: true
@@ -31,6 +30,6 @@ resource:
     tool:
       enabled: true
 tags:
-- productivity
+  - productivity
 type: plugin
-version: 0.0.3
+version: 0.1.0

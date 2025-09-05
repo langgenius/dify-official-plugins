@@ -1,0 +1,29 @@
+identity:
+  name: github
+  author: langgenius
+  label:
+    en_US: GitHub Repository
+    zh_Hans: GitHub 仓库
+  icon: icon.svg
+description:
+  en_US: Access GitHub repositories, issues, pull requests, and wiki pages
+  zh_Hans: 访问 GitHub 仓库、问题、拉取请求和 Wiki 页面
+
+parameters:
+
+output_schema:
+  type: object
+  properties:
+    page_id:
+      type: string
+      description: page id
+    content:
+      type: string
+      description: page content
+    workspace_id:
+      type: string
+      description: workspace id
+
+extra:
+  python:
+    source: datasources/github.py

@@ -1,0 +1,64 @@
+description:
+  human:
+    en_US: Delete a record by row_id in a worksheet
+    zh_Hans: 通过 row_id 删除工作表中的记录
+  llm: >
+    Delete a record. Supports soft delete by default and optional permanent deletion.
+    Supports do_not_trigger_workflow flag and permanent deletion (permanent=true means hard delete and cannot be recovered).
+extra:
+  python:
+    source: tools/delete_record.py
+identity:
+  author: langgenius
+  label:
+    en_US: Delete Record
+    zh_Hans: 删除记录
+  name: delete_record
+parameters:
+  - form: llm
+    name: worksheet_id
+    label:
+      en_US: Worksheet ID
+      zh_Hans: 工作表 ID
+    human_description:
+      en_US: The worksheet ID to which the record belongs
+      zh_Hans: 记录所属的工作表 ID
+    llm_description: The worksheet ID to which the record belongs
+    required: true
+    type: string
+
+  - form: llm
+    name: row_id
+    label:
+      en_US: Row ID
+      zh_Hans: 行记录 ID
+    human_description:
+      en_US: The row ID of the record to delete
+      zh_Hans: 需要删除的行记录 ID
+    llm_description: The row ID of the record to delete
+    required: true
+    type: string
+
+  - form: form
+    name: do_not_trigger_workflow
+    label:
+      en_US: Do Not Trigger Workflow
+      zh_Hans: 不触发工作流
+    human_description:
+      en_US: If true, do NOT trigger workflows; default false
+      zh_Hans: 若为 true，则不触发工作流；默认 false
+    llm_description: If true, do NOT trigger workflows; default false
+    required: false
+    type: boolean
+
+  - form: form
+    name: permanent
+    label:
+      en_US: Permanent Delete
+      zh_Hans: 彻底删除
+    human_description:
+      en_US: If true, permanently delete the record (cannot be recovered). Default false (soft delete).
+      zh_Hans: 若为 true，将彻底删除记录（不可恢复）。默认 false（逻辑删除）。
+    llm_description: If true, permanently delete the record (cannot be recovered)
+    required: false
+    type: boolean

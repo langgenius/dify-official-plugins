@@ -1,0 +1,69 @@
+identity:
+  author: langgenius
+  name: confluence_datasource
+  label:
+    en_US: Confluence
+    zh_Hans: Confluence
+    pt_BR: Confluence
+    ja_JP: Confluence
+  description:
+    en_US: Confluence Datasource
+    zh_Hans: Confluence Datasource
+    pt_BR: Confluence Datasource
+    ja_JP: Confluence Datasource
+  icon: icon.svg
+oauth_schema:
+  client_schema:
+    - name: client_id
+      type: secret-input
+      label:
+        zh_Hans: Client ID
+        en_US: Client ID
+    - name: client_secret
+      type: secret-input
+      label:
+        zh_Hans: Client Secret
+        en_US: Client Secret
+      help:
+        zh_Hans: 从 Confluence 集成页面获取您的接口令牌
+        en_US: Get your integration token from the Confluence Integrations page
+      url: https://developer.atlassian.com/console/myapps/
+  credentials_schema:
+    - name: access_token
+      type: secret-input
+      label:
+        zh_Hans: Access Token
+        en_US: Access Token
+    - name: client_id
+      type: secret-input
+      label:
+        zh_Hans: Client ID
+        en_US: Client ID
+    - name: client_secret
+      type: secret-input
+      label:
+        zh_Hans: Client Secret
+        en_US: Client Secret
+    - name: workspace_id
+      type: text-input
+      label:
+        zh_Hans: Workspace ID
+        en_US: Workspace ID
+    - name: workspace_name
+      type: text-input
+      label:
+        zh_Hans: Workspace Name
+        en_US: Workspace Name
+    - name: workspace_icon
+      type: text-input
+      label:
+        zh_Hans: Workspace Icon
+        en_US: Workspace Icon
+
+provider_type: online_document
+
+datasources:
+  - datasources/confluence_datasource.yaml
+extra:
+  python:
+    source: provider/confluence_datasource.py

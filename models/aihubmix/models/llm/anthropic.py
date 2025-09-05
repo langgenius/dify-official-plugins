@@ -190,7 +190,10 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         extra_model_kwargs = {}
         extra_headers = {}
 
+        extra_headers["APP-Code"] = "Dify2025"
+
         credentials_kwargs = self._to_credential_kwargs(credentials)
+
         client = Anthropic(**credentials_kwargs)
 
         if "max_tokens_to_sample" in model_parameters:
@@ -200,6 +203,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
 
         thinking = model_parameters.pop("thinking", False)
         thinking_budget = model_parameters.pop("thinking_budget", 1024)
+        context_1m = model_parameters.pop("context_1m", False)
         
         if thinking:
             extra_model_kwargs["thinking"] = {
@@ -208,6 +212,12 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             }
             for key in ("temperature", "top_p", "top_k"):
                 model_parameters.pop(key, None)
+
+        if context_1m:
+            if "anthropic-beta" in extra_headers:
+                extra_headers["anthropic-beta"] += ",context-1m-2025-08-07"
+            else:
+                extra_headers["anthropic-beta"] = "context-1m-2025-08-07"
 
         if model_parameters.get("extended_output", False):
             model_parameters.pop("extended_output", None)
@@ -336,8 +346,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 extra_headers["anthropic-beta"] += ",pdfs-2024-09-25"
             else:
                 extra_headers["anthropic-beta"] = "pdfs-2024-09-25"
-        
-        extra_headers["APP-Code"] = "Dify2025"
 
         if not any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
             self.previous_thinking_blocks = []
@@ -921,6 +929,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         :param credentials:
         :return:
         """
+
         credentials_kwargs = {
             "api_key": credentials["api_key"],
             "base_url": "https://aihubmix.com",
@@ -928,6 +937,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             "max_retries": 1,
         }
         api_url = credentials.get("api_url")
+
+        
         if api_url:
             credentials_kwargs["base_url"] = api_url.rstrip("/")
         return credentials_kwargs

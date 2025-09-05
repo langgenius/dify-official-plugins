@@ -51,6 +51,20 @@ provider_credential_schema:
     required: false
     type: secret-input
     variable: vertex_service_account_key
+  - label:
+      en_US: Anthropic Models Location (optional)
+    placeholder:
+      en_US: Enter your Google Cloud Location for Anthropic (Claude) models, overrides default location for Claude on Vertex
+    required: false
+    type: text-input
+    variable: vertex_anthropic_location
+  - label:
+      en_US: Global-only Models (optional)
+    placeholder:
+      en_US: Comma-separated model IDs that must use the global endpoint, overrides defaults
+    required: false
+    type: text-input
+    variable: vertex_global_models
 supported_model_types:
 - llm
 - text-embedding

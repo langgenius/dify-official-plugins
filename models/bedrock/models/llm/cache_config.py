@@ -86,7 +86,6 @@ def get_cache_config(model_id: str) -> dict:
 
     if model_id in CACHE_CONFIG:
         config = CACHE_CONFIG[model_id]
-        print(f"[CACHE CONFIG] Cache config for model {model_id}: {config}")
         logger.info(f"[CACHE CONFIG] Cache config for model {model_id}: {config}")
         return config
 
@@ -96,6 +95,5 @@ def get_cache_config(model_id: str) -> dict:
         "max_checkpoints": 4,
         "supported_fields": ["system", "messages"]
     }
-    print(f"[CACHE CONFIG] Using default cache config for model {model_id}: {default_config}")
     logger.info(f"[CACHE CONFIG] Using default cache config for model {model_id}: {default_config}")
     return default_config

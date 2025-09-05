@@ -29,9 +29,7 @@ class ComfyUiWorkflow:
         elif type(workflow_json) is dict:
             self.load_from_json_dict(workflow_json)
         else:
-            raise Exception(
-                "workflow_json has unsupported format. Please convert it to str or dict"
-            )
+            raise Exception("workflow_json has unsupported format. Please convert it to str or dict")
 
     def __str__(self):
         return json.dumps(self._workflow_api)
@@ -42,8 +40,8 @@ class ComfyUiWorkflow:
                 string = string.replace(char, "")
             for char_id in range(0x007F, 0x00A1):
                 string = string.replace(chr(char_id), "")
-            string = string.replace("'", '"')
             return string
+
         workflow_json: dict = json.loads(clean_json_string(workflow_json_str))
         self.load_from_json_dict(workflow_json)
 
@@ -53,17 +51,14 @@ class ComfyUiWorkflow:
             try:
                 self._workflow_api = self.convert_to_api_ready(workflow_json)
             except Exception as e:
-                raise Exception(
-                    f"Failed to convert Workflow to API ready. {str(e)}")
+                raise Exception(f"Failed to convert Workflow to API ready. {str(e)}")
         else:
             self._workflow_api = deepcopy(workflow_json)
 
     def convert_to_api_ready(self, workflow_json: dict) -> dict:
         result = {}
         current_dir = os.path.dirname(os.path.realpath(__file__))
-        widgets_value_path = os.path.join(
-            current_dir, "json", "widgets_value_names.json"
-        )
+        widgets_value_path = os.path.join(current_dir, "json", "widgets_value_names.json")
         with open(widgets_value_path, "r", encoding="UTF-8") as f:
             widgets_value_names = json.loads(f.read())
         nodes = workflow_json["nodes"]
@@ -83,7 +78,7 @@ class ComfyUiWorkflow:
                 continue
             else:
                 raise Exception(f"{class_type} not found in widgets_value_names.")
-                
+
             # Set links
             for input in node["inputs"]:
                 link_id = input["link"]
@@ -154,13 +149,9 @@ class ComfyUiWorkflow:
             if self.get_property(node_id, "inputs/seed") is not None:
                 self.set_property(node_id, "inputs/seed", random.randint(0, 10**8 - 1))
             if self.get_property(node_id, "inputs/noise_seed") is not None:
-                self.set_property(
-                    node_id, "inputs/noise_seed", random.randint(0, 10**8 - 1)
-                )
+                self.set_property(node_id, "inputs/noise_seed", random.randint(0, 10**8 - 1))
 
-    def set_image_names(
-        self, image_names: list[str], ordered_node_ids: list[str] = None
-    ):
+    def set_image_names(self, image_names: list[str], ordered_node_ids: list[str] = None):
         if ordered_node_ids is None:
             ordered_node_ids = self.get_node_ids_by_class_type("LoadImage")
         for i, node_id in enumerate(ordered_node_ids):
@@ -309,9 +300,7 @@ class ComfyUiWorkflow:
         self.set_property(node_id, "inputs/fps", fps)
         self.set_property(node_id, "inputs/lossless", "true" if lossless else "false")
 
-    def set_asset_downloader(
-        self, node_id: str | None, url: str, save_to: str, filename: str, token: str
-    ):
+    def set_asset_downloader(self, node_id: str | None, url: str, save_to: str, filename: str, token: str):
         # This node is downloadable from https://github.com/ServiceStack/comfy-asset-downloader.
         if node_id is None:
             node_id = self.identify_node_by_class_type("AssetDownloader")

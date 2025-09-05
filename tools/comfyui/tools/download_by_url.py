@@ -8,16 +8,13 @@ from tools.model_manager import ModelManager
 
 
 class DownloadByURL(Tool):
-    def _invoke(
-        self, tool_parameters: dict[str, Any]
-    ) -> Generator[ToolInvokeMessage, None, None]:
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         invoke tools
         """
         base_url = self.runtime.credentials.get("base_url")
         if base_url is None:
-            raise ToolProviderCredentialValidationError(
-                "Please input base_url")
+            raise ToolProviderCredentialValidationError("Please input base_url")
         self.comfyui = ComfyUiClient(base_url)
         self.model_manager = ModelManager(
             self.comfyui,

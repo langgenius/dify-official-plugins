@@ -61,9 +61,10 @@ class XinferenceRerankModel(RerankModel):
         rerank_documents = []
         for idx, result in enumerate(response["results"]):
             index = result["index"]
-            page_content = result["document"] if isinstance(result["document"], str) else result["document"]["text"]
-            rerank_document = RerankDocument(index=index, text=page_content, score=result["relevance_score"])
-            if score_threshold is None or result["relevance_score"] >= score_threshold:
+            page_content = result["document"] if isinstance(result["document"], str) else result["document"]["text"]            
+            score = float(result.get("relevance_score") or 0.0)
+            rerank_document = RerankDocument(index=index, text=page_content, score=score)
+            if score_threshold is None or score >= score_threshold:
                 rerank_documents.append(rerank_document)
         return RerankResult(model=model, docs=rerank_documents)
 
