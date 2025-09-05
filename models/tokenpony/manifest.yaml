@@ -8,10 +8,10 @@ label:
   zh_Hans: TokenPony
   pt_BR: TokenPony
 description:
-  en_US: TokenPony is a powerful platform that provides access to a diverse set of language models, including both commercial and open-source options.
-  ja_JP: TokenPony is a powerful platform that provides access to a diverse set of language models, including both commercial and open-source options.
-  zh_Hans: TokenPony is a powerful platform that provides access to a diverse set of language models, including both commercial and open-source options.
-  pt_BR: TokenPony is a powerful platform that provides access to a diverse set of language models, including both commercial and open-source options.
+  en_US: TokenPony offers affordable and cutting-edge AI large model services, providing a unified API interface for accessing DeepSeek V3.1, DeepSeek V3, DeepSeek R1, Qwen3, Kimi K2, GLM 4.5, and more.
+  ja_JP: TokenPony offers affordable and cutting-edge AI large model services, providing a unified API interface for accessing DeepSeek V3.1, DeepSeek V3, DeepSeek R1, Qwen3, Kimi K2, GLM 4.5, and more.
+  zh_Hans: 小马算力（TokenPony）提供优惠、极致的AI大模型服务，为您接入DeepSeek V3.1，DeepSeek V3，DeepSeek R1，Qwen3，Kimi K2，GLM 4.5等提供统一的API接口。
+  pt_BR: TokenPony offers affordable and cutting-edge AI large model services, providing a unified API interface for accessing DeepSeek V3.1, DeepSeek V3, DeepSeek R1, Qwen3, Kimi K2, GLM 4.5, and more.
 icon: icon.svg
 icon_dark: icon-dark.svg
 resource:
