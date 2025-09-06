@@ -1,7 +1,7 @@
 # Google Drive Datasource Plugin
 
 **Author**: langgenius  
-**Version**: 0.1.4  
+**Version**: 0.1.5
 **Type**: datasource
 
 ## Introduction
@@ -174,4 +174,4 @@ For issues or questions:
 - [OAuth 2.0 for Web Server Applications](https://developers.google.com/identity/protocols/oauth2/web-server)
 - [Google Cloud Console](https://console.cloud.google.com/)
 
-Last updated: December 2024
+Last updated: September 2025

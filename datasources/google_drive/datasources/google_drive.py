@@ -67,7 +67,6 @@ class GoogleDriveDataSource(OnlineDriveDatasource):
             
             # Parse response
             results = response.json()
-            print(results)
             items = results.get("files", [])
             
             if not items:
