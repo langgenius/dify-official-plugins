@@ -22,7 +22,6 @@ class AWSS3StorageDataSource(OnlineDriveDatasource):
         prefix = request.prefix or ""
         max_keys = request.max_keys or 100
         next_page_parameters = request.next_page_parameters or {}
-        print(credentials)
 
         if not credentials:
             raise ValueError("Credentials not found")
