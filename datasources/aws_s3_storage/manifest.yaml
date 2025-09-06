@@ -1,4 +1,4 @@
-version: 0.3.3
+version: 0.3.4
 type: plugin
 author: langgenius
 name: aws_s3_storage

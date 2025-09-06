@@ -1,7 +1,7 @@
 # AWS S3 Storage Datasource Plugin
 
 **Author**: langgenius  
-**Version**: 0.3.3 
+**Version**: 0.3.4
 **Type**: datasource
 
 ## Introduction
@@ -145,5 +145,4 @@ For issues or questions:
 - Contact: [hello@dify.ai](mailto:hello@dify.ai)
 - Repository: Check the project repository for updates and documentation
 
-Last updated: December 2024
-
+Last updated: September 2025
