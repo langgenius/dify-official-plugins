@@ -173,18 +173,14 @@ class ModelManager:
 
     def download_from_json(self, workflow_json: str) -> list[str]:
         workflow = ComfyUiWorkflow(workflow_json)
-        models = []
-        for node in workflow.json_original()["nodes"]:
-            if "properties" in node and "models" in node["properties"]:
-                models += node["properties"]["models"]
-
-        for model in models:
+        model_names = []
+        for model in workflow.get_models_to_download():
             token = None
-            if "://civitai.com" in model["url"]:
+            if "://civitai.com" in model.url:
                 token = self.get_civitai_api_key()
-            elif "://huggingface.co" in model["url"]:
+            elif "://huggingface.co" in model.url:
                 token = self.get_hf_api_key()
 
-            self.download_model(model["url"], model["directory"], model["name"], token)
-        model_names = [m["name"] for m in models]
+            self.download_model(model.url, model.directory, model.name, token)
+            model_names.append(model.name)
         return model_names

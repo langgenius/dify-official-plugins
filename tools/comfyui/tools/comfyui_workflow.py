@@ -2,6 +2,7 @@ import json
 import os
 from copy import deepcopy
 import random
+import dataclasses
 
 LORA_NODE = {
     "inputs": {
@@ -22,38 +23,46 @@ FluxGuidanceNode = {
 }
 
 
+@dataclasses.dataclass
+class ComfyUIModel:
+    name: str
+    url: str
+    directory: str
+
+
 class ComfyUiWorkflow:
     def __init__(self, workflow_json: str | dict):
         if type(workflow_json) is str:
-            self.load_from_json_str(workflow_json)
+
+            def clean_json_string(string: str) -> str:
+                for char in ["\n", "\r", "\t", "\x08", "\x0c"]:
+                    string = string.replace(char, "")
+                for char_id in range(0x007F, 0x00A1):
+                    string = string.replace(chr(char_id), "")
+                return string
+
+            workflow_json: dict = json.loads(clean_json_string(workflow_json))
         elif type(workflow_json) is dict:
-            self.load_from_json_dict(workflow_json)
+            pass
         else:
             raise Exception("workflow_json has unsupported format. Please convert it to str or dict")
 
-    def __str__(self):
-        return json.dumps(self._workflow_api)
-
-    def load_from_json_str(self, workflow_json_str: str):
-        def clean_json_string(string: str) -> str:
-            for char in ["\n", "\r", "\t", "\x08", "\x0c"]:
-                string = string.replace(char, "")
-            for char_id in range(0x007F, 0x00A1):
-                string = string.replace(chr(char_id), "")
-            return string
-
-        workflow_json: dict = json.loads(clean_json_string(workflow_json_str))
-        self.load_from_json_dict(workflow_json)
-
-    def load_from_json_dict(self, workflow_json: dict):
         self._workflow_original = workflow_json
+        self.models_to_download: list[ComfyUIModel] = []
         if "nodes" in workflow_json:
             try:
                 self._workflow_api = self.convert_to_api_ready(workflow_json)
             except Exception as e:
                 raise Exception(f"Failed to convert Workflow to API ready. {str(e)}")
+            for node in workflow_json["nodes"]:
+                if "properties" in node and "models" in node["properties"]:
+                    model = node["properties"]["models"]
+                    self.models_to_download.append(ComfyUIModel(model["name"], model["url"], model["directory"]))
         else:
             self._workflow_api = deepcopy(workflow_json)
+
+    def __str__(self):
+        return json.dumps(self._workflow_api)
 
     def convert_to_api_ready(self, workflow_json: dict) -> dict:
         result = {}
@@ -107,6 +116,9 @@ class ComfyUiWorkflow:
 
     def json_original_str(self) -> str:
         return json.dumps(self._workflow_original)
+
+    def get_models_to_download(self) -> list[ComfyUIModel]:
+        return self.models_to_download
 
     def get_property(self, node_id: str | None, path: str):
         try:
