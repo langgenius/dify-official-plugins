@@ -47,8 +47,7 @@ from google.genai.types import Tool, GenerateContentConfig, GoogleSearch
 from PIL import Image
 
 
-GLOBAL_ONLY_MODELS = ["gemini-2.5-pro-preview-06-05", "gemini-2.5-flash-lite-preview-06-17"]
-
+GLOBAL_ONLY_MODELS_DEFAULT = ["gemini-2.5-pro-preview-06-05","gemini-2.5-flash-lite-preview-06-17"]
 
 class VertexAiLargeLanguageModel(LargeLanguageModel):
     def _invoke(
@@ -110,12 +109,18 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         project_id = credentials["vertex_project_id"]
         SCOPES = ["https://www.googleapis.com/auth/cloud-platform"]
         token = ""
+        vertex_anthropic_location = credentials["vertex_anthropic_location"]
+        vertex_location = credentials["vertex_location"]
         if service_account_info:
             credentials = service_account.Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
             request = google.auth.transport.requests.Request()
             credentials.refresh(request)
             token = credentials.token
-        if any(m in model for m in ["opus", "claude-3-5-sonnet", "claude-3-7-sonnet", "claude-sonnet-4"]):
+        if vertex_anthropic_location:
+            location = vertex_anthropic_location
+        elif vertex_location:
+            location = vertex_location
+        elif any(m in model for m in ["opus", "claude-3-5-sonnet", "claude-3-7-sonnet", "claude-sonnet-4"]):
             location = "us-east5"
         else:
             location = "us-central1"
@@ -436,6 +441,14 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
+    def _get_global_only_models(self, credentials: dict) -> list[str]:
+        if not "vertex_global_models" in credentials:
+            return GLOBAL_ONLY_MODELS_DEFAULT
+        if isinstance(credentials["vertex_global_models"], str):
+            return [m.strip() for m in credentials["vertex_global_models"].split(",") if m.strip()]
+        # Fallback to default if unsupported type
+        return GLOBAL_ONLY_MODELS_DEFAULT
+
     def _generate(
         self,
         model: str,
@@ -482,7 +495,8 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             else None
         )
         project_id = credentials["vertex_project_id"]
-        if model in GLOBAL_ONLY_MODELS:
+        global_only_models = self._get_global_only_models(credentials)
+        if model in global_only_models:
             location = "global"
         elif "preview" in model:
             location = "us-central1"

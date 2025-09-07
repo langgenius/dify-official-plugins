@@ -1,0 +1,92 @@
+description:
+  human:
+    en_US: Remove members from a role (users, departments, jobs, org roles)
+    zh_Hans: 从角色中移除成员（用户、部门、职位、组织角色）
+  llm: Remove members from a role including users, departments, department trees, jobs, and organization roles.
+extra:
+  python:
+    source: tools/remove_role_members.py
+identity:
+  author: langgenius
+  label:
+    en_US: Remove Role Members
+    zh_Hans: 移除角色成员
+  name: remove_role_members
+parameters:
+- form: llm
+  name: role_id
+  label:
+    en_US: Role ID
+    zh_Hans: 角色 ID
+  human_description:
+    en_US: The role ID to remove members from
+    zh_Hans: 需要移除成员的角色 ID
+  llm_description: The role ID to remove members from
+  required: true
+  type: string
+- form: llm
+  name: operator_id
+  label:
+    en_US: Operator ID
+    zh_Hans: 操作者 ID
+  human_description:
+    en_US: The operator ID performing the removal
+    zh_Hans: 执行移除操作的操作者 ID
+  llm_description: The operator ID who is performing the member removal operation
+  required: true
+  type: string
+- form: llm
+  name: account_ids
+  label:
+    en_US: Account IDs
+    zh_Hans: 账号 ID 列表
+  human_description:
+    en_US: Account IDs to remove (comma-separated or JSON array)
+    zh_Hans: 需要移除的账号 ID 列表（逗号分隔或 JSON 数组）
+  llm_description: Account IDs to remove from the role, can be comma-separated string or JSON array
+  required: true
+  type: string
+- form: llm
+  name: department_ids
+  label:
+    en_US: Department IDs
+    zh_Hans: 部门 ID 列表
+  human_description:
+    en_US: Department IDs to remove (comma-separated or JSON array)
+    zh_Hans: 需要移除的部门 ID 列表（逗号分隔或 JSON 数组）
+  llm_description: Department IDs to remove from the role, can be comma-separated string or JSON array
+  required: true
+  type: string
+- form: llm
+  name: department_tree_ids
+  label:
+    en_US: Department Tree IDs
+    zh_Hans: 部门树 ID 列表
+  human_description:
+    en_US: Department tree IDs to remove (comma-separated or JSON array)
+    zh_Hans: 需要移除的部门树 ID 列表（逗号分隔或 JSON 数组）
+  llm_description: Department tree IDs to remove from the role, can be comma-separated string or JSON array
+  required: true
+  type: string
+- form: llm
+  name: job_ids
+  label:
+    en_US: Job IDs
+    zh_Hans: 职位 ID 列表
+  human_description:
+    en_US: Job IDs to remove (comma-separated or JSON array)
+    zh_Hans: 需要移除的职位 ID 列表（逗号分隔或 JSON 数组）
+  llm_description: Job IDs to remove from the role, can be comma-separated string or JSON array
+  required: true
+  type: string
+- form: llm
+  name: org_role_ids
+  label:
+    en_US: Organization Role IDs
+    zh_Hans: 组织角色 ID 列表
+  human_description:
+    en_US: Organization role IDs to remove (comma-separated or JSON array)
+    zh_Hans: 需要移除的组织角色 ID 列表（逗号分隔或 JSON 数组）
+  llm_description: Organization role IDs to remove from the role, can be comma-separated string or JSON array
+  required: true
+  type: string

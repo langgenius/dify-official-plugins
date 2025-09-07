@@ -1,0 +1,152 @@
+identity:
+  name: parentchild_chunker
+  author: langgenius
+  label:
+    en_US: Parent-child Chunker
+    zh_Hans: 父子文本分块
+    pt_BR: Parent-child Chunker
+description:
+  human:
+    en_US: Process documents into parent-child chunk structures
+    zh_Hans: 将文档处理为父子分块结构
+    pt_BR: Processar documentos em estruturas de divisão pai-filho
+  llm: Processes documents into hierarchical parent-child chunk structures
+
+parameters:
+  - name: input_text
+    human_description:
+      en_US: The text you want to chunk.
+      zh_Hans: 输入文本
+      pt_BR: Conteúdo de Entrada
+    label:
+      en_US: Input Content
+      zh_Hans: 输入文本
+      pt_BR: Conteúdo de Entrada
+    llm_description: The text you want to chunk.
+    required: true
+    type: string
+    form: llm
+
+  - name: parent_mode
+    type: select
+    required: true
+    options:
+      - value: paragraph
+        label:
+          en_US: paragraph
+          zh_Hans: paragraph
+          pt_BR: paragraph
+      - value: full_doc
+        label:
+          en_US: full_doc
+          zh_Hans: full_doc
+          pt_BR: full_doc
+    label:
+      en_US: Parent Mode
+      zh_Hans: 父块模式
+      pt_BR: Modo Pai
+    human_description:
+      zh_Hans: 根据分隔符和最大块长度将文本拆分为段落，使用拆分文本作为检索的父块或整个文档用作父块并直接检索。
+      en_US: Split text into paragraphs based on separator and maximum chunk length, using split text as parent block or entire document as parent block and directly retrieve.
+      pt_BR: Dividir texto em parágrafos com base no separador e no comprimento máximo do bloco, usando o texto dividido como bloco pai ou documento completo como bloco pai e diretamente recuperá-lo.
+    llm_description: Split text into paragraphs based on separator and maximum chunk length, using split text as parent block or entire document as parent block and directly retrieve.
+    default: paragraph
+    form: llm
+
+  - name: separator
+    type: string
+    required: false
+    label:
+      en_US: Parent Delimiter
+      zh_Hans: 父块分隔符
+      pt_BR: Separador de Pai
+    human_description:
+      en_US: Separator used for chunking
+      zh_Hans: 用于分块的分隔符
+      pt_BR: Separador usado para divisão
+    llm_description: The separator used to split chunks
+    default: "\n\n"
+    form: llm
+
+  - name: max_length
+    type: number
+    required: false
+    label:
+      en_US: Maximum Parent Chunk Length
+      zh_Hans: 最大父块长度
+      pt_BR: Comprimento Máximo do Bloco Pai
+    human_description:
+      en_US: Maximum length for chunking
+      zh_Hans: 用于分块的最大长度
+      pt_BR: Comprimento máximo para divisão
+    llm_description: Maximum length allowed per chunk
+    default: 1024
+    form: llm
+
+  - name: subchunk_separator
+    type: string
+    required: false
+    label:
+      en_US: Child Delimiter
+      zh_Hans: 子分块分隔符
+      pt_BR: Separador de Subdivisão
+    human_description:
+      en_US: Separator used for subchunking
+      zh_Hans: 用于子分块的分隔符
+      pt_BR: Separador usado para subdivisão
+    llm_description: The separator used to split subchunks
+    default: "\n"
+    form: llm
+
+  - name: subchunk_max_length
+    type: number
+    required: false
+    label:
+      en_US: Maximum Child Chunk Length
+      zh_Hans: 子分块最大长度
+      pt_BR: Comprimento Máximo de Subdivisão
+    human_description:
+      en_US: Maximum length for subchunking
+      zh_Hans: 用于子分块的最大长度
+      pt_BR: Comprimento máximo para subdivisão
+    llm_description: Maximum length allowed per subchunk
+    default: 512
+    form: llm
+
+  - name: remove_extra_spaces
+    type: boolean
+    required: false
+    label:
+      en_US: Replace consecutive spaces, newlines and tabs
+      zh_Hans: 替换连续空格、换行符和制表符
+      pt_BR: Substituir espaços consecutivos, novas linhas e guias
+    human_description:
+      en_US: Whether to remove consecutive spaces, newlines and tabs
+      zh_Hans: 是否移除文本中的连续空格、换行符和制表符
+      pt_BR: Se deve remover espaços extras no texto
+    llm_description: Whether to remove consecutive spaces, newlines and tabs
+    default: false
+    form: llm
+  - name: remove_urls_emails
+    type: boolean
+    required: false
+    label:
+      en_US: Delete all URLs and email addresses
+      zh_Hans: 删除所有URL和电子邮件地址
+      pt_BR: Remover todas as URLs e e-mails
+    human_description:
+      en_US: Whether to remove URLs and emails in the text
+      zh_Hans: 是否移除文本中的URL和电子邮件地址
+      pt_BR: Se deve remover URLs e e-mails no texto
+    llm_description: Whether to remove URLs and emails in the text
+    default: false
+    form: llm
+
+output_schema:
+  type: object
+  properties:
+    result:
+      $ref: "https://dify.ai/schemas/v1/parent_child_structure.json"
+extra:
+  python:
+    source: tools/parent_child_chunk.py

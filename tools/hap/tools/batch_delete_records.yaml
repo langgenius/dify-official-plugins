@@ -1,0 +1,59 @@
+description:
+  human:
+    en_US: Batch delete multiple records from a worksheet
+    zh_Hans: 批量删除工作表中的多个记录
+  llm: Batch delete multiple records from a worksheet with options for permanent deletion and workflow triggering.
+extra:
+  python:
+    source: tools/batch_delete_records.py
+identity:
+  author: langgenius
+  label:
+    en_US: Batch Delete Records
+    zh_Hans: 批量删除记录
+  name: batch_delete_records
+parameters:
+- form: llm
+  name: worksheet_id
+  label:
+    en_US: Worksheet ID
+    zh_Hans: 工作表 ID
+  human_description:
+    en_US: The worksheet ID containing the records to delete
+    zh_Hans: 包含需要删除记录的工作表 ID
+  llm_description: The worksheet ID that contains the records to delete
+  required: true
+  type: string
+- form: llm
+  name: row_ids
+  label:
+    en_US: Row IDs
+    zh_Hans: 行记录 ID 列表
+  human_description:
+    en_US: Row IDs to delete (comma-separated or JSON array)
+    zh_Hans: 需要删除的行记录 ID 列表（逗号分隔或 JSON 数组）
+  llm_description: Row IDs to delete, can be comma-separated string or JSON array
+  required: true
+  type: string
+- form: llm
+  name: permanent
+  label:
+    en_US: Permanent Delete
+    zh_Hans: 彻底删除
+  human_description:
+    en_US: Whether to permanently delete (true/false), default is false (logical delete)
+    zh_Hans: 是否彻底删除 (true/false)，默认为 false（逻辑删除）
+  llm_description: Whether to permanently delete records (true for permanent, false for logical delete), default is false
+  required: false
+  type: string
+- form: form
+  name: do_not_trigger_workflow
+  label:
+    en_US: Do Not Trigger Workflow
+    zh_Hans: 不触发工作流
+  human_description:
+    en_US: If true, do NOT trigger workflows; default false
+    zh_Hans: 若为 true，则不触发工作流；默认 false
+  llm_description: If true, do NOT trigger workflows; default false
+  required: false
+  type: boolean

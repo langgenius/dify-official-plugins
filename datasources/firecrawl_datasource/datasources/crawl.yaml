@@ -1,0 +1,116 @@
+description:
+  en_US: Recursively search through a urls subdomains, and gather the content.
+  zh_Hans: 递归爬取一个网址的子域名，并收集内容。
+identity:
+  author: langgenius
+  label:
+    en_US: Firecrawl
+    zh_Hans: Firecrawl
+  name: crawl
+parameters:
+- form: llm
+  description:
+    en_US: The base URL to start crawling from.
+    zh_Hans: 要爬取网站的起始URL。
+  label:
+    en_US: Start URL
+    zh_Hans: 起始URL
+  name: url
+  required: true
+  type: string
+- form: form
+  description:
+    en_US: is crawl subpages
+    zh_Hans: 是否爬取子页面
+  label:
+    zh_Hans: 爬取子页面
+    en_US: Crawl Subpages
+  default: true
+  name: crawl_subpages
+  placeholder:
+    zh_Hans: 是否爬取子页面
+    en_US: is crawl subpages
+  type: boolean
+- form: form
+  description:
+    en_US: 'Pages matching these patterns will be skipped. Example: blog/*, about/*'
+    zh_Hans: 匹配这些模式的页面将被跳过。示例：blog/*, about/*
+  label:
+    en_US: URL patterns to exclude
+    zh_Hans: 排除路径
+  name: exclude_paths
+  placeholder:
+    en_US: Use commas to separate multiple tags
+    zh_Hans: 多个标签时使用半角逗号分隔
+  type: string
+- form: form
+  description:
+    en_US: 'Only pages matching these patterns will be crawled. Example: blog/*, about/*'
+    zh_Hans: 只有与这些模式匹配的页面才会被爬取。示例：blog/*, about/*
+  label:
+    en_US: URL patterns to include
+    zh_Hans: 仅包含路径
+  name: include_paths
+  placeholder:
+    en_US: Use commas to separate multiple tags
+    zh_Hans: 多个标签时使用半角逗号分隔
+  required: false
+  type: string
+- form: form
+  description:
+    en_US: Maximum depth to crawl relative to the entered URL. A maxDepth of 0 scrapes
+      only the entered URL. A maxDepth of 1 scrapes the entered URL and all pages
+      one level deep. A maxDepth of 2 scrapes the entered URL and all pages up to
+      two levels deep. Higher values follow the same pattern.
+    zh_Hans: 相对于输入的URL，爬取的最大深度。maxDepth为0时，仅抓取输入的URL。maxDepth为1时，抓取输入的URL以及所有一级深层页面。maxDepth为2时，抓取输入的URL以及所有两级深层页面。更高值遵循相同模式。
+  label:
+    en_US: Maximum crawl depth
+    zh_Hans: 最大深度
+  min: 0
+  name: max_depth
+  type: number
+  default: 2
+- form: form
+  description:
+    en_US: Specify the maximum number of pages to crawl. The crawler will stop after
+      reaching this limit.
+    zh_Hans: 指定要爬取的最大页面数。爬虫将在达到此限制后停止。
+  label:
+    en_US: Maximum pages to crawl
+    zh_Hans: 限制数量
+  min: 1
+  name: limit
+  required: false
+  type: number
+  default: 10
+- form: form
+  description:
+    en_US: Only return the main content of the page excluding headers, navs, footers,
+      etc.
+    zh_Hans: 只返回页面的主要内容，不包括头部、导航栏、尾部等。
+  label:
+    en_US: only Main Content
+    zh_Hans: 仅提取主要内容(无标题、导航、页脚等)
+  name: only_main_content
+  type: boolean
+  default: false
+
+output_schema:
+    type: object
+    properties:
+      source_url:
+        type: string
+        description: the source url of the website
+      content:
+        type: string
+        description: the content from the website
+      title:
+        type: string
+        description: the title of the website
+      "description":
+        type: string
+        description: the description of the website
+provider_type: website_crawl
+extra:
+  python:
+    source: datasources/crawl.py

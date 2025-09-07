@@ -1,0 +1,52 @@
+identity:
+  author: langgenius
+  name: brightdata
+  label:
+    en_US: Bright Data Web Scraper
+    zh_Hans: Bright Data 网页抓取器
+    pt_BR: Bright Data Web Scraper
+  description:
+    en_US: Unlock the entire web with enterprise-grade scraping - extract data from any website, bypass anti-bot protection, and access structured data from 50+ platforms including Amazon, LinkedIn, Instagram, and more.
+    zh_Hans: 使用企业级网络抓取解锁整个网络 - 从任何网站提取数据，绕过反机器人保护，并访问来自 50 多个平台（包括 Amazon、LinkedIn、Instagram 等）的结构化数据。
+    pt_BR: Unlock the entire web with enterprise-grade scraping - extract data from any website, bypass anti-bot protection, and access structured data from 50+ platforms including Amazon, LinkedIn, Instagram, and more.
+  icon: icon.svg
+credentials_schema:
+  - name: zone
+    type: text-input
+    required: true
+    label:
+      en_US: Unlocker API Zone
+      zh_Hans: Unlocker API 区域
+      pt_BR: Unlocker API Zona
+    placeholder:
+      en_US: Enter your Unlocker API Zone
+      zh_Hans: 请输入您的 Unlocker API Zone
+      pt_BR: Enter your Unlocker API Zone
+    help:
+      en_US: Get your Unlocker API Zone from Bright Data user settings.
+      zh_Hans: 从 Bright Data 用户设置中获取您的 Unlocker API 区域。
+      pt_BR: Get your Unlocker API Zone from Bright Data user settings.
+    url: https://brightdata.com/cp/zones/new
+  - name: api_token
+    type: secret-input
+    required: true
+    label:
+      en_US: Bright Data API Token
+      zh_Hans: Bright Data API 令牌
+      pt_BR: Bright Data API Token
+    placeholder:
+      en_US: Enter your Bright Data API token
+      zh_Hans: 请输入您的 Bright Data API 令牌
+      pt_BR: Enter your Bright Data API token
+    help:
+      en_US: Get your API token from Bright Data user settings.
+      zh_Hans: 从 Bright Data 用户设置中获取您的 API 令牌。令牌应以您的区域凭据开头。
+      pt_BR: Get your API token from Bright Data user settings.
+    url: https://brightdata.com/cp/setting/users
+
+extra:
+  python:
+    source: provider/brightdata.py
+datasources:
+  - datasources/brightdata.yaml
+provider_type: website_crawl

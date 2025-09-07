@@ -1,0 +1,20 @@
+identity:
+  name: google_cloud_storage
+  author: langgenius
+  label:
+    en_US: Google Cloud Storage
+    zh_Hans: Google Cloud Storage
+description:
+  en_US: Get files from your Google Cloud Storage bucket
+  zh_Hans: 从您的 Google Cloud Storage 存储桶中获取文件
+
+parameters:
+
+output_schema:
+  type: object
+  properties:
+    file:
+      $ref: "https://dify.ai/schemas/v1/file.json"
+extra:
+  python:
+    source: datasources/google_cloud_storage.py

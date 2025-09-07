@@ -1,0 +1,26 @@
+description:
+  human:
+    en_US: Get worksheet structure using worksheet_id
+    zh_Hans: 通过工作表 ID 获取工作表结构信息
+  llm: Get worksheet structure using worksheet_id, including fields and views. In the results from using the `get_app_info` tool, only items with a `type` of `worksheet` can be queryed.
+extra:
+  python:
+    source: tools/get_worksheet_structure.py
+identity:
+  author: langgenius
+  label:
+    en_US: Get Worksheet Structure
+    zh_Hans: 获取工作表结构
+  name: get_worksheet_structure
+parameters:
+- form: llm
+  name: worksheet_id
+  label:
+    en_US: Worksheet ID
+    zh_Hans: 工作表 ID
+  human_description:
+    en_US: The worksheet ID to query
+    zh_Hans: 需要查询的工作表 ID
+  llm_description: The worksheet ID to query
+  required: true
+  type: string

@@ -1,0 +1,20 @@
+identity:
+  name: aws_s3_storage
+  author: langgenius
+  label:
+    en_US: AWS S3 Storage
+    zh_Hans: AWS S3 Storage
+description:
+  en_US: Get files from your AWS S3 Storage bucket
+  zh_Hans: 从您的 AWS S3 Storage 存储桶中获取文件
+
+parameters:
+
+output_schema:
+    type: object
+    properties:
+      file:
+        $ref: "https://dify.ai/schemas/v1/file.json"
+extra:
+  python:
+    source: datasources/aws_s3_storage.py

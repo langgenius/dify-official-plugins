@@ -1,0 +1,44 @@
+background: '#F0F0EB'
+configurate_methods:
+- predefined-model
+extra:
+  python:
+    model_sources:
+    - models/llm/llm.py
+    - models/text_embedding/text_embedding.py
+    provider_source: provider/regolo.py
+help:
+  title:
+    en_US: Get your API Key from Regolo.ai
+  url:
+    en_US: https://dashboard.regolo.ai/
+icon_large:
+  en_US: icon_l_en.svg
+icon_small:
+  en_US: icon_s_en.svg
+label:
+  en_US: Regolo.ai
+  zh_Hans: Regolo.ai
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+    - models/llm/*.yaml
+  text_embedding:
+    position: models/text_embedding/_position.yaml
+    predefined:
+    - models/text_embedding/*.yaml
+provider: regolo
+provider_credential_schema:
+  credential_form_schemas:
+  - label:
+      en_US: API Key
+    placeholder:
+      en_US: Enter your API Key
+    required: true
+    type: secret-input
+    variable: regolo_api_key
+supported_model_types:
+- llm
+- text-embedding
+

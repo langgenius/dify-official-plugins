@@ -1,0 +1,9 @@
+dify_plugin==0.5.0b15
+pandas[excel,output-formatting,performance]~=2.2.2
+chardet~=5.1.0
+python-docx~=1.1.0
+python-pptx~=1.0.2
+openpyxl~=3.1.5
+bs4~=0.0.1
+xlrd~=2.0.1
+pypdfium2~=4.30.0

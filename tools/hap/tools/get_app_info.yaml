@@ -1,0 +1,15 @@
+description:
+  human:
+    en_US: Get application information, including groups, worksheets, and custom pages.
+    zh_Hans: 获取应用信息，包含应用下分组、工作表、自定义页面信息
+  llm: Get application information of HAP, including groups, worksheets, and custom pages.
+extra:
+  python:
+    source: tools/get_app_info.py
+identity:
+  author: langgenius
+  label:
+    en_US: Get Application Info
+    zh_Hans: 获取应用信息
+  name: get_app_info
+parameters: []

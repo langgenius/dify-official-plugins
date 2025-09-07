@@ -1,0 +1,32 @@
+identity:
+  name: notion_datasource
+  author: langgenius
+  label:
+    en_US: Notion
+    zh_Hans: Notion
+    pt_BR: Notion
+    ja_JP: Notion
+description:
+  en_US: Search for pages and databases in your Notion workspace
+  zh_Hans: 在您的 Notion 工作区中搜索页面和数据库
+  pt_BR: Pesquise páginas e bancos de dados em seu workspace do Notion
+  ja_JP: Notion ワークスペース内のページとデータベースを検索します
+  zh_Hant: 在您的 Notion 工作區中搜尋頁面和資料庫
+
+parameters:
+
+output_schema:
+    type: object
+    properties:
+      workspace_id:
+        type: string
+        description: workspace id
+      page_id:
+        type: string
+        description: page id
+      content:
+        type: string
+        description: page content
+extra:
+  python:
+    source: datasources/notion_datasource.py

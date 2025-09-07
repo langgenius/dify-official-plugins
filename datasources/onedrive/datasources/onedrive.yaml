@@ -1,0 +1,22 @@
+identity:
+  name: onedrive
+  author: langgenius
+  label:
+    en_US: OneDrive
+    zh_Hans: OneDrive
+description:
+  en_US: Get files from your OneDrive
+  zh_Hans: 从您的 OneDrive 中获取文件
+
+parameters:
+
+output_schema:
+  type: object
+  properties:
+    file:
+      $ref: "https://dify.ai/schemas/v1/file.json"
+
+
+extra:
+  python:
+    source: datasources/onedrive.py

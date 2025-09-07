@@ -1,0 +1,80 @@
+identity:
+  author: langgenius
+  name: github_datasource
+  label:
+    en_US: GitHub
+    zh_Hans: GitHub
+  description:
+    en_US: GitHub Repository Datasource - Access repositories, issues, PRs, and wiki pages
+    zh_Hans: GitHub 仓库数据源 - 访问仓库、问题、拉取请求和 Wiki 页面
+  icon: icon.svg
+provider_type: online_document
+help:
+  title:
+    en_US: Get your GitHub credentials
+    zh_Hans: 获取您的 GitHub 凭证
+  url:
+    en_US: https://github.com/settings/tokens
+    zh_Hans: https://github.com/settings/tokens
+oauth_schema:
+  client_schema:
+    - name: client_id
+      type: secret-input
+      label:
+        zh_Hans: Client ID
+        en_US: Client ID
+    - name: client_secret
+      type: secret-input
+      label:
+        zh_Hans: Client Secret
+        en_US: Client Secret
+      help:
+        zh_Hans: 从 GitHub OAuth Apps 页面获取您的客户端凭证
+        en_US: Get your client credentials from GitHub OAuth Apps page
+      url: https://github.com/settings/developers
+  credentials_schema:
+    - name: access_token
+      type: secret-input
+      label:
+        zh_Hans: Access Token
+        en_US: Access Token
+    - name: refresh_token
+      type: secret-input
+      label:
+        zh_Hans: Refresh Token
+        en_US: Refresh Token
+    - name: client_id
+      type: secret-input
+      label:
+        zh_Hans: Client ID
+        en_US: Client ID
+    - name: client_secret
+      type: secret-input
+      label:
+        zh_Hans: Client Secret
+        en_US: Client Secret
+    - name: user_login
+      type: secret-input
+      label:
+        zh_Hans: User Login
+        en_US: User Login
+credentials_schema:
+  - name: access_token
+    type: secret-input
+    required: true
+    label:
+      en_US: Personal Access Token
+      zh_Hans: 个人访问令牌
+    placeholder:
+      en_US: ghp_xxxxxxxxxxxxxxxxxxxx
+      zh_Hans: ghp_xxxxxxxxxxxxxxxxxxxx
+    help:
+      en_US: Create a personal access token in GitHub Settings > Developer settings > Personal access tokens
+      zh_Hans: 在 GitHub 设置 > 开发者设置 > 个人访问令牌中创建个人访问令牌
+    url: https://github.com/settings/tokens
+datasources:
+  - datasources/github.yaml
+extra:
+  python:
+    source: provider/github.py
+

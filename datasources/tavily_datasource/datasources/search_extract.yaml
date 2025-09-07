@@ -1,0 +1,238 @@
+description:
+  en_US: Search the web using Tavily and extract content from the found pages.
+  ja_JP: Tavilyを使用してWebを検索し、見つかったページからコンテンツを抽出します。
+  zh_Hans: 使用 Tavily 搜索网络并从找到的页面中提取内容。
+  pt_BR: Pesquise na web usando o Tavily e extraia o conteúdo das páginas encontradas.
+  zh_Hant: 使用 Tavily 搜索網絡並從找到的頁面中提取內容。
+identity:
+  author: langgenius
+  label:
+    en_US: Tavily Search & Extract
+    ja_JP: Tavily 検索と抽出
+    zh_Hans: Tavily 搜索提取
+    pt_BR: Pesquisa e extração de Tavily
+    zh_Hant: Tavily 搜索與提取
+  name: search_extract
+parameters:
+- form: llm
+  description:
+    en_US: The search query to find relevant web pages.
+    ja_JP: 関連するWebページを見つけるための検索クエリ。
+    zh_Hans: 用于查找相关网页的搜索查询。
+    pt_BR: A consulta de pesquisa para encontrar páginas da web relevantes.
+    zh_Hant: 用於查找相關網頁的搜索查詢。
+  label:
+    en_US: Search Query
+    ja_JP: 検索クエリ
+    zh_Hans: 搜索查询
+    pt_BR: Consulta de pesquisa
+    zh_Hant: 搜索查詢
+  name: query
+  required: true
+  type: string
+- form: form
+  description:
+    en_US: The depth of search results - basic (faster) or advanced (more comprehensive)
+    ja_JP: 検索結果の深さ - 基本（高速）または詳細（より包括的）
+    zh_Hans: 搜索结果的深度 - basic（更快）或 advanced（更全面）
+    pt_BR: A profundidade dos resultados da pesquisa - básico (mais rápido) ou avançado (mais abrangente)
+    zh_Hant: 搜索結果的深度 - 基本（更快）或高級（更全面）
+  label:
+    en_US: Search Depth
+    ja_JP: 検索深度
+    zh_Hans: 搜索深度
+    pt_BR: Profundidade da pesquisa
+    zh_Hant: 搜索深度
+  name: search_depth
+  type: select
+  options:
+    - value: basic
+      label:
+        en_US: Basic
+        ja_JP: 基本
+        zh_Hans: 基础
+        pt_BR: Básico
+        zh_Hant: 基礎
+    - value: advanced
+      label:
+        en_US: Advanced
+        ja_JP: 詳細
+        zh_Hans: 高级
+        pt_BR: Avançado
+        zh_Hant: 高級
+  default: basic
+- form: form
+  description:
+    en_US: The topic/type of search - general, news, finance, or legal
+    ja_JP: 検索のトピック/タイプ - 一般、ニュース、金融、または法律
+    zh_Hans: 搜索的主题/类型 - 通用、新闻、金融或法律
+    pt_BR: O tópico/tipo de pesquisa - geral, notícias, finanças ou jurídico
+    zh_Hant: 搜索的主題/類型 - 通用、新聞、金融或法律
+  label:
+    en_US: Search Topic
+    ja_JP: 検索トピック
+    zh_Hans: 搜索主题
+    pt_BR: Tópico de pesquisa
+    zh_Hant: 搜索主題
+  name: topic
+  type: select
+  options:
+    - value: general
+      label:
+        en_US: General
+        ja_JP: 一般
+        zh_Hans: 通用
+        pt_BR: Geral
+        zh_Hant: 通用
+    - value: news
+      label:
+        en_US: News
+        ja_JP: ニュース
+        zh_Hans: 新闻
+        pt_BR: Notícias
+        zh_Hant: 新聞
+    - value: finance
+      label:
+        en_US: Finance
+        ja_JP: 金融
+        zh_Hans: 金融
+        pt_BR: Finanças
+        zh_Hant: 金融
+    - value: legal
+      label:
+        en_US: Legal
+        ja_JP: 法律
+        zh_Hans: 法律
+        pt_BR: Jurídico
+        zh_Hant: 法律
+  default: general
+- form: form
+  description:
+    en_US: Maximum number of search results to return (1-20)
+    ja_JP: 返される検索結果の最大数（1〜20）
+    zh_Hans: 返回的搜索结果最大数量（1-20）
+    pt_BR: Número máximo de resultados de pesquisa a serem retornados (1-20)
+    zh_Hant: 返回的最大搜索結果數（1-20）
+  label:
+    en_US: Max Results
+    ja_JP: 最大結果
+    zh_Hans: 最大结果数
+    pt_BR: Resultados máximos
+    zh_Hant: 最大結果數
+  name: max_results
+  type: number
+  min: 1
+  max: 20
+  default: 5
+- form: form
+  description:
+    en_US: Include domain names to search within (comma-separated)
+    ja_JP: 検索対象に含めるドメイン名（カンマ区切り）
+    zh_Hans: 包含要搜索的域名（逗号分隔）
+    pt_BR: Incluir nomes de domínio para pesquisar (separados por vírgula)
+    zh_Hant: 包括要搜索的域名（以逗號分隔）
+  label:
+    en_US: Include Domains
+    ja_JP: ドメインを含める
+    zh_Hans: 包含域名
+    pt_BR: Incluir domínios
+    zh_Hant: 包括域名
+  name: include_domains
+  placeholder:
+    en_US: "example.com, another.com"
+    ja_JP: "example.com, another.com"
+    zh_Hans: "example.com, another.com"
+    pt_BR: "example.com, another.com"
+    zh_Hant: "example.com, another.com"
+  required: false
+  type: string
+- form: form
+  description:
+    en_US: Exclude domain names from search (comma-separated)
+    ja_JP: 検索から除外するドメイン名（カンマ区切り）
+    zh_Hans: 从搜索中排除的域名（逗号分隔）
+    pt_BR: Excluir nomes de domínio da pesquisa (separados por vírgula)
+    zh_Hant: 從搜索中排除域名（以逗號分隔）
+  label:
+    en_US: Exclude Domains
+    ja_JP: ドメインを除外する
+    zh_Hans: 排除域名
+    pt_BR: Excluir domínios
+    zh_Hant: 排除域名
+  name: exclude_domains
+  placeholder:
+    en_US: "spam.com, bad.com"
+    ja_JP: "spam.com, bad.com"
+    zh_Hans: "spam.com, bad.com"
+    pt_BR: "spam.com, bad.com"
+    zh_Hant: "spam.com, bad.com"
+  required: false
+  type: string
+- form: form
+  description:
+    en_US: Include images in the search results
+    ja_JP: 検索結果に画像を含める
+    zh_Hans: 在搜索结果中包含图片
+    pt_BR: Incluir imagens nos resultados da pesquisa
+    zh_Hant: 在搜索結果中包括圖像
+  label:
+    en_US: Include Images
+    ja_JP: 画像を含める
+    zh_Hans: 包含图片
+    pt_BR: Incluir imagens
+    zh_Hant: 包括圖像
+  name: include_images
+  type: boolean
+  default: false
+- form: form
+  description:
+    en_US: Include AI-generated answer in the search results
+    ja_JP: 検索結果にAIが生成した回答を含める
+    zh_Hans: 在搜索结果中包含 AI 生成的答案
+    pt_BR: Incluir resposta gerada por IA nos resultados da pesquisa
+    zh_Hant: 在搜索結果中包括AI生成的答案
+  label:
+    en_US: Include Answer
+    ja_JP: 回答を含める
+    zh_Hans: 包含答案
+    pt_BR: Incluir resposta
+    zh_Hant: 包括答案
+  name: include_answer
+  type: boolean
+  default: true
+- form: form
+  description:
+    en_US: Include raw content from found web pages (uses more resources)
+    ja_JP: 見つかったWebページからの生のコンテンツを含める（より多くのリソースを使用）
+    zh_Hans: 包含找到的网页的原始内容（使用更多资源）
+    pt_BR: Incluir conteúdo bruto das páginas da web encontradas (usa mais recursos)
+    zh_Hant: 包括來自找到的網頁的原始內容（使用更多資源）
+  label:
+    en_US: Include Raw Content
+    ja_JP: 生のコンテンツを含める
+    zh_Hans: 包含原始内容
+    pt_BR: Incluir conteúdo bruto
+    zh_Hant: 包括原始內容
+  name: include_raw_content
+  type: boolean
+  default: true
+
+output_schema:
+    type: object
+    properties:
+      source_url:
+        type: string
+        description: the source url of the website
+      content:
+        type: string
+        description: the content from the website
+      title:
+        type: string
+        description: the title of the website
+      "description":
+        type: string
+        description: the description of the website
+provider_type: website_crawl
+extra:
+  python:
+    source: datasources/search_extract.py
