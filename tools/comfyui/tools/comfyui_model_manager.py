@@ -77,7 +77,10 @@ class ModelManager:
         if len(re.findall("https?://huggingface\.co/.*", model_name)) > 0:
             # model_name is a URL for huggingface.co
             url = model_name
-            return self.download_model(url, save_dir, model_name.split("/")[-1], self.get_hf_api_key())
+            try:
+                return self.download_model(url, save_dir, model_name.split("/")[-1], None)
+            except:
+                return self.download_model(url, save_dir, model_name.split("/")[-1], self.get_hf_api_key())
         if len(re.findall("https?://.*", model_name)) > 0:
             # model_name is a general URL
             url = model_name
@@ -90,7 +93,7 @@ class ModelManager:
             headers = {"Authorization": f"Bearer {token}"}
         response = requests.head(url, headers=headers)
         if response.status_code == 401:
-            raise Un(f"401 Unauthorized. Please check the api_token.")
+            raise Exception(f"401 Unauthorized. Please check the api_token.")
         elif response.status_code >= 400:
             raise Exception(f"Download failed. Error {response.status_code}. Please check the URL.")
 
