@@ -74,18 +74,24 @@ class ModelManager:
                 version_id = None
             model_name_human, filenames = self.download_civitai(model_id, version_id, save_dir)
             return filenames[0]
-        if len(re.findall("https?://huggingface\.co/.*", model_name)) > 0:
-            # model_name is a URL for huggingface.co
-            url = model_name
-            try:
-                return self.download_model(url, save_dir, model_name.split("/")[-1], None)
-            except:
-                return self.download_model(url, save_dir, model_name.split("/")[-1], self.get_hf_api_key())
         if len(re.findall("https?://.*", model_name)) > 0:
             # model_name is a general URL
             url = model_name
-            return self.download_model(url, save_dir, model_name.split("/")[-1], None)
+            return self.download_model_autotoken(url, save_dir, model_name.split("/")[-1])
         raise Exception(f"Model {model_name} does not exist in the local folder {save_dir}/ or online.")
+
+    def download_model_autotoken(self, url: str, save_dir: str, filename: str | None = None) -> str:
+        try:
+            return self.download_model(url, save_dir, filename, None)
+        except:
+            pass
+        if "://civitai.com" in url:
+            token = self.get_civitai_api_key()
+        elif "://huggingface.co" in url:
+            token = self.get_hf_api_key()
+        else:
+            raise Exception("Unsupported token")
+        return self.download_model(url, save_dir, filename, token)
 
     def download_model(self, url: str, save_dir: str, filename: str | None = None, token=None) -> str:
         headers = {}
@@ -148,35 +154,18 @@ class ModelManager:
             raise Exception(f"Version {version_id} of model {model_name_human} not found.")
         model_filenames = [file["name"] for file in model_detail["files"]]
 
-        try:
-            self.download_model(
-                f"https://civitai.com/api/download/models/{version_id}",
-                save_dir,
-                model_filenames[0].split("/")[-1],
-                None,
-            )
-        except:
-            self.download_model(
-                f"https://civitai.com/api/download/models/{version_id}",
-                save_dir,
-                model_filenames[0].split("/")[-1],
-                self.get_civitai_api_key(),
-            )
+        self.download_model_autotoken(
+            f"https://civitai.com/api/download/models/{version_id}",
+            save_dir,
+            model_filenames[0].split("/")[-1],
+        )
 
         return model_name_human, model_filenames
 
     def download_hugging_face(self, repo_id: str, filepath: str, save_dir: str):
-        try:
-            self.download_model(
-                f"https://huggingface.co/{repo_id}/resolve/main/{filepath}", save_dir, filepath.split("/")[-1], None
-            )
-        except:
-            self.download_model(
-                f"https://huggingface.co/{repo_id}/resolve/main/{filepath}",
-                save_dir,
-                filepath.split("/")[-1],
-                self.get_hf_api_key(),
-            )
+        self.download_model_autotoken(
+            f"https://huggingface.co/{repo_id}/resolve/main/{filepath}", save_dir, filepath.split("/")[-1], None
+        )
         return filepath.split("/")[-1]
 
     def fetch_civitai_air(self, version_id: int) -> tuple[str, str, str, str]:
@@ -191,14 +180,6 @@ class ModelManager:
         workflow = ComfyUiWorkflow(workflow_json)
         model_names = []
         for model in workflow.get_models_to_download():
-            try:
-                self.download_model(model.url, model.directory, model.name, token)
-            except:
-                pass
-            if "://civitai.com" in model.url:
-                token = self.get_civitai_api_key()
-            elif "://huggingface.co" in model.url:
-                token = self.get_hf_api_key()
-            self.download_model(model.url, model.directory, model.name, token)
+            self.download_model_autotoken(model.url, model.directory, model.name)
             model_names.append(model.name)
         return model_names

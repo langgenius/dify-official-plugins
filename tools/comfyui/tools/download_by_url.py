@@ -29,14 +29,5 @@ class DownloadByURL(Tool):
         token_type = tool_parameters.get("token_type")
         save_to = tool_parameters.get("save_dir")
 
-        try:
-            return self.model_manager.download_model(url, save_to, name, None)
-        except:
-            pass
-
-        if token_type == "civitai":
-            token = self.model_manager.get_civitai_api_key()
-        elif token_type == "hugging_face":
-            token = self.model_manager.get_hf_api_key()
-        self.model_manager.download_model(url, save_to, name, token)
+        self.model_manager.download_model_autotoken(url, save_to, name)
         yield self.create_variable_message("model_name", name)
