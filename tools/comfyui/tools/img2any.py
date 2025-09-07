@@ -1,11 +1,14 @@
 import os
-from typing import Any, Generator
-from dify_plugin.errors.tool import ToolProviderCredentialValidationError
-from dify_plugin.entities.tool import ToolInvokeMessage
+from collections.abc import Generator
+from typing import Any
+
 from dify_plugin import Tool
-from tools.comfyui_workflow import ComfyUiWorkflow
+from dify_plugin.entities.tool import ToolInvokeMessage
+from dify_plugin.errors.tool import ToolProviderCredentialValidationError
+
 from tools.comfyui_client import ComfyUiClient, ComfyUiFile, FileType
 from tools.comfyui_model_manager import ModelManager
+from tools.comfyui_workflow import ComfyUiWorkflow
 
 
 class ComfyuiImg2Any(Tool):

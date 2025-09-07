@@ -1,15 +1,18 @@
 import dataclasses
 import os
 import random
-from typing import Any, Generator
+from collections.abc import Generator
+from typing import Any
+
+from dify_plugin import Tool
 from dify_plugin.entities.tool import (
     ToolInvokeMessage,
 )
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
-from dify_plugin import Tool
+
 from tools.comfyui_client import ComfyUiClient
-from tools.comfyui_workflow import ComfyUiWorkflow
 from tools.comfyui_model_manager import ModelManager
+from tools.comfyui_workflow import ComfyUiWorkflow
 
 
 @dataclasses.dataclass(frozen=False)

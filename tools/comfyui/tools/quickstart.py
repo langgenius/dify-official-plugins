@@ -2,13 +2,16 @@ import dataclasses
 import json
 import os
 import random
-from typing import Any, Generator
-from dify_plugin.errors.tool import ToolProviderCredentialValidationError
-from dify_plugin.entities.tool import ToolInvokeMessage
+from collections.abc import Generator
+from typing import Any
+
 from dify_plugin import Tool
-from tools.comfyui_workflow import ComfyUiWorkflow
+from dify_plugin.entities.tool import ToolInvokeMessage
+from dify_plugin.errors.tool import ToolProviderCredentialValidationError
+
 from tools.comfyui_client import ComfyUiClient, FileType
 from tools.comfyui_model_manager import ModelManager
+from tools.comfyui_workflow import ComfyUiWorkflow
 
 
 @dataclasses.dataclass
@@ -126,7 +129,7 @@ class QuickStart(Tool):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         current_dir = os.path.dirname(os.path.realpath(__file__))
         filepath = os.path.join(current_dir, "json", "qwen_image.json")
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             workflow = ComfyUiWorkflow(json.load(f))
 
         workflow.set_prompt("6", ui.prompt)
@@ -172,7 +175,7 @@ class QuickStart(Tool):
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         filepath = os.path.join(current_dir, "json", "qwen_image_edit.json")
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             workflow = ComfyUiWorkflow(json.load(f))
 
         workflow.set_property("76", "inputs/prompt", ui.prompt)
@@ -196,7 +199,7 @@ class QuickStart(Tool):
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         filepath = os.path.join(current_dir, "json", "flux_dev_fp8.json")
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             workflow = ComfyUiWorkflow(json.load(f))
 
         workflow.set_prompt("6", ui.prompt)
@@ -221,7 +224,7 @@ class QuickStart(Tool):
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         filepath = os.path.join(current_dir, "json", "flux_schnell_fp8.json")
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             workflow = ComfyUiWorkflow(json.load(f))
 
         workflow.set_prompt("6", ui.prompt)
@@ -236,7 +239,7 @@ class QuickStart(Tool):
     def get_civitai_workflow(self, ui: QuickStartConfig) -> ComfyUiWorkflow:
         current_dir = os.path.dirname(os.path.realpath(__file__))
         filepath = os.path.join(current_dir, "json", "txt2img.json")
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             workflow = ComfyUiWorkflow(json.load(f))
 
         workflow.set_prompt("6", ui.prompt)

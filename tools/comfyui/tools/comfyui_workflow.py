@@ -1,8 +1,8 @@
+import dataclasses
 import json
 import os
-from copy import deepcopy
 import random
-import dataclasses
+from copy import deepcopy
 
 LORA_NODE = {
     "inputs": {
@@ -133,7 +133,7 @@ class ComfyUiWorkflow:
         workflow_json = self._workflow_api[node_id]
         for name in path.split("/")[:-1]:
             if not can_create and name not in workflow_json:
-                raise Exception(f"Cannot create a new property.")
+                raise Exception("Cannot create a new property.")
             workflow_json = workflow_json[name]
         workflow_json[path.split("/")[-1]] = value
 

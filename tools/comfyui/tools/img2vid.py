@@ -2,17 +2,20 @@ import dataclasses
 import io
 import os
 import random
+from collections.abc import Generator
 from enum import Enum
-from typing import Any, Generator
+from typing import Any
+
+from dify_plugin import Tool
 from dify_plugin.entities.tool import (
     ToolInvokeMessage,
 )
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
-from dify_plugin import Tool
 from PIL import Image
+
 from tools.comfyui_client import ComfyUiClient, FileType
-from tools.comfyui_workflow import ComfyUiWorkflow
 from tools.comfyui_model_manager import ModelManager
+from tools.comfyui_workflow import ComfyUiWorkflow
 
 LORA_NODE = {
     "inputs": {

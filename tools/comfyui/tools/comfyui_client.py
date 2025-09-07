@@ -1,16 +1,17 @@
 import dataclasses
-from enum import StrEnum
 import json
 import mimetypes
 import os
 import random
 import uuid
+from enum import StrEnum
 
 import httpx
 import requests
+from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from websocket import WebSocket
 from yarl import URL
-from dify_plugin.errors.tool import ToolProviderCredentialValidationError
+
 from tools.comfyui_workflow import ComfyUiWorkflow
 
 
@@ -305,7 +306,7 @@ class ComfyUiClient:
             )
             prompt_id = respond.json()["prompt_id"]
             ws = WebSocket()
-            if "https" == self.base_url.scheme:
+            if self.base_url.scheme == "https":
                 ws_url = str(self.base_url).replace("https", "ws")
             else:
                 ws_url = str(self.base_url).replace("http", "ws")

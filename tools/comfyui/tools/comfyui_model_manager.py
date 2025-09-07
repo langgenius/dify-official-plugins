@@ -3,8 +3,8 @@ import re
 
 import requests
 
-from tools.comfyui_workflow import ComfyUiWorkflow
 from tools.comfyui_client import ComfyUiClient
+from tools.comfyui_workflow import ComfyUiWorkflow
 
 
 class ModelManager:
@@ -33,8 +33,8 @@ class ModelManager:
         # For example, if lora_info = "lora.safetensor:0.8", it means a local model "lora.safetensor" should be applied with its strength 0.8
         # If lora_info = "civitai:5529", it means a CivitAI model https://civitai.com/models/5529/eye-lora should be applied with its strength 1.0(default value).
         lora_info = lora_info.lstrip(" ").rstrip(" ")
-        if not re.match("([A-Za-z0-9\.]+|(civitai:[0-9]+(@[0-9]+)?))(:[0-9]+(\.[0-9])?)?", lora_info):
-            raise Exception(f"Invalid lora_info")
+        if not re.match(r"([A-Za-z0-9\.]+|(civitai:[0-9]+(@[0-9]+)?))(:[0-9]+(\.[0-9])?)?", lora_info):
+            raise Exception("Invalid lora_info")
 
         if len(lora_info.split(":")) == 3 or (lora_info.split(":")[0] != "civitai" and len(lora_info.split(":")) == 2):
             lora_name = self.decode_model_name(":".join(lora_info.split(":")[:-1]), save_dir)
@@ -53,10 +53,10 @@ class ModelManager:
         # For example, if model_name = "lora.safetensor", it means a local model "lora.safetensor"
         # If model_name = "civitai:5529", it means a CivitAI model https://civitai.com/models/5529/eye-lora
         model_name = model_name.lstrip(" ").rstrip(" ")
-        if not re.match("[A-Za-z0-9\.]+|(civitai:[0-9]+(@[0-9]+)?)", model_name):
-            raise Exception(f"Invalid model_name")
+        if not re.match(r"[A-Za-z0-9\.]+|(civitai:[0-9]+(@[0-9]+)?)", model_name):
+            raise Exception("Invalid model_name")
         if len(save_dir) == 0:
-            raise Exception(f"Please specify save_dir")
+            raise Exception("Please specify save_dir")
         if model_name in self._comfyui_cli.get_model_dirs(save_dir):
             # model_name is the name for an existing model in ComfyUI
             return model_name
@@ -99,7 +99,7 @@ class ModelManager:
             headers = {"Authorization": f"Bearer {token}"}
         response = requests.head(url, headers=headers)
         if response.status_code == 401:
-            raise Exception(f"401 Unauthorized. Please check the api_token.")
+            raise Exception("401 Unauthorized. Please check the api_token.")
         elif response.status_code >= 400:
             raise Exception(f"Download failed. Error {response.status_code}. Please check the URL.")
 

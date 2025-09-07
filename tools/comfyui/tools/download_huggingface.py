@@ -1,6 +1,9 @@
-from typing import Any, Generator
-from dify_plugin.entities.tool import ToolInvokeMessage
+from collections.abc import Generator
+from typing import Any
+
 from dify_plugin import Tool
+from dify_plugin.entities.tool import ToolInvokeMessage
+
 from tools.comfyui_client import ComfyUiClient
 from tools.comfyui_model_manager import ModelManager
 
