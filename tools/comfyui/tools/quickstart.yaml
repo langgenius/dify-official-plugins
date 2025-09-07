@@ -16,20 +16,6 @@ identity:
   name: quickstart
 
 parameters:
-  - name: images
-    form: llm
-    label:
-      en_US: Input Images
-      zh_Hans: 输入的图片
-      ja_JP: 入力画像
-    llm_description: input image
-    human_description:
-      en_US: Input images
-      zh_Hans: 输入的图片
-      ja_JP: 入力画像
-    required: false
-    type: files
-
   - name: feature
     form: form
     human_description:
@@ -131,6 +117,20 @@ parameters:
     required: false
     default: 1024
     type: number
+
+  - name: images
+    form: llm
+    label:
+      en_US: Input Images
+      zh_Hans: 输入的图片
+      ja_JP: 入力画像
+    llm_description: input image
+    human_description:
+      en_US: Input images
+      zh_Hans: 输入的图片
+      ja_JP: 入力画像
+    required: false
+    type: files
 
   - name: loras
     form: llm
