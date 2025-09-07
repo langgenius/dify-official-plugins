@@ -344,11 +344,3 @@ class ComfyUiWorkflow:
             [self.get_property(sampler_node_id, "inputs/positive")[0], 0],
         )
         self.set_property(sampler_node_id, "inputs/positive", [new_node_id, 0])
-
-
-if __name__ == "__main__":
-    current_dir = os.path.dirname(os.path.realpath(__file__))
-    workflow_path = os.path.join(current_dir, "json", "txt2vid_wan2_2_5B.json")
-    txt = open(workflow_path, "r", encoding="utf-8").read()
-    workflow = ComfyUiWorkflow(txt)
-    print(workflow)

@@ -237,31 +237,15 @@ class ComfyUiClient:
                 if message["type"] == "progress":
                     data = message["data"]
                     current_step = data["value"]
-                    print("In K-Sampler -> Step: ", current_step, " of: ", data["max"])
                 if message["type"] == "execution_cached":
                     data = message["data"]
                     for itm in data["nodes"]:
                         if itm not in finished_nodes:
                             finished_nodes.append(itm)
-                            print(
-                                "Progress: ",
-                                len(finished_nodes),
-                                "/",
-                                len(node_ids),
-                                " Tasks done",
-                            )
                 if message["type"] == "executing":
                     data = message["data"]
                     if data["node"] not in finished_nodes:
                         finished_nodes.append(data["node"])
-                        print(
-                            "Progress: ",
-                            len(finished_nodes),
-                            "/",
-                            len(node_ids),
-                            " Tasks done",
-                        )
-
                     if data["node"] is None and data["prompt_id"] == prompt_id:
                         break  # Execution is done
 
