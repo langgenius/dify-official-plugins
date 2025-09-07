@@ -77,7 +77,10 @@ class ModelManager:
         if len(re.findall("https?://huggingface\.co/.*", model_name)) > 0:
             # model_name is a URL for huggingface.co
             url = model_name
-            return self.download_model(url, save_dir, model_name.split("/")[-1], self.get_hf_api_key())
+            try:
+                return self.download_model(url, save_dir, model_name.split("/")[-1], None)
+            except:
+                return self.download_model(url, save_dir, model_name.split("/")[-1], self.get_hf_api_key())
         if len(re.findall("https?://.*", model_name)) > 0:
             # model_name is a general URL
             url = model_name
@@ -145,22 +148,35 @@ class ModelManager:
             raise Exception(f"Version {version_id} of model {model_name_human} not found.")
         model_filenames = [file["name"] for file in model_detail["files"]]
 
-        self.download_model(
-            f"https://civitai.com/api/download/models/{version_id}",
-            save_dir,
-            model_filenames[0].split("/")[-1],
-            self.get_civitai_api_key(),
-        )
+        try:
+            self.download_model(
+                f"https://civitai.com/api/download/models/{version_id}",
+                save_dir,
+                model_filenames[0].split("/")[-1],
+                None,
+            )
+        except:
+            self.download_model(
+                f"https://civitai.com/api/download/models/{version_id}",
+                save_dir,
+                model_filenames[0].split("/")[-1],
+                self.get_civitai_api_key(),
+            )
 
         return model_name_human, model_filenames
 
     def download_hugging_face(self, repo_id: str, filepath: str, save_dir: str):
-        self.download_model(
-            f"https://huggingface.co/{repo_id}/resolve/main/{filepath}",
-            save_dir,
-            filepath.split("/")[-1],
-            self.get_hf_api_key(),
-        )
+        try:
+            self.download_model(
+                f"https://huggingface.co/{repo_id}/resolve/main/{filepath}", save_dir, filepath.split("/")[-1], None
+            )
+        except:
+            self.download_model(
+                f"https://huggingface.co/{repo_id}/resolve/main/{filepath}",
+                save_dir,
+                filepath.split("/")[-1],
+                self.get_hf_api_key(),
+            )
         return filepath.split("/")[-1]
 
     def fetch_civitai_air(self, version_id: int) -> tuple[str, str, str, str]:
