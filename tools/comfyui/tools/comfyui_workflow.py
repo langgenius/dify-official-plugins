@@ -56,8 +56,8 @@ class ComfyUiWorkflow:
                 raise Exception(f"Failed to convert Workflow to API ready. {str(e)}")
             for node in workflow_json["nodes"]:
                 if "properties" in node and "models" in node["properties"]:
-                    model = node["properties"]["models"]
-                    self.models_to_download.append(ComfyUIModel(model["name"], model["url"], model["directory"]))
+                    for model in node["properties"]["models"]:
+                        self.models_to_download.append(ComfyUIModel(model["name"], model["url"], model["directory"]))
         else:
             self._workflow_api = deepcopy(workflow_json)
 
@@ -68,7 +68,7 @@ class ComfyUiWorkflow:
         result = {}
         current_dir = os.path.dirname(os.path.realpath(__file__))
         widgets_value_path = os.path.join(current_dir, "json", "widgets_value_names.json")
-        with open(widgets_value_path, "r", encoding="UTF-8") as f:
+        with open(widgets_value_path, encoding="UTF-8") as f:
             widgets_value_names = json.loads(f.read())
         nodes = workflow_json["nodes"]
         links = workflow_json["links"]

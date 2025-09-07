@@ -90,7 +90,7 @@ class ModelManager:
             headers = {"Authorization": f"Bearer {token}"}
         response = requests.head(url, headers=headers)
         if response.status_code == 401:
-            raise Exception(f"401 Unauthorized. Please check the api_token.")
+            raise Un(f"401 Unauthorized. Please check the api_token.")
         elif response.status_code >= 400:
             raise Exception(f"Download failed. Error {response.status_code}. Please check the URL.")
 
@@ -145,22 +145,35 @@ class ModelManager:
             raise Exception(f"Version {version_id} of model {model_name_human} not found.")
         model_filenames = [file["name"] for file in model_detail["files"]]
 
-        self.download_model(
-            f"https://civitai.com/api/download/models/{version_id}",
-            save_dir,
-            model_filenames[0].split("/")[-1],
-            self.get_civitai_api_key(),
-        )
+        try:
+            self.download_model(
+                f"https://civitai.com/api/download/models/{version_id}",
+                save_dir,
+                model_filenames[0].split("/")[-1],
+                None,
+            )
+        except:
+            self.download_model(
+                f"https://civitai.com/api/download/models/{version_id}",
+                save_dir,
+                model_filenames[0].split("/")[-1],
+                self.get_civitai_api_key(),
+            )
 
         return model_name_human, model_filenames
 
     def download_hugging_face(self, repo_id: str, filepath: str, save_dir: str):
-        self.download_model(
-            f"https://huggingface.co/{repo_id}/resolve/main/{filepath}",
-            save_dir,
-            filepath.split("/")[-1],
-            self.get_hf_api_key(),
-        )
+        try:
+            self.download_model(
+                f"https://huggingface.co/{repo_id}/resolve/main/{filepath}", save_dir, filepath.split("/")[-1], None
+            )
+        except:
+            self.download_model(
+                f"https://huggingface.co/{repo_id}/resolve/main/{filepath}",
+                save_dir,
+                filepath.split("/")[-1],
+                self.get_hf_api_key(),
+            )
         return filepath.split("/")[-1]
 
     def fetch_civitai_air(self, version_id: int) -> tuple[str, str, str, str]:
