@@ -4,7 +4,7 @@ from dify_plugin import Tool
 from tools.comfyui_client import ComfyUiClient
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
-from tools.model_manager import ModelManager
+from tools.comfyui_model_manager import ModelManager
 
 
 class DownloadCivitAI(Tool):

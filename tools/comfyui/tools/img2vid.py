@@ -12,7 +12,7 @@ from dify_plugin import Tool
 from PIL import Image
 from tools.comfyui_client import ComfyUiClient, FileType
 from tools.comfyui_workflow import ComfyUiWorkflow
-from tools.model_manager import ModelManager
+from tools.comfyui_model_manager import ModelManager
 
 LORA_NODE = {
     "inputs": {

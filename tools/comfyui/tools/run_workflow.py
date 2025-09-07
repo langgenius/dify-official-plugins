@@ -2,7 +2,7 @@ from typing import Any, Generator
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from tools.comfyui_client import ComfyUiClient, FileType
-from tools.model_manager import ModelManager
+from tools.comfyui_model_manager import ModelManager
 from tools.comfyui_workflow import ComfyUiWorkflow
 from dify_plugin import Tool
 
