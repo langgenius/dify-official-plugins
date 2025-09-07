@@ -191,12 +191,14 @@ class ModelManager:
         workflow = ComfyUiWorkflow(workflow_json)
         model_names = []
         for model in workflow.get_models_to_download():
-            token = None
+            try:
+                self.download_model(model.url, model.directory, model.name, token)
+            except:
+                pass
             if "://civitai.com" in model.url:
                 token = self.get_civitai_api_key()
             elif "://huggingface.co" in model.url:
                 token = self.get_hf_api_key()
-
             self.download_model(model.url, model.directory, model.name, token)
             model_names.append(model.name)
         return model_names

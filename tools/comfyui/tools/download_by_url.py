@@ -30,7 +30,7 @@ class DownloadByURL(Tool):
         save_to = tool_parameters.get("save_dir")
 
         try:
-            return self.model_manager.download_model(url, save_to, name, token)
+            return self.model_manager.download_model(url, save_to, name, None)
         except:
             pass
 
