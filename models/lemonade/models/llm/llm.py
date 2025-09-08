@@ -196,7 +196,7 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
                 endpoint_url += "/"
 
             # Use health endpoint to validate the server status
-            endpoint_url = urljoin(endpoint_url, "health")
+            endpoint_url = urljoin(endpoint_url, "/api/v1/health")
 
             # send a get request to check health endpoint
             response = requests.get(endpoint_url, headers=headers, timeout=(10, 300))
