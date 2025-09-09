@@ -33,14 +33,9 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
     def get_customizable_model_schema(
         self, model: str, credentials: Mapping | dict
     ) -> AIModelEntity:
-        # Overwrite some parameters
+        # Ensure credentials is a mutable dict and set custom parameters
         customized_credentials = dict(credentials)
-        customized_credentials["max_tokens_to_sample"] = 4096
-        customized_credentials["stream_mode_delimiter"] = '\n\n'
-        customized_credentials["stream_mode_auth"] = "not_use"
-        customized_credentials["mode"] = "chat"
-        customized_credentials["function_calling_type"] = "tool_call"
-        customized_credentials["stream_function_calling"] = "supported"
+        self._add_custom_parameters(customized_credentials)
         
         entity = super().get_customizable_model_schema(model, customized_credentials)
 
@@ -137,6 +132,9 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
+        # Set required parameters for the OAI compatibility layer
+        self._add_custom_parameters(credentials)
+        
         # Compatibility adapter for Dify's 'json_schema' structured output mode.
         # The base class does not natively handle the 'json_schema' parameter. This block
         # translates it into a standard OpenAI-compatible request by:
@@ -174,6 +172,27 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
             model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
         )
 
+    @staticmethod
+    def _add_custom_parameters(credentials: dict) -> None:
+        """
+        Add custom parameters required for OAI compatibility layer.
+        
+        :param credentials: model credentials
+        """
+        # Set endpoint URL for OAI compatibility - crucial for proper routing
+        if "endpoint_url" in credentials:
+            endpoint_url = credentials["endpoint_url"].rstrip("/")
+            # Set the base URL to include the API version path
+            credentials["endpoint_url"] = endpoint_url + "/api/v1"
+        
+        # Set default parameters for OAI compatibility
+        credentials["mode"] = "chat"
+        credentials["function_calling_type"] = "tool_call"
+        credentials["stream_function_calling"] = "supported"
+        credentials["max_tokens_to_sample"] = 4096
+        credentials["stream_mode_delimiter"] = '\n\n'
+        credentials["stream_mode_auth"] = "not_use"
+
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
         Validate model credentials using requests to ensure compatibility with Lemonade API.
@@ -182,6 +201,9 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
         :param credentials: model credentials
         :return:
         """
+        # Set required parameters for the OAI compatibility layer
+        self._add_custom_parameters(credentials)
+        
         try:
             headers = {"Content-Type": "application/json"}
 
