@@ -54,6 +54,7 @@
 - mistralai/mistral-7b-instruct
 - qwen/qwen-2.5-72b-instruct
 - qwen/qwen-2-72b-instruct
+- qwen/qwen3-max
 - deepseek/deepseek-chat
 - deepseek/deepseek-chat-v3.1
 - deepseek/deepseek-chat-v3-0324
