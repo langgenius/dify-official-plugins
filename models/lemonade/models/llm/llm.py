@@ -149,17 +149,6 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
 
         structured_output_support = credentials.get("structured_output_support", "not_supported")
         if structured_output_support == "supported":
-            # ----
-            # The following section should be added after the new version of `dify-plugin-sdks`
-            # is released.
-            # Related Commit:
-            # https://github.com/langgenius/dify-plugin-sdks/commit/0690573a879caf43f92494bf411f45a1835d96f6
-            # ----
-            # try:
-            #     entity.features.index(ModelFeature.STRUCTURED_OUTPUT)
-            # except ValueError:
-            #     entity.features.append(ModelFeature.STRUCTURED_OUTPUT)
-
             entity.parameter_rules.append(
                 ParameterRule(
                     name=DefaultParameterName.RESPONSE_FORMAT.value,
@@ -240,7 +229,6 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
         # The base class does not natively handle the 'json_schema' parameter. This block
         # translates it into a standard OpenAI-compatible request by:
         # 1. Injecting the JSON schema directly into the system prompt to guide the model.
-        # This ensures models like gpt-4o produce the correct structured output.
         if model_parameters.get("response_format") == "json_schema":
             # Use .get() instead of .pop() for safety
             json_schema_str = model_parameters.get("json_schema")
