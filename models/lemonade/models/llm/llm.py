@@ -27,13 +27,19 @@ from dify_plugin.errors.model import CredentialsValidateFailedError
 from typing import List
 
 
-def validate_lemonade_credentials(credentials: dict) -> None:
+def validate_lemonade_credentials(credentials: dict, model: str = None) -> None:
     """
-    Validate Lemonade server credentials by checking the health endpoint.
+    Validate Lemonade server credentials by checking the health endpoint and model availability.
     
     :param credentials: model credentials containing endpoint_url
+    :param model: optional model name to validate availability
     :raises CredentialsValidateFailedError: if validation fails
     """
+
+    if not model:
+        raise CredentialsValidateFailedError("Please specify a model name")
+    
+    # Step 1: Check if the server is healthy
     try:
         headers = {"Content-Type": "application/json"}
         
@@ -81,6 +87,44 @@ def validate_lemonade_credentials(credentials: dict) -> None:
         )
     except Exception as ex:
         raise CredentialsValidateFailedError(str(ex))
+
+    # Step 2: Check if the model is supported using the openai models endpoint
+    try:
+        response = requests.get(urljoin(credentials["endpoint_url"], "/api/v1/models"), headers=headers, timeout=(10, 300))
+        if response.status_code != 200:
+            raise CredentialsValidateFailedError(f"Credentials validation failed with status code {response.status_code} when checking {credentials['endpoint_url']}")
+        
+        try:
+            models_result = response.json()
+        except json.JSONDecodeError:
+            raise CredentialsValidateFailedError("Failed to parse models response: JSON decode error")
+        
+        # Check if the response has the expected structure
+        if "data" not in models_result:
+            raise CredentialsValidateFailedError("Invalid models response format: missing 'data' field")
+        
+        # Extract model IDs from the response
+        available_models = []
+        for model_info in models_result.get("data", []):
+            if isinstance(model_info, dict) and "id" in model_info:
+                available_models.append(model_info["id"])
+        
+        # Check if the requested model is available
+        if model not in available_models:
+            base_url = credentials.get("endpoint_url", "").rstrip("/")
+            management_url = f"{base_url}:8000/#model-management"
+            raise CredentialsValidateFailedError(
+                f"Model '{model}' is not available on the Lemonade server. "
+                "Please pull the model first. You can find more information about it at "
+                "https://lemonade-server.ai/docs/server/server_models/"
+            )
+            
+    except CredentialsValidateFailedError:
+        raise
+    except Exception as ex:
+        raise CredentialsValidateFailedError(f"Failed to validate model availability: {str(ex)}")
+    
+    
 
 
 class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
@@ -261,5 +305,5 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
         # Set required parameters for the OAI compatibility layer
         self._add_custom_parameters(credentials)
         
-        # Use shared validation function
-        validate_lemonade_credentials(credentials)
+        # Use shared validation function with model parameter
+        validate_lemonade_credentials(credentials, model)
