@@ -4,6 +4,7 @@ from typing import Mapping, Optional, Union, Generator
 import json
 import requests
 from urllib.parse import urljoin
+from requests.exceptions import ConnectionError, Timeout, RequestException
 
 from dify_plugin.entities.model import (
     AIModelEntity,
@@ -24,6 +25,62 @@ from dify_plugin.entities.model.message import (
 from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLanguageModel
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from typing import List
+
+
+def validate_lemonade_credentials(credentials: dict) -> None:
+    """
+    Validate Lemonade server credentials by checking the health endpoint.
+    
+    :param credentials: model credentials containing endpoint_url
+    :raises CredentialsValidateFailedError: if validation fails
+    """
+    try:
+        headers = {"Content-Type": "application/json"}
+        
+        # Lemonade provider uses a fixed API key
+        headers["Authorization"] = "Bearer lemonade"
+        
+        endpoint_url = credentials.get("endpoint_url")
+        if not endpoint_url:
+            raise CredentialsValidateFailedError("endpoint_url is required")
+        
+        if not endpoint_url.endswith("/"):
+            endpoint_url += "/"
+        
+        # Use health endpoint to validate the server status
+        health_endpoint = urljoin(endpoint_url, "/api/v1/health")
+        
+        # Send a GET request to check health endpoint
+        response = requests.get(health_endpoint, headers=headers, timeout=(10, 300))
+        
+        if response.status_code != 200:
+            raise CredentialsValidateFailedError(
+                f"Credentials validation failed with status code {response.status_code} when checking {health_endpoint}"
+            )
+        
+        try:
+            json_result = response.json()
+        except json.JSONDecodeError:
+            raise CredentialsValidateFailedError("Credentials validation failed: JSON decode error")
+        
+        # Basic check for valid health response structure
+        if "status" not in json_result:
+            raise CredentialsValidateFailedError("Credentials validation failed: invalid response format")
+        
+        if json_result.get("status") != "ok":
+            raise CredentialsValidateFailedError("Credentials validation failed: server status is not ok")
+    
+    except CredentialsValidateFailedError:
+        raise
+    except (ConnectionError, Timeout, RequestException):
+        display_url = credentials.get("endpoint_url", "unknown")
+        raise CredentialsValidateFailedError(
+            f"Cannot connect to Lemonade server at {display_url}. "
+            "Please ensure the Lemonade server is running and accessible."
+            "You can download lemonade from lemonade-server.ai"
+        )
+    except Exception as ex:
+        raise CredentialsValidateFailedError(str(ex))
 
 
 class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
@@ -195,7 +252,7 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
-        Validate model credentials using requests to ensure compatibility with Lemonade API.
+        Validate model credentials using shared validation utility.
 
         :param model: model name
         :param credentials: model credentials
@@ -204,43 +261,5 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
         # Set required parameters for the OAI compatibility layer
         self._add_custom_parameters(credentials)
         
-        try:
-            headers = {"Content-Type": "application/json"}
-
-            # Lemonade provider uses a fixed API key
-            headers["Authorization"] = "Bearer lemonade"
-
-            endpoint_url = credentials.get("endpoint_url")
-            if not endpoint_url:
-                raise CredentialsValidateFailedError("endpoint_url is required")
-            
-            if not endpoint_url.endswith("/"):
-                endpoint_url += "/"
-
-            # Use health endpoint to validate the server status
-            endpoint_url = urljoin(endpoint_url, "/api/v1/health")
-
-            # send a get request to check health endpoint
-            response = requests.get(endpoint_url, headers=headers, timeout=(10, 300))
-
-            if response.status_code != 200:
-                raise CredentialsValidateFailedError(
-                    f"Credentials validation failed with status code {response.status_code} when checking {endpoint_url}"
-                )
-
-            try:
-                json_result = response.json()
-            except json.JSONDecodeError as e:
-                raise CredentialsValidateFailedError("Credentials validation failed: JSON decode error")
-
-            # Basic check for valid health response structure
-            if "status" not in json_result:
-                raise CredentialsValidateFailedError("Credentials validation failed: invalid response format")
-            
-            if json_result.get("status") != "ok":
-                raise CredentialsValidateFailedError("Credentials validation failed: server status is not ok")
-
-        except CredentialsValidateFailedError:
-            raise
-        except Exception as ex:
-            raise CredentialsValidateFailedError(str(ex))
+        # Use shared validation function
+        validate_lemonade_credentials(credentials)

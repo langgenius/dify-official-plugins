@@ -5,32 +5,20 @@ from dify_plugin.entities.model import AIModelEntity, I18nObject
 from dify_plugin.interfaces.model.openai_compatible.rerank import OAICompatRerankModel
 from dify_plugin.errors.model import CredentialsValidateFailedError
 
+from ..llm.llm import validate_lemonade_credentials
+
 
 class LemonadeRerankModel(OAICompatRerankModel):
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
-        Validate model credentials
+        Validate model credentials using shared validation utility.
 
         :param model: model name
         :param credentials: model credentials
         :return:
         """
-        try:
-            self._invoke(
-                model=model,
-                credentials=credentials,
-                query="What is the capital of the United States?",
-                docs=[
-                    "Carson City is the capital city of the American state of Nevada. At the 2010 United States "
-                    "Census, Carson City had a population of 55,274.",
-                    "The Commonwealth of the Northern Mariana Islands is a group of islands in the Pacific Ocean that "
-                    "are a political division controlled by the United States. Its capital is Saipan.",
-                ],
-                score_threshold=0.8,
-                top_n=3,
-            )
-        except Exception as ex:
-            raise CredentialsValidateFailedError(str(ex)) from ex
+        # Use shared validation function
+        validate_lemonade_credentials(credentials)
 
     def get_customizable_model_schema(
         self, model: str, credentials: Mapping | dict
