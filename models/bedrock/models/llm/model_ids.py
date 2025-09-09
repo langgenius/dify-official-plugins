@@ -67,12 +67,22 @@ def get_model_id(model_type, model_name):
     """
     return BEDROCK_MODEL_IDS.get(model_type, {}).get(model_name)
 
-def get_region_area(region_name):
+def get_region_area(region_name, prefer_global=False):
     """
-    根据AWS区域名称识别所属地区
-    :param region_name: AWS区域名称，如'us-east-1'
-    :return: 所属地区，如'US', 'EU', 'APAC'等
+    Identify the geographic area based on AWS region name
+    :param region_name: AWS region name, e.g., 'us-east-1'
+    :param prefer_global: Whether to prefer global prefix (for models supporting global routing)
+    :return: Geographic area, e.g., 'us', 'eu', 'apac', 'global'
     """
+    if prefer_global:
+        # For regions that support global prefix, prioritize returning global
+        global_supported_regions = {
+            'us-west-2', 'us-east-1', 'us-east-2', 
+            'eu-west-1', 'ap-northeast-1'
+        }
+        if region_name in global_supported_regions:
+            return 'global'
+    
     prefix = region_name.split('-')[0].lower()
 
     area_mapping = {

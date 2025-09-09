@@ -77,6 +77,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
     # TODO There is invoke issue: context limit on Cohere Model, will add them after fixed.
     CONVERSE_API_ENABLED_MODEL_INFO = [
         {"prefix": "us.deepseek", "support_system_prompts": True, "support_tool_use": False},
+        {"prefix": "global.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "us.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "eu.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "apac.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
@@ -289,9 +290,22 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             
             if model_parameters.pop('cross-region', False):
                 region_name = credentials['aws_region']
-                region_prefix = model_ids.get_region_area(region_name)
+                
+                # Check if the model supports global prefix (currently mainly Claude 4 series)
+                supports_global = any(model_id.startswith(prefix) for prefix in [
+                    'anthropic.claude-sonnet-4', 'anthropic.claude-opus-4'
+                ])
+                
+                if supports_global:
+                    # Prefer using global prefix
+                    region_prefix = model_ids.get_region_area(region_name, prefer_global=True)
+                else:
+                    # Use traditional regional prefix
+                    region_prefix = model_ids.get_region_area(region_name, prefer_global=False)
+                
                 if not region_prefix:
                     raise InvokeError(f'Region {region_name} Unsupport cross-region Inference')
+                
                 model_id = "{}.{}".format(region_prefix, model_id)
 
             model_info = BedrockLargeLanguageModel._find_model_info(model_id)
@@ -1029,7 +1043,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             # Traditional model validation
             foundation_model_ids = self._list_foundation_models(credentials=credentials)
             cris_prefix = model_ids.get_region_area(credentials.get("aws_region"))
-            if model.startswith(cris_prefix):
+            if cris_prefix and model.startswith(cris_prefix + "."):
                 model = model.split('.', 1)[1]
             logger.info(f"get model_ids: {foundation_model_ids}")
             if model not in foundation_model_ids:
