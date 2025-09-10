@@ -11,7 +11,7 @@ identity:
     pt_BR: Conjunto de ferramentas de qualidade de texto usando as regras do Dingo
   icon: icon.svg
   tags:
-    - data-quality
+    - productivity
 extra:
   python:
     source: provider/dingo.py
