@@ -1,6 +1,6 @@
 version: 0.0.1
 type: plugin
-author: "lemonade-sdk"
+author: "langgenius"
 name: "lemonade"
 description:
   en_US: Lemonade lets you run local models with NPU and GPU acceleration.
