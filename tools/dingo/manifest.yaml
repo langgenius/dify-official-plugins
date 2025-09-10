@@ -18,7 +18,7 @@ meta:
     language: python
     version: "3.12"
     entrypoint: main
-  version: 0.1.1
+  version: 0.1.2
   minimum_dify_version: 1.7.0
 plugins:
   tools:
@@ -34,5 +34,5 @@ resource:
 tags:
   - data-quality
   - utilities
-version: 0.1.1
+version: 0.1.2
 
