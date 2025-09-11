@@ -1,0 +1,55 @@
+identity:
+  author: langgenius
+  name: gemini_image
+  label:
+    en_US: Gemini image
+    zh_Hans: Gemini 图像
+  description:
+    en_US: Gemini Image Generation and Editing
+    zh_Hans: Gemini 图像生成和编辑
+  icon: icon.png
+  tags:
+    - image
+    - productivity
+credentials_for_provider:
+  vertex_service_account_key:
+    type: secret-input
+    required: true
+    label:
+      en_US: Vertex Service Account key
+      zh_Hans: Vertex 密钥
+    help:
+      en_US: Please input your Vertex Service Account key in base64 format
+      zh_Hans: 请输入你的 Vertex Service Account key，base64 格式
+    placeholder:
+      en_US: Enter your Vertex Service Account key in base64 format
+      zh_Hans: 输入你的 Vertex Service Account key，base64 格式
+  vertex_project_id:
+    type: text-input
+    required: true
+    label:
+      en_US: Project ID
+      zh_Hans: 项目ID
+    help:
+      en_US: Please input the project ID of your Vertex Service
+      zh_Hans: 请输入你的 Vertex Service 项目ID
+    placeholder:
+      en_US: Enter your Vertex Service Project ID
+      zh_Hans: 输入你的 Vertex Service 项目ID
+  vertex_location:
+    type: text-input
+    required: true
+    label:
+      en_US: Location
+      zh_Hans: 区域
+    help:
+      en_US: Please input the location of your Vertex Service
+      zh_Hans: 请输入你的 Vertex Service 区域
+    placeholder:
+      en_US: Enter your Vertex Service Location
+      zh_Hans: 输入你的 Vertex Service 区域
+extra:
+  python:
+    source: provider/gemini_image.py
+tools:
+- tools/image_generate.yaml

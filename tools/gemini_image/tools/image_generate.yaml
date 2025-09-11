@@ -1,0 +1,56 @@
+description:
+  human:
+    en_US: Gemini Image Generate is a text to image generation and editing tool
+    zh_Hans: Gemini Image Generate 是一个文本到图像的生成与编辑工具
+  llm: Gemini Image Generate is a tool used to generate and edit images from text using Gemini's model
+extra:
+  python:
+    source: tools/image_generate.py
+identity:
+  author: langgenius
+  description:
+    en_US: Gemini Image Generate enables you converse with Gemini and create or edit images with interwoven text.
+    zh_Hans: Gemini Image Generate 使您能够与 Gemini 交谈并创建或编辑带有文本的图像。
+  label:
+    en_US: Gemini Image Generate and Edit
+    zh_Hans: Gemini 图像生成与编辑
+  name: image_generate
+parameters:
+  - form: llm
+    human_description:
+      en_US: Detailed description of the image you want to generate (max 32000 chars). Check the official Gemini documentation.
+      zh_Hans: 您想要生成的图像的详细描述（最多 32000 字符）。请查看 Gemini 的官方文档。
+    label:
+      en_US: Prompt
+      zh_Hans: 提示词
+    llm_description: Detailed image prompt for Gemini Image Generate(max 32000 characters). Describe the desired image clearly.
+    name: prompt
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: One or more images to edit (PNG, JPEG, or WebP, each <7MB).
+      zh_Hans: 要编辑的一张或多张图像（PNG、JPEG 或 WebP，每张小于 7MB）。
+    label:
+      en_US: Image(s)
+      zh_Hans: 图像
+    name: images
+    required: false
+    type: files
+    mime_types: [ "image/png", "image/jpeg" ]    
+  - default: "gemini-2.5-flash-image-preview"
+    form: form
+    human_description:
+      en_US: Select the gemini model 
+      zh_Hans: 选择Gemini模型
+    label:
+      en_US: Gemini Model
+      zh_Hans: Gemini 模型
+    name: model
+    options:
+      - label:
+          en_US: gemini-2.5-flash-image-preview
+          zh_Hans: gemini-2.5-flash-image-preview
+        value: "gemini-2.5-flash-image-preview"
+    required: false
+    type: select
