@@ -1,16 +1,16 @@
 
 """
-批量 YAML 对象操作工具
-这个脚本可以递归搜索 YAML 文件并对指定的对象/字段执行批量操作
-支持使用点表示法的嵌套对象操作 (例如 pricing, metadata.version)
-操作类型: delete, add, modify, replace, remove
-支持对象和数组两种数据类型的完整操作
+Batch YAML Object Operator Tool
+This script recursively searches YAML files and performs batch operations on specified objects/fields.
+Supports nested object operations using dot notation (e.g., pricing, metadata.version).
+Operation types: delete, add, modify, replace, remove
+Supports complete operations for both object and array data types.
 
-新特性:
-- 使用相对路径进行文件匹配，更灵活的 --include 参数
-- 支持多种数组操作模式 (append, prepend, insert, by-value, by-index)
-- 安全的强制 --include 参数要求，防止意外批量修改
-- 自动备份功能，支持干运行模式预览
+New features:
+- Use relative paths for file matching, more flexible --include parameter
+- Support multiple array operation modes (append, prepend, insert, by-value, by-index)
+- Safe mandatory --include parameter requirement to prevent accidental batch modifications
+- Automatic backup functionality with dry-run mode preview support
 """
 
 import os
@@ -534,17 +534,17 @@ def parse_arguments():
         description="Batch operations on objects in YAML files",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-使用示例:
-  # 删除对象 - 推荐用法
-  python tools/yaml_batch_operator.py --operator delete --key pricing --dry-run --include "models/llm/openai/*.yaml"
-  
-  # 添加对象
-  python tools/yaml_batch_operator.py --operator add --key pricing --value '{"input": "0.50", "output": "0.75"}' --type object --include "models/llm/anthropic/*.yaml"
-  
-  # 修改对象
-  python tools/yaml_batch_operator.py --operator modify --key pricing.input --value '"0.60"' --type object --include "models/llm/gemini/*.yaml"
+    Examples:
+      # Delete object - recommended usage
+      python tools/yaml_batch_operator.py --operator delete --key pricing --dry-run --include "models/llm/openai/*.yaml"
+      
+      # Add object
+      python tools/yaml_batch_operator.py --operator add --key pricing --value '{"input": "0.50", "output": "0.75"}' --type object --include "models/llm/anthropic/*.yaml"
+      
+      # Modify object
+      python tools/yaml_batch_operator.py --operator modify --key pricing.input --value '"0.60"' --type object --include "models/llm/gemini/*.yaml"
         """
-    )
+        )
     
     parser.add_argument(
         '--operator', '-o',
@@ -600,7 +600,7 @@ def parse_arguments():
         '--include',
         nargs='+',
         required=True,
-        help='只处理匹配这些模式的文件 (使用相对路径，例如 "models/llm/openai/*.yaml" 或 "openai/*.yaml") - 出于安全考虑此参数为必需'
+        help='Only process files that match these patterns (using relative paths, such as "models/llm/openai/.yaml" or "openai/.yaml") - this parameter is required for security reasons'
     )
     
     parser.add_argument(
