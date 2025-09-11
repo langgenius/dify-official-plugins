@@ -1,0 +1,35 @@
+author: langgenius
+created_at: '2025-09-08T08:03:44.658609186Z'
+description:
+  en_US: Gemini Image Generation and Editing
+  zh_Hans: Gemini 图像生成和编辑
+icon: icon.png
+label:
+  en_US: Gemini Image
+  zh_Hans: Gemini Image
+meta:
+  arch:
+  - amd64
+  - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: '3.12'
+  version: 0.0.1
+name: gemini_image
+plugins:
+  tools:
+  - provider/gemini_image.yaml
+resource:
+  memory: 1048576
+  permission:
+    model:
+      enabled: true
+      llm: true
+    tool:
+      enabled: true
+tags:
+- image
+- productivity
+type: plugin
+version: 0.0.1
