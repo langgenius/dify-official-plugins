@@ -1,0 +1,6 @@
+model: gte-Qwen2
+model_type: text-embedding
+model_properties:
+  context_size: 8192
+
+

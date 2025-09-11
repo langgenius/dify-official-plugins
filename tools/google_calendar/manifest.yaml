@@ -1,0 +1,35 @@
+author: langgenius
+created_at: '2025-08-07T08:03:44.658609186Z'
+description:
+  en_US: Google Calendar integration for managing events, calendars, and scheduling
+  zh_Hans: Google日历集成，用于管理事件、日历和日程安排
+icon: icon.png
+label:
+  en_US: Google Calendar
+  zh_Hans: 谷歌日历
+meta:
+  arch:
+  - amd64
+  - arm64
+  minimum_dify_version: 1.7.1
+  runner:
+    entrypoint: main
+    language: python
+    version: '3.12'
+  version: 0.0.1
+name: google_calendar
+plugins:
+  tools:
+  - provider/google_calendar.yaml
+resource:
+  memory: 1048576
+  permission:
+    model:
+      enabled: true
+      llm: true
+    tool:
+      enabled: true
+tags:
+- utilities
+type: plugin
+version: 0.1.0

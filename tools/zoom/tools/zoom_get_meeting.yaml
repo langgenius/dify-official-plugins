@@ -1,0 +1,152 @@
+identity:
+  name: zoom_get_meeting
+  author: langgenius
+  label:
+    en_US: Get Zoom Meeting Info
+    zh_Hans: 获取Zoom会议信息
+    ja_JP: Zoom会議情報を取得
+
+description:
+  human:
+    en_US: Retrieve comprehensive information about a Zoom meeting by meeting ID
+    zh_Hans: 通过会议ID获取Zoom会议的完整信息
+    ja_JP: 会議IDでZoom会議の包括的な情報を取得
+  llm: Get comprehensive information about a Zoom meeting including details, settings, and URLs using the meeting ID.
+
+parameters:
+  - name: meeting_id
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Meeting ID
+      zh_Hans: 会议ID
+      ja_JP: 会議ID
+    human_description:
+      en_US: The unique identifier of the Zoom meeting
+      zh_Hans: Zoom会议的唯一标识符
+      ja_JP: Zoom会議の一意の識別子
+    llm_description: The unique meeting ID for the Zoom meeting to retrieve information for (required)
+
+  - name: occurrence_id
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Occurrence ID
+      zh_Hans: 发生ID
+      ja_JP: オカレンスID
+    human_description:
+      en_US: Occurrence ID for recurring meetings (optional)
+      zh_Hans: 周期性会议的发生ID（可选）
+      ja_JP: 繰り返し会議のオカレンスID（オプション）
+    llm_description: Optional occurrence ID for getting information about a specific occurrence of a recurring meeting
+
+  - name: show_previous_occurrences
+    type: boolean
+    required: false
+    default: false
+    form: llm
+    label:
+      en_US: Show Previous Occurrences
+      zh_Hans: 显示之前的发生
+      ja_JP: 以前のオカレンスを表示
+    human_description:
+      en_US: Include previous occurrences for recurring meetings
+      zh_Hans: 包括周期性会议的之前发生
+      ja_JP: 繰り返し会議の以前のオカレンスを含める
+    llm_description: Whether to include previous occurrences in the response for recurring meetings (true/false)
+
+extra:
+  python:
+    source: tools/zoom_get_meeting.py
+
+output_schema:
+  type: object
+  properties:
+    meeting_id:
+      type: string
+      description: Unique meeting ID
+    uuid:
+      type: string
+      description: Meeting UUID
+    host_id:
+      type: string
+      description: Host user ID
+    host_email:
+      type: string
+      description: Host email address
+    topic:
+      type: string
+      description: Meeting topic
+    type:
+      type: number
+      description: Meeting type (1=instant, 2=scheduled, 3=recurring no fixed time, 8=recurring with fixed time)
+    status:
+      type: string
+      description: Meeting status (waiting, started, finished)
+    start_time:
+      type: string
+      description: Meeting start time
+    duration:
+      type: number
+      description: Meeting duration in minutes
+    timezone:
+      type: string
+      description: Meeting timezone
+    agenda:
+      type: string
+      description: Meeting agenda
+    created_at:
+      type: string
+      description: Meeting creation timestamp
+    start_url:
+      type: string
+      description: URL for host to start meeting
+    join_url:
+      type: string
+      description: URL for participants to join
+    password:
+      type: string
+      description: Meeting password
+    encrypted_password:
+      type: string
+      description: Encrypted meeting password
+    pmi:
+      type: string
+      description: Personal Meeting ID
+    tracking_fields:
+      type: array
+      description: Custom tracking fields
+    occurrences:
+      type: array
+      description: List of occurrences for recurring meetings
+      items:
+        type: object
+        properties:
+          occurrence_id:
+            type: string
+          start_time:
+            type: string
+          duration:
+            type: number
+          status:
+            type: string
+    settings:
+      type: object
+      description: Meeting settings
+      properties:
+        waiting_room:
+          type: boolean
+        join_before_host:
+          type: boolean
+        mute_upon_entry:
+          type: boolean
+        auto_recording:
+          type: string
+        allow_multiple_devices:
+          type: boolean
+        participant_video:
+          type: boolean
+        host_video:
+          type: boolean

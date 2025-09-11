@@ -1,0 +1,111 @@
+{
+    "AssetDownloader": [
+        "url",
+        "save_to",
+        "filename",
+        "token"
+    ],
+    "EmptyLatentImage": [
+        "width",
+        "height",
+        "batch_size"
+    ],
+    "CheckpointLoaderSimple": [
+        "ckpt_name"
+    ],
+    "KSampler": [
+        "seed",
+        "control",
+        "steps",
+        "cfg",
+        "sampler_name",
+        "scheduler",
+        "denoise"
+    ],
+    "CLIPTextEncode": [
+        "text"
+    ],
+    "VAEEncode": [],
+    "VAEDecode": [],
+    "SaveImage": [
+        "filename_prefix"
+    ],
+    "LatentUpscale": [
+        "upscale_method",
+        "width",
+        "height",
+        "crop"
+    ],
+    "PreviewImage": [],
+    "LoadImage": [
+        "image"
+    ],
+    "ImageScaleToTotalPixels": [
+        "upscale_method",
+        "megapixels"
+    ],
+    "UNETLoader": [
+        "unet_name",
+        "weight_dtype"
+    ],
+    "CLIPLoader": [
+        "clip_name",
+        "type",
+        "device"
+    ],
+    "VAELoader": [
+        "vae_name"
+    ],
+    "CreateVideo": [
+        "fps"
+    ],
+    "SaveVideo": [
+        "filename_prefix",
+        "format",
+        "codec"
+    ],
+    "Wan22ImageToVideoLatent": [
+        "width",
+        "height",
+        "length",
+        "batch_size"
+    ],
+    "ModelSamplingSD3": [
+        "shift"
+    ],
+    "EmptyHunyuanLatentVideo": [
+        "width",
+        "height",
+        "length",
+        "batch_size"
+    ],
+    "LoraLoaderModelOnly": [
+        "lora_name",
+        "strength_model"
+    ],
+    "KSamplerAdvanced": [
+        "add_noise",
+        "noise_seed",
+        "steps",
+        "cfg",
+        "sampler_name",
+        "scheduler",
+        "start_at_step",
+        "end_at_step",
+        "return_with_leftover_noise"
+    ],
+    "EmptySD3LatentImage": [
+        "width",
+        "height",
+        "batch_size"
+    ],
+    "FluxGuidance": [
+        "guidance"
+    ],
+    "LoraLoader":[
+        "lora_name",
+        "strength_model",
+        "strength_clip"
+    ],
+    "ModelSamplingAuraFlow":["shift"]
+}

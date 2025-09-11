@@ -1,0 +1,4 @@
+dify_plugin==0.5.0b14
+requests
+werkzeug
+beautifulsoup4

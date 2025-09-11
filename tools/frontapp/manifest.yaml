@@ -1,0 +1,35 @@
+author: langgenius
+created_at: '2024-09-20T08:03:44.658609186Z'
+description:
+  en_US: Connect to Front API to send emails and manage conversations
+  zh_Hans: 连接到 Front API 发送邮件和管理对话
+icon: icon.png
+label:
+  en_US: Front
+  zh_Hans: Front
+meta:
+  arch:
+  - amd64
+  - arm64
+  minimum_dify_version: 1.7.1
+  runner:
+    entrypoint: main
+    language: python
+    version: '3.12'
+  version: 0.1.2
+name: front
+plugins:
+  tools:
+  - provider/front.yaml
+resource:
+  memory: 1048576
+  permission:
+    model:
+      enabled: true
+      llm: true
+    tool:
+      enabled: true
+tags:
+- utilities
+type: plugin
+version: 0.1.1

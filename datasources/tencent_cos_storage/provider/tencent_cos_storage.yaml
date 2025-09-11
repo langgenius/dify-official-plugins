@@ -1,0 +1,51 @@
+identity:
+  author: langgenius
+  name: tencent_cos_storage
+  label:
+    en_US: Tencent COS Storage
+    zh_Hans: 腾讯云 COS 存储
+  description:
+    en_US: Tencent Cloud COS Storage Datasource
+    zh_Hans: 腾讯云 COS 存储数据源
+  icon: icon.svg
+provider_type: online_drive
+help:
+  title:
+    en_US: Get your credentials from Tencent Cloud Console
+    zh_Hans: 从腾讯云控制台获取您的凭证
+  url:
+    en_US: https://console.cloud.tencent.com/cos
+credentials_schema:
+  - name: secret_id
+    type: secret-input
+    required: true
+    label:
+      en_US: Secret ID
+      zh_Hans: 密钥 ID
+    placeholder:
+      en_US: Enter your Tencent COS secret ID
+      zh_Hans: 输入您的腾讯云 COS 密钥 ID
+  - name: secret_key
+    type: secret-input
+    required: true
+    label:
+      en_US: Secret Key
+      zh_Hans: 密钥
+    placeholder:
+      en_US: Enter your Tencent COS secret key
+      zh_Hans: 输入您的腾讯云 COS 密钥
+  - name: region
+    type: text-input
+    required: true
+    label:
+      en_US: Region
+      zh_Hans: 地域
+    placeholder:
+      en_US: Enter your Tencent COS region (e.g. ap-beijing)
+      zh_Hans: 输入您的腾讯云 COS 地域（例如：ap-beijing）
+
+datasources:
+  - datasources/tencent_cos_storage.yaml
+extra:
+  python:
+    source: provider/tencent_cos_storage.py

@@ -190,6 +190,10 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                 data["format"] = "json"
             del model_parameters["json_schema"]
         data["options"] = model_parameters or {}
+        # Add think support
+        if "think" in model_parameters and model_parameters["think"] is not None:
+            data["think"] = bool(model_parameters["think"])
+            del model_parameters["think"]
         if stop:
             data["options"]["stop"] = stop
         completion_type = LLMMode.value_of(credentials["mode"])
@@ -718,6 +722,15 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                     help=I18nObject(
                         en_US="Return output in the format defined by JSON Schema.",
                         zh_Hans="按照JSON Schema定义的格式返回output",
+                    ),
+                ),
+                ParameterRule(
+                    name="think",
+                    label=I18nObject(en_US="Think", zh_Hans="思考模式"),
+                    type=ParameterType.BOOLEAN,
+                    help=I18nObject(
+                        en_US="Enable thinking mode where the model thinks before responding.",
+                        zh_Hans="启用思考模式，模型在响应前会先进行思考。",
                     ),
                 ),
             ],

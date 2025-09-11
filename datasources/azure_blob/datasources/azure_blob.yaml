@@ -1,0 +1,28 @@
+identity:
+  name: azure_blob
+  author: langgenius
+  label:
+    en_US: Azure Blob Storage
+    zh_Hans: Azure Blob 存储
+  icon: icon.svg
+description:
+  en_US: Access Azure Blob Storage containers and blobs with support for multiple authentication methods
+  zh_Hans: 访问 Azure Blob 存储容器和 Blob，支持多种认证方式
+
+output_schema:
+  type: object
+  properties:
+    file:
+      $ref: "https://dify.ai/schemas/v1/file.json"
+      
+
+extra:
+  python:
+    source: datasources/azure_blob.py
+
+
+
+
+
+
+

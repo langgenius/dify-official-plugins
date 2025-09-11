@@ -1,0 +1,26 @@
+description:
+  human:
+    en_US: Get workflow details by process ID
+    zh_Hans: 通过流程 ID 获取工作流详情
+  llm: Get detailed information about a specific workflow by process ID, including input parameters, output parameters, and field structures.
+extra:
+  python:
+    source: tools/get_workflow.py
+identity:
+  author: langgenius
+  label:
+    en_US: Get Workflow Details
+    zh_Hans: 获取工作流详情
+  name: get_workflow
+parameters:
+- form: llm
+  name: process_id
+  label:
+    en_US: Process ID
+    zh_Hans: 流程 ID
+  human_description:
+    en_US: The process ID to query
+    zh_Hans: 需要查询的流程 ID
+  llm_description: The process ID to query for detailed workflow information
+  required: true
+  type: string

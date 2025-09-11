@@ -1,0 +1,26 @@
+description:
+  human:
+    en_US: Get role details by role ID
+    zh_Hans: 通过角色 ID 获取角色详情
+  llm: Get detailed information about a specific role by role ID, including permissions, worksheet permissions, and page permissions.
+extra:
+  python:
+    source: tools/get_role.py
+identity:
+  author: langgenius
+  label:
+    en_US: Get Role Details
+    zh_Hans: 获取角色详情
+  name: get_role
+parameters:
+- form: llm
+  name: role_id
+  label:
+    en_US: Role ID
+    zh_Hans: 角色 ID
+  human_description:
+    en_US: The role ID to query
+    zh_Hans: 需要查询的角色 ID
+  llm_description: The role ID to query for detailed information
+  required: true
+  type: string

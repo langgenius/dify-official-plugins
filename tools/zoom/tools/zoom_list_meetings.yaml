@@ -1,0 +1,193 @@
+identity:
+  name: zoom_list_meetings
+  author: langgenius
+  label:
+    en_US: List Zoom Meetings
+    zh_Hans: 列出Zoom会议
+    ja_JP: Zoom会議一覧
+
+description:
+  human:
+    en_US: List all Zoom meetings for the authenticated user with advanced filtering options
+    zh_Hans: 列出已认证用户的所有Zoom会议，支持高级筛选选项
+    ja_JP: 認証されたユーザーのすべてのZoom会議を高度なフィルタリングオプションで一覧表示
+  llm: Retrieve a list of Zoom meetings for the authenticated user with various filtering and pagination options.
+
+parameters:
+  - name: type
+    type: select
+    required: false
+    default: "scheduled"
+    form: llm
+    label:
+      en_US: Meeting Type Filter
+      zh_Hans: 会议类型筛选
+      ja_JP: 会議タイプフィルター
+    human_description:
+      en_US: Type of meetings to retrieve
+      zh_Hans: 要检索的会议类型
+      ja_JP: 取得する会議のタイプ
+    llm_description: Filter meetings by type (scheduled, live, upcoming, etc.)
+    options:
+      - value: "scheduled"
+        label:
+          en_US: All Scheduled Meetings
+          zh_Hans: 所有预定会议
+          ja_JP: すべてのスケジュール会議
+      - value: "live"
+        label:
+          en_US: Live Meetings
+          zh_Hans: 直播会议
+          ja_JP: ライブ会議
+      - value: "upcoming"
+        label:
+          en_US: Upcoming Meetings
+          zh_Hans: 即将开始的会议
+          ja_JP: 今後の会議
+      - value: "upcoming_meetings"
+        label:
+          en_US: Upcoming Meetings (Alternative)
+          zh_Hans: 即将开始的会议（备选）
+          ja_JP: 今後の会議（別表記）
+      - value: "previous_meetings"
+        label:
+          en_US: Previous Meetings
+          zh_Hans: 之前的会议
+          ja_JP: 過去の会議
+
+  - name: page_size
+    type: number
+    required: false
+    default: 30
+    form: llm
+    label:
+      en_US: Page Size
+      zh_Hans: 页面大小
+      ja_JP: ページサイズ
+    human_description:
+      en_US: Number of meetings to return per page (1-300)
+      zh_Hans: 每页返回的会议数量（1-300）
+      ja_JP: 1ページあたりの会議数（1-300）
+    llm_description: Number of meetings to return in a single page (maximum 300)
+    min: 1
+    max: 300
+
+  - name: page_number
+    type: number
+    required: false
+    default: 1
+    form: llm
+    label:
+      en_US: Page Number
+      zh_Hans: 页码
+      ja_JP: ページ番号
+    human_description:
+      en_US: Page number to retrieve (starting from 1)
+      zh_Hans: 要检索的页码（从1开始）
+      ja_JP: 取得するページ番号（1から開始）
+    llm_description: Page number to retrieve (starts from 1)
+    min: 1
+
+  - name: from_date
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: From Date
+      zh_Hans: 开始日期
+      ja_JP: 開始日
+    human_description:
+      en_US: Start date for filtering meetings (YYYY-MM-DD format)
+      zh_Hans: 筛选会议的开始日期（YYYY-MM-DD格式）
+      ja_JP: 会議をフィルタリングする開始日（YYYY-MM-DD形式）
+    llm_description: Start date for filtering meetings in YYYY-MM-DD format
+
+  - name: to_date
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: To Date
+      zh_Hans: 结束日期
+      ja_JP: 終了日
+    human_description:
+      en_US: End date for filtering meetings (YYYY-MM-DD format)
+      zh_Hans: 筛选会议的结束日期（YYYY-MM-DD格式）
+      ja_JP: 会議をフィルタリングする終了日（YYYY-MM-DD形式）
+    llm_description: End date for filtering meetings in YYYY-MM-DD format
+
+extra:
+  python:
+    source: tools/zoom_list_meetings.py
+
+output_schema:
+  type: object
+  properties:
+    meetings:
+      type: array
+      description: List of meetings
+      items:
+        type: object
+        properties:
+          meeting_id:
+            type: string
+            description: Unique meeting ID
+          uuid:
+            type: string
+            description: Meeting UUID
+          topic:
+            type: string
+            description: Meeting topic
+          type:
+            type: number
+            description: Meeting type
+          status:
+            type: string
+            description: Meeting status
+          start_time:
+            type: string
+            description: Meeting start time
+          duration:
+            type: number
+            description: Meeting duration in minutes
+          timezone:
+            type: string
+            description: Meeting timezone
+          join_url:
+            type: string
+            description: URL to join the meeting
+          created_at:
+            type: string
+            description: Meeting creation timestamp
+          host_email:
+            type: string
+            description: Host email address
+    pagination:
+      type: object
+      description: Pagination information
+      properties:
+        page_count:
+          type: number
+          description: Total number of pages
+        page_number:
+          type: number
+          description: Current page number
+        page_size:
+          type: number
+          description: Number of records per page
+        total_records:
+          type: number
+          description: Total number of meetings
+    filters:
+      type: object
+      description: Applied filters
+      properties:
+        type:
+          type: string
+          description: Meeting type filter
+        from_date:
+          type: string
+          description: Start date filter
+        to_date:
+          type: string
+          description: End date filter

@@ -168,6 +168,15 @@ model_credential_schema:
       placeholder:
         en_US: Enter your Secret Access Key
         zh_Hans: 在此输入您的 Secret Access Key
+    - variable: assume_role_arn
+      required: false
+      label:
+        en_US: Assume Role ARN (Optional, for cross-account access)
+        zh_Hans: 跨账户角色ARN (可选，用于跨账户访问)
+      type: text-input
+      placeholder:
+        en_US: arn:aws:iam::123456789012:role/SageMakerRole
+        zh_Hans: arn:aws:iam::123456789012:role/SageMakerRole
     - variable: aws_region
       required: false
       label:

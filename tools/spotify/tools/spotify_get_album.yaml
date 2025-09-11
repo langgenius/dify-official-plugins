@@ -1,0 +1,156 @@
+identity:
+  name: spotify_get_album
+  author: Dify Developer
+  label:
+    en_US: Get Spotify Album
+    zh_Hans: 获取 Spotify 专辑
+    ja_JP: Spotify アルバム取得
+  icon: icon.svg
+
+description:
+  human:
+    en_US: Get detailed information about a specific Spotify album including all tracks
+    zh_Hans: 获取特定 Spotify 专辑的详细信息，包括所有歌曲
+    ja_JP: 特定の Spotify アルバムの詳細情報（全楽曲含む）を取得します
+  llm: Retrieve comprehensive information about a Spotify album including metadata, track list, and artist details
+
+parameters:
+  - name: album_id
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Album ID
+      zh_Hans: 专辑 ID
+      ja_JP: アルバム ID
+    human_description:
+      en_US: The Spotify ID of the album to retrieve
+      zh_Hans: 要获取的专辑的 Spotify ID
+      ja_JP: 取得するアルバムの Spotify ID
+    llm_description: Spotify album ID (can be obtained from search results or Spotify URLs)
+
+  - name: market
+    type: string
+    required: false
+    default: "US"
+    form: llm
+    label:
+      en_US: Market/Country
+      zh_Hans: 市场/国家
+      ja_JP: マーケット/国
+    human_description:
+      en_US: ISO 3166-1 alpha-2 country code (e.g., US, GB, JP)
+      zh_Hans: ISO 3166-1 alpha-2 国家代码（例如 US、GB、JP）
+      ja_JP: ISO 3166-1 alpha-2 国コード（例：US、GB、JP）
+    llm_description: Market/country code to filter album availability and track information
+
+extra:
+  python:
+    source: tools/spotify_get_album.py
+
+output_schema:
+  type: object
+  properties:
+    id:
+      type: string
+      description: Spotify album ID
+    name:
+      type: string
+      description: Album name
+    album_type:
+      type: string
+      description: Type of album (album, single, compilation)
+    total_tracks:
+      type: integer
+      description: Total number of tracks in the album
+    release_date:
+      type: string
+      description: Album release date
+    release_date_precision:
+      type: string
+      description: Precision of release date (year, month, day)
+    popularity:
+      type: integer
+      description: Album popularity score (0-100)
+    genres:
+      type: array
+      description: List of genres associated with the album
+    label:
+      type: string
+      description: Record label
+    artists:
+      type: array
+      description: List of album artists
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Artist Spotify ID
+          name:
+            type: string
+            description: Artist name
+          external_urls:
+            type: object
+            description: External URLs for the artist
+    external_urls:
+      type: object
+      description: External URLs for the album
+    images:
+      type: array
+      description: Album cover images in different sizes
+      items:
+        type: object
+        properties:
+          url:
+            type: string
+            description: Image URL
+          height:
+            type: integer
+            description: Image height in pixels
+          width:
+            type: integer
+            description: Image width in pixels
+    copyrights:
+      type: array
+      description: Copyright information
+    tracks:
+      type: object
+      description: Album tracks information
+      properties:
+        total:
+          type: integer
+          description: Total number of tracks
+        items:
+          type: array
+          description: List of tracks in the album
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+                description: Track Spotify ID
+              name:
+                type: string
+                description: Track name
+              track_number:
+                type: integer
+                description: Track number in the album
+              disc_number:
+                type: integer
+                description: Disc number (for multi-disc albums)
+              duration_ms:
+                type: integer
+                description: Track duration in milliseconds
+              explicit:
+                type: boolean
+                description: Whether the track has explicit content
+              preview_url:
+                type: string
+                description: URL to 30-second preview (if available)
+              artists:
+                type: array
+                description: Track artists
+              external_urls:
+                type: object
+                description: External URLs for the track

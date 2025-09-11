@@ -1,0 +1,48 @@
+description:
+  human:
+    en_US: Get record details by worksheet ID and row ID
+    zh_Hans: 通过工作表 ID 和行记录 ID 获取记录详情
+  llm: Get detailed information of a specific record including field values, creator, owner, and timestamps.
+extra:
+  python:
+    source: tools/get_record.py
+identity:
+  author: langgenius
+  label:
+    en_US: Get Record Details
+    zh_Hans: 获取记录详情
+  name: get_record
+parameters:
+- form: llm
+  name: worksheet_id
+  label:
+    en_US: Worksheet ID
+    zh_Hans: 工作表 ID
+  human_description:
+    en_US: The worksheet ID containing the record
+    zh_Hans: 包含记录的工作表 ID
+  llm_description: The worksheet ID that contains the record to retrieve
+  required: true
+  type: string
+- form: llm
+  name: row_id
+  label:
+    en_US: Row ID
+    zh_Hans: 行记录 ID
+  human_description:
+    en_US: The row record ID to retrieve
+    zh_Hans: 需要获取的行记录 ID
+  llm_description: The row record ID to retrieve detailed information
+  required: true
+  type: string
+- form: llm
+  name: include_system_fields
+  label:
+    en_US: Include System Fields
+    zh_Hans: 包含系统字段
+  human_description:
+    en_US: Whether to include system fields (true/false)
+    zh_Hans: 是否包含系统字段 (true/false)
+  llm_description: Whether to include system fields in the response, default is false
+  required: false
+  type: string

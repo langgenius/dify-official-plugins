@@ -144,10 +144,20 @@ parameter_rules:
     help:
       zh_Hans: 对于每个后续标记，仅从前 K 个选项中进行采样。使用 top_k 删除长尾低概率响应。
       en_US: Only sample from the top K options for each subsequent token. Use top_k to remove long tail low probability responses.
+  - name: anthropic_beta
+    label:
+      zh_Hans: anthropic_beta
+      en_US: anthropic_beta
+    required: false
+    type: string
+    default: context-1m-2025-08-07
+    help:
+      zh_Hans: anthropic beta 参数是一串测试版标题的列表，用于表示选择加入一组特定的测试版功能。使用英文逗号连接。
+      en_US: The anthropic beta parameter is a list of strings of beta headers used to indicate opt-in to a particular set of beta features. Use commas to join.
   - name: response_format
     use_template: response_format
 pricing:
-  input: '0.003'
-  output: '0.015'
-  unit: '0.001'
+  input: "0.003"
+  output: "0.015"
+  unit: "0.001"
   currency: USD

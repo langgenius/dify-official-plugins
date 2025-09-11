@@ -5,6 +5,9 @@ from werkzeug import Request, Response
 from dify_plugin import Endpoint
 from slack_sdk import WebClient
 from slack_sdk.errors import SlackApiError
+from markdown_to_mrkdwn import SlackMarkdownConverter
+
+converter = SlackMarkdownConverter()
 
 
 class SlackEndpoint(Endpoint):
@@ -32,8 +35,6 @@ class SlackEndpoint(Endpoint):
                 if message.startswith("<@"):
                     message = message.split("> ", 1)[1] if "> " in message else message
                     channel = event.get("channel", "")
-                    blocks = event.get("blocks", [])
-                    blocks[0]["elements"][0]["elements"] = blocks[0].get("elements")[0].get("elements")[1:]
                     token = settings.get("bot_token")
                     client = WebClient(token=token)
                     try: 
@@ -44,11 +45,23 @@ class SlackEndpoint(Endpoint):
                             response_mode="blocking",
                         )
                         try:
-                            blocks[0]["elements"][0]["elements"][0]["text"] = response.get("answer")
+                            answer = response.get("answer", "")
+                            formatted_answer = converter.convert(answer)
+                            
+                            # Create proper mrkdwn block structure
+                            blocks = [{
+                                "type": "section",
+                                "text": {
+                                    "type": "mrkdwn",
+                                    "text": formatted_answer
+                                }
+                            }]
+                            
                             result = client.chat_postMessage(
                                 channel=channel,
-                                text=response.get("answer"),
-                                blocks=blocks
+                                text=formatted_answer,  # Fallback text
+                                blocks=blocks,
+                                mrkdwn=True
                             )
                             return Response(
                                 status=200,

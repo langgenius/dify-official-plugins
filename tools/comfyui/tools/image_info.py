@@ -1,17 +1,18 @@
 import io
-from typing import Any, Generator
+from collections.abc import Generator
+from typing import Any
+
+from dify_plugin import Tool
 from dify_plugin.entities.tool import (
     ToolInvokeMessage,
 )
-from dify_plugin import Tool
-from tools.comfyui_client import FileType
 from PIL import Image
+
+from tools.comfyui_client import FileType
 
 
 class ComfyuiImageInfo(Tool):
-    def _invoke(
-        self, tool_parameters: dict[str, Any]
-    ) -> Generator[ToolInvokeMessage, None, None]:
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         invoke tools
         """

@@ -1,0 +1,136 @@
+identity:
+  name: get_top_stories
+  author: langgenius
+  label:
+    en_US: Get Top Stories
+    zh_Hans: 获取热门文章
+    ja_JP: トップストーリーを取得
+
+description:
+  human:
+    en_US: Get a list of top stories from Hacker News with various filtering options
+    zh_Hans: 获取 Hacker News 的热门文章列表，支持多种过滤选项
+    ja_JP: Hacker News のトップストーリーのリストを様々なフィルタリングオプションで取得
+  llm: Retrieve a list of top, new, best, ask, show, or job stories from Hacker News with optional content extraction
+
+parameters:
+  - name: limit
+    type: number
+    required: false
+    default: 10
+    form: llm
+    label:
+      en_US: Number of Stories
+      zh_Hans: 文章数量
+      ja_JP: 記事数
+    human_description:
+      en_US: Number of stories to retrieve (1-30)
+      zh_Hans: 要获取的文章数量 (1-30)
+      ja_JP: 取得する記事数 (1-30)
+    llm_description: Number of stories to fetch (between 1 and 30)
+    min: 1
+    max: 30
+
+  - name: story_type
+    type: select
+    required: false
+    default: "top"
+    form: llm
+    label:
+      en_US: Story Type
+      zh_Hans: 文章类型
+      ja_JP: 記事タイプ
+    human_description:
+      en_US: Type of stories to retrieve
+      zh_Hans: 要获取的文章类型
+      ja_JP: 取得する記事のタイプ
+    llm_description: Category of stories to retrieve from Hacker News
+    options:
+      - value: top
+        label:
+          en_US: Top Stories
+          zh_Hans: 热门文章
+          ja_JP: トップストーリー
+      - value: new
+        label:
+          en_US: New Stories
+          zh_Hans: 最新文章
+          ja_JP: 新しいストーリー
+      - value: best
+        label:
+          en_US: Best Stories
+          zh_Hans: 最佳文章
+          ja_JP: ベストストーリー
+      - value: ask
+        label:
+          en_US: Ask HN
+          zh_Hans: Ask HN
+          ja_JP: Ask HN
+      - value: show
+        label:
+          en_US: Show HN
+          zh_Hans: Show HN
+          ja_JP: Show HN
+      - value: job
+        label:
+          en_US: Job Posts
+          zh_Hans: 工作岗位
+          ja_JP: 求人情報
+
+  - name: include_content
+    type: boolean
+    required: false
+    default: false
+    form: llm
+    label:
+      en_US: Include Content
+      zh_Hans: 包含内容
+      ja_JP: コンテンツを含む
+    human_description:
+      en_US: Whether to extract and include article content
+      zh_Hans: 是否提取并包含文章内容
+      ja_JP: 記事の内容を抽出して含めるかどうか
+    llm_description: Whether to extract and include the actual content from linked articles (slower but more comprehensive)
+
+extra:
+  python:
+    source: tools/get_top_stories.py
+
+output_schema:
+  type: object
+  properties:
+    story_type:
+      type: string
+      description: The type of stories retrieved
+    total_fetched:
+      type: number
+      description: Number of stories successfully fetched
+    failed_fetches:
+      type: number
+      description: Number of stories that failed to fetch
+    stories:
+      type: array
+      description: List of story details
+      items:
+        type: object
+        properties:
+          id:
+            type: number
+          title:
+            type: string
+          author:
+            type: string
+          score:
+            type: number
+          created:
+            type: string
+          url:
+            type: string
+          type:
+            type: string
+          descendants:
+            type: number
+          text:
+            type: string
+          content:
+            type: string

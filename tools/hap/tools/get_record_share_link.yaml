@@ -1,0 +1,70 @@
+description:
+  human:
+    en_US: Generate a share link for a specific record
+    zh_Hans: 为指定记录生成分享链接
+  llm: Generate a public share link for a record with configurable visible fields, expiration, and password protection.
+extra:
+  python:
+    source: tools/get_record_share_link.py
+identity:
+  author: langgenius
+  label:
+    en_US: Get Record Share Link
+    zh_Hans: 获取记录分享链接
+  name: get_record_share_link
+parameters:
+- form: llm
+  name: worksheet_id
+  label:
+    en_US: Worksheet ID
+    zh_Hans: 工作表 ID
+  human_description:
+    en_US: The worksheet ID containing the record
+    zh_Hans: 包含记录的工作表 ID
+  llm_description: The worksheet ID that contains the record
+  required: true
+  type: string
+- form: llm
+  name: row_id
+  label:
+    en_US: Row ID
+    zh_Hans: 行记录 ID
+  human_description:
+    en_US: The row record ID to generate share link for
+    zh_Hans: 需要生成分享链接的行记录 ID
+  llm_description: The row record ID to create a share link for
+  required: true
+  type: string
+- form: llm
+  name: visible_fields
+  label:
+    en_US: Visible Field IDs
+    zh_Hans: 可见字段 ID 列表
+  human_description:
+    en_US: Field IDs that should be visible in shared link (comma-separated or JSON array)
+    zh_Hans: 在分享链接中可见的字段 ID 列表（逗号分隔或 JSON 数组）
+  llm_description: Field IDs that should be visible when accessing the shared record, can be comma-separated string or JSON array
+  required: false
+  type: string
+- form: llm
+  name: expired_in
+  label:
+    en_US: Expiration Time (seconds)
+    zh_Hans: 过期时间（秒）
+  human_description:
+    en_US: Expiration time in seconds (0 for permanent)
+    zh_Hans: 过期时间（秒），0 表示永久有效
+  llm_description: Expiration time in seconds, 0 or empty means permanent validity
+  required: false
+  type: number
+- form: llm
+  name: password
+  label:
+    en_US: Access Password
+    zh_Hans: 访问密码
+  human_description:
+    en_US: Password required to access the shared link (empty for no password)
+    zh_Hans: 访问分享链接所需的密码（为空表示无密码）
+  llm_description: Password required to access the shared record, empty string means no password protection
+  required: false
+  type: string

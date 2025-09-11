@@ -1,55 +1,134 @@
-background: '#FFFFFF'
-configurate_methods:
-  - predefined-model
+provider: oci
+author: langgenius
+label:
+  en_US: OCI Generative AI Service
+  zh_Hans: OCI 生成式 AI 服务
+
 description:
-  en_US: Models provided by OCI, such as Cohere Command R and Cohere Command R+.
-  zh_Hans: OCI 提供的模型，例如 Cohere Command R 和 Cohere Command R+。
-extra:
-  python:
-    model_sources:
-      - models/llm/llm.py
-      - models/text_embedding/text_embedding.py
-    provider_source: provider/oci.py
+  en_US: Models provided by OCI, such as Grok, Cohere Command and Llama.
+  zh_Hans: OCI 提供的模型，例如 Grok、Cohere Command 和 Llama。
+
+icon_large:
+  en_US: icon_l_en.png
+icon_small:
+  en_US: icon_s_en.png
+
+background: '#FFFFFF'
+
 help:
   title:
     en_US: Get your API Key from OCI
     zh_Hans: 从 OCI 获取 API Key
   url:
     en_US: https://docs.cloud.oracle.com/Content/API/Concepts/sdkconfig.htm
-icon_large:
-  en_US: icon_l_en.svg
-icon_small:
-  en_US: icon_s_en.svg
-label:
-  en_US: OCIGenerativeAI
+
+supported_model_types:
+  - llm
+  - text-embedding
+
+configurate_methods:
+  - predefined-model
+
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: default_region
+      label:
+        en_US: Default Region
+        zh_Hans: 默认区域
+      type: text-input
+      required: true
+      default: us-chicago-1
+      placeholder:
+        en_US: us-chicago-1
+
+    - variable: compartment_ocid
+      label:
+        en_US: Compartment OCID
+        zh_Hans: 区间 OCID
+      type: text-input
+      required: true
+      placeholder:
+        en_US: ocid1.compartment.oc1..<unique_ID>
+
+
+    - variable: authentication_method
+      label:
+        en_US: Authentication Method
+        zh_Hans: 认证方法
+      type: radio
+      required: true
+      options:
+        - value: instance_principal_authentication
+          label:
+            en_US: Instance Principal Authentication
+            zh_Hans: 实例主体认证
+        - value: api_key_authentication
+          label:
+            en_US: API Key Authentication
+            zh_Hans: API 密钥认证
+
+    - variable: user_ocid
+      show_on:
+        - variable: authentication_method
+          value: api_key_authentication
+      label:
+        en_US: User OCID
+        zh_Hans: 用户 OCID
+      type: text-input
+      #required: true
+      placeholder:
+        en_US: ocid1.user.oc1..<unique_ID>
+
+    - variable: tenancy_ocid
+      show_on:
+        - variable: authentication_method
+          value: api_key_authentication
+      label:
+        en_US: Tenancy OCID
+        zh_Hans: 租户 OCID
+      type: text-input
+      #required: true
+      placeholder:
+        en_US: ocid1.tenancy.oc1..<unique_ID>
+
+    - variable: fingerprint
+      show_on:
+        - variable: authentication_method
+          value: api_key_authentication
+      label:
+        en_US: Fingerprint of your public key
+      type: text-input
+      #required: true
+      placeholder:
+        en_US: "dd:3e:......:44:e0"
+
+    - variable: key_content
+      show_on:
+        - variable: authentication_method
+          value: api_key_authentication
+      label:
+        en_US: Key File Content
+        zh_Hans: 密钥文件内容文本
+      type: secret-input
+      #required: true      
+
+
 models:
   llm:
     position: models/llm/_position.yaml
     predefined:
-      - models/llm/*.yaml
+      - models/llm/models/xai/*.yaml
+      - models/llm/models/cohere/*.yaml
+      - models/llm/models/llama/*.yaml
   text_embedding:
     position: models/text_embedding/_position.yaml
     predefined:
-      - models/text_embedding/*.yaml
-provider: oci
-provider_credential_schema:
-  credential_form_schemas:
-    - label:
-        en_US: oci api key config file's content
-      placeholder:
-        en_US: Enter your oci api key config file's content(base64.b64encode("user_ocid/fingerprint/tenancy_ocid/region/compartment_ocid".encode('utf-8')))
-        zh_Hans: 在此输入您的 oci api key config 文件的内容(base64.b64encode("user_ocid/fingerprint/tenancy_ocid/region/compartment_ocid".encode('utf-8')))
-      required: true
-      type: text-input
-      variable: oci_config_content
-    - label:
-        en_US: oci api key file's content
-      placeholder:
-        en_US: Enter your oci api key file's content(base64.b64encode("pem file content".encode('utf-8')))
-        zh_Hans: 在此输入您的 oci api key 文件的内容(base64.b64encode("pem file content".encode('utf-8')))
-      required: true
-      type: text-input
-      variable: oci_key_content
-supported_model_types:
-  - llm
-  - text-embedding
+      - models/text_embedding/models/*.yaml
+
+extra:
+  python:
+    model_sources:
+      - models/llm/llm.py
+      - models/text_embedding/text_embedding.py
+    provider_source: provider/oci.py
+

@@ -1,0 +1,172 @@
+identity:
+  author: langgenius
+  name: gitlab
+  label:
+    en_US: GitLab
+    zh_Hans: GitLab
+    ja_JP: GitLab
+    pt_BR: GitLab
+    zh_Hant: GitLab
+  description:
+    en_US: GitLab Project Datasource - Access projects, issues, merge requests, and files
+    zh_Hans: GitLab 项目数据源 - 访问项目、问题、合并请求和文件
+    ja_JP: GitLab プロジェクトデータソース - プロジェクト、課題、マージリクエスト、ファイルへのアクセス
+    pt_BR: Fonte de Dados de Projeto GitLab - Acesse projetos, issues, merge requests e arquivos
+    zh_Hant: GitLab 專案資料來源 - 存取專案、議題、合併請求和檔案
+  icon: icon.png
+provider_type: online_document
+help:
+  title:
+    en_US: Get your GitLab credentials
+    zh_Hans: 获取您的 GitLab 凭证
+    ja_JP: GitLabの認証情報を取得する
+    pt_BR: Obtenha suas credenciais do GitLab
+    zh_Hant: 獲取您的 GitLab 憑證
+  url:
+    en_US: https://gitlab.com/-/profile/applications
+    zh_Hans: https://gitlab.com/-/profile/applications
+oauth_schema:
+  client_schema:
+    - name: client_id
+      type: secret-input
+      label:
+        zh_Hans: Client ID
+        en_US: Client ID
+        ja_JP: クライアントID
+        pt_BR: ID do Cliente
+        zh_Hant: 用戶端ID
+    - name: client_secret
+      type: secret-input
+      label:
+        zh_Hans: Client Secret
+        en_US: Client Secret
+        ja_JP: クライアントシークレット
+        pt_BR: Segredo do Cliente
+        zh_Hant: 用戶端密鑰
+      help:
+        zh_Hans: 从 GitLab Applications 页面获取您的客户端凭证
+        en_US: Get your client credentials from GitLab Applications page
+        ja_JP: GitLabのアプリケーションページからクライアント認証情報を取得します
+        pt_BR: Obtenha suas credenciais de cliente na página de Aplicações do GitLab
+        zh_Hant: 從 GitLab 應用程式頁面取得您的用戶端憑證
+      url: https://gitlab.com/-/profile/applications
+    - name: gitlab_url
+      type: text-input
+      label:
+        zh_Hans: GitLab URL
+        en_US: GitLab URL
+        ja_JP: GitLab URL
+        pt_BR: URL do GitLab
+        zh_Hant: GitLab URL
+      placeholder:
+        zh_Hans: https://gitlab.com
+        en_US: https://gitlab.com
+        ja_JP: https://gitlab.com
+        pt_BR: https://gitlab.com
+        zh_Hant: https://gitlab.com
+      default: https://gitlab.com
+      help:
+        zh_Hans: 您的 GitLab 实例 URL（对于 gitlab.com 使用默认值）
+        en_US: Your GitLab instance URL (use default for gitlab.com)
+        ja_JP: あなたのGitLabインスタンスのURL（gitlab.comの場合はデフォルトを使用）
+        pt_BR: A URL da sua instância do GitLab (use o padrão para gitlab.com)
+        zh_Hant: 您的 GitLab 實例 URL（對於 gitlab.com 使用預設值）
+  credentials_schema:
+    - name: access_token
+      type: secret-input
+      label:
+        zh_Hans: Access Token
+        en_US: Access Token
+        ja_JP: アクセストークン
+        pt_BR: Token de Acesso
+        zh_Hant: 存取權杖
+    - name: refresh_token
+      type: secret-input
+      label:
+        zh_Hans: Refresh Token
+        en_US: Refresh Token
+        ja_JP: リフレッシュトークン
+        pt_BR: Token de Atualização
+        zh_Hant: 刷新權杖
+    - name: client_id
+      type: secret-input
+      label:
+        zh_Hans: Client ID
+        en_US: Client ID
+        ja_JP: クライアントID
+        pt_BR: ID do Cliente
+        zh_Hant: 用戶端ID
+    - name: client_secret
+      type: secret-input
+      label:
+        zh_Hans: Client Secret
+        en_US: Client Secret
+        ja_JP: クライアントシークレット
+        pt_BR: Segredo do Cliente
+        zh_Hant: 用戶端密鑰
+    - name: gitlab_url
+      type: text-input
+      label:
+        zh_Hans: GitLab URL
+        en_US: GitLab URL
+        ja_JP: GitLab URL
+        pt_BR: URL do GitLab
+        zh_Hant: GitLab URL
+    - name: user_login
+      type: secret-input
+      label:
+        zh_Hans: User Login
+        en_US: User Login
+        ja_JP: ユーザーログイン
+        pt_BR: Login do Usuário
+        zh_Hant: 使用者登入
+credentials_schema:
+  - name: access_token
+    type: secret-input
+    required: true
+    label:
+      en_US: Personal Access Token
+      zh_Hans: 个人访问令牌
+      ja_JP: 個人アクセストークン
+      pt_BR: Token de Acesso Pessoal
+      zh_Hant: 個人存取權杖
+    placeholder:
+      en_US: glpat-xxxxxxxxxxxxxxxxxxxx
+      zh_Hans: glpat-xxxxxxxxxxxxxxxxxxxx
+      ja_JP: glpat-xxxxxxxxxxxxxxxxxxxx
+      pt_BR: glpat-xxxxxxxxxxxxxxxxxxxx
+      zh_Hant: glpat-xxxxxxxxxxxxxxxxxxxx
+    help:
+      en_US: Create a personal access token in GitLab Settings > Access Tokens
+      zh_Hans: 在 GitLab 设置 > 访问令牌中创建个人访问令牌
+      ja_JP: GitLabの「設定」>「アクセストークン」で個人アクセストークンを作成します
+      pt_BR: Crie um token de acesso pessoal em Configurações > Tokens de Acesso do GitLab
+      zh_Hant: 在 GitLab 設定 > 存取權杖中建立個人存取權杖
+    url: https://gitlab.com/-/profile/personal_access_tokens
+  - name: gitlab_url
+    type: text-input
+    required: false
+    label:
+      en_US: GitLab URL
+      zh_Hans: GitLab URL
+      ja_JP: GitLab URL
+      pt_BR: URL do GitLab
+      zh_Hant: GitLab URL
+    placeholder:
+      en_US: https://gitlab.com
+      zh_Hans: https://gitlab.com
+      ja_JP: https://gitlab.com
+      pt_BR: https://gitlab.com
+      zh_Hant: https://gitlab.com
+    default: https://gitlab.com
+    help:
+      en_US: Your GitLab instance URL (use default for gitlab.com)
+      zh_Hans: 您的 GitLab 实例 URL（对于 gitlab.com 使用默认值）
+      ja_JP: あなたのGitLabインスタンスのURL（gitlab.comの場合はデフォルトを使用）
+      pt_BR: A URL da sua instância do GitLab (use o padrão para gitlab.com)
+      zh_Hant: 您的 GitLab 實例 URL（對於 gitlab.com 使用預設值）
+datasources:
+  - datasources/gitlab.yaml
+extra:
+  python:
+    source: provider/gitlab.py

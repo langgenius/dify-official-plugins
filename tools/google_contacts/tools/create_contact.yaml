@@ -1,0 +1,193 @@
+identity:
+  name: create_contact
+  author: langgenius
+  label:
+    en_US: Create Contact
+    zh_Hans: 创建联系人
+    ja_JP: 連絡先作成
+
+description:
+  human:
+    en_US: Create a new contact in Google Contacts
+    zh_Hans: 在谷歌通讯录中创建新联系人
+    ja_JP: Google連絡先に新しい連絡先を作成
+  llm: Create a new contact in Google Contacts with name, phone number, email address, organization and other details.
+
+parameters:
+  - name: given_name
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: First Name
+      zh_Hans: 名字
+      ja_JP: 名前
+    human_description:
+      en_US: First name of the contact
+      zh_Hans: 联系人的名字
+      ja_JP: 連絡先の名前
+    llm_description: The first name (given name) of the contact
+
+  - name: family_name
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Last Name
+      zh_Hans: 姓氏
+      ja_JP: 姓
+    human_description:
+      en_US: Last name of the contact
+      zh_Hans: 联系人的姓氏
+      ja_JP: 連絡先の姓
+    llm_description: The last name (family name) of the contact
+
+  - name: middle_name
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Middle Name
+      zh_Hans: 中间名
+      ja_JP: ミドルネーム
+    human_description:
+      en_US: Middle name of the contact (optional)
+      zh_Hans: 联系人的中间名（可选）
+      ja_JP: 連絡先のミドルネーム（オプション）
+    llm_description: The middle name of the contact (optional)
+
+  - name: phone_number
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Phone Number
+      zh_Hans: 电话号码
+      ja_JP: 電話番号
+    human_description:
+      en_US: Phone number of the contact
+      zh_Hans: 联系人的电话号码
+      ja_JP: 連絡先の電話番号
+    llm_description: Phone number for the contact (optional)
+
+  - name: email_address
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Email Address
+      zh_Hans: 邮箱地址
+      ja_JP: メールアドレス
+    human_description:
+      en_US: Email address of the contact
+      zh_Hans: 联系人的邮箱地址
+      ja_JP: 連絡先のメールアドレス
+    llm_description: Email address for the contact (optional)
+
+  - name: organization
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Organization
+      zh_Hans: 组织机构
+      ja_JP: 組織
+    human_description:
+      en_US: Company or organization name
+      zh_Hans: 公司或组织名称
+      ja_JP: 会社または組織名
+    llm_description: Company or organization where the contact works (optional)
+
+  - name: job_title
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Job Title
+      zh_Hans: 职位
+      ja_JP: 役職
+    human_description:
+      en_US: Job title or position
+      zh_Hans: 职位或职务
+      ja_JP: 役職または職位
+    llm_description: Job title or position of the contact (optional)
+
+  - name: notes
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Notes
+      zh_Hans: 备注
+      ja_JP: メモ
+    human_description:
+      en_US: Additional notes or comments about the contact
+      zh_Hans: 关于联系人的额外备注或评论
+      ja_JP: 連絡先に関する追加のメモやコメント
+    llm_description: Additional notes or comments about the contact (optional)
+
+output_schema:
+  type: object
+  properties:
+    success:
+      type: boolean
+      description: Whether the contact was created successfully
+    message:
+      type: string
+      description: Success or error message
+    contact:
+      type: object
+      description: Created contact information
+      properties:
+        resource_name:
+          type: string
+          description: Google's unique identifier for this contact
+        display_name:
+          type: string
+          description: Full display name of the contact
+        given_name:
+          type: string
+          description: First name
+        family_name:
+          type: string
+          description: Last name
+        middle_name:
+          type: string
+          description: Middle name
+        phone_numbers:
+          type: array
+          description: Phone numbers
+          items:
+            type: object
+            properties:
+              value:
+                type: string
+              type:
+                type: string
+              formatted_type:
+                type: string
+        email_addresses:
+          type: array
+          description: Email addresses
+          items:
+            type: object
+            properties:
+              value:
+                type: string
+              type:
+                type: string
+              formatted_type:
+                type: string
+        organization:
+          type: string
+          description: Company or organization name
+        job_title:
+          type: string
+          description: Job title or position
+        notes:
+          type: string
+          description: Additional notes about the contact
+
+extra:
+  python:
+    source: tools/create_contact.py

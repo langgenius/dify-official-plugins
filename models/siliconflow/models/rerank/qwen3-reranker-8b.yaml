@@ -1,0 +1,8 @@
+model: Qwen/Qwen3-Reranker-8B
+model_type: rerank
+model_properties:
+  context_size: 32768
+pricing:
+  input: '0.28'
+  unit: '0.000001'
+  currency: RMB

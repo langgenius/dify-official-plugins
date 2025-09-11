@@ -1,5 +1,6 @@
 import base64
 import copy
+import json
 import time
 from typing import Optional
 import numpy as np
@@ -16,27 +17,53 @@ from dify_plugin.errors.model import (
     InvokeServerUnavailableError,
 )
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
-
-request_template = {
-    "compartmentId": "",
-    "servingMode": {"modelId": "cohere.embed-english-light-v3.0", "servingType": "ON_DEMAND"},
-    "truncate": "NONE",
-    "inputs": [""],
-}
-oci_config_template = {
-    "user": "",
-    "fingerprint": "",
-    "tenancy": "",
-    "region": "",
-    "compartment_id": "",
-    "key_content": "",
-}
-
+from .call_api import patched_call_api
+from oci.base_client import BaseClient 
+BaseClient.call_api = patched_call_api
 
 class OCITextEmbeddingModel(TextEmbeddingModel):
     """
     Model class for Cohere text embedding model.
     """
+
+    def _get_oci_credentials(self, credentials: dict) -> dict:
+        if credentials.get("authentication_method") == "instance_principal_authentication":
+            signer = oci.auth.signers.InstancePrincipalsSecurityTokenSigner()
+            oci_credentials = {"config": {}, "signer": signer}
+        elif credentials.get("authentication_method") == "api_key_authentication":
+            if "key_content" not in credentials:
+                raise CredentialsValidateFailedError("need to set key_content in credentials ")
+            if "tenancy_ocid" not in credentials:
+                raise CredentialsValidateFailedError("need to set tenancy_ocid in credentials ")
+            if "user_ocid" not in credentials:
+                raise CredentialsValidateFailedError("need to set user_ocid in credentials ")
+            if "fingerprint" not in credentials:
+                raise CredentialsValidateFailedError("need to set fingerprint in credentials ")
+            if "default_region" not in credentials:
+                raise CredentialsValidateFailedError("need to set default_region in credentials ")
+            if "compartment_ocid" not in credentials:
+                raise CredentialsValidateFailedError("need to set compartment_ocid in credentials ")
+
+            pem_prefix = '-----BEGIN RSA PRIVATE KEY-----\n'
+            pem_suffix = '\n-----END RSA PRIVATE KEY-----'
+            key_string = credentials.get("key_content")
+            for part in key_string.split("-"):
+                if len(part.strip()) > 64:
+                    key_b64 = part.strip()
+            key_content = pem_prefix + "\n".join(key_b64.split(" "))+ pem_suffix
+            
+            config = {
+                "tenancy": credentials.get("tenancy_ocid"),
+                "user": credentials.get("user_ocid"),
+                "fingerprint": credentials.get("fingerprint"),
+                "key_content": key_content,
+                "region": credentials.get("default_region"),
+                "pass_phrase": None
+            }                
+            
+            oci.config.validate_config(config)
+            oci_credentials = {"config": config}
+        return oci_credentials
 
     def _invoke(
         self,
@@ -130,34 +157,38 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
         :param texts: texts to embed
         :return: embeddings and used tokens
         """
-        oci_config = copy.deepcopy(oci_config_template)
-        if "oci_config_content" in credentials:
-            oci_config_content = base64.b64decode(credentials.get("oci_config_content")).decode("utf-8")
-            config_items = oci_config_content.split("/")
-            if len(config_items) != 5:
-                raise CredentialsValidateFailedError(
-                    "oci_config_content should be base64.b64encode('user_ocid/fingerprint/tenancy_ocid/region/compartment_ocid'.encode('utf-8'))"
-                )
-            oci_config["user"] = config_items[0]
-            oci_config["fingerprint"] = config_items[1]
-            oci_config["tenancy"] = config_items[2]
-            oci_config["region"] = config_items[3]
-            oci_config["compartment_id"] = config_items[4]
-        else:
-            raise CredentialsValidateFailedError("need to set oci_config_content in credentials ")
-        if "oci_key_content" in credentials:
-            oci_key_content = base64.b64decode(credentials.get("oci_key_content")).decode("utf-8")
-            oci_config["key_content"] = oci_key_content.encode(encoding="utf-8")
-        else:
-            raise CredentialsValidateFailedError("need to set oci_config_content in credentials ")
-        compartment_id = oci_config["compartment_id"]
-        client = oci.generative_ai_inference.GenerativeAiInferenceClient(config=oci_config)
-        request_args = copy.deepcopy(request_template)
-        request_args["compartmentId"] = compartment_id
-        request_args["servingMode"]["modelId"] = model
-        request_args["inputs"] = texts
-        response = client.embed_text(request_args)
-        return (response.data.embeddings, self.get_num_characters(model=model, credentials=credentials, texts=texts))
+        oci_credentials = self._get_oci_credentials(credentials)
+        client = oci.generative_ai_inference.GenerativeAiInferenceClient(**oci_credentials)
+
+        embed_text_details = oci.generative_ai_inference.models.EmbedTextDetails(
+            compartment_id=credentials.get("compartment_ocid"),
+            serving_mode=oci.generative_ai_inference.models.OnDemandServingMode(
+                serving_type="ON_DEMAND",
+                model_id=model,
+            ),
+            # truncate = "NONE",
+            inputs=texts,
+        )
+        body = client.base_client.sanitize_for_serialization(embed_text_details)
+        body = json.dumps(body)
+
+        response = client.base_client.call_api(
+            resource_path="/actions/embedText",
+            method="POST",
+            operation_name="embedText",
+            header_params={
+                "accept": "application/json, text/event-stream",
+                "content-type": "application/json"
+            },
+            body=body
+            )
+        # response = client.embed_text(embed_text_details)
+        json_response = json.loads(response.data.text)
+        embeddings = json_response["embeddings"]
+        embedding_used_tokens = json_response["usage"]["totalTokens"]
+        #embedding_characters = len(texts)
+        return (embeddings, embedding_used_tokens)
+        #return (embeddings, self.get_num_characters(model=model, credentials=credentials, texts=texts))
 
     def _calc_response_usage(self, model: str, credentials: dict, tokens: int) -> EmbeddingUsage:
         """

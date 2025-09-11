@@ -1,0 +1,69 @@
+extra:
+  python:
+    source: provider/google_calendar.py
+identity:
+  author: langgenius
+  description:
+    en_US: Google Calendar integration for managing events, calendars, and scheduling
+    ja_JP: イベント、カレンダー、スケジュール管理のためのGoogleカレンダー統合
+    zh_Hans: Google日历集成，用于管理事件、日历和日程安排
+  icon: icon.png
+  label:
+    en_US: Google Calendar
+    ja_JP: Google カレンダー
+    zh_Hans: 谷歌日历
+  name: google_calendar
+  tags:
+  - utilities
+oauth_schema:
+  client_schema:
+  - help:
+      en_US: Get your Client ID from Google Cloud Console. Create OAuth 2.0 credentials and enable Calendar API.
+      ja_JP: Google Cloud ConsoleからクライアントIDを取得してください。OAuth 2.0認証情報を作成し、Calendar APIを有効にしてください。
+      zh_Hans: 从Google Cloud Console获取您的客户端ID。创建OAuth 2.0凭据并启用Calendar API。
+    label:
+      en_US: Client ID
+      ja_JP: クライアントID
+      zh_Hans: 客户端ID
+    name: client_id
+    placeholder:
+      en_US: Enter your Google OAuth Client ID
+      ja_JP: Google OAuth クライアントIDを入力してください
+      zh_Hans: 输入您的Google OAuth客户端ID
+    required: true
+    type: secret-input
+    url: https://console.developers.google.com/apis/credentials
+  - help:
+      en_US: Get your Client Secret from Google Cloud Console OAuth credentials.
+      ja_JP: Google Cloud Console OAuth認証情報からクライアントシークレットを取得してください。
+      zh_Hans: 从Google Cloud Console OAuth凭据获取您的客户端密钥。
+    label:
+      en_US: Client Secret
+      ja_JP: クライアントシークレット
+      zh_Hans: 客户端密钥
+    name: client_secret
+    placeholder:
+      en_US: Enter your Google OAuth Client Secret
+      ja_JP: Google OAuth クライアントシークレットを入力してください
+      zh_Hans: 输入您的Google OAuth客户端密钥
+    required: true
+    type: secret-input
+    url: https://console.developers.google.com/apis/credentials
+  credentials_schema:
+  - label:
+      en_US: Access Token
+      ja_JP: アクセストークン
+      zh_Hans: 访问令牌
+    name: access_token
+    type: secret-input
+  - label:
+      en_US: Refresh Token
+      ja_JP: リフレッシュトークン
+      zh_Hans: 刷新令牌
+    name: refresh_token
+    type: secret-input
+tools:
+- tools/list_calendars.yaml
+- tools/list_events.yaml
+- tools/create_event.yaml
+- tools/search_events.yaml

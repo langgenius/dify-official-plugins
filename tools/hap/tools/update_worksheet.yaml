@@ -1,0 +1,122 @@
+description:
+  human:
+    en_US: Update worksheet properties or fields
+    zh_Hans: 更新工作表的属性或字段
+  llm: >
+    Update a worksheet.
+    Optional properties: name, alias, section_id.
+    Optional field changes: add_fields, edit_fields, remove_fields.
+    For field changes, pass JSON strings that follow the OpenAPI schema:
+      - add_fields: JSON array of new field objects.
+      - edit_fields: JSON array of field objects with "id" to edit.
+      - remove_fields: JSON array of field id/alias strings.
+extra:
+  python:
+    source: tools/update_worksheet.py
+identity:
+  author: langgenius
+  label:
+    en_US: Update Worksheet
+    zh_Hans: 编辑工作表
+  name: update_worksheet
+parameters:
+  - form: llm
+    name: worksheet_id
+    label:
+      en_US: Worksheet ID
+      zh_Hans: 工作表 ID
+    human_description:
+      en_US: The target worksheet ID.
+      zh_Hans: 目标工作表的 ID。
+    llm_description: The target worksheet ID.
+    required: true
+    type: string
+
+  - form: llm
+    name: name
+    label:
+      en_US: Worksheet Name
+      zh_Hans: 工作表名称
+    human_description:
+      en_US: Optional new worksheet name.
+      zh_Hans: 可选的新工作表名称。
+    llm_description: Optional new worksheet name.
+    required: false
+    type: string
+
+  - form: llm
+    name: alias
+    label:
+      en_US: Worksheet Alias
+      zh_Hans: 工作表别名
+    human_description:
+      en_US: Optional new worksheet alias.
+      zh_Hans: 可选的新工作表别名。
+    llm_description: Optional new worksheet alias.
+    required: false
+    type: string
+
+  - form: llm
+    name: section_id
+    label:
+      en_US: Section ID
+      zh_Hans: 分组 ID
+    human_description:
+      en_US: Optional section (group) id.
+      zh_Hans: 可选的分组 ID。
+    llm_description: Optional section (group) id.
+    required: false
+    type: string
+
+  - form: llm
+    name: add_fields
+    label:
+      en_US: Add Fields (JSON Array)
+      zh_Hans: 新增字段（JSON 数组）
+    human_description:
+      en_US: JSON array<object> of field definitions
+      zh_Hans: 字段定义 JSON 对象数组
+    llm_description: >
+      JSON array of field definitions. The following types of fields can be added: Text/Number/SingleSelect/MultipleSelect/Date/DateTime/Collaborator/Relation/Time. The configurable attributes for each field include: name(required)/alias/type(required)/isTitle/required/isHidden/isReadOnly/isUnique/remark. 
+      Reserved aliases that cannot be used: status, id, rowId.
+
+      Depending on the different field types, the following attributes may exist: precision/subType/options/showFields/max/dataSource/sourceField.
+      Attribute `subtype` configuration:
+      - For `Collaborator` type: member count, 0: single select, 1: multiple select
+      - For `Relation` type: related record count, 1: single entry, 2: multiple entries. For example, the related order field in the order detail is a single entry, while the order details in an order are multiple entries. 
+      - For `Time` type: time format, 1: hh:mm, 6: hh:mm:ss
+      - For `Date`|`DateTime` type: date format, 5: Y, 4: Y-M, 3: Y-M-D, 2: Y-M-D hh, 1: Y-M-D hh:mm, 6: Y-M-D hh:mm:ss
+
+      When creating a worksheet with a master-detail (parent-child) table structure, you use `{"relation": {"bidirectional": true}}` to establish a bidirectional relationship by adding the parent reference field in the child table. This will automatically create a field in the parent table that references multiple child records. After this, you need to update this field in the parent table by configuring the `showFields` property under `relation` to display as many relevant child table fields as possible within the parent table.
+
+      ## Example(for different types):
+      ```json
+      {"fields":[{"name":"Text","type":"Text","isTitle": true},{"name":"Number","type":"Number","precision":2},{"name":"Single Select","type":"SingleSelect","options":[{"value":"Option 1","index":1},{"value":"Option 2","index":2}]},{"name":"Multi Select","type":"MultipleSelect","options":[{"value":"Option 1","index":1},{"value":"Option 2","index":2}]},{"name":"Time (HH:mm)","type":"Time","required":true,"subType":1},{"name":"Member","type":"Collaborator","subType":0},{"name":"Attachment","type":"Attachment"},{"name":"Date","type":"Date","subType":3},{"name":"DateTime","type":"Date","subType":1},{"name":"Relation Record","type":"Relation","subType":2,"dataSource":"", "relation":{"showFields":["fieldId1","fieldId2","fieldId3"],"bidirectional":false}}]}
+      ```
+    required: false
+    type: string
+
+  - form: llm
+    name: edit_fields
+    label:
+      en_US: Edit Fields (JSON Array)
+      zh_Hans: 编辑字段（JSON 数组）
+    human_description:
+      en_US: JSON array of field objects to edit; each item should contain "id".
+      zh_Hans: 需要编辑的字段 JSON 数组；每个对象需包含 "id"。
+    llm_description: >
+      JSON array of field objects to edit; each item should contain "id". "type" and "relation.bidirectional" is not allowed to change. You need to provide all the configuration items that were read from this field, modifying only the properties that need to be changed.
+    required: false
+    type: string
+
+  - form: llm
+    name: remove_fields
+    label:
+      en_US: Remove Fields (JSON Array)
+      zh_Hans: 删除字段（JSON 数组）
+    human_description:
+      en_US: JSON array of field id/alias strings to remove.
+      zh_Hans: 需要删除的字段 ID/别名字符串的 JSON 数组。
+    llm_description: JSON array of field id/alias strings to remove.
+    required: false
+    type: string

@@ -1,0 +1,26 @@
+description:
+  human:
+    en_US: Remove user from all roles in the application
+    zh_Hans: 将指定成员退出应用下所有角色
+  llm: Remove a specific user from all roles in the application by user ID.
+extra:
+  python:
+    source: tools/user_leave_all_roles.py
+identity:
+  author: langgenius
+  label:
+    en_US: User Leave All Roles
+    zh_Hans: 成员退出所有角色
+  name: user_leave_all_roles
+parameters:
+- form: llm
+  name: user_id
+  label:
+    en_US: User ID
+    zh_Hans: 用户 ID
+  human_description:
+    en_US: The user ID to remove from all roles
+    zh_Hans: 需要从所有角色中移除的用户 ID
+  llm_description: The user ID to remove from all roles in the application
+  required: true
+  type: string

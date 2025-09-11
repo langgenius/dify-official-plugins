@@ -1,23 +1,22 @@
-from typing import Any, Generator
-from dify_plugin.entities.tool import ToolInvokeMessage
+from collections.abc import Generator
+from typing import Any
+
 from dify_plugin import Tool
-from tools.comfyui_client import ComfyUiClient
+from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
-from tools.model_manager import ModelManager
+from tools.comfyui_client import ComfyUiClient
+from tools.comfyui_model_manager import ModelManager
 
 
 class DownloadCivitAI(Tool):
-    def _invoke(
-        self, tool_parameters: dict[str, Any]
-    ) -> Generator[ToolInvokeMessage, None, None]:
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         invoke tools
         """
         base_url = self.runtime.credentials.get("base_url")
         if base_url is None:
-            raise ToolProviderCredentialValidationError(
-                "Please input base_url")
+            raise ToolProviderCredentialValidationError("Please input base_url")
 
         self.comfyui = ComfyUiClient(base_url)
         self.model_manager = ModelManager(
@@ -31,18 +30,12 @@ class DownloadCivitAI(Tool):
         save_dir = tool_parameters.get("save_dir")
         if version_id is None:
             version_id = max(self.model_manager.fetch_version_ids(model_id))
-        model_name_human, model_filenames = self.model_manager.download_civitai(
-            model_id, version_id, save_dir
-        )
+        model_name_human, model_filenames = self.model_manager.download_civitai(model_id, version_id, save_dir)
         yield self.create_variable_message("model_name_human", model_name_human)
         yield self.create_variable_message("model_name", model_filenames[0])
 
-        ecosystem, model_type, source, id = self.model_manager.fetch_civitai_air(
-            version_id
-        )
-        yield self.create_variable_message(
-            "air", f"urn:air:{ecosystem}:{model_type}:{source}:{id}"
-        )
+        ecosystem, model_type, source, id = self.model_manager.fetch_civitai_air(version_id)
+        yield self.create_variable_message("air", f"urn:air:{ecosystem}:{model_type}:{source}:{id}")
         yield self.create_variable_message("ecosystem", ecosystem)
         yield self.create_variable_message("type", model_type)
         yield self.create_variable_message("source", source)

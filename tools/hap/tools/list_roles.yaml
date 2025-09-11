@@ -1,0 +1,15 @@
+description:
+  human:
+    en_US: Get role list for the application
+    zh_Hans: 获取应用下角色列表
+  llm: Get role list for the application, including role details, permissions, and member information.
+extra:
+  python:
+    source: tools/list_roles.py
+identity:
+  author: langgenius
+  label:
+    en_US: List Roles
+    zh_Hans: 获取角色列表
+  name: list_roles
+parameters: []
