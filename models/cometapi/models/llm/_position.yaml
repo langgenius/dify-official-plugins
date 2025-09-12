@@ -1,4 +1,4 @@
-# anthropic models (9)
+# anthropic models (10)
 - claude-3-5-haiku-20241022
 - claude-3-5-sonnet-20240620
 - claude-3-5-sonnet-20241022
@@ -6,6 +6,7 @@
 - claude-3-haiku-20240307
 - claude-3-opus-20240229
 - claude-3-sonnet-20240229
+- claude-opus-4-1-20250805
 - claude-opus-4-20250514
 - claude-sonnet-4-20250514
 
@@ -29,7 +30,7 @@
 - llama-4-maverick
 - llama-4-scout
 
-# openai models (37)
+# openai models (44)
 - chatgpt-4o-latest
 - gpt-3.5-turbo
 - gpt-3.5-turbo-0125
@@ -54,6 +55,13 @@
 - gpt-4o-2024-11-20
 - gpt-4o-mini
 - gpt-4o-mini-2024-07-18
+- gpt-5
+- gpt-5-2025-08-07
+- gpt-5-chat-latest
+- gpt-5-mini
+- gpt-5-mini-2025-08-07
+- gpt-5-nano
+- gpt-5-nano-2025-08-07
 - o1
 - o1-mini
 - o1-mini-2024-09-12

@@ -3,6 +3,10 @@
 Automatic _position.yaml generator
 This script recursively searches for YAML model files and updates _position.yaml files
 Automatically generates and updates _position.yaml files grouped by provider
+Added features:
+- Check for non-ASCII characters that could cause JSON parsing issues
+- Preview mode: shows changes before applying
+- Interactive confirmation for updates
 """
 
 import os
@@ -10,6 +14,67 @@ import yaml
 from pathlib import Path
 from collections import defaultdict
 import re
+import sys
+
+
+def check_file_encoding_issues(yaml_file):
+    """
+    Check for real issues that could cause JSON parsing problems:
+    1. Filename/model field mismatch
+    2. Actual encoding problems (not normal UTF-8 Chinese)
+    3. BOM, null bytes, etc.
+    """
+    issues = []
+    try:
+        # Check filename vs model field mismatch
+        with open(yaml_file, 'r', encoding='utf-8') as f:
+            try:
+                import yaml
+                content = yaml.safe_load(f)
+                if isinstance(content, dict) and 'model' in content:
+                    expected_filename = f"{content['model']}.yaml"
+                    actual_filename = yaml_file.name
+                    if expected_filename != actual_filename:
+                        issues.append({
+                            'type': 'filename_mismatch',
+                            'message': f"Filename '{actual_filename}' doesn't match model field '{content['model']}'"
+                        })
+            except yaml.YAMLError as e:
+                issues.append({'type': 'yaml_error', 'message': f'YAML parsing error: {e}'})
+        
+        # Check for actual encoding problems
+        with open(yaml_file, 'rb') as f:
+            content_bytes = f.read()
+        
+        # Check for BOM
+        if content_bytes.startswith(b'\xef\xbb\xbf'):
+            issues.append({'type': 'bom', 'message': 'File contains UTF-8 BOM'})
+        
+        # Try to decode as UTF-8 to detect actual encoding problems
+        try:
+            content_str = content_bytes.decode('utf-8')
+            # Check for replacement characters (indicates decode errors)
+            if '\ufffd' in content_str:
+                issues.append({'type': 'decode_error', 'message': 'File contains UTF-8 decode errors'})
+        except UnicodeDecodeError as e:
+            issues.append({
+                'type': 'invalid_utf8',
+                'message': f'Invalid UTF-8 encoding at position {e.start}: {e.reason}'
+            })
+        
+        # Check for null bytes (can cause JSON parsing issues)
+        if b'\x00' in content_bytes:
+            null_positions = [i for i, b in enumerate(content_bytes) if b == 0]
+            issues.append({
+                'type': 'null_bytes',
+                'message': f'File contains {len(null_positions)} null bytes',
+                'positions': null_positions[:5]
+            })
+        
+        return issues
+        
+    except Exception as e:
+        return [{'type': 'error', 'message': str(e)}]
 
 
 def find_yaml_files(root_dir):
@@ -29,6 +94,18 @@ def find_yaml_files(root_dir):
             with open(yaml_file, 'r', encoding='utf-8') as f:
                 content = yaml.safe_load(f)
                 if isinstance(content, dict) and 'model' in content:
+                    # Check for real issues (not normal UTF-8 Chinese)
+                    encoding_issues = check_file_encoding_issues(yaml_file)
+                    if encoding_issues:
+                        print(f"⚠️  Issues in {yaml_file}:")
+                        for issue in encoding_issues:
+                            if issue['type'] == 'filename_mismatch':
+                                print(f"   🔍 {issue['message']}")
+                            elif issue['type'] == 'null_bytes':
+                                print(f"   💀 {issue['message']} at positions: {issue.get('positions', [])}")
+                            else:
+                                print(f"   ❌ {issue.get('message', issue['type'])}")
+                    
                     # Check and fix filename if necessary
                     corrected_file = check_and_fix_filename(yaml_file)
                     yaml_files.append(corrected_file)
@@ -171,7 +248,7 @@ def generate_position_yaml_content(provider_groups):
     return "\n".join(lines) + "\n"
 
 
-def update_position_yaml(model_type_dir, provider_groups):
+def update_position_yaml(model_type_dir, provider_groups, preview_mode=True):
     """
     Update _position.yaml file in specified directory
     """
@@ -179,26 +256,44 @@ def update_position_yaml(model_type_dir, provider_groups):
     
     if not provider_groups:
         print(f"No models found for {model_type_dir}")
-        return
+        return False
     
-    content = generate_position_yaml_content(provider_groups)
+    new_content = generate_position_yaml_content(provider_groups)
     
-    try:
-        # Backup existing file
-        if position_file.exists():
-            backup_file = position_file.with_suffix('.yaml.backup')
-            position_file.rename(backup_file)
-            print(f"Backed up existing file to {backup_file}")
-        
-        # Write new content
-        with open(position_file, 'w', encoding='utf-8') as f:
-            f.write(content)
-        
-        print(f"Updated {position_file}")
-        print(f"Total models: {sum(len(models) for models in provider_groups.values())}")
-        
-    except Exception as e:
-        print(f"Error updating {position_file}: {e}")
+    # Check if file exists and compare content
+    needs_update = True
+    if position_file.exists():
+        try:
+            with open(position_file, 'r', encoding='utf-8') as f:
+                current_content = f.read()
+            if current_content == new_content:
+                print(f"✅ {position_file} is already up to date")
+                return False
+            else:
+                print(f"📝 {position_file} needs update")
+        except Exception as e:
+            print(f"⚠️  Error reading existing {position_file}: {e}")
+    else:
+        print(f"🆕 {position_file} will be created")
+    
+    if preview_mode:
+        print(f"\n--- Preview of {position_file} ---")
+        print(new_content)
+        print(f"--- End preview ({len(new_content.splitlines())} lines, {sum(len(models) for models in provider_groups.values())} models) ---\n")
+        return True
+    else:
+        try:
+            # Write new content (no backup by default)
+            with open(position_file, 'w', encoding='utf-8') as f:
+                f.write(new_content)
+            
+            print(f"✅ Updated {position_file}")
+            print(f"   Total models: {sum(len(models) for models in provider_groups.values())}")
+            return True
+            
+        except Exception as e:
+            print(f"❌ Error updating {position_file}: {e}")
+            return False
 
 
 def main():
@@ -209,22 +304,24 @@ def main():
     script_dir = Path(__file__).parent
     cometapi_dir = script_dir.parent
     models_dir = cometapi_dir / "models"
-    
+
     if not models_dir.exists():
-        print(f"Models directory not found: {models_dir}")
+        print(f"❌ Models directory not found: {models_dir}")
         return
     
-    print(f"Scanning models directory: {models_dir}")
+    print(f"🔍 Scanning models directory: {models_dir}")
     
     # Process by model type groups
     model_types = ['llm', 'text_embedding', 'rerank', 'tts', 'speech2text', 'moderation']
+    
+    updates_needed = []
     
     for model_type in model_types:
         model_type_dir = models_dir / model_type
         if not model_type_dir.exists():
             continue
             
-        print(f"\nProcessing {model_type} models...")
+        print(f"\n📂 Processing {model_type} models...")
         
         # Search for all yaml files under this type and check/fix filenames
         yaml_files = []
@@ -237,23 +334,61 @@ def main():
                 with open(yaml_file, 'r', encoding='utf-8') as f:
                     content = yaml.safe_load(f)
                     if isinstance(content, dict) and 'model' in content:
+                        # Check for real issues (not normal UTF-8 Chinese)
+                        encoding_issues = check_file_encoding_issues(yaml_file)
+                        if encoding_issues:
+                            print(f"⚠️  Issues in {yaml_file}:")
+                            for issue in encoding_issues:
+                                if issue['type'] == 'filename_mismatch':
+                                    print(f"   🔍 {issue['message']}")
+                                elif issue['type'] == 'null_bytes':
+                                    print(f"   💀 {issue['message']} at positions: {issue.get('positions', [])}")
+                                else:
+                                    print(f"   ❌ {issue.get('message', issue['type'])}")
+                        
                         # Check and fix filename
                         corrected_file = check_and_fix_filename(yaml_file)
                         yaml_files.append(corrected_file)
             except Exception as e:
-                print(f"Warning: Unable to process file {yaml_file}: {e}")
+                print(f"⚠️  Warning: Unable to process file {yaml_file}: {e}")
         
         if not yaml_files:
-            print(f"No YAML files found in {model_type_dir}")
+            print(f"   No YAML files found in {model_type_dir}")
             continue
         
         # Group by provider
         provider_groups = group_models_by_provider(yaml_files, model_type_dir)
         
-        # Update _position.yaml
-        update_position_yaml(model_type_dir, provider_groups)
+        # Preview update
+        if update_position_yaml(model_type_dir, provider_groups, preview_mode=True):
+            updates_needed.append((model_type_dir, provider_groups))
     
-    print("\n✅ _position.yaml files updated successfully!")
+    # Summary and confirmation
+    if not updates_needed:
+        print("\n✅ All _position.yaml files are up to date!")
+        return
+    
+    print(f"\n📋 Summary: {len(updates_needed)} files need updates")
+    for model_type_dir, _ in updates_needed:
+        print(f"   - {model_type_dir / '_position.yaml'}")
+    
+    # Ask for confirmation
+    try:
+        response = input("\n❓ Do you want to apply these updates? (y/N): ").strip().lower()
+        if response in ['y', 'yes']:
+            print("\n🚀 Applying updates...")
+            success_count = 0
+            for model_type_dir, provider_groups in updates_needed:
+                if update_position_yaml(model_type_dir, provider_groups, preview_mode=False):
+                    success_count += 1
+            
+            print(f"\n✅ Successfully updated {success_count}/{len(updates_needed)} files!")
+        else:
+            print("\n❌ Updates cancelled.")
+    except KeyboardInterrupt:
+        print("\n\n❌ Updates cancelled by user.")
+    except EOFError:
+        print("\n❌ No input received, updates cancelled.")
 
 
 if __name__ == "__main__":
