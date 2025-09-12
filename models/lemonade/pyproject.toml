@@ -1,0 +1,21 @@
+[project]
+name = "lemonade"
+version = "0.1.0"
+description = "Lemonade lets you run local models with NPU and GPU acceleration"
+readme = "README.md"
+requires-python = ">=3.12"
+
+# uv pip compile pyproject.toml -o ./requirements.txt
+dependencies = [
+    "dify-plugin>=0.4.3",
+    "openai>=1.99.9",
+]
+
+# uv run black . -C -l 100
+# uv run ruff check --fix
+[dependency-groups]
+dev = [
+    "black>=25.1.0",
+    "pytest>=8.4.1",
+    "ruff>=0.12.5",
+]
