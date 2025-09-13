@@ -42,7 +42,6 @@ class CogVideoTool(Tool):
         fps = tool_parameters.get("fps", None)
         with_audio = tool_parameters.get("with_audio", None)
         quality = tool_parameters.get("quality", None)
-        duration = tool_parameters.get("duration",None)
 
         response = client.videos.generations(
             model=model,
@@ -52,7 +51,6 @@ class CogVideoTool(Tool):
             with_audio=with_audio,
             size=size,
             fps=fps,
-            duration=duration,
             user_id=user_id,
         )
         return response
