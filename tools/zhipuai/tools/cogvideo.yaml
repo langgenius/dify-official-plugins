@@ -148,7 +148,7 @@ parameters:
       en_US: 10s
     value: 10
 - form: form
-  default: "10"
+  default: "20"
   human_description:
     en_US: Number of retries to obtain the generated video
     zh_Hans: 获取生成后的视频的重试次数
