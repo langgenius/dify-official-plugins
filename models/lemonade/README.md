@@ -1,6 +1,8 @@
 ## Overview
 
-[Lemonade](https://github.com/lemonade-sdk/lemonade) is a powerful inference framework client (Windows, Linux) designed for seamless deployment of large language models (LLMs) with NPU and GPU acceleration. It supports models like Qwen, Llama, DeepSeek, and more, optimized for different hardware configurations.
+![](./_assets/lemonade-banner.png)
+
+[Lemonade](https://github.com/lemonade-sdk/lemonade) is a client inference framework (Windows, Linux) designed for seamless deployment of large language models (LLMs) with NPU and GPU acceleration. It supports models like Qwen, Llama, DeepSeek, and more, optimized for different hardware configurations.
 
 Lemonade enables local execution of LLMs, providing enhanced data privacy and security by keeping your data on your own machine while leveraging hardware acceleration for improved performance.
 
