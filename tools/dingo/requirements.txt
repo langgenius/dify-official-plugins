@@ -36,3 +36,7 @@ packaging>=21.0
 
 # Note: The plugin will try to use local dingo installation first
 # If not available, install with: pip install dingo-python
+
+
+# Dify Plugin SDK (required by runtime)
+dify_plugin

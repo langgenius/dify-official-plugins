@@ -1,4 +1,4 @@
-from typing import Any, Dict, List, Union
+from typing import Any, Dict, List, Generator
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
@@ -6,11 +6,28 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 class TextQualityEvaluatorTool(Tool):
     """Evaluate text quality using Dingo if available, fallback gracefully otherwise."""
 
-    def _invoke(self, user_id: str, tool_parameters: Dict[str, Any]) -> Union[ToolInvokeMessage, List[ToolInvokeMessage]]:
+    def _invoke(self, tool_parameters: Dict[str, Any] | None = None, *args, **kwargs) -> "Generator[ToolInvokeMessage, Any, Any]":
+        # Backward-compatible handling for different SDK call conventions:
+        # - New SDK: _invoke(tool_parameters)
+        # - Old SDK: _invoke(user_id, tool_parameters) or even _invoke()
+        if not isinstance(tool_parameters, dict) or not tool_parameters:
+            # prefer explicit kw
+            if isinstance(kwargs.get("tool_parameters"), dict):
+                tool_parameters = kwargs["tool_parameters"]
+            else:
+                # search positional args for a dict
+                for a in args or []:
+                    if isinstance(a, dict):
+                        tool_parameters = a
+                        break
+        if not isinstance(tool_parameters, dict):
+            tool_parameters = {}
+
         text_content = (tool_parameters.get("text_content") or "").strip()
         rule_group = tool_parameters.get("rule_group", "default")
         if not text_content:
-            return self.create_text_message("Error: Text content cannot be empty")
+            yield self.create_text_message("Error: Text content cannot be empty")
+            return
 
         # Try using dingo-python if installed
         try:
@@ -37,7 +54,8 @@ class TextQualityEvaluatorTool(Tool):
                 body.extend(f"- {i}" for i in issues)
             else:
                 body.append("No obvious issues detected.")
-            return self.create_text_message("\n".join(body))
+            yield self.create_text_message("\n".join(body))
+            return
 
         # Use dingo rules when available
         data = Data(data_id="dify_eval_001", content=text_content)
@@ -63,4 +81,4 @@ class TextQualityEvaluatorTool(Tool):
             lines.extend(f"- {it}" for it in issues)
         else:
             lines.append("No quality issues detected with the selected rules.")
-        return self.create_text_message("\n".join(lines))
+        yield self.create_text_message("\n".join(lines))

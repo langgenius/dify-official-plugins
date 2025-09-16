@@ -1,6 +1,8 @@
 import os
 import importlib.util
 import types
+import inspect
+from collections.abc import Generator
 
 from dify_plugin import DifyPluginEnv, Plugin
 
@@ -34,8 +36,20 @@ def test_smoke_invoke_text_quality_tool():
             break
     assert tool is not None, 'TextQualityEvaluatorTool not found from provider'
 
-    # do a minimal invoke
-    msg = tool._invoke('test-user', {'text_content': 'Hello world'})
+    # do a minimal invoke; support both legacy and new signatures, and generator outputs
+    params = {'text_content': 'Hello world'}
+    sig = inspect.signature(tool._invoke)
+    if len(sig.parameters) == 2:  # (self, tool_parameters)
+        res = tool._invoke(params)
+    else:  # (self, user_id, tool_parameters)
+        res = tool._invoke('test-user', params)
+
+    # normalize to first ToolInvokeMessage
+    if isinstance(res, Generator) or (hasattr(res, '__iter__') and not hasattr(res, 'text')):
+        msg = next(iter(res))
+    else:
+        msg = res
+
     # The ToolInvokeMessage has .text attribute
     assert hasattr(msg, 'text')
     assert 'Quality' in msg.text or 'quality' in msg.text
