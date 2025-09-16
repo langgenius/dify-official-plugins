@@ -82,3 +82,13 @@ class TextQualityEvaluatorTool(Tool):
         else:
             lines.append("No quality issues detected with the selected rules.")
         yield self.create_text_message("\n".join(lines))
+
+
+class DingoTool(TextQualityEvaluatorTool):
+    """Generic Dingo tool entrypoint.
+    Currently implements text quality evaluation; future capabilities can extend this class
+    while keeping backward compatibility with TextQualityEvaluatorTool name.
+    """
+    pass
+
+__all__ = ["TextQualityEvaluatorTool", "DingoTool"]

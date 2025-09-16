@@ -1,7 +1,8 @@
 from dify_plugin import ToolProvider
-from ..tools.text_quality_evaluator import TextQualityEvaluatorTool
+from ..tools.text_quality_evaluator import DingoTool
 
 
 class DingoProvider(ToolProvider):
     def _set_tools(self):
-        self.tools = [TextQualityEvaluatorTool()]
+        # Register the generic DingoTool (backward compatible with TextQualityEvaluatorTool)
+        self.tools = [DingoTool()]
