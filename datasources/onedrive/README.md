@@ -24,7 +24,7 @@ Access Microsoft OneDrive files and folders as a datasource for Dify with compre
 
 ### Requirements
 
-- Dify platform version >= 2.0.0
+- Dify platform version >= 1.9.0
 - Python 3.12+
 - Valid Microsoft account (personal or business)
 - Azure AD App Registration (for OAuth)
