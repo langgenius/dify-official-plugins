@@ -1,7 +1,6 @@
 import dataclasses
 import io
 import os
-import random
 from collections.abc import Generator
 from enum import Enum
 import secrets
