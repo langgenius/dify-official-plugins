@@ -56,3 +56,116 @@ parameters:
         label:
           en_US: Pretrain Rules
           zh_Hans: 预训练规则
+
+  - name: rule_list
+    type: select
+    multiple: true
+    required: false
+    label:
+      en_US: Rules
+      zh_Hans: 规则
+    human_description:
+      en_US: Select rules (overrides Rule Group if set)
+      zh_Hans: 选择规则（如设置则覆盖规则组）
+    form: form
+    options:
+      - value: RuleAbnormalChar
+        label: { en_US: RuleAbnormalChar, zh_Hans: RuleAbnormalChar }
+      - value: RuleAbnormalHtml
+        label: { en_US: RuleAbnormalHtml, zh_Hans: RuleAbnormalHtml }
+      - value: RuleAbnormalNumber
+        label: { en_US: RuleAbnormalNumber, zh_Hans: RuleAbnormalNumber }
+      - value: RuleAlphaWords
+        label: { en_US: RuleAlphaWords, zh_Hans: RuleAlphaWords }
+      - value: RuleCapitalWords
+        label: { en_US: RuleCapitalWords, zh_Hans: RuleCapitalWords }
+      - value: RuleCharNumber
+        label: { en_US: RuleCharNumber, zh_Hans: RuleCharNumber }
+      - value: RuleCharSplit
+        label: { en_US: RuleCharSplit, zh_Hans: RuleCharSplit }
+      - value: RuleColonEnd
+        label: { en_US: RuleColonEnd, zh_Hans: RuleColonEnd }
+      - value: RuleContentNull
+        label: { en_US: RuleContentNull, zh_Hans: RuleContentNull }
+      - value: RuleContentShort
+        label: { en_US: RuleContentShort, zh_Hans: RuleContentShort }
+      - value: RuleContentShortMultiLan
+        label: { en_US: RuleContentShortMultiLan, zh_Hans: RuleContentShortMultiLan }
+      - value: RuleCurlyBracket
+        label: { en_US: RuleCurlyBracket, zh_Hans: RuleCurlyBracket }
+      - value: RuleDocRepeat
+        label: { en_US: RuleDocRepeat, zh_Hans: RuleDocRepeat }
+      - value: RuleEnterAndSpace
+        label: { en_US: RuleEnterAndSpace, zh_Hans: RuleEnterAndSpace }
+      - value: RuleEnterMore
+        label: { en_US: RuleEnterMore, zh_Hans: RuleEnterMore }
+      - value: RuleEnterRatioMore
+        label: { en_US: RuleEnterRatioMore, zh_Hans: RuleEnterRatioMore }
+      - value: RuleHallucinationHHEM
+        label: { en_US: RuleHallucinationHHEM, zh_Hans: RuleHallucinationHHEM }
+      - value: RuleHeadWordAr
+        label: { en_US: RuleHeadWordAr, zh_Hans: RuleHeadWordAr }
+      - value: RuleHeadWordCs
+        label: { en_US: RuleHeadWordCs, zh_Hans: RuleHeadWordCs }
+      - value: RuleHeadWordHu
+        label: { en_US: RuleHeadWordHu, zh_Hans: RuleHeadWordHu }
+      - value: RuleHeadWordKo
+        label: { en_US: RuleHeadWordKo, zh_Hans: RuleHeadWordKo }
+      - value: RuleHeadWordRu
+        label: { en_US: RuleHeadWordRu, zh_Hans: RuleHeadWordRu }
+      - value: RuleHeadWordSr
+        label: { en_US: RuleHeadWordSr, zh_Hans: RuleHeadWordSr }
+      - value: RuleHeadWordTh
+        label: { en_US: RuleHeadWordTh, zh_Hans: RuleHeadWordTh }
+      - value: RuleHeadWordVi
+        label: { en_US: RuleHeadWordVi, zh_Hans: RuleHeadWordVi }
+      - value: RuleHtmlEntity
+        label: { en_US: RuleHtmlEntity, zh_Hans: RuleHtmlEntity }
+      - value: RuleHtmlTag
+        label: { en_US: RuleHtmlTag, zh_Hans: RuleHtmlTag }
+      - value: RuleIDCard
+        label: { en_US: RuleIDCard, zh_Hans: RuleIDCard }
+      - value: RuleInvisibleChar
+        label: { en_US: RuleInvisibleChar, zh_Hans: RuleInvisibleChar }
+      - value: RuleLatexSpecialChar
+        label: { en_US: RuleLatexSpecialChar, zh_Hans: RuleLatexSpecialChar }
+      - value: RuleLineEndWithEllipsis
+        label: { en_US: RuleLineEndWithEllipsis, zh_Hans: RuleLineEndWithEllipsis }
+      - value: RuleLineEndWithTerminal
+        label: { en_US: RuleLineEndWithTerminal, zh_Hans: RuleLineEndWithTerminal }
+      - value: RuleLineJavascriptCount
+        label: { en_US: RuleLineJavascriptCount, zh_Hans: RuleLineJavascriptCount }
+      - value: RuleLineStartWithBulletpoint
+        label: { en_US: RuleLineStartWithBulletpoint, zh_Hans: RuleLineStartWithBulletpoint }
+      - value: RuleLoremIpsum
+        label: { en_US: RuleLoremIpsum, zh_Hans: RuleLoremIpsum }
+      - value: RuleMeanWordLength
+        label: { en_US: RuleMeanWordLength, zh_Hans: RuleMeanWordLength }
+      - value: RuleNoPunc
+        label: { en_US: RuleNoPunc, zh_Hans: RuleNoPunc }
+      - value: RuleOnlyUrl
+        label: { en_US: RuleOnlyUrl, zh_Hans: RuleOnlyUrl }
+      - value: RulePatternSearch
+        label: { en_US: RulePatternSearch, zh_Hans: RulePatternSearch }
+      - value: RuleSentenceNumber
+        label: { en_US: RuleSentenceNumber, zh_Hans: RuleSentenceNumber }
+      - value: RuleSpaceMore
+        label: { en_US: RuleSpaceMore, zh_Hans: RuleSpaceMore }
+      - value: RuleSpecialCharacter
+        label: { en_US: RuleSpecialCharacter, zh_Hans: RuleSpecialCharacter }
+      - value: RuleStopWord
+        label: { en_US: RuleStopWord, zh_Hans: RuleStopWord }
+      - value: RuleSymbolWordRatio
+        label: { en_US: RuleSymbolWordRatio, zh_Hans: RuleSymbolWordRatio }
+      - value: RuleUniqueWords
+        label: { en_US: RuleUniqueWords, zh_Hans: RuleUniqueWords }
+      - value: RuleUnsafeWords
+        label: { en_US: RuleUnsafeWords, zh_Hans: RuleUnsafeWords }
+      - value: RuleWatermark
+        label: { en_US: RuleWatermark, zh_Hans: RuleWatermark }
+      - value: RuleWordNumber
+        label: { en_US: RuleWordNumber, zh_Hans: RuleWordNumber }
+      - value: RuleWordSplit
+        label: { en_US: RuleWordSplit, zh_Hans: RuleWordSplit }
+      - value: RuleWordStuck
+        label: { en_US: RuleWordStuck, zh_Hans: RuleWordStuck }

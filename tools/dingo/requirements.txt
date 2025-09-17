@@ -34,8 +34,9 @@ opencv-python>=4.5.0
 prettytable>=3.0.0
 packaging>=21.0
 
-# Note: The plugin will try to use local dingo installation first
-# If not available, install with: pip install dingo-python
+# Include dingo core to enable real rule evaluation by default
+# If you want a lighter image, you can remove this and install on demand.
+dingo-python
 
 
 # Dify Plugin SDK (required by runtime)

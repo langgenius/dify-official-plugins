@@ -31,8 +31,10 @@ class TextQualityEvaluatorTool(Tool):
 
         # Try using dingo-python if installed
         try:
+            import importlib
+            import inspect
+            import pkgutil
             from dingo.io.input import Data  # type: ignore
-            from dingo.model.rule.rule_common import RuleEnterAndSpace, RuleContentNull  # type: ignore
         except Exception:
             # Fallback: minimal heuristic checks without dingo
             issues: List[str] = []
@@ -57,15 +59,65 @@ class TextQualityEvaluatorTool(Tool):
             yield self.create_text_message("\n".join(body))
             return
 
-        # Use dingo rules when available
+        # Dingo available: build registry of Rule* classes dynamically
+        def _build_registry() -> Dict[str, Any]:
+            try:
+                base = "dingo.model.rule"
+                pkg = importlib.import_module(base)
+                reg: Dict[str, Any] = {}
+                for _, mname, _ in pkgutil.walk_packages(pkg.__path__, base + "."):
+                    try:
+                        mod = importlib.import_module(mname)
+                    except Exception:
+                        continue
+                    for cname, cls in inspect.getmembers(mod, inspect.isclass):
+                        if cname.startswith("Rule") and hasattr(cls, "eval"):
+                            reg[cname] = cls
+                return reg
+            except Exception:
+                return {}
+
+        registry = getattr(self, "_dingo_registry", None)
+        if not isinstance(registry, dict) or not registry:
+            registry = _build_registry()
+            setattr(self, "_dingo_registry", registry)
+
+        def _rules_from_group(group: str) -> List[Any]:
+            # Minimal grouping: default set; other groups fallback to default for now
+            mapping = {
+                "default": ["RuleEnterAndSpace", "RuleContentNull"],
+                "sft": ["RuleEnterAndSpace", "RuleContentNull"],
+                "rag": ["RuleEnterAndSpace", "RuleContentNull"],
+                "hallucination": ["RuleEnterAndSpace", "RuleContentNull"],
+                "pretrain": ["RuleEnterAndSpace", "RuleContentNull"],
+            }
+            names = mapping.get(str(group).lower(), mapping["default"])
+            return [registry[n]() for n in names if n in registry]
+
+        selected = tool_parameters.get("rule_list") or []
+        if isinstance(selected, str):
+            selected = [x.strip() for x in selected.split(",") if x.strip()]
+        rules: List[Any] = []
+        if isinstance(selected, list) and selected:
+            rules = [registry[n]() for n in selected if n in registry]
+        if not rules:
+            rules = _rules_from_group(rule_group)
+        if not rules:
+            # ultimate fallback to a sensible default if registry is empty
+            rules = _rules_from_group("default")
+
         data = Data(data_id="dify_eval_001", content=text_content)
-        rules = [RuleEnterAndSpace(), RuleContentNull()]
         issues: List[str] = []
         for rule in rules:
             try:
                 result = rule.eval(data)
-                if result.error_status:
-                    issues.append(f"{result.name}: {result.reason[0] if result.reason else ''}")
+                if getattr(result, "error_status", False):
+                    reason = ""
+                    try:
+                        reason = result.reason[0] if getattr(result, "reason", None) else ""
+                    except Exception:
+                        reason = ""
+                    issues.append(f"{getattr(result, 'name', rule.__class__.__name__)}: {reason}")
             except Exception:
                 continue
 
