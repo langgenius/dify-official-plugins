@@ -1,5 +1,4 @@
 import os
-import random
 from collections.abc import Generator
 from enum import Enum
 from typing import Any
@@ -105,7 +104,6 @@ class ComfyuiImg2Img(Tool):
             scheduler_name,
             cfg,
             denoise,
-            random.randint(0, 100000000),
         )
         workflow.set_prompt("6", prompt)
         workflow.set_prompt("7", negative_prompt)

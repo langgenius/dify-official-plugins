@@ -3,7 +3,6 @@ from typing import Any
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
 from tools.comfyui_client import ComfyUiClient
 from tools.comfyui_model_manager import ModelManager

@@ -1,5 +1,4 @@
 import os
-import random
 from collections.abc import Generator
 from enum import Enum
 from typing import Any
@@ -116,7 +115,6 @@ class ComfyuiTxt2Img(Tool):
             scheduler_name,
             cfg,
             1.0,
-            random.randint(0, 100000000),
         )
         workflow.set_model_loader(None, model)
         workflow.set_property("6", "inputs/text", prompt)
@@ -130,7 +128,6 @@ class ComfyuiTxt2Img(Tool):
                 scheduler_name,
                 cfg,
                 tool_parameters.get("hiresfix_denoise", 0.6),
-                random.randint(0, 100000000),
             )
 
             hiresfix_size_ratio = tool_parameters.get("hiresfix_size_ratio", 0.5)
