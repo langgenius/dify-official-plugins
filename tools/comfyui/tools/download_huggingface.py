@@ -23,10 +23,7 @@ class DownloadHuggingFace(Tool):
             civitai_api_key=None,
             hf_api_key=self.runtime.credentials.get("hf_api_key"),
         )
-
-        repo_id = tool_parameters.get("repo_id", "")
-        filepath = tool_parameters.get("filepath", "")
-        save_dir = tool_parameters.get("save_dir", "")
-
-        filename = model_manager.download_hugging_face(repo_id, filepath, save_dir)
+        filename = model_manager.download_hugging_face(
+            tool_parameters.get("repo_id"), tool_parameters.get("filepath"), tool_parameters.get("save_dir")
+        )
         yield self.create_variable_message("filename", filename)

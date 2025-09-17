@@ -164,6 +164,10 @@ Deletion:
 - Delete Image Info: Please use [dify-pillow](https://github.com/yt-koike/dify-pillow) for an equivalent feature.
 - Download By JSON node is integrated into Workflow node.
 
+Fix:
+- Fix CivitAI downloader which used to download non-model files(e.g. TrainingData.zip)
+- Change Img2Any node's ID to img2any
+
 Refactor: 
 - Refactor to pass all the checks by ruff.
 

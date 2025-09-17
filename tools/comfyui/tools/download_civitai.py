@@ -24,19 +24,17 @@ class DownloadCivitAI(Tool):
             hf_api_key=None,
         )
 
-        model_id = tool_parameters.get("model_id")
-        version_id = tool_parameters.get("version_id")
-        save_dir = tool_parameters.get("save_dir")
-        if version_id is None:
-            version_id = max(model_manager.fetch_version_ids(model_id))
-        civitai_model = model_manager.search_civitai(model_id, version_id, save_dir)
+        civitai_model = model_manager.search_civitai(
+            tool_parameters.get("model_id"), tool_parameters.get("version_id"), tool_parameters.get("save_dir")
+        )
         yield self.create_variable_message("model_name_human", civitai_model.model_name_human)
         yield self.create_variable_message("model_name", civitai_model.name)
+        yield self.create_variable_message(
+            "air",
+            f"urn:air:{civitai_model.ecosystem}:{civitai_model.model_type}:{civitai_model.source}:{civitai_model.id}",
+        )
+        yield self.create_variable_message("ecosystem", civitai_model.ecosystem)
+        yield self.create_variable_message("type", civitai_model.model_type)
+        yield self.create_variable_message("source", civitai_model.source)
 
         model_manager.download_model_autotoken(civitai_model.url, civitai_model.directory, civitai_model.name)
-
-        ecosystem, model_type, source, id = model_manager.fetch_civitai_air(version_id)
-        yield self.create_variable_message("air", f"urn:air:{ecosystem}:{model_type}:{source}:{id}")
-        yield self.create_variable_message("ecosystem", ecosystem)
-        yield self.create_variable_message("type", model_type)
-        yield self.create_variable_message("source", source)

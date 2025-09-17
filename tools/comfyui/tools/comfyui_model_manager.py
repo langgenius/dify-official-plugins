@@ -12,6 +12,10 @@ from tools.comfyui_workflow import ComfyUIModel, ComfyUiWorkflow
 class CivitAiModel(ComfyUIModel):
     model_name_human: str
     file_names: list[str]
+    ecosystem: str
+    model_type: str
+    source: str
+    id: str
 
 
 class ModelManager:
@@ -146,7 +150,7 @@ class ModelManager:
         version_ids = [v["id"] for v in model_data["modelVersions"] if v["availability"] == "Public"]
         return version_ids
 
-    def search_civitai(self, model_id: int, version_id: int, save_dir: str) -> CivitAiModel:
+    def search_civitai(self, model_id: int, version_id: int | None, save_dir: str) -> CivitAiModel:
         try:
             model_data = requests.get(f"https://civitai.com/api/v1/models/{model_id}").json()
 
@@ -165,6 +169,7 @@ class ModelManager:
         if model_detail is None:
             raise Exception(f"Version {version_id} of model {model_name_human} not found.")
         model_filenames = [str(file["name"]) for file in model_detail["files"]]
+        ecosystem, model_type, source, id = self.fetch_civitai_air(version_id)
 
         return CivitAiModel(
             [name for name in model_filenames if name.endswith(".safetensors")][0].split("/")[-1],
@@ -172,6 +177,10 @@ class ModelManager:
             save_dir,
             model_name_human=model_name_human,
             file_names=model_filenames,
+            ecosystem=ecosystem,
+            model_type=model_type,
+            source=source,
+            id=id,
         )
 
     def download_civitai(self, model_id: int, version_id: int, save_dir: str) -> CivitAiModel:
