@@ -28,8 +28,6 @@ class DownloadByURL(Tool):
         name = tool_parameters.get("name")
         if name is None or len(name) == 0:
             name = url.split("/")[-1].split("?")[0]
-        token_type = tool_parameters.get("token_type")
         save_to = tool_parameters.get("save_dir")
-
         self.model_manager.download_model_autotoken(url, save_to, name)
         yield self.create_variable_message("model_name", name)

@@ -94,30 +94,6 @@ parameters:
           en_US: vae_approx
     required: true
 
-  - name: token_type
-    form: form
-    label:
-      en_US: Token Type
-      zh_Hans: Token Type
-      ja_JP: Token Type
-    llm_description: Token Type
-    type: select
-    human_description:
-      en_US: Token Type
-      zh_Hans: Token Type
-      ja_JP: Token Type
-    options:
-      - value: none
-        label:
-          en_US: None
-      - value: civitai
-        label:
-          en_US: CivitAI
-      - value: hugging_face
-        label:
-          en_US: HuggingFace
-
-
 output_schema:
   type: object
   properties:
