@@ -272,9 +272,9 @@ class QuickStart(Tool):
         return workflow
 
     def pony_v6_xl(self, ui: QuickStartConfig):
-        model_name_human, filenames = self.model_manager.download_civitai(257749, 290640, "checkpoints")
+        civitai_model = self.model_manager.download_civitai(257749, 290640, "checkpoints")
         workflow = self.get_civitai_workflow(ui)
-        workflow.set_model_loader(None, filenames[0])
+        workflow.set_model_loader(None, civitai_model.name)
         workflow.set_k_sampler(
             None,
             25,
@@ -287,9 +287,9 @@ class QuickStart(Tool):
         return workflow.json_str(), output_images
 
     def majicmix_realistic(self, ui: QuickStartConfig):
-        model_name_human, filenames = self.model_manager.download_civitai(43331, 176425, "checkpoints")
+        civitai_model = self.model_manager.download_civitai(43331, 176425, "checkpoints")
         workflow = self.get_civitai_workflow(ui)
-        workflow.set_model_loader(None, filenames[0])
+        workflow.set_model_loader(None, civitai_model.name)
         workflow.set_k_sampler(
             None,
             30,
@@ -303,10 +303,10 @@ class QuickStart(Tool):
         return workflow.json_str(), output_images
 
     def wai_illustrious(self, ui: QuickStartConfig):
-        model_name_human, filenames = self.model_manager.download_civitai(827184, 1761560, "checkpoints")
+        civitai_model = self.model_manager.download_civitai(827184, 1761560, "checkpoints")
 
         workflow = self.get_civitai_workflow(ui)
-        workflow.set_model_loader(None, filenames[0])
+        workflow.set_model_loader(None, civitai_model.name)
         workflow.set_k_sampler(None, 30, "euler_ancestral", "normal", 6.0, 1.0)
 
         output_images = self.comfyui.generate(workflow.json())

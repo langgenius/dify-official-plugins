@@ -29,9 +29,11 @@ class DownloadCivitAI(Tool):
         save_dir = tool_parameters.get("save_dir")
         if version_id is None:
             version_id = max(model_manager.fetch_version_ids(model_id))
-        model_name_human, model_filenames = model_manager.download_civitai(model_id, version_id, save_dir)
-        yield self.create_variable_message("model_name_human", model_name_human)
-        yield self.create_variable_message("model_name", model_filenames[0])
+        civitai_model = model_manager.search_civitai(model_id, version_id, save_dir)
+        yield self.create_variable_message("model_name_human", civitai_model.model_name_human)
+        yield self.create_variable_message("model_name", civitai_model.name)
+
+        model_manager.download_model_autotoken(civitai_model.url, civitai_model.directory, civitai_model.name)
 
         ecosystem, model_type, source, id = model_manager.fetch_civitai_air(version_id)
         yield self.create_variable_message("air", f"urn:air:{ecosystem}:{model_type}:{source}:{id}")

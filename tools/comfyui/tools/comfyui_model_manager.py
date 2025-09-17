@@ -1,10 +1,17 @@
+import dataclasses
 import os
 import re
 
 import requests
 
 from tools.comfyui_client import ComfyUiClient
-from tools.comfyui_workflow import ComfyUiWorkflow
+from tools.comfyui_workflow import ComfyUIModel, ComfyUiWorkflow
+
+
+@dataclasses.dataclass
+class CivitAiModel(ComfyUIModel):
+    model_name_human: str
+    file_names: list[str]
 
 
 class ModelManager:
@@ -74,8 +81,8 @@ class ModelManager:
                 version_id = int(civit_pattern[3])
             except:
                 version_id = None
-            model_name_human, filenames = self.download_civitai(model_id, version_id, save_dir)
-            return filenames[0]
+            civitai_model = self.download_civitai(model_id, version_id, save_dir)
+            return civitai_model.name
         if len(re.findall("https?://.*", model_name)) > 0:
             # model_name is a general URL
             url = model_name
@@ -139,7 +146,7 @@ class ModelManager:
         version_ids = [v["id"] for v in model_data["modelVersions"] if v["availability"] == "Public"]
         return version_ids
 
-    def download_civitai(self, model_id: int, version_id: int, save_dir: str) -> tuple[str, list[str]]:
+    def search_civitai(self, model_id: int, version_id: int, save_dir: str) -> CivitAiModel:
         try:
             model_data = requests.get(f"https://civitai.com/api/v1/models/{model_id}").json()
 
@@ -157,15 +164,20 @@ class ModelManager:
                 break
         if model_detail is None:
             raise Exception(f"Version {version_id} of model {model_name_human} not found.")
-        model_filenames = [file["name"] for file in model_detail["files"]]
+        model_filenames = [str(file["name"]) for file in model_detail["files"]]
 
-        self.download_model_autotoken(
+        return CivitAiModel(
+            [name for name in model_filenames if name.endswith(".safetensors")][0].split("/")[-1],
             f"https://civitai.com/api/download/models/{version_id}",
             save_dir,
-            model_filenames[0].split("/")[-1],
+            model_name_human=model_name_human,
+            file_names=model_filenames,
         )
 
-        return model_name_human, model_filenames
+    def download_civitai(self, model_id: int, version_id: int, save_dir: str) -> CivitAiModel:
+        model = self.search_civitai(model_id, version_id, save_dir)
+        self.download_model_autotoken(model.url, model.directory, model.name)
+        return model
 
     def download_hugging_face(self, repo_id: str, filepath: str, save_dir: str):
         self.download_model_autotoken(
