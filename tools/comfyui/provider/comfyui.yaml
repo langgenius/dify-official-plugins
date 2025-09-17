@@ -74,4 +74,3 @@ tools:
   - tools/download_civitai.yaml
   - tools/download_huggingface.yaml
   - tools/download_by_url.yaml
-  #- tools/convert_to_api.yaml

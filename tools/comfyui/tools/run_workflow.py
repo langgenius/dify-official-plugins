@@ -26,6 +26,8 @@ class ComfyUIWorkflowTool(Tool):
         workflow = ComfyUiWorkflow(tool_parameters.get("workflow_json", ""))
         if tool_parameters.get("enable_download", False):
             self.model_manager.download_from_json(workflow.json_original_str())
+        if not tool_parameters.get("execute_workflow", False):
+            return
 
         image_names = []
         for image in images:
