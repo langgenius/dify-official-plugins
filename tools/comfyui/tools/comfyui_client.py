@@ -68,6 +68,15 @@ class ComfyUiClient:
         except Exception as e:
             return []
 
+    def get_all_models(self, exclude_dirs: list[str] = ["custom_nodes"]) -> list[str]:
+        result = []
+        for model_dir in self.get_model_dirs():
+            if model_dir in exclude_dirs:
+                continue
+            for model_name in self.get_model_dirs(model_dir):
+                result.append(f"{model_dir}/{model_name}")
+        return result
+
     def get_checkpoints(self) -> list[str]:
         """
         get checkpoints
