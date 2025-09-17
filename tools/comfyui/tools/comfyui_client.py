@@ -286,18 +286,19 @@ class ComfyUiClient:
             raise Exception("Error occured during image generation:" + str(e))
         ws.close()
         history = self.get_history(prompt_id)
-        images: list[ComfyUiFile] = []
+        files: list[ComfyUiFile] = []
         for output in history["outputs"].values():
-            for img in output.get("images", []) + output.get("gifs", []):
-                image_data = self.get_image(img["filename"], img["subfolder"], img["type"])
+            for file in output.get("images", []) + output.get("gifs", []) + output.get("audio", []):
+                image_data = self.get_image(file["filename"], file["subfolder"], file["type"])
                 generated_img = ComfyUiFile(
                     blob=image_data,
-                    filename=img["filename"],
-                    mime_type=mimetypes.guess_type(img["filename"])[0],
-                    type=img["type"],
+                    filename=file["filename"],
+                    mime_type=mimetypes.guess_type(file["filename"])[0],
+                    type=file["type"],
                 )
-                images.append(generated_img)
-        return images
+                files.append(generated_img)
+
+        return files
 
     def queue_prompt_image(self, client_id, prompt):
         ws = None
