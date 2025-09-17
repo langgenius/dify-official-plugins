@@ -1,4 +1,4 @@
-version: 0.2.4
+version: 0.2.5
 type: plugin
 author: langgenius
 name: azure_blob_datasource
@@ -24,16 +24,9 @@ meta:
     language: python
     version: "3.12"
     entrypoint: main
-  minimum_dify_version: 1.7.2
+  minimum_dify_version: 1.9.0
 created_at: 2025-01-27T16:00:00.000000+08:00
 privacy: PRIVACY.md
 verified: false
-
-
-
-
-
-
-
-
-
+tags:
+  - rag

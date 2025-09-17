@@ -2,7 +2,6 @@ import dataclasses
 import json
 import mimetypes
 import os
-import random
 import uuid
 from enum import StrEnum
 
@@ -40,6 +39,8 @@ class ComfyUiFile:
 
 class ComfyUiClient:
     def __init__(self, base_url: str, api_key: str | None = None, api_key_comfy_org: str = ""):  # Add api_key parameter
+        if base_url is None or len(base_url) == 0:
+            raise Exception("Please input base_url")
         self.base_url = URL(base_url)
         self.api_key = api_key  # Store api_key
         # https://docs.comfy.org/development/comfyui-server/api-key-integration#integration-of-api-key-to-use-comfyui-api-nodes
@@ -67,6 +68,15 @@ class ComfyUiClient:
                 return response.json()
         except Exception as e:
             return []
+
+    def get_all_models(self, exclude_dirs: list[str] = ["custom_nodes"]) -> list[str]:
+        result = []
+        for model_dir in self.get_model_dirs():
+            if model_dir in exclude_dirs:
+                continue
+            for model_name in self.get_model_dirs(model_dir):
+                result.append(f"{model_dir}/{model_name}")
+        return result
 
     def get_checkpoints(self) -> list[str]:
         """
@@ -215,18 +225,6 @@ class ComfyUiClient:
             prompt.get(load_image)["inputs"]["image"] = image_name
         return prompt
 
-    def set_prompt_seed_by_id(self, origin_prompt: dict, seed_id: str) -> dict:
-        prompt = origin_prompt.copy()
-        if seed_id not in prompt:
-            raise Exception("Not a valid seed node")
-        if "seed" in prompt[seed_id]["inputs"]:
-            prompt[seed_id]["inputs"]["seed"] = random.randint(10**14, 10**15 - 1)
-        elif "noise_seed" in prompt[seed_id]["inputs"]:
-            prompt[seed_id]["inputs"]["noise_seed"] = random.randint(10**14, 10**15 - 1)
-        else:
-            raise Exception("Not a valid seed node")
-        return prompt
-
     def wait_until_generation(self, prompt: dict, ws: WebSocket, prompt_id: str):
         node_ids = list(prompt.keys())
         finished_nodes = []
@@ -275,18 +273,19 @@ class ComfyUiClient:
             raise Exception("Error occured during image generation:" + str(e))
         ws.close()
         history = self.get_history(prompt_id)
-        images: list[ComfyUiFile] = []
+        files: list[ComfyUiFile] = []
         for output in history["outputs"].values():
-            for img in output.get("images", []) + output.get("gifs", []):
-                image_data = self.get_image(img["filename"], img["subfolder"], img["type"])
+            for file in output.get("images", []) + output.get("gifs", []) + output.get("audio", []):
+                image_data = self.get_image(file["filename"], file["subfolder"], file["type"])
                 generated_img = ComfyUiFile(
                     blob=image_data,
-                    filename=img["filename"],
-                    mime_type=mimetypes.guess_type(img["filename"])[0],
-                    type=img["type"],
+                    filename=file["filename"],
+                    mime_type=mimetypes.guess_type(file["filename"])[0],
+                    type=file["type"],
                 )
-                images.append(generated_img)
-        return images
+                files.append(generated_img)
+
+        return files
 
     def queue_prompt_image(self, client_id, prompt):
         ws = None
@@ -369,6 +368,7 @@ class ComfyUiClient:
             output_files = self.generate(workflow.json())
         except Exception as e:
             raise ToolProviderCredentialValidationError(
-                f"Failed to download: {str(e)}. Please make sure https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite works on ComfyUI"
+                f"Failed to download: {str(e)}. "
+                + "Please make sure https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite works on ComfyUI"
             )
         return output_files[0]

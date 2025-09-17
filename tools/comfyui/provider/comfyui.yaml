@@ -67,14 +67,11 @@ tools:
   - tools/quickstart.yaml
   - tools/txt2img.yaml
   - tools/txt2vid.yaml
+  - tools/txt2aud.yaml
   - tools/img2img.yaml
   - tools/img2vid.yaml
   - tools/img2any.yaml
-  - tools/list_models.yaml
-  - tools/list_samplers.yaml
-  - tools/image_info.yaml
+  - tools/list_info.yaml
   - tools/download_civitai.yaml
   - tools/download_huggingface.yaml
-  - tools/download_by_json.yaml
   - tools/download_by_url.yaml
-  #- tools/convert_to_api.yaml

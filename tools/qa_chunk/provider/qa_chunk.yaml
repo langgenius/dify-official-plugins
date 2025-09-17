@@ -14,6 +14,7 @@ identity:
     zh_Hans: Q&A 处理器
   name: qa_chunk
   tags:
-  - utilities
+    - utilities
+    - rag
 tools:
 - tools/qa.yaml

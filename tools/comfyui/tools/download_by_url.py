@@ -3,7 +3,6 @@ from typing import Any
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
 from tools.comfyui_client import ComfyUiClient
 from tools.comfyui_model_manager import ModelManager
@@ -14,12 +13,13 @@ class DownloadByURL(Tool):
         """
         invoke tools
         """
-        base_url = self.runtime.credentials.get("base_url")
-        if base_url is None:
-            raise ToolProviderCredentialValidationError("Please input base_url")
-        self.comfyui = ComfyUiClient(base_url)
-        self.model_manager = ModelManager(
-            self.comfyui,
+        comfyui = ComfyUiClient(
+            base_url=self.runtime.credentials.get("base_url"),
+            api_key=self.runtime.credentials.get("comfyui_api_key"),
+            api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"),
+        )
+        model_manager = ModelManager(
+            comfyui,
             civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
             hf_api_key=self.runtime.credentials.get("hf_api_key"),
         )
@@ -28,8 +28,9 @@ class DownloadByURL(Tool):
         name = tool_parameters.get("name")
         if name is None or len(name) == 0:
             name = url.split("/")[-1].split("?")[0]
-        token_type = tool_parameters.get("token_type")
         save_to = tool_parameters.get("save_dir")
-
-        self.model_manager.download_model_autotoken(url, save_to, name)
+        if tool_parameters.get("use_tokens", False):
+            model_manager.download_model_autotoken(url, save_to, name)
+        else:
+            model_manager.download_model(url, save_to, name, None)
         yield self.create_variable_message("model_name", name)

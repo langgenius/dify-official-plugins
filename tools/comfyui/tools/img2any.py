@@ -16,10 +16,11 @@ class ComfyuiImg2Any(Tool):
         """
         invoke tools
         """
-        base_url = self.runtime.credentials.get("base_url")
-        if base_url is None:
-            yield self.create_text_message("Please input base_url")
-        self.comfyui = ComfyUiClient(base_url, self.runtime.credentials.get("comfyui_api_key"))
+        self.comfyui = ComfyUiClient(
+            base_url=self.runtime.credentials.get("base_url"),
+            api_key=self.runtime.credentials.get("comfyui_api_key"),
+            api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"),
+        )
         self.model_manager = ModelManager(
             self.comfyui,
             civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
@@ -72,7 +73,8 @@ class ComfyuiImg2Any(Tool):
                 output_images.append(self.comfyui.generate(workflow.json())[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
-                    f"Failed to generate image: {str(e)}. Maybe install https://github.com/spacepxl/ComfyUI-Depth-Pro on ComfyUI"
+                    f"Failed to generate image: {str(e)}."
+                    + " Maybe install https://github.com/spacepxl/ComfyUI-Depth-Pro on ComfyUI"
                 )
         return output_images
 
@@ -88,7 +90,8 @@ class ComfyuiImg2Any(Tool):
                 output_images.append(self.comfyui.generate(workflow.json())[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
-                    f"Failed to generate image: {str(e)}. Maybe install https://github.com/kijai/ComfyUI-DepthAnythingV2 on ComfyUI"
+                    f"Failed to generate image: {str(e)}."
+                    + " Maybe install https://github.com/kijai/ComfyUI-DepthAnythingV2 on ComfyUI"
                 )
         return output_images
 
@@ -102,7 +105,8 @@ class ComfyuiImg2Any(Tool):
             output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
             raise ToolProviderCredentialValidationError(
-                f"Failed to generate image: {str(e)}. Maybe install https://github.com/Gourieff/ComfyUI-ReActor on ComfyUI"
+                f"Failed to generate image: {str(e)}."
+                + " Maybe install https://github.com/Gourieff/ComfyUI-ReActor on ComfyUI"
             )
         return output_images
 
@@ -123,6 +127,7 @@ class ComfyuiImg2Any(Tool):
                 output_images.append(self.comfyui.generate(workflow.json())[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
-                    f"Failed to generate image: {str(e)}. Maybe install https://github.com/kijai/ComfyUI-DepthAnythingV2 on ComfyUI"
+                    f"Failed to generate image: {str(e)}."
+                    + " Maybe install https://github.com/kijai/ComfyUI-DepthAnythingV2 on ComfyUI"
                 )
         return output_images

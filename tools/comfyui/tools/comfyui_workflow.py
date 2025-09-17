@@ -1,8 +1,9 @@
 import dataclasses
 import json
 import os
-import random
+import secrets
 from copy import deepcopy
+from typing import Optional
 
 LORA_NODE = {
     "inputs": {
@@ -91,10 +92,13 @@ class ComfyUiWorkflow:
             # Set links
             for input in node["inputs"]:
                 link_id = input["link"]
-                link = [l for l in links if l[0] == link_id]
-                if len(link) == 0:
+                link = None
+                for li in links:
+                    if li[0] == link_id:
+                        link = li
+                        break
+                if link is None:
                     continue
-                link = link[0]
                 link_id, source_id, port_idx, _, _, type = link
                 inputs[input["name"]] = [str(source_id), port_idx]
             result[str(node["id"])] = {
@@ -159,11 +163,11 @@ class ComfyUiWorkflow:
     def randomize_seed(self):
         for node_id in self._workflow_api:
             if self.get_property(node_id, "inputs/seed") is not None:
-                self.set_property(node_id, "inputs/seed", random.randint(0, 10**8 - 1))
+                self.set_property(node_id, "inputs/seed", secrets.randbelow(10**8))
             if self.get_property(node_id, "inputs/noise_seed") is not None:
-                self.set_property(node_id, "inputs/noise_seed", random.randint(0, 10**8 - 1))
+                self.set_property(node_id, "inputs/noise_seed", secrets.randbelow(10**8))
 
-    def set_image_names(self, image_names: list[str], ordered_node_ids: list[str] = None):
+    def set_image_names(self, image_names: list[str], ordered_node_ids: Optional[list[str]] = None):
         if ordered_node_ids is None:
             ordered_node_ids = self.get_node_ids_by_class_type("LoadImage")
         for i, node_id in enumerate(ordered_node_ids):
@@ -176,7 +180,7 @@ class ComfyUiWorkflow:
             raise Exception(f"Node {node_id} is not CheckpointLoaderSimple")
         self.set_property(node_id, "inputs/ckpt_name", ckpt_name)
 
-    def set_Ksampler(
+    def set_k_sampler(
         self,
         node_id: str | None,
         steps: int,
@@ -184,7 +188,7 @@ class ComfyUiWorkflow:
         scheduler_name: str,
         cfg: float,
         denoise: float,
-        seed: int,
+        seed: int | None = None,
     ):
         if node_id is None:
             node_id = self.identify_node_by_class_type("KSampler")
@@ -195,9 +199,11 @@ class ComfyUiWorkflow:
         self.set_property(node_id, "inputs/scheduler", scheduler_name)
         self.set_property(node_id, "inputs/cfg", cfg)
         self.set_property(node_id, "inputs/denoise", denoise)
+        if seed is None:
+            seed = secrets.randbelow(100000000)
         self.set_property(node_id, "inputs/seed", seed)
 
-    def set_SD3_latent_image(
+    def set_sd3_latent_image(
         self,
         node_id: str | None,
         width: int,

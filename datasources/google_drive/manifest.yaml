@@ -1,4 +1,4 @@
-version: 0.1.5
+version: 0.1.6
 type: plugin
 author: langgenius
 name: google_drive
@@ -24,7 +24,9 @@ meta:
     language: python
     version: "3.12"
     entrypoint: main
-  minimum_dify_version: 1.7.2
+  minimum_dify_version: 1.9.0
 created_at: 2025-07-31T14:54:47.062188+08:00
 privacy:
 verified: false
+tags:
+  - rag

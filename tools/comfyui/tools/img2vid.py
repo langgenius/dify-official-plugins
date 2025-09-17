@@ -1,7 +1,7 @@
 import dataclasses
 import io
 import os
-import random
+import secrets
 from collections.abc import Generator
 from enum import Enum
 from typing import Any
@@ -66,10 +66,11 @@ class ComfyuiImg2Vid(Tool):
         """
         invoke tools
         """
-        base_url = self.runtime.credentials.get("base_url", "")
-        if not base_url:
-            yield self.create_text_message("Please input base_url")
-        self.comfyui = ComfyUiClient(base_url, api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"))
+        self.comfyui = ComfyUiClient(
+            base_url=self.runtime.credentials.get("base_url"),
+            api_key=self.runtime.credentials.get("comfyui_api_key"),
+            api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"),
+        )
         self.model_manager = ModelManager(
             self.comfyui,
             civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
@@ -134,9 +135,9 @@ class ComfyuiImg2Vid(Tool):
         if model_type == "wan2_1":
             output_images = self.img2vid_svd_wan2_1(config)
         elif model_type == "wan2_2_14B":
-            output_images = self.img2vid_svd_wan2_2_14B(config)
+            output_images = self.img2vid_svd_wan2_2_14b(config)
         elif model_type == "wan2_2_5B":
-            output_images = self.img2vid_svd_wan2_2_5B(config)
+            output_images = self.img2vid_svd_wan2_2_5b(config)
         elif model_type == "ltxv":
             output_images = self.img2vid_ltxv(config)
         elif model_type == "svd":
@@ -172,14 +173,13 @@ class ComfyuiImg2Vid(Tool):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "img2vid_svd.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
-        workflow.set_Ksampler(
+        workflow.set_k_sampler(
             None,
             config.steps,
             config.sampler_name,
             config.scheduler_name,
             config.cfg,
             config.denoise,
-            random.randint(0, 100000000),
         )
         workflow.set_animated_webp(None, config.fps)
         workflow.set_property("12", "inputs/width", config.width)
@@ -223,14 +223,13 @@ class ComfyuiImg2Vid(Tool):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "img2vid_wan2_1.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
-        workflow.set_Ksampler(
+        workflow.set_k_sampler(
             None,
             config.steps,
             config.sampler_name,
             config.scheduler_name,
             config.cfg,
             config.denoise,
-            random.randint(0, 100000000),
         )
         workflow.set_property("50", "inputs/width", config.width)
         workflow.set_property("50", "inputs/height", config.height)
@@ -276,7 +275,7 @@ class ComfyuiImg2Vid(Tool):
         workflow.set_clip(None, text_encoder)
         workflow.set_animated_webp(None, config.fps)
         workflow.set_property("69", "inputs/frame_rate", config.fps)
-        workflow.set_property("72", "inputs/noise_seed", random.randint(0, 100000000))
+        workflow.set_property("72", "inputs/noise_seed", secrets.randbelow(10**8))
         workflow.set_image_names([config.image_name])
         workflow.set_prompt("6", config.prompt)
         workflow.set_prompt("7", config.negative_prompt)
@@ -287,7 +286,7 @@ class ComfyuiImg2Vid(Tool):
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
 
-    def img2vid_svd_wan2_2_5B(self, config: ComfyuiImg2VidConfig):
+    def img2vid_svd_wan2_2_5b(self, config: ComfyuiImg2VidConfig):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(
             os.path.join(current_dir, "json", "img2vid_wan2_2_5B.json"),
@@ -312,7 +311,7 @@ class ComfyuiImg2Vid(Tool):
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
 
-    def img2vid_svd_wan2_2_14B(self, config: ComfyuiImg2VidConfig):
+    def img2vid_svd_wan2_2_14b(self, config: ComfyuiImg2VidConfig):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(
             os.path.join(current_dir, "json", "img2vid_wan2_2_14B.json"),
