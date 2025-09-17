@@ -1,0 +1,52 @@
+background: '#c0cdff'
+configurate_methods:
+- predefined-model
+description:
+  en_US: Models provided by LongCat, such as longcat-flash-chat.
+  zh_Hans: LongCat 提供的模型，例如 longcat-flash-chat 。
+extra:
+  python:
+    model_sources:
+    - models/llm/llm.py
+    provider_source: provider/longcat.py
+help:
+  title:
+    en_US: Get your API Key from LongCat
+    zh_Hans: 从 LongCat 获取 API Key
+  url:
+    en_US: https://longcat.chat/platform/docs/zh/
+icon_large:
+  en_US: icon_l_en.svg
+icon_small:
+  en_US: icon_s_en.svg
+label:
+  en_US: LongCat
+  zh_Hans: LongCat
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+    - models/llm/*.yaml
+provider: longcat
+provider_credential_schema:
+  credential_form_schemas:
+  - label:
+      en_US: API Key
+    placeholder:
+      en_US: Enter your API Key
+      zh_Hans: 在此输入您的 API Key
+    required: true
+    type: secret-input
+    variable: api_key
+  - label:
+      en_US: Custom API endpoint URL
+      zh_Hans: 自定义 API endpoint 地址
+    placeholder:
+      en_US: Base URL, e.g. https://api.longcat.chat/openai
+      zh_Hans: Base URL, e.g. https://api.longcat.chat/openai
+    required: false
+    type: text-input
+    default: "https://api.longcat.chat/openai"
+    variable: endpoint_url
+supported_model_types:
+- llm

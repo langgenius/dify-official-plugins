@@ -66,7 +66,11 @@ class XinferenceTextEmbeddingModel(TextEmbeddingModel):
         auth_headers = {"Authorization": f"Bearer {api_key}"} if api_key else {}
         try:
             handle = RESTfulEmbeddingModelHandle(model_uid, server_url, auth_headers)
-            embeddings = handle.create_embedding(input=texts)
+            if "jina-embeddings-v4" in model_uid or "jina-embeddings-v4" in model:
+                extra_body = {"task": "retrieval"}
+                embeddings = handle.create_embedding(input=texts, **extra_body)
+            else:
+                embeddings = handle.create_embedding(input=texts)
         except RuntimeError as e:
             raise InvokeServerUnavailableError(str(e))
         '\n        for convenience, the response json is like:\n        class Embedding(TypedDict):\n            object: Literal["list"]\n            model: str\n            data: List[EmbeddingData]\n            usage: EmbeddingUsage\n        class EmbeddingUsage(TypedDict):\n            prompt_tokens: int\n            total_tokens: int\n        class EmbeddingData(TypedDict):\n            index: int\n            object: str\n            embedding: List[float]\n        '

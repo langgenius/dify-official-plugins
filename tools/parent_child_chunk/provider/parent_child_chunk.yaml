@@ -10,7 +10,8 @@ identity:
     zh_Hans: Parent-child Chunk Structure
     pt_BR: Parent-child Chunk Structure
   icon: icon.svg
-  tags: []
+  tags:
+    - rag
 tools:
   - tools/parent_child_chunk.yaml
 extra:

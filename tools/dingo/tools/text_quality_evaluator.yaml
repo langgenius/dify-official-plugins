@@ -1,0 +1,62 @@
+description:
+  human:
+    en_US: Evaluate text quality using Dingo rules. Provide the text content, optionally choose a rule group. Returns a readable report.
+    zh_Hans: 使用 Dingo 规则评估文本质量。输入文本内容，可选规则组，返回可读的评估报告。
+  llm: Evaluate text quality using Dingo rules and return a concise report including score and issues.
+extra:
+  python:
+    source: tools/text_quality_evaluator.py
+
+identity:
+  author: langgenius
+  name: text_quality_evaluator
+  label:
+    en_US: Text Quality Evaluator
+    zh_Hans: 文本质量评估器
+  description:
+    en_US: Evaluate text quality using Dingo library rules
+    zh_Hans: 使用Dingo库规则评估文本质量
+  icon: icon.svg
+parameters:
+  - name: text_content
+    type: string
+    required: true
+    label:
+      en_US: Text Content
+      zh_Hans: 文本内容
+    human_description:
+      en_US: The text content to evaluate for quality issues
+      zh_Hans: 需要评估质量问题的文本内容
+    form: llm
+  - name: rule_group
+    type: select
+    required: false
+    default: default
+    label:
+      en_US: Rule Group
+      zh_Hans: 规则组
+    human_description:
+      en_US: The rule group to use for evaluation
+      zh_Hans: 用于评估的规则组
+    form: form
+    options:
+      - value: default
+        label:
+          en_US: Default Rules
+          zh_Hans: 默认规则
+      - value: sft
+        label:
+          en_US: SFT Rules
+          zh_Hans: SFT规则
+      - value: rag
+        label:
+          en_US: RAG Rules
+          zh_Hans: RAG规则
+      - value: hallucination
+        label:
+          en_US: Hallucination Detection
+          zh_Hans: 幻觉检测
+      - value: pretrain
+        label:
+          en_US: Pretrain Rules
+          zh_Hans: 预训练规则
