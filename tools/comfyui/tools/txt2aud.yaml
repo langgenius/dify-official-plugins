@@ -9,7 +9,7 @@ extra:
 identity:
   author: yt-koike
   label:
-    en_US: Txt2aud
+    en_US: Txt2Aud
   name: txt2aud
 parameters:
   - name: prompt
