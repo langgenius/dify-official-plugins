@@ -72,7 +72,6 @@ tools:
   - tools/img2any.yaml
   - tools/list_models.yaml
   - tools/list_samplers.yaml
-  - tools/image_info.yaml
   - tools/download_civitai.yaml
   - tools/download_huggingface.yaml
   - tools/download_by_json.yaml
