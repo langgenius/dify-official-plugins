@@ -11,8 +11,7 @@ identity:
   author: yt-koike
   label:
     en_US: Img2Any
-  # TODO: change image_edit to img2any
-  name: image_edit
+  name: img2any
 
 parameters:
   - name: images
