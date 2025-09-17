@@ -67,6 +67,7 @@ tools:
   - tools/quickstart.yaml
   - tools/txt2img.yaml
   - tools/txt2vid.yaml
+  - tools/txt2aud.yaml
   - tools/img2img.yaml
   - tools/img2vid.yaml
   - tools/img2any.yaml
