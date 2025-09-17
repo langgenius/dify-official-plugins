@@ -1,6 +1,6 @@
 import dataclasses
 import os
-import random
+import secrets
 from collections.abc import Generator
 from typing import Any
 
@@ -145,7 +145,6 @@ class ComfyuiTxt2Vid(Tool):
             config.scheduler_name,
             config.cfg,
             1.0,
-            random.randint(0, 100000000),
         )
         workflow.set_property("28", "inputs/fps", config.fps)
         workflow.set_empty_mochi(None, config.width, config.height, config.frameN)
@@ -195,7 +194,6 @@ class ComfyuiTxt2Vid(Tool):
             config.scheduler_name,
             config.cfg,
             1.0,
-            random.randint(0, 100000000),
         )
         workflow.set_dual_clip(None, clip_name1, clip_name2)
         workflow.set_unet(None, config.model_name)
@@ -316,7 +314,7 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_prompt("6", config.prompt)
         workflow.set_prompt("7", config.negative_prompt)
         workflow.set_property("38", "inputs/clip_name", text_encoder)
-        workflow.set_property("72", "inputs/noise_seed", random.randint(0, 100000000))
+        workflow.set_property("72", "inputs/noise_seed", secrets.randbelow(10**8))
         ltxv_node_id = workflow.identify_node_by_class_type("EmptyLTXVLatentVideo")
         workflow.set_property(ltxv_node_id, "inputs/width", config.width)
         workflow.set_property(ltxv_node_id, "inputs/height", config.height)

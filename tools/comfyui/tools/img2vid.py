@@ -1,7 +1,6 @@
 import dataclasses
 import io
 import os
-import random
 from collections.abc import Generator
 from enum import Enum
 from typing import Any
@@ -180,7 +179,6 @@ class ComfyuiImg2Vid(Tool):
             config.scheduler_name,
             config.cfg,
             config.denoise,
-            random.randint(0, 100000000),
         )
         workflow.set_animated_webp(None, config.fps)
         workflow.set_property("12", "inputs/width", config.width)
@@ -231,7 +229,6 @@ class ComfyuiImg2Vid(Tool):
             config.scheduler_name,
             config.cfg,
             config.denoise,
-            random.randint(0, 100000000),
         )
         workflow.set_property("50", "inputs/width", config.width)
         workflow.set_property("50", "inputs/height", config.height)
@@ -277,7 +274,7 @@ class ComfyuiImg2Vid(Tool):
         workflow.set_clip(None, text_encoder)
         workflow.set_animated_webp(None, config.fps)
         workflow.set_property("69", "inputs/frame_rate", config.fps)
-        workflow.set_property("72", "inputs/noise_seed", random.randint(0, 100000000))
+        workflow.set_property("72", "inputs/noise_seed", secrets.randbelow(10**8))
         workflow.set_image_names([config.image_name])
         workflow.set_prompt("6", config.prompt)
         workflow.set_prompt("7", config.negative_prompt)

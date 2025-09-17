@@ -1,7 +1,7 @@
 import dataclasses
 import json
 import os
-import random
+import secrets
 from copy import deepcopy
 
 LORA_NODE = {
@@ -159,9 +159,9 @@ class ComfyUiWorkflow:
     def randomize_seed(self):
         for node_id in self._workflow_api:
             if self.get_property(node_id, "inputs/seed") is not None:
-                self.set_property(node_id, "inputs/seed", random.randint(0, 10**8 - 1))
+                self.set_property(node_id, "inputs/seed", secrets.randbelow(10**8))
             if self.get_property(node_id, "inputs/noise_seed") is not None:
-                self.set_property(node_id, "inputs/noise_seed", random.randint(0, 10**8 - 1))
+                self.set_property(node_id, "inputs/noise_seed", secrets.randbelow(10**8))
 
     def set_image_names(self, image_names: list[str], ordered_node_ids: list[str] = None):
         if ordered_node_ids is None:
@@ -184,7 +184,7 @@ class ComfyUiWorkflow:
         scheduler_name: str,
         cfg: float,
         denoise: float,
-        seed: int,
+        seed: int | None = None,
     ):
         if node_id is None:
             node_id = self.identify_node_by_class_type("KSampler")
@@ -195,6 +195,8 @@ class ComfyUiWorkflow:
         self.set_property(node_id, "inputs/scheduler", scheduler_name)
         self.set_property(node_id, "inputs/cfg", cfg)
         self.set_property(node_id, "inputs/denoise", denoise)
+        if seed is None:
+            seed = secrets.randbelow(100000000)
         self.set_property(node_id, "inputs/seed", seed)
 
     def set_SD3_latent_image(
