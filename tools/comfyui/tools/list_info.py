@@ -14,10 +14,11 @@ class ComfyuiListSamplers(Tool):
         """
         invoke tools
         """
-        base_url = self.runtime.credentials.get("base_url", "")
-        if not base_url:
-            yield self.create_text_message("Please input base_url")
-        cli = ComfyUiClient(base_url, self.runtime.credentials.get("comfyui_api_key"))
+        cli = ComfyUiClient(
+            base_url=self.runtime.credentials.get("base_url"),
+            api_key=self.runtime.credentials.get("comfyui_api_key"),
+            api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"),
+        )
         yield self.create_variable_message("models", cli.get_all_models())
         yield self.create_variable_message("sampling_methods", cli.get_samplers())
         yield self.create_variable_message("schedulers", cli.get_schedulers())

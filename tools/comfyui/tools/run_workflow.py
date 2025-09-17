@@ -13,7 +13,8 @@ from tools.comfyui_workflow import ComfyUiWorkflow
 class ComfyUIWorkflowTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         self.comfyui = ComfyUiClient(
-            self.runtime.credentials["base_url"],
+            base_url=self.runtime.credentials.get("base_url"),
+            api_key=self.runtime.credentials.get("comfyui_api_key"),
             api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"),
         )
         self.model_manager = ModelManager(

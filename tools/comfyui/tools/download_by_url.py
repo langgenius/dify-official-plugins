@@ -14,10 +14,11 @@ class DownloadByURL(Tool):
         """
         invoke tools
         """
-        base_url = self.runtime.credentials.get("base_url")
-        if base_url is None:
-            raise ToolProviderCredentialValidationError("Please input base_url")
-        self.comfyui = ComfyUiClient(base_url)
+        self.comfyui = ComfyUiClient(
+            base_url=self.runtime.credentials.get("base_url"),
+            api_key=self.runtime.credentials.get("comfyui_api_key"),
+            api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"),
+        )
         self.model_manager = ModelManager(
             self.comfyui,
             civitai_api_key=self.runtime.credentials.get("civitai_api_key"),

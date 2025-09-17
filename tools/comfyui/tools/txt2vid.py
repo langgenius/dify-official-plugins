@@ -37,11 +37,9 @@ class ComfyuiTxt2Vid(Tool):
         """
         invoke tools
         """
-        base_url = self.runtime.credentials.get("base_url", "")
-        if not base_url:
-            yield self.create_text_message("Please input base_url")
         self.comfyui = ComfyUiClient(
-            base_url,
+            base_url=self.runtime.credentials.get("base_url"),
+            api_key=self.runtime.credentials.get("comfyui_api_key"),
             api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"),
         )
         self.model_manager = ModelManager(

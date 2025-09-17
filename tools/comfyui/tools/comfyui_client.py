@@ -40,6 +40,8 @@ class ComfyUiFile:
 
 class ComfyUiClient:
     def __init__(self, base_url: str, api_key: str | None = None, api_key_comfy_org: str = ""):  # Add api_key parameter
+        if base_url is None or len(base_url) == 0:
+            raise Exception("Please input base_url")
         self.base_url = URL(base_url)
         self.api_key = api_key  # Store api_key
         # https://docs.comfy.org/development/comfyui-server/api-key-integration#integration-of-api-key-to-use-comfyui-api-nodes

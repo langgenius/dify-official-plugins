@@ -14,13 +14,13 @@ class DownloadCivitAI(Tool):
         """
         invoke tools
         """
-        base_url = self.runtime.credentials.get("base_url")
-        if base_url is None:
-            raise ToolProviderCredentialValidationError("Please input base_url")
-
-        self.comfyui = ComfyUiClient(base_url)
-        self.model_manager = ModelManager(
-            self.comfyui,
+        comfyui = ComfyUiClient(
+            base_url=self.runtime.credentials.get("base_url"),
+            api_key=self.runtime.credentials.get("comfyui_api_key"),
+            api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"),
+        )
+        model_manager = ModelManager(
+            comfyui,
             civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
             hf_api_key=None,
         )
@@ -29,12 +29,12 @@ class DownloadCivitAI(Tool):
         version_id = tool_parameters.get("version_id")
         save_dir = tool_parameters.get("save_dir")
         if version_id is None:
-            version_id = max(self.model_manager.fetch_version_ids(model_id))
-        model_name_human, model_filenames = self.model_manager.download_civitai(model_id, version_id, save_dir)
+            version_id = max(model_manager.fetch_version_ids(model_id))
+        model_name_human, model_filenames = model_manager.download_civitai(model_id, version_id, save_dir)
         yield self.create_variable_message("model_name_human", model_name_human)
         yield self.create_variable_message("model_name", model_filenames[0])
 
-        ecosystem, model_type, source, id = self.model_manager.fetch_civitai_air(version_id)
+        ecosystem, model_type, source, id = model_manager.fetch_civitai_air(version_id)
         yield self.create_variable_message("air", f"urn:air:{ecosystem}:{model_type}:{source}:{id}")
         yield self.create_variable_message("ecosystem", ecosystem)
         yield self.create_variable_message("type", model_type)
