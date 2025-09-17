@@ -97,7 +97,7 @@ class ComfyuiImg2Img(Tool):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "img2img.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
-        workflow.set_Ksampler(
+        workflow.set_k_sampler(
             None,
             steps,
             sampler_name,

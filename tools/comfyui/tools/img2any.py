@@ -73,7 +73,8 @@ class ComfyuiImg2Any(Tool):
                 output_images.append(self.comfyui.generate(workflow.json())[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
-                    f"Failed to generate image: {str(e)}. Maybe install https://github.com/spacepxl/ComfyUI-Depth-Pro on ComfyUI"
+                    f"Failed to generate image: {str(e)}."
+                    + " Maybe install https://github.com/spacepxl/ComfyUI-Depth-Pro on ComfyUI"
                 )
         return output_images
 
@@ -89,7 +90,8 @@ class ComfyuiImg2Any(Tool):
                 output_images.append(self.comfyui.generate(workflow.json())[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
-                    f"Failed to generate image: {str(e)}. Maybe install https://github.com/kijai/ComfyUI-DepthAnythingV2 on ComfyUI"
+                    f"Failed to generate image: {str(e)}."
+                    + " Maybe install https://github.com/kijai/ComfyUI-DepthAnythingV2 on ComfyUI"
                 )
         return output_images
 
@@ -103,7 +105,8 @@ class ComfyuiImg2Any(Tool):
             output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
             raise ToolProviderCredentialValidationError(
-                f"Failed to generate image: {str(e)}. Maybe install https://github.com/Gourieff/ComfyUI-ReActor on ComfyUI"
+                f"Failed to generate image: {str(e)}."
+                + " Maybe install https://github.com/Gourieff/ComfyUI-ReActor on ComfyUI"
             )
         return output_images
 
@@ -124,6 +127,7 @@ class ComfyuiImg2Any(Tool):
                 output_images.append(self.comfyui.generate(workflow.json())[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
-                    f"Failed to generate image: {str(e)}. Maybe install https://github.com/kijai/ComfyUI-DepthAnythingV2 on ComfyUI"
+                    f"Failed to generate image: {str(e)}."
+                    + " Maybe install https://github.com/kijai/ComfyUI-DepthAnythingV2 on ComfyUI"
                 )
         return output_images

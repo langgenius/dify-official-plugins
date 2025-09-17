@@ -33,7 +33,7 @@ class Txt2Aud(Tool):
 
         workflow.set_prompt("6", tool_parameters.get("prompt", ""))
         workflow.set_prompt("7", tool_parameters.get("negative_prompt", ""))
-        workflow.set_Ksampler(
+        workflow.set_k_sampler(
             None,
             int(tool_parameters.get("steps", 50)),
             tool_parameters.get("sampler", "dpmpp_3m_sde_gpu"),

@@ -108,7 +108,7 @@ class ComfyuiTxt2Img(Tool):
         with open(workflow_template_path) as file:
             workflow = ComfyUiWorkflow(file.read())
 
-        workflow.set_Ksampler(
+        workflow.set_k_sampler(
             "3",
             steps,
             sampler_name,
@@ -121,7 +121,7 @@ class ComfyuiTxt2Img(Tool):
         workflow.set_property("7", "inputs/text", negative_prompt)
 
         if is_hiresfix_enabled:
-            workflow.set_Ksampler(
+            workflow.set_k_sampler(
                 "11",
                 steps,
                 sampler_name,
@@ -188,7 +188,8 @@ class ComfyuiTxt2Img(Tool):
                 ),
                 type=ToolParameter.ToolParameterType.STRING,
                 form=ToolParameter.ToolParameterForm.LLM,
-                llm_description="Image prompt of Stable Diffusion, you should describe the image you want to generate as a list of words as possible as detailed, the prompt must be written in English.",
+                llm_description="Image prompt of Stable Diffusion, you should describe the image you want to generate"
+                + " as a list of words as possible as detailed, the prompt must be written in English.",
                 required=True,
             )
         ]
@@ -201,12 +202,14 @@ class ComfyuiTxt2Img(Tool):
                             name="model",
                             label=I18nObject(en_US="Model", zh_Hans="Model"),
                             human_description=I18nObject(
-                                en_US="Model of Stable Diffusion or FLUX, you can check the official documentation of Stable Diffusion or FLUX",
+                                en_US="Model of Stable Diffusion or FLUX,"
+                                + " you can check the official documentation of Stable Diffusion or FLUX",
                                 zh_Hans="Stable Diffusion 或者 FLUX 的模型，您可以查看 Stable Diffusion 的官方文档",
                             ),
                             type=ToolParameter.ToolParameterType.SELECT,
                             form=ToolParameter.ToolParameterForm.FORM,
-                            llm_description="Model of Stable Diffusion or FLUX, you can check the official documentation of Stable Diffusion or FLUX",
+                            llm_description="Model of Stable Diffusion or FLUX,"
+                            + " you can check the official documentation of Stable Diffusion or FLUX",
                             required=True,
                             default=models[0],
                             options=[
@@ -222,12 +225,14 @@ class ComfyuiTxt2Img(Tool):
                                 name=f"lora_{n}",
                                 label=I18nObject(en_US=f"Lora {n}", zh_Hans=f"Lora {n}"),
                                 human_description=I18nObject(
-                                    en_US="Lora of Stable Diffusion, you can check the official documentation of Stable Diffusion",
+                                    en_US="Lora of Stable Diffusion,"
+                                    + " you can check the official documentation of Stable Diffusion",
                                     zh_Hans="Stable Diffusion 的 Lora 模型，您可以查看 Stable Diffusion 的官方文档",
                                 ),
                                 type=ToolParameter.ToolParameterType.SELECT,
                                 form=ToolParameter.ToolParameterForm.FORM,
-                                llm_description="Lora of Stable Diffusion, you can check the official documentation of Stable Diffusion",
+                                llm_description="Lora of Stable Diffusion,"
+                                + " you can check the official documentation of Stable Diffusion",
                                 required=False,
                                 options=[
                                     ToolParameterOption(value=i, label=I18nObject(en_US=i, zh_Hans=i)) for i in loras
@@ -242,12 +247,14 @@ class ComfyuiTxt2Img(Tool):
                             name="sampler_name",
                             label=I18nObject(en_US="Sampling method", zh_Hans="Sampling method"),
                             human_description=I18nObject(
-                                en_US="Sampling method of Stable Diffusion, you can check the official documentation of Stable Diffusion",
+                                en_US="Sampling method of Stable Diffusion,"
+                                + " you can check the official documentation of Stable Diffusion",
                                 zh_Hans="Stable Diffusion 的Sampling method，您可以查看 Stable Diffusion 的官方文档",
                             ),
                             type=ToolParameter.ToolParameterType.SELECT,
                             form=ToolParameter.ToolParameterForm.FORM,
-                            llm_description="Sampling method of Stable Diffusion, you can check the official documentation of Stable Diffusion",
+                            llm_description="Sampling method of Stable Diffusion,"
+                            + " you can check the official documentation of Stable Diffusion",
                             required=True,
                             default=sample_methods[0],
                             options=[
@@ -262,12 +269,14 @@ class ComfyuiTxt2Img(Tool):
                             name="scheduler",
                             label=I18nObject(en_US="Scheduler", zh_Hans="Scheduler"),
                             human_description=I18nObject(
-                                en_US="Scheduler of Stable Diffusion, you can check the official documentation of Stable Diffusion",
+                                en_US="Scheduler of Stable Diffusion,"
+                                + " you can check the official documentation of Stable Diffusion",
                                 zh_Hans="Stable Diffusion 的Scheduler，您可以查看 Stable Diffusion 的官方文档",
                             ),
                             type=ToolParameter.ToolParameterType.SELECT,
                             form=ToolParameter.ToolParameterForm.FORM,
-                            llm_description="Scheduler of Stable Diffusion, you can check the official documentation of Stable Diffusion",
+                            llm_description="Scheduler of Stable Diffusion,"
+                            + " you can check the official documentation of Stable Diffusion",
                             required=True,
                             default=schedulers[0],
                             options=[
@@ -280,12 +289,15 @@ class ComfyuiTxt2Img(Tool):
                         name="model_type",
                         label=I18nObject(en_US="Model Type", zh_Hans="Model Type"),
                         human_description=I18nObject(
-                            en_US="Model Type of Stable Diffusion or Flux, you can check the official documentation of Stable Diffusion or Flux",
-                            zh_Hans="Stable Diffusion 或 FLUX 的模型类型，您可以查看 Stable Diffusion 或 Flux 的官方文档",
+                            en_US="Model Type of Stable Diffusion or Flux,"
+                            + " you can check the official documentation of Stable Diffusion or Flux",
+                            zh_Hans="Stable Diffusion 或 FLUX 的模型类型，"
+                            + "您可以查看 Stable Diffusion 或 Flux 的官方文档",
                         ),
                         type=ToolParameter.ToolParameterType.SELECT,
                         form=ToolParameter.ToolParameterForm.FORM,
-                        llm_description="Model Type of Stable Diffusion or Flux, you can check the official documentation of Stable Diffusion or Flux",
+                        llm_description="Model Type of Stable Diffusion or Flux,"
+                        + " you can check the official documentation of Stable Diffusion or Flux",
                         required=True,
                         default=ModelType.SD15.name,
                         options=[

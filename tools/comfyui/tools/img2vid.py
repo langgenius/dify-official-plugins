@@ -1,9 +1,9 @@
 import dataclasses
 import io
 import os
+import secrets
 from collections.abc import Generator
 from enum import Enum
-import secrets
 from typing import Any
 
 from dify_plugin import Tool
@@ -135,9 +135,9 @@ class ComfyuiImg2Vid(Tool):
         if model_type == "wan2_1":
             output_images = self.img2vid_svd_wan2_1(config)
         elif model_type == "wan2_2_14B":
-            output_images = self.img2vid_svd_wan2_2_14B(config)
+            output_images = self.img2vid_svd_wan2_2_14b(config)
         elif model_type == "wan2_2_5B":
-            output_images = self.img2vid_svd_wan2_2_5B(config)
+            output_images = self.img2vid_svd_wan2_2_5b(config)
         elif model_type == "ltxv":
             output_images = self.img2vid_ltxv(config)
         elif model_type == "svd":
@@ -173,7 +173,7 @@ class ComfyuiImg2Vid(Tool):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "img2vid_svd.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
-        workflow.set_Ksampler(
+        workflow.set_k_sampler(
             None,
             config.steps,
             config.sampler_name,
@@ -223,7 +223,7 @@ class ComfyuiImg2Vid(Tool):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "img2vid_wan2_1.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
-        workflow.set_Ksampler(
+        workflow.set_k_sampler(
             None,
             config.steps,
             config.sampler_name,
@@ -286,7 +286,7 @@ class ComfyuiImg2Vid(Tool):
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
 
-    def img2vid_svd_wan2_2_5B(self, config: ComfyuiImg2VidConfig):
+    def img2vid_svd_wan2_2_5b(self, config: ComfyuiImg2VidConfig):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(
             os.path.join(current_dir, "json", "img2vid_wan2_2_5B.json"),
@@ -311,7 +311,7 @@ class ComfyuiImg2Vid(Tool):
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
 
-    def img2vid_svd_wan2_2_14B(self, config: ComfyuiImg2VidConfig):
+    def img2vid_svd_wan2_2_14b(self, config: ComfyuiImg2VidConfig):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(
             os.path.join(current_dir, "json", "img2vid_wan2_2_14B.json"),

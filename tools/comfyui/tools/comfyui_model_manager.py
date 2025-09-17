@@ -29,9 +29,11 @@ class ModelManager:
         return self._hf_api_key
 
     def decode_lora(self, lora_info: str, save_dir: str = "loras"):
-        # lora_info can be expressed as ([A-Za-z0-9\.]+|(civitai:[0-9]+(@[0-9]+)?))(:[0-9]+(\.[0-9])?)? in regular expression.
-        # For example, if lora_info = "lora.safetensor:0.8", it means a local model "lora.safetensor" should be applied with its strength 0.8
-        # If lora_info = "civitai:5529", it means a CivitAI model https://civitai.com/models/5529/eye-lora should be applied with its strength 1.0(default value).
+        # lora_info can be expressed as ([A-Za-z0-9\.]+|(civitai:[0-9]+(@[0-9]+)?))(:[0-9]+(\.[0-9])?)? in regex.
+        # For example, if lora_info = "lora.safetensor:0.8", it means a local model "lora.safetensor"
+        #  should be applied with its strength 0.8
+        # If lora_info = "civitai:5529", it means a CivitAI model https://civitai.com/models/5529/eye-lora
+        #  should be applied with its strength 1.0(default value).
         lora_info = lora_info.lstrip(" ").rstrip(" ")
         if not re.match(r"([A-Za-z0-9\.]+|(civitai:[0-9]+(@[0-9]+)?))(:[0-9]+(\.[0-9])?)?", lora_info):
             raise Exception("Invalid lora_info")
@@ -117,7 +119,10 @@ class ModelManager:
         except Exception as e:
             error = f"Failed to download: {str(e)}."
             if len(self._comfyui_cli.get_model_dirs(save_dir)) == 0:
-                error += f"Please make sure that https://github.com/ServiceStack/comfy-asset-downloader works on ComfyUI and the destination folder named models/{save_dir} exists."
+                error += (
+                    "Please make sure that https://github.com/ServiceStack/comfy-asset-downloader works"
+                    + f" on ComfyUI and the destination folder named models/{save_dir} exists."
+                )
             else:
                 error += (
                     "Please make sure that https://github.com/ServiceStack/comfy-asset-downloader works on ComfyUI."

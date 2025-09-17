@@ -93,9 +93,9 @@ class ComfyuiTxt2Vid(Tool):
         if model_type == "wan2_1":
             output_images = self.txt2vid_wan2_1(config)
         elif model_type == "wan2_2_5B":
-            output_images = self.txt2vid_wan2_2_5B(config)
+            output_images = self.txt2vid_wan2_2_5b(config)
         elif model_type == "wan2_2_14B":
-            output_images = self.txt2vid_wan2_2_14B(config)
+            output_images = self.txt2vid_wan2_2_14b(config)
         elif model_type == "ltxv":
             output_images = self.txt2vid_ltxv(config)
         elif model_type == "mochi":
@@ -138,7 +138,7 @@ class ComfyuiTxt2Vid(Tool):
         with open(os.path.join(current_dir, "json", "txt2vid_mochi.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
 
-        workflow.set_Ksampler(
+        workflow.set_k_sampler(
             None,
             config.steps,
             config.sampler_name,
@@ -187,7 +187,7 @@ class ComfyuiTxt2Vid(Tool):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "txt2vid_hunyuan.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
-        workflow.set_Ksampler(
+        workflow.set_k_sampler(
             None,
             config.steps,
             config.sampler_name,
@@ -246,7 +246,7 @@ class ComfyuiTxt2Vid(Tool):
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
 
-    def txt2vid_wan2_2_14B(self, config: ComfyuiTxt2VidConfig):
+    def txt2vid_wan2_2_14b(self, config: ComfyuiTxt2VidConfig):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(
             os.path.join(current_dir, "json", "txt2vid_wan2_2_14B.json"),
@@ -266,7 +266,7 @@ class ComfyuiTxt2Vid(Tool):
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
 
-    def txt2vid_wan2_2_5B(self, config: ComfyuiTxt2VidConfig):
+    def txt2vid_wan2_2_5b(self, config: ComfyuiTxt2VidConfig):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(
             os.path.join(current_dir, "json", "txt2vid_wan2_2_5B.json"),

@@ -368,6 +368,7 @@ class ComfyUiClient:
             output_files = self.generate(workflow.json())
         except Exception as e:
             raise ToolProviderCredentialValidationError(
-                f"Failed to download: {str(e)}. Please make sure https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite works on ComfyUI"
+                f"Failed to download: {str(e)}. "
+                + "Please make sure https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite works on ComfyUI"
             )
         return output_files[0]
