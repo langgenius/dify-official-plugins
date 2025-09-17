@@ -3,7 +3,6 @@ from typing import Any
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
 from tools.comfyui_client import ComfyUiClient
 from tools.comfyui_model_manager import ModelManager
@@ -30,5 +29,8 @@ class DownloadByURL(Tool):
         if name is None or len(name) == 0:
             name = url.split("/")[-1].split("?")[0]
         save_to = tool_parameters.get("save_dir")
-        self.model_manager.download_model_autotoken(url, save_to, name)
+        if tool_parameters.get("use_tokens", False):
+            self.model_manager.download_model_autotoken(url, save_to, name)
+        else:
+            self.model_manager.download_model(url, save_to, name, None)
         yield self.create_variable_message("model_name", name)

@@ -94,6 +94,15 @@ parameters:
           en_US: vae_approx
     required: true
 
+  - name: use_tokens
+    form: form
+    human_description:
+      en_US: If you don't want to use tokens, set this to False
+    label:
+      en_US: Use Tokens
+    type: boolean
+    default: true
+
 output_schema:
   type: object
   properties:
