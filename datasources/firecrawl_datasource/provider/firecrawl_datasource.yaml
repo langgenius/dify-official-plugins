@@ -1,0 +1,41 @@
+credentials_schema:
+  - name: base_url
+    label:
+      en_US: Firecrawl server's Base URL
+      zh_Hans: Firecrawl服务器的API URL
+    placeholder:
+      en_US: https://api.firecrawl.dev
+    required: false
+    type: text-input
+  - name: firecrawl_api_key
+    help:
+      en_US: Get your Firecrawl API key from your Firecrawl account settings.If you
+        are using a self-hosted version, you may enter any key at your convenience.
+      zh_Hans: 从您的 Firecrawl 账户设置中获取 Firecrawl API 密钥。如果是自托管版本，可以随意填写密钥。
+    label:
+      en_US: Firecrawl API Key
+      zh_Hans: Firecrawl API 密钥
+    placeholder:
+      en_US: Please input your Firecrawl API key
+      zh_Hans: 请输入您的 Firecrawl API 密钥，如果是自托管版本，可以随意填写密钥
+    required: true
+    type: secret-input
+    url: https://www.firecrawl.dev/account
+identity:
+  author: langgenius
+  name: firecrawl
+  label:
+    en_US: Firecrawl
+    zh_Hans: Firecrawl
+    pt_BR: Firecrawl
+  description:
+    en_US: Firecrawl Datasource
+    zh_Hans: Firecrawl Datasource
+    pt_BR: Firecrawl Datasource
+  icon: icon.svg
+provider_type: website_crawl
+datasources:
+  - datasources/crawl.yaml
+extra:
+  python:
+    source: provider/firecrawl_datasource.py

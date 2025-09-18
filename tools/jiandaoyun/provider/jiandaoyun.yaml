@@ -1,0 +1,43 @@
+identity:
+  author: jiandaoyun
+  name: "jiandaoyun"
+  label:
+    en_US: "jiandaoyun"
+    zh_Hans: "简道云"
+    pt_BR: "jiandaoyun"
+  description:
+    en_US: "most popular actions of jiandaoyun"
+    zh_Hans: "简道云平台dify支撑插件"
+    pt_BR: "most popular actions of jiandaoyun"
+  icon: "logo.svg"
+tools:
+  - tools/getApp.yaml
+  - tools/getEntry.yaml
+  - tools/getRecord.yaml
+  - tools/getWidgets.yaml
+  - tools/createRecord.yaml
+  - tools/getRecords.yaml
+  - tools/createRecords.yaml
+  - tools/updateRecord.yaml
+  - tools/deleteRecord.yaml
+extra:
+  python:
+    source: provider/jiandaoyun.py
+credentials_for_provider:
+  jiandaoyun_api_key:
+    type: secret-input # 输入类型为密码框
+    required: true # 此凭证是必需的
+    label: # 在 Dify UI 中显示的标签 (支持多语言)
+      en_US: jiandaoyun api-key
+      zh_Hans: 简道云 api-key
+      # ... (其他语言)
+      placeholder: # 输入框的提示文字 (支持多语言)
+        en_US: Enter your jiandaoyun api-key
+        zh_Hans: 请输入您的 简道云 api-key
+        # ... (其他语言)
+      help: # 帮助提示信息 (支持多语言)
+        en_US: How to get your jiandaoyun api-key
+        zh_Hans: 如何获取 简道云 api-key
+        # ... (其他语言)
+      url: http://jiandaoyun.com/open#/key/api_key #点击帮助提示时跳转的 URL
+    description: "简道云API密钥，请访问[简道云开放平台](http://jiandaoyun.com/open#/key/api_key)自行创建获取，具体创建规则以及使用方法可以查看[简道云文档](https://hc.jiandaoyun.com/open/11498)"

@@ -4,7 +4,7 @@ from dify_plugin.entities.model import EmbeddingInputType, PriceType
 from dify_plugin.entities.model.text_embedding import EmbeddingUsage, TextEmbeddingResult
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin import TextEmbeddingModel
-from zhipuai import ZhipuAI
+from zai import ZhipuAiClient
 from .._common import _CommonZhipuaiAI
 
 
@@ -32,7 +32,7 @@ class ZhipuAITextEmbeddingModel(_CommonZhipuaiAI, TextEmbeddingModel):
         :return: embeddings result
         """
         credentials_kwargs = self._to_credential_kwargs(credentials)
-        client = ZhipuAI(api_key=credentials_kwargs["api_key"])
+        client = ZhipuAiClient(api_key=credentials_kwargs["api_key"])
         (embeddings, embedding_used_tokens) = self.embed_documents(model, client, texts)
         return TextEmbeddingResult(
             embeddings=embeddings,
@@ -66,12 +66,12 @@ class ZhipuAITextEmbeddingModel(_CommonZhipuaiAI, TextEmbeddingModel):
         """
         try:
             credentials_kwargs = self._to_credential_kwargs(credentials)
-            client = ZhipuAI(api_key=credentials_kwargs["api_key"])
+            client = ZhipuAiClient(api_key=credentials_kwargs["api_key"])
             self.embed_documents(model=model, client=client, texts=["ping"])
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
-    def embed_documents(self, model: str, client: ZhipuAI, texts: list[str]) -> tuple[list[list[float]], int]:
+    def embed_documents(self, model: str, client: ZhipuAiClient, texts: list[str]) -> tuple[list[list[float]], int]:
         """Call out to ZhipuAI's embedding endpoint.
 
         Args:

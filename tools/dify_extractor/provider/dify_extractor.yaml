@@ -1,0 +1,19 @@
+identity:
+  author: langgenius
+  name: dify_extractor
+  label:
+    en_US: Dify Extractor
+    zh_Hans: Dify文本提取器
+    pt_BR: Dify Extractor
+  description:
+    en_US: Dify Extractor
+    zh_Hans: Dify Extractor
+    pt_BR: Dify Extractor
+  icon: icon.svg
+  tags:
+    - rag
+tools:
+  - tools/dify_extractor.yaml
+extra:
+  python:
+    source: provider/dify_extractor.py

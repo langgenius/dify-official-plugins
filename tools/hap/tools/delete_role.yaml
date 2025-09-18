@@ -1,0 +1,26 @@
+description:
+  human:
+    en_US: Delete a role by role ID
+    zh_Hans: 通过角色 ID 删除角色
+  llm: Delete a specific role from the application using its role ID.
+extra:
+  python:
+    source: tools/delete_role.py
+identity:
+  author: langgenius
+  label:
+    en_US: Delete Role
+    zh_Hans: 删除角色
+  name: delete_role
+parameters:
+- form: llm
+  name: role_id
+  label:
+    en_US: Role ID
+    zh_Hans: 角色 ID
+  human_description:
+    en_US: The role ID to delete
+    zh_Hans: 需要删除的角色 ID
+  llm_description: The role ID to delete from the application
+  required: true
+  type: string

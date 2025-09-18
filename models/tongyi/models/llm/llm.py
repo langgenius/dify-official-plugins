@@ -40,6 +40,7 @@ from dify_plugin.entities.model.message import (
     ImagePromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
+    PromptMessageRole,
     PromptMessageTool,
     SystemPromptMessage,
     TextPromptMessageContent,
@@ -64,15 +65,15 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
     tokenizers = {}
 
     def _invoke(
-            self,
-            model: str,
-            credentials: dict,
-            prompt_messages: list[PromptMessage],
-            model_parameters: dict,
-            tools: Optional[list[PromptMessageTool]] = None,
-            stop: Optional[list[str]] = None,
-            stream: bool = True,
-            user: Optional[str] = None,
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model
@@ -99,11 +100,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         )
 
     def get_num_tokens(
-            self,
-            model: str,
-            credentials: dict,
-            prompt_messages: list[PromptMessage],
-            tools: Optional[list[PromptMessageTool]] = None,
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        tools: Optional[list[PromptMessageTool]] = None,
     ) -> int:
         """
         Get number of tokens for given prompt messages
@@ -148,15 +149,15 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             raise CredentialsValidateFailedError(str(ex))
 
     def _generate(
-            self,
-            model: str,
-            credentials: dict,
-            prompt_messages: list[PromptMessage],
-            model_parameters: dict,
-            tools: Optional[list[PromptMessageTool]] = None,
-            stop: Optional[list[str]] = None,
-            stream: bool = True,
-            user: Optional[str] = None,
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         """
         Invoke large language model
@@ -183,6 +184,27 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             extra_model_kwargs["tools"] = self._convert_tools(tools)
         if stop:
             extra_model_kwargs["stop"] = stop
+
+        response_format = model_parameters.get("response_format")
+        if response_format:
+            model_parameters["response_format"] = {"type": response_format}
+
+        if model.startswith("qwen-mt"):
+            source_lang = model_parameters.pop("source_lang", None)
+            target_lang = model_parameters.pop("target_lang", None)
+            domains = model_parameters.pop("domains", None)
+            model_parameters["translation_options"] = {
+                "source_lang": source_lang,
+                "target_lang": target_lang,
+                "domains": domains,
+            }
+            # The Qwen-MT model does not support incremental streaming output at this time.
+            stream = False
+            if len(prompt_messages) > 1:
+                prompt_messages = prompt_messages[-1:]
+            if prompt_messages[-1].role != PromptMessageRole.USER:
+                raise ValueError("There is one and only one User Message in the messages array.")
+
         params = {
             "model": model,
             **model_parameters,
@@ -202,7 +224,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             stream = True
 
         # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition and QwQ models only supports incremental_output set to True.
-        if thinking_business_qwen3 or model.startswith(("qwen3-", "qwq-")):
+        if thinking_business_qwen3 or model.startswith(("qwen3-", "qwq-", "qvq-")):
             incremental_output = True
 
         if ModelFeature.VISION in (model_schema.features or []):
@@ -229,11 +251,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         )
 
     def _handle_generate_response(
-            self,
-            model: str,
-            credentials: dict,
-            response: GenerationResponse,
-            prompt_messages: list[PromptMessage],
+        self,
+        model: str,
+        credentials: dict,
+        response: GenerationResponse,
+        prompt_messages: list[PromptMessage],
     ) -> LLMResult:
         """
         Handle llm response
@@ -245,7 +267,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :return: llm response
         """
         if response.status_code not in {200, HTTPStatus.OK}:
-            raise ServiceUnavailableError(response.message)
+            self._handle_error_response(response.status_code, response.message)
         resp_content = response.output.choices[0].message.content
         # special for qwen-vl
         if isinstance(resp_content, list):
@@ -288,12 +310,12 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             tool_call_obj['function']['arguments'] = args
 
     def _handle_generate_stream_response(
-            self,
-            model: str,
-            credentials: dict,
-            responses: Generator[GenerationResponse, None, None],
-            prompt_messages: list[PromptMessage],
-            incremental_output: bool,
+        self,
+        model: str,
+        credentials: dict,
+        responses: Generator[GenerationResponse, None, None],
+        prompt_messages: list[PromptMessage],
+        incremental_output: bool,
     ) -> Generator:
         """
         Handle llm stream response
@@ -311,9 +333,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         tool_calls = []
         for index, response in enumerate(responses):
             if response.status_code not in {200, HTTPStatus.OK}:
-                raise ServiceUnavailableError(
-                    f"Failed to invoke model {model}, status code: {response.status_code}, message: {response.message}"
-                )
+                self._handle_error_response(response.status_code, response.message, model)
             resp_finish_reason = response.output.choices[0].finish_reason
             if resp_finish_reason is not None and resp_finish_reason != "null":
                 resp_content = response.output.choices[0].message.content
@@ -376,7 +396,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 else:
                     delta = resp_content.replace(full_text, "", 1)
                     full_text = resp_content
-                
+
                 assistant_prompt_message = AssistantPromptMessage(
                     content=delta
                 )
@@ -441,10 +461,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         return text.rstrip()
 
     def _convert_prompt_messages_to_tongyi_messages(
-            self,
-            credentials: dict,
-            prompt_messages: list[PromptMessage],
-            rich_content: bool = False,
+        self,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        rich_content: bool = False,
     ) -> list[dict]:
         """
         Convert prompt messages to tongyi messages
@@ -493,9 +513,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             )
                             image_url = message_content.data
                             if message_content.data.startswith("data:"):
-                                image_url = self._save_base64_image_to_file(
-                                    message_content.data
-                                )
+                                image_url = self._save_base64_to_file(message_content.data)
                             sub_message_dict = {"image": image_url}
                             user_messages.append(sub_message_dict)
                         elif message_content.type == PromptMessageContentType.VIDEO:
@@ -504,9 +522,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             )
                             video_url = message_content.data
                             if message_content.data.startswith("data:"):
-                                raise InvokeError(
-                                    "not support base64, please set MULTIMODAL_SEND_FORMAT to url"
-                                )
+                                video_url = self._save_base64_to_file(message_content.data)
                             sub_message_dict = {"video": video_url}
                             user_messages.append(sub_message_dict)
                         elif message_content.type == PromptMessageContentType.DOCUMENT:
@@ -550,17 +566,17 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 raise ValueError(f"Got unknown type {prompt_message}")
         return tongyi_messages
 
-    def _save_base64_image_to_file(self, base64_image: str) -> str:
+    def _save_base64_to_file(self, base64_data: str) -> str:
         """
-        Save base64 image to file
+        Save base64 data to file
         'data:{upload_file.mime_type};base64,{encoded_string}'
-
-        :param base64_image: base64 image data
-        :return: image file path
+        
+        :param base64_data: base64 data
+        :return: file path
         """
         (mime_type, encoded_string) = (
-            base64_image.split(",")[0].split(";")[0].split(":")[1],
-            base64_image.split(",")[1],
+            base64_data.split(",")[0].split(";")[0].split(":")[1],
+            base64_data.split(",")[1],
         )
         temp_dir = tempfile.gettempdir()
         file_path = os.path.join(temp_dir, f"{uuid.uuid4()}.{mime_type.split('/')[1]}")
@@ -568,7 +584,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         return f"file://{file_path}"
 
     def _upload_file_to_tongyi(
-            self, credentials: dict, message_content: DocumentPromptMessageContent
+        self, credentials: dict, message_content: DocumentPromptMessageContent
     ) -> str:
         """
         Upload file to Tongyi
@@ -673,6 +689,37 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             ) from ex
         return content, is_reasoning
 
+    def _handle_error_response(self, status_code: int, message: str, model: str = None) -> None:
+        """
+        Handle error response based on HTTP status code
+        
+        :param status_code: HTTP status code
+        :param message: error message
+        :param model: model name (optional, for more detailed error messages)
+        :raises: Appropriate InvokeError based on status code
+        """
+        error_msg = f"Failed to invoke model {model}, status code: {status_code}, message: {message}" if model else message
+        
+        if status_code == 400:
+            raise InvokeBadRequestError(error_msg)
+        elif status_code == 401:
+            raise InvokeAuthorizationError(error_msg)
+        elif status_code == 403:
+            raise InvokeAuthorizationError(error_msg)
+        elif status_code == 422:
+            raise InvokeBadRequestError(error_msg)
+        elif status_code == 429:
+            raise InvokeRateLimitError(error_msg)
+        elif status_code >= 500:
+            raise InvokeServerUnavailableError(error_msg)
+        else:
+            # For any other 4xx errors, treat as bad request
+            if 400 <= status_code < 500:
+                raise InvokeBadRequestError(error_msg)
+            # For any other status codes, treat as server unavailable
+            else:
+                raise InvokeServerUnavailableError(error_msg)
+
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
         """
@@ -696,7 +743,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         }
 
     def get_customizable_model_schema(
-            self, model: str, credentials: dict
+        self, model: str, credentials: dict
     ) -> Optional[AIModelEntity]:
         """
         Architecture for defining customizable models

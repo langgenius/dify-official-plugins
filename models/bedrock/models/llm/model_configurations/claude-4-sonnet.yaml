@@ -1,0 +1,110 @@
+model: claude-4-sonnet
+label:
+  en_US: Claude 4.0 Sonnet
+icon: icon_s_en.svg
+model_type: llm
+features:
+  - agent-thought
+  - vision
+  - tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 200000
+parameter_rules:
+  - name: cross-region
+    label:
+      zh_Hans: 使用跨区域推理
+      en_US: Use Cross-Region Inference
+    type: boolean
+    required: true
+    default: true
+    help:
+      zh_Hans: 跨区域推理会自动选择您所在地理区域 AWS 区域 内的最佳位置来处理您的推理请求。
+      en_US: Cross-Region inference automatically selects the optimal AWS Region within your geography to process your inference request.
+  - name: system_cache_checkpoint
+    label:
+      zh_Hans: 缓存系统提示词
+      en_US: Cache System Prompt
+    type: boolean
+    required: false
+    help:
+      zh_Hans: 在系统消息中启用缓存检查点，可以提高性能并降低成本。
+      en_US: Enable cache checkpoint in the system message to improve performance and reduce costs.
+  - name: latest_two_messages_cache_checkpoint
+    label:
+      zh_Hans: 缓存用户消息
+      en_US: Cache User Messages
+    type: boolean
+    required: false
+    help:
+      zh_Hans: 在最新的两条用户消息中启用缓存检查点，可以提高性能并降低成本。
+      en_US: Enable cache checkpoint in the latest two user messages to improve performance and reduce costs.
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    label:
+      zh_Hans: 最大token数
+      en_US: Max Tokens
+    type: int
+    default: 4096
+    min: 1
+    max: 128000
+    help:
+      zh_Hans: 停止前生成的最大令牌数。请注意，Anthropic Claude 模型可能会在达到 max_tokens 的值之前停止生成令牌。不同的 Anthropic Claude 模型对此参数具有不同的最大值。
+      en_US: The maximum number of tokens to generate before stopping. Note that Anthropic Claude models might stop generating tokens before reaching the value of max_tokens. Different Anthropic Claude models have different maximum values for this parameter.
+  - name: temperature
+    use_template: temperature
+    required: false
+    label:
+      zh_Hans: 模型温度
+      en_US: Model Temperature
+    type: float
+    default: 1
+    min: 0.0
+    max: 1.0
+    help:
+      zh_Hans: 生成内容的随机性。
+      en_US: The amount of randomness injected into the response.
+  - name: top_p
+    use_template: top_p
+    label:
+      zh_Hans: Top P
+      en_US: Top P
+    required: false
+    type: float
+    default: 0.999
+    min: 0.000
+    max: 1.000
+    help:
+      zh_Hans: 在核采样中的概率阈值。
+      en_US: The probability threshold in nucleus sampling.
+  - name: top_k
+    label:
+      zh_Hans: 取样数量
+      en_US: Top k
+    required: false
+    type: int
+    default: 0
+    min: 0
+    max: 500
+    help:
+      zh_Hans: 对于每个后续标记，仅从前 K 个选项中进行采样。使用 top_k 删除长尾低概率响应。
+      en_US: Only sample from the top K options for each subsequent token. Use top_k to remove long tail low probability responses.
+  - name: anthropic_beta
+    label:
+      zh_Hans: anthropic_beta
+      en_US: anthropic_beta
+    required: false
+    type: string
+    default: context-1m-2025-08-07
+    help:
+      zh_Hans: anthropic beta 参数是一串测试版标题的列表，用于表示选择加入一组特定的测试版功能。使用英文逗号连接。
+      en_US: The anthropic beta parameter is a list of strings of beta headers used to indicate opt-in to a particular set of beta features. Use commas to join.
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '0.015'
+  output: '0.075'
+  unit: '0.001'
+  currency: USD

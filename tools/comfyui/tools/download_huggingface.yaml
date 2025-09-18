@@ -93,7 +93,7 @@ parameters:
 output_schema:
   type: object
   properties:
-    filename:
+    filepath:
       type: string
       label:
         en_US: Filename

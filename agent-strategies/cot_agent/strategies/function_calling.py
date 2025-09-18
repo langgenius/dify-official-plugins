@@ -20,7 +20,7 @@ from dify_plugin.entities.model.message import (
     ToolPromptMessage,
     UserPromptMessage,
 )
-from dify_plugin.entities.tool import LogMetadata, ToolInvokeMessage, ToolProviderType
+from dify_plugin.entities.tool import ToolInvokeMessage, ToolProviderType
 from dify_plugin.interfaces.agent import (
     AgentModelConfig,
     AgentStrategy,
@@ -29,6 +29,51 @@ from dify_plugin.interfaces.agent import (
 )
 from pydantic import BaseModel
 
+class LogMetadata:
+    """Metadata keys for logging"""
+    STARTED_AT = "started_at"
+    PROVIDER = "provider"
+    FINISHED_AT = "finished_at"
+    ELAPSED_TIME = "elapsed_time"
+    TOTAL_PRICE = "total_price"
+    CURRENCY = "currency"
+    TOTAL_TOKENS = "total_tokens"
+
+class ExecutionMetadata(BaseModel):
+    """Execution metadata with default values"""
+    total_price: float = 0.0
+    currency: str = ""
+    total_tokens: int = 0
+    prompt_tokens: int = 0
+    prompt_unit_price: float = 0.0
+    prompt_price_unit: float = 0.0
+    prompt_price: float = 0.0
+    completion_tokens: int = 0
+    completion_unit_price: float = 0.0
+    completion_price_unit: float = 0.0
+    completion_price: float = 0.0
+    latency: float = 0.0
+    
+    @classmethod
+    def from_llm_usage(cls, usage: Optional[LLMUsage]) -> "ExecutionMetadata":
+        """Create ExecutionMetadata from LLMUsage, handling None case"""
+        if usage is None:
+            return cls()
+        
+        return cls(
+            total_price=float(usage.total_price),
+            currency=usage.currency,
+            total_tokens=usage.total_tokens,
+            prompt_tokens=usage.prompt_tokens,
+            prompt_unit_price=float(usage.prompt_unit_price),
+            prompt_price_unit=float(usage.prompt_price_unit),
+            prompt_price=float(usage.prompt_price),
+            completion_tokens=usage.completion_tokens,
+            completion_unit_price=float(usage.completion_unit_price),
+            completion_price_unit=float(usage.completion_price_unit),
+            completion_price=float(usage.completion_price),
+            latency=usage.latency
+        )
 
 class ContextItem(BaseModel):
     content: str
@@ -499,19 +544,10 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                 context="",
             )
 
+        metadata = ExecutionMetadata.from_llm_usage(llm_usage["usage"])
         yield self.create_json_message(
             {
-                "execution_metadata": {
-                    LogMetadata.TOTAL_PRICE: llm_usage["usage"].total_price
-                    if llm_usage["usage"] is not None
-                    else 0,
-                    LogMetadata.CURRENCY: llm_usage["usage"].currency
-                    if llm_usage["usage"] is not None
-                    else "",
-                    LogMetadata.TOTAL_TOKENS: llm_usage["usage"].total_tokens
-                    if llm_usage["usage"] is not None
-                    else 0,
-                }
+                "execution_metadata": metadata.model_dump()
             }
         )
 

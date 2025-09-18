@@ -1,7 +1,6 @@
 from collections.abc import Generator
 from typing import Any
 import requests
-import msal
 from datetime import datetime
 
 from dify_plugin import Tool
@@ -15,38 +14,24 @@ class ListDraftEmailsTool(Tool):
         """
         try:
             # Get parameters
-            user_email = self.runtime.credentials.get("user_email")
             limit = int(tool_parameters.get("limit", 10))
             search_query = tool_parameters.get("search", "")
             include_attachments_info = tool_parameters.get("include_attachments_info", True)
             
             # Validate parameters
-            if not user_email:
-                yield self.create_text_message("User email is required in credentials.")
-                return
-                
             if limit < 1 or limit > 100:
                 yield self.create_text_message("Limit must be between 1 and 100.")
                 return
                 
-            # Get credentials
-            client_id = self.runtime.credentials.get("client_id")
-            client_secret = self.runtime.credentials.get("client_secret")
-            tenant_id = self.runtime.credentials.get("tenant_id")
-            
-            if not all([client_id, client_secret, tenant_id]):
-                yield self.create_text_message("Azure AD credentials are required.")
+            # Get access token from OAuth credentials
+            access_token = self.runtime.credentials.get("access_token")
+            if not access_token:
+                yield self.create_text_message("Access token is required in credentials.")
                 return
             
             try:
-                # Get access token
-                access_token = self._get_access_token(client_id, client_secret, tenant_id)
-                if not access_token:
-                    yield self.create_text_message("Failed to acquire access token.")
-                    return
-                
                 # Get draft emails
-                drafts = self._get_draft_emails(access_token, user_email, limit, search_query, include_attachments_info)
+                drafts = self._get_draft_emails(access_token, limit, search_query, include_attachments_info)
                 
                 if isinstance(drafts, str):  # Error message
                     yield self.create_text_message(drafts)
@@ -61,14 +46,13 @@ class ListDraftEmailsTool(Tool):
                     return
                 
                 # Create summary
-                summary = f"Found {len(drafts)} draft emails for {user_email}"
+                summary = f"Found {len(drafts)} draft emails"
                 if search_query:
                     summary += f" matching '{search_query}'"
                 
                 yield self.create_text_message(summary)
                 yield self.create_json_message({
                     "total_count": len(drafts),
-                    "user_email": user_email,
                     "search_query": search_query if search_query else None,
                     "drafts": drafts
                 })
@@ -81,40 +65,14 @@ class ListDraftEmailsTool(Tool):
             yield self.create_text_message(f"Error: {str(e)}")
             return
     
-    def _get_access_token(self, client_id: str, client_secret: str, tenant_id: str) -> str:
-        """
-        Get access token using client credentials flow
-        """
-        try:
-            app = msal.ConfidentialClientApplication(
-                client_id=client_id,
-                client_credential=client_secret,
-                authority=f"https://login.microsoftonline.com/{tenant_id}"
-            )
-            
-            result = app.acquire_token_for_client(
-                scopes=["https://graph.microsoft.com/.default"]
-            )
-            
-            if "access_token" in result:
-                return result["access_token"]
-            else:
-                error_desc = result.get("error_description", "Unknown error")
-                print(f"Token acquisition failed: {error_desc}")
-                return None
-                
-        except Exception as e:
-            print(f"Error getting access token: {str(e)}")
-            return None
-    
-    def _get_draft_emails(self, access_token: str, user_email: str, limit: int, 
+    def _get_draft_emails(self, access_token: str, limit: int, 
                          search_query: str, include_attachments_info: bool):
         """
         Get draft emails from Microsoft Graph API
         """
         try:
-            # Build base URL for drafts folder
-            base_url = f"https://graph.microsoft.com/v1.0/users/{user_email}/mailFolders/drafts/messages"
+            # Build base URL for drafts folder using /me
+            base_url = "https://graph.microsoft.com/v1.0/me/mailFolders/drafts/messages"
             
             # Build select fields
             select_fields = [
@@ -150,7 +108,7 @@ class ListDraftEmailsTool(Tool):
             elif response.status_code == 403:
                 return "Access denied. Check app permissions and admin consent."
             elif response.status_code == 404:
-                return f"User '{user_email}' not found or drafts folder not accessible."
+                return "Drafts folder not accessible."
             elif response.status_code != 200:
                 return f"API error {response.status_code}: {response.text}"
             
@@ -160,7 +118,7 @@ class ListDraftEmailsTool(Tool):
             # Format messages
             formatted_drafts = []
             for msg in messages:
-                draft_data = self._format_draft_email(msg, include_attachments_info, access_token, user_email)
+                draft_data = self._format_draft_email(msg, include_attachments_info, access_token)
                 formatted_drafts.append(draft_data)
             
             return formatted_drafts
@@ -171,7 +129,7 @@ class ListDraftEmailsTool(Tool):
             return f"Error fetching draft emails: {str(e)}"
     
     def _format_draft_email(self, msg: dict, include_attachments_info: bool, 
-                           access_token: str = None, user_email: str = None) -> dict:
+                           access_token: str = None) -> dict:
         """
         Format draft email message data
         """
@@ -214,20 +172,20 @@ class ListDraftEmailsTool(Tool):
         }
         
         # Get attachment details if requested and attachments exist
-        if include_attachments_info and msg.get("hasAttachments", False) and access_token and user_email:
-            attachments_info = self._get_attachment_details(access_token, user_email, msg.get("id", ""))
+        if include_attachments_info and msg.get("hasAttachments", False) and access_token:
+            attachments_info = self._get_attachment_details(access_token, msg.get("id", ""))
             draft_data["attachments"] = attachments_info
         else:
             draft_data["attachments"] = []
         
         return draft_data
     
-    def _get_attachment_details(self, access_token: str, user_email: str, message_id: str) -> list:
+    def _get_attachment_details(self, access_token: str, message_id: str) -> list:
         """
         Get attachment details for a message
         """
         try:
-            url = f"https://graph.microsoft.com/v1.0/users/{user_email}/messages/{message_id}/attachments"
+            url = f"https://graph.microsoft.com/v1.0/me/messages/{message_id}/attachments"
             headers = {
                 "Authorization": f"Bearer {access_token}",
                 "Content-Type": "application/json"

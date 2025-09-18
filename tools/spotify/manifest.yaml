@@ -1,0 +1,36 @@
+author: langgenius
+created_at: '2024-09-20T08:03:44.658609186Z'
+description:
+  en_US: Connect to Spotify to search music, control playback, and manage your music
+    library
+  zh_Hans: 连接到 Spotify 以搜索音乐、控制播放和管理您的音乐库
+icon: icon.svg
+label:
+  en_US: Spotify
+  zh_Hans: Spotify
+meta:
+  arch:
+  - amd64
+  - arm64
+  minimum_dify_version: 1.7.1
+  runner:
+    entrypoint: main
+    language: python
+    version: '3.12'
+  version: 0.0.1
+name: spotify
+plugins:
+  tools:
+  - provider/spotify.yaml
+resource:
+  memory: 1048576
+  permission:
+    model:
+      enabled: true
+      llm: true
+    tool:
+      enabled: true
+tags:
+- utilities
+type: plugin
+version: 0.1.0

@@ -1,0 +1,15 @@
+[project]
+name = "dify-plugin-microsoft-todo"
+version = "0.0.1"
+description = "Default template for PDM package"
+authors = [
+    {name = "jingfelix", email = "jingfelix@outlook.com"},
+]
+dependencies = ["pymstodo>=0.2.0", "dify-plugin==0.4.2b2", "dify-easy>=0.1.0", "structlog>=25.4.0"]
+requires-python = ">=3.12"
+readme = "README.md"
+license = {text = "MIT"}
+
+
+[tool.pdm]
+distribution = false

@@ -1,0 +1,33 @@
+model: Phi-4
+label:
+  en_US: Phi-4
+  zh_Hans: Phi-4
+model_type: llm
+features:
+  - agent-thought
+model_properties:
+  mode: chat
+  context_size: 16384
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    min: 0
+    max: 1
+    default: 0.5
+  - name: top_p
+    use_template: top_p
+    min: 0
+    max: 1
+    default: 1
+  - name: max_tokens
+    use_template: max_tokens
+    min: 1
+    max: 16384
+    default: 2048
+pricing:
+  input: '0.05'
+  output: '0.25'
+  unit: '0.000001'
+  currency: EUR
+
+

@@ -1,0 +1,83 @@
+identity:
+  name: list_all_files
+  author: langgenius
+  label:
+    en_US: List All Files
+    zh_Hans: 列出所有文件
+    ja_JP: すべてのファイルをリスト
+  icon: icon.svg
+
+description:
+  human:
+    en_US: List all files and folders in OneDrive with optional filtering
+    zh_Hans: 列出 OneDrive 中的所有文件和文件夹，支持可选过滤
+    ja_JP: OneDriveのすべてのファイルとフォルダーをオプションのフィルタリングでリストする
+  llm: List all files and folders in OneDrive, useful for finding Excel workbooks and navigating folder structure
+
+parameters:
+  - name: folder_path
+    type: string
+    required: false
+    default: "root"
+    form: llm
+    label:
+      en_US: Folder Path
+      zh_Hans: 文件夹路径
+      ja_JP: フォルダパス
+    human_description:
+      en_US: The folder path to list (use 'root' for root folder, 'recent' for recent files, or 'id:FOLDER_ID' for specific folder)
+      zh_Hans: 要列出的文件夹路径（使用 'root' 表示根文件夹，'recent' 表示最近文件，或 'id:FOLDER_ID' 表示特定文件夹）
+      ja_JP: リストするフォルダパス（ルートフォルダは'root'、最近のファイルは'recent'、特定のフォルダは'id:FOLDER_ID'を使用）
+    llm_description: The folder to list. Use 'root' for root folder, 'recent' for recent files, 'id:FOLDER_ID' for a specific folder by ID, or a path like 'Documents/Reports'
+
+  - name: file_type
+    type: select
+    required: false
+    default: "all"
+    form: llm
+    label:
+      en_US: File Type Filter
+      zh_Hans: 文件类型过滤
+      ja_JP: ファイルタイプフィルター
+    human_description:
+      en_US: Filter by file type
+      zh_Hans: 按文件类型过滤
+      ja_JP: ファイルタイプでフィルター
+    llm_description: Filter results by file type
+    options:
+      - value: all
+        label:
+          en_US: All Files
+          zh_Hans: 所有文件
+          ja_JP: すべてのファイル
+      - value: excel
+        label:
+          en_US: Excel Files Only
+          zh_Hans: 仅 Excel 文件
+          ja_JP: Excelファイルのみ
+      - value: folders
+        label:
+          en_US: Folders Only
+          zh_Hans: 仅文件夹
+          ja_JP: フォルダのみ
+
+  - name: max_results
+    type: number
+    required: false
+    default: 50
+    form: llm
+    label:
+      en_US: Maximum Results
+      zh_Hans: 最大结果数
+      ja_JP: 最大結果数
+    human_description:
+      en_US: Maximum number of items to return
+      zh_Hans: 返回的最大项目数
+      ja_JP: 返す最大アイテム数
+    llm_description: Maximum number of items to return (default is 50)
+    min: 1
+    max: 200
+
+extra:
+  python:
+    source: tools/list_all_files.py

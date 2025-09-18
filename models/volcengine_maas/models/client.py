@@ -185,6 +185,7 @@ class ArkClientV3:
         temperature: Optional[float] = None,
         skip_moderation: Optional[bool] = None,
         thinking: Thinking | None = None,
+        response_format: Optional[dict] = None,
     ) -> ChatCompletion:
         """Block chat"""
         return self.ark.chat.completions.create(
@@ -198,6 +199,7 @@ class ArkClientV3:
             top_p=top_p,
             temperature=temperature,
             thinking=thinking,
+            response_format=response_format,
             extra_headers={"x-ark-moderation-scene": "skip-ark-moderation"} if skip_moderation else None,
         )
 
@@ -213,6 +215,7 @@ class ArkClientV3:
         temperature: Optional[float] = None,
         skip_moderation: Optional[bool] = None,
         thinking: Thinking | None = None,
+        response_format: Optional[dict] = None,
     ) -> Generator[ChatCompletionChunk]:
         """Stream chat"""
         chunks = self.ark.chat.completions.create(
@@ -228,6 +231,7 @@ class ArkClientV3:
             temperature=temperature,
             stream_options={"include_usage": True},
             thinking=thinking,
+            response_format=response_format,
             extra_headers={"x-ark-moderation-scene": "skip-ark-moderation"} if skip_moderation else None,
         )
         yield from chunks

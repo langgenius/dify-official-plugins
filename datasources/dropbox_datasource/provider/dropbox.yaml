@@ -1,0 +1,129 @@
+identity:
+  author: langgenius
+  name: dropbox
+  label:
+    en_US: "Dropbox"
+    ja_JP: "Dropbox"
+    zh_Hans: "Dropbox"
+    pt_BR: "Dropbox"
+    zh_Hant: "Dropbox"
+  description:
+    en_US: "Dropbox Datasource"
+    ja_JP: "Dropboxデータソース"
+    zh_Hans: "Dropbox 数据源"
+    pt_BR: "Fonte de dados do Dropbox"
+    zh_Hant: "Dropbox 數據源"
+  icon: icon.svg
+provider_type: online_drive
+help:
+  title:
+    en_US: "Get your credentials from Dropbox App Console"
+    ja_JP: "Dropbox App Console から認証情報を取得します"
+    zh_Hans: "从 Dropbox 应用控制台获取您的凭证"
+    pt_BR: "Obtenha suas credenciais no Dropbox App Console"
+    zh_Hant: "從 Dropbox 應用程式控制台取得您的憑證"
+  url:
+    en_US: "https://www.dropbox.com/developers/apps"
+    ja_JP: "https://www.dropbox.com/developers/apps"
+    zh_Hans: "https://www.dropbox.com/developers/apps"
+    pt_BR: "https://www.dropbox.com/developers/apps"
+    zh_Hant: "https://www.dropbox.com/developers/apps"
+oauth_schema:
+  client_schema:
+    - name: client_id
+      type: secret-input
+      required: true
+      label:
+        en_US: "Client ID"
+        ja_JP: "Client ID"
+        zh_Hans: "Client ID"
+        pt_BR: "Client ID"
+        zh_Hant: "Client ID"
+      placeholder:
+        en_US: "Please input your Client ID"
+        ja_JP: "クライアントIDを入力してください"
+        zh_Hans: "请输入你的 Client ID"
+        pt_BR: "Insira seu ID de cliente"
+        zh_Hant: "請輸入您的客戶端 ID"
+      help:
+        en_US: "Client ID is used to authenticate requests to the Dropbox API."
+        ja_JP: "クライアントIDは、Dropbox APIへのリクエストを認証するために使用されます。"
+        zh_Hans: "Client ID 用于认证请求到 Dropbox API。"
+        pt_BR: "O ID do cliente é usado para autenticar solicitações à API do Dropbox."
+        zh_Hant: "客戶端 ID 用於對 Dropbox API 的請求進行身份驗證。"
+      url: https://www.dropbox.com/developers/apps
+    - name: client_secret
+      type: secret-input
+      required: true
+      label:
+        en_US: "Client Secret"
+        ja_JP: "Client Secret"
+        zh_Hans: "Client Secret"
+        pt_BR: "Client Secret"
+        zh_Hant: "Client Secret"
+      placeholder:
+        en_US: "Please input your Client Secret"
+        ja_JP: "クライアントシークレットを入力してください"
+        zh_Hans: "请输入你的 Client Secret"
+        pt_BR: "Insira seu segredo de cliente"
+        zh_Hant: "請輸入您的客戶端密鑰"
+      help:
+        en_US: "Get your client secret from the Dropbox App Console"
+        ja_JP: "Dropbox App Console からクライアントシークレットを取得します"
+        zh_Hans: "从 Dropbox 应用控制台获取您的客户端密钥"
+        pt_BR: "Obtenha seu segredo de cliente no Dropbox App Console"
+        zh_Hant: "從 Dropbox 應用程式控制台取得您的用戶端密碼"
+      url: https://www.dropbox.com/developers/apps
+  credentials_schema:
+    - name: access_token
+      type: secret-input
+      label:
+        en_US: "Access Token"
+        ja_JP: "Access Token"
+        zh_Hans: "Access Token"
+        pt_BR: "Access Token"
+        zh_Hant: "Access Token"
+    - name: client_id
+      type: secret-input
+      label:
+        en_US: "Client ID"
+        ja_JP: "Client ID"
+        zh_Hans: "Client ID"
+        pt_BR: "Client ID"
+        zh_Hant: "Client ID"
+    - name: client_secret
+      type: secret-input
+      label:
+        en_US: "Client Secret"
+        ja_JP: "Client Secret"
+        zh_Hans: "Client Secret"
+        pt_BR: "Client Secret"
+        zh_Hant: "Client Secret"
+credentials_schema:
+  - name: access_token
+    type: secret-input
+    required: true
+    label:
+      en_US: "Access Token"
+      ja_JP: "アクセストークン"
+      zh_Hans: "访问令牌"
+      pt_BR: "Token de acesso"
+      zh_Hant: "訪問令牌"
+    placeholder:
+      en_US: "Please input your Dropbox access token"
+      ja_JP: "Dropboxアクセストークンを入力してください"
+      zh_Hans: "请输入您的 Dropbox 访问令牌"
+      pt_BR: "Insira seu token de acesso do Dropbox"
+      zh_Hant: "請輸入您的 Dropbox 存取權杖"
+    help:
+      en_US: "Get your access token from Dropbox App Console"
+      ja_JP: "Dropbox App Console からアクセストークンを取得します"
+      zh_Hans: "从 Dropbox 应用控制台获取您的访问令牌"
+      pt_BR: "Obtenha seu token de acesso no Dropbox App Console"
+      zh_Hant: "從 Dropbox 應用程式控制台取得您的存取權杖"
+    url: https://www.dropbox.com/developers/apps
+datasources:
+  - datasources/dropbox.yaml
+extra:
+  python:
+    source: provider/dropbox.py

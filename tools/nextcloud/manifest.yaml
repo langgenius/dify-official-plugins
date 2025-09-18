@@ -1,4 +1,4 @@
-version: 0.0.1
+version: 0.1.0
 type: plugin
 author: langgenius
 name: nextcloud
@@ -45,7 +45,7 @@ plugins:
   tools:
     - provider/nextcloud.yaml
 meta:
-  version: 0.0.1
+  version: 0.1.0
   arch:
     - amd64
     - arm64

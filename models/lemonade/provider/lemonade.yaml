@@ -1,0 +1,95 @@
+provider: lemonade
+label:
+  en_US: Lemonade
+description:
+  en_US: Lemonade lets you run local models with NPU and GPU acceleration.
+  zh_Hans: Lemonade 让你在 NPU 和 GPU 上运行本地模型。
+icon_small:
+  en_US: icon.svg
+supported_model_types:
+  - llm
+  - rerank
+  - text-embedding
+configurate_methods:
+  - customizable-model
+model_credential_schema:
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: Enter full model name
+      zh_Hans: 输入模型全称
+  credential_form_schemas:
+    - variable: endpoint_url
+      label:
+        zh_Hans: API endpoint URL
+        en_US: API endpoint URL
+      type: text-input
+      required: true
+      placeholder:
+        zh_Hans: Lemonade Server 的地址，如 http://127.0.0.1:8000
+        en_US: Base URL of Lemonade Server, e.g. http://127.0.0.1:8000
+    - variable: context_size
+      label:
+        zh_Hans: 模型上下文长度
+        en_US: Model context size
+      required: true
+      show_on:
+        - variable: __model_type
+          value: llm
+      type: text-input
+      default: "4096"
+      placeholder:
+        zh_Hans: 在此输入您的模型上下文长度
+        en_US: Enter your Model context size
+    - variable: agent_though_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Agent Thought
+      type: radio
+      required: false
+      default: not_supported
+      options:
+        - value: supported
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: not_supported
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+    - variable: vision_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        zh_Hans: Vision 支持
+        en_US: Vision Support
+      type: radio
+      required: false
+      default: no_support
+      options:
+        - value: support
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: no_support
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+extra:
+  python:
+    provider_source: provider/lemonade.py
+    model_sources:
+      - "models/llm/llm.py"
+      - "models/text_embedding/text_embedding.py"
+      - "models/rerank/rerank.py"
+help:
+  title:
+    en_US: How to integrate with Lemonade
+    zh_Hans: 如何集成 Lemonade
+  url:
+    en_US: https://marketplace.dify.ai/plugins/langgenius/lemonade

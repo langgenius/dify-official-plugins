@@ -1,0 +1,45 @@
+version: 0.2.4
+type: plugin
+author: langgenius
+name: firecrawl_datasource
+label:
+  en_US: Firecrawl
+  ja_JP: Firecrawl
+  zh_Hans: Firecrawl
+  pt_BR: Firecrawl
+description:
+  en_US: Firecrawl Datasource
+  ja_JP: Firecrawl Datasource
+  zh_Hans: Firecrawl Datasource
+  pt_BR: Firecrawl Datasource
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: false
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+plugins:
+  datasources:
+    - provider/firecrawl_datasource.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: 1.9.0
+created_at: 2025-05-14T16:03:40.268524+08:00
+privacy: PRIVACY.md
+verified: false
+provider_type: website_crawl
+tags:
+  - rag

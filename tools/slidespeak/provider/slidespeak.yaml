@@ -23,4 +23,7 @@ identity:
     zh_Hans: SlideSpeak
   name: slidespeak
 tools:
-- tools/slides_generator.yaml
+- tools/presentation_generator.yaml
+- tools/slide_by_slide_generator.yaml
+- tools/document_uploader.yaml
+- tools/template_lister.yaml

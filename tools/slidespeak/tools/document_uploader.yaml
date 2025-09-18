@@ -1,0 +1,26 @@
+description:
+  human:
+    en_US: Upload a document to SlideSpeak for later use in presentation generation.
+    zh_Hans: 将文档上传到 SlideSpeak 以供后续生成演示文稿。
+  llm: This tool uploads a document file to SlideSpeak and returns the document UUID for later use.
+extra:
+  python:
+    source: tools/document_uploader.py
+identity:
+  author: Kalo Chin
+  label:
+    en_US: Document Uploader
+    zh_Hans: 文档上传器
+  name: document_uploader
+parameters:
+- name: file
+  form: llm
+  human_description:
+    en_US: The document file to upload. Supported types are .pptx, .ppt, .docx, .doc, .xlsx, .pdf
+    zh_Hans: 要上传的文档文件。支持类型为 .pptx, .ppt, .docx, .doc, .xlsx, .pdf
+  label:
+    en_US: Document File
+    zh_Hans: 文档文件
+  llm_description: Required. The document file to upload to SlideSpeak.
+  required: true
+  type: file 

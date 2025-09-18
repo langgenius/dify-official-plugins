@@ -1,0 +1,41 @@
+description:
+  human:
+    en_US: Delete a tweet on Twitter
+    zh_Hans: 删除推特上的推文
+  llm: A tool that allows deleting tweets on Twitter by providing the tweet ID (only your own tweets can be deleted)
+extra:
+  python:
+    source: tools/delete_tweet.py
+identity:
+  author: langgenius
+  icon: icon.jpg
+  label:
+    en_US: Delete Tweet
+    zh_Hans: 删除推文
+  name: delete_tweet
+parameters:
+- form: llm
+  human_description:
+    en_US: The ID of the tweet to delete (you can only delete your own tweets)
+    zh_Hans: 要删除的推文ID（只能删除自己的推文）
+  label:
+    en_US: Tweet ID
+    zh_Hans: 推文ID
+  llm_description: The ID of the tweet to delete (only your own tweets can be deleted)
+  name: tweet_id
+  required: true
+  type: string
+
+# output_schema:
+#   type: object
+#   properties:
+#     success:
+#       type: boolean
+#     tweet_id:
+#       type: string
+#     deleted:
+#       type: boolean
+#     message:
+#       type: string
+#     error:
+#       type: string

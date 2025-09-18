@@ -9,9 +9,9 @@ dependencies:
 - current_identifier: null
   type: package
   value:
-    plugin_unique_identifier: langgenius/comfyui:0.2.0@3ea2a8faf4da05e2759396504ef5a8b6313f25b8352c235cb80fe30511d69df8
+    plugin_unique_identifier: langgenius/comfyui:0.2.2@4aaba026314974dc3eebfadc03b4d83ff34f3c3ed3c571b19df5b08e6d731a33
 kind: app
-version: 0.3.0
+version: 0.3.1
 workflow:
   conversation_variables: []
   environment_variables: []
@@ -110,7 +110,7 @@ workflow:
         title: Answer
         type: answer
         variables: []
-      height: 104
+      height: 105
       id: answer
       position:
         x: 638
@@ -118,7 +118,7 @@ workflow:
       positionAbsolute:
         x: 638
         y: 252
-      selected: true
+      selected: false
       sourcePosition: right
       targetPosition: left
       type: custom
@@ -254,15 +254,18 @@ workflow:
         provider_id: langgenius/comfyui/comfyui
         provider_name: langgenius/comfyui/comfyui
         provider_type: builtin
-        selected: false
+        selected: true
         title: Image Edit
         tool_configurations:
-          feature: upscale_esrgan_x4
+          feature:
+            type: constant
+            value: upscale_esrgan_x4
         tool_description: A highly practical solution for robust monocular depth estimation
           by training on a combination of 1.5M labeled images and 62M+ unlabeled images.
           https://github.com/kijai/ComfyUI-DepthAnythingV2
         tool_label: Image Edit
         tool_name: image_edit
+        tool_node_version: '2'
         tool_parameters:
           images:
             type: variable
@@ -278,12 +281,12 @@ workflow:
       positionAbsolute:
         x: 334
         y: 252
-      selected: false
+      selected: true
       sourcePosition: right
       targetPosition: left
       type: custom
       width: 244
     viewport:
-      x: 120.00000000000006
-      y: 229.70000000000005
-      zoom: 0.7
+      x: -24.90170043735202
+      y: -7.775755987935781
+      zoom: 1.274054353713259

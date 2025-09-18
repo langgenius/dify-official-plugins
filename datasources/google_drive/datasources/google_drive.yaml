@@ -1,0 +1,20 @@
+identity:
+  name: google_drive
+  author: langgenius
+  label:
+    en_US: Google Drive
+    zh_Hans: Google Drive
+description:
+  en_US: Get files from your Google Drive
+  zh_Hans: 从您的 Google Drive 中获取文件
+
+parameters:
+
+output_schema:
+  type: object
+  properties:
+    file:
+      $ref: "https://dify.ai/schemas/v1/file.json"
+extra:
+  python:
+    source: datasources/google_drive.py

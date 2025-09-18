@@ -1,166 +1,153 @@
-from collections.abc import Generator
-from typing import Any
-import os
-import fnmatch
-
+import requests
+import xml.etree.ElementTree as ET
+from typing import Any, Generator
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-
 
 class SearchFilesTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
-        Search for files and folders in NextCloud by name pattern
+        Perform full-text search on Nextcloud files via OCS API and retrieve matching files regardless of hierarchy.
         """
-        # Get parameters
         search_pattern = tool_parameters.get("search_pattern", "")
         search_path = tool_parameters.get("search_path", "/")
         max_results = int(tool_parameters.get("max_results", "50"))
-        
-        # Validate parameters
-        if not search_pattern:
-            yield self.create_text_message("Search pattern is required.")
+
+        # Extract keywords (supports patterns like "*test*.*", "`test`", etc.)
+        import re
+        pattern = search_pattern.strip().strip("`'\"")  # Remove backticks and quotes
+        pattern = pattern.strip("*")                    # Remove wildcard characters
+        keyword = pattern.split(".")[0]                 # Remove file extension if present
+
+        if not keyword:
+            yield self.create_text_message("Search keyword is empty.")
             return
-        if not search_path.startswith("/"):
-            search_path = "/" + search_path
-            
+
+        # Nextcloud OCS API credentials
+        webdav_hostname = self.runtime.credentials.get("webdav_hostname")
+        username = self.runtime.credentials.get("username")
+        app_password = self.runtime.credentials.get("app_password")
+        if not all([webdav_hostname, username, app_password]):
+            yield self.create_text_message("Nextcloud authentication information is not set.")
+            return
+
+        # OCS API endpoint
+        if not webdav_hostname.endswith("/"):
+            webdav_hostname += "/"
+        if webdav_hostname.endswith("remote.php/webdav/"):
+            webdav_hostname = webdav_hostname.replace("remote.php/webdav/", "")
+        api_url = f"{webdav_hostname}ocs/v2.php/search/providers/files/search"
+
+        headers = {
+            "OCS-APIRequest": "true",
+        }
+        params = {
+            "term": keyword
+        }
+
         try:
-            # Import webdavclient3 package (imported as webdav3.client)
-            from webdav3.client import Client
-            
-            # Get credentials from runtime
-            webdav_hostname = self.runtime.credentials.get("webdav_hostname")
-            username = self.runtime.credentials.get("username")
-            app_password = self.runtime.credentials.get("app_password")
-            
-            if not all([webdav_hostname, username, app_password]):
-                yield self.create_text_message("NextCloud credentials are not properly configured.")
-                return
-            
-            # Ensure hostname ends with /remote.php/webdav
-            if not webdav_hostname.endswith('/'):
-                webdav_hostname += '/'
-            if not webdav_hostname.endswith('remote.php/webdav/'):
-                webdav_hostname += 'remote.php/webdav/'
-            
-            # Create WebDAV client options
-            webdav_options = {
-                'webdav_hostname': webdav_hostname,
-                'webdav_login': username,
-                'webdav_password': app_password
-            }
-            
-            # Create client
-            client = Client(webdav_options)
-            
-            try:
-                # Check if search path exists
-                if not client.check(search_path):
-                    yield self.create_text_message(f"Search path '{search_path}' not found.")
-                    return
-                
-                # Perform recursive search
-                matching_files = []
-                self._search_recursive(client, search_path, search_pattern, matching_files, max_results)
-                
-                if matching_files:
-                    summary = f"Found {len(matching_files)} items matching '{search_pattern}' in '{search_path}'"
-                    if len(matching_files) >= max_results:
-                        summary += f" (limited to {max_results} results)"
-                    
-                    yield self.create_text_message(summary)
-                    yield self.create_json_message({
-                        "search_pattern": search_pattern,
-                        "search_path": search_path,
-                        "total_found": len(matching_files),
-                        "max_results": max_results,
-                        "results": matching_files
-                    })
-                else:
-                    yield self.create_text_message(f"No files found matching '{search_pattern}' in '{search_path}'.")
-                    yield self.create_json_message({
-                        "search_pattern": search_pattern,
-                        "search_path": search_path,
-                        "total_found": 0,
-                        "results": []
-                    })
-                
-            except Exception as e:
-                error_msg = str(e).lower()
-                if 'not found' in error_msg or '404' in error_msg:
-                    yield self.create_text_message(f"Search path '{search_path}' not found.")
-                elif 'forbidden' in error_msg or '403' in error_msg:
-                    yield self.create_text_message(f"Access denied to search path '{search_path}'.")
-                else:
-                    yield self.create_text_message(f"Error searching in '{search_path}': {str(e)}")
-                return
-                
-        except ImportError:
-            yield self.create_text_message("webdavclient3 library is required but not installed.")
-            return
+            resp = requests.get(api_url, headers=headers, params=params, auth=(username, app_password), timeout=15)
+            resp.raise_for_status()
         except Exception as e:
-            yield self.create_text_message(f"Unexpected error: {str(e)}")
+            yield self.create_text_message(f"Nextcloud OCS API request failed: {str(e)}")
             return
-    
-    def _search_recursive(self, client, path, pattern, results, max_results, depth=0):
-        """
-        Recursively search for files matching the pattern
-        """
-        # Prevent infinite recursion and limit depth
-        if depth > 10 or len(results) >= max_results:
-            return
-        
+
+        # Parse the XML response
         try:
-            # List items in current directory
-            items = client.list(path)
+            root = ET.fromstring(resp.text)
+        except Exception as e:
+            yield self.create_text_message(f"Failed to parse OCS API response XML: {str(e)}")
+            return
+
+        # Extract file information from OCS response, applying search path filter and maximum result limit
+        results = []
+        found_count = 0
+
+        # OCS hierarchical path matching
+        def path_match(path: str, search_path: str) -> bool:
+            # If search_path is "test1/**", match paths starting with /test1/ (completing slash)
+            if not search_path.startswith("/"):
+                search_path = "/" + search_path
             
-            for item_path in items:
-                # Skip current directory entry
-                if item_path == path or item_path == path + "/":
-                    continue
-                
-                if len(results) >= max_results:
-                    break
-                
-                # Get item name
-                item_name = os.path.basename(item_path.rstrip('/'))
-                
-                # Check if name matches pattern
-                if fnmatch.fnmatch(item_name.lower(), pattern.lower()):
-                    try:
-                        # Get item info
-                        info = client.info(item_path)
-                        item_info = {
-                            "name": item_name,
-                            "path": item_path,
-                            "type": "directory" if item_path.endswith('/') else "file"
-                        }
-                        
-                        # Add size and modification date if available
-                        if 'size' in info:
-                            item_info["size"] = info['size']
-                        if 'modified' in info:
-                            item_info["modified"] = info['modified']
-                        
-                        results.append(item_info)
-                        
-                    except Exception:
-                        # If we can't get info, add basic info
-                        item_info = {
-                            "name": item_name,
-                            "path": item_path,
-                            "type": "directory" if item_path.endswith('/') else "file"
-                        }
-                        results.append(item_info)
-                
-                # If it's a directory, search recursively
-                if item_path.endswith('/') and len(results) < max_results:
-                    try:
-                        self._search_recursive(client, item_path, pattern, results, max_results, depth + 1)
-                    except Exception:
-                        # Skip directories we can't access
-                        continue
-                        
+            if search_path.endswith("/**"):
+                base = search_path[:-3]
+                return path.startswith(base)
+            elif search_path.endswith("/*"):
+                base = search_path[:-2]
+                rel = path[len(base):].lstrip("/")
+                return path.startswith(base) and ("/" not in rel)
+            else:
+                return path.startswith(search_path.rstrip("/"))
+
+        # Retrieve 'entries' element from XML (expected path: ocs/data/entries)
+        try:
+            # Use XPath with namespace awareness
+            entries = root.find(".//data/entries")
+            if entries is None:
+                yield self.create_text_message("OCS API response does not contain entries data.")
+                return
         except Exception:
-            # Skip directories we can't list
-            pass 
+            yield self.create_text_message("Failed to parse OCS API response structure.")
+            return
+
+        # Process each element (file or folder)
+        for element in entries.findall("element"):
+            try:
+                title_elem = element.find("title")
+                path_elem = element.find("attributes/path")
+                if title_elem is None or path_elem is None:
+                    continue
+
+                title = title_elem.text
+                full_path = path_elem.text
+                
+                # Extract filename from title (should match the last path segment)
+                if full_path:
+                    # Get the actual filename from the path
+                    name = full_path.split("/")[-1] if "/" in full_path else full_path
+                else:
+                    name = title
+
+                # Check for match with search_path
+                if path_match(full_path, search_path):
+                    # Extract directory path
+                    if "/" in full_path:
+                        dir_path = full_path.rsplit("/", 1)[0]
+                        if not dir_path:
+                            dir_path = "/"
+                    else:
+                        dir_path = "/"
+                    
+                    results.append({
+                        "name": name,
+                        "path": dir_path,
+                        "type": "file"
+                    })
+                    found_count += 1
+                    if found_count >= max_results:
+                        break
+            except Exception:
+                continue
+
+        if results:
+            found_texts = [f"Found 1 items matching '{r['name']}' in '{r['path']}'" for r in results]
+            text = ", ".join(found_texts)
+            json_output = {
+                "max_results": max_results,
+                "results": results,
+                "search_path": search_path,
+                "search_pattern": search_pattern,
+                "total_found": found_count
+            }
+            yield self.create_text_message(text)
+            yield self.create_json_message(json_output)
+        else:
+            json_output = {
+                "max_results": max_results,
+                "results": [],
+                "search_path": search_path,
+                "search_pattern": search_pattern,
+                "total_found": 0
+            }
+            yield self.create_text_message("")
+            yield self.create_json_message(json_output)

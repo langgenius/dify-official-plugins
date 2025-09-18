@@ -1,0 +1,66 @@
+identity:
+  author: langgenius
+  name: notion_datasource
+  label:
+    en_US: Notion
+    zh_Hans: Notion
+    pt_BR: Notion
+    ja_JP: Notion
+  description:
+    en_US: Notion Datasource
+    zh_Hans: Notion Datasource
+    pt_BR: Notion Datasource
+    ja_JP: Notion Datasource
+  icon: icon.svg
+oauth_schema:
+  client_schema:
+    - name: client_id
+      type: secret-input
+      label:
+        zh_Hans: Client ID
+        en_US: Client ID
+    - name: client_secret
+      type: secret-input
+      label:
+        zh_Hans: Client Secret
+        en_US: Client Secret
+      help:
+        zh_Hans: 从 Notion 集成页面获取您的接口令牌
+        en_US: Get your integration token from the Notion Integrations page
+      url: https://www.notion.so/profile/integrations
+  credentials_schema:
+    - name: integration_secret
+      type: secret-input
+      label:
+        zh_Hans: Access Token
+        en_US: Access Token
+
+provider_type: online_document
+credentials_schema:
+  - name: integration_secret
+    type: secret-input
+    required: true
+    label:
+      en_US: Integration Secret
+      zh_Hans: 接口密钥 (Integration Secret)
+      pt_BR: Segredo de Integração (Integration Secret)
+      ja_JP: 統合シークレット (Integration Secret)
+      zh_Hant: 整合密鑰 (Integration Secret)
+    placeholder:
+      en_US: Enter your Notion Integration Token
+      zh_Hans: 输入您的 Notion 接口令牌
+      pt_BR: Digite seu Token de Integração do Notion
+      ja_JP: Notion統合トークンを入力してください
+      zh_Hant: 輸入您的 Notion 整合權杖
+    help:
+      en_US: Get your integration token from the Notion Integrations page
+      zh_Hans: 从 Notion 集成页面获取您的接口令牌
+      pt_BR: Obtenha seu token de integração na página de Integrações do Notion
+      ja_JP: Notion統合ページから統合トークンを取得してください
+      zh_Hant: 從 Notion 整合頁面獲取您的整合權杖
+    url: https://www.notion.so/profile/integrations
+datasources:
+  - datasources/notion_datasource.yaml
+extra:
+  python:
+    source: provider/notion_datasource.py

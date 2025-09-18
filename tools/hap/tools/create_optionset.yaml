@@ -1,0 +1,59 @@
+description:
+  human:
+    en_US: Create a new option set with options, colors, and scores
+    zh_Hans: 创建新的选项集，包含选项、颜色和分值
+  llm: Create a new option set with specified name, options array, and enable color/score settings.
+extra:
+  python:
+    source: tools/create_optionset.py
+identity:
+  author: langgenius
+  label:
+    en_US: Create Option Set
+    zh_Hans: 创建选项集
+  name: create_optionset
+parameters:
+- form: llm
+  name: name
+  label:
+    en_US: Option Set Name
+    zh_Hans: 选项集名称
+  human_description:
+    en_US: The name of the option set
+    zh_Hans: 选项集的名称
+  llm_description: The name of the option set to create
+  required: true
+  type: string
+- form: llm
+  name: options
+  label:
+    en_US: Options Array
+    zh_Hans: 选项数组
+  human_description:
+    en_US: JSON array of option objects with value, index, color, and score properties
+    zh_Hans: 选项对象的 JSON 数组，包含 value、index、color 和 score 属性
+  llm_description: JSON array of option objects, each containing value (string), index (integer for sorting), color (hex color string), and score (number, Optional)
+  required: true
+  type: string
+- form: llm
+  name: enable_color
+  label:
+    en_US: Enable Color
+    zh_Hans: 启用颜色
+  human_description:
+    en_US: Whether to enable colors for options (true/false)
+    zh_Hans: 是否为选项启用颜色 (true/false)
+  llm_description: Whether to enable color feature for options, affects color property usage
+  required: true
+  type: string
+- form: llm
+  name: enable_score
+  label:
+    en_US: Enable Score
+    zh_Hans: 启用分值
+  human_description:
+    en_US: Whether to enable scores for options (true/false)
+    zh_Hans: 是否为选项启用分值 (true/false)
+  llm_description: Whether to enable score feature for options, affects score property usage
+  required: true
+  type: string

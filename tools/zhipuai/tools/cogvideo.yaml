@@ -39,9 +39,9 @@ parameters:
 - form: form
   default: "cogvideox-flash"
   human_description:
-    en_US: Model code, Support：cogvideox-2, cogvideox-flash
-    pt_BR: Model code, Support：cogvideox-2, cogvideox-flash
-    zh_Hans: 模型编码，支持：cogvideox-2, cogvideox-flash
+    en_US: Model code, Support：cogvideox-3, cogvideox-2, cogvideox-flash
+    pt_BR: Model code, Support：cogvideox-3, cogvideox-2, cogvideox-flash
+    zh_Hans: 模型编码，支持：cogvideox-3, cogvideox-2, cogvideox-flash
   label:
     en_US: model
     pt_BR: model
@@ -130,7 +130,25 @@ parameters:
   name: fps
   type: number
 - form: form
-  default: "10"
+  human_description:
+    en_US: Video duration, default 5 seconds, supports 5 or 10 seconds. cogvideox-flash and cogvideox-2 only support 5 seconds.
+    pt_BR: Video duration, default 5 seconds, supports 5 or 10 seconds. cogvideox-flash and cogvideox-2 only support 5 seconds.
+    zh_Hans: 视频持续时长，默认5秒，支持5、10。cogvideox-flash 和 cogvideox-2 只支持5s。
+  label:
+    en_US: duration
+    pt_BR: duration
+    zh_Hans: 视频时长
+  name: duration
+  type: select
+  options:
+  - label:
+      en_US: 5s
+    value: 5
+  - label:
+      en_US: 10s
+    value: 10
+- form: form
+  default: "20"
   human_description:
     en_US: Number of retries to obtain the generated video
     zh_Hans: 获取生成后的视频的重试次数

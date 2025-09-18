@@ -1,0 +1,60 @@
+description:
+  human:
+    en_US: Batch create multiple records in a worksheet
+    zh_Hans: 批量创建工作表记录
+  llm: Batch create multiple records in a worksheet with field values and optional workflow triggering.
+extra:
+  python:
+    source: tools/batch_create_records.py
+identity:
+  author: langgenius
+  label:
+    en_US: Batch Create Records
+    zh_Hans: 批量创建记录
+  name: batch_create_records
+parameters:
+- form: llm
+  name: worksheet_id
+  label:
+    en_US: Worksheet ID
+    zh_Hans: 工作表 ID
+  human_description:
+    en_US: The worksheet ID to create records in
+    zh_Hans: 需要创建记录的工作表 ID
+  llm_description: The worksheet ID where records will be created
+  required: true
+  type: string
+- form: llm
+  name: rows
+  label:
+    en_US: Rows Data
+    zh_Hans: 行记录数据
+  human_description:
+    en_US: JSON array of row data with fields array containing id and value
+    zh_Hans: >
+      行记录数据的 JSON 对象数组：[{"fields": [{"id": "field_id", "value": "field_value"}, ...]}, ...]
+  llm_description: >
+    JSON array of row data, each containing a `fields` array with field `id` and `value`, e.g. `[{"fields": [{"id": "field_id", "value": "field_value"}, ...]}, ...]`
+    There are certain types of field values that need to be provided in a specified format, for example:
+    - Region Value: "1430300". The value can be obtained from the `public_find_region` tool.
+    - SingleSelect Value: ["Option key1"]
+    - MultipleSelect Value: ["Option key1", "Option key2"]
+    - Collaborator Value: ["user_accountId1"]. The accountId can be obtained from the `public_find_member` tool.
+    - Department Value: "department_id1"]. The departmentId can be obtained from the `public_find_department` tool.
+    - Relation/SubTable/CascadingSelect Value: ["record_rowId1"]
+    - Attachment Value: [{"name": "file1.txt", "url": "https://example.com/file1.txt or base64 encoded string}"}]
+    - Location Value: "{\"x\":114.072825,\"y\":22.655475,\"address\":\"Yunhui Center, Xiangjiaotang Village, Bantian Street, Longgang District, Shenzhen City, Guangdong Province\",\"title\":\"Building A, Phase 1, Yunhui Center\"}"
+    - Checkbox Value: 1. 1 for true, 0 for false
+  required: true
+  type: string
+- form: form
+  name: do_not_trigger_workflow
+  label:
+    en_US: Do Not Trigger Workflow
+    zh_Hans: 不触发工作流
+  human_description:
+    en_US: If true, do NOT trigger workflows; default false
+    zh_Hans: 若为 true，则不触发工作流；默认 false
+  llm_description: If true, do NOT trigger workflows; default false
+  required: false
+  type: boolean

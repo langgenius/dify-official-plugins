@@ -1,0 +1,51 @@
+identity:
+  name: "flag_message"
+  display_name: "Flag Message"
+  author: "langgenius"
+  label:
+    en_US: "Flag Gmail Message"
+    zh_Hans: "标记Gmail邮件"
+    pt_BR: "Marcar Mensagem do Gmail"
+    ja_JP: "Gmailメッセージにフラグを立てる"
+description:
+  human:
+    en_US: "Flag or unflag a Gmail message for follow-up using Gmail's built-in flagging system"
+    zh_Hans: "使用Gmail的内置标记系统标记或取消标记邮件以便后续跟进"
+    pt_BR: "Marcar ou desmarcar uma mensagem do Gmail para acompanhamento usando o sistema de marcação integrado do Gmail"
+    ja_JP: "Gmailの組み込みフラグシステムを使用して、後でフォローアップするためにGmailメッセージにフラグを立てるか、フラグを外す"
+  llm: "Flag or unflag a Gmail message for follow-up. This adds or removes the 'starred' label from the message, making it easier to find important emails later."
+parameters:
+  - name: message_id
+    type: string
+    required: true
+    label:
+      en_US: "Message ID"
+      zh_Hans: "邮件ID"
+      pt_BR: "ID da Mensagem"
+      ja_JP: "メッセージID"
+    human_description:
+      en_US: "The unique identifier of the Gmail message to flag or unflag"
+      zh_Hans: "要标记或取消标记的Gmail邮件的唯一标识符"
+      pt_BR: "Identificador único da mensagem do Gmail a ser marcada ou desmarcada"
+      ja_JP: "フラグを立てるか、フラグを外すGmailメッセージの一意の識別子"
+    llm_description: "The unique message ID of the Gmail message to flag or unflag. This ID can be obtained from the list_messages tool or get_message tool."
+    form: llm
+  - name: action
+    type: string
+    required: true
+    default: "flag"
+    label:
+      en_US: "Action"
+      zh_Hans: "操作"
+      pt_BR: "Ação"
+      ja_JP: "アクション"
+    human_description:
+      en_US: "Whether to flag or unflag the message ('flag' to add star, 'unflag' to remove star)"
+      zh_Hans: "是标记还是取消标记邮件（'flag'添加星标，'unflag'移除星标）"
+      pt_BR: "Se deve marcar ou desmarcar a mensagem ('flag' para adicionar estrela, 'unflag' para remover estrela)"
+      ja_JP: "メッセージにフラグを立てるか、フラグを外すか（'flag'でスターを追加、'unflag'でスターを削除）"
+    llm_description: "Action to perform: 'flag' to add the starred label (mark for follow-up), 'unflag' to remove the starred label."
+    form: llm
+extra:
+  python:
+    source: tools/flag_message.py 

@@ -1,0 +1,55 @@
+identity:
+  name: upload_file
+  author: langgenius
+  label:
+    en_US: Upload File
+    zh_Hans: 上传文件
+    zh_CN: 上传文件
+    ja_JP: ファイルアップロード
+    pt_BR: Carregar Arquivo
+description:
+  human:
+    en_US: Upload a file to OneDrive
+    zh_Hans: 将文件上传到 OneDrive
+    zh_CN: 将文件上传到 OneDrive
+    ja_JP: OneDriveにファイルをアップロードします
+    pt_BR: Fazer upload de um arquivo para o OneDrive
+  llm: Upload a file to OneDrive root directory. Returns information about the uploaded file including ID, name, size, and download URL.
+parameters:
+  - name: file
+    type: file
+    required: true
+    label:
+      en_US: File to Upload
+      zh_Hans: 要上传的文件
+      zh_CN: 要上传的文件
+      ja_JP: アップロードするファイル
+      pt_BR: Arquivo para carregar
+    human_description:
+      en_US: The file to upload to OneDrive
+      zh_Hans: 要上传到 OneDrive 的文件
+      zh_CN: 要上传到 OneDrive 的文件
+      ja_JP: OneDriveにアップロードするファイル
+      pt_BR: O arquivo para carregar no OneDrive
+    llm_description: The file to upload to OneDrive. Accepts various file types including documents, images, videos, etc.
+    form: llm
+  - name: file_name
+    type: string
+    required: false
+    label:
+      en_US: Custom File Name
+      zh_Hans: 自定义文件名
+      zh_CN: 自定义文件名
+      ja_JP: カスタムファイル名
+      pt_BR: Nome de Arquivo Personalizado
+    human_description:
+      en_US: Optional custom name for the uploaded file. If not provided, uses the original file name.
+      zh_Hans: 上传文件的可选自定义名称。如果未提供，则使用原始文件名。
+      zh_CN: 上传文件的可选自定义名称。如果未提供，则使用原始文件名。
+      ja_JP: アップロードされるファイルのオプションのカスタム名。提供されない場合は、元のファイル名が使用されます。
+      pt_BR: Nome personalizado opcional para o arquivo carregado. Se não fornecido, usa o nome original do arquivo.
+    llm_description: Optional custom name for the uploaded file. If not provided, the original file name will be used.
+    form: llm
+extra:
+  python:
+    source: tools/upload_file.py

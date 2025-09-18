@@ -1,0 +1,112 @@
+identity:
+  name: get_contact
+  author: langgenius
+  label:
+    en_US: Get Contact Details
+    zh_Hans: 获取联系人详情
+    ja_JP: 連絡先詳細取得
+
+description:
+  human:
+    en_US: Get detailed information about a specific contact using its resource name
+    zh_Hans: 使用资源名称获取特定联系人的详细信息
+    ja_JP: リソース名を使って特定の連絡先の詳細情報を取得
+  llm: Retrieve detailed information about a specific contact from Google Contacts using the contact's resource name. Returns comprehensive contact details including names, phone numbers, email addresses, organizations, addresses, birthdays, and more.
+
+parameters:
+  - name: resource_name
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Resource Name
+      zh_Hans: 资源名称
+      ja_JP: リソース名
+    human_description:
+      en_US: Google's unique resource identifier for the contact (e.g., people/123456789)
+      zh_Hans: Google为联系人分配的唯一资源标识符（例如，people/123456789）
+      ja_JP: Googleが連絡先に割り当てた一意のリソース識別子（例：people/123456789）
+    llm_description: The unique resource name of the contact to retrieve (format people/contactId). This is returned from other contact operations like list or search.
+
+  - name: person_fields
+    type: string
+    required: false
+    default: "names,phoneNumbers,emailAddresses,organizations,addresses,biographies,birthdays,urls,relations"
+    form: llm
+    label:
+      en_US: Person Fields
+      zh_Hans: 人员字段
+      ja_JP: 人物フィールド
+    human_description:
+      en_US: Comma-separated list of person fields to include in the response
+      zh_Hans: 要包含在响应中的人员字段的逗号分隔列表
+      ja_JP: レスポンスに含める人物フィールドのカンマ区切りリスト
+    llm_description: Fields to include in the response. Common fields include names, phoneNumbers, emailAddresses, organizations, addresses, biographies, birthdays, urls, relations, photos, etc.
+
+output_schema:
+  type: object
+  properties:
+    resource_name:
+      type: string
+      description: Google's unique identifier for this contact
+    etag:
+      type: string
+      description: ETag for this contact resource
+    display_name:
+      type: string
+      description: Full display name of the contact
+    given_name:
+      type: string
+      description: First name
+    family_name:
+      type: string
+      description: Last name
+    middle_name:
+      type: string
+      description: Middle name
+    honorific_prefix:
+      type: string
+      description: Honorific prefix (e.g. Mr., Dr.)
+    honorific_suffix:
+      type: string
+      description: Honorific suffix (e.g. Jr., Sr.)
+    phonetic_given_name:
+      type: string
+      description: Phonetic pronunciation of given name
+    phonetic_family_name:
+      type: string
+      description: Phonetic pronunciation of family name
+    phone_numbers:
+      type: array
+      description: Phone numbers
+    email_addresses:
+      type: array
+      description: Email addresses
+    organizations:
+      type: array
+      description: Organizations and work information
+    organization:
+      type: string
+      description: Primary organization name (for backward compatibility)
+    job_title:
+      type: string
+      description: Primary job title (for backward compatibility)
+    addresses:
+      type: array
+      description: Physical addresses
+    biography:
+      type: string
+      description: Biography or notes about the contact
+    birthday:
+      type: object
+      description: Birthday information
+    urls:
+      type: array
+      description: URLs associated with the contact
+    relations:
+      type: array
+      description: Relations to other people
+
+extra:
+  python:
+    source: tools/get_contact.py

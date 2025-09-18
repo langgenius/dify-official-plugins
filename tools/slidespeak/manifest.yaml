@@ -30,4 +30,4 @@ resource:
       enabled: true
 tags: []
 type: plugin
-version: 0.0.4
+version: 1.0.0

@@ -6,6 +6,7 @@ extra:
     model_sources:
     - models/llm/llm.py
     - models/text_embedding/text_embedding.py
+    - models/rerank/rerank.py
     provider_source: provider/ollama.py
 help:
   title:
@@ -121,3 +122,4 @@ provider: ollama
 supported_model_types:
 - llm
 - text-embedding
+- rerank

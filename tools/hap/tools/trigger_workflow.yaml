@@ -1,0 +1,37 @@
+description:
+  human:
+    en_US: Trigger a workflow with input parameters
+    zh_Hans: 使用输入参数触发工作流
+  llm: Trigger a workflow execution by providing input parameters and receive output results from the workflow.
+extra:
+  python:
+    source: tools/trigger_workflow.py
+identity:
+  author: langgenius
+  label:
+    en_US: Trigger Workflow
+    zh_Hans: 触发工作流
+  name: trigger_workflow
+parameters:
+- form: llm
+  name: process_id
+  label:
+    en_US: Process ID
+    zh_Hans: 流程 ID
+  human_description:
+    en_US: The process ID to trigger
+    zh_Hans: 需要触发的流程 ID
+  llm_description: The process ID to trigger workflow execution
+  required: true
+  type: string
+- form: llm
+  name: inputs
+  label:
+    en_US: Input Parameters
+    zh_Hans: 输入参数
+  human_description:
+    en_US: JSON object containing input parameters for the workflow
+    zh_Hans: 包含工作流输入参数的 JSON 对象
+  llm_description: JSON object containing input parameters based on the workflow's input parameter schema
+  required: true
+  type: string

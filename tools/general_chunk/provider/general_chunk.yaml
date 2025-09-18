@@ -1,0 +1,19 @@
+extra:
+  python:
+    source: provider/general_chunk.py
+identity:
+  author: langgenius
+  description:
+    en_US: General text chunking mode, the chunks retrieved and recalled are the same.
+    pt_BR: General text chunking mode, the chunks retrieved and recalled are the same.
+    zh_Hans: 通用文本分块模式，检索和召回的块是相同的。
+  icon: icon.svg
+  tags:
+    - rag
+  label:
+    en_US: General Chunker
+    pt_BR: General Chunker
+    zh_Hans: 通用文本分块
+  name: general_chunker
+tools:
+- tools/general.yaml

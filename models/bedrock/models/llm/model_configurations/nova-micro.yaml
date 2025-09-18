@@ -1,0 +1,81 @@
+model: nova-micro
+label:
+  en_US: Nova Micro
+icon: icon_s_en.svg
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+  - vision
+model_properties:
+  mode: chat
+  context_size: 300000
+parameter_rules:
+  - name: cross-region
+    label:
+      zh_Hans: 使用跨区域推理
+      en_US: Use Cross-Region Inference
+    type: boolean
+    required: true
+    default: true
+    help:
+      zh_Hans: 跨区域推理会自动选择您所在地理区域 AWS 区域 内的最佳位置来处理您的推理请求。
+      en_US: Cross-Region inference automatically selects the optimal AWS Region within your geography to process your inference request.
+  - name: system_cache_checkpoint
+    label:
+      zh_Hans: 缓存系统提示词
+      en_US: Cache System Prompt
+    type: boolean
+    required: false
+    help:
+      zh_Hans: 在系统消息中启用缓存检查点，可以提高性能并降低成本。
+      en_US: Enable cache checkpoint in the system message to improve performance and reduce costs.
+  - name: latest_two_messages_cache_checkpoint
+    label:
+      zh_Hans: 缓存用户消息
+      en_US: Cache User Messages
+    type: boolean
+    required: false
+    help:
+      zh_Hans: 在最新的两条用户消息中启用缓存检查点，可以提高性能并降低成本。
+      en_US: Enable cache checkpoint in the latest two user messages to improve performance and reduce costs.
+  - name: max_new_tokens
+    use_template: max_tokens
+    required: true
+    default: 2048
+    min: 1
+    max: 5000
+  - name: temperature
+    use_template: temperature
+    required: false
+    type: float
+    default: 1
+    min: 0.0
+    max: 1.0
+    label:
+      zh_Hans: 生成内容的随机性。
+      en_US: The amount of randomness injected into the response.
+  - name: top_p
+    required: false
+    type: float
+    default: 0.999
+    min: 0.000
+    max: 1.000
+    label:
+      zh_Hans: 在核采样中，Amazon Nova 按概率递减顺序计算每个后续标记的所有选项的累积分布，并在达到 top_p 指定的特定概率时将其切断。您应该更改温度或top_p，但不能同时更改两者。
+      en_US: In nucleus sampling, Amazon Nova computes the cumulative distribution over all the options for each subsequent token in decreasing probability order and cuts it off once it reaches a particular probability specified by top_p. You should alter either temperature or top_p, but not both.
+  - name: top_k
+    required: false
+    type: int
+    default: 0
+    min: 0
+    max: 500
+    label:
+      zh_Hans: 对于每个后续标记，仅从前 K 个选项中进行采样。使用 top_k 删除长尾低概率响应。
+      en_US: Only sample from the top K options for each subsequent token. Use top_k to remove long tail low probability responses.
+pricing:
+  input: '0.000047'
+  output: '0.000188'
+  unit: '0.001'
+  currency: USD

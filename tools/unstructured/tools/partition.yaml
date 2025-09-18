@@ -1,0 +1,257 @@
+identity:
+  name: partition
+  author: langgenius
+  label:
+    en_US: partition
+    zh_Hans: partition
+    pt_BR: partition
+description:
+  human:
+    en_US: Document partitioning tool with essential configuration options
+    zh_Hans: 具有基本配置选项的文档分区工具
+    pt_BR: Ferramenta de particionamento de documentos com opções essenciais de configuração
+    ja_JP: 基本的な設定オプションを持つドキュメントの分割ツール
+  llm: A tool for partitioning documents with key customization parameters
+parameters:
+  - name: file
+    type: file
+    required: true
+    label:
+      en_US: file
+      zh_Hans: 文件
+      ja_JP: ファイル
+    human_description:
+      en_US: the file to be parsed(support pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
+      zh_Hans: 用于解析的文件(支持 pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
+      ja_JP: 解析するファイル(pdf、ppt、pptx、doc、docx、png、jpg、jpegをサポート)
+    llm_description: the file to be parsed (support pdf, ppt, pptx, doc, docx, png, jpg, jpeg)
+    form: llm
+
+  - name: strategy
+    type: select
+    required: false
+    default: hi_res
+    label:
+      en_US: Strategy
+      zh_Hans: 策略
+      ja_JP: 戦略
+    human_description:
+      en_US: The strategy to use for partitioning (vlm, fast, hi_res, auto, ocr_only)
+      zh_Hans: 用于分区的策略(vlm, fast, hi_res, auto, ocr_only)
+      ja_JP: 分割に使用する戦略(vlm, fast, hi_res, auto, ocr_only)
+    llm_description: The strategy to use for partitioning (vlm, fast, hi_res, auto, ocr_only)
+    form: form
+    options:
+      - value: auto
+        label:
+          en_US: auto
+          zh_Hans: auto
+          ja_JP: auto
+      - value: vlm
+        label:
+          en_US: vlm
+          zh_Hans: vlm
+          ja_JP: vlm
+      - value: fast
+        label:
+          en_US: fast
+          zh_Hans: fast
+          ja_JP: fast
+      - value: hi_res
+        label:
+          en_US: hi_res
+          zh_Hans: hi_res
+          ja_JP: hi_res
+      - value: ocr_only
+        label:
+          en_US: ocr_only
+          zh_Hans: ocr_only
+          ja_JP: ocr_only
+
+  - name: hi_res_model_name
+    type: string
+    default: layout_v1.1.0
+    required: false
+    label:
+      en_US: High-res Model
+      zh_Hans: 高分辨率模型
+      ja_JP: 高解像度モデル
+    human_description:
+      en_US: The inference model used for hi_res strategy (layout_v1.1.0 or yolox)
+      zh_Hans: 高分辨率策略使用的推理模型(layout_v1.1.0或yolox)
+      ja_JP: hi_res戦略で使用する推論モデル(layout_v1.1.0またはyolox)
+    options:
+      - value: layout_v1.1.0
+        label:
+          en_US: layout_v1.1.0
+          zh_Hans: layout_v1.1.0
+          ja_JP: layout_v1.1.0
+      - value: yolox
+        label:
+          en_US: yolox
+          zh_Hans: yolox
+          ja_JP: yolox
+    form: form
+
+  - name: chunking_strategy
+    type: select
+    required: false
+    label:
+      en_US: Chunking Strategy
+      zh_Hans: 分块策略
+      ja_JP: チャンキング戦略
+    human_description:
+      en_US: Strategy for chunking partitioned elements
+      zh_Hans: 分区元素的分块策略
+      ja_JP: 分割要素のチャンキング戦略
+    llm_description: Strategy for chunking partitioned elements
+    form: form
+    options:
+      - value: basic
+        label:
+          en_US: basic
+          zh_Hans: basic
+          ja_JP: basic
+      - value: by_page
+        label:
+          en_US: by_page
+          zh_Hans: by_page
+          ja_JP: by_page
+      - value: by_title
+        label:
+          en_US: by_title
+          zh_Hans: by_title
+          ja_JP: by_title
+      - value: by_similarity
+        label:
+          en_US: by_similarity
+          zh_Hans: by_similarity
+          ja_JP: by_similarity
+
+  - name: vlm_model
+    type: string
+    required: false
+    default: gpt-4o
+    label:
+      en_US: VLM Model
+      zh_Hans: VLM模型
+      ja_JP: VLMモデル
+    human_description:
+      en_US: The VLM model to use for processing
+      zh_Hans: 用于处理的VLM模型
+      ja_JP: 処理に使用するVLMモデル
+    llm_description: The VLM model to use for processing
+    form: form
+
+  - name: vlm_model_provider
+    type: string
+    required: false
+    default: openai
+    label:
+      en_US: VLM Model Provider
+      zh_Hans: VLM模型提供商
+      ja_JP: VLMモデルプロバイダー
+    human_description:
+      en_US: The provider of the VLM model
+      zh_Hans: VLM模型的提供商
+      ja_JP: VLMモデルのプロバイダー
+    llm_description: The provider of the VLM model
+    form: form
+
+  - name: max_characters
+    type: number
+    required: false
+    default: 500
+    label:
+      en_US: Max Characters
+      zh_Hans: 最大字符数
+      ja_JP: 最大文字数
+    human_description:
+      en_US: Maximum characters per chunk
+      zh_Hans: 每个分块的最大字符数
+      ja_JP: チャンクあたりの最大文字数
+    llm_description: Maximum characters per chunk
+    form: form
+
+  - name: combine_under_n_chars
+    type: number
+    required: false
+    label:
+      en_US: Combine Under N Chars
+      zh_Hans: 合并少于N字符
+      ja_JP: N文字以下を結合
+    human_description:
+      en_US: Combines small chunks until reaching this length (applies to by_title strategy)
+      zh_Hans: 合并小分块直到达到此长度(适用于by_title策略)
+      ja_JP: この長さに達するまで小さなチャンクを結合(by_title戦略に適用)
+    llm_description: Combines small chunks until reaching specified length (for by_title strategy)
+    form: form
+    default: 500
+
+
+  - name: overlap
+    type: number
+    required: false
+    default: 0
+    label:
+      en_US: Overlap
+      zh_Hans: 重叠量
+      ja_JP: オーバーラップ
+    human_description:
+      en_US: Number of overlapping characters between chunks
+      zh_Hans: 分块之间的重叠字符数
+      ja_JP: チャンク間の重複文字数
+    llm_description: Number of overlapping characters between chunks
+    form: form
+
+  - name: languages
+    type: string
+    required: false
+    default: "[]"
+    label:
+      en_US: Languages
+      zh_Hans: 语言
+      ja_JP: 言語
+    human_description:
+      en_US: The languages present in the document (e.g. ["eng","chi_sim"])
+      zh_Hans: 文档中使用的语言(例如 ["eng","chi_sim"])
+      ja_JP: 文書で使用される言語(例 ["eng","jpn"])
+    llm_description: The languages present in the document for partitioning and OCR
+    form: form
+
+  - name: advanced_options
+    type: string
+    required: false
+    default: "{}"
+    label:
+      en_US: Advanced Options
+      zh_Hans: 高级选项
+      ja_JP: 高度なオプション
+    human_description:
+      en_US: JSON format advanced configuration options (e.g. {"strategy":"hi_res","chunking_strategy":"by_title"}, see official documentation for details)
+      zh_Hans: JSON格式高级配置选项(例如 {"strategy":"hi_res","chunking_strategy":"by_title"},具体参数请参考官方文档)
+      ja_JP: JSON形式の高度な設定オプション(例 {"strategy":"hi_res","chunking_strategy":"by_title"},詳細は公式ドキュメントを参照してください)
+    llm_description: JSON format advanced configuration options
+    form: form
+    placeholder:
+      en_US: Enter JSON configuration
+      zh_Hans: 输入JSON配置
+      ja_JP: JSON設定を入力
+
+output_schema:
+    type: object
+    properties:
+      images:
+        type: array
+        items:
+          type: object
+        description: The images extracted from the file
+      elements:
+        type: array
+        items:
+          type: object
+        description: The structured elements extracted from the file
+extra:
+  python:
+    source: tools/partition.py
+

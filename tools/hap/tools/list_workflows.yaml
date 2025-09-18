@@ -1,0 +1,15 @@
+description:
+  human:
+    en_US: Get workflow list for the application
+    zh_Hans: 获取应用下工作流列表
+  llm: Get workflow list for the application, including workflow details like ID, name, type, and owner information.
+extra:
+  python:
+    source: tools/list_workflows.py
+identity:
+  author: langgenius
+  label:
+    en_US: List Workflows
+    zh_Hans: 获取工作流列表
+  name: list_workflows
+parameters: []
