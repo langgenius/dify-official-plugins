@@ -2,7 +2,7 @@ identity:
   name: "get_records"
   author: "jiandaoyun"
   label:
-    en_US: "dataget"
+    en_US: "Get records"
     zh_Hans: "查询多条数据"
     pt_BR: "jiandaoyun"
 description:
@@ -109,19 +109,6 @@ parameters:
         pt_BR: "limite dos dados que você deseja consultar"
     llm_description: "limit of the data you want to query"
     form: llm
-  - name: base_url
-    type: secret-input
-    required: false
-    label:
-      en_US: server url
-      zh_Hans: 服务器地址
-      pt_BR: url do servidor
-    human_description:
-      en_US: "the base url of the jiandaoyun server,if not specified,default to https://api.jiandaoyun.com"
-      zh_Hans: "简道云服务器的地址，如果不指定，默认为https://api.jiandaoyun.com"
-      pt_BR: "a URL base do servidor jiandaoyun, se não especificado, padrão para https://api.jiandaoyun.com"
-    llm_description: "the base url of the jiandaoyun server,if not specified,default to https://api.jiandaoyun.com"
-    form: form
   - name: output_type
     type: select
     required: true
