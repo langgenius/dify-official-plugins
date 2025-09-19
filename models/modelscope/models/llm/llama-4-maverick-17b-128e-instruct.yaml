@@ -1,11 +1,10 @@
-# for more details, please refer to https://help.aliyun.com/zh/model-studio/getting-started/models
-model: LLM-Research/Llama-3.3-70B-Instruct
+model: LLM-Research/Llama-4-Maverick-17B-128E-Instruct
 label:
-  en_US: LLM-Research/Llama-3.3-70B-Instruct
+  en_US: LLM-Research/Llama-4-Maverick-17B-128E-Instruct
 model_type: llm
 model_properties:
   mode: chat
-  context_size: 131072
+  context_size: 128000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -21,7 +20,7 @@ parameter_rules:
     type: int
     default: 8192
     min: 1
-    max: 100000
+    max: 16384
     help:
       zh_Hans: 用于指定模型在生成内容时token的最大数量，它定义了生成的上限，但不保证每次都会生成到这个数量。
       en_US: It is used to specify the maximum number of tokens when the model generates content. It defines the upper limit of generation, but does not guarantee that this number will be generated every time.

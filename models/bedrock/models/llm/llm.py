@@ -71,11 +71,13 @@ if you are not sure about the structure.
 </instructions>
 """  # noqa: E501
 
-
 class BedrockLargeLanguageModel(LargeLanguageModel):
     # please refer to the documentation: https://docs.aws.amazon.com/bedrock/latest/userguide/conversation-inference.html
     # TODO There is invoke issue: context limit on Cohere Model, will add them after fixed.
     CONVERSE_API_ENABLED_MODEL_INFO = [
+        {"prefix": "qwen.qwen3", "support_system_prompts": True, "support_tool_use": False},
+        {"prefix": "openai.gpt", "support_system_prompts": True, "support_tool_use": False},
+        {"prefix": "deepseek.v3-v1:0", "support_system_prompts": True, "support_tool_use": False},
         {"prefix": "us.deepseek", "support_system_prompts": True, "support_tool_use": False},
         {"prefix": "global.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
         {"prefix": "us.anthropic.claude", "support_system_prompts": True, "support_tool_use": True},
@@ -215,14 +217,11 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 raise InvokeError(f"Failed to invoke inference profile {inference_profile_id}: {str(e)}")
         else:
             # Traditional model - try converse API first, then fall back if needed
-            try:
-                model_info = self._get_model_info(model, credentials, model_parameters)
-                if model_info:
-                    return self._generate_with_converse(
-                        model_info, credentials, prompt_messages, model_parameters, stop, stream, user, tools, model
-                    )
-            except Exception as e:
-                logger.error(f"Failed to get model info: {str(e)}")
+            model_info = self._get_model_info(model, credentials, model_parameters)
+            if model_info:
+                return self._generate_with_converse(
+                    model_info, credentials, prompt_messages, model_parameters, stop, stream, user, tools, model
+                )
             
             # Fallback to traditional model ID for non-converse API models
             model_name = model_parameters.get('model_name')
@@ -282,7 +281,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             # Use traditional model ID resolution
             model_name = model_parameters.get('model_name')
             model_id = model_ids.get_model_id(model, model_name)
-            
+
             # Store model_name in credentials for pricing calculation
             if 'model_parameters' not in credentials:
                 credentials['model_parameters'] = {}
@@ -304,9 +303,13 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     region_prefix = model_ids.get_region_area(region_name, prefer_global=False)
                 
                 if not region_prefix:
-                    raise InvokeError(f'Region {region_name} Unsupport cross-region Inference')
+                    raise InvokeError(f'Failed to get cross-region Inference predix for {region_name}')
+
+                if not model_ids.is_support_cross_region(model_id):
+                    raise InvokeError(f"Model - {model_id} doesn't support cross-region Inference")
                 
                 model_id = "{}.{}".format(region_prefix, model_id)
+
 
             model_info = BedrockLargeLanguageModel._find_model_info(model_id)
             if model_info:
