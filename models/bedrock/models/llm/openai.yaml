@@ -1,11 +1,10 @@
-model: deepseek
+model: openai
 label:
-  en_US: DeepSeek
+  en_US: OpenAI
 icon: icon_s_en.svg
 model_type: llm
 features:
   - agent-thought
-  - vision
   - tool-call
   - stream-tool-call
 model_properties:
@@ -21,10 +20,10 @@ parameter_rules:
       zh_Hans: 指定模型名称
       en_US: specify model name
     required: true
-    default: DeepSeek R1
+    default: GPT OSS 20B
     options:
-      - DeepSeek R1
-      - DeepSeek V3.1
+      - GPT OSS 120B
+      - GPT OSS 20B
   - name: cross-region
     label:
       zh_Hans: 使用跨区域推理
@@ -42,7 +41,7 @@ parameter_rules:
       zh_Hans: 最大token数
       en_US: Max Tokens
     type: int
-    default: 8192
+    default: 4096
     min: 1
     max: 128000
     help:
@@ -59,12 +58,9 @@ parameter_rules:
     min: 0.0
     max: 1.0
     help:
-      zh_Hans: 生成内容的随机性。当推理功能启用时，该值将被固定为1。
-      en_US: The amount of randomness injected into the response. When reasoning is enabled, this value will be fixed to 1.
+      zh_Hans: 生成内容的随机性。
+      en_US: The amount of randomness injected into the response.
   - name: top_p
-    show_on:
-      - variable: reasoning_type
-        value: disabled
     use_template: top_p
     label:
       zh_Hans: Top P
@@ -75,12 +71,12 @@ parameter_rules:
     min: 0.000
     max: 1.000
     help:
-      zh_Hans: 在核采样中的概率阈值。当推理功能启用时，该参数将被禁用。
-      en_US: The probability threshold in nucleus sampling. When reasoning is enabled, this parameter will be disabled.
+      zh_Hans: 在核采样中的概率阈值。
+      en_US: The probability threshold in nucleus sampling.
   - name: response_format
     use_template: response_format
 pricing:
-  input: '0.00058'
-  output: '0.00168'
+  input: '0.003'
+  output: '0.015'
   unit: '0.001'
   currency: USD
