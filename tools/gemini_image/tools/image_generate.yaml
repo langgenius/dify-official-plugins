@@ -16,7 +16,8 @@ identity:
     zh_Hans: Gemini 图像生成与编辑
   name: image_generate
 parameters:
-  - form: llm
+  - name: prompt
+    form: llm
     human_description:
       en_US: Detailed description of the image you want to generate (max 32000 chars). Check the official Gemini documentation.
       zh_Hans: 您想要生成的图像的详细描述（最多 32000 字符）。请查看 Gemini 的官方文档。
@@ -24,21 +25,20 @@ parameters:
       en_US: Prompt
       zh_Hans: 提示词
     llm_description: Detailed image prompt for Gemini Image Generate(max 32000 characters). Describe the desired image clearly.
-    name: prompt
     required: true
     type: string
-  - form: llm
+  - name: images
+    form: llm
     human_description:
       en_US: One or more images to edit (PNG, JPEG, or WebP, each <7MB).
       zh_Hans: 要编辑的一张或多张图像（PNG、JPEG 或 WebP，每张小于 7MB）。
     label:
       en_US: Image(s)
       zh_Hans: 图像
-    name: images
     required: false
     type: files
-    mime_types: [ "image/png", "image/jpeg" ]    
-  - default: "gemini-2.5-flash-image-preview"
+  - name: model
+    default: "gemini-2.5-flash-image-preview"
     form: form
     human_description:
       en_US: Select the gemini model 
@@ -46,7 +46,6 @@ parameters:
     label:
       en_US: Gemini Model
       zh_Hans: Gemini 模型
-    name: model
     options:
       - label:
           en_US: gemini-2.5-flash-image-preview
