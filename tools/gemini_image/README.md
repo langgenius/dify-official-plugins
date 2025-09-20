@@ -2,8 +2,7 @@
 
 ## Overview
 
-The **Gemini Image Tool** is used to access Gemini's image generation and editing models on Vertex AI.
-Currently, this plugin supports the following models.
+The **Gemini Image Tool** is used to access Gemini's image generation and editing models on Vertex AI. Currently, this plugin supports the following models.
 
 - Gemini 2.5 Flash Image (aka Nano Banana)
 
@@ -11,7 +10,7 @@ Currently, this plugin supports the following models.
 
 ## Configuration
 
-### 1. Get a Google Cloud API key
+### 1. Get a Gemini API Key
 
 Go to the [Google AI Studio](https://aistudio.google.com/app/apikey) and make an Gemini API Key.
 
