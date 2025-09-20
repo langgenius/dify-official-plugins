@@ -24,7 +24,9 @@ class DownloadHuggingFace(Tool):
             hf_api_key=self.runtime.credentials.get("hf_api_key"),
             expire_after=int(self.runtime.credentials.get("expire_after", 300)),
         )
+        yield self.create_text_message("Downloading...")
         filename = model_manager.download_hugging_face(
             tool_parameters.get("repo_id"), tool_parameters.get("filepath"), tool_parameters.get("save_dir")
         )
+        yield self.create_text_message("Download Complete.")
         yield self.create_variable_message("filename", filename)

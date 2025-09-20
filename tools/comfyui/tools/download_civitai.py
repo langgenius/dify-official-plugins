@@ -38,4 +38,9 @@ class DownloadCivitAI(Tool):
         yield self.create_variable_message("type", civitai_model.model_type)
         yield self.create_variable_message("source", civitai_model.source)
 
+        if civitai_model.name in self._comfyui_cli.get_model_dirs(civitai_model.directory):
+            yield self.create_text_message("Model was found on local. Download skipped.")
+            return
+        yield self.create_text_message("Downloading...")
         model_manager.download_model_autotoken(civitai_model.url, civitai_model.directory, civitai_model.name)
+        yield self.create_text_message("Download Complete.")
