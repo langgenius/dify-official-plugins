@@ -36,7 +36,7 @@ class ImageGenerateTool(Tool):
             yield self.create_blob_message(
                 blob=blob,
                 meta={
-                    "filename": f"original{i}.png",
+                    "filename": f"output{i}.png",
                     "mime_type": "image/png",
                 },
             )
