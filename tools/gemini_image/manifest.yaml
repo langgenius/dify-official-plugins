@@ -3,10 +3,12 @@ created_at: '2025-09-08T08:03:44.658609186Z'
 description:
   en_US: Gemini Image Generation and Editing
   zh_Hans: Gemini 图像生成和编辑
+  ja_JP: Gemini 画像生成・編集
 icon: icon.png
 label:
   en_US: Gemini Image
   zh_Hans: Gemini Image
+  ja_JP: Gemini Image
 meta:
   arch:
   - amd64
@@ -32,4 +34,4 @@ tags:
 - image
 - productivity
 type: plugin
-version: 0.0.1
+version: 0.1.0
