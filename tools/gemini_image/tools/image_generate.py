@@ -5,6 +5,7 @@ from typing import Any
 import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from PIL import Image, ImageDraw
 
 
 class ImageGenerateTool(Tool):
@@ -29,8 +30,7 @@ class ImageGenerateTool(Tool):
         if len(images) == 0:
             generated_blobs = self.txt2img(prompt)
         else:
-            for image in images:
-                generated_blobs += self.img2img(prompt, image.blob, image.mime_type)
+            generated_blobs = self.img2img(prompt, [img.blob for img in images], [img.mime_type for img in images])
         for i, blob in enumerate(generated_blobs):
             yield self.create_blob_message(
                 blob=blob,
@@ -56,14 +56,17 @@ class ImageGenerateTool(Tool):
                     image_blobs.append(base64.b64decode(inline_data["data"]))
         return image_blobs
 
-    def img2img(self, prompt: str, image_blob: bytes, mime_type: str) -> list[bytes]:
-        input_base64 = base64.b64encode(image_blob).decode()
+    def img2img(self, prompt: str, image_blobs: list[bytes], mime_types: list[str]) -> list[bytes]:
+        if len(image_blobs) != len(mime_types):
+            raise Exception("Number of image_blobs and mime_types does not match!")
         url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent"
-        data = {
-            "contents": [{"parts": [{"text": prompt}, {"inline_data": {"mime_type": mime_type, "data": input_base64}}]}]
-        }
         headers = {"x-goog-api-key": self._gemini_api_key, "Content-Type": "application/json"}
-        response = requests.post(url, json=data, headers=headers).json()
+        parts = [{"text": prompt}]
+        for i in range(len(image_blobs)):
+            input_base64 = base64.b64encode(image_blobs[i]).decode()
+            parts.append({"inline_data": {"mime_type": mime_types[i], "data": input_base64}})
+
+        response = requests.post(url, json={"contents": [{"parts": parts}]}, headers=headers).json()
         if "error" in response:
             raise Exception(response["error"]["message"])
 
