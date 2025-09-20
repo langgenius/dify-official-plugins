@@ -10,7 +10,7 @@ The **Gemini Image Tool** is used to access Gemini's image generation and editin
 
 ## Configuration
 
-### 1. Get a Google Cloud API key
+### 1. Get a Gemini API Key
 
 Go to the [Google AI Studio](https://aistudio.google.com/app/apikey) and make an Gemini API Key.
 
