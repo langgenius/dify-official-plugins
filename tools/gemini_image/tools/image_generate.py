@@ -60,6 +60,9 @@ class ImageGenerateTool(Tool):
     def img2img(self, prompt: str, image_blobs: list[bytes], mime_types: list[str]) -> list[bytes]:
         if len(image_blobs) != len(mime_types):
             raise Exception("Number of image_blobs and mime_types does not match!")
+        if len(image_blobs) > 3:
+            # https://ai.google.dev/gemini-api/docs/image-generation#limitations
+            yield self.create_text_message("Warning: The number of input images should be three or less.")
         url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent"
         headers = {"x-goog-api-key": self._gemini_api_key, "Content-Type": "application/json"}
         parts = [{"text": prompt}]
