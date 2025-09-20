@@ -5,7 +5,6 @@ from typing import Any
 import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from PIL import Image, ImageDraw
 
 
 class ImageGenerateTool(Tool):
@@ -26,25 +25,27 @@ class ImageGenerateTool(Tool):
         images = tool_parameters.get("images", [])
         if not isinstance(images, list):
             images = [images]  # Make one image to list
-        generated_blobs = []
+
+        generated_blobs: list[bytes] = []
         if len(images) == 0:
             generated_blobs = self.txt2img(prompt)
         else:
             generated_blobs = self.img2img(prompt, [img.blob for img in images], [img.mime_type for img in images])
+
         for i, blob in enumerate(generated_blobs):
             yield self.create_blob_message(
                 blob=blob,
                 meta={
-                    "filename": f"output{i}.png",
+                    "filename": f"original{i}.png",
                     "mime_type": "image/png",
                 },
             )
 
     def txt2img(self, prompt: str) -> list[bytes]:
         url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent"
-        data = {"contents": [{"parts": [{"text": prompt}]}]}
         headers = {"x-goog-api-key": self._gemini_api_key, "Content-Type": "application/json"}
-        response = requests.post(url, json=data, headers=headers).json()
+
+        response = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, headers=headers).json()
         if "error" in response:
             raise Exception(response["error"]["message"])
 
