@@ -5,7 +5,6 @@ import os
 import uuid
 from enum import StrEnum
 
-import httpx
 import requests
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from websocket import WebSocket
@@ -61,7 +60,7 @@ class ComfyUiClient:
                 api_url = str(self.base_url / "models")
             else:
                 api_url = str(self.base_url / "models" / path)
-            response = httpx.get(url=api_url, timeout=(2, 10), headers=self._get_headers())  # Add headers
+            response = requests.get(url=api_url, timeout=(2, 10), headers=self._get_headers())  # Add headers
             if response.status_code != 200:
                 return []
             else:
@@ -102,7 +101,7 @@ class ComfyUiClient:
         """
         try:
             api_url = str(self.base_url / "object_info" / "KSampler")
-            response = httpx.get(url=api_url, timeout=(2, 10), headers=self._get_headers())  # Add headers
+            response = requests.get(url=api_url, timeout=(2, 10), headers=self._get_headers())  # Add headers
             if response.status_code != 200:
                 return []
             else:
@@ -117,7 +116,7 @@ class ComfyUiClient:
         """
         try:
             api_url = str(self.base_url / "object_info" / "KSampler")
-            response = httpx.get(url=api_url, timeout=(2, 10), headers=self._get_headers())  # Add headers
+            response = requests.get(url=api_url, timeout=(2, 10), headers=self._get_headers())  # Add headers
             if response.status_code != 200:
                 return []
             else:
@@ -127,7 +126,7 @@ class ComfyUiClient:
             return []
 
     def get_history(self, prompt_id: str) -> dict:
-        res = httpx.get(
+        res = requests.get(
             str(self.base_url / "history"),
             params={"prompt_id": prompt_id},
             headers=self._get_headers(),
@@ -136,7 +135,7 @@ class ComfyUiClient:
         return history
 
     def get_image(self, filename: str, subfolder: str, folder_type: str) -> bytes:
-        response = httpx.get(
+        response = requests.get(
             str(self.base_url / "view"),
             params={"filename": filename, "subfolder": subfolder, "type": folder_type},
             headers=self._get_headers(),  # Add headers
@@ -166,7 +165,7 @@ class ComfyUiClient:
             return None
 
     def queue_prompt(self, client_id: str, prompt: dict) -> str:
-        res = httpx.post(
+        res = requests.post(
             str(self.base_url / "prompt"),
             data=json.dumps(
                 {
@@ -253,7 +252,7 @@ class ComfyUiClient:
         download image
         """
         url = str(self.base_url / "view")
-        response = httpx.get(
+        response = requests.get(
             url,
             params={"filename": filename, "subfolder": subfolder, "type": folder_type},
             timeout=(2, 10),
@@ -291,7 +290,7 @@ class ComfyUiClient:
         ws = None
         try:
             url = str(self.base_url / "prompt")
-            respond = httpx.post(
+            respond = requests.post(
                 url,
                 data=json.dumps(
                     {

@@ -20,8 +20,9 @@ class DownloadHuggingFace(Tool):
         )
         model_manager = ModelManager(
             comfyui,
-            civitai_api_key=None,
+            civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
             hf_api_key=self.runtime.credentials.get("hf_api_key"),
+            expire_after=int(self.runtime.credentials.get("expire_after", 300)),
         )
         filename = model_manager.download_hugging_face(
             tool_parameters.get("repo_id"), tool_parameters.get("filepath"), tool_parameters.get("save_dir")
