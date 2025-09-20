@@ -12,9 +12,10 @@ class DatacreateTool(Tool):
     create data in batch in jiandaoyun
     """
 
-    def create_data(self, data: dict[str, Any], base_url: str) -> dict[str, Any]:
+    def create_data(self, data: dict[str, Any]) -> dict[str, Any]:
         try:
             access_token = self.runtime.credentials["jiandaoyun_api_key"]
+            base_url = self.runtime.credentials["base_url"] or "https://api.jiandaoyun.com/"
         except KeyError:
             raise Exception("jiandaoyun api-key is missing or invalid.")
         httpClient = APIRequestTool(base_url=base_url, token=access_token)
@@ -31,7 +32,6 @@ class DatacreateTool(Tool):
 
         data = self.create_data(
             {"app_id": app_id, "entry_id": entry_id, "data_list": data_list},
-            tool_parameters.get("base_url"),
         )
         json_data = {
             "status": "success",

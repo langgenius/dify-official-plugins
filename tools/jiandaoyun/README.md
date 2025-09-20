@@ -25,8 +25,8 @@ To start using the Jiandaoyun Dify plugin, ensure you have installed it from the
 ![img.png](_assets/img.png)
 
 2.click To Authorize, fill in your API key(if you don't have one, please refer to the "Installation and Usage" section below to obtain it), and then click "Save".Then you've get your apiKey configured.
-
-3.Then you can use the plugin in your conversations by invoking its functions. For example, to query all applications, you can say:
+3.If you are using the self-hosted version of Jiandaoyun, you also need to fill in the server url in the "Server URL" field. If you are using the official Jiandaoyun API center, just fill in "https://api.jiandaoyun.com/api".
+4.Then you can use the plugin in your conversations by invoking its functions. For example, to query all applications, you can say:
 ```"Use the Jiandaoyun plugin to query all applications."```
 To create a new record in a specific form, you can prompt:
 "Use the Jiandaoyun plugin to create a new record in the form with entry_id 'your_entry_id' and app_id 'your_app_id', with the following data: {field1: value1, field2: value2}."

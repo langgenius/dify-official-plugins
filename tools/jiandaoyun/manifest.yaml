@@ -1,12 +1,12 @@
-version: 0.0.1
+version: 0.0.2
 type: plugin
 author: langgenius
 name: jiandaoyun
 label:
-  en_US: jiandaoyun
-  ja_JP: jiandaoyun
+  en_US: Jiandaoyun
+  ja_JP: Jiandaoyun
   zh_Hans: 简道云
-  pt_BR: jiandaoyun
+  pt_BR: Jiandaoyun
 description:
   en_US: Jiandaoyun is a no-code application building platform that allows users to create customized systems like CRM, ERP, OA, project management, and inventory management without using code
   ja_JP: ジァンドーユンはノーコードアプリ構築プラットフォームで、ユーザーがCRM、ERP、OA、プロジェクト管理、在庫管理などのカスタマイズされたシステムをコードを使わずに作成できる
