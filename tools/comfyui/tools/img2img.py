@@ -35,6 +35,7 @@ class ComfyuiImg2Img(Tool):
             self.comfyui,
             civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
             hf_api_key=self.runtime.credentials.get("hf_api_key"),
+            expire_after=int(self.runtime.credentials.get("expire_after", 300)),
         )
 
         model_raw = tool_parameters.get("model", "")

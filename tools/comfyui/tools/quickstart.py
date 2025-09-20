@@ -40,6 +40,7 @@ class QuickStart(Tool):
             self.comfyui,
             civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
             hf_api_key=self.runtime.credentials.get("hf_api_key"),
+            expire_after=int(self.runtime.credentials.get("expire_after", 300)),
         )
         image_names = []
         for image in tool_parameters.get("images", []):

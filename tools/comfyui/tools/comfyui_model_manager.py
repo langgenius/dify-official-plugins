@@ -3,6 +3,7 @@ import os
 import re
 
 import requests
+from requests_cache import CachedSession
 
 from tools.comfyui_client import ComfyUiClient
 from tools.comfyui_workflow import ComfyUIModel, ComfyUiWorkflow
@@ -24,10 +25,12 @@ class ModelManager:
         comfyui_cli: ComfyUiClient,
         civitai_api_key: str | None,
         hf_api_key: str | None,
+        expire_after: int = 60 * 5,
     ):
         self._comfyui_cli = comfyui_cli
         self._civitai_api_key = civitai_api_key
         self._hf_api_key = hf_api_key
+        self._session = CachedSession("model_manager", expire_after=expire_after)
 
     def get_civitai_api_key(self):
         if self._civitai_api_key is None:
@@ -94,6 +97,8 @@ class ModelManager:
         raise Exception(f"Model {model_name} does not exist in the local folder {save_dir}/ or online.")
 
     def download_model_autotoken(self, url: str, save_dir: str, filename: str | None = None) -> str:
+        if filename in self._comfyui_cli.get_model_dirs(save_dir):
+            return filename
         try:
             return self.download_model(url, save_dir, filename, None)
         except:
@@ -142,25 +147,17 @@ class ModelManager:
 
         return filename
 
-    def fetch_version_ids(self, model_id: int):
-        try:
-            model_data = requests.get(f"https://civitai.com/api/v1/models/{model_id}").json()
-        except:
-            raise Exception(f"Model {model_id} not found.")
-        version_ids = [v["id"] for v in model_data["modelVersions"] if v["availability"] == "Public"]
-        return version_ids
-
     def search_civitai(self, model_id: int, version_id: int | None, save_dir: str) -> CivitAiModel:
         try:
-            model_data = requests.get(f"https://civitai.com/api/v1/models/{model_id}").json()
-
-            model_name_human = model_data["name"]
+            model_data = self._session.get(f"https://civitai.com/api/v1/models/{model_id}").json()
         except:
             raise Exception(f"Model {model_id} not found.")
         if "error" in model_data:
             raise Exception(model_data["error"])
+        model_name_human = model_data.get("name", "")
         if version_id is None:
-            version_id = max(self.fetch_version_ids(model_id))
+            version_ids = [v["id"] for v in model_data["modelVersions"] if v["availability"] == "Public"]
+            version_id = max(version_ids)
         model_detail = None
         for past_model in model_data["modelVersions"]:
             if past_model["id"] == version_id:
@@ -196,7 +193,7 @@ class ModelManager:
 
     def fetch_civitai_air(self, version_id: int) -> tuple[str, str, str, str]:
         try:
-            air_str: str = requests.get(f"https://civitai.com/api/v1/model-versions/{version_id}").json()["air"]
+            air_str: str = self._session.get(f"https://civitai.com/api/v1/model-versions/{version_id}").json()["air"]
             urn, air, ecosystem, model_type, source, id = air_str.split(":")
             return ecosystem, model_type, source, id
         except:
