@@ -3,6 +3,9 @@
 ## Overview
 
 The **Gemini Image Tool** is used to access Gemini's image generation and editing models on Vertex AI.
+Currently, this plugin supports the following models.
+
+- Gemini 2.5 Flash Image (aka Nano Banana)
 
 ---
 
@@ -10,22 +13,18 @@ The **Gemini Image Tool** is used to access Gemini's image generation and editin
 
 ### 1. Get a Google Cloud API key
 
-1. Go to the [Google Cloud ](https://cloud.google.com/vertex-ai/generative-ai/docs/start/api-keys?usertype=existinguser).  
-2. Follow the steps to create an API key.  
+Go to the [Google AI Studio](https://aistudio.google.com/app/apikey) and make an Gemini API Key.
 
-
-### 3. Gemini Image Tool in Dify
+### 2. Gemini Image Tool in Dify
 
 1. In the **Dify Console**, go to **Plugin Marketplace**.  
 2. Search for **Gemini Image** and install it.
 
-### 4. Configure in Dify
+### 3. Configure in Dify
 
 In **Dify Console > Tools > Gemini Image > Authorize**, enter:  
 
-- **Vertex Service Account key**: The key from [Google Cloud](https://ai.google.dev/gemini-api/docs/api-key) in base64 format.  
-- **project ID**: The [Google Cloud project ID](https://cloud.google.com/resource-manager/docs/creating-managing-projects#identifying_projects).  
-- **vertex_location**: The [Google model endpoint location](https://cloud.google.com/vertex-ai/generative-ai/docs/learn/locations).
+- **Gemini API Key**: The key from [Google AI Studio](https://aistudio.google.com/app/apikey).
 ---
 
 ## Usage
