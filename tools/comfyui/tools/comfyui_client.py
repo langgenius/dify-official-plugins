@@ -214,19 +214,6 @@ class ComfyUiClient:
                     if data["node"] is None and data["prompt_id"] == prompt_id:
                         break  # Execution is done
 
-    def download_image(self, filename, subfolder, folder_type):
-        """
-        download image
-        """
-        url = str(self.base_url / "view")
-        response = requests.get(
-            url,
-            params={"filename": filename, "subfolder": subfolder, "type": folder_type},
-            timeout=(2, 10),
-            headers=self._get_headers(),  # Add headers
-        )
-        return response.content
-
     def generate(self, workflow_json: dict) -> list[ComfyUiResultFile]:
         try:
             ws, client_id = self.open_websocket_connection()
