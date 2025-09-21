@@ -78,18 +78,20 @@ class ComfyuiImg2Img(Tool):
         if len(image_names) == 0:
             raise ToolProviderCredentialValidationError("Please input images")
 
-        lora_list = []
+        lora_name_list = []
+        lora_strength_list = []
         try:
             for lora_info in tool_parameters.get("loras", "").split(","):
                 lora_info = lora_info.lstrip(" ").rstrip(" ")
                 if lora_info == "":
                     continue
-                lora_list.append(self.model_manager.decode_lora(lora_info))
+                lora_name, lora_strength = self.model_manager.decode_lora(lora_info)
+                lora_name_list.append(lora_name)
+                lora_strength_list.append(lora_strength)
         except Exception as e:
             raise ToolProviderCredentialValidationError(str(e))
         batch_size = int(tool_parameters.get("batch_size", 1))
 
-        lora_strength_list = []
         if len(tool_parameters.get("lora_strengths", "")) > 0:
             lora_strength_list = [
                 float(x.lstrip(" ").rstrip(" ")) for x in tool_parameters.get("lora_strengths").split(",")
@@ -111,12 +113,13 @@ class ComfyuiImg2Img(Tool):
         workflow.set_model_loader(None, model)
         workflow.set_image_names([image_name])
 
-        for i, lora_name in enumerate(lora_list):
+        for i, lora_name in enumerate(lora_name_list):
             try:
                 strength = lora_strength_list[i]
             except:
                 strength = 1.0
             workflow.add_lora_node("3", "6", "7", lora_name, strength, strength)
+        yield self.create_json_message(workflow.json())
 
         for _ in range(batch_size):
             workflow.randomize_seed()
@@ -132,4 +135,3 @@ class ComfyuiImg2Img(Tool):
                         "mime_type": img.mime_type,
                     },
                 )
-        yield self.create_json_message(workflow.json())
