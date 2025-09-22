@@ -1,0 +1,71 @@
+identity:
+  author: langgenius
+  name: sharepoint
+  label:
+    en_US: SharePoint
+    zh_Hans: SharePoint
+  description:
+    en_US: SharePoint Datasource
+    zh_Hans: SharePoint 数据源
+  icon: icon.svg
+provider_type: online_drive
+help:
+  title:
+    en_US: Get your credentials from Microsoft Azure App Registration
+    zh_Hans: 从 Microsoft Azure 应用注册获取您的凭证
+  url:
+    en_US: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+    zh_Hans: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+  description:
+    en_US: "Required permissions: openid, offline_access, and site-specific .default scope or User.Read + Sites.Read.All + Files.Read.All"
+    zh_Hans: "所需权限: openid, offline_access, 以及站点特定的 .default 范围权限 或 User.Read + Sites.Read.All + Files.Read.All"
+oauth_schema:
+  client_schema:
+    - name: client_id
+      type: secret-input
+      label:
+        zh_Hans: Client ID
+        en_US: Client ID
+    - name: client_secret
+      type: secret-input
+      label:
+        zh_Hans: Client Secret
+        en_US: Client Secret
+      help:
+        zh_Hans: 从 Microsoft Azure 应用注册页面获取您的客户端密钥
+        en_US: Get your client secret from the Microsoft Azure App Registration page
+      url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+    - name: subdomain
+      type: text-input
+      label:
+        zh_Hans: SharePoint 子域名
+        en_US: SharePoint Subdomain
+      help:
+        zh_Hans: '输入您的 SharePoint 子域名 (例如: mycompany，对应 mycompany.sharepoint.com)'
+        en_US: Enter your SharePoint subdomain (e.g., mycompany for mycompany.sharepoint.com)
+      placeholder:
+        zh_Hans: mycompany
+        en_US: mycompany
+      required: true
+  credentials_schema:
+    - name: access_token
+      type: secret-input
+      label:
+        zh_Hans: Access Token
+        en_US: Access Token
+    - name: refresh_token
+      type: secret-input
+      label:
+        zh_Hans: Refresh Token
+        en_US: Refresh Token
+    - name: subdomain
+      type: text-input
+      label:
+        zh_Hans: SharePoint 子域名
+        en_US: SharePoint Subdomain
+datasources:
+  - datasources/docs_in_site.yaml
+  - datasources/docs_in_group.yaml
+extra:
+  python:
+    source: provider/sharepoint.py

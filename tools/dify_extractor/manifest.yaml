@@ -1,0 +1,36 @@
+version: 0.0.5
+type: plugin
+author: langgenius
+name: dify_extractor
+label:
+  en_US: Dify Extractor
+  ja_JP: Dify Extractor
+  zh_Hans: Dify文本提取器
+  pt_BR: Dify Extractor
+description:
+  en_US: Dify Extractor
+  ja_JP: Dify Extractor
+  zh_Hans: Dify Extractor
+  pt_BR: Dify Extractor
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission: {}
+plugins:
+  tools:
+    - provider/dify_extractor.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: 1.9.0
+created_at: 2025-05-06T17:36:36.427192+08:00
+privacy: PRIVACY.md
+verified: false
+tags: 
+  - rag

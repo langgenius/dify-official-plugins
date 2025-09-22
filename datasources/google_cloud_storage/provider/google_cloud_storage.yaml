@@ -1,0 +1,34 @@
+identity:
+  author: langgenius
+  name: google_cloud_storage
+  label:
+    en_US: Google Cloud Storage
+    zh_Hans: Google Cloud Storage
+  description:
+    en_US: Google Cloud Storage Datasource
+    zh_Hans: Google Cloud Storage 数据源
+  icon: icon.svg
+provider_type: online_drive
+help:
+  title:
+    en_US: Get your credentials from Google Cloud Console
+    zh_Hans: 从 Google Cloud Console 获取您的凭证
+  url:
+    en_US: https://console.cloud.google.com/iam-admin/serviceaccounts
+credentials_schema:
+  - name: credentials
+    type: secret-input
+    required: true
+    label:
+      en_US: Credentials
+      zh_Hans: 凭证
+    placeholder:
+      en_US: Enter your Google Cloud Storage credentials
+      zh_Hans: 输入您的 Google Cloud Storage 项目 ID
+
+
+datasources:
+  - datasources/google_cloud_storage.yaml
+extra:
+  python:
+    source: provider/google_cloud_storage.py

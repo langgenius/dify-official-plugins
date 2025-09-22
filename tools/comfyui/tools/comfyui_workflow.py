@@ -1,7 +1,9 @@
+import dataclasses
 import json
 import os
+import secrets
 from copy import deepcopy
-import random
+from typing import Optional
 
 LORA_NODE = {
     "inputs": {
@@ -22,44 +24,52 @@ FluxGuidanceNode = {
 }
 
 
+@dataclasses.dataclass
+class ComfyUIModel:
+    name: str
+    url: str
+    directory: str
+
+
 class ComfyUiWorkflow:
     def __init__(self, workflow_json: str | dict):
         if type(workflow_json) is str:
-            self.load_from_json_str(workflow_json)
+
+            def clean_json_string(string: str) -> str:
+                for char in ["\n", "\r", "\t", "\x08", "\x0c"]:
+                    string = string.replace(char, "")
+                for char_id in range(0x007F, 0x00A1):
+                    string = string.replace(chr(char_id), "")
+                return string
+
+            workflow_json: dict = json.loads(clean_json_string(workflow_json))
         elif type(workflow_json) is dict:
-            self.load_from_json_dict(workflow_json)
+            pass
         else:
             raise Exception("workflow_json has unsupported format. Please convert it to str or dict")
 
-    def __str__(self):
-        return json.dumps(self._workflow_api)
-
-    def load_from_json_str(self, workflow_json_str: str):
-        def clean_json_string(string: str) -> str:
-            for char in ["\n", "\r", "\t", "\x08", "\x0c"]:
-                string = string.replace(char, "")
-            for char_id in range(0x007F, 0x00A1):
-                string = string.replace(chr(char_id), "")
-            return string
-
-        workflow_json: dict = json.loads(clean_json_string(workflow_json_str))
-        self.load_from_json_dict(workflow_json)
-
-    def load_from_json_dict(self, workflow_json: dict):
         self._workflow_original = workflow_json
+        self.models_to_download: list[ComfyUIModel] = []
         if "nodes" in workflow_json:
             try:
                 self._workflow_api = self.convert_to_api_ready(workflow_json)
             except Exception as e:
                 raise Exception(f"Failed to convert Workflow to API ready. {str(e)}")
+            for node in workflow_json["nodes"]:
+                if "properties" in node and "models" in node["properties"]:
+                    for model in node["properties"]["models"]:
+                        self.models_to_download.append(ComfyUIModel(model["name"], model["url"], model["directory"]))
         else:
             self._workflow_api = deepcopy(workflow_json)
+
+    def __str__(self):
+        return json.dumps(self._workflow_api)
 
     def convert_to_api_ready(self, workflow_json: dict) -> dict:
         result = {}
         current_dir = os.path.dirname(os.path.realpath(__file__))
         widgets_value_path = os.path.join(current_dir, "json", "widgets_value_names.json")
-        with open(widgets_value_path, "r", encoding="UTF-8") as f:
+        with open(widgets_value_path, encoding="UTF-8") as f:
             widgets_value_names = json.loads(f.read())
         nodes = workflow_json["nodes"]
         links = workflow_json["links"]
@@ -82,10 +92,13 @@ class ComfyUiWorkflow:
             # Set links
             for input in node["inputs"]:
                 link_id = input["link"]
-                link = [l for l in links if l[0] == link_id]
-                if len(link) == 0:
+                link = None
+                for li in links:
+                    if li[0] == link_id:
+                        link = li
+                        break
+                if link is None:
                     continue
-                link = link[0]
                 link_id, source_id, port_idx, _, _, type = link
                 inputs[input["name"]] = [str(source_id), port_idx]
             result[str(node["id"])] = {
@@ -108,6 +121,9 @@ class ComfyUiWorkflow:
     def json_original_str(self) -> str:
         return json.dumps(self._workflow_original)
 
+    def get_models_to_download(self) -> list[ComfyUIModel]:
+        return self.models_to_download
+
     def get_property(self, node_id: str | None, path: str):
         try:
             workflow_json = self._workflow_api[node_id]
@@ -121,7 +137,7 @@ class ComfyUiWorkflow:
         workflow_json = self._workflow_api[node_id]
         for name in path.split("/")[:-1]:
             if not can_create and name not in workflow_json:
-                raise Exception(f"Cannot create a new property.")
+                raise Exception("Cannot create a new property.")
             workflow_json = workflow_json[name]
         workflow_json[path.split("/")[-1]] = value
 
@@ -147,11 +163,11 @@ class ComfyUiWorkflow:
     def randomize_seed(self):
         for node_id in self._workflow_api:
             if self.get_property(node_id, "inputs/seed") is not None:
-                self.set_property(node_id, "inputs/seed", random.randint(0, 10**8 - 1))
+                self.set_property(node_id, "inputs/seed", secrets.randbelow(10**8))
             if self.get_property(node_id, "inputs/noise_seed") is not None:
-                self.set_property(node_id, "inputs/noise_seed", random.randint(0, 10**8 - 1))
+                self.set_property(node_id, "inputs/noise_seed", secrets.randbelow(10**8))
 
-    def set_image_names(self, image_names: list[str], ordered_node_ids: list[str] = None):
+    def set_image_names(self, image_names: list[str], ordered_node_ids: Optional[list[str]] = None):
         if ordered_node_ids is None:
             ordered_node_ids = self.get_node_ids_by_class_type("LoadImage")
         for i, node_id in enumerate(ordered_node_ids):
@@ -164,7 +180,7 @@ class ComfyUiWorkflow:
             raise Exception(f"Node {node_id} is not CheckpointLoaderSimple")
         self.set_property(node_id, "inputs/ckpt_name", ckpt_name)
 
-    def set_Ksampler(
+    def set_k_sampler(
         self,
         node_id: str | None,
         steps: int,
@@ -172,7 +188,7 @@ class ComfyUiWorkflow:
         scheduler_name: str,
         cfg: float,
         denoise: float,
-        seed: int,
+        seed: int | None = None,
     ):
         if node_id is None:
             node_id = self.identify_node_by_class_type("KSampler")
@@ -183,9 +199,11 @@ class ComfyUiWorkflow:
         self.set_property(node_id, "inputs/scheduler", scheduler_name)
         self.set_property(node_id, "inputs/cfg", cfg)
         self.set_property(node_id, "inputs/denoise", denoise)
+        if seed is None:
+            seed = secrets.randbelow(100000000)
         self.set_property(node_id, "inputs/seed", seed)
 
-    def set_SD3_latent_image(
+    def set_sd3_latent_image(
         self,
         node_id: str | None,
         width: int,
@@ -344,11 +362,3 @@ class ComfyUiWorkflow:
             [self.get_property(sampler_node_id, "inputs/positive")[0], 0],
         )
         self.set_property(sampler_node_id, "inputs/positive", [new_node_id, 0])
-
-
-if __name__ == "__main__":
-    current_dir = os.path.dirname(os.path.realpath(__file__))
-    workflow_path = os.path.join(current_dir, "json", "txt2vid_wan2_2_5B.json")
-    txt = open(workflow_path, "r", encoding="utf-8").read()
-    workflow = ComfyUiWorkflow(txt)
-    print(workflow)

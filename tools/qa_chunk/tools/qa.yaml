@@ -1,0 +1,57 @@
+description:
+  human:
+    en_US: A tool for QA chunking mode.
+    zh_Hans: 一个用于 QA 分块模式的工具。
+  llm: A tool for QA chunking mode. Input should be the text you want to chunk.
+extra:
+  python:
+    source: tools/qa.py
+identity:
+  author: langgenius
+  icon: icon.svg
+  label:
+    en_US: QA Chunk
+    pt_BR: QA Chunk
+    zh_Hans: QA 分块
+  name: qa_chunk
+parameters:
+- form: llm
+  human_description:
+    en_US: The file you want to extract QA from.
+    zh_Hans: 你想要提取 QA 的文件。
+  label:
+    en_US: Input File
+    zh_Hans: 输入文件
+  llm_description: The file you want to extract QA from.
+  name: input_file
+  required: true
+  type: file
+- form: llm
+  human_description:
+    en_US: Column number for question.
+    zh_Hans: 问题所在的列。
+  label:
+    en_US: Column number for question
+    zh_Hans: 问题所在的列
+  llm_description: The column number for question, the format of the column number must be an integer.
+  name: question_column
+  default: 0
+  required: true
+  type: number
+- form: llm
+  human_description:
+    en_US: Column number for answer.
+    zh_Hans: 答案所在的列。
+  label:
+    en_US: Column number for answer
+    zh_Hans: 答案所在的列
+  llm_description: The column number for answer, the format of the column number must be an integer.
+  name: answer_column
+  default: 1
+  required: true
+  type: number
+output_schema:
+  type: object
+  properties:
+    result:
+      $ref: "https://dify.ai/schemas/v1/qa_structure.json"

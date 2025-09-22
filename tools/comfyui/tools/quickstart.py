@@ -1,14 +1,16 @@
 import dataclasses
 import json
 import os
-import random
-from typing import Any, Generator
-from dify_plugin.errors.tool import ToolProviderCredentialValidationError
-from dify_plugin.entities.tool import ToolInvokeMessage
+from collections.abc import Generator
+from typing import Any
+
 from dify_plugin import Tool
-from tools.comfyui_workflow import ComfyUiWorkflow
+from dify_plugin.entities.tool import ToolInvokeMessage
+from dify_plugin.errors.tool import ToolProviderCredentialValidationError
+
 from tools.comfyui_client import ComfyUiClient, FileType
-from tools.model_manager import ModelManager
+from tools.comfyui_model_manager import ModelManager
+from tools.comfyui_workflow import ComfyUiWorkflow
 
 
 @dataclasses.dataclass
@@ -28,14 +30,17 @@ class QuickStart(Tool):
         """
         invoke tools
         """
-        base_url = self.runtime.credentials.get("base_url")
-        if base_url is None:
-            yield self.create_text_message("Please input base_url")
-        self.comfyui = ComfyUiClient(base_url, self.runtime.credentials.get("comfyui_api_key"))
+
+        self.comfyui = ComfyUiClient(
+            base_url=self.runtime.credentials.get("base_url"),
+            api_key=self.runtime.credentials.get("comfyui_api_key"),
+            api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"),
+        )
         self.model_manager = ModelManager(
             self.comfyui,
             civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
             hf_api_key=self.runtime.credentials.get("hf_api_key"),
+            expire_after=int(self.runtime.credentials.get("expire_after", 300)),
         )
         image_names = []
         for image in tool_parameters.get("images", []):
@@ -126,15 +131,22 @@ class QuickStart(Tool):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         current_dir = os.path.dirname(os.path.realpath(__file__))
         filepath = os.path.join(current_dir, "json", "qwen_image.json")
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             workflow = ComfyUiWorkflow(json.load(f))
 
         workflow.set_prompt("6", ui.prompt)
         workflow.set_prompt("7", ui.negative_prompt)
         if ui.width is None or ui.height is None:
             raise ToolProviderCredentialValidationError("Please input width and height")
-        workflow.set_SD3_latent_image(None, ui.width, ui.height)
-        workflow.set_Ksampler(None, 8, "euler", "simple", 2.5, 1.0, random.randint(0, 10**8))
+        workflow.set_sd3_latent_image(None, ui.width, ui.height)
+        workflow.set_k_sampler(
+            None,
+            8,
+            "euler",
+            "simple",
+            2.5,
+            1.0,
+        )
         for i, lora_name in enumerate(ui.lora_names):
             workflow.add_lora_node("3", "6", "7", lora_name, ui.lora_strengths[i])
 
@@ -172,13 +184,20 @@ class QuickStart(Tool):
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         filepath = os.path.join(current_dir, "json", "qwen_image_edit.json")
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             workflow = ComfyUiWorkflow(json.load(f))
 
         workflow.set_property("76", "inputs/prompt", ui.prompt)
         workflow.set_property("77", "inputs/prompt", ui.negative_prompt)
         workflow.set_image_names(ui.image_names)
-        workflow.set_Ksampler(None, 4, "euler", "simple", 1.0, 1.0, random.randint(0, 10**8))
+        workflow.set_k_sampler(
+            None,
+            4,
+            "euler",
+            "simple",
+            1.0,
+            1.0,
+        )
 
         output_images = self.comfyui.generate(workflow.json())
         return workflow.json_str(), output_images
@@ -196,12 +215,12 @@ class QuickStart(Tool):
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         filepath = os.path.join(current_dir, "json", "flux_dev_fp8.json")
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             workflow = ComfyUiWorkflow(json.load(f))
 
         workflow.set_prompt("6", ui.prompt)
         workflow.set_prompt("33", ui.negative_prompt)
-        workflow.set_Ksampler(None, 20, "euler", "simple", 1.0, 1.0, random.randint(0, 10**8))
+        workflow.set_k_sampler(None, 20, "euler", "simple", 1.0, 1.0)
         for i, lora_name in enumerate(ui.lora_names):
             workflow.add_lora_node("31", "6", "33", lora_name, ui.lora_strengths[i])
 
@@ -221,12 +240,19 @@ class QuickStart(Tool):
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         filepath = os.path.join(current_dir, "json", "flux_schnell_fp8.json")
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             workflow = ComfyUiWorkflow(json.load(f))
 
         workflow.set_prompt("6", ui.prompt)
         workflow.set_prompt("33", ui.negative_prompt)
-        workflow.set_Ksampler(None, 4, "euler", "simple", 1.0, 1.0, random.randint(0, 10**8))
+        workflow.set_k_sampler(
+            None,
+            4,
+            "euler",
+            "simple",
+            1.0,
+            1.0,
+        )
         for i, lora_name in enumerate(ui.lora_names):
             workflow.add_lora_node("31", "6", "33", lora_name, ui.lora_strengths[i])
 
@@ -236,7 +262,7 @@ class QuickStart(Tool):
     def get_civitai_workflow(self, ui: QuickStartConfig) -> ComfyUiWorkflow:
         current_dir = os.path.dirname(os.path.realpath(__file__))
         filepath = os.path.join(current_dir, "json", "txt2img.json")
-        with open(filepath, "r", encoding="utf-8") as f:
+        with open(filepath, encoding="utf-8") as f:
             workflow = ComfyUiWorkflow(json.load(f))
 
         workflow.set_prompt("6", ui.prompt)
@@ -247,28 +273,42 @@ class QuickStart(Tool):
         return workflow
 
     def pony_v6_xl(self, ui: QuickStartConfig):
-        model_name_human, filenames = self.model_manager.download_civitai(257749, 290640, "checkpoints")
+        civitai_model = self.model_manager.download_civitai(257749, 290640, "checkpoints")
         workflow = self.get_civitai_workflow(ui)
-        workflow.set_model_loader(None, filenames[0])
-        workflow.set_Ksampler(None, 25, "euler_ancestral", "normal", 8.5, 1.0, random.randint(0, 10**8))
+        workflow.set_model_loader(None, civitai_model.name)
+        workflow.set_k_sampler(
+            None,
+            25,
+            "euler_ancestral",
+            "normal",
+            8.5,
+            1.0,
+        )
         output_images = self.comfyui.generate(workflow.json())
         return workflow.json_str(), output_images
 
     def majicmix_realistic(self, ui: QuickStartConfig):
-        model_name_human, filenames = self.model_manager.download_civitai(43331, 176425, "checkpoints")
+        civitai_model = self.model_manager.download_civitai(43331, 176425, "checkpoints")
         workflow = self.get_civitai_workflow(ui)
-        workflow.set_model_loader(None, filenames[0])
-        workflow.set_Ksampler(None, 30, "euler_ancestral", "normal", 8.5, 1.0, random.randint(0, 10**8))
+        workflow.set_model_loader(None, civitai_model.name)
+        workflow.set_k_sampler(
+            None,
+            30,
+            "euler_ancestral",
+            "normal",
+            8.5,
+            1.0,
+        )
 
         output_images = self.comfyui.generate(workflow.json())
         return workflow.json_str(), output_images
 
     def wai_illustrious(self, ui: QuickStartConfig):
-        model_name_human, filenames = self.model_manager.download_civitai(827184, 1761560, "checkpoints")
+        civitai_model = self.model_manager.download_civitai(827184, 1761560, "checkpoints")
 
         workflow = self.get_civitai_workflow(ui)
-        workflow.set_model_loader(None, filenames[0])
-        workflow.set_Ksampler(None, 30, "euler_ancestral", "normal", 6.0, 1.0, random.randint(0, 10**8))
+        workflow.set_model_loader(None, civitai_model.name)
+        workflow.set_k_sampler(None, 30, "euler_ancestral", "normal", 6.0, 1.0)
 
         output_images = self.comfyui.generate(workflow.json())
         return workflow.json_str(), output_images

@@ -1,0 +1,68 @@
+identity:
+  author: "frederick"
+  name: "linuxdo"
+  label:
+    en_US: "LinuxDo Connect"
+    zh_Hans: "LinuxDo Connect"
+    pt_BR: "LinuxDo Connect"
+  description:
+    en_US: "Connect to LinuxDo forum with authentication, user verification, content search, personalized recommendations, and auto check-in"
+    zh_Hans: "连接LinuxDo论坛，支持身份验证、用户信息获取、内容搜索、个性化推荐和自动签到"
+    pt_BR: "Conectar ao fórum LinuxDo com autenticação, verificação de usuário, busca de conteúdo, recomendações personalizadas e check-in automático"
+  icon: "icon.svg"
+
+credentials_schema:
+  - name: "client_id"
+    type: "secret-input"
+    required: true
+    placeholder:
+      en_US: "Please input your LinuxDo Client ID"
+      zh_Hans: "请输入你的 LinuxDo Client ID"
+      pt_BR: "Insira seu LinuxDo Client ID"
+    help:
+      en_US: "Client ID is used for Basic Authorization to LinuxDo Connect API. Get it from https://connect.linux.do"
+      zh_Hans: "Client ID 用于 LinuxDo Connect API 的基础认证。请从 https://connect.linux.do 获取"
+      pt_BR: "Client ID é usado para autorização básica da API LinuxDo Connect. Obtenha em https://connect.linux.do"
+    label:
+      zh_Hans: "Client ID"
+      en_US: "Client ID"
+      pt_BR: "Client ID"
+  - name: "client_secret"
+    type: "secret-input"
+    required: true
+    placeholder:
+      en_US: "Please input your LinuxDo Client Secret"
+      zh_Hans: "请输入你的 LinuxDo Client Secret"
+      pt_BR: "Insira seu LinuxDo Client Secret"
+    help:
+      en_US: "Client Secret is used for Basic Authorization to LinuxDo Connect API. Get it from https://connect.linux.do"
+      zh_Hans: "Client Secret 用于 LinuxDo Connect API 的基础认证。请从 https://connect.linux.do 获取"
+      pt_BR: "Client Secret é usado para autorização básica da API LinuxDo Connect. Obtenha em https://connect.linux.do"
+    label:
+      zh_Hans: "Client Secret"
+      en_US: "Client Secret"
+      pt_BR: "Client Secret"
+  - name: "api_key"
+    type: "secret-input"
+    required: true
+    placeholder:
+      en_US: "Please input your LinuxDo API Key"
+      zh_Hans: "请输入你的 LinuxDo API Key"
+      pt_BR: "Insira sua LinuxDo API Key"
+    help:
+      en_US: "API Key is used to identify your user account. Get it from https://connect.linux.do"
+      zh_Hans: "API Key 用于识别你的用户账户。请从 https://connect.linux.do 获取"
+      pt_BR: "API Key é usado para identificar sua conta de usuário. Obtenha em https://connect.linux.do"
+    label:
+      zh_Hans: "API Key"
+      en_US: "API Key"
+      pt_BR: "API Key"
+
+tools:
+  - tools/linuxdo.yaml
+  - tools/content_search.yaml
+  - tools/recommendations.yaml
+  - tools/checkin.yaml
+extra:
+  python:
+    source: provider/linuxdo.py

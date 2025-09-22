@@ -1,0 +1,103 @@
+description:
+  human:
+    en_US: Get operation logs for a specific record
+    zh_Hans: 获取指定记录的操作日志
+  llm: Get detailed operation logs for a specific record including field changes, operators, and timestamps.
+extra:
+  python:
+    source: tools/get_record_logs.py
+identity:
+  author: langgenius
+  label:
+    en_US: Get Record Logs
+    zh_Hans: 获取记录日志
+  name: get_record_logs
+parameters:
+- form: llm
+  name: worksheet_id
+  label:
+    en_US: Worksheet ID
+    zh_Hans: 工作表 ID
+  human_description:
+    en_US: The worksheet ID containing the record
+    zh_Hans: 包含记录的工作表 ID
+  llm_description: The worksheet ID that contains the record
+  required: true
+  type: string
+- form: llm
+  name: row_id
+  label:
+    en_US: Row ID
+    zh_Hans: 行记录 ID
+  human_description:
+    en_US: The row record ID to get logs for
+    zh_Hans: 需要获取日志的行记录 ID
+  llm_description: The row record ID to retrieve operation logs for
+  required: true
+  type: string
+- form: llm
+  name: operator_ids
+  label:
+    en_US: Operator IDs
+    zh_Hans: 操作者 ID 列表
+  human_description:
+    en_US: Operator IDs to filter logs (comma-separated)
+    zh_Hans: 用于过滤日志的操作者 ID 列表（逗号分隔）
+  llm_description: Operator IDs to filter logs, can be comma-separated string
+  required: false
+  type: string
+- form: llm
+  name: field
+  label:
+    en_US: Field ID
+    zh_Hans: 字段 ID
+  human_description:
+    en_US: Field ID to filter logs for specific field operations
+    zh_Hans: 用于过滤特定字段操作的字段 ID
+  llm_description: Field ID to filter logs for operations on specific field
+  required: false
+  type: string
+- form: llm
+  name: page_index
+  label:
+    en_US: Page Index
+    zh_Hans: 页码
+  human_description:
+    en_US: Page number for pagination
+    zh_Hans: 分页页码
+  llm_description: Page number for pagination, starting from 1
+  required: false
+  type: string
+- form: llm
+  name: page_size
+  label:
+    en_US: Page Size
+    zh_Hans: 每页数量
+  human_description:
+    en_US: Number of logs per page
+    zh_Hans: 每页日志数量
+  llm_description: Number of logs per page
+  required: false
+  type: string
+- form: llm
+  name: start_date
+  label:
+    en_US: Start Date
+    zh_Hans: 开始日期
+  human_description:
+    en_US: Start date to filter logs (YYYY-MM-DD format)
+    zh_Hans: 过滤日志的开始日期 (YYYY-MM-DD 格式)
+  llm_description: Start date to filter logs in YYYY-MM-DD format
+  required: false
+  type: string
+- form: llm
+  name: end_date
+  label:
+    en_US: End Date
+    zh_Hans: 结束日期
+  human_description:
+    en_US: End date to filter logs (YYYY-MM-DD format)
+    zh_Hans: 过滤日志的结束日期 (YYYY-MM-DD 格式)
+  llm_description: End date to filter logs in YYYY-MM-DD format
+  required: false
+  type: string

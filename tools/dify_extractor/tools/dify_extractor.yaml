@@ -1,0 +1,43 @@
+identity:
+  name: dify_extractor
+  author: langgenius
+  label:
+    en_US: Dify Extractor
+    zh_Hans: Dify文本提取器
+    pt_BR: Dify Extractor
+description:
+  human:
+    en_US: Dify Extractor
+    zh_Hans: Dify Extractor
+    pt_BR: Dify Extractor
+  llm: Dify Extractor
+parameters:
+  - name: file
+    type: file
+    required: true
+    label:
+      en_US: file
+      zh_Hans: file
+      pt_BR: file
+    human_description:
+      en_US:  the file to be parsed (support pdf, xls, xlsx, md, markdown, mdx, htm, html, pptx, docx, csv, json, yaml, yml)
+      zh_Hans: 用于解析的文件 (支持 pdf, xls, xlsx, md, markdown, mdx, htm, html, pptx, docx, csv, json, yaml, yml)
+      pt_BR:  o arquivo a ser analisado (suporta pdf, xls, xlsx, md, markdown, mdx, htm, html, pptx, docx, csv, json, yaml, yml)
+    llm_description: the file to be parsed (support pdf, xls, xlsx, md, markdown, mdx, htm, html, pptx, docx, csv, json, yaml, yml)
+    form: llm
+output_schema:
+    type: object
+    properties:
+      documents:
+        type: array
+        items:
+          type: object
+        description: the documents extracted from the file
+      images:
+        type: array
+        items:
+          type: object
+        description: The images extracted from the file
+extra:
+  python:
+    source: tools/dify_extractor.py

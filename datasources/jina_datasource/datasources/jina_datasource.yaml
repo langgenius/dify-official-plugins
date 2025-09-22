@@ -1,0 +1,75 @@
+description:
+  en_US: Fetch the target URL (can be a PDF) and convert it into a LLM-friendly
+    markdown.
+  pt_BR: Busque a URL de destino (que pode ser um PDF) e converta em um Markdown
+    LLM-friendly.
+  zh_Hans: 获取目标网址（可以是 PDF），并将其转换为适合大模型处理的 Markdown 格式。
+identity:
+  author: langgenius
+  label:
+    en_US: Jina Reader
+    pt_BR: Jina Reader
+    zh_Hans: Jina Reader
+  name: jina_reader
+parameters:
+  - name: url
+    description:
+      en_US: The base URL to start crawling from.
+      zh_Hans: 要爬取网站的起始URL。
+    label:
+      en_US: Start URL
+      zh_Hans: 起始URL
+    required: true
+    type: string
+    form : llm
+  - name: crawl_sub_pages
+    description:
+      en_US: is crawl subpages
+      zh_Hans: 是否爬取子页面
+    label:
+      en_US: Crawl Subpages
+      zh_Hans: 爬取子页面
+    default: true
+    type: boolean
+    form : llm
+  - name: limit
+    description:
+      en_US: Specify the maximum number of pages to crawl. The crawler will stop after
+        reaching this limit.
+      zh_Hans: 指定要爬取的最大页面数。爬取器将在达到此限制后停止。
+    label:
+      en_US: Maximum Pages to Crawl
+      zh_Hans: 最大爬取页面数
+    default: 10
+    type: number
+    form : llm
+  - name: use_sitemap
+    description:
+      en_US: Use sitemap to crawl the website.
+      zh_Hans: 使用 sitemap 爬取网站。
+    label:
+      en_US: Use Sitemap
+      zh_Hans: 使用 Sitemap
+    default: false
+    type: boolean
+    form : llm
+
+output_schema:
+    type: object
+    properties:
+      source_url:
+        type: string
+        description: the source url of ebsite
+      content:
+        type: string
+        description: the content from the website
+      title:
+        type: string
+        description: the title of the website
+      "description":
+        type: string
+        description: the description of the website
+extra:
+  python:
+    source: datasources/jina_datasource.py
+provider_type: website_crawl

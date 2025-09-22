@@ -1,0 +1,45 @@
+version: 0.0.5
+type: plugin
+author: langgenius
+name: jina_datasource
+label:
+  en_US: Jina Reader
+  ja_JP: Jina Reader
+  zh_Hans: Jina Reader
+  pt_BR: Jina Reader
+description:
+  en_US: Jina Reader Datasource
+  ja_JP: Jina Reader Datasource
+  zh_Hans: Jina Reader Datasource
+  pt_BR: Jina Reader Datasource
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: false
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+plugins:
+  datasources:
+    - provider/jina_datasource.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: 1.9.0
+created_at: 2025-05-18T14:29:38.188882+08:00
+privacy: PRIVACY.md
+verified: false
+provider_type: website_crawl
+tags:
+  - rag

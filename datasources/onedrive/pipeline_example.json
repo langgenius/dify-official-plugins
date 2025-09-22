@@ -1,0 +1,55 @@
+{
+  "pipeline_name": "OneDrive文档处理Pipeline",
+  "nodes": [
+    {
+      "id": "onedrive_source",
+      "type": "datasource",
+      "name": "OneDrive数据源",
+      "config": {
+        "provider": "onedrive",
+        "operation": "download_file",
+        "parameters": {
+          "file_id": "4C588C50361D50A3!857"
+        }
+      },
+      "outputs": {
+        "result": "file_content"
+      }
+    },
+    {
+      "id": "document_processor", 
+      "type": "document_loader",
+      "name": "文档处理器",
+      "config": {
+        "input": "{{onedrive_source.result}}",
+        "extract_text": true,
+        "chunk_size": 1000,
+        "chunk_overlap": 100
+      },
+      "outputs": {
+        "documents": "processed_documents"
+      }
+    },
+    {
+      "id": "knowledge_base",
+      "type": "knowledge_base", 
+      "name": "知识库",
+      "config": {
+        "documents": "{{document_processor.documents}}",
+        "embedding_model": "text-embedding-ada-002"
+      }
+    }
+  ],
+  "connections": [
+    {
+      "from": "onedrive_source",
+      "to": "document_processor",
+      "variable": "result"
+    },
+    {
+      "from": "document_processor", 
+      "to": "knowledge_base",
+      "variable": "documents"
+    }
+  ]
+}

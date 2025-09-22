@@ -1,0 +1,36 @@
+version: 0.1.12
+type: plugin
+author: langgenius
+name: notion_datasource
+label:
+  en_US: Notion
+  ja_JP: Notion
+  zh_Hans: Notion
+  pt_BR: Notion
+description:
+  en_US: Notion Datasource
+  ja_JP: Notion Datasource
+  zh_Hans: Notion Datasource
+  pt_BR: Notion Datasource
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission: {}
+plugins:
+  datasources:
+    - provider/notion_datasource.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: 1.9.0
+created_at: 2025-05-13T14:54:47.062188+08:00
+privacy: PRIVACY.md
+verified: false
+tags:
+  - rag

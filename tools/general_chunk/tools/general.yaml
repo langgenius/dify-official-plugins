@@ -1,0 +1,90 @@
+description:
+  human:
+    en_US: A tool for general text chunking mode, the chunks retrieved and recalled are the same.
+    zh_Hans: 一个用于通用文本分块模式的工具，检索和召回的块是相同的。
+  llm: A tool for general text chunking mode, the chunks retrieved and recalled are the same. Input should be the text you want to chunk.
+extra:
+  python:
+    source: tools/general.py
+identity:
+  author: langgenius
+  icon: icon.svg
+  label:
+    en_US: General Chunker
+    pt_BR: General Chunker
+    zh_Hans: 通用文本分块
+  name: general_chunker
+parameters:
+- form: llm
+  human_description:
+    en_US: The text you want to chunk.
+    zh_Hans: 你想要分块的文本。
+  label:
+    en_US: Input Content
+    zh_Hans: 输入变量
+  llm_description: The text you want to chunk.
+  name: input_variable
+  required: true
+  type: string
+- form: llm
+  human_description:
+    en_US: The delimiter of the chunks.
+    zh_Hans: 块的分隔符。
+  label:
+    en_US: Delimiter
+    zh_Hans: 分隔符
+  llm_description: The delimiter of the chunks, the format of the delimiter must be a string.
+  name: delimiter
+  required: true
+  type: string
+- form: llm
+  human_description:
+    en_US: The maximum chunk length.
+    zh_Hans: 最大块的长度。
+  label:
+    en_US: Maximum Chunk Length
+    zh_Hans: 最大块的长度
+  llm_description: The maximum chunk length, the format of the chunk size must be an integer.
+  name: max_chunk_length
+  required: true
+  type: number
+- form: llm
+  human_description:
+    en_US: The chunk overlap length.
+    zh_Hans: 块的重叠长度。
+  label:
+    en_US: Chunk Overlap Length
+    zh_Hans: 块的重叠长度
+  llm_description: The chunk overlap length, the format of the chunk overlap length must be an integer.
+  name: chunk_overlap_length
+  required: false
+  type: number
+- form: llm
+  human_description:
+    en_US: Replace consecutive spaces, newlines and tabs
+    zh_Hans: 替换连续的空格、换行符和制表符
+  label:
+    en_US: Replace consecutive spaces, newlines and tabs
+    zh_Hans: 替换连续的空格、换行符和制表符
+  llm_description: Replace consecutive spaces, newlines and tabs, the format of the replace must be a boolean.
+  name: replace_consecutive_spaces_newlines_tabs
+  required: false
+  type: boolean
+- form: llm
+  human_description:
+    en_US: Delete all URLs and email addresses
+    zh_Hans: 删除所有URL和电子邮件地址
+  label:
+    en_US: Delete all URLs and email addresses
+    zh_Hans: 删除所有URL和电子邮件地址
+  llm_description: Delete all URLs and email addresses, the format of the delete must be a boolean.
+  name: delete_all_urls_and_email_addresses
+  required: false
+  type: boolean
+output_schema:
+  type: object
+  properties:
+    result:
+      $ref: "https://dify.ai/schemas/v1/general_structure.json"
+
+

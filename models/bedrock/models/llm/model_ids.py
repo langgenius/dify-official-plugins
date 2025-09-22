@@ -10,6 +10,7 @@ BEDROCK_MODEL_IDS = {
     'anthropic claude': {
         'Claude 4.0 Sonnet': 'anthropic.claude-sonnet-4-20250514-v1:0',
         'Claude 4.0 Opus': 'anthropic.claude-opus-4-20250514-v1:0',
+        'Claude 4.1 Opus': 'anthropic.claude-opus-4-1-20250805-v1:0',
         'Claude 3.7 Sonnet': 'anthropic.claude-3-7-sonnet-20250219-v1:0',
         'Claude 3.5 Sonnet': 'anthropic.claude-3-5-sonnet-20240620-v1:0',
         'Claude 3.5 Sonnet V2': 'anthropic.claude-3-5-sonnet-20241022-v2:0',
@@ -44,15 +45,38 @@ BEDROCK_MODEL_IDS = {
         'Jamba 1.5 Large': 'ai21.jamba-1-5-large-v1:0'
     },
     'deepseek': {
-        'DeepSeek R1': 'deepseek.r1-v1:0'
+        'DeepSeek R1': 'deepseek.r1-v1:0',
+        'DeepSeek V3.1': 'deepseek.v3-v1:0'
     },
     'cohere': {
         'Command': 'cohere.command-text-v14',
         'Command Light': 'cohere.command-light-text-v14',
         'Command R': 'cohere.command-r-v1:0',
         'Command R+': 'cohere.command-r-plus-v1:0'
+    },
+    'qwen': {
+        'Qwen3 235B': 'qwen.qwen3-235b-a22b-2507-v1:0',
+        'Qwen3 32B': 'qwen.qwen3-32b-v1:0',
+        'Qwen3 Coder 480B': 'qwen.qwen3-coder-480b-a35b-v1:0',
+        'Qwen3 Coder 30B': 'qwen.qwen3-coder-30b-a3b-v1:0'
+    },
+    'openai': {
+        'GPT OSS 120B': 'openai.gpt-oss-120b-1:0',
+        'GPT OSS 20B': 'openai.gpt-oss-20b-1:0'
     }
 }
+
+def is_support_cross_region(model_id):
+    unsupport_model_list = [
+        "deepseek.v3-v1:0",
+        "qwen.qwen3-235b-a22b-2507-v1:0",
+        "qwen.qwen3-32b-v1:0",
+        "qwen.qwen3-coder-480b-a35b-v1:0",
+        "qwen.qwen3-coder-30b-a3b-v1:0",
+        "openai.gpt-oss-120b-1:0",
+        "openai.gpt-oss-20b-1:0"
+    ]
+    return model_id not in unsupport_model_list
 
 def get_model_id(model_type, model_name):
     """
@@ -67,12 +91,22 @@ def get_model_id(model_type, model_name):
     """
     return BEDROCK_MODEL_IDS.get(model_type, {}).get(model_name)
 
-def get_region_area(region_name):
+def get_region_area(region_name, prefer_global=False):
     """
-    根据AWS区域名称识别所属地区
-    :param region_name: AWS区域名称，如'us-east-1'
-    :return: 所属地区，如'US', 'EU', 'APAC'等
+    Identify the geographic area based on AWS region name
+    :param region_name: AWS region name, e.g., 'us-east-1'
+    :param prefer_global: Whether to prefer global prefix (for models supporting global routing)
+    :return: Geographic area, e.g., 'us', 'eu', 'apac', 'global'
     """
+    if prefer_global:
+        # For regions that support global prefix, prioritize returning global
+        global_supported_regions = {
+            'us-west-2', 'us-east-1', 'us-east-2', 
+            'eu-west-1', 'ap-northeast-1'
+        }
+        if region_name in global_supported_regions:
+            return 'global'
+    
     prefix = region_name.split('-')[0].lower()
 
     area_mapping = {

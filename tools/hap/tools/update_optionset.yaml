@@ -1,0 +1,70 @@
+description:
+  human:
+    en_US: Update an existing option set with new options and settings
+    zh_Hans: 更新现有选项集的选项和设置
+  llm: Update an existing option set by modifying name, options array, and enable color/score settings.
+extra:
+  python:
+    source: tools/update_optionset.py
+identity:
+  author: langgenius
+  label:
+    en_US: Update Option Set
+    zh_Hans: 更新选项集
+  name: update_optionset
+parameters:
+- form: llm
+  name: optionset_id
+  label:
+    en_US: Option Set ID
+    zh_Hans: 选项集 ID
+  human_description:
+    en_US: The option set ID to update
+    zh_Hans: 需要更新的选项集 ID
+  llm_description: The option set ID to update
+  required: true
+  type: string
+- form: llm
+  name: name
+  label:
+    en_US: Option Set Name
+    zh_Hans: 选项集名称
+  human_description:
+    en_US: The updated name of the option set
+    zh_Hans: 选项集的更新名称
+  llm_description: The updated name of the option set
+  required: true
+  type: string
+- form: llm
+  name: options
+  label:
+    en_US: Options Array
+    zh_Hans: 选项数组
+  human_description:
+    en_US: JSON array of option objects with key, value, index, isDeleted, color, and score properties
+    zh_Hans: 选项对象的 JSON 数组，包含 key、value、index、isDeleted、color 和 score 属性
+  llm_description: JSON array of option objects, each containing key (string), value (string), index (integer), isDeleted (boolean), color (hex color string), and score (number)
+  required: true
+  type: string
+- form: llm
+  name: enable_color
+  label:
+    en_US: Enable Color
+    zh_Hans: 启用颜色
+  human_description:
+    en_US: Whether to enable colors for options (true/false)
+    zh_Hans: 是否为选项启用颜色 (true/false)
+  llm_description: Whether to enable color feature for options
+  required: true
+  type: string
+- form: llm
+  name: enable_score
+  label:
+    en_US: Enable Score
+    zh_Hans: 启用分值
+  human_description:
+    en_US: Whether to enable scores for options (true/false)
+    zh_Hans: 是否为选项启用分值 (true/false)
+  llm_description: Whether to enable score feature for options
+  required: true
+  type: string

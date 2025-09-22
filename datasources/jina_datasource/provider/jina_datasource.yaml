@@ -1,0 +1,37 @@
+credentials_schema:
+  - name: api_key
+    label:
+      en_US: API Key (leave empty if you don't have one)
+      pt_BR: Chave API (deixe vazio se você não tiver uma)
+      zh_Hans: API 密钥（可留空）
+    placeholder:
+      en_US: Please enter your Jina AI API key
+      pt_BR: Por favor, insira sua chave de API do Jina AI
+      zh_Hans: 请输入你的 Jina AI API 密钥
+    required: false
+    type: secret-input
+    help:
+      en_US: Get your Jina AI API key from Jina AI (optional, but you can get a higher
+        rate)
+      pt_BR: Obtenha sua chave de API do Jina AI na Jina AI (opcional, mas você pode
+        obter uma taxa mais alta)
+      zh_Hans: 从 Jina AI 获取您的 Jina AI API 密钥（非必须，能得到更高的速率）
+    url: https://jina.ai
+extra:
+  python:
+    source: provider/jina_datasource.py
+identity:
+  author: langgenius
+  description:
+    en_US: Your Search Foundation, Supercharged!
+    pt_BR: Your Search Foundation, Supercharged!
+    zh_Hans: 您的搜索底座，从此不同!
+  icon: icon.svg
+  label:
+    en_US: Jina Reader
+    pt_BR: Jina Reader
+    zh_Hans: Jina Reader
+  name: jinareader
+datasources:
+  - datasources/jina_datasource.yaml
+provider_type: website_crawl

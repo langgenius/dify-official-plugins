@@ -1,0 +1,27 @@
+description:
+  human:
+    en_US: Delete a worksheet by ID
+    zh_Hans: 根据 ID 删除工作表
+  llm: >
+    Delete a worksheet by worksheet_id
+extra:
+  python:
+    source: tools/delete_worksheet.py
+identity:
+  author: langgenius
+  label:
+    en_US: Delete Worksheet
+    zh_Hans: 删除工作表
+  name: delete_worksheet
+parameters:
+  - form: llm
+    name: worksheet_id
+    label:
+      en_US: Worksheet ID
+      zh_Hans: 工作表 ID
+    human_description:
+      en_US: The worksheet ID to delete.
+      zh_Hans: 需要删除的工作表 ID。
+    llm_description: The worksheet ID to delete.
+    required: true
+    type: string
