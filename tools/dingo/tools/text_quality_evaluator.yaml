@@ -60,3 +60,74 @@ parameters:
         label:
           en_US: Pretrain Rules
           zh_Hans: 预训练规则
+  - name: rule_list
+    type: select
+    required: false
+    label:
+      en_US: Specific Rules
+      zh_Hans: 具体规则
+    human_description:
+      en_US: Select specific rules to apply (optional, overrides rule group)
+      zh_Hans: 选择要应用的具体规则（可选，会覆盖规则组）
+    form: form
+    options:
+      - value: RuleEnterAndSpace
+        label:
+          en_US: Enter and Space Rule
+          zh_Hans: 回车和空格规则
+      - value: RuleContentNull
+        label:
+          en_US: Content Null Rule
+          zh_Hans: 内容空值规则
+      - value: RuleColonEnd
+        label:
+          en_US: Colon End Rule
+          zh_Hans: 冒号结尾规则
+      - value: RuleDocRepeat
+        label:
+          en_US: Document Repeat Rule
+          zh_Hans: 文档重复规则
+      - value: RuleSpecialCharacter
+        label:
+          en_US: Special Character Rule
+          zh_Hans: 特殊字符规则
+      - value: RuleAlphaWords
+        label:
+          en_US: Alpha Words Rule
+          zh_Hans: 字母单词规则
+      - value: RuleCapitalWords
+        label:
+          en_US: Capital Words Rule
+          zh_Hans: 大写单词规则
+      - value: RuleHallucinationHHEM
+        label:
+          en_US: Hallucination HHEM Rule
+          zh_Hans: 幻觉HHEM规则
+      - value: RuleContentLength
+        label:
+          en_US: Content Length Rule
+          zh_Hans: 内容长度规则
+      - value: RuleLanguageDetection
+        label:
+          en_US: Language Detection Rule
+          zh_Hans: 语言检测规则
+      - value: RuleTextQuality
+        label:
+          en_US: Text Quality Rule
+          zh_Hans: 文本质量规则
+      - value: RuleDataDiversity
+        label:
+          en_US: Data Diversity Rule
+          zh_Hans: 数据多样性规则
+      - value: RuleCompleteness
+        label:
+          en_US: Completeness Rule
+          zh_Hans: 完整性规则
+      - value: RuleRelevance
+        label:
+          en_US: Relevance Rule
+          zh_Hans: 相关性规则
+      - value: RuleSimilarity
+        label:
+          en_US: Similarity Rule
+          zh_Hans: 相似性规则

@@ -18,7 +18,7 @@ meta:
     language: python
     version: "3.12"
     entrypoint: main
-  version: 0.1.2
+  version: 0.1.5
   minimum_dify_version: 1.7.0
 plugins:
   tools:
@@ -34,6 +34,6 @@ resource:
 tags:
   - productivity
   - utilities
-version: 0.1.2
+version: 0.1.5
 created_at: 2025-09-10T00:00:00+08:00
 privacy: privacy-policy.md
