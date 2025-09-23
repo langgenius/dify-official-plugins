@@ -3,9 +3,7 @@ label:
   en_US: gpt-5-chat
 model_type: llm
 features:
-  - multi-tool-call
   - agent-thought
-  - stream-tool-call
   - vision
   - document
 model_properties:
