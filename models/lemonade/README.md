@@ -57,7 +57,6 @@ Then, fill in the following configuration:
 ```
 Model Name: Qwen3-8B-GGUF
 Model Type: llm
-API Endpoint URL: http://127.0.0.1:8000
 Authorization Name: (leave blank)
 Context Size: 4096
 Agent Thought: Support
