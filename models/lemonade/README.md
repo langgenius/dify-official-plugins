@@ -26,7 +26,7 @@ Once started, Lemonade will be accessible at `http://localhost:8000`.
 
 ### 2. Install Lemonade Plugin in Dify
 
-Go to the [Dify marketplace](https://marketplace.dify.ai/plugins/langgenius/lemonade), search for "Lemonade", and click to install the official plugin.
+Go to the [Dify marketplace](http://localhost/plugins?category=discover), search for "Lemonade", and click to install the official plugin.
 
 ![](./_assets/lemonade-01.png)
 
