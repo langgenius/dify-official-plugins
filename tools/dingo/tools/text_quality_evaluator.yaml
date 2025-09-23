@@ -131,3 +131,34 @@ parameters:
         label:
           en_US: Similarity Rule
           zh_Hans: 相似性规则
+  - name: prompt_list
+    type: select
+    required: false
+    label:
+      en_US: Prompt List
+      zh_Hans: 提示列表
+    human_description:
+      en_US: Select specific prompts to apply for evaluation
+      zh_Hans: 选择要应用的具体提示进行评估
+    form: form
+    options:
+      - value: PromptRepeat
+        label:
+          en_US: Prompt Repeat
+          zh_Hans: 重复提示
+      - value: PromptContentChaos
+        label:
+          en_US: Prompt Content Chaos
+          zh_Hans: 内容混乱提示
+      - value: PromptWordStick
+        label:
+          en_US: Prompt Word Stick
+          zh_Hans: 词汇粘连提示
+      - value: PromptCodeListIssue
+        label:
+          en_US: Prompt Code List Issue
+          zh_Hans: 代码列表问题提示
+      - value: PromptUnreadIssue
+        label:
+          en_US: Prompt Unread Issue
+          zh_Hans: 不可读问题提示
