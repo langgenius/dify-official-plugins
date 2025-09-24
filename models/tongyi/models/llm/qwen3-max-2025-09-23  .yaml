@@ -1,7 +1,7 @@
 # for more details, please refer to https://help.aliyun.com/zh/model-studio/getting-started/models
-model: qwen3-max-preview
+model: qwen3-max-2025-09-23
 label:
-  en_US: qwen3-max-preview
+  en_US: qwen3-max-2025-09-23
 model_type: llm
 features:
   - multi-tool-call
