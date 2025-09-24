@@ -54,7 +54,6 @@ class ConfluenceDatasourceProvider(DatasourceProvider):
         access_token = response_json.get("access_token")
         refresh_token = response_json.get("refresh_token")
         expires_in = response_json.get("expires_in")
-        print(f"Expires in: {expires_in}")
         if not access_token:
             raise DatasourceOAuthError(f"OAuth failed: {response_json}")
 

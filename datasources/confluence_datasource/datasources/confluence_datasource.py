@@ -41,7 +41,6 @@ class ConfluenceDataSource(OnlineDocumentDatasource):
         }
         
 
-        print(f"Fetching Confluence pages from: {url}")
         all_pages = []
         next_cursor = None
         
@@ -56,15 +55,12 @@ class ConfluenceDataSource(OnlineDocumentDatasource):
                 data = response.json()
             except requests.exceptions.HTTPError as e:
                 if response.status_code == 401:
-                    print(f"Authentication failed with 401. URL: {url}")
-                    print(f"Response: {response.text[:200]}")
                     raise ValueError(
                         "Authentication failed (401 Unauthorized). The access token may have expired. "
                         "Please refresh the connection or reauthorize. If the problem persists, "
                         "the OAuth app may need reconfiguration."
                     ) from e
                 else:
-                    print(f"Request failed: {response.status_code} - {response.text[:200]}")
                     raise ValueError(f"Failed to fetch pages: {response.status_code} {response.text[:200]}") from e
 
             # Parse v2 response structure
