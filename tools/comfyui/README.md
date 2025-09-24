@@ -46,14 +46,6 @@ Add the `ComfyUI` tool in the Agent application, then send a picture description
 
 Some ComfyUI workflows require multiple images inputs. In Dify, it will find every `LoadImage` node in the `WORKFLOW JSON` and fill in the image files input by the user in order. When you want to change this order, you can adjust it by filling in the `Image node ID list`. For example, if your workflow needs to input images into the 35th, 69th, and 87th nodes, then input `69,35,87` will pass the first image to the 69th node.
 
-## Example Workflows
-
-There are some example workflows to show what this plugin can do for you.
-
-* [Txt2Img](_assets/Txt2Img.yml)
-* [Upscale](_assets/Upscale.yml)
-* [CivitAI Download](_assets/CivitAI.yml)
-
 ## Nodes
 
 ![](./_assets/nodes.png)
@@ -75,6 +67,24 @@ Quick Start node supports some functions of ComfyUI including the following ones
 * [majicMIX realistic](https://civitai.com/models/43331/majicmix-realistic): the most liked SD1.5-based model on CivitAI
 * [WAI-NSFW-illustrious-SDXL](https://civitai.com/models/827184/wai-nsfw-illustrious-sdxl): the most liked Illustrious-based model on CivitAI
 
+### List Info
+
+List Models can fetch all the names of the models, sampling methods and schedulers available on the connected ComfyUI.
+
+### CivitAI Download
+
+CivitAI Download node can download models from [CivitAI](https://civitai.com/home).
+You need to input model ID and version ID to download a model.
+These two IDs are shown as AIR(see the highlited area on the image below).
+
+![](_assets/AIR.jpg)
+
+### Hugging Face Download
+Hugging Face Download node can download models from [Hugging Face](https://huggingface.co/).
+
+### Download By URL 
+Download By URL node can download models from a given URL.
+
 ### Txt2Img
 
 Txt2Img node can generate an image from texts(prompt and negative prompt).
@@ -85,6 +95,10 @@ Without HiresFix, large images tend to have unnaturally duplicated objects and a
 ### Txt2Vid
 
 Txt2Vid node can generate an video from texts(prompt and negative prompt).
+
+### Txt2Aud
+
+Txt2Aud node can generate an audio from texts(prompt and negative prompt).
 
 ### Img2Img
 
@@ -110,39 +124,6 @@ Some features require addons for ComfyUI. You need to install them to ComfyUI in
 * Faceswap: https://github.com/Gourieff/ComfyUI-ReActor
 * Upscale ESRGAN x4: No addons required
 
-### List Models
-
-List Models can fetch all the names of the models available on the connected ComfyUI.
-
-### List Samplers
-
-List Samplers node can fetch all samplers and schedulers available on the connected ComfyUI.
-
-### Image Info
-
-Image Info node can extract basic information from a given image.
-These include width, height, [mode](https://pillow.readthedocs.io/en/stable/handbook/concepts.html#modes), filename and MIME type.
-This node would be useful when you use [Img2Vid node](#img2vid).
-
-### CivitAI Download
-
-CivitAI Download node can download models from [CivitAI](https://civitai.com/home).
-You need to input model ID and version ID to download a model.
-These two IDs are shown as AIR(see the highlited area on the image below).
-
-![](_assets/AIR.jpg)
-
-### Hugging Face Download
-Hugging Face Download node can download models from [Hugging Face](https://huggingface.co/).
-
-### Download By URL 
-Download By URL node can download models from a given URL.
-
-### Download By JSON
-Download By JSON node can download models specified by ComfyUI's workflow json.
-More specifically, it downloads all the models listed in "properties":{"models": [...]} in every node.
-It needs a JSON file exported with "Export", not "Export (API)".
-
 ## Prebuilt Docker Image
 
 If you don't know how to host ComfyUI, a [prebuilt docker image](https://hub.docker.com/r/l125/comfyui-for-dify) would help you.
@@ -167,3 +148,62 @@ Specifically, the docker image contains the following packages.
 * https://github.com/spacepxl/ComfyUI-Depth-Pro.git: Addon for Depth Pro
 * https://github.com/Gourieff/ComfyUI-ReActor.git: Addon for Faceswap
 * https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite.git: Addon for converting WEBP to MP4
+
+## Key Changelogs
+
+### 0.3.0 Sound Update
+
+https://github.com/langgenius/dify-official-plugins/pull/1728
+
+New features:
+- Text-to-audio: it used to output only image or videos but now it can output audio files as well!
+-  Auto token selection for downloader: Download By URL node now automatically selects the most appropriate token to the given download URL.
+
+Deletion:
+- List Models node and List Samplers node are integrated into List Info node.
+- Delete Image Info: Please use [dify-pillow](https://github.com/yt-koike/dify-pillow) for an equivalent feature.
+- Download By JSON node is integrated into Workflow node.
+
+Fix:
+- Fix CivitAI downloader which used to download non-model files(e.g. TrainingData.zip)
+- Change Img2Any node's ID to img2any
+
+Refactor: 
+- Refactor to pass all the checks by ruff.
+
+### 0.2.0 Video&AutoDownloader Update
+
+https://github.com/langgenius/dify-official-plugins/pull/1203
+
+New feature:
+- Img2vid node now supports Wan2.1, LTXV and SVD.
+- New Txt2vid node generates a video from prompts. It also supports Wan2.1, LTXV, Mochi and Hunyuan.
+- Auto Download feature: All generative nodes from txt2img to img2vid now download and use ComfyUI's default models if models are not specified.
+- Support for generating MP4 video: As requested in here, txt2vid and img2vid can output .mp4 as well as .webp.
+- List models node used to be able to list models in some directories including checkpoints/ but now it can list those in all the directiory on ComfyUI.
+- More detailed error messages
+
+Deletion:
+- Depth Anything, Depth Pro, Faceswap and Upscale nodes are deleted and integrated to Image Edit node.
+
+Refactor:
+- Implement ComfyUiWorkflow() to manage and modify workflow json efficiently.
+
+
+### 0.1.0
+
+https://github.com/langgenius/dify-official-plugins/pull/914
+
+New feature:
+- CivitAI downloader and Hugging Face downloader
+- Flexible LORA setting
+
+Deletion:
+- list_upscalers node was merged into list_models node.
+
+### 0.0.1
+
+https://github.com/langgenius/dify-official-plugins/pull/9
+
+New feature:
+- Supports ComfyUI workflow

@@ -72,3 +72,12 @@ parameters:
       en_US: Download models
     type: boolean
     default: true
+
+  - name: execute_workflow
+    form: form
+    human_description:
+      en_US: If you only want to download models, set this to False
+    label:
+      en_US: Execute Workflow
+    type: boolean
+    default: true

@@ -87,3 +87,9 @@ extra:
       - "models/llm/llm.py"
       - "models/text_embedding/text_embedding.py"
       - "models/rerank/rerank.py"
+help:
+  title:
+    en_US: How to integrate with Lemonade
+    zh_Hans: 如何集成 Lemonade
+  url:
+    en_US: https://marketplace.dify.ai/plugins/langgenius/lemonade

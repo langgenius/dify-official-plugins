@@ -1,4 +1,4 @@
-version: 0.0.4
+version: 0.0.5
 type: plugin
 author: langgenius
 name: jina_datasource
@@ -36,8 +36,10 @@ meta:
     language: python
     version: "3.12"
     entrypoint: main
-  minimum_dify_version: 1.7.2
+  minimum_dify_version: 1.9.0
 created_at: 2025-05-18T14:29:38.188882+08:00
 privacy: PRIVACY.md
 verified: false
 provider_type: website_crawl
+tags:
+  - rag

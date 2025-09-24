@@ -26,6 +26,7 @@ parameter_rules:
     options:
       - Claude 4.0 Sonnet
       - Claude 4.0 Opus
+      - Claude 4.1 Opus
       - Claude 3.7 Sonnet
       - Claude 3.5 Sonnet
       - Claude 3.5 Sonnet V2
