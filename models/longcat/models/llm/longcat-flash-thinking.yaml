@@ -50,7 +50,7 @@ parameter_rules:
     required: false
     type: int
     default: 1024
-    min: 1
+    min: 1024
     max: 8192
     label:
       zh_Hans: 思考长度限制
