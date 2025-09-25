@@ -71,6 +71,7 @@ class MineruTool(Tool):
             return {
                 'Authorization': f'Bearer {credentials.token}',
                 'Content-Type': 'application/json',
+                'source': 'dify'
             }
         return {
             'accept': 'application/json'
@@ -199,6 +200,9 @@ class MineruTool(Tool):
         if tool_parameters.get('language') and tool_parameters.get('language') != "auto":
             lang_list = tool_parameters.get('language')
 
+        if (tool_parameters.get('backend', 'pipeline') == 'vlm-sglang-client' or tool_parameters.get('backend', 'pipeline') == 'vlm-http-client') and not tool_parameters.get('server_url'):
+            raise ToolProviderCredentialValidationError("When backend is vlm-sglang-client or vlm-http-client, server_url is required")
+
         body = {
             'parse_method': tool_parameters.get('parse_method', 'auto'),
             'return_md': True,
@@ -209,7 +213,7 @@ class MineruTool(Tool):
             'backend': tool_parameters.get('backend', 'pipeline'),
             'formula_enable': tool_parameters.get('formula_enable', True),
             'table_enable': tool_parameters.get('table_enable', True),
-            'server_url': tool_parameters.get('sglang_server_url', ""),
+            'server_url': tool_parameters.get('server_url'),
             'return_middle_json': False,
         }
 
