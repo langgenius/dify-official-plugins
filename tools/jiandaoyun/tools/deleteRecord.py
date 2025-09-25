@@ -13,9 +13,10 @@ class DataupdateTool(Tool):
     delete a record in jiandaoyun
     """
 
-    def updateData(self, data: dict[str, Any], base_url: str) -> dict[str, Any]:
+    def updateData(self, data: dict[str, Any]) -> dict[str, Any]:
         try:
             access_token = self.runtime.credentials["jiandaoyun_api_key"]
+            base_url = self.runtime.credentials["base_url"] or "https://api.jiandaoyun.com/"
         except KeyError:
             raise Exception("jiandaoyun api-key is missing or invalid.")
         httpClient = APIRequestTool(base_url=base_url, token=access_token)
@@ -33,7 +34,6 @@ class DataupdateTool(Tool):
             raise ValueError("data_id is required to invoke this tool")
         data_update = self.updateData(
             {"app_id": app_id, "entry_id": entry_id, "data_id": data_id},
-            tool_parameters.get("base_url"),
         )
         try:
             data = json.dumps(data_update)

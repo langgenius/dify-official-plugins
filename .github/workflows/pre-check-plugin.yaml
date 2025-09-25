@@ -33,7 +33,7 @@ jobs:
 
       - name: Download Plugin Daemon
         run: |
-          gh release download -R langgenius/dify-plugin-daemon --pattern "dify-plugin-linux-amd64" --dir .scripts
+          gh release download -R langgenius/dify-plugin-daemon --pattern "dify-plugin-linux-amd64" --dir .scripts || gh release download -R langgenius/dify-plugin-daemon --pattern "dify-plugin-linux-amd64" --dir .scripts
           chmod +x .scripts/dify-plugin-linux-amd64
           mv .scripts/dify-plugin-linux-amd64 /usr/local/bin/dify
 

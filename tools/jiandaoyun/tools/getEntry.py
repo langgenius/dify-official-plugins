@@ -14,9 +14,10 @@ class GetEntryTool(Tool):
     get the entry list of a specific application
     """
 
-    def getEntryList(self, data: dict[str, Any], base_url: str) -> dict[str, Any]:
+    def getEntryList(self, data: dict[str, Any]) -> dict[str, Any]:
         try:
             access_token = self.runtime.credentials["jiandaoyun_api_key"]
+            base_url = self.runtime.credentials["base_url"] or "https://api.jiandaoyun.com/"
         except KeyError:
             raise Exception("jiandaoyun api-key is missing or invalid.")
         httpClient = APIRequestTool(base_url=base_url, token=access_token)
@@ -31,7 +32,6 @@ class GetEntryTool(Tool):
         output_type = tool_parameters.get("output_type", "json")
         response = self.getEntryList(
             {"app_id": app_id, "limit": limit, "offset": offset},
-            tool_parameters.get("base_url"),
         )
         if response.get("status") != "success":
             raise ValueError(
