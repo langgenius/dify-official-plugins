@@ -15,9 +15,12 @@ from dify_plugin.entities.model import I18nObject
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    ImagePromptMessageContent,
     PromptMessage,
+    PromptMessageContent,
     PromptMessageTool,
     SystemPromptMessage,
+    TextPromptMessageContent,
     ToolPromptMessage,
     UserPromptMessage,
 )
@@ -132,8 +135,35 @@ class ModelScopeLargeLanguageModel(LargeLanguageModel):
             message = cast(UserPromptMessage, message)
             if isinstance(message.content, str):
                 message_dict = {"role": "user", "content": message.content}
+            elif isinstance(message.content, list):
+                # Handle multimodal content (text + images)
+                content_list = []
+                for content in message.content:
+                    if isinstance(content, TextPromptMessageContent):
+                        content_list.append({
+                            "type": "text",
+                            "text": content.data
+                        })
+                    elif isinstance(content, ImagePromptMessageContent):
+                        if content.data.startswith("data:"):
+                            # Base64 encoded image
+                            content_list.append({
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": content.data
+                                }
+                            })
+                        else:
+                            # Image URL
+                            content_list.append({
+                                "type": "image_url", 
+                                "image_url": {
+                                    "url": content.data
+                                }
+                            })
+                message_dict = {"role": "user", "content": content_list}
             else:
-                raise ValueError("User message content must be str")
+                raise ValueError("User message content must be str or list")
         elif isinstance(message, AssistantPromptMessage):
             message = cast(AssistantPromptMessage, message)
             message_dict = {"role": "assistant", "content": message.content}
