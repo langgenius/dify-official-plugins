@@ -1,7 +1,6 @@
 import oracledb
 from typing import Generator, Any
 
-import oracledb
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
