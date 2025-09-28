@@ -8,36 +8,36 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 class OracleDbPluginTool(Tool):
     def __init__(self, runtime=None, session=None):
         super().__init__(runtime, session)
-        # 获取当前语言环境，默认为英文
+        # Get current language environment, default to English
         self.language = self.get_language()
     
     def get_language(self):
-        # 从运行环境中获取语言设置，默认返回'en_US'
+        # Get language settings from runtime environment, default to 'en_US'
         try:
-            # 实际应用中可能需要从不同位置获取语言设置
-            # 这里仅作为示例
+            # In actual applications, language settings may need to be obtained from different locations
+            # This is just an example
             return 'en_US'
         except:
             return 'en_US'
     
     def get_message(self, messages_dict):
-        # 根据当前语言返回对应消息，如果没有对应语言的消息，返回英文消息
+        # Return corresponding message based on current language, if no message for current language, return English message
         return messages_dict.get(self.language, messages_dict.get('en_US', ''))
     
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
-        # 或者也可以使用 Iterator[ToolInvokeMessage]，如果不需要指定 send 和 return 类型
+        # Or can also use Iterator[ToolInvokeMessage] if you don't need to specify send and return types
         # def _invoke(self, tool_parameters: dict[str, Any]) -> Iterator[ToolInvokeMessage]:
         conn = None
         try:
-            # 获取连接参数
+            # Get connection parameters
             host = tool_parameters.get('host')
-            port = tool_parameters.get('port', 1521)  # 使用默认端口1521
+            port = tool_parameters.get('port', 1521)  # Use default port 1521
             user = tool_parameters.get('user')
             password = tool_parameters.get('password')
             service_name = tool_parameters.get('service_name')
             sql_query = tool_parameters.get('query')
             
-            # 验证必要参数
+            # Validate required parameters
             if not all([host, user, password, service_name, sql_query]):
                 messages = {
                     'en_US': 'Missing required parameters: host, user, password, service_name, query are all required',
@@ -49,49 +49,47 @@ class OracleDbPluginTool(Tool):
                 })
                 return
             
-            # python-oracledb默认使用Thin Mode，无需额外配置
+            # python-oracledb uses Thin Mode by default, no additional configuration needed
             
-            # 构建连接字符串
+            # Build connection string
             dsn = f'{host}:{port}/{service_name}'
-            print(f'dsn:{dsn},user:{user},pwd:{password}')
             
-            # 连接数据库
+            # Connect to database
             conn = oracledb.connect(
                 user=user,
                 password=password,
                 dsn=dsn
             )
-            print(conn)
             
-            # 创建游标
+            # Create cursor
             with conn.cursor() as cursor:
-                # 执行查询
+                # Execute query
                 cursor.execute(sql_query)
                 
-                # 获取列名
+                # Get column names
                 columns = [col[0] for col in cursor.description]
                 
-                # 获取查询结果
+                # Get query results
                 results = []
                 for row in cursor.fetchall():
-                    # 将每行数据转换为字典
+                    # Convert each row data to dictionary
                     row_dict = {columns[i]: value for i, value in enumerate(row)}
-                    # 处理可能的特殊类型
+                    # Handle possible special types
                     for key, value in row_dict.items():
-                        # 处理LOB类型
+                        # Handle LOB type
                         if isinstance(value, oracledb.LOB):
                             try:
-                                # 尝试将LOB转换为字符串
+                                # Try to convert LOB to string
                                 row_dict[key] = value.read()
                             except:
-                                # 如果读取失败，设置为None或错误信息
+                                # If read fails, set to None or error message
                                 row_dict[key] = None
-                        # 转换datetime对象为字符串
+                        # Convert datetime object to string
                         elif hasattr(value, 'strftime'):
                             row_dict[key] = value.strftime('%Y-%m-%d %H:%M:%S')
                     results.append(row_dict)
                 
-                # 返回结果
+                # Return results
                 messages = {
                     'en_US': f'Query executed successfully, returned {len(results)} rows.',
                     'zh_Hans': f'查询执行成功，返回了{len(results)}行数据。'
@@ -103,13 +101,13 @@ class OracleDbPluginTool(Tool):
                     "message": self.get_message(messages)
                 })
         except Exception as e:
-            # 处理异常并返回错误信息
+            # Handle exceptions and return error message
             yield self.create_json_message({
                 "status": "error",
                 "message": str(e)
             })
         finally:
-            # 确保连接关闭
+            # Ensure connection is closed
             if conn:
                 try:
                     conn.close()
