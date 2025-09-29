@@ -60,6 +60,10 @@
 - qwen3-1.7b
 - qwen3-0.6b
 - qwen3-coder-plus
+- qwen3-vl-235b-a22b-instruct
+- qwen3-vl-235b-a22b-thinking
+- qwen3-vl-plus
+- qwen3-vl-plus-2025-09-23
 - qwen2.5-72b-instruct
 - qwen2.5-32b-instruct
 - qwen2.5-14b-instruct-1m
