@@ -97,6 +97,9 @@ jobs:
               uv pip install -r tests/${{ env.PLUGIN_PATH }}/requirements.txt
             fi
             PYTHONPATH=. uv run pytest tests/${{ env.PLUGIN_PATH }}
+          else
+            echo "!!! Plugin tests directory not found, please ensure at least one test file exists in tests/${{ env.PLUGIN_PATH }}"
+            exit 1
           fi
 
       - name: Check Plugin Install
