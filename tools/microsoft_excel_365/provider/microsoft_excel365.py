@@ -20,7 +20,7 @@ class Excel365Provider(ToolProvider):
     _TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
     _API_BASE_URL = "https://graph.microsoft.com/v1.0"
     # Hardcoded SCOPE - includes file read/write and offline access permissions
-    _SCOPES = "Files.ReadWrite offline_access"
+    _SCOPES = "Files.ReadWrite offline_access Sites.Read.All"
 
     def _oauth_get_authorization_url(
         self, redirect_uri: str, system_credentials: Mapping[str, Any]

@@ -69,6 +69,28 @@ This plugin supports comprehensive Excel 365 operations including:
 The plugin uses the following Microsoft Graph scopes (hard-coded in the provider):
 - `Files.ReadWrite`: Read and write user's files
 - `offline_access`: Maintain access to data you have given it access to
+- `Sites.Read.All`: Read SharePoint site collections and related files/drives (required for accessing SharePoint Site drives)
+
+Note: Scopes are defined in `provider/microsoft_excel365.py` and requested during OAuth.
+
+## SharePoint Site Support (site_id)
+
+By default, all tools operate on the signed-in user’s OneDrive using the Graph endpoint `…/me/drive`.
+
+If you need to access or edit files that live under a SharePoint Site, you can provide an optional parameter `site_id` to target that Site’s drive. When `site_id` is present, the tools will switch to the Graph endpoint `…/sites/{site_id}/drive`.
+
+- When to use: only when you need to access/edit content inside a SharePoint Site.
+- How to find: obtain the Site’s ID from Microsoft Graph or the SharePoint admin/UI as appropriate. Quick tip: append `/_api/site/id` to your SharePoint site URL (e.g., `https://yourdomain.sharepoint.com/sites/YourSite/_api/site/id`) to get the `site_id`.
+
+Tools that accept `site_id` (optional):
+- list_all_files
+- list_workbooks
+- list_worksheets
+- read_worksheet_data
+- write_worksheet_data
+- clear_worksheet_data
+- create_worksheet
+- search_worksheet_data
 
 ## Tool Descriptions
 
@@ -76,6 +98,7 @@ The plugin uses the following Microsoft Graph scopes (hard-coded in the provider
 List all files and folders in OneDrive with optional filtering.
 
 **Parameters:**
+- site_id (string, optional): Only required when accessing a SharePoint Site drive.
 - folder_path (string, optional): The folder path to list (use 'root' for root folder, 'recent' for recent files, or 'id:FOLDER_ID' for specific folder). Default is "root".
 - file_type (select, optional): Filter by file type. Options: "all", "excel", "folders". Default is "all".
 - max_results (number, optional): Maximum number of items to return (default: 50, max: 200).
@@ -84,6 +107,7 @@ List all files and folders in OneDrive with optional filtering.
 List all Excel workbooks accessible to the user in OneDrive or SharePoint.
 
 **Parameters:**
+- site_id (string, optional): Only required when accessing a SharePoint Site drive.
 - folder_id (string, optional): The ID of the folder to list workbooks from.
 - search_query (string, optional): Search for workbooks by name.
 - max_results (number, optional): Maximum number of workbooks to return (default: 20, max: 100).
@@ -92,12 +116,14 @@ List all Excel workbooks accessible to the user in OneDrive or SharePoint.
 List all worksheets in a specified Excel workbook.
 
 **Parameters:**
+- site_id (string, optional): Only required when accessing a SharePoint Site drive.
 - workbook_id (string): The ID of the Excel workbook.
 
 ### read_worksheet_data
 Read data from a specified range in an Excel worksheet.
 
 **Parameters:**
+- site_id (string, optional): Only required when accessing a SharePoint Site drive.
 - workbook_id (string): The ID of the Excel workbook.
 - worksheet_name (string): The name of the worksheet to read from.
 - range (string, optional): The cell range to read (e.g., A1:D10). Default is A1:Z100.
@@ -106,6 +132,7 @@ Read data from a specified range in an Excel worksheet.
 Write data to a specified range in an Excel worksheet.
 
 **Parameters:**
+- site_id (string, optional): Only required when accessing a SharePoint Site drive.
 - workbook_id (string): The ID of the Excel workbook.
 - worksheet_name (string): The name of the worksheet to write to.
 - range (string): The cell range to write to (e.g., A1:D10).
@@ -115,6 +142,7 @@ Write data to a specified range in an Excel worksheet.
 Clear data from a specified range in an Excel worksheet.
 
 **Parameters:**
+- site_id (string, optional): Only required when accessing a SharePoint Site drive.
 - workbook_id (string): The ID of the Excel workbook.
 - worksheet_name (string): The name of the worksheet to clear data from.
 - range (string): The cell range to clear (e.g., A1:D10).
@@ -123,6 +151,7 @@ Clear data from a specified range in an Excel worksheet.
 Create a new worksheet in an Excel workbook.
 
 **Parameters:**
+- site_id (string, optional): Only required when accessing a SharePoint Site drive.
 - workbook_id (string): The ID of the Excel workbook.
 - worksheet_name (string): The name for the new worksheet.
 
@@ -130,6 +159,7 @@ Create a new worksheet in an Excel workbook.
 Search for specific values in an Excel worksheet.
 
 **Parameters:**
+- site_id (string, optional): Only required when accessing a SharePoint Site drive.
 - workbook_id (string): The ID of the Excel workbook.
 - worksheet_name (string): The name of the worksheet to search in.
 - search_value (string): The value to search for.
