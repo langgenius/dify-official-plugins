@@ -1,0 +1,17 @@
+identity:
+  author: langgenius
+  name: oracle_db_23ai
+  label:
+    en_US: "Oracle Database"
+    zh_Hans: "Oracle 数据库"
+    pt_BR: "Banco de Dados Oracle"
+  description:
+    en_US: "Connect to Oracle database"
+    zh_Hans: "连接Oracle数据库"
+    pt_BR: "Conectar ao banco de dados Oracle"
+  icon: "oracle.jpg"
+tools:
+  - tools/oracle_db_plugin.yaml
+extra:
+  python:
+    source: provider/oracle_db_plugin.py

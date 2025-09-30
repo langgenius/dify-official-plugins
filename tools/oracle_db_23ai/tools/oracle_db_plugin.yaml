@@ -1,0 +1,95 @@
+identity:
+  name: oracle_db_23ai
+  author: langgenius
+  label:
+    en_US: "Oracle Database Query"
+    zh_Hans: "Oracle数据库查询"
+    pt_BR: "Consulta Oracle Database"
+description:
+  human:
+    en_US: "Connect to Oracle database and execute SQL queries using Thin Mode."
+    zh_Hans: "使用Thin Mode连接Oracle数据库并执行SQL查询。"
+    pt_BR: "Conecte-se ao banco de dados Oracle e execute consultas SQL usando o Modo Thin."
+  llm: "A tool for connecting to Oracle database and executing SQL queries using Thin Mode."
+parameters:
+  - name: host
+    type: string
+    required: true
+    label:
+      en_US: Database Host
+      zh_Hans: 数据库主机
+      pt_BR: Host do Banco de Dados
+    human_description:
+      en_US: "The hostname or IP address of the Oracle database server."
+      zh_Hans: "Oracle数据库服务器的主机名或IP地址。"
+      pt_BR: "O hostname ou endereço IP do servidor de banco de dados Oracle."
+    llm_description: "The hostname or IP address of the Oracle database server."
+    form: llm
+  - name: port
+    type: number
+    required: false
+    label:
+      en_US: Database Port
+      zh_Hans: 数据库端口
+      pt_BR: Porta do Banco de Dados
+    human_description:
+      en_US: "The port number of the Oracle database server."
+      zh_Hans: "Oracle数据库服务器的端口号。"
+      pt_BR: "O número da porta do servidor de banco de dados Oracle."
+    llm_description: "The port number of the Oracle database server."
+    form: llm
+  - name: user
+    type: string
+    required: true
+    label:
+      en_US: Username
+      zh_Hans: 用户名
+      pt_BR: Nome de Usuário
+    human_description:
+      en_US: "The username for connecting to the Oracle database."
+      zh_Hans: "连接Oracle数据库的用户名。"
+      pt_BR: "O nome de usuário para conectar ao banco de dados Oracle."
+    llm_description: "The username for connecting to the Oracle database."
+    form: llm
+  - name: password
+    type: secret-input
+    required: true
+    label:
+      en_US: Password
+      zh_Hans: 密码
+      pt_BR: Senha
+    human_description:
+      en_US: "The password for connecting to the Oracle database."
+      zh_Hans: "连接Oracle数据库的密码。"
+      pt_BR: "A senha para conectar ao banco de dados Oracle."
+    llm_description: "The password for connecting to the Oracle database."
+    form: llm
+  - name: service_name
+    type: string
+    required: true
+    label:
+      en_US: Service Name
+      zh_Hans: 服务名
+      pt_BR: Nome do Serviço
+    human_description:
+      en_US: "The service name of the Oracle database."
+      zh_Hans: "Oracle数据库的服务名。"
+      pt_BR: "O nome do serviço do banco de dados Oracle."
+    llm_description: "The service name of the Oracle database."
+    form: llm
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: SQL Query
+      zh_Hans: SQL查询语句
+      pt_BR: Consulta SQL
+    human_description:
+      en_US: "The SQL query to execute against the Oracle database."
+      zh_Hans: "要在Oracle数据库上执行的SQL查询语句。"
+      pt_BR: "A consulta SQL a ser executada no banco de dados Oracle."
+    llm_description: "The SQL query to execute against the Oracle database."
+    form: llm
+extra:
+  python:
+    source: tools/oracle_db_plugin.py
