@@ -1,0 +1,21 @@
+[project]
+name = "dify-official-plugins"
+version = "1.0.0"
+description = "Official plugins for Dify platform"
+readme = "README.md"
+requires-python = ">=3.11,<3.13"
+
+# This is a collection of plugins, so no dependencies are specified here
+dependencies = []
+
+[tool.uv]
+package = false
+
+[dependency-groups]
+# Dev dependencies for development tools and type checking
+dev = [
+    "basedpyright~=1.31.0",
+    "ruff~=0.12.3",
+    "pytest~=8.3.2",
+    "uv",
+]
