@@ -23,7 +23,7 @@ Access GitHub repositories, issues, pull requests, and wiki pages as a datasourc
 
 ### Requirements
 
-- Dify platform version >= 2.0.0
+- Dify platform version >= 1.9.0
 - Python 3.12+
 - Valid GitHub account with appropriate permissions
 

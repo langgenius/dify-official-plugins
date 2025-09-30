@@ -102,10 +102,26 @@
     "FluxGuidance": [
         "guidance"
     ],
-    "LoraLoader":[
+    "LoraLoader": [
         "lora_name",
         "strength_model",
         "strength_clip"
     ],
-    "ModelSamplingAuraFlow":["shift"]
+    "ModelSamplingAuraFlow": [
+        "shift"
+    ],
+    "EmptyLatentAudio": [
+        "seconds",
+        "batch_size"
+    ],
+    "VAEDecodeAudio": [],
+    "SaveAudio": [
+        "filename_prefix"
+    ],
+    "TextEncodeQwenImageEditPlus": [
+        "prompt"
+    ],
+    "CFGNorm": [
+        "strength"
+    ]
 }

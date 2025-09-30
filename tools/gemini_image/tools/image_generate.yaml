@@ -1,0 +1,65 @@
+description:
+  human:
+    en_US: Gemini Image Generate is a text to image generation and editing tool
+    zh_Hans: Gemini Image Generate 是一个文本到图像的生成与编辑工具
+    ja_JP: Gemini 画像生成はテキストから画像を生成・編集するツールです。
+  llm: Gemini Image Generate is a tool used to generate and edit images from text using Gemini's model
+extra:
+  python:
+    source: tools/image_generate.py
+identity:
+  author: langgenius
+  description:
+    en_US: Gemini Image Generate enables you converse with Gemini and create or edit images with interwoven text.
+    zh_Hans: Gemini Image Generate 使您能够与 Gemini 交谈并创建或编辑带有文本的图像。
+    ja_JP: Gemini Image Generate では、Geminiと対話しながら、テキストを織り交ぜた画像を作成または編集できます。
+  label:
+    en_US: Gemini Image Generate and Edit
+    zh_Hans: Gemini 图像生成与编辑
+    ja_JP: Gemini 画像生成・編集
+  name: image_generate
+parameters:
+  - name: prompt
+    form: llm
+    human_description:
+      en_US: Detailed description of the image you want to generate (max 32000 tokens). Check the official Gemini documentation.
+      zh_Hans: 您想要生成的图像的详细描述（最多 32000 tokens）。请查看 Gemini 的官方文档。
+      ja_JP: 生成したい画像の細かな説明(最大 32000 トークン)。Gemini 公式ドキュメントを参照してください。
+    label:
+      en_US: Prompt
+      zh_Hans: 提示词
+      ja_JP: プロンプト
+    llm_description: Detailed image prompt for Gemini Image Generate(max 32000 tokens). Describe the desired image clearly.
+    required: true
+    type: string
+  - name: images
+    form: llm
+    human_description:
+      en_US: One or more images to edit (PNG, JPEG, or WebP, each <7MB).
+      zh_Hans: 要编辑的一张或多张图像（PNG、JPEG 或 WebP，每张小于 7MB）。
+      ja_JP: 編集対象の画像(PNG, JPEG, or WebP, 1つ当たり最大 7MB)
+    label:
+      en_US: Image(s)
+      zh_Hans: 图像
+      ja_JP: 画像
+    required: false
+    type: files
+  - name: model
+    default: "gemini-2.5-flash-image-preview"
+    form: form
+    human_description:
+      en_US: Select the gemini model 
+      zh_Hans: 选择Gemini模型
+      ja_JP: Gemini モデルを選択
+    label:
+      en_US: Gemini Model
+      zh_Hans: Gemini 模型
+      ja_JP: Gemini モデル
+    options:
+      - label:
+          en_US: gemini-2.5-flash-image-preview
+          zh_Hans: gemini-2.5-flash-image-preview
+          ja_JP: gemini-2.5-flash-image-preview
+        value: "gemini-2.5-flash-image-preview"
+    required: false
+    type: select

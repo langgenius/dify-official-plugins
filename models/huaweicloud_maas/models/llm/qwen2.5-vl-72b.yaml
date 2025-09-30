@@ -1,0 +1,26 @@
+model: qwen2.5-vl-72b
+label:
+  en_US: Qwen2.5-VL-72B
+model_type: llm
+features:
+  - vision
+model_properties:
+  mode: chat
+  context_size: 32768
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    default: 0.6
+  - name: top_p
+    use_template: top_p
+    default: 0.95
+  - name: max_tokens
+    use_template: max_tokens
+    min: 1
+    max: 8192
+    default: 8192
+pricing:
+  input: '16'
+  output: '48'
+  unit: '0.000001'
+  currency: RMB

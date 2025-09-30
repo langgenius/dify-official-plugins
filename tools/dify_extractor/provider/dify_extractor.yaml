@@ -10,10 +10,10 @@ identity:
     zh_Hans: Dify Extractor
     pt_BR: Dify Extractor
   icon: icon.svg
-  tags: []
+  tags:
+    - rag
 tools:
   - tools/dify_extractor.yaml
 extra:
   python:
     source: provider/dify_extractor.py
-

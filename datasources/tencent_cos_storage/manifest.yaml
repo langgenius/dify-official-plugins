@@ -1,4 +1,4 @@
-version: 0.3.3
+version: 0.3.4
 type: plugin
 author: langgenius
 name: tencent_cos_storage
@@ -24,7 +24,8 @@ meta:
     language: python
     version: "3.12"
     entrypoint: main
-  minimum_dify_version: 1.7.2
+  minimum_dify_version: 1.9.0
 created_at: 2025-09-05T10:00:00.000000+08:00
 privacy: 
 verified: false
+tags:

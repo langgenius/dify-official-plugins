@@ -57,7 +57,6 @@ class NotionDataSource(OnlineDocumentDatasource):
             online_document_res = notion_extractor.extract()
         except Exception as e:
             raise ValueError(str(e)) from e
-        print(online_document_res)
         yield self.create_variable_message("content", online_document_res["content"])
         yield self.create_variable_message("page_id", online_document_res["page_id"])
         yield self.create_variable_message("workspace_id", online_document_res["workspace_id"])

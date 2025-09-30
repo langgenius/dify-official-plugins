@@ -1,10 +1,22 @@
+import dataclasses
 import os
 import re
 
 import requests
+from requests_cache import CachedSession
 
 from tools.comfyui_client import ComfyUiClient
-from tools.comfyui_workflow import ComfyUiWorkflow
+from tools.comfyui_workflow import ComfyUIModel, ComfyUiWorkflow
+
+
+@dataclasses.dataclass
+class CivitAiModel(ComfyUIModel):
+    model_name_human: str
+    file_names: list[str]
+    ecosystem: str
+    model_type: str
+    source: str
+    id: str
 
 
 class ModelManager:
@@ -13,10 +25,12 @@ class ModelManager:
         comfyui_cli: ComfyUiClient,
         civitai_api_key: str | None,
         hf_api_key: str | None,
+        expire_after: int = 60 * 5,
     ):
         self._comfyui_cli = comfyui_cli
         self._civitai_api_key = civitai_api_key
         self._hf_api_key = hf_api_key
+        self._session = CachedSession("model_manager", expire_after=expire_after)
 
     def get_civitai_api_key(self):
         if self._civitai_api_key is None:
@@ -29,9 +43,11 @@ class ModelManager:
         return self._hf_api_key
 
     def decode_lora(self, lora_info: str, save_dir: str = "loras"):
-        # lora_info can be expressed as ([A-Za-z0-9\.]+|(civitai:[0-9]+(@[0-9]+)?))(:[0-9]+(\.[0-9])?)? in regular expression.
-        # For example, if lora_info = "lora.safetensor:0.8", it means a local model "lora.safetensor" should be applied with its strength 0.8
-        # If lora_info = "civitai:5529", it means a CivitAI model https://civitai.com/models/5529/eye-lora should be applied with its strength 1.0(default value).
+        # lora_info can be expressed as ([A-Za-z0-9\.]+|(civitai:[0-9]+(@[0-9]+)?))(:[0-9]+(\.[0-9])?)? in regex.
+        # For example, if lora_info = "lora.safetensor:0.8", it means a local model "lora.safetensor"
+        #  should be applied with its strength 0.8
+        # If lora_info = "civitai:5529", it means a CivitAI model https://civitai.com/models/5529/eye-lora
+        #  should be applied with its strength 1.0(default value).
         lora_info = lora_info.lstrip(" ").rstrip(" ")
         if not re.match(r"([A-Za-z0-9\.]+|(civitai:[0-9]+(@[0-9]+)?))(:[0-9]+(\.[0-9])?)?", lora_info):
             raise Exception("Invalid lora_info")
@@ -72,8 +88,8 @@ class ModelManager:
                 version_id = int(civit_pattern[3])
             except:
                 version_id = None
-            model_name_human, filenames = self.download_civitai(model_id, version_id, save_dir)
-            return filenames[0]
+            civitai_model = self.download_civitai(model_id, version_id, save_dir)
+            return civitai_model.name
         if len(re.findall("https?://.*", model_name)) > 0:
             # model_name is a general URL
             url = model_name
@@ -81,6 +97,8 @@ class ModelManager:
         raise Exception(f"Model {model_name} does not exist in the local folder {save_dir}/ or online.")
 
     def download_model_autotoken(self, url: str, save_dir: str, filename: str | None = None) -> str:
+        if filename in self._comfyui_cli.get_model_dirs(save_dir):
+            return filename
         try:
             return self.download_model(url, save_dir, filename, None)
         except:
@@ -117,7 +135,10 @@ class ModelManager:
         except Exception as e:
             error = f"Failed to download: {str(e)}."
             if len(self._comfyui_cli.get_model_dirs(save_dir)) == 0:
-                error += f"Please make sure that https://github.com/ServiceStack/comfy-asset-downloader works on ComfyUI and the destination folder named models/{save_dir} exists."
+                error += (
+                    "Please make sure that https://github.com/ServiceStack/comfy-asset-downloader works"
+                    + f" on ComfyUI and the destination folder named models/{save_dir} exists."
+                )
             else:
                 error += (
                     "Please make sure that https://github.com/ServiceStack/comfy-asset-downloader works on ComfyUI."
@@ -126,25 +147,17 @@ class ModelManager:
 
         return filename
 
-    def fetch_version_ids(self, model_id: int):
+    def search_civitai(self, model_id: int, version_id: int | None, save_dir: str) -> CivitAiModel:
         try:
-            model_data = requests.get(f"https://civitai.com/api/v1/models/{model_id}").json()
-        except:
-            raise Exception(f"Model {model_id} not found.")
-        version_ids = [v["id"] for v in model_data["modelVersions"] if v["availability"] == "Public"]
-        return version_ids
-
-    def download_civitai(self, model_id: int, version_id: int, save_dir: str) -> tuple[str, list[str]]:
-        try:
-            model_data = requests.get(f"https://civitai.com/api/v1/models/{model_id}").json()
-
-            model_name_human = model_data["name"]
+            model_data = self._session.get(f"https://civitai.com/api/v1/models/{model_id}").json()
         except:
             raise Exception(f"Model {model_id} not found.")
         if "error" in model_data:
             raise Exception(model_data["error"])
+        model_name_human = model_data.get("name", "")
         if version_id is None:
-            version_id = max(self.fetch_version_ids(model_id))
+            version_ids = [v["id"] for v in model_data["modelVersions"] if v["availability"] == "Public"]
+            version_id = max(version_ids)
         model_detail = None
         for past_model in model_data["modelVersions"]:
             if past_model["id"] == version_id:
@@ -152,15 +165,25 @@ class ModelManager:
                 break
         if model_detail is None:
             raise Exception(f"Version {version_id} of model {model_name_human} not found.")
-        model_filenames = [file["name"] for file in model_detail["files"]]
+        model_filenames = [str(file["name"]) for file in model_detail["files"]]
+        ecosystem, model_type, source, id = self.fetch_civitai_air(version_id)
 
-        self.download_model_autotoken(
+        return CivitAiModel(
+            [name for name in model_filenames if name.endswith(".safetensors")][0].split("/")[-1],
             f"https://civitai.com/api/download/models/{version_id}",
             save_dir,
-            model_filenames[0].split("/")[-1],
+            model_name_human=model_name_human,
+            file_names=model_filenames,
+            ecosystem=ecosystem,
+            model_type=model_type,
+            source=source,
+            id=id,
         )
 
-        return model_name_human, model_filenames
+    def download_civitai(self, model_id: int, version_id: int, save_dir: str) -> CivitAiModel:
+        model = self.search_civitai(model_id, version_id, save_dir)
+        self.download_model_autotoken(model.url, model.directory, model.name)
+        return model
 
     def download_hugging_face(self, repo_id: str, filepath: str, save_dir: str):
         self.download_model_autotoken(
@@ -170,7 +193,7 @@ class ModelManager:
 
     def fetch_civitai_air(self, version_id: int) -> tuple[str, str, str, str]:
         try:
-            air_str: str = requests.get(f"https://civitai.com/api/v1/model-versions/{version_id}").json()["air"]
+            air_str: str = self._session.get(f"https://civitai.com/api/v1/model-versions/{version_id}").json()["air"]
             urn, air, ecosystem, model_type, source, id = air_str.split(":")
             return ecosystem, model_type, source, id
         except:

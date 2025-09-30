@@ -18,4 +18,5 @@ extra:
 
 tools:
   - tools/text_quality_evaluator.yaml
+  - tools/resume_optimizer.yaml
 

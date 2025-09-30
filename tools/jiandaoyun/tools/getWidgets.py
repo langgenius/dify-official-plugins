@@ -14,12 +14,12 @@ class WidgetTool(Tool):
     get widgets of a form in jiandaoyun
     """
 
-    def getWidget(self, data: dict[str, Any], base_url: str) -> dict[str, Any]:
+    def getWidget(self, data: dict[str, Any]) -> dict[str, Any]:
         try:
             access_token = self.runtime.credentials["jiandaoyun_api_key"]
+            base_url = self.runtime.credentials["base_url"] or "https://api.jiandaoyun.com/"
         except KeyError:
             raise Exception("jiandaoyun api-key is missing or invalid.")
-
         httpClient = APIRequestTool(base_url=base_url, token=access_token)
         return httpClient.create("v5/app/entry/widget/list", data=data)["data"]
 
@@ -32,7 +32,7 @@ class WidgetTool(Tool):
             raise ValueError("entry_id is required to invoke this tool")
         output_type = tool_parameters.get("output_type", "json")
         widget_data = self.getWidget(
-            {"app_id": app_id, "entry_id": entry_id}, tool_parameters.get("base_url")
+            {"app_id": app_id, "entry_id": entry_id},
         )
         try:
             dumped_data = json.dumps(widget_data)
@@ -40,6 +40,7 @@ class WidgetTool(Tool):
             raise ValueError(
                 "JSON decoding error: the response is not a valid JSON format"
             )
+        print(dumped_data)
         if output_type == "json":
             yield self.create_text_message(str(dumped_data))
         elif output_type == "table":

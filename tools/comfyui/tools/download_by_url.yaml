@@ -94,29 +94,14 @@ parameters:
           en_US: vae_approx
     required: true
 
-  - name: token_type
+  - name: use_tokens
     form: form
-    label:
-      en_US: Token Type
-      zh_Hans: Token Type
-      ja_JP: Token Type
-    llm_description: Token Type
-    type: select
     human_description:
-      en_US: Token Type
-      zh_Hans: Token Type
-      ja_JP: Token Type
-    options:
-      - value: none
-        label:
-          en_US: None
-      - value: civitai
-        label:
-          en_US: CivitAI
-      - value: hugging_face
-        label:
-          en_US: HuggingFace
-
+      en_US: If you don't want to use tokens, set this to False
+    label:
+      en_US: Use Tokens
+    type: boolean
+    default: true
 
 output_schema:
   type: object

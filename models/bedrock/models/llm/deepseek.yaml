@@ -24,13 +24,14 @@ parameter_rules:
     default: DeepSeek R1
     options:
       - DeepSeek R1
+      - DeepSeek V3.1
   - name: cross-region
     label:
       zh_Hans: 使用跨区域推理
       en_US: Use Cross-Region Inference
     type: boolean
     required: true
-    default: true
+    default: false
     help:
       zh_Hans: 跨区域推理会自动选择您所在地理区域 AWS 区域 内的最佳位置来处理您的推理请求。
       en_US: Cross-Region inference automatically selects the optimal AWS Region within your geography to process your inference request.
@@ -79,7 +80,7 @@ parameter_rules:
   - name: response_format
     use_template: response_format
 pricing:
-  input: '0.00135'
-  output: '0.0054'
+  input: '0.00058'
+  output: '0.00168'
   unit: '0.001'
   currency: USD
