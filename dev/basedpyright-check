@@ -3,13 +3,29 @@
 set -x
 
 # Get script directory more robustly
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd "$SCRIPT_DIR/.."
 
 # Get the path argument if provided
 PATH_TO_CHECK="$1"
 
-# Check if uv is available, otherwise use python -m pip and python -m basedpyright
+# Find python command
+PYTHON_CMD=""
+for cmd in python3 python; do
+    if command -v "$cmd" &> /dev/null; then
+        PYTHON_CMD="$cmd"
+        break
+    fi
+done
+
+if [ -z "$PYTHON_CMD" ]; then
+    echo "Error: No Python interpreter found. Please install Python."
+    exit 1
+fi
+
+echo "Using Python: $PYTHON_CMD"
+
+# Check if uv is available
 if command -v uv &> /dev/null; then
     echo "Using uv for dependency management..."
     # Ensure development dependencies are installed
@@ -25,19 +41,20 @@ if command -v uv &> /dev/null; then
         uv run --group dev basedpyright
     fi
 else
-    echo "uv not found, using python..."
+    echo "uv not found, using $PYTHON_CMD directly..."
+    
     # Check if basedpyright is installed
-    if ! python3 -m basedpyright --version &> /dev/null; then
+    if ! $PYTHON_CMD -m basedpyright --version &> /dev/null; then
         echo "basedpyright not found. Installing..."
-        python3 -m pip install --user basedpyright
+        $PYTHON_CMD -m pip install --user basedpyright
     fi
     
     # run basedpyright checks  
     if [ -n "$PATH_TO_CHECK" ]; then
         echo "Running basedpyright on: $PATH_TO_CHECK"
-        python3 -m basedpyright "$PATH_TO_CHECK"
+        $PYTHON_CMD -m basedpyright "$PATH_TO_CHECK"
     else
         echo "Running basedpyright on entire repository..."
-        python3 -m basedpyright
+        $PYTHON_CMD -m basedpyright
     fi
 fi

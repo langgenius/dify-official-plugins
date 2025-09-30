@@ -61,6 +61,22 @@ Extensions facilitate external integrations through HTTP webhooks. Build custom 
 
 In the future, all new official plugins developed by Dify will be updated and maintained in this repository.
 
+### Development
+
+For development guidelines, type checking, and other development tools, see [DEVELOPMENT.md](DEVELOPMENT.md).
+
+Quick start for development:
+```bash
+# Set up development environment
+make setup
+
+# Run type checking
+make type-check
+
+# Check specific plugin
+make type-check-path PATH=models/openai
+```
+
 ### Security disclosure
 
 To protect your privacy, please avoid posting security issues on GitHub. Instead, send your questions to [security@dify.ai](mailto:security@dify.ai) and we will provide you with a more detailed answer.
