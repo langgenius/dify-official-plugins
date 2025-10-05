@@ -1,7 +1,7 @@
 # https://ai.google.dev/gemini-api/docs/models#gemini-2.5-flash-image-preview
 model: gemini-2.5-flash-image-preview
 label:
-  en_US: Gemini 2.5 Flash Preview Image Generation
+  en_US: Nano Banana
 model_type: llm
 features:
   - vision

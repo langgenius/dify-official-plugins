@@ -25,12 +25,20 @@ class ImageGenerateTool(Tool):
         images = tool_parameters.get("images", [])
         if not isinstance(images, list):
             images = [images]  # Make one image to list
-        generated_blobs = []
+
+        generated_blobs: list[bytes] = []
+        generated_texts: list[str] = []
         if len(images) == 0:
-            generated_blobs = self.txt2img(prompt)
+            generated_blobs, generated_texts = self.txt2img(prompt)
         else:
-            for image in images:
-                generated_blobs += self.img2img(prompt, image.blob, image.mime_type)
+            if len(images) > 3:
+                # https://ai.google.dev/gemini-api/docs/image-generation#limitations
+                yield self.create_text_message("Warning: The number of input images should be three or less.")
+            generated_blobs, generated_texts = self.img2img(prompt, [img.blob for img in images], [img.mime_type for img in images])
+
+        for text in generated_texts:
+            yield self.create_text_message(text=text)
+
         for i, blob in enumerate(generated_blobs):
             yield self.create_blob_message(
                 blob=blob,
@@ -40,37 +48,49 @@ class ImageGenerateTool(Tool):
                 },
             )
 
-    def txt2img(self, prompt: str) -> list[bytes]:
+    def txt2img(self, prompt: str) -> tuple[list[bytes], list[str]]:
         url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent"
-        data = {"contents": [{"parts": [{"text": prompt}]}]}
-        headers = {"x-goog-api-key": self._gemini_api_key, "Content-Type": "application/json"}
-        response = requests.post(url, json=data, headers=headers).json()
+        headers = {"x-goog-api-key": self._gemini_api_key,
+                   "Content-Type": "application/json"}
+
+        response = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, headers=headers).json()
         if "error" in response:
             raise Exception(response["error"]["message"])
 
-        image_blobs = []
+        image_blobs: list[bytes] = []
+        texts: list[str] = []
         for candidate in response.get("candidates", []):
             for part in candidate.get("content", {}).get("parts", []):
+                text = part.get("text")
+                if text:
+                    texts.append(text)
                 inline_data = part.get("inlineData")
                 if inline_data and "data" in inline_data:
                     image_blobs.append(base64.b64decode(inline_data["data"]))
-        return image_blobs
+        return image_blobs, texts
 
-    def img2img(self, prompt: str, image_blob: bytes, mime_type: str) -> list[bytes]:
-        input_base64 = base64.b64encode(image_blob).decode()
+    def img2img(self, prompt: str, image_blobs: list[bytes], mime_types: list[str]) -> tuple[list[bytes], list[str]]:
+        if len(image_blobs) != len(mime_types):
+            raise Exception("Number of image_blobs and mime_types does not match!")
         url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent"
-        data = {
-            "contents": [{"parts": [{"text": prompt}, {"inline_data": {"mime_type": mime_type, "data": input_base64}}]}]
-        }
         headers = {"x-goog-api-key": self._gemini_api_key, "Content-Type": "application/json"}
-        response = requests.post(url, json=data, headers=headers).json()
+        parts = [{"text": prompt}]
+        for i in range(len(image_blobs)):
+            input_base64 = base64.b64encode(image_blobs[i]).decode()
+            parts.append({"inline_data": {"mime_type": mime_types[i], "data": input_base64}})
+
+        response = requests.post(url, json={"contents": [{"parts": parts}]}, headers=headers).json()
         if "error" in response:
             raise Exception(response["error"]["message"])
 
-        image_blobs = []
+        image_blobs: list[bytes] = []
+        texts: list[str] = []
         for candidate in response.get("candidates", []):
             for part in candidate.get("content", {}).get("parts", []):
+                text = part.get("text")
+                if text:
+                    texts.append(text)
                 inline_data = part.get("inlineData")
                 if inline_data and "data" in inline_data:
                     image_blobs.append(base64.b64decode(inline_data["data"]))
-        return image_blobs
+        return image_blobs, texts

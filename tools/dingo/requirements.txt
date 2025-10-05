@@ -1,3 +1,6 @@
+# Dify plugin framework dependency
+dify_plugin
+
 # Core Dingo dependencies for plugin functionality
 # Based on dingo/dingo-latest/requirements/runtime.txt
 

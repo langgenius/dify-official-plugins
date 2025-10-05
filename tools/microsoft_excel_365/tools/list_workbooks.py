@@ -27,6 +27,7 @@ class ListWorkbooksTool(Tool):
         folder_id = tool_parameters.get("folder_id", "")
         search_query = tool_parameters.get("search_query", "")
         max_results = tool_parameters.get("max_results", 20)
+        site_id = tool_parameters.get("site_id")
 
         headers = {
             "Authorization": f"Bearer {access_token}",
@@ -36,20 +37,28 @@ class ListWorkbooksTool(Tool):
         try:
             workbooks = []
 
+            # Determine base drive URL (personal or SharePoint site drive)
+            base_drive = (
+                f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive"
+                if site_id
+                else "https://graph.microsoft.com/v1.0/me/drive"
+            )
+
             if search_query:
                 # Use search endpoint for searching
-                url = f"https://graph.microsoft.com/v1.0/me/drive/search(q='{search_query}')"
+                # Use root/search for broader compatibility across drive types
+                url = f"{base_drive}/root/search(q='{search_query}')"
                 params = {"$top": str(max_results)}
             elif folder_id:
                 # List files in specific folder
-                url = f"https://graph.microsoft.com/v1.0/me/drive/items/{folder_id}/children"
+                url = f"{base_drive}/items/{folder_id}/children"
                 params = {
                     "$top": str(max_results),
                     "$select": "id,name,file,size,createdDateTime,lastModifiedDateTime,webUrl,parentReference",
                 }
             else:
                 # Use a more targeted approach - get recent files first
-                url = "https://graph.microsoft.com/v1.0/me/drive/recent"
+                url = f"{base_drive}/recent"
                 params = {"$top": str(max_results)}
 
             response = requests.get(url, headers=headers, params=params, timeout=30)
@@ -76,7 +85,7 @@ class ListWorkbooksTool(Tool):
 
                 # If no workbooks found in recent, try root folder
                 if not workbooks and not search_query and not folder_id:
-                    url = "https://graph.microsoft.com/v1.0/me/drive/root/children"
+                    url = f"{base_drive}/root/children"
                     params = {
                         "$top": str(max_results),
                         "$select": "id,name,file,size,createdDateTime,lastModifiedDateTime,webUrl,parentReference",

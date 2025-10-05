@@ -1,4 +1,4 @@
-version: 0.0.2
+version: 0.0.3
 type: plugin
 author: "langgenius"
 name: "lemonade"
@@ -21,7 +21,7 @@ plugins:
   models:
     - "provider/lemonade.yaml"
 meta:
-  version: 0.0.2
+  version: 0.0.3
   arch:
     - "amd64"
   runner:

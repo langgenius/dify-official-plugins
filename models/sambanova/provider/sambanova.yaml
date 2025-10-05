@@ -19,6 +19,7 @@ help:
     en_US: http://cloud.sambanova.ai?utm_source=dify&utm_medium=external&utm_campaign=cloud_signup
 supported_model_types:
   - llm
+  - speech2text
 configurate_methods:
   - predefined-model
   - customizable-model
@@ -54,8 +55,13 @@ models:
     position: "models/llm/_position.yaml"
     predefined:
       - "models/llm/*.yaml"
+  speech2text:
+    position: "models/speech2text/_position.yaml"
+    predefined:
+      - "models/speech2text/*.yaml"
 extra:
   python:
     provider_source: provider/sambanova.py
     model_sources:
       - "models/llm/llm.py"
+      - "models/speech2text/speech2text.py"
