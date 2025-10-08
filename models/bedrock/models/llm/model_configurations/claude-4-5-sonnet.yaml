@@ -1,6 +1,7 @@
-model: anthropic claude
+model: claude-4-5-sonnet
 label:
-  en_US: Anthropic Claude
+  en_US: Claude 4.5 Sonnet
+  zh_Hans: Claude 4.5 Sonnet
 icon: icon_s_en.svg
 model_type: llm
 features:
@@ -11,30 +12,7 @@ features:
 model_properties:
   mode: chat
   context_size: 200000
-# docs: https://docs.aws.amazon.com/bedrock/latest/userguide/model-parameters-anthropic-claude-messages.html
 parameter_rules:
-  - name: model_name
-    label:
-      zh_Hans: Bedrock 模型
-      en_US: Bedrock Model
-    type: string
-    help:
-      zh_Hans: 指定模型名称
-      en_US: specify model name
-    required: true
-    default: Claude 3.7 Sonnet
-    options:
-      - Claude 4.1 Opus
-      - Claude 4.5 Sonnet
-      - Claude 4.0 Opus
-      - Claude 4.0 Sonnet
-      - Claude 3.7 Sonnet
-      - Claude 3.5 Sonnet
-      - Claude 3.5 Sonnet V2
-      - Claude 3 Sonnet
-      - Claude 3.5 Haiku
-      - Claude 3 Haiku
-      - Claude 3 Opus
   - name: cross-region
     label:
       zh_Hans: 使用跨区域推理
@@ -90,7 +68,6 @@ parameter_rules:
     help:
       zh_Hans: 推理的预算限制（最小1024），必须小于max_tokens。仅在推理类型为enabled时可用。
       en_US: Budget limit for reasoning (minimum 1024), must be less than max_tokens. Only available when reasoning type is enabled.
-
   - name: max_tokens
     use_template: max_tokens
     required: true
@@ -159,7 +136,7 @@ parameter_rules:
   - name: response_format
     use_template: response_format
 pricing:
-  input: "0.003"
-  output: "0.015"
-  unit: "0.001"
+  input: '0.015'
+  output: '0.075'
+  unit: '0.001'
   currency: USD
