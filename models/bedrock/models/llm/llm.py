@@ -898,12 +898,16 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :param tools: tools for tool calling
         :return:md = genai.GenerativeModel(model)
         """
+        model_parts = model.split(".")
+        
         if model.startswith('us.') or model.startswith('eu.'):
-            prefix = model.split(".")[1]
-            model_name = model.split(".")[2]
+            if len(model_parts) >= 3:
+                prefix = model_parts[1]
+                model_name = model_parts[2]
         else:
-            prefix = model.split(".")[0]
-            model_name = model.split(".")[1]
+            if len(model_parts) >= 2:
+                prefix = model_parts[0]
+                model_name = model_parts[1]
 
         if isinstance(prompt_messages, str):
             prompt = prompt_messages
