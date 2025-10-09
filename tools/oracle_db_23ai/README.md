@@ -30,12 +30,19 @@ When using this plugin, you need to provide the following parameters:
 | service_name | String | Yes | The service name of the Oracle database |
 | query | String | Yes | The SQL query to execute against the Oracle database |
 
+![Alt text](./README.assets/parameters.png)
+
+![Alt text](./README.assets/config.png)
+
 ### Example Usage
 
 ```sql
 -- Example query to get data from a table
 SELECT * FROM employees WHERE department = 'IT' LIMIT 10;
 ```
+
+![Alt text](./README.assets/workflow.png)
+![Alt text](./README.assets/result.png)
 
 ### Return Format
 
@@ -52,6 +59,8 @@ The plugin returns results in JSON format with the following structure:
   "message": "Query executed successfully, returned 2 rows."
 }
 ```
+
+![Alt text](./README.assets/success.png)
 
 In case of an error, the response will be:
 
