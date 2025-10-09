@@ -45,6 +45,16 @@ parameter_rules:
       - json_schema
   - name: json_schema
     use_template: json_schema
+  - name: enable_stream
+    label:
+      zh_Hans: 流式响应
+      en_US: Streaming
+    type: boolean
+    help:
+      zh_Hans: o3 系列模型流式输出需要 KYC 验证，若想跳过这个限制使用模型，请关闭流式响应。
+      en_US: o3 series models require KYC validation for streaming output, if you want to use the models without this limitation, please turn off streaming responses.
+    required: true
+    default: true
 pricing:
   input: "2.0"
   output: "8.0"

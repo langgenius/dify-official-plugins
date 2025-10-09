@@ -22,6 +22,7 @@
 - qwen-max
 - qwen-max-longcontext
 - qwen-plus-latest
+- qwen-plus-2025-07-28
 - qwen-plus-2025-04-28
 - qwen-plus-0125
 - qwen-plus-0112
@@ -44,6 +45,9 @@
 - qwen-turbo-0624
 - qwen-turbo-chat
 - qwen-turbo
+- qwen3-max
+- qwen3-max-2025-09-23
+- qwen3-max-preview
 - qwen3-235b-a22b-thinking-2507
 - qwen3-235b-a22b-instruct-2507
 - qwen3-30b-a3b-instruct-2507
@@ -56,6 +60,10 @@
 - qwen3-1.7b
 - qwen3-0.6b
 - qwen3-coder-plus
+- qwen3-vl-235b-a22b-instruct
+- qwen3-vl-235b-a22b-thinking
+- qwen3-vl-plus
+- qwen3-vl-plus-2025-09-23
 - qwen2.5-72b-instruct
 - qwen2.5-32b-instruct
 - qwen2.5-14b-instruct-1m
@@ -74,6 +82,8 @@
 - qwen-math-turbo-latest
 - qwen-math-turbo-0919
 - qwen-math-turbo
+- qwen-mt-plus
+- qwen-mt-turbo
 - qwen-coder-turbo-latest
 - qwen-coder-turbo-0919
 - qwen-coder-turbo

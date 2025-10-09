@@ -1,0 +1,80 @@
+identity:
+  name: spotify_list_devices
+  author: Dify Developer
+  label:
+    en_US: List Spotify Devices
+    zh_Hans: 列出 Spotify 设备
+    ja_JP: Spotify デバイス一覧
+  icon: icon.svg
+
+description:
+  human:
+    en_US: List all available Spotify playback devices for the authenticated user
+    zh_Hans: 列出已验证用户的所有可用 Spotify 播放设备
+    ja_JP: 認証されたユーザーの利用可能な Spotify 再生デバイスをすべて一覧表示します
+  llm: Get a list of all Spotify Connect devices available for playback, including their status and capabilities
+
+parameters: []
+
+extra:
+  python:
+    source: tools/spotify_list_devices.py
+
+output_schema:
+  type: object
+  properties:
+    total_devices:
+      type: integer
+      description: Total number of available devices
+    active_device:
+      type: object
+      description: Currently active device (if any)
+      properties:
+        id:
+          type: string
+          description: Device ID
+        name:
+          type: string
+          description: Device name
+        type:
+          type: string
+          description: Device type (computer, smartphone, speaker, etc.)
+        is_active:
+          type: boolean
+          description: Whether this device is currently active
+        volume_percent:
+          type: integer
+          description: Current volume percentage
+        supports_volume:
+          type: boolean
+          description: Whether the device supports volume control
+    devices:
+      type: array
+      description: List of all available devices
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+            description: Unique device identifier
+          name:
+            type: string
+            description: Human-readable device name
+          type:
+            type: string
+            description: Device type (Computer, Smartphone, Speaker, TV, AVR, STB, AudioDongle, GameConsole, CastVideo, CastAudio, Automobile, Unknown)
+          is_active:
+            type: boolean
+            description: Whether this device is currently active for playback
+          is_private_session:
+            type: boolean
+            description: Whether the device is in a private session
+          is_restricted:
+            type: boolean
+            description: Whether the device has restricted functionality
+          volume_percent:
+            type: integer
+            description: Current volume percentage (0-100, null if not available)
+          supports_volume:
+            type: boolean
+            description: Whether the device supports volume control

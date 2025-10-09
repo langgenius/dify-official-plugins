@@ -1,0 +1,65 @@
+identity:
+  author: langgenius
+  name: onedrive_datasource
+  label:
+    en_US: OneDrive
+    zh_Hans: OneDrive
+  description:
+    en_US: OneDrive Datasource
+    zh_Hans: OneDrive 数据源
+  icon: icon.svg
+provider_type: online_drive
+help:
+  title:
+    en_US: Get your credentials from Microsoft Entra ID (Azure AD) App Registration
+    zh_Hans: 从 Microsoft Entra ID（Azure AD）应用注册获取凭证
+  url:
+    en_US: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+    zh_Hans: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+oauth_schema:
+  client_schema:
+    - name: client_id
+      type: secret-input
+      label:
+        zh_Hans: Client ID
+        en_US: Client ID
+    - name: client_secret
+      type: secret-input
+      label:
+        zh_Hans: Client Secret
+        en_US: Client Secret
+      help:
+        zh_Hans: 在 Azure 门户的应用注册中获取客户端凭证
+        en_US: Get client credentials from Azure Portal App Registration
+      url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+  credentials_schema:
+    - name: access_token
+      type: secret-input
+      label:
+        zh_Hans: Access Token
+        en_US: Access Token
+    - name: refresh_token
+      type: secret-input
+      label:
+        zh_Hans: Refresh Token
+        en_US: Refresh Token
+    - name: client_id
+      type: secret-input
+      label:
+        zh_Hans: Client ID
+        en_US: Client ID
+    - name: client_secret
+      type: secret-input
+      label:
+        zh_Hans: Client Secret
+        en_US: Client Secret
+    - name: user_email
+      type: secret-input
+      label:
+        zh_Hans: User Email
+        en_US: User Email
+datasources:
+  - datasources/onedrive.yaml
+extra:
+  python:
+    source: provider/onedrive.py

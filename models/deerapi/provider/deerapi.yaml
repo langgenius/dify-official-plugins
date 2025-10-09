@@ -1,0 +1,150 @@
+identity:
+  author: langgenius
+  name: deerapi
+  label:
+    en_US: DeerAPI
+    zh_Hans: DeerAPI
+    ja_JP: DeerAPI
+    pt_BR: DeerAPI
+  description:
+    en_US: One-stop AI model API aggregation platform.
+    zh_Hans: AI 大模型 API 一站式聚合平台。
+    ja_JP: 500以上のAIモデルAPIを一括提供。すべてはDeerAPIに。
+    pt_BR: "500+ modelos de IA em uma única API. Tudo em um só lugar : DeerAPI."
+  icon: deerapi_small.png
+background: "#1E40AF"
+configurate_methods:
+  - predefined-model
+  - customizable-model
+extra:
+  python:
+    source: provider/deerapi.py
+    provider_source: provider/deerapi.py
+    model_sources:
+      - "models/llm/llm.py"
+      - "models/text_embedding/text_embedding.py"
+      - "models/speech2text/speech2text.py"
+      - "models/tts/tts.py"
+help:
+  title:
+    en_US: Get your API key from DeerAPI Console
+    zh_Hans: 从 DeerAPI 控制台获取 API Key
+    ja_JP: DeerAPI コンソールから API キーを取得
+    pt_BR: Obtenha sua chave de API do Console DeerAPI
+  url:
+    en_US: https://api.deerapi.com/token
+    zh_Hans: https://api.deerapi.com/token
+    ja_JP: https://api.deerapi.com/token
+    pt_BR: https://api.deerapi.com/token
+supported_model_types:
+  - llm
+  - text-embedding
+  - speech2text
+  - tts
+icon_large:
+  en_US: deerapi_large.png
+  zh_Hans: deerapi_large.png
+  ja_JP: deerapi_large.png
+  pt_BR: deerapi_large.png
+icon_small:
+  en_US: deerapi_small.png
+  zh_Hans: deerapi_small.png
+  ja_JP: deerapi_small.png
+  pt_BR: deerapi_small.png
+label:
+  en_US: DeerAPI
+  zh_Hans: DeerAPI
+  ja_JP: DeerAPI
+  pt_BR: DeerAPI
+model_credential_schema:
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+        zh_Hans: API 密钥
+        ja_JP: API キー
+        pt_BR: Chave da API
+      type: secret-input
+      required: true
+      placeholder:
+        en_US: Enter your API Key
+        zh_Hans: 在此输入您的 API Key
+        ja_JP: API キーを入力してください
+        pt_BR: Digite sua chave de API
+    - variable: mode
+      label:
+        en_US: Completion mode
+        zh_Hans: 完成模式
+        ja_JP: 完了モード
+        pt_BR: Modo de conclusão
+      type: select
+      required: false
+      default: chat
+      options:
+        - label:
+            en_US: Completion
+            zh_Hans: 补全
+            ja_JP: 完了
+            pt_BR: Conclusão
+          value: completion
+        - label:
+            en_US: Chat
+            zh_Hans: 对话
+            ja_JP: チャット
+            pt_BR: Chat
+          value: chat
+      placeholder:
+        en_US: Select completion mode
+        zh_Hans: 选择对话类型
+        ja_JP: 完了モードを選択
+        pt_BR: Selecione o modo de conclusão
+      show_on:
+        - variable: __model_type
+          value: llm
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+      ja_JP: モデル名
+      pt_BR: Nome do Modelo
+    placeholder:
+      en_US: Enter full model name
+      zh_Hans: 输入模型全称
+      ja_JP: 完全なモデル名を入力
+      pt_BR: Digite o nome completo do modelo
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+      - models/llm/anthropic/*.yaml
+      - models/llm/deepseek/*.yaml
+      - models/llm/gemini/*.yaml
+      - models/llm/llama/*.yaml
+      - models/llm/openai/*.yaml
+      - models/llm/qwen/*.yaml
+      - models/llm/x-ai/*.yaml
+  text_embedding:
+    predefined:
+      - "models/text_embedding/*.yaml"
+  tts:
+    predefined:
+      - "models/tts/*.yaml"
+  speech2text:
+    predefined:
+      - "models/speech2text/*.yaml"
+provider: deerapi
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+        zh_Hans: API 密钥
+        ja_JP: API キー
+        pt_BR: Chave da API
+      type: secret-input
+      required: true
+      placeholder:
+        en_US: Enter your API Key
+        zh_Hans: 在此输入您的 API Key
+        ja_JP: API キーを入力してください
+        pt_BR: Digite sua chave de API

@@ -1,0 +1,106 @@
+description:
+  human:
+    en_US: Lists available samplers, schedulers and models on connected ComfyUI.
+    ja_JP: 利用可能なサンプリング手法とスケジューラー、モデルを取得します。
+  llm: Lists available samplers and schedulers and models on connected ComfyUI.
+extra:
+  python:
+    source: tools/txt2aud.py
+identity:
+  author: yt-koike
+  label:
+    en_US: Txt2Aud
+  name: txt2aud
+parameters:
+  - name: prompt
+    form: llm
+    human_description:
+      en_US: Prompt
+      zh_Hans: 提示词
+      ja_JP: プロンプト
+    label:
+      en_US: Prompt
+      zh_Hans: 提示词
+      ja_JP: プロンプト
+    llm_description: Prompt
+    required: true
+    type: string
+
+  - name: negative_prompt
+    form: llm
+    human_description:
+      en_US: Negative prompt
+      pt_BR: Negative prompt
+      zh_Hans: Negative prompt
+      ja_JP: ネガティブプロンプト
+    label:
+      en_US: Negative prompt
+      pt_BR: Negative prompt
+      zh_Hans: Negative prompt
+      ja_JP: ネガティブプロンプト
+    required: false
+    type: string
+
+  - name: steps
+    form: llm
+    default: 50
+    human_description:
+      en_US: Steps
+      pt_BR: Steps
+      zh_Hans: Steps
+      ja_JP: ステップ数
+    label:
+      en_US: Steps
+      pt_BR: Steps
+      zh_Hans: Steps
+      ja_JP: ステップ数
+    required: true
+    type: number
+
+  - default: 7.0
+    form: llm
+    human_description:
+      en_US: CFG Scale (7.0 by default)
+      pt_BR: CFG Scale (7.0 by default)
+      zh_Hans: 提示词相关性(CFG Scale) (7.0 by default)
+      ja_JP: CFG スケール (デフォルト値 7.0)
+    label:
+      en_US: CFG Scale
+      pt_BR: CFG Scale
+      zh_Hans: CFG Scale
+      ja_JP: CFG スケール
+    name: cfg
+    required: false
+    type: number
+
+  - form: llm
+    default: euler
+    human_description:
+      en_US: Sampling method
+      pt_BR: Sampling method
+      zh_Hans: Sampling method
+      ja_JP: サンプリング手法
+    label:
+      en_US: Sampling method
+      pt_BR: Sampling method
+      zh_Hans: Sampling method
+      ja_JP: サンプリング手法
+    name: sampler_name
+    required: true
+    type: string
+
+  - form: llm
+    default: normal
+    human_description:
+      en_US: Scheduler
+      pt_BR: Scheduler
+      zh_Hans: Scheduler
+      ja_JP: スケジューラー
+    label:
+      en_US: Scheduler
+      pt_BR: Scheduler
+      zh_Hans: Scheduler
+      ja_JP: スケジューラー
+    name: scheduler
+    required: true
+    type: string

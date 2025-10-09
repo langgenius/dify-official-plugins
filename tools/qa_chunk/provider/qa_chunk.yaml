@@ -1,0 +1,20 @@
+extra:
+  python:
+    source: provider/qa_chunk.py
+identity:
+  author: langgenius
+  description:
+    en_US: QA chunking mode.
+    pt_BR: QA chunking mode.
+    zh_Hans: QA 分块模式。
+  icon: icon.svg
+  label:
+    en_US: Q&A Processor
+    pt_BR: Q&A Processor
+    zh_Hans: Q&A 处理器
+  name: qa_chunk
+  tags:
+    - utilities
+    - rag
+tools:
+- tools/qa.yaml

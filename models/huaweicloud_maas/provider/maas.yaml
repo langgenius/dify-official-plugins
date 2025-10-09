@@ -6,6 +6,8 @@ extra:
   python:
     model_sources:
       - models/llm/llm.py
+      - models/rerank/rerank.py
+      - models/text_embedding/text_embedding.py
     provider_source: provider/maas.py
 help:
   title:
@@ -88,6 +90,12 @@ models:
     position: models/llm/_position.yaml
     predefined:
       - models/llm/*.yaml
+  text_embedding:
+    predefined:
+      - models/text_embedding/*.yaml
+  rerank:
+    predefined:
+      - models/rerank/*.yaml
 provider: huaweicloud_maas
 provider_credential_schema:
   credential_form_schemas:
@@ -101,3 +109,5 @@ provider_credential_schema:
       variable: api_key
 supported_model_types:
   - llm
+  - text-embedding
+  - rerank

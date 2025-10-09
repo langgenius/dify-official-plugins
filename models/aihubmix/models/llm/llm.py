@@ -26,6 +26,9 @@ anthropic_llm = AnthropicLargeLanguageModel(model_schemas)
 google_llm = GoogleLargeLanguageModel(model_schemas)
 logger = logging.getLogger(__name__)
 
+# thinking models compatibility for max_completion_tokens (all starting with "o" or "gpt-5")
+THINKING_SERIES_COMPATIBILITY = ("o", "gpt-5")
+
 
 class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
     def _update_credential(self, model: str, credentials: dict):
@@ -56,6 +59,14 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
         if model.startswith("gemini") and not (model.endswith("-nothink") or model.endswith("-search")):
             return google_llm._invoke(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
         
+        # thinking models compatibility for max_completion_tokens (all starting with "o" or "gpt-5")
+        if model.startswith(THINKING_SERIES_COMPATIBILITY):
+            if "max_tokens" in model_parameters:
+                model_parameters["max_completion_tokens"] = model_parameters[
+                    "max_tokens"
+                ]
+                del model_parameters["max_tokens"]
+
         # 默认使用父类的生成方法
         return super()._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 

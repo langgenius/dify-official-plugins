@@ -1,0 +1,56 @@
+identity:
+  name: "delete_record"
+  author: "jiandaoyun"
+  label:
+    en_US: "Delete record"
+    zh_Hans: "删除单条记录"
+    pt_BR: "jiandaoyun"
+description:
+  human:
+    en_US: "delete a specific record according to app_id,entry_id and data_id"
+    zh_Hans: "删除特定某一条记录"
+    pt_BR: "atualizar dados específicos de uma entrada em um aplicativo jiandaoyun, de acordo com as permissões da chave API"
+  llm: "delete a specific record in a jiandaoyun entry(by app_id,entry_id and data_id), this is a destructive operation, the data will be lost forever, please use it with caution.returns the result of the deletion operation, if the record is not found, it will return an error."
+parameters:
+  - name: app_id
+    type: string
+    required: true
+    label:
+      en_US: app_id
+      zh_Hans: app_id
+      pt_BR: app_id
+    human_description:
+      en_US: "app_id of the application you want to query"
+      zh_Hans: "应用的app_id"
+      pt_BR: "app_id do aplicativo que você deseja consultar"
+    llm_description: "app_id of the application you want to query. This field is mandatary."
+    form: llm
+  - name: entry_id
+    type: string
+    required: true
+    label:
+      en_US: entry_id
+      zh_Hans: entry_id
+      pt_BR: entry_id
+    human_description:
+      en_US: "entry_id of the application you want to query"
+      zh_Hans: "应用的entry_id"
+      pt_BR: "most popular actions of jiandaoyun"
+    llm_description: "entry_id of the application you want to query. This field is mandatary."
+    form: llm
+  - name: data_id
+    type: string
+    required: true
+    label:
+      en_US: data_id
+      zh_Hans: data_id
+      pt_BR: data_id
+    human_description:
+      en_US: "data_id of the data you want to update"
+      zh_Hans: "数据的data_id"
+      pt_BR: "most popular actions of jiandaoyun"
+    llm_description: "data_id of the record you want to update. This field is mandatary."
+    form: llm
+extra:
+  python:
+    source: tools/deleteRecord.py

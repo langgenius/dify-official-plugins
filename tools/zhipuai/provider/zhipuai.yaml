@@ -27,7 +27,7 @@ credentials_for_provider:
       en_US: Please input your ZhipuAI base URL
       pt_BR: Please input your ZhipuAI base URL
       zh_Hans: 请输入你的 ZhipuAI base URL
-    required: false
+    required: true
     type: text-input
 extra:
   python:

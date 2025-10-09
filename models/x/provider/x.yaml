@@ -43,23 +43,17 @@ provider_credential_schema:
         zh_Hans: 模型
       options:
         - label:
+            en_US: grok-code-fast-1-0825
+          value: grok-code-fast-1-0825
+        - label:
+            en_US: grok-4-0709
+          value: grok-4-0709
+        - label:
             en_US: grok-3-mini
           value: grok-3-mini
         - label:
             en_US: grok-3
           value: grok-3
-        - label:
-            en_US: grok-3-fast
-          value: grok-3-fast
-        - label:
-            en_US: grok-3-mini-fast
-          value: grok-3-mini-fast
-        - label:
-            en_US: grok-2-1212
-          value: grok-2-1212
-        - label:
-            en_US: grok-2-vision-1212
-          value: grok-2-vision-1212
       required: false
       type: select
       variable: model

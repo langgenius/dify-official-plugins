@@ -1,15 +1,18 @@
 import dataclasses
 import os
-import random
-from typing import Any, Generator
+import secrets
+from collections.abc import Generator
+from typing import Any
+
+from dify_plugin import Tool
 from dify_plugin.entities.tool import (
     ToolInvokeMessage,
 )
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
-from dify_plugin import Tool
+
 from tools.comfyui_client import ComfyUiClient
+from tools.comfyui_model_manager import ModelManager
 from tools.comfyui_workflow import ComfyUiWorkflow
-from tools.model_manager import ModelManager
 
 
 @dataclasses.dataclass(frozen=False)
@@ -30,21 +33,20 @@ class ComfyuiTxt2VidConfig:
 
 
 class ComfyuiTxt2Vid(Tool):
-    def _invoke(
-        self, tool_parameters: dict[str, Any]
-    ) -> Generator[ToolInvokeMessage, None, None]:
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         invoke tools
         """
-        base_url = self.runtime.credentials.get("base_url", "")
-        if not base_url:
-            yield self.create_text_message("Please input base_url")
         self.comfyui = ComfyUiClient(
-            base_url, api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"))
+            base_url=self.runtime.credentials.get("base_url"),
+            api_key=self.runtime.credentials.get("comfyui_api_key"),
+            api_key_comfy_org=self.runtime.credentials.get("api_key_comfy_org"),
+        )
         self.model_manager = ModelManager(
             self.comfyui,
             civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
             hf_api_key=self.runtime.credentials.get("hf_api_key"),
+            expire_after=int(self.runtime.credentials.get("expire_after", 300)),
         )
 
         steps = tool_parameters.get("steps", 20)
@@ -87,8 +89,14 @@ class ComfyuiTxt2Vid(Tool):
         )
 
         model_type = tool_parameters.get("model_type")
+
+        output_images = []
         if model_type == "wan2_1":
-            output_images = self.txt2vid_svd_wan2_1(config)
+            output_images = self.txt2vid_wan2_1(config)
+        elif model_type == "wan2_2_5B":
+            output_images = self.txt2vid_wan2_2_5b(config)
+        elif model_type == "wan2_2_14B":
+            output_images = self.txt2vid_wan2_2_14b(config)
         elif model_type == "ltxv":
             output_images = self.txt2vid_ltxv(config)
         elif model_type == "mochi":
@@ -98,62 +106,49 @@ class ComfyuiTxt2Vid(Tool):
 
         for img in output_images:
             if config.output_format == "mp4":
-                img = self.comfyui.convert_webp2mp4(img["data"], config.fps)
+                img = self.comfyui.convert_webp2mp4(img.blob, config.fps)
             yield self.create_blob_message(
-                blob=img["data"],
+                blob=img.blob,
                 meta={
-                    "filename": img["filename"],
-                    "mime_type": img["mime_type"],
+                    "filename": img.filename,
+                    "mime_type": img.mime_type,
                 },
             )
 
-    def get_civit_key(self) -> str:
-        civitai_api_key = self.runtime.credentials.get("civitai_api_key")
-        if civitai_api_key is None:
-            raise ToolProviderCredentialValidationError(
-                "Please input civitai_api_key")
-        return civitai_api_key
-
-    def get_hf_key(self) -> str:
-        hf_api_key = self.runtime.credentials.get("hf_api_key")
-        if hf_api_key is None:
-            raise ToolProviderCredentialValidationError(
-                "Please input hf_api_key")
-        return hf_api_key
-
-    def txt2vid_mochi(
-        self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    def txt2vid_mochi(self, config: ComfyuiTxt2VidConfig):
+        mochi_repo_id = "Comfy-Org/mochi_preview_repackaged"
         if config.model_name == "":
             # download model
-            config.model_name = self.model_manager.download_model(
-                "https://huggingface.co/Comfy-Org/mochi_preview_repackaged/resolve/main/split_files/diffusion_models/mochi_preview_fp8_scaled.safetensors",
+            config.model_name = self.model_manager.download_hugging_face(
+                mochi_repo_id,
+                "split_files/diffusion_models/mochi_preview_fp8_scaled.safetensors",
                 "diffusion_models",
-                token=self.get_hf_key(),
             )
-        clip_name = self.model_manager.download_model(
-            "https://huggingface.co/Comfy-Org/mochi_preview_repackaged/resolve/main/split_files/text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors",
+        clip_name = self.model_manager.download_hugging_face(
+            mochi_repo_id,
+            "split_files/text_encoders/t5xxl_fp8_e4m3fn_scaled.safetensors",
             "text_encoders",
-            token=self.get_hf_key(),
         )
-        vae_name = self.model_manager.download_model(
-            "https://huggingface.co/Comfy-Org/mochi_preview_repackaged/resolve/main/split_files/vae/mochi_vae.safetensors",
+        vae_name = self.model_manager.download_hugging_face(
+            mochi_repo_id,
+            "split_files/vae/mochi_vae.safetensors",
             "vae",
-            token=self.get_hf_key(),
         )
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "txt2vid_mochi.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
 
-        workflow.set_Ksampler(None, config.steps, config.sampler_name,
-                              config.scheduler_name, config.cfg, 1.0, random.randint(0, 100000000))
+        workflow.set_k_sampler(
+            None,
+            config.steps,
+            config.sampler_name,
+            config.scheduler_name,
+            config.cfg,
+            1.0,
+        )
         workflow.set_property("28", "inputs/fps", config.fps)
-        workflow.set_empty_mochi(
-            None, config.width, config.height, config.frameN)
+        workflow.set_empty_mochi(None, config.width, config.height, config.frameN)
         workflow.set_unet(None, config.model_name)
         workflow.set_clip(None, clip_name)
         workflow.set_vae(None, vae_name)
@@ -163,81 +158,74 @@ class ComfyuiTxt2Vid(Tool):
         try:
             output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
-            raise ToolProviderCredentialValidationError(
-                f"Failed to generate image: {str(e)}"
-            )
+            raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
 
-    def txt2vid_hunyuan(
-        self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    def txt2vid_hunyuan(self, config: ComfyuiTxt2VidConfig):
+        hunyuan_repo_id = "Comfy-Org/HunyuanVideo_repackaged"
         if config.model_name == "":
             # download model
-            config.model_name = self.model_manager.download_model(
-                "https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/diffusion_models/hunyuan_video_t2v_720p_bf16.safetensors",
+            config.model_name = self.model_manager.download_hugging_face(
+                hunyuan_repo_id,
+                "split_files/diffusion_models/hunyuan_video_t2v_720p_bf16.safetensors",
                 "diffusion_models",
-                token=self.get_hf_key(),
             )
-        clip_name1 = self.model_manager.download_model(
-            "https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/text_encoders/clip_l.safetensors",
+        clip_name1 = self.model_manager.download_hugging_face(
+            hunyuan_repo_id,
+            "split_files/text_encoders/clip_l.safetensors",
             "text_encoders",
-            token=self.get_hf_key(),
         )
-        clip_name2 = self.model_manager.download_model(
-            "https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/text_encoders/llava_llama3_fp8_scaled.safetensors",
+        clip_name2 = self.model_manager.download_hugging_face(
+            hunyuan_repo_id,
+            "split_files/text_encoders/llava_llama3_fp8_scaled.safetensors",
             "text_encoders",
-            token=self.get_hf_key(),
         )
-        vae_name = self.model_manager.download_model(
-            "https://huggingface.co/Comfy-Org/HunyuanVideo_repackaged/resolve/main/split_files/vae/hunyuan_video_vae_bf16.safetensors",
+        vae_name = self.model_manager.download_hugging_face(
+            hunyuan_repo_id,
+            "split_files/vae/hunyuan_video_vae_bf16.safetensors",
             "vae",
-            token=self.get_hf_key(),
         )
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "txt2vid_hunyuan.json")) as file:
             workflow = ComfyUiWorkflow(file.read())
-        workflow.set_Ksampler(None, config.steps, config.sampler_name,
-                              config.scheduler_name, config.cfg, 1.0, random.randint(0, 100000000))
+        workflow.set_k_sampler(
+            None,
+            config.steps,
+            config.sampler_name,
+            config.scheduler_name,
+            config.cfg,
+            1.0,
+        )
         workflow.set_dual_clip(None, clip_name1, clip_name2)
         workflow.set_unet(None, config.model_name)
         workflow.set_vae(None, vae_name)
-        workflow.set_empty_hunyuan(
-            None, config.width, config.height, config.frameN)
+        workflow.set_empty_hunyuan(None, config.width, config.height, config.frameN)
         workflow.set_prompt(None, config.prompt)
 
         try:
             output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
-            raise ToolProviderCredentialValidationError(
-                f"Failed to generate image: {str(e)}"
-            )
+            raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
 
-    def txt2vid_svd_wan2_1(
-        self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    def txt2vid_wan2_1(self, config: ComfyuiTxt2VidConfig):
+        wan_repo_id = "Comfy-Org/Wan_2.1_ComfyUI_repackaged"
         if config.model_name == "":
             # download model
-            config.model_name = self.model_manager.download_model(
-                "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/diffusion_models/wan2.1_t2v_14B_fp8_e4m3fn.safetensors",
+            config.model_name = self.model_manager.download_hugging_face(
+                wan_repo_id,
+                "split_files/diffusion_models/wan2.1_t2v_14B_fp8_e4m3fn.safetensors",
                 "diffusion_models",
-                token=self.get_hf_key(),
             )
-        vae = self.model_manager.download_model(
-            "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/vae/wan_2.1_vae.safetensors",
+        vae = self.model_manager.download_hugging_face(
+            wan_repo_id,
+            "split_files/vae/wan_2.1_vae.safetensors",
             "vae",
-            token=self.get_hf_key(),
         )
-        text_encoder = self.model_manager.download_model(
-            "https://huggingface.co/Comfy-Org/Wan_2.1_ComfyUI_repackaged/resolve/main/split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors",
+        text_encoder = self.model_manager.download_hugging_face(
+            wan_repo_id,
+            "split_files/text_encoders/umt5_xxl_fp8_e4m3fn_scaled.safetensors",
             "text_encoders",
-            token=self.get_hf_key(),
         )
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "txt2vid_wan2_1.json")) as file:
@@ -251,34 +239,70 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_unet(None, config.model_name)
         workflow.set_clip(None, text_encoder)
         workflow.set_vae(None, vae)
-        workflow.set_empty_hunyuan(
-            None, config.width, config.height, config.frameN)
+        workflow.set_empty_hunyuan(None, config.width, config.height, config.frameN)
 
         try:
             output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
-            raise ToolProviderCredentialValidationError(
-                f"Failed to generate image: {str(e)}"
-            )
+            raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
 
-    def txt2vid_ltxv(
-        self, config: ComfyuiTxt2VidConfig
-    ) -> Generator[ToolInvokeMessage, None, None]:
-        """
-        generate image
-        """
+    def txt2vid_wan2_2_14b(self, config: ComfyuiTxt2VidConfig):
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        with open(
+            os.path.join(current_dir, "json", "txt2vid_wan2_2_14B.json"),
+            encoding="UTF-8",
+        ) as file:
+            workflow = ComfyUiWorkflow(file.read())
+            self.model_manager.download_from_json(workflow.json_original_str())
+
+        workflow.set_prompt("89", config.prompt)
+        workflow.set_prompt("72", config.negative_prompt)
+
+        workflow.set_empty_hunyuan(None, config.width, config.height, config.frameN)
+
+        try:
+            output_images = self.comfyui.generate(workflow.json())
+        except Exception as e:
+            raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
+        return output_images
+
+    def txt2vid_wan2_2_5b(self, config: ComfyuiTxt2VidConfig):
+        current_dir = os.path.dirname(os.path.realpath(__file__))
+        with open(
+            os.path.join(current_dir, "json", "txt2vid_wan2_2_5B.json"),
+            encoding="UTF-8",
+        ) as file:
+            workflow = ComfyUiWorkflow(file.read())
+            self.model_manager.download_from_json(workflow.json_original_str())
+
+        workflow.set_prompt("6", config.prompt)
+        workflow.set_prompt("7", config.negative_prompt)
+
+        wan2_2 = workflow.identify_node_by_class_type("Wan22ImageToVideoLatent")
+        workflow.set_property(wan2_2, "inputs/width", config.width)
+        workflow.set_property(wan2_2, "inputs/height", config.height)
+        workflow.set_property(wan2_2, "inputs/length", config.frameN)
+
+        try:
+            output_images = self.comfyui.generate(workflow.json())
+        except Exception as e:
+            raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
+        return output_images
+
+    def txt2vid_ltxv(self, config: ComfyuiTxt2VidConfig):
+        ltxv_repo_id = "Lightricks/LTX-Video"
         if config.model_name == "":
             # download model
-            config.model_name = self.model_manager.download_model(
-                "https://huggingface.co/Lightricks/LTX-Video/resolve/main/ltx-video-2b-v0.9.safetensors",
+            config.model_name = self.model_manager.download_hugging_face(
+                ltxv_repo_id,
+                "ltx-video-2b-v0.9.safetensors",
                 "checkpoints",
-                token=self.get_hf_key(),
             )
-        text_encoder = self.model_manager.download_model(
-            "https://huggingface.co/comfyanonymous/flux_text_encoders/resolve/main/t5xxl_fp16.safetensors",
+        text_encoder = self.model_manager.download_hugging_face(
+            ltxv_repo_id,
+            "t5xxl_fp16.safetensors",
             "text_encoders",
-            token=self.get_hf_key(),
         )
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
@@ -291,10 +315,8 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_prompt("6", config.prompt)
         workflow.set_prompt("7", config.negative_prompt)
         workflow.set_property("38", "inputs/clip_name", text_encoder)
-        workflow.set_property("72", "inputs/noise_seed",
-                              random.randint(0, 100000000))
-        ltxv_node_id = workflow.identify_node_by_class_type(
-            "EmptyLTXVLatentVideo")
+        workflow.set_property("72", "inputs/noise_seed", secrets.randbelow(10**8))
+        ltxv_node_id = workflow.identify_node_by_class_type("EmptyLTXVLatentVideo")
         workflow.set_property(ltxv_node_id, "inputs/width", config.width)
         workflow.set_property(ltxv_node_id, "inputs/height", config.height)
         workflow.set_property(ltxv_node_id, "inputs/length", config.frameN)
@@ -302,7 +324,5 @@ class ComfyuiTxt2Vid(Tool):
         try:
             output_images = self.comfyui.generate(workflow.json())
         except Exception as e:
-            raise ToolProviderCredentialValidationError(
-                f"Failed to generate image: {str(e)}"
-            )
+            raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images

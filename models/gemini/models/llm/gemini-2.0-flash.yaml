@@ -3,9 +3,10 @@ label:
   en_US: Gemini 2.0 Flash
 model_type: llm
 features:
+  - tool-call
+  - multi-tool-call
   - agent-thought
   - vision
-  - tool-call
   - stream-tool-call
   - document
   - video
@@ -35,20 +36,47 @@ parameter_rules:
     default: 8192
     min: 1
     max: 8192
-  - name: json_schema
-    use_template: json_schema
   - name: grounding
-    label:
-      en_US: Grounding
-      ja_JP: Grounding
     type: boolean
-    help:
-      en_US: ensures responses are based on Google Search.
-      ja_JP: Google検索に基づいた応答をします。
     required: true
     default: false
+    label:
+      en_US: Grounding
+      zh_Hans: 事实核查
+      ja_JP: 事実チェック
+    help:
+      en_US: Grounding with Google Search
+      zh_Hans: Google 事实核查
+      ja_JP: Google検索に基づいた応答をします。
+  - name: url_context
+    type: boolean
+    required: true
+    default: false
+    label:
+        en_US: URL context
+        zh_Hans: 链接详情
+        ja_JP: 網羅閲覧
+    help:
+      en_US: Browse the url context
+      zh_Hans: 获取并分析该链接的详细信息，为回答提供参考依据。
+      ja_JP: リンク先の詳細情報を取得し、文脈を理解します。
+  - name: code_execution
+    type:  boolean
+    required: true
+    default: false
+    label:
+        en_US: Code execution
+        zh_Hans: 代码执行
+        ja_JP: コード実行
+    help:
+      en_US: Lets Gemini use code to solve complex tasks
+      zh_Hans: 让 Gemini 使用代码来解决复杂任务。
+      ja_JP: Gemini にコードを使って複雑なタスクを解決させましょう。
+  - name: json_schema
+    use_template: json_schema
+# https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-2.0-flash
 pricing:
-  input: '0.00'
-  output: '0.00'
+  input: '0.10'
+  output: '0.40'
   unit: '0.000001'
   currency: USD

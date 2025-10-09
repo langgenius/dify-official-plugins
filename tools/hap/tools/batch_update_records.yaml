@@ -1,0 +1,69 @@
+description:
+  human:
+    en_US: Batch update multiple records with the same field values
+    zh_Hans: 批量更新多个记录的相同字段值
+  llm: Batch update multiple records in a worksheet with the same field values and optional workflow triggering.
+extra:
+  python:
+    source: tools/batch_update_records.py
+identity:
+  author: langgenius
+  label:
+    en_US: Batch Update Records
+    zh_Hans: 批量更新记录
+  name: batch_update_records
+parameters:
+- form: llm
+  name: worksheet_id
+  label:
+    en_US: Worksheet ID
+    zh_Hans: 工作表 ID
+  human_description:
+    en_US: The worksheet ID containing the records to update
+    zh_Hans: 包含需要更新记录的工作表 ID
+  llm_description: The worksheet ID that contains the records to update
+  required: true
+  type: string
+- form: llm
+  name: row_ids
+  label:
+    en_US: Row IDs
+    zh_Hans: 行记录 ID 列表
+  human_description:
+    en_US: Row IDs to update (comma-separated or JSON array)
+    zh_Hans: 需要更新的行记录 ID 列表（逗号分隔或 JSON 数组）
+  llm_description: Row IDs to update, can be comma-separated string or JSON array
+  required: true
+  type: string
+- form: llm
+  name: fields
+  label:
+    en_US: Fields Data
+    zh_Hans: 字段数据
+  human_description:
+    en_US: JSON array of field data with field id and value pairs
+    zh_Hans: 字段数据的 JSON 数组，包含字段 id 和 value 对
+  llm_description: >
+    JSON array of field data with field `id` and `value`
+    There are certain types of field values that need to be provided in a specified format, for example:
+    - Region: {"value": "1430300"}. The value can be obtained from the `public_find_region` tool.
+    - SingleSelect/MultipleSelect: {"value": ["Option key1"]}, {"MultipleSelect": ["Option key1", "Option key2"]}
+    - Collaborator: {"value": ["user_accountId1"]}. The accountId can be obtained from the `public_find_member` tool.
+    - Department: {"value": ["department_id1"]}. The departmentId can be obtained from the `public_find_department` tool.
+    - Relation/SubTable/CascadingSelect: {"value": ["record_rowId1"]}
+    - Attachment: {"value": [{"name": "file1.txt", "url": "https://example.com/file1.txt or base64 encoded string}"}]}
+    - Location: {"value": "{\"x\":114.072825,\"y\":22.655475,\"address\":\"Yunhui Center, Xiangjiaotang Village, Bantian Street, Longgang District, Shenzhen City, Guangdong Province\",\"title\":\"Building A, Phase 1, Yunhui Center\"}"}
+    - Checkbox: {"value": 1}. 1 for true, 0 for false
+  required: true
+  type: string
+- form: form
+  name: do_not_trigger_workflow
+  label:
+    en_US: Do Not Trigger Workflow
+    zh_Hans: 不触发工作流
+  human_description:
+    en_US: If true, do NOT trigger workflows; default false
+    zh_Hans: 若为 true，则不触发工作流；默认 false
+  llm_description: If true, do NOT trigger workflows; default false
+  required: false
+  type: boolean

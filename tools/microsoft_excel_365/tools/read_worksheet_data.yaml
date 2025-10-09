@@ -1,0 +1,76 @@
+identity:
+  name: read_worksheet_data
+  author: langgenius
+  label:
+    en_US: Read Worksheet Data
+    zh_Hans: 读取工作表数据
+    ja_JP: ワークシートデータの読み取り
+  icon: icon.svg
+
+description:
+  human:
+    en_US: Read data from a specified range in an Excel worksheet
+    zh_Hans: 从 Excel 工作表的指定范围读取数据
+    ja_JP: Excelワークシートの指定範囲からデータを読み取る
+  llm: Read cell values from a specified range in an Excel worksheet
+
+parameters:
+  - name: site_id
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Site ID (only if editing SharePoint Site content)
+      zh_Hans: 站点 ID（仅当要编辑 SharePoint Site 内的内容时需要）
+      ja_JP: サイトID（SharePoint サイト内の内容を編集する場合のみ）
+    human_description:
+      en_US: Optional SharePoint site ID. When provided, reads from this site's drive instead of personal OneDrive.
+      zh_Hans: 可选的 SharePoint 站点 ID。若提供，则从该站点的驱动器而非个人 OneDrive 读取。
+      ja_JP: 任意のSharePointサイトID。指定すると個人のOneDriveではなく、このサイトのドライブから読み取ります。
+    llm_description: Optional SharePoint site ID. If set, use sites/{site_id}/drive instead of me/drive.
+  - name: workbook_id
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Workbook ID
+      zh_Hans: 工作簿 ID
+      ja_JP: ワークブックID
+    human_description:
+      en_US: The ID of the Excel workbook
+      zh_Hans: Excel 工作簿的 ID
+      ja_JP: ExcelワークブックのID
+    llm_description: The unique identifier of the Excel workbook
+
+  - name: worksheet_name
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Worksheet Name
+      zh_Hans: 工作表名称
+      ja_JP: ワークシート名
+    human_description:
+      en_US: The name of the worksheet to read from
+      zh_Hans: 要读取的工作表名称
+      ja_JP: 読み取るワークシートの名前
+    llm_description: The name of the worksheet to read data from
+
+  - name: range
+    type: string
+    required: false
+    default: "A1:Z100"
+    form: llm
+    label:
+      en_US: Range
+      zh_Hans: 范围
+      ja_JP: 範囲
+    human_description:
+      en_US: The cell range to read (e.g., A1:D10)
+      zh_Hans: 要读取的单元格范围（例如 A1:D10）
+      ja_JP: 読み取るセル範囲（例：A1:D10）
+    llm_description: The range of cells to read in A1 notation (e.g., A1:D10). Default is A1:Z100.
+
+extra:
+  python:
+    source: tools/read_worksheet_data.py

@@ -1,0 +1,35 @@
+identity:
+  name: gitlab
+  author: langgenius
+  label:
+    en_US: GitLab Project
+    zh_Hans: GitLab 项目
+    ja_JP: GitLab プロジェクト
+    pt_BR: Projeto GitLab
+    zh_Hant: GitLab 專案
+  icon: icon.png
+description:
+  en_US: Access GitLab projects, issues, merge requests, and files
+  zh_Hans: 访问 GitLab 项目、问题、合并请求和文件
+  ja_JP: GitLabのプロジェクト、課題、マージリクエスト、ファイルにアクセスします
+  pt_BR: Acesse projetos, issues, merge requests e arquivos do GitLab
+  zh_Hant: 存取 GitLab 專案、議題、合併請求和檔案
+
+parameters:
+
+output_schema:
+  type: object
+  properties:
+    page_id:
+      type: string
+      description: page id
+    content:
+      type: string
+      description: page content
+    workspace_id:
+      type: string
+      description: workspace id
+
+extra:
+  python:
+    source: datasources/gitlab.py

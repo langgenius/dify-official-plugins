@@ -1,0 +1,35 @@
+version: 0.0.2
+type: plugin
+author: langgenius
+name: jiandaoyun
+label:
+  en_US: Jiandaoyun
+  ja_JP: Jiandaoyun
+  zh_Hans: 简道云
+  pt_BR: Jiandaoyun
+description:
+  en_US: Jiandaoyun is a no-code application building platform that allows users to create customized systems like CRM, ERP, OA, project management, and inventory management without using code
+  ja_JP: ジァンドーユンはノーコードアプリ構築プラットフォームで、ユーザーがCRM、ERP、OA、プロジェクト管理、在庫管理などのカスタマイズされたシステムをコードを使わずに作成できる
+  zh_Hans: 简道云是一个无代码应用搭建平台，用户无需编写代码即可创建CRM、ERP、OA、项目管理、库存管理等定制化系统。
+  pt_BR: Jiandaoyun é uma plataforma de construção de aplicativos sem código que permite aos usuários criar sistemas personalizados como CRM, ERP, OA, gerenciamento de projetos e gerenciamento de inventário sem usar código
+icon: logo.svg
+resource:
+  memory: 268435456
+  permission: {}
+plugins:
+  tools:
+    - provider/jiandaoyun.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: 1.0.1
+created_at: 2025-07-01T19:52:25.9415484+08:00
+privacy:
+repo: https://github.com/freezetheflame/dify_jiandaoyun_plugin
+verified: false

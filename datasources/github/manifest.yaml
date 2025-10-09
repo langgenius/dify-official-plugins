@@ -1,0 +1,32 @@
+version: 0.3.3
+type: plugin
+author: langgenius
+name: github_datasource
+label:
+  en_US: GitHub
+  zh_Hans: GitHub
+description:
+  en_US: GitHub Repository Datasource - Access repositories, issues, PRs, and wiki pages
+  zh_Hans: GitHub 仓库数据源 - 访问仓库、问题、拉取请求和 Wiki 页面
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission: {}
+plugins:
+  datasources:
+    - provider/github.yaml
+meta:
+  version: 0.3.0
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: 1.9.0
+created_at: 2025-01-27T10:00:00.000000+08:00
+privacy: PRIVACY.md
+verified: false
+tags:
+  - rag

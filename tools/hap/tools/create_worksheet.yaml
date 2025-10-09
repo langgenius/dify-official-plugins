@@ -1,0 +1,84 @@
+description:
+  human:
+    en_US: Create a worksheet with fields and metadata
+    zh_Hans: 创建包含字段与元数据的工作表
+  llm: >
+    Create a worksheet.
+    Required: name, fields.
+    Optional: alias, section_id.
+    "fields" should be a JSON array, e.g.
+    [{"name":"Title","type":"Text","required":true,"isTitle":true}].
+extra:
+  python:
+    source: tools/create_worksheet.py
+identity:
+  author: langgenius
+  label:
+    en_US: Create Worksheet
+    zh_Hans: 新建工作表
+  name: create_worksheet
+parameters:
+  - form: llm
+    name: name
+    label:
+      en_US: Worksheet Name
+      zh_Hans: 工作表名称
+    human_description:
+      en_US: Name of the worksheet to create.
+      zh_Hans: 要创建的工作表名称。
+    llm_description: Name of the worksheet to create. Use entity names directly, such as "order" instead of "order table"
+    required: true
+    type: string
+
+  - form: llm
+    name: alias
+    label:
+      en_US: Worksheet Alias
+      zh_Hans: 工作表别名
+    human_description:
+      en_US: Optional alias of the worksheet.
+      zh_Hans: 工作表的可选别名。
+    llm_description: Optional alias of the worksheet.
+    required: false
+    type: string
+
+  - form: llm
+    name: section_id
+    label:
+      en_US: Section ID
+      zh_Hans: 分组 ID
+    human_description:
+      en_US: Optional section (group) id that the worksheet belongs to.
+      zh_Hans: 可选的工作表分组 ID。
+    llm_description: Optional section (group) id that the worksheet belongs to.
+    required: false
+    type: string
+
+  - form: llm
+    name: fields
+    label:
+      en_US: Fields (JSON Array)
+      zh_Hans: 字段定义（JSON 数组）
+    human_description:
+      en_US: JSON array<object> of field definitions
+      zh_Hans: 字段定义 JSON 对象数组
+    llm_description: >
+      JSON array of field definitions. The following types of fields can be created: Text/Number/SingleSelect/MultipleSelect/Date/DateTime/Collaborator/Relation/Time. The configurable attributes for each field include: name(required)/alias/type(required)/isTitle/required/isHidden/isReadOnly/isUnique/remark. 
+      Reserved aliases that cannot be used: status, id, rowId.
+      There is exactly one field with isTitle set to `true`.
+      
+      Depending on the different field types, the following attributes may exist: precision/subType/options/showFields/max/dataSource/relation.
+      Attribute `subtype` configuration:
+      - For `Collaborator` type: member count, 0: single select, 1: multiple select
+      - For `Relation` type: related record count, 1: single entry, 2: multiple entries. For example, the related order field in the order detail is a single entry, while the order details in an order are multiple entries. 
+      - For `Time` type: time format, 1: hh:mm, 6: hh:mm:ss
+      - For `Date`|`DateTime` type: date format, 5: Y, 4: Y-M, 3: Y-M-D, 2: Y-M-D hh, 1: Y-M-D hh:mm, 6: Y-M-D hh:mm:ss
+
+      When creating a worksheet with a master-detail (parent-child) table structure, you use `{"relation": {"bidirectional": true}}` to establish a bidirectional relationship by adding the parent reference field in the child table. This will automatically create a field in the parent table that references multiple child records. After this, you need to update this field in the parent table by configuring the `showFields` property under `relation` to display as many relevant child table fields as possible within the parent table.
+
+      ## Example(for different types):
+      ```json
+      {"fields":[{"name":"Text","type":"Text","isTitle": true},{"name":"Number","type":"Number","precision":2},{"name":"Single Select","type":"SingleSelect","options":[{"value":"Option 1","index":1},{"value":"Option 2","index":2}]},{"name":"Multi Select","type":"MultipleSelect","options":[{"value":"Option 1","index":1},{"value":"Option 2","index":2}]},{"name":"Time (HH:mm)","type":"Time","required":true,"subType":1},{"name":"Member","type":"Collaborator","subType":0},{"name":"Attachment","type":"Attachment"},{"name":"Date","type":"Date","subType":3},{"name":"DateTime","type":"Date","subType":1},{"name":"Relation Record","type":"Relation","subType":2,"dataSource":"", "relation":{"showFields":["fieldId1","fieldId2","fieldId3"],"bidirectional":false}}]}
+      ```
+    required: true
+    type: string

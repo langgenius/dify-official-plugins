@@ -10,7 +10,7 @@ features:
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 131072
+  context_size: 1000000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -24,9 +24,9 @@ parameter_rules:
   - name: max_tokens
     use_template: max_tokens
     type: int
-    default: 512
+    default: 8192
     min: 1
-    max: 8192
+    max: 32768
     help:
       zh_Hans: 用于指定模型在生成内容时token的最大数量，它定义了生成的上限，但不保证每次都会生成到这个数量。
       en_US: It is used to specify the maximum number of tokens when the model generates content. It defines the upper limit of generation, but does not guarantee that this number will be generated every time.
@@ -93,7 +93,7 @@ parameter_rules:
     type: int
     default: 2048
     min: 1
-    max: 8192
+    max: 81920
     label:
       zh_Hans: 思考长度限制
       en_US: Thinking budget
@@ -101,10 +101,20 @@ parameter_rules:
       zh_Hans: 思考过程的最大长度，只在思考模式为true时生效。
       en_US: The maximum length of the thinking process, only effective when thinking mode is true.
   - name: response_format
-    use_template: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - text
+      - json_object
 pricing:
   input: '0.0008'
   output: '0.002'
-#  output_thinking: '0.016'
+#  output_thinking: '0.008'
   unit: '0.001'
   currency: RMB

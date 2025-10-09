@@ -1,0 +1,38 @@
+version: 0.3.6
+type: plugin
+author: langgenius
+name: gitlab_datasource
+label:
+  en_US: GitLab
+  ja_JP: GitLab
+  zh_Hans: GitLab
+  pt_BR: GitLab
+  zh_Hant: GitLab
+description:
+  en_US: GitLab Project Datasource - Access projects, issues, merge requests, and files
+  ja_JP: GitLab プロジェクトデータソース - プロジェクト、課題、マージリクエスト、ファイルへのアクセス
+  zh_Hans: GitLab 项目数据源 - 访问项目、问题、合并请求和文件
+  pt_BR: Fonte de Dados de Projeto GitLab - Acesse projetos, issues, merge requests e arquivos
+  zh_Hant: GitLab 專案資料來源 - 存取專案、議題、合併請求和檔案
+icon: icon.png
+resource:
+  memory: 268435456
+  permission: {}
+plugins:
+  datasources:
+    - provider/gitlab.yaml
+meta:
+  version: 0.3.0
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: 1.9.0
+created_at: 2025-01-27T10:00:00.000000+08:00
+privacy: PRIVACY.md
+verified: false
+tags:
+  - rag

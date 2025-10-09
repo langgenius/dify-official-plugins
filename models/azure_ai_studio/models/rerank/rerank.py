@@ -4,6 +4,7 @@ import os
 import ssl
 import urllib.request
 from typing import Optional
+
 from dify_plugin.entities.model import AIModelEntity, FetchFrom, I18nObject, ModelType
 from dify_plugin.entities.model.rerank import RerankDocument, RerankResult
 from dify_plugin.errors.model import (
@@ -33,10 +34,34 @@ class AzureRerankModel(RerankModel):
         ):
             ssl._create_default_https_context = ssl._create_unverified_context
 
-    def _azure_rerank(
-        self, query_input: str, docs: list[str], endpoint: str, api_key: str
-    ):
-        data = {"inputs": query_input, "docs": docs}
+    def _azure_rerank(self, query_input: str, docs: list[str], endpoint: str, api_key: str, model_name: Optional[str] = None, top_n: Optional[int] = None):
+        # Azure AI Foundry may use different endpoint paths depending on the model
+        # Common patterns: /v2/rerank (Cohere), /v1/rerank, /rerank, /score
+        if not any(path in endpoint for path in ["/v2/rerank", "/v1/rerank", "/rerank", "/score"]):
+            if endpoint.endswith(".models.ai.azure.com") or endpoint.endswith(".models.ai.azure.com/"):
+                # Default to v2/rerank for Cohere models, which is the most common
+                if not endpoint.endswith("/"):
+                    endpoint += "/"
+                endpoint += "v2/rerank"
+        
+        logger.info(f"Attempting rerank with endpoint: {endpoint}")
+        
+        # Build request data 
+        data = {
+            "query": query_input, 
+            "documents": docs
+        }
+        
+        # Add model field if provided or if using Cohere endpoint
+        # Cohere models on Azure require "model" field
+        if model_name:
+            data["model"] = model_name
+        elif "cohere" in endpoint.lower() or "/v2/rerank" in endpoint:
+            # Auto-detect Cohere models and add required model field
+            data["model"] = "model"
+        
+        if top_n is not None:
+            data["top_n"] = top_n
         body = json.dumps(data).encode("utf-8")
         headers = {
             "Content-Type": "application/json",
@@ -48,10 +73,24 @@ class AzureRerankModel(RerankModel):
                 result = response.read()
                 return json.loads(result)
         except urllib.error.HTTPError as error:
-            logger.exception(f"The request failed with status code: {error.code}")
-            logger.exception(error.info())
-            logger.exception(error.read().decode("utf8", "ignore"))
-            raise
+            error_body = error.read().decode("utf8", "ignore")
+            logger.error(f"The request failed with status code: {error.code}")
+            logger.error(f"Error response: {error_body}")
+            if error.code == 404:
+                raise InvokeServerUnavailableError(
+                    f"Endpoint not found: {endpoint}. "
+                    f"Please check your Azure AI Studio endpoint URL. "
+                    f"For Cohere models, the endpoint should be like: https://[deployment-name].[region].models.ai.azure.com"
+                )
+            elif error.code == 401:
+                raise InvokeAuthorizationError("Invalid API key or JWT token. Please check your credentials.")
+            elif error.code == 400:
+                raise InvokeBadRequestError(f"Bad request: {error_body}. Please check the request format.")
+            else:
+                raise InvokeError(f"HTTP Error {error.code}: {error_body}")
+        except urllib.error.URLError as error:
+            logger.error(f"Connection error: {error}")
+            raise InvokeConnectionError(f"Failed to connect to endpoint: {endpoint}")
 
     def _invoke(
         self,
@@ -81,17 +120,36 @@ class AzureRerankModel(RerankModel):
             endpoint = credentials.get("endpoint")
             api_key = credentials.get("jwt_token")
             if not endpoint or not api_key:
-                raise ValueError(
-                    "Azure endpoint and API key must be provided in credentials"
-                )
-            result = self._azure_rerank(query, docs, endpoint, api_key)
+                raise ValueError("Azure endpoint and API key must be provided in credentials")
+            # Pass model name if it looks like a specific model identifier
+            model_name = model if model and model.lower() != "rerank" else None
+            result = self._azure_rerank(query, docs, endpoint, api_key, model_name=model_name, top_n=top_n)
             logger.info(f"Azure rerank result: {result}")
             rerank_documents = []
-            for idx, (doc, score_dict) in enumerate(zip(docs, result)):
-                score = score_dict["score"]
-                rerank_document = RerankDocument(index=idx, text=doc, score=score)
-                if score_threshold is None or score >= score_threshold:
-                    rerank_documents.append(rerank_document)
+
+            # Handle Azure AI Foundry rerank response format
+            if isinstance(result, dict) and "results" in result:
+                # Azure AI Foundry format: {"results": [{"index": 0, "relevance_score": 0.9}, ...]}
+                for item in result["results"]:
+                    idx = item.get("index", 0)
+                    score = item.get("relevance_score", item.get("score", 0))
+                    if idx < len(docs):
+                        rerank_document = RerankDocument(index=idx, text=docs[idx], score=score)
+                        if score_threshold is None or score >= score_threshold:
+                            rerank_documents.append(rerank_document)
+            elif isinstance(result, list):
+                # Alternative format: list of scores
+                for idx, score_item in enumerate(result):
+                    if idx < len(docs):
+                        if isinstance(score_item, dict):
+                            score = score_item.get("score", score_item.get("relevance_score", 0))
+                        else:
+                            score = float(score_item)
+                        rerank_document = RerankDocument(index=idx, text=docs[idx], score=score)
+                        if score_threshold is None or score >= score_threshold:
+                            rerank_documents.append(rerank_document)
+            else:
+                raise InvokeBadRequestError(f"Unexpected response format from Azure rerank API: {type(result)}")
             rerank_documents.sort(key=lambda x: x.score, reverse=True)
             if top_n:
                 rerank_documents = rerank_documents[:top_n]
@@ -118,6 +176,7 @@ class AzureRerankModel(RerankModel):
                     "The Commonwealth of the Northern Mariana Islands is a group of islands in the Pacific Ocean that are a political division controlled by the United States. Its capital is Saipan.",
                 ],
                 score_threshold=0.8,
+                top_n=2,
             )
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
@@ -145,9 +204,7 @@ class AzureRerankModel(RerankModel):
             ],
         }
 
-    def get_customizable_model_schema(
-        self, model: str, credentials: dict
-    ) -> Optional[AIModelEntity]:
+    def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:  # noqa: ARG002
         """
         used to define customizable model schema
         """

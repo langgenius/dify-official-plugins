@@ -1,0 +1,27 @@
+identity:
+  name: dropbox
+  author: langgenius
+  label:
+    en_US: "Dropbox"
+    ja_JP: "Dropbox"
+    zh_Hans: "Dropbox"
+    pt_BR: "Dropbox"
+    zh_Hant: "Dropbox"
+description:
+  en_US: "Get files from your Dropbox"
+  ja_JP: "Dropboxからファイルを取得します"
+  zh_Hans: "从您的 Dropbox 中获取文件"
+  pt_BR: "Obtenha arquivos do seu Dropbox"
+  zh_Hant: "從您的 Dropbox 中獲取文件"
+
+parameters:
+
+output_schema:
+  type: object
+  properties:
+    file:
+     $ref: "https://dify.ai/schemas/v1/file.json"
+        
+extra:
+  python:
+    source: datasources/dropbox.py

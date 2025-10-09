@@ -1,0 +1,68 @@
+identity:
+  name: "get_app_list"
+  author: "jiandaoyun"
+  label:
+    en_US: "Get apps"
+    zh_Hans: "查询所有应用"
+    pt_BR: "jiandaoyun"
+description:
+  human:
+    en_US: "list all your jiandaoyun applications,according to the api-key permissions"
+    zh_Hans: "管理简道云应用，按照api-key的权限返回所有用户应用及其appid"
+    pt_BR: "most popular actions of jiandaoyun"
+  llm: "list all the applications,according to authorization permissions.return all applications in the jiandaoyun account,if you need app_id, please use this method"
+parameters:
+  - name: limit
+    type: number
+    required: false
+    label:
+      en_US: Limit
+      zh_Hans: 限制数量
+      pt_BR: Limit
+    human_description:
+      en_US: "limit of the applications to be listed"
+      zh_Hans: "限制查询的应用数量"
+      pt_BR: "limite de aplicativos a serem listados"
+    llm_description: "the limit of the applications to be listed, default is 10"
+    form: llm
+  - name: offset
+    type: number
+    required: false
+    label:
+      en_US: Offset
+      zh_Hans: 偏移量
+      pt_BR: Offset
+    human_description:
+      en_US: "offset of the applications you want to query"
+      zh_Hans: "偏移量"
+      pt_BR: "offset dos aplicativos que você deseja consultar"
+    llm_description: "offset of the applications you want to query,default is 0"
+    form: llm
+  - name: output_type
+    type: select
+    required: true
+    default: json
+    form: llm
+    label:
+      en_US: output type
+      zh_Hans: 输出类型
+      pt_BR: tipo de saída
+    human_description:
+      en_US: "the output type of the result,default is json"
+      zh_Hans: "结果的输出类型，默认为json"
+      pt_BR: "o tipo de saída do resultado, padrão é json"
+    llm_description: "the output type of the result,default is json text"
+    options:
+      - value: json
+        label:
+          en_US: json
+          zh_Hans: json文本
+          pt_BR: json
+      - value: table
+        label:
+          en_US: table
+          zh_Hans: 表格文本
+          pt_BR: tabela
+extra:
+  python:
+    source: tools/getApp.py

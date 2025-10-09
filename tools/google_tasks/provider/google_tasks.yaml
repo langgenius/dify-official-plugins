@@ -1,0 +1,73 @@
+oauth_schema:
+  client_schema:
+    - name: "client_id"
+      type: secret-input
+      required: true
+      url: https://console.cloud.google.com/apis/credentials
+      placeholder:
+        en_US: "Client ID from Google Cloud Console"
+        zh_Hans: "来自 Google Cloud Console 的客户端 ID"
+        ja_JP: "Google Cloud Console のクライアント ID"
+      help:
+        en_US: "Get your OAuth 2.0 Client ID from Google Cloud Console"
+        zh_Hans: "从 Google Cloud Console 获取 OAuth 2.0 客户端 ID"
+        ja_JP: "Google Cloud Console から OAuth 2.0 クライアント ID を取得"
+      label:
+        zh_Hans: "客户端 ID"
+        en_US: "Client ID"
+        ja_JP: "クライアント ID"
+    - name: "client_secret"
+      type: secret-input
+      required: true
+      url: https://console.cloud.google.com/apis/credentials
+      placeholder:
+        en_US: "Client Secret from Google Cloud Console"
+        zh_Hans: "来自 Google Cloud Console 的客户端密钥"
+        ja_JP: "Google Cloud Console のクライアントシークレット"
+      help:
+        en_US: "Get your OAuth 2.0 Client Secret from Google Cloud Console"
+        zh_Hans: "从 Google Cloud Console 获取 OAuth 2.0 客户端密钥"
+        ja_JP: "Google Cloud Console から OAuth 2.0 クライアントシークレットを取得"
+      label:
+        zh_Hans: "客户端密钥"
+        en_US: "Client Secret"
+        ja_JP: "クライアントシークレット"
+  credentials_schema:
+    - name: "access_token"
+      type: "secret-input"
+      label:
+        zh_Hans: "访问令牌"
+        en_US: "Access Token"
+        ja_JP: "アクセストークン"
+    - name: "refresh_token"
+      type: "secret-input"
+      label:
+        zh_Hans: "刷新令牌"
+        en_US: "Refresh Token"
+        ja_JP: "リフレッシュトークン"
+
+extra:
+  python:
+    source: provider/google_tasks.py
+identity:
+  author: langgenius
+  description:
+    en_US: Manage your tasks with Google Tasks API
+    zh_Hans: 使用 Google Tasks API 管理任务
+    ja_JP: Google Tasks API でタスクを管理
+  icon: icon.svg
+  label:
+    en_US: Google Tasks
+    zh_Hans: Google Tasks
+    ja_JP: Google タスク
+  name: google_tasks
+  tags:
+    - utilities
+tools:
+  - tools/list_tasklists.yaml
+  - tools/list_tasks.yaml
+  - tools/create_task.yaml
+  - tools/update_task.yaml
+  - tools/delete_task.yaml
+  - tools/get_task.yaml
+  - tools/batch_get_tasks.yaml

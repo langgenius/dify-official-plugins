@@ -1,0 +1,51 @@
+identity:
+  author: langgenius
+  name: aws_s3_storage
+  label:
+    en_US: AWS S3 Storage
+    zh_Hans: AWS S3 Storage
+  description:
+    en_US: AWS S3 Storage Datasource
+    zh_Hans: AWS S3 Storage 数据源
+  icon: icon.svg
+provider_type: online_drive
+help:
+  title:
+    en_US: Get your credentials from AWS Console
+    zh_Hans: 从 AWS Console 获取您的凭证
+  url:
+    en_US: https://console.aws.amazon.com/
+credentials_schema:
+  - name: secret_access_key
+    type: secret-input
+    required: true
+    label:
+      en_US: Secret Access Key
+      zh_Hans: 密钥
+    placeholder:
+      en_US: Enter your AWS S3 Storage secret access key
+      zh_Hans: 输入您的 AWS S3 Storage 密钥
+  - name: access_key_id
+    type: secret-input
+    required: true
+    label:
+      en_US: Access Key ID
+      zh_Hans: 访问密钥 ID
+    placeholder:
+      en_US: Enter your AWS S3 Storage access key ID
+      zh_Hans: 输入您的 AWS S3 Storage 访问密钥 ID
+  - name: region_name
+    type: text-input
+    required: true
+    label:
+      en_US: Region Name
+      zh_Hans: 区域名称
+    placeholder:
+      en_US: Enter your AWS S3 Storage region name
+      zh_Hans: 输入您的 AWS S3 Storage 区域名称
+
+datasources:
+  - datasources/aws_s3_storage.yaml
+extra:
+  python:
+    source: provider/aws_s3_storage.py

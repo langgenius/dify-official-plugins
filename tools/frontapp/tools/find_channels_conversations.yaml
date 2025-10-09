@@ -1,0 +1,249 @@
+identity:
+  name: find_channels_conversations
+  author: Dify Developer
+  label:
+    en_US: Find Channels & Conversations
+    zh_Hans: 查找频道和对话
+    ja_JP: チャンネルと会話を検索
+  icon: icon.png
+
+description:
+  human:
+    en_US: Search and filter Front channels and conversations with comprehensive filtering options
+    zh_Hans: 使用全面的筛选选项搜索和过滤 Front 频道和对话
+    ja_JP: 包括的なフィルタリングオプションで Front チャンネルと会話を検索・フィルタリング
+  llm: Search Front channels and conversations with filters for channel type, name, conversation status, and optional conversation inclusion
+
+parameters:
+  - name: search_type
+    type: select
+    required: false
+    default: "channels"
+    form: llm
+    label:
+      en_US: Search Type
+      zh_Hans: 搜索类型
+      ja_JP: 検索タイプ
+    human_description:
+      en_US: What to search for - channels, conversations, or both
+      zh_Hans: 搜索内容 - 频道、对话或两者
+      ja_JP: 検索対象 - チャンネル、会話、または両方
+    llm_description: Specify whether to search for channels, conversations, or both
+    options:
+      - value: channels
+        label:
+          en_US: Channels Only
+          zh_Hans: 仅频道
+          ja_JP: チャンネルのみ
+      - value: conversations
+        label:
+          en_US: Conversations Only
+          zh_Hans: 仅对话
+          ja_JP: 会話のみ
+      - value: both
+        label:
+          en_US: Both Channels & Conversations
+          zh_Hans: 频道和对话
+          ja_JP: チャンネルと会話の両方
+
+  - name: channel_type_filter
+    type: select
+    required: false
+    form: llm
+    label:
+      en_US: Channel Type Filter
+      zh_Hans: 频道类型筛选
+      ja_JP: チャンネルタイプフィルタ
+    human_description:
+      en_US: Filter channels by their type (email, SMS, etc.)
+      zh_Hans: 按类型筛选频道（邮件、短信等）
+      ja_JP: タイプでチャンネルをフィルタリング（メール、SMSなど）
+    llm_description: Filter channels by their type (smtp for email, sms, facebook, etc.)
+    options:
+      - value: ""
+        label:
+          en_US: All Types
+          zh_Hans: 所有类型
+          ja_JP: 全てのタイプ
+      - value: smtp
+        label:
+          en_US: Email (SMTP)
+          zh_Hans: 邮件 (SMTP)
+          ja_JP: メール (SMTP)
+      - value: sms
+        label:
+          en_US: SMS
+          zh_Hans: 短信
+          ja_JP: SMS
+      - value: facebook
+        label:
+          en_US: Facebook
+          zh_Hans: Facebook
+          ja_JP: Facebook
+      - value: twitter
+        label:
+          en_US: Twitter
+          zh_Hans: Twitter
+          ja_JP: Twitter
+      - value: phone
+        label:
+          en_US: Phone
+          zh_Hans: 电话
+          ja_JP: 電話
+
+  - name: channel_name_search
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Channel Name Search
+      zh_Hans: 频道名称搜索
+      ja_JP: チャンネル名検索
+    human_description:
+      en_US: Search for channels containing this text in their name
+      zh_Hans: 搜索名称中包含此文本的频道
+      ja_JP: 名前にこのテキストを含むチャンネルを検索
+    llm_description: Text to search for within channel names (case insensitive partial match)
+
+  - name: include_conversations
+    type: boolean
+    required: false
+    default: false
+    form: llm
+    label:
+      en_US: Include Channel Conversations
+      zh_Hans: 包含频道对话
+      ja_JP: チャンネル会話を含める
+    human_description:
+      en_US: Whether to fetch conversations for each found channel
+      zh_Hans: 是否获取每个找到的频道的对话
+      ja_JP: 見つかった各チャンネルの会話を取得するかどうか
+    llm_description: Include conversations from each channel in the results (adds API calls)
+
+  - name: conversation_status
+    type: select
+    required: false
+    form: llm
+    label:
+      en_US: Conversation Status Filter
+      zh_Hans: 对话状态筛选
+      ja_JP: 会話ステータスフィルタ
+    human_description:
+      en_US: Filter conversations by their current status
+      zh_Hans: 按当前状态筛选对话
+      ja_JP: 現在のステータスで会話をフィルタリング
+    llm_description: Filter conversations by status when fetching them
+    options:
+      - value: ""
+        label:
+          en_US: All Statuses
+          zh_Hans: 所有状态
+          ja_JP: 全てのステータス
+      - value: open
+        label:
+          en_US: Open
+          zh_Hans: 打开
+          ja_JP: オープン
+      - value: archived
+        label:
+          en_US: Archived
+          zh_Hans: 已归档
+          ja_JP: アーカイブ済み
+      - value: deleted
+        label:
+          en_US: Deleted
+          zh_Hans: 已删除
+          ja_JP: 削除済み
+
+  - name: limit
+    type: number
+    required: false
+    default: 50
+    form: llm
+    label:
+      en_US: Result Limit
+      zh_Hans: 结果限制
+      ja_JP: 結果制限
+    human_description:
+      en_US: Maximum number of results to return (1-100)
+      zh_Hans: 返回的最大结果数（1-100）
+      ja_JP: 返される結果の最大数（1-100）
+    llm_description: Maximum number of channels or conversations to return
+    min: 1
+    max: 100
+
+extra:
+  python:
+    source: tools/find_channels_conversations.py
+
+output_schema:
+  type: object
+  properties:
+    search_type:
+      type: string
+      description: Type of search performed
+    filters_applied:
+      type: object
+      description: Summary of applied filters
+      properties:
+        channel_type:
+          type: string
+        channel_name_search:
+          type: string
+        conversation_status:
+          type: string
+        include_conversations:
+          type: boolean
+    channels:
+      type: array
+      description: Found channels
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          name:
+            type: string
+          type:
+            type: string
+          address:
+            type: string
+          send_as:
+            type: string
+          is_private:
+            type: boolean
+          conversations:
+            type: array
+            description: Channel conversations if requested
+    conversations:
+      type: array
+      description: Found standalone conversations
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          subject:
+            type: string
+          status:
+            type: string
+          created_at:
+            type: string
+          assignee:
+            type: string
+          tags:
+            type: array
+          inbox:
+            type: string
+          recipient:
+            type: string
+    summary:
+      type: object
+      description: Search results summary
+      properties:
+        total_channels_found:
+          type: integer
+        total_conversations_found:
+          type: integer
+        channel_types:
+          type: object

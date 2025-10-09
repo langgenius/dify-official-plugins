@@ -1,0 +1,97 @@
+description:
+  human:
+    en_US: Get user information from Twitter
+    zh_Hans: 从推特获取用户信息
+  llm: A tool that retrieves detailed user information from Twitter using either username or user ID
+extra:
+  python:
+    source: tools/get_user_info.py
+identity:
+  author: langgenius
+  icon: icon.jpg
+  label:
+    en_US: Get User Info
+    zh_Hans: 获取用户信息
+  name: get_user_info
+parameters:
+- form: llm
+  human_description:
+    en_US: Twitter username (without @) to get information for
+    zh_Hans: 要获取信息的推特用户名（不含@）
+  label:
+    en_US: Username
+    zh_Hans: 用户名
+  llm_description: Twitter username (without @) to get information for
+  name: username
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: Twitter user ID to get information for (alternative to username)
+    zh_Hans: 要获取信息的推特用户ID（用户名的替代）
+  label:
+    en_US: User ID
+    zh_Hans: 用户ID
+  llm_description: Twitter user ID to get information for (alternative to username)
+  name: user_id
+  required: false
+  type: string
+
+# output_schema:
+#   type: object
+#   properties:
+#     id:
+#       type: string
+#       label:
+#         en_US: User ID
+#         zh_Hans: 用户ID
+#     name:
+#       type: string
+#       label:
+#         en_US: Display Name
+#         zh_Hans: 显示名称
+#     username:
+#       type: string
+#       label:
+#         en_US: Username
+#         zh_Hans: 用户名
+#     description:
+#       type: string
+#       label:
+#         en_US: Bio/Description
+#         zh_Hans: 个人简介
+#     location:
+#       type: string
+#       label:
+#         en_US: Location
+#         zh_Hans: 位置
+#     created_at:
+#       type: string
+#       label:
+#         en_US: Account Created Date
+#         zh_Hans: 账户创建日期
+#     followers_count:
+#       type: number
+#       label:
+#         en_US: Followers Count
+#         zh_Hans: 粉丝数量
+#     following_count:
+#       type: number
+#       label:
+#         en_US: Following Count
+#         zh_Hans: 关注数量
+#     tweet_count:
+#       type: number
+#       label:
+#         en_US: Tweet Count
+#         zh_Hans: 推文数量
+#     verified:
+#       type: boolean
+#       label:
+#         en_US: Verified Status
+#         zh_Hans: 认证状态
+#     protected:
+#       type: boolean
+#       label:
+#         en_US: Protected Account
+#         zh_Hans: 受保护账户

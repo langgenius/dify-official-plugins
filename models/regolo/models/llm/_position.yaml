@@ -1,0 +1,13 @@
+- Llama-3.3-70B-Instruct
+ - deepseek-r1-70b
+ - gemma-3-27b-it
+ - gpt-oss-120b
+ - Llama-3.1-8B-Instruct
+ - maestrale-chat-v0.4-beta
+ - mistral-small3.2
+ - Phi-4
+ - Qwen2.5-VL-32B-Instruct
+ - Qwen3-8B
+ - qwen3-coder-30b
+ - llama-guard3-8b
+

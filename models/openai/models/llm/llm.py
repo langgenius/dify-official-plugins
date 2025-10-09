@@ -62,8 +62,8 @@ if you are not sure about the structure.
 </instructions>
 """
 
-# o1, o3, o4 compatibility
-O_SERIES_COMPATIBILITY = ("o1", "o3", "o4")
+# thinking models compatibility for max_completion_tokens (all starting with "o" or "gpt-5")
+THINKING_SERIES_COMPATIBILITY = ("o", "gpt-5")
 
 class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
     """
@@ -98,6 +98,11 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         base_model = model
         if model.startswith("ft:"):
             base_model = model.split(":")[1]
+
+        # GPT-5 series SOTA models require KYC validation for streaming output
+        # If you want to use the models without this limitation, please turn off streaming responses.
+        if model_parameters.pop("enable_stream", None) is False:  # noqa
+            stream = False
 
         # get model mode
         model_mode = self.get_model_mode(base_model, credentials)
@@ -728,7 +733,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         # o1, o3, o4 compatibility
         block_as_stream = False
-        if model.startswith(O_SERIES_COMPATIBILITY):
+        if model.startswith(THINKING_SERIES_COMPATIBILITY):
             if "max_tokens" in model_parameters:
                 model_parameters["max_completion_tokens"] = model_parameters[
                     "max_tokens"
@@ -1140,10 +1145,6 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         tool_calls = []
         if response_tool_calls:
             for response_tool_call in response_tool_calls:
-                assert isinstance(
-                    response_tool_call,
-                    (ChatCompletionMessageToolCall, ChoiceDeltaToolCall),
-                )
                 if response_tool_call.function:
                     function = AssistantPromptMessage.ToolCall.ToolCallFunction(
                         name=response_tool_call.function.name or "",
@@ -1170,9 +1171,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         """
         tool_call = None
         if response_function_call:
-            assert isinstance(
-                response_function_call, (FunctionCall, ChoiceDeltaFunctionCall)
-            )
+            # Avoid isinstance with possibly generic typing classes; use duck-typing instead
+            if not hasattr(response_function_call, "name"):
+                return None
 
             function = AssistantPromptMessage.ToolCall.ToolCallFunction(
                 name=response_function_call.name or "",
@@ -1356,7 +1357,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             model = model.split(":")[1]
 
         # Currently, we can use gpt4o to calculate chatgpt-4o-latest's token.
-        if model == "chatgpt-4o-latest" or model.startswith(("o1", "o3", "o4", "gpt-4.1", "gpt-4.5")):
+        if model == "chatgpt-4o-latest" or model.startswith(("o1", "o3", "o4", "gpt-4.1", "gpt-4.5", "gpt-5")):
             model = "gpt-4o"
 
         try:
@@ -1375,6 +1376,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             model.startswith("gpt-3.5-turbo")
             or model.startswith("gpt-4")
             or model.startswith(("o1", "o3", "o4"))
+            or model.startswith("gpt-5")
         ):
             tokens_per_message = 3
             tokens_per_name = 1

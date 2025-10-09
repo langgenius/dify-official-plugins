@@ -1,8 +1,10 @@
 model: cohere.embed-multilingual-v3
+label:
+  en_US: Cohere Embed 3 Multilingual
 model_type: text-embedding
 model_properties:
   context_size: 512
 pricing:
-  input: '0.1'
-  unit: '0.000001'
+  input: '0.0001'
+  unit: '0.001'
   currency: USD

@@ -1,0 +1,68 @@
+# https://platform.openai.com/docs/models/gpt-5-nano
+model: gpt-5-nano-2025-08-07
+label:
+  zh_Hans: gpt-5-nano-2025-08-07
+  en_US: gpt-5-nano-2025-08-07
+model_type: llm
+features:
+  - multi-tool-call
+  - agent-thought
+  - stream-tool-call
+  - vision
+model_properties:
+  mode: chat
+  context_size: 400000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 1
+    max: 128000
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - text
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理努力程度
+      en_US: Reasoning Effort
+    type: string
+    help:
+      zh_Hans: 约束推理模型的推理努力程度。支持的值包括minimal、low、medium和high。降低推理努力可以获得更快的响应和更少的推理token使用
+      en_US: Constrains effort on reasoning for reasoning models. Currently supported values are minimal, low, medium, and high. Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response
+    required: false
+    default: medium
+    options:
+      - minimal
+      - low
+      - medium
+      - high
+  - name: verbosity
+    label:
+      zh_Hans: 详细程度
+      en_US: Verbosity
+    type: string
+    help:
+      zh_Hans: 约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。支持的值包括low、medium和high
+      en_US: Constrains the verbosity of the model's response. Lower values will result in more concise responses, while higher values will result in more verbose responses. Currently supported values are low, medium, and high
+    required: false
+    default: medium
+    options:
+      - low
+      - medium
+      - high
+pricing:
+  input: '0.05'
+  output: '0.40'
+  unit: '0.000001'
+  currency: USD

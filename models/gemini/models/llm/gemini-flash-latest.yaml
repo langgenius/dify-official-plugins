@@ -1,0 +1,115 @@
+# https://ai.google.dev/gemini-api/docs/models#gemini-2.5-flash-preview
+model: gemini-flash-latest
+label:
+  en_US: Gemini Flash Latest
+model_type: llm
+features:
+  - tool-call
+  - multi-tool-call
+  - agent-thought
+  - vision
+  - stream-tool-call
+  - document
+  - video
+  - audio
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    default: 1
+    min: 0
+    max: 2
+  - name: top_p
+    use_template: top_p
+  - name: top_k
+    label:
+      zh_Hans: 取样数量
+      en_US: Top k
+    type: int
+    help:
+      zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
+      en_US: Only sample from the top K options for each subsequent token.
+    required: false
+  - name: max_output_tokens
+    use_template: max_tokens
+    default: 65536
+    min: 1
+    max: 65536
+  - name: include_thoughts
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Include thoughts
+      zh_Hans: 返回思考过程
+    help:
+      en_US: Indicates whether to include thoughts in the response. If true, thoughts are returned only if the model supports thought and thoughts are available.
+      zh_Hans: 是否返回思考过程。若为 true 则只有模型支持思考且启动思考模式时才返回思考过程。
+  - name: thinking_mode
+    type: boolean
+    required: true
+    default: true
+    label:
+      en_US: Thinking mode
+      zh_Hans: 思考模式
+    help:
+      en_US: Whether to enable thinking mode. If true and thinking_budget is not set, turn on dynamic thinking.
+      zh_Hans: 是否开启思考模式。若为 true 且 thinking_budget 未设置，则开启动态预算推理。
+  - name: thinking_budget
+    type: int
+    required: false
+    default: 8000
+    min: 0
+    max: 24576
+    label:
+      en_US: Set thinking budget
+      zh_Hans: 思考预算
+    help:
+      en_US: Indicates the thinking budget in tokens. This value is valid only when thinking mode is enabled. The default values and allowed ranges are model dependent. When enabling the thinking mode, if the thinking budget is not set, the default is to enable dynamic budget reasoning.
+      zh_Hans: 大模型的思考预算。仅在思考模式启动时该值有效。默认值和允许范围取决于模型。开启思考模式时，若未设置思考预算，则默认开启动态预算推理。
+  - name: grounding
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: Grounding
+      zh_Hans: 事实核查
+      ja_JP: 事実チェック
+    help:
+      en_US: Grounding with Google Search
+      zh_Hans: Google 事实核查
+      ja_JP: Google検索に基づいた応答をします。
+  - name: url_context
+    type: boolean
+    required: true
+    default: false
+    label:
+        en_US: URL context
+        zh_Hans: 链接详情
+        ja_JP: 網羅閲覧
+    help:
+      en_US: Browse the url context
+      zh_Hans: 获取并分析该链接的详细信息，为回答提供参考依据。
+      ja_JP: リンク先の詳細情報を取得し、文脈を理解します。
+  - name: code_execution
+    type:  boolean
+    required: true
+    default: false
+    label:
+        en_US: Code execution
+        zh_Hans: 代码执行
+        ja_JP: コード実行
+    help:
+      en_US: Lets Gemini use code to solve complex tasks
+      zh_Hans: 让 Gemini 使用代码来解决复杂任务。
+      ja_JP: Gemini にコードを使って複雑なタスクを解決させましょう。
+  - name: json_schema
+    use_template: json_schema
+# https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-2.5-flash-preview
+pricing:
+  input: '0.30'
+  output: '2.50'
+  unit: '0.000001'
+  currency: USD

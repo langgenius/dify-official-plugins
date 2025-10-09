@@ -1,0 +1,36 @@
+version: 0.2.4
+type: plugin
+author: langgenius
+name: confluence_datasource
+label:
+  en_US: Confluence
+  ja_JP: Confluence
+  zh_Hans: Confluence
+  pt_BR: Confluence
+description:
+  en_US: Confluence Datasource
+  ja_JP: Confluence Datasource
+  zh_Hans: Confluence Datasource
+  pt_BR: Confluence Datasource
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission: {}
+plugins:
+  datasources:
+    - provider/confluence_datasource.yaml
+meta:
+  version: 0.1.8
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: 1.9.0
+created_at: 2025-05-13T14:54:47.062188+08:00
+privacy: PRIVACY.md
+verified: false
+tags:
+  - rag

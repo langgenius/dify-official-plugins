@@ -1,0 +1,36 @@
+author: langgenius
+created_at: '2024-09-20T08:03:44.658609186Z'
+description:
+  en_US: Twitter social media platform integration for posting tweets, liking posts,
+    and managing Twitter interactions
+  zh_Hans: 推特社交媒体平台集成，用于发布推文、点赞帖子和管理推特互动
+icon: icon.jpg
+label:
+  en_US: Twitter
+  zh_Hans: 推特
+meta:
+  arch:
+  - amd64
+  - arm64
+  minimum_dify_version: 1.7.1
+  runner:
+    entrypoint: main
+    language: python
+    version: '3.12'
+  version: 0.0.1
+name: twitter
+plugins:
+  tools:
+  - provider/twitter.yaml
+resource:
+  memory: 1048576
+  permission:
+    model:
+      enabled: true
+      llm: true
+    tool:
+      enabled: true
+tags:
+- utilities
+type: plugin
+version: 0.1.0

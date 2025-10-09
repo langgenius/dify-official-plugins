@@ -1,0 +1,30 @@
+version: 0.0.3
+type: plugin
+author: "langgenius"
+name: "lemonade"
+description:
+  en_US: Lemonade lets you run local models with NPU and GPU acceleration.
+  zh_Hans: Lemonade 让你在 NPU 和 GPU 上运行本地模型。
+label:
+  en_US: "Lemonade"
+created_at: "2025-09-02T17:22:00.000000000Z"
+icon: icon.svg
+resource:
+  memory: 1048576
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+plugins:
+  models:
+    - "provider/lemonade.yaml"
+meta:
+  version: 0.0.3
+  arch:
+    - "amd64"
+  runner:
+    language: "python"
+    version: "3.12"
+    entrypoint: "main"

@@ -1,0 +1,196 @@
+identity:
+  name: spotify_search
+  author: Dify Developer
+  label:
+    en_US: Spotify Search
+    zh_Hans: Spotify 搜索
+    ja_JP: Spotify 検索
+  icon: icon.svg
+
+description:
+  human:
+    en_US: Search for tracks, albums, artists, and playlists on Spotify
+    zh_Hans: 在 Spotify 上搜索歌曲、专辑、艺术家和播放列表
+    ja_JP: Spotify で楽曲、アルバム、アーティスト、プレイリストを検索します
+  llm: Search for music content on Spotify including tracks, albums, artists, and playlists with customizable filters
+
+parameters:
+  - name: query
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Search Query
+      zh_Hans: 搜索查询
+      ja_JP: 検索クエリ
+    human_description:
+      en_US: Enter the search term (song title, artist name, album name, etc.)
+      zh_Hans: 输入搜索词（歌曲标题、艺术家姓名、专辑名称等）
+      ja_JP: 検索語を入力してください（楽曲タイトル、アーティスト名、アルバム名など）
+    llm_description: The search query string to find content on Spotify
+
+  - name: type
+    type: select
+    required: false
+    default: "track,album,artist"
+    form: llm
+    label:
+      en_US: Search Type
+      zh_Hans: 搜索类型
+      ja_JP: 検索タイプ
+    human_description:
+      en_US: Select what type of content to search for
+      zh_Hans: 选择要搜索的内容类型
+      ja_JP: 検索するコンテンツの種類を選択してください
+    llm_description: Comma-separated list of search types (track, album, artist, playlist)
+    options:
+      - value: track
+        label:
+          en_US: Tracks Only
+          zh_Hans: 仅歌曲
+          ja_JP: 楽曲のみ
+      - value: album
+        label:
+          en_US: Albums Only
+          zh_Hans: 仅专辑
+          ja_JP: アルバムのみ
+      - value: artist
+        label:
+          en_US: Artists Only
+          zh_Hans: 仅艺术家
+          ja_JP: アーティストのみ
+      - value: playlist
+        label:
+          en_US: Playlists Only
+          zh_Hans: 仅播放列表
+          ja_JP: プレイリストのみ
+      - value: track,album,artist
+        label:
+          en_US: Tracks, Albums & Artists
+          zh_Hans: 歌曲、专辑和艺术家
+          ja_JP: 楽曲、アルバム、アーティスト
+      - value: track,album,artist,playlist
+        label:
+          en_US: All Types
+          zh_Hans: 所有类型
+          ja_JP: すべてのタイプ
+
+  - name: limit
+    type: number
+    required: false
+    default: 20
+    form: llm
+    label:
+      en_US: Maximum Results
+      zh_Hans: 最大结果数
+      ja_JP: 最大結果数
+    human_description:
+      en_US: Maximum number of results to return (1-50)
+      zh_Hans: 返回的最大结果数（1-50）
+      ja_JP: 返す結果の最大数（1-50）
+    llm_description: Maximum number of results to return per search type (1-50)
+    min: 1
+    max: 50
+
+  - name: market
+    type: string
+    required: false
+    default: "US"
+    form: llm
+    label:
+      en_US: Market/Country
+      zh_Hans: 市场/国家
+      ja_JP: マーケット/国
+    human_description:
+      en_US: ISO 3166-1 alpha-2 country code (e.g., US, GB, JP)
+      zh_Hans: ISO 3166-1 alpha-2 国家代码（例如 US、GB、JP）
+      ja_JP: ISO 3166-1 alpha-2 国コード（例：US、GB、JP）
+    llm_description: Market/country code to filter search results by availability
+
+extra:
+  python:
+    source: tools/spotify_search.py
+
+output_schema:
+  type: object
+  properties:
+    query:
+      type: string
+      description: The search query that was executed
+    total_results:
+      type: integer
+      description: Total number of results returned across all types
+    results:
+      type: object
+      description: Search results organized by type
+      properties:
+        tracks:
+          type: object
+          description: Track search results
+          properties:
+            total:
+              type: integer
+              description: Total number of tracks found
+            items:
+              type: array
+              description: Array of track objects
+              items:
+                type: object
+                properties:
+                  id:
+                    type: string
+                    description: Spotify track ID
+                  name:
+                    type: string
+                    description: Track name
+                  artists:
+                    type: array
+                    description: List of artist names
+                  album:
+                    type: string
+                    description: Album name
+                  duration_ms:
+                    type: integer
+                    description: Track duration in milliseconds
+                  popularity:
+                    type: integer
+                    description: Track popularity score (0-100)
+                  external_urls:
+                    type: object
+                    description: External URLs for the track
+                  preview_url:
+                    type: string
+                    description: URL to 30-second preview (if available)
+                  explicit:
+                    type: boolean
+                    description: Whether the track has explicit content
+        albums:
+          type: object
+          description: Album search results
+          properties:
+            total:
+              type: integer
+              description: Total number of albums found
+            items:
+              type: array
+              description: Array of album objects
+        artists:
+          type: object
+          description: Artist search results
+          properties:
+            total:
+              type: integer
+              description: Total number of artists found
+            items:
+              type: array
+              description: Array of artist objects
+        playlists:
+          type: object
+          description: Playlist search results
+          properties:
+            total:
+              type: integer
+              description: Total number of playlists found
+            items:
+              type: array
+              description: Array of playlist objects

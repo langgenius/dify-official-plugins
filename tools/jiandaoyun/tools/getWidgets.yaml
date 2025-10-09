@@ -1,0 +1,68 @@
+identity:
+  name: "query_form_fields"
+  author: "jiandaoyun"
+  label:
+    en_US: "Get form fields"
+    zh_Hans: "查询表单字段"
+    pt_BR: "jiandaoyun"
+description:
+  human:
+    en_US: "get the widget list of an entry in a jiandaoyun application,according to the api-key permissions"
+    zh_Hans: "查询某个表单的全部字段值，通过app_id和entry_id确认对应表单"
+    pt_BR: "most popular actions of jiandaoyun"
+  llm: "get the widget list of an entry,returns all the widgets in the entry.return all the widgets of the entry ,if you need widget_id, please use this method"
+parameters:
+  - name: app_id
+    type: string
+    required: true
+    label:
+      en_US: app_id
+      zh_Hans: 应用id
+      pt_BR: Query string
+    human_description:
+      en_US: "app_id of the application you want to query"
+      zh_Hans: "应用的app_id"
+      pt_BR: "most popular actions of jiandaoyun"
+    llm_description: "app_id of the application you want to query. This field is mandatary."
+    form: llm
+  - name: entry_id
+    type: string
+    required: true
+    label:
+      en_US: entry_id
+      zh_Hans: entry_id
+      pt_BR: entry_id
+    human_description:
+      en_US: "entry_id of the application you want to query"
+      zh_Hans: "应用的entry_id"
+      pt_BR: "most popular actions of jiandaoyun"
+    llm_description: "entry_id of the application you want to query. This field is mandatary."
+    form: llm
+  - name: output_type
+    type: select
+    required: true
+    default: json
+    label:
+      en_US: output type
+      zh_Hans: 输出类型
+      pt_BR: tipo de saída
+    human_description:
+      en_US: "the output type of the result,default is json"
+      zh_Hans: "结果的输出类型，默认为json"
+      pt_BR: "o tipo de saída do resultado, padrão é json"
+    llm_description: "the output type of the result,default is json text"
+    options:
+      - value: json
+        label:
+          en_US: json
+          zh_Hans: json文本
+          pt_BR: json
+      - value: table
+        label:
+          en_US: table
+          zh_Hans: 表格文本
+          pt_BR: tabela
+    form: llm
+extra:
+  python:
+    source: tools/getWidgets.py

@@ -47,6 +47,14 @@ credentials_for_provider:
       zh_Hans: 请输入你的 Hugging Face API Key
     required: false
     type: text-input
+  expire_after:
+    label:
+      en_US: Cache Expiration Time [s]
+    placeholder:
+      en_US: Please input Expiration Time [s] (default=300).
+    required: false
+    default: "300"
+    type: text-input
 extra:
   python:
     source: provider/comfyui.py
@@ -64,15 +72,14 @@ identity:
     - image
 tools:
   - tools/run_workflow.yaml
+  - tools/quickstart.yaml
   - tools/txt2img.yaml
   - tools/txt2vid.yaml
+  - tools/txt2aud.yaml
   - tools/img2img.yaml
   - tools/img2vid.yaml
-  - tools/image_edit.yaml
-  - tools/list_models.yaml
-  - tools/list_samplers.yaml
-  - tools/image_info.yaml
+  - tools/img2any.yaml
+  - tools/list_info.yaml
   - tools/download_civitai.yaml
   - tools/download_huggingface.yaml
-  - tools/download_by_json.yaml
   - tools/download_by_url.yaml

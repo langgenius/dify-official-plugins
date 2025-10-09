@@ -1,0 +1,22 @@
+identity:
+  author: langgenius
+  name: dingo
+  label:
+    en_US: Dingo
+    zh_Hans: Dingo
+    pt_BR: Dingo
+  description:
+    en_US: Text quality toolkit using Dingo rules
+    zh_Hans: 使用 Dingo 规则的文本质量工具
+    pt_BR: Conjunto de ferramentas de qualidade de texto usando as regras do Dingo
+  icon: icon.svg
+  tags:
+    - productivity
+extra:
+  python:
+    source: provider/dingo.py
+
+tools:
+  - tools/text_quality_evaluator.yaml
+  - tools/resume_optimizer.yaml
+

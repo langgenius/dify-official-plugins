@@ -176,12 +176,12 @@ parameters:
     required: true
     type: string
 
-  - name: lora_names
+  - name: loras
     form: llm
     human_description:
-      en_US: LORAs, put comma between each LORA name if multiple. If you input a Civitai AIR like "civitai:000000@000000", the model will be downloaded.
-      zh_Hans: LORA, 如果有多个 LORA 名称，请在名称之间加上逗号。输入 Civitai AIR，如 civitai:000000@000000，即可从 civitai 下载。
-      ja_JP: LORA, 複数ある場合はコンマで区切ってください. civitai:000000@000000 のように Civitai AIR 入力すると civitai からダウンロードします．
+      en_US: LORAs, put comma between each LORA name if multiple. If you input a Civitai AIR like "civitai:000000@000000", the model will be downloaded. You can set the strength by putting ":0.8" on the end of each LORA.
+      zh_Hans: LORA, 如果有多个 LORA 名称，请在名称之间加上逗号。输入 Civitai AIR，如 civitai:000000@000000，即可从 civitai 下载。通过在末尾添加如“:0.8”等标记，也可设置强度参数。
+      ja_JP: LORA, 複数ある場合はコンマで区切ってください. civitai:000000@000000 のように Civitai AIR 入力すると civitai からダウンロードします．":0.8" などと末尾に付けることで強度設定もできます．
     label:
       en_US: LORAs
       zh_Hans: LORA
@@ -192,9 +192,9 @@ parameters:
   - name: lora_strengths
     form: llm
     human_description:
-      en_US: LORAs strength, put comma between each LORA strength if multiple
-      zh_Hans: LORA 力量, 如果有多个 LORA 力量，请在名称之间加上逗号
-      ja_JP: LORA 強度, 複数ある場合はコンマで区切ってください
+      en_US: (Deprecated) LORAs strength, put comma between each LORA strength if multiple
+      zh_Hans: (Deprecated) LORA 力量, 如果有多个 LORA 力量，请在名称之间加上逗号
+      ja_JP: (Deprecated) LORA 強度, 複数ある場合はコンマで区切ってください
     label:
       en_US: LORAs strength
       zh_Hans: LORA 力量

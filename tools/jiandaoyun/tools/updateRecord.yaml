@@ -1,0 +1,83 @@
+identity:
+  name: "update_record"
+  author: "jiandaoyun"
+  label:
+    en_US: "Update record"
+    zh_Hans: "更新单条数据"
+    pt_BR: "jiandaoyun"
+description:
+  human:
+    en_US: "update a specific record according to app_id,entry_id and data_id"
+    zh_Hans: "更新特定某一条数据"
+    pt_BR: "atualizar dados específicos de uma entrada em um aplicativo jiandaoyun, de acordo com as permissões da chave API"
+  llm: "update a specific record in a jiandaoyun application(by app_id,entry_id and data_id),data is in JSON format string.returns the updated record, if the record is not found, it will return an error."
+parameters:
+  - name: app_id
+    type: string
+    required: true
+    label:
+      en_US: app_id
+      zh_Hans: app_id
+      pt_BR: app_id
+    human_description:
+      en_US: "app_id of the application you want to query"
+      zh_Hans: "应用的app_id"
+      pt_BR: "most popular actions of jiandaoyun"
+    llm_description: "app_id of the application you want to query. This field is mandatary."
+    form: llm
+  - name: entry_id
+    type: string
+    required: true
+    label:
+      en_US: entry_id
+      zh_Hans: entry_id
+      pt_BR: entry_id
+    human_description:
+      en_US: "entry_id of the entry you want to query"
+      zh_Hans: "应用的entry_id"
+      pt_BR: "most popular actions of jiandaoyun"
+    llm_description: "_id of the entry you want to query. This field is mandatary."
+    form: llm
+  - name: data_id
+    type: string
+    required: true
+    label:
+      en_US: data_id
+      zh_Hans: data_id
+      pt_BR: data_id
+    human_description:
+      en_US: "data_id of the data you want to update"
+      zh_Hans: "数据的data_id"
+      pt_BR: "most popular actions of jiandaoyun"
+    llm_description: "data_id of the data you want to update. This field is mandatary."
+    form: llm
+  - name: data
+    type: string
+    required: true
+    label:
+      en_US: data
+      zh_Hans: 具体数据
+      pt_BR: data
+    human_description:
+      en_US: "the actual data you want to create, in JSON format"
+      zh_Hans: "你想要更新的实际数据，JSON格式"
+      pt_BR: "os dados reais que você deseja criar, no formato JSON"
+    llm_description: "the actual data you want to update, in JSON format string,examples:
+    {\"
+        \"_widget_1432728651402\": { // 单行文本
+            \"value\": \"简道云\"
+        },
+        \"_widget_1725969783950\": {
+            \"value\": \"67221b4fac0a62ac8f43a1c3\"//关联数据
+        },
+        \"_widget_1432728651403\": { // 数字
+            \"value\": 100
+        },
+        \"_widget_1432728651404\": { // 多行文本
+            \"value\": \"简道云是一个强大易用的应用搭建工具，\n可以快速把你的想法变成应用\"
+        }
+    }"
+    form: llm
+extra:
+  python:
+    source: tools/updateRecord.py

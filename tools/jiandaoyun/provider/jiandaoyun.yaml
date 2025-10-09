@@ -1,0 +1,56 @@
+identity:
+  author: jiandaoyun
+  name: jiandaoyun
+  label:
+    en_US: Jiandaoyun
+    zh_Hans: "简道云"
+    pt_BR: Jiandaoyun
+  description:
+    en_US: "most popular actions of Jiandaoyun"
+    zh_Hans: "简道云平台dify支撑插件"
+    pt_BR: "most popular actions of Jiandaoyun"
+  icon: "logo.svg"
+tools:
+  - tools/getApp.yaml
+  - tools/getEntry.yaml
+  - tools/getWidgets.yaml
+  - tools/getRecord.yaml
+  - tools/getRecords.yaml
+  - tools/createRecord.yaml
+  - tools/createRecords.yaml
+  - tools/updateRecord.yaml
+  - tools/deleteRecord.yaml
+extra:
+  python:
+    source: provider/jiandaoyun.py
+credentials_for_provider:
+  jiandaoyun_api_key:
+    type: secret-input
+    required: true
+    label:
+      en_US: Jiandaoyun api-key
+      zh_Hans: 简道云 api-key
+      placeholder:
+        en_US: Enter your Jiandaoyun api-key
+        zh_Hans: 请输入您的 简道云 api-key
+      help:
+        en_US: How to get your Jiandaoyun api-key
+        zh_Hans: 如何获取 简道云 api-key
+      url: https://jiandaoyun.com/open#/key/api_key
+    description: "简道云API密钥，请访问[简道云开放平台](http://jiandaoyun.com/open#/key/api_key)自行创建获取，具体创建规则以及使用方法可以查看[简道云文档](https://hc.Jiandaoyun.com/open/11498)"
+  base_url:
+    type: text-input
+    required: false
+    label:
+      en_US: Server url
+      zh_Hans: 服务器地址
+      pt_BR: url do servidor
+    placeholder:
+      en_US: Enter your Jiandaoyun server url
+      zh_Hans: 请输入您的简道云服务器地址
+      pt_BR: Insira o URL do seu servidor Jiandaoyun
+    help:
+      en_US: configure this if it's a private deployment
+      zh_Hans: 如果是私有化部署，请配置此项
+      pt_BR: configure isso se for uma implantação privada
+    description: "the base url of the jiandaoyun server,if not specified,default to https://api.jiandaoyun.com"

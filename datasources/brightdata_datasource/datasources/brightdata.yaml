@@ -1,0 +1,76 @@
+identity:
+  name: brightdata
+  author: langgenius
+  label:
+    en_US: Bright Data Web Scraper
+    zh_Hans: Bright Data 网页抓取器
+    pt_BR: Bright Data Web Scraper
+  description:
+    en_US: Scrape a single webpage URL and get back the results in MarkDown format. This tool can unlock any webpage even if it uses bot detection or CAPTCHA.
+    zh_Hans: 抓取单个网页URL并以MarkDown语言返回结果。此工具可以解锁任何网页，即使它使用机器人检测或验证码。
+    pt_BR: Scrape a single webpage URL and get back the results in MarkDown format. This tool can unlock any webpage even if it uses bot detection or CAPTCHA.
+  icon: icon.svg
+
+description:
+  en_US: Fetch the target URL (can be a PDF) and convert it into a LLM-friendly
+    markdown.
+  pt_BR: Busque a URL de destino (que pode ser um PDF) e converta em um Markdown
+    LLM-friendly.
+  zh_Hans: 获取目标网址（可以是 PDF），并将其转换为适合大模型处理的 Markdown 格式。
+
+parameters:
+  - name: url
+    type: string
+    required: true
+    label:
+      en_US: Website URL
+      zh_Hans: 网站 URL
+      pt_BR: Website URL
+    description:
+      en_US: The full URL of the webpage to scrape
+      zh_Hans: 要抓取的网页的完整 URL
+      pt_BR: The full URL of the webpage to scrape
+    form: llm
+  - name: format
+    type: select
+    required: true
+    label:
+      en_US: Format
+      zh_Hans: 格式
+      pt_BR: Formato
+    description:
+      en_US: The format of the output
+      zh_Hans: 输出的格式
+      pt_BR: O formato da saída
+    form: llm
+    default: markdown
+    options:
+      - label:
+          en_US: Markdown
+          zh_Hans: Markdown
+          pt_BR: Markdown
+        value: markdown
+      - label:
+          en_US: HTML
+          zh_Hans: HTML
+          pt_BR: HTML
+        value: html
+output_schema:
+    type: object
+    properties:
+        source_url:
+          type: string
+          description: the source url of the file
+        content:
+          type: string
+          description: the content extracted from the file
+        title:
+          type: string
+          description: the title of the file
+        description:
+          type: string
+          description: the description of the file
+extra:
+  python:
+    source: datasources/brightdata.py
+provider_type: website_crawl
