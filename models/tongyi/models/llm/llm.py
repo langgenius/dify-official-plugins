@@ -351,6 +351,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             full_text, "", 1
                         )
                         full_text = resp_content
+                elif is_reasoning:
+                    assistant_prompt_message.content = "\n</think>"
+                    full_text += "\n</think>"
                 if tool_calls:
                     message_tool_calls = []
                     for tool_call_obj in tool_calls:
