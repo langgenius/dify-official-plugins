@@ -2,9 +2,9 @@ identity:
   name: ReAct
   author: Dify
   label:
-    en_US: LReAct
-    zh_Hans: LReAct
-    pt_BR: LReAct
+    en_US: ReAct
+    zh_Hans: ReAct
+    pt_BR: ReAct
 description:
   en_US: ReAct is a basic strategy for agent, model will use the tools provided to perform the task.
   zh_Hans: ReAct 是一个基本的 Agent 策略，模型将使用提供的工具来执行任务。
