@@ -8,15 +8,23 @@ label:
   zh_Hans: databricks
   pt_BR: databricks
 description:
-  en_US: Access models available on Databricks
-  ja_JP: Access models available on Databricks
-  zh_Hans: Access models available on Databricks
-  pt_BR: Access models available on Databricks
+  en_US: Access to models hosted on Databricks
+  ja_JP: Access to models hosted on Databricks
+  zh_Hans: Access to models hosted on Databricks
+  pt_BR: Access to models hosted on Databricks
 icon: icon.svg
 icon_dark: icon-dark.svg
 resource:
   memory: 268435456
-  permission: {}
+  permission:
+    model:
+      enabled: true
+      llm: true
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
 plugins:
   models:
     - provider/databricks.yaml
