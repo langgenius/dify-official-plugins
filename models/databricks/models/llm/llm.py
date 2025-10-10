@@ -71,7 +71,81 @@ class DatabricksLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
-        pass
+        return self._chat_generate(
+            model=model,
+            credentials=credentials,
+            prompt_messages=prompt_messages,
+            model_parameters=model_parameters,
+            tools=tools,
+            stop=stop,
+            stream=stream,
+            user=user,
+        )
+
+    def _chat_generate(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
+    ) -> Union[LLMResult, Generator]:
+        """
+        Invoke llm chat model
+
+        :param model: model name
+        :param credentials: credentials
+        :param prompt_messages: prompt messages
+        :param model_parameters: model parameters
+        :param tools: tools for tool calling
+        :param stop: stop words
+        :param stream: is stream response
+        :param user: unique user id
+        :return: full response or stream response chunk generator result
+        """
+        # Create client
+        client = self._create_client(credentials)
+
+        # Convert prompt messages to OpenAI format
+        messages = self._convert_prompt_messages(prompt_messages)
+
+        # Prepare extra kwargs
+        extra_model_kwargs = {}
+
+        if tools:
+            extra_model_kwargs["tools"] = [
+                {
+                    "type": "function",
+                    "function": {
+                        "name": tool.name,
+                        "description": tool.description,
+                        "parameters": tool.parameters,
+                    },
+                }
+                for tool in tools
+            ]
+            if "tool_choice" not in model_parameters:
+                model_parameters["tool_choice"] = "auto"
+
+        if stop:
+            extra_model_kwargs["stop"] = stop
+
+        # Make API call
+        response = client.chat.completions.create(
+            model=model,
+            messages=messages,
+            stream=stream,
+            **model_parameters,
+            **extra_model_kwargs,
+        )
+
+        if stream:
+            return self._handle_generate_stream_response(model, credentials, response, prompt_messages)
+
+        return self._handle_generate_response(model, credentials, response, prompt_messages)
    
     def get_num_tokens(
         self,
@@ -150,6 +224,57 @@ class DatabricksLargeLanguageModel(LargeLanguageModel):
                     "content": message.content,
                 })
         return messages
+
+    def _handle_generate_response(
+        self,
+        model: str,
+        credentials: dict,
+        response: ChatCompletion,
+        prompt_messages: list[PromptMessage],
+    ) -> LLMResult:
+        """
+        Handle non-streaming response
+
+        :param model: model name
+        :param credentials: credentials
+        :param response: OpenAI ChatCompletion response
+        :param prompt_messages: prompt messages
+        :return: LLMResult
+        """
+        # Extract assistant message
+        assistant_message = AssistantPromptMessage(content="", tool_calls=[])
+
+        choice = response.choices[0]
+        if choice.message.content:
+            assistant_message.content = choice.message.content
+
+        if choice.message.tool_calls:
+            for tool_call in choice.message.tool_calls:
+                assistant_message.tool_calls.append(
+                    AssistantPromptMessage.ToolCall(
+                        id=tool_call.id,
+                        type="function",
+                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                            name=tool_call.function.name,
+                            arguments=tool_call.function.arguments,
+                        ),
+                    )
+                )
+
+        # Calculate usage
+        usage = self._calc_response_usage(
+            model=model,
+            credentials=credentials,
+            prompt_tokens=response.usage.prompt_tokens if response.usage else 0,
+            completion_tokens=response.usage.completion_tokens if response.usage else 0,
+        )
+
+        return LLMResult(
+            model=response.model,
+            prompt_messages=prompt_messages,
+            message=assistant_message,
+            usage=usage,
+        )
 
     def get_customizable_model_schema(
         self, model: str, credentials: dict
