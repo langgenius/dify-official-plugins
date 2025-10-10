@@ -8,7 +8,7 @@ from dify_plugin.errors.model import CredentialsValidateFailedError
 logger = logging.getLogger(__name__)
 
 
-class DatabricksModelProvider(ModelProvider):
+class DatabricksProvider(ModelProvider):
     def validate_provider_credentials(self, credentials: Mapping) -> None:
         """
         Validate provider credentials
@@ -17,7 +17,8 @@ class DatabricksModelProvider(ModelProvider):
         :param credentials: provider credentials, credentials form defined in `provider_credential_schema`.
         """
         try:
-            pass
+            model_instance = self.get_model_instance(ModelType.LLM)
+            model_instance.validate_credentials(model="databricks-claude-3-7-sonnet", credentials=credentials)
         except CredentialsValidateFailedError as ex:
             raise ex
         except Exception as ex:
