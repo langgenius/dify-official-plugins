@@ -13,18 +13,25 @@ identity:
   tags:
     - productivity
 tools:
-  - tools/apply_guardrail.yaml
   - tools/bedrock_retrieve.yaml
   - tools/bedrock_retrieve_and_generate.yaml
-  - tools/lambda_translate_utils.yaml
-  - tools/lambda_yaml_to_json.yaml
-  - tools/nova_canvas.yaml
+  - tools/opensearch_knn_search.yaml
   - tools/s3_operator.yaml
-  - tools/sagemaker_chinese_toxicity_detector.yaml
+  - tools/apply_guardrail.yaml
+  - tools/nova_canvas.yaml
+  - tools/transcribe_asr.yaml
+  - tools/lambda_translate_utils.yaml
   - tools/sagemaker_text_rerank.yaml
   - tools/sagemaker_tts.yaml
-  - tools/transcribe_asr.yaml
-  - tools/opensearch_knn_search.yaml
+  - tools/translation_evaluator.yaml
+  - tools/sagemaker_chinese_toxicity_detector.yaml
+  - tools/lambda_yaml_to_json.yaml
+  - tools/extract_frame.yaml
+  - tools/agentcore_memory.yaml
+  - tools/agentcore_memory_search.yaml
+  - tools/agentcore-browser-tool.yaml
+  - tools/agentcore-browser-session-manager.yaml
+  - tools/agentcore_code_interpreter.yaml
 extra:
   python:
     source: provider/aws_tools.py

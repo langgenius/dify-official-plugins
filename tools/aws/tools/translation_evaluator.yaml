@@ -1,0 +1,69 @@
+identity:
+  name: translation_evaluator
+  author: AWS
+  label:
+    en_US: TranslationEvaluator
+    zh_Hans: 翻译质量评估
+    pt_BR: TranslationEvaluator
+  icon: icon.svg
+description:
+  human:
+    en_US: A tool for evaluating translation.
+    zh_Hans: 翻译质量评估工具。
+    pt_BR: A tool for evaluating translation.
+  llm: A tool for evaluating translation.
+parameters:
+  - name: source
+    type: string
+    required: false
+    label:
+      en_US: the source content of the translation
+      zh_Hans: 翻译原文内容
+      pt_BR: the source content of the translation
+    human_description:
+      en_US: the source content of the translation
+      zh_Hans: 翻译原文内容
+      pt_BR: the source content of the translation
+    llm_description: the source content of the translation
+    form: llm
+  - name: translation
+    type: string
+    required: false
+    label:
+      en_US: the target content of translation
+      zh_Hans: 翻译译文内容
+      pt_BR: the target content of translation
+    human_description:
+      en_US: the target content of translation
+      zh_Hans: 翻译译文内容
+      pt_BR: the target content of translation
+    llm_description: the target content of translation
+    form: llm
+  - name: label
+    type: string
+    required: false
+    label:
+      en_US: the label of translation
+      zh_Hans: 参考译文
+      pt_BR: the label of translation
+    human_description:
+      en_US: the label of translation
+      zh_Hans: 参考译文
+      pt_BR: the label of translation
+    llm_description: the label of translation
+    form: llm
+  - name: model_endpoint
+    type: string
+    required: false
+    form: form
+    label:
+      en_US: The endpoint of model evaluator
+      zh_Hans: 评估模型的端点
+      pt_BR: The endpoint of model evaluator
+    human_description:
+      en_US: The endpoint of model evaluator
+      zh_Hans: 评估模型的端点
+      pt_BR: The endpoint of model evaluator
+extra:
+  python:
+    source: tools/translation_evaluator.py
