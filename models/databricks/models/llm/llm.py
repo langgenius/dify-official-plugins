@@ -276,6 +276,96 @@ class DatabricksLargeLanguageModel(LargeLanguageModel):
             usage=usage,
         )
 
+    def _handle_generate_stream_response(
+        self,
+        model: str,
+        credentials: dict,
+        response: Stream[ChatCompletionChunk],
+        prompt_messages: list[PromptMessage],
+    ) -> Generator:
+        """
+        Handle streaming response
+
+        :param model: model name
+        :param credentials: credentials
+        :param response: OpenAI streaming response
+        :param prompt_messages: prompt messages
+        :return: Generator of LLMResultChunk
+        """
+        from dify_plugin.entities.model.llm import LLMResultChunk, LLMResultChunkDelta
+
+        full_content = ""
+        tool_calls = []
+        prompt_tokens = 0
+        completion_tokens = 0
+
+        for chunk in response:
+            if not chunk.choices:
+                continue
+
+            delta = chunk.choices[0].delta
+
+            # Handle content
+            if delta.content:
+                full_content += delta.content
+                yield LLMResultChunk(
+                    model=chunk.model,
+                    prompt_messages=prompt_messages,
+                    delta=LLMResultChunkDelta(
+                        index=chunk.choices[0].index,
+                        message=AssistantPromptMessage(content=delta.content),
+                    ),
+                )
+
+            # Handle tool calls
+            if delta.tool_calls:
+                for tool_call_delta in delta.tool_calls:
+                    if tool_call_delta.id:
+                        tool_calls.append({
+                            "id": tool_call_delta.id,
+                            "type": "function",
+                            "function": {
+                                "name": tool_call_delta.function.name if tool_call_delta.function else "",
+                                "arguments": tool_call_delta.function.arguments if tool_call_delta.function else "",
+                            }
+                        })
+
+            # Handle usage (comes in last chunk)
+            if chunk.usage:
+                prompt_tokens = chunk.usage.prompt_tokens
+                completion_tokens = chunk.usage.completion_tokens
+
+        # Send final chunk with usage
+        usage = self._calc_response_usage(
+            model=model,
+            credentials=credentials,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+        )
+
+        final_tool_calls = [
+            AssistantPromptMessage.ToolCall(
+                id=tc["id"],
+                type="function",
+                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                    name=tc["function"]["name"],
+                    arguments=tc["function"]["arguments"],
+                ),
+            )
+            for tc in tool_calls
+        ] if tool_calls else []
+
+        yield LLMResultChunk(
+            model=model,
+            prompt_messages=prompt_messages,
+            delta=LLMResultChunkDelta(
+                index=0,
+                message=AssistantPromptMessage(content="", tool_calls=final_tool_calls),
+                finish_reason="stop",
+                usage=usage,
+            ),
+        )
+
     def get_customizable_model_schema(
         self, model: str, credentials: dict
     ) -> AIModelEntity:
