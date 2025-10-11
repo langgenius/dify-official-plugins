@@ -1,6 +1,6 @@
-model: databricks-claude-3-7-sonnet
+model: databricks-claude-sonnet-4
 label:
-  en_US: databricks-claude-3-7-sonnet
+  en_US: databricks-claude-sonnet-4
 model_type: llm
 features:
   - agent-thought

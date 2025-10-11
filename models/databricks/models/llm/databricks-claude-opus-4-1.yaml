@@ -1,6 +1,6 @@
-model: databricks-claude-3-7-sonnet
+model: databricks-claude-opus-4-1
 label:
-  en_US: databricks-claude-3-7-sonnet
+  en_US: databricks-claude-opus-4-1
 model_type: llm
 features:
   - agent-thought
@@ -23,7 +23,7 @@ parameter_rules:
     min: 1
     max: 128000
 pricing:
-  input: '3.00'
-  output: '15.00'
+  input: '15.00'
+  output: '75.00'
   unit: '0.000001'
   currency: USD

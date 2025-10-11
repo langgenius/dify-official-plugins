@@ -5,9 +5,9 @@ description:
   en_US: "Models provided by Databricks."
   zh_Hans: "Databricks 提供的模型。"
 icon_small:
-  en_US: "databricks-icon.svg"
+  en_US: "icon.svg"
 icon_large:
-  en_US: "databricks-icon.svg"
+  en_US: "icon-dark.svg"
 background: "#E5E7EB"
 help:
   title:

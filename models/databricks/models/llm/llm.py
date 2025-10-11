@@ -9,6 +9,7 @@ from dify_plugin import LargeLanguageModel
 from dify_plugin.entities import I18nObject
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
+    InvokeError,
 )
 from dify_plugin.entities.model import (
     AIModelEntity,
@@ -365,6 +366,18 @@ class DatabricksLargeLanguageModel(LargeLanguageModel):
                 usage=usage,
             ),
         )
+
+    @property
+    def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
+        """
+        Map model invoke error to unified error
+        The key is the error type thrown to the caller
+        The value is the error type thrown by the model,
+        which needs to be converted into a unified error type for the caller.
+
+        :return: Invoke error mapping
+        """
+        return {}
 
     def get_customizable_model_schema(
         self, model: str, credentials: dict
