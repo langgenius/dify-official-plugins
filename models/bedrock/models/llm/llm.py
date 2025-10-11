@@ -900,6 +900,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         """
         model_parts = model.split(".")
         
+        prefix = ""
+        model_name = ""
         if model.startswith('us.') or model.startswith('eu.'):
             if len(model_parts) >= 3:
                 prefix = model_parts[1]
