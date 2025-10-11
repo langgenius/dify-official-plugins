@@ -36,6 +36,9 @@ class DatabricksLargeLanguageModel(LargeLanguageModel):
     Model class for databricks large language model.
     """
 
+    def __init__(self, model_schemas=None):
+        super().__init__(model_schemas or [])
+
     def _create_client(self, credentials: dict) -> OpenAI:
         """
         Create OpenAI client configured for Databricks
@@ -117,8 +120,10 @@ class DatabricksLargeLanguageModel(LargeLanguageModel):
         extra_model_kwargs = {}
 
         if tools:
-            extra_model_kwargs["tools"] = [
-                {
+            # Build tool definitions
+            tool_defs = []
+            for tool in tools:
+                tool_def = {
                     "type": "function",
                     "function": {
                         "name": tool.name,
@@ -126,8 +131,9 @@ class DatabricksLargeLanguageModel(LargeLanguageModel):
                         "parameters": tool.parameters,
                     },
                 }
-                for tool in tools
-            ]
+                tool_defs.append(tool_def)
+
+            extra_model_kwargs["tools"] = tool_defs
             if "tool_choice" not in model_parameters:
                 model_parameters["tool_choice"] = "auto"
 
@@ -201,8 +207,10 @@ class DatabricksLargeLanguageModel(LargeLanguageModel):
         for message in prompt_messages:
             if isinstance(message, SystemPromptMessage):
                 messages.append({"role": "system", "content": message.content})
+
             elif isinstance(message, UserPromptMessage):
                 messages.append({"role": "user", "content": message.content})
+
             elif isinstance(message, AssistantPromptMessage):
                 msg_dict = {"role": "assistant", "content": message.content}
                 if message.tool_calls:
@@ -218,12 +226,14 @@ class DatabricksLargeLanguageModel(LargeLanguageModel):
                         for tool_call in message.tool_calls
                     ]
                 messages.append(msg_dict)
+
             elif isinstance(message, ToolPromptMessage):
-                messages.append({
+                tool_msg = {
                     "role": "tool",
                     "tool_call_id": message.tool_call_id,
                     "content": message.content,
-                })
+                }
+                messages.append(tool_msg)
         return messages
 
     def _handle_generate_response(
@@ -263,11 +273,14 @@ class DatabricksLargeLanguageModel(LargeLanguageModel):
                 )
 
         # Calculate usage
+        prompt_tokens = response.usage.prompt_tokens if response.usage else 0
+        completion_tokens = response.usage.completion_tokens if response.usage else 0
+
         usage = self._calc_response_usage(
             model=model,
             credentials=credentials,
-            prompt_tokens=response.usage.prompt_tokens if response.usage else 0,
-            completion_tokens=response.usage.completion_tokens if response.usage else 0,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
         )
 
         return LLMResult(
