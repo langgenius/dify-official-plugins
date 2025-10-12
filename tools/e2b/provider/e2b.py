@@ -11,12 +11,12 @@ class E2bProvider(ToolProvider):
         try:
             api_key = credentials.get("api_key")
             domain = credentials.get("domain")
+            sandbox_args = {"api_key": api_key}
             if domain:
-                sbx = Sandbox(domain=domain, api_key=api_key)
-                running_sandboxes = sbx.list(domain=domain, api_key=api_key)
-            else:
-                sbx = Sandbox(api_key=api_key)
-                running_sandboxes = sbx.list(api_key=api_key)
+                sandbox_args["domain"] = domain
+
+            sbx = Sandbox(**sandbox_args)
+            running_sandboxes = sbx.list(**sandbox_args)
 
             sbx.kill()
 
