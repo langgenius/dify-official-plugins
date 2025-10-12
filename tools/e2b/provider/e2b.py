@@ -9,9 +9,14 @@ from e2b_code_interpreter import Sandbox
 class E2bProvider(ToolProvider):
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
         try:
-            sbx = Sandbox(api_key=credentials.get("api_key"))
-
-            running_sandboxes = sbx.list(api_key=credentials.get("api_key"))
+            api_key = credentials.get("api_key")
+            domain = credentials.get("domain")
+            if domain:
+                sbx = Sandbox(domain=domain, api_key=api_key)
+                running_sandboxes = sbx.list(domain=domain, api_key=api_key)
+            else:
+                sbx = Sandbox(api_key=api_key)
+                running_sandboxes = sbx.list(api_key=api_key)
 
             sbx.kill()
 

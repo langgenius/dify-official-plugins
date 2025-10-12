@@ -24,6 +24,18 @@ credentials_for_provider:
     required: true
     type: secret-input
     url: https://e2b.dev/dashboard?tab=keys
+  domain:
+    description:
+      en_US: Custom domain for E2B (optional)
+      zh_Hans: E2B 自定义域名（可选）
+    help:
+      en_US: If you have a custom E2B domain, enter it here. Leave empty to use default.
+      zh_Hans: 如果您有自定义的 E2B 域名，请在此输入。留空则使用默认域名。
+    label:
+      en_US: Domain
+      zh_Hans: 域名
+    required: false
+    type: text-input
 tools:
   - tools/run_code.yaml
   - tools/run_command.yaml
