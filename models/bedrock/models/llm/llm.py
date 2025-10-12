@@ -287,12 +287,15 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 credentials['model_parameters'] = {}
             credentials['model_parameters']['model_name'] = model_name
             
+            # Get region prefix for model ID construction
+            region_name = credentials['aws_region']
+            region_prefix = None
+            
             if model_parameters.pop('cross-region', False):
-                region_name = credentials['aws_region']
-                
+                # Cross-region inference enabled
                 # Check if the model supports global prefix (currently mainly Claude 4 series)
                 supports_global = any(model_id.startswith(prefix) for prefix in [
-                    'anthropic.claude-sonnet-4', 'anthropic.claude-opus-4'
+                    'anthropic.claude-sonnet-4', 'anthropic.claude-sonnet-4-5'
                 ])
                 
                 if supports_global:
@@ -303,11 +306,19 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     region_prefix = model_ids.get_region_area(region_name, prefer_global=False)
                 
                 if not region_prefix:
-                    raise InvokeError(f'Failed to get cross-region Inference predix for {region_name}')
+                    raise InvokeError(f'Failed to get cross-region inference prefix for region {region_name}')
 
                 if not model_ids.is_support_cross_region(model_id):
-                    raise InvokeError(f"Model - {model_id} doesn't support cross-region Inference")
+                    raise InvokeError(f"Model {model_id} doesn't support cross-region inference")
                 
+                model_id = "{}.{}".format(region_prefix, model_id)
+            else:
+                # Cross-region inference not enabled, but still add region prefix for all models
+                region_prefix = model_ids.get_region_area(region_name, prefer_global=False)
+                
+                if not region_prefix:
+                    raise InvokeError(f'Failed to get region prefix for region {region_name}')
+
                 model_id = "{}.{}".format(region_prefix, model_id)
 
 
