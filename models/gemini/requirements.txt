@@ -19,7 +19,7 @@ charset-normalizer==3.4.3
     # via requests
 click==8.3.0
     # via flask
-dify-plugin==0.4.5
+dify-plugin==0.5.0
     # via gemini-g9cie8 (pyproject.toml)
 dpkt==1.9.8
     # via dify-plugin

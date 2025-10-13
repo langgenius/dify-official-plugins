@@ -1,4 +1,4 @@
-dify_plugin~=0.0.1b65
+dify_plugin<0.6.0,>=0.5.0
 azure-ai-inference~=1.0.0b8
 azure-ai-ml~=1.20.0
 azure-identity~=1.16.1
