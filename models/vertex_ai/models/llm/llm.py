@@ -510,13 +510,15 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             
         history = []
         system_instruction = ""
-        
+
+        video_metadata = config_kwargs.pop("video_metadata", None)
+
         for msg in prompt_messages:
 
             if isinstance(msg, SystemPromptMessage):
                 system_instruction = msg.content
             else:
-                content = self._format_message_to_glm_content(msg)
+                content = self._format_message_to_glm_content(msg, video_metadata=video_metadata)
 
                 if history and history[-1].role == content.role:
 
@@ -737,7 +739,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             raise ValueError(f"Got unknown type {message}")
         return message_text
 
-    def _format_message_to_glm_content(self, message: PromptMessage) -> glm.Content:
+    def _format_message_to_glm_content(self, message: PromptMessage, video_metadata: dict = None) -> glm.Content:
         """
         Format a single message into glm.Content for Google API
 
@@ -755,12 +757,42 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                     elif c.type in [
                         PromptMessageContentType.IMAGE,
                         PromptMessageContentType.DOCUMENT,
-                        PromptMessageContentType.AUDIO,
-                        PromptMessageContentType.VIDEO
+                        PromptMessageContentType.AUDIO
                     ]:
                         data = c.base64_data
                         mime_type = getattr(c, 'mime_type', None)
                         parts.append(glm.Part.from_data(data=data, mime_type=mime_type))
+                    elif c.type == PromptMessageContentType.VIDEO:
+                        video_meta = {}
+                        if video_metadata:
+                            if video_metadata.get('start_offset', None):
+                                video_meta['startOffset'] = video_metadata.get('start_offset')
+                            if video_metadata.get('end_offset', None):
+                                video_meta['endOffset'] = video_metadata.get('end_offset')
+                        if c.url:
+                            url = c.url
+                            mime_type = getattr(c, 'mime_type', None)
+                            part_dict = {
+                                "fileData": {
+                                    "fileUri": url,
+                                    "mimeType": mime_type
+                                }
+                            }
+                            if video_meta:
+                                part_dict['videoMetadata'] = video_meta
+                            parts.append(glm.Part.from_dict(part_dict=part_dict))
+                        else:
+                            data = c.base64_data
+                            mime_type = getattr(c, 'mime_type', None)
+                            part_dict = {
+                                "inlineData": {
+                                    "data": data,
+                                    "mimeType": mime_type
+                                }
+                            }
+                            if video_meta:
+                                part_dict['videoMetadata'] = video_meta
+                            parts.append(glm.Part.from_dict(part_dict=part_dict))
                     else:
                         raise ValueError(f"Unsupported content type: {c.type}")
             glm_content = glm.Content(role="user", parts=parts)
