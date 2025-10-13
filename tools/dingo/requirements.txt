@@ -1,5 +1,6 @@
 # Dify plugin framework dependency
 dify_plugin
+python-dotenv>=1.0.0
 
 # Core Dingo dependencies for plugin functionality
 # Based on dingo/dingo-latest/requirements/runtime.txt

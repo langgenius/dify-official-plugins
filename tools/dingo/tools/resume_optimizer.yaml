@@ -1,36 +1,17 @@
-description:
-  human:
-    en_US: Optimize resumes with AI-powered suggestions tailored to specific job positions. Input your resume in markdown format and target position for personalized optimization advice.
-    zh_Hans: 使用AI为特定岗位提供简历优化建议。输入markdown格式的简历和目标岗位，获得个性化的优化建议。
-  llm: Optimize resumes with targeted suggestions for specific job positions, including keyword optimization, content improvement, and structural enhancements.
-
-extra:
-  python:
-    source: tools/resume_optimizer.py
-
 identity:
   author: langgenius
   name: resume_optimizer
   label:
     en_US: Resume Optimizer
     zh_Hans: 简历优化器
-  description:
-    en_US: AI-powered resume optimization for specific job positions
-    zh_Hans: 针对特定岗位的AI简历优化工具
-  icon: icon.svg
+
+description:
+  human:
+    en_US: Optimize resumes with AI-powered suggestions tailored to specific job positions. Input your resume in markdown format and target position for personalized optimization advice.
+    zh_Hans: 使用AI为特定岗位提供简历优化建议。输入markdown格式的简历和目标岗位，获得个性化的优化建议。
+  llm: Optimize resumes with targeted suggestions for specific job positions, including keyword optimization, content improvement, and structural enhancements.
 
 parameters:
-  - name: resume_file
-    type: file
-    required: false
-    label:
-      en_US: Resume File
-      zh_Hans: 简历文件
-    human_description:
-      en_US: Upload your resume file (markdown format preferred)
-      zh_Hans: 上传您的简历文件（推荐markdown格式）
-    form: form
-
   - name: resume_content
     type: string
     required: false
@@ -73,3 +54,7 @@ parameters:
         label:
           en_US: English
           zh_Hans: 英文
+
+extra:
+  python:
+    source: tools/resume_optimizer.py

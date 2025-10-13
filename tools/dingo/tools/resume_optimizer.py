@@ -88,24 +88,15 @@ Resume Content:
 
     def _get_resume_content(self, tool_parameters: dict[str, Any], language: str) -> tuple[str, str]:
         """
-        Extract resume content from file upload or text input.
+        Extract resume content from text input.
 
         Returns:
             tuple: (resume_content, error_message)
         """
-        resume_file = tool_parameters.get('resume_file')
-
-        if resume_file:
-            try:
-                content = resume_file.read().decode('utf-8').strip()
-                return content, ""
-            except Exception as e:
-                error_msg = f"文件读取失败: {str(e)}" if language == 'zh_Hans' else f"Failed to read file: {str(e)}"
-                return "", error_msg
-
+        # Get resume content from text input
         resume_content = tool_parameters.get('resume_content', '').strip()
         if not resume_content:
-            error_msg = "请上传简历文件或输入简历内容" if language == 'zh_Hans' else "Please upload resume file or input resume content"
+            error_msg = "请输入简历内容" if language == 'zh_Hans' else "Please input resume content"
             return "", error_msg
 
         return resume_content, ""
