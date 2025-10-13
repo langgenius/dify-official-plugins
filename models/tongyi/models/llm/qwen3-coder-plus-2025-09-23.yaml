@@ -1,7 +1,7 @@
 # for more details, please refer to https://help.aliyun.com/zh/model-studio/getting-started/models
-model: qwen3-coder-plus
+model: qwen3-coder-plus-2025-09-23
 label:
-  en_US: qwen3-coder-plus
+  en_US: qwen3-coder-plus-2025-09-23
 model_type: llm
 features:
   - agent-thought

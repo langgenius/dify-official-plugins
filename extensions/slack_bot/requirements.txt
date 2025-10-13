@@ -1,4 +1,4 @@
 dify_plugin==0.0.1b65
-Werkzeug==3.0.3
+Werkzeug==3.0.6
 slack-sdk==3.34.0
 markdown_to_mrkdwn==0.2.0
