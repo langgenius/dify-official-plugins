@@ -46,6 +46,16 @@ parameter_rules:
     options:
       - text
       - json_object
+  - name: enable_thinking
+    required: false
+    type: boolean
+    default: false
+    label:
+      zh_Hans: 思考模式
+      en_US: Thinking mode
+    help:
+      zh_Hans: 是否开启思考模式。
+      en_US: Whether to enable thinking mode.
 pricing:
   input: "4"
   output: "12"
