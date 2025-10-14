@@ -30,7 +30,7 @@ huggingface_hub>=0.16.0
 openai>=1.0.0
 
 # Optional: Image processing (for multimodal support)
-Pillow>=9.0.0
+Pillow>=11.3.0
 opencv-python>=4.5.0
 
 # Utility packages
