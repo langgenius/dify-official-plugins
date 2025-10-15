@@ -33,6 +33,7 @@ from dify_plugin.entities.model.llm import (
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     ImagePromptMessageContent,
+    DocumentPromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
     PromptMessageTool,
@@ -854,11 +855,12 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                         }
                         sub_messages.append(sub_message_dict)
                     elif message_content.type == PromptMessageContentType.DOCUMENT:
-                        message_content = cast(ImagePromptMessageContent, message_content)
+                        message_content = cast(DocumentPromptMessageContent, message_content)
                         doc_bytes = base64.b64decode(message_content.base64_data)
                         mime_type = message_content.mime_type
 
-                        if mime_type not in ["application/pdf"]:
+                        SUPPORTED_DOC_MIME_TYPES = ["application/pdf"]
+                        if mime_type not in SUPPORTED_DOC_MIME_TYPES:
                             raise ValueError(
                                 f"Unsupported document type {mime_type}, "
                                 f"only support application/pdf"
