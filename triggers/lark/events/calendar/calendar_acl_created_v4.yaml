@@ -1,0 +1,61 @@
+identity:
+  name: calendar_acl_created_v4
+  author: langgenius
+  label:
+    en_US: Calendar Access Granted
+    zh_Hans: 日历权限授权
+    ja_JP: カレンダー権限が付与されました
+
+description:
+  en_US: Fires when users or teams gain access to a calendar, including the granted role and recipients.
+  zh_Hans: 当用户或团队获得日历访问权限时触发，包括授予的角色和接收者。
+  ja_JP: ユーザーやチームにカレンダーへのアクセス権が付与されたときに発火し、付与されたロールと対象者を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    acl_id:
+      type: string
+      description: ACL identifier for the permission entry
+
+    role:
+      type: string
+      description: Role granted to the recipients (viewer, editor, etc.)
+
+    scope_type:
+      type: string
+      description: Scope type of the permission (user, chat, department)
+
+    scope_user_id:
+      type: string
+      description: User ID of the scoped recipient when applicable
+
+    scope_open_id:
+      type: string
+      description: Open ID of the scoped recipient when applicable
+
+    scope_union_id:
+      type: string
+      description: Union ID of the scoped recipient when applicable
+
+    shared_users:
+      type: array
+      description: List of users who received access
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+            description: User ID
+          open_id:
+            type: string
+            description: Open ID
+          union_id:
+            type: string
+            description: Union ID
+
+extra:
+  python:
+    source: events/calendar/calendar_acl_created_v4.py

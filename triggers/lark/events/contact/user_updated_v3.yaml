@@ -1,0 +1,236 @@
+identity:
+  name: user_updated_v3
+  author: langgenius
+  label:
+    en_US: Employee Updated
+    zh_Hans: 员工信息更新
+    ja_JP: 従業員情報更新
+
+description:
+  en_US: Fires when an employee record changes, returning current and previous profile snapshots for auditing or sync.
+  zh_Hans: 当员工档案发生变更时触发，返回当前与之前的资料快照，方便审计或同步。
+  ja_JP: 従業員レコードが変更された際に発火し、監査や同期に利用できる最新と以前のプロフィールスナップショットを提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    user_id:
+      type: string
+      description: Employee user ID
+
+    open_id:
+      type: string
+      description: Employee open ID
+
+    union_id:
+      type: string
+      description: Employee union ID
+
+    name:
+      type: string
+      description: Display name
+
+    en_name:
+      type: string
+      description: English name
+
+    nickname:
+      type: string
+      description: Nickname
+
+    email:
+      type: string
+      description: Primary email address
+
+    enterprise_email:
+      type: string
+      description: Enterprise email address
+
+    job_title:
+      type: string
+      description: Job title
+
+    mobile:
+      type: string
+      description: Mobile phone number
+
+    mobile_visible:
+      type: boolean
+      description: Whether the mobile number is visible to colleagues
+
+    gender:
+      type: integer
+      description: Gender value defined in Lark (0 unknown, 1 male, 2 female)
+
+    leader_user_id:
+      type: string
+      description: Direct leader user ID
+
+    city:
+      type: string
+      description: City location
+
+    country:
+      type: string
+      description: Country location
+
+    work_station:
+      type: string
+      description: Workplace or desk info
+
+    join_time:
+      type: integer
+      description: Join timestamp (epoch milliseconds)
+
+    is_tenant_manager:
+      type: boolean
+      description: Whether the user is a tenant administrator
+
+    employee_no:
+      type: string
+      description: Employee number
+
+    employee_type:
+      type: integer
+      description: Employee type value
+
+    time_zone:
+      type: string
+      description: Preferred time zone
+
+    job_level_id:
+      type: string
+      description: Job level identifier
+
+    job_family_id:
+      type: string
+      description: Job family identifier
+
+    status_is_frozen:
+      type: boolean
+      description: Whether the account is frozen
+
+    status_is_resigned:
+      type: boolean
+      description: Whether the employee has resigned
+
+    status_is_activated:
+      type: boolean
+      description: Whether the account is activated
+
+    status_is_exited:
+      type: boolean
+      description: Whether the employee has exited
+
+    status_is_unjoin:
+      type: boolean
+      description: Whether the employee never joined
+
+    department_ids:
+      type: array
+      description: Department IDs the employee belongs to
+      items:
+        type: string
+
+    positions:
+      type: array
+      description: Position assignments with department context
+      items:
+        type: object
+        properties:
+          position_code:
+            type: string
+            description: Position code
+          position_name:
+            type: string
+            description: Position name
+          department_id:
+            type: string
+            description: Department ID for the position
+          leader_user_id:
+            type: string
+            description: Leader user ID for the position
+          leader_position_code:
+            type: string
+            description: Leader position code
+          is_major:
+            type: boolean
+            description: Whether this is the primary position
+
+    orders:
+      type: array
+      description: Department ranking configuration
+      items:
+        type: object
+        properties:
+          department_id:
+            type: string
+            description: Department ID for the order
+          user_order:
+            type: integer
+            description: User order within the department
+          department_order:
+            type: integer
+            description: Department order within the tenant
+          is_primary_dept:
+            type: boolean
+            description: Whether this is the primary department
+
+    custom_attributes:
+      type: array
+      description: Custom attribute values
+      items:
+        type: object
+        properties:
+          type:
+            type: string
+            description: Attribute type identifier
+          id:
+            type: string
+            description: Attribute ID
+          value:
+            type: object
+            description: Attribute value payload
+            properties:
+              text:
+                type: string
+              url:
+                type: string
+              pc_url:
+                type: string
+              option_id:
+                type: string
+              option_value:
+                type: string
+              name:
+                type: string
+              picture_url:
+                type: string
+              generic_user:
+                type: object
+                description: Linked user reference if applicable
+                properties:
+                  id:
+                    type: string
+                  type:
+                    type: integer
+
+    dotted_line_leader_user_ids:
+      type: array
+      description: Dotted line leader user IDs
+      items:
+        type: string
+
+    current_user_json:
+      type: object
+      description: Current user snapshot
+
+    previous_user_json:
+      type: object
+      description: Previous user snapshot before the update
+
+extra:
+  python:
+    source: events/contact/user_updated_v3.py
