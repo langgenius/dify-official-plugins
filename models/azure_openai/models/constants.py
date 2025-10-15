@@ -1132,7 +1132,7 @@ LLM_BASE_MODELS = [
                         en_US="specifying the format that the model must output",
                     ),
                     required=False,
-                    options=["text", "json_object", "json_schema"],
+                    options=["text", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
@@ -1210,7 +1210,7 @@ LLM_BASE_MODELS = [
                         en_US="specifying the format that the model must output",
                     ),
                     required=False,
-                    options=["text", "json_object", "json_schema"],
+                    options=["text", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
@@ -1288,7 +1288,7 @@ LLM_BASE_MODELS = [
                         en_US="specifying the format that the model must output",
                     ),
                     required=False,
-                    options=["text", "json_object", "json_schema"],
+                    options=["text", "json_schema"],
                 ),
                 ParameterRule(
                     name="json_schema",
