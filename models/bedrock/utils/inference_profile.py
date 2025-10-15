@@ -2,6 +2,7 @@
 Shared utility functions for Bedrock inference profiles
 """
 import logging
+import time
 from typing import Dict, Any
 from botocore.exceptions import ClientError
 from dify_plugin.errors.model import CredentialsValidateFailedError
@@ -9,15 +10,38 @@ from provider.get_bedrock_client import get_bedrock_client
 
 logger = logging.getLogger(__name__)
 
+# Cache for inference profile info with 5 minutes TTL in order not 
+_inference_profile_cache = {}
+_CACHE_TTL = 300  # 5 minutes in seconds
+
 
 def get_inference_profile_info(inference_profile_id: str, credentials: dict) -> dict:
     """
-    Get inference profile information from Bedrock API
+    Get inference profile information from Bedrock API with 5-minute caching
+    High-frequency calls will cause GetInferenceProfile throttling.
+
     
     :param inference_profile_id: inference profile identifier
     :param credentials: credentials containing AWS access info
     :return: inference profile information
     """
+    current_time = time.time()
+    
+    # Create cache key based on profile ID and AWS region
+    aws_region = credentials.get('aws_region', 'default')
+    cache_key = f"{inference_profile_id}:{aws_region}"
+    
+    # Check if cached data exists and is still valid
+    if cache_key in _inference_profile_cache:
+        cached_data, timestamp = _inference_profile_cache[cache_key]
+        if current_time - timestamp < _CACHE_TTL:
+            logger.debug(f"Using cached inference profile info for {inference_profile_id}")
+            return cached_data
+        else:
+            # Remove expired cache entry
+            logger.debug(f"Cache expired for inference profile {inference_profile_id}, fetching fresh data")
+            del _inference_profile_cache[cache_key]
+    
     try:
         bedrock_client = get_bedrock_client("bedrock", credentials)
         
@@ -25,6 +49,10 @@ def get_inference_profile_info(inference_profile_id: str, credentials: dict) -> 
         response = bedrock_client.get_inference_profile(
             inferenceProfileIdentifier=inference_profile_id
         )
+        
+        # Cache the response
+        _inference_profile_cache[cache_key] = (response, current_time)
+        logger.debug(f"Cached inference profile info for {inference_profile_id} (cache size: {len(_inference_profile_cache)})")
         
         return response
         
@@ -35,18 +63,14 @@ def get_inference_profile_info(inference_profile_id: str, credentials: dict) -> 
 
 def validate_inference_profile(inference_profile_id: str, credentials: dict) -> None:
     """
-    Validate inference profile by calling Bedrock API
+    Validate inference profile by calling Bedrock API (uses cached data if available)
     
     :param inference_profile_id: inference profile identifier
     :param credentials: credentials containing AWS access info
     """
     try:
-        bedrock_client = get_bedrock_client("bedrock", credentials)
-        
-        # Call get-inference-profile API
-        response = bedrock_client.get_inference_profile(
-            inferenceProfileIdentifier=inference_profile_id
-        )
+        # Use cached get_inference_profile_info if available
+        response = get_inference_profile_info(inference_profile_id, credentials)
         
         # Check if profile is active
         if response.get('status') != 'ACTIVE':
