@@ -831,7 +831,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 message_dict = {"role": "user", "content": [{"text": message.content}]}
             else:
                 sub_messages = []
-                for message_content in message.content:
+                for idx, message_content in enumerate(message.content):
                     if message_content.type == PromptMessageContentType.TEXT:
                         message_content = cast(TextPromptMessageContent, message_content)
                         sub_message_dict = {"text": message_content.data}
@@ -851,6 +851,21 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
                         sub_message_dict = {
                             "image": {"format": mime_type.replace("image/", ""), "source": {"bytes": image_content}}
+                        }
+                        sub_messages.append(sub_message_dict)
+                    elif message_content.type == PromptMessageContentType.DOCUMENT:
+                        message_content = cast(ImagePromptMessageContent, message_content)
+                        doc_bytes = base64.b64decode(message_content.base64_data)
+                        mime_type = message_content.mime_type
+
+                        if mime_type not in ["application/pdf"]:
+                            raise ValueError(
+                                f"Unsupported document type {mime_type}, "
+                                f"only support application/pdf"
+                            )
+
+                        sub_message_dict = {
+                            "document": {"format": mime_type.replace("application/", ""), "name": f"pdf-{idx}", "source": {"bytes": doc_bytes}}
                         }
                         sub_messages.append(sub_message_dict)
 
