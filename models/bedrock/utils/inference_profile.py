@@ -2,6 +2,7 @@
 Shared utility functions for Bedrock inference profiles
 """
 import logging
+import threading
 import time
 from typing import Dict, Any
 from botocore.exceptions import ClientError
@@ -10,10 +11,10 @@ from provider.get_bedrock_client import get_bedrock_client
 
 logger = logging.getLogger(__name__)
 
-# Cache for inference profile info with 5 minutes TTL in order not 
+# Cache for inference profile info with 5 minutes TTL
 _inference_profile_cache = {}
-_CACHE_TTL = 300  # 5 minutes in seconds
-
+_CACHE_TTL = 300  # 5 minutes
+_cache_lock = threading.Lock()
 
 def get_inference_profile_info(inference_profile_id: str, credentials: dict) -> dict:
     """
@@ -32,15 +33,17 @@ def get_inference_profile_info(inference_profile_id: str, credentials: dict) -> 
     cache_key = f"{inference_profile_id}:{aws_region}"
     
     # Check if cached data exists and is still valid
-    if cache_key in _inference_profile_cache:
-        cached_data, timestamp = _inference_profile_cache[cache_key]
-        if current_time - timestamp < _CACHE_TTL:
-            logger.debug(f"Using cached inference profile info for {inference_profile_id}")
-            return cached_data
-        else:
-            # Remove expired cache entry
-            logger.debug(f"Cache expired for inference profile {inference_profile_id}, fetching fresh data")
-            del _inference_profile_cache[cache_key]
+    with _cache_lock:
+        # Check if cached data exists and is still valid
+        if cache_key in _inference_profile_cache:
+            cached_data, timestamp = _inference_profile_cache[cache_key]
+            if current_time - timestamp < _CACHE_TTL:
+                logger.debug(f"Using cached inference profile info for {inference_profile_id}")
+                return cached_data
+            else:
+                # Remove expired cache entry
+                logger.debug(f"Cache expired for inference profile {inference_profile_id}, fetching fresh data")
+                del _inference_profile_cache[cache_key]
     
     try:
         bedrock_client = get_bedrock_client("bedrock", credentials)
@@ -50,9 +53,17 @@ def get_inference_profile_info(inference_profile_id: str, credentials: dict) -> 
             inferenceProfileIdentifier=inference_profile_id
         )
         
-        # Cache the response
-        _inference_profile_cache[cache_key] = (response, current_time)
-        logger.debug(f"Cached inference profile info for {inference_profile_id} (cache size: {len(_inference_profile_cache)})")
+        with _cache_lock:
+            # Double-check again before caching
+            # (another thread might have cached it while we were calling API)
+            if cache_key not in _inference_profile_cache:
+                _inference_profile_cache[cache_key] = (response, time.time())
+                logger.debug(f"Cached inference profile info for {inference_profile_id} (cache size: {len(_inference_profile_cache)})")
+            else:
+                # Another thread already cached it, that's fine
+                cached_data, _ = _inference_profile_cache[cache_key]
+                logger.debug(f"Another thread cached {inference_profile_id}, using existing cache")
+                return cached_data
         
         return response
         
