@@ -1,0 +1,192 @@
+identity:
+  name: package
+  author: langgenius
+  label:
+    en_US: Package (Unified)
+    zh_Hans: 包（统一）
+    ja_JP: パッケージ（統合）
+
+description:
+  en_US: Unified GitHub Packages event with actions filter
+  zh_Hans: 带 actions 过滤的统一 GitHub Packages 事件
+  ja_JP: アクションフィルタ付きの統合 GitHub Packages イベント
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - published
+  - updated
+  - deleted
+  options:
+  - value: published
+    label:
+      en_US: Published
+      zh_Hans: 已发布
+      ja_JP: 公開
+  - value: updated
+    label:
+      en_US: Updated
+      zh_Hans: 已更新
+      ja_JP: 更新
+  - value: deleted
+    label:
+      en_US: Deleted
+      zh_Hans: 已删除
+      ja_JP: 削除
+  help:
+    en_US: Multi select package lifecycle actions such as published updated deleted. Leave empty to accept all.
+    zh_Hans: 多选过滤包的生命周期动作 如 发布 更新 删除。留空不过滤。
+    ja_JP: パッケージのライフサイクルアクションを複数選択で。公開 更新 削除など。未設定で全許可。
+
+- name: package_type
+  label:
+    en_US: Package Type
+    zh_Hans: 包类型
+    ja_JP: パッケージタイプ
+  type: select
+  required: false
+  multiple: true
+  options:
+  - value: container
+    label:
+      en_US: Container
+      zh_Hans: 容器
+      ja_JP: コンテナ
+  - value: maven
+    label:
+      en_US: Maven
+      zh_Hans: Maven
+      ja_JP: Maven
+  - value: npm
+    label:
+      en_US: npm
+      zh_Hans: npm
+      ja_JP: npm
+  - value: rubygems
+    label:
+      en_US: RubyGems
+      zh_Hans: RubyGems
+      ja_JP: RubyGems
+  - value: nuget
+    label:
+      en_US: NuGet
+      zh_Hans: NuGet
+      ja_JP: NuGet
+  - value: docker
+    label:
+      en_US: Docker (legacy)
+      zh_Hans: Docker（旧）
+      ja_JP: Docker（旧）
+
+- name: name
+  label:
+    en_US: Package Name
+    zh_Hans: 包名称
+    ja_JP: パッケージ名
+  type: string
+  required: false
+  help:
+    en_US: Exact match on package name. Comma separated allowed.
+    zh_Hans: 包名称精确匹配。支持逗号分隔多值。
+    ja_JP: パッケージ名の完全一致。カンマ区切り対応。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    package:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        package_type:
+          type: string
+        html_url:
+          type:
+          - string
+          - "null"
+          format: uri
+        owner:
+          type:
+          - object
+          - "null"
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+        version:
+          type:
+          - object
+          - "null"
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            html_url:
+              type:
+              - string
+              - "null"
+              format: uri
+            created_at:
+              type:
+              - string
+              - "null"
+              format: date-time
+      required:
+      - id
+      - name
+      - package_type
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+    sender:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - package
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/package/package.py
+  help:
+    en_US: Filter by package ecosystem such as container maven npm rubygems nuget. Select any that apply.
+    zh_Hans: 按包生态过滤 如 container maven npm rubygems nuget。可多选。
+    ja_JP: コンテナ maven npm rubygems nuget などのエコシステムでフィルタ。複数選択可。

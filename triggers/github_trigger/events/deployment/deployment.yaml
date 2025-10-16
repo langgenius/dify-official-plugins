@@ -1,0 +1,259 @@
+identity:
+  name: deployment
+  author: langgenius
+  label:
+    en_US: Deployment
+    zh_Hans: 部署
+    ja_JP: デプロイメント
+
+description:
+  en_US: Triggers when a deployment is created (unified)
+  zh_Hans: 当部署创建时触发（统一）
+  ja_JP: デプロイメント作成時にトリガー（統合）
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - created
+  options:
+  - value: created
+    label:
+      en_US: Created
+      zh_Hans: 已创建
+      ja_JP: 作成
+  help:
+    en_US: Filter which deployment actions to include. Currently GitHub sends created.
+    zh_Hans: 选择要包含的部署动作。当前 GitHub 仅发送 created。
+    ja_JP: 対象のデプロイアクションを選択。現状 created のみが送信されます。
+
+- name: environment
+  label:
+    en_US: Environment
+    zh_Hans: 环境
+    ja_JP: 環境
+  type: string
+  required: false
+  help:
+    en_US: Exact match on deployment environment such as dev staging production. Comma separated allowed.
+    zh_Hans: 按部署环境精确匹配 如 dev staging production。支持逗号分隔。
+    ja_JP: デプロイ環境の完全一致 dev staging production など。カンマ区切り可。
+
+- name: ref
+  label:
+    en_US: Ref
+    zh_Hans: 引用
+    ja_JP: リファレンス
+  type: string
+  required: false
+  help:
+    en_US: Filter by deployment ref such as branch tag or SHA. Comma separated allowed.
+    zh_Hans: 按部署的 ref 过滤 如 分支 标签 或 SHA。支持逗号分隔。
+    ja_JP: デプロイのリファレンスでフィルタ ブランチ タグ SHA など。カンマ区切り可。
+
+- name: creator
+  label:
+    en_US: Creator
+    zh_Hans: 创建者
+    ja_JP: 作成者
+  type: string
+  required: false
+  help:
+    en_US: Filter by deployment creator login. Comma separated allowed.
+    zh_Hans: 按部署创建者登录名过滤。支持逗号分隔。
+    ja_JP: デプロイ作成者のログインでフィルタ。カンマ区切り可。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    deployment:
+      type: object
+      properties:
+        id:
+          type: integer
+        node_id:
+          type: string
+        ref:
+          type: string
+        sha:
+          type: string
+        environment:
+          type: string
+        description:
+          type:
+          - string
+          - "null"
+        creator:
+          type: object
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+        payload:
+          type: object
+        original_environment:
+          type:
+          - string
+          - "null"
+        created_at:
+          type: string
+          format: date-time
+        statuses_url:
+          type: string
+          format: uri
+        repository_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - ref
+      - environment
+    repository:
+      type: object
+      description: The repository where the deployment was created
+      properties:
+        id:
+          type: integer
+          format: int64
+        node_id:
+          type: string
+        name:
+          type: string
+        full_name:
+          type: string
+        private:
+          type: boolean
+        owner:
+          type: object
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+            node_id:
+              type: string
+            avatar_url:
+              type: string
+              format: uri
+            html_url:
+              type: string
+              format: uri
+            type:
+              type: string
+              enum:
+              - Bot
+              - User
+              - Organization
+            site_admin:
+              type: boolean
+          required:
+          - id
+          - login
+        html_url:
+          type: string
+          format: uri
+        description:
+          type:
+          - string
+          - "null"
+        fork:
+          type: boolean
+        url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        pushed_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+        stargazers_count:
+          type: integer
+        watchers_count:
+          type: integer
+        language:
+          type:
+          - string
+          - "null"
+        forks_count:
+          type: integer
+        open_issues_count:
+          type: integer
+        default_branch:
+          type: string
+        topics:
+          type: array
+          items:
+            type: string
+        visibility:
+          type: string
+          enum:
+          - public
+          - private
+          - internal
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - private
+      - owner
+      - html_url
+      - url
+      - created_at
+      - updated_at
+      - fork
+      - default_branch
+      - visibility
+    sender:
+      type: object
+      description: The user who triggered the event
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        node_id:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        html_url:
+          type: string
+          format: uri
+        type:
+          type: string
+          enum:
+          - Bot
+          - User
+          - Organization
+        site_admin:
+          type: boolean
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - deployment
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/deployment/deployment.py

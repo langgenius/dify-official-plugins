@@ -1,0 +1,2 @@
+"""Dependabot Alert events (unified)."""
+

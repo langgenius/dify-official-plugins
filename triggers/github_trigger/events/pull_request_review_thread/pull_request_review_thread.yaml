@@ -1,0 +1,206 @@
+identity:
+  name: pull_request_review_thread
+  author: langgenius
+  label:
+    en_US: Pull Request Review Thread (Unified)
+    zh_Hans: 拉取请求审查线程（统一）
+    ja_JP: プルリクエストレビュースレッド（統合）
+
+description:
+  en_US: Unified review thread event with actions filter
+  zh_Hans: 带 actions 过滤的统一审查线程事件
+  ja_JP: アクションフィルタ付きの統合レビュースレッドイベント
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - created
+  - edited
+  - resolved
+  - unresolved
+  options:
+  - value: created
+    label:
+      en_US: Created
+      zh_Hans: 创建
+      ja_JP: 作成
+  - value: edited
+    label:
+      en_US: Edited
+      zh_Hans: 编辑
+      ja_JP: 編集
+  - value: resolved
+    label:
+      en_US: Resolved
+      zh_Hans: 已解决
+      ja_JP: 解決
+  - value: unresolved
+    label:
+      en_US: Unresolved
+      zh_Hans: 未解决
+      ja_JP: 未解決
+  help:
+    en_US: Multi select filter for review thread actions. Use with is_resolved to distinguish resolution state.
+    zh_Hans: 多选过滤审查线程动作。可结合 is_resolved 区分是否已解决。
+    ja_JP: レビュースレッドのアクションを複数選択で絞り込み。is_resolved と併用で解決状態を区別。
+
+- name: is_resolved
+  label:
+    en_US: Is Resolved
+    zh_Hans: 是否已解决
+    ja_JP: 解決済みか
+  type: boolean
+  required: false
+  help:
+    en_US: True to match resolved threads only. False to match unresolved only. Leave empty to ignore.
+    zh_Hans: true 仅匹配已解决线程，false 仅匹配未解决，留空不限制。
+    ja_JP: true で解決済みのみ。false で未解決のみ。未設定で無視。
+
+- name: author
+  label:
+    en_US: Comment Author
+    zh_Hans: 评论作者
+    ja_JP: コメント作成者
+  type: string
+  required: false
+  help:
+    en_US: Comma separated commenter logins within the thread to match.
+    zh_Hans: 逗号分隔的线程内评论者登录名，任一命中即匹配。
+    ja_JP: スレッド内のコメント作者のログイン。カンマ区切りでいずれか一致。
+
+- name: path
+  label:
+    en_US: File Path
+    zh_Hans: 文件路径
+    ja_JP: ファイルパス
+  type: string
+  required: false
+  help:
+    en_US: Filter by file path commented in the thread. Comma separated exact paths.
+    zh_Hans: 按线程评论涉及的文件路径过滤。逗号分隔的精确路径。
+    ja_JP: スレッドでコメントされたファイルパスでフィルタ。カンマ区切りの完全一致。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    thread:
+      type: object
+      properties:
+        id:
+          type: integer
+        is_resolved:
+          type:
+          - boolean
+          - "null"
+        comments:
+          type:
+          - array
+          - "null"
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              body:
+                type:
+                - string
+                - "null"
+              path:
+                type:
+                - string
+                - "null"
+              diff_hunk:
+                type:
+                - string
+                - "null"
+              commit_id:
+                type:
+                - string
+                - "null"
+              original_commit_id:
+                type:
+                - string
+                - "null"
+              user:
+                type:
+                - object
+                - "null"
+                properties:
+                  login:
+                    type: string
+                  id:
+                    type: integer
+              created_at:
+                type:
+                - string
+                - "null"
+                format: date-time
+              updated_at:
+                type:
+                - string
+                - "null"
+                format: date-time
+      required:
+      - id
+    pull_request:
+      type: object
+      properties:
+        id:
+          type: integer
+        number:
+          type: integer
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - number
+      - html_url
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+    sender:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - thread
+  - pull_request
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/pull_request_review_thread/pull_request_review_thread.py

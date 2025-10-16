@@ -1,0 +1,189 @@
+identity:
+  name: check_run
+  author: langgenius
+  label:
+    en_US: Check Run (Unified)
+    zh_Hans: 检查运行（统一）
+    ja_JP: チェックラン（統合）
+
+description:
+  en_US: Unified check_run event with actions filter
+  zh_Hans: 带 actions 过滤的统一 check_run 事件
+  ja_JP: アクションフィルタ付きの統合 check_run イベント
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - created
+  - completed
+  options:
+  - value: created
+    label:
+      en_US: Created
+      zh_Hans: 创建
+      ja_JP: 作成
+  - value: completed
+    label:
+      en_US: Completed
+      zh_Hans: 完成
+      ja_JP: 完了
+  help:
+    en_US: Filter which check run actions to process. Leave empty to accept created and completed.
+    zh_Hans: 选择要处理的 Check Run 动作。留空接收 created 与 completed。
+    ja_JP: Check Run のアクションを選択。未設定で created と completed を許可。
+
+- name: check_name
+  label:
+    en_US: Check Name
+    zh_Hans: 检查名称
+    ja_JP: チェック名
+  type: string
+  required: false
+  help:
+    en_US: Exact match on check run name. Comma separated values allowed.
+    zh_Hans: 按检查名称精确匹配。支持逗号分隔多值。
+    ja_JP: チェック名の完全一致。カンマ区切り対応。
+
+- name: branch
+  label:
+    en_US: Branch
+    zh_Hans: 分支
+    ja_JP: ブランチ
+  type: string
+  required: false
+  help:
+    en_US: Filter by head branch name. Comma separated values supported.
+    zh_Hans: 按 head 分支名过滤。支持逗号分隔多值。
+    ja_JP: head ブランチ名でフィルタ。カンマ区切り対応。
+
+- name: app_slug
+  label:
+    en_US: App Slug
+    zh_Hans: 应用 Slug
+    ja_JP: アプリスラッグ
+  type: string
+  required: false
+  help:
+    en_US: Filter by GitHub App slug that created the run.
+    zh_Hans: 按创建该检查的 GitHub App slug 过滤。
+    ja_JP: チェックを作成した GitHub App のスラッグでフィルタ。
+
+- name: conclusion
+  label:
+    en_US: Conclusion (for completed)
+    zh_Hans: 结论（仅 completed）
+    ja_JP: 結論（completed のみ）
+  type: string
+  required: false
+  help:
+    en_US: Filter by run conclusion such as success failure cancelled neutral timed_out action_required.
+    zh_Hans: 按运行结论过滤 如 success failure cancelled neutral timed_out action_required。
+    ja_JP: 実行の結論でフィルタ success failure cancelled neutral timed_out action_required など。
+
+- name: actor
+  label:
+    en_US: Actor
+    zh_Hans: 触发者
+    ja_JP: 実行者
+  type: string
+  required: false
+  help:
+    en_US: Filter by the user who triggered the run. Comma separated logins.
+    zh_Hans: 按触发该运行的用户过滤。逗号分隔登录名。
+    ja_JP: 実行をトリガーしたユーザーでフィルタ。ログインをカンマ区切り。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    check_run:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        head_sha:
+          type: string
+        status:
+          type: string
+        conclusion:
+          type: string
+        details_url:
+          type: string
+          format: uri
+        external_id:
+          type:
+          - string
+          - "null"
+        started_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+        completed_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+        html_url:
+          type: string
+          format: uri
+        app:
+          type: object
+          properties:
+            id:
+              type: integer
+            slug:
+              type: string
+      required:
+      - id
+      - name
+      - head_sha
+      - status
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+    sender:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - check_run
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/check_run/check_run.py

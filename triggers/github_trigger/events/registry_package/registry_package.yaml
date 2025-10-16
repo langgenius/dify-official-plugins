@@ -1,0 +1,157 @@
+identity:
+  name: registry_package
+  author: langgenius
+  label:
+    en_US: Registry Package (Unified)
+    zh_Hans: 注册包（统一）
+    ja_JP: レジストリパッケージ（統合）
+
+description:
+  en_US: Unified registry_package event with actions filter
+  zh_Hans: 带 actions 过滤的统一 registry_package 事件
+  ja_JP: アクションフィルタ付きの統合 registry_package イベント
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - published
+  - updated
+  - deleted
+  options:
+  - value: published
+    label:
+      en_US: Published
+      zh_Hans: 已发布
+      ja_JP: 公開
+  - value: updated
+    label:
+      en_US: Updated
+      zh_Hans: 已更新
+      ja_JP: 更新
+  - value: deleted
+    label:
+      en_US: Deleted
+      zh_Hans: 已删除
+      ja_JP: 削除
+  help:
+    en_US: Multi select registry package lifecycle actions such as published updated deleted.
+    zh_Hans: 多选过滤注册包生命周期动作 如 发布 更新 删除。
+    ja_JP: レジストリパッケージのライフサイクルアクションを複数選択で指定。
+
+- name: package_type
+  label:
+    en_US: Package Type
+    zh_Hans: 包类型
+    ja_JP: パッケージタイプ
+  type: select
+  required: false
+  multiple: true
+  options:
+  - value: container
+    label:
+      en_US: Container
+      zh_Hans: 容器
+      ja_JP: コンテナ
+
+- name: name
+  label:
+    en_US: Package Name
+    zh_Hans: 包名称
+    ja_JP: パッケージ名
+  type: string
+  required: false
+  help:
+    en_US: Exact match on registry package name. Comma separated values supported.
+    zh_Hans: 注册包名称精确匹配。支持逗号分隔多值。
+    ja_JP: レジストリパッケージ名の完全一致。カンマ区切りで複数指定可。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    registry_package:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        package_type:
+          type: string
+        owner:
+          type:
+          - object
+          - "null"
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+        version:
+          type:
+          - object
+          - "null"
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+            created_at:
+              type:
+              - string
+              - "null"
+              format: date-time
+      required:
+      - id
+      - name
+      - package_type
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+    sender:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - registry_package
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/registry_package/registry_package.py
+  help:
+    en_US: Filter by package type for registry events. Example container.
+    zh_Hans: 按注册包类型过滤 如 container。
+    ja_JP: レジストリのパッケージタイプでフィルタ 例 container。

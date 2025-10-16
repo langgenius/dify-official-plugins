@@ -1,0 +1,218 @@
+identity:
+  name: star
+  author: langgenius
+  label:
+    en_US: Star Event
+    zh_Hans: 仓库 Star 事件
+    ja_JP: Star イベント
+
+description:
+  en_US: Triggers when someone stars the repository
+  zh_Hans: 当有人给仓库添加 star 时触发
+  ja_JP: 誰かがリポジトリにスターを付けたときにトリガーされます
+parameters:
+- name: "events"
+  label:
+    en_US: "Events your interested in"
+    zh_Hans: "你感兴趣的事件"
+    ja_JP: "あなたが興味のあるイベント"
+  type: "select"
+  required: false
+  multiple: true
+  default:
+  - "star_created"
+  - "star_deleted"
+  options:
+  - value: "star_created"
+    label:
+      en_US: "Starred"
+      zh_Hans: "星标"
+      ja_JP: "スター"
+  - value: "star_deleted"
+    label:
+      en_US: "Unstarred"
+      zh_Hans: "取消星标"
+      ja_JP: "スター解除"
+  help:
+    en_US: Choose which star actions to react to. Both created and deleted share the same schema so they are unified here.
+    zh_Hans: 选择要关注的 star 动作。创建与取消的 payload 结构一致，因此在此统一。
+    ja_JP: 対応する Star のアクションを選択。作成と解除は同一スキーマのため統合しています。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum:
+      - created
+      description: The action that was performed (created)
+
+    starred_at:
+      type:
+      - string
+      - "null"
+      format: date-time
+      description: The time the star was created
+
+    repository:
+      type: object
+      description: The repository that was starred
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: Unique identifier of the repository
+        node_id:
+          type: string
+        name:
+          type: string
+          description: The name of the repository
+        full_name:
+          type: string
+          description: Full name including owner
+        private:
+          type: boolean
+          description: Whether the repository is private
+        owner:
+          type: object
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+            node_id:
+              type: string
+            avatar_url:
+              type: string
+              format: uri
+            html_url:
+              type: string
+              format: uri
+            type:
+              type: string
+              enum:
+              - Bot
+              - User
+              - Organization
+            site_admin:
+              type: boolean
+          required:
+          - id
+          - login
+        html_url:
+          type: string
+          format: uri
+        description:
+          type:
+          - string
+          - "null"
+        fork:
+          type: boolean
+        url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        pushed_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+        stargazers_count:
+          type: integer
+        watchers_count:
+          type: integer
+        language:
+          type:
+          - string
+          - "null"
+        forks_count:
+          type: integer
+        open_issues_count:
+          type: integer
+        default_branch:
+          type: string
+          description: The default branch of the repository
+        topics:
+          type: array
+          items:
+            type: string
+        visibility:
+          type: string
+          enum:
+          - public
+          - private
+          - internal
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - private
+      - owner
+      - html_url
+      - url
+      - created_at
+      - updated_at
+      - fork
+      - default_branch
+      - visibility
+
+    sender:
+      type: object
+      description: The user who starred the repository
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        node_id:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        html_url:
+          type: string
+          format: uri
+        type:
+          type: string
+          enum:
+          - Bot
+          - User
+          - Organization
+        site_admin:
+          type: boolean
+      required:
+      - id
+      - login
+      - type
+
+    organization:
+      type: object
+      description: The organization that owns the repository (if applicable)
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        node_id:
+          type: string
+        url:
+          type: string
+          format: uri
+        avatar_url:
+          type: string
+          format: uri
+
+  required:
+  - action
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/star/star.py

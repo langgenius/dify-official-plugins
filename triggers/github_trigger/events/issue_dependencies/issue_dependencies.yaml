@@ -1,0 +1,138 @@
+identity:
+  name: issue_dependencies
+  author: langgenius
+  label:
+    en_US: Issue Dependencies (Unified)
+    zh_Hans: 议题依赖（统一）
+    ja_JP: イシュー依存関係（統合）
+
+description:
+  en_US: Triggered when issue dependencies are added or removed
+  zh_Hans: 当议题依赖被添加或移除时触发
+  ja_JP: 課題依存関係が追加または削除された時にトリガー
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - added
+  - removed
+  options:
+  - value: added
+    label:
+      en_US: Added
+      zh_Hans: 已添加
+      ja_JP: 追加
+  - value: removed
+    label:
+      en_US: Removed
+      zh_Hans: 已移除
+      ja_JP: 削除
+  help:
+    en_US: Multi select filter for dependency relationship changes added or removed.
+    zh_Hans: 多选过滤依赖关系变更 例如 添加 或 移除。
+    ja_JP: 依存関係の追加または削除を複数選択で絞り込み。
+
+- name: parent_issue
+  label:
+    en_US: Parent Issue Number(s)
+    zh_Hans: 父议题编号
+    ja_JP: 親課題番号
+  type: string
+  required: false
+  help:
+    en_US: Filter by parent issue numbers. Comma separated integers.
+    zh_Hans: 按父议题编号过滤。逗号分隔的整数。
+    ja_JP: 親課題番号でフィルタ。整数をカンマ区切りで。
+
+- name: child_issue
+  label:
+    en_US: Child Issue Number(s)
+    zh_Hans: 子议题编号
+    ja_JP: 子課題番号
+  type: string
+  required: false
+  help:
+    en_US: Filter by child issue numbers. Comma separated integers.
+    zh_Hans: 按子议题编号过滤。逗号分隔的整数。
+    ja_JP: 子課題番号でフィルタ。整数のカンマ区切り。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    dependency:
+      type:
+      - object
+      - "null"
+      properties:
+        dependent_issue:
+          type:
+          - object
+          - "null"
+          properties:
+            id:
+              type: integer
+            number:
+              type: integer
+            title:
+              type:
+              - string
+              - "null"
+        blocking_issue:
+          type:
+          - object
+          - "null"
+          properties:
+            id:
+              type: integer
+            number:
+              type: integer
+            title:
+              type:
+              - string
+              - "null"
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+    sender:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/issue_dependencies/issue_dependencies.py

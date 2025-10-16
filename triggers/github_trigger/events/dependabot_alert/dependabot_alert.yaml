@@ -1,0 +1,323 @@
+identity:
+  name: dependabot_alert
+  author: langgenius
+  label:
+    en_US: Dependabot Alert
+    zh_Hans: Dependabot 警报
+    ja_JP: Dependabotアラート
+
+description:
+  en_US: Unified event for Dependabot alerts
+  zh_Hans: Dependabot 安全告警（统一）
+  ja_JP: Dependabot 警告（統合）
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - created
+  - dismissed
+  - fixed
+  - reintroduced
+  options:
+  - value: created
+    label:
+      en_US: Created
+      zh_Hans: 已创建
+      ja_JP: 作成
+  - value: dismissed
+    label:
+      en_US: Dismissed
+      zh_Hans: 已忽略
+      ja_JP: 却下
+  - value: fixed
+    label:
+      en_US: Fixed
+      zh_Hans: 已修复
+      ja_JP: 修正
+  - value: reintroduced
+    label:
+      en_US: Reintroduced
+      zh_Hans: 再次引入
+      ja_JP: 再導入
+  help:
+    en_US: Multi select filter for Dependabot lifecycle actions such as created dismissed fixed reintroduced.
+    zh_Hans: 多选过滤 Dependabot 生命周期动作 如 创建 忽略 修复 再次引入。
+    ja_JP: Dependabot のライフサイクルアクションを複数選択で。作成 却下 修正 再導入 など。
+
+- name: severity
+  label:
+    en_US: Severity
+    zh_Hans: 严重程度
+    ja_JP: 重大度
+  type: string
+  required: false
+  help:
+    en_US: Filter by advisory severity such as critical high moderate low.
+    zh_Hans: 按安全公告严重程度过滤 如 critical high moderate low。
+    ja_JP: 重大度でフィルタ critical high moderate low など。
+
+- name: state
+  label:
+    en_US: State
+    zh_Hans: 状态
+    ja_JP: 状態
+  type: string
+  required: false
+  help:
+    en_US: Filter by alert state such as open dismissed fixed.
+    zh_Hans: 按告警状态过滤 如 open dismissed fixed。
+    ja_JP: アラート状態でフィルタ open dismissed fixed など。
+
+- name: ecosystem
+  label:
+    en_US: Ecosystem
+    zh_Hans: 生态
+    ja_JP: エコシステム
+  type: string
+  required: false
+  help:
+    en_US: Filter by package ecosystem such as npm maven pip rubygems nuget.
+    zh_Hans: 按包生态过滤 如 npm maven pip rubygems nuget。
+    ja_JP: npm maven pip rubygems nuget などのエコシステムでフィルタ。
+
+- name: package
+  label:
+    en_US: Package
+    zh_Hans: 包名
+    ja_JP: パッケージ
+  type: string
+  required: false
+  help:
+    en_US: Exact match on vulnerable package name. Comma separated allowed.
+    zh_Hans: 按受影响包名精确匹配。支持逗号分隔。
+    ja_JP: 影響を受けるパッケージ名で完全一致。カンマ区切り可。
+
+- name: manifest
+  label:
+    en_US: Manifest
+    zh_Hans: 清单文件
+    ja_JP: マニフェスト
+  type: string
+  required: false
+  help:
+    en_US: Filter by manifest file path such as package.json or requirements.txt. Comma separated allowed.
+    zh_Hans: 按清单文件路径过滤 如 package.json 或 requirements.txt。支持逗号分隔。
+    ja_JP: package.json や requirements.txt などのマニフェストパスでフィルタ。カンマ区切り可。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    alert:
+      type: object
+      description: Dependabot alert payload
+      properties:
+        number:
+          type: integer
+        state:
+          type: string
+        dismissed_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+        dismissed_reason:
+          type:
+          - string
+          - "null"
+        html_url:
+          type: string
+          format: uri
+        security_advisory:
+          type: object
+          properties:
+            ghsa_id:
+              type: string
+            summary:
+              type: string
+            description:
+              type: string
+            severity:
+              type: string
+            identifiers:
+              type: array
+              items:
+                type: object
+                properties:
+                  type:
+                    type: string
+                  value:
+                    type: string
+            references:
+              type: array
+              items:
+                type: object
+                properties:
+                  url:
+                    type: string
+                    format: uri
+        security_vulnerability:
+          type: object
+          properties:
+            package:
+              type: object
+              properties:
+                ecosystem:
+                  type: string
+                name:
+                  type: string
+            vulnerable_version_range:
+              type: string
+            first_patched_version:
+              type: object
+              properties:
+                identifier:
+                  type: string
+    repository:
+      type: object
+      description: The repository where the alert was generated
+      properties:
+        id:
+          type: integer
+          format: int64
+        node_id:
+          type: string
+        name:
+          type: string
+        full_name:
+          type: string
+        private:
+          type: boolean
+        owner:
+          type: object
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+            node_id:
+              type: string
+            avatar_url:
+              type: string
+              format: uri
+            html_url:
+              type: string
+              format: uri
+            type:
+              type: string
+              enum:
+              - Bot
+              - User
+              - Organization
+            site_admin:
+              type: boolean
+          required:
+          - id
+          - login
+        html_url:
+          type: string
+          format: uri
+        description:
+          type:
+          - string
+          - "null"
+        fork:
+          type: boolean
+        url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        pushed_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+        stargazers_count:
+          type: integer
+        watchers_count:
+          type: integer
+        language:
+          type:
+          - string
+          - "null"
+        forks_count:
+          type: integer
+        open_issues_count:
+          type: integer
+        default_branch:
+          type: string
+        topics:
+          type: array
+          items:
+            type: string
+        visibility:
+          type: string
+          enum:
+          - public
+          - private
+          - internal
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - private
+      - owner
+      - html_url
+      - url
+      - created_at
+      - updated_at
+      - fork
+      - default_branch
+      - visibility
+    sender:
+      type: object
+      description: The user who triggered the event
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        node_id:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        html_url:
+          type: string
+          format: uri
+        type:
+          type: string
+          enum:
+          - Bot
+          - User
+          - Organization
+        site_admin:
+          type: boolean
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - alert
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/dependabot_alert/dependabot_alert.py

@@ -1,0 +1,139 @@
+identity:
+  name: project_column
+  author: langgenius
+  label:
+    en_US: Project Column (Unified)
+    zh_Hans: 项目列（统一）
+    ja_JP: プロジェクトカラム（統合）
+
+description:
+  en_US: Unified project_column event with actions filter
+  zh_Hans: 带 actions 过滤的统一 project_column 事件
+  ja_JP: アクションフィルタ付きの統合 project_column イベント
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - created
+  - edited
+  - deleted
+  - moved
+  options:
+  - value: created
+    label:
+      en_US: Created
+      zh_Hans: 创建
+      ja_JP: 作成
+  - value: edited
+    label:
+      en_US: Edited
+      zh_Hans: 编辑
+      ja_JP: 編集
+  - value: deleted
+    label:
+      en_US: Deleted
+      zh_Hans: 删除
+      ja_JP: 削除
+  - value: moved
+    label:
+      en_US: Moved
+      zh_Hans: 移动
+      ja_JP: 移動
+  help:
+    en_US: Multi select filter for column actions like created edited deleted moved.
+    zh_Hans: 多选过滤项目列动作 如 创建 编辑 删除 移动。
+    ja_JP: カラムのアクションを複数選択で絞り込み 作成 編集 削除 移動。
+
+- name: column_name
+  label:
+    en_US: Column Name
+    zh_Hans: 列名称
+    ja_JP: カラム名
+  type: string
+  required: false
+  help:
+    en_US: Exact match on column name. Comma separated values supported.
+    zh_Hans: 列名精确匹配。支持逗号分隔多值。
+    ja_JP: カラム名の完全一致。カンマ区切りで複数指定可。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    project_column:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        project_url:
+          type:
+          - string
+          - "null"
+          format: uri
+        html_url:
+          type:
+          - string
+          - "null"
+          format: uri
+        cards_url:
+          type:
+          - string
+          - "null"
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - name
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+    sender:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - project_column
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/project_column/project_column.py

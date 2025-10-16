@@ -1,0 +1,259 @@
+identity:
+  name: commit_comment
+  author: langgenius
+  label:
+    en_US: Commit Comment
+    zh_Hans: 提交评论
+    ja_JP: コミットコメント
+
+description:
+  en_US: Triggers when a commit comment is created (unified)
+  zh_Hans: 当提交评论创建时触发（统一）
+  ja_JP: コミットコメント作成時にトリガー（統合）
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  description:
+    en_US: Filter by actions (default created). Provided for forward compatibility.
+    zh_Hans: 按动作过滤（默认 created）。用于向前兼容。
+    ja_JP: アクションでフィルタ（デフォルトは created）。将来互換のため。
+
+- name: body_contains
+  label:
+    en_US: Body Contains
+    zh_Hans: 内容包含
+    ja_JP: 本文に含む
+  type: string
+  required: false
+  help:
+    en_US: Match keywords in commit comment body. Comma separated any match passes.
+    zh_Hans: 匹配提交评论内容中的关键字。逗号分隔 任一命中即通过。
+    ja_JP: コミットコメント本文のキーワード一致。カンマ区切りでいずれか一致。
+
+- name: commenter
+  label:
+    en_US: Commenter
+    zh_Hans: 评论者
+    ja_JP: コメント投稿者
+  type: string
+  required: false
+  help:
+    en_US: Comma separated commenter logins to include.
+    zh_Hans: 逗号分隔的评论者登录名白名单。
+    ja_JP: コメント投稿者のログインをカンマ区切りで指定。
+
+- name: commit_id
+  label:
+    en_US: Commit ID
+    zh_Hans: 提交 ID
+    ja_JP: コミットID
+  type: string
+  required: false
+  help:
+    en_US: Filter by commit SHA the comment belongs to. Comma separated allowed.
+    zh_Hans: 按评论所属的提交 SHA 过滤。支持逗号分隔。
+    ja_JP: コメントが紐付くコミット SHA でフィルタ。カンマ区切り可。
+
+- name: path
+  label:
+    en_US: File Path
+    zh_Hans: 文件路径
+    ja_JP: ファイルパス
+  type: string
+  required: false
+  help:
+    en_US: Filter by file path referenced in the comment. Comma separated exact paths.
+    zh_Hans: 按评论引用的文件路径过滤。逗号分隔 精确匹配。
+    ja_JP: コメントで参照されたファイルパスでフィルタ。カンマ区切りの完全一致。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    comment:
+      type: object
+      properties:
+        id:
+          type: integer
+        body:
+          type: string
+        path:
+          type: string
+        commit_id:
+          type: string
+        html_url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        line:
+          type:
+          - integer
+          - "null"
+        position:
+          type:
+          - integer
+          - "null"
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+      required:
+      - id
+      - body
+      - user
+    repository:
+      type: object
+      description: The repository where the comment was created
+      properties:
+        id:
+          type: integer
+          format: int64
+        node_id:
+          type: string
+        name:
+          type: string
+        full_name:
+          type: string
+        private:
+          type: boolean
+        owner:
+          type: object
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+            node_id:
+              type: string
+            avatar_url:
+              type: string
+              format: uri
+            html_url:
+              type: string
+              format: uri
+            type:
+              type: string
+              enum:
+              - Bot
+              - User
+              - Organization
+            site_admin:
+              type: boolean
+          required:
+          - id
+          - login
+        html_url:
+          type: string
+          format: uri
+        description:
+          type:
+          - string
+          - "null"
+        fork:
+          type: boolean
+        url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        pushed_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+        stargazers_count:
+          type: integer
+        watchers_count:
+          type: integer
+        language:
+          type:
+          - string
+          - "null"
+        forks_count:
+          type: integer
+        open_issues_count:
+          type: integer
+        default_branch:
+          type: string
+        topics:
+          type: array
+          items:
+            type: string
+        visibility:
+          type: string
+          enum:
+          - public
+          - private
+          - internal
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - private
+      - owner
+      - html_url
+      - url
+      - created_at
+      - updated_at
+      - fork
+      - default_branch
+      - visibility
+    sender:
+      type: object
+      description: The user who triggered the event
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        node_id:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        html_url:
+          type: string
+          format: uri
+        type:
+          type: string
+          enum:
+          - Bot
+          - User
+          - Organization
+        site_admin:
+          type: boolean
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - comment
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/commit_comment/commit_comment.py

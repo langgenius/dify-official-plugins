@@ -1,0 +1,268 @@
+identity:
+  name: repository
+  author: langgenius
+  label:
+    en_US: Repository (Unified)
+    zh_Hans: 仓库（统一）
+    ja_JP: リポジトリ（統合）
+
+description:
+  en_US: Unified repository event with actions filter
+  zh_Hans: 带 actions 过滤的统一 repository 事件
+  ja_JP: アクションフィルタ付きの統合 repository イベント
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - created
+  - deleted
+  - archived
+  - unarchived
+  - publicized
+  - privatized
+  - renamed
+  - transferred
+  - edited
+  options:
+  - value: created
+    label:
+      en_US: Created
+      zh_Hans: 创建
+      ja_JP: 作成
+  - value: deleted
+    label:
+      en_US: Deleted
+      zh_Hans: 删除
+      ja_JP: 削除
+  - value: archived
+    label:
+      en_US: Archived
+      zh_Hans: 已归档
+      ja_JP: アーカイブ
+  - value: unarchived
+    label:
+      en_US: Unarchived
+      zh_Hans: 取消归档
+      ja_JP: アーカイブ解除
+  - value: publicized
+    label:
+      en_US: Publicized
+      zh_Hans: 公开
+      ja_JP: 公開
+  - value: privatized
+    label:
+      en_US: Privatized
+      zh_Hans: 私有化
+      ja_JP: 非公開化
+  - value: renamed
+    label:
+      en_US: Renamed
+      zh_Hans: 重命名
+      ja_JP: 改名
+  - value: transferred
+    label:
+      en_US: Transferred
+      zh_Hans: 转移
+      ja_JP: 移管
+  - value: edited
+    label:
+      en_US: Edited
+      zh_Hans: 编辑
+      ja_JP: 編集
+  help:
+    en_US: Multi select filter for repository lifecycle actions such as created archived renamed transferred edited.
+    zh_Hans: 多选过滤仓库生命周期动作 如 创建 归档 重命名 转移 编辑。
+    ja_JP: リポジトリのライフサイクルアクションを複数選択で絞り込み。作成 アーカイブ 改名 移管 編集 など。
+
+- name: visibility
+  label:
+    en_US: Visibility
+    zh_Hans: 可见性
+    ja_JP: 可視性
+  type: select
+  required: false
+  multiple: true
+  options:
+  - value: public
+    label:
+      en_US: Public
+      zh_Hans: 公开
+      ja_JP: 公開
+  - value: private
+    label:
+      en_US: Private
+      zh_Hans: 私有
+      ja_JP: 非公開
+  - value: internal
+    label:
+      en_US: Internal
+      zh_Hans: 内部
+      ja_JP: 内部
+  help:
+    en_US: Filter by repository visibility public private internal. Useful for governance and compliance cases.
+    zh_Hans: 按仓库可见性过滤 public private internal。适用于治理合规场景。
+    ja_JP: リポジトリの公開区分でフィルタ public private internal。ガバナンス用途に便利。
+
+- name: name_contains
+  label:
+    en_US: Name Contains
+    zh_Hans: 名称包含
+    ja_JP: 名に含む
+  type: string
+  required: false
+  help:
+    en_US: Substring match on name or full_name. Comma separated keywords accepted.
+    zh_Hans: 在 name 或 full_name 上做包含匹配。支持逗号分隔关键字。
+    ja_JP: name や full_name の部分一致。カンマ区切りのキーワード対応。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    repository:
+      type: object
+      description: The repository object
+      properties:
+        id:
+          type: integer
+          format: int64
+        node_id:
+          type: string
+        name:
+          type: string
+        full_name:
+          type: string
+        private:
+          type: boolean
+        owner:
+          type: object
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+            node_id:
+              type: string
+            avatar_url:
+              type: string
+              format: uri
+            html_url:
+              type: string
+              format: uri
+            type:
+              type: string
+              enum:
+              - Bot
+              - User
+              - Organization
+            site_admin:
+              type: boolean
+          required:
+          - id
+          - login
+        html_url:
+          type: string
+          format: uri
+        description:
+          type:
+          - string
+          - "null"
+        fork:
+          type: boolean
+        url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        pushed_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+        stargazers_count:
+          type: integer
+        watchers_count:
+          type: integer
+        language:
+          type:
+          - string
+          - "null"
+        forks_count:
+          type: integer
+        open_issues_count:
+          type: integer
+        default_branch:
+          type: string
+        topics:
+          type: array
+          items:
+            type: string
+        visibility:
+          type: string
+          enum:
+          - public
+          - private
+          - internal
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - private
+      - owner
+      - html_url
+      - url
+      - created_at
+      - updated_at
+      - fork
+      - default_branch
+      - visibility
+    sender:
+      type: object
+      description: The user who triggered the event
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        node_id:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        html_url:
+          type: string
+          format: uri
+        type:
+          type: string
+          enum:
+          - Bot
+          - User
+          - Organization
+        site_admin:
+          type: boolean
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/repository/repository.py
