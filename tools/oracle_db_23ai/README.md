@@ -1,7 +1,7 @@
 ## Oracle Database Query Plugin
 
-**Author:** FindOracle
-**Version:** 0.0.1
+**Author:** langgenius
+**Version:** 0.0.2
 **Type:** tool
 **Repo:** [https://github.com/WilburOracle/dify-oracle-db-plugin](https://github.com/WilburOracle/dify-oracle-db-plugin)
 
