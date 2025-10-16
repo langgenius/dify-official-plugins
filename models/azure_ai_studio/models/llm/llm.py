@@ -83,22 +83,13 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
                 content = []
                 for message_content in message.content:
                     if message_content.type == PromptMessageContentType.TEXT:
-                        message_content = message_content
                         content.append({"type": "text", "text": message_content.data})
                     elif message_content.type == PromptMessageContentType.IMAGE:
-                        message_content = message_content
-                        # Azure AI Studio expects base64 encoded images in a specific format
-                        import re
-
-                        image_data = re.sub(
-                            r"^data:image\/[a-zA-Z]+;base64,", "", message_content.data
-                        )
+                        # The content is a data URI (e.g., "data:image/png;base64,..."), which can be used directly.
                         content.append(
                             {
                                 "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{image_data}"
-                                },
+                                "image_url": {"url": message_content.data},
                             }
                         )
                 return {"role": "user", "content": content}
@@ -137,9 +128,8 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
         :param tools: tool messages
         :return: tool dicts
         """
-        tool_dicts = []
-        for tool in tools:
-            tool_dict = {
+        return [
+            {
                 "type": "function",
                 "function": {
                     "name": tool.name,
@@ -147,8 +137,30 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
                     "parameters": tool.parameters,
                 },
             }
-            tool_dicts.append(tool_dict)
-        return tool_dicts
+            for tool in tools
+        ]
+
+    def _convert_tool_calls(self, tool_calls) -> list[AssistantPromptMessage.ToolCall]:
+        """
+        Convert API tool calls to AssistantPromptMessage.ToolCall objects
+
+        :param tool_calls: tool calls from API response
+        :return: list of AssistantPromptMessage.ToolCall
+        """
+        result = []
+        for tool_call in tool_calls:
+            if hasattr(tool_call, "function"):
+                result.append(
+                    AssistantPromptMessage.ToolCall(
+                        id=tool_call.id or "",
+                        type="function",
+                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                            name=tool_call.function.name or "",
+                            arguments=tool_call.function.arguments or "",
+                        ),
+                    )
+                )
+        return result
 
     def _invoke(
         self,
@@ -229,21 +241,7 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
 
                     # Handle tool calls if present
                     if hasattr(delta, "tool_calls") and delta.tool_calls:
-                        tool_calls = []
-                        for tool_call in delta.tool_calls:
-                            if hasattr(tool_call, "function"):
-                                tool_calls.append(
-                                    AssistantPromptMessage.ToolCall(
-                                        id=tool_call.id or "",
-                                        type="function",
-                                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                            name=tool_call.function.name or "",
-                                            arguments=tool_call.function.arguments
-                                            or "",
-                                        ),
-                                    )
-                                )
-
+                        tool_calls = self._convert_tool_calls(delta.tool_calls)
                         if tool_calls:
                             yield LLMResultChunk(
                                 model=model,
@@ -269,18 +267,7 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
         # Handle tool calls if present
         tool_calls = []
         if hasattr(choice.message, "tool_calls") and choice.message.tool_calls:
-            for tool_call in choice.message.tool_calls:
-                if hasattr(tool_call, "function"):
-                    tool_calls.append(
-                        AssistantPromptMessage.ToolCall(
-                            id=tool_call.id or "",
-                            type="function",
-                            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                name=tool_call.function.name or "",
-                                arguments=tool_call.function.arguments or "",
-                            ),
-                        )
-                    )
+            tool_calls = self._convert_tool_calls(choice.message.tool_calls)
 
         assistant_prompt_message = AssistantPromptMessage(
             content=assistant_text, tool_calls=tool_calls
