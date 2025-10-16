@@ -23,7 +23,9 @@ class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
 
         enable_thinking = model_parameters.pop("enable_thinking", None)
         if enable_thinking is not None:
-            thinking_key = "thinking" if model == "deepseek-v3.1" else "enable_thinking"
+            thinking_key = (
+                "thinking" if model.startswith("deepseek-v") else "enable_thinking"
+            )
             model_parameters["chat_template_kwargs"] = {
                 thinking_key: bool(enable_thinking)
             }

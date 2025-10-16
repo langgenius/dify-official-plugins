@@ -27,6 +27,7 @@ class ReadWorksheetDataTool(Tool):
         workbook_id = tool_parameters.get("workbook_id")
         worksheet_name = tool_parameters.get("worksheet_name")
         range_address = tool_parameters.get("range", "A1:Z100")  # Default range
+        site_id = tool_parameters.get("site_id")
 
         if not workbook_id:
             yield self.create_text_message("Workbook ID is required.")
@@ -41,8 +42,15 @@ class ReadWorksheetDataTool(Tool):
         }
 
         try:
+            # Determine base drive URL (personal or SharePoint site drive)
+            base_drive = (
+                f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive"
+                if site_id
+                else "https://graph.microsoft.com/v1.0/me/drive"
+            )
+
             # Read data from the worksheet range
-            url = f"https://graph.microsoft.com/v1.0/me/drive/items/{workbook_id}/workbook/worksheets('{worksheet_name}')/range(address='{range_address}')"
+            url = f"{base_drive}/items/{workbook_id}/workbook/worksheets('{worksheet_name}')/range(address='{range_address}')"
 
             response = requests.get(url, headers=headers, timeout=30)
 
