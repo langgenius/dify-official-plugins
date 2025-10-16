@@ -1,60 +1,22 @@
+from typing import Any
 from dify_plugin import ToolProvider
-import importlib.util
-from pathlib import Path
-
-
-def _load_text_quality_tool():
-    # Try absolute import first
-    try:
-        from tools.dingo.tools.text_quality_evaluator import TextQualityEvaluatorTool  # type: ignore
-        return TextQualityEvaluatorTool
-    except Exception:
-        pass
-    # Try package-relative import if available
-    try:
-        from ..tools.text_quality_evaluator import TextQualityEvaluatorTool  # type: ignore
-        return TextQualityEvaluatorTool
-    except Exception:
-        pass
-    # Fallback: load by file path to work when module is loaded directly
-    plugin_root = Path(__file__).resolve().parents[1]  # .../tools/dingo
-    tool_path = plugin_root / 'tools' / 'text_quality_evaluator.py'
-    spec = importlib.util.spec_from_file_location('dingo_text_quality_evaluator', str(tool_path))
-    assert spec and spec.loader, f"cannot load spec for {tool_path}"
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)  # type: ignore
-    return getattr(mod, 'TextQualityEvaluatorTool')
-
-
-def _load_resume_optimizer_tool():
-    # Try absolute import first
-    try:
-        from tools.dingo.tools.resume_optimizer import ResumeOptimizerTool  # type: ignore
-        return ResumeOptimizerTool
-    except Exception:
-        pass
-    # Try package-relative import if available
-    try:
-        from ..tools.resume_optimizer import ResumeOptimizerTool  # type: ignore
-        return ResumeOptimizerTool
-    except Exception:
-        pass
-    # Fallback: load by file path to work when module is loaded directly
-    plugin_root = Path(__file__).resolve().parents[1]  # .../tools/dingo
-    tool_path = plugin_root / 'tools' / 'resume_optimizer.py'
-    spec = importlib.util.spec_from_file_location('dingo_resume_optimizer', str(tool_path))
-    assert spec and spec.loader, f"cannot load spec for {tool_path}"
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)  # type: ignore
-    return getattr(mod, 'ResumeOptimizerTool')
 
 
 class DingoProvider(ToolProvider):
-    def _set_tools(self):
-        TextQualityEvaluatorTool = _load_text_quality_tool()
-        ResumeOptimizerTool = _load_resume_optimizer_tool()
-        self.tools = [
-            TextQualityEvaluatorTool(),
-            ResumeOptimizerTool()
-        ]
+    """
+    Dingo tool provider for text quality evaluation and resume optimization.
+
+    This provider does not require credentials as it provides stateless tools.
+    """
+
+    def _validate_credentials(self, credentials: dict[str, Any]) -> None:
+        """
+        Validate credentials (not required for Dingo tools).
+
+        Dingo tools are stateless and do not require authentication.
+        This method is implemented to comply with the ToolProvider interface.
+        """
+        # This plugin does not require credentials
+        # Empty implementation to meet Dify plugin system interface requirements
+        pass
 

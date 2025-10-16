@@ -1,4 +1,4 @@
-version: 0.2.1
+version: 0.2.3
 type: plugin
 author: langgenius
 name: dingo
@@ -28,7 +28,7 @@ plugins:
   tools:
     - provider/dingo.yaml
 meta:
-  version: 0.2.1
+  version: 0.2.3
   arch:
     - amd64
     - arm64
