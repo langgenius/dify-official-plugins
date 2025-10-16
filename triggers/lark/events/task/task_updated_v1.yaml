@@ -1,0 +1,29 @@
+identity:
+  name: task_updated_v1
+  author: langgenius
+  label:
+    en_US: Task Updated
+    zh_Hans: 任务更新
+    ja_JP: タスク更新
+
+description:
+  en_US: This event activates when a task is created or updated.
+  zh_Hans: 当任务被创建或更新时激活。
+  ja_JP: タスクが作成または更新されたときにアクティブになります。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    task_id:
+      type: string
+      description: ID of the task
+    
+    obj_type:
+      type: string
+      description: Type of the object
+
+extra:
+  python:
+    source: events/task/task_updated_v1.py

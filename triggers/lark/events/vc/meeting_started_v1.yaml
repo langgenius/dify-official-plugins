@@ -1,0 +1,61 @@
+identity:
+  name: meeting_started_v1
+  author: langgenius
+  label:
+    en_US: Meeting Started
+    zh_Hans: 会议开始
+    ja_JP: 会議開始
+
+description:
+  en_US: This event activates when a video conference meeting starts.
+  zh_Hans: 当视频会议开始时激活。
+  ja_JP: ビデオ会議が開始されたときにアクティブになります。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    meeting_id:
+      type: string
+      description: ID of the meeting
+    
+    meeting_no:
+      type: string
+      description: Meeting number
+    
+    topic:
+      type: string
+      description: Meeting topic
+    
+    meeting_url:
+      type: string
+      description: Meeting URL
+    
+    start_time:
+      type: string
+      description: Meeting start time
+    
+    participant_count:
+      type: number
+      description: Number of participants
+    
+    host_user_id:
+      type: string
+      description: Host user ID
+    
+    host_user_type:
+      type: string
+      description: Host user type
+    
+    operator_id:
+      type: string
+      description: Operator ID
+    
+    operator_user_type:
+      type: string
+      description: Operator user type
+
+extra:
+  python:
+    source: events/vc/meeting_started_v1.py

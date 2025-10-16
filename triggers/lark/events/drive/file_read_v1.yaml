@@ -1,0 +1,54 @@
+identity:
+  name: file_read_v1
+  author: langgenius
+  label:
+    en_US: File Viewed
+    zh_Hans: 文件查看
+    ja_JP: ファイル閲覧
+
+description:
+  en_US: This event activates when a file is accessed or viewed by users.
+  zh_Hans: 当文件被用户访问或查看时激活。
+  ja_JP: ファイルがユーザーによってアクセスまたは表示されたときにアクティブになります。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    file_token:
+      type: string
+      description: Token of the viewed file
+    
+    file_type:
+      type: string
+      description: Type of the viewed file
+    
+    operator_user_id:
+      type: string
+      description: User ID of who viewed the file
+    
+    operator_open_id:
+      type: string
+      description: Open ID of the operator
+    
+    operator_union_id:
+      type: string
+      description: Union ID of the operator
+    
+    operators:
+      type: array
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+          open_id:
+            type: string
+          union_id:
+            type: string
+      description: List of all users who viewed the file
+
+extra:
+  python:
+    source: events/drive/file_read_v1.py

@@ -1,0 +1,73 @@
+identity:
+  name: leave_meeting_v1
+  author: langgenius
+  label:
+    en_US: User Left Meeting
+    zh_Hans: 用户离开会议
+    ja_JP: ユーザーが会議から退出
+
+description:
+  en_US: This event activates when a user leaves a video conference meeting.
+  zh_Hans: 当用户离开视频会议时激活。
+  ja_JP: ユーザーがビデオ会議から退出したときにアクティブになります。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    leave_reason:
+      type: string
+      description: Reason for leaving
+    
+    leave_user_id:
+      type: string
+      description: Leaving user ID
+    
+    leave_user_type:
+      type: string
+      description: Leaving user type
+    
+    meeting_id:
+      type: string
+      description: ID of the meeting
+    
+    meeting_no:
+      type: string
+      description: Meeting number
+    
+    topic:
+      type: string
+      description: Meeting topic
+    
+    start_time:
+      type: string
+      description: Meeting start time
+    
+    meeting_source:
+      type: string
+      description: Meeting source
+    
+    calendar_event_id:
+      type: string
+      description: Calendar event ID
+    
+    host_user_id:
+      type: string
+      description: Host user ID
+    
+    host_user_type:
+      type: string
+      description: Host user type
+    
+    operator_id:
+      type: string
+      description: Operator ID
+    
+    operator_user_type:
+      type: string
+      description: Operator user type
+
+extra:
+  python:
+    source: events/vc/leave_meeting_v1.py

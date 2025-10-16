@@ -1,0 +1,61 @@
+identity:
+  name: join_meeting_v1
+  author: langgenius
+  label:
+    en_US: User Joined Meeting
+    zh_Hans: 用户加入会议
+    ja_JP: ユーザーが会議に参加
+
+description:
+  en_US: This event activates when a user joins a video conference meeting.
+  zh_Hans: 当用户加入视频会议时激活。
+  ja_JP: ユーザーがビデオ会議に参加したときにアクティブになります。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    meeting_id:
+      type: string
+      description: ID of the meeting
+    
+    meeting_no:
+      type: string
+      description: Meeting number
+    
+    topic:
+      type: string
+      description: Meeting topic
+    
+    start_time:
+      type: string
+      description: Meeting start time
+    
+    meeting_source:
+      type: string
+      description: Meeting source
+    
+    calendar_event_id:
+      type: string
+      description: Calendar event ID
+    
+    host_user_id:
+      type: string
+      description: Host user ID
+    
+    host_user_type:
+      type: string
+      description: Host user type
+    
+    operator_id:
+      type: string
+      description: Joining user ID
+    
+    operator_user_type:
+      type: string
+      description: Joining user type
+
+extra:
+  python:
+    source: events/vc/join_meeting_v1.py

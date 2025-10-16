@@ -1,0 +1,53 @@
+identity:
+  name: approval_updated_v4
+  author: langgenius
+  label:
+    en_US: Approval Status Changed
+    zh_Hans: 审批状态变更
+    ja_JP: 承認ステータス変更
+
+description:
+  en_US: This event activates when the status of an approval request changes, providing details about the approval and its current state.
+  zh_Hans: 当审批请求的状态发生变化时激活，提供审批详情和当前状态。
+  ja_JP: 承認リクエストのステータスが変更されたときにアクティブになり、承認の詳細と現在の状態を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    approval_code:
+      type: string
+      description: Approval template code
+    
+    approval_id:
+      type: string
+      description: Approval identifier
+    
+    timestamp:
+      type: string
+      description: Event timestamp
+    
+    version_id:
+      type: string
+      description: Approval version
+    
+    form_definition_id:
+      type: string
+      description: Form template identifier
+    
+    widget_group_type:
+      type: number
+      description: Widget group type
+    
+    process_obj:
+      type: string
+      description: Process object data (JSON string)
+    
+    extra:
+      type: string
+      description: Additional information
+
+extra:
+  python:
+    source: events/approval/approval_updated_v4.py
