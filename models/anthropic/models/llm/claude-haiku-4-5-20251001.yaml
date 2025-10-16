@@ -28,7 +28,7 @@ parameter_rules:
       en_US: Thinking Budget
     type: int
     default: 1024
-    min: 0
+    min: 1024
     max: 64000
     required: false
     help:
