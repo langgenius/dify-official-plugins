@@ -1,0 +1,150 @@
+identity:
+  name: public
+  author: langgenius
+  label:
+    en_US: Public
+    zh_Hans: 公开
+    ja_JP: 公開
+
+description:
+  en_US: Triggers when a private repository is made public
+  zh_Hans: 当私有仓库变为公开时触发
+  ja_JP: 非公開リポジトリが公開された時にトリガー
+
+parameters:
+- name: repository_name
+  label:
+    en_US: Repository Name
+    zh_Hans: 仓库名
+    ja_JP: リポジトリ名
+  type: string
+  required: false
+  help:
+    en_US: Exact match on repository name or owner slash name. Comma separated allowed.
+    zh_Hans: 精确匹配仓库名或 owner/repo。支持逗号分隔多值。
+    ja_JP: リポジトリ名または owner/repo の完全一致。カンマ区切り対応。
+
+output_schema:
+  type: object
+  properties:
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        node_id:
+          type: string
+        name:
+          type: string
+        full_name:
+          type: string
+        private:
+          type: boolean
+        owner:
+          type: object
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+            node_id:
+              type: string
+            avatar_url:
+              type: string
+              format: uri
+            html_url:
+              type: string
+              format: uri
+            type:
+              type: string
+              enum:
+              - Bot
+              - User
+              - Organization
+            site_admin:
+              type: boolean
+          required:
+          - id
+          - login
+        html_url:
+          type: string
+          format: uri
+        description:
+          type:
+          - string
+          - "null"
+        fork:
+          type: boolean
+        url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        pushed_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+        default_branch:
+          type: string
+        visibility:
+          type: string
+          enum:
+          - public
+          - private
+          - internal
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - private
+      - owner
+      - html_url
+      - url
+      - created_at
+      - updated_at
+      - fork
+      - default_branch
+      - visibility
+    sender:
+      type: object
+      description: The user who triggered the event
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        node_id:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        html_url:
+          type: string
+          format: uri
+        type:
+          type: string
+          enum:
+          - Bot
+          - User
+          - Organization
+        site_admin:
+          type: boolean
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/public/public.py

@@ -1,0 +1,126 @@
+identity:
+  name: member
+  author: langgenius
+  label:
+    en_US: Member (Unified)
+    zh_Hans: 成员（统一）
+    ja_JP: メンバー（統合）
+
+description:
+  en_US: Unified member event with actions filter
+  zh_Hans: 带 actions 过滤的统一 member 事件
+  ja_JP: アクションフィルタ付きの統合 member イベント
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - added
+  - edited
+  - removed
+  options:
+  - value: added
+    label:
+      en_US: Added
+      zh_Hans: 已添加
+      ja_JP: 追加
+  - value: edited
+    label:
+      en_US: Edited
+      zh_Hans: 已编辑
+      ja_JP: 編集
+  - value: removed
+    label:
+      en_US: Removed
+      zh_Hans: 已移除
+      ja_JP: 削除
+  help:
+    en_US: Multi select filter for repository member lifecycle. Leave empty to accept all.
+    zh_Hans: 多选过滤仓库成员生命周期事件。留空不过滤。
+    ja_JP: リポジトリメンバーのライフサイクルを複数選択で絞り込み。未設定で全て許可。
+
+- name: member
+  label:
+    en_US: Member Login
+    zh_Hans: 成员登录名
+    ja_JP: メンバーログイン
+  type: string
+  required: false
+  help:
+    en_US: Comma separated member logins to include.
+    zh_Hans: 逗号分隔的成员登录名白名单。
+    ja_JP: メンバーのログインをカンマ区切りで指定。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    member:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+        site_admin:
+          type: boolean
+        avatar_url:
+          type:
+          - string
+          - "null"
+          format: uri
+        html_url:
+          type:
+          - string
+          - "null"
+          format: uri
+      required:
+      - id
+      - login
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+    sender:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - member
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/member/member.py

@@ -1,0 +1,226 @@
+identity:
+  name: pull_request_review_comment_deleted
+  author: langgenius
+  label:
+    en_US: Pull Request Review Comment Deleted
+    zh_Hans: Pull Request 审查评论已删除
+    ja_JP: Pull Request レビューコメント削除
+
+description:
+  en_US: Triggers when a review comment on a pull request is deleted
+  zh_Hans: 当拉取请求的审查评论被删除时触发
+  ja_JP: プルリクエストのレビューコメントが削除されたときにトリガーします
+
+parameters:
+- name: body_contains
+  label:
+    en_US: Comment Body Contains
+    zh_Hans: 评论内容包含
+    ja_JP: コメント本文に含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if the deleted comment body contained these keywords (comma-separated)."
+    zh_Hans: "仅当被删除的评论内容包含这些关键词时触发（逗号分隔）。"
+    ja_JP: "削除されたコメント本文にこれらのキーワードが含まれていた場合のみトリガー（カンマ区切り）。"
+
+- name: commenter
+  label:
+    en_US: Comment Author
+    zh_Hans: 评论作者
+    ja_JP: コメント作成者
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if the deleted comment belonged to these users (comma-separated GitHub usernames)."
+    zh_Hans: "仅当被删除的评论属于这些用户时触发（逗号分隔 GitHub 用户名）。"
+    ja_JP: "削除されたコメントがこれらのユーザーのものだった場合のみトリガー（GitHub ユーザー名、カンマ区切り）。"
+
+- name: path
+  label:
+    en_US: File Path
+    zh_Hans: 文件路径
+    ja_JP: ファイルパス
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for comments on these file paths (comma-separated)."
+    zh_Hans: "仅当评论位于这些文件路径时触发（逗号分隔）。"
+    ja_JP: "これらのファイルパスへのコメントの場合のみトリガー（カンマ区切り）。"
+
+- name: position
+  label:
+    en_US: Diff Position
+    zh_Hans: 差异位置
+    ja_JP: 差分位置
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for these diff positions or lines (comma-separated integers)."
+    zh_Hans: "仅当差异位置或行号匹配时触发（逗号分隔整数）。"
+    ja_JP: "これらの差分位置または行番号の場合のみトリガー（整数、カンマ区切り）。"
+
+- name: author
+  label:
+    en_US: Pull Request Author
+    zh_Hans: Pull Request 作者
+    ja_JP: Pull Request 作成者
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for pull requests created by these users (comma-separated GitHub usernames)."
+    zh_Hans: "仅当拉取请求由这些用户创建时触发（逗号分隔 GitHub 用户名）。"
+    ja_JP: "これらのユーザーが作成したプルリクエストの場合のみトリガー（GitHub ユーザー名、カンマ区切り）。"
+
+- name: pull_request_numbers
+  label:
+    en_US: Pull Request Numbers
+    zh_Hans: Pull Request 编号
+    ja_JP: Pull Request 番号
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for these pull request numbers (comma-separated)."
+    zh_Hans: "仅当拉取请求编号匹配时触发（逗号分隔）。"
+    ja_JP: "これらのプルリクエスト番号の場合のみトリガー（カンマ区切り）。"
+
+- name: deleter
+  label:
+    en_US: Deleted By
+    zh_Hans: 删除者
+    ja_JP: 削除者
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if deleted by these users (comma-separated GitHub usernames)."
+    zh_Hans: "仅当由这些用户删除时触发（逗号分隔 GitHub 用户名）。"
+    ja_JP: "これらのユーザーによって削除された場合のみトリガー（GitHub ユーザー名、カンマ区切り）。"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      description: The action that triggered this event
+    comment:
+      type: object
+      description: The review comment that was deleted
+      properties:
+        id:
+          type: integer
+        body:
+          type: string
+        user:
+          type: object
+          properties:
+            login:
+              type: string
+            id:
+              type: integer
+        path:
+          type: string
+        position:
+          type: integer
+        original_position:
+          type: integer
+        diff_hunk:
+          type: string
+        html_url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - user
+      - path
+      - html_url
+
+    pull_request:
+      type: object
+      description: The pull request the comment belonged to
+      properties:
+        id:
+          type: integer
+        number:
+          type: integer
+        title:
+          type: string
+        state:
+          type: string
+        user:
+          type: object
+          properties:
+            login:
+              type: string
+            id:
+              type: integer
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - number
+      - title
+      - state
+      - user
+      - html_url
+
+    repository:
+      type: object
+      description: Repository information
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+
+    sender:
+      type: object
+      description: The user who triggered the event
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+    organization:
+      type: object
+      description: Organization context if applicable
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+
+    installation:
+      type: object
+      description: Installation that triggered the event if coming from a GitHub App
+      properties:
+        id:
+          type: integer
+
+  required:
+  - action
+  - comment
+  - pull_request
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/pull_request_review_comment/pull_request_review_comment_deleted.py

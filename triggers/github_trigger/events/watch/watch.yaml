@@ -1,0 +1,191 @@
+identity:
+  name: watch
+  author: langgenius
+  label:
+    en_US: Watch
+    zh_Hans: 关注
+    ja_JP: ウォッチ
+
+description:
+  en_US: Unified watch event (typically 'started')
+  zh_Hans: 统一 watch 事件（通常为 started）
+  ja_JP: 統合 watch イベント（通常は started）
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - started
+  options:
+  - value: started
+    label:
+      en_US: Started
+      zh_Hans: 开始关注
+      ja_JP: 開始
+  help:
+    en_US: Filter by watch action. GitHub generally sends started. Leave empty to accept all.
+    zh_Hans: 按 watch 动作过滤。GitHub 通常仅发送 started。留空不过滤。
+    ja_JP: watch のアクションで絞り込み。通常は started のみ。未設定で全て許可。
+
+- name: watcher
+  label:
+    en_US: Watcher
+    zh_Hans: 关注者
+    ja_JP: ウォッチャー
+  type: string
+  required: false
+  help:
+    en_US: Comma separated watcher logins. Only trigger when sender login matches.
+    zh_Hans: 逗号分隔的关注者登录名。仅当 sender 命中时触发。
+    ja_JP: ウォッチャーのログインをカンマ区切りで。sender が一致した場合のみ発火。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    repository:
+      type: object
+      description: The repository where the watch event occurred
+      properties:
+        id:
+          type: integer
+          format: int64
+        node_id:
+          type: string
+        name:
+          type: string
+        full_name:
+          type: string
+        private:
+          type: boolean
+        owner:
+          type: object
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+            node_id:
+              type: string
+            avatar_url:
+              type: string
+              format: uri
+            html_url:
+              type: string
+              format: uri
+            type:
+              type: string
+              enum:
+              - Bot
+              - User
+              - Organization
+            site_admin:
+              type: boolean
+          required:
+          - id
+          - login
+        html_url:
+          type: string
+          format: uri
+        description:
+          type:
+          - string
+          - "null"
+        fork:
+          type: boolean
+        url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        pushed_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+        stargazers_count:
+          type: integer
+        watchers_count:
+          type: integer
+        language:
+          type:
+          - string
+          - "null"
+        forks_count:
+          type: integer
+        open_issues_count:
+          type: integer
+        default_branch:
+          type: string
+        topics:
+          type: array
+          items:
+            type: string
+        visibility:
+          type: string
+          enum:
+          - public
+          - private
+          - internal
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - private
+      - owner
+      - html_url
+      - url
+      - created_at
+      - updated_at
+      - fork
+      - default_branch
+      - visibility
+    sender:
+      type: object
+      description: The user who triggered the event
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        node_id:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        html_url:
+          type: string
+          format: uri
+        type:
+          type: string
+          enum:
+          - Bot
+          - User
+          - Organization
+        site_admin:
+          type: boolean
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/watch/watch.py

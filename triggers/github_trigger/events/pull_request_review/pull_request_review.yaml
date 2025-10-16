@@ -1,0 +1,283 @@
+identity:
+  name: pull_request_review
+  author: langgenius
+  label:
+    en_US: Pull Request Review (Unified)
+    zh_Hans: 拉取请求审查（统一）
+    ja_JP: プルリクエストレビュー（統合）
+
+description:
+  en_US: Unified pull_request_review event with actions filter
+  zh_Hans: 带 actions 过滤的统一 pull_request_review 事件
+  ja_JP: アクションフィルタ付きの統合 pull_request_review イベント
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - submitted
+  - edited
+  - dismissed
+  options:
+  - value: submitted
+    label:
+      en_US: Submitted
+      zh_Hans: 提交
+      ja_JP: 送信
+  - value: edited
+    label:
+      en_US: Edited
+      zh_Hans: 编辑
+      ja_JP: 編集
+  - value: dismissed
+    label:
+      en_US: Dismissed
+      zh_Hans: 撤销
+      ja_JP: 却下
+  help:
+    en_US: Multi select filter for review actions such as submitted edited dismissed.
+    zh_Hans: 多选过滤审查动作 如 提交 编辑 撤销。
+    ja_JP: レビューのアクションを複数選択で。送信 編集 却下 など。
+
+- name: review_state
+  label:
+    en_US: Review State
+    zh_Hans: 审查状态
+    ja_JP: レビュー状態
+  type: string
+  required: false
+  help:
+    en_US: Filter by review state such as approved changes_requested commented.
+    zh_Hans: 按审查状态过滤 如 approved changes_requested commented。
+    ja_JP: レビュー状態でフィルタ approved changes_requested commented など。
+
+- name: reviewer
+  label:
+    en_US: Reviewer
+    zh_Hans: 审查者
+    ja_JP: レビュアー
+  type: string
+  required: false
+  help:
+    en_US: Comma separated reviewer logins to include.
+    zh_Hans: 逗号分隔的审查者登录名白名单。
+    ja_JP: レビュアーのログインをカンマ区切りで指定。
+
+- name: author
+  label:
+    en_US: Pull Request Author
+    zh_Hans: Pull Request 作者
+    ja_JP: Pull Request 作成者
+  type: string
+  required: false
+  help:
+    en_US: Comma separated PR author logins to include.
+    zh_Hans: 逗号分隔的 PR 作者登录名白名单。
+    ja_JP: PR 作成者のログインをカンマ区切りで指定。
+
+- name: pull_request_numbers
+  label:
+    en_US: Pull Request Numbers
+    zh_Hans: Pull Request 编号
+    ja_JP: Pull Request 番号
+  type: string
+  required: false
+  help:
+    en_US: Filter by PR numbers. Comma separated integers.
+    zh_Hans: 按 PR 编号过滤。逗号分隔整数。
+    ja_JP: PR 番号でフィルタ。整数をカンマ区切りで。
+
+- name: body_contains
+  label:
+    en_US: Review Body Contains
+    zh_Hans: 审查内容包含
+    ja_JP: レビュー本文に含む
+  type: string
+  required: false
+  help:
+    en_US: Match keywords in review body. Comma separated any match passes.
+    zh_Hans: 审查正文包含关键字。逗号分隔 任一命中即通过。
+    ja_JP: レビュー本文のキーワード一致。カンマ区切りでいずれか一致。
+
+- name: dismissed_by
+  label:
+    en_US: Dismissed By
+    zh_Hans: 撤销者
+    ja_JP: 却下者
+  type: string
+  required: false
+  help:
+    en_US: Filter by the user who dismissed the review. Comma separated logins.
+    zh_Hans: 按撤销者登录名过滤。逗号分隔。
+    ja_JP: 却下したユーザーのログインでフィルタ。カンマ区切り。
+
+- name: dismissal_message_contains
+  label:
+    en_US: Dismissal Message Contains
+    zh_Hans: 撤销消息包含
+    ja_JP: 却下メッセージに含む
+  type: string
+  required: false
+  help:
+    en_US: Match keywords in dismissal message. Comma separated any match passes.
+    zh_Hans: 匹配撤销消息中的关键字。逗号分隔 任意命中即通过。
+    ja_JP: 却下メッセージのキーワード一致。カンマ区切りでいずれか一致。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    review:
+      type: object
+      properties:
+        id:
+          type: integer
+        user:
+          type: object
+          properties:
+            login:
+              type: string
+            id:
+              type: integer
+        body:
+          type: string
+        state:
+          type: string
+        html_url:
+          type: string
+          format: uri
+        submitted_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - user
+      - state
+    pull_request:
+      type: object
+      properties:
+        id:
+          type: integer
+        number:
+          type: integer
+        title:
+          type: string
+        state:
+          type: string
+        draft:
+          type: boolean
+        user:
+          type: object
+          properties:
+            login:
+              type: string
+            id:
+              type: integer
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - number
+      - title
+      - state
+      - user
+      - html_url
+    repository:
+      type: object
+      description: Repository information
+      properties:
+        id:
+          type: integer
+          format: int64
+        node_id:
+          type: string
+        name:
+          type: string
+        full_name:
+          type: string
+        private:
+          type: boolean
+        owner:
+          type: object
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+            node_id:
+              type: string
+            avatar_url:
+              type: string
+              format: uri
+            html_url:
+              type: string
+              format: uri
+            type:
+              type: string
+              enum:
+              - Bot
+              - User
+              - Organization
+            site_admin:
+              type: boolean
+          required:
+          - id
+          - login
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - private
+      - owner
+      - html_url
+    sender:
+      type: object
+      description: The user who triggered the event
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        node_id:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        html_url:
+          type: string
+          format: uri
+        type:
+          type: string
+          enum:
+          - Bot
+          - User
+          - Organization
+        site_admin:
+          type: boolean
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - review
+  - pull_request
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/pull_request_review/pull_request_review.py

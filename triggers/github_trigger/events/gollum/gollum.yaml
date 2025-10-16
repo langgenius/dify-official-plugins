@@ -1,0 +1,123 @@
+identity:
+  name: gollum
+  author: langgenius
+  label:
+    en_US: Gollum (Wiki)
+    zh_Hans: Wiki 页面
+    ja_JP: Gollum（Wiki）
+
+description:
+  en_US: Triggered when a Wiki page is created or edited
+  zh_Hans: 当 Wiki 页面被创建或编辑时触发
+  ja_JP: Wiki ページが作成または編集された時にトリガー
+
+parameters:
+- name: actions
+  label:
+    en_US: Page Actions
+    zh_Hans: 页面动作
+    ja_JP: ページアクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - created
+  - edited
+  options:
+  - value: created
+    label:
+      en_US: Created
+      zh_Hans: 创建
+      ja_JP: 作成
+  - value: edited
+    label:
+      en_US: Edited
+      zh_Hans: 编辑
+      ja_JP: 編集
+  help:
+    en_US: Multi select page actions to include such as created or edited. Filters each page entry in the payload.
+    zh_Hans: 多选要包含的页面动作 如 创建 或 编辑。对 payload 中的每个页面项进行过滤。
+    ja_JP: 作成や編集など含めるページアクションを複数選択。ペイロードの各ページ項目を判定します。
+
+- name: title
+  label:
+    en_US: Page Title
+    zh_Hans: 页面标题
+    ja_JP: ページタイトル
+  type: string
+  required: false
+  help:
+    en_US: Filter by page title exact match. Comma separated allowed. At least one page must match to trigger.
+    zh_Hans: 按页面标题精确匹配。支持逗号分隔。至少有一条页面命中才会触发。
+    ja_JP: ページタイトルの完全一致でフィルタ。カンマ区切り可。いずれか一致で発火。
+
+output_schema:
+  type: object
+  properties:
+    pages:
+      type: array
+      items:
+        type: object
+        properties:
+          page_name:
+            type:
+            - string
+            - "null"
+          title:
+            type:
+            - string
+            - "null"
+          action:
+            type:
+            - string
+            - "null"
+          html_url:
+            type:
+            - string
+            - "null"
+            format: uri
+          sha:
+            type:
+            - string
+            - "null"
+          summary:
+            type:
+            - string
+            - "null"
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+    sender:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - pages
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/gollum/gollum.py
