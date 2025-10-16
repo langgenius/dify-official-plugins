@@ -80,6 +80,44 @@ model_credential_schema:
     type: text-input
     variable: context_size
   - label:
+      en_US: Vision support
+      zh_Hans: 是否支持 Vision
+    default: 'false'
+    options:
+    - label:
+        en_US: 'Yes'
+        zh_Hans: 是
+      value: 'true'
+    - label:
+        en_US: 'No'
+        zh_Hans: 否
+      value: 'false'
+    required: false
+    show_on:
+    - value: llm
+      variable: __model_type
+    type: radio
+    variable: vision_support
+  - label:
+      en_US: Function call support
+      zh_Hans: 是否支持函数调用
+    default: 'false'
+    options:
+    - label:
+        en_US: 'Yes'
+        zh_Hans: 是
+      value: 'true'
+    - label:
+        en_US: 'No'
+        zh_Hans: 否
+      value: 'false'
+    required: false
+    show_on:
+    - value: llm
+      variable: __model_type
+    type: radio
+    variable: function_call_support
+  - label:
       en_US: JWT Token
       zh_Hans: JWT令牌
     placeholder:
