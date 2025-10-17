@@ -1,0 +1,37 @@
+author: langgenius
+created_at: "2025-10-12T21:00:00.000000000Z"
+description:
+  en_US: Linear is a modern issue tracking tool with webhook trigger support.
+  ja_JP: Linearは、webhookトリガーのサポートがある最新の課題管理ツールです。
+  zh_Hans: Linear是一个现代化的问题跟踪工具，支持webhook触发器。
+icon: image.png
+label:
+  en_US: Linear
+  ja_JP: Linear
+  zh_Hans: Linear
+meta:
+  arch:
+  - amd64
+  - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: "3.12"
+  version: 0.3.1
+  minimum_dify_version: 1.9.0
+name: linear_trigger
+plugins:
+  triggers:
+  - provider/linear_simple.yaml
+resource:
+  memory: 1048576
+  permission:
+    model:
+      enabled: true
+      llm: true
+    tool:
+      enabled: true
+tags:
+- productivity
+type: plugin
+version: 0.3.1
