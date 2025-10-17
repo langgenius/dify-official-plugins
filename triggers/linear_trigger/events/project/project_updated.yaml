@@ -1,0 +1,87 @@
+identity:
+  name: project_updated
+  author: langgenius
+  label:
+    en_US: Project Updated
+    zh_Hans: 项目更新
+    ja_JP: プロジェクト更新
+
+description:
+  en_US: Triggers when a project is updated in Linear
+  zh_Hans: 当在 Linear 中更新项目时触发
+  ja_JP: Linearでプロジェクトが更新されたときにトリガーされます
+
+parameters:
+- name: name_contains
+  label:
+    en_US: Name Contains
+    zh_Hans: 名称包含
+    ja_JP: 名前に含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if project name contains keywords (comma-separated). Leave empty for all updates."
+    zh_Hans: "仅当项目名称包含关键词时触发（逗号分隔）。留空则触发所有更新。"
+    ja_JP: "プロジェクト名にキーワードが含まれる場合のみトリガー（カンマ区切り）。空の場合は全更新でトリガー。"
+
+- name: status_changed
+  label:
+    en_US: Status Changed Only
+    zh_Hans: 仅状态变更
+    ja_JP: ステータス変更のみ
+  type: boolean
+  required: false
+  default: false
+  description:
+    en_US: "When enabled, only trigger when project status changes (e.g., planned → started → completed)"
+    zh_Hans: "启用时，仅在项目状态变更时触发（例如：计划中 → 进行中 → 已完成）"
+    ja_JP: "有効にすると、プロジェクトステータスが変更された場合のみトリガー（例：計画中 → 進行中 → 完了）"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [update]
+    type:
+      type: string
+      enum: [Project]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        priority:
+          type: number
+        url:
+          type: string
+        startDate:
+          type: string
+        targetDate:
+          type: string
+        updatedAt:
+          type: string
+        completedAt:
+          type: string
+        canceledAt:
+          type: string
+        startedAt:
+          type: string
+        status:
+          type: object
+        statusId:
+          type: string
+    actor:
+      type: object
+  required:
+  - action
+  - type
+  - data
+
+extra:
+  python:
+    source: events/project/project_updated.py

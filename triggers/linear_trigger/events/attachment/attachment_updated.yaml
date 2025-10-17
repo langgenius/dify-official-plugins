@@ -1,0 +1,93 @@
+identity:
+  name: attachment_updated
+  author: langgenius
+  label:
+    en_US: Attachment Updated
+    zh_Hans: 附件更新
+    ja_JP: 添付ファイル更新
+description:
+  en_US: Triggers when an attachment is updated
+  zh_Hans: 当附件更新时触发
+  ja_JP: 添付ファイルが更新されたときにトリガーされます
+parameters:
+- name: title_contains
+  label:
+    en_US: Title Contains
+    zh_Hans: 标题包含
+    ja_JP: タイトルに含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if the attachment title contains specific keywords (comma-separated)."
+    zh_Hans: "仅当附件标题包含指定关键词时触发（逗号分隔）。"
+    ja_JP: "添付ファイルのタイトルに特定のキーワードが含まれる場合のみトリガーします（カンマ区切り）。"
+
+- name: source_type_filter
+  label:
+    en_US: Source Type Filter
+    zh_Hans: 来源类型过滤
+    ja_JP: ソース種別フィルター
+  type: string
+  required: false
+  description:
+    en_US: "Restrict to updates coming from specific integration source types (comma-separated)."
+    zh_Hans: "仅当更新来自特定来源类型时触发（逗号分隔）。"
+    ja_JP: "特定のソース種別からの更新のみ対象にします（カンマ区切り）。"
+
+- name: issue_filter
+  label:
+    en_US: Issue Filter
+    zh_Hans: Issue 过滤
+    ja_JP: 課題フィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the attachment belongs to specific issue IDs (comma-separated)."
+    zh_Hans: "仅当附件关联到指定的 Issue ID 时触发（逗号分隔）。"
+    ja_JP: "添付が指定した課題 ID に属する場合のみトリガーします（カンマ区切り）。"
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [update]
+    type:
+      type: string
+      enum: [Attachment]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: string
+        url:
+          type: string
+        issueId:
+          type: string
+        originalIssueId:
+          type: string
+        creatorId:
+          type: string
+        externalUserCreatorId:
+          type: string
+        sourceType:
+          type: string
+        groupBySource:
+          type: boolean
+        metadata:
+          type: object
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        archivedAt:
+          type: string
+    actor:
+      type: object
+  required: [action, type, data]
+extra:
+  python:
+    source: events/attachment/attachment_updated.py

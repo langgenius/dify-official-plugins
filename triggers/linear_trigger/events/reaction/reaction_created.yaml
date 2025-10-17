@@ -1,0 +1,85 @@
+identity:
+  name: reaction_created
+  author: langgenius
+  label:
+    en_US: Reaction Created
+    zh_Hans: Reaction 创建
+    ja_JP: リアクション作成
+description:
+  en_US: Triggers when a reaction is created
+  zh_Hans: 当在 Linear 中新增 Reaction 时触发
+  ja_JP: Linear でリアクションが作成されたときにトリガーされます
+parameters:
+- name: emoji_filter
+  label:
+    en_US: Emoji Filter
+    zh_Hans: 表情过滤
+    ja_JP: 絵文字フィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for specific emoji (comma-separated, e.g. 👍,🚀,❤️)."
+    zh_Hans: "仅当使用指定的表情符号时触发（逗号分隔，例如 👍、🚀、❤️）。"
+    ja_JP: "特定の絵文字の場合のみトリガーします（例: 👍,🚀,❤️。カンマ区切り）。"
+- name: target_type_filter
+  label:
+    en_US: Target Type Filter
+    zh_Hans: 目标类型过滤
+    ja_JP: 対象タイプフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Limit to reactions on certain entities (comma-separated: issue, comment, project_update, initiative_update, post)."
+    zh_Hans: "仅当 Reaction 作用于特定实体时触发（逗号分隔：issue、comment、project_update、initiative_update、post）。"
+    ja_JP: "特定の対象でのリアクションのみ対象にします（課題、コメント、プロジェクト更新などをカンマ区切りで指定）。"
+- name: user_filter
+  label:
+    en_US: User Filter
+    zh_Hans: 用户过滤
+    ja_JP: ユーザーフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the reaction was added by specific user IDs (comma-separated)."
+    zh_Hans: "仅当 Reaction 由指定用户 ID 添加时触发（逗号分隔）。"
+    ja_JP: "指定したユーザー ID がリアクションした場合のみトリガーします（カンマ区切り）。"
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [create]
+    type:
+      type: string
+      enum: [Reaction]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        emoji:
+          type: string
+        issueId:
+          type: string
+        commentId:
+          type: string
+        projectUpdateId:
+          type: string
+        initiativeUpdateId:
+          type: string
+        postId:
+          type: string
+        userId:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        user:
+          type: object
+    actor:
+      type: object
+  required: [action, type, data]
+extra:
+  python:
+    source: events/reaction/reaction_created.py

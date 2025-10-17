@@ -1,0 +1,116 @@
+identity:
+  name: customer_need_created
+  author: langgenius
+  label:
+    en_US: Customer Need Created
+    zh_Hans: 客户需求创建
+    ja_JP: カスタマーニーズ作成
+description:
+  en_US: Triggers when a customer_need is created
+  zh_Hans: 当在 Linear 中创建新的客户需求时触发
+  ja_JP: Linear でカスタマーニーズが作成されたときにトリガーされます
+parameters:
+- name: body_contains
+  label:
+    en_US: Body Contains
+    zh_Hans: 正文包含
+    ja_JP: 本文に含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the need body contains specific keywords (comma-separated)."
+    zh_Hans: "仅当需求正文包含指定关键词时触发（逗号分隔）。"
+    ja_JP: "ニーズ本文に指定したキーワードが含まれる場合のみトリガーします（カンマ区切り）。"
+- name: priority_filter
+  label:
+    en_US: Priority Filter
+    zh_Hans: 优先级过滤
+    ja_JP: 優先度フィルター
+  type: string
+  required: false
+  description:
+    en_US: "Limit to needs with specific priority values (comma-separated integers)."
+    zh_Hans: "仅保留特定优先级的需求（逗号分隔的整数）。"
+    ja_JP: "特定の優先度を持つニーズのみ対象にします（整数をカンマ区切り）。"
+- name: customer_filter
+  label:
+    en_US: Customer Filter
+    zh_Hans: 客户过滤
+    ja_JP: カスタマーフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the need is attached to specific customer IDs (comma-separated)."
+    zh_Hans: "仅当需求关联到指定客户 ID 时触发（逗号分隔）。"
+    ja_JP: "指定したカスタマー ID に紐づくニーズのみトリガーします（カンマ区切り）。"
+- name: issue_filter
+  label:
+    en_US: Issue Filter
+    zh_Hans: Issue 过滤
+    ja_JP: 課題フィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the need references specific issue IDs (comma-separated)."
+    zh_Hans: "仅当需求引用指定的 Issue ID 时触发（逗号分隔）。"
+    ja_JP: "指定した課題 ID を参照するニーズのみトリガーします（カンマ区切り）。"
+- name: project_filter
+  label:
+    en_US: Project Filter
+    zh_Hans: 项目过滤
+    ja_JP: プロジェクトフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the need references specific project IDs (comma-separated)."
+    zh_Hans: "仅当需求关联到指定项目 ID 时触发（逗号分隔）。"
+    ja_JP: "指定したプロジェクト ID を参照するニーズのみトリガーします（カンマ区切り）。"
+- name: creator_filter
+  label:
+    en_US: Creator Filter
+    zh_Hans: 创建者过滤
+    ja_JP: 作成者フィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the need was created by specific user IDs (comma-separated)."
+    zh_Hans: "仅当需求由指定用户 ID 创建时触发（逗号分隔）。"
+    ja_JP: "指定したユーザー ID が作成したニーズのみトリガーします（カンマ区切り）。"
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [create]
+    type:
+      type: string
+      enum: [CustomerNeed]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        body:
+          type: string
+        priority:
+          type: number
+        customerId:
+          type: string
+        issueId:
+          type: string
+        projectId:
+          type: string
+        creatorId:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        archivedAt:
+          type: string
+    actor:
+      type: object
+  required: [action, type, data]
+extra:
+  python:
+    source: events/customer_need/customer_need_created.py
