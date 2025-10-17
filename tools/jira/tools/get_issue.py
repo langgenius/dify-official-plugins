@@ -5,6 +5,8 @@ from atlassian.jira import Jira
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
+from .util import simplify_issue
+
 
 class ListIssueTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
@@ -24,7 +26,7 @@ class ListIssueTool(Tool):
         try:
             yield self.create_json_message(
                 {
-                    "issue": jira.issue(issue_key),
+                    "issue": simplify_issue(jira.issue(issue_key)),
                 }
             )
 
