@@ -1,4 +1,9 @@
-dify_plugin~=0.0.1b72
-boto3~=1.37.4
-botocore~=1.37.4
+dify_plugin>=0.4.2,<0.5.0
+boto3~=1.40.45
 opensearch-py~=2.8.0
+jieba~=0.42.1
+nltk~=3.9.1
+sacrebleu~=2.5.1
+Pillow~=11.3.0
+playwright>=1.49.0
+bedrock-agentcore~=0.1.4

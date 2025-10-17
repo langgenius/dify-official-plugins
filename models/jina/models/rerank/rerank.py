@@ -76,6 +76,7 @@ class JinaRerankModel(RerankModel):
             "query": query,
             "documents": [transform_jina_input_text(model, doc) for doc in docs],
             "top_n": top_n,
+            "return_documents": False,
         }
 
         try:
@@ -85,9 +86,10 @@ class JinaRerankModel(RerankModel):
 
             rerank_documents = []
             for result in results["results"]:
+                original_index = result["index"]
                 rerank_document = RerankDocument(
                     index=result["index"],
-                    text=result["document"]["text"],
+                    text=docs[original_index],
                     score=result["relevance_score"],
                 )
                 if (

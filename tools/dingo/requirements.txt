@@ -1,5 +1,6 @@
 # Dify plugin framework dependency
 dify_plugin
+python-dotenv>=1.0.0
 
 # Core Dingo dependencies for plugin functionality
 # Based on dingo/dingo-latest/requirements/runtime.txt
@@ -11,7 +12,7 @@ jieba>=0.42.1
 jsonlines>=3.0.0
 pandas>=1.5.0
 pydantic>=2.0.0
-requests>=2.28.0
+requests>=2.32.7
 textstat>=0.7.0
 numpy>=1.24.0
 
@@ -30,7 +31,7 @@ huggingface_hub>=0.16.0
 openai>=1.0.0
 
 # Optional: Image processing (for multimodal support)
-Pillow>=9.0.0
+Pillow>=11.3.0
 opencv-python>=4.5.0
 
 # Utility packages
