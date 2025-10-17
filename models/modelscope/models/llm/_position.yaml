@@ -12,6 +12,9 @@
 - qwen2.5-vl-32B-instruct
 - qwen2.5-vl-72B-instruct
 - qwen3-vl-235b-a22b-instruct
+- qwen3-vl-30b-a3b-instruct
+- qwen3-vl-8b-instruct
+- qwen3-vl-4b-instruct
 - qwen3-0.6B
 - qwen3-1.7B
 - qwen3-4B
@@ -39,6 +42,7 @@
 - ernie-4.5-300b-a47b-pt
 - ernie-4.5-vl-28b-a3b-pt
 - glm-4.5
+- glm-4.6
 - llama-4-maverick-17b-128e-instruct
 - llama-4-scout-17b-16e-instruct
 - minmax-m1-80k
