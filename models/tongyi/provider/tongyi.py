@@ -16,7 +16,12 @@ class TongyiProvider(ModelProvider):
         :param credentials: provider credentials, credentials form defined in `provider_credential_schema`.
         """
         try:
-            model_instance = self.get_model_instance(ModelType.LLM)
+            model_obj = self.get_model_instance(ModelType.LLM)
+            # If the returned object is a class instead of an instance, instantiate it and pass in the model_schemas from the provider schema
+            if isinstance(model_obj, type):
+                model_instance = model_obj(model_schemas=self.provider_schema.models)
+            else:
+                model_instance = model_obj
             model_instance.validate_credentials(model="qwen-turbo", credentials=credentials)
         except CredentialsValidateFailedError as ex:
             raise ex
