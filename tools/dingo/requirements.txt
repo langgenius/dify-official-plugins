@@ -1,42 +1,20 @@
 # Dify plugin framework dependency
-dify_plugin
+dify_plugin>=0.3.0,<0.5.0
 python-dotenv>=1.0.0
 
-# Core Dingo dependencies for plugin functionality
-# Based on dingo/dingo-latest/requirements/runtime.txt
-
-# Essential dependencies for text quality evaluation
-chardet>=5.0.0
-datasets>=2.0.0
-jieba>=0.42.1
-jsonlines>=3.0.0
-pandas>=1.5.0
+# Core dependencies
 pydantic>=2.0.0
-requests>=2.32.7
-textstat>=0.7.0
-numpy>=1.24.0
 
-# Language and text processing
+# Dingo core dependencies (lightweight, essential for text quality evaluation)
+chardet>=5.0.0
+jieba>=0.42.1
+textstat>=0.7.0
 hanziconv>=0.3.2
 langid>=1.1.6
-nltk>=3.8
 pyahocorasick>=2.0.0
 wordninja>=2.0.0
 zhon>=1.1.5
 
-# Optional: Hugging Face integration (for dataset loading)
-huggingface_hub>=0.16.0
-
-# Optional: OpenAI integration (for LLM-based evaluation)
-openai>=1.0.0
-
-# Optional: Image processing (for multimodal support)
-Pillow>=11.3.0
-opencv-python>=4.5.0
-
-# Utility packages
-prettytable>=3.0.0
-packaging>=21.0
-
-# Note: The plugin will try to use local dingo installation first
-# If not available, install with: pip install dingo-python
+# Note: Heavy dependencies like datasets, opencv-python, nltk are excluded
+# to reduce installation size and avoid potential conflicts.
+# The plugin will work with basic text quality rules.
