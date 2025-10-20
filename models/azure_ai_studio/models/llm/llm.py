@@ -5,8 +5,6 @@ from typing import Any, Optional, Union
 from azure.ai.inference import ChatCompletionsClient
 from azure.ai.inference.models import (
     StreamingChatCompletionsUpdate,
-    SystemMessage,
-    UserMessage,
 )
 from azure.core.credentials import AzureKeyCredential
 from azure.core.exceptions import (
@@ -189,19 +187,27 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
         if not self.client:
             endpoint = str(credentials.get("endpoint"))
             api_key = str(credentials.get("api_key"))
+            api_version = credentials.get("api_version", "2024-05-01-preview")
+
             self.client = ChatCompletionsClient(
-                endpoint=endpoint, credential=AzureKeyCredential(api_key)
+                endpoint=endpoint,
+                credential=AzureKeyCredential(api_key),
+                api_version=api_version,
             )
         messages = [
             self._convert_prompt_message_to_dict(msg) for msg in prompt_messages
         ]
+        optional_fields = {}
+        # GPT O series model don't support max_tokens parameter
+        if "max_tokens" in model_parameters:
+            optional_fields["max_tokens"] = model_parameters["max_tokens"]
         payload = {
             "messages": messages,
-            "max_tokens": model_parameters.get("max_tokens", 4096),
             "temperature": model_parameters.get("temperature", 0),
             "top_p": model_parameters.get("top_p", 1),
             "stream": stream,
             "model": model,
+            **optional_fields,
         }
         if stop:
             payload["stop"] = stop
@@ -318,13 +324,15 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
         try:
             endpoint = str(credentials.get("endpoint"))
             api_key = str(credentials.get("api_key"))
+            api_version = credentials.get("api_version", "2024-05-01-preview")
             client = ChatCompletionsClient(
-                endpoint=endpoint, credential=AzureKeyCredential(api_key)
+                endpoint=endpoint,
+                credential=AzureKeyCredential(api_key),
+                api_version=api_version,
             )
             client.complete(
                 messages=[
-                    SystemMessage(content="I say 'ping', you say 'pong'"),
-                    UserMessage(content="ping"),
+                    {"role": "user", "content": "I say 'ping', you say 'pong'.ping"},
                 ],
                 model=model,
             )

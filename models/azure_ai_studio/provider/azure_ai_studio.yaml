@@ -47,6 +47,71 @@ model_credential_schema:
     type: secret-input
     variable: api_key
   - label:
+      en_US: API Version
+      zh_Hans: API 版本
+    options:
+        - label:
+            en_US: 2025-04-01-preview
+          value: 2025-04-01-preview
+        - label:
+            en_US: 2025-03-01-preview
+          value: 2025-03-01-preview
+        - label:
+            en_US: 2025-02-01-preview
+          value: 2025-02-01-preview
+        - label:
+            en_US: 2025-01-01-preview
+          value: 2025-01-01-preview
+        - label:
+            en_US: 2024-12-01-preview
+          value: 2024-12-01-preview
+        - label:
+            en_US: 2024-10-01-preview
+          value: 2024-10-01-preview
+        - label:
+            en_US: 2024-09-01-preview
+          value: 2024-09-01-preview
+        - label:
+            en_US: 2024-08-01-preview
+          value: 2024-08-01-preview
+        - label:
+            en_US: 2024-07-01-preview
+          value: 2024-07-01-preview
+        - label:
+            en_US: 2024-05-01-preview
+          value: 2024-05-01-preview
+        - label:
+            en_US: 2024-04-01-preview
+          value: 2024-04-01-preview
+        - label:
+            en_US: 2024-03-01-preview
+          value: 2024-03-01-preview
+        - label:
+            en_US: 2024-02-15-preview
+          value: 2024-02-15-preview
+        - label:
+            en_US: 2023-12-01-preview
+          value: 2023-12-01-preview
+        - label:
+            en_US: "2024-02-01"
+          value: "2024-02-01"
+        - label:
+            en_US: "2024-06-01"
+          value: "2024-06-01"
+        - label:
+            en_US: "2024-10-21"
+          value: "2024-10-21"
+    placeholder:
+      en_US: Select API Version (default is 2024-05-01-preview)
+      zh_Hans: 选择 API 版本（默认为 2024-05-01-preview）
+    default: 2024-05-01-preview
+    required: false
+    show_on:
+    - value: llm
+      variable: __model_type
+    type: select
+    variable: api_version
+  - label:
       en_US: Select completion mode
       zh_Hans: 选择对话类型
     placeholder:
