@@ -147,7 +147,6 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         else:
             self._set_reasoning_params(model_parameters)
             self._set_verbosity_params(model_parameters)
-        print(json.dumps(model_parameters, indent=2, ensure_ascii=False))
         return self._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
