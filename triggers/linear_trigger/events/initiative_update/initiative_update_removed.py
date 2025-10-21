@@ -59,8 +59,8 @@ class InitiativeUpdateRemovedEvent(Event):
         self._check_initiative_filter(data, parameters.get("initiative_filter"))
         self._check_author_filter(data, parameters.get("author_filter"))
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
-        payload = request.get_json()
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any] | None = None) -> Variables:
+        payload = payload or request.get_json()
         if not payload:
             raise ValueError("No payload received")
 

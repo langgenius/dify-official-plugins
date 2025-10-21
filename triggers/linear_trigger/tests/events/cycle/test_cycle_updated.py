@@ -30,7 +30,7 @@ class TestCycleUpdatedEvent:
     def test_basic_event_handling(self):
         event = CycleUpdatedEvent(self.runtime)
         request = MockRequest(self.base_payload)
-        result = event._on_event(request, {})
+        result = event._on_event(request, {}, request.get_json())
         assert result.variables['action'] == 'update'
         assert result.variables['type'] == 'Cycle'
 
@@ -38,7 +38,7 @@ class TestCycleUpdatedEvent:
         event = CycleUpdatedEvent(self.runtime)
         request = MockRequest(self.base_payload)
         parameters = {'name_contains': 'test'}
-        result = event._on_event(request, parameters)
+        result = event._on_event(request, parameters, request.get_json())
         assert result.variables['data']['id'] == 'test-123'
 
     def test_filter_no_match(self):
@@ -46,20 +46,20 @@ class TestCycleUpdatedEvent:
         request = MockRequest(self.base_payload)
         parameters = {'name_contains': 'nomatch,fail'}
         with pytest.raises(EventIgnoreError):
-            event._on_event(request, parameters)
+            event._on_event(request, parameters, request.get_json())
 
     def test_empty_filter(self):
         event = CycleUpdatedEvent(self.runtime)
         request = MockRequest(self.base_payload)
         parameters = {'name_contains': ''}
-        result = event._on_event(request, parameters)
+        result = event._on_event(request, parameters, request.get_json())
         assert result.variables['data']['id'] == 'test-123'
 
     def test_missing_payload(self):
         event = CycleUpdatedEvent(self.runtime)
         request = MockRequest(None)
         with pytest.raises(ValueError, match="No payload received"):
-            event._on_event(request, {})
+            event._on_event(request, {}, request.get_json())
 
 if __name__ == "__main__":
     pytest.main([__file__, "-v"])

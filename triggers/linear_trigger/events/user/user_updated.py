@@ -69,8 +69,8 @@ class UserUpdatedEvent(Event):
         self._check_guest_only(data, parameters.get("guest_only"))
         self._check_exclude_apps(data, parameters.get("exclude_app_users"))
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
-        payload = request.get_json()
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any] | None = None) -> Variables:
+        payload = payload or request.get_json()
         if not payload:
             raise ValueError("No payload received")
 

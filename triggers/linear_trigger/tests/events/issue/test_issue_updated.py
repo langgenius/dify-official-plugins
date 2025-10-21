@@ -61,7 +61,7 @@ class TestIssueUpdatedEvent:
         """Test basic event handling without filters"""
         event = IssueUpdatedEvent(self.runtime)
         request = MockRequest(self.base_payload)
-        result = event._on_event(request, {})
+        result = event._on_event(request, {}, request.get_json())
 
         assert result.variables["action"] == "update"
         assert result.variables["type"] == "Issue"
@@ -73,7 +73,7 @@ class TestIssueUpdatedEvent:
         request = MockRequest(self.base_payload)
         parameters = {"priority_filter": "1,2,3"}
 
-        result = event._on_event(request, parameters)
+        result = event._on_event(request, parameters, request.get_json())
         assert result.variables["data"]["priority"] == 2
 
     def test_priority_filter_no_match(self):
@@ -83,7 +83,7 @@ class TestIssueUpdatedEvent:
         parameters = {"priority_filter": "0,1"}  # Priority 0 and 1 only
 
         with pytest.raises(EventIgnoreError):
-            event._on_event(request, parameters)
+            event._on_event(request, parameters, request.get_json())
 
     def test_state_filter_match(self):
         """Test state filter with matching state"""
@@ -91,7 +91,7 @@ class TestIssueUpdatedEvent:
         request = MockRequest(self.base_payload)
         parameters = {"state_filter": "in progress,backlog"}
 
-        result = event._on_event(request, parameters)
+        result = event._on_event(request, parameters, request.get_json())
         assert result.variables["data"]["state"]["name"] == "In Progress"
 
     def test_state_filter_no_match(self):
@@ -101,7 +101,7 @@ class TestIssueUpdatedEvent:
         parameters = {"state_filter": "done,canceled"}
 
         with pytest.raises(EventIgnoreError):
-            event._on_event(request, parameters)
+            event._on_event(request, parameters, request.get_json())
 
     def test_title_contains_match(self):
         """Test title filter with matching keyword"""
@@ -109,7 +109,7 @@ class TestIssueUpdatedEvent:
         request = MockRequest(self.base_payload)
         parameters = {"title_contains": "test,bug,feature"}
 
-        result = event._on_event(request, parameters)
+        result = event._on_event(request, parameters, request.get_json())
         assert "test" in result.variables["data"]["title"].lower()
 
     def test_title_contains_no_match(self):
@@ -119,7 +119,7 @@ class TestIssueUpdatedEvent:
         parameters = {"title_contains": "urgent,critical"}
 
         with pytest.raises(EventIgnoreError):
-            event._on_event(request, parameters)
+            event._on_event(request, parameters, request.get_json())
 
     def test_multiple_filters_all_match(self):
         """Test multiple filters when all match"""
@@ -131,7 +131,7 @@ class TestIssueUpdatedEvent:
             "title_contains": "test"
         }
 
-        result = event._on_event(request, parameters)
+        result = event._on_event(request, parameters, request.get_json())
         assert result.variables["data"]["identifier"] == "TEST-123"
 
     def test_multiple_filters_one_fails(self):
@@ -145,7 +145,7 @@ class TestIssueUpdatedEvent:
         }
 
         with pytest.raises(EventIgnoreError):
-            event._on_event(request, parameters)
+            event._on_event(request, parameters, request.get_json())
 
     def test_empty_filters(self):
         """Test that empty filters don't block events"""
@@ -157,7 +157,7 @@ class TestIssueUpdatedEvent:
             "title_contains": ""
         }
 
-        result = event._on_event(request, parameters)
+        result = event._on_event(request, parameters, request.get_json())
         assert result.variables["data"]["identifier"] == "TEST-123"
 
     def test_missing_payload(self):
@@ -166,7 +166,7 @@ class TestIssueUpdatedEvent:
         request = MockRequest(None)
 
         with pytest.raises(ValueError, match="No payload received"):
-            event._on_event(request, {})
+            event._on_event(request, {}, request.get_json())
 
     def test_missing_data_field(self):
         """Test handling of missing data field"""
@@ -174,7 +174,7 @@ class TestIssueUpdatedEvent:
         request = MockRequest({"action": "update", "type": "Issue"})
 
         with pytest.raises(ValueError, match="No issue data in payload"):
-            event._on_event(request, {})
+            event._on_event(request, {}, request.get_json())
 
     def test_state_case_insensitive(self):
         """Test that state filter is case-insensitive"""
@@ -182,7 +182,7 @@ class TestIssueUpdatedEvent:
         request = MockRequest(self.base_payload)
         parameters = {"state_filter": "IN PROGRESS,DONE"}
 
-        result = event._on_event(request, parameters)
+        result = event._on_event(request, parameters, request.get_json())
         assert result.variables["data"]["state"]["name"] == "In Progress"
 
     def test_title_case_insensitive(self):
@@ -191,7 +191,7 @@ class TestIssueUpdatedEvent:
         request = MockRequest(self.base_payload)
         parameters = {"title_contains": "TEST"}
 
-        result = event._on_event(request, parameters)
+        result = event._on_event(request, parameters, request.get_json())
         assert result.variables["data"]["title"] == "Test Issue Updated"
 
 

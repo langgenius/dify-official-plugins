@@ -58,7 +58,7 @@ class TestProjectCreatedEvent:
     def test_basic_event_handling(self):
         event = ProjectCreatedEvent(self.runtime)
         request = MockRequest(self.base_payload)
-        result = event._on_event(request, {})
+        result = event._on_event(request, {}, request.get_json())
 
         assert result.variables["action"] == "create"
         assert result.variables["type"] == "Project"
@@ -70,7 +70,7 @@ class TestProjectCreatedEvent:
         request = MockRequest(self.base_payload)
         parameters = {"name_contains": "Q4,launch,product"}
 
-        result = event._on_event(request, parameters)
+        result = event._on_event(request, parameters, request.get_json())
         assert "q4" in result.variables["data"]["name"].lower()
 
     def test_name_contains_no_match(self):
@@ -79,14 +79,14 @@ class TestProjectCreatedEvent:
         parameters = {"name_contains": "Q1,Q2,Q3"}
 
         with pytest.raises(EventIgnoreError):
-            event._on_event(request, parameters)
+            event._on_event(request, parameters, request.get_json())
 
     def test_priority_filter_match(self):
         event = ProjectCreatedEvent(self.runtime)
         request = MockRequest(self.base_payload)
         parameters = {"priority_filter": "1,2,3"}
 
-        result = event._on_event(request, parameters)
+        result = event._on_event(request, parameters, request.get_json())
         assert result.variables["data"]["priority"] == 2
 
     def test_priority_filter_no_match(self):
@@ -95,14 +95,14 @@ class TestProjectCreatedEvent:
         parameters = {"priority_filter": "0,4"}
 
         with pytest.raises(EventIgnoreError):
-            event._on_event(request, parameters)
+            event._on_event(request, parameters, request.get_json())
 
     def test_team_filter_match(self):
         event = ProjectCreatedEvent(self.runtime)
         request = MockRequest(self.base_payload)
         parameters = {"team_filter": "team-123,team-789"}
 
-        result = event._on_event(request, parameters)
+        result = event._on_event(request, parameters, request.get_json())
         assert "team-123" in result.variables["data"]["teamIds"]
 
     def test_team_filter_no_match(self):
@@ -111,7 +111,7 @@ class TestProjectCreatedEvent:
         parameters = {"team_filter": "team-999,team-888"}
 
         with pytest.raises(EventIgnoreError):
-            event._on_event(request, parameters)
+            event._on_event(request, parameters, request.get_json())
 
     def test_multiple_filters_all_match(self):
         event = ProjectCreatedEvent(self.runtime)
@@ -122,7 +122,7 @@ class TestProjectCreatedEvent:
             "team_filter": "team-123"
         }
 
-        result = event._on_event(request, parameters)
+        result = event._on_event(request, parameters, request.get_json())
         assert result.variables["data"]["id"] == "project-123"
 
     def test_empty_filters(self):
@@ -134,7 +134,7 @@ class TestProjectCreatedEvent:
             "team_filter": ""
         }
 
-        result = event._on_event(request, parameters)
+        result = event._on_event(request, parameters, request.get_json())
         assert result.variables["data"]["id"] == "project-123"
 
     def test_missing_payload(self):
@@ -142,14 +142,14 @@ class TestProjectCreatedEvent:
         request = MockRequest(None)
 
         with pytest.raises(ValueError, match="No payload received"):
-            event._on_event(request, {})
+            event._on_event(request, {}, request.get_json())
 
     def test_missing_data_field(self):
         event = ProjectCreatedEvent(self.runtime)
         request = MockRequest({"action": "create", "type": "Project"})
 
         with pytest.raises(ValueError, match="No project data in payload"):
-            event._on_event(request, {})
+            event._on_event(request, {}, request.get_json())
 
 
 if __name__ == "__main__":

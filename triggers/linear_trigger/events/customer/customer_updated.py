@@ -78,8 +78,8 @@ class CustomerUpdatedEvent(Event):
         self._check_owner_filter(data, parameters.get("owner_filter"))
         self._check_domain_filter(data, parameters.get("domain_contains"))
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
-        payload = request.get_json()
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any] | None = None) -> Variables:
+        payload = payload or request.get_json()
         if not payload:
             raise ValueError("No payload received")
 

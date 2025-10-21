@@ -99,8 +99,8 @@ class CustomerNeedUpdatedEvent(Event):
         self._check_project_filter(data, parameters.get("project_filter"))
         self._check_creator_filter(data, parameters.get("creator_filter"))
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
-        payload = request.get_json()
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any] | None = None) -> Variables:
+        payload = payload or request.get_json()
         if not payload:
             raise ValueError("No payload received")
 

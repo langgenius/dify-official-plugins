@@ -65,8 +65,8 @@ class IssueLabelRemovedEvent(Event):
         self._check_team_filter(data, parameters.get("team_filter"))
         self._check_group_only(data, parameters.get("group_only"))
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
-        payload = request.get_json()
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any] | None = None) -> Variables:
+        payload = payload or request.get_json()
         if not payload:
             raise ValueError("No payload received")
 

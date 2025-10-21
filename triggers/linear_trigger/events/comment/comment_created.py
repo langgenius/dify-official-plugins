@@ -39,11 +39,11 @@ class CommentCreatedEvent(Event):
         if not issue_id:
             raise EventIgnoreError()
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any] | None = None) -> Variables:
         """
         Transform Linear comment created webhook event into structured Variables
         """
-        payload = request.get_json()
+        payload = payload or request.get_json()
         if not payload:
             raise ValueError("No payload received")
 

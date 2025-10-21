@@ -63,8 +63,8 @@ class ReactionRemovedEvent(Event):
         self._check_target_type_filter(data, parameters.get("target_type_filter"))
         self._check_user_filter(data, parameters.get("user_filter"))
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
-        payload = request.get_json()
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any] | None = None) -> Variables:
+        payload = payload or request.get_json()
         if not payload:
             raise ValueError("No payload received")
 

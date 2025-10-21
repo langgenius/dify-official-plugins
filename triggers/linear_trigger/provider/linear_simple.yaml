@@ -19,6 +19,7 @@ subscription_constructor:
       zh_Hans: "团队"
       ja_JP: "チーム"
     type: "dynamic-select"
+    multiple: true
     required: true
     placeholder:
       en_US: "Select a team"

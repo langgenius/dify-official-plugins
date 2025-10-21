@@ -61,11 +61,11 @@ class ProjectCreatedEvent(Event):
         if not any(team_id in allowed_teams for team_id in team_ids):
             raise EventIgnoreError()
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any] | None = None) -> Variables:
         """
         Transform Linear project created webhook event into structured Variables
         """
-        payload = request.get_json()
+        payload = payload or request.get_json()
         if not payload:
             raise ValueError("No payload received")
 

@@ -66,7 +66,7 @@ class TestProjectUpdatedEvent:
         event = ProjectUpdatedEvent(self.runtime)
         request = self._make_request(self.base_payload)
 
-        result = event._on_event(request, {})
+        result = event._on_event(request, {}, request.get_json())
         assert result.variables["action"] == "update"
         assert result.variables["data"]["statusId"] == "status-started"
 
@@ -75,7 +75,7 @@ class TestProjectUpdatedEvent:
         request = self._make_request(self.base_payload)
         parameters = {"name_contains": "product,launch"}
 
-        result = event._on_event(request, parameters)
+        result = event._on_event(request, parameters, request.get_json())
         assert "launch" in result.variables["data"]["name"].lower()
 
     def test_status_changed_filter_allows_transition(self):
@@ -83,7 +83,7 @@ class TestProjectUpdatedEvent:
         request = self._make_request(self.base_payload)
         parameters = {"status_changed": True}
 
-        result = event._on_event(request, parameters)
+        result = event._on_event(request, parameters, request.get_json())
         assert result.variables["data"]["status"]["type"] == "started"
 
     def test_status_changed_filter_requires_change(self):
@@ -95,7 +95,7 @@ class TestProjectUpdatedEvent:
         parameters = {"status_changed": True}
 
         with pytest.raises(EventIgnoreError):
-            event._on_event(request, parameters)
+            event._on_event(request, parameters, request.get_json())
 
     def test_status_changed_filter_without_previous_state(self):
         payload = copy.deepcopy(self.base_payload)
@@ -106,7 +106,7 @@ class TestProjectUpdatedEvent:
         parameters = {"status_changed": True}
 
         with pytest.raises(EventIgnoreError):
-            event._on_event(request, parameters)
+            event._on_event(request, parameters, request.get_json())
 
     def test_status_changed_detects_completion_timestamps(self):
         payload = copy.deepcopy(self.base_payload)
@@ -117,7 +117,7 @@ class TestProjectUpdatedEvent:
         request = self._make_request(payload)
         parameters = {"status_changed": True}
 
-        result = event._on_event(request, parameters)
+        result = event._on_event(request, parameters, request.get_json())
         assert result.variables["data"]["completedAt"] == "2025-12-01T00:00:00.000Z"
 
 
