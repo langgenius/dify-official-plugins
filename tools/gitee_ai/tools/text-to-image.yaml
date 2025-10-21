@@ -12,7 +12,7 @@ identity:
     en_US: text to image
   name: text-to-image
 parameters:
-- default: Kolors
+- default: FLUX.1-dev
   form: form
   human_description:
     en_US: The model input used to generate the image.
@@ -23,11 +23,26 @@ parameters:
   name: model
   options:
   - label:
-      en_US: flux-1-schnell
-    value: flux-1-schnell
+      en_US: FLUX.1-dev
+    value: FLUX.1-dev
   - label:
       en_US: Kolors
     value: Kolors
+  - label:
+      en_US: HiDream-I1-Full
+    value: HiDream-I1-Full
+  - label:
+      en_US: stable-diffusion-3.5-large-turbo
+    value: stable-diffusion-3.5-large-turbo
+  - label:
+      en_US: flux-1-schnell
+    value: flux-1-schnell
+  - label:
+      en_US: HunyuanDiT-v1.2-Diffusers-Distilled
+    value: HunyuanDiT-v1.2-Diffusers-Distilled
+  - label:
+      en_US: CogView4_6B
+    value: CogView4_6B
   - label:
       en_US: stable-diffusion-3-medium
     value: stable-diffusion-3-medium
@@ -35,8 +50,11 @@ parameters:
       en_US: stable-diffusion-xl-base-1.0
     value: stable-diffusion-xl-base-1.0
   - label:
-      en_US: stable-diffusion-v1-4
-    value: stable-diffusion-v1-4
+      en_US: FLUX_1-Krea-dev
+    value: FLUX_1-Krea-dev
+  - label:
+      en_US: Qwen-Image
+    value: Qwen-Image
   required: true
   type: select
 - form: llm
