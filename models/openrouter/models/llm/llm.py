@@ -89,6 +89,12 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
 
     @staticmethod
     def _set_reasoning_params(model_parameters: dict):
+        """Sets the reasoning parameters for the OpenRouter API.
+
+        This method modifies the model_parameters dictionary in-place to add
+        the 'reasoning' parameter block based on individual reasoning-related
+        parameters, which are removed from the dictionary.
+        """
         reasoning_params = {}
 
         reasoning_budget = model_parameters.pop('reasoning_budget', None)
@@ -115,10 +121,13 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
 
     @staticmethod
     def _set_verbosity_params(model_parameters: dict):
-        """
-        https://openrouter.ai/docs/api-reference/parameters#verbosity
-        :param model_parameters:
-        :return:
+        """Sets the verbosity parameter for the OpenRouter API.
+
+        This method modifies the model_parameters dictionary in-place to add
+        the 'verbosity' parameter if it's provided and valid.
+        See: https://openrouter.ai/docs/api-reference/parameters#verbosity
+
+        :param model_parameters: The dictionary of model parameters.
         """
         verbosity = model_parameters.pop("verbosity", None)
         if isinstance(verbosity, str) and verbosity in ["low", "medium", "high"]:
