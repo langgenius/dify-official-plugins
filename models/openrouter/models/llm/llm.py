@@ -1,4 +1,5 @@
 import codecs
+import json
 import re
 from collections.abc import Generator
 from typing import Optional, Union, Any
@@ -86,6 +87,52 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         
         return converted_messages
 
+    @staticmethod
+    def _set_reasoning_params(model_parameters: dict):
+        """Sets the reasoning parameters for the OpenRouter API.
+
+        This method modifies the model_parameters dictionary in-place to add
+        the 'reasoning' parameter block based on individual reasoning-related
+        parameters, which are removed from the dictionary.
+        """
+        reasoning_params = {}
+
+        reasoning_budget = model_parameters.pop('reasoning_budget', None)
+        enable_thinking = model_parameters.pop('enable_thinking', None)
+
+        if isinstance(enable_thinking, str) and enable_thinking == 'dynamic':
+            reasoning_budget = -1
+        elif isinstance(enable_thinking, bool):
+            reasoning_params['enabled'] = enable_thinking
+
+        if reasoning_budget is not None:
+            reasoning_params['max_tokens'] = reasoning_budget
+
+        reasoning_effort = model_parameters.pop('reasoning_effort', None)
+        if reasoning_effort is not None:
+            reasoning_params['effort'] = reasoning_effort
+
+        exclude_reasoning_tokens = model_parameters.pop('exclude_reasoning_tokens', None)
+        if exclude_reasoning_tokens is not None:
+            reasoning_params['exclude'] = exclude_reasoning_tokens
+
+        if reasoning_params:
+            model_parameters['reasoning'] = reasoning_params
+
+    @staticmethod
+    def _set_verbosity_params(model_parameters: dict):
+        """Sets the verbosity parameter for the OpenRouter API.
+
+        This method modifies the model_parameters dictionary in-place to add
+        the 'verbosity' parameter if it's provided and valid.
+        See: https://openrouter.ai/docs/api-reference/parameters#verbosity
+
+        :param model_parameters: The dictionary of model parameters.
+        """
+        verbosity = model_parameters.pop("verbosity", None)
+        if isinstance(verbosity, str) and verbosity in ["low", "medium", "high"]:
+            model_parameters["verbosity"] = verbosity
+
     def _invoke(
         self,
         model: str,
@@ -107,24 +154,8 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         if model in IMAGE_GENERATION_MODELS:
             model_parameters["modalities"] = ["image", "text"]
         else:
-            # reasoning
-            reasoning_params = {}
-            reasoning_budget = model_parameters.pop('reasoning_budget', None)
-            enable_thinking = model_parameters.pop('enable_thinking', None)
-            if enable_thinking == 'dynamic':
-                reasoning_budget = -1
-            elif isinstance(enable_thinking, bool):
-                reasoning_params['enabled'] = enable_thinking
-            if reasoning_budget is not None:
-                reasoning_params['max_tokens'] = reasoning_budget
-            reasoning_effort = model_parameters.pop('reasoning_effort', None)
-            if reasoning_effort is not None:
-                reasoning_params['effort'] = reasoning_effort
-            exclude_reasoning_tokens = model_parameters.pop('exclude_reasoning_tokens', None)
-            if exclude_reasoning_tokens is not None:
-                reasoning_params['exclude'] = exclude_reasoning_tokens
-            if reasoning_params:
-                model_parameters['reasoning'] = reasoning_params
+            self._set_reasoning_params(model_parameters)
+            self._set_verbosity_params(model_parameters)
         return self._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
