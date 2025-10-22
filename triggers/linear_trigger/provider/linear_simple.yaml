@@ -40,6 +40,20 @@ subscription_constructor:
     multiple: true
     default:
     - "Issue"
+    - "Attachment"
+    - "Comment"
+    - "IssueLabel"
+    - "Reaction"
+    - "Project"
+    - "ProjectUpdate"
+    - "Initiative"
+    - "InitiativeUpdate"
+    - "Cycle"
+    - "Document"
+    - "Customer"
+    - "CustomerNeed"
+    - "User"
+    - "IssueRelation"
     options:
     # Core Issue-related types
     - value: "Issue"
