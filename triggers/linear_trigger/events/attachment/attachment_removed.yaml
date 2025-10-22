@@ -1,0 +1,93 @@
+identity:
+  name: attachment_removed
+  author: langgenius
+  label:
+    en_US: Attachment Removed
+    zh_Hans: 附件删除
+    ja_JP: 添付ファイル削除
+description:
+  en_US: Triggers when an attachment is deleted
+  zh_Hans: 当附件删除时触发
+  ja_JP: 添付ファイルが削除されたときにトリガーされます
+parameters:
+- name: title_contains
+  label:
+    en_US: Title Contains
+    zh_Hans: 标题包含
+    ja_JP: タイトルに含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if the attachment title contains specific keywords (comma-separated)."
+    zh_Hans: "仅当附件标题包含指定关键词时触发（逗号分隔）。"
+    ja_JP: "添付ファイルのタイトルに特定のキーワードが含まれる場合のみトリガーします（カンマ区切り）。"
+
+- name: source_type_filter
+  label:
+    en_US: Source Type Filter
+    zh_Hans: 来源类型过滤
+    ja_JP: ソース種別フィルター
+  type: string
+  required: false
+  description:
+    en_US: "Restrict to deletions for attachments created by specific source types (comma-separated)."
+    zh_Hans: "仅当删除来自特定来源类型的附件时触发（逗号分隔）。"
+    ja_JP: "特定のソース種別で作成された添付の削除のみ対象にします（カンマ区切り）。"
+
+- name: issue_filter
+  label:
+    en_US: Issue Filter
+    zh_Hans: Issue 过滤
+    ja_JP: 課題フィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the attachment belonged to specific issue IDs (comma-separated)."
+    zh_Hans: "仅当附件属于指定的 Issue ID 时触发（逗号分隔）。"
+    ja_JP: "添付が指定した課題 ID に属していた場合のみトリガーします（カンマ区切り）。"
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [remove]
+    type:
+      type: string
+      enum: [Attachment]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: string
+        url:
+          type: string
+        issueId:
+          type: string
+        originalIssueId:
+          type: string
+        creatorId:
+          type: string
+        externalUserCreatorId:
+          type: string
+        sourceType:
+          type: string
+        groupBySource:
+          type: boolean
+        metadata:
+          type: object
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        archivedAt:
+          type: string
+    actor:
+      type: object
+  required: [action, type, data]
+extra:
+  python:
+    source: events/attachment/attachment_removed.py

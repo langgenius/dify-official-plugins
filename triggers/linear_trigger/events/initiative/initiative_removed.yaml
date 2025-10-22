@@ -1,0 +1,119 @@
+identity:
+  name: initiative_removed
+  author: langgenius
+  label:
+    en_US: Initiative Removed
+    zh_Hans: Initiative 删除
+    ja_JP: イニシアチブ削除
+description:
+  en_US: Triggers when a initiative is removed
+  zh_Hans: 当在 Linear 中删除或归档 Initiative 时触发
+  ja_JP: Linear でイニシアチブが削除またはアーカイブされたときにトリガーされます
+parameters:
+- name: name_contains
+  label:
+    en_US: Name Contains
+    zh_Hans: 名称包含
+    ja_JP: 名前に含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the initiative name includes specified keywords (comma-separated)."
+    zh_Hans: "仅当 Initiative 名称包含指定关键词时触发（逗号分隔）。"
+    ja_JP: "イニシアチブ名に指定したキーワードが含まれる場合のみトリガーします（カンマ区切り）。"
+- name: status_filter
+  label:
+    en_US: Status Filter
+    zh_Hans: 状态过滤
+    ja_JP: ステータスフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Restrict to removals of initiatives in specific statuses (comma-separated)."
+    zh_Hans: "仅当被删除的 Initiative 状态属于指定值时触发（逗号分隔）。"
+    ja_JP: "指定ステータスのイニシアチブが削除された場合のみ対象にします（カンマ区切り）。"
+- name: owner_filter
+  label:
+    en_US: Owner Filter
+    zh_Hans: 负责人过滤
+    ja_JP: オーナーフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the removed initiative was owned by specific user IDs (comma-separated)."
+    zh_Hans: "仅当被删除的 Initiative 负责人匹配指定用户 ID 时触发（逗号分隔）。"
+    ja_JP: "削除されたイニシアチブのオーナーが指定ユーザー ID の場合のみトリガーします（カンマ区切り）。"
+- name: health_filter
+  label:
+    en_US: Health Filter
+    zh_Hans: 健康度过滤
+    ja_JP: ヘルスフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Restrict to initiatives with specific health values (comma-separated)."
+    zh_Hans: "仅当 Initiative 健康度属于指定值时触发（逗号分隔）。"
+    ja_JP: "特定のヘルス値を持つイニシアチブが削除された場合のみ対象にします（カンマ区切り）。"
+- name: project_filter
+  label:
+    en_US: Linked Project Filter
+    zh_Hans: 关联项目过滤
+    ja_JP: 関連プロジェクトフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the removed initiative referenced specific project IDs (comma-separated)."
+    zh_Hans: "仅当被删除的 Initiative 关联到指定项目 ID 时触发（逗号分隔）。"
+    ja_JP: "削除されたイニシアチブが指定プロジェクト ID と関連していた場合のみトリガーします（カンマ区切り）。"
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [remove]
+    type:
+      type: string
+      enum: [Initiative]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        status:
+          type: string
+        health:
+          type: string
+        ownerId:
+          type: string
+        creatorId:
+          type: string
+        organizationId:
+          type: string
+        parentInitiative:
+          type: object
+        projects:
+          type: array
+        startedAt:
+          type: string
+        targetDate:
+          type: string
+        completedAt:
+          type: string
+        healthUpdatedAt:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        url:
+          type: string
+    actor:
+      type: object
+  required: [action, type, data]
+extra:
+  python:
+    source: events/initiative/initiative_removed.py

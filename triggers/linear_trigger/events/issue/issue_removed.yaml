@@ -1,0 +1,68 @@
+identity:
+  name: issue_removed
+  author: langgenius
+  label:
+    en_US: Issue Removed
+    zh_Hans: Issue 删除
+    ja_JP: 課題削除
+
+description:
+  en_US: Triggers when an issue is deleted or archived in Linear
+  zh_Hans: 当在 Linear 中删除或归档 issue 时触发
+  ja_JP: Linearで課題が削除またはアーカイブされたときにトリガーされます
+
+parameters:
+- name: title_contains
+  label:
+    en_US: Title Contains
+    zh_Hans: 标题包含
+    ja_JP: タイトルに含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if title contains keywords (comma-separated). Leave empty to trigger for all removed issues."
+    zh_Hans: "仅当标题包含关键词时触发（逗号分隔）。留空则触发所有删除。"
+    ja_JP: "タイトルにキーワードが含まれる場合のみトリガー（カンマ区切り）。空の場合は全削除でトリガー。"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [remove]
+    type:
+      type: string
+      enum: [Issue]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        identifier:
+          type: string
+        number:
+          type: number
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          type: number
+        priorityLabel:
+          type: string
+        url:
+          type: string
+        archivedAt:
+          type: string
+        teamId:
+          type: string
+    actor:
+      type: object
+  required:
+  - action
+  - type
+  - data
+
+extra:
+  python:
+    source: events/issue/issue_removed.py
