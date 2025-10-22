@@ -351,6 +351,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             full_text, "", 1
                         )
                         full_text = resp_content
+                elif is_reasoning:
+                    assistant_prompt_message.content = "\n</think>"
+                    full_text += "\n</think>"
                 if tool_calls:
                     message_tool_calls = []
                     for tool_call_obj in tool_calls:
@@ -388,8 +391,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     if "tool_calls" in response.output.choices[0].message:
                         self._handle_tool_call_stream(response, tool_calls, incremental_output)
                     continue
-                if isinstance(resp_content, list):
-                    resp_content = resp_content[0]["text"]
                 if incremental_output:
                     delta = resp_content
                     full_text += delta
@@ -570,7 +571,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         """
         Save base64 data to file
         'data:{upload_file.mime_type};base64,{encoded_string}'
-        
+
         :param base64_data: base64 data
         :return: file path
         """
@@ -658,6 +659,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         """
 
         content = delta.get("content") or ""
+        if isinstance(content, list) and content:
+            content = content[0].get("text") if isinstance(content[0], dict) else ""
+        else:
+            content = str(content)
         reasoning_content = delta.get("reasoning_content")
         try:
             if reasoning_content:
@@ -677,10 +682,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                         f"[wrap_thinking_by_reasoning_content-1] {ex}"
                     ) from ex
             elif is_reasoning and content:
-                if not isinstance(content, list):
-                    content = str(content)
-                else:
-                    content = ""
                 content = "\n</think>" + content
                 is_reasoning = False
         except Exception as ex:
@@ -692,14 +693,14 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
     def _handle_error_response(self, status_code: int, message: str, model: str = None) -> None:
         """
         Handle error response based on HTTP status code
-        
+
         :param status_code: HTTP status code
         :param message: error message
         :param model: model name (optional, for more detailed error messages)
         :raises: Appropriate InvokeError based on status code
         """
         error_msg = f"Failed to invoke model {model}, status code: {status_code}, message: {message}" if model else message
-        
+
         if status_code == 400:
             raise InvokeBadRequestError(error_msg)
         elif status_code == 401:

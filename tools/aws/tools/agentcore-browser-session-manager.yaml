@@ -1,0 +1,90 @@
+identity:
+  name: "agentcore-browser-session-manager"
+  author: "aws"
+  label:
+    en_US: "AgentCore Browser Session Manager"
+    zh_Hans: "AgentCore AgentCore 浏览器环境管理器"
+    pt_BR: "AgentCore Browser Session Manager"
+description:
+  human:
+    en_US: "Browser Session Manager is for launching or shutting down browser session. "
+    zh_Hans: "Browser Session Manager用于启动和关闭浏览器session。"
+    pt_BR: "Browser Session Manager is for launching or shutting down browser session. "
+  llm: "Browser Session Manager is for launching or shutting down browser session. "
+parameters:
+  - name: function_name
+    type: select
+    required: true
+    options:
+      - value: init_browser_session
+        label:
+          en_US: Initialize Browser Session
+          zh_Hans: 初始化浏览器会话
+          pt_BR: Inicializar Sessão do Navegador
+        description:
+          en_US: "Initialize a new AWS managed browser session for subsequent operations"
+          zh_Hans: "初始化一个新的AWS托管浏览器会话，用于后续操作"
+          pt_BR: "Inicializar uma nova sessão de navegador gerenciada pela AWS para operações subsequentes"
+      - value: close_browser_session
+        label:
+          en_US: Close Browser Session
+          zh_Hans: 关闭浏览器会话
+          pt_BR: Fechar Sessão do Navegador
+        description:
+          en_US: "Close the current browser session and clean up resources"
+          zh_Hans: "关闭当前浏览器会话并清理资源"
+          pt_BR: "Fechar a sessão atual do navegador e limpar recursos"
+    label:
+      en_US: function_name
+      zh_Hans: 功能名称
+      pt_BR: function_name
+    human_description:
+      en_US: "The function of Browser Session Manager"
+      zh_Hans: "Browser Session Manager的功能"
+      pt_BR: "The function of Browser Session Manager"
+    llm_description: "The specific fuction name of Browser Session Manager"
+    form: llm
+  - name: session_timeout_seconds
+    type: number
+    required: false
+    default: 7200
+    label:
+      en_US: Browser Session timeout seconds
+      zh_Hans: 浏览器环境Session过期时间
+      pt_BR: Browser Session timeout seconds
+    human_description:
+      en_US: "Browser Session timeout seconds"
+      zh_Hans: "浏览器环境Session过期时间"
+      pt_BR: "Browser Session timeout seconds"
+    llm_description: "The timeout seconds of browser interaction session"
+    form: form
+  - name: session_id
+    type: string
+    required: false
+    label:
+      en_US: Browser Session Id
+      zh_Hans: Browser Session Id
+      pt_BR: Browser Session Id
+    human_description:
+      en_US: "Browser Session Id"
+      zh_Hans: "Browser Session Id"
+      pt_BR: "Browser Session Id"
+    llm_description: "The session id of browser interaction environment"
+    form: form
+  - name: aws_region
+    type: string
+    required: false
+    default: "us-west-2"
+    label:
+      en_US: AWS Region
+      zh_Hans: AWS 区域
+      pt_BR: AWS Region
+    human_description:
+      en_US: AWS region where the Bedrock Knowledge Base is located
+      zh_Hans: Bedrock知识库所在的AWS区域
+      pt_BR: AWS region where the Bedrock Knowledge Base is located
+    llm_description: AWS region where the Bedrock Knowledge Base is located
+    form: form
+extra:
+  python:
+    source: tools/agentcore-browser-session-manager.py

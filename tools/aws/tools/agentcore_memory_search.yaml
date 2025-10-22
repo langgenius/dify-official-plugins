@@ -1,0 +1,138 @@
+identity:
+  name: agentcore_memory_search
+  author: AWS
+  label:
+    en_US: AgentCore Memory Search
+    zh_Hans: AgentCore 记忆搜索
+    pt_BR: Pesquisa de Memória AgentCore
+  icon: icon.svg
+
+description:
+  human:
+    en_US: AgentCore Memory Search tool for finding relevant memories by query
+    zh_Hans: AgentCore 记忆搜索工具，用于通过查询查找相关记忆
+    pt_BR: Ferramenta de pesquisa de memória AgentCore para encontrar memórias relevantes por consulta
+  llm: |
+    AGENTCORE MEMORY SEARCH TOOL - Tool for searching relevant memories.
+    
+    OPERATION:
+    - **SEARCH** - Find relevant memories by query using retrieve_memories
+    
+    WHEN TO USE:
+    - Looking for specific information from past interactions
+    - Need to find memories related to a particular topic
+    
+    **Function**:
+    - Search: client.retrieve_memories(memory_id, query, namespace, top_k)
+    
+    Use "all" as search query when no specific query is provided.
+    Use "/" as namespace for global search across all strategies.
+
+parameters:
+  - name: memory_id
+    type: string
+    required: true
+    label:
+      en_US: Memory ID
+      zh_Hans: 记忆ID
+      pt_BR: ID da Memória
+    human_description:
+      en_US: ID of the memory resource (get from AWS Console)
+      zh_Hans: 记忆资源ID（从AWS控制台获取）
+      pt_BR: ID do recurso de memória (obter do Console AWS)
+    llm_description: The memory resource ID from AWS Console AgentCore Memory service.
+    form: llm
+
+  - name: namespace
+    type: string
+    required: false
+    default: /
+    label:
+      en_US: Namespace
+      zh_Hans: 命名空间
+      pt_BR: Namespace
+    human_description:
+      en_US: Memory namespace (optional, use "/" when not provided for Global across all strategies)
+      zh_Hans: 记忆命名空间（可选，未提供时使用"/"进行全局搜索）
+      pt_BR: Namespace da memória (opcional, use "/" quando não fornecido para busca global)
+    llm_description: The memory namespace for search operation. Use "/" for global search across all strategies.
+    form: llm
+
+  - name: search_query
+    type: string
+    required: false
+    default: all
+    label:
+      en_US: Search Query
+      zh_Hans: 搜索查询
+      pt_BR: Consulta de Pesquisa
+    human_description:
+      en_US: What you want to search for (use "all" when not provided)
+      zh_Hans: 您想要搜索的内容（未提供时使用"all"）
+      pt_BR: O que você quer pesquisar (use "all" quando não fornecido)
+    llm_description: |
+      The search query to find relevant memories. Use natural language to describe
+      what you're looking for. Use "all" to search for all memories.
+    form: llm
+
+  - name: max_results
+    type: number
+    required: false
+    default: 10
+    label:
+      en_US: Maximum Results
+      zh_Hans: 最大结果数
+      pt_BR: Máximo de Resultados
+    human_description:
+      en_US: Maximum number of memories to return (1-20, default=10)
+      zh_Hans: 返回的最大记忆数量（1-20，默认=10）
+      pt_BR: Número máximo de memórias a retornar (1-20, padrão=10)
+    llm_description: |
+      Maximum number of memories to return (1-20, default 10)
+    form: llm
+
+  - name: aws_region
+    type: string
+    required: false
+    label:
+      en_US: AWS Region
+      zh_Hans: AWS区域
+      pt_BR: Região AWS
+    human_description:
+      en_US: AWS region for the AgentCore Memory service (optional)
+      zh_Hans: AgentCore Memory服务的AWS区域（可选）
+      pt_BR: Região AWS para o serviço AgentCore Memory (opcional)
+    llm_description: AWS region for the AgentCore Memory service.
+    form: form
+
+  - name: aws_access_key_id
+    type: string
+    required: false
+    label:
+      en_US: AWS Access Key ID
+      zh_Hans: AWS访问密钥ID
+      pt_BR: ID da Chave de Acesso AWS
+    human_description:
+      en_US: AWS access key ID for authentication (optional)
+      zh_Hans: 用于身份验证的AWS访问密钥ID（可选）
+      pt_BR: ID da chave de acesso AWS para autenticação (opcional)
+    llm_description: AWS access key ID for authentication.
+    form: form
+
+  - name: aws_secret_access_key
+    type: string
+    required: false
+    label:
+      en_US: AWS Secret Access Key
+      zh_Hans: AWS秘密访问密钥
+      pt_BR: Chave de Acesso Secreta AWS
+    human_description:
+      en_US: AWS secret access key for authentication (optional)
+      zh_Hans: 用于身份验证的AWS秘密访问密钥（可选）
+      pt_BR: Chave de acesso secreta AWS para autenticação (opcional)
+    llm_description: AWS secret access key for authentication.
+    form: form
+
+extra:
+  python:
+    source: tools/agentcore_memory_search.py

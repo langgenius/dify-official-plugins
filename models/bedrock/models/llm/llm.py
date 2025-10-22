@@ -33,6 +33,7 @@ from dify_plugin.entities.model.llm import (
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     ImagePromptMessageContent,
+    DocumentPromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
     PromptMessageTool,
@@ -287,12 +288,15 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 credentials['model_parameters'] = {}
             credentials['model_parameters']['model_name'] = model_name
             
+            # Get region prefix for model ID construction
+            region_name = credentials['aws_region']
+            region_prefix = None
+            
             if model_parameters.pop('cross-region', False):
-                region_name = credentials['aws_region']
-                
+                # Cross-region inference enabled
                 # Check if the model supports global prefix (currently mainly Claude 4 series)
                 supports_global = any(model_id.startswith(prefix) for prefix in [
-                    'anthropic.claude-sonnet-4', 'anthropic.claude-opus-4'
+                    'anthropic.claude-sonnet-4', 'anthropic.claude-sonnet-4-5'
                 ])
                 
                 if supports_global:
@@ -303,11 +307,19 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     region_prefix = model_ids.get_region_area(region_name, prefer_global=False)
                 
                 if not region_prefix:
-                    raise InvokeError(f'Failed to get cross-region Inference predix for {region_name}')
+                    raise InvokeError(f'Failed to get cross-region inference prefix for region {region_name}')
 
                 if not model_ids.is_support_cross_region(model_id):
-                    raise InvokeError(f"Model - {model_id} doesn't support cross-region Inference")
+                    raise InvokeError(f"Model {model_id} doesn't support cross-region inference")
                 
+                model_id = "{}.{}".format(region_prefix, model_id)
+            else:
+                # Cross-region inference not enabled, but still add region prefix for all models
+                region_prefix = model_ids.get_region_area(region_name, prefer_global=False)
+                
+                if not region_prefix:
+                    raise InvokeError(f'Failed to get region prefix for region {region_name}')
+
                 model_id = "{}.{}".format(region_prefix, model_id)
 
 
@@ -820,7 +832,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 message_dict = {"role": "user", "content": [{"text": message.content}]}
             else:
                 sub_messages = []
-                for message_content in message.content:
+                for idx, message_content in enumerate(message.content):
                     if message_content.type == PromptMessageContentType.TEXT:
                         message_content = cast(TextPromptMessageContent, message_content)
                         sub_message_dict = {"text": message_content.data}
@@ -840,6 +852,22 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
                         sub_message_dict = {
                             "image": {"format": mime_type.replace("image/", ""), "source": {"bytes": image_content}}
+                        }
+                        sub_messages.append(sub_message_dict)
+                    elif message_content.type == PromptMessageContentType.DOCUMENT:
+                        message_content = cast(DocumentPromptMessageContent, message_content)
+                        doc_bytes = base64.b64decode(message_content.base64_data)
+                        mime_type = message_content.mime_type
+
+                        SUPPORTED_DOC_MIME_TYPES = ["application/pdf"]
+                        if mime_type not in SUPPORTED_DOC_MIME_TYPES:
+                            raise ValueError(
+                                f"Unsupported document type {mime_type}, "
+                                f"only support application/pdf"
+                            )
+
+                        sub_message_dict = {
+                            "document": {"format": mime_type.replace("application/", ""), "name": f"pdf-{idx}", "source": {"bytes": doc_bytes}}
                         }
                         sub_messages.append(sub_message_dict)
 
@@ -898,12 +926,18 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :param tools: tools for tool calling
         :return:md = genai.GenerativeModel(model)
         """
+        model_parts = model.split(".")
+        
+        prefix = ""
+        model_name = ""
         if model.startswith('us.') or model.startswith('eu.'):
-            prefix = model.split(".")[1]
-            model_name = model.split(".")[2]
+            if len(model_parts) >= 3:
+                prefix = model_parts[1]
+                model_name = model_parts[2]
         else:
-            prefix = model.split(".")[0]
-            model_name = model.split(".")[1]
+            if len(model_parts) >= 2:
+                prefix = model_parts[0]
+                model_name = model_parts[1]
 
         if isinstance(prompt_messages, str):
             prompt = prompt_messages

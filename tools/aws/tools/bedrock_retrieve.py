@@ -13,6 +13,53 @@ class BedrockRetrieveTool(Tool):
     knowledge_base_id: str = None
     topk: int = None
 
+    def convert_to_dify_kb_format(self, kb_repsonse):
+        result_array = []
+        for idx, item in enumerate(kb_repsonse['retrievalResults']):
+            # 提取基础字段
+            source_uri = item['metadata']['x-amz-bedrock-kb-source-uri']
+            page_number = item['metadata'].get('x-amz-bedrock-kb-document-page-number', 0)
+            data_source_id = item['metadata'].get('x-amz-bedrock-kb-data-source-id', '')
+            chunk_id = item['metadata'].get('x-amz-bedrock-kb-chunk-id','')
+            score = item.get('score', 0.0)
+
+            # 生成动态字段
+            document_name = source_uri.split('/')[-1]
+
+            # 构建元数据
+            metadata = {
+                "_source": "knowledge",
+                "dataset_id": data_source_id,
+                "dataset_name": "BedRock knowledge base",
+                "document_id": document_name,
+                "document_name": document_name,
+                "document_data_source_type": item['content']['type'],
+                "segment_id": chunk_id,
+                "retriever_from": "workflow",
+                "score": round(score, 6),
+                "segment_hit_count": 1,  # 示例值递增
+                "segment_word_count": len(item['content']['text']),  # 计算词数
+                "segment_position": page_number,
+                "doc_metadata": {
+                    "tag": "bedrock knowledge base",
+                    "source": item["location"]["type"],
+                    "uploader": "advantage",
+                    "upload_date": int(1715299200),  # 固定时间戳
+                    "document_name": document_name,
+                    "last_update_date": int(1715299200)
+                },
+                "position": idx + 1
+            }
+
+            if item['content']['text'].strip() != "" :
+                result_array.append({
+                    "content": item['content']['text'],
+                    "title": f"{document_name}",  # 添加默认扩展名
+                    "metadata": metadata
+                })
+
+        return result_array
+
     def _bedrock_retrieve(
         self,
         query_input: str,
@@ -55,15 +102,7 @@ class BedrockRetrieveTool(Tool):
                 retrievalConfiguration=retrieval_configuration,
             )
 
-            results = []
-            for result in response.get("retrievalResults", []):
-                results.append(
-                    {
-                        "content": result.get("content", {}).get("text", ""),
-                        "score": result.get("score", 0.0),
-                        "metadata": result.get("metadata", {}),
-                    }
-                )
+            results = self.convert_to_dify_kb_format(response)
 
             return results
         except Exception as e:
@@ -130,13 +169,9 @@ class BedrockRetrieveTool(Tool):
             )
 
             line = 5
-            # Sort results by score in descending order
-            sorted_docs = sorted(retrieved_docs, key=operator.itemgetter("score"), reverse=True)
-
-            line = 6
             result_type = tool_parameters.get("result_type")
             if result_type == "json":
-                json_result = { "results" : sorted_docs }
+                json_result = { "results" : retrieved_docs }
                 yield self.create_json_message(json_result)
             else:
                 text = ""
