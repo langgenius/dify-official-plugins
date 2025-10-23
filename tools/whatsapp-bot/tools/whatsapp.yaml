@@ -1,0 +1,63 @@
+identity:
+  author: langgenius
+  name: whatsapp
+  description:
+    en_US: WhatsApp Cloud API tools for sending messages
+    ja_JP: メッセージ送信用の WhatsApp Cloud API ツール
+    zh_Hans: 用于发送消息的 WhatsApp Cloud API 工具
+    pt_BR: Ferramentas da API WhatsApp Cloud para envio de mensagens
+  icon: icons8-whatsapp.svg
+  label:
+    en_US: WhatsApp
+    ja_JP: WhatsApp
+    zh_Hans: WhatsApp
+    pt_BR: WhatsApp
+  tags:
+    - social
+credentials_for_provider:
+  access_token:
+    type: secret-input
+    required: true
+    label:
+      en_US: WhatsApp Access Token
+      ja_JP: WhatsApp アクセストークン
+      zh_Hans: WhatsApp 访问令牌
+      pt_BR: Token de Acesso do WhatsApp
+    placeholder:
+      en_US: Enter your WhatsApp Cloud API access token
+      ja_JP: WhatsApp Cloud API のアクセストークンを入力してください
+      zh_Hans: 请输入 WhatsApp Cloud API 访问令牌
+      pt_BR: Insira o token de acesso da API do WhatsApp Cloud
+  phone_number_id:
+    type: text-input
+    required: true
+    label:
+      en_US: Phone Number ID
+      ja_JP: 電話番号 ID
+      zh_Hans: 号码 ID
+      pt_BR: ID do Número de Telefone
+    placeholder:
+      en_US: Enter your WhatsApp Business Phone Number ID
+      ja_JP: WhatsApp ビジネスの電話番号 ID を入力してください
+      zh_Hans: 请输入 WhatsApp 企业电话号码 ID
+      pt_BR: Insira o ID do número de telefone comercial do WhatsApp
+  waba_id:
+    type: text-input
+    required: true
+    label:
+      en_US: WhatsApp Business Account ID (WABA ID)
+      ja_JP: WhatsApp ビジネスアカウント ID（WABA ID）
+      zh_Hans: WhatsApp 商业账户 ID（WABA ID）
+      pt_BR: ID da Conta Comercial do WhatsApp (WABA ID)
+    placeholder:
+      en_US: Enter your WhatsApp Business Account ID
+      ja_JP: WhatsApp ビジネスアカウント ID を入力してください
+      zh_Hans: 请输入 WhatsApp 商业账户 ID
+      pt_BR: Insira o ID da sua conta comercial do WhatsApp
+extra:
+  python:
+    source: tools/whatsapp_provider.py
+tools:
+  - tools/send_message.yaml
+  - tools/send_template.yaml
+

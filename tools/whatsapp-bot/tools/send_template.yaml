@@ -1,0 +1,82 @@
+identity:
+  author: langgenius
+  name: send_template
+  label:
+    en_US: Send WhatsApp Template Message
+    ja_JP: WhatsApp テンプレートメッセージを送信
+    zh_Hans: 发送 WhatsApp 模板消息
+    pt_BR: Enviar mensagem de modelo do WhatsApp
+description:
+  human:
+    en_US: Send an approved WhatsApp template message to a user
+    ja_JP: 承認された WhatsApp テンプレートメッセージをユーザーに送信
+    zh_Hans: 向用户发送已审批通过的 WhatsApp 模板消息
+    pt_BR: Envie uma mensagem de modelo aprovada do WhatsApp para um usuário
+  llm: "Send a template message. Parameters: to, template_name, language_code, template_parameters"
+parameters:
+  - name: to
+    label:
+      en_US: To (WhatsApp User ID)
+      ja_JP: 宛先（WhatsApp ユーザー ID）
+      zh_Hans: 目标（WhatsApp 用户 ID）
+      pt_BR: Para (ID do usuário do WhatsApp)
+    human_description:
+      en_US: WhatsApp user ID or phone in international format without '+'
+      ja_JP: 国際形式（+ なし）の電話番号または WhatsApp ユーザー ID
+      zh_Hans: 国际格式（不含+）的手机号或 WhatsApp 用户 ID
+      pt_BR: ID do usuário do WhatsApp ou telefone em formato internacional sem '+'
+    type: string
+    form: llm
+    required: false
+    llm_description: WhatsApp user ID / phone to send message to
+  - name: template_name
+    label:
+      en_US: Template Name
+      ja_JP: テンプレート名
+      zh_Hans: 模板名称
+      pt_BR: Nome do modelo
+    human_description:
+      en_US: Enter the name of your approved template 
+      ja_JP: 承認済みテンプレートの名前を入力
+      zh_Hans: 输入已审批通过的模板的名字
+      pt_BR: Insira o nome do seu modelo aprovado
+    type: string
+    form: form
+    required: true
+    llm_description: Name of the approved template to send
+  - name: language_code
+    label:
+      en_US: Language Code
+      ja_JP: 言語コード
+      zh_Hans: 语言代码
+      pt_BR: Código de idioma
+    human_description:
+      en_US: Template language code like en, zh, pt. 
+      ja_JP: en, zh, pt などのテンプレート言語コード。
+      zh_Hans: 模板语言代码，如 en, zh, pt。
+      pt_BR: Código de idioma do modelo, ex. en, zh, pt.
+    type: string
+    form: form
+    required: true
+    default: en
+    llm_description: Language code for template
+  - name: template_parameters
+    label:
+      en_US: Template Parameters
+      ja_JP: テンプレートパラメータ
+      zh_Hans: 模板参数
+      pt_BR: Parâmetros do modelo
+    human_description:
+      en_US: Optional parameters for variables. Comma-separated or JSON components array
+      ja_JP: 変数用の任意パラメータ。カンマ区切りまたは JSON components 配列
+      zh_Hans: 可选变量参数。逗号分隔或 JSON components 数组
+      pt_BR: Parâmetros opcionais das variáveis. Separados por vírgula ou array JSON de components
+    type: string
+    form: form
+    required: false
+    llm_description: Parameters for template placeholders
+extra:
+  python:
+    source: tools/send_template.py
+
+
