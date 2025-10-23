@@ -183,8 +183,8 @@ class VertexAiTextEmbeddingModel(CommonVertexAi, TextEmbeddingModel):
         
         embeddings = []
         token_usage = 0
-        
-        # Process texts in batches (GenAI SDK can handle multiple texts)
+
+        # Process each text individually with GenAI SDK
         for text in texts:
             response = client.models.embed_content(
                 model=model,
