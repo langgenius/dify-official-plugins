@@ -17,9 +17,9 @@ from dify_plugin.entities.model import (
 )
 from dify_plugin.entities.model.text_embedding import EmbeddingUsage, TextEmbeddingResult
 from dify_plugin.errors.model import CredentialsValidateFailedError
-from google.cloud import aiplatform
 from google.oauth2 import service_account
-from vertexai.language_models import TextEmbeddingModel as VertexTextEmbeddingModel
+from google import genai
+from google.genai import types
 
 from models.common import CommonVertexAi
 
@@ -57,13 +57,36 @@ class VertexAiTextEmbeddingModel(CommonVertexAi, TextEmbeddingModel):
         )
         project_id = credentials["vertex_project_id"]
         location = credentials["vertex_location"]
+        
+        # Initialize GenAI client
         if service_account_info:
-            service_accountSA = service_account.Credentials.from_service_account_info(service_account_info)
-            aiplatform.init(credentials=service_accountSA, project=project_id, location=location, api_transport="rest")
+            SCOPES = [
+                "https://www.googleapis.com/auth/cloud-platform",
+                "https://www.googleapis.com/auth/generative-language"
+            ]
+            credential = service_account.Credentials.from_service_account_info(
+                service_account_info,
+                scopes=SCOPES
+            )
+            client = genai.Client(
+                vertexai=True,
+                project=project_id,
+                location=location,
+                credentials=credential
+            )
         else:
-            aiplatform.init(project=project_id, location=location, api_transport="rest")
-        client = VertexTextEmbeddingModel.from_pretrained(model)
-        (embeddings_batch, embedding_used_tokens) = self._embedding_invoke(client=client, texts=texts)
+            client = genai.Client(
+                vertexai=True,
+                project=project_id,
+                location=location
+            )
+        
+        (embeddings_batch, embedding_used_tokens) = self._embedding_invoke(
+            client=client, 
+            model=model,
+            texts=texts,
+            input_type=input_type
+        )
         usage = self._calc_response_usage(model=model, credentials=credentials, tokens=embedding_used_tokens)
         return TextEmbeddingResult(embeddings=embeddings_batch, usage=usage, model=model)
 
@@ -106,31 +129,89 @@ class VertexAiTextEmbeddingModel(CommonVertexAi, TextEmbeddingModel):
             )
             project_id = credentials["vertex_project_id"]
             location = credentials["vertex_location"]
+            
+            # Initialize GenAI client
             if service_account_info:
-                service_accountSA = service_account.Credentials.from_service_account_info(service_account_info)
-                aiplatform.init(credentials=service_accountSA, project=project_id, location=location, api_transport="rest")
+                SCOPES = [
+                    "https://www.googleapis.com/auth/cloud-platform",
+                    "https://www.googleapis.com/auth/generative-language"
+                ]
+                credential = service_account.Credentials.from_service_account_info(
+                    service_account_info,
+                    scopes=SCOPES
+                )
+                client = genai.Client(
+                    vertexai=True,
+                    project=project_id,
+                    location=location,
+                    credentials=credential
+                )
             else:
-                aiplatform.init(project=project_id, location=location, api_transport="rest")
-            client = VertexTextEmbeddingModel.from_pretrained(model)
-            self._embedding_invoke(model=model, client=client, texts=["ping"])
+                client = genai.Client(
+                    vertexai=True,
+                    project=project_id,
+                    location=location
+                )
+            
+            # Test embedding with a simple text
+            self._embedding_invoke(client=client, model=model, texts=["ping"])
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
-    def _embedding_invoke(self, client: VertexTextEmbeddingModel, texts: list[str]) -> [list[float], int]:
+    def _embedding_invoke(
+        self, 
+        client: genai.Client, 
+        model: str,
+        texts: list[str],
+        input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT
+    ) -> tuple[list[list[float]], int]:
         """
         Invoke embedding model
 
+        :param client: GenAI client
         :param model: model name
-        :param client: model client
         :param texts: texts to embed
+        :param input_type: input type
         :return: embeddings and used tokens
         """
-        response = client.get_embeddings(texts)
+        # Map Dify input types to GenAI task types
+        task_type_mapping = {
+            EmbeddingInputType.DOCUMENT: "RETRIEVAL_DOCUMENT",
+            EmbeddingInputType.QUERY: "RETRIEVAL_QUERY",
+        }
+        task_type = task_type_mapping.get(input_type, "RETRIEVAL_DOCUMENT")
+        
         embeddings = []
         token_usage = 0
-        for i in range(len(response)):
-            embeddings.append(response[i].values)
-            token_usage += int(response[i].statistics.token_count)
+        
+        # Process texts in batches (GenAI SDK can handle multiple texts)
+        for text in texts:
+            response = client.models.embed_content(
+                model=model,
+                contents=text,
+                config=types.EmbedContentConfig(
+                    task_type=task_type
+                )
+            )
+            
+            # Extract embeddings
+            if hasattr(response, 'embeddings') and response.embeddings:
+                embedding_values = response.embeddings[0].values
+                embeddings.append(embedding_values)
+                
+                # Estimate token count (GenAI SDK doesn't always provide token count)
+                # Use tiktoken as fallback
+                if hasattr(response, 'usage_metadata') and hasattr(response.usage_metadata, 'prompt_token_count'):
+                    token_usage += response.usage_metadata.prompt_token_count
+                else:
+                    # Fallback to estimation
+                    try:
+                        enc = tiktoken.get_encoding("cl100k_base")
+                        token_usage += len(enc.encode(text))
+                    except Exception:
+                        # Rough estimation: 1 token ≈ 4 characters
+                        token_usage += len(text) // 4
+        
         return (embeddings, token_usage)
 
     def _calc_response_usage(self, model: str, credentials: dict, tokens: int) -> EmbeddingUsage:
