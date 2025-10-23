@@ -19,9 +19,18 @@ from yarl import URL
 
 logger = logging.getLogger(__name__)
 
-SUPPORTED_EXTENSIONS = {".pdf", ".doc", ".docx", ".ppt", ".pptx", ".png", ".jpg", ".jpeg"}
+SUPPORTED_EXTENSIONS = {
+    ".pdf",
+    ".doc",
+    ".docx",
+    ".ppt",
+    ".pptx",
+    ".png",
+    ".jpg",
+    ".jpeg",
+}
 MAX_RETRIES = 50
-SUPPORTED_IMAGE_EXTENSIONS = {'.png', '.jpg', '.jpeg'}
+SUPPORTED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg"}
 
 
 @dataclass
@@ -29,6 +38,7 @@ class Credentials:
     base_url: str
     token: str | None
     server_type: str
+
 
 @dataclass
 class ZipContent:
@@ -53,15 +63,15 @@ class MineruTool(Tool):
         base_url = self.runtime.credentials.get("base_url")
         server_type = self.runtime.credentials.get("server_type", "local")
         token = self.runtime.credentials.get("token")
-        
+
         if not base_url:
             logger.error("Missing base_url in credentials")
             raise ToolProviderCredentialValidationError("Please input base_url")
-        
+
         if server_type == "remote" and not token:
             logger.error("Missing token for remote server type")
             raise ToolProviderCredentialValidationError("Please input token")
-        
+
         return Credentials(base_url=base_url, server_type=server_type, token=token)
 
     @staticmethod
@@ -69,13 +79,11 @@ class MineruTool(Tool):
         """Get request headers."""
         if credentials.server_type == "remote":
             return {
-                'Authorization': f'Bearer {credentials.token}',
-                'Content-Type': 'application/json',
-                'source': 'dify'
+                "Authorization": f"Bearer {credentials.token}",
+                "Content-Type": "application/json",
+                "source": "dify",
             }
-        return {
-            'accept': 'application/json'
-        }
+        return {"accept": "application/json"}
 
     @staticmethod
     def _build_api_url(base_url: str, *paths: str) -> str:
@@ -88,7 +96,7 @@ class MineruTool(Tool):
     def validate_token(self) -> None:
         """Validate URL and token."""
         credentials = self._get_credentials()
-        
+
         if credentials.server_type == "local":
             self._validate_local_server(credentials)
         elif credentials.server_type == "remote":
@@ -98,7 +106,7 @@ class MineruTool(Tool):
         """Validate local server connection"""
         url = self._build_api_url(credentials.base_url, "docs")
         logger.info(f"Validating local server connection to {url}")
-        
+
         try:
             response = get(url, headers=self._get_headers(credentials), timeout=10)
             if response.status_code != 200:
@@ -112,7 +120,7 @@ class MineruTool(Tool):
         """Validate remote server connection"""
         url = self._build_api_url(credentials.base_url, "api/v4/file-urls/batch")
         logger.info(f"Validating remote server connection to {url}")
-        
+
         try:
             response = post(url, headers=self._get_headers(credentials), timeout=10)
             if response.status_code != 200:
@@ -123,11 +131,7 @@ class MineruTool(Tool):
             raise ToolProviderCredentialValidationError("Please check your base_url and token")
 
     def _upload_image_to_dify(self, image_bytes: bytes, file_name: str) -> UploadFileResponse:
-        return self.session.file.upload(
-            file_name,
-            image_bytes,
-            "image/jpeg"
-        )
+        return self.session.file.upload(file_name, image_bytes, "image/jpeg")
 
     def _process_base64_image(self, encoded_image_data: str, file_name: str) -> UploadFileResponse:
         try:
@@ -138,14 +142,16 @@ class MineruTool(Tool):
             logger.error(f"Failed to decode base64 image {file_name}: {e}")
             raise ValueError(f"Invalid base64 image data for {file_name}")
 
-    def _parse_local_v1(self, credentials: Credentials, tool_parameters: Dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
+    def _parse_local_v1(
+        self, credentials: Credentials, tool_parameters: Dict[str, Any]
+    ) -> Generator[ToolInvokeMessage, None, None]:
         """Parse local file by v1 api"""
         params = {
-            'parse_method': tool_parameters.get('parse_method', 'auto'),
-            'return_layout': False,
-            'return_info': False,
-            'return_content_list': True,
-            'return_images': True
+            "parse_method": tool_parameters.get("parse_method", "auto"),
+            "return_layout": False,
+            "return_info": False,
+            "return_content_list": True,
+            "return_images": True,
         }
 
         file = tool_parameters.get("file")
@@ -158,7 +164,7 @@ class MineruTool(Tool):
         file_data = {"file": (file.filename, file.blob)}
 
         logger.info(f"Starting file parse request to {task_url} by v1 api")
-        
+
         try:
             response = post(task_url, headers=headers, params=params, files=file_data)
         except Exception as e:
@@ -184,8 +190,8 @@ class MineruTool(Tool):
                 images.append(file_res)
                 if not file_res.preview_url:
                     yield self.create_blob_message(
-                        base64.b64decode(encoded_image_data.split(",")[1]), 
-                        meta={"filename": file_name, "mime_type": "image/jpeg"}
+                        base64.b64decode(encoded_image_data.split(",")[1]),
+                        meta={"filename": file_name, "mime_type": "image/jpeg"},
                     )
             except Exception as e:
                 logger.error(f"Failed to process image {file_name}: {e}")
@@ -195,33 +201,40 @@ class MineruTool(Tool):
         yield self.create_text_message(md_content)
         yield self.create_json_message({"content_list": content_list})
 
-    def _parse_local_v2(self, credentials: Credentials, tool_parameters: Dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
+    def _parse_local_v2(
+        self, credentials: Credentials, tool_parameters: Dict[str, Any]
+    ) -> Generator[ToolInvokeMessage, None, None]:
         lang_list = ["ch"]
-        if tool_parameters.get('language') and tool_parameters.get('language') != "auto":
-            lang_list = tool_parameters.get('language')
+        if tool_parameters.get("language") and tool_parameters.get("language") != "auto":
+            lang_list = tool_parameters.get("language")
 
-        if (tool_parameters.get('backend', 'pipeline') == 'vlm-sglang-client' or tool_parameters.get('backend', 'pipeline') == 'vlm-http-client') and not tool_parameters.get('server_url'):
-            raise ToolProviderCredentialValidationError("When backend is vlm-sglang-client or vlm-http-client, server_url is required")
+        if (
+            tool_parameters.get("backend", "pipeline") == "vlm-sglang-client"
+            or tool_parameters.get("backend", "pipeline") == "vlm-http-client"
+        ) and not tool_parameters.get("server_url"):
+            raise ToolProviderCredentialValidationError(
+                "When backend is vlm-sglang-client or vlm-http-client, server_url is required"
+            )
 
         body = {
-            'parse_method': tool_parameters.get('parse_method', 'auto'),
-            'return_md': True,
-            'return_model_output': False,
-            'return_content_list': True,
-            'lang_list': lang_list,
-            'return_images': True,
-            'backend': tool_parameters.get('backend', 'pipeline'),
-            'formula_enable': tool_parameters.get('formula_enable', True),
-            'table_enable': tool_parameters.get('table_enable', True),
-            'server_url': tool_parameters.get('server_url'),
-            'return_middle_json': False,
+            "parse_method": tool_parameters.get("parse_method", "auto"),
+            "return_md": True,
+            "return_model_output": False,
+            "return_content_list": True,
+            "lang_list": lang_list,
+            "return_images": True,
+            "backend": tool_parameters.get("backend", "pipeline"),
+            "formula_enable": tool_parameters.get("formula_enable", True),
+            "table_enable": tool_parameters.get("table_enable", True),
+            "server_url": tool_parameters.get("server_url"),
+            "return_middle_json": False,
         }
 
         file = tool_parameters.get("file")
         headers = self._get_headers(credentials)
         task_url = self._build_api_url(credentials.base_url, "file_parse")
         file_data = [("files", (file.filename, file.blob))]
-        
+
         try:
             response = post(task_url, headers=headers, data=body, files=file_data)
         except Exception as e:
@@ -236,7 +249,7 @@ class MineruTool(Tool):
             logger.error(f"File parse failed with status {response.status_code}")
             yield self.create_text_message(f"Failed to parse file. result: {response.text}")
             return
-        
+
         logger.info("File parse completed successfully")
         response_json = response.json()
         results = response_json.get("results", {})
@@ -252,12 +265,15 @@ class MineruTool(Tool):
                         result_item["images"].append(file_res)
                         if not file_res.preview_url:
                             yield self.create_blob_message(
-                                base64.b64decode(encoded_image_data.split(",")[1]), 
-                                meta={"filename": img_name, "mime_type": "image/jpeg"}
+                                base64.b64decode(encoded_image_data.split(",")[1]),
+                                meta={
+                                    "filename": img_name,
+                                    "mime_type": "image/jpeg",
+                                },
                             )
                     except Exception as e:
                         logger.error(f"Failed to process image {img_name}: {e}")
-                
+
                 yield self.create_variable_message("images", result_item["images"])
 
             if result.get("content_list"):
@@ -270,7 +286,9 @@ class MineruTool(Tool):
             if result.get("md_content"):
                 result_item["md_content"] = result["md_content"]
                 if result_item.get("images"):
-                    result_item["md_content"] = self._replace_md_img_path(result_item["md_content"], result_item["images"])
+                    result_item["md_content"] = self._replace_md_img_path(
+                        result_item["md_content"], result_item["images"]
+                    )
                 yield self.create_text_message(result_item["md_content"])
 
         yield self.create_json_message({"_result": result_item})
@@ -280,17 +298,21 @@ class MineruTool(Tool):
             detail = response.json().get("detail")
             if isinstance(detail, list) and response.status_code == 422:
                 for item in detail:
-                    if (item.get("type") == "missing" and 
-                        item.get("loc") and 
-                        len(item.get("loc")) >= 2 and
-                        item.get("loc")[0] == "body" and 
-                        item.get("loc")[1] == "file"):
+                    if (
+                        item.get("type") == "missing"
+                        and item.get("loc")
+                        and len(item.get("loc")) >= 2
+                        and item.get("loc")[0] == "body"
+                        and item.get("loc")[1] == "file"
+                    ):
                         return True
             return False
         except Exception:
             return False
 
-    def _parser_file_local(self, credentials: Credentials, tool_parameters: Dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
+    def _parser_file_local(
+        self, credentials: Credentials, tool_parameters: Dict[str, Any]
+    ) -> Generator[ToolInvokeMessage, None, None]:
         file = tool_parameters.get("file", None)
         if not file:
             logger.error("No file provided for file parsing")
@@ -300,7 +322,9 @@ class MineruTool(Tool):
 
         yield from self._parse_local_v2(credentials, tool_parameters)
 
-    def _parser_file_remote(self, credentials: Credentials, tool_parameters: Dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
+    def _parser_file_remote(
+        self, credentials: Credentials, tool_parameters: Dict[str, Any]
+    ) -> Generator[ToolInvokeMessage, None, None]:
         file = tool_parameters.get("file", None)
         if not file:
             logger.error("No file provided for file parsing")
@@ -315,13 +339,18 @@ class MineruTool(Tool):
             "enable_formula": tool_parameters.get("enable_formula", True),
             "enable_table": tool_parameters.get("enable_table", True),
             "language": tool_parameters.get("language", "auto"),
-            "layout_model": tool_parameters.get("layout_model", "doclayout_yolo"),
+            "model_version": tool_parameters.get("model_version", "pipeline"),
             "extra_formats": json.loads(tool_parameters.get("extra_formats", "[]")),
-            "files": [{"name": file.filename, "is_ocr": tool_parameters.get("enable_ocr", False)}]
+            "files": [
+                {
+                    "name": file.filename,
+                    "is_ocr": tool_parameters.get("enable_ocr", False),
+                }
+            ],
         }
-        
+
         task_url = self._build_api_url(credentials.base_url, "api/v4/file-urls/batch")
-        
+
         try:
             response = post(task_url, headers=header, json=data)
         except Exception as e:
@@ -329,13 +358,13 @@ class MineruTool(Tool):
             raise Exception(f"Failed to create parsing task: {e}")
 
         if response.status_code != 200:
-            logger.error(f'Apply upload url failed. status:{response.status_code}, result:{response.text}')
-            raise Exception(f'Apply upload url failed. status:{response.status_code}, result:{response.text}')
+            logger.error(f"Apply upload url failed. status:{response.status_code}, result:{response.text}")
+            raise Exception(f"Apply upload url failed. status:{response.status_code}, result:{response.text}")
 
         result = response.json()
 
         if result["code"] == 0:
-            logger.info(f'Apply upload url success, result:{result}')
+            logger.info(f"Apply upload url success, result:{result}")
             batch_id = result["data"]["batch_id"]
             urls = result["data"]["file_urls"]
 
@@ -347,7 +376,7 @@ class MineruTool(Tool):
                 raise Exception(f"{urls[0]} upload failed")
 
             extract_result = self._poll_get_parse_result(credentials, batch_id)
-            
+
             full_zip_url = extract_result.get("full_zip_url")
             if full_zip_url:
                 yield from self._download_and_extract_zip(full_zip_url)
@@ -370,19 +399,19 @@ class MineruTool(Tool):
                 if response.status_code == 200:
                     data = response.json().get("data", {})
                     extract_results = data.get("extract_result", [])
-                    
+
                     if not extract_results:
                         logger.warning("No extract results found")
                         continue
-                    
+
                     extract_result = extract_results[0]
                     state = extract_result.get("state")
-                    
+
                     if state == "done":
                         logger.info("Parse completed successfully")
                         return extract_result
                     elif state == "failed":
-                        err_msg = extract_result.get('err_msg', 'Unknown error')
+                        err_msg = extract_result.get("err_msg", "Unknown error")
                         logger.error(f"Parse failed, reason: {err_msg}")
                         raise Exception(f"Parse failed, reason: {err_msg}")
                     else:
@@ -433,7 +462,9 @@ class MineruTool(Tool):
         yield self.create_text_message(content.md_content)
         yield self.create_variable_message("images", content.images)
 
-    def _process_zip_file(self, f, file_info: zipfile.ZipInfo, file_name: str, content: ZipContent) -> Generator[ToolInvokeMessage, None, None]:
+    def _process_zip_file(
+        self, f, file_info: zipfile.ZipInfo, file_name: str, content: ZipContent
+    ) -> Generator[ToolInvokeMessage, None, None]:
         """Process single file from ZIP archive."""
         try:
             if file_name.startswith("images/") and file_name.endswith(tuple(SUPPORTED_IMAGE_EXTENSIONS)):
@@ -444,32 +475,38 @@ class MineruTool(Tool):
                     base_name = os.path.basename(file_info.filename)
                     yield self.create_blob_message(
                         image_bytes,
-                        meta={"filename": base_name, "mime_type": "image/jpeg"}
+                        meta={"filename": base_name, "mime_type": "image/jpeg"},
                     )
             elif file_name.endswith(".md"):
-                content.md_content = f.read().decode('utf-8')
-            elif file_name.endswith('.json') and file_name != "layout.json":
-                content.content_list.append(json.loads(f.read().decode('utf-8')))
-            elif file_name.endswith('.html'):
-                html_content = f.read().decode('utf-8')
+                content.md_content = f.read().decode("utf-8")
+            elif file_name.endswith(".json") and file_name != "layout.json":
+                content.content_list.append(json.loads(f.read().decode("utf-8")))
+            elif file_name.endswith(".html"):
+                html_content = f.read().decode("utf-8")
                 content.html_content = html_content
                 yield self.create_blob_message(
-                    html_content.encode('utf-8'),
-                    meta={"filename": file_name, "mime_type": "text/html"}
+                    html_content.encode("utf-8"),
+                    meta={"filename": file_name, "mime_type": "text/html"},
                 )
-            elif file_name.endswith('.docx'):
+            elif file_name.endswith(".docx"):
                 docx_content = f.read()
                 content.docx_content = docx_content
                 yield self.create_blob_message(
                     docx_content,
-                    meta={"filename": file_name, "mime_type": "application/msword"}
+                    meta={
+                        "filename": file_name,
+                        "mime_type": "application/msword",
+                    },
                 )
-            elif file_name.endswith('.tex'):
-                latex_content = f.read().decode('utf-8')
+            elif file_name.endswith(".tex"):
+                latex_content = f.read().decode("utf-8")
                 content.latex_content = latex_content
                 yield self.create_blob_message(
-                    latex_content.encode('utf-8'),
-                    meta={"filename": file_name, "mime_type": "application/x-tex"}
+                    latex_content.encode("utf-8"),
+                    meta={
+                        "filename": file_name,
+                        "mime_type": "application/x-tex",
+                    },
                 )
         except Exception as e:
             logger.error(f"Failed to process file {file_name}: {e}")
@@ -477,11 +514,7 @@ class MineruTool(Tool):
     def _process_image(self, image_bytes: bytes, file_info: zipfile.ZipInfo) -> UploadFileResponse:
         """Process image file from ZIP archive."""
         base_name = os.path.basename(file_info.filename)
-        return self.session.file.upload(
-            base_name,
-            image_bytes,
-            "image/jpeg"
-        )
+        return self.session.file.upload(base_name, image_bytes, "image/jpeg")
 
     @staticmethod
     def _replace_md_img_path(md_content: str, images: List[UploadFileResponse]) -> str:
@@ -496,13 +529,13 @@ class MineruTool(Tool):
         """Validate file type."""
         extension = os.path.splitext(filename)[1].lower()
         if extension not in SUPPORTED_EXTENSIONS:
-            raise ValueError(f"File extension {extension} is not supported. Supported extensions: {SUPPORTED_EXTENSIONS}")
+            raise ValueError(
+                f"File extension {extension} is not supported. Supported extensions: {SUPPORTED_EXTENSIONS}"
+            )
         return extension
 
     def parser_file(
-        self,
-        credentials: Credentials,
-        tool_parameters: Dict[str, Any]
+        self, credentials: Credentials, tool_parameters: Dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
         """Main entry point for parsing file."""
         if credentials.server_type == "local":
@@ -511,5 +544,3 @@ class MineruTool(Tool):
             yield from self._parser_file_remote(credentials, tool_parameters)
         else:
             raise ValueError(f"Unsupported server type: {credentials.server_type}")
-
-
