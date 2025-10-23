@@ -359,7 +359,7 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                     continue
                 msg = chunk_json.get("message", {}) or {}
                 text = msg.get("content", "")
-                response_tool_calls = msg.get("tool_calls", [])
+                response_tool_calls = msg.get("tool_calls", []) or []
                 tool_calls = [
                     self._extract_response_tool_call(tool_call)
                     for tool_call in response_tool_calls
