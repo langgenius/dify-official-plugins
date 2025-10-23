@@ -1,0 +1,71 @@
+provider: gmicloud
+label:
+  en_US: "GMI Cloud"
+description:
+  en_US: "Models provided by GMI Cloud."
+  zh_Hans: "GMI Cloud 提供的模型。"
+  ja_JP: "GMI Cloudが提供するモデル。"
+icon_small:
+  en_US: "icon_gmi_small.svg"
+icon_large:
+  en_US: "icon_gmi_black.svg"
+background: "#E5E7EB"
+help:
+  title:
+    en_US: "Get your API Key from GMI Cloud"
+    zh_Hans: "从 GMI Cloud 获取 API Key"
+    ja_JP: "GMI CloudからAPIキーを取得"
+  url:
+    en_US: "https://console.gmicloud.ai/user-setting/organization/api-key-management"
+supported_model_types:
+  - llm
+configurate_methods:
+  - predefined-model
+  - customizable-model
+model_credential_schema:
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+      ja_JP: モデル名
+    placeholder:
+      en_US: Enter your model name
+      zh_Hans: 输入模型名称
+      ja_JP: モデル名を入力してください
+  credential_form_schemas:
+    - variable: gmicloud_api_key
+      label:
+        en_US: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        zh_Hans: 在此输入您的 API Key
+        en_US: Enter your API Key
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: gmicloud_api_key
+      label:
+        en_US: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        zh_Hans: 在此输入您的 API Key
+        en_US: Enter your API Key
+    - variable: endpoint_url
+      label:
+        en_US: API Endpoint URL
+        zh_Hans: API 端点地址
+      type: text-input
+      required: false
+      placeholder:
+        en_US: https://api.gmi-serving.com
+        zh_Hans: https://api.gmi-serving.com
+models:
+  llm:
+    predefined:
+      - "models/llm/*.yaml"
+extra:
+  python:
+    provider_source: provider/gmicloud.py
+    model_sources:
+      - "models/llm/llm.py"
