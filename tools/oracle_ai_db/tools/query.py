@@ -1,4 +1,6 @@
 import oracledb
+import csv
+import io
 from typing import Generator, Any
 
 from dify_plugin import Tool
@@ -35,6 +37,7 @@ class OracleDbPluginTool(Tool):
             password = tool_parameters.get('password')
             service_name = tool_parameters.get('service_name')
             sql_query = tool_parameters.get('query')
+            output_format = tool_parameters.get('output_format', 'JSON')  # Default to JSON format
             
             # Validate required parameters
             if not all([host, user, password, service_name, sql_query]):
@@ -88,17 +91,50 @@ class OracleDbPluginTool(Tool):
                             row_dict[key] = value.strftime('%Y-%m-%d %H:%M:%S')
                     results.append(row_dict)
                 
-                # Return results
+                # Format and return results based on output_format
                 messages = {
                     'en_US': f'Query executed successfully, returned {len(results)} rows.',
                     'zh_Hans': f'查询执行成功，返回了{len(results)}行数据。'
                 }
-                yield self.create_json_message({
-                    "status": "success",
-                    "data": results,
-                    "columns": columns,
-                    "message": self.get_message(messages)
-                })
+                
+                if output_format == 'JSON':
+                    # Return results in JSON format
+                    yield self.create_json_message({
+                        "status": "success",
+                        "data": results,
+                        "columns": columns,
+                        "message": self.get_message(messages)
+                    })
+                elif output_format == 'Text-Markdown':
+                    # Return results in Markdown table format
+                    markdown_table = '| ' + ' | '.join(columns) + ' |\n'
+                    markdown_table += '| ' + ' | '.join(['---'] * len(columns)) + ' |\n'
+                    
+                    for row in results:
+                        row_values = []
+                        for col in columns:
+                            value = row.get(col, '')
+                            row_values.append(str(value) if value is not None else '')
+                        markdown_table += '| ' + ' | '.join(row_values) + ' |\n'
+                    
+                    yield self.create_text_message(f"{self.get_message(messages)}\n\n{markdown_table}")
+                elif output_format == 'Text-CSV':
+                    # Return results in CSV format, only return CSV content without message
+                    output = io.StringIO()
+                    writer = csv.DictWriter(output, fieldnames=columns)
+                    writer.writeheader()
+                    writer.writerows(results)
+                    csv_content = output.getvalue()
+                    
+                    yield self.create_text_message(csv_content)
+                else:
+                    # Default to JSON if format is not recognized
+                    yield self.create_json_message({
+                        "status": "success",
+                        "data": results,
+                        "columns": columns,
+                        "message": self.get_message(messages)
+                    })
         except Exception as e:
             # Handle exceptions and return error message
             yield self.create_json_message({

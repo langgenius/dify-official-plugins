@@ -1,0 +1,16 @@
+identity:
+  author: langgenius
+  name: oracle_ai_db
+  label:
+    en_US: "Oracle AI Database"
+    zh_Hans: "Oracle AI 数据库"
+  description:
+    en_US: "Oracle AI database"
+    zh_Hans: "Oracle AI 数据库"
+  icon: "oracle.svg"
+tools:
+  - tools/query.yaml
+  - tools/execution.yaml
+extra:
+  python:
+    source: provider/oracle_ai_db.py
