@@ -1,12 +1,10 @@
 import oracledb
-import csv
-import io
 from typing import Generator, Any
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-class OracleDbPluginTool(Tool):
+class OracleDbExecutionTool(Tool):
     def __init__(self, runtime=None, session=None):
         super().__init__(runtime, session)
         # Get current language environment, default to English
@@ -26,8 +24,6 @@ class OracleDbPluginTool(Tool):
         return messages_dict.get(self.language, messages_dict.get('en_US', ''))
     
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
-        # Or can also use Iterator[ToolInvokeMessage] if you don't need to specify send and return types
-        # def _invoke(self, tool_parameters: dict[str, Any]) -> Iterator[ToolInvokeMessage]:
         conn = None
         try:
             # Get connection parameters
@@ -36,14 +32,14 @@ class OracleDbPluginTool(Tool):
             user = tool_parameters.get('user')
             password = tool_parameters.get('password')
             service_name = tool_parameters.get('service_name')
-            sql_query = tool_parameters.get('query')
+            sql_statement = tool_parameters.get('statement')
             output_format = tool_parameters.get('output_format', 'JSON')  # Default to JSON format
             
             # Validate required parameters
-            if not all([host, user, password, service_name, sql_query]):
+            if not all([host, user, password, service_name, sql_statement]):
                 messages = {
-                    'en_US': 'Missing required parameters: host, user, password, service_name, query are all required',
-                    'zh_Hans': '缺少必要参数：host、user、password、service_name、query都是必需的'
+                    'en_US': 'Missing required parameters: host, user, password, service_name, statement are all required',
+                    'zh_Hans': '缺少必要参数：host、user、password、service_name、statement都是必需的'
                 }
                 yield self.create_json_message({
                     "status": "error",
@@ -65,74 +61,43 @@ class OracleDbPluginTool(Tool):
             
             # Create cursor
             with conn.cursor() as cursor:
-                # Execute query
-                cursor.execute(sql_query)
+                # Execute SQL statement
+                cursor.execute(sql_statement)
                 
-                # Get column names
-                columns = [col[0] for col in cursor.description]
+                # Commit transaction for DML statements
+                conn.commit()
                 
-                # Get query results
-                results = []
-                for row in cursor.fetchall():
-                    # Convert each row data to dictionary
-                    row_dict = {columns[i]: value for i, value in enumerate(row)}
-                    # Handle possible special types
-                    for key, value in row_dict.items():
-                        # Handle LOB type
-                        if isinstance(value, oracledb.LOB):
-                            try:
-                                # Try to convert LOB to string
-                                row_dict[key] = value.read()
-                            except:
-                                # If read fails, set to None or error message
-                                row_dict[key] = None
-                        # Convert datetime object to string
-                        elif hasattr(value, 'strftime'):
-                            row_dict[key] = value.strftime('%Y-%m-%d %H:%M:%S')
-                    results.append(row_dict)
+                # Get row count affected
+                row_count = cursor.rowcount
                 
-                # Format and return results based on output_format
+                # Return results
                 messages = {
-                    'en_US': f'Query executed successfully, returned {len(results)} rows.',
-                    'zh_Hans': f'查询执行成功，返回了{len(results)}行数据。'
+                    'en_US': f'SQL statement executed successfully, affected {row_count} rows.',
+                    'zh_Hans': f'SQL语句执行成功，影响了{row_count}行数据。'
                 }
                 
                 if output_format == 'JSON':
                     # Return results in JSON format
                     yield self.create_json_message({
                         "status": "success",
-                        "data": results,
-                        "columns": columns,
+                        "row_count": row_count,
                         "message": self.get_message(messages)
                     })
                 elif output_format == 'Text-Markdown':
-                    # Return results in Markdown table format
-                    markdown_table = '| ' + ' | '.join(columns) + ' |\n'
-                    markdown_table += '| ' + ' | '.join(['---'] * len(columns)) + ' |\n'
-                    
-                    for row in results:
-                        row_values = []
-                        for col in columns:
-                            value = row.get(col, '')
-                            row_values.append(str(value) if value is not None else '')
-                        markdown_table += '| ' + ' | '.join(row_values) + ' |\n'
-                    
-                    yield self.create_text_message(f"{self.get_message(messages)}\n\n{markdown_table}")
+                    # Return results in Markdown format
+                    markdown_content = f"## SQL Execution Result\n\n"
+                    markdown_content += f"- **Status**: Success\n"
+                    markdown_content += f"- **Affected Rows**: {row_count}\n"
+                    yield self.create_text_message(markdown_content)
                 elif output_format == 'Text-CSV':
-                    # Return results in CSV format, only return CSV content without message
-                    output = io.StringIO()
-                    writer = csv.DictWriter(output, fieldnames=columns)
-                    writer.writeheader()
-                    writer.writerows(results)
-                    csv_content = output.getvalue()
-                    
+                    # For execution tool, CSV format is not ideal but provide basic information
+                    csv_content = f"status,row_count\nsuccess,{row_count}"
                     yield self.create_text_message(csv_content)
                 else:
                     # Default to JSON if format is not recognized
                     yield self.create_json_message({
                         "status": "success",
-                        "data": results,
-                        "columns": columns,
+                        "row_count": row_count,
                         "message": self.get_message(messages)
                     })
         except Exception as e:

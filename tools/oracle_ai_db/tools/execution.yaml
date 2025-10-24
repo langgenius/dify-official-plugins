@@ -1,14 +1,14 @@
 identity:
-  name: oracle_db_query
+  name: oracle_db_execution
   author: langgenius
   label:
-    en_US: "Oracle Database Query Tool"
-    zh_Hans: "Oracle数据库查询工具"
+    en_US: "Oracle Database Execution Tool"
+    zh_Hans: "Oracle数据库执行工具"
 description:
   human:
-    en_US: "Connect to Oracle database and execute SQL queries using Thin Mode."
-    zh_Hans: "使用Thin Mode连接Oracle数据库并执行SQL查询。"
-  llm: "A tool for connecting to Oracle database and executing SQL queries using Thin Mode."
+    en_US: "Connect to Oracle database and execute SQL statements (INSERT, UPDATE, DELETE, etc.) using Thin Mode."
+    zh_Hans: "使用Thin Mode连接Oracle数据库并执行SQL语句（插入、更新、删除等）。"
+  llm: "A tool for connecting to Oracle database and executing SQL statements (INSERT, UPDATE, DELETE, etc.) using Thin Mode."
 parameters:
   - name: host
     type: string
@@ -65,16 +65,16 @@ parameters:
       zh_Hans: "Oracle数据库的服务名。"
     llm_description: "The service name of the Oracle database."
     form: llm
-  - name: query
+  - name: statement
     type: string
     required: true
     label:
-      en_US: SQL Query
-      zh_Hans: SQL查询语句
+      en_US: SQL Statement
+      zh_Hans: SQL语句
     human_description:
-      en_US: "The SQL query to execute against the Oracle database."
-      zh_Hans: "要在Oracle数据库上执行的SQL查询语句。"
-    llm_description: "The SQL query to execute against the Oracle database."
+      en_US: "The SQL statement to execute (INSERT, UPDATE, DELETE, etc.)."
+      zh_Hans: "要执行的SQL语句（插入、更新、删除等）。"
+    llm_description: "The SQL statement to execute (INSERT, UPDATE, DELETE, etc.)."
     form: llm
   - name: output_format
     type: select
@@ -84,9 +84,9 @@ parameters:
       en_US: Output Format
       zh_Hans: 输出格式
     human_description:
-      en_US: "The format of the query results."
-      zh_Hans: "查询结果的输出格式。"
-    llm_description: "The format of the query results."
+      en_US: "The format of the execution results."
+      zh_Hans: "执行结果的输出格式。"
+    llm_description: "The format of the execution results."
     form: llm
     options:
       - label:
@@ -103,4 +103,4 @@ parameters:
         value: "Text-CSV"
 extra:
   python:
-    source: tools/query.py
+    source: tools/execution.py

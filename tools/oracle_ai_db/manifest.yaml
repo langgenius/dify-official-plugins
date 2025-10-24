@@ -1,4 +1,4 @@
-version: 0.0.3
+version: 0.0.5
 type: plugin
 author: langgenius
 name: oracle_ai_db
@@ -8,8 +8,7 @@ label:
 description:
   en_US: Connect to Oracle database and execute SQL statements.
   zh_Hans: 连接Oracle数据库并执行SQL语句。
-icon: oracle.jpg
-icon_dark: oracle.jpg
+icon: oracle.svg
 resource:
   memory: 268435456
   permission: {}
@@ -17,7 +16,7 @@ plugins:
   tools:
     - provider/oracle_ai_db.yaml
 meta:
-  version: 0.0.2
+  version: 0.0.1
   arch:
     - amd64
     - arm64
