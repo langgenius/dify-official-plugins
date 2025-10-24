@@ -11,23 +11,218 @@ description:
   ja_JP: Outlook メール受信イベント
 
 parameters:
-- name: sender
+- name: sender_email_address
   label:
-    en_US: Sender
-    zh_Hans: 发送者
-    ja_JP: 送信者
+    en_US: Sender Email Address
+    zh_Hans: 发送者电子邮件地址
+    ja_JP: 送信者のメールアドレス
   type: string
   required: false
   description:
-    en_US: "Only trigger if sender is these specific users (e.g., developer-1, team-member, engineer, comma-separated). Leave empty to trigger for any sender."
-    zh_Hans: "仅当发送者是这些特定用户时触发（例如：developer-1, team-member, engineer，逗号分隔）。留空则对任何发送者触发。"
-    ja_JP: "送信者がこれらの特定のユーザーの場合のみトリガー（例: developer-1, team-member, engineer，カンマ区切り）。空の場合は任意の送信者でトリガー。"
+    en_US: "Only trigger if sender is these specific email addresses (e.g., foo@example.com, bar@example.com, baz@example.com, comma-separated). Leave empty to trigger for any sender."
+    zh_Hans: "仅当发送者是这些特定电子邮件地址时触发（例如：foo@example.com, bar@example.com, baz@example.com，逗号分隔）。留空则对任何发送者触发。"
+    ja_JP: "送信者がこれらの特定の電子メールアドレスの場合のみトリガー（例: foo@example.com, bar@example.com, baz@example.com，カンマ区切り）。空の場合は任意の送信者でトリガー。"
 output_schema:
   type: object
   properties:
-    sender:
+    id:
       type: string
-      description: The sender of the email
+      description: The id of the email
+    createdDateTime:
+      type: string
+      description: The date and time the email was created
+    lastModifiedDateTime:
+      type: string
+      description: The date and time the email was last modified
+    changeKey:
+      type: string
+      description: The change key of the email
+    categories:
+      type: array
+      items:
+        type: string
+      description: The categories of the email
+    receivedDateTime:
+      type: string
+      description: The date and time the email was received
+    sentDateTime:
+      type: string
+      description: The date and time the email was sent
+    hasAttachments:
+      type: boolean
+      description: Whether the email has attachments
+    internetMessageId:
+      type: string
+      description: The internet message id of the email
+    subject:
+      type: string
+      description: The subject of the email
+    bodyPreview:
+      type: string
+      description: The preview of the email body
+    importance:
+      type: string
+      description: The importance of the email
+    parentFolderId:
+      type: string
+      description: The parent folder id of the email
+    conversationId:
+      type: string
+      description: The conversation id of the email
+    conversationIndex:
+      type: string
+      description: The conversation index of the email
+    isDeliveryReceiptRequested:
+      type: boolean
+      description: Whether the email is a delivery receipt requested
+    isReadReceiptRequested:
+      type: boolean
+      description: Whether the email is a read receipt requested
+    isRead:
+      type: boolean
+      description: Whether the email is read
+    isDraft:
+      type: boolean
+      description: Whether the email is a draft
+    webLink:
+      type: string
+      description: The web link of the email
+    inferenceClassification:
+      type: string
+      description: The inference classification of the email
+    body:
+      type: object
+      properties:
+        contentType:
+          type: string
+          description: The content type of the email body
+        content:
+          type: string
+          description: The content of the email body
+      required:
+      - contentType
+      - content
+    sender:
+      type: object
+      properties:
+        emailAddress:
+          type: object
+          properties:
+            name:
+              type: string
+              description: The name of the sender
+            address:
+              type: string
+              description: The address of the sender
+          required:
+          - name
+          - address
+      required:
+      - emailAddress
+    from:
+      type: object
+      properties:
+        emailAddress:
+          type: object
+          properties:
+            name:
+              type: string
+              description: The name of the from
+            address:
+              type: string
+              description: The address of the from
+          required:
+          - name
+          - address
+      required:
+      - emailAddress
+    toRecipients:
+      type: array
+      items:
+        type: object
+        properties:
+          emailAddress:
+            type: object
+            properties:
+              name:
+                type: string
+                description: The name of the to recipient
+              address:
+                type: string
+                description: The address of the to recipient
+          required:
+          - name
+          - address
+        required:
+        - emailAddress
+    ccRecipients:
+      type: array
+      items:
+        type: object
+        properties:
+          emailAddress:
+            type: object
+            properties:
+              name:
+                type: string
+                description: The name of the cc recipient
+              address:
+                type: string
+                description: The address of the cc recipient
+          required:
+          - name
+          - address
+        required:
+        - emailAddress
+    bccRecipients:
+      type: array
+      items:
+        type: object
+        properties:
+          emailAddress:
+            type: object
+            properties:
+              name:
+                type: string
+                description: The name of the bcc recipient
+              address:
+                type: string
+                description: The address of the bcc recipient
+            required:
+            - name
+            - address
+          required:
+          - emailAddress
+    replyTo:
+      type: array
+      items:
+        type: object
+        properties:
+          emailAddress:
+            type: object
+            properties:
+              name:
+                type: string
+                description: The name of the reply to
+              address:
+                type: string
+                description: The address of the reply to
+            required:
+            - name
+            - address
+          required:
+          - emailAddress
+    flag:
+      type: object
+      properties:
+        flagStatus:
+          type: string
+          description: The status of the flag
+          enum:
+          - notFlagged
+          - flagged
+          - unread
+          - read
   required:
   - sender
 

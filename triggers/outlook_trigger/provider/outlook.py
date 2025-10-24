@@ -63,6 +63,9 @@ class OutlookTrigger(Trigger):
 
             if value.get("clientState") != client_state:
                 raise TriggerDispatchError("Invalid client state")
+            
+            response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
+            events = ["email_received"]
 
             fetch_url = f"https://graph.microsoft.com/v1.0/{resource}"
             headers = {
@@ -73,7 +76,11 @@ class OutlookTrigger(Trigger):
             if response.status_code == 200:
                 data = response.json()
                 print("email data", json.dumps(data, indent=4))
-                return EventDispatch(events=[json.dumps(data)], response=Response(response=json.dumps(data), status=200, mimetype="application/json"))
+                
+                response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
+
+                events = ["email_received"]
+                return EventDispatch(events=events, response=response, payload=data)
             else:
                 print("response", response.json())
                 raise TriggerDispatchError(f"Failed to fetch resource: {response.json().get('message', 'Unknown error')}")
