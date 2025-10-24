@@ -1,0 +1,36 @@
+identity:
+  name: email_received
+  author: langgenius
+  label:
+    en_US: Email Received
+    zh_Hans: 邮件接收
+    ja_JP: メール受信
+description:
+  en_US: Outlook Email Received Event
+  zh_Hans: Outlook 邮件接收事件
+  ja_JP: Outlook メール受信イベント
+
+parameters:
+- name: sender
+  label:
+    en_US: Sender
+    zh_Hans: 发送者
+    ja_JP: 送信者
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if sender is these specific users (e.g., developer-1, team-member, engineer, comma-separated). Leave empty to trigger for any sender."
+    zh_Hans: "仅当发送者是这些特定用户时触发（例如：developer-1, team-member, engineer，逗号分隔）。留空则对任何发送者触发。"
+    ja_JP: "送信者がこれらの特定のユーザーの場合のみトリガー（例: developer-1, team-member, engineer，カンマ区切り）。空の場合は任意の送信者でトリガー。"
+output_schema:
+  type: object
+  properties:
+    sender:
+      type: string
+      description: The sender of the email
+  required:
+  - sender
+
+extra:
+  python:
+    source: events/email_received.py
