@@ -1,9 +1,9 @@
 author: langgenius
 created_at: "2024-09-20T08:03:44.658609186Z"
 description:
-  en_US: Outlook Trigger is a plugin that allows you to trigger actions based on Outlook events.
-  ja_JP: Outlook Triggerは、Outlookイベントに基づいてアクションをトリガーするプラグインです。
-  zh_Hans: Outlook Trigger是一个插件，允许您基于Outlook事件触发操作。
+  en_US: Outlook Trigger is a trigger plugin that allows you to trigger actions based on Outlook events.
+  ja_JP: Outlook Triggerは、Outlook イベントに基づいてアクションをトリガーするトリガープラグインです。
+  zh_Hans: Outlook Trigger是一个触发器插件，支持在收到 Outlook 邮件时触发操作。
 icon: icon.svg
 label:
   en_US: Outlook Trigger
@@ -31,6 +31,9 @@ resource:
       llm: true
     tool:
       enabled: true
+    storage:
+      enabled: true
+      size: 1048576
 tags:
 - email
 type: plugin

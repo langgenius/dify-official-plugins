@@ -22,5 +22,12 @@ class EmailReceivedEvent(Event):
         """
         Transform Outlook email received webhook event into structured Variables
         """
+        sender_email_address = parameters.get("sender_email_address")
+
+        if sender_email_address:
+            allowed_addresses = [address.strip() for address in sender_email_address.split(",") if address.strip()]
+            if allowed_addresses:
+                if payload.get("sender").get("emailAddress").get("address") not in allowed_addresses:
+                    raise EventIgnoreError()
 
         return Variables(variables={**payload})

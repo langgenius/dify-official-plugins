@@ -37,10 +37,6 @@ class OutlookTrigger(Trigger):
     ) -> EventDispatch:
         client_state = subscription.properties.get("client_state")
 
-        print("subscription", subscription)
-        print("request", request)
-        print("request.args", request.args)
-
         body = request.get_data()
 
         if len(body) == 0:  # validation request
@@ -48,23 +44,24 @@ class OutlookTrigger(Trigger):
             validationToken = request.args.get("validationToken")
             if validationToken:
                 returnText = urllib.parse.unquote(validationToken)
-                print("returnText", returnText)
                 return EventDispatch(events=[], response=Response(response=returnText, status=200, mimetype="application/text"))
             pass
         else:
             payload = json.loads(body)
-            print("payload", payload)
-            
 
             value = payload.get("value")[0]
 
+            id = value.get("resourceData").get("id")
+
+            # check if the email is already processed
+            if self._is_email_processed(id):
+                return EventDispatch(events=[], response=Response(response="Email already processed", status=200, mimetype="application/text"))
+
             resource = value.get("resource")
-            print("resource", resource)
 
             if value.get("clientState") != client_state:
                 raise TriggerDispatchError("Invalid client state")
             
-            response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
             events = ["email_received"]
 
             fetch_url = f"https://graph.microsoft.com/v1.0/{resource}"
@@ -75,15 +72,22 @@ class OutlookTrigger(Trigger):
             response = requests.get(fetch_url, headers=headers, timeout=10)
             if response.status_code == 200:
                 data = response.json()
-                print("email data", json.dumps(data, indent=4))
                 
-                response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
+                response = Response(response='Accepted', status=202, mimetype="application/text")
 
                 events = ["email_received"]
                 return EventDispatch(events=events, response=response, payload=data)
             else:
-                print("response", response.json())
                 raise TriggerDispatchError(f"Failed to fetch resource: {response.json().get('message', 'Unknown error')}")
+
+    def _is_email_processed(self, id: str) -> bool:
+        processed = self.runtime.session.storage.exist(f"email_processed_{id}")
+
+        if processed:
+            return True
+        else:
+            self.runtime.session.storage.set(f"email_processed_{id}", b'1')
+            return False
 
 
 class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
@@ -132,12 +136,6 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
     def _oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
     ) -> TriggerOAuthCredentials:
-        print("request", request)
-        print("request.args", request.args)
-        print("request.form", request.form)
-        print("request.args.get('code')", request.args.get("code"))
-        print("request.args.get('state')", request.args.get("state"))
-        print("system_credentials", system_credentials)
         code = request.args.get("code")
         if not code:
             raise TriggerProviderOAuthError("No code provided")
@@ -169,8 +167,6 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         refresh_token = response_json.get("refresh_token")
         if not refresh_token:
             raise TriggerProviderOAuthError("No refresh token in response")
-
-        print("response_json", response_json)
 
         return TriggerOAuthCredentials(
             credentials={
@@ -204,7 +200,6 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
                 expires_at=response.json().get("expires_in", 3599) + int(time.time()),
             )
         else:
-            print("response", response.json())
             raise TriggerProviderOAuthError(f"Failed to refresh access token: {response.json().get('message', 'Unknown error')}") from response.json()
 
     def _create_subscription(
@@ -215,8 +210,6 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         credential_type: CredentialType,
     ) -> Subscription:
 
-        print("create_subscription", endpoint, parameters, credentials, credential_type)
-
         url = "https://graph.microsoft.com/v1.0/subscriptions"
         headers = {
             "Authorization": f"Bearer {credentials.get('access_tokens')}",
@@ -224,11 +217,9 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         }
 
         client_state = secrets.token_urlsafe(16)
-        print("client_state", client_state)
         # 72 hours from now
         expiration_date = datetime.now() + timedelta(seconds=self._WEBHOOK_TTL)
         expiration_date_str = expiration_date.isoformat() + "Z"
-        print("expiration_date_str", expiration_date_str)
         data = {
             "changeType": "created,updated",
             "notificationUrl": endpoint,
@@ -237,8 +228,6 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
             "clientState": client_state,
         }
         
-
-        print("data", data)
         try:
             response = requests.post(url, headers=headers, json=data, timeout=10)
         except requests.RequestException as exc:
@@ -250,7 +239,6 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
             
         if response.status_code == 201:
             subscription = response.json()
-            print("subscription", subscription)
             return Subscription(
                 expires_at=int(time.time()) + self._WEBHOOK_TTL,
                 endpoint=endpoint,
@@ -263,7 +251,6 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
                 },
             )
         else:
-            print("response", response.json())
             raise SubscriptionError(
                 message=f"Failed to create subscription: {response.json().get('message', 'Unknown error')}",
                 error_code="SUBSCRIPTION_CREATION_FAILED",
@@ -276,7 +263,6 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
         credential_type: CredentialType,
     ) -> UnsubscribeResult:
-        print("delete_subscription", subscription, credentials, credential_type)
         subscription_id = subscription.properties.get("subscription_id")
         if not subscription_id:
             raise UnsubscribeError(
@@ -294,7 +280,6 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         if response.status_code == 204:
             return UnsubscribeResult(success=True, message=f"Successfully deleted subscription {subscription_id}")
         else:
-            print("response", response.json())
             raise UnsubscribeError(
                 message=f"Failed to delete subscription: {response.json().get('message', 'Unknown error')}",
                 error_code="SUBSCRIPTION_DELETION_FAILED",
@@ -339,7 +324,6 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
                 },
             )
         else:
-            print("response", response.json())
             raise SubscriptionError(
                 message=f"Failed to refresh subscription: {response.json().get('message', 'Unknown error')}",
                 error_code="SUBSCRIPTION_REFRESH_FAILED",
