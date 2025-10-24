@@ -175,7 +175,7 @@ In case of an error, the response will be:
 #### 0.0.3
 - Renamed plugin to Oracle AI Database
 - Added new tool to execute SQL statements (INSERT, UPDATE, DELETE)
-- Enhanced output format options for query results
+- Enhanced output format options for query results(JSON, Text-Markdown, Text-CSV)
 
 ### 0.0.2
 - Change Python version to 3.11.
