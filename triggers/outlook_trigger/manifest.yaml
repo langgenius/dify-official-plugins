@@ -34,7 +34,6 @@ resource:
     storage:
       enabled: true
       size: 1048576
-tags:
-- email
+tags: []
 type: plugin
 version: 0.1.0
