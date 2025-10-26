@@ -2,23 +2,6 @@ subscription_schema: []
 
 subscription_constructor:
   parameters: []
-
-  # - name: "events"
-  #   label:
-  #     en_US: "Events"
-  #     zh_Hans: "事件"
-  #     ja_JP: "イベント"
-  #   type: "checkbox"
-  #   required: true
-  #   multiple: true
-  #   default:
-  #   - "email_received"
-  #   options:
-  #   - value: "email_received"
-  #     label:
-  #       en_US: "Email Received"
-  #       zh_Hans: "邮件接收"
-  #       ja_JP: "メール受信"
   credentials_schema:
     access_tokens:
       help:
@@ -120,7 +103,7 @@ subscription_constructor:
       source: provider/outlook.py
 
 events:
-- events/email_received.yaml
+  - events/email_received.yaml
 
 identity:
   author: langgenius
