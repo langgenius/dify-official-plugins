@@ -67,6 +67,9 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
                 ]
                 del model_parameters["max_tokens"]
 
+        if model.startswith("gpt-5-codex"):
+            return self._invoke(model, credentials, prompt_messages, model_parameters, stop, stream, user)
+
         # 默认使用父类的生成方法
         return super()._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 
@@ -86,6 +89,11 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
             enable_thinking = model_parameters.pop("enable_thinking", None)
             if enable_thinking is not None:
                 model_parameters["chat_template_kwargs"] = {"enable_thinking": bool(enable_thinking)}
+
+            # 将自定义的 enable_stream 参数映射到本地 stream 标志，避免把未知参数透传给上游
+            enable_stream = model_parameters.pop("enable_stream", None)
+            if enable_stream is not None:
+                stream = bool(enable_stream)
 
             return self._dispatch_to_appropriate_model(
                 model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
