@@ -12,6 +12,10 @@ from tools.utils import to_refs, VALID_LANGUAGES, VALID_COUNTRIES, InstantSearch
 def _parse_results(results: dict) -> dict:
     """
     [deprecated function]
+    Parse search results into legacy format for backward compatibility.
+    The new response protocol wraps data in new fields (refs), but we keep the old fields
+    to prevent unexpected issues with existing integrations.
+    
     :param results:
     :return:
     """
@@ -87,6 +91,9 @@ class GoogleSearchTool(Tool):
 
             if not as_agent_tool:
                 isr_json_parts = isr.to_dify_json_message()
+                # Merge deprecated fields for backward compatibility
+                # The new protocol uses 'refs' to wrap the response, but legacy fields are retained
+                # to prevent unexpected issues with existing workflows
                 if deprecated_parts := _parse_results(tool_invoke_results):
                     isr_json_parts.update(deprecated_parts)
                 yield self.create_json_message(json=isr_json_parts)
