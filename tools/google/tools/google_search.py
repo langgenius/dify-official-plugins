@@ -81,10 +81,15 @@ class GoogleSearchTool(Tool):
             response = requests.get(url=self.SERP_API_URL, params=params)
             response.raise_for_status()
 
-            isr = InstantSearchResponse(refs=to_refs(response.json()))
+            tool_invoke_results = response.json()
+
+            isr = InstantSearchResponse(refs=to_refs(tool_invoke_results))
 
             if not as_agent_tool:
-                yield self.create_json_message(json=isr.to_dify_json_message())
+                isr_json_parts = isr.to_dify_json_message()
+                if deprecated_parts := _parse_results(tool_invoke_results):
+                    isr_json_parts.update(deprecated_parts)
+                yield self.create_json_message(json=isr_json_parts)
             else:
                 yield self.create_text_message(text=isr.to_dify_text_message())
 
