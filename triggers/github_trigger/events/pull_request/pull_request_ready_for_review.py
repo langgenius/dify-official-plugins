@@ -14,7 +14,7 @@ from ..utils.pull_request import apply_pull_request_common_filters, load_pull_re
 class PullRequestReadyForReviewEvent(Event):
     """GitHub Pull Request Ready for Review Event"""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload, pull_request = load_pull_request_payload(request, expected_action="ready_for_review")
         apply_pull_request_common_filters(pull_request, parameters)
         return Variables(variables={**payload})

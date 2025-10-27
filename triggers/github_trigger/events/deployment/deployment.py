@@ -13,7 +13,7 @@ from dify_plugin.interfaces.trigger import Event
 class DeploymentEvent(Event):
     """Unified Deployment event (primarily 'created')."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
@@ -55,4 +55,3 @@ class DeploymentEvent(Event):
         targets = {s.strip() for s in str(value).split(",") if s.strip()}
         if targets and creator not in targets:
             raise EventIgnoreError()
-

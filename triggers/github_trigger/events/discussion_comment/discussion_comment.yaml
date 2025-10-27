@@ -40,7 +40,7 @@ parameters:
       en_US: Deleted
       zh_Hans: 删除
       ja_JP: 削除
-  help:
+  description:
     en_US: Multi select filter for discussion comment actions. Leave empty to accept all.
     zh_Hans: 多选过滤讨论评论动作。留空不过滤。
     ja_JP: ディスカッションコメントのアクションを複数選択で。未設定で全許可。
@@ -52,7 +52,7 @@ parameters:
     ja_JP: 本文に含む
   type: string
   required: false
-  help:
+  description:
     en_US: Match keywords in comment body. Comma separated any match passes.
     zh_Hans: 评论正文中包含关键字。逗号分隔 任一命中即通过。
     ja_JP: コメント本文のキーワード一致。カンマ区切りでいずれか一致。
@@ -64,7 +64,7 @@ parameters:
     ja_JP: コメント投稿者
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated commenter logins to include.
     zh_Hans: 逗号分隔的评论者登录名白名单。
     ja_JP: コメント投稿者のログインをカンマ区切りで指定。

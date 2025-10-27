@@ -40,10 +40,11 @@ class GithubTrigger(Trigger):
         if not event_type:
             raise TriggerDispatchError("Missing GitHub event type header")
 
+        user_id = request.headers.get("X-GitHub-Delivery") or ""
         payload: Mapping[str, Any] = self._validate_payload(request)
         response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
         events: list[str] = self._dispatch_trigger_events(event_type=event_type, payload=payload)
-        return EventDispatch(events=events, response=response)
+        return EventDispatch(user_id=user_id, events=events, response=response)
 
     def _dispatch_trigger_events(self, event_type: str, payload: Mapping[str, Any]) -> list[str]:
         event_type = event_type.lower()
@@ -53,7 +54,14 @@ class GithubTrigger(Trigger):
             return [event_type]
 
         # Unified review & CI events (breaking change)
-        if event_type in {"pull_request_review", "pull_request_review_comment", "check_suite", "check_run", "workflow_run", "workflow_job"}:
+        if event_type in {
+            "pull_request_review",
+            "pull_request_review_comment",
+            "check_suite",
+            "check_run",
+            "workflow_run",
+            "workflow_job",
+        }:
             return [event_type]
 
         if event_type in {"deployment_status", "release"}:

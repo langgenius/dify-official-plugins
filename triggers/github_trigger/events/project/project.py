@@ -13,7 +13,7 @@ from dify_plugin.interfaces.trigger import Event
 class ProjectUnifiedEvent(Event):
     """Unified Project event (created/edited/deleted/closed/reopened)."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
@@ -40,4 +40,3 @@ class ProjectUnifiedEvent(Event):
                 raise EventIgnoreError()
 
         return Variables(variables={**payload})
-

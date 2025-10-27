@@ -1,2 +1,1 @@
 """Check Run events."""
-

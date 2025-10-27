@@ -46,7 +46,7 @@ parameters:
       en_US: Dismissed
       zh_Hans: 已忽略
       ja_JP: 却下
-  help:
+  description:
     en_US: Multi select filter for alert lifecycle actions such as created fixed reopened dismissed.
     zh_Hans: 多选过滤告警生命周期动作 如 创建 修复 重新打开 忽略。
     ja_JP: 警告ライフサイクルのアクションを複数選択で。作成 修正 再オープン 却下 など。

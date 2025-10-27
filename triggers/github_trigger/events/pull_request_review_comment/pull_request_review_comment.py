@@ -19,7 +19,7 @@ from ..utils.pull_request_review_comment import (
 class PullRequestReviewCommentUnifiedEvent(Event):
     """Unified PR review comment event (created/edited/deleted)."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload, comment, pull_request = load_pull_request_review_comment_payload(request, expected_action=None)
 
         allowed_actions = parameters.get("actions") or []
@@ -32,4 +32,3 @@ class PullRequestReviewCommentUnifiedEvent(Event):
             check_comment_deleter(payload, parameters.get("deleter"))
 
         return Variables(variables={**payload})
-

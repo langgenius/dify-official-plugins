@@ -46,7 +46,7 @@ parameters:
       en_US: Unresolved
       zh_Hans: 未解决
       ja_JP: 未解決
-  help:
+  description:
     en_US: Multi select filter for review thread actions. Use with is_resolved to distinguish resolution state.
     zh_Hans: 多选过滤审查线程动作。可结合 is_resolved 区分是否已解决。
     ja_JP: レビュースレッドのアクションを複数選択で絞り込み。is_resolved と併用で解決状態を区別。
@@ -58,7 +58,7 @@ parameters:
     ja_JP: 解決済みか
   type: boolean
   required: false
-  help:
+  description:
     en_US: True to match resolved threads only. False to match unresolved only. Leave empty to ignore.
     zh_Hans: true 仅匹配已解决线程，false 仅匹配未解决，留空不限制。
     ja_JP: true で解決済みのみ。false で未解決のみ。未設定で無視。
@@ -70,7 +70,7 @@ parameters:
     ja_JP: コメント作成者
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated commenter logins within the thread to match.
     zh_Hans: 逗号分隔的线程内评论者登录名，任一命中即匹配。
     ja_JP: スレッド内のコメント作者のログイン。カンマ区切りでいずれか一致。
@@ -82,7 +82,7 @@ parameters:
     ja_JP: ファイルパス
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by file path commented in the thread. Comma separated exact paths.
     zh_Hans: 按线程评论涉及的文件路径过滤。逗号分隔的精确路径。
     ja_JP: スレッドでコメントされたファイルパスでフィルタ。カンマ区切りの完全一致。

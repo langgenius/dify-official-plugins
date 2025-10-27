@@ -18,7 +18,7 @@ from ..utils.pull_request import (
 class PullRequestClosedEvent(Event):
     """GitHub Pull Request Closed Event"""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload, pull_request = load_pull_request_payload(request, expected_action="closed")
         apply_pull_request_common_filters(pull_request, parameters)
         check_merged_state(pull_request, parameters.get("merged"))

@@ -34,7 +34,7 @@ parameters:
       en_US: Edited
       zh_Hans: 编辑
       ja_JP: 編集
-  help:
+  description:
     en_US: Multi select page actions to include such as created or edited. Filters each page entry in the payload.
     zh_Hans: 多选要包含的页面动作 如 创建 或 编辑。对 payload 中的每个页面项进行过滤。
     ja_JP: 作成や編集など含めるページアクションを複数選択。ペイロードの各ページ項目を判定します。
@@ -46,7 +46,7 @@ parameters:
     ja_JP: ページタイトル
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by page title exact match. Comma separated allowed. At least one page must match to trigger.
     zh_Hans: 按页面标题精确匹配。支持逗号分隔。至少有一条页面命中才会触发。
     ja_JP: ページタイトルの完全一致でフィルタ。カンマ区切り可。いずれか一致で発火。

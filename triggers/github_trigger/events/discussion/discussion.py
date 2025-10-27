@@ -13,7 +13,7 @@ from dify_plugin.interfaces.trigger import Event
 class DiscussionUnifiedEvent(Event):
     """Unified Discussion event (created/edited/deleted/answered/labeled/unlabeled/category_changed)."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
@@ -60,4 +60,3 @@ class DiscussionUnifiedEvent(Event):
             body = (discussion.get("body") or "").lower()
             if kws and not any(k in body for k in kws):
                 raise EventIgnoreError()
-

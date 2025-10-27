@@ -34,7 +34,7 @@ parameters:
       en_US: Destroyed
       zh_Hans: 已销毁
       ja_JP: 破棄
-  help:
+  description:
     en_US: Multi select filter for merge queue group actions such as checks_requested or destroyed.
     zh_Hans: 多选过滤 Merge Queue 组事件 如 checks_requested 或 destroyed。
     ja_JP: マージキューのグループイベントを複数選択で絞り込み。checks_requested や destroyed など。
@@ -46,7 +46,7 @@ parameters:
     ja_JP: ベースリファレンス
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by base ref names. Comma separated values supported.
     zh_Hans: 按基准分支名过滤。支持逗号分隔多值。
     ja_JP: ベースリファレンス名でフィルタ。カンマ区切りで複数指定。
@@ -58,7 +58,7 @@ parameters:
     ja_JP: Head SHA
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by head SHA values. Comma separated values supported.
     zh_Hans: 按 Head SHA 过滤。支持逗号分隔多值。
     ja_JP: Head SHA でフィルタ。カンマ区切りで複数指定可。

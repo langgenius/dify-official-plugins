@@ -40,7 +40,7 @@ parameters:
       en_US: Completed
       zh_Hans: 已完成
       ja_JP: 完了
-  help:
+  description:
     en_US: Filter which workflow run actions to process. Leave empty to accept requested in_progress completed.
     zh_Hans: 选择要处理的工作流运行动作。留空接收 requested in_progress completed。
     ja_JP: ワークフロー実行のアクションを選択。未設定で requested in_progress completed を許可。
@@ -52,7 +52,7 @@ parameters:
     ja_JP: ワークフロー名
   type: string
   required: false
-  help:
+  description:
     en_US: Exact match on workflow name. Comma separated allowed.
     zh_Hans: 精确匹配工作流名称。支持逗号分隔多值。
     ja_JP: ワークフロー名の完全一致。カンマ区切り可。
@@ -64,7 +64,7 @@ parameters:
     ja_JP: ブランチ
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by head branch. Comma separated allowed.
     zh_Hans: 按 head 分支过滤。支持逗号分隔。
     ja_JP: head ブランチでフィルタ。カンマ区切り可。
@@ -76,7 +76,7 @@ parameters:
     ja_JP: 結論（completed のみ）
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by run conclusion for completed actions. Example success or failure.
     zh_Hans: 仅在 completed 动作时按运行结论过滤 如 success 或 failure。
     ja_JP: completed 時の結論でフィルタ 例 success や failure。
@@ -88,7 +88,7 @@ parameters:
     ja_JP: 実行者
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by run actor login. Comma separated allowed.
     zh_Hans: 按执行者登录名过滤。支持逗号分隔。
     ja_JP: 実行者のログインでフィルタ。カンマ区切り可。

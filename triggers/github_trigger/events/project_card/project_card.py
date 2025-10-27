@@ -13,7 +13,7 @@ from dify_plugin.interfaces.trigger import Event
 class ProjectCardUnifiedEvent(Event):
     """Unified Project Card event (created/edited/deleted/moved/converted)."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
@@ -35,4 +35,3 @@ class ProjectCardUnifiedEvent(Event):
                 raise EventIgnoreError()
 
         return Variables(variables={**payload})
-

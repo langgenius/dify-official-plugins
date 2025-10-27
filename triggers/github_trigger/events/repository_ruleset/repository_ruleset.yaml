@@ -40,7 +40,7 @@ parameters:
       en_US: Deleted
       zh_Hans: 已删除
       ja_JP: 削除
-  help:
+  description:
     en_US: Multi select filter for ruleset lifecycle changes. Leave empty to accept created edited deleted.
     zh_Hans: 多选过滤规则集生命周期变化。留空接收 created edited deleted。
     ja_JP: ルールセットのライフサイクル変更を複数選択で。未設定で created edited deleted を許可。
@@ -52,7 +52,7 @@ parameters:
     ja_JP: ルールセット名
   type: string
   required: false
-  help:
+  description:
     en_US: Exact match on ruleset name. Comma separated allowed.
     zh_Hans: 规则集名称精确匹配。支持逗号分隔。
     ja_JP: ルールセット名の完全一致。カンマ区切り可。

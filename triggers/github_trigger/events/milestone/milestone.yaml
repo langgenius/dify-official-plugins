@@ -52,7 +52,7 @@ parameters:
       en_US: Deleted
       zh_Hans: 删除
       ja_JP: 削除
-  help:
+  description:
     en_US: Multi select filter for milestone actions. Leave empty to accept all.
     zh_Hans: 多选过滤里程碑动作。留空表示不过滤。
     ja_JP: マイルストーンのアクションを複数選択で絞り込み。未設定で全て許可。
@@ -64,7 +64,7 @@ parameters:
     ja_JP: マイルストーンタイトル
   type: string
   required: false
-  help:
+  description:
     en_US: Match milestone title exactly. Comma separated to match any.
     zh_Hans: 精确匹配里程碑标题。支持逗号分隔多值，任一命中即通过。
     ja_JP: マイルストーンタイトルの完全一致。カンマ区切りでいずれか一致。
@@ -76,7 +76,7 @@ parameters:
     ja_JP: 状態
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by milestone state such as open or closed.
     zh_Hans: 按里程碑状态过滤，如 open 或 closed。
     ja_JP: open や closed などの状態でフィルタ。
@@ -88,7 +88,7 @@ parameters:
     ja_JP: 期限（ISO 時刻）
   type: string
   required: false
-  help:
+  description:
     en_US: Match due date timestamp ISO 8601 exactly. Comma separated to match multiple.
     zh_Hans: 以 ISO 8601 时间戳精确匹配截止时间。支持逗号分隔多值。
     ja_JP: 期限の ISO 8601 を完全一致で。カンマ区切りで複数指定可。
@@ -100,7 +100,7 @@ parameters:
     ja_JP: 作成者ログイン
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated creator logins. Matches sender login.
     zh_Hans: 逗号分隔的创建者登录名。与 sender 登录名匹配。
     ja_JP: 作成者のログインをカンマ区切りで。sender のログインと一致で通過。

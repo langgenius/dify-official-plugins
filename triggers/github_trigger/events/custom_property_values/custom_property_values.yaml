@@ -19,7 +19,7 @@ parameters:
     ja_JP: プロパティ名
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by property name whose values changed. Comma separated names allowed.
     zh_Hans: 按发生变更的属性名过滤。支持逗号分隔多个名称。
     ja_JP: 変更されたプロパティ名でフィルタ。カンマ区切りで複数指定可。

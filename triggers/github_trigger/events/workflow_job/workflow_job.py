@@ -13,7 +13,7 @@ from dify_plugin.interfaces.trigger import Event
 class WorkflowJobUnifiedEvent(Event):
     """Unified Workflow Job event (queued/in_progress/completed)."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
@@ -94,4 +94,3 @@ class WorkflowJobUnifiedEvent(Event):
         actor_login = (payload.get("sender") or {}).get("login")
         if actor_login not in users:
             raise EventIgnoreError()
-

@@ -20,7 +20,7 @@ from ..utils.pull_request_review import (
 class PullRequestReviewUnifiedEvent(Event):
     """Unified Pull Request Review event (submitted/edited/dismissed)."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload, review, pull_request = load_pull_request_review_payload(request, expected_action=None)
 
         allowed_actions = parameters.get("actions") or []
@@ -34,4 +34,3 @@ class PullRequestReviewUnifiedEvent(Event):
             check_dismissal_message(payload, parameters.get("dismissal_message_contains"))
 
         return Variables(variables={**payload})
-

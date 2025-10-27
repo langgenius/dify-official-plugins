@@ -40,7 +40,7 @@ parameters:
       en_US: Dismissed
       zh_Hans: 撤销
       ja_JP: 却下
-  help:
+  description:
     en_US: Multi select filter for review actions such as submitted edited dismissed.
     zh_Hans: 多选过滤审查动作 如 提交 编辑 撤销。
     ja_JP: レビューのアクションを複数選択で。送信 編集 却下 など。
@@ -52,7 +52,7 @@ parameters:
     ja_JP: レビュー状態
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by review state such as approved changes_requested commented.
     zh_Hans: 按审查状态过滤 如 approved changes_requested commented。
     ja_JP: レビュー状態でフィルタ approved changes_requested commented など。
@@ -64,7 +64,7 @@ parameters:
     ja_JP: レビュアー
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated reviewer logins to include.
     zh_Hans: 逗号分隔的审查者登录名白名单。
     ja_JP: レビュアーのログインをカンマ区切りで指定。
@@ -76,7 +76,7 @@ parameters:
     ja_JP: Pull Request 作成者
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated PR author logins to include.
     zh_Hans: 逗号分隔的 PR 作者登录名白名单。
     ja_JP: PR 作成者のログインをカンマ区切りで指定。
@@ -88,7 +88,7 @@ parameters:
     ja_JP: Pull Request 番号
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by PR numbers. Comma separated integers.
     zh_Hans: 按 PR 编号过滤。逗号分隔整数。
     ja_JP: PR 番号でフィルタ。整数をカンマ区切りで。
@@ -100,7 +100,7 @@ parameters:
     ja_JP: レビュー本文に含む
   type: string
   required: false
-  help:
+  description:
     en_US: Match keywords in review body. Comma separated any match passes.
     zh_Hans: 审查正文包含关键字。逗号分隔 任一命中即通过。
     ja_JP: レビュー本文のキーワード一致。カンマ区切りでいずれか一致。
@@ -112,7 +112,7 @@ parameters:
     ja_JP: 却下者
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by the user who dismissed the review. Comma separated logins.
     zh_Hans: 按撤销者登录名过滤。逗号分隔。
     ja_JP: 却下したユーザーのログインでフィルタ。カンマ区切り。
@@ -124,7 +124,7 @@ parameters:
     ja_JP: 却下メッセージに含む
   type: string
   required: false
-  help:
+  description:
     en_US: Match keywords in dismissal message. Comma separated any match passes.
     zh_Hans: 匹配撤销消息中的关键字。逗号分隔 任意命中即通过。
     ja_JP: 却下メッセージのキーワード一致。カンマ区切りでいずれか一致。

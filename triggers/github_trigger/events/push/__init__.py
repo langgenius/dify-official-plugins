@@ -1,2 +1,1 @@
 """Push events."""
-

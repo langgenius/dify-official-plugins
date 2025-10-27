@@ -13,7 +13,7 @@ from dify_plugin.interfaces.trigger import Event
 class CheckSuiteCompletedEvent(Event):
     """GitHub Check Suite Completed Event"""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
@@ -61,4 +61,3 @@ class CheckSuiteCompletedEvent(Event):
         slug = (app.get("slug") if isinstance(app, Mapping) else None) or ""
         if slug not in slugs:
             raise EventIgnoreError()
-

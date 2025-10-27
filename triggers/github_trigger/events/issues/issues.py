@@ -15,7 +15,7 @@ from ..utils import issues as isu
 class IssuesUnifiedEvent(Event):
     """Unified Issues event. Filters by actions and common issue attributes."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
@@ -38,4 +38,3 @@ class IssuesUnifiedEvent(Event):
         isu.check_state(issue, parameters.get("state"))
 
         return Variables(variables={**payload})
-

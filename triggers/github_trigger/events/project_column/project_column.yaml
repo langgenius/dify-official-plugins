@@ -46,7 +46,7 @@ parameters:
       en_US: Moved
       zh_Hans: 移动
       ja_JP: 移動
-  help:
+  description:
     en_US: Multi select filter for column actions like created edited deleted moved.
     zh_Hans: 多选过滤项目列动作 如 创建 编辑 删除 移动。
     ja_JP: カラムのアクションを複数選択で絞り込み 作成 編集 削除 移動。
@@ -58,7 +58,7 @@ parameters:
     ja_JP: カラム名
   type: string
   required: false
-  help:
+  description:
     en_US: Exact match on column name. Comma separated values supported.
     zh_Hans: 列名精确匹配。支持逗号分隔多值。
     ja_JP: カラム名の完全一致。カンマ区切りで複数指定可。

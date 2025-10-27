@@ -13,7 +13,7 @@ from dify_plugin.interfaces.trigger import Event
 class CodeScanningAlertEvent(Event):
     """Unified GitHub Code Scanning Alert event with actions filter."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
@@ -75,13 +75,8 @@ class CodeScanningAlertEvent(Event):
         branches = {s.strip() for s in str(value).split(",") if s.strip()}
         if not branches:
             return
-        ref = (
-            (alert.get("most_recent_instance") or {}).get("ref")
-            or alert.get("ref")
-            or ""
-        )
+        ref = (alert.get("most_recent_instance") or {}).get("ref") or alert.get("ref") or ""
         # Convert refs/heads/main -> main
         branch = ref.split("/", 2)[-1] if ref.startswith("refs/heads/") else ref
         if branch not in branches:
             raise EventIgnoreError()
-

@@ -1,2 +1,1 @@
 """Commit status events (unified)."""
-

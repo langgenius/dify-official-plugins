@@ -1,11 +1,12 @@
 from __future__ import annotations
 
+import fnmatch
 from collections.abc import Mapping
 from typing import Any
-import fnmatch
+
+from werkzeug import Request
 
 from dify_plugin.errors.trigger import EventIgnoreError
-from werkzeug import Request
 
 from .common import ensure_action, load_json_payload, require_mapping
 

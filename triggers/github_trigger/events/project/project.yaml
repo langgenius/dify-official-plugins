@@ -52,7 +52,7 @@ parameters:
       en_US: Reopened
       zh_Hans: 重新打开
       ja_JP: 再オープン
-  help:
+  description:
     en_US: Multi select filter for project actions. Leave empty to accept all.
     zh_Hans: 多选过滤项目动作。留空表示不过滤。
     ja_JP: プロジェクトのアクションを複数選択で絞り込み。未設定で全て許可。
@@ -64,7 +64,7 @@ parameters:
     ja_JP: プロジェクト名
   type: string
   required: false
-  help:
+  description:
     en_US: Exact match on project name. Comma separated values supported.
     zh_Hans: 项目名称精确匹配。支持逗号分隔多值。
     ja_JP: プロジェクト名の完全一致。カンマ区切りで複数指定可。
@@ -76,7 +76,7 @@ parameters:
     ja_JP: 状態
   type: string
   required: false
-  help:
+  description:
     en_US: Project state filter for values like open or closed.
     zh_Hans: 项目状态过滤，常见为 open 或 closed。
     ja_JP: open や closed などの状態でフィルタします。

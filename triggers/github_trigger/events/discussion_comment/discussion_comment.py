@@ -13,7 +13,7 @@ from dify_plugin.interfaces.trigger import Event
 class DiscussionCommentUnifiedEvent(Event):
     """Unified Discussion Comment event (created/edited/deleted)."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
@@ -47,4 +47,3 @@ class DiscussionCommentUnifiedEvent(Event):
         login = ((comment.get("user") or {}).get("login") or "").strip()
         if allowed and login not in allowed:
             raise EventIgnoreError()
-

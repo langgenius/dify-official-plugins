@@ -64,7 +64,7 @@ parameters:
       en_US: Converted to Draft
       zh_Hans: 转为草稿
       ja_JP: ドラフトへ変更
-  help:
+  description:
     en_US: Multi select filter for PR actions. Leave empty to accept all actions. Implemented by matching payload action.
     zh_Hans: 多选过滤 PR 动作。留空表示不过滤。通过匹配 payload 的 action 字段实现。
     ja_JP: PR のアクションを複数選択で絞り込み。未設定なら全て許可。ペイロード action で判定。
@@ -76,7 +76,7 @@ parameters:
     ja_JP: ベースブランチ
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by base branch name. Comma separated values supported.
     zh_Hans: 按基础分支名过滤。支持逗号分隔多值。
     ja_JP: ベースブランチ名でフィルタ。カンマ区切りで複数指定可。
@@ -88,7 +88,7 @@ parameters:
     ja_JP: ヘッドブランチ
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by head branch name. Comma separated values supported.
     zh_Hans: 按头部分支名过滤。支持逗号分隔多值。
     ja_JP: ヘッドブランチ名でフィルタ。カンマ区切りで複数指定可。
@@ -100,7 +100,7 @@ parameters:
     ja_JP: 作成者
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated PR author logins to include.
     zh_Hans: 逗号分隔的 PR 作者登录名白名单。
     ja_JP: PR 作成者のログインをカンマ区切りで指定。
@@ -112,7 +112,7 @@ parameters:
     ja_JP: ドラフトプルリクエスト
   type: boolean
   required: false
-  help:
+  description:
     en_US: Filter by PR draft state. True for draft only. False for non draft only. Leave empty to ignore.
     zh_Hans: 按草稿状态过滤。true 仅草稿，false 仅非草稿，留空不限制。
     ja_JP: ドラフト状態でフィルタ。true でドラフトのみ。false で非ドラフトのみ。未設定で無視。
@@ -124,7 +124,7 @@ parameters:
     ja_JP: ラベル
   type: string
   required: false
-  help:
+  description:
     en_US: Require PR to contain these labels. Comma separated list of label names.
     zh_Hans: PR 必须包含的标签名。逗号分隔列表。
     ja_JP: PR に必須のラベル名。カンマ区切りで指定。
@@ -136,7 +136,7 @@ parameters:
     ja_JP: レビュアー
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated requested reviewers logins. Trigger only when any matches.
     zh_Hans: 逗号分隔的请求审查者登录名。任一命中即触发。
     ja_JP: 要求されたレビュアーのログイン。カンマ区切りでいずれか一致で発火。
@@ -148,7 +148,7 @@ parameters:
     ja_JP: PR 規模のしきい値
   type: string
   required: false
-  help:
+  description:
     en_US: Numeric threshold for changed files or lines. Supports operators like >100 or >=10. Skipped if change counts missing.
     zh_Hans: 变更规模阈值，支持 >100 或 >=10 等写法。若缺少变更统计将跳过此过滤。
     ja_JP: 変更規模のしきい値。>100 や >=10 の形式に対応。変更数が無い場合はスキップ。
@@ -160,7 +160,7 @@ parameters:
     ja_JP: 変更ファイルのグロブ
   type: string
   required: false
-  help:
+  description:
     en_US: Glob patterns for changed file paths. Comma separated patterns like src/**. Skipped if payload lacks file list.
     zh_Hans: 变更文件路径的 Glob 模式。逗号分隔，如 src/**。若 payload 无文件列表则跳过。
     ja_JP: 変更ファイルのグロブ。src/** のようにカンマ区切り。ファイル一覧が無い場合はスキップ。
@@ -172,7 +172,7 @@ parameters:
     ja_JP: マージ済み（closed のみに適用）
   type: boolean
   required: false
-  help:
+  description:
     en_US: Only applies when action is closed. True to require merged PRs. False to require closed without merge.
     zh_Hans: 仅在动作为 closed 时生效。true 仅匹配已合并，false 匹配未合并关闭。
     ja_JP: action が closed のときのみ適用。true はマージ済み。false は未マージのクローズ。

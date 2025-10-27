@@ -19,7 +19,7 @@ parameters:
     ja_JP: リポジトリ名
   type: string
   required: false
-  help:
+  description:
     en_US: Exact match on repository name or owner slash name. Comma separated allowed.
     zh_Hans: 精确匹配仓库名或 owner/repo。支持逗号分隔多值。
     ja_JP: リポジトリ名または owner/repo の完全一致。カンマ区切り対応。

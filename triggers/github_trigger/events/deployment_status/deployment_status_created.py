@@ -13,7 +13,7 @@ from dify_plugin.interfaces.trigger import Event
 class DeploymentStatusCreatedEvent(Event):
     """GitHub Deployment Status Created Event"""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
@@ -72,4 +72,3 @@ class DeploymentStatusCreatedEvent(Event):
         creator = payload.get("sender", {}).get("login")
         if creator not in users:
             raise EventIgnoreError()
-

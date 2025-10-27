@@ -40,7 +40,7 @@ parameters:
       en_US: Deleted
       zh_Hans: 已删除
       ja_JP: 削除
-  help:
+  description:
     en_US: Multi select package lifecycle actions such as published updated deleted. Leave empty to accept all.
     zh_Hans: 多选过滤包的生命周期动作 如 发布 更新 删除。留空不过滤。
     ja_JP: パッケージのライフサイクルアクションを複数選択で。公開 更新 削除など。未設定で全許可。
@@ -92,7 +92,7 @@ parameters:
     ja_JP: パッケージ名
   type: string
   required: false
-  help:
+  description:
     en_US: Exact match on package name. Comma separated allowed.
     zh_Hans: 包名称精确匹配。支持逗号分隔多值。
     ja_JP: パッケージ名の完全一致。カンマ区切り対応。

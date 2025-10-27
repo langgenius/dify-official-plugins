@@ -64,7 +64,7 @@ parameters:
       en_US: Category Changed
       zh_Hans: 分类变更
       ja_JP: カテゴリ変更
-  help:
+  description:
     en_US: Multi select filter for discussion actions such as created edited deleted answered labeled.
     zh_Hans: 多选过滤讨论事件动作 如 创建 编辑 删除 已回答 打标 等。
     ja_JP: ディスカッションのアクションを複数選択で絞り込み。作成 編集 削除 回答済 など。
@@ -76,7 +76,7 @@ parameters:
     ja_JP: カテゴリ名
   type: string
   required: false
-  help:
+  description:
     en_US: Exact match on category name. Comma separated allowed.
     zh_Hans: 按分类名称精确匹配。支持逗号分隔。
     ja_JP: カテゴリ名の完全一致。カンマ区切り可。
@@ -88,7 +88,7 @@ parameters:
     ja_JP: 作成者
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by discussion author login. Comma separated allowed.
     zh_Hans: 按讨论作者登录名过滤。支持逗号分隔。
     ja_JP: ディスカッション作成者のログインでフィルタ。カンマ区切り可。
@@ -100,7 +100,7 @@ parameters:
     ja_JP: タイトルに含む
   type: string
   required: false
-  help:
+  description:
     en_US: Substring match in discussion title. Comma separated keywords allowed.
     zh_Hans: 讨论标题包含关键字。支持逗号分隔多个关键字。
     ja_JP: タイトルの部分一致。カンマ区切りのキーワード対応。
@@ -112,7 +112,7 @@ parameters:
     ja_JP: 本文に含む
   type: string
   required: false
-  help:
+  description:
     en_US: Substring match in discussion body. Comma separated keywords allowed.
     zh_Hans: 讨论正文包含关键字。支持逗号分隔关键字。
     ja_JP: 本文の部分一致。カンマ区切りのキーワードに対応。

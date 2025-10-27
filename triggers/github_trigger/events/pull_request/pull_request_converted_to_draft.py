@@ -14,7 +14,7 @@ from ..utils.pull_request import apply_pull_request_common_filters, load_pull_re
 class PullRequestConvertedToDraftEvent(Event):
     """GitHub Pull Request Converted to Draft Event"""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload, pull_request = load_pull_request_payload(request, expected_action="converted_to_draft")
         apply_pull_request_common_filters(pull_request, parameters)
         return Variables(variables={**payload})
