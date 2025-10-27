@@ -1,14 +1,16 @@
-# this model corresponds to qwen-turbo-0919, for more details
-# please refer to (https://help.aliyun.com/zh/model-studio/getting-started/models#ff492e2c10lub)
-model: qwen-turbo-0919
+# this model corresponds to qwen-flash, for more details
+# please refer to (https://help.aliyun.com/zh/model-studio/getting-started/models)
+model: qwen-flash
 label:
-  en_US: qwen-turbo-0919
+  en_US: qwen-flash
 model_type: llm
 features:
+  - multi-tool-call
   - agent-thought
+  - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 131072
+  context_size: 1000000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -22,9 +24,9 @@ parameter_rules:
   - name: max_tokens
     use_template: max_tokens
     type: int
-    default: 8192
+    default: 32768
     min: 1
-    max: 8192
+    max: 32768
     help:
       zh_Hans: 用于指定模型在生成内容时token的最大数量，它定义了生成的上限，但不保证每次都会生成到这个数量。
       en_US: It is used to specify the maximum number of tokens when the model generates content. It defines the upper limit of generation, but does not guarantee that this number will be generated every time.
@@ -32,8 +34,8 @@ parameter_rules:
     use_template: top_p
     type: float
     default: 0.8
-    min: 0.1
-    max: 0.9
+    min: 0.01
+    max: 0.99
     help:
       zh_Hans: 生成过程中核采样方法概率阈值，例如，取值为0.8时，仅保留概率加起来大于等于0.8的最可能token的最小集合作为候选集。取值范围为（0,1.0)，取值越大，生成的随机性越高；取值越低，生成的确定性越高。
       en_US: The probability threshold of the kernel sampling method during the generation process. For example, when the value is 0.8, only the smallest set of the most likely tokens with a sum of probabilities greater than or equal to 0.8 is retained as the candidate set. The value range is (0,1.0). The larger the value, the higher the randomness generated; the lower the value, the higher the certainty generated.
@@ -74,8 +76,30 @@ parameter_rules:
       zh_Hans: 联网搜索
       en_US: Web Search
     help:
-      zh_Hans: 模型内置了互联网搜索服务，该参数控制模型在生成文本时是否参考使用互联网搜索结果。启用互联网搜索，模型会将搜索结果作为文本生成过程中的参考信息，但模型会基于其内部逻辑“自行判断”是否使用互联网搜索结果。
+      zh_Hans: 模型内置了互联网搜索服务，该参数控制模型在生成文本时是否参考使用互联网搜索结果。启用互联网搜索，模型会将搜索结果作为文本生成过程中的参考信息，但模型会基于其内部逻辑"自行判断"是否使用互联网搜索结果。
       en_US: The model has a built-in Internet search service. This parameter controls whether the model refers to Internet search results when generating text. When Internet search is enabled, the model will use the search results as reference information in the text generation process, but the model will "judge" whether to use Internet search results based on its internal logic.
+  - name: enable_thinking
+    required: false
+    type: boolean
+    default: false
+    label:
+      zh_Hans: 思考模式
+      en_US: Thinking mode
+    help:
+      zh_Hans: 是否开启思考模式。
+      en_US: Whether to enable thinking mode.
+  - name: thinking_budget
+    required: false
+    type: int
+    default: 81920
+    min: 1
+    max: 81920
+    label:
+      zh_Hans: 思考长度限制
+      en_US: Thinking budget
+    help:
+      zh_Hans: 思考过程的最大长度，只在思考模式为true时生效。
+      en_US: The maximum length of the thinking process, only effective when thinking mode is true.
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -89,8 +113,17 @@ parameter_rules:
       - text
       - json_object
 pricing:
-  input: '0.0003'
-  output: '0.0006'
+  input: '0.00015'
+  output: '0.0015'
   unit: '0.001'
   currency: RMB
-deprecated: true
+  tiered_pricing:
+    - input: '0.00015'
+      output: '0.0015'
+      max_tokens: 128000
+    - input: '0.0006'
+      output: '0.006'
+      max_tokens: 256000
+    - input: '0.0012'
+      output: '0.012'
+      max_tokens: 1000000
