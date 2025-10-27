@@ -1,0 +1,100 @@
+identity:
+  name: attachment_created
+  author: langgenius
+  label:
+    en_US: Attachment Created
+    zh_Hans: 附件创建
+    ja_JP: 添付ファイル作成
+
+description:
+  en_US: Triggers when a new attachment is added to an issue
+  zh_Hans: 当向 issue 添加新附件时触发
+  ja_JP: 課題に新しい添付ファイルが追加されたときにトリガーされます
+
+parameters:
+- name: title_contains
+  label:
+    en_US: Title Contains
+    zh_Hans: 标题包含
+    ja_JP: タイトルに含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if the attachment title contains specific keywords (comma-separated). Leave empty to capture every attachment."
+    zh_Hans: "仅当附件标题包含指定关键词时触发（逗号分隔）。留空则捕获所有附件。"
+    ja_JP: "添付ファイルのタイトルに特定のキーワードが含まれる場合のみトリガー（カンマ区切り）。空の場合はすべての添付を取得します。"
+
+- name: source_type_filter
+  label:
+    en_US: Source Type Filter
+    zh_Hans: 来源类型过滤
+    ja_JP: ソース種別フィルター
+  type: string
+  required: false
+  description:
+    en_US: "Restrict to attachments created by certain integrations (comma-separated source types, e.g. github, slack)."
+    zh_Hans: "仅保留由特定集成创建的附件（逗号分隔的来源类型，例如 github、slack）。"
+    ja_JP: "特定の連携が作成した添付のみ対象にします（カンマ区切りのソース種別。例: github, slack）。"
+
+- name: issue_filter
+  label:
+    en_US: Issue Filter
+    zh_Hans: Issue 过滤
+    ja_JP: 課題フィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the attachment belongs to specific issue IDs (comma-separated)."
+    zh_Hans: "仅当附件关联到指定的 Issue ID 时触发（逗号分隔）。"
+    ja_JP: "添付が指定した課題 ID のものだけをトリガーします（カンマ区切り）。"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [create]
+    type:
+      type: string
+      enum: [Attachment]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        subtitle:
+          type: string
+        url:
+          type: string
+        issueId:
+          type: string
+        originalIssueId:
+          type: string
+        creatorId:
+          type: string
+        externalUserCreatorId:
+          type: string
+        sourceType:
+          type: string
+        groupBySource:
+          type: boolean
+        metadata:
+          type: object
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        archivedAt:
+          type: string
+    actor:
+      type: object
+  required:
+  - action
+  - type
+  - data
+
+extra:
+  python:
+    source: events/attachment/attachment_created.py
