@@ -2,7 +2,7 @@ from typing import Any, Mapping, Optional, Sequence, Union, Tuple, Generator, Ca
 import logging
 
 from openai import OpenAI
-
+from httpx import Timeout
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
@@ -23,8 +23,6 @@ class AihubmixOpenAIResponses:
 
     def _to_credential_kwargs(self, credentials: Mapping[str, Any]) -> Mapping[str, Any]:
         # Align with aihubmix provider style (see anthropic.py)
-        from httpx import Timeout
-
         return {
             "api_key": credentials["api_key"],
             "base_url": "https://aihubmix.com/v1",
@@ -111,10 +109,7 @@ class AihubmixOpenAIResponses:
             **params
         ) as stream:
             for event in stream:
-                try:
-                    etype = getattr(event, "type", None)
-                except Exception:
-                    etype = None
+                etype = getattr(event, "type", None)
                 if etype == "response.output_text.delta":
                     delta_text = getattr(event, "delta", "") or ""
                     if delta_text:
@@ -127,7 +122,7 @@ class AihubmixOpenAIResponses:
                 elif etype == "response.error":
                     # Surface error immediately
                     err = getattr(event, "error", None)
-                    message = getattr(err, "message", None) or str(err) or "Responses stream error"
+                    message = (getattr(err, "message", None) or str(err)) if err else "Responses stream error"
                     raise RuntimeError(message)
 
     def create_llm_result(
