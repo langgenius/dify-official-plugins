@@ -1,0 +1,18 @@
+[project]
+name = "google-sra72z"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+
+# uv pip compile pyproject.toml -o ./requirements.txt
+dependencies = [
+    "dify-plugin>=0.5.1",
+]
+
+# uv run black . -C -l 100 && uv run ruff check --fix
+[dependency-groups]
+dev = [
+    "black>=25.9.0",
+    "ruff>=0.14.2",
+]
