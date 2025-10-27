@@ -18,7 +18,9 @@ charset-normalizer==3.4.4
 click==8.3.0
     # via flask
 colorama==0.4.6
-    # via click
+    # via
+    #   click
+    #   loguru
 dify-plugin==0.5.1
     # via google-sra72z (pyproject.toml)
 dpkt==1.9.8
@@ -45,6 +47,8 @@ itsdangerous==2.2.0
     # via flask
 jinja2==3.1.6
     # via flask
+loguru==0.7.3
+    # via google-sra72z (pyproject.toml)
 markupsafe==3.0.3
     # via
     #   jinja2
@@ -59,6 +63,7 @@ pycparser==2.23
     # via cffi
 pydantic==2.12.3
     # via
+    #   google-sra72z (pyproject.toml)
     #   dify-plugin
     #   pydantic-settings
 pydantic-core==2.41.4
@@ -99,6 +104,8 @@ werkzeug==3.0.6
     # via
     #   dify-plugin
     #   flask
+win32-setctime==1.2.0
+    # via loguru
 yarl==1.22.0
     # via dify-plugin
 zope-event==6.0

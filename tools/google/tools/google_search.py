@@ -1,10 +1,10 @@
 from collections.abc import Generator
-from contextlib import suppress
 from typing import Any
 
 import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from loguru import logger
 
 from tools.utils import to_refs, VALID_LANGUAGES, VALID_COUNTRIES, InstantSearchResponse
 
@@ -36,7 +36,7 @@ class GoogleSearchTool(Tool):
 
     @staticmethod
     def _set_params_language_code(params: dict, tool_parameters: dict):
-        with suppress(Exception):
+        try:
             language_code = tool_parameters.get("language_code") or tool_parameters.get("hl")
             if (
                 language_code
@@ -45,10 +45,12 @@ class GoogleSearchTool(Tool):
                 and language_code in VALID_LANGUAGES
             ):
                 params["hl"] = language_code
+        except Exception as e:
+            logger.warning(f"Failed to set language code parameter: {e}")
 
     @staticmethod
     def _set_params_country_code(params: dict, tool_parameters: dict):
-        with suppress(Exception):
+        try:
             country_code = tool_parameters.get("country_code") or tool_parameters.get("gl")
             if (
                 country_code
@@ -58,6 +60,8 @@ class GoogleSearchTool(Tool):
                 and country_code in VALID_COUNTRIES
             ):
                 params["gl"] = country_code
+        except Exception as e:
+            logger.warning(f"Failed to set country code parameter: {e}")
 
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         as_agent_tool = tool_parameters.get("as_agent_tool", False)
@@ -84,8 +88,6 @@ class GoogleSearchTool(Tool):
             else:
                 yield self.create_text_message(text=isr.to_dify_text_message())
 
-            # valuable_res = self._parse_results(response.json())
-            # yield self.create_json_message(valuable_res)
         except requests.exceptions.RequestException as e:
             yield self.create_text_message(
                 f"An error occurred while invoking the tool: {str(e)}. "

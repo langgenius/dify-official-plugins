@@ -1,9 +1,9 @@
 import json
-from contextlib import suppress
 from pathlib import Path
 from typing import Any, Set, List
 from urllib.parse import urlparse
 
+from loguru import logger
 from pydantic import BaseModel, Field
 
 PROJECT_PATH = Path(__file__).parent
@@ -63,9 +63,8 @@ class SearchRef(BaseModel):
             try:
                 u = urlparse(self.url)
                 self.site_name = u.netloc
-            except Exception:
-                # Consider logging this exception to help with debugging.
-                pass
+            except Exception as e:
+                logger.warning(f"Failed to parse URL '{self.url}': {e}")
 
 
 class InstantSearchResponse(BaseModel):
@@ -110,9 +109,11 @@ def load_valid_countries(filepath: Path) -> set | None:
     :param filepath:
     :return:
     """
-    with suppress(Exception):
+    try:
         if countries := json.loads(filepath.read_text(encoding="utf8")):
             return {country["country_code"] for country in countries}
+    except Exception as e:
+        logger.error(f"Failed to load valid countries from '{filepath}': {e}")
     return None
 
 
@@ -122,9 +123,11 @@ def load_valid_languages(filepath: Path) -> set | None:
     :param filepath:
     :return:
     """
-    with suppress(Exception):
+    try:
         if languages := json.loads(filepath.read_text(encoding="utf8")):
             return {language["language_code"] for language in languages}
+    except Exception as e:
+        logger.error(f"Failed to load valid languages from '{filepath}': {e}")
     return None
 
 
