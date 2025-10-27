@@ -1,9 +1,9 @@
 import logging
 from collections.abc import Generator
-from typing import Optional, Union
+from typing import Optional, Union, Any, cast
 from dify_plugin.entities.model import AIModelEntity
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
-from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
+from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool, AssistantPromptMessage
 from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model.message import (
     PromptMessage,
@@ -19,6 +19,7 @@ from dify_plugin.errors.model import (
 )
 from .anthropic import AnthropicLargeLanguageModel
 from .google import GoogleLargeLanguageModel
+from .openai_response import AihubmixOpenAIResponses
 
 # 如果两个类都继承自同一个基类，可以使用相同的初始化方式
 model_schemas = []  # 或者从某处获取适当的模型模式
@@ -28,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 # thinking models compatibility for max_completion_tokens (all starting with "o" or "gpt-5")
 THINKING_SERIES_COMPATIBILITY = ("o", "gpt-5")
+RESPONSE_SERIES_COMPATIBILITY = ("gpt-5-codex", "gpt-5-pro", "o3-pro")
 
 
 class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
@@ -66,7 +68,33 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
                     "max_tokens"
                 ]
                 del model_parameters["max_tokens"]
+        # 走 response 接口，其他模型走 generate 接口
+        if model.startswith(RESPONSE_SERIES_COMPATIBILITY):
+            # 使用 Responses API（委托给 openai_response 封装；支持流式/非流式）
+            resp_handler = AihubmixOpenAIResponses(credentials)
+            compute_usage = lambda pt, ct: self._calc_response_usage(
+                model=model,
+                credentials=credentials,
+                prompt_tokens=pt,
+                completion_tokens=ct,
+            )
+            if stream:
+                return resp_handler.stream_llm_chunks(
+                    model=model,
+                    prompt_messages=prompt_messages,
+                    model_parameters=model_parameters,
+                    compute_usage=compute_usage,
+                    user=user,
+                )
 
+            return resp_handler.create_llm_result(
+                model=model,
+                prompt_messages=prompt_messages,
+                model_parameters=model_parameters,
+                compute_usage=compute_usage,
+                user=user,
+            )
+        
         # 默认使用父类的生成方法
         return super()._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 
@@ -86,6 +114,11 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
             enable_thinking = model_parameters.pop("enable_thinking", None)
             if enable_thinking is not None:
                 model_parameters["chat_template_kwargs"] = {"enable_thinking": bool(enable_thinking)}
+
+            # 将自定义的 enable_stream 参数映射到本地 stream 标志，避免把未知参数透传给上游
+            enable_stream = model_parameters.pop("enable_stream", None)
+            if enable_stream is not None:
+                stream = bool(enable_stream)
 
             return self._dispatch_to_appropriate_model(
                 model, credentials, prompt_messages, model_parameters, tools, stop, stream, user

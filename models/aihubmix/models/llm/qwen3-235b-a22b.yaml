@@ -1,6 +1,6 @@
-model: Qwen/Qwen3-235B-A22B
+model: qwen3-235b-a22b
 label:
-  en_US: Qwen/Qwen3-235B-A22B
+  en_US: qwen3-235b-a22b
 model_type: llm
 features:
   - agent-thought
