@@ -1,0 +1,170 @@
+subscription_schema: []
+
+subscription_constructor:
+  parameters:
+  - name: verification_token
+    type: string
+    required: true
+    label:
+      en_US: Verification Token
+      ja_JP: 検証トークン
+      zh_Hans: 验证令牌
+    help:
+      en_US: "Paste the verification_token that Notion sends to your webhook endpoint when verifying the subscription."
+      ja_JP: "Notion が Webhook 検証時に送信する verification_token を入力してください。"
+      zh_Hans: "输入 Notion 在验证 webhook 时发送的 verification_token。"
+  - name: event_types
+    type: checkbox
+    multiple: true
+    required: false
+    default:
+    - "page.created"
+    - "page.deleted"
+    - "page.undeleted"
+    - "page.content_updated"
+    - "page.moved"
+    - "page.properties_updated"
+    - "page.locked"
+    - "page.unlocked"
+    - "database.created"
+    - "database.content_updated"
+    - "database.deleted"
+    - "database.undeleted"
+    - "database.moved"
+    - "database.schema_updated"
+    - "data_source.created"
+    - "data_source.deleted"
+    - "data_source.undeleted"
+    - "data_source.moved"
+    - "data_source.content_updated"
+    - "data_source.schema_updated"
+    - "comment.created"
+    - "comment.updated"
+    - "comment.deleted"
+    label:
+      en_US: Event Filters
+      ja_JP: イベントフィルター
+      zh_Hans: 事件过滤器
+    help:
+      en_US: "Select the Notion event types to deliver. Leave empty to receive every supported event."
+      ja_JP: "受信する Notion イベントタイプを選択します。未選択の場合はすべてのイベントが送信されます。"
+      zh_Hans: "选择需要接收的 Notion 事件类型。不选择将接收全部支持的事件。"
+    options:
+    - value: "page.created"
+      label:
+        en_US: "page.created"
+    - value: "page.deleted"
+      label:
+        en_US: "page.deleted"
+    - value: "page.undeleted"
+      label:
+        en_US: "page.undeleted"
+    - value: "page.content_updated"
+      label:
+        en_US: "page.content_updated"
+    - value: "page.moved"
+      label:
+        en_US: "page.moved"
+    - value: "page.properties_updated"
+      label:
+        en_US: "page.properties_updated"
+    - value: "page.locked"
+      label:
+        en_US: "page.locked"
+    - value: "page.unlocked"
+      label:
+        en_US: "page.unlocked"
+    - value: "database.created"
+      label:
+        en_US: "database.created"
+    - value: "database.content_updated"
+      label:
+        en_US: "database.content_updated"
+    - value: "database.deleted"
+      label:
+        en_US: "database.deleted"
+    - value: "database.undeleted"
+      label:
+        en_US: "database.undeleted"
+    - value: "database.moved"
+      label:
+        en_US: "database.moved"
+    - value: "database.schema_updated"
+      label:
+        en_US: "database.schema_updated"
+    - value: "data_source.created"
+      label:
+        en_US: "data_source.created"
+    - value: "data_source.deleted"
+      label:
+        en_US: "data_source.deleted"
+    - value: "data_source.undeleted"
+      label:
+        en_US: "data_source.undeleted"
+    - value: "data_source.moved"
+      label:
+        en_US: "data_source.moved"
+    - value: "data_source.content_updated"
+      label:
+        en_US: "data_source.content_updated"
+    - value: "data_source.schema_updated"
+      label:
+        en_US: "data_source.schema_updated"
+    - value: "comment.created"
+      label:
+        en_US: "comment.created"
+    - value: "comment.updated"
+      label:
+        en_US: "comment.updated"
+    - value: "comment.deleted"
+      label:
+        en_US: "comment.deleted"
+
+credentials_schema: {}
+
+oauth_schema: {}
+
+events:
+# Page events
+- events/page/page_created.yaml
+- events/page/page_deleted.yaml
+- events/page/page_undeleted.yaml
+- events/page/page_content_updated.yaml
+- events/page/page_moved.yaml
+- events/page/page_properties_updated.yaml
+- events/page/page_locked.yaml
+- events/page/page_unlocked.yaml
+
+# Database events
+- events/database/database_created.yaml
+- events/database/database_content_updated.yaml
+- events/database/database_deleted.yaml
+- events/database/database_undeleted.yaml
+- events/database/database_moved.yaml
+- events/database/database_schema_updated.yaml
+
+# Data source events
+- events/data_source/data_source_created.yaml
+- events/data_source/data_source_deleted.yaml
+- events/data_source/data_source_undeleted.yaml
+- events/data_source/data_source_moved.yaml
+- events/data_source/data_source_content_updated.yaml
+- events/data_source/data_source_schema_updated.yaml
+
+# Comment events
+- events/comment/comment_created.yaml
+- events/comment/comment_updated.yaml
+- events/comment/comment_deleted.yaml
+
+identity:
+  author: langgenius
+  description:
+    en_US: Notion webhook triggers.
+  icon: notion.icon.png
+  label:
+    en_US: Notion Triggers
+  name: notion_trigger
+
+extra:
+  python:
+    source: provider/notion_simple.py

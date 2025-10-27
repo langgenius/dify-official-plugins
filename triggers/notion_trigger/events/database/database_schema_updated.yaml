@@ -1,0 +1,48 @@
+identity:
+  name: database_schema_updated
+  author: langgenius
+  label:
+    en_US: Database Schema Updated
+    ja_JP: Database Schema Updated
+    zh_Hans: Database Schema Updated
+description:
+  en_US: Triggered when Notion emits the database.schema_updated webhook event.
+  ja_JP: Notion で database.schema_updated Webhook イベントが発生したときにトリガーされます。
+  zh_Hans: 当 Notion 触发 database.schema_updated Webhook 事件时触发。
+parameters:
+- name: workspace_filter
+  type: string
+  required: false
+  label:
+    en_US: Workspace Filter
+    ja_JP: ワークスペースフィルター
+    zh_Hans: 工作区过滤器
+  help:
+    en_US: "Comma separated workspace IDs to forward events from. Leave blank to accept all workspaces."
+    ja_JP: "イベントを転送するワークスペース ID をカンマ区切りで指定します。空欄の場合はすべてを受け入れます。"
+    zh_Hans: "使用逗号分隔的工作区 ID，仅接收这些工作区的事件。留空接收所有工作区。"
+
+output_schema:
+  type: object
+  properties:
+    id:
+      type: string
+    type:
+      type: string
+    timestamp:
+      type: string
+    workspace_id:
+      type: string
+    subscription_id:
+      type: string
+    integration_id:
+      type: string
+    entity:
+      type: object
+    data:
+      type: object
+  required: [id, type, timestamp, workspace_id]
+
+extra:
+  python:
+    source: events/database/database_schema_updated.py
