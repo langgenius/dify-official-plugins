@@ -19,7 +19,7 @@ parameters:
     ja_JP: 変更された設定名
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated setting names to watch. Triggers only when any of these settings change.
     zh_Hans: 逗号分隔的设置名称白名单。仅当这些设置发生变化时触发。
     ja_JP: 監視する設定名をカンマ区切りで。指定のいずれかが変更された場合のみ発火。

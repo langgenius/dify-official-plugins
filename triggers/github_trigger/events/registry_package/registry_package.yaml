@@ -40,7 +40,7 @@ parameters:
       en_US: Deleted
       zh_Hans: 已删除
       ja_JP: 削除
-  help:
+  description:
     en_US: Multi select registry package lifecycle actions such as published updated deleted.
     zh_Hans: 多选过滤注册包生命周期动作 如 发布 更新 删除。
     ja_JP: レジストリパッケージのライフサイクルアクションを複数選択で指定。
@@ -67,7 +67,7 @@ parameters:
     ja_JP: パッケージ名
   type: string
   required: false
-  help:
+  description:
     en_US: Exact match on registry package name. Comma separated values supported.
     zh_Hans: 注册包名称精确匹配。支持逗号分隔多值。
     ja_JP: レジストリパッケージ名の完全一致。カンマ区切りで複数指定可。

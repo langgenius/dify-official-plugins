@@ -34,7 +34,7 @@ parameters:
       en_US: Completed
       zh_Hans: 完成
       ja_JP: 完了
-  help:
+  description:
     en_US: Filter which check run actions to process. Leave empty to accept created and completed.
     zh_Hans: 选择要处理的 Check Run 动作。留空接收 created 与 completed。
     ja_JP: Check Run のアクションを選択。未設定で created と completed を許可。
@@ -46,7 +46,7 @@ parameters:
     ja_JP: チェック名
   type: string
   required: false
-  help:
+  description:
     en_US: Exact match on check run name. Comma separated values allowed.
     zh_Hans: 按检查名称精确匹配。支持逗号分隔多值。
     ja_JP: チェック名の完全一致。カンマ区切り対応。
@@ -58,7 +58,7 @@ parameters:
     ja_JP: ブランチ
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by head branch name. Comma separated values supported.
     zh_Hans: 按 head 分支名过滤。支持逗号分隔多值。
     ja_JP: head ブランチ名でフィルタ。カンマ区切り対応。
@@ -70,7 +70,7 @@ parameters:
     ja_JP: アプリスラッグ
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by GitHub App slug that created the run.
     zh_Hans: 按创建该检查的 GitHub App slug 过滤。
     ja_JP: チェックを作成した GitHub App のスラッグでフィルタ。
@@ -82,7 +82,7 @@ parameters:
     ja_JP: 結論（completed のみ）
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by run conclusion such as success failure cancelled neutral timed_out action_required.
     zh_Hans: 按运行结论过滤 如 success failure cancelled neutral timed_out action_required。
     ja_JP: 実行の結論でフィルタ success failure cancelled neutral timed_out action_required など。
@@ -94,7 +94,7 @@ parameters:
     ja_JP: 実行者
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by the user who triggered the run. Comma separated logins.
     zh_Hans: 按触发该运行的用户过滤。逗号分隔登录名。
     ja_JP: 実行をトリガーしたユーザーでフィルタ。ログインをカンマ区切り。

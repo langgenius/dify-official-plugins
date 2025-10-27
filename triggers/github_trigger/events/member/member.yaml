@@ -40,7 +40,7 @@ parameters:
       en_US: Removed
       zh_Hans: 已移除
       ja_JP: 削除
-  help:
+  description:
     en_US: Multi select filter for repository member lifecycle. Leave empty to accept all.
     zh_Hans: 多选过滤仓库成员生命周期事件。留空不过滤。
     ja_JP: リポジトリメンバーのライフサイクルを複数選択で絞り込み。未設定で全て許可。
@@ -52,7 +52,7 @@ parameters:
     ja_JP: メンバーログイン
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated member logins to include.
     zh_Hans: 逗号分隔的成员登录名白名单。
     ja_JP: メンバーのログインをカンマ区切りで指定。

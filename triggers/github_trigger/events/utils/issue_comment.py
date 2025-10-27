@@ -60,4 +60,3 @@ def _normalize_list(raw: Any, *, lowercase: bool = False) -> list[str]:
     if lowercase:
         values = [v.lower() for v in values]
     return values
-

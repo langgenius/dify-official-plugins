@@ -32,7 +32,7 @@ parameters:
     ja_JP: 本文に含む
   type: string
   required: false
-  help:
+  description:
     en_US: Match keywords in commit comment body. Comma separated any match passes.
     zh_Hans: 匹配提交评论内容中的关键字。逗号分隔 任一命中即通过。
     ja_JP: コミットコメント本文のキーワード一致。カンマ区切りでいずれか一致。
@@ -44,7 +44,7 @@ parameters:
     ja_JP: コメント投稿者
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated commenter logins to include.
     zh_Hans: 逗号分隔的评论者登录名白名单。
     ja_JP: コメント投稿者のログインをカンマ区切りで指定。
@@ -56,7 +56,7 @@ parameters:
     ja_JP: コミットID
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by commit SHA the comment belongs to. Comma separated allowed.
     zh_Hans: 按评论所属的提交 SHA 过滤。支持逗号分隔。
     ja_JP: コメントが紐付くコミット SHA でフィルタ。カンマ区切り可。
@@ -68,7 +68,7 @@ parameters:
     ja_JP: ファイルパス
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by file path referenced in the comment. Comma separated exact paths.
     zh_Hans: 按评论引用的文件路径过滤。逗号分隔 精确匹配。
     ja_JP: コメントで参照されたファイルパスでフィルタ。カンマ区切りの完全一致。

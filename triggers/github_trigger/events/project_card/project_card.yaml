@@ -52,7 +52,7 @@ parameters:
       en_US: Converted
       zh_Hans: 转换
       ja_JP: 変換
-  help:
+  description:
     en_US: Multi select filter for card actions like created edited deleted moved converted.
     zh_Hans: 多选过滤卡片动作 如 创建 编辑 删除 移动 转换。
     ja_JP: カードのアクションを複数選択で絞り込み 作成 編集 削除 移動 変換。
@@ -64,7 +64,7 @@ parameters:
     ja_JP: ノートに含む
   type: string
   required: false
-  help:
+  description:
     en_US: Match keywords in card note. Comma separated any match passes.
     zh_Hans: 匹配卡片备注中的关键字。逗号分隔 任一命中即可。
     ja_JP: カードのノートに含まれるキーワード。カンマ区切りでいずれか一致。

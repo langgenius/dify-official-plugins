@@ -1,2 +1,1 @@
 """Pull Request events."""
-

@@ -70,7 +70,7 @@ parameters:
       en_US: Unlabeled
       zh_Hans: 移除标签
       ja_JP: ラベル削除
-  help:
+  description:
     en_US: Multi select filter for issue actions. Leave empty to accept all actions. Implemented by matching payload action.
     zh_Hans: 多选过滤要关注的议题动作。留空表示不过滤。通过匹配 payload 的 action 字段实现。
     ja_JP: 対象のアクションを複数選択で絞り込みます。未設定なら全て受け入れ。ペイロードの action による判定です。
@@ -82,7 +82,7 @@ parameters:
     ja_JP: 必須ラベル
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated label names. Trigger only if the issue includes all these labels.
     zh_Hans: 逗号分隔的标签名。仅当议题包含这些标签时触发。
     ja_JP: カンマ区切りのラベル名。イシューに全て含まれる場合のみ発火します。
@@ -94,7 +94,7 @@ parameters:
     ja_JP: 担当者フィルター
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated GitHub logins. Trigger only when assigned user matches.
     zh_Hans: 逗号分隔的 GitHub 登录名。仅当指派的用户命中时触发。
     ja_JP: カンマ区切りの GitHub ログイン。担当者が一致した場合のみ発火します。
@@ -106,7 +106,7 @@ parameters:
     ja_JP: 作成者
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated authors by login. Filters by issue author.
     zh_Hans: 逗号分隔的作者登录名。按议题作者过滤。
     ja_JP: 作成者のログインをカンマ区切りで。イシュー作成者でフィルタします。
@@ -118,7 +118,7 @@ parameters:
     ja_JP: マイルストーン
   type: string
   required: false
-  help:
+  description:
     en_US: Milestone title filter. Match exact milestone title when present.
     zh_Hans: 里程碑标题过滤。与议题关联的里程碑标题精确匹配。
     ja_JP: マイルストーンのタイトルでフィルタします。完全一致です。
@@ -130,7 +130,7 @@ parameters:
     ja_JP: タイトルに含む
   type: string
   required: false
-  help:
+  description:
     en_US: Substring match in issue title. Use comma separated keywords to match any.
     zh_Hans: 议题标题包含关键字。可用逗号分隔多个关键字，任一命中即通过。
     ja_JP: タイトルの部分一致。カンマ区切りのキーワードいずれか一致で通過。
@@ -142,7 +142,7 @@ parameters:
     ja_JP: 本文に含む
   type: string
   required: false
-  help:
+  description:
     en_US: Substring match in issue body. Use comma separated keywords to match any.
     zh_Hans: 议题正文包含关键字。支持多个关键字，逗号分隔，任一命中即通过。
     ja_JP: 本文の部分一致。カンマ区切りでいずれか一致。
@@ -154,7 +154,7 @@ parameters:
     ja_JP: 状態
   type: string
   required: false
-  help:
+  description:
     en_US: State filter such as open or closed. Comma separated to allow multiple values.
     zh_Hans: 状态过滤，如 open 或 closed。支持逗号分隔多值。
     ja_JP: open や closed などの状態でフィルタ。カンマ区切りで複数指定可。

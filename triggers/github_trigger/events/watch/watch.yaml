@@ -28,7 +28,7 @@ parameters:
       en_US: Started
       zh_Hans: 开始关注
       ja_JP: 開始
-  help:
+  description:
     en_US: Filter by watch action. GitHub generally sends started. Leave empty to accept all.
     zh_Hans: 按 watch 动作过滤。GitHub 通常仅发送 started。留空不过滤。
     ja_JP: watch のアクションで絞り込み。通常は started のみ。未設定で全て許可。
@@ -40,7 +40,7 @@ parameters:
     ja_JP: ウォッチャー
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated watcher logins. Only trigger when sender login matches.
     zh_Hans: 逗号分隔的关注者登录名。仅当 sender 命中时触发。
     ja_JP: ウォッチャーのログインをカンマ区切りで。sender が一致した場合のみ発火。

@@ -40,7 +40,7 @@ parameters:
       en_US: Deleted
       zh_Hans: 删除
       ja_JP: 削除
-  help:
+  description:
     en_US: Multi select filter for comment actions. Leave empty to accept all. Implemented by checking payload action.
     zh_Hans: 多选过滤评论事件动作。留空表示不过滤。通过 payload 的 action 字段判断。
     ja_JP: コメントのアクションを複数選択で絞り込み。未設定なら全て許可。ペイロード action を参照。
@@ -52,7 +52,7 @@ parameters:
     ja_JP: コメント本文に含む
   type: string
   required: false
-  help:
+  description:
     en_US: Match keywords in comment body. Comma separated, any match passes.
     zh_Hans: 评论内容包含关键字。逗号分隔多个，任意命中即通过。
     ja_JP: コメント本文のキーワード一致。カンマ区切りでいずれか一致。
@@ -64,7 +64,7 @@ parameters:
     ja_JP: コメント作成者
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated commenter logins. Only trigger for these users.
     zh_Hans: 逗号分隔的评论者登录名。仅对这些用户触发。
     ja_JP: コメント投稿者のログイン。カンマ区切りで一致時のみ発火。
@@ -76,7 +76,7 @@ parameters:
     ja_JP: Issue/PR ラベル
   type: string
   required: false
-  help:
+  description:
     en_US: Require the parent Issue or PR to contain these labels. Comma separated list.
     zh_Hans: 要求父级 Issue 或 PR 包含这些标签。逗号分隔。
     ja_JP: 親の Issue または PR に含まれるべきラベル。カンマ区切り。
@@ -88,7 +88,7 @@ parameters:
     ja_JP: Issue/PR の状態
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by parent Issue or PR state such as open or closed.
     zh_Hans: 按父级 Issue 或 PR 的状态过滤，如 open 或 closed。
     ja_JP: 親の Issue/PR の状態でフィルタ。open や closed など。
@@ -100,7 +100,7 @@ parameters:
     ja_JP: Pull Request かどうか
   type: boolean
   required: false
-  help:
+  description:
     en_US: If true only comments on pull requests. If false only comments on issues. Leave empty for both.
     zh_Hans: 设为 true 仅匹配 PR 评论，false 仅匹配 Issue 评论，留空两者都接收。
     ja_JP: true なら PR のコメントのみ。false なら Issue のみ。未設定で両方許可。

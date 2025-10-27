@@ -40,7 +40,7 @@ parameters:
       en_US: Completed
       zh_Hans: 已完成
       ja_JP: 完了
-  help:
+  description:
     en_US: Filter which check suite actions to process. Leave empty to accept requested rerequested completed.
     zh_Hans: 选择要处理的 Check Suite 动作。留空接受 requested rerequested completed。
     ja_JP: 対象の Check Suite アクションを選択。未設定で requested rerequested completed を全て許可。
@@ -52,7 +52,7 @@ parameters:
     ja_JP: 結論
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by suite conclusion such as success failure cancelled neutral timed_out action_required.
     zh_Hans: 按套件结论过滤 如 success failure cancelled neutral timed_out action_required。
     ja_JP: スイートの結論でフィルタ success failure cancelled neutral timed_out action_required など。
@@ -64,7 +64,7 @@ parameters:
     ja_JP: ブランチ
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by head branch name. Comma separated values supported.
     zh_Hans: 按 head 分支名过滤。支持逗号分隔多值。
     ja_JP: head ブランチ名でフィルタ。カンマ区切り対応。
@@ -76,7 +76,7 @@ parameters:
     ja_JP: アプリスラッグ
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by GitHub App slug that created the suite.
     zh_Hans: 按创建套件的 GitHub App slug 过滤。
     ja_JP: スイートを作成した GitHub App のスラッグでフィルタ。

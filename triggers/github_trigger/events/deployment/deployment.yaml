@@ -28,7 +28,7 @@ parameters:
       en_US: Created
       zh_Hans: 已创建
       ja_JP: 作成
-  help:
+  description:
     en_US: Filter which deployment actions to include. Currently GitHub sends created.
     zh_Hans: 选择要包含的部署动作。当前 GitHub 仅发送 created。
     ja_JP: 対象のデプロイアクションを選択。現状 created のみが送信されます。
@@ -40,7 +40,7 @@ parameters:
     ja_JP: 環境
   type: string
   required: false
-  help:
+  description:
     en_US: Exact match on deployment environment such as dev staging production. Comma separated allowed.
     zh_Hans: 按部署环境精确匹配 如 dev staging production。支持逗号分隔。
     ja_JP: デプロイ環境の完全一致 dev staging production など。カンマ区切り可。
@@ -52,7 +52,7 @@ parameters:
     ja_JP: リファレンス
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by deployment ref such as branch tag or SHA. Comma separated allowed.
     zh_Hans: 按部署的 ref 过滤 如 分支 标签 或 SHA。支持逗号分隔。
     ja_JP: デプロイのリファレンスでフィルタ ブランチ タグ SHA など。カンマ区切り可。
@@ -64,7 +64,7 @@ parameters:
     ja_JP: 作成者
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by deployment creator login. Comma separated allowed.
     zh_Hans: 按部署创建者登录名过滤。支持逗号分隔。
     ja_JP: デプロイ作成者のログインでフィルタ。カンマ区切り可。

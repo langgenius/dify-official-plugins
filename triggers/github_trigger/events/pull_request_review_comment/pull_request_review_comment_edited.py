@@ -17,7 +17,7 @@ from ..utils.pull_request_review_comment import (
 class PullRequestReviewCommentEditedEvent(Event):
     """GitHub Pull Request Review Comment Edited Event"""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload, comment, pull_request = load_pull_request_review_comment_payload(
             request,
             expected_action="edited",

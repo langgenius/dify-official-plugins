@@ -12,9 +12,8 @@ from dify_plugin.interfaces.trigger import Event
 class PingEvent(Event):
     """GitHub ping event for webhook connectivity."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
         return Variables(variables={**payload})
-

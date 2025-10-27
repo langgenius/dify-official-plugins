@@ -13,7 +13,7 @@ from dify_plugin.interfaces.trigger import Event
 class CommitCommentEvent(Event):
     """Unified commit comment event (typically 'created')."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
@@ -65,4 +65,3 @@ class CommitCommentEvent(Event):
         targets = {s.strip() for s in str(value).split(",") if s.strip()}
         if targets and path not in targets:
             raise EventIgnoreError()
-

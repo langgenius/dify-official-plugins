@@ -34,7 +34,7 @@ parameters:
       en_US: Deleted
       zh_Hans: 删除
       ja_JP: 削除
-  help:
+  description:
     en_US: Multi select filter for deploy key lifecycle created or deleted.
     zh_Hans: 多选过滤部署密钥生命周期事件 如 创建 或 删除。
     ja_JP: デプロイキーのライフサイクルを複数選択で絞り込み 作成 または 削除。
@@ -46,7 +46,7 @@ parameters:
     ja_JP: キータイトル
   type: string
   required: false
-  help:
+  description:
     en_US: Exact match on deploy key title. Comma separated allowed.
     zh_Hans: 部署密钥标题精确匹配。支持逗号分隔。
     ja_JP: デプロイキーのタイトル完全一致。カンマ区切り可。
@@ -58,7 +58,7 @@ parameters:
     ja_JP: キーフィンガープリント
   type: string
   required: false
-  help:
+  description:
     en_US: Exact match on key fingerprint. Comma separated allowed.
     zh_Hans: 按密钥指纹精确匹配。支持逗号分隔。
     ja_JP: キーのフィンガープリント完全一致。カンマ区切り可。

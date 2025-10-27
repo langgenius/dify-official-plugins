@@ -13,7 +13,7 @@ from dify_plugin.interfaces.trigger import Event
 class PullRequestReviewThreadUnifiedEvent(Event):
     """Unified PR review thread event (resolved/unresolved/edited/created)."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
@@ -50,15 +50,13 @@ class PullRequestReviewThreadUnifiedEvent(Event):
         if path_filter:
             paths = {v.strip() for v in str(path_filter).split(",") if v.strip()}
             comments = thread.get("comments") or []
+
             def any_path_match() -> bool:
                 if not isinstance(comments, list):
                     return False
-                for c in comments:
-                    if (c or {}).get("path") in paths:
-                        return True
-                return False
+                return any((c or {}).get("path") in paths for c in comments)
+
             if paths and not any_path_match():
                 raise EventIgnoreError()
 
         return Variables(variables={**payload})
-

@@ -40,7 +40,7 @@ parameters:
       en_US: Completed
       zh_Hans: 已完成
       ja_JP: 完了
-  help:
+  description:
     en_US: Filter which workflow job actions to process. Leave empty to accept queued in_progress completed.
     zh_Hans: 选择要处理的工作流任务动作。留空接收 queued in_progress completed。
     ja_JP: ワークフロージョブのアクションを選択。未設定で queued in_progress completed を許可。
@@ -52,7 +52,7 @@ parameters:
     ja_JP: ワークフロー名
   type: string
   required: false
-  help:
+  description:
     en_US: Exact match on workflow name from the job payload.
     zh_Hans: 按 job payload 中的工作流名称精确匹配。
     ja_JP: ジョブのペイロードに含まれるワークフロー名の完全一致。
@@ -64,7 +64,7 @@ parameters:
     ja_JP: ジョブ名
   type: string
   required: false
-  help:
+  description:
     en_US: Exact match on job name. Comma separated allowed.
     zh_Hans: 按任务名称精确匹配。支持逗号分隔。
     ja_JP: ジョブ名の完全一致。カンマ区切り可。
@@ -76,7 +76,7 @@ parameters:
     ja_JP: ブランチ
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by head branch. Comma separated allowed.
     zh_Hans: 按 head 分支过滤。支持逗号分隔。
     ja_JP: head ブランチでフィルタ。カンマ区切り可。
@@ -88,7 +88,7 @@ parameters:
     ja_JP: 結論（completed のみ）
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by job conclusion for completed actions. Example success failure cancelled.
     zh_Hans: 仅在 completed 动作时按任务结论过滤 如 success failure cancelled。
     ja_JP: completed 時のジョブ結論でフィルタ 例 success failure cancelled。
@@ -100,7 +100,7 @@ parameters:
     ja_JP: ランナーラベル
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated runner labels required on the job. Matches if any label is present.
     zh_Hans: 逗号分隔的运行器标签。只要包含任意一个标签即匹配。
     ja_JP: ジョブに付与されたランナーラベル。カンマ区切りでいずれか一致。
@@ -112,7 +112,7 @@ parameters:
     ja_JP: 実行者
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by job actor login. Comma separated allowed.
     zh_Hans: 按执行者登录名过滤。支持逗号分隔。
     ja_JP: 実行者のログインでフィルタ。カンマ区切り可。

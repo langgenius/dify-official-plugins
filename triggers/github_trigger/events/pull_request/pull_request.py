@@ -18,7 +18,7 @@ from ..utils.pull_request import (
 class PullRequestUnifiedEvent(Event):
     """Unified Pull Request event with actions filter."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
@@ -37,4 +37,3 @@ class PullRequestUnifiedEvent(Event):
             check_merged_state(pr, parameters.get("merged"))
 
         return Variables(variables={**payload})
-

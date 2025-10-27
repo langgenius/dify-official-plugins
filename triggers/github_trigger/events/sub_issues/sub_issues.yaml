@@ -40,7 +40,7 @@ parameters:
       en_US: Updated
       zh_Hans: 已更新
       ja_JP: 更新
-  help:
+  description:
     en_US: Multi select filter for sub issue relationship changes such as added removed updated.
     zh_Hans: 多选过滤子议题关系变化 如 添加 移除 更新。
     ja_JP: サブイシューの関係変更を複数選択で絞り込み。追加 削除 更新 など。
@@ -52,7 +52,7 @@ parameters:
     ja_JP: 親課題番号
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by parent issue numbers. Comma separated integers.
     zh_Hans: 按父议题编号过滤。逗号分隔整数。
     ja_JP: 親課題番号でフィルタ。整数のカンマ区切り。
@@ -64,7 +64,7 @@ parameters:
     ja_JP: 子課題番号
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by child issue numbers. Comma separated integers.
     zh_Hans: 按子议题编号过滤。逗号分隔整数。
     ja_JP: 子課題番号でフィルタ。整数のカンマ区切り。

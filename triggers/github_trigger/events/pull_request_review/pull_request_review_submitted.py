@@ -17,7 +17,7 @@ from ..utils.pull_request_review import (
 class PullRequestReviewSubmittedEvent(Event):
     """GitHub Pull Request Review Submitted Event"""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload, review, pull_request = load_pull_request_review_payload(request, expected_action="submitted")
         apply_pull_request_review_filters(review, pull_request, parameters)
         return Variables(variables={**payload})

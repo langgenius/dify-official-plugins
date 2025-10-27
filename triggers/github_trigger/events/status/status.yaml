@@ -19,7 +19,7 @@ parameters:
     ja_JP: コンテキスト
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by status context name. Comma separated allowed.
     zh_Hans: 按状态上下文名称过滤。支持逗号分隔。
     ja_JP: ステータスのコンテキスト名でフィルタ。カンマ区切り可。
@@ -31,7 +31,7 @@ parameters:
     ja_JP: 状態
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by state such as success failure error pending. Comma separated allowed.
     zh_Hans: 按状态过滤 如 success failure error pending。支持逗号分隔。
     ja_JP: success failure error pending などの状態でフィルタ。カンマ区切り可。
@@ -43,7 +43,7 @@ parameters:
     ja_JP: ブランチ
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by branch name associated with the status. Comma separated allowed.
     zh_Hans: 按关联的分支名称过滤。支持逗号分隔。
     ja_JP: そのステータスに紐づくブランチ名でフィルタ。カンマ区切り可。
@@ -55,7 +55,7 @@ parameters:
     ja_JP: ターゲットURLに含む
   type: string
   required: false
-  help:
+  description:
     en_US: Match substring in target URL. Comma separated keywords any match passes.
     zh_Hans: 匹配目标链接中的关键字。逗号分隔 任一命中即通过。
     ja_JP: ターゲットURL の部分一致。カンマ区切りのキーワードでいずれか一致。

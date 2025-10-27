@@ -17,7 +17,7 @@ class StarCreatedEvent(Event):
     information from the webhook payload to provide as variables to the workflow.
     """
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         """
         Transform GitHub star created webhook event into structured Variables
         """

@@ -1,2 +1,1 @@
 """Check Suite events."""
-

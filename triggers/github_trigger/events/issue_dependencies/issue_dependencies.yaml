@@ -34,7 +34,7 @@ parameters:
       en_US: Removed
       zh_Hans: 已移除
       ja_JP: 削除
-  help:
+  description:
     en_US: Multi select filter for dependency relationship changes added or removed.
     zh_Hans: 多选过滤依赖关系变更 例如 添加 或 移除。
     ja_JP: 依存関係の追加または削除を複数選択で絞り込み。
@@ -46,7 +46,7 @@ parameters:
     ja_JP: 親課題番号
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by parent issue numbers. Comma separated integers.
     zh_Hans: 按父议题编号过滤。逗号分隔的整数。
     ja_JP: 親課題番号でフィルタ。整数をカンマ区切りで。
@@ -58,7 +58,7 @@ parameters:
     ja_JP: 子課題番号
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by child issue numbers. Comma separated integers.
     zh_Hans: 按子议题编号过滤。逗号分隔的整数。
     ja_JP: 子課題番号でフィルタ。整数のカンマ区切り。

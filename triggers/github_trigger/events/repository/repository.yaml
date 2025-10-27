@@ -76,7 +76,7 @@ parameters:
       en_US: Edited
       zh_Hans: 编辑
       ja_JP: 編集
-  help:
+  description:
     en_US: Multi select filter for repository lifecycle actions such as created archived renamed transferred edited.
     zh_Hans: 多选过滤仓库生命周期动作 如 创建 归档 重命名 转移 编辑。
     ja_JP: リポジトリのライフサイクルアクションを複数選択で絞り込み。作成 アーカイブ 改名 移管 編集 など。
@@ -105,7 +105,7 @@ parameters:
       en_US: Internal
       zh_Hans: 内部
       ja_JP: 内部
-  help:
+  description:
     en_US: Filter by repository visibility public private internal. Useful for governance and compliance cases.
     zh_Hans: 按仓库可见性过滤 public private internal。适用于治理合规场景。
     ja_JP: リポジトリの公開区分でフィルタ public private internal。ガバナンス用途に便利。
@@ -117,7 +117,7 @@ parameters:
     ja_JP: 名に含む
   type: string
   required: false
-  help:
+  description:
     en_US: Substring match on name or full_name. Comma separated keywords accepted.
     zh_Hans: 在 name 或 full_name 上做包含匹配。支持逗号分隔关键字。
     ja_JP: name や full_name の部分一致。カンマ区切りのキーワード対応。

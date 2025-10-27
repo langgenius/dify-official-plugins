@@ -1,8 +1,8 @@
 from __future__ import annotations
 
+import fnmatch
 from collections.abc import Mapping
 from typing import Any
-import fnmatch
 
 from werkzeug import Request
 
@@ -14,7 +14,7 @@ from dify_plugin.interfaces.trigger import Event
 class PushEvent(Event):
     """GitHub Push Event"""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")

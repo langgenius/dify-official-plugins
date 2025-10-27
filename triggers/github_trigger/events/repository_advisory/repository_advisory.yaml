@@ -40,7 +40,7 @@ parameters:
       en_US: Withdrawn
       zh_Hans: 已撤回
       ja_JP: 撤回
-  help:
+  description:
     en_US: Multi select filter for advisory lifecycle such as published updated withdrawn.
     zh_Hans: 多选过滤安全公告生命周期 如 发布 更新 撤回。
     ja_JP: アドバイザリのライフサイクルを複数選択で絞り込み。公開 更新 撤回。
@@ -82,7 +82,7 @@ parameters:
     ja_JP: GHSA ID
   type: string
   required: false
-  help:
+  description:
     en_US: Exact match on GHSA IDs to include. Comma separated values allowed.
     zh_Hans: 包含的 GHSA 编号精确匹配。支持逗号分隔。
     ja_JP: 含める GHSA ID の完全一致。カンマ区切り可。

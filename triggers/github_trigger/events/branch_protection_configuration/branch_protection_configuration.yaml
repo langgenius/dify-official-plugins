@@ -40,7 +40,7 @@ parameters:
       en_US: Deleted
       zh_Hans: 已删除
       ja_JP: 削除
-  help:
+  description:
     en_US: Filter which configuration actions to process. Leave empty to accept created edited deleted.
     zh_Hans: 选择要处理的配置变更动作。留空接收 created edited deleted。
     ja_JP: 設定変更のアクションを選択。未設定で created edited deleted を許可。

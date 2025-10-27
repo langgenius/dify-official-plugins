@@ -19,7 +19,7 @@ parameters:
     ja_JP: フォーカー
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated GitHub logins. Only trigger when the forker (sender) matches.
     zh_Hans: 逗号分隔的 GitHub 登录名。仅当 Fork 发起者（sender）命中时触发。
     ja_JP: フォークしたユーザーのログイン。カンマ区切りで一致時のみ発火。

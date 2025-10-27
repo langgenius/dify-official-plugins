@@ -46,7 +46,7 @@ parameters:
       en_US: Reintroduced
       zh_Hans: 再次引入
       ja_JP: 再導入
-  help:
+  description:
     en_US: Multi select filter for Dependabot lifecycle actions such as created dismissed fixed reintroduced.
     zh_Hans: 多选过滤 Dependabot 生命周期动作 如 创建 忽略 修复 再次引入。
     ja_JP: Dependabot のライフサイクルアクションを複数選択で。作成 却下 修正 再導入 など。
@@ -58,7 +58,7 @@ parameters:
     ja_JP: 重大度
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by advisory severity such as critical high moderate low.
     zh_Hans: 按安全公告严重程度过滤 如 critical high moderate low。
     ja_JP: 重大度でフィルタ critical high moderate low など。
@@ -70,7 +70,7 @@ parameters:
     ja_JP: 状態
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by alert state such as open dismissed fixed.
     zh_Hans: 按告警状态过滤 如 open dismissed fixed。
     ja_JP: アラート状態でフィルタ open dismissed fixed など。
@@ -82,7 +82,7 @@ parameters:
     ja_JP: エコシステム
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by package ecosystem such as npm maven pip rubygems nuget.
     zh_Hans: 按包生态过滤 如 npm maven pip rubygems nuget。
     ja_JP: npm maven pip rubygems nuget などのエコシステムでフィルタ。
@@ -94,7 +94,7 @@ parameters:
     ja_JP: パッケージ
   type: string
   required: false
-  help:
+  description:
     en_US: Exact match on vulnerable package name. Comma separated allowed.
     zh_Hans: 按受影响包名精确匹配。支持逗号分隔。
     ja_JP: 影響を受けるパッケージ名で完全一致。カンマ区切り可。
@@ -106,7 +106,7 @@ parameters:
     ja_JP: マニフェスト
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by manifest file path such as package.json or requirements.txt. Comma separated allowed.
     zh_Hans: 按清单文件路径过滤 如 package.json 或 requirements.txt。支持逗号分隔。
     ja_JP: package.json や requirements.txt などのマニフェストパスでフィルタ。カンマ区切り可。

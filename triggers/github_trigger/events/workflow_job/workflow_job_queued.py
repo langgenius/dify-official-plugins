@@ -13,7 +13,7 @@ from dify_plugin.interfaces.trigger import Event
 class WorkflowJobQueuedEvent(Event):
     """GitHub Workflow Job Queued Event"""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
@@ -81,4 +81,3 @@ class WorkflowJobQueuedEvent(Event):
         actor_login = payload.get("sender", {}).get("login")
         if actor_login not in users:
             raise EventIgnoreError()
-

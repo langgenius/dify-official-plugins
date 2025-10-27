@@ -13,7 +13,7 @@ from dify_plugin.interfaces.trigger import Event
 class RepositoryAdvisoryUnifiedEvent(Event):
     """Unified repository_advisory event (published/updated/withdrawn)."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
@@ -42,4 +42,3 @@ class RepositoryAdvisoryUnifiedEvent(Event):
                 raise EventIgnoreError()
 
         return Variables(variables={**payload})
-

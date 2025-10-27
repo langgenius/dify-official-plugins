@@ -13,7 +13,7 @@ from dify_plugin.interfaces.trigger import Event
 class MilestoneUnifiedEvent(Event):
     """Unified Milestone event (created/opened/closed/edited/deleted)."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
@@ -66,4 +66,3 @@ class MilestoneUnifiedEvent(Event):
         creator = (payload.get("sender") or {}).get("login")
         if users and creator not in users:
             raise EventIgnoreError()
-

@@ -40,7 +40,7 @@ parameters:
       en_US: Deleted
       zh_Hans: 删除
       ja_JP: 削除
-  help:
+  description:
     en_US: Multi select filter for label lifecycle events. Leave empty to accept all.
     zh_Hans: 多选过滤标签生命周期事件。留空表示不过滤。
     ja_JP: ラベルのライフサイクルイベントを複数選択で絞り込み。未設定で全て許可。
@@ -52,7 +52,7 @@ parameters:
     ja_JP: ラベル名
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated label names to match exactly.
     zh_Hans: 逗号分隔的标签名，精确匹配。
     ja_JP: ラベル名をカンマ区切りで。完全一致。
@@ -64,7 +64,7 @@ parameters:
     ja_JP: ラベル色
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated hex color values without leading #. Example FF0000.
     zh_Hans: 逗号分隔的十六进制颜色值，不含 # 前缀。如 FF0000。
     ja_JP: 先頭 # 無しの 16 進色をカンマ区切りで。例 FF0000。

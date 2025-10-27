@@ -13,7 +13,7 @@ from dify_plugin.interfaces.trigger import Event
 class MetaUnifiedEvent(Event):
     """Unified Meta event (webhook metadata changes)."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
@@ -26,4 +26,3 @@ class MetaUnifiedEvent(Event):
         # meta events often include hook_id and hook object
         # Be permissive if absent and just forward payload
         return Variables(variables={**payload})
-
