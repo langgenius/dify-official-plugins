@@ -126,7 +126,7 @@ def load_valid_languages(filepath: Path) -> set | None:
 
 
 def _is_valid_knowledge_field(key: str, value: Any) -> bool:
-    """检查知识图谱字段是否有效"""
+    """Check if a knowledge graph field is valid."""
     if not isinstance(value, str) or not isinstance(key, str):
         return False
     if key in KNOWLEDGE_GRAPH_IGNORE_FIELDS:
