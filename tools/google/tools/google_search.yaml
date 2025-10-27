@@ -65,9 +65,9 @@ parameters:
       zh_Hans: 在 Agent 节点中使用
       pt_BR: Used in Agent nodes
     human_description:
-      en_US: Default is False. The node behaves differently in workflow/chatflow calls versus when used as a tool within an Agent, resulting in different return formats. In Agent mode, the context template is optimized to clearly highlight key information.
-      zh_Hans: 默认为 False，直接在 workflow 或 chatflow 中调用还是在 Agent 中作为工具使用，两种模式触发不同的返回格式。在 Agent 模式下，优化上下文模板，明确关键信息。
-      pt_BR: Default is False. The node behaves differently in workflow/chatflow calls versus when used as a tool within an Agent, resulting in different return formats. In Agent mode, the context template is optimized to clearly highlight key information.
+      en_US: Default is False. The node behaves differently in workflow/chatflow calls versus when used as a tool within an Agent, resulting in different return formats. In Agent mode, the context template is optimized to clearly highlight key information. Make sure to enable this parameter when using the Agent mode.
+      zh_Hans: 默认为 False，直接在 workflow 或 chatflow 中调用还是在 Agent 中作为工具使用，两种模式触发不同的返回格式。在 Agent 模式下，优化上下文模板，明确关键信息。 在 Agent 模式下请务必启动这个参数。
+      pt_BR: Default is False. The node behaves differently in workflow/chatflow calls versus when used as a tool within an Agent, resulting in different return formats. In Agent mode, the context template is optimized to clearly highlight key information. Make sure to enable this parameter when using the Agent mode.
     llm_description: 默认为 False，直接在 workflow 或 chatflow 中调用还是在 Agent 中作为工具使用，两种模式触发不同的返回格式。在 Agent 模式下，优化上下文模板，明确关键信息。
 extra:
   python:
