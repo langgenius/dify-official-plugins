@@ -59,10 +59,13 @@ class SearchRef(BaseModel):
     date: str | None = ""
 
     def model_post_init(self, context: Any, /) -> None:
-        with suppress(Exception):
-            if not self.site_name and self.url:
+        if not self.site_name and self.url:
+            try:
                 u = urlparse(self.url)
                 self.site_name = u.netloc
+            except Exception:
+                # Consider logging this exception to help with debugging.
+                pass
 
 
 class InstantSearchResponse(BaseModel):
