@@ -78,7 +78,7 @@ This plugin connects Zendesk's customer service platform with Dify's AI capabili
 ## Version History
 
 - **1.0.0** (2025-10-31): Initial release
-  - Support for ticket, comment, rating, and article events
+  - Support for ticket, comment and article events
   - Comprehensive filtering options
   - Webhook signature validation
   - Multi-language support (EN, ZH, JA)
