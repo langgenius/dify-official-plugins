@@ -11,7 +11,7 @@ from dify_plugin.interfaces.trigger import Event
 class ArticleUnpublishedEvent(Event):
     """Triggered when a Zendesk help center article is unpublished."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")

@@ -14,7 +14,7 @@ from ..utils import check_priority, check_status, check_tags
 class TicketMarkedAsSpamEvent(Event):
     """Triggered when a Zendesk ticket is marked as spam."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")

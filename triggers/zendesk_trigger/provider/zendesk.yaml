@@ -111,6 +111,67 @@ subscription_constructor:
         zh_Hans: "你的 Zendesk 子域名（例如 dify.zendesk.com 中的 'dify'）"
         ja_JP: "Zendesk のサブドメイン（例 dify.zendesk.com の 'dify'）"
 
+  oauth_schema:
+    client_schema:
+    - name: "subdomain"
+      type: "text-input"
+      required: true
+      label:
+        en_US: "Zendesk Subdomain"
+        zh_Hans: "Zendesk 子域名"
+        ja_JP: "Zendesk サブドメイン"
+      placeholder:
+        en_US: "your-company"
+        zh_Hans: "your-company"
+        ja_JP: "your-company"
+      help:
+        en_US: "The Zendesk subdomain for your account (e.g., 'dify' for dify.zendesk.com)."
+        zh_Hans: "你 Zendesk 帐号的子域名（例如 dify.zendesk.com 中的 'dify'）。"
+        ja_JP: "Zendesk アカウントのサブドメイン（例: dify.zendesk.com の 'dify'）。"
+    - name: "client_id"
+      type: "secret-input"
+      required: true
+      label:
+        en_US: "Client ID"
+        zh_Hans: "Client ID"
+        ja_JP: "クライアントID"
+      placeholder:
+        en_US: "Enter the OAuth Client ID"
+        zh_Hans: "请输入 OAuth Client ID"
+        ja_JP: "OAuth クライアントIDを入力してください"
+      help:
+        en_US: "The OAuth Client ID from Zendesk Admin Center → Apps and integrations → OAuth."
+        zh_Hans: "在 Zendesk 管理中心 → 应用和集成 → OAuth 中获取 Client ID。"
+        ja_JP: "Zendesk 管理センター → アプリとインテグレーション → OAuth で取得したクライアントID。"
+    - name: "client_secret"
+      type: "secret-input"
+      required: true
+      label:
+        en_US: "Client Secret"
+        zh_Hans: "Client Secret"
+        ja_JP: "クライアントシークレット"
+      placeholder:
+        en_US: "Enter the OAuth Client Secret"
+        zh_Hans: "请输入 OAuth Client Secret"
+        ja_JP: "OAuth クライアントシークレットを入力してください"
+      help:
+        en_US: "The OAuth Client Secret generated together with the Client ID."
+        zh_Hans: "与 Client ID 一同生成的 OAuth Client Secret。"
+        ja_JP: "クライアントIDと併せて発行された OAuth クライアントシークレット。"
+    credentials_schema:
+    - name: "access_token"
+      type: "secret-input"
+      label:
+        en_US: "Access Token"
+        zh_Hans: "访问令牌"
+        ja_JP: "アクセストークン"
+    - name: "refresh_token"
+      type: "secret-input"
+      label:
+        en_US: "Refresh Token"
+        zh_Hans: "刷新令牌"
+        ja_JP: "リフレッシュトークン"
+
 events:
 - events/ticket/ticket_created.yaml
 - events/ticket/ticket_status_changed.yaml

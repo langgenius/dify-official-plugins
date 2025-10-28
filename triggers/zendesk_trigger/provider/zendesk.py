@@ -1,5 +1,8 @@
 import base64
 import json
+import secrets
+import time
+import urllib.parse
 import uuid
 from collections.abc import Mapping
 from typing import Any
@@ -7,12 +10,14 @@ from typing import Any
 import httpx
 from werkzeug import Request, Response
 
+from dify_plugin.entities.oauth import TriggerOAuthCredentials
 from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.trigger import EventDispatch, Subscription, UnsubscribeResult
 from dify_plugin.errors.trigger import (
     SubscriptionError,
     TriggerDispatchError,
     TriggerProviderCredentialValidationError,
+    TriggerProviderOAuthError,
     UnsubscribeError,
 )
 from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstructor
@@ -83,10 +88,20 @@ class ZendeskTrigger(Trigger):
 class ZendeskSubscriptionConstructor(TriggerSubscriptionConstructor):
     """Manage Zendesk trigger subscriptions."""
 
+    _AUTHORIZATION_PATH = "/oauth/authorizations/new"
+    _TOKEN_PATH = "/oauth/tokens"
+    _REQUEST_TIMEOUT = 15
+
     def _validate_api_key(self, credentials: Mapping[str, Any]) -> None:
         api_token = credentials.get("api_token")
         email = credentials.get("email")
-        subdomain = credentials.get("subdomain")
+        runtime_credentials = self.runtime.credentials if getattr(self, "runtime", None) else None
+        subdomain = credentials.get("subdomain") or (runtime_credentials or {}).get("subdomain")
+
+        if not api_token or not email:
+            raise TriggerProviderCredentialValidationError("Zendesk API Token and admin email are required.")
+        if not subdomain:
+            raise TriggerProviderCredentialValidationError("Zendesk subdomain is required.")
 
         url = f"https://{subdomain}.zendesk.com/api/v2/webhooks"
         auth_string = f"{email}/token:{api_token}"
@@ -96,11 +111,88 @@ class ZendeskSubscriptionConstructor(TriggerSubscriptionConstructor):
             "Content-Type": "application/json",
         }
         try:
-            httpx.get(url, headers=headers, timeout=10)
+            response = httpx.get(url, headers=headers, timeout=10)
         except Exception as exc:
             raise TriggerProviderCredentialValidationError(
                 f"error while validating credentials: {exc}"
             )
+        if response.status_code >= 400:
+            try:
+                details = response.json()
+            except json.JSONDecodeError:
+                details = {"message": response.text}
+            raise TriggerProviderCredentialValidationError(
+                f"Zendesk API token validation failed: {details.get('error', details.get('message', response.text))}"
+            )
+
+    def _oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
+        subdomain = system_credentials.get("subdomain")
+        if not subdomain:
+            raise TriggerProviderOAuthError("Zendesk subdomain is required in the OAuth client configuration.")
+        client_id = system_credentials.get("client_id")
+        if not client_id:
+            raise TriggerProviderOAuthError("Zendesk OAuth client_id is missing.")
+
+        state = secrets.token_urlsafe(16)
+        params: dict[str, str] = {
+            "response_type": "code",
+            "client_id": client_id,
+            "redirect_uri": redirect_uri,
+            "state": state,
+            "scope": "read write",
+        }
+
+        base_url = f"https://{subdomain}.zendesk.com{self._AUTHORIZATION_PATH}"
+        return f"{base_url}?{urllib.parse.urlencode(params)}"
+
+    def _oauth_get_credentials(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
+    ) -> TriggerOAuthCredentials:
+        error = request.args.get("error")
+        if error:
+            description = request.args.get("error_description") or ""
+            message = f"{error}: {description}".strip(": ")
+            raise TriggerProviderOAuthError(f"Zendesk OAuth authorization failed: {message}")
+
+        code = request.args.get("code")
+        if not code:
+            raise TriggerProviderOAuthError("Zendesk OAuth callback missing authorization code.")
+
+        subdomain = system_credentials.get("subdomain")
+        client_id = system_credentials.get("client_id")
+        client_secret = system_credentials.get("client_secret")
+        if not subdomain or not client_id or not client_secret:
+            raise TriggerProviderOAuthError("Zendesk OAuth client configuration is incomplete.")
+
+        payload = {
+            "grant_type": "authorization_code",
+            "code": code,
+            "redirect_uri": redirect_uri,
+            "client_id": client_id,
+            "client_secret": client_secret,
+        }
+        return self._exchange_token(subdomain=subdomain, payload=payload)
+
+    def _oauth_refresh_credentials(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
+    ) -> TriggerOAuthCredentials:
+        refresh_token = credentials.get("refresh_token")
+        if not refresh_token:
+            raise TriggerProviderOAuthError("Zendesk OAuth refresh token is missing; please re-authorize.")
+
+        subdomain = credentials.get("subdomain") or system_credentials.get("subdomain")
+        client_id = system_credentials.get("client_id")
+        client_secret = system_credentials.get("client_secret")
+        if not subdomain or not client_id or not client_secret:
+            raise TriggerProviderOAuthError("Zendesk OAuth client configuration is incomplete.")
+
+        payload = {
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
+            "client_id": client_id,
+            "client_secret": client_secret,
+        }
+        return self._exchange_token(subdomain=subdomain, payload=payload)
 
     def _create_subscription(
         self,
@@ -109,29 +201,20 @@ class ZendeskSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
         credential_type: CredentialType,
     ) -> Subscription:
-        
+
         events: list[str] = parameters.get("events", [])
 
         # Map our internal event names to Zendesk webhook trigger events
         zendesk_triggers = self._map_events_to_triggers(events)
 
-        api_token = credentials.get("api_token")
-        email = credentials.get("email")
-        subdomain = credentials.get("subdomain")
+        subdomain, headers = self._build_authorization_headers(credentials, credential_type)
 
         # Create webhook using Zendesk API
         # Note: Zendesk uses webhooks via triggers, which is more complex
         # For simplicity, we're creating a webhook endpoint
         url = f"https://{subdomain}.zendesk.com/api/v2/webhooks"
 
-        auth_string = f"{email}/token:{api_token}"
-        encoded_auth = base64.b64encode(auth_string.encode()).decode()
-
-        headers = {
-            "Authorization": f"Basic {encoded_auth}",
-            "Content-Type": "application/json",
-        }
-
+        user_defined_secret = parameters.get("webhook_secret")
         webhook_data = {
             "webhook": {
                 "name": f"Dify Webhook - {uuid.uuid4().hex[:8]}",
@@ -142,9 +225,11 @@ class ZendeskSubscriptionConstructor(TriggerSubscriptionConstructor):
                 "subscriptions": zendesk_triggers,
             }
         }
+        if user_defined_secret:
+            webhook_data["webhook"]["signing_secret"] = user_defined_secret
 
         try:
-            response = httpx.post(url, json=webhook_data, headers=headers, timeout=10)
+            response = httpx.post(url, json=webhook_data, headers=headers, timeout=self._REQUEST_TIMEOUT)
         except httpx.RequestException as exc:
             raise SubscriptionError(
                 f"Network error while creating webhook: {exc}", error_code="NETWORK_ERROR"
@@ -161,7 +246,7 @@ class ZendeskSubscriptionConstructor(TriggerSubscriptionConstructor):
                     "external_id": webhook_id,
                     "events": events,
                     "status": webhook.get("status", "active"),
-                    "webhook_secret": "abcdef", 
+                    "webhook_secret": user_defined_secret,
                 },
             )
 
@@ -185,21 +270,11 @@ class ZendeskSubscriptionConstructor(TriggerSubscriptionConstructor):
                 external_response=None,
             )
 
-        api_token = credentials.get("api_token")
-        email = credentials.get("email")
-        subdomain = credentials.get("subdomain")
-
-        auth_string = f"{email}/token:{api_token}"
-        encoded_auth = base64.b64encode(auth_string.encode()).decode()
-
+        subdomain, headers = self._build_authorization_headers(credentials, credential_type)
         url = f"https://{subdomain}.zendesk.com/api/v2/webhooks/{external_id}"
-        headers = {
-            "Authorization": f"Basic {encoded_auth}",
-            "Content-Type": "application/json",
-        }
 
         try:
-            response = httpx.delete(url, headers=headers, timeout=10)
+            response = httpx.delete(url, headers=headers, timeout=self._REQUEST_TIMEOUT)
         except httpx.RequestException as exc:
             raise UnsubscribeError(
                 message=f"Network error while deleting webhook: {exc}",
@@ -244,5 +319,92 @@ class ZendeskSubscriptionConstructor(TriggerSubscriptionConstructor):
             "article_published": "zen:event-type:article.published",
             "article_unpublished": "zen:event-type:article.unpublished",
         }
-        zendesk_triggers = [event_mapping.get(e) for e in events]
-        return zendesk_triggers
+        return [event_mapping[e] for e in events if event_mapping.get(e)]
+
+    def _build_authorization_headers(
+        self, credentials: Mapping[str, Any], credential_type: CredentialType
+    ) -> tuple[str, dict[str, str]]:
+        runtime_credentials = self.runtime.credentials if getattr(self, "runtime", None) else None
+        subdomain = credentials.get("subdomain") or (runtime_credentials or {}).get("subdomain")
+        if not subdomain:
+            raise SubscriptionError(
+                "Zendesk subdomain is required to manage webhooks.",
+                error_code="MISSING_SUBDOMAIN",
+                external_response=None,
+            )
+
+        headers: dict[str, str] = {"Content-Type": "application/json"}
+        if credential_type == CredentialType.API_KEY:
+            api_token = credentials.get("api_token")
+            email = credentials.get("email")
+            if not api_token or not email:
+                raise SubscriptionError(
+                    "Zendesk API token credentials require both email and api_token.",
+                    error_code="MISSING_CREDENTIALS",
+                    external_response=None,
+                )
+            auth_string = f"{email}/token:{api_token}"
+            encoded_auth = base64.b64encode(auth_string.encode()).decode()
+            headers["Authorization"] = f"Basic {encoded_auth}"
+        elif credential_type == CredentialType.OAUTH:
+            access_token = credentials.get("access_token")
+            if not access_token:
+                raise SubscriptionError(
+                    "Zendesk OAuth credentials require an access_token.",
+                    error_code="MISSING_CREDENTIALS",
+                    external_response=None,
+                )
+            headers["Authorization"] = f"Bearer {access_token}"
+        else:
+            raise SubscriptionError(
+                f"Unsupported Zendesk credential type: {credential_type.value}",
+                error_code="UNSUPPORTED_CREDENTIAL_TYPE",
+                external_response=None,
+            )
+
+        return subdomain, headers
+
+    def _exchange_token(self, subdomain: str, payload: Mapping[str, Any]) -> TriggerOAuthCredentials:
+        url = f"https://{subdomain}.zendesk.com{self._TOKEN_PATH}"
+
+        try:
+            response = httpx.post(url, json=payload, timeout=self._REQUEST_TIMEOUT)
+        except httpx.RequestException as exc:
+            raise TriggerProviderOAuthError(f"Failed to reach Zendesk OAuth token endpoint: {exc}") from exc
+
+        try:
+            response_data = response.json()
+        except json.JSONDecodeError as exc:
+            raise TriggerProviderOAuthError(
+                f"Invalid response from Zendesk OAuth token endpoint: {response.text}"
+            ) from exc
+
+        if response.status_code >= 400:
+            error_description = response_data.get("error_description") or response_data.get("error")
+            raise TriggerProviderOAuthError(
+                f"Zendesk OAuth token request failed: {error_description or response.text}"
+            )
+
+        access_token = response_data.get("access_token")
+        if not access_token:
+            raise TriggerProviderOAuthError("Zendesk OAuth token response missing access_token.")
+
+        expires_in: int | None = None
+        try:
+            expires_in = int(response_data.get("expires_in", 0)) or None
+        except (TypeError, ValueError):
+            expires_in = None
+
+        expires_at = int(time.time()) + expires_in if expires_in else -1
+
+        credentials: dict[str, Any] = {
+            "access_token": access_token,
+            "refresh_token": response_data.get("refresh_token"),
+            "scope": response_data.get("scope"),
+            "token_type": response_data.get("token_type"),
+            "subdomain": subdomain,
+        }
+        # Clean out None values to keep stored credentials compact
+        filtered_credentials = {key: value for key, value in credentials.items() if value}
+
+        return TriggerOAuthCredentials(credentials=filtered_credentials, expires_at=expires_at)

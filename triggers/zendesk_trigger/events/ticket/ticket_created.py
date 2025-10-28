@@ -21,7 +21,7 @@ from ..utils import (
 class TicketCreatedEvent(Event):
     """Triggered when a new Zendesk ticket is created."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         payload = request.get_json()
         if not payload:
             raise ValueError("No payload received")
