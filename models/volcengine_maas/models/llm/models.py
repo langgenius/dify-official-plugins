@@ -287,4 +287,6 @@ def get_v3_req_params(credentials: dict, model_parameters: dict, stop: list[str]
         req_params["thinking"] = thinking
     if model_parameters.get("response_format"):
         req_params["response_format"] = model_parameters.get("response_format")
+    if model_parameters.get("reasoning_effort"):
+        req_params["reasoning_effort"] = model_parameters.get("reasoning_effort")
     return req_params
