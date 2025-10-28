@@ -20,6 +20,8 @@ class ResumeOptimizerTool(Tool):
 
 目标岗位：{target_position}
 
+{detected_issues_section}
+
 请针对【{target_position}】岗位提供简洁的优化要点：
 
 ## 优化建议
@@ -27,6 +29,7 @@ class ResumeOptimizerTool(Tool):
 2. **关键词优化** - 针对{target_position}的重要关键词
 3. **经验突出** - 如何更好展示相关经验
 4. **结构改进** - 简历布局和格式建议
+{issues_fix_section}
 
 请提供具体、可操作的优化要点。
 
@@ -37,6 +40,8 @@ class ResumeOptimizerTool(Tool):
 
 Target Position: {target_position}
 
+{detected_issues_section}
+
 Please provide concise optimization points for the [{target_position}] position:
 
 ## Optimization Suggestions
@@ -44,6 +49,7 @@ Please provide concise optimization points for the [{target_position}] position:
 2. **Keyword Optimization** - Important keywords for {target_position}
 3. **Experience Highlight** - How to better showcase relevant experience
 4. **Structure Improvement** - Resume layout and format suggestions
+{issues_fix_section}
 
 Please provide specific, actionable optimization points.
 
@@ -56,7 +62,7 @@ Resume Content:
         Invoke the resume optimizer tool.
 
         Args:
-            tool_parameters: Tool parameters including resume_content, target_position, and language
+            tool_parameters: Tool parameters including resume_content, target_position, detected_issues, and language
 
         Returns:
             Generator of ToolInvokeMessage
@@ -64,6 +70,7 @@ Resume Content:
         try:
             # Extract and validate parameters
             target_position = tool_parameters.get('target_position', '').strip()
+            detected_issues = tool_parameters.get('detected_issues', '').strip()
             language = tool_parameters.get('language', 'zh_Hans')
 
             # Get resume content from file upload or text input
@@ -79,7 +86,7 @@ Resume Content:
                 return
 
             # Generate optimization suggestions using LLM
-            result = self._optimize_resume_with_llm(resume_content, target_position, language)
+            result = self._optimize_resume_with_llm(resume_content, target_position, detected_issues, language)
             yield self.create_text_message(result)
 
         except Exception as e:
@@ -101,14 +108,28 @@ Resume Content:
 
         return resume_content, ""
 
-    def _optimize_resume_with_llm(self, resume_content: str, target_position: str, language: str) -> str:
+    def _optimize_resume_with_llm(self, resume_content: str, target_position: str, detected_issues: str, language: str) -> str:
         """Use LLM to generate resume optimization suggestions."""
         try:
+            # Build detected issues section
+            detected_issues_section = ""
+            issues_fix_section = ""
+
+            if detected_issues:
+                if language == 'zh_Hans':
+                    detected_issues_section = f"## 已检测到的问题\n\n{detected_issues}\n"
+                    issues_fix_section = "\n5. **问题修复** - 针对上述检测到的问题提供具体修复建议"
+                else:
+                    detected_issues_section = f"## Detected Issues\n\n{detected_issues}\n"
+                    issues_fix_section = "\n5. **Issue Resolution** - Specific fixes for the detected issues above"
+
             # Build prompt using template
             prompt_template = self.PROMPTS.get(language, self.PROMPTS['zh_Hans'])
             prompt = prompt_template.format(
                 target_position=target_position,
-                resume_content=resume_content
+                resume_content=resume_content,
+                detected_issues_section=detected_issues_section,
+                issues_fix_section=issues_fix_section
             )
 
             # Prepare LLM request
