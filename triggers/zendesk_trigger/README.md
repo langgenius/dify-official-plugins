@@ -49,71 +49,35 @@ This plugin connects Zendesk's customer service platform with Dify's AI capabili
 
 ### Prerequisites
 1. Zendesk account with admin access
-2. API Token from Zendesk Admin Center
+2. API Token or Oauth client from Zendesk Admin Center
 3. Zendesk subdomain (e.g., `acme` for acme.zendesk.com)
 
 ### Setup Steps
 
-1. **Get Zendesk API Credentials**
-   - Navigate to Admin Center → Apps and integrations → APIs → Zendesk API
-   - Generate a new API Token
-   - Note your admin email address
+1. **API Token configurations**
 
-2. **Install Plugin in Dify**
-   - Upload plugin to Dify workspace
-   - Configure credentials:
-     - **Email**: Your Zendesk admin email
-     - **API Token**: Generated API token
-     - **Subdomain**: Your Zendesk subdomain
+![1](./_assets/1.png)
 
-3. **Create Webhook Subscription**
-   - Select events to monitor
-   - (Optional) Set webhook secret for signature validation
-   - Plugin automatically creates webhook in Zendesk
+- navigate to `Apps and integrations/Apis/Api tokens`
+- add a API token
+- config the api to dify
 
-## Event Filtering
+![2](./_assets/2.png)
 
-Each event type supports powerful filtering options:
+2. **Oauth Client configurations**
 
-### Ticket Filters
-- **Status**: Filter by ticket status (new, open, pending, solved, closed)
-- **Priority**: Filter by priority level (urgent, high, normal, low)
-- **Tags**: Require specific tags
-- **Type**: Filter by ticket type (problem, incident, question, task)
-- **Subject/Description Contains**: Keyword matching
+![3](./_assets/3.png)
+![4](./_assets/4.png)
 
-### Comment Filters
-- **Public/Private**: Filter by comment visibility
-- **Body Contains**: Keyword matching in comment text
+- the oauth client config is more complicated, let's compare the two screenshot
+- the `Client ID` in dify is the `Identifier` in Zendesk
+- the `Redirect URLs` of Zendesk required to copied from dify
+- the `Client kind` of Zendesk required choose `Confidential`
 
-### Article Filters
-- **Locale**: Filter by language (en-us, ja, zh-cn, etc.)
-- **Title Contains**: Keyword matching in article titles
-
-## Troubleshooting
-
-### Common Issues
-
-**Webhook not receiving events**
-- Verify webhook is active in Zendesk Admin
-- Check Dify endpoint is publicly accessible
-- Review Zendesk webhook delivery logs
-
-**Events being filtered out**
-- Check event filter parameters
-- Review payload structure in Zendesk logs
-- Test with minimal filters first
-
-
-## Support
-
-- **Documentation**: https://developer.zendesk.com/documentation/
-- **Dify Plugin Docs**: https://docs.dify.ai/
-- **Issues**: Report issues in the Dify Plugin SDK repository
 
 ## Version History
 
-- **1.0.0** (2025-01-17): Initial release
+- **1.0.0** (2025-10-31): Initial release
   - Support for ticket, comment, rating, and article events
   - Comprehensive filtering options
   - Webhook signature validation
