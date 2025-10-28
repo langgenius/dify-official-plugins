@@ -40,8 +40,8 @@ class GithubTrigger(Trigger):
         if not event_type:
             raise TriggerDispatchError("Missing GitHub event type header")
 
-        user_id = request.headers.get("X-GitHub-Delivery") or ""
         payload: Mapping[str, Any] = self._validate_payload(request)
+        user_id = str(payload.get("sender", {}).get("id", "unknown"))
         response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
         events: list[str] = self._dispatch_trigger_events(event_type=event_type, payload=payload)
         return EventDispatch(user_id=user_id, events=events, response=response)

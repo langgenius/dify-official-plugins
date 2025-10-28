@@ -11,8 +11,6 @@ from dify_plugin.interfaces.trigger import Event
 class FeedUpdateEvent(Event):
     """rss.app-compatible feed_update event."""
 
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
-        payload = request.get_json() or {}
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         # Pass through as-is to match documented schema
-        return Variables(variables={**payload})
-
+        return Variables(variables={**request.get_json()})
