@@ -9,7 +9,7 @@ class NovitaAIProvider(ToolProvider):
         try:
             for _ in NovitaAiTxt2ImgTool.from_credentials(credentials).invoke(
                 tool_parameters={
-                    "model_name": "AnythingV5_v5PrtRE.safetensors",
+                    "model_name": "cinenautXLATRUE_cinenautV10_392434.safetensors",
                     "prompt": "a futuristic city with flying cars",
                     "negative_prompt": "",
                     "width": 128,
