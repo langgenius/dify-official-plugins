@@ -32,6 +32,7 @@ tools:
   - tools/agentcore-browser-tool.yaml
   - tools/agentcore-browser-session-manager.yaml
   - tools/agentcore_code_interpreter.yaml
+  - tools/dynamodb_manager.yaml
 extra:
   python:
     source: provider/aws_tools.py
