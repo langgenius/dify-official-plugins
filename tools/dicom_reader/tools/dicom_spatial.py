@@ -3,7 +3,6 @@ from __future__ import annotations
 from io import BytesIO
 from typing import Any
 
-import numpy as np
 import pydicom
 from dify_plugin import Tool
 
