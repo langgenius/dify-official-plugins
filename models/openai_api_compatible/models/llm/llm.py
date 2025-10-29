@@ -88,6 +88,23 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 required=False,
             )
         ]
+
+        if credentials.get("reasoning_thought_support") == "supported":
+            entity.parameter_rules += [
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(en_US="Reasoning effort", zh_Hans="推理努力程度"),
+                    help=I18nObject(
+                        en_US="Whether to enable reasoning effort, applicable to various reasoning effort models deployed on reasoning frameworks such as vLLM and SGLang, for example Qwen3.",
+                        zh_Hans="是否开启推理努力程度，适用于vLLM和SGLang等推理框架部署的多种推理努力程度模型，例如Qwen3。",
+                    ),
+                    type=ParameterType.STRING,
+                    options=["none", "low", "normal", "high"],
+                    default="none",
+                    required=True,
+                )
+            ]
+
         return entity
 
     @classmethod
