@@ -34,6 +34,17 @@ parameters:
       zh_Hans: 您要应聘的岗位
     form: llm
 
+  - name: detected_issues
+    type: string
+    required: false
+    label:
+      en_US: Detected Issues
+      zh_Hans: 检测问题
+    human_description:
+      en_US: Quality issues detected by Resume Quality Checker (optional, will be used to provide targeted optimization)
+      zh_Hans: 简历质量检测器检测出的问题（可选，将用于提供针对性优化建议）
+    form: llm
+
   - name: language
     type: select
     required: false

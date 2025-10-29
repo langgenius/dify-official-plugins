@@ -1,20 +1,3 @@
-# Dify plugin framework dependency
 dify_plugin>=0.3.0,<0.5.0
 python-dotenv>=1.0.0
-
-# Core dependencies
-pydantic>=2.0.0
-
-# Dingo core dependencies (lightweight, essential for text quality evaluation)
-chardet>=5.0.0
-jieba>=0.42.1
-textstat>=0.7.0
-hanziconv>=0.3.2
-langid>=1.1.6
-pyahocorasick>=2.0.0
-wordninja>=2.0.0
-zhon>=1.1.5
-
-# Note: Heavy dependencies like datasets, opencv-python, nltk are excluded
-# to reduce installation size and avoid potential conflicts.
-# The plugin will work with basic text quality rules.
+git+https://github.com/MigoXLab/dingo.git@dev
