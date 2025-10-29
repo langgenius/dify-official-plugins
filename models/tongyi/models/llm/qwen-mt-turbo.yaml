@@ -7,7 +7,7 @@ features:
   - agent-thought
 model_properties:
   mode: chat
-  context_size: 4096
+  context_size: 16384
 parameter_rules:
   - name: source_lang
     label:
