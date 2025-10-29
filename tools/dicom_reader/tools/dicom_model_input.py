@@ -1,12 +1,14 @@
 from __future__ import annotations
 
-from io import BytesIO
 from typing import Any
+from io import BytesIO
 
 import numpy as np
 import pydicom
 from PIL import Image
 from dify_plugin import Tool
+
+from ._utils import as_bool, as_int, make_preview_png_bytes, select_frame
 
 
 class DicomModelInputTool(Tool):
@@ -21,11 +23,11 @@ class DicomModelInputTool(Tool):
             yield self.create_text_message("`dicom_file` is required.")
             return
 
-        frame_index = self._as_int(tool_parameters.get("frame_index"), 0)
-        channels_first = self._as_bool(tool_parameters.get("channels_first"), True)
-        normalize_01 = self._as_bool(tool_parameters.get("normalize_0_1"), True)
-        include_preview = self._as_bool(tool_parameters.get("include_preview_image"), False)
-        max_edge = self._as_int(tool_parameters.get("max_preview_edge"), 256)
+        frame_index = as_int(tool_parameters.get("frame_index"), 0)
+        channels_first = as_bool(tool_parameters.get("channels_first"), True)
+        normalize_01 = as_bool(tool_parameters.get("normalize_0_1"), True)
+        include_preview = as_bool(tool_parameters.get("include_preview_image"), False)
+        max_edge = as_int(tool_parameters.get("max_preview_edge"), 256)
 
         blob = getattr(file_obj, "blob", None)
         if blob is None:
@@ -45,7 +47,7 @@ class DicomModelInputTool(Tool):
             yield self.create_text_message(f"No pixel array: {exc}")
             return
 
-        frame, _ = self._select_frame(arr, ds, frame_index)
+        frame, _ = select_frame(ds, arr, frame_index)
         x = frame.astype(np.float32)
 
         # Ensure 2D/3D (channels last if multi-channel)
@@ -96,33 +98,14 @@ class DicomModelInputTool(Tool):
                         img8 = img8[0]
                     else:
                         img8 = np.moveaxis(img8, 0, -1)
-            image = Image.fromarray(img8 if img8.ndim == 2 else img8.astype(np.uint8), mode="L" if img8.ndim == 2 else "RGB")
-            resampling = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
-            MAX_BLOB_BYTES = 8 * 1024 * 1024
-            current_edge = int(max_edge)
-            blob = None
-            pw = ph = None
-            while current_edge >= 32:
-                img = image.copy()
-                img.thumbnail((current_edge, current_edge), resampling)
-                b = BytesIO()
-                try:
-                    img.save(b, format="PNG", optimize=True)
-                except Exception:
-                    img.save(b, format="PNG")
-                d = b.getvalue()
-                if len(d) <= MAX_BLOB_BYTES or current_edge == 32:
-                    blob = d
-                    pw, ph = img.width, img.height
-                    break
-                current_edge = max(32, int(current_edge * 0.75))
+            blob, pw, ph = make_preview_png_bytes(img8, max_edge)
             preview = {
                 "preview_width": image.width,
                 "preview_height": image.height,
                 "mime_type": "image/png",
                 "filename": (filename.rsplit(".", 1)[0] or "dicom") + "_model_input.png",
             }
-            yield self.create_blob_message(blob=blob or b"", meta={
+            yield self.create_blob_message(blob=blob, meta={
                 "mime_type": preview["mime_type"],
                 "filename": preview["filename"],
             })
@@ -149,33 +132,8 @@ class DicomModelInputTool(Tool):
             x = x[..., 0]
         return x
 
-    def _select_frame(self, arr: np.ndarray, ds, desired: int):
-        num_frames = int(getattr(ds, "NumberOfFrames", 1) or 1)
-        if arr.ndim >= 4:
-            frames = arr.shape[0]
-            idx = max(0, min(int(desired), frames - 1))
-            return arr[idx], idx
-        if arr.ndim == 3 and num_frames > 1 and arr.shape[0] == num_frames:
-            frames = arr.shape[0]
-            idx = max(0, min(int(desired), frames - 1))
-            return arr[idx], idx
-        return arr, 0
+    def _as_int(self, value: Any, default: int = 0) -> int:  # backward compat, unused
+        return as_int(value, default)
 
-    def _as_int(self, value: Any, default: int = 0) -> int:
-        if value is None:
-            return default
-        try:
-            return int(float(value))
-        except (TypeError, ValueError):
-            return default
-
-    def _as_bool(self, value: Any, default: bool = False) -> bool:
-        if value is None:
-            return default
-        if isinstance(value, bool):
-            return value
-        if isinstance(value, (int, float)):
-            return value != 0
-        if isinstance(value, str):
-            return value.strip().lower() in {"1", "true", "yes", "y", "on"}
-        return default
+    def _as_bool(self, value: Any, default: bool = False) -> bool:  # backward compat, unused
+        return as_bool(value, default)

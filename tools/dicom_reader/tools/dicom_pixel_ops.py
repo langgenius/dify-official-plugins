@@ -8,6 +8,8 @@ import pydicom
 from PIL import Image
 from dify_plugin import Tool
 
+from ._utils import as_int, make_preview_png_bytes, select_frame, to_uint8_minmax
+
 
 class DicomPixelOpsTool(Tool):
     """
@@ -22,12 +24,12 @@ class DicomPixelOpsTool(Tool):
             return
 
         op = (tool_parameters.get("operation") or "normalize").strip().lower()
-        frame_index = self._as_int(tool_parameters.get("frame_index"), 0)
+        frame_index = as_int(tool_parameters.get("frame_index"), 0)
         value = self._as_float(tool_parameters.get("value"), 0.0)
         min_v = self._as_float(tool_parameters.get("min_value"), None)
         max_v = self._as_float(tool_parameters.get("max_value"), None)
-        ksize = max(1, self._as_int(tool_parameters.get("kernel_size"), 3))
-        max_edge = self._as_int(tool_parameters.get("max_preview_edge"), 256)
+        ksize = max(1, as_int(tool_parameters.get("kernel_size"), 3))
+        max_edge = as_int(tool_parameters.get("max_preview_edge"), 256)
 
         blob = getattr(file_obj, "blob", None)
         if blob is None:
@@ -47,7 +49,7 @@ class DicomPixelOpsTool(Tool):
             yield self.create_json_message({"error": f"No pixel data: {exc}"})
             return
 
-        frame, idx = self._select_frame(arr, ds, frame_index)
+        frame, idx = select_frame(ds, arr, frame_index)
         data = frame.astype(np.float32)
 
         if op == "normalize":
@@ -80,19 +82,15 @@ class DicomPixelOpsTool(Tool):
             "std": float(np.std(out)) if out.size else None,
         }
 
-        img8 = self._to_uint8(out)
-        image = Image.fromarray(img8, mode="L")
-        resampling = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
-        image.thumbnail((max_edge, max_edge), resampling)
-        buf = BytesIO()
-        image.save(buf, format="PNG")
+        img8 = to_uint8_minmax(out)
+        blob, pw, ph = make_preview_png_bytes(img8, max_edge)
         preview = {
-            "preview_width": image.width,
-            "preview_height": image.height,
+            "preview_width": int(pw),
+            "preview_height": int(ph),
             "mime_type": "image/png",
             "filename": (filename.rsplit(".", 1)[0] or "dicom") + f"_{op}_{idx}.png",
         }
-        yield self.create_blob_message(blob=buf.getvalue(), meta={
+        yield self.create_blob_message(blob=blob, meta={
             "mime_type": preview["mime_type"],
             "filename": preview["filename"],
         })
@@ -122,29 +120,8 @@ class DicomPixelOpsTool(Tool):
         v = (c2[k:, :] - c2[:-k, :]) / k
         return v
 
-    def _to_uint8(self, x: np.ndarray) -> np.ndarray:
-        x = self._normalize(x)
-        return np.clip(x * 255.0, 0, 255).astype(np.uint8)
-
-    def _select_frame(self, arr: np.ndarray, ds, desired: int):
-        num_frames = int(getattr(ds, "NumberOfFrames", 1) or 1)
-        if arr.ndim >= 4:
-            frames = arr.shape[0]
-            idx = max(0, min(int(desired), frames - 1))
-            return arr[idx], idx
-        if arr.ndim == 3 and num_frames > 1 and arr.shape[0] == num_frames:
-            frames = arr.shape[0]
-            idx = max(0, min(int(desired), frames - 1))
-            return arr[idx], idx
-        return arr, 0
-
-    def _as_int(self, value: Any, default: int = 0) -> int:
-        if value is None:
-            return default
-        try:
-            return int(float(value))
-        except (TypeError, ValueError):
-            return default
+    def _as_int(self, value: Any, default: int = 0) -> int:  # backward compat, unused
+        return as_int(value, default)
 
     def _as_float(self, value: Any, default: float | None) -> float | None:
         if value is None:
@@ -153,4 +130,3 @@ class DicomPixelOpsTool(Tool):
             return float(value)
         except (TypeError, ValueError):
             return default
-

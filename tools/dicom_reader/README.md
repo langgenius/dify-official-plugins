@@ -7,6 +7,11 @@ Type: Plugin (multiple tools)
 ### Overview
 This plugin now provides focused DICOM tools, split from the original monolithic reader. Each tool does one job well and keeps outputs compact for LLMs.
 
+Refactor highlights:
+- Extracted common helpers into `tools/dicom_reader/tools/_utils.py` to reduce duplication.
+- Unified preview image generation with a consistent size cap and resizing policy.
+- Standardized frame selection, type coercion, and simple parsing utilities across tools.
+
 Available tools and typical use cases:
 
 - dicom_metadata — 文件读取与元数据解析
@@ -63,6 +68,13 @@ The original combined tool (tools/dicom_reader.yaml) remains for backwards compa
 ### Large File Strategy
 - Where possible, headers are parsed with `stop_before_pixels` to keep responses small.
 - Tools that operate on pixel data avoid returning full arrays; instead they report stats and attach small PNG previews (soft-capped to ~8 MB per image).
+
+### Shared Utilities
+- `as_bool/as_int/as_float`: consistent parameter parsing
+- `select_frame`: robust multi-frame indexing across shapes
+- `ensure_hw_or_hwc` and `to_uint8_minmax`: reliable image normalization
+- `make_preview_png_bytes`: preview generation with edge clamping and byte-size cap
+- Metadata helpers (`file_stats`, `collect_named_fields`, `parse_tag_keyword`, etc.) for compact, human-friendly output
 
 ### Notes
 - No external credentials required.

@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from io import BytesIO
 from typing import Any
+from io import BytesIO
 
 import numpy as np
 import pydicom
 from dify_plugin import Tool
+
+from ._utils import as_float, as_int
 
 
 class DicomVolumeTool(Tool):
@@ -20,9 +22,9 @@ class DicomVolumeTool(Tool):
             yield self.create_text_message("`dicom_file` is required.")
             return
 
-        frame_index = self._as_int(tool_parameters.get("frame_index"), None)
-        thr_lo = self._as_float(tool_parameters.get("threshold_lower"), None)
-        thr_hi = self._as_float(tool_parameters.get("threshold_upper"), None)
+        frame_index = as_int(tool_parameters.get("frame_index"), None)
+        thr_lo = as_float(tool_parameters.get("threshold_lower"), None)
+        thr_hi = as_float(tool_parameters.get("threshold_upper"), None)
 
         blob = getattr(file_obj, "blob", None)
         if blob is None:
@@ -133,19 +135,8 @@ class DicomVolumeTool(Tool):
                 vals.append(float(np.mean(arr[i][m])))
         return total, (float(np.mean(vals)) if vals else None)
 
-    def _as_int(self, value: Any, default: int | None) -> int | None:
-        if value is None:
-            return default
-        try:
-            return int(float(value))
-        except (TypeError, ValueError):
-            return default
+    def _as_int(self, value: Any, default: int | None) -> int | None:  # backward compat, unused
+        return as_int(value, default)  # type: ignore[arg-type]
 
-    def _as_float(self, value: Any, default: float | None) -> float | None:
-        if value is None:
-            return default
-        try:
-            return float(value)
-        except (TypeError, ValueError):
-            return default
-
+    def _as_float(self, value: Any, default: float | None) -> float | None:  # backward compat, unused
+        return as_float(value, default)
