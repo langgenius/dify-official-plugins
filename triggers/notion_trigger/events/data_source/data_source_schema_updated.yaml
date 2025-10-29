@@ -1,0 +1,71 @@
+identity:
+  name: data_source_schema_updated
+  author: langgenius
+  label:
+    en_US: Data Source Schema Updated
+    ja_JP: Data Source Schema Updated
+    zh_Hans: Data Source Schema Updated
+description:
+  en_US: Triggered when Notion emits the data_source.schema_updated webhook event.
+  ja_JP: Notion で data_source.schema_updated Webhook イベントが発生したときにトリガーされます。
+  zh_Hans: 当 Notion 触发 data_source.schema_updated Webhook 事件时触发。
+parameters:
+- name: workspace_filter
+  type: string
+  required: false
+  label:
+    en_US: Workspace Filter
+    ja_JP: ワークスペースフィルター
+    zh_Hans: 工作区过滤器
+  help:
+    en_US: "Comma separated workspace IDs to forward events from. Leave blank to accept all workspaces."
+    ja_JP: "イベントを転送するワークスペース ID をカンマ区切りで指定します。空欄の場合はすべてを受け入れます。"
+    zh_Hans: "使用逗号分隔的工作区 ID，仅接收这些工作区的事件。留空接收所有工作区。"
+
+output_schema:
+  type: object
+  properties:
+    id:
+      type: string
+    type:
+      type: string
+    timestamp:
+      type: string
+    workspace_id:
+      type: string
+    subscription_id:
+      type: string
+    integration_id:
+      type: string
+    entity:
+      type: object
+    entity_content:
+      type: object
+      description: Full data source object retrieved from Notion API.
+      properties:
+        object:
+          type: string
+          description: Always `data_source`.
+        id:
+          type: string
+        created_time:
+          type: string
+        last_edited_time:
+          type: string
+        parent:
+          type: object
+          description: Parent database reference.
+        database_parent:
+          type: object
+          description: Page hosting the database.
+        properties:
+          type: object
+          description: Data source schema keyed by property name.
+      required: [object, id]
+    data:
+      type: object
+  required: [id, type, timestamp, workspace_id]
+
+extra:
+  python:
+    source: events/data_source/data_source_schema_updated.py
