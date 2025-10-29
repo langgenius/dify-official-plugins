@@ -1,0 +1,49 @@
+identity:
+  name: form_response_received
+  author: langgenius
+  label:
+    en_US: Form Response Received
+    ja_JP: フォーム回答を受信
+    zh_Hans: 收到表单响应
+description:
+  en_US: Triggered whenever Typeform delivers a form_response webhook.
+  ja_JP: Typeform が form_response Webhook を送信したときにトリガーされます。
+  zh_Hans: 当 Typeform 发送 form_response Webhook 时触发。
+parameters:
+- name: hidden_field_filter
+  type: string
+  required: false
+  label:
+    en_US: Hidden Field Filter
+    ja_JP: Hidden フィールドフィルター
+    zh_Hans: 隐藏字段筛选
+  help:
+    en_US: "Comma separated key=value pairs to match against form_response.hidden (e.g. \"user_id=123,source=ads\")."
+    ja_JP: "form_response.hidden を対象に key=value 形式でフィルターします（例: \"user_id=123,source=ads\"）。"
+    zh_Hans: "用逗号分隔的 key=value 对，用于匹配 form_response.hidden（例如 \"user_id=123,source=ads\"）。"
+- name: variable_filter
+  type: string
+  required: false
+  label:
+    en_US: Variable Filter
+    ja_JP: 変数フィルター
+    zh_Hans: 变量筛选
+  help:
+    en_US: "Comma separated key=value pairs to match against form_response.variables entries."
+    ja_JP: "form_response.variables に対して key=value 形式で一致する値を指定します。"
+    zh_Hans: "用逗号分隔的 key=value 对，用于匹配 form_response.variables 项。"
+
+output_schema:
+  type: object
+  properties:
+    event_id:
+      type: string
+    event_type:
+      type: string
+    form_response:
+      type: object
+  required: [event_id, event_type, form_response]
+
+extra:
+  python:
+    source: events/form/form_response_received.py
