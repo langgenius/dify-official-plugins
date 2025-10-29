@@ -1,0 +1,37 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: dicom_reader
+label:
+  en_US: DICOM Reader
+  ja_JP: DICOMリーダー
+  zh_Hans: DICOM 读取器
+  pt_BR: Leitor DICOM
+description:
+  en_US: Extract metadata and previews from DICOM medical imaging files.
+  ja_JP: DICOM医用画像ファイルからメタデータとプレビューを抽出します。
+  zh_Hans: 从 DICOM 医学影像文件中提取元数据和预览内容。
+  pt_BR: Extraia metadados e prévias de arquivos DICOM de imagem médica.
+icon: icon.svg
+icon_dark: icon-dark.svg
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+plugins:
+  tools:
+    - provider/dicom_reader.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: null
+created_at: 2025-10-29T16:18:12.291489+08:00
+privacy: PRIVACY.md
+verified: false
