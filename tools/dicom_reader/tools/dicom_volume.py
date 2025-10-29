@@ -135,8 +135,4 @@ class DicomVolumeTool(Tool):
                 vals.append(float(np.mean(arr[i][m])))
         return total, (float(np.mean(vals)) if vals else None)
 
-    def _as_int(self, value: Any, default: int | None) -> int | None:  # backward compat, unused
-        return as_int(value, default)  # type: ignore[arg-type]
-
-    def _as_float(self, value: Any, default: float | None) -> float | None:  # backward compat, unused
-        return as_float(value, default)
+    # duplicate helpers removed; using shared utils

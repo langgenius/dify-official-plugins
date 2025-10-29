@@ -1,17 +1,11 @@
 from __future__ import annotations
 
-import re
 from io import BytesIO
 from typing import Any
 
 import pydicom
 from dify_plugin import Tool
-from dify_plugin.entities.tool import ToolInvokeMessage
-from pydicom.datadict import tag_for_keyword
 from pydicom.errors import InvalidDicomError
-from pydicom.sequence import Sequence
-from pydicom.tag import BaseTag, Tag
-from pydicom.uid import UID
 
 from ._utils import (
     collect_additional_tags,
@@ -73,7 +67,7 @@ class DicomMetadataTool(Tool):
         "WindowWidth",
     )
 
-    def _invoke(self, tool_parameters: dict[str, Any]) -> "ToolInvokeMessageGenerator":
+    def _invoke(self, tool_parameters: dict[str, Any]):
         file_obj = tool_parameters.get("dicom_file")
         if not file_obj:
             yield self.create_text_message("`dicom_file` is required.")
@@ -111,4 +105,3 @@ class DicomMetadataTool(Tool):
             metadata["additional_tags"] = additional
 
         yield self.create_json_message(metadata)
-

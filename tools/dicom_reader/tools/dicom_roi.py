@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import json
 from typing import Any
+from io import BytesIO
 
 import numpy as np
 import pydicom
-from PIL import Image
 from dify_plugin import Tool
 
 from ._utils import as_bool, as_int, make_preview_png_bytes, select_frame, to_uint8_minmax
@@ -104,8 +104,4 @@ class DicomROITool(Tool):
         else:
             yield self.create_json_message({"stats": stats})
 
-    def _as_int(self, value: Any, default: int = 0) -> int:  # backward compat, unused
-        return as_int(value, default)
-
-    def _as_bool(self, value: Any, default: bool = False) -> bool:  # backward compat, unused
-        return as_bool(value, default)
+    # duplicate helpers removed; using shared utils

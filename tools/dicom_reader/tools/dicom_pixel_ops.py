@@ -5,7 +5,6 @@ from typing import Any
 
 import numpy as np
 import pydicom
-from PIL import Image
 from dify_plugin import Tool
 
 from ._utils import as_int, make_preview_png_bytes, select_frame, to_uint8_minmax
@@ -104,24 +103,25 @@ class DicomPixelOpsTool(Tool):
         return (x - vmin) / (vmax - vmin)
 
     def _box_blur(self, x: np.ndarray, k: int) -> np.ndarray:
-        # Simple separable box blur using cumulative sums (O(n))
+        # Separable box blur for 2D, and per-channel for 3D (H, W, C)
         if k <= 1:
             return x.copy()
-        if x.ndim != 2:
-            x2d = x.reshape(x.shape[-2], x.shape[-1]) if x.ndim > 2 else x
-        else:
-            x2d = x
-        pad = k // 2
-        # Horizontal
+        if x.ndim == 2:
+            return self._box_blur_2d(x, k)
+        if x.ndim == 3:
+            return np.stack([self._box_blur_2d(x[..., c], k) for c in range(x.shape[-1])], axis=-1)
+        # Fallback: blur last two dims
+        x2d = x.reshape(x.shape[-2], x.shape[-1])
+        return self._box_blur_2d(x2d, k)
+
+    def _box_blur_2d(self, x2d: np.ndarray, k: int) -> np.ndarray:
         c = np.cumsum(np.pad(x2d, ((0, 0), (1, 0)), mode='edge'), axis=1)
         h = (c[:, k:] - c[:, :-k]) / k
-        # Vertical
         c2 = np.cumsum(np.pad(h, ((1, 0), (0, 0)), mode='edge'), axis=0)
         v = (c2[k:, :] - c2[:-k, :]) / k
         return v
 
-    def _as_int(self, value: Any, default: int = 0) -> int:  # backward compat, unused
-        return as_int(value, default)
+    # duplicate helpers removed; using shared utils
 
     def _as_float(self, value: Any, default: float | None) -> float | None:
         if value is None:

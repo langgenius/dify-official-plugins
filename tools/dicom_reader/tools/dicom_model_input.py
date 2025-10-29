@@ -132,8 +132,4 @@ class DicomModelInputTool(Tool):
             x = x[..., 0]
         return x
 
-    def _as_int(self, value: Any, default: int = 0) -> int:  # backward compat, unused
-        return as_int(value, default)
-
-    def _as_bool(self, value: Any, default: bool = False) -> bool:  # backward compat, unused
-        return as_bool(value, default)
+    # duplicate helpers removed; using shared utils

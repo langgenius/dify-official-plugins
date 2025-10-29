@@ -24,7 +24,7 @@ class DicomStatsTool(Tool):
             return
 
         frame_index = as_int(tool_parameters.get("frame_index"), 0)
-        bins = self._as_int(tool_parameters.get("hist_bins"), 64)
+        bins = as_int(tool_parameters.get("hist_bins"), 64)
         roi_json = tool_parameters.get("roi_bbox")
 
         roi = None
@@ -89,5 +89,4 @@ class DicomStatsTool(Tool):
 
         yield self.create_json_message(stats)
 
-    def _as_int(self, value: Any, default: int = 0) -> int:  # backward compat, unused
-        return as_int(value, default)
+    # duplicate helpers removed; using shared utils

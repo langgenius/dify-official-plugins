@@ -81,8 +81,4 @@ class DicomThresholdMaskTool(Tool):
             mask &= x <= float(hi)
         return mask
 
-    def _as_int(self, value: Any, default: int = 0) -> int:  # backward compat, unused
-        return as_int(value, default)
-
-    def _as_float(self, value: Any, default: float | None) -> float | None:  # backward compat, unused
-        return as_float(value, default)
+    # duplicate helpers removed; using shared utils
