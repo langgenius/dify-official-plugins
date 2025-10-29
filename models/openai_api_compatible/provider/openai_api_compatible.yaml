@@ -20,7 +20,7 @@ model_credential_schema:
       en_US: Model Name
       zh_Hans: 模型名称
     placeholder:
-      en_US: Enter full model name here
+      en_US: Enter full model name
       zh_Hans: 输入模型全称
   credential_form_schemas:
     - variable: display_name
