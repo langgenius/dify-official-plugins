@@ -39,6 +39,29 @@ output_schema:
       type: string
     entity:
       type: object
+    entity_content:
+      type: object
+      description: Full data source object retrieved from Notion API.
+      properties:
+        object:
+          type: string
+          description: Always `data_source`.
+        id:
+          type: string
+        created_time:
+          type: string
+        last_edited_time:
+          type: string
+        parent:
+          type: object
+          description: Parent database reference.
+        database_parent:
+          type: object
+          description: Page hosting the database.
+        properties:
+          type: object
+          description: Data source schema keyed by property name.
+      required: [object, id]
     data:
       type: object
   required: [id, type, timestamp, workspace_id]

@@ -39,6 +39,38 @@ output_schema:
       type: string
     entity:
       type: object
+    entity_content:
+      type: object
+      description: Full database object retrieved from Notion API.
+      properties:
+        object:
+          type: string
+          description: Always `database`.
+        id:
+          type: string
+        title:
+          type: array
+          description: Rich text title for the database.
+          items:
+            type: object
+        parent:
+          type: object
+          description: Parent reference for the database.
+        is_inline:
+          type: boolean
+        data_sources:
+          type: array
+          description: Data sources defined under the database.
+          items:
+            type: object
+        properties:
+          type: object
+          description: Database schema keyed by property name.
+        cover:
+          type: object
+        icon:
+          type: object
+      required: [object, id]
     data:
       type: object
   required: [id, type, timestamp, workspace_id]

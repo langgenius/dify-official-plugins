@@ -1,18 +1,40 @@
-subscription_schema: []
+subscription_schema:
+- name: notion_integration_token
+  type: secret-input
+  required: true
+  label:
+    en_US: Notion Integration Token
+    ja_JP: Notion 統合トークン
+    zh_Hans: Notion 集成令牌
+  help:
+    en_US: "Create an internal integration at https://www.notion.so/my-integrations and paste its token."
+    ja_JP: "https://www.notion.so/my-integrations で内部インテグレーションを作成し、そのトークンを入力してください。"
+    zh_Hans: "在 https://www.notion.so/my-integrations 创建内部集成，并粘贴生成的令牌。"
 
 subscription_constructor:
   parameters:
-  - name: verification_token
+  - name: notion_integration_token
     type: string
     required: true
+    label:
+      en_US: Notion Integration Token
+      ja_JP: Notion 統合トークン
+      zh_Hans: Notion 集成令牌
+    help:
+      en_US: "Create an internal integration at https://www.notion.so/my-integrations and paste its token."
+      ja_JP: "https://www.notion.so/my-integrations で内部インテグレーションを作成し、そのトークンを入力してください。"
+      zh_Hans: "在 https://www.notion.so/my-integrations 创建内部集成，并粘贴生成的令牌。"
+  - name: verification_token
+    type: string
+    required: false
     label:
       en_US: Verification Token
       ja_JP: 検証トークン
       zh_Hans: 验证令牌
     help:
-      en_US: "Paste the verification_token that Notion sends to your webhook endpoint when verifying the subscription."
-      ja_JP: "Notion が Webhook 検証時に送信する verification_token を入力してください。"
-      zh_Hans: "输入 Notion 在验证 webhook 时发送的 verification_token。"
+      en_US: "(Optional) Paste the verification_token from the initial Notion webhook if you want signature validation."
+      ja_JP: "（任意）署名検証を有効にする場合は、最初の Notion Webhook で受け取った verification_token を入力してください。"
+      zh_Hans: "（可选）若要启用签名校验，可粘贴首次 Notion Webhook 中的 verification_token。"
   - name: event_types
     type: checkbox
     multiple: true

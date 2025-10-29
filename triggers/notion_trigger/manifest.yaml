@@ -17,7 +17,7 @@ meta:
     entrypoint: main
     language: python
     version: "3.12"
-  version: 0.0.3
+  version: 0.0.1
   minimum_dify_version: 1.10.0
 name: notion_trigger
 plugins:
@@ -34,4 +34,4 @@ resource:
 tags:
 - productivity
 type: plugin
-version: 0.0.3
+version: 0.1.0

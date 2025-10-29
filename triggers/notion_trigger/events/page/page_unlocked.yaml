@@ -39,6 +39,37 @@ output_schema:
       type: string
     entity:
       type: object
+    entity_content:
+      type: object
+      description: Full page object retrieved from Notion API.
+      properties:
+        object:
+          type: string
+          description: Always `page`.
+        id:
+          type: string
+        created_time:
+          type: string
+        last_edited_time:
+          type: string
+        archived:
+          type: boolean
+        icon:
+          type: object
+          description: Page icon details.
+        cover:
+          type: object
+          description: Page cover details.
+        parent:
+          type: object
+          description: Parent reference for the page.
+        properties:
+          type: object
+          description: Page properties keyed by property name.
+        url:
+          type: string
+          description: Canonical Notion URL for the page.
+      required: [object, id]
     data:
       type: object
   required: [id, type, timestamp, workspace_id]

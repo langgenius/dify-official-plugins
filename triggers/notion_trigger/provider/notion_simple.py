@@ -138,9 +138,11 @@ class NotionSubscriptionConstructor(TriggerSubscriptionConstructor):
         credentials: Mapping[str, Any],
         credential_type,
     ) -> Subscription:
-        verification_token = parameters.get("verification_token")
-        if not verification_token:
-            raise SubscriptionError("verification_token is required", error_code="missing_verification_token")
+        integration_token = parameters.get("notion_integration_token")
+        if not integration_token:
+            raise SubscriptionError("notion_integration_token is required", error_code="missing_integration_token")
+
+        verification_token = parameters.get("verification_token") or None
 
         event_types_param = parameters.get("event_types")
         if isinstance(event_types_param, str):
@@ -162,6 +164,7 @@ class NotionSubscriptionConstructor(TriggerSubscriptionConstructor):
             endpoint=endpoint,
             parameters=parameters,
             properties={
+                "notion_integration_token": integration_token,
                 "verification_token": verification_token,
                 "event_types": filtered_types or None,
             },

@@ -39,6 +39,36 @@ output_schema:
       type: string
     entity:
       type: object
+    entity_content:
+      type: object
+      description: Full comment object retrieved from Notion API.
+      properties:
+        object:
+          type: string
+          description: Always `comment`.
+        id:
+          type: string
+        parent:
+          type: object
+          description: Page or block that hosts the comment.
+        discussion_id:
+          type: string
+        created_time:
+          type: string
+        last_edited_time:
+          type: string
+        created_by:
+          type: object
+        rich_text:
+          type: array
+          description: Rich text segments composing the comment.
+          items:
+            type: object
+        attachments:
+          type: array
+          items:
+            type: object
+      required: [object, id]
     data:
       type: object
   required: [id, type, timestamp, workspace_id]
