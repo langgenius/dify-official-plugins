@@ -14,49 +14,42 @@ Refactor highlights:
 
 Available tools and typical use cases:
 
-- dicom_metadata — 文件读取与元数据解析
-  - Purpose: Load patient/study/series/image tags and optional extras
+- dicom_metadata
+  - Purpose: Load patient/study/series/image tags and optional extra tags
   - Example: ds = pydicom.dcmread(file)
 
-- dicom_pixels — 影像像素提取
+- dicom_pixels
   - Purpose: Summarize pixel array (shape/dtype/stats) with optional preview
   - Example: img = ds.pixel_array
 
-- dicom_multiframe — 多帧影像解析
+- dicom_multiframe
   - Purpose: Read multi-frame CT/MRI, report frame count, preview a frame
   - Example: ds.NumberOfFrames
 
-- dicom_hu_correction — 灰度与 HU 值校正
-  - Purpose: Apply RescaleSlope/Intercept; return stats and preview
+- dicom_hu_correction
+  - Purpose: Apply RescaleSlope/Intercept; return stats and a preview
   - Example: hu = img * slope + intercept
 
-- dicom_spatial — 空间几何信息
+- dicom_spatial
   - Purpose: Extract pixel spacing, slice thickness, orientation/position; compute voxel size/volume
-  - Example: spacing, thickness, orientation matrix → volume and 3D use
 
-- dicom_pixel_ops — 像素矩阵操作
+- dicom_pixel_ops
   - Purpose: Add/subtract, normalize, clip, contrast stretch, box blur; returns preview
-  - Example: 对比度增强、噪声分析
 
-- dicom_stats — 统计特征提取
-  - Purpose: Mean/variance/std and histogram on image or rectangular ROI
-  - Example: 病灶亮度分布
+- dicom_stats
+  - Purpose: Mean/variance/std and histogram on full image or rectangular ROI
 
-- dicom_volume — 体积与密度计算
+- dicom_volume
   - Purpose: Threshold-based mask with spacing to estimate volume (mm³) and mean intensity
-  - Example: 肺结节体积（mm³）
 
-- dicom_threshold_mask — 阈值与掩码运算
-  - Purpose: Build binary mask from thresholds and return overlay preview
-  - Example: mask = img > threshold
+- dicom_threshold_mask
+  - Purpose: Build a binary mask from thresholds and return overlay preview
 
-- dicom_roi — ROI 区域分析
-  - Purpose: Compute stats inside user-provided rectangular ROI; optional outlined preview
-  - Example: ROI 平均灰度、纹理特征
+- dicom_roi
+  - Purpose: Compute stats inside a rectangular ROI; optional outlined preview
 
-- dicom_model_input — 模型输入处理
+- dicom_model_input
   - Purpose: Convert to standard model shape [1, C, H, W] (or NHWC); optional normalization and preview
-  - Example: [H, W, C] → [1, C, H, W]
 
 The original combined tool (tools/dicom_reader.yaml) remains for backwards compatibility.
 
