@@ -13,11 +13,13 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import logging
 from collections.abc import Mapping
 from typing import Any
 
 from werkzeug import Request, Response
 
+from dify_plugin.config.logger_format import plugin_logger_handler
 from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.trigger import EventDispatch, Subscription, UnsubscribeResult
 from dify_plugin.errors.trigger import (
@@ -26,6 +28,10 @@ from dify_plugin.errors.trigger import (
     TriggerValidationError,
 )
 from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstructor
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(plugin_logger_handler)
 
 # ---------------------------------------------------------------------------
 # Constants

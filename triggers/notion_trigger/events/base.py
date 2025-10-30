@@ -6,12 +6,15 @@ from typing import Any
 
 from werkzeug import Request
 
+from dify_plugin.config.logger_format import plugin_logger_handler
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.errors.trigger import EventIgnoreError
 
 from notion_client import NotionAPIError, NotionClient
 
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(plugin_logger_handler)
 
 
 class NotionBaseEvent():
@@ -73,7 +76,9 @@ class NotionBaseEvent():
         runtime = getattr(self, "runtime", None)
         subscription = getattr(runtime, "subscription", None) if runtime else None
         if subscription:
-            properties = getattr(subscription, "properties", {}) or {}
+            properties = getattr(subscription, "properties", None)
+            if properties is None:
+                properties = {}
             return properties.get("notion_integration_token")
 
         return None
