@@ -1,29 +1,74 @@
-## DICOM Reader
+## DICOM Reader (Split Tools)
 
-**Author:** langgenius  
-**Version:** 0.0.1  
-**Type:** Tool
+Author: langgenius  
+Version: 0.0.2  
+Type: Plugin (multiple tools)
 
-### Description
-- Parses DICOM Part 10 files using pydicom.
-- Extracts structured patient, study, series, and image metadata.
-- Optionally samples pixel data to compute descriptive statistics.
-- Generates a min-max normalised PNG preview that is downsampled to remain small.
+### Overview
+This plugin now provides focused DICOM tools, split from the original monolithic reader. Each tool does one job well and keeps outputs compact for LLMs.
 
-### Parameters
-- `dicom_file` *(file, required)*: The DICOM file (.dcm) to inspect.
-- `include_pixel_statistics` *(boolean)*: Compute min/mean/max/std and percentiles from pixel data (uses sampling for large datasets).
-- `include_preview_image` *(boolean)*: Return a downsampled PNG preview of the selected frame as an attached image file.
-- `preview_frame_index` *(number)*: Frame index (0-based) to preview when multiple frames exist.
-- `max_preview_edge` *(number)*: Maximum edge length for the generated preview (32–1024 px).
-- `additional_tags` *(string)*: Optional comma-separated tag names or hex codes to include (e.g. `PatientAge,0018,5100`).
+Refactor highlights:
+- Extracted common helpers into `tools/dicom_reader/tools/_utils.py` to reduce duplication.
+- Unified preview image generation with a consistent size cap and resizing policy.
+- Standardized frame selection, type coercion, and simple parsing utilities across tools.
+
+Available tools and typical use cases:
+
+- dicom_metadata
+  - Purpose: Load patient/study/series/image tags and optional extra tags
+  - Example: ds = pydicom.dcmread(file)
+
+- dicom_pixels
+  - Purpose: Summarize pixel array (shape/dtype/stats) with optional preview
+  - Example: img = ds.pixel_array
+
+- dicom_multiframe
+  - Purpose: Read multi-frame CT/MRI, report frame count, preview a frame
+  - Example: ds.NumberOfFrames
+
+- dicom_hu_correction
+  - Purpose: Apply RescaleSlope/Intercept; return stats and a preview
+  - Example: hu = img * slope + intercept
+
+- dicom_spatial
+  - Purpose: Extract pixel spacing, slice thickness, orientation/position; compute voxel size/volume
+
+- dicom_pixel_ops
+  - Purpose: Add/subtract, normalize, clip, contrast stretch, box blur; returns preview
+
+- dicom_stats
+  - Purpose: Mean/variance/std and histogram on full image or rectangular ROI
+
+- dicom_volume
+  - Purpose: Threshold-based mask with spacing to estimate volume (mm³) and mean intensity
+
+- dicom_threshold_mask
+  - Purpose: Build a binary mask from thresholds and return overlay preview
+
+- dicom_roi
+  - Purpose: Compute stats inside a rectangular ROI; optional outlined preview
+
+- dicom_model_input
+  - Purpose: Convert to standard model shape [1, C, H, W] (or NHWC); optional normalization and preview
+
+The original combined tool (tools/dicom_reader.yaml) remains for backwards compatibility.
+
+### Common Parameters
+- dicom_file (file, required): DICOM Part 10 (.dcm) file to process
+- frame_index (number): 0-based frame index for multi-frame data (tools that use frames)
+- max_preview_edge (number): Max preview edge (32–1024) for tools that output images
 
 ### Large File Strategy
-- Metadata extraction uses `stop_before_pixels` unless statistics or previews are requested, so headers from >20 MB files remain light-weight.
-- Pixel statistics operate on a sampled subset (default ≤262,144 pixels) to balance fidelity and size.
-- Preview images are normalised to 8-bit and resized to keep responses well under 20 MB even for very high-resolution studies.
+- Where possible, headers are parsed with `stop_before_pixels` to keep responses small.
+- Tools that operate on pixel data avoid returning full arrays; instead they report stats and attach small PNG previews (soft-capped to ~8 MB per image).
 
-### Output
-- JSON payload containing `metadata`, optional `pixel_statistics`, optional `preview` metadata, and diagnostic `notes`.
-- When a preview is requested the PNG image is delivered via a binary file message (no base64 in JSON), keeping responses compact.
-- Human-readable text summary that highlights key findings and indicates any skipped operations.
+### Shared Utilities
+- `as_bool/as_int/as_float`: consistent parameter parsing
+- `select_frame`: robust multi-frame indexing across shapes
+- `ensure_hw_or_hwc` and `to_uint8_minmax`: reliable image normalization
+- `make_preview_png_bytes`: preview generation with edge clamping and byte-size cap
+- Metadata helpers (`file_stats`, `collect_named_fields`, `parse_tag_keyword`, etc.) for compact, human-friendly output
+
+### Notes
+- No external credentials required.
+- Outputs are JSON and small binary attachments (PNG) only; no base64 in JSON payloads.
