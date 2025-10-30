@@ -1,13 +1,9 @@
-import logging
 import time
 from typing import Any, Generator
 
 import snowflake.connector
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-
-logging.basicConfig(level=logging.DEBUG)
-logger = logging.getLogger(__name__)
 
 
 class SnowflakeQueryTool(Tool):
@@ -176,7 +172,6 @@ class SnowflakeQueryTool(Tool):
                     "execution_time": round(execution_time, 3),
                 }
             )
-            logger.error(error_msg)
             yield self.create_variable_message("success", False)
             yield self.create_variable_message("executed_sql", sql_query)
             yield self.create_variable_message(
@@ -197,7 +192,6 @@ class SnowflakeQueryTool(Tool):
                     "execution_time": round(execution_time, 3),
                 }
             )
-            logger.error(error_msg)
             yield self.create_variable_message("success", False)
             yield self.create_variable_message("executed_sql", sql_query)
             yield self.create_variable_message(
@@ -218,7 +212,6 @@ class SnowflakeQueryTool(Tool):
                     "execution_time": round(execution_time, 3),
                 }
             )
-            logger.error(error_msg)
             yield self.create_variable_message("success", False)
             yield self.create_variable_message("executed_sql", sql_query)
             yield self.create_variable_message(
