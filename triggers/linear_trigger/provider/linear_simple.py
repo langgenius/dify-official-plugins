@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import hmac
+import logging
 import secrets
 import time
 import urllib.parse
@@ -18,6 +19,7 @@ from typing import Any
 import requests
 from werkzeug import Request, Response
 
+from dify_plugin.config.logger_format import plugin_logger_handler
 from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.oauth import TriggerOAuthCredentials
 from dify_plugin.entities.provider_config import CredentialType
@@ -31,6 +33,10 @@ from dify_plugin.errors.trigger import (
     UnsubscribeError,
 )
 from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstructor
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(plugin_logger_handler)
 
 
 class LinearTrigger(Trigger):

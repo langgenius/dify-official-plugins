@@ -91,29 +91,55 @@ A comprehensive Dify plugin providing 44 Linear webhook event triggers for your 
 - `issue_relation_removed`: Issue relation removed
 
 ## Quick Start
+### 1. Authentication & Subscription Options
 
-### 1. Install Plugin
+This plugin supports **three modes** for Linear webhook subscription and authentication. Choose the option that best fits your use case:
 
-Install this plugin from Dify marketplace.
+#### Option 1: OAuth 2.0 (Recommended)
 
-### 2. Authentication
+**Default OAuth Client (Dify Cloud)**
+- On Dify Cloud, Linear is pre-configured with a default OAuth client for one-click authorization.
+- Select **Create with OAuth > Default** and authorize Dify with Linear instantly.
 
-#### Option A: API Key
-1. Go to [Linear Settings > API](https://linear.app/settings/api)
-2. Create a Personal API Key
-3. Copy the key for plugin configuration
+**Custom OAuth Client (Self-hosted)**
+- In self-hosted environments, you need to create your own OAuth application.
+- Select **Create with OAuth > Custom**.
+- Go to [Linear Settings > API Applications](https://linear.app/settings/api/applications) and create a new OAuth Application.
+- Use the callback URL provided by Dify when creating the OAuth application in Linear.
+- Back in Dify, enter the Client ID and Client Secret from your Linear OAuth application, then click **Save and Authorize**.
+- Once saved, the same client credentials can be reused for future subscriptions.
+- Specify the subscription name, select the events you want to subscribe to, and configure any other required settings.
+- We recommend selecting all available events.
+- Click **Create**.
 
-#### Option B: OAuth 2.0 (Recommended for teams)
-1. Go to [Linear Settings > API Applications](https://linear.app/settings/api/applications)
-2. Create a new OAuth Application
-3. Configure Client ID and Client Secret in Dify
+The Callback URL displayed on the subscription configuration page is used internally by Dify to create the webhook in Linear on your behalf. You don't need to take any action with this URL.
 
-### 3. Set Up Webhook in Linear
+#### Option 2: API Key Authentication
 
-1. Go to Linear Workspace Settings > Webhooks
-2. Create new webhook pointing to your Dify endpoint
-3. Select resource types to monitor
-4. (Optional) Add webhook secret for verification
+- Select **Create with API Key**.
+- Go to [Linear Settings > API](https://linear.app/settings/api) and create a Personal API Key.
+- Enter the API Key in Dify, then click **Verify**.
+- Specify the subscription name, select the events you want to subscribe to, and configure any other required settings.
+- We recommend selecting all available events.
+- Click **Create**.
+
+#### Option 3: Manual Webhook Setup
+
+- Select **Paste URL** to create a new subscription.
+- Specify the subscription name and use the provided callback URL to manually create a webhook in Linear.
+- Go to Linear Workspace Settings > Webhooks and create a new webhook pointing to the Dify callback URL.
+- (Optional) Add a webhook secret in Linear for request signature verification.
+- (Optional) Test the created webhook:
+  - Linear automatically tests new webhooks by sending a ping request to Dify upon creation.
+  - You can also trigger a subscribed event so Linear sends an HTTP request to the callback URL.
+  - Check the **Request Logs** section on the Manual Setup page. If the webhook works properly, you'll see the received request and Dify's response.
+- Click **Create**.
+
+**Note:**  
+- For best security and team management, OAuth 2.0 is recommended.
+- Webhook Secret (optional in Linear) enables request signature validation for extra security.
+
+Please refer to Dify’s plugin configuration page or Linear documentation for step-by-step guidance if you are unsure which option matches your needs.
 
 ## Event Parameters
 
@@ -131,53 +157,9 @@ Each event supports specific filter parameters to reduce noise:
 - **project_only**: Only trigger for project-related items
 - **status_changed**: Only trigger on status changes
 
-## Usage Example
-
-```yaml
-# High-priority issue automation
-trigger:
-  type: linear_trigger.issue_created
-  parameters:
-    priority_filter: "1,2"  # Urgent and High only
-    team_filter: "team-id-123"
-
-workflow:
-  - send_slack_alert:
-      channel: "#critical-issues"
-      message: "🚨 New urgent issue: {{trigger.data.title}}"
-```
-
-## Changelog
-
-### Version 0.3.0 (2025-10-16)
-- ✅ **Added 29 new events** (44 total):
-  - Attachment events (3)
-  - IssueLabel events (3)
-  - Reaction events (3)
-  - ProjectUpdate events (3)
-  - Initiative events (3)
-  - InitiativeUpdate events (3)
-  - Customer events (3)
-  - CustomerNeed events (3)
-  - User events (2)
-  - IssueRelation events (3)
-- ✅ Complete Linear webhook coverage
-- ✅ All events tested and validated
-
-### Version 0.2.0 (2025-10-16)
-- ✅ Added Issue, Comment, Project, Cycle, Document events (15 total)
-- ✅ Comprehensive test coverage
-- ✅ Enhanced filtering capabilities
-
-### Version 0.1.4
-- ✅ Fixed OAuth implementation
-- ✅ Fixed OAuth token exchange format
-- ✅ Fixed credential key naming
 
 
 ## Support
 
-- GitHub: [dify-plugins](https://github.com/langgenius/dify-plugins)
-- Dify Community: [discussions](https://github.com/langgenius/dify/discussions)
-- Linear API: [developers.linear.app](https://developers.linear.app)
+Reference: [Linear Webhooks documentation](https://linear.app/developers/webhooks)
 
