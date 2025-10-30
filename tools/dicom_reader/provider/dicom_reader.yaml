@@ -57,6 +57,17 @@ identity:
 
 tools:
   - tools/dicom_reader.yaml
+  - tools/dicom_metadata.yaml
+  - tools/dicom_pixels.yaml
+  - tools/dicom_multiframe.yaml
+  - tools/dicom_hu_correction.yaml
+  - tools/dicom_spatial.yaml
+  - tools/dicom_pixel_ops.yaml
+  - tools/dicom_stats.yaml
+  - tools/dicom_volume.yaml
+  - tools/dicom_threshold_mask.yaml
+  - tools/dicom_roi.yaml
+  - tools/dicom_model_input.yaml
 extra:
   python:
     source: provider/dicom_reader.py

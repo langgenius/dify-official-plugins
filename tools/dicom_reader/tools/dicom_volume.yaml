@@ -1,0 +1,60 @@
+identity:
+  name: "dicom_volume"
+  author: "langgenius"
+  label:
+    en_US: "DICOM Volume & Density"
+    zh_Hans: "体积与密度计算"
+description:
+  human:
+    en_US: "Compute estimated volume using spacing and a thresholded mask; also report mean intensity in mask."
+    zh_Hans: "结合 DICOM 间距与阈值掩码估算体积，并计算掩码内平均强度。"
+  llm: "Estimate volume (mm^3) via threshold mask × voxel volume."
+parameters:
+  - name: dicom_file
+    type: file
+    required: true
+    label:
+      en_US: "DICOM file"
+      zh_Hans: "DICOM 文件"
+    human_description:
+      en_US: "Upload the DICOM file (.dcm)."
+      zh_Hans: "上传 DICOM 文件（.dcm）。"
+    llm_description: "Provide the DICOM file."
+    form: llm
+  - name: frame_index
+    type: number
+    required: false
+    label:
+      en_US: "Frame index (optional)"
+      zh_Hans: "帧索引（可选）"
+    human_description:
+      en_US: "If omitted, sum across frames when multi-frame."
+      zh_Hans: "若不提供，遇多帧数据将跨帧汇总。"
+    llm_description: "Frame index to evaluate."
+    form: form
+  - name: threshold_lower
+    type: number
+    required: false
+    label:
+      en_US: "Lower threshold"
+      zh_Hans: "下阈值"
+    human_description:
+      en_US: "Lower bound for mask. If both empty, mean is used."
+      zh_Hans: "掩码下限；若上下皆空，默认使用均值阈值。"
+    llm_description: "Lower threshold."
+    form: form
+  - name: threshold_upper
+    type: number
+    required: false
+    label:
+      en_US: "Upper threshold"
+      zh_Hans: "上阈值"
+    human_description:
+      en_US: "Upper bound for mask (optional)."
+      zh_Hans: "掩码上限（可选）。"
+    llm_description: "Upper threshold."
+    form: form
+extra:
+  python:
+    source: tools/dicom_volume.py
+

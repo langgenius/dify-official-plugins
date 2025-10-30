@@ -343,10 +343,28 @@ class DicomReaderTool(Tool):
 
         resampling = Image.Resampling.LANCZOS if hasattr(Image, "Resampling") else Image.LANCZOS
         sanitized_edge = max(self.PREVIEW_MIN_EDGE, min(max_preview_edge, self.PREVIEW_MAX_EDGE))
-        image.thumbnail((sanitized_edge, sanitized_edge), resampling)
-
-        buffer = BytesIO()
-        image.save(buffer, format="PNG")
+        # Downsample and enforce a conservative binary size cap to avoid transport issues.
+        # Start at requested edge and shrink until under the limit or we hit minimum edge.
+        MAX_BLOB_BYTES = 8 * 1024 * 1024  # 8 MB soft cap for transport stability
+        current_edge = int(sanitized_edge)
+        blob_bytes: bytes | None = None
+        preview_w = preview_h = None
+        while current_edge >= self.PREVIEW_MIN_EDGE:
+            img = image.copy()
+            img.thumbnail((current_edge, current_edge), resampling)
+            buf = BytesIO()
+            # Use optimize to reduce PNG size
+            try:
+                img.save(buf, format="PNG", optimize=True)
+            except Exception:
+                img.save(buf, format="PNG")
+            data = buf.getvalue()
+            if len(data) <= MAX_BLOB_BYTES or current_edge == self.PREVIEW_MIN_EDGE:
+                blob_bytes = data
+                preview_w, preview_h = img.width, img.height
+                break
+            # shrink by 75% and try again
+            current_edge = max(self.PREVIEW_MIN_EDGE, int(current_edge * 0.75))
 
         base_name = Path(original_filename).stem or "dicom_preview"
         filename = f"{base_name}_frame_{actual_frame}.png"
@@ -354,12 +372,12 @@ class DicomReaderTool(Tool):
         return {
             "frame_index": int(actual_frame),
             "original_shape": original_shape,
-            "preview_width": image.width,
-            "preview_height": image.height,
+            "preview_width": int(preview_w or image.width),
+            "preview_height": int(preview_h or image.height),
             "mime_type": "image/png",
             "filename": filename,
-            "blob": buffer.getvalue(),
-            "note": "Preview is min-max normalized and downsampled to stay well under 20 MB.",
+            "blob": blob_bytes or b"",
+            "note": "Preview is min-max normalized and size-capped for transport stability.",
         }
 
     def _select_frame(
