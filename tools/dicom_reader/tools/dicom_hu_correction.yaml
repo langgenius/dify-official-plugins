@@ -1,0 +1,63 @@
+identity:
+  name: "dicom_hu_correction"
+  author: "langgenius"
+  label:
+    en_US: "DICOM HU Correction"
+    zh_Hans: "灰度与 HU 校正"
+description:
+  human:
+    en_US: "Convert pixel intensities using RescaleSlope/Intercept and preview the result."
+    zh_Hans: "使用 RescaleSlope/Intercept 将像素恢复为接近 HU 的强度，并提供预览。"
+  llm: "Apply slope/intercept to pixels and return stats with optional preview."
+parameters:
+  - name: dicom_file
+    type: file
+    required: true
+    label:
+      en_US: "DICOM file"
+      zh_Hans: "DICOM 文件"
+    human_description:
+      en_US: "Upload the DICOM file (.dcm)."
+      zh_Hans: "上传 DICOM 文件（.dcm）。"
+    llm_description: "Provide the DICOM file."
+    form: llm
+  - name: frame_index
+    type: number
+    required: false
+    default: 0
+    label:
+      en_US: "Frame index"
+      zh_Hans: "帧索引"
+    human_description:
+      en_US: "0-based frame index to convert."
+      zh_Hans: "转换的 0 基帧索引。"
+    llm_description: "Frame to convert."
+    form: form
+  - name: include_preview_image
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: "Include preview image"
+      zh_Hans: "包含预览图像"
+    human_description:
+      en_US: "Return a PNG preview of the converted frame."
+      zh_Hans: "返回 HU 校正后的 PNG 预览。"
+    llm_description: "Set true to include a PNG preview."
+    form: form
+  - name: max_preview_edge
+    type: number
+    required: false
+    default: 256
+    label:
+      en_US: "Max preview edge"
+      zh_Hans: "预览最大边长"
+    human_description:
+      en_US: "Maximum edge size for preview image (32–1024)."
+      zh_Hans: "预览图最大边长（32–1024）。"
+    llm_description: "Maximum edge length for preview."
+    form: form
+extra:
+  python:
+    source: tools/dicom_hu_correction.py
+
