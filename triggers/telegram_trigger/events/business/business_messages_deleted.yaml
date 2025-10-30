@@ -1,0 +1,609 @@
+identity:
+  name: business_messages_deleted
+  author: langgenius
+  label:
+    en_US: Business Messages Deleted
+    zh_Hans: 商业消息被删除
+    ja_JP: ビジネスメッセージ削除
+description:
+  en_US: Triggers when Telegram reports that previously sent business messages were
+    deleted.
+  zh_Hans: 当 Telegram 报告先前发送的商业消息被删除时触发。
+  ja_JP: 以前に送信されたビジネスメッセージが削除されたことを Telegram が通知したときにトリガーします。
+parameters: []
+output_schema:
+  type: object
+  additionalProperties: false
+  required:
+  - update_id
+  - deleted_business_messages
+  properties:
+    update_id:
+      type: integer
+      description: Unique identifier for the Telegram update.
+    deleted_business_messages:
+      type: object
+      additionalProperties: false
+      description: Information about deleted Telegram Business messages.
+      required:
+      - business_connection_id
+      - chat
+      - message_ids
+      properties:
+        business_connection_id:
+          type: string
+          description: Unique identifier of the affected business connection.
+        chat:
+          type: object
+          description: Telegram Chat object as defined in the Bot API.
+          additionalProperties: true
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for this chat.
+            type:
+              type: string
+              description: Type of chat, such as private, group, supergroup, or channel.
+            title:
+              type: string
+              description: Chat title for supergroups, channels, and group chats.
+            username:
+              type: string
+              description: Username of the chat if available.
+            first_name:
+              type: string
+              description: First name of the other party in a private chat.
+            last_name:
+              type: string
+              description: Last name of the other party in a private chat.
+            is_forum:
+              type: boolean
+              description: True if the supergroup chat is a forum.
+            photo:
+              type: object
+              description: Chat photo information.
+              properties:
+                small_file_id:
+                  type: string
+                  description: File identifier of the small (160x160) chat photo version.
+                small_file_unique_id:
+                  type: string
+                  description: Unique file identifier of the small chat photo version.
+                big_file_id:
+                  type: string
+                  description: File identifier of the big (640x640) chat photo version.
+                big_file_unique_id:
+                  type: string
+                  description: Unique file identifier of the big chat photo version.
+              additionalProperties: false
+            active_usernames:
+              type: array
+              items:
+                type: string
+              description: List of all active chat usernames.
+            emoji_status_custom_emoji_id:
+              type: string
+              description: Custom emoji identifier of the chat emoji status.
+            bio:
+              type: string
+              description: Bio of the other party in a private chat.
+            has_private_forwards:
+              type: boolean
+              description: True if privacy settings allow private forwards.
+            has_restricted_voice_and_video_messages:
+              type: boolean
+              description: True if voice and video messages are restricted.
+            join_to_send_messages:
+              type: boolean
+              description: True if all users must join before they can send messages.
+            join_by_request:
+              type: boolean
+              description: True if only users invited by administrators can join.
+            description:
+              type: string
+              description: Chat description for supergroups and channels.
+            invite_link:
+              type: string
+              description: Primary invite link for the chat.
+            pinned_message:
+              type: object
+              description: Pinned message in the chat.
+              additionalProperties: false
+              properties:
+                message_id:
+                  type: integer
+                  description: Unique message identifier inside the chat.
+                message_thread_id:
+                  type: integer
+                  description: Identifier of the thread the message belongs to, for
+                    forum topics.
+                date:
+                  type: integer
+                  description: Date the message was sent in Unix time.
+                chat:
+                  type: object
+                  description: Chat the message belongs to.
+                  additionalProperties: true
+                  properties:
+                    id:
+                      type: integer
+                      description: Unique identifier for this chat.
+                    type:
+                      type: string
+                      description: Type of chat, such as private, group, supergroup,
+                        or channel.
+                    title:
+                      type: string
+                      description: Chat title for supergroups, channels, and group
+                        chats.
+                    username:
+                      type: string
+                      description: Username of the chat if available.
+                    first_name:
+                      type: string
+                      description: First name of the other party in a private chat.
+                    last_name:
+                      type: string
+                      description: Last name of the other party in a private chat.
+                from:
+                  type: object
+                  description: Sender of the message.
+                  additionalProperties: true
+                  properties:
+                    id:
+                      type: integer
+                      description: Unique identifier for this user or bot.
+                    is_bot:
+                      type: boolean
+                      description: True if this user is a bot.
+                    first_name:
+                      type: string
+                      description: User first name.
+                    last_name:
+                      type: string
+                      description: User last name.
+                    username:
+                      type: string
+                      description: Username of the user, if any.
+                    language_code:
+                      type: string
+                      description: IETF language tag of the user's language.
+                    is_premium:
+                      type: boolean
+                      description: True if the user is a Telegram Premium subscriber.
+                    added_to_attachment_menu:
+                      type: boolean
+                      description: True if the user added the bot to the attachment
+                        menu.
+                    can_join_groups:
+                      type: boolean
+                      description: True if the bot can join groups.
+                    can_read_all_group_messages:
+                      type: boolean
+                      description: True if privacy mode is disabled for the bot.
+                    supports_inline_queries:
+                      type: boolean
+                      description: True if the bot can be invited to inline mode.
+                    can_connect_to_business:
+                      type: boolean
+                      description: True if the bot can connect to Telegram Business
+                        accounts.
+                    has_main_web_app:
+                      type: boolean
+                      description: True if the bot has a main Web App.
+                sender_chat:
+                  type: object
+                  description: Channel on behalf of which the message was sent.
+                  additionalProperties: true
+                  properties:
+                    id:
+                      type: integer
+                      description: Unique identifier for this chat.
+                    type:
+                      type: string
+                      description: Type of chat, such as private, group, supergroup,
+                        or channel.
+                    title:
+                      type: string
+                      description: Chat title for supergroups, channels, and group
+                        chats.
+                    username:
+                      type: string
+                      description: Username of the chat if available.
+                    first_name:
+                      type: string
+                      description: First name of the other party in a private chat.
+                    last_name:
+                      type: string
+                      description: Last name of the other party in a private chat.
+                text:
+                  type: string
+                  description: Text of the message.
+                entities:
+                  type: array
+                  description: Special entities that appear in message text.
+                  items:
+                    type: object
+                    description: Special entity in a text message.
+                    additionalProperties: true
+                    properties:
+                      type:
+                        type: string
+                        description: Type of the entity.
+                      offset:
+                        type: integer
+                        description: Offset in UTF-16 code units to the start of the
+                          entity.
+                      length:
+                        type: integer
+                        description: Length of the entity in UTF-16 code units.
+                      url:
+                        type: string
+                        description: URL for "text_link" entity.
+                      user:
+                        type: object
+                        description: Telegram User object as defined in the Bot API.
+                        additionalProperties: true
+                        properties:
+                          id:
+                            type: integer
+                            description: Unique identifier for this user or bot.
+                          is_bot:
+                            type: boolean
+                            description: True if this user is a bot.
+                          first_name:
+                            type: string
+                            description: User first name.
+                          last_name:
+                            type: string
+                            description: User last name.
+                          username:
+                            type: string
+                            description: Username of the user, if any.
+                          language_code:
+                            type: string
+                            description: IETF language tag of the user's language.
+                          is_premium:
+                            type: boolean
+                            description: True if the user is a Telegram Premium subscriber.
+                          added_to_attachment_menu:
+                            type: boolean
+                            description: True if the user added the bot to the attachment
+                              menu.
+                          can_join_groups:
+                            type: boolean
+                            description: True if the bot can join groups.
+                          can_read_all_group_messages:
+                            type: boolean
+                            description: True if privacy mode is disabled for the
+                              bot.
+                          supports_inline_queries:
+                            type: boolean
+                            description: True if the bot can be invited to inline
+                              mode.
+                          can_connect_to_business:
+                            type: boolean
+                            description: True if the bot can connect to Telegram Business
+                              accounts.
+                          has_main_web_app:
+                            type: boolean
+                            description: True if the bot has a main Web App.
+                      language:
+                        type: string
+                        description: Programming language of the entity text for "pre".
+                      custom_emoji_id:
+                        type: string
+                        description: Identifier of a custom emoji.
+            permissions:
+              type: object
+              description: Default chat member permissions.
+              properties:
+                can_send_messages:
+                  type: boolean
+                  description: True if the user may send text messages.
+                can_send_audios:
+                  type: boolean
+                  description: True if the user may send audio messages.
+                can_send_documents:
+                  type: boolean
+                  description: True if the user may send document messages.
+                can_send_photos:
+                  type: boolean
+                  description: True if the user may send photos.
+                can_send_videos:
+                  type: boolean
+                  description: True if the user may send videos.
+                can_send_video_notes:
+                  type: boolean
+                  description: True if the user may send video notes.
+                can_send_voice_notes:
+                  type: boolean
+                  description: True if the user may send voice notes.
+                can_send_polls:
+                  type: boolean
+                  description: True if the user may send polls.
+                can_send_other_messages:
+                  type: boolean
+                  description: True if the user may send animations, games, stickers,
+                    and use inline bots.
+                can_add_web_page_previews:
+                  type: boolean
+                  description: True if the user may add web page previews to messages.
+                can_change_info:
+                  type: boolean
+                  description: True if the user may change the chat title, photo,
+                    and other settings.
+                can_invite_users:
+                  type: boolean
+                  description: True if the user may invite new users to the chat.
+                can_pin_messages:
+                  type: boolean
+                  description: True if the user may pin messages.
+                can_manage_topics:
+                  type: boolean
+                  description: True if the user may manage forum topics.
+                can_manage_video_chats:
+                  type: boolean
+                  description: True if the user may manage video chats.
+                can_post_stories:
+                  type: boolean
+                  description: True if the user may post stories.
+                can_edit_stories:
+                  type: boolean
+                  description: True if the user may edit stories.
+                can_delete_stories:
+                  type: boolean
+                  description: True if the user may delete stories.
+              additionalProperties: false
+            slow_mode_delay:
+              type: integer
+              description: Allowed delay between consecutive messages for non-administrators.
+            message_auto_delete_time:
+              type: integer
+              description: Time after which messages are automatically deleted.
+            has_protected_content:
+              type: boolean
+              description: True if content protection is enabled.
+            sticker_set_name:
+              type: string
+              description: Name of the group sticker set.
+            can_set_sticker_set:
+              type: boolean
+              description: True if the bot can change the group sticker set.
+            linked_chat_id:
+              type: integer
+              description: Identifier of the linked channel for supergroups.
+            location:
+              type: object
+              description: Location to which the supergroup is connected.
+              properties:
+                location:
+                  type: object
+                  description: Location coordinates of the chat.
+                  additionalProperties: false
+                  required:
+                  - latitude
+                  - longitude
+                  properties:
+                    latitude:
+                      type: number
+                      description: Latitude as defined by the sender.
+                    longitude:
+                      type: number
+                      description: Longitude as defined by the sender.
+                    horizontal_accuracy:
+                      type: number
+                      description: Radius of uncertainty for the location, in meters;
+                        0-1500.
+                    live_period:
+                      type: integer
+                      description: Time in seconds while the location can be updated.
+                    heading:
+                      type: integer
+                      description: Direction in which the user is moving, in degrees
+                        1-360.
+                    proximity_alert_radius:
+                      type: integer
+                      description: Maximum distance for proximity alerts about approaching
+                        another chat member, in meters.
+                address:
+                  type: string
+                  description: Address of the location; 1-64 characters, as defined
+                    by the sender.
+              additionalProperties: false
+              required:
+              - location
+              - address
+            has_hidden_members:
+              type: boolean
+              description: True if members are hidden in the chat.
+            has_aggressive_anti_spam_enabled:
+              type: boolean
+              description: True if aggressive anti-spam is enabled.
+            has_hidden_participants:
+              type: boolean
+              description: True if only admins can see other participants.
+            has_visible_history:
+              type: boolean
+              description: True if new members can see message history.
+            boost_level:
+              type: integer
+              description: Current boost level of the chat.
+            emoji_status_expiration_date:
+              type: integer
+              description: Expiration date of the emoji status in Unix time.
+            custom_emoji_sticker_set_name:
+              type: string
+              description: Name of the custom emoji sticker set used in the chat.
+            business_intro:
+              type: object
+              description: Business intro information for the chat.
+              properties:
+                title:
+                  type: string
+                  description: Localized title displayed in the business intro.
+                message:
+                  type: string
+                  description: Introductory message shown to customers.
+                sticker:
+                  type: object
+                  description: Sticker used in the business intro.
+                  additionalProperties: false
+                  properties:
+                    file_id:
+                      type: string
+                      description: Identifier for this sticker file.
+                    file_unique_id:
+                      type: string
+                      description: Unique identifier for this sticker file.
+                    emoji:
+                      type: string
+                      description: Emoji associated with the sticker.
+                    type:
+                      type: string
+                      description: Sticker type, e.g. regular or custom_emoji.
+                    width:
+                      type: integer
+                      description: Sticker width in pixels.
+                    height:
+                      type: integer
+                      description: Sticker height in pixels.
+                    is_animated:
+                      type: boolean
+                      description: True if the sticker is animated.
+                    is_video:
+                      type: boolean
+                      description: True if the sticker is a video sticker.
+              additionalProperties: false
+            business_location:
+              type: object
+              description: Business location information for the chat.
+              properties:
+                address:
+                  type: string
+                  description: Business address used for profile disclosure.
+                location:
+                  type: object
+                  description: Location coordinates of the chat.
+                  additionalProperties: false
+                  required:
+                  - latitude
+                  - longitude
+                  properties:
+                    latitude:
+                      type: number
+                      description: Latitude as defined by the sender.
+                    longitude:
+                      type: number
+                      description: Longitude as defined by the sender.
+                    horizontal_accuracy:
+                      type: number
+                      description: Radius of uncertainty for the location, in meters;
+                        0-1500.
+                    live_period:
+                      type: integer
+                      description: Time in seconds while the location can be updated.
+                    heading:
+                      type: integer
+                      description: Direction in which the user is moving, in degrees
+                        1-360.
+                    proximity_alert_radius:
+                      type: integer
+                      description: Maximum distance for proximity alerts about approaching
+                        another chat member, in meters.
+              additionalProperties: false
+            business_opening_hours:
+              type: object
+              description: Business opening hours for the chat.
+              properties:
+                time_zone_name:
+                  type: string
+                  description: Time zone in IANA format that the business hours relate
+                    to.
+                opening_hours:
+                  type: array
+                  description: Opening hour intervals within the week.
+                  items:
+                    type: object
+                    additionalProperties: false
+                    properties:
+                      opening_minute:
+                        type: integer
+                        description: Minute of the day when the business opens (0-1439).
+                      closing_minute:
+                        type: integer
+                        description: Minute of the day when the business closes (0-1439).
+                      opening_day:
+                        type: integer
+                        description: Day of week when the interval starts, 1 (Monday)
+                          to 7 (Sunday).
+                      closing_day:
+                        type: integer
+                        description: Day of week when the interval ends, 1 (Monday)
+                          to 7 (Sunday).
+              additionalProperties: false
+            personal_chat:
+              type: object
+              description: Personal chat information if applicable.
+              properties:
+                chat_id:
+                  type: integer
+                  description: Identifier for the personal chat with the business.
+                user:
+                  type: object
+                  description: User that is part of this personal chat.
+                  additionalProperties: true
+                  properties:
+                    id:
+                      type: integer
+                      description: Unique identifier for this user or bot.
+                    is_bot:
+                      type: boolean
+                      description: True if this user is a bot.
+                    first_name:
+                      type: string
+                      description: User first name.
+                    last_name:
+                      type: string
+                      description: User last name.
+                    username:
+                      type: string
+                      description: Username of the user, if any.
+                    language_code:
+                      type: string
+                      description: IETF language tag of the user's language.
+                    is_premium:
+                      type: boolean
+                      description: True if the user is a Telegram Premium subscriber.
+                    added_to_attachment_menu:
+                      type: boolean
+                      description: True if the user added the bot to the attachment
+                        menu.
+                    can_join_groups:
+                      type: boolean
+                      description: True if the bot can join groups.
+                    can_read_all_group_messages:
+                      type: boolean
+                      description: True if privacy mode is disabled for the bot.
+                    supports_inline_queries:
+                      type: boolean
+                      description: True if the bot can be invited to inline mode.
+                    can_connect_to_business:
+                      type: boolean
+                      description: True if the bot can connect to Telegram Business
+                        accounts.
+                    has_main_web_app:
+                      type: boolean
+                      description: True if the bot has a main Web App.
+              additionalProperties: false
+        message_ids:
+          type: array
+          description: Identifiers of deleted messages in the chat.
+          items:
+            type: integer
+        media_group_id:
+          type: string
+          description: Media group identifier for deleted album messages.
+extra:
+  python:
+    source: events/business/business_messages_deleted.py
