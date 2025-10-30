@@ -1,6 +1,9 @@
 # Notion Trigger Plugin
 
-Dify trigger plugin that receives Notion webhook events for pages, databases, data sources, and comments. It converts Notion event payloads into Dify trigger variables so workflows can react to workspace activity in near real time.
+This plugin enables Dify to react to real-time Notion activity—including updates to pages, databases, data sources, and comments—by subscribing to Notion webhooks. When events occur in your Notion workspace, Notion securely POSTs event payloads to your configured Dify endpoint. The plugin maps event data into Dify trigger variables so you can build automations or process changes instantly, without polling.
+
+Learn more about Notion webhooks and supported event types in the [Notion API documentation](https://developers.notion.com/reference/webhooks).
+
 
 ## Configure the Webhook Subscription
 
@@ -11,9 +14,6 @@ Dify trigger plugin that receives Notion webhook events for pages, databases, da
 5. In Dify, create a new trigger connection for this plugin and paste the `verification_token` value into the Verification Token field. Optionally select the same event types in the Event Filters checkbox list to forward only a subset to the workflow.
 6. Return to Notion and click Verify. Once verification succeeds, Notion will start delivering full webhook events to Dify.
 
-### Signature Validation
-
-When a verification token is supplied, the trigger validates every incoming request using the `X-Notion-Signature` header. The signature is an HMAC-SHA256 digest of the raw body with your verification token as the shared secret. If you skip the token, requests are still accepted, but signature checks are bypassed.
 
 ### Workspace Filtering
 

@@ -1,14 +1,20 @@
 from __future__ import annotations
 
+import logging
 from collections.abc import Mapping
 from typing import Any
 
 from werkzeug import Request
 
+from dify_plugin.config.logger_format import plugin_logger_handler
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.errors.trigger import EventIgnoreError
 
 from notion_client import NotionAPIError, NotionClient
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(plugin_logger_handler)
 
 
 class NotionBaseEvent():
@@ -70,7 +76,9 @@ class NotionBaseEvent():
         runtime = getattr(self, "runtime", None)
         subscription = getattr(runtime, "subscription", None) if runtime else None
         if subscription:
-            properties = getattr(subscription, "properties", {}) or {}
+            properties = getattr(subscription, "properties", None)
+            if properties is None:
+                properties = {}
             return properties.get("notion_integration_token")
 
         return None
@@ -102,6 +110,7 @@ class NotionBaseEvent():
         try:
             return client.fetch_block_children(page_id)
         except NotionAPIError as exc:
+            logger.warning("Failed to fetch block children for page %s: %s", page_id, exc)
             return None
 
     def _fetch_entity_content(self, payload: Mapping[str, Any], integration_token: str | None) -> Mapping[str, Any] | None:
@@ -149,6 +158,11 @@ class NotionBaseEvent():
                     discussion_id=discussion_id,
                 )
         except NotionAPIError as exc:
-            pass
+            logger.warning(
+                "Failed to hydrate Notion entity %s (%s): %s",
+                entity_id,
+                entity_type,
+                exc,
+            )
 
         return None
