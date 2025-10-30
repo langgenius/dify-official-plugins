@@ -1,0 +1,162 @@
+identity:
+  name: snowflake_sql_query
+  author: langgenius
+  label:
+    en_US: Snowflake Query
+    ja_JP: Snowflakeクエリ
+  icon: icon.svg
+description:
+  human:
+    en_US: Execute SQL queries on Snowflake data warehouse (Security restrictions apply)
+    ja_JP: SnowflakeデータウェアハウスでSQLクエリを実行（セキュリティ制限あり）
+  llm: This tool allows you to execute SQL queries on Snowflake data warehouse. You can query tables, aggregate data, and retrieve information from your Snowflake databases. For security reasons, privilege management statements (GRANT, REVOKE, CREATE USER, etc.) and multiple statements in a single query are blocked. Only data querying and basic DML operations are allowed.
+parameters:
+  - name: sql_query
+    type: string
+    required: true
+    label:
+      en_US: SQL Query
+      ja_JP: SQLクエリ
+    placeholder:
+      en_US: SELECT * FROM table_name LIMIT 10
+      ja_JP: SELECT * FROM テーブル名 LIMIT 10
+    human_description:
+      en_US: SQL query to execute (GRANT/REVOKE statements are blocked for security)
+      ja_JP: 実行するSQLクエリ（セキュリティのためGRANT/REVOKE文はブロックされます）
+    llm_description: SQL query to execute on Snowflake database. For security reasons, privilege management statements (GRANT, REVOKE, CREATE USER, etc.) and multiple statements in a single query are not allowed. Only data querying and basic DML operations are permitted.
+    form: llm
+  - name: sql_type
+    type: select
+    required: true
+    default: SELECT
+    label:
+      en_US: SQL Type
+      ja_JP: SQLタイプ
+    human_description:
+      en_US: Type of SQL statement
+      ja_JP: SQL文の種類
+    llm_description: "The type of SQL statement being executed. This determines how the results are processed: SELECT/SHOW/DESCRIBE return data rows, INSERT/UPDATE/DELETE return affected row count, CREATE/DROP/ALTER return execution status only."
+    form: form
+    options:
+      - value: SELECT
+        label:
+          en_US: SELECT (Query data)
+          ja_JP: SELECT (データ取得)
+      - value: INSERT
+        label:
+          en_US: INSERT (Insert data)
+          ja_JP: INSERT (データ挿入)
+      - value: UPDATE
+        label:
+          en_US: UPDATE (Update data)
+          ja_JP: UPDATE (データ更新)
+      - value: DELETE
+        label:
+          en_US: DELETE (Delete data)
+          ja_JP: DELETE (データ削除)
+      - value: MERGE
+        label:
+          en_US: MERGE (Merge data)
+          ja_JP: MERGE (データマージ)
+      - value: CREATE
+        label:
+          en_US: CREATE (Create object)
+          ja_JP: CREATE (オブジェクト作成)
+      - value: DROP
+        label:
+          en_US: DROP (Drop object)
+          ja_JP: DROP (オブジェクト削除)
+      - value: ALTER
+        label:
+          en_US: ALTER (Alter object)
+          ja_JP: ALTER (オブジェクト変更)
+      - value: TRUNCATE
+        label:
+          en_US: TRUNCATE (Truncate table)
+          ja_JP: TRUNCATE (テーブル切り詰め)
+      - value: SHOW
+        label:
+          en_US: SHOW (Show metadata)
+          ja_JP: SHOW (メタデータ表示)
+      - value: DESCRIBE
+        label:
+          en_US: DESCRIBE (Describe object)
+          ja_JP: DESCRIBE (オブジェクト説明)
+  - name: warehouse
+    type: string
+    required: false
+    label:
+      en_US: Warehouse
+      ja_JP: ウェアハウス
+    human_description:
+      en_US: Snowflake warehouse to use (optional)
+      ja_JP: 使用するSnowflakeウェアハウス（オプション）
+    llm_description: The Snowflake warehouse name to use for query execution. If not specified, the default warehouse will be used.
+    form: llm
+  - name: database
+    type: string
+    required: false
+    label:
+      en_US: Database
+      ja_JP: データベース
+    human_description:
+      en_US: Snowflake database to query (optional)
+      ja_JP: クエリ対象のSnowflakeデータベース（オプション）
+    llm_description: The Snowflake database name to query. If not specified, the default database will be used.
+    form: llm
+  - name: schema
+    type: string
+    required: false
+    label:
+      en_US: Schema
+      ja_JP: スキーマ
+    human_description:
+      en_US: Snowflake schema to use (optional)
+      ja_JP: 使用するSnowflakeスキーマ（オプション）
+    llm_description: The Snowflake schema name to use. If not specified, the default schema will be used.
+    form: llm
+  - name: max_rows
+    type: number
+    required: false
+    default: 100
+    label:
+      en_US: Max Rows
+      ja_JP: "最大行数"
+    human_description:
+      en_US: Maximum number of rows to return (default 100)
+      ja_JP: "返す最大行数（デフォルト100）"
+    llm_description: Maximum number of rows to return
+    form: llm
+output_schema:
+  type: object
+  properties:
+    success:
+      type: boolean
+      description: Whether the query executed successfully
+    columns:
+      type: array
+      description: List of column names in the result
+      items:
+        type: string
+    rows:
+      type: array
+      description: Query result rows
+      items:
+        type: object
+    row_count:
+      type: number
+      description: Number of rows returned
+    executed_sql:
+      type: string
+      description: The SQL query that was executed
+    execution_time:
+      type: number
+      description: Query execution time in seconds
+    error:
+      type: string
+      description: Error message if query failed
+  required:
+    - success
+extra:
+  python:
+    source: tools/snowflake_sql.py

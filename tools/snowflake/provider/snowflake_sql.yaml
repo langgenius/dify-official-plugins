@@ -1,0 +1,74 @@
+identity:
+  author: langgenius
+  name: snowflake_sql
+  label:
+    en_US: snowflake_sql
+    ja_JP: snowflake_sql
+  description:
+    en_US: snowflake_sql data warehouse (OAuth authentication supported)
+    ja_JP: snowflake_sqlデータウェアハウス（OAuth認証サポート）
+  icon: icon.svg
+  tags:
+    - utilities
+    - search
+oauth_schema:
+  client_schema:
+    - name: "client_id"
+      type: "secret-input"
+      required: true
+      placeholder:
+        en_US: "Please input your Snowflake OAuth Client ID"
+        ja_JP: "Snowflake OAuth クライアントIDを入力してください"
+      help:
+        en_US: "OAuth Client ID from Snowflake SYSTEM$SHOW_OAUTH_CLIENT_SECRETS"
+        ja_JP: "Snowflake SYSTEM$SHOW_OAUTH_CLIENT_SECRETSから取得したOAuthクライアントID"
+      label:
+        en_US: "OAuth Client ID"
+        ja_JP: "OAuth クライアントID"
+    - name: "client_secret"
+      type: "secret-input"
+      required: true
+      placeholder:
+        en_US: "Please input your Snowflake OAuth Client Secret"
+        ja_JP: "Snowflake OAuth クライアントシークレットを入力してください"
+      help:
+        en_US: "OAuth Client Secret from Snowflake SYSTEM$SHOW_OAUTH_CLIENT_SECRETS"
+        ja_JP: "Snowflake SYSTEM$SHOW_OAUTH_CLIENT_SECRETSから取得したOAuthクライアントシークレット"
+      label:
+        en_US: "OAuth Client Secret"
+        ja_JP: "OAuth クライアントシークレット"
+    - name: "account_name"
+      type: "text-input"
+      required: true
+      placeholder:
+        en_US: "myorg-account_xyz"
+        ja_JP: "myorg-account_xyz"
+      help:
+        en_US: "Your Snowflake account name (e.g., myorg-account_xyz)"
+        ja_JP: "Snowflakeアカウント名 (例: myorg-account_xyz)"
+      label:
+        en_US: "Account Name"
+        ja_JP: "アカウント名"
+    - name: "scope"
+      type: "text-input"
+      required: false
+      placeholder:
+        en_US: "session:role:your_role"
+        ja_JP: "session:role:your_role"
+      help:
+        en_US: "OAuth scope (e.g., session:role:SYSADMIN). Leave empty for default scope."
+        ja_JP: "OAuth スコープ (例: session:role:SYSADMIN)。デフォルトスコープを使用する場合は空欄。"
+      label:
+        en_US: "OAuth Scope (Optional)"
+        ja_JP: "OAuth スコープ (オプション)"
+  credentials_schema:
+    - name: "access_tokens"
+      type: "secret-input"
+      label:
+        zh_Hans: "Access Token"
+        en_US: "Access Token"
+tools:
+  - tools/snowflake_sql.yaml
+extra:
+  python:
+    source: provider/snowflake_sql.py
