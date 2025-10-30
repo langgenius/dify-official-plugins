@@ -3,9 +3,9 @@ type: plugin
 author: langgenius
 name: snowflake_sql
 label:
-  en_US: snowflake_sql
-  ja_JP: snowflake_sql
-  zh_Hans: snowflake_sql
+  en_US: Snowflake SQL
+  ja_JP: Snowflake SQL
+  zh_Hans: Snowflake SQL
 description:
   en_US: Execute SQL queries on Snowflake data warehouse (supports OAuth authentication)
   ja_JP: SnowflakeデータウェアハウスでSQLクエリを実行（OAuth認証サポート）
@@ -32,5 +32,4 @@ tags:
   - utilities
   - search
 created_at: 2025-10-28T20:10:33.031749+09:00
-privacy: PRIVACY.md
 verified: false

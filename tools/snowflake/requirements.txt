@@ -1,2 +1,2 @@
 dify_plugin>=0.4.0,<0.7.0
-snowflake-connector-python
+snowflake-connector-python=4.0.0

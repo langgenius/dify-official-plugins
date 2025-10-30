@@ -7,9 +7,9 @@ identity:
   icon: icon.svg
 description:
   human:
-    en_US: Execute SQL queries on Snowflake data warehouse
-    ja_JP: SnowflakeデータウェアハウスでSQLクエリを実行
-  llm: This tool allows you to execute SQL queries on Snowflake data warehouse. You can query tables, aggregate data, and retrieve information from your Snowflake databases.
+    en_US: Execute SQL queries on Snowflake data warehouse (Security restrictions apply)
+    ja_JP: SnowflakeデータウェアハウスでSQLクエリを実行（セキュリティ制限あり）
+  llm: This tool allows you to execute SQL queries on Snowflake data warehouse. You can query tables, aggregate data, and retrieve information from your Snowflake databases. For security reasons, privilege management statements (GRANT, REVOKE, CREATE USER, etc.) and multiple statements in a single query are blocked. Only data querying and basic DML operations are allowed.
 parameters:
   - name: sql_query
     type: string
@@ -21,9 +21,9 @@ parameters:
       en_US: SELECT * FROM table_name LIMIT 10
       ja_JP: SELECT * FROM テーブル名 LIMIT 10
     human_description:
-      en_US: SQL query to execute
-      ja_JP: 実行するSQLクエリ
-    llm_description: SQL query to execute on Snowflake database
+      en_US: SQL query to execute (GRANT/REVOKE statements are blocked for security)
+      ja_JP: 実行するSQLクエリ（セキュリティのためGRANT/REVOKE文はブロックされます）
+    llm_description: SQL query to execute on Snowflake database. For security reasons, privilege management statements (GRANT, REVOKE, CREATE USER, etc.) and multiple statements in a single query are not allowed. Only data querying and basic DML operations are permitted.
     form: llm
   - name: sql_type
     type: select

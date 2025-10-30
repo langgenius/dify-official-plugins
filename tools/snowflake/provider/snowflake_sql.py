@@ -1,10 +1,12 @@
 import base64
 import secrets
+import time
 import urllib.parse
 from collections.abc import Mapping
 from typing import Any
 
 import requests
+import snowflake.connector
 from dify_plugin import ToolProvider
 from dify_plugin.entities.oauth import ToolOAuthCredentials
 from dify_plugin.errors.tool import (
@@ -88,8 +90,6 @@ class SnowflakeSQLProvider(ToolProvider):
         # Calculate expiration time if expires_in is provided
         expires_at = -1
         if "expires_in" in response_json:
-            import time
-
             expires_at = int(time.time()) + int(response_json["expires_in"])
 
         return ToolOAuthCredentials(
@@ -189,8 +189,6 @@ class SnowflakeSQLProvider(ToolProvider):
                 )
 
             # Test connection with OAuth token
-            import snowflake.connector
-
             conn = snowflake.connector.connect(
                 account=account_name,
                 authenticator="oauth",
