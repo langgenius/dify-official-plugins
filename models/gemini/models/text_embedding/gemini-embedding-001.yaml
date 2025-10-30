@@ -1,7 +1,7 @@
-model: gemini-embedding-exp-03-07
+model: gemini-embedding-001
 model_type: text-embedding
 model_properties:
-  context_size: 8192
+  context_size: 2048
   max_chunks: 100
 pricing:
   input: "0"
