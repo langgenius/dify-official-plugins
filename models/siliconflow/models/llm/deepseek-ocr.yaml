@@ -25,7 +25,7 @@ parameter_rules:
   - name: top_k
     label:
       zh_Hans: 取样数量
-      en_US: Top k
+      en_US: Top K
     type: int
     help:
       zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
@@ -40,7 +40,7 @@ parameter_rules:
     type: string
     help:
       zh_Hans: 指定模型必须输出的格式
-      en_US: specifying the format that the model must output
+      en_US: Specifying the format that the model must output
     required: false
     options:
       - text
