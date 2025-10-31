@@ -1,0 +1,86 @@
+identity:
+  name: ticket_comment_created
+  author: langgenius
+  label:
+    en_US: Ticket Comment Created
+    zh_Hans: 工单评论创建
+    ja_JP: チケットコメント作成
+
+description:
+  en_US: Triggered when a comment is added to a ticket
+  zh_Hans: 当工单添加评论时触发
+  ja_JP: チケットにコメントが追加されたときにトリガーされます
+
+parameters:
+- name: is_public
+  label:
+    en_US: Public Comment Only
+    zh_Hans: 仅公开评论
+    ja_JP: 公開コメントのみ
+  type: select
+  required: false
+  options:
+  - value: "true"
+    label:
+      en_US: "Public Only"
+      zh_Hans: "仅公开"
+      ja_JP: "公開のみ"
+  - value: "false"
+    label:
+      en_US: "Private Only"
+      zh_Hans: "仅私密"
+      ja_JP: "非公開のみ"
+  - value: "any"
+    label:
+      en_US: "Any"
+      zh_Hans: "任意"
+      ja_JP: "任意"
+  default: "any"
+  help:
+    en_US: Filter by comment visibility
+    zh_Hans: 按评论可见性过滤
+    ja_JP: コメントの可視性でフィルター
+
+- name: body_contains
+  label:
+    en_US: Body Contains
+    zh_Hans: 内容包含
+    ja_JP: 本文に含む
+  type: string
+  required: false
+  help:
+    en_US: Comma separated keywords. Trigger if comment contains any keyword.
+    zh_Hans: 逗号分隔的关键词。如果评论包含任何关键词则触发。
+    ja_JP: カンマ区切りのキーワード。コメントにいずれかが含まれる場合トリガーします。
+
+output_schema:
+  type: object
+  properties:
+    comment:
+      type: object
+      properties:
+        id:
+          type: integer
+        body:
+          type: string
+        is_public:
+          type: boolean
+        author:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+      required:
+      - id
+      - body
+    ticket:
+      type: object
+      description: The ticket this comment belongs to
+  required:
+  - comment
+
+extra:
+  python:
+    source: events/ticket/ticket_comment_created.py
