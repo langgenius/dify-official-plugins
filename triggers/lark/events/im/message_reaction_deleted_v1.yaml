@@ -1,0 +1,53 @@
+identity:
+  name: message_reaction_deleted_v1
+  author: langgenius
+  label:
+    en_US: Reaction Removed
+    zh_Hans: 表情回应移除
+    ja_JP: リアクション削除
+
+description:
+  en_US: This event activates when a reaction emoji is removed from a message.
+  zh_Hans: 当消息的表情回应被移除时激活。
+  ja_JP: メッセージからリアクション絵文字が削除されたときにアクティブになります。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    message_id:
+      type: string
+      description: ID of the message
+    
+    reaction_type:
+      type: string
+      description: Type of reaction removed
+    
+    operator_type:
+      type: string
+      description: Type of operator (user or app)
+    
+    user_open_id:
+      type: string
+      description: Open ID of the user who removed reaction
+    
+    user_user_id:
+      type: string
+      description: User ID of who removed reaction
+    
+    user_union_id:
+      type: string
+      description: Union ID of who removed reaction
+    
+    app_id:
+      type: string
+      description: App ID if removed by app
+    
+    action_time:
+      type: string
+      description: Time when reaction was removed
+
+extra:
+  python:
+    source: events/im/message_reaction_deleted_v1.py

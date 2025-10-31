@@ -1,0 +1,73 @@
+identity:
+  name: file_edit_v1
+  author: langgenius
+  label:
+    en_US: Drive File Edited
+    zh_Hans: 云文档文件编辑
+    ja_JP: ドライブファイル編集
+
+description:
+  en_US: Fires when a Drive file changes, returning operator and subscriber details for collaborative tracking.
+  zh_Hans: 当云文档发生更改时触发，返回协作者和订阅者详情，便于协作追踪。
+  ja_JP: ドライブファイルに変更があった際に発火し、共同編集者と購読者の詳細を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    file_token:
+      type: string
+      description: Token of the edited file
+
+    file_type:
+      type: string
+      description: File type (doc, sheet, slide, etc.)
+
+    sheet_id:
+      type: string
+      description: Sheet identifier when the edit targets a specific sheet
+
+    operators:
+      type: array
+      description: Users who edited the file
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+            description: User ID
+          open_id:
+            type: string
+            description: Open ID
+          union_id:
+            type: string
+            description: Union ID
+
+    operator_count:
+      type: integer
+      description: Number of operators involved in the edit
+
+    subscriber_users:
+      type: array
+      description: Subscribers notified about the edit
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+            description: User ID
+          open_id:
+            type: string
+            description: Open ID
+          union_id:
+            type: string
+            description: Union ID
+
+    subscriber_count:
+      type: integer
+      description: Number of subscribers informed about the change
+
+extra:
+  python:
+    source: events/drive/file_edit_v1.py

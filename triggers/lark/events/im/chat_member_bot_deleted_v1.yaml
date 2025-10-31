@@ -1,0 +1,60 @@
+identity:
+  name: chat_member_bot_deleted_v1
+  author: langgenius
+  label:
+    en_US: Bot Removed from Chat
+    zh_Hans: 机器人移出群聊
+    ja_JP: ボットがチャットから削除
+
+description:
+  en_US: This event activates when a bot is removed from a group chat.
+  zh_Hans: 当机器人被从群聊移除时激活。
+  ja_JP: ボットがグループチャットから削除されたときにアクティブになります。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    chat_id:
+      type: string
+      description: Group chat identifier
+
+    name:
+      type: string
+      description: Name of the group chat
+
+    is_external:
+      type: string
+      description: Whether the chat includes external users
+
+    operator_tenant_key:
+      type: string
+      description: Organization key of the operator
+
+    operator_user_id:
+      type: string
+      description: ID of the person who removed the bot
+
+    operator_open_id:
+      type: string
+      description: Open ID of the person who removed the bot
+
+    operator_union_id:
+      type: string
+      description: Union ID of the person who removed the bot
+
+    i18n_names:
+      type: object
+      properties:
+        zh_cn:
+          type: string
+        en_us:
+          type: string
+        ja_jp:
+          type: string
+      description: Internationalized chat names
+
+extra:
+  python:
+    source: events/im/chat_member_bot_deleted_v1.py

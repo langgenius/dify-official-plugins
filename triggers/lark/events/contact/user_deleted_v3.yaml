@@ -1,0 +1,74 @@
+identity:
+  name: user_deleted_v3
+  author: langgenius
+  label:
+    en_US: Employee Deleted
+    zh_Hans: 员工删除
+    ja_JP: 従業員削除
+
+description:
+  en_US: This event activates when an employee is deleted from the organization, providing details about the deleted user.
+  zh_Hans: 当员工从组织中删除时激活，提供关于删除用户的详细信息。
+  ja_JP: 従業員が組織から削除されたときにアクティブになり、削除されたユーザーの詳細を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    user_id:
+      type: string
+      description: User ID of the deleted employee
+
+    open_id:
+      type: string
+      description: Open ID of the deleted user
+
+    union_id:
+      type: string
+      description: Union ID of the deleted user
+
+    name:
+      type: string
+      description: Name of the deleted employee
+
+    en_name:
+      type: string
+      description: English name of the deleted employee
+
+    email:
+      type: string
+      description: Email of the deleted employee
+
+    mobile:
+      type: string
+      description: Mobile number of the deleted employee
+
+    employee_no:
+      type: string
+      description: Employee number
+
+    employee_type:
+      type: string
+      description: Employee type
+
+    department_ids:
+      type: array
+      items:
+        type: string
+      description: Department IDs
+
+    old_user_info:
+      type: object
+      properties:
+        open_id:
+          type: string
+        department_ids:
+          type: array
+          items:
+            type: string
+      description: User information before deletion
+
+extra:
+  python:
+    source: events/contact/user_deleted_v3.py

@@ -1,0 +1,45 @@
+identity:
+  name: file_created_v1
+  author: langgenius
+  label:
+    en_US: File Created
+    zh_Hans: 文件创建
+    ja_JP: ファイル作成
+
+description:
+  en_US: This event activates when a new file or document is created in the drive, providing information about the file and its creator.
+  zh_Hans: 当在云盘中创建新文件或文档时激活，提供文件和创建者的信息。
+  ja_JP: ドライブに新しいファイルまたはドキュメントが作成されたときにアクティブになり、ファイルとその作成者の情報を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    file_token:
+      type: string
+      description: File identifier
+    
+    file_type:
+      type: string
+      description: Type of file (doc, sheet, folder, etc.)
+    
+    folder_token:
+      type: string
+      description: Parent folder identifier
+    
+    creator_user_id:
+      type: string
+      description: ID of the file creator
+    
+    creator_open_id:
+      type: string
+      description: Open ID of the file creator
+    
+    creator_union_id:
+      type: string
+      description: Union ID of the file creator
+
+extra:
+  python:
+    source: events/drive/file_created_v1.py

@@ -1,0 +1,138 @@
+subscription_schema:
+  - name: "lark_encrypt_key"
+    type: "secret-input"
+    required: false
+    help:
+      en_US: Get your Lark Encrypt Key from Lark
+      ja_JP: Lark から暗号化キーを取得してください
+      zh_Hans: 从 Lark 获取您的 Encrypt Key
+    label:
+      zh_Hans: "Lark 加密 Key"
+      en_US: "Lark Encrypt Key"
+      ja_JP: "Lark 暗号化キー"
+    placeholder:
+      en_US: "Please input your Lark Encrypt Key"
+      ja_JP: "Lark の暗号化キーを入力してください"
+      zh_Hans: "请输入你的 Lark 加密 Key"
+    url: https://open.feishu.cn/document/event-subscription-guide/event-subscriptions/event-subscription-configure-/choose-a-subscription-mode/send-notifications-to-developers-server#e0dff53d
+  - name: "lark_verification_token"
+    type: "secret-input"
+    required: true
+    help:
+      en_US: Get your Lark Verification Token from Lark
+      ja_JP: Lark から検証トークンを取得してください
+      zh_Hans: 从 Lark 获取您的 Verification Token
+    label:
+      zh_Hans: "Lark 验证 Token"
+      en_US: "Lark Verification Token"
+      ja_JP: "Lark 検証トークン"
+    placeholder:
+      en_US: "Please input your Lark Verification Token"
+      ja_JP: "Lark の検証トークンを入力してください"
+      zh_Hans: "请输入你的 Lark 验证 Token"
+    url: https://open.feishu.cn/document/event-subscription-guide/event-subscriptions/event-subscription-configure-/choose-a-subscription-mode/send-notifications-to-developers-server#c589dfb1
+  - name: "lark_app_id"
+    type: "secret-input"
+    required: true
+    help:
+      en_US: Get your App ID from Lark
+      ja_JP: Lark からアプリIDを取得してください
+      zh_Hans: 从 Lark 获取您的 App ID
+    label:
+      zh_Hans: "Lark App ID"
+      en_US: "Lark App ID"
+      ja_JP: "Lark アプリID"
+    placeholder:
+      en_US: "Please input your Lark App ID"
+      ja_JP: "Lark のアプリIDを入力してください"
+      zh_Hans: "请输入你的 Lark App ID"
+    url: https://open.larksuite.com/
+  - name: "lark_app_secret"
+    type: "secret-input"
+    required: true
+    help:
+      en_US: Get your App Secret from Lark
+      ja_JP: Lark からアプリシークレットを取得してください
+      zh_Hans: 从 Lark 获取您的 App Secret
+    label:
+      zh_Hans: "Lark App Secret"
+      en_US: "Lark App Secret"
+      ja_JP: "Lark アプリシークレット"
+
+events:
+  # IM Events
+  - events/im/message_receive_v1.yaml
+  - events/im/chat_disbanded_v1.yaml
+  - events/im/chat_updated_v1.yaml
+  - events/im/chat_member_user_added_v1.yaml
+  - events/im/chat_member_user_removed_v1.yaml
+  - events/im/chat_member_user_withdrawn_v1.yaml
+  - events/im/chat_member_bot_added_v1.yaml
+  - events/im/chat_member_bot_deleted_v1.yaml
+  - events/im/message_reaction_added_v1.yaml
+  - events/im/message_reaction_deleted_v1.yaml
+  - events/im/message_recalled_v1.yaml
+  - events/im/message_read_v1.yaml
+
+  # Calendar Events
+  - events/calendar/calendar_changed_v4.yaml
+  - events/calendar/event_changed_v4.yaml
+  - events/calendar/calendar_acl_created_v4.yaml
+  - events/calendar/calendar_acl_deleted_v4.yaml
+
+  # Approval Events
+  - events/approval/approval_updated_v4.yaml
+
+  # Drive Events
+  - events/drive/file_created_v1.yaml
+  - events/drive/file_deleted_v1.yaml
+  - events/drive/file_edit_v1.yaml
+  - events/drive/file_permission_member_added_v1.yaml
+  - events/drive/file_permission_member_removed_v1.yaml
+  - events/drive/file_read_v1.yaml
+  - events/drive/file_title_updated_v1.yaml
+  - events/drive/file_trashed_v1.yaml
+  - events/drive/file_bitable_record_changed_v1.yaml
+  - events/drive/file_bitable_field_changed_v1.yaml
+
+  # Contact Events
+  - events/contact/user_created_v3.yaml
+  - events/contact/user_updated_v3.yaml
+  - events/contact/user_deleted_v3.yaml
+  - events/contact/department_created_v3.yaml
+  - events/contact/department_updated_v3.yaml
+  - events/contact/department_deleted_v3.yaml
+  - events/contact/scope_updated_v3.yaml
+
+  # Task Events
+  - events/task/task_updated_v1.yaml
+  - events/task/task_comment_updated_v1.yaml
+
+  # Meeting Room Events
+  - events/meeting_room/meeting_room_created_v1.yaml
+  - events/meeting_room/meeting_room_status_changed_v1.yaml
+
+  # VC Events
+  - events/vc/meeting_started_v1.yaml
+  - events/vc/meeting_ended_v1.yaml
+  - events/vc/join_meeting_v1.yaml
+  - events/vc/leave_meeting_v1.yaml
+  - events/vc/recording_started_v1.yaml
+  - events/vc/recording_ended_v1.yaml
+  - events/vc/recording_ready_v1.yaml
+
+identity:
+  author: langgenius
+  description:
+    en_US: Lark is a productivity superapp for teams. Get chat, docs, meetings, workflow automations & AI for free all in one place.
+    ja_JP: Larkはチームの生産性向上を目的としたスーパーアプリです。チャット、ドキュメント、ミーティング、ワークフローオートメーション、AIを無料ですべての場所で利用できます。
+    zh_Hans: Lark是一个团队生产力超级应用。免费获取聊天、文档、会议、工作流自动化和AI。
+  icon: icon.png
+  label:
+    en_US: Lark Triggers
+    zh_Hans: Lark 触发器
+    ja_JP: Lark トリガー
+  name: lark
+extra:
+  python:
+    source: provider/lark.py

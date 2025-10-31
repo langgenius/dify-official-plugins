@@ -1,0 +1,96 @@
+identity:
+  name: department_deleted_v3
+  author: langgenius
+  label:
+    en_US: Department Deleted
+    zh_Hans: 部门删除
+    ja_JP: 部門削除
+
+description:
+  en_US: Fires when a department is deleted, including the department snapshot and prior metadata for downstream cleanup.
+  zh_Hans: 当部门被删除时触发，提供部门快照及删除前的元数据，便于后续清理。
+  ja_JP: 部門が削除された際に発火し、部門のスナップショットと削除前のメタデータを提供して後続処理を支援します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    department_id:
+      type: string
+      description: Department ID of the removed department
+
+    open_department_id:
+      type: string
+      description: Open department ID
+
+    name:
+      type: string
+      description: Department name
+
+    parent_department_id:
+      type: string
+      description: Parent department ID
+
+    leader_user_id:
+      type: string
+      description: Department leader user ID
+
+    chat_id:
+      type: string
+      description: Associated group chat ID
+
+    order:
+      type: integer
+      description: Department order value
+
+    unit_ids:
+      type: array
+      description: Associated unit IDs
+      items:
+        type: string
+
+    is_deleted:
+      type: boolean
+      description: Whether the department is marked as deleted after removal
+
+    leaders:
+      type: array
+      description: Department leader assignments
+      items:
+        type: object
+        properties:
+          leader_type:
+            type: integer
+            description: Leader type value
+          leader_id:
+            type: string
+            description: Leader identifier
+
+    department_hrbps:
+      type: array
+      description: HRBP users for the department
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+            description: User ID
+          open_id:
+            type: string
+            description: Open ID
+          union_id:
+            type: string
+            description: Union ID
+
+    current_department_json:
+      type: object
+      description: Department snapshot at deletion time
+
+    previous_department_json:
+      type: object
+      description: Previous metadata before deletion
+
+extra:
+  python:
+    source: events/contact/department_deleted_v3.py

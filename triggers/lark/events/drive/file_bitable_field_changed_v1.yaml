@@ -1,0 +1,85 @@
+identity:
+  name: file_bitable_field_changed_v1
+  author: langgenius
+  label:
+    en_US: Bitable Field Changed
+    zh_Hans: 多维表格字段更改
+    ja_JP: Bitableフィールド変更
+
+description:
+  en_US: This event activates when a field/column in a bitable is created, updated or deleted.
+  zh_Hans: 当多维表格中的字段/列被创建、更新或删除时激活。
+  ja_JP: Bitableのフィールド/カラムが作成、更新、または削除されたときにアクティブになります。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    file_token:
+      type: string
+      description: Token of the bitable file
+    
+    file_type:
+      type: string
+      description: Type of the file
+    
+    table_id:
+      type: string
+      description: ID of the table
+    
+    revision:
+      type: number
+      description: Revision number
+    
+    update_time:
+      type: string
+      description: Time of update
+    
+    operator_user_id:
+      type: string
+      description: User ID of the operator
+    
+    operator_open_id:
+      type: string
+      description: Open ID of the operator
+    
+    operator_union_id:
+      type: string
+      description: Union ID of the operator
+    
+    subscribers:
+      type: array
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+          open_id:
+            type: string
+          union_id:
+            type: string
+      description: List of subscribers
+    
+    actions:
+      type: array
+      items:
+        type: object
+        properties:
+          action:
+            type: string
+          field_id:
+            type: string
+          before_value:
+            type: string
+          after_value:
+            type: string
+      description: List of field actions performed
+    
+    action_count:
+      type: number
+      description: Number of actions performed
+
+extra:
+  python:
+    source: events/drive/file_bitable_field_changed_v1.py
