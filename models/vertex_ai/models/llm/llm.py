@@ -6,7 +6,6 @@ from collections.abc import Generator
 from typing import Optional, Union, cast
 import google.auth.transport.requests
 import requests
-import vertexai.generative_models as glm
 from anthropic import AnthropicVertex, Stream
 from anthropic.types import (
     ContentBlockDeltaEvent,
@@ -40,10 +39,9 @@ from dify_plugin.errors.model import (
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from google.api_core import exceptions
-from google.cloud import aiplatform
 from google.oauth2 import service_account
 from google import genai
-from google.genai.types import Tool, GenerateContentConfig, GoogleSearch
+from google.genai import types
 from PIL import Image
 
 
@@ -351,12 +349,12 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         text = "".join((self._convert_one_message_to_text(message) for message in messages))
         return text.rstrip()
 
-    def _convert_tools_to_glm_tool(self, tools: list[PromptMessageTool]) -> list["glm.Tool"]:
+    def _convert_tools_to_genai_tool(self, tools: list[PromptMessageTool]) -> list[types.Tool]:
         """
-        Convert tool messages to glm tools
+        Convert tool messages to genai tools
 
         :param tools: tool messages
-        :return: glm tools
+        :return: genai tools
         """
         tool_declarations = []
         for tool_config in tools:
@@ -373,11 +371,11 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                         continue
 
                     raw_type_str = str(value_schema.get("type", "string")).upper()
-                    # Map "SELECT" to "STRING" for Vertex AI compatibility
+                    # Map "SELECT" to "STRING" for GenAI SDK compatibility
                     final_type_for_prop = "STRING" if raw_type_str == "SELECT" else raw_type_str
                     
                     prop_details = {
-                        "type_": final_type_for_prop, # Vertex AI SDK maps 'type_' to protobuf 'type'
+                        "type": final_type_for_prop,
                         "description": value_schema.get("description", ""),
                     }
                     
@@ -399,33 +397,25 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             if required_params and isinstance(required_params, list) and all(isinstance(item, str) for item in required_params):
                 parameters_schema_for_declaration["required"] = required_params
 
-            # tool_config.description is Optional[str], which is fine for FunctionDeclaration
-            function_declaration = glm.FunctionDeclaration(
-                name=tool_config.name,
-                description=tool_config.description, 
-                parameters=parameters_schema_for_declaration
-            )
+            # Create function declaration dict for GenAI SDK
+            function_declaration = {
+                "name": tool_config.name,
+                "description": tool_config.description or "", 
+                "parameters": parameters_schema_for_declaration
+            }
             tool_declarations.append(function_declaration)
 
-        return [glm.Tool(function_declarations=tool_declarations)] if tool_declarations else None
+        return [types.Tool(function_declarations=tool_declarations)] if tool_declarations else None
 
-    def _convert_grounding_to_glm_tool(self, dynamic_threshold: Optional[float]) -> list["glm.Tool"]:
+    def _convert_grounding_to_genai_tool(self, dynamic_threshold: Optional[float]) -> list[types.Tool]:
         """
-        Convert grounding messages to glm tools
+        Convert grounding messages to genai tools
 
         :param dynamic_threshold: grounding messages
-        :return: glm tools
+        :return: genai tools
         """
-        return [
-            glm.Tool.from_google_search_retrieval(
-                glm.grounding.GoogleSearchRetrieval(
-                    dynamic_retrieval_config=glm.grounding.DynamicRetrievalConfig(
-                        mode=glm.grounding.DynamicRetrievalConfig.Mode.MODE_DYNAMIC,
-                        dynamic_threshold=dynamic_threshold,
-                    )
-                )
-            )
-        ]
+        # GenAI SDK uses GoogleSearch tool for grounding
+        return [types.Tool(google_search=types.GoogleSearch())]
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -487,6 +477,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         dynamic_threshold = config_kwargs.pop("grounding", None)
         if stop:
             config_kwargs["stop_sequences"] = stop
+        
         service_account_info = (
             json.loads(base64.b64decode(service_account_key))
             if (
@@ -502,36 +493,9 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             location = "us-central1"
         else:
             location = credentials["vertex_location"]
-        if service_account_info:
-            service_accountSA = service_account.Credentials.from_service_account_info(service_account_info)
-            aiplatform.init(credentials=service_accountSA, project=project_id, location=location, api_transport="rest")
-        else:
-            aiplatform.init(project=project_id, location=location, api_transport="rest")
-            
-        history = []
-        system_instruction = ""
         
-        for msg in prompt_messages:
-
-            if isinstance(msg, SystemPromptMessage):
-                system_instruction = msg.content
-            else:
-                content = self._format_message_to_glm_content(msg)
-
-                if history and history[-1].role == content.role:
-
-                    all_parts = list(history[-1].parts)
-                    all_parts.extend(content.parts)
-
-                    history[-1] = glm.Content(
-                        role=history[-1].role,
-                        parts=all_parts
-                    )
-
-                else:
-                    history.append(content)
-
-        if dynamic_threshold is not None and model.startswith("gemini-2."):
+        # Initialize GenAI client
+        if service_account_info:
             SCOPES = [
                 "https://www.googleapis.com/auth/cloud-platform",
                 "https://www.googleapis.com/auth/generative-language"
@@ -540,49 +504,75 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 service_account_info,
                 scopes=SCOPES
             )
-            client = genai.Client(credentials=credential, project=project_id, location=location, vertexai=True)
-
-            google_search_tool = Tool(google_search=GoogleSearch())
-            response = client.models.generate_content(
-                model=model,
-                contents=[item.to_dict() for item in history],
-                config=GenerateContentConfig(
-                    tools=[google_search_tool],
-                    response_modalities=["TEXT"],
-                    system_instruction=system_instruction
-                )
+            client = genai.Client(
+                vertexai=True,
+                project=project_id,
+                location=location,
+                credentials=credential
             )
         else:
-            google_model = glm.GenerativeModel(model_name=model, system_instruction=system_instruction)
-
-            if dynamic_threshold is not None:
-                tools = self._convert_grounding_to_glm_tool(dynamic_threshold=dynamic_threshold)
-            else:
-                tools = self._convert_tools_to_glm_tool(tools) if tools else None
-            mime_type = config_kwargs.pop("response_mime_type", None)
-
-            generation_config_params = config_kwargs.copy()
-
-            if response_schema:
-                generation_config_params["response_schema"] = response_schema
-                generation_config_params["response_mime_type"] = "application/json"
-            elif mime_type:
-                generation_config_params["response_mime_type"] = mime_type
-
-            generation_config = glm.GenerationConfig(**generation_config_params)
-
-            response = google_model.generate_content(
-                contents=history,
-                generation_config=generation_config,
-                stream=stream,
-                tools=tools,
+            client = genai.Client(
+                vertexai=True,
+                project=project_id,
+                location=location
             )
+            
+        # Process messages and build content
+        contents = []
+        system_instruction = None
+        
+        for msg in prompt_messages:
+            if isinstance(msg, SystemPromptMessage):
+                system_instruction = msg.content
+            else:
+                content = self._format_message_to_genai_content(msg)
+                # Merge consecutive messages from the same role
+                if contents and contents[-1].get("role") == content.get("role"):
+                    # Merge parts from the same role
+                    contents[-1]["parts"].extend(content["parts"])
+                else:
+                    contents.append(content)
+
+        # Build config
+        genai_tools = None
+        if dynamic_threshold is not None:
+            genai_tools = self._convert_grounding_to_genai_tool(dynamic_threshold=dynamic_threshold)
+        elif tools:
+            genai_tools = self._convert_tools_to_genai_tool(tools)
+        
+        mime_type = config_kwargs.pop("response_mime_type", None)
+        generation_config_params = config_kwargs.copy()
+
+        if response_schema:
+            generation_config_params["response_schema"] = response_schema
+            generation_config_params["response_mime_type"] = "application/json"
+        elif mime_type:
+            generation_config_params["response_mime_type"] = mime_type
+
+        config = types.GenerateContentConfig(
+            **generation_config_params,
+            system_instruction=system_instruction,
+            tools=genai_tools
+        )
+
+        # Generate content
         if stream:
+            response = client.models.generate_content_stream(
+                model=model,
+                contents=contents,
+                config=config
+            )
             return self._handle_generate_stream_response(model, credentials, response, prompt_messages, system_instruction)
-        return self._handle_generate_response(model, credentials, response, prompt_messages)
+        else:
+            response = client.models.generate_content(
+                model=model,
+                contents=contents,
+                config=config
+            )
+            return self._handle_generate_response(model, credentials, response, prompt_messages)
 
     def _handle_generate_response(
-        self, model: str, credentials: dict, response: glm.GenerationResponse, prompt_messages: list[PromptMessage]
+        self, model: str, credentials: dict, response: types.GenerateContentResponse, prompt_messages: list[PromptMessage]
     ) -> LLMResult:
         """
         Handle llm response
@@ -594,21 +584,26 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :return: llm response
         """
         assistant_prompt_message = AssistantPromptMessage(content="", tool_calls=[])
-        part = response.candidates[0].content.parts[0]
-        if part.function_call:
-            tool_call = [
-                AssistantPromptMessage.ToolCall(
-                    id=part.function_call.name,
-                    type="function",
-                    function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                        name=part.function_call.name,
-                        arguments=json.dumps(dict(part.function_call.args.items())),
-                    ),
-                )
-            ]
-            assistant_prompt_message.tool_calls.append(tool_call)
-        elif part.text:
-            assistant_prompt_message.content = part.text
+        
+        # Access the first candidate and its content parts
+        if response.candidates and len(response.candidates) > 0:
+            candidate = response.candidates[0]
+            if candidate.content and candidate.content.parts:
+                for part in candidate.content.parts:
+                    # Check for function call
+                    if hasattr(part, 'function_call') and part.function_call:
+                        tool_call = AssistantPromptMessage.ToolCall(
+                            id=part.function_call.name,
+                            type="function",
+                            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                name=part.function_call.name,
+                                arguments=json.dumps(dict(part.function_call.args)) if hasattr(part.function_call, 'args') else "{}",
+                            ),
+                        )
+                        assistant_prompt_message.tool_calls.append(tool_call)
+                    # Check for text
+                    elif hasattr(part, 'text') and part.text:
+                        assistant_prompt_message.content += part.text
 
         prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
         completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
@@ -617,47 +612,56 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         return result
 
     def _handle_generate_stream_response(
-        self, model: str, credentials: dict, response: glm.GenerationResponse, prompt_messages: list[PromptMessage], system_instruction: str
+        self, model: str, credentials: dict, response: Generator, prompt_messages: list[PromptMessage], system_instruction: str
     ) -> Generator:
         """
         Handle llm stream response
 
         :param model: model name
         :param credentials: credentials
-        :param response: response
+        :param response: response stream generator
         :param prompt_messages: prompt messages
+        :param system_instruction: system instruction
         :return: llm response chunk generator result
         """
         index = -1
         is_first_gemini2_response = True
+        
         for chunk in response:
-            if isinstance(chunk, tuple):
-                key, value = chunk
-                if key == 'candidates':
-                    candidate = value[0]
-                else:
-                    continue
-            else:
-                candidate = chunk.candidates[0]
+            # GenAI SDK returns GenerateContentResponse objects
+            if not hasattr(chunk, 'candidates') or not chunk.candidates:
+                continue
+                
+            candidate = chunk.candidates[0]
+            
+            if not hasattr(candidate, 'content') or not candidate.content or not candidate.content.parts:
+                continue
+                
             for part in candidate.content.parts:
                 assistant_prompt_message = AssistantPromptMessage(content="", tool_calls=[])
 
-                if part.function_call:
+                # Check for function call
+                if hasattr(part, 'function_call') and part.function_call:
                     assistant_prompt_message.tool_calls.append(
                         AssistantPromptMessage.ToolCall(
                             id=part.function_call.name,
                             type="function",
                             function=AssistantPromptMessage.ToolCall.ToolCallFunction(
                                 name=part.function_call.name,
-                                arguments=json.dumps(dict(part.function_call.args.items())),
+                                arguments=json.dumps(dict(part.function_call.args)) if hasattr(part.function_call, 'args') else "{}",
                             ),
                         )
                     )
-                elif part.text:
+                # Check for text
+                elif hasattr(part, 'text') and part.text:
                     assistant_prompt_message.content += part.text
 
                 index += 1
-                if not hasattr(candidate, "finish_reason") or not candidate.finish_reason:
+                
+                # Check if this is the final chunk
+                has_finish_reason = hasattr(candidate, "finish_reason") and candidate.finish_reason
+                
+                if not has_finish_reason:
                     yield LLMResultChunk(
                         model=model,
                         prompt_messages=prompt_messages,
@@ -668,28 +672,26 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                     completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
                     usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
 
+                    # Extract grounding metadata if present
                     reference_lines = []
-                    grounding_chunks = None
+                    grounding_chunks = []
+                    
                     try:
-                        grounding_chunks = candidate.grounding_metadata.grounding_chunks
-                    except AttributeError:
-                        try:
-                            candidate_dict = chunk.candidates[0].to_dict()
-                            grounding_chunks = candidate_dict.get("grounding_metadata", {}).get("grounding_chunks", [])
-                        except Exception:
-                            grounding_chunks = []
+                        if hasattr(candidate, 'grounding_metadata') and candidate.grounding_metadata:
+                            grounding_chunks = candidate.grounding_metadata.grounding_chunks or []
+                    except (AttributeError, TypeError):
+                        pass
 
                     if grounding_chunks:
                         for gc in grounding_chunks:
                             try:
-                                title = gc.web.title
-                                uri = gc.web.uri
-                            except AttributeError:
-                                web_info = gc.get("web", {})
-                                title = web_info.get("title")
-                                uri = web_info.get("uri")
-                            if title and uri:
-                                reference_lines.append(f"<li><a href='{uri}'>{title}</a></li>")
+                                if hasattr(gc, 'web') and gc.web:
+                                    title = getattr(gc.web, 'title', None)
+                                    uri = getattr(gc.web, 'uri', None)
+                                    if title and uri:
+                                        reference_lines.append(f"<li><a href='{uri}'>{title}</a></li>")
+                            except (AttributeError, TypeError):
+                                continue
 
                     if reference_lines:
                         reference_lines.insert(0, "<ol>")
@@ -697,12 +699,17 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                         reference_section = "\n\nGrounding Sources\n" + "\n".join(reference_lines)
                     else:
                         reference_section = ""
+                    
                     if is_first_gemini2_response and model.startswith("gemini-2.") and system_instruction:
                         integrated_text = f"{assistant_prompt_message.content}"
                         is_first_gemini2_response = False
                     else:
                         integrated_text = f"{assistant_prompt_message.content}{reference_section}"
-                    assistant_message_with_refs = AssistantPromptMessage(content=integrated_text, tool_calls=assistant_prompt_message.tool_calls)
+                    
+                    assistant_message_with_refs = AssistantPromptMessage(
+                        content=integrated_text, 
+                        tool_calls=assistant_prompt_message.tool_calls
+                    )
 
                     yield LLMResultChunk(
                         model=model,
@@ -710,7 +717,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                         delta=LLMResultChunkDelta(
                             index=index,
                             message=assistant_message_with_refs,
-                            finish_reason=str(candidate.finish_reason),
+                            finish_reason=str(candidate.finish_reason) if candidate.finish_reason else None,
                             usage=usage,
                         ),
                     )
@@ -737,21 +744,21 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             raise ValueError(f"Got unknown type {message}")
         return message_text
 
-    def _format_message_to_glm_content(self, message: PromptMessage) -> glm.Content:
+    def _format_message_to_genai_content(self, message: PromptMessage) -> dict:
         """
-        Format a single message into glm.Content for Google API
+        Format a single message into content dict for GenAI SDK
 
         :param message: one PromptMessage
-        :return: glm Content representation of message
+        :return: Content dict representation of message
         """
         if isinstance(message, UserPromptMessage):
             parts = []
             if isinstance(message.content, str):
-                parts.append(glm.Part.from_text(message.content))
+                parts.append({"text": message.content})
             elif isinstance(message.content, list):
                 for c in message.content:
                     if c.type == PromptMessageContentType.TEXT:
-                        parts.append(glm.Part.from_text(c.data))
+                        parts.append({"text": c.data})
                     elif c.type in [
                         PromptMessageContentType.IMAGE,
                         PromptMessageContentType.DOCUMENT,
@@ -760,41 +767,41 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                     ]:
                         data = c.base64_data
                         mime_type = getattr(c, 'mime_type', None)
-                        parts.append(glm.Part.from_data(data=data, mime_type=mime_type))
+                        parts.append({
+                            "inline_data": {
+                                "mime_type": mime_type,
+                                "data": data
+                            }
+                        })
                     else:
                         raise ValueError(f"Unsupported content type: {c.type}")
-            glm_content = glm.Content(role="user", parts=parts)
-            return glm_content
+            return {"role": "user", "parts": parts}
         elif isinstance(message, AssistantPromptMessage):
             if message.tool_calls:
-                glm_content = glm.Content(
-                    role="model",
-                    parts=[
-                        glm.Part.from_dict(
-                            {
-                                "function_call": {
-                                    "name": tool_call.function.name,
-                                    "args": json.loads(tool_call.function.arguments),
-                                }
-                            }
-                        )
-                        for tool_call in message.tool_calls
-                    ],
-                )
+                parts = [
+                    {
+                        "function_call": {
+                            "name": tool_call.function.name,
+                            "args": json.loads(tool_call.function.arguments),
+                        }
+                    }
+                    for tool_call in message.tool_calls
+                ]
             else:
-                glm_content = glm.Content(role="model", parts=[glm.Part.from_text(message.content)])
-            return glm_content
+                parts = [{"text": message.content}]
+            return {"role": "model", "parts": parts}
         elif isinstance(message, ToolPromptMessage):
-            glm_content = glm.Content(
-                role="function",
-                parts=[
-                    glm.Part.from_function_response(
-                        name=message.name,
-                        response={"response": message.content}
-                    )
-                ],
-            )
-            return glm_content
+            return {
+                "role": "function",
+                "parts": [
+                    {
+                        "function_response": {
+                            "name": message.name,
+                            "response": {"response": message.content}
+                        }
+                    }
+                ]
+            }
         else:
             raise ValueError(f"Got unknown type {message}")
 
