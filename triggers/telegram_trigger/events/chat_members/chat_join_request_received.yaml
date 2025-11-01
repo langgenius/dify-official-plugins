@@ -1,0 +1,154 @@
+identity:
+  name: chat_join_request_received
+  author: langgenius
+  label:
+    en_US: Chat Join Request Received
+    zh_Hans: 收到入群请求
+    ja_JP: 参加リクエスト受信
+description:
+  en_US: Triggers when a user requests to join a chat where the bot is an administrator.
+  zh_Hans: 当用户请求加入机器人管理的会话时触发。
+  ja_JP: ボットが管理者のチャットで参加リクエストが届いたときにトリガーします。
+parameters: []
+output_schema:
+  type: object
+  additionalProperties: false
+  required:
+  - update_id
+  - chat_join_request
+  properties:
+    update_id:
+      type: integer
+      description: Unique identifier for the Telegram update.
+    chat_join_request:
+      type: object
+      additionalProperties: false
+      description: Join request details.
+      required:
+      - chat
+      - from
+      - user_chat_id
+      - date
+      properties:
+        chat:
+          type: object
+          description: Telegram Chat object.
+          additionalProperties: true
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for this chat.
+            type:
+              type: string
+              description: Type of chat, such as private, group, supergroup, or channel.
+            title:
+              type: string
+              description: Chat title for supergroups, channels, and group chats.
+            username:
+              type: string
+              description: Username of the chat if available.
+            first_name:
+              type: string
+              description: First name of the other party in a private chat.
+            last_name:
+              type: string
+              description: Last name of the other party in a private chat.
+        from:
+          type: object
+          description: Telegram User object.
+          additionalProperties: true
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for this user or bot.
+            is_bot:
+              type: boolean
+              description: True if this user is a bot.
+            first_name:
+              type: string
+              description: User first name.
+            last_name:
+              type: string
+              description: User last name.
+            username:
+              type: string
+              description: Username of the user, if any.
+            language_code:
+              type: string
+              description: IETF language tag of the user's language.
+            is_premium:
+              type: boolean
+              description: True if the user is a Telegram Premium subscriber.
+        user_chat_id:
+          type: integer
+          description: Identifier of the private chat with the requesting user.
+        date:
+          type: integer
+          description: Date the request was sent in Unix time.
+        bio:
+          type: string
+          description: Bio of the user provided with the request.
+        invite_link:
+          type: object
+          description: Chat invite link used to initiate the join request.
+          additionalProperties: true
+          properties:
+            invite_link:
+              type: string
+              description: Invite link URL.
+            name:
+              type: string
+              description: Optional invite link name.
+            creator:
+              type: object
+              description: Telegram User object.
+              additionalProperties: true
+              properties:
+                id:
+                  type: integer
+                  description: Unique identifier for this user or bot.
+                is_bot:
+                  type: boolean
+                  description: True if this user is a bot.
+                first_name:
+                  type: string
+                  description: User first name.
+                last_name:
+                  type: string
+                  description: User last name.
+                username:
+                  type: string
+                  description: Username of the user, if any.
+                language_code:
+                  type: string
+                  description: IETF language tag of the user's language.
+                is_premium:
+                  type: boolean
+                  description: True if the user is a Telegram Premium subscriber.
+            expire_date:
+              type: integer
+              description: Point in time when the link will expire.
+            member_limit:
+              type: integer
+              description: Maximum number of users that can join using this link.
+            pending_join_request_count:
+              type: integer
+              description: Number of pending join requests created using this link.
+            subscription_period:
+              type: integer
+              description: Subscription period in seconds for paid invite links.
+            subscription_price:
+              type: integer
+              description: Price in stars for paid invite links.
+            creates_join_request:
+              type: boolean
+              description: True if users joining need administrator approval.
+            is_primary:
+              type: boolean
+              description: True if this is the primary invite link.
+            is_revoked:
+              type: boolean
+              description: True if the link has been revoked.
+extra:
+  python:
+    source: events/chat_members/chat_join_request_received.py

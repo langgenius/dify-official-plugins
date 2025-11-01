@@ -1,0 +1,143 @@
+identity:
+  name: business_connection_updated
+  author: langgenius
+  label:
+    en_US: Business Connection Updated
+    zh_Hans: 商业连接更新
+    ja_JP: ビジネス接続更新
+description:
+  en_US: Triggers when Telegram sends an update about a business connection status
+    or rights.
+  zh_Hans: 当 Telegram 发送商业连接状态或权限更新时触发。
+  ja_JP: Telegram がビジネス接続の状態や権限を更新したときにトリガーします。
+parameters: []
+output_schema:
+  type: object
+  additionalProperties: false
+  required:
+  - update_id
+  - business_connection
+  properties:
+    update_id:
+      type: integer
+      description: Unique identifier for the Telegram update.
+    business_connection:
+      type: object
+      additionalProperties: false
+      description: Business connection metadata shared by Telegram.
+      required:
+      - id
+      - user
+      - user_chat_id
+      - date
+      - can_reply
+      properties:
+        id:
+          type: string
+          description: Unique identifier of the business connection.
+        user:
+          type: object
+          description: Telegram User object as defined in the Bot API.
+          additionalProperties: true
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for this user or bot.
+            is_bot:
+              type: boolean
+              description: True if this user is a bot.
+            first_name:
+              type: string
+              description: User first name.
+            last_name:
+              type: string
+              description: User last name.
+            username:
+              type: string
+              description: Username of the user, if any.
+            language_code:
+              type: string
+              description: IETF language tag of the user's language.
+            is_premium:
+              type: boolean
+              description: True if the user is a Telegram Premium subscriber.
+            added_to_attachment_menu:
+              type: boolean
+              description: True if the user added the bot to the attachment menu.
+            can_join_groups:
+              type: boolean
+              description: True if the bot can join groups.
+            can_read_all_group_messages:
+              type: boolean
+              description: True if privacy mode is disabled for the bot.
+            supports_inline_queries:
+              type: boolean
+              description: True if the bot can be invited to inline mode.
+            can_connect_to_business:
+              type: boolean
+              description: True if the bot can connect to Telegram Business accounts.
+            has_main_web_app:
+              type: boolean
+              description: True if the bot has a main Web App.
+        user_chat_id:
+          type: integer
+          description: Identifier of the private chat with the connected user.
+        date:
+          type: integer
+          description: Unix time when the connection was updated.
+        is_enabled:
+          type: boolean
+          description: True if the business connection is currently enabled.
+        can_reply:
+          type: boolean
+          description: True if the bot can reply to the user via the business connection.
+        rights:
+          type: object
+          description: Permissions granted to the bot within the business connection.
+          additionalProperties: false
+          properties:
+            can_reply:
+              type: boolean
+              description: True if the bot may reply to messages.
+            can_read_messages:
+              type: boolean
+              description: True if the bot may read incoming messages.
+            can_delete_sent_messages:
+              type: boolean
+              description: True if the bot may delete messages it sent.
+            can_delete_all_messages:
+              type: boolean
+              description: True if the bot may delete any message in the chat.
+            can_edit_name:
+              type: boolean
+              description: True if the bot may edit the business profile name.
+            can_edit_bio:
+              type: boolean
+              description: True if the bot may edit the business bio.
+            can_edit_profile_photo:
+              type: boolean
+              description: True if the bot may edit the profile photo.
+            can_edit_username:
+              type: boolean
+              description: True if the bot may edit the public username.
+            can_view_gifts_and_stars:
+              type: boolean
+              description: True if the bot may view the gifts and stars balance.
+            can_convert_gifts_to_stars:
+              type: boolean
+              description: True if the bot may convert gifts into stars.
+            can_change_gift_settings:
+              type: boolean
+              description: True if the bot may change gift-related settings.
+            can_transfer_and_upgrade_gifts:
+              type: boolean
+              description: True if the bot may transfer or upgrade gifts.
+            can_transfer_stars:
+              type: boolean
+              description: True if the bot may transfer stars.
+            can_manage_stories:
+              type: boolean
+              description: True if the bot may manage business stories.
+extra:
+  python:
+    source: events/connections/business_connection_updated.py
