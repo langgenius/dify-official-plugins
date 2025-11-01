@@ -313,7 +313,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     raise InvokeError(f"Model {model_id} doesn't support cross-region inference")
                 
                 model_id = "{}.{}".format(region_prefix, model_id)
-            else:
+            elif model_ids.is_support_cross_region(model_id):
                 # Cross-region inference not enabled, but still add region prefix for all models
                 region_prefix = model_ids.get_region_area(region_name, prefer_global=False)
                 
