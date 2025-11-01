@@ -1,0 +1,152 @@
+identity:
+  name: google_drive_trigger
+  icon: icon.svg
+  author: langgenius
+  label:
+    en_US: Google Drive
+    ja_JP: Google Drive
+    zh_Hans: Google 云端硬盘
+  description:
+    en_US: Receive Google Drive change notifications via webhook channels.
+    ja_JP: Webhook チャンネルを介して Google Drive の変更通知を受信します。
+    zh_Hans: 通过 Webhook 通道接收 Google 云端硬盘的更改通知。
+channel:
+  type: trigger
+subscription_constructor:
+  oauth_schema:
+    client_schema:
+      - name: client_id
+        type: text-input
+        required: true
+        label:
+          en_US: OAuth Client ID
+          ja_JP: OAuth クライアント ID
+          zh_Hans: OAuth 客户端 ID
+        help:
+          en_US: The OAuth Client ID is used to authenticate requests to the Google Drive API.
+          ja_JP: OAuth クライアント ID は Google Drive API へのリクエスト認証に使用されます。
+          zh_Hans: OAuth 客户端 ID 用于认证请求到 Google 云端硬盘 API。
+        placeholder:
+          en_US: "Please input your Client ID"
+          zh_Hans: "请输入你的 Client ID"
+          ja_JP: "クライアント ID を入力してください"
+        url: https://console.cloud.google.com/apis/credentials
+      - name: client_secret
+        type: secret-input
+        required: true
+        label:
+          en_US: OAuth Client Secret
+          ja_JP: OAuth クライアント シークレット
+          zh_Hans: OAuth 客户端密钥
+        help:
+          en_US: The OAuth Client Secret is used to authenticate requests to the Google Drive API.
+          ja_JP: OAuth クライアント シークレットは Google Drive API へのリクエスト認証に使用されます。
+          zh_Hans: OAuth 客户端密钥用于认证请求到 Google 云端硬盘 API。
+        placeholder:
+          en_US: "Please input your Client Secret"
+          zh_Hans: "请输入你的 Client Secret"
+          ja_JP: "クライアント シークレットを入力してください"
+        url: https://console.cloud.google.com/apis/credentials
+      - name: scope
+        type: text-input
+        required: false
+        default: https://www.googleapis.com/auth/drive.metadata.readonly https://www.googleapis.com/auth/drive.appdata
+        label:
+          en_US: OAuth Scope
+          ja_JP: OAuth スコープ
+          zh_Hans: OAuth 范围
+        help:
+          en_US: Overrides the default Google Drive scope if provided.
+          ja_JP: 指定した場合、デフォルトの Google Drive スコープを上書きします。
+          zh_Hans: 如填写，将覆盖默认的 Google 云端硬盘权限范围。
+        placeholder:
+          en_US: "Please input your Scope"
+          zh_Hans: "请输入你的 Scope"
+          ja_JP: "スコープを入力してください"
+        url: https://console.cloud.google.com/apis/credentials
+    credentials_schema:
+      - name: access_tokens
+        type: secret-input
+        label:
+          en_US: Access Token
+          ja_JP: アクセストークン
+          zh_Hans: 访问令牌
+  parameters:
+    - name: spaces
+      type: checkbox
+      multiple: true
+      required: true
+      default:
+        - drive
+      options:
+        - label:
+            en_US: My Drive
+            ja_JP: マイドライブ
+            zh_Hans: 我的云端硬盘
+          value: drive
+        - label:
+            en_US: Application data folder
+            ja_JP: アプリケーション データ フォルダ
+            zh_Hans: 应用数据文件夹
+          value: appDataFolder
+      label:
+        en_US: Spaces
+        ja_JP: スペース
+        zh_Hans: 空间
+      description:
+        en_US: Choose Drive spaces to monitor. "My Drive" is required for standard file changes.
+        ja_JP: 監視する Drive スペースを選択します。通常のファイル変更には「マイドライブ」が必要です。
+        zh_Hans: 选择需要监控的云端硬盘空间。监控常规文件变化需选择“我的云端硬盘”。
+    - name: include_removed
+      type: boolean
+      required: false
+      default: false
+      label:
+        en_US: Include removed items
+        ja_JP: 削除済みアイテムを含める
+        zh_Hans: 包含已删除的项目
+      description:
+        en_US: If enabled, removed files will be included in the result set.
+        ja_JP: 有効にすると削除されたファイルも結果に含めます。
+        zh_Hans: 启用后，结果中会包含已删除的文件。
+    - name: restrict_to_my_drive
+      type: boolean
+      required: false
+      default: false
+      label:
+        en_US: Restrict to my drive
+        ja_JP: マイドライブのみを監視
+        zh_Hans: 仅监控我的云端硬盘
+      description:
+        en_US: If enabled, only changes in your My Drive will be monitored. the restrict_to_my_drive parameter is only applicable for the 'drive' and 'photos' spaces.
+        ja_JP: 有効にすると、マイドライブのみが監視対象となります。 restrict_to_my_drive パラメータは 'drive' と 'photos' スペースにのみ適用されます。
+        zh_Hans: 启用后，仅监控我的云端硬盘。restrict_to_my_drive 参数仅适用于 'drive' 和 'photos' 空间。
+    - name: include_items_from_all_drives
+      type: boolean
+      required: false
+      default: false
+      label:
+        en_US: Include items from all drives
+        ja_JP: すべてのドライブからのアイテムを含める
+        zh_Hans: 包含所有云端硬盘中的项目
+      description:
+        en_US: If enabled, changes from all drives will be monitored.
+        ja_JP: 有効にすると、すべてのドライブからの変更が監視対象となります。
+        zh_Hans: 启用后，监控所有云端硬盘中的项目。
+    - name: supports_all_drives
+      type: boolean
+      required: false
+      default: false
+      label:
+        en_US: Supports all drives
+        ja_JP: すべてのドライブをサポート
+        zh_Hans: 支持所有云端硬盘
+      description:
+        en_US: If enabled, the changes from all drives will be monitored.
+        ja_JP: 有効にすると、すべてのドライブからの変更が監視対象となります。
+        zh_Hans: 启用后，监控所有云端硬盘中的项目。
+extra:
+  python:
+    source: provider/google_drive.py
+events:
+  - events/change_detected/change_detected.yaml
