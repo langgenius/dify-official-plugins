@@ -96,7 +96,7 @@ class VannaTool(Tool):
         res = vn.ask(
             prompt, print_results=False, auto_train=True, visualize=False, allow_llm_to_see_data=allow_llm_to_see_data
         )
-        if res is not None:
+        if res and res[0] is not None:
             yield self.create_text_message(res[0])
             if len(res) > 1 and res[1] is not None:
                 yield self.create_text_message(res[1].to_markdown())
