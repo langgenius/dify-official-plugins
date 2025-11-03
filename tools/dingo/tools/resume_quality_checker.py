@@ -215,6 +215,14 @@ Output only JSON format, no other content.
 
     def _parse_llm_response(self, response: str, language: str) -> list:
         """Parse LLM JSON response."""
+        # Check if response is empty
+        if not response or not response.strip():
+            return [{
+                "source": "error",
+                "description": "LLM返回空响应，可能是网络问题或API调用失败" if language == 'zh_Hans'
+                              else "LLM returned empty response, possibly due to network issues or API failure"
+            }]
+
         # Clean markdown code blocks
         response = response.strip()
         if response.startswith("```json"):
@@ -225,14 +233,22 @@ Output only JSON format, no other content.
             response = response[:-3]
         response = response.strip()
 
+        # Check again after cleaning
+        if not response:
+            return [{
+                "source": "error",
+                "description": "LLM返回空响应（清理后），可能是网络问题或API调用失败" if language == 'zh_Hans'
+                              else "LLM returned empty response (after cleaning), possibly due to network issues or API failure"
+            }]
+
         # Parse JSON
         try:
             data = json.loads(response)
-        except json.JSONDecodeError:
+        except json.JSONDecodeError as e:
             return [{
                 "source": "error",
-                "description": f"LLM响应解析失败: {response[:100]}" if language == 'zh_Hans'
-                              else f"Failed to parse LLM response: {response[:100]}"
+                "description": f"LLM响应JSON解析失败: {str(e)}, 响应内容: {response[:100]}" if language == 'zh_Hans'
+                              else f"Failed to parse LLM JSON response: {str(e)}, content: {response[:100]}"
             }]
 
         # Handle both dict and list responses
