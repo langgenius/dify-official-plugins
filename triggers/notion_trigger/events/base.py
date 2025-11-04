@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import logging
 from collections.abc import Mapping
 from typing import Any
 
@@ -10,8 +9,6 @@ from dify_plugin.entities.trigger import Variables
 from dify_plugin.errors.trigger import EventIgnoreError
 
 from notion_client import NotionAPIError, NotionClient
-
-logger = logging.getLogger(__name__)
 
 
 class NotionBaseEvent():
@@ -105,7 +102,6 @@ class NotionBaseEvent():
         try:
             return client.fetch_block_children(page_id)
         except NotionAPIError as exc:
-            logger.warning("Failed to fetch block children for page %s: %s", page_id, exc)
             return None
 
     def _fetch_entity_content(self, payload: Mapping[str, Any], integration_token: str | None) -> Mapping[str, Any] | None:
@@ -153,11 +149,6 @@ class NotionBaseEvent():
                     discussion_id=discussion_id,
                 )
         except NotionAPIError as exc:
-            logger.warning(
-                "Failed to hydrate Notion entity %s (%s): %s",
-                entity_id,
-                entity_type,
-                exc,
-            )
+            pass
 
         return None
