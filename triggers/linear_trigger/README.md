@@ -92,12 +92,9 @@ A comprehensive Dify plugin providing 44 Linear webhook event triggers for your 
 
 ## Quick Start
 
-### 1. Install Dependencies
+### 1. Install Plugin
 
-```bash
-cd linear_from_github
-uv pip install -r requirements.txt
-```
+Install this plugin from Dify marketplace.
 
 ### 2. Authentication
 
@@ -150,13 +147,6 @@ workflow:
       message: "🚨 New urgent issue: {{trigger.data.title}}"
 ```
 
-## Package Plugin
-
-```bash
-# From parent directory
-/Applications/Development/difyplugin/dify-plugin-darwin-arm64-new plugin package linear_from_github -o linear_trigger.difypkg
-```
-
 ## Changelog
 
 ### Version 0.3.0 (2025-10-16)
@@ -184,16 +174,6 @@ workflow:
 - ✅ Fixed OAuth token exchange format
 - ✅ Fixed credential key naming
 
-## Testing
-
-```bash
-# Run all tests
-uv run python -m pytest tests/ -v
-
-# Run specific event tests
-uv run python -m pytest tests/events/issue/ -v
-uv run python -m pytest tests/events/project/ -v
-```
 
 ## Support
 

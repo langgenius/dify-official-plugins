@@ -2,14 +2,11 @@
 
 from __future__ import annotations
 
-import logging
 import time
 from collections.abc import Mapping
 from typing import Any
 
 import requests
-
-logger = logging.getLogger(__name__)
 
 
 class NotionAPIError(RuntimeError):
@@ -136,7 +133,6 @@ class NotionClient:
             except requests.RequestException as exc:
                 if attempt == self._max_retries:
                     raise NotionAPIError(f"Request to {url} failed: {exc}") from exc
-                logger.debug("Notion request error (%s), retrying in %.1fs", exc, backoff)
                 time.sleep(backoff)
                 backoff *= 2
                 continue
@@ -151,14 +147,6 @@ class NotionClient:
                         backoff = float(retry_after)
                     except ValueError:
                         pass
-                logger.debug(
-                    "Notion response %s for %s, retrying in %.1fs (attempt %d/%d)",
-                    response.status_code,
-                    url,
-                    backoff,
-                    attempt,
-                    self._max_retries,
-                )
                 time.sleep(backoff)
                 backoff *= 2
                 continue

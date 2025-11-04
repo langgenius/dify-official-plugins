@@ -28,18 +28,15 @@ Receive RssHub feed notifications in Dify via simple webhooks. Flexible events, 
 
 ## Setup
 
--
-
-1. Install dependencies: `pip install -r requirements.txt`
-2. Install/import the plugin into Dify.
-3. Subscription configuration:
+1. Install/import the plugin into Dify.
+2. Subscription configuration:
    - `API Key` (optional):
      - If provided, all webhook calls must include the same key (see Authentication).
      - If left blank, the webhook accepts unauthenticated posts.
-4. Copy the generated webhook endpoint URL from your Dify trigger.
-5. Configure your RssHub (or a small companion worker) to POST updates to this URL.
+3. Copy the generated webhook endpoint URL from your Dify trigger.
+4. Configure your RssHub (or a small companion worker) to POST updates to this URL.
    - If using an API Key, include it as described below.
-6. (Optional) If you send a custom event name via header/query/body, it will be accepted, but the plugin is optimized for `feed_update`.
+5. (Optional) If you send a custom event name via header/query/body, it will be accepted, but the plugin is optimized for `feed_update`.
 
 ## Authentication (Optional)
 
