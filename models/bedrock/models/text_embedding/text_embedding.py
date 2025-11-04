@@ -38,9 +38,6 @@ logger = logging.getLogger(__name__)
 
 
 class BedrockTextEmbeddingModel(TextEmbeddingModel):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.started_at = time.perf_counter()
     def _invoke(
         self,
         model: str,
