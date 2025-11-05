@@ -1,0 +1,9 @@
+model: KaLM-embedding-multilingual-mini-v1
+model_type: text-embedding
+model_properties:
+  context_size: 131072
+  max_chunks: 32
+pricing:
+  input: '0.0005'
+  unit: '0.001'
+  currency: CNY
