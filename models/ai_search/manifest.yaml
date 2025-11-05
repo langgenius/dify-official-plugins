@@ -1,0 +1,43 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: tencent_cloud_es
+label:
+  en_US: Tencent Cloud ES
+  ja_JP: Tencent Cloud ES
+  zh_Hans: 腾讯云 ES
+  pt_BR: Tencent Cloud ES
+description:
+  en_US: Tencent Cloud ES provides atomic services such as Embedding, Rerank, LLM, etc.
+  ja_JP: Tencent Cloud ESが提供するEmbedding、Rerank、LLMなどのアトミックサービス
+  zh_Hans: 腾讯云 ES 提供的原子服务，如 Embedding、Rerank、LLM 等
+  pt_BR: Tencent Cloud ES fornece serviços atômicos como Embedding, Rerank, LLM, etc.
+icon: icon.svg
+icon_dark: icon.svg
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true
+      text_embedding: true
+      rerank: true
+      tts: false
+      speech2text: false
+      moderation: false
+plugins:
+  models:
+    - provider/ai_search.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: null
+created_at: 2025-10-27T15:31:07.280136+08:00
+privacy: PRIVACY.md
+verified: false

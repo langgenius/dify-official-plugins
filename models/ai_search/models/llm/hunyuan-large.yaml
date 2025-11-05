@@ -1,0 +1,42 @@
+model: hunyuan-large
+label:
+  zh_Hans: hunyuan-large
+  en_US: hunyuan-large
+model_type: llm
+features: []
+model_properties:
+  mode: chat
+  context_size: 28000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    type: float
+    default: 0.7
+    min: 0.0
+    max: 2.0
+    help:
+      zh_Hans: 控制生成结果的多样性和随机性。
+      en_US: Control the diversity and randomness of generated results.
+  - name: max_tokens
+    use_template: max_tokens
+    type: int
+    default: 2048
+    min: 1
+    max: 4096
+    help:
+      zh_Hans: 指定生成结果长度的上限（最大4K）。
+      en_US: Specifies the upper limit on the length of generated results (max 4K).
+  - name: online_search
+    type: boolean
+    default: false
+    label:
+      zh_Hans: 联网搜索
+      en_US: Web Search
+    help:
+      zh_Hans: 是否启用联网搜索功能。
+      en_US: Specifies whether to enable internet search capability.
+pricing:
+  input: "0.4"
+  output: "1.2"
+  unit: "0.001"
+  currency: RMB
