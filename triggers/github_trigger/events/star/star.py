@@ -3,7 +3,6 @@ from typing import Any
 
 from werkzeug import Request
 
-from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.errors.trigger import EventIgnoreError
 from dify_plugin.interfaces.trigger import Event
@@ -28,29 +27,9 @@ class StarCreatedEvent(Event):
         star_action = payload.get("action")
         events = parameters.get("events", [])
         if star_action not in events:
-            raise EventIgnoreError("Not interested in this star action " + star_action)
+            raise EventIgnoreError(f"Not interested in this star action {star_action}")
 
         sender = payload.get("sender")
         if not sender:
             raise ValueError("No sender data in payload")
         return Variables(variables={**payload})
-
-    def _fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
-        """Fetch parameter options"""
-        return [
-            ParameterOption(
-                value="test",
-                label=I18nObject(en_US="test"),
-                icon="https://avatars.githubusercontent.com/u/29746822?v=4",
-            ),
-            ParameterOption(
-                value="test2",
-                label=I18nObject(en_US="test"),
-                icon="https://avatars.githubusercontent.com/u/29746822?v=4",
-            ),
-            ParameterOption(
-                value="test3",
-                label=I18nObject(en_US="test"),
-                icon="https://avatars.githubusercontent.com/u/29746822?v=4",
-            ),
-        ]

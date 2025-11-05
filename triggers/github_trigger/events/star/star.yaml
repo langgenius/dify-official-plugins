@@ -37,18 +37,7 @@ parameters:
     en_US: Choose which star actions to react to. Both created and deleted share the same schema so they are unified here.
     zh_Hans: 选择要关注的 star 动作。创建与取消的 payload 结构一致，因此在此统一。
     ja_JP: 対応する Star のアクションを選択。作成と解除は同一スキーマのため統合しています。
-- name: "enable_filter"
-  label:
-    en_US: "Enable filter"
-    zh_Hans: "启用过滤"
-    ja_JP: "フィルターを有効にする"
-  type: "boolean"
-  required: false
-  default: false
-  description:
-    en_US: "Enable filter to only react to starred repositories. If disabled, all repositories will be reacted to."
-    zh_Hans: "启用过滤，仅响应星标仓库。如果禁用，所有仓库都会响应。"
-    ja_JP: "フィルターを有効にすると、スター付けされたリポジトリのみに反応します。無効にすると、すべてのリポジトリに反応します。"
+
 output_schema:
   type: object
   properties:
