@@ -160,9 +160,9 @@ identity:
     ja_JP: メールとラベル更新イベント対応の Gmail プッシュトリガー。
   icon: icon.svg
   label:
-    en_US: gmail_trigger
-    zh_Hans: gmail_trigger
-    ja_JP: gmail_trigger
+    en_US: Gmail Trigger
+    zh_Hans: Gmail Trigger
+    ja_JP: Gmail Trigger
   name: gmail_trigger
 
 extra:

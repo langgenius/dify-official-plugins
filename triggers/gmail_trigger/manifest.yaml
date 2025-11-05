@@ -19,7 +19,7 @@ meta:
     version: "3.12"
   version: 0.0.1
   minimum_dify_version: 1.7.0
-name: Gmail Trigger
+name: gmail_trigger
 plugins:
   triggers:
   - provider/gmail_trigger.yaml

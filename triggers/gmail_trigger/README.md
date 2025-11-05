@@ -131,6 +131,14 @@ Event Outputs (high-level)
   - `history_id`: string
   - `changes[]`: id, threadId, labelIds
 
+Attachment Handling
+
+- The trigger attempts to upload at most 20 real attachments (with `attachmentId` or inline content), skipping individual files larger than 5 MiB.
+- `attachments[].file_url` is the only externally exposed download address; `attachments[].file_source` identifies its origin (`gmail` for original links or `dify_storage` for Dify mirror).
+- When attachments are successfully uploaded to Dify, both `upload_file_id` and `original_url` (Gmail/Drive original address) are returned; if not mirrored, `original_url` is omitted.
+- Gmail often returns Drive links for oversized attachments, or provides sharing addresses directly in the message body. The event scans text/HTML content to extract these links and returns them as attachment items for unified handling by callers.
+- Callers only need to use `file_url`, determining whether to access Gmail/Drive directly or go through Dify storage based on `file_source`.
+
 Lifecycle & Refresh
 
 - Create: Plugin auto-provisions Pub/Sub, then calls `users.watch` with `topicName` and optional `labelIds`

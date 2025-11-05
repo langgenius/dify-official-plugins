@@ -69,4 +69,24 @@ output_schema:
                   type:
                   - integer
                   - "null"
-
+                attachmentId:
+                  type:
+                  - string
+                  - "null"
+                file_url:
+                  type:
+                  - string
+                  - "null"
+                original_url:
+                  type:
+                  - string
+                  - "null"
+                upload_file_id:
+                  type:
+                  - string
+                  - "null"
+                file_source:
+                  type: string
+                  enum:
+                  - dify_storage
+                  - gmail
