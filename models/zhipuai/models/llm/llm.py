@@ -108,8 +108,8 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
             self._generate(
                 model=model,
                 credentials_kwargs=credentials_kwargs,
-                prompt_messages=[UserPromptMessage(content="ping")],
-                model_parameters={"temperature": 0.5},
+                prompt_messages=[UserPromptMessage(content="hello")],
+                model_parameters={"temperature": 0.5, "thinking": False},
                 tools=[],
                 stream=False,
             )
@@ -143,7 +143,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
         # request to glm-4v-plus with stop words will always respond "finish_reason":"network_error"
         if stop and model != "glm-4v-plus":
             extra_model_kwargs["stop"] = stop
-        client = ZhipuAiClient(api_key=credentials_kwargs["api_key"])
+        client = ZhipuAiClient(api_key=credentials_kwargs["api_key"],base_url=credentials_kwargs["base_url"] )
         if len(prompt_messages) == 0:
             raise ValueError("At least one message is required")
         if prompt_messages[0].role == PromptMessageRole.SYSTEM:
