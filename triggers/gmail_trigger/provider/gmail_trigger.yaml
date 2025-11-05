@@ -144,7 +144,7 @@ subscription_constructor:
         en_US: "Refresh Token"
   extra:
     python:
-      source: provider/gmail.py
+      source: provider/gmail_trigger.py
 
 events:
 - events/gmail_message_added/gmail_message_added.yaml
@@ -160,11 +160,11 @@ identity:
     ja_JP: メールとラベル更新イベント対応の Gmail プッシュトリガー。
   icon: icon.svg
   label:
-    en_US: Gmail Triggers
-    zh_Hans: Gmail 触发器
-    ja_JP: Gmail トリガー
+    en_US: gmail_trigger
+    zh_Hans: gmail_trigger
+    ja_JP: gmail_trigger
   name: gmail_trigger
 
 extra:
   python:
-    source: provider/gmail.py
+    source: provider/gmail_trigger.py

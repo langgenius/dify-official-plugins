@@ -6,9 +6,9 @@ description:
   zh_Hans: 用于 Dify 的 Gmail 推送通知触发器。
 icon: icon.svg
 label:
-  en_US: Gmail trigger
-  ja_JP: Gmail trigger
-  zh_Hans: Gmail trigger
+  en_US: Gmail Trigger
+  ja_JP: Gmail Trigger
+  zh_Hans: Gmail Trigger
 meta:
   arch:
   - amd64
@@ -19,10 +19,10 @@ meta:
     version: "3.12"
   version: 0.0.1
   minimum_dify_version: 1.7.0
-name: gmail_trigger
+name: Gmail Trigger
 plugins:
   triggers:
-  - provider/gmail.yaml
+  - provider/gmail_trigger.yaml
 resource:
   memory: 1048576
   permission:
