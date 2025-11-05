@@ -1,0 +1,72 @@
+identity:
+  name: gmail_message_added
+  author: langgenius
+  label:
+    en_US: Gmail Message Added
+    zh_Hans: Gmail 新增消息
+    ja_JP: Gmail メッセージ追加
+
+description:
+  en_US: Emits newly added messages (e.g., new incoming mail) since last checkpoint.
+  zh_Hans: 自上次位点以来新增的消息（如新邮件到达）。
+  ja_JP: 直近チェックポイント以降に追加されたメッセージ（新規メールなど）。
+
+parameters: []
+
+extra:
+  python:
+    source: events/gmail_message_added/gmail_message_added.py
+
+output_schema:
+  type: object
+  properties:
+    history_id:
+      type: string
+    messages:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          threadId:
+            type: string
+          internalDate:
+            type: string
+          snippet:
+            type: string
+          sizeEstimate:
+            type: integer
+          labelIds:
+            type: array
+            items:
+              type: string
+          headers:
+            type: object
+            properties:
+              From:
+                type: string
+              To:
+                type: string
+              Subject:
+                type: string
+              Date:
+                type: string
+              Message-Id:
+                type: string
+          has_attachments:
+            type: boolean
+          attachments:
+            type: array
+            items:
+              type: object
+              properties:
+                filename:
+                  type: string
+                mimeType:
+                  type: string
+                size:
+                  type:
+                  - integer
+                  - "null"
+
