@@ -25,6 +25,8 @@ class OpenAIRerankModel(OAICompatRerankModel):
                     "Census, Carson City had a population of 55,274.",
                     "The Commonwealth of the Northern Mariana Islands is a group of islands in the Pacific Ocean that "
                     "are a political division controlled by the United States. Its capital is Saipan.",
+                    "Washington, D.C., formally the District of Columbia, is the capital city and federal district of "
+                    "the United States. It is located on the east bank of the Potomac River.",
                 ],
                 score_threshold=0.8,
                 top_n=3,
