@@ -1,14 +1,14 @@
-model: zai-org/GLM-4.5-Air-FP8
+model: zai-org/GLM-4.6
 label:
-  zh_Hans: GLM-4.5-Air-FP8-forestlee
-  en_US: GLM-4.5-Air-FP8-forestlee
+  zh_Hans: GLM-4.6
+  en_US: GLM-4.6
 model_type: llm
 features:
   - agent-thought
   - tool-call
 model_properties:
   mode: chat
-  context_size: 131076
+  context_size: 204800
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -31,7 +31,7 @@ parameter_rules:
   - name: response_format
     use_template: response_format
 pricing:
-  input: '0.20'
-  output: '1.10'
+  input: '0.6'
+  output: '2.00'
   unit: '0.000001'
   currency: USD

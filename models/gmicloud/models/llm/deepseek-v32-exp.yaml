@@ -1,14 +1,14 @@
-model: deepseek-ai/DeepSeek-R1-0528
+model: deepseek-ai/DeepSeek-V3.2-Exp
 label:
-  zh_Hans: DeepSeek R1 0528
-  en_US: DeepSeek R1 0528
+  zh_Hans: DeepSeek V3.2 Exp
+  en_US: DeepSeek V3.2 Exp
 model_type: llm
 features:
   - agent-thought
   - tool-call
 model_properties:
   mode: chat
-  context_size: 131072
+  context_size: 163840
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -31,7 +31,7 @@ parameter_rules:
   - name: response_format
     use_template: response_format
 pricing:
-  input: '1.0'
-  output: '3.0'
+  input: '0.27'
+  output: '0.41'
   unit: '0.000001'
   currency: USD
