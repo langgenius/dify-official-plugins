@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 
 # uv pip compile pyproject.toml -o ./requirements.txt
 dependencies = [
-    "dify-plugin>=0.4.3",
+    "dify-plugin>=0.5.1,<0.6.0",
     "openai>=1.99.9",
 ]
 
