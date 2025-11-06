@@ -1,1 +1,2 @@
 dify_plugin~=0.0.1b32
+pytz~=2025.2

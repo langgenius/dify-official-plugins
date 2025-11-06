@@ -50,6 +50,18 @@ parameters:
   type: string
 - form: llm
   human_description:
+    en_US: 'The start time of the task is all day.
+      '
+    zh_Hans: 任务开始是否为全天任务
+  label:
+    en_US: Start Time Is All Day
+    zh_Hans: 任务开始是否为全天任务
+  llm_description: 任务开始是否为全天任务
+  name: start_time_is_all_day
+  required: false
+  type: boolean
+- form: llm
+  human_description:
     en_US: 'The end time of the task, in the format: 2006-01-02 15:04:05
 
       '
@@ -58,9 +70,21 @@ parameters:
     en_US: End Time
     zh_Hans: 任务结束时间
   llm_description: 任务结束时间，格式为：2006-01-02 15:04:05
-  name: end_time
+  name: due_date
   required: false
   type: string
+- form: llm
+  human_description:
+    en_US: 'The end time of the task is all day.
+      '
+    zh_Hans: 任务结束是否为全天任务
+  label:
+    en_US: End Time Is All Day
+    zh_Hans: 任务结束是否为全天任务
+  llm_description: 任务结束是否为全天任务
+  name: end_time_is_all_day
+  required: false
+  type: boolean
 - form: llm
   human_description:
     en_US: 'The completion time of the task, in the format: 2006-01-02 15:04:05. Leave
@@ -73,6 +97,45 @@ parameters:
     en_US: Completed Time
     zh_Hans: 任务完成时间
   llm_description: 任务完成时间，格式为：2006-01-02 15:04:05，不填写表示创建一个未完成任务；填写一个具体的时间表示创建一个已完成任务。
-  name: completed_time
+  name: completed_at
   required: false
   type: string
+- form: llm
+  human_description:
+    en_US: 'The assignee of the task, in the format: {"ou_3f82f588f0f90870339703184d2042ee" , "ou_3f82f588f0f90870339703184d2043123e"}
+    
+      '
+    zh_Hans: 任务负责人，格式为：{"ou_3f82f588f0f90870339703184d2042ee" , "ou_3f82f588f0f90870339703184d2043123e"}
+  label:
+    en_US: Assignees
+    zh_Hans: 任务负责人
+  llm_description: 任务负责人，格式为：{"ou_3f82f588f0f90870339703184d2042ee" , "ou_3f82f588f0f90870339703184d2043123e"}
+  name: assignees_members
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: 'The follower of the task, in the format: {"ou_3f82f588f0f90870339703184d2042ee" , "ou_3f82f588f0f90870339703184d2043123e"}
+    
+      '
+    zh_Hans: 任务关注人，格式为：{"ou_3f82f588f0f90870339703184d2042ee" , "ou_3f82f588f0f90870339703184d2043123e"}
+  label:
+    en_US: Followers
+    zh_Hans: 任务关注人
+  llm_description: 任务关注人，格式为：{"ou_3f82f588f0f90870339703184d2042ee" , "ou_3f82f588f0f90870339703184d2043123e"}
+  name: followers_members
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: 'The notice minute of the task. Leave empty to create a task without a notice minute.
+      '
+    zh_Hans: 任务提醒提前分钟数，不填写表示创建一个没有提醒的任务
+  label:
+    en_US: Relative Fire Minute
+    zh_Hans: 任务提醒提前分钟数
+  llm_description: 任务提醒提前分钟数，不填写表示创建一个没有提醒的任务
+  name: relative_fire_minute
+  required: false
+  type: number
+
