@@ -1,5 +1,6 @@
 from collections.abc import Mapping
 
+import os
 import boto3
 from botocore.config import Config
 
@@ -29,10 +30,6 @@ def get_bedrock_client(service_name: str, credentials: Mapping[str, str]):
             'https': 'http://' + bedrock_proxy_url
         }
 
-    # Get AWS credentials
-    aws_access_key_id = credentials.get("aws_access_key_id")
-    aws_secret_access_key = credentials.get("aws_secret_access_key")
-
     # Initialize client parameters
     client_kwargs = {
         'service_name': service_name,
@@ -43,11 +40,29 @@ def get_bedrock_client(service_name: str, credentials: Mapping[str, str]):
     if bedrock_endpoint_url and service_name == 'bedrock-runtime':
         client_kwargs['endpoint_url'] = bedrock_endpoint_url
 
-    # Add credentials if provided
-    if aws_access_key_id and aws_secret_access_key:
-        client_kwargs['aws_access_key_id'] = aws_access_key_id
-        client_kwargs['aws_secret_access_key'] = aws_secret_access_key
+    # Check authentication method
+    auth_method = credentials.get("auth_method", "Access_Secret_Key")
+    
+    if auth_method == "API_Key":
+        # Use API Key authentication
+        bedrock_api_key = credentials.get("bedrock_api_key")
+        if not bedrock_api_key:
+            raise InvokeBadRequestError("bedrock_api_key is required when using API Key authentication")
+        
+        # Add API Key to client config
+        os.environ['AWS_BEARER_TOKEN_BEDROCK'] = bedrock_api_key
 
-    # Create and return the client
+    elif auth_method == "Access_Secret_Key":
+        # Use IAM authentication (default)
+        aws_access_key_id = credentials.get("aws_access_key_id")
+        aws_secret_access_key = credentials.get("aws_secret_access_key")
+        
+        # Add credentials if provided
+        if aws_access_key_id and aws_secret_access_key:
+            client_kwargs['aws_access_key_id'] = aws_access_key_id
+            client_kwargs['aws_secret_access_key'] = aws_secret_access_key
+    else: # auth_method == "IAM_Role"
+        pass
+
     client = boto3.client(**client_kwargs)
     return client
