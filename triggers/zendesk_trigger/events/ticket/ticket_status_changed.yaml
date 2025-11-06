@@ -1,0 +1,98 @@
+identity:
+  name: ticket_status_changed
+  author: langgenius
+  label:
+    en_US: Ticket Status Changed
+    zh_Hans: 工单状态变更
+    ja_JP: チケットステータス変更
+
+description:
+  en_US: Triggered when a ticket's status changes
+  zh_Hans: 当工单状态发生变化时触发
+  ja_JP: チケットのステータスが変更されたときにトリガーされます
+
+parameters:
+- name: from_status
+  label:
+    en_US: From Status
+    zh_Hans: 从状态
+    ja_JP: 変更前ステータス
+  type: string
+  required: false
+  help:
+    en_US: Filter by previous status (e.g., new,open). Leave empty for any.
+    zh_Hans: 按之前的状态过滤（例如 new,open）。留空表示任意状态。
+    ja_JP: 以前のステータスでフィルター（例 new,open）。空の場合は任意。
+
+- name: to_status
+  label:
+    en_US: To Status
+    zh_Hans: 到状态
+    ja_JP: 変更後ステータス
+  type: string
+  required: false
+  help:
+    en_US: Filter by new status (e.g., solved,closed). Leave empty for any.
+    zh_Hans: 按新状态过滤（例如 solved,closed）。留空表示任意状态。
+    ja_JP: 新しいステータスでフィルター（例 solved,closed）。空の場合は任意。
+
+output_schema:
+  type: object
+  properties:
+    ticket:
+      type: object
+      description: The ticket that had its status changed
+      properties:
+        actor_id:
+          type: ["string", "null"]
+        assignee_id:
+          type: ["string", "null"]
+        brand_id:
+          type: ["string", "null"]
+        created_at:
+          type: string
+          format: date-time
+        custom_status:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        external_id:
+          type: ["string", "null"]
+        form_id:
+          type: ["string", "null"]
+        group_id:
+          type: ["string", "null"]
+        id:
+          type: string
+        is_public:
+          type: boolean
+        organization_id:
+          type: ["string", "null"]
+        priority:
+          type: ["string", "null"]
+        requester_id:
+          type: ["string", "null"]
+        status:
+          type: ["string", "null"]
+        subject:
+          type: ["string", "null"]
+        submitter_id:
+          type: ["string", "null"]
+        tags:
+          type: array
+          items:
+            type: string
+        type:
+          type: ["string", "null"]
+        updated_at:
+          type: string
+          format: date-time
+        via:
+          type: object
+          properties:
+            channel:
+              type: string
+
+extra:
+  python:
+    source: events/ticket/ticket_status_changed.py
