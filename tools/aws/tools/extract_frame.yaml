@@ -1,0 +1,60 @@
+identity:
+  name: extract_frame
+  author: AWS
+  label:
+    en_US: ExtractFrame
+    zh_Hans: 抽帧工具
+    pt_BR: ExtractFrame
+  icon: icon.svg
+description:
+  human:
+    en_US: A extract frame tool for LLM
+    zh_Hans: 为大模型提供抽帧处理
+    pt_BR: A extract frame tool for LLM
+  llm: A extract frame tool.
+parameters:
+  - name: input_url
+    type: string
+    required: true
+    label:
+      en_US: input url
+      zh_Hans: 输入 url
+      pt_BR: input url
+    human_description:
+      en_US: input url（video/gif）
+      zh_Hans: 输入 url video/gif）
+      pt_BR: input url video/gif）
+    llm_description: input url video/gif）
+    form: llm
+  - name: frame_count
+    type: number
+    required: true
+    label:
+      en_US: Frame count(first/last frames + some middle frames)
+      zh_Hans: 帧数(首尾帧+中间帧)
+    human_description:
+      en_US: Frame count
+      zh_Hans: 帧数
+    form: form
+    default: 3
+  - name: input_type
+    type: select
+    required: true
+    label:
+      en_US: input type
+      zh_Hans: 请求类型
+      pt_BR: input type
+    human_description:
+      en_US: input type
+      zh_Hans: 请求类型
+      pt_BR: input type
+    default: GIF
+    options:
+      - value: GIF
+        label:
+          en_US: GIF
+          zh_Hans: GIF
+    form: form
+extra:
+  python:
+    source: tools/extract_frame.py

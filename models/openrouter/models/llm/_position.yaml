@@ -20,10 +20,12 @@
 - openai/gpt-3.5-turbo
 - anthropic/claude-opus-4
 - anthropic/claude-opus-4.1
+- anthropic/claude-sonnet-4.5
 - anthropic/claude-sonnet-4
 - anthropic/claude-3.7-sonnet:thinking
 - anthropic/claude-3.7-sonnet
 - anthropic/claude-3.5-sonnet
+- anthropic/claude-haiku-4.5
 - anthropic/claude-3-haiku
 - anthropic/claude-3-opus
 - anthropic/claude-3-sonnet
@@ -72,5 +74,6 @@
 - deepseek/deepseek-v3-base
 - moonshotai/kimi-k2-0905
 - moonshotai/kimi-k2-0711
+- x-ai/grok-4-fast:free
 - x-ai/grok-3-beta
 - x-ai/grok-3-mini-beta

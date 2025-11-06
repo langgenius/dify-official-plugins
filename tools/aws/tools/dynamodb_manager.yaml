@@ -1,0 +1,121 @@
+identity:
+  name: dynamodb_manager
+  author: AWS
+  label:
+    en_US: DynamoDB Manager
+    zh_Hans: DynamoDB 管理器
+description:
+  human:
+    en_US: DynamoDB Manager - Comprehensive tool for managing DynamoDB tables and items with full CRUD operations
+    zh_Hans: DynamoDB 管理器 - 用于管理 DynamoDB 表和项目的全面工具，支持完整的增删改查操作
+  llm: DynamoDB Manager provides comprehensive database management capabilities including create table, put item, get item, and delete item operations for AWS DynamoDB service
+parameters:
+  - name: operation_type
+    type: select
+    required: true
+    label:
+      en_US: Operation Type
+      zh_Hans: 操作类型
+    human_description:
+      en_US: Select the DynamoDB Manager operation type (create table, put item, get item, or delete item)
+      zh_Hans: 选择 DynamoDB 管理器操作类型（创建表、添加项目、获取项目或删除项目）
+    llm_description: Specify the type of DynamoDB Manager operation to execute
+    options:
+      - value: create_table
+        label:
+          en_US: Create Table
+          zh_Hans: 创建表
+      - value: put_item
+        label:
+          en_US: Put Item
+          zh_Hans: 添加项目
+      - value: get_item
+        label:
+          en_US: Get Item
+          zh_Hans: 获取项目
+      - value: delete_item
+        label:
+          en_US: Delete Item
+          zh_Hans: 删除项目
+    form: form
+  - name: table_name
+    type: string
+    required: true
+    label:
+      en_US: Table Name
+      zh_Hans: 表名
+    human_description:
+      en_US: DynamoDB Manager target table name for operations
+      zh_Hans: DynamoDB 管理器操作的目标表名称
+    llm_description: Target DynamoDB table name for DynamoDB Manager operations
+    form: llm
+  - name: aws_region
+    type: string
+    required: false
+    label:
+      en_US: AWS Region
+      zh_Hans: AWS 区域
+    human_description:
+      en_US: AWS region for DynamoDB Manager operations
+      zh_Hans: DynamoDB 管理器操作的 AWS 区域
+    llm_description: AWS region where DynamoDB Manager will perform operations
+    default: us-east-1
+    form: form
+  - name: partition_key_name
+    type: string
+    required: true
+    label:
+      en_US: Partition Key Name
+      zh_Hans: 主键名称
+    human_description:
+      en_US: DynamoDB Manager partition key name for table creation and item operations
+      zh_Hans: DynamoDB 管理器用于创建表和项目操作的分区键名称
+    llm_description: Partition key name for DynamoDB Manager table creation and item operations
+    form: llm
+  - name: partition_key
+    type: string
+    required: true
+    label:
+      en_US: Partition Key
+      zh_Hans: 主键值
+    human_description:
+      en_US: DynamoDB Manager partition key value for get/delete operations
+      zh_Hans: DynamoDB 管理器分区键值，用于获取/删除操作
+    llm_description: JSON formatted partition key value for DynamoDB Manager get/delete operations
+    form: llm
+  - name: sort_key_name
+    type: string
+    required: false
+    label:
+      en_US: Sort Key Name
+      zh_Hans: 排序键名称
+    human_description:
+      en_US: DynamoDB Manager sort key name for table creation and composite key operations
+      zh_Hans: DynamoDB 管理器排序键名称，用于创建表和复合键操作
+    llm_description: Sort key name for DynamoDB Manager table creation and composite key operations
+    form: llm
+  - name: sort_key
+    type: string
+    required: false
+    label:
+      en_US: sort key
+      zh_Hans: 排序键
+    human_description:
+      en_US: DynamoDB Manager sort key value for composite key operations
+      zh_Hans: DynamoDB 管理器排序键值，用于复合键操作
+    llm_description: Sort key value for DynamoDB Manager composite key operations
+    form: llm
+  - name: item_data
+    type: string
+    required: false
+    label:
+      en_US: Item Data
+      zh_Hans: 数据项
+    human_description:
+      en_US: DynamoDB Manager item data (JSON format) for put operations
+      zh_Hans: DynamoDB 管理器项目数据（JSON 格式），用于添加操作
+    llm_description: JSON formatted item data for DynamoDB Manager put operations
+    form: llm
+extra:
+  python:
+    source: tools/dynamodb_manager.py

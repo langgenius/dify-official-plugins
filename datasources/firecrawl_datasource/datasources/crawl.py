@@ -69,7 +69,6 @@ class CrawlDatasource(WebsiteCrawlDatasource):
             )
             job_id = _crawl_result["id"]
             crawl_res.status = "processing"
-            print(crawl_res)
             yield self.create_crawl_message(crawl_res)
 
             while True:

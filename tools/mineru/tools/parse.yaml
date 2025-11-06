@@ -157,14 +157,19 @@ parameters:
           ja_JP: vlm-transformers
       - value: vlm-sglang-engine
         label:
-          zh_Hans: vlm-sglang-engine
-          en_US: vlm-sglang-engine
-          ja_JP: vlm-sglang-engine
+          zh_Hans: vlm-sglang-engine (v2.2)
+          en_US: vlm-sglang-engine (v2.2)
+          ja_JP: vlm-sglang-engine (v2.2)
       - value: vlm-sglang-client
         label:
-          zh_Hans: vlm-sglang-client
-          en_US: vlm-sglang-client
-          ja_JP: vlm-sglang-client
+          zh_Hans: vlm-sglang-client (v2.2)
+          en_US: vlm-sglang-client (v2.2)
+          ja_JP: vlm-sglang-client (v2.2)
+      - value: vlm-http-client
+        label:
+          zh_Hans: vlm-http-client (v2.5)
+          en_US: vlm-http-client (v2.5)
+          ja_JP: vlm-http-client (v2.5)
       - value: vlm-vllm-async-engine
         label:
           zh_Hans: vlm-vllm-async-engine (v2.5)
@@ -181,19 +186,19 @@ parameters:
     llm_description: '(For local deployment v2/v2.5) Example: pipeline, vlm-transformers, vlm-sglang-engine, vlm-sglang-client, default is pipeline'
     form: form
 
-  - name: sglang_server_url
+  - name: server_url
     type: string
     required: false
     default: ""
     label:
-      zh_Hans: sglang-server地址
-      en_US: sglang-server url
-      ja_JP: sglang-serverアドレス
+      zh_Hans: server地址
+      en_US: server url
+      ja_JP: serverアドレス
     human_description:
-      zh_Hans: '（用于本地部署v2版本 解析后端为vlm-sglang-client时）示例：http://127.0.0.1:8000，默认值为空'
-      en_US: '(For local deployment v2 when backend is vlm-sglang-client) Example: http://127.0.0.1:8000, default is empty'
-      ja_JP: '（ローカルデプロイメントv2用 解析後端がvlm-sglang-clientの場合）例：http://127.0.0.1:8000、デフォルトは空'
-    llm_description: '(For local deployment v2 when backend is vlm-sglang-client) Example: http://127.0.0.1:8000, default is empty' 
+      zh_Hans: '（用于本地部署v2版本 解析后端为 vlm-sglang-client 或 vlm-http-client 时）示例：http://127.0.0.1:30000，默认值为空'
+      en_US: '(For local deployment v2 when backend is vlm-sglang-client or vlm-http-client) Example: http://127.0.0.1:30000, default is empty'
+      ja_JP: '（ローカルデプロイメントv2用 解析後端が vlm-sglang-client 或 vlm-http-client の場合）例：http://127.0.0.1:30000、デフォルトは空'
+    llm_description: '(For local deployment v2 when backend is vlm-sglang-client or vlm-http-client) Example: http://127.0.0.1:30000, default is empty' 
     form: form
 
 output_schema:

@@ -2,6 +2,8 @@ model: Qwen/Qwen2.5-VL-72B-Instruct
 label:
   en_US: Qwen/Qwen2.5-VL-72B-Instruct
 model_type: llm
+features:
+  - vision
 model_properties:
   mode: chat
   context_size: 32768

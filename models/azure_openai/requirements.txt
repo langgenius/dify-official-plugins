@@ -1,5 +1,5 @@
-dify_plugin>=0.3.0,<0.5.0
-openai~=1.99.6
+dify_plugin<0.6.0,>=0.5.0
+openai~=2.3.0
 tiktoken~=0.8.0
 numpy~=2.2.4
-pillow~=11.2.1
+pillow~=11.3.0

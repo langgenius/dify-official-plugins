@@ -1,0 +1,73 @@
+identity:
+  name: "dicom_threshold_mask"
+  author: "langgenius"
+  label:
+    en_US: "DICOM Threshold & Mask"
+    zh_Hans: "阈值与掩码运算"
+description:
+  human:
+    en_US: "Create a binary mask from threshold(s) and return a visual overlay preview with pixel count."
+    zh_Hans: "根据阈值生成二值掩码，返回覆盖可视化预览和掩码像素数量。"
+  llm: "Build threshold mask and overlay preview."
+parameters:
+  - name: dicom_file
+    type: file
+    required: true
+    label:
+      en_US: "DICOM file"
+      zh_Hans: "DICOM 文件"
+    human_description:
+      en_US: "Upload the DICOM file (.dcm)."
+      zh_Hans: "上传 DICOM 文件（.dcm）。"
+    llm_description: "Provide the DICOM file."
+    form: llm
+  - name: frame_index
+    type: number
+    required: false
+    default: 0
+    label:
+      en_US: "Frame index"
+      zh_Hans: "帧索引"
+    human_description:
+      en_US: "0-based frame index to process."
+      zh_Hans: "要处理的 0 基帧索引。"
+    llm_description: "Frame index."
+    form: form
+  - name: threshold_lower
+    type: number
+    required: false
+    label:
+      en_US: "Lower threshold"
+      zh_Hans: "下阈值"
+    human_description:
+      en_US: "Lower bound for mask. If both empty, mean is used."
+      zh_Hans: "掩码下限；若上下皆空，默认使用均值阈值。"
+    llm_description: "Lower threshold."
+    form: form
+  - name: threshold_upper
+    type: number
+    required: false
+    label:
+      en_US: "Upper threshold"
+      zh_Hans: "上阈值"
+    human_description:
+      en_US: "Upper bound for mask (optional)."
+      zh_Hans: "掩码上限（可选）。"
+    llm_description: "Upper threshold."
+    form: form
+  - name: max_preview_edge
+    type: number
+    required: false
+    default: 256
+    label:
+      en_US: "Max preview edge"
+      zh_Hans: "预览最大边长"
+    human_description:
+      en_US: "Maximum edge size for overlay (32–1024)."
+      zh_Hans: "覆盖图的最大边长（32–1024）。"
+    llm_description: "Maximum edge length for preview."
+    form: form
+extra:
+  python:
+    source: tools/dicom_threshold_mask.py
+

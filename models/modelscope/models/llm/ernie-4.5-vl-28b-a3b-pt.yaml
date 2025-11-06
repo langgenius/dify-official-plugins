@@ -2,6 +2,8 @@ model: PaddlePaddle/ERNIE-4.5-VL-28B-A3B-PT
 label:
   en_US: PaddlePaddle/ERNIE-4.5-VL-28B-A3B-PT
 model_type: llm
+features:
+  - vision
 model_properties:
   mode: chat
   context_size: 131072

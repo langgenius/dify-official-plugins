@@ -94,7 +94,7 @@ class TavilySearchExtractDatasource(WebsiteCrawlDatasource):
                             if extracted_content and extracted_content.get("results"):
                                 content = extracted_content["results"][0].get("raw_content", "")
                         except Exception as e:
-                            print(f"Failed to extract content from {result.get('url', '')}: {str(e)}")
+                            raise ValueError(f"Failed to extract content from {result.get('url', '')}: {str(e)}")
                     
                     web_info_detail = WebSiteInfoDetail(
                         source_url=result.get("url", ""),
@@ -110,8 +110,7 @@ class TavilySearchExtractDatasource(WebsiteCrawlDatasource):
                     crawl_res.web_info_list = web_info_list
                     yield self.create_crawl_message(crawl_res)
                     
-                except Exception as e:
-                    print(f"Error processing result {idx}: {str(e)}")
+                except Exception:
                     continue
             
             # Add AI answer as a summary if available

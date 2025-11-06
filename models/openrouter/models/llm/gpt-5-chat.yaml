@@ -3,14 +3,12 @@ label:
   en_US: gpt-5-chat
 model_type: llm
 features:
-  - multi-tool-call
   - agent-thought
-  - stream-tool-call
   - vision
   - document
 model_properties:
   mode: chat
-  context_size: 400000
+  context_size: 128000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -32,33 +30,6 @@ parameter_rules:
     options:
       - text
       - json_object
-      - json_schema
-  - name: json_schema
-    use_template: json_schema
-  - name: reasoning_effort
-    label:
-      zh_Hans: 推理程度
-      en_US: Reasoning Effort
-    type: string
-    help:
-      zh_Hans: 指定模型推理的难度
-      en_US: specifying the difficulty of the model's reasoning
-    required: false
-    options:
-      - high
-      - medium
-      - low
-      - minimal
-  - name: exclude_reasoning_tokens
-    label:
-      zh_Hans: 隐藏思考过程
-      en_US: Hide the thought process
-    type: boolean
-    default: false
-    help:
-      zh_Hans: 是否隐藏思考过程。
-      en_US: Whether to hide the thought process.
-    required: false
   - name: logprobs
     label:
       zh_Hans: 返回对数概率

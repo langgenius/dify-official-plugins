@@ -46,6 +46,7 @@ _MMC = TypeVar("_MMC", bound=MultiModalPromptMessageContent)
 IMAGE_GENERATION_MODELS = {
     "gemini-2.0-flash-preview-image-generation",
     "gemini-2.5-flash-image-preview",
+    "gemini-2.5-flash-image",
 }
 
 
@@ -604,6 +605,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         credentials: dict,
         response: Iterator[types.GenerateContentResponse],
         prompt_messages: list[PromptMessage],
+        genai_client: genai.Client,
     ) -> Generator[LLMResultChunk]:
         """
         Handle llm stream response
@@ -626,8 +628,13 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :param credentials: credentials
         :param response: response
         :param prompt_messages: prompt messages
+        :param genai_client: genai client to keep alive during streaming
         :return: llm response chunk generator result
         """
+        # Keep a reference to the client to prevent it from being garbage collected
+        # while the generator is still active
+        _client_ref = genai_client
+        
         index = -1
         self.is_thinking = False
 
@@ -892,7 +899,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 model=model, contents=contents, config=config
             )
             return self._handle_generate_stream_response(
-                model, credentials, response, prompt_messages
+                model, credentials, response, prompt_messages, genai_client
             )
 
         response = genai_client.models.generate_content(

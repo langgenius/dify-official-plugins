@@ -61,6 +61,7 @@ Quick Start node supports some functions of ComfyUI including the following ones
 
 * [Qwen Image](https://comfyanonymous.github.io/ComfyUI_examples/qwen_image/)
 * [Qwen Image Edit](https://comfyanonymous.github.io/ComfyUI_examples/qwen_image/)
+* [Qwen Image Edit 2509](https://comfyanonymous.github.io/ComfyUI_examples/qwen_image/)
 * [Flux Dev fp8](https://comfyanonymous.github.io/ComfyUI_examples/flux/)
 * [Flux Schnell fp8](https://comfyanonymous.github.io/ComfyUI_examples/flux/)
 * [Pony Diffusion V6 XL](https://civitai.com/models/257749/pony-diffusion-v6-xl): the most liked Pony-based model on CivitAI

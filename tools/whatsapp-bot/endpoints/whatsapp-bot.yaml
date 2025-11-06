@@ -1,0 +1,5 @@
+path: "/webhooks/whatsapp"
+method: "POST"
+extra:
+  python:
+    source: "endpoints/whatsapp-bot.py"
