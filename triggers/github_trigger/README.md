@@ -57,9 +57,9 @@ Step-by-step Setup
 - Choose one or more webhook `events`. Defaults cover most repository-level activities; you can narrow the list to reduce noise.
 - (Optional) Provide `webhook_secret` if you maintain the webhook manually. If Dify provisions the webhook, a secret is generated automatically and stored with the subscription.
 - Manual webhook setup: under GitHub → Repository Settings → Webhooks, set **Content type** to `application/json`. The trigger only accepts raw JSON payloads (`Content-Type: application/json`) and will reject `application/x-www-form-urlencoded`.
-- Save the subscription. Dify shows the webhook endpoint URL (`https://<dify-host>/api/plugin/triggers/<subscription-id>`) for manual setups or diagnostics.
+- Save the subscription. Dify shows the webhook endpoint URL (`https://<dify-host>/triggers/plugin/<subscription-id>`) for manual setups or diagnostics.
     ![GitHub Webhook](_assets/GITHUB_WEBHOOK.png)
-    
+
 What happens automatically
 
 - The plugin calls GitHub’s `repos/{owner}/{repo}/hooks` API to create (or later delete) the webhook, using JSON payloads with `content_type=json` and the shared secret.

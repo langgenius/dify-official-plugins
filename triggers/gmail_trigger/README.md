@@ -98,7 +98,7 @@ Where To Get OIDC Values
 
 - `oidc_audience`
   - Use the exact webhook endpoint URL shown in the Dify subscription details (Endpoint). Example:
-    - `https://<your-dify-host>/api/plugin/triggers/<subscription-id>`
+    - `https://<your-dify-host>/triggers/plugin/<subscription-id>`
   - The YAML field includes a URL to Google docs for the `audience` claim: see the OIDC token reference.
 - `oidc_service_account_email`
   - The service account used by the Pub/Sub push subscription (set via `--push-auth-service-account`).
