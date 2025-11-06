@@ -5,10 +5,9 @@ import json
 import logging
 import math
 from collections.abc import Generator, Sequence
-from typing import Optional, Union, cast, Any
+from typing import Any, Optional, Union, cast
 
 import tiktoken
-from PIL import Image
 from dify_plugin.entities.model import AIModelEntity, ModelPropertyKey
 from dify_plugin.entities.model.llm import (
     LLMMode,
@@ -38,7 +37,8 @@ from openai.types.chat import (
     ChatCompletionChunk,
     ChatCompletionMessageToolCall,
 )
-from openai.types.chat.chat_completion_chunk import ChoiceDeltaToolCall, ChoiceDelta
+from openai.types.chat.chat_completion_chunk import ChoiceDelta, ChoiceDeltaToolCall
+from PIL import Image
 
 from ..common import _CommonAzureOpenAI
 from ..constants import LLM_BASE_MODELS
@@ -116,14 +116,24 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             raise CredentialsValidateFailedError(
                 "Azure OpenAI API Base Endpoint is required"
             )
-        if "openai_api_key" not in credentials:
-            raise CredentialsValidateFailedError("Azure OpenAI API key is required")
+
+        # Check authentication method
+        auth_method = credentials.get("auth_method", "api_key")
+        if auth_method == "api_key" and "openai_api_key" not in credentials:
+            raise CredentialsValidateFailedError(
+                "Azure OpenAI API key is required when using API Key authentication"
+            )
+
         if "base_model_name" not in credentials:
             raise CredentialsValidateFailedError("Base Model Name is required")
         base_model_name = self._get_base_model_name(credentials)
-        ai_model_entity = self._get_ai_model_entity(base_model_name=base_model_name, model=model)
+        ai_model_entity = self._get_ai_model_entity(
+            base_model_name=base_model_name, model=model
+        )
         if not ai_model_entity:
-            raise CredentialsValidateFailedError(f"Base Model Name {credentials['base_model_name']} is invalid")
+            raise CredentialsValidateFailedError(
+                f"Base Model Name {credentials['base_model_name']} is invalid"
+            )
 
         try:
             client = AzureOpenAI(**self._to_credential_kwargs(credentials))
@@ -350,7 +360,9 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             if "stop" in extra_model_kwargs:
                 del extra_model_kwargs["stop"]
 
-        messages: Any = [self._convert_prompt_message_to_dict(m) for m in prompt_messages]
+        messages: Any = [
+            self._convert_prompt_message_to_dict(m) for m in prompt_messages
+        ]
         response = client.chat.completions.create(
             messages=messages,
             model=model,
@@ -367,7 +379,9 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             model, credentials, response, prompt_messages, tools
         )
         if block_as_stream:
-            return self._handle_chat_block_as_stream_response(block_result, prompt_messages, stop)
+            return self._handle_chat_block_as_stream_response(
+                block_result, prompt_messages, stop
+            )
 
         return block_result
 
@@ -467,8 +481,14 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             tool_calls=tool_calls, tool_calls_response=assistant_message_tool_calls
         )
         content = ""
-        if hasattr(assistant_message, "model_extra") and assistant_message.model_extra.get("reasoning_content"):
-            content += "<think>\n" + assistant_message.model_extra["reasoning_content"] + "\n</think>"
+        if hasattr(
+            assistant_message, "model_extra"
+        ) and assistant_message.model_extra.get("reasoning_content"):
+            content += (
+                "<think>\n"
+                + assistant_message.model_extra["reasoning_content"]
+                + "\n</think>"
+            )
         content += assistant_message.content
 
         assistant_prompt_message = AssistantPromptMessage(
@@ -877,7 +897,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 tokens = width_patches * height_patches
 
                 if tokens > cap:
-                    shrink_factor = math.sqrt(cap * 32 ** 2 / (width * height))
+                    shrink_factor = math.sqrt(cap * 32**2 / (width * height))
 
                     new_width = width * shrink_factor
                     new_height = height * shrink_factor
@@ -923,8 +943,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
     @staticmethod
     def _azure_wrap_thinking_by_reasoning_content(
-        delta: ChoiceDelta,
-        is_reasoning: bool
+        delta: ChoiceDelta, is_reasoning: bool
     ) -> tuple[str, bool]:
         """
         If the reasoning response is from delta.get("reasoning_content"), we wrap
@@ -935,7 +954,9 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         """
 
         content = delta.content or ""
-        reasoning_content = delta.reasoning_content if hasattr(delta, "reasoning_content") else ""
+        reasoning_content = (
+            delta.reasoning_content if hasattr(delta, "reasoning_content") else ""
+        )
         try:
             if reasoning_content:
                 try:
@@ -945,10 +966,14 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     else:
                         content = reasoning_content
                 except Exception as ex:
-                    raise ValueError(f"[_azure_wrap_thinking_by_reasoning_content-1] {ex}") from ex
+                    raise ValueError(
+                        f"[_azure_wrap_thinking_by_reasoning_content-1] {ex}"
+                    ) from ex
             elif is_reasoning and content:
                 content = "\n</think>" + content
                 is_reasoning = False
         except Exception as ex:
-            raise ValueError(f"[_azure_wrap_thinking_by_reasoning_content-2] {ex}") from ex
+            raise ValueError(
+                f"[_azure_wrap_thinking_by_reasoning_content-2] {ex}"
+            ) from ex
         return content, is_reasoning
