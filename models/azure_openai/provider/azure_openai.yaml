@@ -33,14 +33,72 @@ model_credential_schema:
       type: text-input
       variable: openai_api_base
     - label:
+        en_US: Authentication Method
+        zh_Hans: 身份验证方式
+      options:
+        - label:
+            en_US: API Key
+            zh_Hans: API 密钥
+          value: api_key
+        - label:
+            en_US: Microsoft Entra ID (Service Principal)
+            zh_Hans: Microsoft Entra ID（服务主体）
+          value: entra_id_service_principal
+      placeholder:
+        en_US: Select authentication method
+        zh_Hans: 选择身份验证方式
+      required: true
+      type: select
+      variable: auth_method
+      default: api_key
+    - label:
         en_US: API Key
         zh_Hans: API Key
       placeholder:
         en_US: Enter your API key here
         zh_Hans: 在此输入您的 API Key
-      required: true
+      required: false
       type: secret-input
       variable: openai_api_key
+      show_on:
+        - variable: auth_method
+          value: api_key
+    - label:
+        en_US: Application (Client) ID
+        zh_Hans: 应用程序（客户端）ID
+      placeholder:
+        en_US: Enter your Azure AD Application (Client) ID
+        zh_Hans: 在此输入您的 Azure AD 应用程序（客户端）ID
+      required: false
+      type: text-input
+      variable: azure_client_id
+      show_on:
+        - variable: auth_method
+          value: entra_id_service_principal
+    - label:
+        en_US: Directory (Tenant) ID
+        zh_Hans: 目录（租户）ID
+      placeholder:
+        en_US: Enter your Azure AD Directory (Tenant) ID
+        zh_Hans: 在此输入您的 Azure AD 目录（租户）ID
+      required: false
+      type: text-input
+      variable: azure_tenant_id
+      show_on:
+        - variable: auth_method
+          value: entra_id_service_principal
+    - label:
+        en_US: Client Secret Value
+        zh_Hans: 客户端密钥值
+      placeholder:
+        en_US: Enter your Azure AD Client Secret Value
+        zh_Hans: 在此输入您的 Azure AD 客户端密钥值
+      required: false
+      type: secret-input
+      variable: azure_client_secret
+      show_on:
+        - variable: auth_method
+          value: entra_id_service_principal
     - label:
         en_US: API Version
         zh_Hans: API 版本
