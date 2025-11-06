@@ -18,19 +18,18 @@ class CreateTaskTool(Tool):
 
         summary = tool_parameters.get("summary")
         description = tool_parameters.get("description")
-        start_time = tool_parameters.get("start_time")
-        start_time_is_all_day = tool_parameters.get("start_time_is_all_day")
-        due_date = tool_parameters.get("due_date")
-        end_time_is_all_day = tool_parameters.get("end_time_is_all_day")
-        completed_at = tool_parameters.get("completed_at")
-        relative_fire_minute = tool_parameters.get("relative_fire_minute")
+        start_time = tool_parameters.get("start_time") or None
+        start_time_is_all_day = tool_parameters.get("start_time_is_all_day") or False
+        due_date = tool_parameters.get("due_date") or None
+        end_time_is_all_day = tool_parameters.get("end_time_is_all_day") or False
+        completed_at = tool_parameters.get("completed_at") or None
+        relative_fire_minute = tool_parameters.get("relative_fire_minute") or None
         assignees_members = tool_parameters.get("assignees_members") or []
         followers_members = tool_parameters.get("followers_members") or []
 
         def normalize_members(members):
-            """兼容字符串 / JSON 字符串 / list 输入"""
             if isinstance(members, list):
-                return [str(x).strip() for x in members if x]
+                return [m.strip() for m in members if m]
             if isinstance(members, str):
                 members = members.strip()
                 if not members:
@@ -39,11 +38,12 @@ class CreateTaskTool(Tool):
                     parsed = json.loads(members)
                     if isinstance(parsed, list):
                         return [str(x).strip() for x in parsed if x]
-                    elif isinstance(parsed, str):
-                        return [parsed.strip()]
                 except json.JSONDecodeError:
-                    members = members.strip("{} ")
-                    return [m.strip().strip('"') for m in members.split(",") if m.strip()]
+                    pass
+                members = members.replace("{", "").replace("}", "").replace("[", "").replace("]", "")
+                members = members.replace('"', '').replace("'", "")
+                return [m.strip() for m in members.split(",") if m.strip()]
+
             return []
 
         assignees_members = normalize_members(assignees_members)
@@ -64,3 +64,4 @@ class CreateTaskTool(Tool):
         )
 
         yield self.create_json_message(res)
+        yield self.create_variable_message("guid", res.get("data", {}).get("task", {}).get("guid", ""))

@@ -67,6 +67,8 @@ class FeishuRequestV2:
         Convert time string to UTC millisecond timestamp (as string).
         Example input: "2023-05-01 14:30:00"
         """
+        if not time_str:
+            return None
         try:
             tzinfo = pytz.timezone(tz)
         except pytz.UnknownTimeZoneError:

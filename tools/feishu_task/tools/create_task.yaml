@@ -107,9 +107,7 @@ parameters:
   llm_description: 任务负责人ID列表，格式为["ou_xxx","ou_xxx"]
   name: assignees_members
   required: false
-  type: array
-  items:
-    type: string
+  type: string
 
 - form: llm
   human_description:
@@ -121,9 +119,7 @@ parameters:
   llm_description: 任务关注人ID列表，格式为["ou_xxx","ou_xxx"]
   name: followers_members
   required: false
-  type: array
-  items:
-    type: string
+  type: string
 
 - form: llm
   human_description:
@@ -136,3 +132,10 @@ parameters:
   name: relative_fire_minute
   required: false
   type: number
+
+output_schema:
+  type: object
+  properties:
+    guid:
+      type: string
+      description: The unique identifier of the created task
