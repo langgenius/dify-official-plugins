@@ -1,94 +1,102 @@
-GitHub Trigger (Unified Events)
+GitHub Trigger (Webhooks)
 
 Overview
-- GitHub Trigger is a Dify provider that receives GitHub webhooks and emits trigger events into your workflows.
-- Events are unified by family (e.g., issues, pull_request, check_run) with an actions filter, instead of splitting every action into separate events. This reduces noise and aligns with product usage.
-- Each event exposes clear parameters and a comprehensive output schema (including full repository and sender objects) for reliable automation.
 
-Quick Start
-- Install dependencies: `pip install -r requirements.txt`
-- In Dify, add the GitHub Trigger provider and configure Credentials.
-- Create a Subscription with:
-  - `repository`: pick one repository (dynamic select)
-  - `events`: choose the webhook families you want (e.g., issues, pull_request, check_run)
-  - `webhook_secret` (optional): used to validate signatures; see “Webhook Secret”.
+- GitHub Trigger connects repository webhooks to Dify and fans out concrete events for issues, pull requests, CI/CD jobs, security alerts, and more.
+- Subscriptions can be provisioned automatically: the plugin creates a webhook on the selected repository, generates a secret, and stores it for signature verification.
+- Both OAuth (recommended) and personal access tokens are supported, so administrators can choose between per-user authorization flows and shared GitHub credentials.
+- Incoming payloads are validated (`X-Hub-Signature-256`, `X-GitHub-Event`) before Dify receives the resulting trigger events.
 
-Credentials
-- Access Token (recommended for simplicity)
-  - Generate a fine-grained or classic token with repo/webhook scopes.
-  - Where to create: https://github.com/settings/tokens?type=beta
-- OAuth (optional)
-  - Register a GitHub OAuth app and provide Client ID/Secret.
-  - Used to obtain an access token during subscription construction.
+Prerequisites
 
-Webhook Secret
-- Purpose: verify the HMAC signature on incoming requests.
-- If Dify creates the webhook: a random secret is generated and stored with the subscription.
-- If you configure the webhook manually in Repository Settings → Webhooks: set the same secret in GitHub and paste it into `webhook_secret` so signatures validate.
-- Reference: https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
+- GitHub user with administrative permission on each repository that should emit events.
+- Dify instance reachable by GitHub over HTTPS (publicly accessible endpoint for webhook deliveries).
+- One of the following credential options:
+  - GitHub OAuth App (client ID/secret, scopes `read:user admin:repo_hook`).
+  - GitHub fine-grained personal access token with repository administration → **Repository hooks: Read & Write**.
 
-Unified Event Model
-- Design: unify events per family and expose an `actions` multi-select parameter to filter actions when payload shapes are identical (e.g., star created/deleted, label created/edited/deleted).
-- Benefits: fewer choices for users, simpler mental model, consistent schemas, easier reuse.
-- Breaking change: legacy per-action events (e.g., issue_opened) are replaced by unified families; configure the desired actions in parameters.
+Step-by-step Setup
 
-Parameter Semantics
-- Multi-select parameters: choose specific actions/states; leave empty to accept all supported values.
-- String lists: comma-separated exact matches, case-insensitive where noted (e.g., authors, labels).
-- Contains filters: “*_contains” parameters check substrings and accept comma-separated keywords; any match passes.
-- Boolean flags: when set, they filter strictly (true/false). When omitted, they do not filter.
-- Glob patterns: where supported (e.g., changed_files_glob), match file paths with comma-separated globs.
+1. Install the plugin in Dify
 
-Implemented Events (high-level)
-- Collaboration: issues, issue_comment, pull_request, pull_request_review, pull_request_review_comment, pull_request_review_thread
-- CI/Automation: check_suite, check_run, workflow_run, workflow_job, status
-- SCM: push, ref_change (create/delete), commit_comment, release (published), deployment, deployment_status (created)
-- Governance/Security: code_scanning_alert, secret_scanning, dependabot_alert, repository_vulnerability_alert, repository_advisory, security_and_analysis, branch_protection_configuration, branch_protection_rule, repository_ruleset
-- Community/Growth: discussion, discussion_comment, star, watch, fork, label, gollum (Wiki)
-- Projects/Planning: milestone, project, project_column, project_card, member, merge_group, meta
-- Packages: package, registry_package
-- Advanced: repository, repository_import, public, custom_property_values, issue_dependencies, sub_issues, deploy_key
+- Options:
+  - Import the `.difypkg` in Plugin Center (Plugins → Import).
+  - During development, make sure your runtime installs the dependencies from `requirements.txt`.
 
-Output Schema Consistency
-- Every unified event includes a detailed `repository` and `sender` block modeled after the Issues event style.
-- Each family adds its specific object (e.g., `issue`, `pull_request`, `check_run`, `package`, `deployment`, `pages`) with commonly used fields and URLs.
-- See the YAML under `events/**/` for complete schemas and parameter help.
+2. Choose an authentication strategy (Administrator)
 
-Subscription Flow
-- Provider manifest: `github_trigger/provider/github.yaml` lists all registered events.
-- Dispatch: `github_trigger/provider/github.py` routes GitHub headers and payloads to the appropriate unified event.
-- Subscriptions automatically create and manage webhooks on the target repository using your credentials.
+- **OAuth (recommended)**: Users authorize with their own GitHub identities, and Dify stores only refreshable access tokens.
+- **Personal Access Token**: Administrators paste a PAT that grants webhook administration rights; all subscriptions share the same token.
 
-Examples
-- Subscribe to PR review automation
-  - Events: `pull_request`, `pull_request_review`, `pull_request_review_comment`
-  - Parameters: set `actions` to the review states you care about; optionally filter by `reviewer`, `author`, `body_contains`.
-- Security guardrails
-  - Events: `code_scanning_alert`, `dependabot_alert`, `secret_scanning`
-  - Parameters: filter by `severity`, `state`, `branch`, or `subtypes` for secret scanning.
-- Branch governance
-  - Event: `ref_change` with `event_types=create,delete` and `ref_type=branch` to detect branch creation/deletion.
+3. (OAuth only) Create a GitHub OAuth App
 
-Extending the Provider
-- Add a new event family
-  - Create a folder under `events/<family>/` with `<family>.py` and `<family>.yaml`.
-  - Implement a subclass of `dify_plugin.interfaces.trigger.Event` with `_on_event` returning `Variables(payload)`.
-  - In YAML, provide `identity`, `description`, `parameters` (include helpful `help` text), and a complete `output_schema`.
-  - Register the YAML path in `provider/github.yaml` under `events:`.
-- Utilities
-  - Common helpers live in `events/utils/` (payload loading, PR filters, etc.).
+- GitHub Settings → Developer settings → OAuth Apps → **New OAuth App**  
+  URL: https://github.com/settings/applications/new
+  ![GitHub OAuth App](_assets/GITHUB_OAUTH_APP.png)
+
+- Configuration:
+  - Application name: anything descriptive (e.g., “Dify GitHub Trigger”)
+  - Homepage URL: your Dify console URL
+  - Authorization callback URL: `https://<your-dify-host>/console/api/plugin/oauth/callback`
+- Capture the generated **Client ID** and **Client Secret**.
+- Adjust scopes if needed; the plugin defaults to `read:user admin:repo_hook`, which allows webhook management without full repo access.
+
+4. Enter credentials in Dify (Administrator)
+
+- For OAuth:
+  - `client_id`: from the OAuth App.
+  - `client_secret`: from the OAuth App.
+  - `scope` (optional): keep the default unless additional GitHub APIs are required.
+- For Personal Access Token:
+  - `access_tokens`: paste the PAT; ensure it has the repository hook permissions mentioned above.
+
+5. User: Create a subscription
+
+- Click **Authorize** (OAuth) or ensure a PAT is configured; the plugin will retrieve repositories the authenticated account can administer.
+- Select the target `repository` from the dropdown (format `owner/repo`).
+- Choose one or more webhook `events`. Defaults cover most repository-level activities; you can narrow the list to reduce noise.
+- (Optional) Provide `webhook_secret` if you maintain the webhook manually. If Dify provisions the webhook, a secret is generated automatically and stored with the subscription.
+- Manual webhook setup: under GitHub → Repository Settings → Webhooks, set **Content type** to `application/json`. The trigger only accepts raw JSON payloads (`Content-Type: application/json`) and will reject `application/x-www-form-urlencoded`.
+- Save the subscription. Dify shows the webhook endpoint URL (`https://<dify-host>/api/plugin/triggers/<subscription-id>`) for manual setups or diagnostics.
+    ![GitHub Webhook](_assets/GITHUB_WEBHOOK.png)
+    
+What happens automatically
+
+- The plugin calls GitHub’s `repos/{owner}/{repo}/hooks` API to create (or later delete) the webhook, using JSON payloads with `content_type=json` and the shared secret.
+- Webhook secrets are generated with UUID4 hex strings when not supplied, enabling HMAC SHA-256 signature verification (`X-Hub-Signature-256`) on every delivery.
+- Subscription refresh extends the webhook TTL (~30 days) so GitHub keeps it active without reauthorization.
+- On unsubscribe, the webhook is removed via `DELETE repos/{owner}/{repo}/hooks/{hook_id}`.
+
+Supported Events (high-level)
+
+- `issues`, `issue_comment`, `pull_request`, and related review/comment events.
+- CI/CD and automation: `check_run`, `check_suite`, `workflow_run`, `workflow_job`, `deployment`, `deployment_status`.
+- Repository activity: `push`, `ref_change` (create/delete), `commit_comment`, `star`, `watch`, `fork`, `public`, `repository`.
+- Project and collaboration: `project`, `project_card`, `project_column`, `discussion`, `discussion_comment`, `label`, `milestone`, `member`.
+- Security and quality: `code_scanning_alert`, `dependabot_alert`, `repository_vulnerability_alert`, `secret_scanning`.
+- Configuration and governance: `branch_protection_configuration`, `branch_protection_rule`, `repository_ruleset`, `custom_property_values`.
+
+How It Works
+
+- Dispatch
+  - Validates the webhook signature if a secret is present.
+  - Parses JSON (or `payload` in form-encoded requests) and captures `X-GitHub-Event`.
+  - Maps GitHub events to concrete Dify event names (e.g., `deployment_status` → `deployment_status_created`, `create/delete` → `ref_change`).
+  - Returns a JSON `{"status": "ok"}` response so GitHub considers the delivery successful.
+- Events
+  - Each event YAML loads the stored payload, highlights the most relevant fields, and exposes them as structured outputs for downstream workflows.
+  - Action-based events (e.g., release published) are split to keep automation clear and deterministic.
+
 
 Troubleshooting
-- Webhook not triggering: verify repository, events, and that the webhook delivery logs show 2xx.
-- Signature validation failed: confirm `webhook_secret` is identical on both GitHub and the subscription.
-- Filter didn’t match: check your parameter values against the actual payload (comma-separated vs exact match; action names).
-- Payload variance: some security events differ by repo/app configuration; schemas cover common fields but you may need to adjust filters.
 
-Directory Layout
-- `provider/github.py`: webhook dispatch, subscription lifecycle, OAuth/API key handling
-- `provider/github.yaml`: manifest, credential schemas, events listing
-- `events/**`: unified event handlers (`.py`) and schemas (`.yaml`)
-- `EVENTS_TODO.md`: planning and status for event coverage
+- Webhook creation fails: confirm the OAuth token or PAT has `admin:repo_hook` scope and that the actor is an admin on the repository.
+- “Missing webhook signature”: either supply the secret in the subscription form (for manual webhooks) or let Dify recreate the webhook.
+- No events arriving: check that your Dify endpoint is publicly reachable (status 200) and that selected events match the GitHub activity you expect.
+- 401/403 responses: re-authorize the plugin; revoked tokens or expired PATs must be replaced.
 
-Author
-- langgenius
+References
+
+- GitHub Webhooks: https://docs.github.com/webhooks
+- OAuth Apps: https://docs.github.com/apps/oauth-apps
+- Event payloads: https://docs.github.com/webhooks-and-events/webhooks/webhook-events-and-payloads
