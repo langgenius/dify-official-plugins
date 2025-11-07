@@ -22,8 +22,31 @@ configurate_methods:
   - customizable-model
 provider_credential_schema:
   credential_form_schemas:
+    - variable: auth_method
+      required: true
+      label:
+        en_US: Authentication Method
+        zh_Hans: 认证方式
+      type: select
+      default: IAM_Role
+      options:
+        - value: IAM_Role
+          label:
+            en_US: IAM Role
+            zh_Hans: IAM 角色
+        - value: Access_Secret_Key
+          label:
+            en_US: Access-Secret Key
+            zh_Hans: Access-Secret 密钥
+        - value: API_Key
+          label:
+            en_US: Bedrock API Key
+            zh_Hans: Bedrock API 密钥
     - variable: aws_access_key_id
-      required: false
+      required: true
+      show_on:
+        - variable: auth_method
+          value: Access_Secret_Key
       label:
         en_US: Access Key (If not provided, credentials are obtained from the running environment.)
         zh_Hans: Access Key
@@ -32,7 +55,10 @@ provider_credential_schema:
         en_US: Enter your Access Key
         zh_Hans: 在此输入您的 Access Key
     - variable: aws_secret_access_key
-      required: false
+      required: true
+      show_on:
+        - variable: auth_method
+          value: Access_Secret_Key
       label:
         en_US: Secret Access Key
         zh_Hans: Secret Access Key
@@ -40,6 +66,18 @@ provider_credential_schema:
       placeholder:
         en_US: Enter your Secret Access Key
         zh_Hans: 在此输入您的 Secret Access Key
+    - variable: bedrock_api_key
+      required: true
+      show_on:
+        - variable: auth_method
+          value: API_Key
+      label:
+        en_US: Bedrock API Key
+        zh_Hans: Bedrock API Key
+      type: secret-input
+      placeholder:
+        en_US: Enter your Bedrock API Key
+        zh_Hans: 在此输入您的 Bedrock API Key
     - variable: aws_region
       required: true
       label:
@@ -207,8 +245,27 @@ model_credential_schema:
       placeholder:
         en_US: Enter model context length (default 4096)
         zh_Hans: 输入模型上下文长度（默认4096）
+    - variable: auth_method
+      required: true
+      label:
+        en_US: Authentication Method
+        zh_Hans: 认证方式
+      type: select
+      default: iam
+      options:
+        - value: iam
+          label:
+            en_US: IAM (Access Key & Secret Key)
+            zh_Hans: IAM（Access Key 和 Secret Key）
+        - value: api_key
+          label:
+            en_US: Long-term API Key
+            zh_Hans: 长期 API Key
     - variable: aws_access_key_id
       required: false
+      show_on:
+        - variable: auth_method
+          value: iam
       label:
         en_US: Access Key (If not provided, credentials are obtained from the running environment.)
         zh_Hans: Access Key (如果未提供，凭证将从运行环境中获取。)
@@ -218,6 +275,9 @@ model_credential_schema:
         zh_Hans: 在此输入您的 Access Key
     - variable: aws_secret_access_key
       required: false
+      show_on:
+        - variable: auth_method
+          value: iam
       label:
         en_US: Secret Access Key
         zh_Hans: Secret Access Key
@@ -225,6 +285,18 @@ model_credential_schema:
       placeholder:
         en_US: Enter your Secret Access Key
         zh_Hans: 在此输入您的 Secret Access Key
+    - variable: bedrock_api_key
+      required: true
+      show_on:
+        - variable: auth_method
+          value: api_key
+      label:
+        en_US: Bedrock API Key
+        zh_Hans: Bedrock API Key
+      type: secret-input
+      placeholder:
+        en_US: Enter your Bedrock API Key
+        zh_Hans: 在此输入您的 Bedrock API Key
     - variable: aws_region
       required: false
       label:
