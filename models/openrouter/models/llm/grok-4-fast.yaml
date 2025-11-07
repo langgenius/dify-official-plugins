@@ -1,6 +1,6 @@
-model: x-ai/grok-4-fast:free
+model: x-ai/grok-4-fast
 label:
-  en_US: grok-4-fast:free
+  en_US: grok-4-fast
 model_type: llm
 features:
   - multi-tool-call
@@ -74,8 +74,7 @@ parameter_rules:
       en_US: Whether to hide the thought process.
     required: false
 pricing:
-  input: "0"
-  output: "0"
+  input: "0.2"
+  output: "0.5"
   unit: "0.000001"
   currency: USD
-deprecated: true
