@@ -1,0 +1,40 @@
+author: langgenius
+created_at: "2024-11-01T00:00:00Z"
+description:
+  en_US: Google Calendar push notifications trigger provider for Dify.
+  ja_JP: Dify 向け Google カレンダーのプッシュ通知トリガープロバイダー。
+  zh_Hans: 面向 Dify 的 Google 日历推送触发器。
+icon: icon.png
+label:
+  en_US: Google Calendar Trigger
+  ja_JP: Google Calendar Trigger
+  zh_Hans: Google Calendar Trigger
+meta:
+  arch:
+  - amd64
+  - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: "3.12"
+  version: 0.0.1
+  minimum_dify_version: 1.7.0
+name: google_calendar_trigger
+plugins:
+  triggers:
+  - provider/google_calendar_trigger.yaml
+resource:
+  memory: 1048576
+  permission:
+    model:
+      enabled: true
+      llm: true
+    tool:
+      enabled: true
+    storage:
+      enabled: true
+      size: 1048576
+tags:
+- utilities
+type: plugin
+version: 0.0.1
