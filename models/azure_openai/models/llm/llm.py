@@ -8,6 +8,7 @@ from collections.abc import Generator, Sequence
 from typing import Any, Optional, Union, cast
 
 import tiktoken
+from PIL import Image
 from dify_plugin.entities.model import AIModelEntity, ModelPropertyKey
 from dify_plugin.entities.model.llm import (
     LLMMode,
@@ -38,7 +39,7 @@ from openai.types.chat import (
     ChatCompletionMessageToolCall,
 )
 from openai.types.chat.chat_completion_chunk import ChoiceDelta, ChoiceDeltaToolCall
-from PIL import Image
+from openai.types.responses import ResponseStreamEvent, Response
 
 from ..common import _CommonAzureOpenAI
 from ..constants import LLM_BASE_MODELS
@@ -69,16 +70,29 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             and ai_model_entity.entity.model_properties.get(ModelPropertyKey.MODE)
             == LLMMode.CHAT.value
         ):
-            return self._chat_generate(
-                model=model,
-                credentials=credentials,
-                prompt_messages=prompt_messages,
-                model_parameters=model_parameters,
-                tools=tools,
-                stop=stop,
-                stream=stream,
-                user=user,
-            )
+            # 对 GPT-5-codex 模型使用 Responses API
+            if base_model_name in ["gpt-5-codex"]:
+                return self._chat_generate_with_responses(
+                    model=model,
+                    credentials=credentials,
+                    prompt_messages=prompt_messages,
+                    model_parameters=model_parameters,
+                    tools=tools,
+                    stop=stop,
+                    stream=stream,
+                    user=user,
+                )
+            else:
+                return self._chat_generate(
+                    model=model,
+                    credentials=credentials,
+                    prompt_messages=prompt_messages,
+                    model_parameters=model_parameters,
+                    tools=tools,
+                    stop=stop,
+                    stream=stream,
+                    user=user,
+                )
         else:
             return self._generate(
                 model=model,
@@ -384,6 +398,495 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             )
 
         return block_result
+
+    def _chat_generate_with_responses(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
+    ) -> Union[LLMResult, Generator]:
+        """
+        使用 OpenAI Responses API 生成聊天响应
+
+        参考: https://platform.openai.com/docs/guides/migrate-to-responses
+        """
+        client = AzureOpenAI(**self._to_credential_kwargs(credentials))
+
+        # 转换消息格式为 Responses API 格式
+        input_messages = self._convert_prompt_messages_to_responses_input(prompt_messages)
+
+        # 构建 Responses API 参数
+        responses_params = {
+            "model": model,
+            "input": input_messages,
+        }
+
+        # 处理模型参数映射到 Responses API
+        if "temperature" in model_parameters:
+            responses_params["temperature"] = model_parameters["temperature"]
+        if "top_p" in model_parameters:
+            responses_params["top_p"] = model_parameters["top_p"]
+        if "max_tokens" in model_parameters:
+            responses_params["max_output_tokens"] = model_parameters["max_tokens"]
+        elif "max_completion_tokens" in model_parameters:
+            responses_params["max_output_tokens"] = model_parameters["max_completion_tokens"]
+
+        # 处理工具 - Responses API 格式
+        if tools:
+            responses_params["tools"] = []
+            for tool in tools:
+                # 确保参数是有效的 JSON 对象
+                parameters = tool.parameters
+                if isinstance(parameters, str):
+                    try:
+                        parameters = json.loads(parameters)
+                    except json.JSONDecodeError:
+                        parameters = {"type": "object", "properties": {}}
+                elif not isinstance(parameters, dict):
+                    parameters = {"type": "object", "properties": {}}
+
+                tool_dict = {
+                    "type": "function",
+                    "name": tool.name,
+                    "description": tool.description or "",
+                    "parameters": parameters
+                }
+                responses_params["tools"].append(tool_dict)
+            responses_params["tool_choice"] = "auto"
+
+        # 处理用户ID
+        if user:
+            responses_params["user"] = user
+
+        # 处理停止词
+        if stop:
+            responses_params["stop"] = stop
+
+        # 处理响应格式
+        response_format = model_parameters.get("response_format")
+        if response_format:
+            if response_format == "json_schema":
+                json_schema_data = model_parameters.get("json_schema", {})
+                # 确保 json_schema 是一个对象，而不是字符串
+                if isinstance(json_schema_data, str):
+                    try:
+                        json_schema_data = json.loads(json_schema_data)
+                    except json.JSONDecodeError:
+                        json_schema_data = {}
+
+                responses_params["text"] = {
+                    "format": {
+                        "type": "json_schema",
+                        "name": json_schema_data.get("name", "response"),
+                        "strict": json_schema_data.get("strict", True),
+                        "schema": json_schema_data.get("json_schema", {})
+                    }
+                }
+            else:
+                responses_params["text"] = {
+                    "format": {"type": response_format}
+                }
+
+        if "reasoning_effort" in model_parameters:
+            responses_params["reasoning"] = {"effort": model_parameters["reasoning_effort"]}
+
+        logger.info(
+            f"llm request with responses api: model={model}, stream={stream}, "
+            f"parameters={responses_params}"
+        )
+
+        # 使用 Responses API
+        response = client.responses.create(
+            **responses_params,
+            stream=stream,
+        )
+
+        if stream:
+            return self._handle_responses_stream_response(
+                model, credentials, response, prompt_messages, tools
+            )
+        else:
+            return self._handle_responses_response(
+                model, credentials, response, prompt_messages, tools
+            )
+
+    def _convert_prompt_messages_to_responses_input(
+        self, prompt_messages: list[PromptMessage]
+    ) -> list[dict]:
+        """将提示消息转换为 Responses API 输入格式"""
+        input_messages = []
+
+        for message in prompt_messages:
+            if isinstance(message, SystemPromptMessage):
+                input_messages.append({
+                    "role": "developer",
+                    "content": message.content
+                })
+            elif isinstance(message, UserPromptMessage):
+                if isinstance(message.content, str):
+                    input_messages.append({
+                        "role": "user",
+                        "content": message.content
+                    })
+                else:
+                    # 处理多模态内容
+                    content_parts = []
+                    for content_item in message.content:
+                        if hasattr(content_item, 'type'):
+                            if content_item.type == "text":
+                                content_parts.append({
+                                    "type": "input_text",
+                                    "text": content_item.data
+                                })
+                            elif content_item.type == "image_url":
+                                content_parts.append({
+                                    "type": "input_image",
+                                    "image_url": content_item.data
+                                })
+                    input_messages.append({
+                        "role": "user",
+                        "content": content_parts
+                    })
+            elif isinstance(message, AssistantPromptMessage):
+                input_messages.append({
+                    "role": "assistant",
+                    "content": message.content
+                })
+            elif isinstance(message, ToolPromptMessage):
+                input_messages.append({
+                    "role": "assistant",  # Responses API 中工具调用也使用 assistant
+                    "content": message.content
+                })
+
+        return input_messages
+
+    def _handle_responses_response(
+        self,
+        model: str,
+        credentials: dict,
+        response: Response,
+        prompt_messages: list[PromptMessage],
+        tools: Optional[list[PromptMessageTool]] = None,
+    ) -> LLMResult:
+        """处理 Responses API 的非流式响应"""
+        # 提取文本内容
+        content = ""
+
+        # 检查响应的实际结构
+        if hasattr(response, 'output') and response.output:
+            # Responses API 的标准格式
+            for item in response.output:
+                item_type = getattr(item, 'type', '')
+                if item_type == "message":
+                    # message.content 可能是字符串或由分段构成的列表
+                    item_content = getattr(item, 'content', None)
+                    if isinstance(item_content, str):
+                        if item_content:
+                            content += item_content
+                    elif isinstance(item_content, list):
+                        for part in item_content:
+                            part_type = getattr(part, 'type', '')
+                            if part_type in ("output_text", "text", "input_text"):
+                                text_val = getattr(part, 'text', '')
+                                if text_val:
+                                    content += text_val
+                elif item_type in ("output_text", "text"):
+                    # 一些实现会直接返回 output_text/text 项
+                    text_val = getattr(item, 'text', '')
+                    if text_val:
+                        content += text_val
+        elif hasattr(response, 'text') and response.text:
+            # 备用格式
+            content = response.text
+        elif hasattr(response, 'content') and response.content:
+            # 直接内容格式
+            content = response.content
+
+        # 处理工具调用
+        tool_calls = []
+        if hasattr(response, 'output') and response.output:
+            for item in response.output:
+                item_type = getattr(item, 'type', '')
+                if item_type == "function_call":
+                    # 处理 Responses API 的工具调用格式
+                    function_name = getattr(item, 'name', '')
+                    function_args = getattr(item, 'arguments', '')
+                    call_id = getattr(item, 'call_id', '') or getattr(item, 'id', '')
+
+                    # 确保参数是有效的 JSON 字符串
+                    if isinstance(function_args, dict):
+                        args_str = json.dumps(function_args)
+                    elif isinstance(function_args, str):
+                        args_str = function_args
+                    else:
+                        args_str = "{}"
+
+                    tool_call = AssistantPromptMessage.ToolCall(
+                        id=call_id,
+                        type="function",
+                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                            name=function_name,
+                            arguments=args_str
+                        )
+                    )
+                    tool_calls.append(tool_call)
+
+        assistant_prompt_message = AssistantPromptMessage(
+            content=content,
+            tool_calls=tool_calls
+        )
+
+        # 计算token使用量
+        prompt_tokens = 0
+        completion_tokens = 0
+        prompt_tokens_details: Optional[dict] = None
+        completion_tokens_details: Optional[dict] = None
+
+        if hasattr(response, 'usage') and response.usage:
+            usage_obj = response.usage
+            # Responses API 字段兼容
+            prompt_tokens = getattr(usage_obj, 'input_tokens', None) or getattr(usage_obj, 'prompt_tokens', 0)
+            completion_tokens = getattr(usage_obj, 'output_tokens', None) or getattr(usage_obj, 'completion_tokens', 0)
+            # 兼容包含细分字段的实现（将 SDK 类型转换为 dict）
+            # 优先使用统一字段名 prompt_tokens_details/completion_tokens_details
+            if hasattr(usage_obj, 'prompt_tokens_details') and usage_obj.prompt_tokens_details:
+                _ptd = usage_obj.prompt_tokens_details
+                if hasattr(_ptd, 'to_dict'):
+                    prompt_tokens_details = _ptd.to_dict()
+                elif isinstance(_ptd, dict):
+                    prompt_tokens_details = _ptd
+                else:
+                    prompt_tokens_details = {
+                        'cached_tokens': getattr(_ptd, 'cached_tokens', None)
+                    }
+            elif hasattr(usage_obj, 'input_tokens_details') and usage_obj.input_tokens_details:
+                it = usage_obj.input_tokens_details
+                if hasattr(it, 'to_dict'):
+                    prompt_tokens_details = it.to_dict()
+                else:
+                    prompt_tokens_details = {
+                        'cached_tokens': getattr(it, 'cached_tokens', None)
+                    }
+            if hasattr(usage_obj, 'completion_tokens_details') and usage_obj.completion_tokens_details:
+                completion_tokens_details = usage_obj.completion_tokens_details
+            elif hasattr(usage_obj, 'output_tokens_details') and usage_obj.output_tokens_details:
+                ot = usage_obj.output_tokens_details
+                if hasattr(ot, 'to_dict'):
+                    completion_tokens_details = ot.to_dict()
+                else:
+                    completion_tokens_details = {
+                        'reasoning_tokens': getattr(ot, 'reasoning_tokens', None)
+                    }
+        else:
+            # 如果没有usage信息，进行估算
+            prompt_tokens = self._num_tokens_from_messages(
+                credentials, prompt_messages, tools
+            )
+            completion_tokens = self._num_tokens_from_messages(
+                credentials, [assistant_prompt_message]
+            )
+
+        usage = self._calc_response_usage(
+            model, credentials, prompt_tokens, completion_tokens,
+            prompt_tokens_details=prompt_tokens_details,
+            completion_tokens_details=completion_tokens_details
+        )
+
+        return LLMResult(
+            model=model,
+            prompt_messages=prompt_messages,
+            message=assistant_prompt_message,
+            usage=usage,
+            system_fingerprint=getattr(response, 'id', ''),
+        )
+
+    def _handle_responses_stream_response(
+        self,
+        model: str,
+        credentials: dict,
+        response: Stream[ResponseStreamEvent],
+        prompt_messages: list[PromptMessage],
+        tools: Optional[list[PromptMessageTool]] = None,
+    ) -> Generator:
+        """处理 Responses API 的流式响应"""
+        full_text = ""
+        tool_calls = []
+        index = 0
+        is_first = True
+
+        # 用于跟踪工具调用的状态
+        pending_tool_calls = {}  # call_id -> tool_call_dict
+        current_tool_call = None
+
+        for chunk in response:
+            if is_first:
+                is_first = False
+
+            # 处理 Responses API 的流式事件格式
+            chunk_type = getattr(chunk, 'type', '')
+
+            if chunk_type == 'response.output_text.delta':
+                # ResponseTextDeltaEvent 格式 - 文本增量
+                delta_text = getattr(chunk, 'delta', '')
+                if delta_text:
+                    full_text += delta_text
+
+                    assistant_prompt_message = AssistantPromptMessage(
+                        content=delta_text,
+                        tool_calls=[]
+                    )
+
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        system_fingerprint=getattr(chunk, 'item_id', ''),
+                        delta=LLMResultChunkDelta(
+                            index=index,
+                            message=assistant_prompt_message
+                        ),
+                    )
+                    index += 1
+
+            elif chunk_type == 'response.output_item.added':
+                # ResponseOutputItemAddedEvent 格式 - 工具调用开始
+                item = getattr(chunk, 'item', None)
+                if item and hasattr(item, 'type'):
+                    item_type = getattr(item, 'type', '')
+
+                    if item_type == 'function_call':
+                        # 工具调用开始 - 初始化工具调用对象
+                        function_name = getattr(item, 'name', '')
+                        call_id = getattr(item, 'call_id', '')
+
+                        if function_name and call_id:
+                            pending_tool_calls[call_id] = {
+                                'id': call_id,
+                                'name': function_name,
+                                'arguments': ''  # 初始为空，等待参数增量
+                            }
+                            current_tool_call = call_id
+
+            elif chunk_type == 'response.function_call_arguments.delta':
+                # ResponseFunctionCallArgumentsDeltaEvent 格式 - 工具参数增量
+                delta_args = getattr(chunk, 'delta', '')
+
+                # 使用当前跟踪的工具调用
+                if current_tool_call and current_tool_call in pending_tool_calls:
+                    # 追加参数到现有工具调用
+                    pending_tool_calls[current_tool_call]['arguments'] += delta_args
+
+            elif chunk_type == 'response.function_call_arguments.done':
+                # ResponseFunctionCallArgumentsDoneEvent 格式 - 工具参数完成
+                call_id = getattr(chunk, 'item_id', '')
+                final_args = getattr(chunk, 'arguments', '')
+
+                if call_id and call_id in pending_tool_calls:
+                    # 使用完成的参数更新工具调用
+                    pending_tool_calls[call_id]['arguments'] = final_args
+
+            elif chunk_type == 'response.output_item.done':
+                # ResponseOutputItemDoneEvent 格式 - 工具调用完成
+                item = getattr(chunk, 'item', None)
+                if item and hasattr(item, 'type'):
+                    item_type = getattr(item, 'type', '')
+
+                    if item_type == 'function_call':
+                        # 工具调用完成 - 发送完整的工具调用
+                        function_name = getattr(item, 'name', '')
+                        function_args = getattr(item, 'arguments', '')
+                        call_id = getattr(item, 'call_id', '')
+
+                        # 优先使用完成的参数（来自 response.function_call_arguments.done）
+                        if call_id in pending_tool_calls:
+                            final_args = pending_tool_calls[call_id]['arguments'] or function_args
+                        else:
+                            final_args = function_args
+
+                        if function_name:
+                            tool_call = AssistantPromptMessage.ToolCall(
+                                id=call_id,
+                                type="function",
+                                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                    name=function_name,
+                                    arguments=final_args or "{}"
+                                )
+                            )
+
+                            assistant_prompt_message = AssistantPromptMessage(
+                                content="",
+                                tool_calls=[tool_call]
+                            )
+
+                            yield LLMResultChunk(
+                                model=model,
+                                prompt_messages=prompt_messages,
+                                system_fingerprint=call_id,
+                                delta=LLMResultChunkDelta(
+                                    index=index,
+                                    message=assistant_prompt_message
+                                ),
+                            )
+                            index += 1
+
+                            # 清理已完成的工具调用
+                            if call_id in pending_tool_calls:
+                                del pending_tool_calls[call_id]
+
+                            # 重置当前工具调用跟踪
+                            if call_id == current_tool_call:
+                                current_tool_call = None
+
+            elif hasattr(chunk, 'delta') and hasattr(chunk.delta, 'text'):
+                # 备用格式处理
+                delta_text = chunk.delta.text or ""
+                if delta_text:
+                    full_text += delta_text
+
+                    assistant_prompt_message = AssistantPromptMessage(
+                        content=delta_text,
+                        tool_calls=[]
+                    )
+
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        system_fingerprint=getattr(chunk, 'item_id', ''),
+                        delta=LLMResultChunkDelta(
+                            index=index,
+                            message=assistant_prompt_message
+                        ),
+                    )
+                    index += 1
+
+        # 处理最终的使用统计
+        prompt_tokens = self._num_tokens_from_messages(
+            credentials, prompt_messages, tools
+        )
+        full_assistant_prompt_message = AssistantPromptMessage(content=full_text)
+        completion_tokens = self._num_tokens_from_messages(
+            credentials, [full_assistant_prompt_message]
+        )
+
+        usage = self._calc_response_usage(
+            model, credentials, prompt_tokens, completion_tokens
+        )
+
+        yield LLMResultChunk(
+            model=model,
+            prompt_messages=prompt_messages,
+            system_fingerprint="",
+            delta=LLMResultChunkDelta(
+                index=index,
+                message=AssistantPromptMessage(content=""),
+                finish_reason="stop",
+                usage=usage,
+            ),
+        )
 
     def _handle_chat_block_as_stream_response(
         self,
