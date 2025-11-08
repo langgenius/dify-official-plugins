@@ -1,3 +1,6 @@
+import base64
+import hashlib
+import hmac
 import json
 from collections.abc import Mapping
 from typing import Any
@@ -41,17 +44,27 @@ class AirtableTrigger(Trigger):
         return ["record"]
 
     def _validate_payload(self, subscription: Subscription, request: Request) -> Mapping[str, Any]:
-        """Validate the webhook payload and signature if MAC secret is configured."""
+        """
+        Validate the webhook payload and signature.
+        https://airtable.com/developers/web/api/webhooks-overview describe the verify method.
+        """
         try:
             payload = request.get_json(force=True)
             if not payload:
                 raise TriggerDispatchError("Empty request body")
-            
-            return payload
-        except TriggerDispatchError:
-            raise
         except Exception as exc:
             raise TriggerDispatchError(f"Failed to parse payload: {exc}") from exc
+
+        mac_secret = base64.b64decode(subscription.properties.get("mac_secret", ""))
+        body_bytes = json.dumps(payload, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+        hmac_obj = hmac.new(mac_secret, body_bytes, hashlib.sha256)
+        computed_signature = f"hmac-sha256={hmac_obj.hexdigest()}"
+        expected_signature = request.headers.get("X-Airtable-Content-MAC")
+
+        if computed_signature != expected_signature:
+            raise TriggerDispatchError("Invalid webhook signature")
+
+        return payload
 
 
 class AirtableSubscriptionConstructor(TriggerSubscriptionConstructor):
