@@ -1,0 +1,118 @@
+subscription_schema:
+- name: "mac_secret"
+  type: "secret-input"
+  required: false
+  label:
+    zh_Hans: "MAC Secret"
+    en_US: "MAC Secret"
+    ja_JP: "MACシークレット"
+  help:
+    en_US: "Optional secret to validate incoming Airtable webhook notifications using HMAC. If left empty, signature validation will be skipped."
+    ja_JP: "受信する Airtable Webhook 通知の検証に使用する任意の MAC シークレット。空の場合は署名検証をスキップします。"
+    zh_Hans: "用于通过 HMAC 验证 Airtable Webhook 通知的可选密钥。留空则跳过签名校验。"
+  url: https://airtable.com/developers/web/api/webhooks-overview
+
+subscription_constructor:
+  parameters:
+  - name: "base_id"
+    label:
+      en_US: "Base ID"
+      zh_Hans: "Base ID"
+      ja_JP: "ベース ID"
+    type: "string"
+    required: true
+    help:
+      en_US: "The ID of the Airtable base to monitor for changes. You can find this in your base's URL."
+      zh_Hans: "要监控变化的 Airtable base ID。你可以在 base 的 URL 中找到它。"
+      ja_JP: "変更を監視する Airtable ベースの ID。ベースの URL で確認できます。"
+    placeholder:
+      en_US: "appXXXXXXXXXXXXXX"
+      zh_Hans: "appXXXXXXXXXXXXXX"
+      ja_JP: "appXXXXXXXXXXXXXX"
+
+  - name: "events"
+    label:
+      en_US: "Events"
+      zh_Hans: "事件"
+      ja_JP: "イベント"
+    type: "checkbox"
+    required: true
+    multiple: true
+    default:
+    - "record_created"
+    - "record_updated"
+    - "record_deleted"
+    options:
+    - value: "record_created"
+      label:
+        en_US: "Record Created"
+        zh_Hans: "记录创建"
+        ja_JP: "レコード作成"
+    - value: "record_updated"
+      label:
+        en_US: "Record Updated"
+        zh_Hans: "记录更新"
+        ja_JP: "レコード更新"
+    - value: "record_deleted"
+      label:
+        en_US: "Record Deleted"
+        zh_Hans: "记录删除"
+        ja_JP: "レコード削除"
+
+  - name: "table_ids"
+    label:
+      en_US: "Table IDs (Optional)"
+      zh_Hans: "表格 ID（可选）"
+      ja_JP: "テーブル ID（オプション）"
+    type: "string"
+    required: false
+    help:
+      en_US: "Comma-separated list of table IDs to monitor. Leave empty to monitor all tables in the base."
+      zh_Hans: "要监控的表格 ID 列表（用逗号分隔）。留空则监控 base 中的所有表格。"
+      ja_JP: "監視するテーブル ID のリスト（カンマ区切り）。空の場合はベース内のすべてのテーブルを監視します。"
+    placeholder:
+      en_US: "tblXXXXXXXXXXXXXX,tblYYYYYYYYYYYYYY"
+      zh_Hans: "tblXXXXXXXXXXXXXX,tblYYYYYYYYYYYYYY"
+      ja_JP: "tblXXXXXXXXXXXXXX,tblYYYYYYYYYYYYYY"
+
+  credentials_schema:
+    access_token:
+      help:
+        en_US: Get your Personal Access Token from Airtable account settings. It needs 'webhook:manage', 'data.records:read', and 'schema.bases:read' scopes.
+        ja_JP: Airtable アカウント設定から Personal Access Token を取得してください。'webhook:manage'、'data.records:read'、'schema.bases:read' のスコープが必要です。
+        zh_Hans: 从 Airtable 账户设置中获取你的个人访问令牌（Personal Access Token）。需要 'webhook:manage'、'data.records:read' 和 'schema.bases:read' 权限。
+      label:
+        en_US: Personal Access Token
+        ja_JP: パーソナルアクセストークン
+        zh_Hans: 个人访问令牌
+      placeholder:
+        en_US: Please input your Airtable Personal Access Token
+        ja_JP: Airtable の Personal Access Token を入力してください
+        zh_Hans: 请输入你的 Airtable 个人访问令牌
+      required: true
+      type: secret-input
+      url: https://airtable.com/developers/web/api/authentication
+
+
+events:
+- events/record/record_created.yaml
+- events/record/record_deleted.yaml
+- events/record/record_updated.yaml
+
+
+identity:
+  author: langgenius
+  description:
+    en_US: Airtable is a cloud-based platform that combines spreadsheet and database functionality with real-time collaboration.
+    ja_JP: Airtable は、スプレッドシートとデータベース機能をリアルタイムコラボレーションで組み合わせたクラウドベースのプラットフォームです。
+    zh_Hans: Airtable 是一个云端平台，结合了电子表格和数据库功能，并支持实时协作。
+  icon: icon.svg
+  label:
+    en_US: Airtable Triggers
+    zh_Hans: Airtable 触发器
+    ja_JP: Airtable トリガー
+  name: airtable_trigger
+
+extra:
+  python:
+    source: provider/airtable.py
