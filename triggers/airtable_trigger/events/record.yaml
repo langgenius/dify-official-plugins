@@ -75,4 +75,4 @@ output_schema:
 
 extra:
   python:
-    source: events/record/record_created.py
+    source: events/record.py

@@ -26,9 +26,9 @@ class RecordCreatedEvent(Event):
 
         base_id = payload.get("base", {}).get("id")
         webhook_id = payload.get("webhook", {}).get("id")
-        access_token = self.runtime.subscription.properties.get("access_token")
-        # cursor = self.runtime.subscription.properties.get("cursor")
-        cursor = self.runtime.session.storage.get("cursor") or 1
+        saved_cursor_key = f"airtable_cursor_{base_id}_{webhook_id}"
+        access_token = self.runtime.credentials.get("access_token")
+        cursor = self.runtime.session.storage.get(saved_cursor_key) or 1
 
         headers = {
             "Authorization": f"Bearer {access_token}",
@@ -50,7 +50,6 @@ class RecordCreatedEvent(Event):
         
         cursor = result.get("cursor")
         self.runtime.session.storage.set("cursor", cursor)
-        # self.runtime.subscription.properties["cursor"] = cursor
         
         
         # Return the notification payload

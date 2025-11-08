@@ -30,50 +30,81 @@ subscription_constructor:
       zh_Hans: "appXXXXXXXXXXXXXX"
       ja_JP: "appXXXXXXXXXXXXXX"
 
-  - name: "events"
+  - name: "record_change_scope"
     label:
-      en_US: "Events"
-      zh_Hans: "事件"
-      ja_JP: "イベント"
-    type: "checkbox"
-    required: true
-    multiple: true
-    default:
-    - "record_created"
-    - "record_updated"
-    - "record_deleted"
-    options:
-    - value: "record_created"
-      label:
-        en_US: "Record Created"
-        zh_Hans: "记录创建"
-        ja_JP: "レコード作成"
-    - value: "record_updated"
-      label:
-        en_US: "Record Updated"
-        zh_Hans: "记录更新"
-        ja_JP: "レコード更新"
-    - value: "record_deleted"
-      label:
-        en_US: "Record Deleted"
-        zh_Hans: "记录删除"
-        ja_JP: "レコード削除"
-
-  - name: "table_ids"
-    label:
-      en_US: "Table IDs (Optional)"
-      zh_Hans: "表格 ID（可选）"
-      ja_JP: "テーブル ID（オプション）"
+      en_US: "Record Change Scope (Optional)"
+      zh_Hans: "记录变更范围（可选）"
+      ja_JP: "レコード変更スコープ（オプション）"
     type: "string"
     required: false
     help:
-      en_US: "Comma-separated list of table IDs to monitor. Leave empty to monitor all tables in the base."
-      zh_Hans: "要监控的表格 ID 列表（用逗号分隔）。留空则监控 base 中的所有表格。"
-      ja_JP: "監視するテーブル ID のリスト（カンマ区切り）。空の場合はベース内のすべてのテーブルを監視します。"
+      en_US: "Specify a Table ID (e.g., tblXXXXXXXXXXXXXX) or View ID (e.g., viwXXXXXXXXXXXXXX) to monitor. Leave empty to monitor all tables. Note: Form view and List view are not supported."
+      zh_Hans: "指定一个表格 ID（例如 tblXXXXXXXXXXXXXX）或视图 ID（例如 viwXXXXXXXXXXXXXX）进行监控。留空则监控所有表格。注意：不支持表单视图和列表视图。"
+      ja_JP: "監視するテーブル ID（例：tblXXXXXXXXXXXXXX）またはビュー ID（例：viwXXXXXXXXXXXXXX）を指定します。空の場合はすべてのテーブルを監視します。注意：フォームビューとリストビューはサポートされていません。"
     placeholder:
-      en_US: "tblXXXXXXXXXXXXXX,tblYYYYYYYYYYYYYY"
-      zh_Hans: "tblXXXXXXXXXXXXXX,tblYYYYYYYYYYYYYY"
-      ja_JP: "tblXXXXXXXXXXXXXX,tblYYYYYYYYYYYYYY"
+      en_US: "tblXXXXXXXXXXXXXX or viwXXXXXXXXXXXXXX"
+      zh_Hans: "tblXXXXXXXXXXXXXX 或 viwXXXXXXXXXXXXXX"
+      ja_JP: "tblXXXXXXXXXXXXXX または viwXXXXXXXXXXXXXX"
+
+  - name: "data_types"
+    label:
+      en_US: "Data Types"
+      zh_Hans: "数据类型"
+      ja_JP: "データタイプ"
+    type: "checkbox"
+    required: false
+    multiple: true
+    default:
+    - "tableData"
+    options:
+    - value: "tableData"
+      label:
+        en_US: "Table Data (record and cell value changes)"
+        zh_Hans: "表格数据（记录和单元格值变化）"
+        ja_JP: "テーブルデータ（レコードとセル値の変更）"
+    - value: "tableFields"
+      label:
+        en_US: "Table Fields (field changes)"
+        zh_Hans: "表格字段（字段变化）"
+        ja_JP: "テーブルフィールド（フィールドの変更）"
+    - value: "tableMetadata"
+      label:
+        en_US: "Table Metadata (table name and description changes)"
+        zh_Hans: "表格元数据（表名和描述变化）"
+        ja_JP: "テーブルメタデータ（テーブル名と説明の変更）"
+    help:
+      en_US: "Only generate payloads that contain changes affecting these data types. Leave empty to monitor all types."
+      zh_Hans: "仅生成包含影响这些数据类型的变化的 payload。留空则监控所有类型。"
+      ja_JP: "これらのデータタイプに影響する変更を含むペイロードのみを生成します。空の場合はすべてのタイプを監視します。"
+
+  - name: "change_types"
+    label:
+      en_US: "Change Types (Optional)"
+      zh_Hans: "变更类型（可选）"
+      ja_JP: "変更タイプ（オプション）"
+    type: "checkbox"
+    required: false
+    multiple: true
+    options:
+    - value: "add"
+      label:
+        en_US: "Add"
+        zh_Hans: "添加"
+        ja_JP: "追加"
+    - value: "update"
+      label:
+        en_US: "Update"
+        zh_Hans: "更新"
+        ja_JP: "更新"
+    - value: "remove"
+      label:
+        en_US: "Remove"
+        zh_Hans: "删除"
+        ja_JP: "削除"
+    help:
+      en_US: "Only generate payloads that contain changes of these types. Leave empty to monitor all change types."
+      zh_Hans: "仅生成包含这些类型变化的 payload。留空则监控所有变更类型。"
+      ja_JP: "これらのタイプの変更を含むペイロードのみを生成します。空の場合はすべての変更タイプを監視します。"
 
   credentials_schema:
     access_token:
@@ -95,9 +126,7 @@ subscription_constructor:
 
 
 events:
-- events/record/record_created.yaml
-- events/record/record_deleted.yaml
-- events/record/record_updated.yaml
+- events/record.yaml
 
 
 identity:

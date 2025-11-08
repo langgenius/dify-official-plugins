@@ -107,29 +107,31 @@ class AirtableSubscriptionConstructor(TriggerSubscriptionConstructor):
                 error_code="MISSING_BASE_ID",
             )
 
-        events: list[str] = parameters.get("events", [])
-        table_ids_str = parameters.get("table_ids", "")
+        record_change_scope = parameters.get("record_change_scope", "")
+        data_types: list[str] = parameters.get("data_types", [])
+        change_types: list[str] = parameters.get("change_types", [])
 
         # Build webhook specification
         spec: dict[str, Any] = {
             "options": {
-                "filters": {
-                    "dataTypes": []
-                }
+                "filters": {}
             }
         }
 
-        # Map events to Airtable data types
-        if "record_created" in events or "record_updated" in events or "record_deleted" in events:
-            spec["options"]["filters"]["dataTypes"].append("tableData")
+        # Set data types - use user selection or default to tableData
+        if data_types:
+            spec["options"]["filters"]["dataTypes"] = data_types
+        else:
+            # Default to tableData if not specified
+            spec["options"]["filters"]["dataTypes"] = ["tableData"]
 
-        # Add table filters if specified
-        if table_ids_str:
-            table_ids = [tid.strip() for tid in table_ids_str.split(",") if tid.strip()]
-            if table_ids:
-                spec["options"]["filters"]["fromSources"] = [
-                    {"type": "table", "tableId": tid} for tid in table_ids
-                ]
+        # Set change types if specified
+        if change_types:
+            spec["options"]["filters"]["changeTypes"] = change_types
+
+        # Add record change scope if specified (single table or view ID)
+        if record_change_scope and record_change_scope.strip():
+            spec["options"]["filters"]["recordChangeScope"] = record_change_scope.strip()
 
         access_token = credentials.get("access_token")
 
@@ -165,9 +167,6 @@ class AirtableSubscriptionConstructor(TriggerSubscriptionConstructor):
                 properties={
                     "external_id": webhook_id,
                     "base_id": base_id,
-                    "events": events,
-                    "cursor": 1,
-                    "access_token": access_token,
                     "mac_secret": mac_secret,
                     "expiration_time": expiration_time,
                 },
