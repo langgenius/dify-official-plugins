@@ -38,7 +38,7 @@ class AirtableTrigger(Trigger):
         Note: Airtable doesn't send the actual changed data in the notification.
         The notification is just a ping that tells you to fetch the payloads.
         """
-        return ["record_created"]
+        return ["record"]
 
     def _validate_payload(self, subscription: Subscription, request: Request) -> Mapping[str, Any]:
         """Validate the webhook payload and signature if MAC secret is configured."""

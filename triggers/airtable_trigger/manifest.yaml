@@ -18,7 +18,7 @@ meta:
     language: python
     version: "3.12"
   version: 0.0.1
-  minimum_dify_version: 1.7.0
+  minimum_dify_version: 1.10.0
 name: airtable_trigger
 plugins:
   triggers:
@@ -31,6 +31,9 @@ resource:
       llm: true
     tool:
       enabled: true
+    storage:
+      enabled: true
+      size: 1048576
 tags:
 - productivity
 - database

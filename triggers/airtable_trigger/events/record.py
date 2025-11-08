@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from collections.abc import Mapping
 from typing import Any
 
@@ -8,8 +6,6 @@ from werkzeug import Request
 
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.interfaces.trigger import Event
-
-from ..utils import check_field_contains, check_table_id
 
 
 class RecordCreatedEvent(Event):
@@ -26,18 +22,34 @@ class RecordCreatedEvent(Event):
 
         base_id = payload.get("base", {}).get("id")
         webhook_id = payload.get("webhook", {}).get("id")
+        
+        # Get limit from parameters (default to 1, max 50 per Airtable API)
+        limit = min(parameters.get("limit", 1), 50)
+        
+        # Get cursor - priority: manual input > saved value > None (first time)
+        manual_cursor = parameters.get("cursor")
         saved_cursor_key = f"airtable_cursor_{base_id}_{webhook_id}"
+        
+        if manual_cursor:
+            cursor = manual_cursor
+        elif self.runtime.session.storage.exist(saved_cursor_key):
+            cursor_bytes = self.runtime.session.storage.get(saved_cursor_key)
+            cursor = int.from_bytes(cursor_bytes, byteorder='big')
+        else:
+            cursor = None
+
         access_token = self.runtime.credentials.get("access_token")
-        cursor = self.runtime.session.storage.get(saved_cursor_key) or 1
 
         headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json",
         }
-        params = {
-            "limit": 1,
-            "cursor": cursor
-        }
+        
+        # Build params - only include cursor if we have one
+        params: dict[str, Any] = {"limit": limit}
+        if cursor is not None:
+            params["cursor"] = cursor
+            
         response = httpx.get(
                     f"https://api.airtable.com/v0/bases/{base_id}/webhooks/{webhook_id}/payloads",
                     headers=headers,
@@ -48,15 +60,18 @@ class RecordCreatedEvent(Event):
         result = response.json()
         payloads = result.get("payloads", [])
         
-        cursor = result.get("cursor")
-        self.runtime.session.storage.set("cursor", cursor)
+        # Save the new cursor for next time
+        # Convert int to bytes for storage (use 4 bytes for cursor)
+        new_cursor = result.get("cursor")
+        if new_cursor is not None:
+            cursor_bytes = new_cursor.to_bytes(4, byteorder='big')
+            self.runtime.session.storage.set(saved_cursor_key, cursor_bytes)
         
-        
-        # Return the notification payload
-        # In production, this should contain the actual record data fetched from the API
+        # Return the fetched payloads
         return Variables(variables={
             "base_id": base_id,
             "webhook_id": webhook_id,
             "timestamp": payload.get("timestamp"),
-            "notification": payloads,
+            "cursor": new_cursor,
+            "payloads": payloads,
         })
