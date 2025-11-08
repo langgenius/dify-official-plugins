@@ -173,5 +173,57 @@ class FeishuRequestV2:
             require_token=True,
             payload=payload,
         )
+        return res
 
+    def delete_task(self, task_id: str) -> dict:
+        """
+        Delete a task in Feishu.
+        API doc: https://open.feishu.cn/document/task-v2/task/delete
+        """
+        res = self._send_request(
+            url=f"{self.API_BASE_URL}/task/v2/tasks/{task_id}",
+            method="delete",
+            require_token=True,
+        )
+        return res
+
+    def get_userID_from_email_phone(self, email_or_phone: list = []) -> dict:
+        """
+        Get user ID from email or phone number.
+        API doc: https://open.feishu.cn/document/server-docs/contact-v3/user/batch_get_id
+        """
+        emails = []
+        mobiles = []
+        for item in email_or_phone:
+            if "@" in item:
+                emails.append(item)
+            else:
+                mobiles.append(item)
+        payload = {
+            "emails": emails,
+            "mobiles": mobiles,
+            "include_resigned": False,
+        }
+        res = self._send_request(
+            url=f"{self.API_BASE_URL}/contact/v3/users/batch_get_id",
+            method="post",
+            require_token=True,
+            payload=payload,
+        )
+        return res
+
+    def add_members(self, task_id: str, userID: list = [], member_role: str = "follower") -> dict:
+        """
+        Add members to a task in Feishu.
+        API doc: https://open.feishu.cn/document/task-v2/task/add_members
+        """
+        payload = {
+            "members": [{"id": m, "role": member_role} for m in member_phone_or_email],
+        }
+        res = self._send_request(
+            url=f"{self.API_BASE_URL}/task/v2/tasks/{task_id}/members",
+            method="post",
+            require_token=True,
+            payload=payload,
+        )
         return res

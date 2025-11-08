@@ -52,3 +52,4 @@ tools:
 - tools/create_task.yaml
 - tools/update_task.yaml
 - tools/add_members.yaml
+- tools/get_user_id.yaml
