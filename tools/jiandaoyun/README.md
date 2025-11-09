@@ -49,7 +49,7 @@ To start using the Jiandaoyun Dify plugin, ensure you have installed it from the
 
     ![img.png](_assets/reasoning_config.png)
 
-    Then the plugin will work well.
+    The plugin is now ready to use.
 
 ## Core Features
 
