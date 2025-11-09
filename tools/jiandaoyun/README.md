@@ -27,7 +27,7 @@ To start using the Jiandaoyun Dify plugin, ensure you have installed it from the
 
     ![img.png](_assets/img.png)
 
-2.  Click "To Authorize", fill in your API key (if you don't have one, please refer to the "Obtaining an API Key" section to obtain it), and then click "Save". Then you've get your apiKey configured.
+2.  Click "To Authorize", fill in your API key (if you don't have one, please refer to the "Obtaining an API Key" section to obtain it), and then click "Save". Your API key is now configured.
 
 3.  If you are using the Jiandaoyun in SaaS, you can leave the "Server URL" field empty; it will default to `https://api.jiandaoyun.com/api`. Or if you are using a self-hosted version, you need to fill in the corresponding URL for your environment.
 
