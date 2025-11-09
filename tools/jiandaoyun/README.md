@@ -1,7 +1,7 @@
 # Dify plugin for Jiandaoyun
 
-**Author:** jiandaoyun  
-**Version:** 0.0.1  
+**Author:** Jiandaoyun  
+**Version:** 0.0.3
 **Type:** tool  
 
 ## Description
@@ -12,37 +12,44 @@ The plugin is designed to support better corperate management and data collectio
 ## Installation and Usage  
 
 ### Prerequisites  
+
 No specific prerequisites.
 
 ### Obtaining an API Key
+
 To obtain an API key, visit the [Jiandaoyun Open Platform](http://jiandaoyun.com/open#/key/api_key) to create one. For detailed creation guidelines and usage instructions, refer to the [Jiandaoyun documentation](https://hc.jiandaoyun.com/open/11498).
 
 ### Plugin Installation and Configuration
-To start using the Jiandaoyun Dify plugin, ensure you have installed it from the marketplace and configured it with your API key
 
-1.Open the PLUGINS page ,click the "Jiandaoyun" plugin, and you will see the following interface:
+To start using the Jiandaoyun Dify plugin, ensure you have installed it from the marketplace and configured it with your API key.
 
-![img.png](_assets/img.png)
+1.  Open the PLUGINS page, click the "Jiandaoyun" plugin, and you will see the following interface:
 
-2.click To Authorize, fill in your API key(if you don't have one, please refer to the "Installation and Usage" section below to obtain it), and then click "Save".Then you've get your apiKey configured.
-3.If you are using the self-hosted version of Jiandaoyun, you also need to fill in the server url in the "Server URL" field. If you are using the official Jiandaoyun API center, just fill in "https://api.jiandaoyun.com/api".
-4.Then you can use the plugin in your conversations by invoking its functions. For example, to query all applications, you can say:
-```"Use the Jiandaoyun plugin to query all applications."```
-To create a new record in a specific form, you can prompt:
-"Use the Jiandaoyun plugin to create a new record in the form with entry_id 'your_entry_id' and app_id 'your_app_id', with the following data: {field1: value1, field2: value2}."
+    ![img.png](_assets/img.png)
 
-![tools_usage.png](_assets/tools_usage.png)
+2.  Click "To Authorize", fill in your API key (if you don't have one, please refer to the "Obtaining an API Key" section to obtain it), and then click "Save". Then you've get your apiKey configured.
 
-4.then use an agent which can call the tool to complete the operation.
-Before the agent works, you should fill in the neceesary fields(the server url if you are not using the official jiandaoyun api center; app_id and entry_id if necessary):
+3.  If you are using the Jiandaoyun in SaaS, you can leave the "Server URL" field empty; it will default to `https://api.jiandaoyun.com/api`. Or if you are using a self-hosted version, you need to fill in the corresponding URL for your environment.
 
-![img.png](_assets/list_entry.png)
+4.  Then you can use the plugin in your conversations by invoking its functions. For example, to query all applications, you can say:
+    ```
+    "Use the Jiandaoyun plugin to query all applications."
+    ```
+    To create a new record in a specific form, you can prompt:
+    ```
+    "Use the Jiandaoyun plugin to create a new record in the form with entry_id 'your_entry_id' and app_id 'your_app_id', with the following data: {field1: value1, field2: value2}."
+    ```
+    ![tools_usage.png](_assets/tools_usage.png)
 
-5.You should also tell the agent your app_id in reasoning config:
+5.  Then use an agent which can call the tool to complete the operation. Before the agent works, you should fill in the necessary fields (the server url if you are not using the official jiandaoyun api center; app_id and entry_id if necessary):
 
-![img.png](_assets/reasoning_config.png)
+    ![img.png](_assets/list_entry.png)
 
-then the plugin will work well.
+6.  You should also tell the agent your app_id in reasoning config:
+
+    ![img.png](_assets/reasoning_config.png)
+
+    Then the plugin will work well.
 
 ## Core Features
 
