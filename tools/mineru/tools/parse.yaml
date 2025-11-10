@@ -140,6 +140,28 @@ parameters:
     llm_description: '(For official API) Example: ["docx","html"], markdown, json are the default export formats, no need to set, this parameter only supports one or more of docx, html, latex'
     form: form
 
+  - name: model_version
+    type: select
+    required: false
+    default: pipeline
+    label:
+      en_US: Model version
+      zh_Hans: 模型版本
+      ja_JP: モデルバージョン
+    human_description:
+      en_US: '(For official API) MinerU model version; options: pipeline or vlm, default is pipeline.'
+      zh_Hans: '（用于官方API）MinerU模型版本，两个选项:pipeline、vlm，默认pipeline。'
+      ja_JP: '（公式API用）MinerUモデルのバージョン; オプション: pipelineまたはvlm、デフォルトはpipeline'
+    llm_description: '(For official API) MinerU model version; options: pipeline or vlm, default is pipeline.'
+    form: form
+    options:
+      - value: pipeline
+        label:
+          en_US: pipeline
+      - value: vlm
+        label:
+          en_US: vlm
+
   - name: backend
     type: select
     required: false
