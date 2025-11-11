@@ -42,7 +42,7 @@ def get_bedrock_client(service_name: str, credentials: Mapping[str, str]):
 
     # Check authentication method
     auth_method = credentials.get("auth_method", "Access_Secret_Key")
-    
+
     if auth_method == "API_Key":
         # Use API Key authentication
         bedrock_api_key = credentials.get("bedrock_api_key")
@@ -54,6 +54,8 @@ def get_bedrock_client(service_name: str, credentials: Mapping[str, str]):
 
     elif auth_method == "Access_Secret_Key":
         # Use IAM authentication (default)
+        if 'AWS_BEARER_TOKEN_BEDROCK' in os.environ:
+            os.environ.pop('AWS_BEARER_TOKEN_BEDROCK')
         aws_access_key_id = credentials.get("aws_access_key_id")
         aws_secret_access_key = credentials.get("aws_secret_access_key")
         
@@ -62,7 +64,8 @@ def get_bedrock_client(service_name: str, credentials: Mapping[str, str]):
             client_kwargs['aws_access_key_id'] = aws_access_key_id
             client_kwargs['aws_secret_access_key'] = aws_secret_access_key
     else: # auth_method == "IAM_Role"
-        pass
+        if 'AWS_BEARER_TOKEN_BEDROCK' in os.environ:
+            os.environ.pop('AWS_BEARER_TOKEN_BEDROCK')
 
     client = boto3.client(**client_kwargs)
     return client

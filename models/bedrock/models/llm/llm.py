@@ -1068,26 +1068,22 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :param credentials: model credentials
         :return:
         """
+        if 'auth_method' not in credentials:
+            raise CredentialsValidateFailedError("no auth_method specified in {credentials}.")
+
         try:
-            # Check if this is an inference profile based custom model
-            inference_profile_id = credentials.get("inference_profile_id")
-            if inference_profile_id:
-                # Validate inference profile directly
-                validate_inference_profile(inference_profile_id, credentials)
-                logger.info(f"Successfully validated inference profile: {inference_profile_id}")
+            if credentials['auth_method'] == 'IAM_Role':
                 return
-            
-            # Traditional model validation
-            foundation_model_ids = self._list_foundation_models(credentials=credentials)
-            cris_prefix = model_ids.get_region_area(credentials.get("aws_region"))
-            if cris_prefix and model.startswith(cris_prefix + "."):
-                model = model.split('.', 1)[1]
-            logger.info(f"get model_ids: {foundation_model_ids}")
-            if model not in foundation_model_ids:
-                raise ValueError(f"model id: {model} not found in bedrock")
+            elif credentials['auth_method'] == 'Access_Secret_Key':
+                if credentials['aws_access_key_id'] and credentials['aws_secret_access_key']:
+                    return 
+            elif credentials['auth_method'] == 'API_Key':
+                if credentials['bedrock_api_key']:
+                    return
+
+            raise CredentialsValidateFailedError(f"invalid credential of {credentials['auth_method']}, credentials: {credentials}")
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
-
 
     def _list_foundation_models(self, credentials: dict) -> list[str]:
         """
