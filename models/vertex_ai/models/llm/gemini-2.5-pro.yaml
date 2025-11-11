@@ -55,7 +55,7 @@ parameter_rules:
     required: false
     help:
       zh_Hans: 推理的预算限制（最小128），必须小于max_tokens。不开启时，模型会根据请求的复杂程度自动整预算。
-      en_US: Budget limit for thinking (minimum 1024), must be less than max_tokens.  if not set, the model will automatically adjust the budget based on the complexity of the request.    
+      en_US: Budget limit for thinking (minimum 128), must be less than max_tokens.  if not set, the model will automatically adjust the budget based on the complexity of the request.    
   - name: include_thoughts
     type: boolean
     required: false

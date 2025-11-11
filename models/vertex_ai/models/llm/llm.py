@@ -485,7 +485,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             # please refer to https://ai.google.dev/gemini-api/docs/thinking
             if thinking_config.get("include_thoughts", False) and \
                 (model in DEFAULT_NO_THINKING_MODELS and "thinking_budget" not in thinking_config):
-                raise InvokeBadRequestError(f"The {model} does not enable thinking by default. Include Thoughts is only enabled when thinking budget is seted.")
+                raise InvokeBadRequestError(f"The {model} does not enable thinking by default. Include Thoughts is only enabled when thinking budget is set.")
             config_kwargs["thinking_config"] = types.ThinkingConfig(**thinking_config)
         if tools_config:
             config_kwargs["tools"] = tools_config
