@@ -55,14 +55,16 @@ class AirtableTrigger(Trigger):
         except Exception as exc:
             raise TriggerDispatchError(f"Failed to parse payload: {exc}") from exc
 
-        mac_secret = base64.b64decode(subscription.properties.get("mac_secret", ""))
-        body_bytes = json.dumps(payload, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
-        hmac_obj = hmac.new(mac_secret, body_bytes, hashlib.sha256)
-        computed_signature = f"hmac-sha256={hmac_obj.hexdigest()}"
-        expected_signature = request.headers.get("X-Airtable-Content-MAC")
+        mac_secret_b64 = subscription.properties.get("mac_secret")
+        if mac_secret_b64:
+            mac_secret = base64.b64decode(mac_secret_b64)
+            body_bytes = json.dumps(payload, separators=(',', ':'), ensure_ascii=False).encode('utf-8')
+            hmac_obj = hmac.new(mac_secret, body_bytes, hashlib.sha256)
+            computed_signature = f"hmac-sha256={hmac_obj.hexdigest()}"
+            expected_signature = request.headers.get("X-Airtable-Content-MAC")
 
-        if computed_signature != expected_signature:
-            raise TriggerDispatchError("Invalid webhook signature")
+            if computed_signature != expected_signature:
+                raise TriggerDispatchError("Invalid webhook signature")
 
         return payload
 
