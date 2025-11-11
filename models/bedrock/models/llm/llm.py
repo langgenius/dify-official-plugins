@@ -1081,7 +1081,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 if credentials['bedrock_api_key']:
                     return
 
-            raise CredentialsValidateFailedError(f"invalid credential of {credentials['auth_method']}, credentials: {credentials}")
+            raise CredentialsValidateFailedError(f"Invalid or incomplete credentials for auth_method: {credentials.get('auth_method')}")
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
