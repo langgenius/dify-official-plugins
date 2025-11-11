@@ -21,7 +21,7 @@ subscription_constructor:
       ja_JP: "ベース ID"
     type: "string"
     required: true
-    help:
+    description:
       en_US: "The ID of the Airtable base to monitor for changes. You can find this in your base's URL."
       zh_Hans: "要监控变化的 Airtable base ID。你可以在 base 的 URL 中找到它。"
       ja_JP: "変更を監視する Airtable ベースの ID。ベースの URL で確認できます。"
@@ -37,7 +37,7 @@ subscription_constructor:
       ja_JP: "レコード変更スコープ（オプション）"
     type: "string"
     required: false
-    help:
+    description:
       en_US: "Specify a Table ID (e.g., tblXXXXXXXXXXXXXX) or View ID (e.g., viwXXXXXXXXXXXXXX) to monitor. Leave empty to monitor all tables. Note: Form view and List view are not supported."
       zh_Hans: "指定一个表格 ID（例如 tblXXXXXXXXXXXXXX）或视图 ID（例如 viwXXXXXXXXXXXXXX）进行监控。留空则监控所有表格。注意：不支持表单视图和列表视图。"
       ja_JP: "監視するテーブル ID（例：tblXXXXXXXXXXXXXX）またはビュー ID（例：viwXXXXXXXXXXXXXX）を指定します。空の場合はすべてのテーブルを監視します。注意：フォームビューとリストビューはサポートされていません。"
@@ -72,7 +72,7 @@ subscription_constructor:
         en_US: "Table Metadata (table name and description changes)"
         zh_Hans: "表格元数据（表名和描述变化）"
         ja_JP: "テーブルメタデータ（テーブル名と説明の変更）"
-    help:
+    description:
       en_US: "Only generate payloads that contain changes affecting these data types. Leave empty to monitor all types."
       zh_Hans: "仅生成包含影响这些数据类型的变化的 payload。留空则监控所有类型。"
       ja_JP: "これらのデータタイプに影響する変更を含むペイロードのみを生成します。空の場合はすべてのタイプを監視します。"
@@ -101,7 +101,7 @@ subscription_constructor:
         en_US: "Remove"
         zh_Hans: "删除"
         ja_JP: "削除"
-    help:
+    description:
       en_US: "Only generate payloads that contain changes of these types. Leave empty to monitor all change types."
       zh_Hans: "仅生成包含这些类型变化的 payload。留空则监控所有变更类型。"
       ja_JP: "これらのタイプの変更を含むペイロードのみを生成します。空の場合はすべての変更タイプを監視します。"
