@@ -48,7 +48,7 @@ The trigger provides the following variables to your workflow:
   "webhook_id": "achXXXXXXXXXXXXXX",
   "timestamp": "2023-01-01T00:00:00.000Z",
   "cursor": 9,
-  "payloads": { /* full webhook notification payload */ }
+  "payloads": [ /* full webhook notification payload */ ]
 }
 ```
 
