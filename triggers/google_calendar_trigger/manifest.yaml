@@ -18,7 +18,7 @@ meta:
     language: python
     version: "3.12"
   version: 0.0.1
-  minimum_dify_version: 1.7.0
+  minimum_dify_version: 1.10.0
 name: google_calendar_trigger
 plugins:
   triggers:
