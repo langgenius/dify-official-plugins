@@ -1,6 +1,6 @@
-model: gemini-2.5-flash-lite
+model: gemini-2.5-flash-preview-09-2025
 label:
-  en_US: Gemini 2.5 Flash Lite
+  en_US: Gemini 2.5 Flash Preview 09-2025
 model_type: llm
 features:
   - agent-thought
@@ -50,12 +50,12 @@ parameter_rules:
       en_US: Thinking Budget
     type: int
     default: 1024
-    min: 512
+    min: 0
     max: 24576
     required: false
     help:
-      zh_Hans: 推理的预算限制（最小512），必须小于max_tokens。不开启时，模型会根据请求的复杂程度自动整预算。
-      en_US: Budget limit for thinking (minimum 512), must be less than max_tokens.  if not set, the model will automatically adjust the budget based on the complexity of the request.           
+      zh_Hans: 推理的预算限制（最小0），必须小于max_tokens。不开启时，模型会根据请求的复杂程度自动整预算。
+      en_US: Budget limit for thinking (minimum 0), must be less than max_tokens.  if not set, the model will automatically adjust the budget based on the complexity of the request.          
   - name: include_thoughts
     type: boolean
     required: false
@@ -65,11 +65,11 @@ parameter_rules:
       zh_Hans: 返回思考过程
     help:
       en_US: Indicates whether to include thoughts in the response. If true, thoughts are returned only if the model supports thought and thoughts are available.
-      zh_Hans: 是否返回思考过程。若为 true 则只有模型支持思考且启动思考模式时才返回思考过程。              
+      zh_Hans: 是否返回思考过程。若为 true 则只有模型支持思考且启动思考模式时才返回思考过程。          
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '0.10'
-  output: '0.40'
+  input: '0.30'
+  output: '2.50'
   unit: '0.000001'
   currency: USD
