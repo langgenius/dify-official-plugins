@@ -1,0 +1,43 @@
+identity:
+  name: product_created
+  author: langgenius
+  label:
+    en_US: Product Created
+    zh_Hans: 商品创建
+    ja_JP: 商品作成
+description:
+  en_US: Triggered when a new product (simple, variable, or grouped) is published in WooCommerce.
+  zh_Hans: 当 WooCommerce 中发布新的商品（含简单、可变或分组商品）时触发。
+  ja_JP: WooCommerce で新しい商品（シンプル、バリアブル、グループなど）が公開されたときにトリガーされます。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    product:
+      type: object
+      description: Raw WooCommerce product payload with pricing, stock, and metadata fields.
+      additionalProperties: true
+    webhook:
+      type: object
+      description: Metadata derived from X-WC-Webhook headers.
+      properties:
+        id:
+          type: string
+        delivery_id:
+          type: string
+        resource:
+          type: string
+        event:
+          type: string
+        topic:
+          type: string
+        source:
+          type: string
+  required:
+    - product
+
+extra:
+  python:
+    source: events/product/product_created.py
