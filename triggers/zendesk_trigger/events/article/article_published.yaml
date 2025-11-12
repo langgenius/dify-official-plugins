@@ -19,7 +19,7 @@ parameters:
     ja_JP: ロケールフィルター
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by article locale (e.g., en-us,ja,zh-cn). Leave empty for all.
     zh_Hans: 按文章语言过滤（例如 en-us,ja,zh-cn）。留空表示所有语言。
     ja_JP: 記事のロケールでフィルター（例 en-us,ja,zh-cn）。空の場合は全て。
@@ -31,7 +31,7 @@ parameters:
     ja_JP: タイトルに含む
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated keywords. Trigger if title contains any keyword.
     zh_Hans: 逗号分隔的关键词。如果标题包含任何关键词则触发。
     ja_JP: カンマ区切りのキーワード。タイトルにいずれかが含まれる場合トリガーします。

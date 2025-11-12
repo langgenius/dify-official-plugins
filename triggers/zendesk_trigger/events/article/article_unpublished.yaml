@@ -19,7 +19,7 @@ parameters:
     ja_JP: ブランド ID
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated Zendesk brand IDs to match. Leave blank for any brand.
     zh_Hans: 逗号分隔的 Zendesk 品牌 ID。留空表示任意品牌。
     ja_JP: カンマ区切りの Zendesk ブランド ID。空の場合はすべて。
@@ -31,7 +31,7 @@ parameters:
     ja_JP: ユーザー ID
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated user IDs who can unpublish. Leave blank for any user.
     zh_Hans: 逗号分隔的下线用户 ID。留空表示任意用户。
     ja_JP: カンマ区切りの非公開操作を行ったユーザー ID。空の場合はすべて。

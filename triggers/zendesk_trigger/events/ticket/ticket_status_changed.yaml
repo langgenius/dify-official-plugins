@@ -19,7 +19,7 @@ parameters:
     ja_JP: 変更前ステータス
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by previous status (e.g., new,open). Leave empty for any.
     zh_Hans: 按之前的状态过滤（例如 new,open）。留空表示任意状态。
     ja_JP: 以前のステータスでフィルター（例 new,open）。空の場合は任意。
@@ -31,7 +31,7 @@ parameters:
     ja_JP: 変更後ステータス
   type: string
   required: false
-  help:
+  description:
     en_US: Filter by new status (e.g., solved,closed). Leave empty for any.
     zh_Hans: 按新状态过滤（例如 solved,closed）。留空表示任意状态。
     ja_JP: 新しいステータスでフィルター（例 solved,closed）。空の場合は任意。

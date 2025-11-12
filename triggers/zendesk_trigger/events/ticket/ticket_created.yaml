@@ -19,7 +19,7 @@ parameters:
     ja_JP: ステータスフィルター
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated status values (e.g., new,open,pending). Leave empty to accept all.
     zh_Hans: 逗号分隔的状态值（例如 new,open,pending）。留空表示接受所有状态。
     ja_JP: カンマ区切りのステータス値（例 new,open,pending）。空の場合は全て受け入れます。
@@ -31,7 +31,7 @@ parameters:
     ja_JP: 優先度フィルター
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated priority values (e.g., urgent,high). Leave empty to accept all.
     zh_Hans: 逗号分隔的优先级值（例如 urgent,high）。留空表示接受所有优先级。
     ja_JP: カンマ区切りの優先度値（例 urgent,high）。空の場合は全て受け入れます。
@@ -43,7 +43,7 @@ parameters:
     ja_JP: 必須タグ
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated tag names. Trigger only if ticket has all these tags.
     zh_Hans: 逗号分隔的标签名。仅当工单包含所有这些标签时触发。
     ja_JP: カンマ区切りのタグ名。チケットに全て含まれる場合のみトリガーします。
@@ -55,7 +55,7 @@ parameters:
     ja_JP: チケットタイプ
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated ticket types (e.g., problem,incident,question,task).
     zh_Hans: 逗号分隔的工单类型（例如 problem,incident,question,task）。
     ja_JP: カンマ区切りのチケットタイプ（例 problem,incident,question,task）。
@@ -67,7 +67,7 @@ parameters:
     ja_JP: 件名に含む
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated keywords. Trigger if subject contains any keyword.
     zh_Hans: 逗号分隔的关键词。如果主题包含任何关键词则触发。
     ja_JP: カンマ区切りのキーワード。件名にいずれかが含まれる場合トリガーします。
@@ -79,7 +79,7 @@ parameters:
     ja_JP: 説明に含む
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated keywords. Trigger if description contains any keyword.
     zh_Hans: 逗号分隔的关键词。如果描述包含任何关键词则触发。
     ja_JP: カンマ区切りのキーワード。説明にいずれかが含まれる場合トリガーします。

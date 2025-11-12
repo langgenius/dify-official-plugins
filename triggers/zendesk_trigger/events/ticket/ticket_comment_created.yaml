@@ -36,7 +36,7 @@ parameters:
       zh_Hans: "任意"
       ja_JP: "任意"
   default: "any"
-  help:
+  description:
     en_US: Filter by comment visibility
     zh_Hans: 按评论可见性过滤
     ja_JP: コメントの可視性でフィルター
@@ -48,7 +48,7 @@ parameters:
     ja_JP: 本文に含む
   type: string
   required: false
-  help:
+  description:
     en_US: Comma separated keywords. Trigger if comment contains any keyword.
     zh_Hans: 逗号分隔的关键词。如果评论包含任何关键词则触发。
     ja_JP: カンマ区切りのキーワード。コメントにいずれかが含まれる場合トリガーします。
