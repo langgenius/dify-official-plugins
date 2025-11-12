@@ -70,7 +70,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             and ai_model_entity.entity.model_properties.get(ModelPropertyKey.MODE)
             == LLMMode.CHAT.value
         ):
-            # 对 GPT-5-codex 模型使用 Responses API
+            # Use the Responses API for the gpt-5-codex model
             if base_model_name in ["gpt-5-codex"]:
                 return self._chat_generate_with_responses(
                     model=model,
@@ -411,22 +411,22 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         """
-        使用 OpenAI Responses API 生成聊天响应
+        Generate chat responses with the OpenAI Responses API.
 
-        参考: https://platform.openai.com/docs/guides/migrate-to-responses
+        Reference: https://platform.openai.com/docs/guides/migrate-to-responses
         """
         client = AzureOpenAI(**self._to_credential_kwargs(credentials))
 
-        # 转换消息格式为 Responses API 格式
+        # Convert prompt messages to the Responses API format
         input_messages = self._convert_prompt_messages_to_responses_input(prompt_messages)
 
-        # 构建 Responses API 参数
+        # Build parameters for the Responses API
         responses_params = {
             "model": model,
             "input": input_messages,
         }
 
-        # 处理模型参数映射到 Responses API
+        # Map model parameters to the Responses API
         if "temperature" in model_parameters:
             responses_params["temperature"] = model_parameters["temperature"]
         if "top_p" in model_parameters:
@@ -436,11 +436,11 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         elif "max_completion_tokens" in model_parameters:
             responses_params["max_output_tokens"] = model_parameters["max_completion_tokens"]
 
-        # 处理工具 - Responses API 格式
+        # Handle tools in the Responses API format
         if tools:
             responses_params["tools"] = []
             for tool in tools:
-                # 确保参数是有效的 JSON 对象
+                # Ensure parameters are valid JSON objects
                 parameters = tool.parameters
                 if isinstance(parameters, str):
                     try:
@@ -459,20 +459,20 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 responses_params["tools"].append(tool_dict)
             responses_params["tool_choice"] = "auto"
 
-        # 处理用户ID
+        # Handle the user identifier
         if user:
             responses_params["user"] = user
 
-        # 处理停止词
+        # Handle stop sequences
         if stop:
             responses_params["stop"] = stop
 
-        # 处理响应格式
+        # Handle the response format
         response_format = model_parameters.get("response_format")
         if response_format:
             if response_format == "json_schema":
                 json_schema_data = model_parameters.get("json_schema", {})
-                # 确保 json_schema 是一个对象，而不是字符串
+                # Ensure json_schema is an object rather than a string
                 if isinstance(json_schema_data, str):
                     try:
                         json_schema_data = json.loads(json_schema_data)
@@ -500,7 +500,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             f"parameters={responses_params}"
         )
 
-        # 使用 Responses API
+        # Call the Responses API
         response = client.responses.create(
             **responses_params,
             stream=stream,
@@ -518,7 +518,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
     def _convert_prompt_messages_to_responses_input(
         self, prompt_messages: list[PromptMessage]
     ) -> list[dict]:
-        """将提示消息转换为 Responses API 输入格式"""
+        """Convert prompt messages to the Responses API input format."""
         input_messages = []
 
         for message in prompt_messages:
@@ -534,7 +534,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                         "content": message.content
                     })
                 else:
-                    # 处理多模态内容
+                    # Handle multimodal content
                     content_parts = []
                     for content_item in message.content:
                         if hasattr(content_item, 'type'):
@@ -559,7 +559,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 })
             elif isinstance(message, ToolPromptMessage):
                 input_messages.append({
-                    "role": "assistant",  # Responses API 中工具调用也使用 assistant
+                    "role": "assistant",  # Responses API represents tool calls with the assistant role
                     "content": message.content
                 })
 
@@ -573,17 +573,17 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         prompt_messages: list[PromptMessage],
         tools: Optional[list[PromptMessageTool]] = None,
     ) -> LLMResult:
-        """处理 Responses API 的非流式响应"""
-        # 提取文本内容
+        """Handle non-streaming Responses API responses."""
+        # Extract text content
         content = ""
 
-        # 检查响应的实际结构
+        # Inspect the actual response structure
         if hasattr(response, 'output') and response.output:
-            # Responses API 的标准格式
+            # Standard Responses API format
             for item in response.output:
                 item_type = getattr(item, 'type', '')
                 if item_type == "message":
-                    # message.content 可能是字符串或由分段构成的列表
+                    # message.content can be a string or a list of segments
                     item_content = getattr(item, 'content', None)
                     if isinstance(item_content, str):
                         if item_content:
@@ -596,29 +596,29 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                                 if text_val:
                                     content += text_val
                 elif item_type in ("output_text", "text"):
-                    # 一些实现会直接返回 output_text/text 项
+                    # Some implementations return output_text/text entries directly
                     text_val = getattr(item, 'text', '')
                     if text_val:
                         content += text_val
         elif hasattr(response, 'text') and response.text:
-            # 备用格式
+            # Fallback format
             content = response.text
         elif hasattr(response, 'content') and response.content:
-            # 直接内容格式
+            # Direct content format
             content = response.content
 
-        # 处理工具调用
+        # Handle tool calls
         tool_calls = []
         if hasattr(response, 'output') and response.output:
             for item in response.output:
                 item_type = getattr(item, 'type', '')
                 if item_type == "function_call":
-                    # 处理 Responses API 的工具调用格式
+                    # Handle the Responses API tool call format
                     function_name = getattr(item, 'name', '')
                     function_args = getattr(item, 'arguments', '')
                     call_id = getattr(item, 'call_id', '') or getattr(item, 'id', '')
 
-                    # 确保参数是有效的 JSON 字符串
+                    # Ensure the arguments are valid JSON strings
                     if isinstance(function_args, dict):
                         args_str = json.dumps(function_args)
                     elif isinstance(function_args, str):
@@ -641,7 +641,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             tool_calls=tool_calls
         )
 
-        # 计算token使用量
+        # Calculate token usage
         prompt_tokens = 0
         completion_tokens = 0
         prompt_tokens_details: Optional[dict] = None
@@ -649,11 +649,11 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
         if hasattr(response, 'usage') and response.usage:
             usage_obj = response.usage
-            # Responses API 字段兼容
+            # Support Responses API usage fields
             prompt_tokens = getattr(usage_obj, 'input_tokens', None) or getattr(usage_obj, 'prompt_tokens', 0)
             completion_tokens = getattr(usage_obj, 'output_tokens', None) or getattr(usage_obj, 'completion_tokens', 0)
-            # 兼容包含细分字段的实现（将 SDK 类型转换为 dict）
-            # 优先使用统一字段名 prompt_tokens_details/completion_tokens_details
+            # Support implementations that expose detailed fields (convert SDK types to dict)
+            # Prefer the unified prompt_tokens_details/completion_tokens_details fields
             if hasattr(usage_obj, 'prompt_tokens_details') and usage_obj.prompt_tokens_details:
                 _ptd = usage_obj.prompt_tokens_details
                 if hasattr(_ptd, 'to_dict'):
@@ -683,7 +683,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                         'reasoning_tokens': getattr(ot, 'reasoning_tokens', None)
                     }
         else:
-            # 如果没有usage信息，进行估算
+            # Estimate usage when it is not provided
             prompt_tokens = self._num_tokens_from_messages(
                 credentials, prompt_messages, tools
             )
@@ -713,13 +713,13 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         prompt_messages: list[PromptMessage],
         tools: Optional[list[PromptMessageTool]] = None,
     ) -> Generator:
-        """处理 Responses API 的流式响应"""
+        """Handle streaming Responses API responses."""
         full_text = ""
         tool_calls = []
         index = 0
         is_first = True
 
-        # 用于跟踪工具调用的状态
+        # Track tool call state
         pending_tool_calls = {}  # call_id -> tool_call_dict
         current_tool_call = None
 
@@ -727,11 +727,11 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             if is_first:
                 is_first = False
 
-            # 处理 Responses API 的流式事件格式
+            # Handle the Responses API streaming event format
             chunk_type = getattr(chunk, 'type', '')
 
             if chunk_type == 'response.output_text.delta':
-                # ResponseTextDeltaEvent 格式 - 文本增量
+                # ResponseTextDeltaEvent format - text delta
                 delta_text = getattr(chunk, 'delta', '')
                 if delta_text:
                     full_text += delta_text
@@ -753,13 +753,13 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     index += 1
 
             elif chunk_type == 'response.output_item.added':
-                # ResponseOutputItemAddedEvent 格式 - 工具调用开始
+                # ResponseOutputItemAddedEvent format - tool call start
                 item = getattr(chunk, 'item', None)
                 if item and hasattr(item, 'type'):
                     item_type = getattr(item, 'type', '')
 
                     if item_type == 'function_call':
-                        # 工具调用开始 - 初始化工具调用对象
+                        # Tool call start - initialize the tool call object
                         function_name = getattr(item, 'name', '')
                         call_id = getattr(item, 'call_id', '')
 
@@ -767,41 +767,41 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                             pending_tool_calls[call_id] = {
                                 'id': call_id,
                                 'name': function_name,
-                                'arguments': ''  # 初始为空，等待参数增量
+                                'arguments': ''  # Start empty and wait for argument deltas
                             }
                             current_tool_call = call_id
 
             elif chunk_type == 'response.function_call_arguments.delta':
-                # ResponseFunctionCallArgumentsDeltaEvent 格式 - 工具参数增量
+                # ResponseFunctionCallArgumentsDeltaEvent format - tool argument delta
                 delta_args = getattr(chunk, 'delta', '')
 
-                # 使用当前跟踪的工具调用
+                # Use the currently tracked tool call
                 if current_tool_call and current_tool_call in pending_tool_calls:
-                    # 追加参数到现有工具调用
+                    # Append arguments to the existing tool call
                     pending_tool_calls[current_tool_call]['arguments'] += delta_args
 
             elif chunk_type == 'response.function_call_arguments.done':
-                # ResponseFunctionCallArgumentsDoneEvent 格式 - 工具参数完成
+                # ResponseFunctionCallArgumentsDoneEvent format - tool arguments complete
                 call_id = getattr(chunk, 'item_id', '')
                 final_args = getattr(chunk, 'arguments', '')
 
                 if call_id and call_id in pending_tool_calls:
-                    # 使用完成的参数更新工具调用
+                    # Update the tool call with the completed arguments
                     pending_tool_calls[call_id]['arguments'] = final_args
 
             elif chunk_type == 'response.output_item.done':
-                # ResponseOutputItemDoneEvent 格式 - 工具调用完成
+                # ResponseOutputItemDoneEvent format - tool call complete
                 item = getattr(chunk, 'item', None)
                 if item and hasattr(item, 'type'):
                     item_type = getattr(item, 'type', '')
 
                     if item_type == 'function_call':
-                        # 工具调用完成 - 发送完整的工具调用
+                        # Tool call complete - emit the full tool call
                         function_name = getattr(item, 'name', '')
                         function_args = getattr(item, 'arguments', '')
                         call_id = getattr(item, 'call_id', '')
 
-                        # 优先使用完成的参数（来自 response.function_call_arguments.done）
+                        # Prefer the completed arguments (from response.function_call_arguments.done)
                         if call_id in pending_tool_calls:
                             final_args = pending_tool_calls[call_id]['arguments'] or function_args
                         else:
@@ -833,16 +833,16 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                             )
                             index += 1
 
-                            # 清理已完成的工具调用
+                            # Clean up completed tool calls
                             if call_id in pending_tool_calls:
                                 del pending_tool_calls[call_id]
 
-                            # 重置当前工具调用跟踪
+                            # Reset tracking for the current tool call
                             if call_id == current_tool_call:
                                 current_tool_call = None
 
             elif hasattr(chunk, 'delta') and hasattr(chunk.delta, 'text'):
-                # 备用格式处理
+                # Handle alternative formats
                 delta_text = chunk.delta.text or ""
                 if delta_text:
                     full_text += delta_text
@@ -863,7 +863,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     )
                     index += 1
 
-        # 处理最终的使用统计
+        # Handle the final usage statistics
         prompt_tokens = self._num_tokens_from_messages(
             credentials, prompt_messages, tools
         )
