@@ -1,0 +1,38 @@
+author: langgenius
+created_at: "2025-02-01T00:00:00Z"
+description:
+  en_US: Webhook trigger plugin for WooCommerce stores covering orders, products, customers, and coupons.
+  zh_Hans: 针对 WooCommerce 商店的 Webhook 触发器，覆盖订单、商品、客户与优惠券事件。
+  ja_JP: WooCommerce ストア向けの Webhook トリガープラグインで、注文・商品・顧客・クーポンのイベントに対応します。
+icon: icon.png
+label:
+  en_US: WooCommerce
+  zh_Hans: WooCommerce
+  ja_JP: WooCommerce
+meta:
+  arch:
+    - amd64
+    - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: "3.12"
+  version: 0.0.1
+  minimum_dify_version: 1.10.0
+name: woocommerce_trigger
+plugins:
+  triggers:
+    - provider/woocommerce.yaml
+resource:
+  memory: 1048576
+  permission:
+    model:
+      enabled: true
+      llm: true
+    tool:
+      enabled: true
+tags:
+  - ecommerce
+  - trigger
+type: plugin
+version: 1.0.0
