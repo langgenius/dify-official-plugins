@@ -424,6 +424,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                     delta.delta.reasoning_content is None
                     or delta.delta.reasoning_content == ""
                 )
+                and delta.delta.tool_calls is None
             ):
                 continue
 
