@@ -197,16 +197,23 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
             else:
                 new_prompt_messages.append(copy_prompt_message)
         if "web_search" in model_parameters:
-            enable_web_search = model_parameters.get("web_search")
-            model_parameters.pop("web_search")
-            web_search_params = {
-                "type": "web_search",
-                "web_search": {"enable": enable_web_search},
-            }
-            if "tools" in model_parameters:
-                model_parameters["tools"].append(web_search_params)
-            else:
-                model_parameters["tools"] = [web_search_params]
+            enable_web_search = model_parameters.pop("web_search")
+            if enable_web_search:
+                web_search_params = {
+                    "type": "web_search",
+                    "web_search": {
+                        "enable": "True",
+                        "search_engine": "search_pro",
+                        "search_result": "True",
+                        "count": "5",
+                        "search_recency_filter": "noLimit",
+                        "content_size": "high"
+                    }
+                }
+                if "tools" in model_parameters:
+                    model_parameters["tools"].append(web_search_params)
+                else:
+                    model_parameters["tools"] = [web_search_params]
 
         if "response_format" in model_parameters:
             response_format = model_parameters.get("response_format")
