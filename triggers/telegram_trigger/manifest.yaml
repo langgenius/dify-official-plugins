@@ -31,7 +31,5 @@ resource:
       llm: true
     tool:
       enabled: true
-tags:
-  - trigger
 type: plugin
 version: 0.0.1

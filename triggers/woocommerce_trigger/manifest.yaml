@@ -31,8 +31,5 @@ resource:
       llm: true
     tool:
       enabled: true
-tags:
-  - ecommerce
-  - trigger
 type: plugin
 version: 1.0.0

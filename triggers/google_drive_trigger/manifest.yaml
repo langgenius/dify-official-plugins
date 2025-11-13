@@ -29,7 +29,5 @@ resource:
     storage:
       size: 1048576
       enabled: true
-tags:
-  - trigger
 type: plugin
 version: 1.3.0

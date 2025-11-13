@@ -36,7 +36,6 @@ resource:
       size: 1048576
 tags:
 - productivity
-- database
 - utilities
 type: plugin
 version: 1.0.0

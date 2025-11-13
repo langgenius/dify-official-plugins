@@ -32,7 +32,6 @@ resource:
     tool:
       enabled: true
 tags:
-- customer-service
 - utilities
 type: plugin
 version: 1.0.0
