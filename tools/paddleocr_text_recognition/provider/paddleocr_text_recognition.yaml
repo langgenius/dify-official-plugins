@@ -1,0 +1,89 @@
+identity:
+  author: "paddlepaddle"
+  name: "paddleocr_text_recognition"
+  label:
+    en_US: "PaddleOCR Text Recognition"
+    zh_Hans: "PaddleOCR 文字识别"
+  description:
+    en_US: "PaddleOCR text recognition plugin that provides text recognition capabilities for multiple scenarios and various text types"
+    zh_Hans: "PaddleOCR 文字识别插件，提供多场景、多文字类型的文字识别能力"
+  icon: "icon.png"
+
+#########################################################################################
+# If you want to support OAuth, you can uncomment the following code.
+#########################################################################################
+# oauth_schema:
+#   client_schema:
+#     - name: "client_id"
+#       type: "secret-input"
+#       required: true
+#       url: https://example.com/oauth/authorize
+#       placeholder:
+#         en_US: "Please input your Client ID"
+#         zh_Hans: "请输入你的 Client ID"
+#         pt_BR: "Insira seu Client ID"
+#       help:
+#         en_US: "Client ID is used to authenticate requests to the example.com API."
+#         zh_Hans: "Client ID 用于认证请求到 example.com API。"
+#         pt_BR: "Client ID é usado para autenticar solicitações à API do example.com."
+#       label:
+#         zh_Hans: "Client ID"
+#         en_US: "Client ID"
+#     - name: "client_secret"
+#       type: "secret-input"
+#       required: true
+#       url: https://example.com/oauth/authorize
+#       placeholder:
+#         en_US: "Please input your Client Secret"
+#         zh_Hans: "请输入你的 Client Secret"
+#         pt_BR: "Insira seu Client Secret"
+#       help:
+#         en_US: "Client Secret is used to authenticate requests to the example.com API."
+#         zh_Hans: "Client Secret 用于认证请求到 example.com API。"
+#         pt_BR: "Client Secret é usado para autenticar solicitações à API do example.com."
+#       label:
+#         zh_Hans: "Client Secret"
+#         en_US: "Client Secret"
+#   credentials_schema:
+#     - name: "access_token"
+#       type: "secret-input"
+#       label:
+#         zh_Hans: "Access Token"
+#         en_US: "Access Token"
+
+tools:
+  - tools/paddleocr_text_recognition.yaml
+extra:
+  python:
+    source: provider/paddleocr_text_recognition.py
+
+credentials_for_provider:
+    api_url:
+        type: text-input
+        required: true
+        label:
+            en_US: API URL
+            zh_Hans: API URL
+        placeholder:
+            en_US: API URL
+            zh_Hans: API URL
+        placeholder:
+            en_US: API URL
+            zh_Hans: API URL
+        help:
+            en_US: Click the "API" button in the upper-left corner, select "Text recognition(PP-OCRv5)", and copy the `API_URL`.
+            zh_Hans: 点击左上角的“API”，选择“文字识别（PP-OCRv5）”并复制`API_URL`
+        url: https://aistudio.baidu.com/paddleocr/task
+    aistudio_access_token:
+        type: secret-input
+        required: true
+        label:
+            en_US: AI Studio Access Token
+            zh_Hans: 星河社区访问令牌
+        placeholder:
+            en_US: AI Studio Access Token
+            zh_Hans: 请输入您的星河社区访问令牌
+        help:
+            en_US: Get your AI Studio access token
+            zh_Hans: 获取星河社区访问令牌
+        url: https://aistudio.baidu.com/index/accessToken
