@@ -32,4 +32,4 @@ Add the PaddleOCR text recognition tool in the Agent application, and then enter
 
 ## Credits
 
-This plugin is powered by [PaddleOCR]([GitHub - PaddlePaddle/PaddleOCR: Turn any PDF or image document into structured data for your AI. A powerful, lightweight OCR toolkit that bridges the gap between images/PDFs and LLMs. Supports 100+ languages.](https://github.com/PaddlePaddle/PaddleOCR))
+This plugin is powered by [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR).

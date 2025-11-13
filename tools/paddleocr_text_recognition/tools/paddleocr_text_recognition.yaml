@@ -2,8 +2,8 @@ identity:
   name: paddleocr_text_recognition
   author: langgenius
   label:
-    en_US: paddleocr_text_recognition
-    zh_Hans: paddleocr_text_recognition
+    en_US: PaddleOCR Text Recognition
+    zh_Hans: PaddleOCR 文字识别
 description:
   human:
     en_US: PaddleOCR text recognition plugin that provides text recognition capabilities for multiple scenarios and various text types

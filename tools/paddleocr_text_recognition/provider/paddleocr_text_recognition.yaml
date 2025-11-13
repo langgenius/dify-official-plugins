@@ -1,5 +1,5 @@
 identity:
-  author: "paddlepaddle"
+  author: "langgenius"
   name: "paddleocr_text_recognition"
   label:
     en_US: "PaddleOCR Text Recognition"
@@ -62,9 +62,6 @@ credentials_for_provider:
         type: text-input
         required: true
         label:
-            en_US: API URL
-            zh_Hans: API URL
-        placeholder:
             en_US: API URL
             zh_Hans: API URL
         placeholder:

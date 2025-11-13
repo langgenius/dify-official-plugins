@@ -7,11 +7,13 @@ from tools.paddleocr_text_recognition import PaddleocrTextRecognitionTool
 
 
 class PaddleocrTextRecognitionProvider(ToolProvider):
-    
+
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
         try:
             for _ in PaddleocrTextRecognitionTool.from_credentials(credentials).invoke(
-                tool_parameters={"file": "https://paddle-model-ecology.bj.bcebos.com/paddlex/imgs/demo_image/general_ocr_002.png"}
+                tool_parameters={
+                    "file": "https://paddle-model-ecology.bj.bcebos.com/paddlex/imgs/demo_image/general_ocr_002.png"
+                }
             ):
                 pass
         except Exception as e:
@@ -32,7 +34,7 @@ class PaddleocrTextRecognitionProvider(ToolProvider):
     #     except Exception as e:
     #         raise ToolProviderOAuthError(str(e))
     #     return ""
-        
+
     # def _oauth_get_credentials(
     #     self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
     # ) -> Mapping[str, Any]:
