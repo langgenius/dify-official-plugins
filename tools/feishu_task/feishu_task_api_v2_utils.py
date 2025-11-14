@@ -212,18 +212,78 @@ class FeishuRequestV2:
         )
         return res
 
-    def add_members(self, task_id: str, userID: list = [], member_role: str = "follower") -> dict:
+    def add_members(
+        self,
+        task_id: str,
+        user_ids: list = [],
+        member_role: str = "follower",
+        member_type: str = "user",
+        client_token: Optional[str] = None,
+    ) -> dict:
         """
         Add members to a task in Feishu.
         API doc: https://open.feishu.cn/document/task-v2/task/add_members
         """
         payload = {
-            "members": [{"id": m, "role": member_role} for m in member_phone_or_email],
+            "members": [{"id": m, "role": member_role, "type": member_type} for m in user_ids],
         }
+        if client_token:
+            payload["client_token"] = client_token
         res = self._send_request(
-            url=f"{self.API_BASE_URL}/task/v2/tasks/{task_id}/members",
+            url=f"{self.API_BASE_URL}/task/v2/tasks/{task_id}/add_members",
             method="post",
             require_token=True,
             payload=payload,
+            params={"user_id_type": "open_id"},
+        )
+        return res
+
+    def update_task(
+        self,
+        task_id: str,
+        summary: Optional[str] = None,
+        description: Optional[str] = None,
+        start_time: Optional[str] = None,
+        due_date: Optional[str] = None,
+        completed_at: Optional[str] = None,
+        tz: str = "Asia/Shanghai",
+    ) -> dict:
+        payload_task: dict[str, Any] = {}
+        update_fields: list[str] = []
+
+        if summary is not None:
+            payload_task["summary"] = summary
+            update_fields.append("summary")
+
+        if description is not None:
+            payload_task["description"] = description
+            update_fields.append("description")
+
+        if start_time is not None:
+            start_ts = self.to_timestamp_str(start_time, tz)
+            payload_task["start"] = {"timestamp": start_ts, "is_all_day": False}
+            update_fields.append("start")
+
+        if due_date is not None:
+            due_ts = self.to_timestamp_str(due_date, tz)
+            payload_task["due"] = {"timestamp": due_ts, "is_all_day": False}
+            update_fields.append("due")
+
+        if completed_at is not None:
+            completed_ts = self.to_timestamp_str(completed_at, tz)
+            payload_task["completed_at"] = completed_ts
+            update_fields.append("completed_at")
+
+        payload: dict[str, Any] = {
+            "task": payload_task,
+            "update_fields": update_fields,
+        }
+
+        res = self._send_request(
+            url=f"{self.API_BASE_URL}/task/v2/tasks/{task_id}",
+            method="patch",
+            require_token=True,
+            payload=payload,
+            params={"user_id_type": "open_id"},
         )
         return res
