@@ -62,7 +62,7 @@ class FeishuRequestV2:
             raise Exception(res)
         return res
 
-    def to_timestamp_str(self, time_str: str, tz: str = "Asia/Shanghai") -> str:
+    def to_timestamp_str(self, time_str: str, tz: str = "Asia/Shanghai") -> Optional[str]:
         """
         Convert time string to UTC millisecond timestamp (as string).
         Example input: "2023-05-01 14:30:00"
