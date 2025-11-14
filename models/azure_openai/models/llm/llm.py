@@ -8,6 +8,7 @@ from collections.abc import Generator, Sequence
 from typing import Any, Optional, Union, cast
 
 import tiktoken
+from PIL import Image
 from dify_plugin.entities.model import AIModelEntity, ModelPropertyKey
 from dify_plugin.entities.model.llm import (
     LLMMode,
@@ -38,7 +39,7 @@ from openai.types.chat import (
     ChatCompletionMessageToolCall,
 )
 from openai.types.chat.chat_completion_chunk import ChoiceDelta, ChoiceDeltaToolCall
-from PIL import Image
+from openai.types.responses import ResponseStreamEvent, Response
 
 from ..common import _CommonAzureOpenAI
 from ..constants import LLM_BASE_MODELS
@@ -69,16 +70,29 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             and ai_model_entity.entity.model_properties.get(ModelPropertyKey.MODE)
             == LLMMode.CHAT.value
         ):
-            return self._chat_generate(
-                model=model,
-                credentials=credentials,
-                prompt_messages=prompt_messages,
-                model_parameters=model_parameters,
-                tools=tools,
-                stop=stop,
-                stream=stream,
-                user=user,
-            )
+            # Use the Responses API for the gpt-5-codex model
+            if base_model_name in ["gpt-5-codex"]:
+                return self._chat_generate_with_responses(
+                    model=model,
+                    credentials=credentials,
+                    prompt_messages=prompt_messages,
+                    model_parameters=model_parameters,
+                    tools=tools,
+                    stop=stop,
+                    stream=stream,
+                    user=user,
+                )
+            else:
+                return self._chat_generate(
+                    model=model,
+                    credentials=credentials,
+                    prompt_messages=prompt_messages,
+                    model_parameters=model_parameters,
+                    tools=tools,
+                    stop=stop,
+                    stream=stream,
+                    user=user,
+                )
         else:
             return self._generate(
                 model=model,
@@ -384,6 +398,495 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             )
 
         return block_result
+
+    def _chat_generate_with_responses(
+        self,
+        model: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        tools: Optional[list[PromptMessageTool]] = None,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
+    ) -> Union[LLMResult, Generator]:
+        """
+        Generate chat responses with the OpenAI Responses API.
+
+        Reference: https://platform.openai.com/docs/guides/migrate-to-responses
+        """
+        client = AzureOpenAI(**self._to_credential_kwargs(credentials))
+
+        # Convert prompt messages to the Responses API format
+        input_messages = self._convert_prompt_messages_to_responses_input(prompt_messages)
+
+        # Build parameters for the Responses API
+        responses_params = {
+            "model": model,
+            "input": input_messages,
+        }
+
+        # Map model parameters to the Responses API
+        if "temperature" in model_parameters:
+            responses_params["temperature"] = model_parameters["temperature"]
+        if "top_p" in model_parameters:
+            responses_params["top_p"] = model_parameters["top_p"]
+        if "max_tokens" in model_parameters:
+            responses_params["max_output_tokens"] = model_parameters["max_tokens"]
+        elif "max_completion_tokens" in model_parameters:
+            responses_params["max_output_tokens"] = model_parameters["max_completion_tokens"]
+
+        # Handle tools in the Responses API format
+        if tools:
+            responses_params["tools"] = []
+            for tool in tools:
+                # Ensure parameters are valid JSON objects
+                parameters = tool.parameters
+                if isinstance(parameters, str):
+                    try:
+                        parameters = json.loads(parameters)
+                    except json.JSONDecodeError:
+                        parameters = {"type": "object", "properties": {}}
+                elif not isinstance(parameters, dict):
+                    parameters = {"type": "object", "properties": {}}
+
+                tool_dict = {
+                    "type": "function",
+                    "name": tool.name,
+                    "description": tool.description or "",
+                    "parameters": parameters
+                }
+                responses_params["tools"].append(tool_dict)
+            responses_params["tool_choice"] = "auto"
+
+        # Handle the user identifier
+        if user:
+            responses_params["user"] = user
+
+        # Handle stop sequences
+        if stop:
+            responses_params["stop"] = stop
+
+        # Handle the response format
+        response_format = model_parameters.get("response_format")
+        if response_format:
+            if response_format == "json_schema":
+                json_schema_data = model_parameters.get("json_schema", {})
+                # Ensure json_schema is an object rather than a string
+                if isinstance(json_schema_data, str):
+                    try:
+                        json_schema_data = json.loads(json_schema_data)
+                    except json.JSONDecodeError:
+                        json_schema_data = {}
+
+                responses_params["text"] = {
+                    "format": {
+                        "type": "json_schema",
+                        "name": json_schema_data.get("name", "response"),
+                        "strict": json_schema_data.get("strict", True),
+                        "schema": json_schema_data.get("json_schema", {})
+                    }
+                }
+            else:
+                responses_params["text"] = {
+                    "format": {"type": response_format}
+                }
+
+        if "reasoning_effort" in model_parameters:
+            responses_params["reasoning"] = {"effort": model_parameters["reasoning_effort"]}
+
+        logger.info(
+            f"llm request with responses api: model={model}, stream={stream}, "
+            f"parameters={responses_params}"
+        )
+
+        # Call the Responses API
+        response = client.responses.create(
+            **responses_params,
+            stream=stream,
+        )
+
+        if stream:
+            return self._handle_responses_stream_response(
+                model, credentials, response, prompt_messages, tools
+            )
+        else:
+            return self._handle_responses_response(
+                model, credentials, response, prompt_messages, tools
+            )
+
+    def _convert_prompt_messages_to_responses_input(
+        self, prompt_messages: list[PromptMessage]
+    ) -> list[dict]:
+        """Convert prompt messages to the Responses API input format."""
+        input_messages = []
+
+        for message in prompt_messages:
+            if isinstance(message, SystemPromptMessage):
+                input_messages.append({
+                    "role": "developer",
+                    "content": message.content
+                })
+            elif isinstance(message, UserPromptMessage):
+                if isinstance(message.content, str):
+                    input_messages.append({
+                        "role": "user",
+                        "content": message.content
+                    })
+                else:
+                    # Handle multimodal content
+                    content_parts = []
+                    for content_item in message.content:
+                        if hasattr(content_item, 'type'):
+                            if content_item.type == "text":
+                                content_parts.append({
+                                    "type": "input_text",
+                                    "text": content_item.data
+                                })
+                            elif content_item.type == "image_url":
+                                content_parts.append({
+                                    "type": "input_image",
+                                    "image_url": content_item.data
+                                })
+                    input_messages.append({
+                        "role": "user",
+                        "content": content_parts
+                    })
+            elif isinstance(message, AssistantPromptMessage):
+                input_messages.append({
+                    "role": "assistant",
+                    "content": message.content
+                })
+            elif isinstance(message, ToolPromptMessage):
+                input_messages.append({
+                    "role": "assistant",  # Responses API represents tool calls with the assistant role
+                    "content": message.content
+                })
+
+        return input_messages
+
+    def _handle_responses_response(
+        self,
+        model: str,
+        credentials: dict,
+        response: Response,
+        prompt_messages: list[PromptMessage],
+        tools: Optional[list[PromptMessageTool]] = None,
+    ) -> LLMResult:
+        """Handle non-streaming Responses API responses."""
+        # Extract text content
+        content = ""
+
+        # Inspect the actual response structure
+        if hasattr(response, 'output') and response.output:
+            # Standard Responses API format
+            for item in response.output:
+                item_type = getattr(item, 'type', '')
+                if item_type == "message":
+                    # message.content can be a string or a list of segments
+                    item_content = getattr(item, 'content', None)
+                    if isinstance(item_content, str):
+                        if item_content:
+                            content += item_content
+                    elif isinstance(item_content, list):
+                        for part in item_content:
+                            part_type = getattr(part, 'type', '')
+                            if part_type in ("output_text", "text", "input_text"):
+                                text_val = getattr(part, 'text', '')
+                                if text_val:
+                                    content += text_val
+                elif item_type in ("output_text", "text"):
+                    # Some implementations return output_text/text entries directly
+                    text_val = getattr(item, 'text', '')
+                    if text_val:
+                        content += text_val
+        elif hasattr(response, 'text') and response.text:
+            # Fallback format
+            content = response.text
+        elif hasattr(response, 'content') and response.content:
+            # Direct content format
+            content = response.content
+
+        # Handle tool calls
+        tool_calls = []
+        if hasattr(response, 'output') and response.output:
+            for item in response.output:
+                item_type = getattr(item, 'type', '')
+                if item_type == "function_call":
+                    # Handle the Responses API tool call format
+                    function_name = getattr(item, 'name', '')
+                    function_args = getattr(item, 'arguments', '')
+                    call_id = getattr(item, 'call_id', '') or getattr(item, 'id', '')
+
+                    # Ensure the arguments are valid JSON strings
+                    if isinstance(function_args, dict):
+                        args_str = json.dumps(function_args)
+                    elif isinstance(function_args, str):
+                        args_str = function_args
+                    else:
+                        args_str = "{}"
+
+                    tool_call = AssistantPromptMessage.ToolCall(
+                        id=call_id,
+                        type="function",
+                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                            name=function_name,
+                            arguments=args_str
+                        )
+                    )
+                    tool_calls.append(tool_call)
+
+        assistant_prompt_message = AssistantPromptMessage(
+            content=content,
+            tool_calls=tool_calls
+        )
+
+        # Calculate token usage
+        prompt_tokens = 0
+        completion_tokens = 0
+        prompt_tokens_details: Optional[dict] = None
+        completion_tokens_details: Optional[dict] = None
+
+        if hasattr(response, 'usage') and response.usage:
+            usage_obj = response.usage
+            # Support Responses API usage fields
+            prompt_tokens = getattr(usage_obj, 'input_tokens', None) or getattr(usage_obj, 'prompt_tokens', 0)
+            completion_tokens = getattr(usage_obj, 'output_tokens', None) or getattr(usage_obj, 'completion_tokens', 0)
+            # Support implementations that expose detailed fields (convert SDK types to dict)
+            # Prefer the unified prompt_tokens_details/completion_tokens_details fields
+            if hasattr(usage_obj, 'prompt_tokens_details') and usage_obj.prompt_tokens_details:
+                _ptd = usage_obj.prompt_tokens_details
+                if hasattr(_ptd, 'to_dict'):
+                    prompt_tokens_details = _ptd.to_dict()
+                elif isinstance(_ptd, dict):
+                    prompt_tokens_details = _ptd
+                else:
+                    prompt_tokens_details = {
+                        'cached_tokens': getattr(_ptd, 'cached_tokens', None)
+                    }
+            elif hasattr(usage_obj, 'input_tokens_details') and usage_obj.input_tokens_details:
+                it = usage_obj.input_tokens_details
+                if hasattr(it, 'to_dict'):
+                    prompt_tokens_details = it.to_dict()
+                else:
+                    prompt_tokens_details = {
+                        'cached_tokens': getattr(it, 'cached_tokens', None)
+                    }
+            if hasattr(usage_obj, 'completion_tokens_details') and usage_obj.completion_tokens_details:
+                completion_tokens_details = usage_obj.completion_tokens_details
+            elif hasattr(usage_obj, 'output_tokens_details') and usage_obj.output_tokens_details:
+                ot = usage_obj.output_tokens_details
+                if hasattr(ot, 'to_dict'):
+                    completion_tokens_details = ot.to_dict()
+                else:
+                    completion_tokens_details = {
+                        'reasoning_tokens': getattr(ot, 'reasoning_tokens', None)
+                    }
+        else:
+            # Estimate usage when it is not provided
+            prompt_tokens = self._num_tokens_from_messages(
+                credentials, prompt_messages, tools
+            )
+            completion_tokens = self._num_tokens_from_messages(
+                credentials, [assistant_prompt_message]
+            )
+
+        usage = self._calc_response_usage(
+            model, credentials, prompt_tokens, completion_tokens,
+            prompt_tokens_details=prompt_tokens_details,
+            completion_tokens_details=completion_tokens_details
+        )
+
+        return LLMResult(
+            model=model,
+            prompt_messages=prompt_messages,
+            message=assistant_prompt_message,
+            usage=usage,
+            system_fingerprint=getattr(response, 'id', ''),
+        )
+
+    def _handle_responses_stream_response(
+        self,
+        model: str,
+        credentials: dict,
+        response: Stream[ResponseStreamEvent],
+        prompt_messages: list[PromptMessage],
+        tools: Optional[list[PromptMessageTool]] = None,
+    ) -> Generator:
+        """Handle streaming Responses API responses."""
+        full_text = ""
+        tool_calls = []
+        index = 0
+        is_first = True
+
+        # Track tool call state
+        pending_tool_calls = {}  # call_id -> tool_call_dict
+        current_tool_call = None
+
+        for chunk in response:
+            if is_first:
+                is_first = False
+
+            # Handle the Responses API streaming event format
+            chunk_type = getattr(chunk, 'type', '')
+
+            if chunk_type == 'response.output_text.delta':
+                # ResponseTextDeltaEvent format - text delta
+                delta_text = getattr(chunk, 'delta', '')
+                if delta_text:
+                    full_text += delta_text
+
+                    assistant_prompt_message = AssistantPromptMessage(
+                        content=delta_text,
+                        tool_calls=[]
+                    )
+
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        system_fingerprint=getattr(chunk, 'item_id', ''),
+                        delta=LLMResultChunkDelta(
+                            index=index,
+                            message=assistant_prompt_message
+                        ),
+                    )
+                    index += 1
+
+            elif chunk_type == 'response.output_item.added':
+                # ResponseOutputItemAddedEvent format - tool call start
+                item = getattr(chunk, 'item', None)
+                if item and hasattr(item, 'type'):
+                    item_type = getattr(item, 'type', '')
+
+                    if item_type == 'function_call':
+                        # Tool call start - initialize the tool call object
+                        function_name = getattr(item, 'name', '')
+                        call_id = getattr(item, 'call_id', '')
+
+                        if function_name and call_id:
+                            pending_tool_calls[call_id] = {
+                                'id': call_id,
+                                'name': function_name,
+                                'arguments': ''  # Start empty and wait for argument deltas
+                            }
+                            current_tool_call = call_id
+
+            elif chunk_type == 'response.function_call_arguments.delta':
+                # ResponseFunctionCallArgumentsDeltaEvent format - tool argument delta
+                delta_args = getattr(chunk, 'delta', '')
+
+                # Use the currently tracked tool call
+                if current_tool_call and current_tool_call in pending_tool_calls:
+                    # Append arguments to the existing tool call
+                    pending_tool_calls[current_tool_call]['arguments'] += delta_args
+
+            elif chunk_type == 'response.function_call_arguments.done':
+                # ResponseFunctionCallArgumentsDoneEvent format - tool arguments complete
+                call_id = getattr(chunk, 'item_id', '')
+                final_args = getattr(chunk, 'arguments', '')
+
+                if call_id and call_id in pending_tool_calls:
+                    # Update the tool call with the completed arguments
+                    pending_tool_calls[call_id]['arguments'] = final_args
+
+            elif chunk_type == 'response.output_item.done':
+                # ResponseOutputItemDoneEvent format - tool call complete
+                item = getattr(chunk, 'item', None)
+                if item and hasattr(item, 'type'):
+                    item_type = getattr(item, 'type', '')
+
+                    if item_type == 'function_call':
+                        # Tool call complete - emit the full tool call
+                        function_name = getattr(item, 'name', '')
+                        function_args = getattr(item, 'arguments', '')
+                        call_id = getattr(item, 'call_id', '')
+
+                        # Prefer the completed arguments (from response.function_call_arguments.done)
+                        if call_id in pending_tool_calls:
+                            final_args = pending_tool_calls[call_id]['arguments'] or function_args
+                        else:
+                            final_args = function_args
+
+                        if function_name:
+                            tool_call = AssistantPromptMessage.ToolCall(
+                                id=call_id,
+                                type="function",
+                                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                    name=function_name,
+                                    arguments=final_args or "{}"
+                                )
+                            )
+
+                            assistant_prompt_message = AssistantPromptMessage(
+                                content="",
+                                tool_calls=[tool_call]
+                            )
+
+                            yield LLMResultChunk(
+                                model=model,
+                                prompt_messages=prompt_messages,
+                                system_fingerprint=call_id,
+                                delta=LLMResultChunkDelta(
+                                    index=index,
+                                    message=assistant_prompt_message
+                                ),
+                            )
+                            index += 1
+
+                            # Clean up completed tool calls
+                            if call_id in pending_tool_calls:
+                                del pending_tool_calls[call_id]
+
+                            # Reset tracking for the current tool call
+                            if call_id == current_tool_call:
+                                current_tool_call = None
+
+            elif hasattr(chunk, 'delta') and hasattr(chunk.delta, 'text'):
+                # Handle alternative formats
+                delta_text = chunk.delta.text or ""
+                if delta_text:
+                    full_text += delta_text
+
+                    assistant_prompt_message = AssistantPromptMessage(
+                        content=delta_text,
+                        tool_calls=[]
+                    )
+
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        system_fingerprint=getattr(chunk, 'item_id', ''),
+                        delta=LLMResultChunkDelta(
+                            index=index,
+                            message=assistant_prompt_message
+                        ),
+                    )
+                    index += 1
+
+        # Handle the final usage statistics
+        prompt_tokens = self._num_tokens_from_messages(
+            credentials, prompt_messages, tools
+        )
+        full_assistant_prompt_message = AssistantPromptMessage(content=full_text)
+        completion_tokens = self._num_tokens_from_messages(
+            credentials, [full_assistant_prompt_message]
+        )
+
+        usage = self._calc_response_usage(
+            model, credentials, prompt_tokens, completion_tokens
+        )
+
+        yield LLMResultChunk(
+            model=model,
+            prompt_messages=prompt_messages,
+            system_fingerprint="",
+            delta=LLMResultChunkDelta(
+                index=index,
+                message=AssistantPromptMessage(content=""),
+                finish_reason="stop",
+                usage=usage,
+            ),
+        )
 
     def _handle_chat_block_as_stream_response(
         self,

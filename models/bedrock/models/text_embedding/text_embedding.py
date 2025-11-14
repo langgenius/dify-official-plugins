@@ -87,7 +87,35 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
         embeddings = []
         token_usage = 0
 
-        if model_prefix == "amazon":
+        # Nova MME model
+        if model_prefix == "amazon" and "nova" in model_id.lower():
+            embedding_purpose = "GENERIC_INDEX" 
+            for text in texts:
+                body = {
+                    "taskType": "SINGLE_EMBEDDING",
+                    "singleEmbeddingParams": {
+                        "embeddingPurpose": embedding_purpose,
+                        "embeddingDimension": 1024,
+                        "text": {
+                            "truncationMode": "END",
+                            "value": text
+                        }
+                    }
+                }
+                response_body = self._invoke_bedrock_embedding(model_id, bedrock_runtime, body)
+                embedding_data = response_body.get("embeddings", [{}])[0]
+                embeddings.extend([embedding_data.get("embedding")])
+                token_usage += len(text.split())
+            logger.warning(f"Total Tokens: {token_usage}")
+            result = TextEmbeddingResult(
+                model=model,
+                embeddings=embeddings,
+                usage=self._calc_response_usage(model=model, credentials=credentials, tokens=token_usage),
+            )
+            return result
+
+        # Titan embedding models
+        if model_prefix == "amazon" and "titan" in model_id.lower():
             for text in texts:
                 body = {
                     "inputText": text,
