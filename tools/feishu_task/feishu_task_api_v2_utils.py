@@ -187,7 +187,7 @@ class FeishuRequestV2:
         )
         return res
 
-    def get_userID_from_email_phone(self, email_or_phone: list = []) -> dict:
+    def get_userID_from_email_phone(self, email_or_phone: Optional[list] = None) -> dict:
         """
         Get user ID from email or phone number.
         API doc: https://open.feishu.cn/document/server-docs/contact-v3/user/batch_get_id
