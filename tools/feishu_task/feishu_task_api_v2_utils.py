@@ -117,7 +117,7 @@ class FeishuRequestV2:
             raise Exception("Invalid JSON response from Feishu API")
 
         if res.get("code") != 0:
-            raise Exception(res)
+            raise Exception(f"Feishu API Error: {res.get('msg', 'Unknown error')}. Response: {res}")
 
         return res
 
