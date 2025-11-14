@@ -3,7 +3,7 @@ import json
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from feishu_task_api_v2_utils import FeishuRequestV2
+from feishu_task_api_v2_utils import FeishuRequestV2, normalize_list
 
 
 class CreateTaskTool(Tool):
@@ -27,27 +27,8 @@ class CreateTaskTool(Tool):
         assignees_members = tool_parameters.get("assignees_members") or []
         followers_members = tool_parameters.get("followers_members") or []
 
-        def normalize_members(members):
-            if isinstance(members, list):
-                return [m.strip() for m in members if m]
-            if isinstance(members, str):
-                members = members.strip()
-                if not members:
-                    return []
-                try:
-                    parsed = json.loads(members)
-                    if isinstance(parsed, list):
-                        return [str(x).strip() for x in parsed if x]
-                except json.JSONDecodeError:
-                    pass
-                members = members.replace("{", "").replace("}", "").replace("[", "").replace("]", "")
-                members = members.replace('"', '').replace("'", "")
-                return [m.strip() for m in members.split(",") if m.strip()]
-
-            return []
-
-        assignees_members = normalize_members(assignees_members)
-        followers_members = normalize_members(followers_members)
+        assignees_members = normalize_list(assignees_members)
+        followers_members = normalize_list(followers_members)
 
         res = client.create_task(
             summary,

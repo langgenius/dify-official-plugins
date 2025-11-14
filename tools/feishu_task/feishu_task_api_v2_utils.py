@@ -1,6 +1,6 @@
 import json
 from datetime import datetime
-from typing import Any, Optional, cast
+from typing import Any, Optional
 import pytz
 import httpx
 
@@ -30,6 +30,55 @@ def auth(credentials):
     except pytz.UnknownTimeZoneError:
         raise ToolProviderCredentialValidationError(f"Unknown time zone: {time_zone}")
 
+
+def normalize_list(value: Any) -> list[str]:
+    """
+    将可能是字符串或列表的输入规范化为字符串列表。
+
+    参数:
+    - value: 支持 `str`、`list`、`tuple`、`set` 或 `None`。字符串会优先尝试按 JSON 解析，失败则回退到逗号分隔。
+
+    返回:
+    - list[str]: 去除空白、过滤空元素后的字符串列表。
+
+    行为说明:
+    - `list/tuple/set`: 对每个元素做 `str(...).strip()`，过滤为空的项。
+    - `str`: 先用 `json.loads()` 解析；若解析为 `list`，将其元素规范化。
+            若抛出 `json.JSONDecodeError` 或解析结果不是 `list`，则回退到逗号分割，
+            同时去除常见的包裹符号（`[] {}`）及引号。
+    - 其它类型或 `None`: 返回空列表。
+
+    使用示例:
+    - normalize_list('["a", "b" ]') -> ['a', 'b']
+    - normalize_list('a,b , c') -> ['a', 'b', 'c']
+    - normalize_list(['a', 'b']) -> ['a', 'b']
+    - normalize_list('') -> []
+
+    错误处理:
+    - 仅捕获 `json.JSONDecodeError`；解析失败后自动回退到逗号分割，不抛异常。
+    """
+    if isinstance(value, (list, tuple, set)):
+        return [str(x).strip() for x in value if x and str(x).strip()]
+
+    if isinstance(value, str):
+        s = value.strip()
+        if not s:
+            return []
+        try:
+            parsed = json.loads(s)
+        except json.JSONDecodeError:
+            parsed = None
+        if isinstance(parsed, list):
+            return [str(x).strip() for x in parsed if x and str(x).strip()]
+
+        cleaned = s.replace("\n", ",").replace(";", ",")
+        for ch in "{}[]":
+            cleaned = cleaned.replace(ch, "")
+        cleaned = cleaned.replace('"', "").replace("'", "")
+        items = [x.strip() for x in cleaned.split(",") if x and x.strip()]
+        return items
+
+    return []
 
 class FeishuRequestV2:
     API_BASE_URL = "https://open.feishu.cn/open-apis"

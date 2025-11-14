@@ -3,7 +3,7 @@ import logging
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from feishu_task_api_v2_utils import FeishuRequestV2
+from feishu_task_api_v2_utils import FeishuRequestV2, normalize_list
 
 
 class AddMembersTool(Tool):
@@ -20,25 +20,6 @@ class AddMembersTool(Tool):
         member_role = tool_parameters.get("member_role", "follower")
         member_type = tool_parameters.get("member_type", "user")
         client_token = tool_parameters.get("client_token")
-
-        def normalize_list(v):
-            if isinstance(v, list):
-                return [str(x).strip() for x in v if x]
-            if isinstance(v, str):
-                s = v.strip()
-                if not s:
-                    return []
-                try:
-                    import json
-                    parsed = json.loads(s)
-                    if isinstance(parsed, list):
-                        return [str(x).strip() for x in parsed if x]
-                except Exception:
-                    pass
-                s = s.replace("{", "").replace("}", "").replace("[", "").replace("]", "")
-                s = s.replace('"', "").replace("'", "")
-                return [x.strip() for x in s.split(",") if x.strip()]
-            return []
 
         logger = logging.getLogger(__name__)
 
