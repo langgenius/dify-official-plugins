@@ -42,17 +42,6 @@ parameters:
   name: member_ids
   required: false
   type: string
-- form: llm
-  human_description:
-    en_US: "Optional. Member emails or phone numbers, separated by commas. Used to resolve IDs."
-    zh_Hans: "可选。成员邮箱或手机号，逗号分隔，用于解析为 ID。"
-  label:
-    en_US: Member Phone Or Email
-    zh_Hans: 成员电话或邮箱
-  llm_description: "可选。成员邮箱或手机号，逗号分隔，用于解析为 ID。"
-  name: member_phone_or_email
-  required: false
-  type: string
 - default: follower
   form: form
   human_description:

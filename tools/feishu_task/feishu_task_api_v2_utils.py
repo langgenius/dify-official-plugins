@@ -262,6 +262,33 @@ class FeishuRequestV2:
         )
         return res
 
+    @staticmethod
+    def extract_open_ids_from_batch_get_id_response(res: dict) -> list[str]:
+        data = res.get("data") if isinstance(res, dict) else None
+        candidates: list[str] = []
+        buckets = []
+        if isinstance(data, list):
+            buckets.append(data)
+        elif isinstance(data, dict):
+            for key in (
+                "user_infos",
+                "users",
+                "items",
+                "entities",
+                "results",
+                "data",
+            ):
+                v = data.get(key)
+                if isinstance(v, list):
+                    buckets.append(v)
+        for lst in buckets:
+            for it in lst:
+                if isinstance(it, dict):
+                    uid = it.get("open_id") or it.get("user_id") or it.get("id")
+                    if uid and str(uid).strip():
+                        candidates.append(str(uid).strip())
+        return list(dict.fromkeys(candidates))
+
     def add_members(
         self,
         task_id: str,

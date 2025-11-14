@@ -16,7 +16,6 @@ class AddMembersTool(Tool):
 
         task_guid = tool_parameters.get("task_guid")
         member_ids = tool_parameters.get("member_ids")
-        member_phone_or_email = tool_parameters.get("member_phone_or_email")
         member_role = tool_parameters.get("member_role", "follower")
         member_type = tool_parameters.get("member_type", "user")
         client_token = tool_parameters.get("client_token")
@@ -32,30 +31,9 @@ class AddMembersTool(Tool):
                 raise ValueError("member_type must be 'user' or 'app'")
 
             user_ids = normalize_list(member_ids)
-            if not user_ids:
-                contacts = normalize_list(member_phone_or_email)
-                if contacts:
-                    res_ids = client.get_userID_from_email_phone(contacts)
-                    data = res_ids.get("data", {}) if isinstance(res_ids, dict) else {}
-                    extracted_set = set()
-                    if isinstance(data, list):
-                        for it in data:
-                            if isinstance(it, dict):
-                                uid = it.get("open_id") or it.get("user_id") or it.get("id")
-                                if uid:
-                                    extracted_set.add(str(uid))
-                    for k in ["users", "user_infos", "items", "data"]:
-                        v = data.get(k)
-                        if isinstance(v, list):
-                            for it in v:
-                                if isinstance(it, dict):
-                                    uid = it.get("open_id") or it.get("user_id") or it.get("id")
-                                    if uid:
-                                        extracted_set.add(str(uid))
-                    user_ids = list(extracted_set)
 
             if not user_ids:
-                raise ValueError("member_ids or member_phone_or_email must provide at least one member")
+                raise ValueError("member_ids must provide at least one member")
 
             logger.info("add_members start: task_guid=%s, count=%d, role=%s, type=%s", task_guid, len(user_ids), member_role, member_type)
 
