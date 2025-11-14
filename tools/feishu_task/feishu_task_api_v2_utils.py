@@ -258,6 +258,7 @@ class FeishuRequestV2:
             method="post",
             require_token=True,
             payload=payload,
+            params={"user_id_type": "open_id"},
         )
         return res
 

@@ -37,7 +37,13 @@ class AddMembersTool(Tool):
                 if contacts:
                     res_ids = client.get_userID_from_email_phone(contacts)
                     data = res_ids.get("data", {}) if isinstance(res_ids, dict) else {}
-                    extracted = []
+                    extracted_set = set()
+                    if isinstance(data, list):
+                        for it in data:
+                            if isinstance(it, dict):
+                                uid = it.get("open_id") or it.get("user_id") or it.get("id")
+                                if uid:
+                                    extracted_set.add(str(uid))
                     for k in ["users", "user_infos", "items", "data"]:
                         v = data.get(k)
                         if isinstance(v, list):
@@ -45,8 +51,8 @@ class AddMembersTool(Tool):
                                 if isinstance(it, dict):
                                     uid = it.get("open_id") or it.get("user_id") or it.get("id")
                                     if uid:
-                                        extracted.append(str(uid))
-                    user_ids = extracted
+                                        extracted_set.add(str(uid))
+                    user_ids = list(extracted_set)
 
             if not user_ids:
                 raise ValueError("member_ids or member_phone_or_email must provide at least one member")
