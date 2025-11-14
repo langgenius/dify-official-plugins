@@ -16,6 +16,7 @@ Reference: Resume-Matcher/apps/backend/app/services/score_improvement_service.py
 
 import re
 import json
+import time
 from pathlib import Path
 from typing import Any
 from collections.abc import Generator
@@ -280,29 +281,86 @@ class KeywordExtraction(Tool):
                 }
             }
 
-            # Invoke LLM
-            llm_result = self.session.model.llm.invoke(
-                model_config=LLMModelConfig(**llm_config),
-                prompt_messages=prompt_messages,
-                stream=False
-            )
+            # Retry logic for LLM invocation
+            max_retries = 3
+            retry_delay = 1  # Initial delay in seconds
 
-            # Parse LLM response
-            if llm_result and hasattr(llm_result, 'message') and hasattr(llm_result.message, 'content'):
-                response_text = llm_result.message.content.strip()
+            for attempt in range(max_retries):
+                try:
+                    # Invoke LLM
+                    llm_result = self.session.model.llm.invoke(
+                        model_config=LLMModelConfig(**llm_config),
+                        prompt_messages=prompt_messages,
+                        stream=False
+                    )
 
-                # Remove markdown code blocks if present
-                if response_text.startswith("```json"):
-                    response_text = response_text[7:]
-                if response_text.startswith("```"):
-                    response_text = response_text[3:]
-                if response_text.endswith("```"):
-                    response_text = response_text[:-3]
-                response_text = response_text.strip()
+                    # Parse LLM response
+                    if llm_result and hasattr(llm_result, 'message') and hasattr(llm_result.message, 'content'):
+                        response_text = llm_result.message.content.strip()
 
-                # Parse JSON
-                llm_data = json.loads(response_text)
-                return llm_data.get("keywords", [])
+                        # Check for empty response
+                        if not response_text:
+                            if attempt < max_retries - 1:
+                                print(f"⚠️ LLM returned empty response (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...")
+                                time.sleep(retry_delay)
+                                retry_delay *= 2  # Exponential backoff
+                                continue
+                            else:
+                                print(f"❌ LLM returned empty response after {max_retries} attempts")
+                                return []
+
+                        # Remove markdown code blocks if present
+                        if response_text.startswith("```json"):
+                            response_text = response_text[7:]
+                        if response_text.startswith("```"):
+                            response_text = response_text[3:]
+                        if response_text.endswith("```"):
+                            response_text = response_text[:-3]
+                        response_text = response_text.strip()
+
+                        # Parse JSON
+                        llm_data = json.loads(response_text)
+                        keywords = llm_data.get("keywords", [])
+
+                        if keywords:
+                            return keywords
+                        else:
+                            if attempt < max_retries - 1:
+                                print(f"⚠️ LLM returned empty keywords list (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...")
+                                time.sleep(retry_delay)
+                                retry_delay *= 2
+                                continue
+                            else:
+                                return []
+
+                    # No valid response
+                    if attempt < max_retries - 1:
+                        print(f"⚠️ LLM returned invalid response (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2
+                        continue
+                    else:
+                        return []
+
+                except json.JSONDecodeError as json_err:
+                    if attempt < max_retries - 1:
+                        print(f"⚠️ JSON parsing failed (attempt {attempt + 1}/{max_retries}): {str(json_err)}, retrying in {retry_delay}s...")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2
+                        continue
+                    else:
+                        print(f"❌ JSON parsing failed after {max_retries} attempts: {str(json_err)}")
+                        return []
+
+                except Exception as llm_err:
+                    if attempt < max_retries - 1:
+                        print(f"⚠️ LLM invocation failed (attempt {attempt + 1}/{max_retries}): {str(llm_err)}, retrying in {retry_delay}s...")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2
+                        continue
+                    else:
+                        print(f"❌ LLM invocation failed after {max_retries} attempts: {str(llm_err)}")
+                        return []
 
             return []
 

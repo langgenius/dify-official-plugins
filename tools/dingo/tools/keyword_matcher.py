@@ -18,6 +18,7 @@ Reference:
 
 import re
 import json
+import time
 from pathlib import Path
 from typing import Any
 from collections.abc import Generator
@@ -222,21 +223,70 @@ Text:
             }
         }
 
-        llm_result = self.session.model.llm.invoke(
-            model_config=LLMModelConfig(**llm_config),
-            prompt_messages=[UserPromptMessage(content=prompt)],
-            stream=False
-        )
+        # Retry logic for LLM invocation
+        max_retries = 3
+        retry_delay = 1  # Initial delay in seconds
 
-        response_text = llm_result.message.content.strip()
-        response_text = re.sub(r'^```json\s*', '', response_text)
-        response_text = re.sub(r'\s*```$', '', response_text)
+        for attempt in range(max_retries):
+            try:
+                llm_result = self.session.model.llm.invoke(
+                    model_config=LLMModelConfig(**llm_config),
+                    prompt_messages=[UserPromptMessage(content=prompt)],
+                    stream=False
+                )
 
-        try:
-            llm_data = json.loads(response_text)
-            return llm_data.get('keywords', [])
-        except json.JSONDecodeError:
-            return []
+                response_text = llm_result.message.content.strip()
+
+                # Check for empty response
+                if not response_text:
+                    if attempt < max_retries - 1:
+                        print(f"⚠️ LLM returned empty response (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2
+                        continue
+                    else:
+                        print(f"❌ LLM returned empty response after {max_retries} attempts")
+                        return []
+
+                # Clean markdown code blocks
+                response_text = re.sub(r'^```json\s*', '', response_text)
+                response_text = re.sub(r'\s*```$', '', response_text)
+
+                llm_data = json.loads(response_text)
+                keywords = llm_data.get('keywords', [])
+
+                if keywords:
+                    return keywords
+                else:
+                    if attempt < max_retries - 1:
+                        print(f"⚠️ LLM returned empty keywords list (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2
+                        continue
+                    else:
+                        return []
+
+            except json.JSONDecodeError as json_err:
+                if attempt < max_retries - 1:
+                    print(f"⚠️ JSON parsing failed (attempt {attempt + 1}/{max_retries}): {str(json_err)}, retrying in {retry_delay}s...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+                    continue
+                else:
+                    print(f"❌ JSON parsing failed after {max_retries} attempts: {str(json_err)}")
+                    return []
+
+            except Exception as llm_err:
+                if attempt < max_retries - 1:
+                    print(f"⚠️ LLM invocation failed (attempt {attempt + 1}/{max_retries}): {str(llm_err)}, retrying in {retry_delay}s...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+                    continue
+                else:
+                    print(f"❌ LLM invocation failed after {max_retries} attempts: {str(llm_err)}")
+                    return []
+
+        return []
 
     def _merge_keywords(self, dict_results: list[dict], llm_results: list[dict]) -> list[dict]:
         """Merge and deduplicate keywords from both engines"""
@@ -398,7 +448,7 @@ Text:
         missing_high_skills = ", ".join([s['skill'] for s in missing_high])
         missing_medium_skills = ", ".join([s['skill'] for s in missing_medium])
 
-        prompt = f"""你是一位资深的简历优化专家和 ATS 系统专家。基于以下关键词匹配分析，为用户提供具体的简历优化建议。
+        prompt = f"""你是一位资深的简历优化专家和 ATS 系统专家。基于关键词匹配分析，直接给出具体的简历优化建议。
 
 ## 匹配分析结果
 - **ATS 匹配度**: {weighted_score}%
@@ -412,24 +462,76 @@ Text:
 ## 职位描述
 {jd_text[:2000]}
 
-请提供具体的优化建议，包括：
+## 输出要求
 
-### 1. 高优先级建议（必须补充）
-- 针对每个缺失的高优先级关键词，分析用户是否有相关经验
-- 如果有相关经验，给出具体的表述建议（在哪个部分添加，如何表述）
-- 如果没有相关经验，建议如何快速学习或补充项目经验
+**不要**自我介绍、不要分析问题、不要介绍工作计划，**直接开始输出优化建议**。
 
-### 2. 中优先级建议（建议补充）
-- 针对缺失的中优先级关键词，给出优化建议
+每条建议必须包含：
+- **改前**：从简历中摘录需要修改的原文（如果是新增内容，写"无"）
+- **改后**：优化后的表述（可直接复制粘贴使用）
+- **优化理由**：1-2 句话说明为什么这样改，重点说明如何提升 ATS 匹配度
 
-### 3. 已匹配关键词优化
-- 如何更好地突出已匹配的关键词（增加出现频率、添加量化指标等）
+## 输出格式
 
-### 4. ATS 优化技巧
-- 格式优化建议（确保 ATS 可读）
-- 关键词密度优化建议
+### 🔴 高优先级优化（必须补充）
 
-请用简洁、可操作的语言给出建议，每条建议都要具体到可以直接执行。"""
+**改前**：
+```
+[从简历中摘录的原文，如果是新增内容则写"无"]
+```
+
+**改后**：
+```
+[优化后的表述，包含缺失的高优先级关键词]
+```
+
+**优化理由**：[说明如何提升 ATS 匹配度]
+
+---
+
+### 🟡 中优先级优化（建议补充）
+
+**改前**：
+```
+[原文或"无"]
+```
+
+**改后**：
+```
+[优化后的表述，包含缺失的中优先级关键词]
+```
+
+**优化理由**：[说明如何提升 ATS 匹配度]
+
+---
+
+### 🟢 已匹配关键词优化（强化表述）
+
+**改前**：
+```
+[原文]
+```
+
+**改后**：
+```
+[优化后的表述，增加关键词密度或量化指标]
+```
+
+**优化理由**：[说明如何更好地突出已匹配关键词]
+
+---
+
+## 优化重点
+
+1. **补充缺失关键词**：优先补充高优先级关键词（{missing_high_skills or "无"}）
+2. **增加关键词密度**：已匹配关键词要在简历中出现 2-3 次
+3. **量化成果**：用数据说话（如：性能提升 X%、处理量 X 万次/日）
+4. **ATS 友好格式**：避免表格、图片、特殊符号，使用标准字体和标题
+5. **自然融入**：关键词要自然融入句子，不要生硬堆砌
+
+---
+
+**现在开始输出优化建议**（不要任何开场白，直接从第一条建议开始）："""
 
         llm_config = {
             "provider": "deepseek",
@@ -441,13 +543,45 @@ Text:
             }
         }
 
-        llm_result = self.session.model.llm.invoke(
-            model_config=LLMModelConfig(**llm_config),
-            prompt_messages=[UserPromptMessage(content=prompt)],
-            stream=False
-        )
+        # Retry logic for LLM invocation
+        max_retries = 3
+        retry_delay = 1  # Initial delay in seconds
 
-        return llm_result.message.content.strip()
+        for attempt in range(max_retries):
+            try:
+                llm_result = self.session.model.llm.invoke(
+                    model_config=LLMModelConfig(**llm_config),
+                    prompt_messages=[UserPromptMessage(content=prompt)],
+                    stream=False
+                )
+
+                response_text = llm_result.message.content.strip()
+
+                # Check for empty response
+                if not response_text:
+                    if attempt < max_retries - 1:
+                        print(f"⚠️ LLM returned empty recommendations (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2
+                        continue
+                    else:
+                        print(f"❌ LLM returned empty recommendations after {max_retries} attempts, using fallback")
+                        return self._generate_rule_based_recommendations(missing_high, missing_medium, weighted_score)
+
+                return response_text
+
+            except Exception as llm_err:
+                if attempt < max_retries - 1:
+                    print(f"⚠️ LLM recommendation generation failed (attempt {attempt + 1}/{max_retries}): {str(llm_err)}, retrying in {retry_delay}s...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+                    continue
+                else:
+                    print(f"❌ LLM recommendation generation failed after {max_retries} attempts, using fallback")
+                    return self._generate_rule_based_recommendations(missing_high, missing_medium, weighted_score)
+
+        # Fallback to rule-based recommendations
+        return self._generate_rule_based_recommendations(missing_high, missing_medium, weighted_score)
 
     def _generate_rule_based_recommendations(self, missing_high: list[dict],
                                             missing_medium: list[dict],
@@ -660,21 +794,62 @@ Text:
             }
         }
 
-        try:
-            llm_result = self.session.model.llm.invoke(
-                model_config=LLMModelConfig(**llm_config),
-                prompt_messages=[UserPromptMessage(content=prompt)],
-                stream=False
-            )
-            return llm_result.message.content.strip()
-        except Exception as e:
-            # Fallback: return a simple template
-            return f"""# {position_name} - 标准职位要求
+        # Retry logic for LLM invocation
+        max_retries = 3
+        retry_delay = 1  # Initial delay in seconds
+
+        for attempt in range(max_retries):
+            try:
+                llm_result = self.session.model.llm.invoke(
+                    model_config=LLMModelConfig(**llm_config),
+                    prompt_messages=[UserPromptMessage(content=prompt)],
+                    stream=False
+                )
+
+                response_text = llm_result.message.content.strip()
+
+                # Check for empty response
+                if not response_text:
+                    if attempt < max_retries - 1:
+                        print(f"⚠️ LLM returned empty JD (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2
+                        continue
+                    else:
+                        print(f"❌ LLM returned empty JD after {max_retries} attempts, using fallback")
+                        return f"""# {position_name} - 标准职位要求
+
+## 核心技能要求
+根据职位名称，请提供完整的职位描述以获得更准确的匹配分析。
+
+LLM 生成失败: 多次重试后仍返回空响应
+"""
+
+                return response_text
+
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    print(f"⚠️ LLM JD generation failed (attempt {attempt + 1}/{max_retries}): {str(e)}, retrying in {retry_delay}s...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+                    continue
+                else:
+                    print(f"❌ LLM JD generation failed after {max_retries} attempts: {str(e)}")
+                    return f"""# {position_name} - 标准职位要求
 
 ## 核心技能要求
 根据职位名称，请提供完整的职位描述以获得更准确的匹配分析。
 
 LLM 生成失败: {str(e)}
+"""
+
+        # Fallback
+        return f"""# {position_name} - 标准职位要求
+
+## 核心技能要求
+根据职位名称，请提供完整的职位描述以获得更准确的匹配分析。
+
+LLM 生成失败: 未知错误
 """
 
     def _extract_keywords_from_generated_jd(self, generated_jd: str) -> list[dict[str, Any]]:
