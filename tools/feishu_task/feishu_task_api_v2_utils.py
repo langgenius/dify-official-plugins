@@ -215,7 +215,7 @@ class FeishuRequestV2:
     def add_members(
         self,
         task_id: str,
-        user_ids: list = [],
+        user_ids: Optional[list] = None,
         member_role: str = "follower",
         member_type: str = "user",
         client_token: Optional[str] = None,
