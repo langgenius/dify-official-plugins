@@ -9,3 +9,4 @@ logs
 .idea
 .venv/
 .scripts/
+tools/feishu_task/api_v2_test.py

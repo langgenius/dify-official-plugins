@@ -1,0 +1,28 @@
+description:
+  human:
+    en_US: get userID from email or phone
+    zh_Hans: 根据邮箱或手机号获取飞书用户ID
+  llm: A tool for getting userID from email or phone in Feishu.(根据邮箱或手机号获取飞书用户ID)
+extra:
+  python:
+    source: tools/get_user_id.py
+identity:
+  author: Doug Lea
+  label:
+    en_US: Get UserID
+    zh_Hans: 获取飞书用户ID
+  name: get_user_id
+parameters:
+- form: llm
+  human_description:
+    en_US: 'The email or phone of the user to be queried. Example: {"111@example.com", "11111111111"}
+
+      '
+    zh_Hans: 要获取的用户的邮箱或手机号
+  label:
+    en_US: Email or Phone
+    zh_Hans: 邮箱或手机号
+  llm_description: 要获取的用户的邮箱或手机号
+  name: email_or_phone
+  required: true
+  type: string

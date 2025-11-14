@@ -19,6 +19,14 @@ credentials_for_provider:
       zh_Hans: 请输入你的飞书 app secret
     required: true
     type: secret-input
+  time_zone:
+    label:
+      en_US: Time Zone
+    placeholder:
+      en_US: Please input your time zone
+      zh_Hans: 请输入您的时区
+    required: false
+    type: text-input
 extra:
   python:
     source: provider/feishu_task.py
@@ -44,3 +52,4 @@ tools:
 - tools/create_task.yaml
 - tools/update_task.yaml
 - tools/add_members.yaml
+- tools/get_user_id.yaml

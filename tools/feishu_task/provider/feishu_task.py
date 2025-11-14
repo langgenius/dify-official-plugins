@@ -1,5 +1,5 @@
 from dify_plugin import ToolProvider
-from feishu_api_utils import auth
+from feishu_task_api_v2_utils import auth
 
 
 class FeishuTaskProvider(ToolProvider):

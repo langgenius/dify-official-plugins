@@ -24,6 +24,7 @@ parameters:
   name: summary
   required: true
   type: string
+
 - form: llm
   human_description:
     en_US: The description or notes for the task.
@@ -35,11 +36,10 @@ parameters:
   name: description
   required: false
   type: string
+
 - form: llm
   human_description:
-    en_US: 'The start time of the task, in the format: 2006-01-02 15:04:05
-
-      '
+    en_US: 'The start time of the task, in the format: 2006-01-02 15:04:05'
     zh_Hans: 任务开始时间，格式为：2006-01-02 15:04:05
   label:
     en_US: Start Time
@@ -48,31 +48,94 @@ parameters:
   name: start_time
   required: false
   type: string
+
 - form: llm
   human_description:
-    en_US: 'The end time of the task, in the format: 2006-01-02 15:04:05
+    en_US: Whether the task start time is all day.
+    zh_Hans: 任务开始是否为全天任务
+  label:
+    en_US: Start Time Is All Day
+    zh_Hans: 任务开始是否为全天任务
+  llm_description: 任务开始是否为全天任务
+  name: start_time_is_all_day
+  required: false
+  type: boolean
 
-      '
+- form: llm
+  human_description:
+    en_US: 'The end time of the task, in the format: 2006-01-02 15:04:05'
     zh_Hans: 任务结束时间，格式为：2006-01-02 15:04:05
   label:
     en_US: End Time
     zh_Hans: 任务结束时间
   llm_description: 任务结束时间，格式为：2006-01-02 15:04:05
-  name: end_time
+  name: due_date
   required: false
   type: string
+
 - form: llm
   human_description:
-    en_US: 'The completion time of the task, in the format: 2006-01-02 15:04:05. Leave
-      empty to create an incomplete task; fill in a specific time to create a completed
-      task.
+    en_US: Whether the task end time is all day.
+    zh_Hans: 任务结束是否为全天任务
+  label:
+    en_US: End Time Is All Day
+    zh_Hans: 任务结束是否为全天任务
+  llm_description: 任务结束是否为全天任务
+  name: end_time_is_all_day
+  required: false
+  type: boolean
 
-      '
+- form: llm
+  human_description:
+    en_US: 'The completion time of the task, in the format: 2006-01-02 15:04:05. Leave empty to create an incomplete task; fill in a specific time to create a completed task.'
     zh_Hans: 任务完成时间，格式为：2006-01-02 15:04:05，不填写表示创建一个未完成任务；填写一个具体的时间表示创建一个已完成任务。
   label:
     en_US: Completed Time
     zh_Hans: 任务完成时间
   llm_description: 任务完成时间，格式为：2006-01-02 15:04:05，不填写表示创建一个未完成任务；填写一个具体的时间表示创建一个已完成任务。
-  name: completed_time
+  name: completed_at
   required: false
   type: string
+
+- form: llm
+  human_description:
+    en_US: 'The assignees of the task (user IDs). Example: ["ou_123", "ou_456"]'
+    zh_Hans: 任务负责人，格式示例：["ou_123", "ou_456"]
+  label:
+    en_US: Assignees
+    zh_Hans: 任务负责人
+  llm_description: 任务负责人ID列表，格式为["ou_xxx","ou_xxx"]
+  name: assignees_members
+  required: false
+  type: string
+
+- form: llm
+  human_description:
+    en_US: 'The followers of the task (user IDs). Example: ["ou_789", "ou_101"]'
+    zh_Hans: 任务关注人，格式示例：["ou_789", "ou_101"]
+  label:
+    en_US: Followers
+    zh_Hans: 任务关注人
+  llm_description: 任务关注人ID列表，格式为["ou_xxx","ou_xxx"]
+  name: followers_members
+  required: false
+  type: string
+
+- form: llm
+  human_description:
+    en_US: 'The notice minute of the task. Leave empty to create a task without a notice minute.'
+    zh_Hans: 任务提醒提前分钟数，不填写表示创建一个没有提醒的任务
+  label:
+    en_US: Relative Fire Minute
+    zh_Hans: 任务提醒提前分钟数
+  llm_description: 任务提醒提前分钟数，不填写表示创建一个没有提醒的任务
+  name: relative_fire_minute
+  required: false
+  type: number
+
+output_schema:
+  type: object
+  properties:
+    guid:
+      type: string
+      description: The unique identifier of the created task
