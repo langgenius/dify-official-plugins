@@ -1,0 +1,5 @@
+path: "/"
+method: "ANY"
+extra:
+  python:
+    source: "endpoints/wecom.py"

@@ -1,0 +1,62 @@
+settings:
+  - name: token
+    type: text-input
+    required: true
+    label:
+      en_US: Token
+      zh_Hans: Token
+      ja_JP: トークン
+  - name: encoding_aes_key
+    type: secret-input
+    required: true
+    label:
+      en_US: Encoding AES Key
+      zh_Hans: EncodingAESKey
+      ja_JP: Encoding AES Key
+  - name: receive_id
+    type: text-input
+    required: true
+    label:
+      en_US: Receive ID (CorpID or SuiteID)
+      zh_Hans: ReceiveId（CorpID 或 SuiteID）
+      ja_JP: 受信 ID
+  - name: corp_id
+    type: text-input
+    required: true
+    label:
+      en_US: CorpID
+      zh_Hans: CorpID
+      ja_JP: CorpID
+  - name: agent_secret
+    type: secret-input
+    required: true
+    label:
+      en_US: App Secret
+      zh_Hans: 应用 Secret
+      ja_JP: アプリシークレット
+  - name: agent_id
+    type: text-input
+    required: true
+    label:
+      en_US: Agent ID
+      zh_Hans: AgentId
+      ja_JP: Agent ID
+  - name: app
+    type: app-selector
+    required: true
+    label:
+      en_US: App
+      zh_Hans: 应用
+      ja_JP: アプリ
+    placeholder:
+      en_US: Select the app/agent that should answer WeCom messages
+  - name: allow_retry
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Allow Retry
+      zh_Hans: 允许重试
+      ja_JP: 再試行を許可
+endpoints:
+  - endpoints/wecom.yaml
