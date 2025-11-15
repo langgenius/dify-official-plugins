@@ -4,9 +4,8 @@ This plugin mirrors the Slack bot integration but targets Enterprise WeChat (WeC
 
 ## Features
 - AES-CBC + SHA-1 verification compatible with the official WeCom callback spec.
-- Handles both GET `echostr` handshake and POST message callbacks.
-- Invokes any Dify app selected in the endpoint settings, just like the Slack bot.
-- Sends replies via the `message/send` API (text messages for now, extensible later).
+- Separate GET/POST endpoints: GET responds to the initial `echostr` challenge, POST decrypts messages and re-encrypts answers.
+- Invokes any Dify App/Agent selected in the settings and returns the answer as an encrypted HTTP response (no additional WeCom API calls required).
 
 ## Setup
 1. Create a WeCom custom app and collect `CorpID`, `AgentID`, and the app secret.
@@ -14,9 +13,8 @@ This plugin mirrors the Slack bot integration but targets Enterprise WeChat (WeC
    - Token / EncodingAESKey / ReceiveID (CorpID or SuiteID)
    - CorpID + App Secret + AgentID
    - Target Dify app (the workflow that answers messages)
-3. Deploy the plugin and copy the endpoint URL. Paste it into `应用管理 → 事件配置` as the callback URL. URL verification will succeed immediately if the token / AES key match.
-4. Send a message to the WeCom app. The bot will forward it to the Dify app and send the answer back.
+3. Deploy the plugin and copy the endpoint URL(s). Use the same path for both GET & POST; paste it into `应用管理 → 事件配置` as the callback URL. URL verification will succeed immediately if the token / AES key match.
+4. Send a message to the WeCom app. The bot forwards it to the Dify app and returns the AI answer in the encrypted HTTP response.
 
 ## Limitations
-- Only text replies are implemented in this version. You can extend `wecom.py` to cover images/files/events.
-- Access token caching is in-memory per process. If you scale horizontally, consider storing tokens in shared storage or re-request them for each call.
+- Only text replies are implemented in this version. You can extend `wecom_message.py` to cover images/files/events.
