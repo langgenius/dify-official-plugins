@@ -1,11 +1,9 @@
-model: longcat-flash-chat
+model: qwen3-30b-a3b
 label:
-  en_US: LongCat-Flash-Chat
+  en_US: Qwen3-30B-A3B
 model_type: llm
 features:
-  - tool-call
-  - multi-tool-call
-  - stream-tool-call
+  - agent-thought
 model_properties:
   mode: chat
   context_size: 128000
@@ -32,7 +30,7 @@ parameter_rules:
     max: 2
     default: 0
 pricing:
-  input: "0.086"
-  output: "0.344"
+  input: "0.75"
+  output: "7.5"
   unit: "0.000001"
   currency: RMB
