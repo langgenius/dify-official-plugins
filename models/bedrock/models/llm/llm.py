@@ -396,8 +396,43 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         if model_info["support_system_prompts"] and system and len(system) > 0:
             parameters["system"] = system
 
-        if model_info["support_tool_use"] and tools:
-            parameters["toolConfig"] = self._convert_converse_tool_config(tools=tools)
+        # Check if message history contains tool-related content
+        # AWS Bedrock requires toolConfig when messages contain toolUse or toolResult blocks
+        has_tool_content_in_messages = False
+        if model_info["support_tool_use"]:
+            for msg in prompt_messages:
+                if isinstance(msg, AssistantPromptMessage) and msg.tool_calls:
+                    has_tool_content_in_messages = True
+                    break
+                if isinstance(msg, ToolPromptMessage):
+                    has_tool_content_in_messages = True
+                    break
+
+        # Add toolConfig based on tools and message history
+        if model_info["support_tool_use"]:
+            if tools:
+                # Normal case: tools provided
+                parameters["toolConfig"] = self._convert_converse_tool_config(tools=tools)
+            elif has_tool_content_in_messages:
+                # WORKAROUND for Dify Agent issue:
+                # In the last iteration, Dify sets tools=[] but messages contain tool history
+                # AWS Bedrock requires toolConfig.tools to have at least 1 element
+                # Create a placeholder tool that LLM won't call, allowing agent to finish gracefully
+                logger.info(
+                    "Message history contains tool calls but no tools provided. "
+                    "Creating placeholder tool to satisfy AWS Bedrock API requirements. "
+                    "This prevents the agent from making further tool calls."
+                )
+                placeholder_tool = PromptMessageTool(
+                    name="__no_more_tools_available__",
+                    description="This is a placeholder tool. No more tools are available for this conversation. Please provide a final answer based on the information already gathered.",
+                    parameters={
+                        "type": "object",
+                        "properties": {},
+                        "required": []
+                    }
+                )
+                parameters["toolConfig"] = self._convert_converse_tool_config(tools=[placeholder_tool])
         try:
             # for issue #10976
             conversations_list = parameters["messages"]
@@ -705,7 +740,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             inference_config["temperature"] = model_parameters["temperature"]
 
         if "top_p" in model_parameters:
-            inference_config["topP"] = model_parameters["temperature"]
+            inference_config["topP"] = model_parameters["top_p"]
 
         if stop:
             inference_config["stopSequences"] = stop
