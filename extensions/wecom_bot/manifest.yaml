@@ -16,11 +16,6 @@ resource:
   permission:
     endpoint:
       enabled: true
-    model:
-      enabled: true
-      llm: true
-    tool:
-      enabled: true
     app:
       enabled: true
     storage:

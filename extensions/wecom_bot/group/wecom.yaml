@@ -15,6 +15,7 @@ settings:
       ja_JP: Encoding AES Key
   - name: app
     type: app-selector
+    scope: chat
     required: true
     label:
       en_US: App
@@ -22,6 +23,8 @@ settings:
       ja_JP: アプリ
     placeholder:
       en_US: Select the app/agent that should answer WeCom messages
+      zh_Hans: 选择用于回复企业微信消息的应用/代理
+      ja_JP: WeCom メッセージに応答するアプリ/エ
 endpoints:
   - endpoints/wecom_verify.yaml
   - endpoints/wecom_message.yaml

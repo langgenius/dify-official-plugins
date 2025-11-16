@@ -1,13 +1,17 @@
-from __future__ import annotations
-
+import logging
 import json
 from typing import Mapping
 
 from werkzeug import Request, Response
-
 from dify_plugin import Endpoint
+from dify_plugin.config.logger_format import plugin_logger_handler
 
 from utils.crypto import WeComCryptor
+
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(plugin_logger_handler)
 
 
 class WeComMessageEndpoint(Endpoint):
@@ -37,10 +41,71 @@ class WeComMessageEndpoint(Endpoint):
             payload = cryptor.decrypt(signature=signature, timestamp=timestamp, nonce=nonce, ciphertext=encrypt)
         except Exception as exc:
             return Response(status=400, response=f"decrypt_failed:{exc}")
-
+        
         content = str(payload.get("text", {}).get("content")).strip()
         if not content:
             return Response(status=200, response="success")
+        
+        message_id = payload.get("msgid")
+        if self.session.storage.exist(f"wecom_msg_{message_id}"):
+            logger.info(f"Duplicate message detected: {message_id}")
+            res = {
+                "msgtype": "stream",
+                "stream": {
+                    "id": message_id,
+                    "finish": False,
+                    "content": "",
+                }
+            }
+            encrypted = cryptor.encrypt_response(
+                plain=json.dumps(res),
+                timestamp=timestamp,
+                nonce=nonce,
+            )
+            return Response(status=200, response=json.dumps(encrypted), mimetype="application/json")
+        else:
+            logger.info(f"Processing new message: {message_id}")
+            self.session.storage.set(f"wecom_msg_{message_id}", b"processing")
+        
+        if payload.get("msgtype") == "stream":
+            stream_id = payload.get("stream", {}).get("id") 
+            if self.session.storage.exist(f"wecom_msg_{stream_id}"):
+                logger.info(f"Duplicate stream detected: {stream_id}")
+
+                result = self.session.storage.get(f"wecom_msg_{stream_id}").decode()
+                if result == "processing":
+                    res = {
+                        "msgtype": "stream",
+                        "stream": {
+                            "id": stream_id,
+                            "finish": False,
+                            "content": "",
+                        }
+                    }
+                    encrypted = cryptor.encrypt_response(
+                        plain=json.dumps(res),
+                        timestamp=timestamp,
+                        nonce=nonce,
+                    )
+                else:
+                    plain = {
+                        "msgtype": "stream",
+                        "stream": {
+                            "id": stream_id,
+                            "finish": True,
+                            "content": result,
+                        }
+                    }
+                    encrypted = cryptor.encrypt_response(
+                        plain=json.dumps(plain, ensure_ascii=False),
+                        timestamp=timestamp,
+                        nonce=nonce,
+                    )
+                    self.session.storage.delete(f"wecom_msg_{stream_id}")
+                return Response(status=200, response=json.dumps(encrypted, ensure_ascii=False), mimetype="application/json")
+            else:
+                logger.info(f"Processing new stream: {stream_id}")
+                self.session.storage.set(f"wecom_msg_{stream_id}", b"processing")
 
         try:
             app = settings.get("app")
@@ -53,11 +118,16 @@ class WeComMessageEndpoint(Endpoint):
             answer = response.get("answer") or json.dumps(response, ensure_ascii=False)
         except Exception as exc:
             answer = f"Errors：{exc}"
+        
+        if len(answer) > 5000:
+            answer = answer[:5000] + "..."
 
+        stream_id = message_id
+        self.session.storage.set(f"wecom_msg_{stream_id}", answer.encode())
         plain = {
             "msgtype": "stream",
             "stream": {
-                "id": "STREAMID",
+                "id": stream_id,
                 "finish": True,
                 "content": answer,
             }
