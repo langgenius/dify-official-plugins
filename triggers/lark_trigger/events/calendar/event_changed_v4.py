@@ -2,11 +2,12 @@ from typing import Any, Mapping
 from werkzeug import Request
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.interfaces.trigger import Event
-from examples.lark_trigger.events._shared import dispatch_single_event
+
+from .._shared import dispatch_single_event
 
 
 class CalendarEventChangedV4Event(Event):
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         """
         Handle calendar event changes.
 
