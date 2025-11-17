@@ -15,6 +15,23 @@ logger.addHandler(plugin_logger_handler)
 
 
 class WeComMessageEndpoint(Endpoint):
+    def _build_wecom_res(self, message_id: str, content: str, finish: bool, timestamp: str, nonce: str, cryptor: WeComCryptor) -> Mapping:
+        body = {
+            "msgtype": "stream",
+            "stream": {
+                "id": message_id,
+                "finish": finish,
+                "content": content,
+            }
+        }
+
+        encrypted = cryptor.encrypt_response(
+                plain=json.dumps(body, ensure_ascii=False),
+                timestamp=timestamp,
+                nonce=nonce,
+        )
+        return json.dumps(encrypted, ensure_ascii=False)
+
     def _invoke(self, r: Request, values: Mapping, settings: Mapping) -> Response:
         token = settings.get("token")
         encoding_key = settings.get("encoding_aes_key")
@@ -49,20 +66,15 @@ class WeComMessageEndpoint(Endpoint):
         message_id = payload.get("msgid")
         if self.session.storage.exist(f"wecom_msg_{message_id}"):
             logger.info(f"Duplicate message detected: {message_id}")
-            res = {
-                "msgtype": "stream",
-                "stream": {
-                    "id": message_id,
-                    "finish": False,
-                    "content": "",
-                }
-            }
-            encrypted = cryptor.encrypt_response(
-                plain=json.dumps(res),
+            res = self._build_wecom_res(
+                message_id=message_id,
+                content="",
+                finish=False,
                 timestamp=timestamp,
                 nonce=nonce,
+                cryptor=cryptor,
             )
-            return Response(status=200, response=json.dumps(encrypted), mimetype="application/json")
+            return Response(status=200, response=res, mimetype="application/json")
         else:
             logger.info(f"Processing new message: {message_id}")
             self.session.storage.set(f"wecom_msg_{message_id}", b"processing")
@@ -74,35 +86,25 @@ class WeComMessageEndpoint(Endpoint):
 
                 result = self.session.storage.get(f"wecom_msg_{stream_id}").decode()
                 if result == "processing":
-                    res = {
-                        "msgtype": "stream",
-                        "stream": {
-                            "id": stream_id,
-                            "finish": False,
-                            "content": "",
-                        }
-                    }
-                    encrypted = cryptor.encrypt_response(
-                        plain=json.dumps(res),
+                    res = self._build_wecom_res(
+                        message_id=stream_id,
+                        content="",
+                        finish=False,
                         timestamp=timestamp,
                         nonce=nonce,
+                        cryptor=cryptor,
                     )
                 else:
-                    plain = {
-                        "msgtype": "stream",
-                        "stream": {
-                            "id": stream_id,
-                            "finish": True,
-                            "content": result,
-                        }
-                    }
-                    encrypted = cryptor.encrypt_response(
-                        plain=json.dumps(plain, ensure_ascii=False),
+                    res = self._build_wecom_res(
+                        message_id=stream_id,
+                        content=result,
+                        finish=True,
                         timestamp=timestamp,
                         nonce=nonce,
+                        cryptor=cryptor,
                     )
                     self.session.storage.delete(f"wecom_msg_{stream_id}")
-                return Response(status=200, response=json.dumps(encrypted, ensure_ascii=False), mimetype="application/json")
+                return Response(status=200, response=res, mimetype="application/json")
             else:
                 logger.info(f"Processing new stream: {stream_id}")
                 self.session.storage.set(f"wecom_msg_{stream_id}", b"processing")
@@ -124,18 +126,12 @@ class WeComMessageEndpoint(Endpoint):
 
         stream_id = message_id
         self.session.storage.set(f"wecom_msg_{stream_id}", answer.encode())
-        plain = {
-            "msgtype": "stream",
-            "stream": {
-                "id": stream_id,
-                "finish": True,
-                "content": answer,
-            }
-        }
-        
-        encrypted = cryptor.encrypt_response(
-            plain=json.dumps(plain, ensure_ascii=False),
+        res = self._build_wecom_res(
+            message_id=stream_id,
+            content=answer,
+            finish=True,
             timestamp=timestamp,
             nonce=nonce,
+            cryptor=cryptor,
         )
-        return Response(status=200, response=json.dumps(encrypted, ensure_ascii=False), mimetype="application/json")
+        return Response(status=200, response=res, mimetype="application/json")
