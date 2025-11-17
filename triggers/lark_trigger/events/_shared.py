@@ -42,9 +42,6 @@ def dispatch_single_event(
     encrypt_key = runtime.subscription.properties.get("lark_encrypt_key", "")
     verification_token = runtime.subscription.properties.get("lark_verification_token", "")
 
-    if not encrypt_key or not verification_token:
-        raise ValueError("encrypt_key or verification_token is not set")
-
     builder = lark.EventDispatcherHandler.builder(
         encrypt_key,
         verification_token,
