@@ -10,7 +10,7 @@ description:
   en_US: Receive Enterprise WeChat callbacks as an endpoint and reply through Dify apps, similar to Slack Bot.
   zh_Hans: 将企业微信回调接入 Dify，可调用 App/Agent 回复用户，类似 Slack Bot。
   ja_JP: 企業微信のコールバックを受信し、Dify アプリで応答できる Bot プラグインです。
-icon: icon.svg
+icon: icon.png
 resource:
   memory: 268435456
   permission:
