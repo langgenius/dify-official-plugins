@@ -1,0 +1,61 @@
+identity:
+  name: file_deleted_v1
+  author: langgenius
+  label:
+    en_US: Drive File Deleted
+    zh_Hans: 云文档文件删除
+    ja_JP: ドライブファイル削除
+
+description:
+  en_US: Fires when a monitored Drive file is removed, including the file token and operator details.
+  zh_Hans: 当监控的云文档文件被移除时触发，包含文件 Token 及操作人信息。
+  ja_JP: 監視対象のドライブファイルが削除されたときに発火し、ファイルトークンと操作ユーザーを提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    file_token:
+      type: string
+      description: Token of the deleted file
+
+    file_type:
+      type: string
+      description: File type (doc, sheet, slide, etc.)
+
+    operator_user_id:
+      type: string
+      description: User ID of the operator who deleted the file
+
+    operator_open_id:
+      type: string
+      description: Open ID of the operator
+
+    operator_union_id:
+      type: string
+      description: Union ID of the operator
+
+    subscriber_users:
+      type: array
+      description: Users subscribed to file changes
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+            description: User ID
+          open_id:
+            type: string
+            description: Open ID
+          union_id:
+            type: string
+            description: Union ID
+
+    subscriber_count:
+      type: integer
+      description: Number of subscribers affected by the deletion
+
+extra:
+  python:
+    source: events/drive/file_deleted_v1.py

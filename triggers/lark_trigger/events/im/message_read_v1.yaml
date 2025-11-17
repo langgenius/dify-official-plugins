@@ -1,0 +1,41 @@
+identity:
+  name: message_read_v1
+  author: langgenius
+  label:
+    en_US: Message Read
+    zh_Hans: 消息已读
+    ja_JP: メッセージ既読
+
+description:
+  en_US: This event activates when a user reads one or more messages, providing information about who read the messages and when.
+  zh_Hans: 当用户阅读一条或多条消息时，此事件会被激活，提供谁阅读了消息以及何时阅读的信息。
+  ja_JP: ユーザーが1つ以上のメッセージを読んだときにアクティブになり、誰がいつメッセージを読んだかの情報を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    reader_id:
+      type: string
+      description: ID of the person who read the messages
+
+    read_time:
+      type: string
+      description: Time when the messages were read
+
+    tenant_key:
+      type: string
+      description: Organization key of the reader
+
+    message_ids_read:
+      type: string
+      description: List of message IDs that were read (JSON format)
+
+    message_count:
+      type: string
+      description: Number of messages read
+
+extra:
+  python:
+    source: events/im/message_read_v1.py

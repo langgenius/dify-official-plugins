@@ -1,0 +1,185 @@
+identity:
+  name: workflow_run
+  author: langgenius
+  label:
+    en_US: Workflow Run (Unified)
+    zh_Hans: 工作流运行（统一）
+    ja_JP: ワークフロー実行（統合）
+
+description:
+  en_US: Unified workflow_run event with actions filter
+  zh_Hans: 带 actions 过滤的统一 workflow_run 事件
+  ja_JP: アクションフィルタ付きの統合 workflow_run イベント
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - requested
+  - in_progress
+  - completed
+  options:
+  - value: requested
+    label:
+      en_US: Requested
+      zh_Hans: 已请求
+      ja_JP: 要求
+  - value: in_progress
+    label:
+      en_US: In Progress
+      zh_Hans: 进行中
+      ja_JP: 進行中
+  - value: completed
+    label:
+      en_US: Completed
+      zh_Hans: 已完成
+      ja_JP: 完了
+  description:
+    en_US: Filter which workflow run actions to process. Leave empty to accept requested in_progress completed.
+    zh_Hans: 选择要处理的工作流运行动作。留空接收 requested in_progress completed。
+    ja_JP: ワークフロー実行のアクションを選択。未設定で requested in_progress completed を許可。
+
+- name: workflow_name
+  label:
+    en_US: Workflow Name
+    zh_Hans: 工作流名称
+    ja_JP: ワークフロー名
+  type: string
+  required: false
+  description:
+    en_US: Exact match on workflow name. Comma separated allowed.
+    zh_Hans: 精确匹配工作流名称。支持逗号分隔多值。
+    ja_JP: ワークフロー名の完全一致。カンマ区切り可。
+
+- name: branch
+  label:
+    en_US: Branch
+    zh_Hans: 分支
+    ja_JP: ブランチ
+  type: string
+  required: false
+  description:
+    en_US: Filter by head branch. Comma separated allowed.
+    zh_Hans: 按 head 分支过滤。支持逗号分隔。
+    ja_JP: head ブランチでフィルタ。カンマ区切り可。
+
+- name: conclusion
+  label:
+    en_US: Conclusion (for completed)
+    zh_Hans: 结论（仅 completed）
+    ja_JP: 結論（completed のみ）
+  type: string
+  required: false
+  description:
+    en_US: Filter by run conclusion for completed actions. Example success or failure.
+    zh_Hans: 仅在 completed 动作时按运行结论过滤 如 success 或 failure。
+    ja_JP: completed 時の結論でフィルタ 例 success や failure。
+
+- name: actor
+  label:
+    en_US: Actor
+    zh_Hans: 触发者
+    ja_JP: 実行者
+  type: string
+  required: false
+  description:
+    en_US: Filter by run actor login. Comma separated allowed.
+    zh_Hans: 按执行者登录名过滤。支持逗号分隔。
+    ja_JP: 実行者のログインでフィルタ。カンマ区切り可。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    workflow_run:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        head_branch:
+          type: string
+        head_sha:
+          type: string
+        status:
+          type: string
+        conclusion:
+          type: string
+        event:
+          type: string
+        html_url:
+          type: string
+          format: uri
+        url:
+          type: string
+          format: uri
+        run_number:
+          type: integer
+        run_attempt:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+        actor:
+          type: object
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+      required:
+      - id
+      - head_branch
+      - head_sha
+      - status
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+    sender:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - workflow_run
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/workflow_run/workflow_run.py

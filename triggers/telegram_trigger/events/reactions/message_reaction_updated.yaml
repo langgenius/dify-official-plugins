@@ -1,0 +1,150 @@
+identity:
+  name: message_reaction_updated
+  author: langgenius
+  label:
+    en_US: Message Reaction Updated
+    zh_Hans: 消息表情更新
+    ja_JP: メッセージリアクション更新
+description:
+  en_US: Triggers when a user or chat updates reactions on a message.
+  zh_Hans: 当用户或会话更新消息的表情反应时触发。
+  ja_JP: ユーザーまたはチャットがメッセージのリアクションを更新したときにトリガーします。
+parameters: []
+output_schema:
+  type: object
+  additionalProperties: false
+  required:
+  - update_id
+  - message_reaction
+  properties:
+    update_id:
+      type: integer
+      description: Unique identifier for the Telegram update.
+    message_reaction:
+      type: object
+      additionalProperties: false
+      description: Information about the reaction update.
+      required:
+      - chat
+      - message_id
+      - date
+      - old_reaction
+      - new_reaction
+      properties:
+        chat:
+          type: object
+          description: Telegram Chat object.
+          additionalProperties: true
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for this chat.
+            type:
+              type: string
+              description: Type of chat, such as private, group, supergroup, or channel.
+            title:
+              type: string
+              description: Chat title for supergroups, channels, and group chats.
+            username:
+              type: string
+              description: Username of the chat if available.
+            first_name:
+              type: string
+              description: First name of the other party in a private chat.
+            last_name:
+              type: string
+              description: Last name of the other party in a private chat.
+        message_id:
+          type: integer
+          description: Identifier of the affected message.
+        user:
+          type: object
+          description: Telegram User object.
+          additionalProperties: true
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for this user or bot.
+            is_bot:
+              type: boolean
+              description: True if this user is a bot.
+            first_name:
+              type: string
+              description: User first name.
+            last_name:
+              type: string
+              description: User last name.
+            username:
+              type: string
+              description: Username of the user, if any.
+            language_code:
+              type: string
+              description: IETF language tag of the user's language.
+            is_premium:
+              type: boolean
+              description: True if the user is a Telegram Premium subscriber.
+        actor_chat:
+          type: object
+          description: Telegram Chat object.
+          additionalProperties: true
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for this chat.
+            type:
+              type: string
+              description: Type of chat, such as private, group, supergroup, or channel.
+            title:
+              type: string
+              description: Chat title for supergroups, channels, and group chats.
+            username:
+              type: string
+              description: Username of the chat if available.
+            first_name:
+              type: string
+              description: First name of the other party in a private chat.
+            last_name:
+              type: string
+              description: Last name of the other party in a private chat.
+        date:
+          type: integer
+          description: Date the reaction was updated in Unix time.
+        old_reaction:
+          type: array
+          description: Previous reaction set applied to the message.
+          items:
+            type: object
+            description: One reaction applied to the message.
+            additionalProperties: false
+            properties:
+              type:
+                type: string
+                description: Reaction type identifier such as emoji, custom_emoji,
+                  or paid.
+              emoji:
+                type: string
+                description: Emoji value when type is emoji.
+              custom_emoji_id:
+                type: string
+                description: Identifier of the custom emoji when type is custom_emoji.
+        new_reaction:
+          type: array
+          description: New reaction set applied to the message.
+          items:
+            type: object
+            description: One reaction applied to the message.
+            additionalProperties: false
+            properties:
+              type:
+                type: string
+                description: Reaction type identifier such as emoji, custom_emoji,
+                  or paid.
+              emoji:
+                type: string
+                description: Emoji value when type is emoji.
+              custom_emoji_id:
+                type: string
+                description: Identifier of the custom emoji when type is custom_emoji.
+extra:
+  python:
+    source: events/reactions/message_reaction_updated.py

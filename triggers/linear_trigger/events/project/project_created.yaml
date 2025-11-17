@@ -1,0 +1,124 @@
+identity:
+  name: project_created
+  author: langgenius
+  label:
+    en_US: Project Created
+    zh_Hans: 项目创建
+    ja_JP: プロジェクト作成
+
+description:
+  en_US: Triggers when a new project is created in Linear
+  zh_Hans: 当在 Linear 中创建新项目时触发
+  ja_JP: Linearで新しいプロジェクトが作成されたときにトリガーされます
+
+parameters:
+- name: name_contains
+  label:
+    en_US: Name Contains
+    zh_Hans: 名称包含
+    ja_JP: 名前に含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if project name contains keywords (comma-separated, e.g., Q4,Launch). Leave empty for all projects."
+    zh_Hans: "仅当项目名称包含关键词时触发（逗号分隔，例如：Q4,Launch）。留空则触发所有项目。"
+    ja_JP: "プロジェクト名にキーワードが含まれる場合のみトリガー（カンマ区切り、例：Q4,Launch）。空の場合は全プロジェクトでトリガー。"
+
+- name: priority_filter
+  label:
+    en_US: Priority Filter
+    zh_Hans: 优先级过滤
+    ja_JP: 優先度フィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for specific priorities: 0=None, 1=Urgent, 2=High, 3=Normal, 4=Low (comma-separated)"
+    zh_Hans: "仅触发指定优先级：0=无，1=紧急，2=高，3=正常，4=低（逗号分隔）"
+    ja_JP: "特定の優先度のみトリガー：0=なし、1=緊急、2=高、3=通常、4=低（カンマ区切り）"
+
+- name: team_filter
+  label:
+    en_US: Team Filter
+    zh_Hans: 团队过滤
+    ja_JP: チームフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for specific team IDs (comma-separated). Leave empty for all teams."
+    zh_Hans: "仅触发指定团队 ID（逗号分隔）。留空则触发所有团队。"
+    ja_JP: "特定のチームIDのみトリガー（カンマ区切り）。空の場合は全チームでトリガー。"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [create]
+    type:
+      type: string
+      enum: [Project]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        color:
+          type: string
+        priority:
+          type: number
+        slugId:
+          type: string
+        url:
+          type: string
+        startDate:
+          type: string
+        targetDate:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        lead:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            email:
+              type: string
+        leadId:
+          type: string
+        status:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            type:
+              type: string
+        statusId:
+          type: string
+        teamIds:
+          type: array
+          items:
+            type: string
+        memberIds:
+          type: array
+          items:
+            type: string
+    actor:
+      type: object
+  required:
+  - action
+  - type
+  - data
+
+extra:
+  python:
+    source: events/project/project_created.py
