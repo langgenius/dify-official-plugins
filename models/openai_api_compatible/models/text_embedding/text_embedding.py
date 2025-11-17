@@ -55,4 +55,4 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
         return ""
 
     def _add_prefix(self, texts: list[str], prefix: str) -> list[str]:
-        return [f"{prefix} {text}" for text in texts]
+        return [f"{prefix} {text}" for text in texts] if prefix else texts
