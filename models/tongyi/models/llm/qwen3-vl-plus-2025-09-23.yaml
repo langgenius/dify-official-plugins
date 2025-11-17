@@ -103,11 +103,10 @@ parameter_rules:
       - text
       - json_object
 pricing:
-  input: '0.003'  # 128K-256K
-  output: '0.03'  # 128K-256K
-#  input: '0.001'   0-32K
-#  output: '0.01'  0-32K
-#  input: '0.0015'    32K-128K
-#  output: '0.015'   32K-128K
+  input: '0.001'              # 0<Token≤32K
+  output: '0.01'              # 0<Token≤32K
+# Tiered pricing per 1k tokens: 0<Token≤32K=0.001/0.01
+# 32K<Token≤128K=0.0015/0.015
+# 128K<Token≤256K=0.003/0.03
   unit: '0.001'
   currency: RMB

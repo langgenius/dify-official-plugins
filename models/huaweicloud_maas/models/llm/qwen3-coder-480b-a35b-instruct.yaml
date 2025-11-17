@@ -1,0 +1,29 @@
+model: qwen3-coder-480b-a35b-instruct
+label:
+  zh_Hans: Qwen3-Coder-480B-A35B-Instruct
+  en_US: Qwen3-Coder-480B-A35B-Instruct
+model_type: llm
+features:
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 128000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    default: 0.6
+  - name: top_p
+    use_template: top_p
+    default: 0.95
+  - name: max_tokens
+    use_template: max_tokens
+    min: 1
+    max: 124000
+    default: 65536
+pricing:
+  input: "0.258"
+  output: "1.548"
+  unit: "0.000001"
+  currency: RMB

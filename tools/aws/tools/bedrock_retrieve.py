@@ -175,6 +175,10 @@ class BedrockRetrieveTool(Tool):
                 yield self.create_json_message(json_result)
             else:
                 text = ""
+                sorted_docs = sorted(
+                    retrieved_docs,
+                    key=lambda res: res.get("metadata", {}).get("position", 0),
+                )
                 for i, res in enumerate(sorted_docs):
                     text += f"{i + 1}: {res['content']}\n"
                 yield self.create_text_message(text)

@@ -313,7 +313,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     raise InvokeError(f"Model {model_id} doesn't support cross-region inference")
                 
                 model_id = "{}.{}".format(region_prefix, model_id)
-            else:
+            elif model_ids.is_support_cross_region(model_id):
                 # Cross-region inference not enabled, but still add region prefix for all models
                 region_prefix = model_ids.get_region_area(region_name, prefer_global=False)
                 
@@ -396,8 +396,43 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         if model_info["support_system_prompts"] and system and len(system) > 0:
             parameters["system"] = system
 
-        if model_info["support_tool_use"] and tools:
-            parameters["toolConfig"] = self._convert_converse_tool_config(tools=tools)
+        # Check if message history contains tool-related content
+        # AWS Bedrock requires toolConfig when messages contain toolUse or toolResult blocks
+        has_tool_content_in_messages = False
+        if model_info["support_tool_use"]:
+            for msg in prompt_messages:
+                if isinstance(msg, AssistantPromptMessage) and msg.tool_calls:
+                    has_tool_content_in_messages = True
+                    break
+                if isinstance(msg, ToolPromptMessage):
+                    has_tool_content_in_messages = True
+                    break
+
+        # Add toolConfig based on tools and message history
+        if model_info["support_tool_use"]:
+            if tools:
+                # Normal case: tools provided
+                parameters["toolConfig"] = self._convert_converse_tool_config(tools=tools)
+            elif has_tool_content_in_messages:
+                # WORKAROUND for Dify Agent issue:
+                # In the last iteration, Dify sets tools=[] but messages contain tool history
+                # AWS Bedrock requires toolConfig.tools to have at least 1 element
+                # Create a placeholder tool that LLM won't call, allowing agent to finish gracefully
+                logger.info(
+                    "Message history contains tool calls but no tools provided. "
+                    "Creating placeholder tool to satisfy AWS Bedrock API requirements. "
+                    "This prevents the agent from making further tool calls."
+                )
+                placeholder_tool = PromptMessageTool(
+                    name="__no_more_tools_available__",
+                    description="This is a placeholder tool. No more tools are available for this conversation. Please provide a final answer based on the information already gathered.",
+                    parameters={
+                        "type": "object",
+                        "properties": {},
+                        "required": []
+                    }
+                )
+                parameters["toolConfig"] = self._convert_converse_tool_config(tools=[placeholder_tool])
         try:
             # for issue #10976
             conversations_list = parameters["messages"]
@@ -705,7 +740,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             inference_config["temperature"] = model_parameters["temperature"]
 
         if "top_p" in model_parameters:
-            inference_config["topP"] = model_parameters["temperature"]
+            inference_config["topP"] = model_parameters["top_p"]
 
         if stop:
             inference_config["stopSequences"] = stop
@@ -1068,26 +1103,22 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :param credentials: model credentials
         :return:
         """
+        if 'auth_method' not in credentials:
+            raise CredentialsValidateFailedError("Authentication method 'auth_method' is missing in credentials.")
+
         try:
-            # Check if this is an inference profile based custom model
-            inference_profile_id = credentials.get("inference_profile_id")
-            if inference_profile_id:
-                # Validate inference profile directly
-                validate_inference_profile(inference_profile_id, credentials)
-                logger.info(f"Successfully validated inference profile: {inference_profile_id}")
+            if credentials['auth_method'] == 'IAM_Role':
                 return
-            
-            # Traditional model validation
-            foundation_model_ids = self._list_foundation_models(credentials=credentials)
-            cris_prefix = model_ids.get_region_area(credentials.get("aws_region"))
-            if cris_prefix and model.startswith(cris_prefix + "."):
-                model = model.split('.', 1)[1]
-            logger.info(f"get model_ids: {foundation_model_ids}")
-            if model not in foundation_model_ids:
-                raise ValueError(f"model id: {model} not found in bedrock")
+            elif credentials['auth_method'] == 'Access_Secret_Key':
+                if credentials['aws_access_key_id'] and credentials['aws_secret_access_key']:
+                    return 
+            elif credentials['auth_method'] == 'API_Key':
+                if credentials['bedrock_api_key']:
+                    return
+
+            raise CredentialsValidateFailedError(f"Invalid or incomplete credentials for auth_method: {credentials.get('auth_method')}")
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
-
 
     def _list_foundation_models(self, credentials: dict) -> list[str]:
         """

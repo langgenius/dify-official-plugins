@@ -1,0 +1,69 @@
+identity:
+  name: scope_updated_v3
+  author: langgenius
+  label:
+    en_US: Contact Scope Updated
+    zh_Hans: 通讯录范围更新
+    ja_JP: 連絡先スコープ更新
+
+description:
+  en_US: This event activates when contact visibility scope is updated, showing added and removed users, departments, and groups.
+  zh_Hans: 当通讯录可见范围更新时激活，显示添加和移除的用户、部门和群组。
+  ja_JP: 連絡先の表示範囲が更新されたときにアクティブになり、追加および削除されたユーザー、部門、グループを表示します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    added_scope:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id:
+                type: string
+              open_id:
+                type: string
+              union_id:
+                type: string
+        departments:
+          type: array
+          items:
+            type: string
+        user_groups:
+          type: array
+          items:
+            type: string
+      description: Scope additions
+
+    removed_scope:
+      type: object
+      properties:
+        users:
+          type: array
+          items:
+            type: object
+            properties:
+              user_id:
+                type: string
+              open_id:
+                type: string
+              union_id:
+                type: string
+        departments:
+          type: array
+          items:
+            type: string
+        user_groups:
+          type: array
+          items:
+            type: string
+      description: Scope removals
+
+extra:
+  python:
+    source: events/contact/scope_updated_v3.py

@@ -1,0 +1,84 @@
+{
+  "metadata": {
+    "source": "O*NET 30.0 Database",
+    "url": "https://www.onetcenter.org/database.html",
+    "license": "Creative Commons Attribution 4.0",
+    "version": "1.0.0",
+    "last_updated": "2024-12-01",
+    "total_keywords": 221,
+    "categories": 13,
+    "description": "Technology skills and competencies extracted from O*NET database for software development occupations (15-1252.00 through 15-1299.08)"
+  },
+  "keywords": {
+    "programming_languages": [
+      "Python", "Java", "JavaScript", "TypeScript", "C++", "C#", "Go", "Rust",
+      "Ruby", "PHP", "Swift", "Kotlin", "Scala", "R", "MATLAB", "Perl",
+      "Objective-C", "Dart", "Elixir", "Haskell", "Clojure", "F#", "Julia",
+      "Groovy", "Shell"
+    ],
+    "frontend_frameworks": [
+      "React", "Vue.js", "Angular", "Next.js", "Nuxt.js", "Svelte", "Ember.js",
+      "Backbone.js", "jQuery", "Bootstrap", "Tailwind CSS", "Material-UI",
+      "Ant Design", "Chakra UI", "Semantic UI", "Bulma", "Foundation",
+      "Sass", "Less", "Styled Components"
+    ],
+    "backend_frameworks": [
+      "Django", "Flask", "FastAPI", "Spring", "Spring Boot", "Express.js",
+      "NestJS", "Laravel", "Symfony", "Ruby on Rails", "ASP.NET", "ASP.NET Core",
+      "Gin", "Echo", "Fiber", "Phoenix", "Actix", "Rocket", "Sinatra", "Koa"
+    ],
+    "databases": [
+      "MySQL", "PostgreSQL", "MongoDB", "Redis", "Oracle", "SQL Server",
+      "SQLite", "MariaDB", "Cassandra", "DynamoDB", "Elasticsearch",
+      "Neo4j", "CouchDB", "InfluxDB", "TimescaleDB", "Snowflake",
+      "BigQuery", "Redshift", "Firestore", "Supabase"
+    ],
+    "cloud_devops": [
+      "AWS", "Azure", "Google Cloud", "GCP", "Docker", "Kubernetes", "Terraform",
+      "Ansible", "Jenkins", "GitLab CI", "GitHub Actions", "CircleCI",
+      "Travis CI", "ArgoCD", "Helm", "Prometheus", "Grafana", "ELK Stack",
+      "Datadog", "New Relic", "Nginx", "Apache", "Cloudflare", "Vercel", "Netlify"
+    ],
+    "data_science_ai": [
+      "TensorFlow", "PyTorch", "Keras", "Scikit-learn", "Pandas", "NumPy",
+      "Matplotlib", "Seaborn", "Jupyter", "Apache Spark", "Hadoop",
+      "Airflow", "MLflow", "Hugging Face", "LangChain"
+    ],
+    "mobile_development": [
+      "React Native", "Flutter", "Swift", "Kotlin", "Xamarin",
+      "Ionic", "Cordova", "SwiftUI", "Jetpack Compose", "Expo"
+    ],
+    "testing_tools": [
+      "Jest", "Pytest", "JUnit", "Mocha", "Chai", "Selenium", "Cypress",
+      "Playwright", "TestNG", "Postman", "Insomnia", "JMeter", "Cucumber",
+      "Robot Framework", "Appium"
+    ],
+    "version_control": [
+      "Git", "GitHub", "GitLab", "Bitbucket", "SVN", "Mercurial",
+      "Perforce", "Azure DevOps"
+    ],
+    "web_technologies": [
+      "HTML", "CSS", "REST API", "GraphQL", "WebSocket", "OAuth", "JWT",
+      "gRPC", "Protobuf", "JSON", "XML", "YAML", "Webpack", "Vite", "Babel"
+    ],
+    "operating_systems": [
+      "Linux", "Ubuntu", "CentOS", "Debian", "Red Hat", "Windows Server",
+      "macOS", "Unix"
+    ],
+    "methodologies": [
+      "Agile", "Scrum", "Kanban", "DevOps", "CI/CD", "Test-Driven Development",
+      "TDD", "Microservices", "RESTful", "Event-Driven Architecture",
+      "Domain-Driven Design", "DDD", "Continuous Integration",
+      "Continuous Deployment", "Pair Programming"
+    ],
+    "soft_skills": [
+      "Leadership", "Communication", "Problem Solving", "Teamwork",
+      "Project Management", "Critical Thinking", "Time Management",
+      "Collaboration", "Mentoring", "Presentation Skills", "Analytical Thinking",
+      "Creativity", "Adaptability", "Conflict Resolution", "Decision Making",
+      "Strategic Planning", "Stakeholder Management",
+      "Cross-functional Collaboration", "Technical Writing", "Public Speaking"
+    ]
+  }
+}
+

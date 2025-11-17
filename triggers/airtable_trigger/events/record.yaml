@@ -1,0 +1,75 @@
+identity:
+  name: record
+  author: langgenius
+  label:
+    en_US: Record
+    zh_Hans: 记录
+    ja_JP: レコード
+
+description:
+  en_US: Triggered when a record is created/deleted/updated in an Airtable table
+  zh_Hans: 当在 Airtable 表格中创建/删除/更新记录时触发
+  ja_JP: Airtable テーブルにレコードが作成/削除/更新されたときにトリガーされます
+
+parameters:
+- name: limit
+  label:
+    en_US: Payload Limit
+    zh_Hans: Payload 限制数量
+    ja_JP: ペイロード制限数
+  type: number
+  required: false
+  default: 1
+  min: 1
+  max: 50
+  description:
+    en_US: Maximum number of payloads to return per request (1-50). Each payload can contain multiple updates. Default is 1.
+    zh_Hans: 每次请求返回的最大 payload 数量（1-50）。每个 payload 可以包含多个更新。默认为 1。
+    ja_JP: リクエストごとに返されるペイロードの最大数（1-50）。各ペイロードには複数の更新が含まれる場合があります。デフォルトは 1 です。
+
+- name: cursor
+  label:
+    en_US: Cursor (Optional)
+    zh_Hans: Cursor（可选）
+    ja_JP: カーソル（オプション）
+  type: number
+  required: false
+  description:
+    en_US: Transaction number to start listing from. Leave empty to use auto-managed cursor or start from beginning. Manual input will override saved cursor.
+    zh_Hans: 开始列出的事务编号。留空则使用自动管理的 cursor 或从头开始。手动输入会覆盖已保存的 cursor。
+    ja_JP: リストを開始するトランザクション番号。空の場合は自動管理されたカーソルを使用するか、最初から開始します。手動入力は保存されたカーソルを上書きします。
+
+output_schema:
+  type: object
+  properties:
+    base_id:
+      type: string
+      description: The ID of the base that triggered the webhook
+    webhook_id:
+      type: string
+      description: The ID of the webhook
+    timestamp:
+      type: string
+      format: date-time
+      description: Timestamp of the webhook notification
+    cursor:
+      type: integer
+      description: The cursor value for the next request
+    payloads:
+      type: array
+      description: Array of webhook payloads containing the actual changes
+      items:
+        type: object
+        properties:
+          timestamp:
+            type: string
+            format: date-time
+          actionMetadata:
+            type: object
+          changedTablesById:
+            type: object
+            description: Tables that have been modified
+
+extra:
+  python:
+    source: events/record.py

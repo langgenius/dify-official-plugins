@@ -182,14 +182,11 @@ class NovaCanvasTool(Tool):
             except Exception as e:
                 logger.exception("Failed to upload image to S3")
             # return image
-            yield [
-                self.create_text_message(f"Image is available at: s3://{output_bucket}/{output_key}"),
-                self.create_blob_message(
+            yield self.create_text_message(f"Image is available at: s3://{output_bucket}/{output_key}")
+            yield self.create_blob_message(
                     blob=base64.b64decode(base64_image),
                     meta={"mime_type": "image/png"},
-                    save_as=self.VariableKey.IMAGE.value,
-                ),
-            ]
+            )
 
         except Exception as e:
             yield self.create_text_message(f"Failed to generate image: {str(e)}")
