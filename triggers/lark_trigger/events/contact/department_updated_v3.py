@@ -53,7 +53,7 @@ def _serialize_department(department: DepartmentEvent | None) -> dict[str, Any]:
 
 
 class ContactDepartmentUpdatedV3Event(Event):
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         """Handle contact department updated events."""
 
         event_data = dispatch_single_event(

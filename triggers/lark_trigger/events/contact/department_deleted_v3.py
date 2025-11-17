@@ -64,7 +64,7 @@ def _serialize_old_department(old_department: OldDepartmentObject | None) -> dic
 
 
 class ContactDepartmentDeletedV3Event(Event):
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         """Handle contact department deleted events."""
 
         event_data = dispatch_single_event(

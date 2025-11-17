@@ -6,7 +6,7 @@ from .._shared import dispatch_single_event
 
 
 class ChatUpdatedV1Event(Event):
-    def _on_event(self, request: Request, parameters: Mapping[str, Any]) -> Variables:
+    def _on_event(self, request: Request, parameters: Mapping[str, Any], payload: Mapping[str, Any]) -> Variables:
         """
         Handle the event when chat information is updated.
 

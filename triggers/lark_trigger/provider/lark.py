@@ -80,11 +80,8 @@ class LarkTrigger(Trigger):
         """
         Handle Lark event dispatch.
         """
-        encrypt_key = subscription.properties.get("lark_encrypt_key")
+        encrypt_key = subscription.properties.get("lark_encrypt_key") or ""
         verification_token = subscription.properties.get("lark_verification_token")
-
-        if not encrypt_key or not verification_token:
-            raise TriggerDispatchError("Encrypt key or verification token not found")
 
         self.handler = (
             lark.EventDispatcherHandler.builder(

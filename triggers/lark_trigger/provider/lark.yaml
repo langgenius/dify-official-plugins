@@ -132,7 +132,7 @@ identity:
     en_US: Lark Triggers
     zh_Hans: Lark 触发器
     ja_JP: Lark トリガー
-  name: lark
+  name: lark_trigger
 extra:
   python:
     source: provider/lark.py
