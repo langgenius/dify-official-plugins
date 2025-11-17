@@ -627,6 +627,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         temp_file_path = None
         try:
             with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                temp_file_path = temp_file.name
                 if message_content.base64_data:
                     file_content = base64.b64decode(message_content.base64_data)
                     temp_file.write(file_content)
@@ -640,9 +641,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             f"Failed to fetch data from url {message_content.url}, {ex}"
                         ) from ex
                 temp_file.flush()
-                temp_file_path = temp_file.name
-            response = client.files.create(file=temp_file, purpose="file-extract")
-            return response.id
+                temp_file.seek(0)
+                response = client.files.create(file=temp_file, purpose="file-extract")
+                return response.id
         finally:
             # Clean up temporary file after upload
             if temp_file_path and os.path.exists(temp_file_path):
