@@ -1,0 +1,66 @@
+identity:
+  name: chat_member_user_added_v1
+  author: langgenius
+  label:
+    en_US: New Members Joined
+    zh_Hans: 新成员加入
+    ja_JP: 新メンバー参加
+
+description:
+  en_US: This event activates when one or more users are added to a group chat, providing information about the new members and who added them.
+  zh_Hans: 当一个或多个用户被添加到群聊时，此事件会被激活，提供新成员和添加者的信息。
+  ja_JP: 1人以上のユーザーがグループチャットに追加されたときにアクティブになり、新メンバーと追加者の情報を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    chat_id:
+      type: string
+      description: Group chat identifier
+
+    chat_name:
+      type: string
+      description: Name of the group chat
+
+    is_external:
+      type: string
+      description: Whether the chat includes external users
+
+    operator_user_id:
+      type: string
+      description: ID of the person who added members
+
+    operator_open_id:
+      type: string
+      description: Open ID of the person who added members
+
+    operator_union_id:
+      type: string
+      description: Union ID of the person who added members
+
+    operator_tenant_key:
+      type: string
+      description: Organization key of the operator
+
+    new_members:
+      type: array
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+          open_id:
+            type: string
+          union_id:
+            type: string
+      description: List of newly added members
+
+    new_members_count:
+      type: string
+      description: Number of members added
+
+extra:
+  python:
+    source: events/im/chat_member_user_added_v1.py

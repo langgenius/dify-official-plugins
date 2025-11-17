@@ -1,0 +1,43 @@
+identity:
+  name: coupon_deleted
+  author: langgenius
+  label:
+    en_US: Coupon Deleted
+    zh_Hans: 优惠券删除
+    ja_JP: クーポン削除
+description:
+  en_US: Triggered when a coupon is trashed or removed from WooCommerce.
+  zh_Hans: 当 WooCommerce 优惠券被移入回收站或被删除时触发。
+  ja_JP: WooCommerce のクーポンが削除されたときにトリガーされます。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    coupon:
+      type: object
+      description: Coupon payload associated with the delete event.
+      additionalProperties: true
+    webhook:
+      type: object
+      description: Metadata derived from X-WC-Webhook headers.
+      properties:
+        id:
+          type: string
+        delivery_id:
+          type: string
+        resource:
+          type: string
+        event:
+          type: string
+        topic:
+          type: string
+        source:
+          type: string
+  required:
+    - coupon
+
+extra:
+  python:
+    source: events/coupon/coupon_deleted.py

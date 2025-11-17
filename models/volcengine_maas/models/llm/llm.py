@@ -298,6 +298,11 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
         elif "json_schema" in model_parameters:
             del model_parameters["json_schema"]
 
+        if "thinking" in model_parameters:
+            thinking_type = model_parameters.get("thinking")
+            if thinking_type == "disabled":
+                model_parameters["reasoning_effort"] = "minimal"
+
         req_params = get_v3_req_params(credentials, model_parameters, stop)
         if tools:
             req_params["tools"] = tools

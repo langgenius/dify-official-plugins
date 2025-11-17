@@ -22,7 +22,7 @@ class TongyiProvider(ModelProvider):
                 model_instance = model_obj(model_schemas=self.provider_schema.models)
             else:
                 model_instance = model_obj
-            model_instance.validate_credentials(model="qwen-turbo", credentials=credentials)
+            model_instance.validate_credentials(model="qwen-flash", credentials=credentials)
         except CredentialsValidateFailedError as ex:
             raise ex
         except Exception as ex:

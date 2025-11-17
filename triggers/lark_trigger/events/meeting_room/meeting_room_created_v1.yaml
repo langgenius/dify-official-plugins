@@ -1,0 +1,29 @@
+identity:
+  name: meeting_room_created_v1
+  author: langgenius
+  label:
+    en_US: Meeting Room Created
+    zh_Hans: 会议室创建
+    ja_JP: 会議室作成
+
+description:
+  en_US: This event activates when a new meeting room is created.
+  zh_Hans: 当新会议室被创建时激活。
+  ja_JP: 新しい会議室が作成されたときにアクティブになります。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    room_id:
+      type: string
+      description: ID of the meeting room
+
+    room_name:
+      type: string
+      description: Name of the meeting room
+
+extra:
+  python:
+    source: events/meeting_room/meeting_room_created_v1.py

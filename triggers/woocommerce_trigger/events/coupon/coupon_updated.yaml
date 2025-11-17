@@ -1,0 +1,43 @@
+identity:
+  name: coupon_updated
+  author: langgenius
+  label:
+    en_US: Coupon Updated
+    zh_Hans: 优惠券更新
+    ja_JP: クーポン更新
+description:
+  en_US: Triggered when coupon amounts, restrictions, or metadata are edited.
+  zh_Hans: 当优惠券的金额、限制或元数据被编辑时触发。
+  ja_JP: クーポンの金額・制限・メタデータなどが編集されたときにトリガーされます。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    coupon:
+      type: object
+      description: Updated WooCommerce coupon payload.
+      additionalProperties: true
+    webhook:
+      type: object
+      description: Metadata derived from X-WC-Webhook headers.
+      properties:
+        id:
+          type: string
+        delivery_id:
+          type: string
+        resource:
+          type: string
+        event:
+          type: string
+        topic:
+          type: string
+        source:
+          type: string
+  required:
+    - coupon
+
+extra:
+  python:
+    source: events/coupon/coupon_updated.py

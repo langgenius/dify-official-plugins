@@ -1,0 +1,117 @@
+identity:
+  name: feed_update
+  author: langgenius
+  label:
+    en_US: Feed Update
+    zh_Hans: 订阅更新
+    ja_JP: フィード更新
+
+description:
+  en_US: Triggered when a feed update payload is posted (rss.app compatible schema).
+  zh_Hans: 当收到一次订阅更新的 Webhook 载荷时触发（兼容 rss.app 格式）。
+  ja_JP: フィード更新の Webhook ペイロードを受信した際にトリガー（rss.app 互換）。
+
+parameters: []
+
+output_schema:
+  type: object
+  description: Feed update payload (rss.app format)
+  properties:
+    id:
+      type: string
+      description: Unique identifier for the webhook event
+    type:
+      type: string
+      description: Event type (feed_update)
+    feed:
+      type: object
+      description: Feed metadata
+      properties:
+        id:
+          type: string
+          description: Unique identifier for the feed
+        title:
+          type: string
+          description: Feed title
+        source_url:
+          type: string
+          format: uri
+          description: Source website URL
+        rss_feed_url:
+          type: string
+          format: uri
+          description: RSS feed XML URL
+        description:
+          type: string
+          description: Feed description
+        icon:
+          type: string
+          format: uri
+          description: Favicon/icon URL
+        is_active:
+          type: boolean
+          description: Whether feed is currently active
+    data:
+      type: object
+      description: Feed update details
+      properties:
+        items_new:
+          type: array
+          description: New items since last event
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+                format: uri
+              title:
+                type: string
+              description_text:
+                type: string
+              description_html:
+                type: string
+              thumbnail:
+                type: string
+                format: uri
+              date_published:
+                type: string
+                format: date-time
+              authors:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+        items_changed:
+          type: array
+          description: Updated items since last event
+          items:
+            type: object
+            properties:
+              url:
+                type: string
+                format: uri
+              title:
+                type: string
+              description_text:
+                type: string
+              description_html:
+                type: string
+              thumbnail:
+                type: string
+                format: uri
+              date_published:
+                type: string
+                format: date-time
+              authors:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+
+extra:
+  python:
+    source: events/feed_update.py

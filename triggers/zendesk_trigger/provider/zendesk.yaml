@@ -1,0 +1,199 @@
+subscription_schema:
+- name: "webhook_secret"
+  type: "secret-input"
+  required: false
+  label:
+    zh_Hans: "Webhook Secret"
+    en_US: "Webhook Secret"
+    ja_JP: "Webhookシークレット"
+  help:
+    en_US: "Optional secret to validate incoming Zendesk webhook requests. If left empty, signature validation will be skipped."
+    ja_JP: "受信する Zendesk Webhook リクエストの検証に使用する任意のシークレット。空の場合は署名検証をスキップします。"
+    zh_Hans: "用于验证 Zendesk Webhook 请求的可选密钥。留空则跳过签名校验。"
+  url: https://developer.zendesk.com/documentation/webhooks/verifying/
+
+subscription_constructor:
+  parameters:
+  - name: "events"
+    label:
+      en_US: "Events"
+      zh_Hans: "事件"
+      ja_JP: "イベント"
+    type: "checkbox"
+    required: true
+    multiple: true
+    default:
+    - "ticket_created"
+    - "ticket_comment_created"
+    - "ticket_status_changed"
+    options:
+    - value: "ticket_created"
+      label:
+        en_US: "Ticket Created"
+        zh_Hans: "工单创建"
+        ja_JP: "チケット作成"
+    - value: "ticket_marked_as_spam"
+      label:
+        en_US: "Ticket Marked as Spam"
+        zh_Hans: "工单标记为垃圾"
+        ja_JP: "チケットがスパムとしてマーク"
+    - value: "ticket_status_changed"
+      label:
+        en_US: "Ticket Status Changed"
+        zh_Hans: "工单状态变更"
+        ja_JP: "チケットステータス変更"
+    - value: "ticket_priority_changed"
+      label:
+        en_US: "Ticket Priority Changed"
+        zh_Hans: "工单优先级变更"
+        ja_JP: "チケット優先度変更"
+    - value: "ticket_comment_created"
+      label:
+        en_US: "Ticket Comment Created"
+        zh_Hans: "工单评论创建"
+        ja_JP: "チケットコメント作成"
+    - value: "article_published"
+      label:
+        en_US: "Article Published"
+        zh_Hans: "文章发布"
+        ja_JP: "記事公開"
+    - value: "article_unpublished"
+      label:
+        en_US: "Article Unpublished"
+        zh_Hans: "文章下线"
+        ja_JP: "記事非公開"
+
+  credentials_schema:
+    api_token:
+      help:
+        en_US: Get your API Token from Zendesk Admin Center
+        ja_JP: Zendesk 管理センターから API トークンを取得してください
+        zh_Hans: 从 Zendesk 管理中心获取你的 API Token
+      label:
+        en_US: API Token
+        ja_JP: APIトークン
+        zh_Hans: API Token
+      placeholder:
+        en_US: Please input your Zendesk API Token
+        ja_JP: Zendesk の API トークンを入力してください
+        zh_Hans: 请输入你的 Zendesk API Token
+      required: true
+      type: secret-input
+      url: https://developer.zendesk.com/api-reference/introduction/security-and-auth/#api-token
+    email:
+      help:
+        en_US: Your Zendesk admin email address
+        ja_JP: Zendesk 管理者のメールアドレス
+        zh_Hans: 你的 Zendesk 管理员邮箱地址
+      label:
+        en_US: Email Address
+        ja_JP: メールアドレス
+        zh_Hans: 邮箱地址
+      placeholder:
+        en_US: admin@example.com
+        ja_JP: admin@example.com
+        zh_Hans: admin@example.com
+      required: true
+      type: text-input
+    subdomain:
+      label:
+        en_US: "Zendesk Subdomain"
+        zh_Hans: "Zendesk 子域名"
+        ja_JP: "Zendesk サブドメイン"
+      type: text-input
+      required: true
+      placeholder:
+        en_US: "your-company"
+        zh_Hans: "your-company"
+        ja_JP: "your-company"
+      help:
+        en_US: "Your Zendesk subdomain (e.g., 'dify' for dify.zendesk.com)"
+        zh_Hans: "你的 Zendesk 子域名（例如 dify.zendesk.com 中的 'dify'）"
+        ja_JP: "Zendesk のサブドメイン（例 dify.zendesk.com の 'dify'）"
+
+  oauth_schema:
+    client_schema:
+    - name: "subdomain"
+      type: "text-input"
+      required: true
+      label:
+        en_US: "Zendesk Subdomain"
+        zh_Hans: "Zendesk 子域名"
+        ja_JP: "Zendesk サブドメイン"
+      placeholder:
+        en_US: "your-company"
+        zh_Hans: "your-company"
+        ja_JP: "your-company"
+      help:
+        en_US: "The Zendesk subdomain for your account (e.g., 'dify' for dify.zendesk.com)."
+        zh_Hans: "你 Zendesk 帐号的子域名（例如 dify.zendesk.com 中的 'dify'）。"
+        ja_JP: "Zendesk アカウントのサブドメイン（例: dify.zendesk.com の 'dify'）。"
+    - name: "client_id"
+      type: "secret-input"
+      required: true
+      label:
+        en_US: "Client ID"
+        zh_Hans: "Client ID"
+        ja_JP: "クライアントID"
+      placeholder:
+        en_US: "Enter the OAuth Client ID"
+        zh_Hans: "请输入 OAuth Client ID"
+        ja_JP: "OAuth クライアントIDを入力してください"
+      help:
+        en_US: "The OAuth Client ID from Zendesk Admin Center → Apps and integrations → OAuth."
+        zh_Hans: "在 Zendesk 管理中心 → 应用和集成 → OAuth 中获取 Client ID。"
+        ja_JP: "Zendesk 管理センター → アプリとインテグレーション → OAuth で取得したクライアントID。"
+    - name: "client_secret"
+      type: "secret-input"
+      required: true
+      label:
+        en_US: "Client Secret"
+        zh_Hans: "Client Secret"
+        ja_JP: "クライアントシークレット"
+      placeholder:
+        en_US: "Enter the OAuth Client Secret"
+        zh_Hans: "请输入 OAuth Client Secret"
+        ja_JP: "OAuth クライアントシークレットを入力してください"
+      help:
+        en_US: "The OAuth Client Secret generated together with the Client ID."
+        zh_Hans: "与 Client ID 一同生成的 OAuth Client Secret。"
+        ja_JP: "クライアントIDと併せて発行された OAuth クライアントシークレット。"
+    credentials_schema:
+    - name: "access_token"
+      type: "secret-input"
+      label:
+        en_US: "Access Token"
+        zh_Hans: "访问令牌"
+        ja_JP: "アクセストークン"
+    - name: "refresh_token"
+      type: "secret-input"
+      label:
+        en_US: "Refresh Token"
+        zh_Hans: "刷新令牌"
+        ja_JP: "リフレッシュトークン"
+
+events:
+- events/ticket/ticket_created.yaml
+- events/ticket/ticket_status_changed.yaml
+- events/ticket/ticket_marked_as_spam.yaml
+- events/ticket/ticket_priority_changed.yaml
+- events/ticket/ticket_comment_created.yaml
+- events/article/article_published.yaml
+- events/article/article_unpublished.yaml
+
+identity:
+  author: langgenius
+  description:
+    en_US: Zendesk is a customer service platform with webhook trigger support.
+    ja_JP: Zendesk は、webhook トリガーのサポートがあるカスタマーサービスプラットフォームです。
+    zh_Hans: Zendesk 是一个客户服务平台，支持 webhook 触发器。
+  icon: icon.svg
+  label:
+    en_US: Zendesk Triggers
+    zh_Hans: Zendesk 触发器
+    ja_JP: Zendesk トリガー
+  name: zendesk_trigger
+
+extra:
+  python:
+    source: provider/zendesk.py

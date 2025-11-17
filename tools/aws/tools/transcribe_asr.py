@@ -338,12 +338,19 @@ class TranscribeTool(Tool):
         try:
             if not self.transcribe_client:
                 aws_region = tool_parameters.get("aws_region")
+                aws_access_key_id = tool_parameters.get("aws_access_key_id")
+                aws_secret_access_key = tool_parameters.get("aws_secret_access_key")
+                
+                # Build boto3 client kwargs
+                client_kwargs = {}
                 if aws_region:
-                    self.transcribe_client = boto3.client("transcribe", region_name=aws_region)
-                    self.s3_client = boto3.client("s3", region_name=aws_region)
-                else:
-                    self.transcribe_client = boto3.client("transcribe")
-                    self.s3_client = boto3.client("s3")
+                    client_kwargs["region_name"] = aws_region
+                if aws_access_key_id and aws_secret_access_key:
+                    client_kwargs["aws_access_key_id"] = aws_access_key_id
+                    client_kwargs["aws_secret_access_key"] = aws_secret_access_key
+                
+                self.transcribe_client = boto3.client("transcribe", **client_kwargs)
+                self.s3_client = boto3.client("s3", **client_kwargs)
 
             file_url = tool_parameters.get("file_url")
             file_type = tool_parameters.get("file_type")

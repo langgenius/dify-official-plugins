@@ -1,0 +1,68 @@
+identity:
+  name: article_published
+  author: langgenius
+  label:
+    en_US: Article Published
+    zh_Hans: 文章发布
+    ja_JP: 記事公開
+
+description:
+  en_US: Triggered when a Zendesk knowledge base article is published
+  zh_Hans: 当 Zendesk 文章发布时触发
+  ja_JP: Zendesk ナレッジベース記事が公開されたときにトリガーされます
+
+parameters:
+- name: locale
+  label:
+    en_US: Locale Filter
+    zh_Hans: 语言过滤
+    ja_JP: ロケールフィルター
+  type: string
+  required: false
+  description:
+    en_US: Filter by article locale (e.g., en-us,ja,zh-cn). Leave empty for all.
+    zh_Hans: 按文章语言过滤（例如 en-us,ja,zh-cn）。留空表示所有语言。
+    ja_JP: 記事のロケールでフィルター（例 en-us,ja,zh-cn）。空の場合は全て。
+
+- name: title_contains
+  label:
+    en_US: Title Contains
+    zh_Hans: 标题包含
+    ja_JP: タイトルに含む
+  type: string
+  required: false
+  description:
+    en_US: Comma separated keywords. Trigger if title contains any keyword.
+    zh_Hans: 逗号分隔的关键词。如果标题包含任何关键词则触发。
+    ja_JP: カンマ区切りのキーワード。タイトルにいずれかが含まれる場合トリガーします。
+
+output_schema:
+  type: object
+  properties:
+    article:
+      type: object
+      properties:
+        id:
+          type: string
+        brand_id:
+          type: ["string", "null"]
+        user_id:
+          type: ["string", "null"]
+        author_id:
+          type: ["string", "null"]
+        category_id:
+          type: ["string", "null"]
+        section_id:
+          type: ["string", "null"]
+        locale:
+          type: ["string", "null"]
+        title:
+          type: ["string", "null"]
+      required:
+      - id
+  required:
+  - article
+
+extra:
+  python:
+    source: events/article/article_published.py

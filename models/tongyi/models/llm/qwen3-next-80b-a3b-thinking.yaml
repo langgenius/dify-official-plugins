@@ -81,8 +81,8 @@ parameter_rules:
       zh_Hans: 思考过程的最大长度，只在思考模式为true时生效。
       en_US: The maximum length of the thinking process, only effective when thinking mode is true.
 pricing:
-  input: '0.004'
-  output: '0.02'
+  input: '0.001'
+  output: '0.01'
 #  output_thinking: '0.04'
   unit: '0.001'
   currency: RMB
