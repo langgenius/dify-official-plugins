@@ -27,62 +27,6 @@ from dify_plugin import OAICompatLargeLanguageModel
 logger = logging.getLogger(__name__)
 
 class ShengsuanyunLargeLanguageModel(OAICompatLargeLanguageModel):
-    def _convert_image_url_to_base64(self, messages: list[PromptMessage]) -> list[PromptMessage]:
-        converted_messages = []
-        for message in messages:
-            if isinstance(message, UserPromptMessage) and isinstance(message.content, list):
-                converted_content = []
-                
-                for content in message.content:
-                    if isinstance(content, ImagePromptMessageContent):
-                        # Check if it's a URL (not already base64)
-                        if hasattr(content, 'url') and content.url and not content.url.startswith('data:'):
-                            try:
-                                # Download the image from URL
-                                response = requests.get(content.url, timeout=10)
-                                response.raise_for_status()
-                                
-                                # Get content type from response headers
-                                content_type = response.headers.get('Content-Type', 'image/jpeg')
-                                
-                                # Encode image to base64
-                                image_data = response.content
-                                base64_encoded = base64.b64encode(image_data).decode('utf-8')
-                                
-                                # Create base64 data URL
-                                base64_url = f"data:{content_type};base64,{base64_encoded}"
-                                
-                                # Create new ImagePromptMessageContent with base64 data
-                                mime_subtype = content_type.split('/')[-1] if '/' in content_type else 'jpeg'
-                                converted_image = ImagePromptMessageContent(
-                                    format=mime_subtype,
-                                    base64_data=base64_encoded,
-                                    mime_type=content_type,
-                                    detail=content.detail if hasattr(content, 'detail') else ImagePromptMessageContent.DETAIL.HIGH,
-                                )
-                                converted_content.append(converted_image)
-                                logger.info(f"Converted image URL to base64: {content.url[:50]}...")
-                                
-                            except Exception as e:
-                                logger.error(f"Failed to convert image URL to base64: {content.url}, error: {str(e)}")
-                                # Keep original content if conversion fails
-                                converted_content.append(content)
-                        else:
-                            # Already base64 or no URL, keep as is
-                            converted_content.append(content)
-                    else:
-                        # Not an image, keep as is
-                        converted_content.append(content)
-                
-                # Create new message with converted content
-                converted_message = UserPromptMessage(content=converted_content)
-                converted_messages.append(converted_message)
-            else:
-                # Not a user message with list content, keep as is
-                converted_messages.append(message)
-        
-        return converted_messages
-
     def _update_credential(self, model: str, credentials: dict):
         credentials["endpoint_url"] = "https://router.shengsuanyun.com/api/v1"
         credentials["mode"] = self.get_model_mode(model).value
@@ -147,9 +91,6 @@ class ShengsuanyunLargeLanguageModel(OAICompatLargeLanguageModel):
         model_schema = self.get_model_schema(model, credentials)
         if not (model_schema and ModelFeature.VISION in (model_schema.features or [])):
             prompt_messages = self._convert_files_to_text(prompt_messages)
-        else:
-            prompt_messages = self._convert_image_url_to_base64(prompt_messages)
-        logger.info("ShengsuanyunLargeLanguageModel._invoke()", prompt_messages)
         return self._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
