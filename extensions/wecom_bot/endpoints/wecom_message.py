@@ -15,7 +15,7 @@ logger.addHandler(plugin_logger_handler)
 
 
 class WeComMessageEndpoint(Endpoint):
-    def _build_wecom_res(self, message_id: str, content: str, finish: bool, timestamp: str, nonce: str, cryptor: WeComCryptor) -> Mapping:
+    def _build_wecom_res(self, message_id: str, content: str, finish: bool, timestamp: str, nonce: str, cryptor: WeComCryptor) -> str:
         body = {
             "msgtype": "stream",
             "stream": {
