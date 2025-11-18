@@ -1,5 +1,6 @@
 from typing import Any
 from collections.abc import Generator
+import time
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
@@ -21,6 +22,23 @@ class ResumeOptimizerTool(Tool):
 目标岗位：{target_position}
 
 {detected_issues_section}
+
+## 重要约束
+
+简历内容可能是从 PDF/DOCX 转换为 Markdown 的，可能存在格式转换问题。
+
+**请只关注简历的实质内容优化**：
+- 关键词匹配度（是否包含岗位要求的核心技术栈和技能）
+- 工作经历和项目经验的描述（是否突出相关经验）
+- 技能展示和量化成果（是否用数据说话）
+- 内容的专业性和针对性（是否符合岗位要求）
+
+**请忽略以下问题，不要在优化建议中提及**：
+- Markdown 格式问题（多余空格、换行、符号丢失、缩进等）
+- 排版和布局问题
+- 文件格式问题
+
+这些格式问题可能是转换工具导致的，在原始文件中不存在。用户会在原始文件中应用你的内容优化建议。
 
 ## 输出要求
 
@@ -96,6 +114,23 @@ class ResumeOptimizerTool(Tool):
 Target Position: {target_position}
 
 {detected_issues_section}
+
+## Important Constraints
+
+The resume content may have been converted from PDF/DOCX to Markdown, which may introduce format conversion issues.
+
+**Please focus ONLY on substantive content optimization**:
+- Keyword matching (does it include core tech stack and skills required for the position)
+- Work experience and project descriptions (does it highlight relevant experience)
+- Skills showcase and quantified achievements (does it use data to demonstrate impact)
+- Content professionalism and relevance (does it align with position requirements)
+
+**Please IGNORE the following issues and do NOT mention them in your suggestions**:
+- Markdown formatting issues (extra spaces, line breaks, missing symbols, indentation, etc.)
+- Layout and formatting problems
+- File format issues
+
+These formatting issues may be caused by conversion tools and do not exist in the original file. Users will apply your content optimization suggestions to their original files.
 
 ## Output Requirements
 
@@ -257,22 +292,65 @@ Resume Content:
                 }
             }
 
-            # Invoke LLM
-            llm_result = self.session.model.llm.invoke(
-                model_config=LLMModelConfig(**llm_config),
-                prompt_messages=prompt_messages,
-                stream=False
-            )
+            # Retry logic for LLM invocation
+            max_retries = 3
+            retry_delay = 1  # Initial delay in seconds
 
-            # Extract result
-            if llm_result and hasattr(llm_result, 'message') and hasattr(llm_result.message, 'content'):
-                return llm_result.message.content
-            else:
-                return "LLM调用返回空结果" if language == 'zh_Hans' else "LLM returned empty result"
+            for attempt in range(max_retries):
+                try:
+                    # Invoke LLM
+                    llm_result = self.session.model.llm.invoke(
+                        model_config=LLMModelConfig(**llm_config),
+                        prompt_messages=prompt_messages,
+                        stream=False
+                    )
+
+                    # Extract result
+                    if llm_result and hasattr(llm_result, 'message') and hasattr(llm_result.message, 'content'):
+                        response_text = llm_result.message.content.strip()
+
+                        # Check for empty response
+                        if not response_text:
+                            if attempt < max_retries - 1:
+                                print(f"⚠️ LLM returned empty optimization suggestions (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...")
+                                time.sleep(retry_delay)
+                                retry_delay *= 2
+                                continue
+                            else:
+                                print(f"❌ LLM returned empty optimization suggestions after {max_retries} attempts")
+                                return "LLM调用返回空结果，请稍后重试" if language == 'zh_Hans' else "LLM returned empty result, please retry later"
+
+                        return response_text
+                    else:
+                        # No valid response - retry
+                        if attempt < max_retries - 1:
+                            print(f"⚠️ LLM returned invalid response (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...")
+                            time.sleep(retry_delay)
+                            retry_delay *= 2
+                            continue
+                        else:
+                            return "LLM调用返回空结果" if language == 'zh_Hans' else "LLM returned empty result"
+
+                except Exception as e:
+                    error_details = str(e)
+
+                    # Check if it's a configuration error (don't retry)
+                    if "Provider" in error_details and "does not exist" in error_details:
+                        return f"请在Dify设置中配置DeepSeek提供商: {error_details}" if language == 'zh_Hans' else f"Please configure DeepSeek provider in Dify settings: {error_details}"
+
+                    # For other errors, retry
+                    if attempt < max_retries - 1:
+                        print(f"⚠️ LLM invocation failed (attempt {attempt + 1}/{max_retries}): {error_details}, retrying in {retry_delay}s...")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2
+                        continue
+                    else:
+                        print(f"❌ LLM invocation failed after {max_retries} attempts: {error_details}")
+                        return f"LLM调用失败: {error_details}" if language == 'zh_Hans' else f"LLM invocation failed: {error_details}"
+
+            # Fallback (should not reach here)
+            return "LLM调用失败，请稍后重试" if language == 'zh_Hans' else "LLM invocation failed, please retry later"
 
         except Exception as e:
             error_details = str(e)
-            if "Provider" in error_details and "does not exist" in error_details:
-                return f"请在Dify设置中配置DeepSeek提供商: {error_details}" if language == 'zh_Hans' else f"Please configure DeepSeek provider in Dify settings: {error_details}"
-            else:
-                return f"LLM调用失败: {error_details}" if language == 'zh_Hans' else f"LLM invocation failed: {error_details}"
+            return f"优化过程出错: {error_details}" if language == 'zh_Hans' else f"Optimization error: {error_details}"
