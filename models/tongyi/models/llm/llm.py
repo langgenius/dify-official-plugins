@@ -1,4 +1,5 @@
 import base64
+import logging
 import os
 import tempfile
 import uuid
@@ -59,6 +60,8 @@ from dify_plugin.errors.model import (
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from openai import OpenAI
+
+logger = logging.getLogger(__name__)
 
 
 class TongyiLargeLanguageModel(LargeLanguageModel):
@@ -602,8 +605,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 if os.path.exists(file_path):
                     os.remove(file_path)
             except Exception as e:
-                # Log error but don't fail
-                pass
+                logger.warning(f"Failed to remove temporary file {file_path}: {e}")
+        self._temp_files.clear()
 
     def _upload_file_to_tongyi(
         self, credentials: dict, message_content: DocumentPromptMessageContent
@@ -649,9 +652,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             if temp_file_path and os.path.exists(temp_file_path):
                 try:
                     os.remove(temp_file_path)
-                except Exception:
-                    # Log error but don't fail
-                    pass
+                except Exception as e:
+                    logger.warning(f"Failed to remove temporary file {temp_file_path}: {e}")
 
     def _convert_tools(self, tools: list[PromptMessageTool]) -> list[dict]:
         """
