@@ -29,6 +29,10 @@ logger = logging.getLogger(__name__)
 class ShengsuanyunLargeLanguageModel(OAICompatLargeLanguageModel):
     def _update_credential(self, model: str, credentials: dict):
         credentials["endpoint_url"] = "https://router.shengsuanyun.com/api/v1"
+        if credentials.get("base_url"):
+            api_base = credentials["base_url"].rstrip("/")
+            credentials_kwargs["base_url"] = api_base + "/v1"
+            
         credentials["mode"] = self.get_model_mode(model).value
         credentials["extra_headers"] = {
             "HTTP-Referer": "https://dify.ai/",
