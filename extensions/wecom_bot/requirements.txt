@@ -1,2 +1,2 @@
-dify_plugin==0.6.0b14
+dify_plugin~=0.6.0
 pycryptodomex==3.20.0
