@@ -8,7 +8,7 @@ meta:
     version: "3.12"
   version: 0.0.1
 name: maas_hk
-author: huawei
+author: langgenius
 label:
   en_US: Huawei Cloud MaaS - HK
   zh_Hans: 华为云MaaS平台 - HK
