@@ -1,7 +1,7 @@
-# https://ai.google.dev/gemini-api/docs/models?hl=zh-cn#gemini-3.0-pro
-model: gemini-3.0-pro
+# https://ai.google.dev/gemini-api/docs/models?hl=zh-cn#gemini-3-pro
+model: gemini-3-pro-preview
 label:
-  en_US: Gemini 3.0 Pro
+  en_US: Gemini 3 Pro Preview
 model_type: llm
 features:
   - tool-call
@@ -47,18 +47,19 @@ parameter_rules:
     help:
       en_US: Indicates whether to include thoughts in the response. If true, thoughts are returned only if the model supports thought and thoughts are available.
       zh_Hans: 是否返回思考过程。若为 true 则只有模型支持思考且启动思考模式时才返回思考过程。
-  - name: thinking_budget
-    type: int
+  - name: thinking_level
+    type: string
     required: false
-    default: 8192
-    min: 128
-    max: 32768
+    default: "Low"
+    options:
+      - Low
+      - High
     label:
-      en_US: Set thinking budget
-      zh_Hans: 思考预算
+      en_US: Thinking level
+      zh_Hans: 思考层级
     help:
-      en_US: Indicates the thinking budget in tokens. This value is valid only when thinking mode is enabled. The default values and allowed ranges are model dependent. If the thinking budget is not set, the default is to enable dynamic budget reasoning.
-      zh_Hans: 大模型的思考预算。仅在思考模式启动时该值有效。默认值和允许范围取决于模型。若未设置思考预算，则默认开启动态预算推理。
+      en_US: Indicates the thinking level
+      zh_Hans: 思考层级
   - name: grounding
     type: boolean
     required: true
@@ -97,9 +98,10 @@ parameter_rules:
       ja_JP: Gemini にコードを使って複雑なタスクを解決させましょう。
   - name: json_schema
     use_template: json_schema
-# https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-3.0-pro
+# https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-3-pro
 pricing:
-  input: '1.25'
-  output: '10.00'
+  # $ > 200K tokens
+  input: '4.0'
+  output: '18.00'
   unit: '0.000001'
   currency: USD
