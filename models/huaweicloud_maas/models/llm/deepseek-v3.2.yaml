@@ -22,6 +22,16 @@ parameter_rules:
     min: 1
     max: 16384
     default: 16384
+  - name: frequency_penalty
+    use_template: frequency_penalty
+    min: -2
+    max: 2
+    default: 0
+  - name: presence_penalty
+    use_template: presence_penalty
+    min: -2
+    max: 2
+    default: 0
   - name: enable_thinking
     required: false
     type: boolean
