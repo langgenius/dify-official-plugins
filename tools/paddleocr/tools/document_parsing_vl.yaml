@@ -1,0 +1,211 @@
+identity:
+  name: document_parsing_vl
+  author: langgenius
+  label:
+    en_US: Large Model Document Parsing
+    zh_Hans: 大模型文档解析
+description:
+  human:
+    en_US: PaddleOCR large model document parsing tool, capable of extracting tables, formulas, seals, and other information from documents while preserving the original layout
+    zh_Hans: PaddleOCR 大模型文档解析工具，能够提取文档中的表格、公式、印章等信息，同时保留原始版面结构
+  llm: PaddleOCR large model document parsing tool, capable of extracting tables, formulas, seals, and other information from documents while preserving the original layout
+parameters:
+  - name: file
+    type: string
+    required: true
+    label:
+      en_US: File
+      zh_Hans: 文件
+    human_description:
+      en_US: The URL of an image or PDF file, or the Base64-encoded result of the content of such a file.
+      zh_Hans: 图像文件或 PDF 文件的 URL，或上述类型文件内容的 Base64 编码结果。
+    llm_description: The URL of an image or PDF file, or the Base64-encoded result of the content of such a file.
+    form: llm
+  - name: fileType
+    type: number
+    required: false
+    label:
+      en_US: File Type
+      zh_Hans: 文件类型
+    human_description:
+      en_US: File type. 0 indicates a PDF file, and 1 indicates an image file. If not specified, the file type will be inferred from the URL.
+      zh_Hans: 文件类型。0 表示 PDF 文件，1 表示图像文件。若不设置，则将根据 URL 推断文件类型。
+    llm_description: File type. 0 indicates a PDF file, and 1 indicates an image file. If not specified, the file type will be inferred from the URL.
+    form: llm
+  - name: useDocOrientationClassify
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Whether to Enable Document Orientation Classification
+      zh_Hans: 是否启用文档方向分类
+    human_description:
+      en_US: Whether to enable the document orientation classification function. Enabling this feature allows the input image to be automatically rotated to the correct orientation.
+      zh_Hans: 是否启用文档方向分类功能。启用该功能可以将输入图像自动转正。
+    llm_description: Whether to enable the document orientation classification function. Enabling this feature allows the input image to be automatically rotated to the correct orientation. Keep this feature disabled unless the user ask for it.
+    form: llm
+  - name: useDocUnwarping
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Whether to Enable Text Image Unwarping
+      zh_Hans: 是否启用文本图像矫正
+    human_description:
+      en_US: Whether to enable the text image unwarping function. Enabling this feature allows automatic correction of distorted text images.
+      zh_Hans: 是否启用文本图像矫正功能。启用该功能可以对发生畸变的文本图像进行自动矫正。
+    llm_description: Whether to enable the text image unwarping function. Enabling this feature allows automatic correction of distorted text images. Keep this feature disabled unless the user ask for it.
+    form: llm
+  - name: useLayoutDetection
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: Whether to Enable Layout Detection
+      zh_Hans: 是否启用版面检测
+    human_description:
+      en_US: Whether to enable the layout detection function.
+      zh_Hans: 是否启用版面检测功能。
+    llm_description: Whether to enable the layout detection function.
+    form: llm
+  - name: useChartRecognition
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Whether to Enable Chart Recognition
+      zh_Hans: 是否启用图表识别
+    human_description:
+      en_US: Whether to enable the chart recognition function.
+      zh_Hans: 是否启用图表识别功能。
+    llm_description: Whether to enable the chart recognition function.
+    form: llm
+  - name: layoutNms
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: Whether to Perform NMS on Layout Detection Results
+      zh_Hans: 是否对版面检测结果进行 NMS
+    human_description:
+      en_US: Whether to perform NMS on layout detection results.
+      zh_Hans: 是否对版面检测结果进行 NMS。
+    llm_description: Whether to perform NMS on layout detection results.
+    form: llm
+  - name: promptLabel
+    type: string
+    required: false
+    label:
+      en_US: Prompt Type for the VLM
+      zh_Hans: VLM 的 prompt 类型
+    human_description:
+      en_US: Prompt type for the VLM. Possible values are "ocr", "formula", "table", and "chart".
+      zh_Hans: VLM 的 prompt 类型。可能的值为："ocr"、"formula"、"table"、"chart"。
+    llm_description: Prompt type for the VLM. Possible values are "ocr", "formula", "table", and "chart".
+    form: llm
+  - name: formatBlockContent
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Whether to Format Block Content
+      zh_Hans: 是否格式化 block 内容
+    human_description:
+      en_US: Whether to format block content.
+      zh_Hans: 是否格式化 block 内容。
+    llm_description: Whether to format block content.
+    form: llm
+  - name: repetitionPenalty
+    type: number
+    required: false
+    label:
+      en_US: Repetition Penalty Parameter Used in VLM Sampling
+      zh_Hans: VLM 采样时使用的重复惩罚参数
+    human_description:
+      en_US: Repetition penalty parameter used in VLM sampling.
+      zh_Hans: VLM 采样时使用的重复惩罚参数。
+    llm_description: Repetition penalty parameter used in VLM sampling.
+    form: llm
+  - name: temperature
+    type: number
+    required: false
+    label:
+      en_US: Temperature Parameter Used in VLM Sampling
+      zh_Hans: VLM 采样时使用的温度参数
+    human_description:
+      en_US: Temperature parameter used in VLM sampling.
+      zh_Hans: VLM 采样时使用的温度参数。
+    llm_description: Temperature parameter used in VLM sampling.
+    form: llm
+  - name: topP
+    type: number
+    required: false
+    label:
+      en_US: Top-p Parameter Used in VLM Sampling
+      zh_Hans: VLM 采样时使用的 top-p 参数
+    human_description:
+      en_US: Top-p parameter used in VLM sampling.
+      zh_Hans: VLM 采样时使用的 top-p 参数。
+    llm_description: Top-p parameter used in VLM sampling.
+    form: llm
+  - name: minPixels
+    type: number
+    required: false
+    label:
+      en_US: Minimum Number of Pixels Allowed During VLM Preprocessing.
+      zh_Hans: VLM 预处理时允许的最小像素数。
+    human_description:
+      en_US: Minimum number of pixels allowed during VLM preprocessing.
+      zh_Hans: VLM 预处理时允许的最小像素数。
+    llm_description: Minimum number of pixels allowed during VLM preprocessing.
+    form: llm
+  - name: maxPixels
+    type: number
+    required: false
+    label:
+      en_US: Maximum Number of Pixels Allowed During VLM Preprocessing.
+      zh_Hans: VLM 预处理时允许的最大像素数。
+    human_description:
+      en_US: Maximum number of pixels allowed during VLM preprocessing.
+      zh_Hans: VLM 预处理时允许的最大像素数。
+    llm_description: Maximum number of pixels allowed during VLM preprocessing.
+    form: llm
+  - name: prettifyMarkdown
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: Whether to Prettify the Output Markdown Text
+      zh_Hans: 是否美化输出的 Markdown 文本
+    human_description:
+      en_US: Whether to prettify the output Markdown text.
+      zh_Hans: 是否美化输出的 Markdown 文本。
+    llm_description: Whether to prettify the output Markdown text.
+    form: llm
+  - name: showFormulaNumber
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Whether to Include Formula Numbers in the Output Markdown Text
+      zh_Hans: 是否在输出的 Markdown 文本中包含公式编号
+    human_description:
+      en_US: Whether to include formula numbers in the output markdown text.
+      zh_Hans: 是否在输出的 Markdown 文本中包含公式编号。
+    llm_description: Whether to include formula numbers in the output markdown text.
+    form: llm
+  - name: visualize
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Whether to Return Visualization Results
+      zh_Hans: 是否返回可视化结果
+    human_description:
+      en_US: Whether or not to return visualization results.
+      zh_Hans: 是否返回可视化结果。
+    llm_description: Whether or not to return visualization results.
+    form: llm
+extra:
+  python:
+    source: tools/document_parsing.py
