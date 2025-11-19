@@ -8,6 +8,7 @@ import time
 from collections.abc import Generator, Iterator, Sequence
 from contextlib import suppress
 from typing import Optional, Union, Mapping, Any, Tuple, List, TypeVar
+from loguru import logger
 
 import requests
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
@@ -266,6 +267,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         config.top_k = model_parameters.get("top_k", None)
         config.temperature = model_parameters.get("temperature", None)
         config.max_output_tokens = model_parameters.get("max_output_tokens", None)
+
+        # if config.temperature is None or not isinstance(config.temperature, float) or not isinstance(config.temperature, int):
 
     @staticmethod
     def _set_thinking_config(
@@ -581,7 +584,17 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         if model in IMAGE_GENERATION_MODELS:
             assistant_prompt_message = self._parse_parts(response.candidates[0].content.parts)
         else:
-            assistant_prompt_message = AssistantPromptMessage(content=response.text)
+            assistant_prompt_message = AssistantPromptMessage(
+                content=response.text,
+                name=base64.b64encode(
+                    response.candidates[0].content.parts[-1].thought_signature
+                ).decode(encoding="utf-8"),
+            )
+
+        for part in response.candidates[0].content.parts:
+            print(json.dumps(part.model_dump(mode="json"), indent=2, ensure_ascii=False))
+
+        print(f">> To dify message: {assistant_prompt_message}")
 
         # calculate num tokens
         prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
@@ -656,10 +669,23 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 or not chunk.candidates[0].content.parts
             ):
                 continue
+
+            print(
+                json.dumps(
+                    chunk.candidates[0].content.model_dump(mode="json"),
+                    indent=2,
+                    ensure_ascii=False,
+                )
+            )
+
             candidate = chunk.candidates[0]
             message = self._parse_parts(candidate.content.parts)
 
             index += len(candidate.content.parts)
+
+            print(f">> To dify message -> {message=}")
+
+            print(f"------------------- [{candidate.finish_reason=}] ---------------------")
 
             # if the stream is not finished, yield the chunk
             if not candidate.finish_reason:
@@ -705,6 +731,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
     def _parse_parts(self, parts: Sequence[types.Part], /) -> AssistantPromptMessage:
         """
+        https://ai.google.dev/gemini-api/docs/gemini-3?hl=zh-cn&thinking=high#thought_signatures
 
         Args:
             parts: [
@@ -739,7 +766,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     contents.append(TextPromptMessageContent(data="\n\n</think>"))
                     self.is_thinking = False
 
-                contents.append(TextPromptMessageContent(data=part.text))
+                contents.append(
+                    TextPromptMessageContent(
+                        data=part.text, thought_signature=part.thought_signature
+                    )
+                )
 
             # TODO:
             #  Upstream needs to provide a new type of PromptMessageContent for tracking the code executor's behavior.
@@ -749,11 +780,19 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     code = part.executable_code.code
                     language = part.executable_code.language.lower()
                     code_block = f"\n```{language}\n{code}\n```\n"
-                    contents.append(TextPromptMessageContent(data=code_block))
+                    contents.append(
+                        TextPromptMessageContent(
+                            data=code_block, thought_signature=part.thought_signature
+                        )
+                    )
             if part.code_execution_result:
                 with suppress(Exception):
                     result_tpl = f"\n```\n{part.code_execution_result.output}\n```\n"
-                    contents.append(TextPromptMessageContent(data=result_tpl))
+                    contents.append(
+                        TextPromptMessageContent(
+                            data=result_tpl, thought_signature=part.thought_signature
+                        )
+                    )
 
             # A predicted [FunctionCall] returned from the model that contains a string
             # representing the [FunctionDeclaration.name] with the parameters and their values.
@@ -796,10 +835,26 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                             base64_data=base64.b64encode(data).decode(),
                             mime_type=mime_type,
                             detail=ImagePromptMessageContent.DETAIL.HIGH,
+                            thought_signature=part.thought_signature,
                         )
                     )
                 else:
                     raise InvokeError(f"unsupported mime_type {mime_type}")
+
+            # Hold interleaved thinking
+            if part.thought_signature:
+                thought_signature_base64 = base64.b64encode(part.thought_signature).decode(
+                    encoding="utf-8"
+                )
+                # thought_signature_base64 = part.thought_signature
+                if contents:
+                    contents[-1].thought_signature = thought_signature_base64
+                else:
+                    contents.append(
+                        TextPromptMessageContent(
+                            data="", thought_signature=thought_signature_base64
+                        )
+                    )
 
         # FIXME: This is a workaround to fix the typing issue in the dify_plugin
         # https://github.com/langgenius/dify-plugin-sdks/issues/41
@@ -849,6 +904,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator[LLMResultChunk]]:
+
+        logger.debug(json.dumps(model_parameters, indent=2, ensure_ascii=False))
+        for p in prompt_messages:
+            print(f"{p=}")
 
         # Validate and adjust feature compatibility
         model_parameters = self._validate_feature_compatibility(model_parameters, tools)
@@ -904,6 +963,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         self._set_tool_calling(config=config, model_parameters=model_parameters, tools=tools)
 
         # == InvokeModel == #
+
+        stream = False
 
         if stream:
             response = genai_client.models.generate_content_stream(

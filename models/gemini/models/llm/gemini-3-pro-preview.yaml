@@ -15,23 +15,11 @@ features:
 model_properties:
   mode: chat
   context_size: 1048576
+
+# Documentation: https://ai.google.dev/gemini-api/docs/gemini-3?hl=zh-cn
 parameter_rules:
-  - name: temperature
-    use_template: temperature
-    default: 1
-    min: 0
-    max: 2
-  - name: top_p
-    use_template: top_p
-  - name: top_k
-    label:
-      zh_Hans: 取样数量
-      en_US: Top k
-    type: int
-    help:
-      zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
-      en_US: Only sample from the top K options for each subsequent token.
-    required: false
+  # Force setting temperature = 1.0
+  # https://ai.google.dev/gemini-api/docs/gemini-3?hl=zh-cn&thinking=high#temperature
   - name: max_output_tokens
     use_template: max_tokens
     default: 65536
@@ -96,8 +84,6 @@ parameter_rules:
       en_US: Lets Gemini use code to solve complex tasks
       zh_Hans: 让 Gemini 使用代码来解决复杂任务。
       ja_JP: Gemini にコードを使って複雑なタスクを解決させましょう。
-  - name: json_schema
-    use_template: json_schema
 # https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-3-pro
 pricing:
   # $ > 200K tokens

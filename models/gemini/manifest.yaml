@@ -5,7 +5,7 @@ description:
   zh_Hans: 谷歌提供的 Gemini 模型.
 icon: icon_s_en.svg
 label:
-  en_US: Gemini
+  en_US: Gemini dev
 meta:
   arch:
     - amd64
@@ -34,4 +34,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.6.0
+version: 0.6.1
