@@ -25,7 +25,7 @@ class PaddleocrProvider(ToolProvider):
         )
         test_file = "https://paddle-model-ecology.bj.bcebos.com/paddlex/imgs/demo_image/general_ocr_002.png"
 
-        if not any(map(credentials.__contains__, api_url_keys)):
+        if not any(key in credentials for key in api_url_keys):
             raise ToolProviderCredentialValidationError("You should provide at least one API URL")
         
         for api_url_key, tool_cls in zip(api_url_keys, tool_classes):

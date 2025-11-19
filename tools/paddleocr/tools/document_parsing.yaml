@@ -310,7 +310,7 @@ parameters:
       zh_Hans: 是否将有线表单元格检测结果直转为 HTML。
     llm_description: Whether to transform wired table cell detection results to HTML directly.
     form: llm
-  - name: useWirelessableCellsTransToHtml
+  - name: useWirelessTableCellsTransToHtml
     type: boolean
     required: false
     default: false
@@ -364,7 +364,7 @@ parameters:
     default: true
     label:
       en_US: Whether to Enable End-to-End Wireless Table Recognition Mode
-      zh_Hans: 使用启用无线表端到端表格识别模式
+      zh_Hans: 是否启用无线表端到端表格识别模式
     human_description:
       en_US: Whether to enable end-to-end wireless table recognition mode. When enabled, the cell detection model will not be used, and only the table structure recognition model will be used.
       zh_Hans: 是否启用无线表端到端表格识别模式。启用时，不使用单元格检测模型，只使用表格结构识别模型。
