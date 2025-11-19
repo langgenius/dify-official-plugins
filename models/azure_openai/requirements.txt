@@ -3,3 +3,4 @@ openai~=2.3.0
 tiktoken~=0.8.0
 numpy~=2.2.4
 pillow~=11.3.0
+azure-identity~=1.19.0

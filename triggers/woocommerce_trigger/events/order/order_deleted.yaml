@@ -1,0 +1,43 @@
+identity:
+  name: order_deleted
+  author: langgenius
+  label:
+    en_US: Order Deleted
+    zh_Hans: 订单删除
+    ja_JP: 注文削除
+description:
+  en_US: Triggered when a WooCommerce order is trashed or permanently deleted.
+  zh_Hans: 当 WooCommerce 订单被移入回收站或被永久删除时触发。
+  ja_JP: WooCommerce の注文がゴミ箱へ移動または完全に削除されたときにトリガーされます。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    order:
+      type: object
+      description: The order payload that triggered the delete event.
+      additionalProperties: true
+    webhook:
+      type: object
+      description: Metadata derived from X-WC-Webhook headers.
+      properties:
+        id:
+          type: string
+        delivery_id:
+          type: string
+        resource:
+          type: string
+        event:
+          type: string
+        topic:
+          type: string
+        source:
+          type: string
+  required:
+    - order
+
+extra:
+  python:
+    source: events/order/order_deleted.py

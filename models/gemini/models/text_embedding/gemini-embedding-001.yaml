@@ -1,0 +1,11 @@
+# https://ai.google.dev/gemini-api/docs/embeddings#model-versions
+model: gemini-embedding-001
+model_type: text-embedding
+model_properties:
+  context_size: 2048
+  max_chunks: 100
+# https://ai.google.dev/gemini-api/docs/pricing#gemini-embedding
+pricing:
+  input: "0.15"
+  unit: "0.000001"
+  currency: USD

@@ -1,0 +1,307 @@
+subscription_schema:
+- name: "webhook_secret"
+  type: "secret-input"
+  required: false
+  label:
+    zh_Hans: "Webhook Secret"
+    en_US: "Webhook Secret"
+    ja_JP: "Webhookシークレット"
+  help:
+    en_US: "Optional webhook secret for validating Linear webhook requests"
+    ja_JP: "Linear Webhookリクエストの検証用のオプションのWebhookシークレット"
+    zh_Hans: "可选的用于验证 Linear webhook 请求的 webhook 密钥"
+
+subscription_constructor:
+  parameters:
+  - name: "team_id"
+    label:
+      en_US: "Team"
+      zh_Hans: "团队"
+      ja_JP: "チーム"
+    type: "dynamic-select"
+    multiple: false
+    required: true
+    placeholder:
+      en_US: "Select a team"
+      zh_Hans: "选择团队"
+      ja_JP: "チームを選択"
+    help:
+      en_US: "The Linear team to create webhooks for"
+      zh_Hans: "要为其创建 webhook 的 Linear 团队"
+      ja_JP: "Webhookを作成するLinearチーム"
+
+  - name: "resource_types"
+    label:
+      en_US: "Resource Types"
+      zh_Hans: "资源类型"
+      ja_JP: "リソースタイプ"
+    type: "checkbox"
+    required: true
+    multiple: true
+    default:
+    - "Issue"
+    - "Attachment"
+    - "Comment"
+    - "IssueLabel"
+    - "Reaction"
+    - "Project"
+    - "ProjectUpdate"
+    - "Initiative"
+    - "InitiativeUpdate"
+    - "Cycle"
+    - "Document"
+    - "Customer"
+    - "CustomerNeed"
+    - "User"
+    - "IssueRelation"
+    options:
+    # Core Issue-related types
+    - value: "Issue"
+      label:
+        en_US: "Issues"
+        zh_Hans: "议题"
+        ja_JP: "イシュー"
+
+    - value: "Attachment"
+      label:
+        en_US: "Issue Attachments"
+        zh_Hans: "议题附件"
+        ja_JP: "イシュー添付ファイル"
+
+    - value: "Comment"
+      label:
+        en_US: "Issue Comments"
+        zh_Hans: "议题评论"
+        ja_JP: "イシューコメント"
+
+    - value: "IssueLabel"
+      label:
+        en_US: "Issue Labels"
+        zh_Hans: "议题标签"
+        ja_JP: "イシューラベル"
+
+    - value: "Reaction"
+      label:
+        en_US: "Comment Reactions"
+        zh_Hans: "评论反应"
+        ja_JP: "コメントリアクション"
+
+    # Project-related types
+    - value: "Project"
+      label:
+        en_US: "Projects"
+        zh_Hans: "项目"
+        ja_JP: "プロジェクト"
+
+    - value: "ProjectUpdate"
+      label:
+        en_US: "Project Updates"
+        zh_Hans: "项目更新"
+        ja_JP: "プロジェクト更新"
+
+    # Initiative-related types
+    - value: "Initiative"
+      label:
+        en_US: "Initiatives"
+        zh_Hans: "计划"
+        ja_JP: "イニシアティブ"
+
+    - value: "InitiativeUpdate"
+      label:
+        en_US: "Initiative Updates"
+        zh_Hans: "计划更新"
+        ja_JP: "イニシアティブ更新"
+
+    # Other types
+    - value: "Cycle"
+      label:
+        en_US: "Cycles"
+        zh_Hans: "周期"
+        ja_JP: "サイクル"
+
+    - value: "Document"
+      label:
+        en_US: "Documents"
+        zh_Hans: "文档"
+        ja_JP: "ドキュメント"
+
+    - value: "Customer"
+      label:
+        en_US: "Customers"
+        zh_Hans: "客户"
+        ja_JP: "顧客"
+
+    - value: "CustomerNeed"
+      label:
+        en_US: "Customer Requests"
+        zh_Hans: "客户请求"
+        ja_JP: "顧客リクエスト"
+
+    - value: "User"
+      label:
+        en_US: "Users"
+        zh_Hans: "用户"
+        ja_JP: "ユーザー"
+
+    help:
+      en_US: "Select which resource types should trigger the webhook (verified with Linear API)"
+      zh_Hans: "选择哪些资源类型应该触发 webhook（已通过 Linear API 验证）"
+      ja_JP: "Webhookをトリガーするリソースタイプを選択（Linear APIで検証済み）"
+
+  credentials_schema:
+    api_key:
+      label:
+        en_US: "Linear API Key"
+        zh_Hans: "Linear API 密钥"
+        ja_JP: "Linear APIキー"
+      type: secret-input
+      required: true
+      url: https://linear.app/settings/api
+      placeholder:
+        en_US: "Please input your Linear API key"
+        zh_Hans: "请输入你的 Linear API 密钥"
+        ja_JP: "Linear APIキーを入力してください"
+      help:
+        en_US: "Get your Personal API key from Linear Settings"
+        zh_Hans: "从 Linear 设置中获取你的个人 API 密钥"
+        ja_JP: "Linear設定から個人APIキーを取得してください"
+
+  oauth_schema:
+    client_schema:
+    - name: "client_id"
+      type: "secret-input"
+      required: true
+      url: https://linear.app/settings/api/applications
+      placeholder:
+        en_US: "Please input your OAuth Client ID"
+        zh_Hans: "请输入你的 OAuth 客户端 ID"
+        ja_JP: "OAuth クライアントIDを入力してください"
+      help:
+        en_US: "Create an OAuth application in Linear Settings to get Client ID"
+        zh_Hans: "在 Linear 设置中创建 OAuth 应用以获取客户端 ID"
+        ja_JP: "Linear設定でOAuthアプリケーションを作成してクライアントIDを取得してください"
+      label:
+        en_US: "Client ID"
+        zh_Hans: "客户端 ID"
+        ja_JP: "クライアントID"
+
+    - name: "client_secret"
+      type: "secret-input"
+      required: true
+      url: https://linear.app/settings/api/applications
+      placeholder:
+        en_US: "Please input your OAuth Client Secret"
+        zh_Hans: "请输入你的 OAuth 客户端密钥"
+        ja_JP: "OAuth クライアントシークレットを入力してください"
+      help:
+        en_US: "Client Secret is provided when you create an OAuth application in Linear"
+        zh_Hans: "在 Linear 中创建 OAuth 应用时会提供客户端密钥"
+        ja_JP: "LinearでOAuthアプリケーションを作成すると、クライアントシークレットが提供されます"
+      label:
+        en_US: "Client Secret"
+        zh_Hans: "客户端密钥"
+        ja_JP: "クライアントシークレット"
+
+    credentials_schema:
+    - name: "access_tokens"
+      type: "secret-input"
+      label:
+        en_US: "Access Token"
+        zh_Hans: "访问令牌"
+        ja_JP: "アクセストークン"
+
+  extra:
+    python:
+      source: provider/linear_simple.py
+
+events:
+# Issue events
+- events/issue/issue_created.yaml
+- events/issue/issue_updated.yaml
+- events/issue/issue_removed.yaml
+
+# Comment events
+- events/comment/comment_created.yaml
+- events/comment/comment_updated.yaml
+- events/comment/comment_removed.yaml
+
+# Project events
+- events/project/project_created.yaml
+- events/project/project_updated.yaml
+- events/project/project_removed.yaml
+
+# Cycle events
+- events/cycle/cycle_created.yaml
+- events/cycle/cycle_updated.yaml
+- events/cycle/cycle_removed.yaml
+
+# Document events
+- events/document/document_created.yaml
+- events/document/document_updated.yaml
+- events/document/document_removed.yaml
+
+# Attachment events
+- events/attachment/attachment_created.yaml
+- events/attachment/attachment_updated.yaml
+- events/attachment/attachment_removed.yaml
+
+# IssueLabel events
+- events/issue_label/issue_label_created.yaml
+- events/issue_label/issue_label_updated.yaml
+- events/issue_label/issue_label_removed.yaml
+
+# Reaction events
+- events/reaction/reaction_created.yaml
+- events/reaction/reaction_updated.yaml
+- events/reaction/reaction_removed.yaml
+
+# ProjectUpdate events
+- events/project_update/project_update_created.yaml
+- events/project_update/project_update_updated.yaml
+- events/project_update/project_update_removed.yaml
+
+# Initiative events
+- events/initiative/initiative_created.yaml
+- events/initiative/initiative_updated.yaml
+- events/initiative/initiative_removed.yaml
+
+# InitiativeUpdate events
+- events/initiative_update/initiative_update_created.yaml
+- events/initiative_update/initiative_update_updated.yaml
+- events/initiative_update/initiative_update_removed.yaml
+
+# Customer events
+- events/customer/customer_created.yaml
+- events/customer/customer_updated.yaml
+- events/customer/customer_removed.yaml
+
+# CustomerNeed events
+- events/customer_need/customer_need_created.yaml
+- events/customer_need/customer_need_updated.yaml
+- events/customer_need/customer_need_removed.yaml
+
+# User events
+- events/user/user_created.yaml
+- events/user/user_updated.yaml
+
+# IssueRelation events
+- events/issue_relation/issue_relation_created.yaml
+- events/issue_relation/issue_relation_updated.yaml
+- events/issue_relation/issue_relation_removed.yaml
+
+identity:
+  author: langgenius
+  description:
+    en_US: Linear is a modern issue tracking tool designed for software development teams, with webhook trigger support.
+    ja_JP: Linearは、ソフトウェア開発チーム向けに設計された最新の課題管理ツールで、webhookトリガーのサポートがあります。
+    zh_Hans: Linear是一个为软件开发团队设计的现代化问题跟踪工具，支持webhook触发器。
+  icon: image.png
+  label:
+    en_US: Linear Triggers
+    zh_Hans: Linear 触发器
+    ja_JP: Linear トリガー
+  name: linear_trigger
+
+extra:
+  python:
+    source: provider/linear_simple.py

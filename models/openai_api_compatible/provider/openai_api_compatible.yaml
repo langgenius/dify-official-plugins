@@ -325,6 +325,32 @@ model_credential_schema:
       help:
         en_US: "List voice names separated by commas. First voice will be used as default."
         zh_Hans: "用英文逗号分隔的声音列表。第一个声音将作为默认值。"
+    - variable: document_prefix
+      label:
+        zh_Hans: 文档前缀
+        en_US: Document prefix
+      required: false
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+      type: text-input
+      default: ""
+      placeholder:
+        zh_Hans: "输入您的文档前缀, 例如 document:"
+        en_US: "Enter your Document prefix, e.g. document:"
+    - variable: query_prefix
+      label:
+        zh_Hans: 查询前缀
+        en_US: Query prefix
+      required: false
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+      type: text-input
+      default: ""
+      placeholder:
+        zh_Hans: "请输入您的查询前缀, 例如 query:"
+        en_US: "Enter your Query prefix, e.g. query:"
 extra:
   python:
     provider_source: provider/openai_api_compatible.py

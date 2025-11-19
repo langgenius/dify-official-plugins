@@ -1,0 +1,102 @@
+identity:
+  name: project_update_removed
+  author: langgenius
+  label:
+    en_US: Project Update Removed
+    zh_Hans: 项目更新删除
+    ja_JP: プロジェクトアップデート削除
+description:
+  en_US: Triggers when a project_update is removed
+  zh_Hans: 当在 Linear 中删除或归档项目更新时触发
+  ja_JP: Linear でプロジェクトアップデートが削除またはアーカイブされたときにトリガーされます
+parameters:
+- name: body_contains
+  label:
+    en_US: Body Contains
+    zh_Hans: 正文包含
+    ja_JP: 本文に含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if the update body contains the provided keywords (comma-separated)."
+    zh_Hans: "仅当更新正文包含指定关键词时触发（逗号分隔）。"
+    ja_JP: "アップデート本文に指定したキーワードが含まれる場合のみトリガーします（カンマ区切り）。"
+- name: health_filter
+  label:
+    en_US: Health Filter
+    zh_Hans: 健康度过滤
+    ja_JP: ヘルスフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Restrict to removals of updates with specific health statuses (comma-separated)."
+    zh_Hans: "仅当被删除的更新具有指定健康状态时触发（逗号分隔）。"
+    ja_JP: "指定したヘルスステータスのアップデートが削除された場合のみ対象にします（カンマ区切り）。"
+- name: project_filter
+  label:
+    en_US: Project Filter
+    zh_Hans: 项目过滤
+    ja_JP: プロジェクトフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the removed update belonged to specific project IDs (comma-separated)."
+    zh_Hans: "仅当被删除的更新属于指定项目 ID 时触发（逗号分隔）。"
+    ja_JP: "削除されたアップデートが指定したプロジェクト ID のものだった場合のみトリガーします（カンマ区切り）。"
+- name: author_filter
+  label:
+    en_US: Author Filter
+    zh_Hans: 作者过滤
+    ja_JP: 作成者フィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the removed update was written by specific user IDs (comma-separated)."
+    zh_Hans: "仅当被删除的更新由指定用户 ID 撰写时触发（逗号分隔）。"
+    ja_JP: "削除されたアップデートが指定したユーザー ID によるものだった場合のみトリガーします（カンマ区切り）。"
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [remove]
+    type:
+      type: string
+      enum: [ProjectUpdate]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        body:
+          type: string
+        bodyData:
+          type: string
+        health:
+          type: string
+        projectId:
+          type: string
+        slugId:
+          type: string
+        url:
+          type: string
+        userId:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        editedAt:
+          type: string
+        reactionData:
+          type: object
+        project:
+          type: object
+        user:
+          type: object
+    actor:
+      type: object
+  required: [action, type, data]
+extra:
+  python:
+    source: events/project_update/project_update_removed.py

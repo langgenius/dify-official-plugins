@@ -1,0 +1,1 @@
+"""WooCommerce trigger events package."""

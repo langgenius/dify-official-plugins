@@ -1,0 +1,43 @@
+identity:
+  name: product_deleted
+  author: langgenius
+  label:
+    en_US: Product Deleted
+    zh_Hans: 商品删除
+    ja_JP: 商品削除
+description:
+  en_US: Triggered when a product is trashed or permanently removed from WooCommerce.
+  zh_Hans: 当 WooCommerce 商品被移入回收站或被永久删除时触发。
+  ja_JP: WooCommerce の商品がゴミ箱へ移動または削除されたときにトリガーされます。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    product:
+      type: object
+      description: Product payload related to the delete event.
+      additionalProperties: true
+    webhook:
+      type: object
+      description: Metadata derived from X-WC-Webhook headers.
+      properties:
+        id:
+          type: string
+        delivery_id:
+          type: string
+        resource:
+          type: string
+        event:
+          type: string
+        topic:
+          type: string
+        source:
+          type: string
+  required:
+    - product
+
+extra:
+  python:
+    source: events/product/product_deleted.py

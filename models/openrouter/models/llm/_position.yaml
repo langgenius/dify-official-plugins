@@ -1,3 +1,5 @@
+- openai/gpt-5.1
+- openai/gpt-5.1-chat
 - openai/gpt-5
 - openai/gpt-5-chat
 - openai/gpt-5-mini
@@ -29,6 +31,7 @@
 - anthropic/claude-3-haiku
 - anthropic/claude-3-opus
 - anthropic/claude-3-sonnet
+- google/gemini-3-pro-preview
 - google/gemini-2.5-pro
 - google/gemini-2.5-flash
 - google/gemini-2.5-flash-image-preview
@@ -74,6 +77,7 @@
 - deepseek/deepseek-v3-base
 - moonshotai/kimi-k2-0905
 - moonshotai/kimi-k2-0711
+- x-ai/grok-4-fast
 - x-ai/grok-4-fast:free
 - x-ai/grok-3-beta
 - x-ai/grok-3-mini-beta
