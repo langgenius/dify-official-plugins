@@ -251,13 +251,14 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         model_parameters: Mapping[str, Any],
         stop: List[str] | None = None,
     ) -> None:
-        if schema := model_parameters.get("json_schema"):
-            try:
-                schema = json.loads(schema)
-            except (TypeError, ValueError) as exc:
-                raise InvokeError("Invalid JSON Schema") from exc
-            config.response_schema = schema
+        if "json_schema" in model_parameters:
             config.response_mime_type = "application/json"
+            if schema := model_parameters.get("json_schema"):
+                try:
+                    schema = json.loads(schema)
+                except (TypeError, ValueError) as exc:
+                    raise InvokeError("Invalid JSON Schema") from exc
+                config.response_schema = schema
 
         if stop:
             config.stop_sequences = stop
