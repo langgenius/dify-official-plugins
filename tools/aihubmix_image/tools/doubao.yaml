@@ -1,0 +1,164 @@
+identity:
+  name: "doubao"
+  author: "xinrui"
+  label:
+    en_US: "Doubao Seedream 4.0"
+    zh_Hans: "Doubao Seedream 4.0"
+    pt_BR: "Doubao Seedream 4.0"
+    ja_JP: "Doubao Seedream 4.0"
+description:
+  human:
+    en_US: "Doubao Seedream 4.0 Image Generation Model"
+    zh_Hans: "Doubao Seedream 4.0 图像生成模型"
+    pt_BR: "Modelo de geração de imagens Doubao Seedream 4.0"
+    ja_JP: "Doubao Seedream 4.0 画像生成モデル"
+  llm: "Generate image using Doubao Seedream model with advanced Chinese language understanding and high-quality output"
+parameters:
+  - name: prompt
+    type: string
+    required: true
+    label:
+      en_US: "Prompt"
+      zh_Hans: "提示词"
+      pt_BR: "Prompt"
+      ja_JP: "プロンプト"
+    human_description:
+      en_US: "Text description of image you want to generate"
+      zh_Hans: "您想要生成的图像的文字描述"
+      pt_BR: "Descrição textual da imagem que você deseja gerar"
+      ja_JP: "生成したい画像のテキスト説明"
+    llm_description: "Text prompt for Doubao Seedream image generation, describing the desired image content. Optimized for Chinese prompts"
+    form: llm
+  
+  - name: size
+    type: select
+    required: false
+    label:
+      en_US: "Image Size"
+      zh_Hans: "图像尺寸"
+      pt_BR: "Tamanho da Imagem"
+      ja_JP: "画像サイズ"
+    human_description:
+      en_US: "Output image size"
+      zh_Hans: "输出图像尺寸"
+      pt_BR: "Tamanho da imagem de saída"
+      ja_JP: "出力画像サイズ"
+    llm_description: "Output image size for Doubao Seedream generation"
+    form: form
+    default: "2K"
+    options:
+      - value: "1K"
+        label:
+          en_US: "1K (1024x1024)"
+          zh_Hans: "1K (1024x1024)"
+          pt_BR: "1K (1024x1024)"
+          ja_JP: "1K (1024x1024)"
+      - value: "2K"
+        label:
+          en_US: "2K (2048x2048)"
+          zh_Hans: "2K (2048x2048)"
+          pt_BR: "2K (2048x2048)"
+          ja_JP: "2K (2048x2048)"
+      - value: "4K"
+        label:
+          en_US: "4K (4096x4096)"
+          zh_Hans: "4K (4096x4096)"
+          pt_BR: "4K (4096x4096)"
+          ja_JP: "4K (4096x4096)"
+  
+  - name: sequential_image_generation
+    type: select
+    required: false
+    label:
+      en_US: "Sequential Generation"
+      zh_Hans: "连续生成"
+      pt_BR: "Geração Sequencial"
+      ja_JP: "連続生成"
+    human_description:
+      en_US: "Enable sequential image generation for consistency"
+      zh_Hans: "启用连续图像生成以保持一致性"
+      pt_BR: "Ativar geração de imagem sequencial para consistência"
+      ja_JP: "一貫性のために連続画像生成を有効にする"
+    llm_description: "Sequential image generation setting for Doubao Seedream. ENABLED for consistent multi-image generation"
+    form: form
+    default: "disabled"
+    options:
+      - value: "enabled"
+        label:
+          en_US: "Enabled"
+          zh_Hans: "启用"
+          pt_BR: "Ativado"
+          ja_JP: "有効"
+      - value: "disabled"
+        label:
+          en_US: "Disabled"
+          zh_Hans: "禁用"
+          pt_BR: "Desativado"
+          ja_JP: "無効"
+  
+  - name: stream
+    type: boolean
+    required: false
+    label:
+      en_US: "Stream Response"
+      zh_Hans: "流式响应"
+      pt_BR: "Resposta em Fluxo"
+      ja_JP: "ストリーム応答"
+    human_description:
+      en_US: "Enable streaming response for faster feedback"
+      zh_Hans: "启用流式响应以获得更快反馈"
+      pt_BR: "Ativar resposta em fluxo para feedback mais rápido"
+      ja_JP: "より速いフィードバックのためにストリーム応答を有効にする"
+    llm_description: "Enable streaming response for Doubao Seedream generation"
+    form: form
+    default: false
+  
+  - name: response_format
+    type: select
+    required: false
+    label:
+      en_US: "Response Format"
+      zh_Hans: "响应格式"
+      pt_BR: "Formato de Resposta"
+      ja_JP: "応答形式"
+    human_description:
+      en_US: "Format of the generated image response"
+      zh_Hans: "生成图像的响应格式"
+      pt_BR: "Formato da resposta da imagem gerada"
+      ja_JP: "生成された画像の応答形式"
+    llm_description: "Response format for Doubao Seedream generation"
+    form: form
+    default: "url"
+    options:
+      - value: "url"
+        label:
+          en_US: "URL"
+          zh_Hans: "URL"
+          pt_BR: "URL"
+          ja_JP: "URL"
+      - value: "b64_json"
+        label:
+          en_US: "Base64 JSON"
+          zh_Hans: "Base64 JSON"
+          pt_BR: "Base64 JSON"
+          ja_JP: "Base64 JSON"
+  
+  - name: watermark
+    type: boolean
+    required: false
+    label:
+      en_US: "Add Watermark"
+      zh_Hans: "添加水印"
+      pt_BR: "Adicionar Marca d'água"
+      ja_JP: "透かしを追加"
+    human_description:
+      en_US: "Whether to add watermark to the generated image"
+      zh_Hans: "是否在生成的图像中添加水印"
+      pt_BR: "Se deve adicionar marca d'água à imagem gerada"
+      ja_JP: "生成された画像に透かしを追加するかどうか"
+    llm_description: "Whether to add watermark to the generated image using Doubao Seedream"
+    form: form
+    default: true
+extra:
+  python:
+    source: tools/doubao.py

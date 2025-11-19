@@ -1,0 +1,91 @@
+identity:
+  author: "xinrui"
+  name: "aihubmix-image"
+  label:
+    en_US: "aihubmix-image"
+    zh_Hans: "aihubmix-image"
+    pt_BR: "aihubmix-image"
+    ja_JP: "aihubmix-image"
+  description:
+    en_US: "Image generation by AIHubMix API with support for sync/async models"
+    zh_Hans: "基于 AIHubMix API 的图像生成工具，支持同步/异步模型"
+    pt_BR: "Geração de imagem por API AIHubMix com suporte para modelos síncronos/assíncronos"
+    ja_JP: "AIHubMix APIによる画像生成、同期/非同期モデルをサポート"
+  icon: "icon.svg"
+
+credentials_schema:
+  - name: "api_key"
+    type: "secret-input"
+    required: true
+    label:
+      en_US: "API Key"
+      zh_Hans: "API 密钥"
+      pt_BR: "Chave API"
+      ja_JP: "APIキー"
+    placeholder:
+      en_US: "Enter your AIHubMix API Key"
+      zh_Hans: "请输入您的 AIHubMix API 密钥"
+      pt_BR: "Digite sua chave API AIHubMix"
+      ja_JP: "AIHubMix APIキーを入力してください"
+    help:
+      en_US: "API Key is used to authenticate requests to the AIHubMix API. Get your API key from https://docs.aihubmix.com"
+      zh_Hans: "API 密钥用于认证请求到 AIHubMix API。请从 https://docs.aihubmix.com 获取您的 API 密钥"
+      pt_BR: "A chave API é usada para autenticar solicitações à API AIHubMix. Obtenha sua chave em https://docs.aihubmix.com"
+      ja_JP: "APIキーはAIHubMix APIへのリクエスト認証に使用されます。https://docs.aihubmix.com からAPIキーを取得してください"
+
+#########################################################################################
+# OAuth configuration can be enabled by uncommenting the section below
+# This provides alternative authentication method using OAuth 2.0 flow
+#########################################################################################
+# oauth_schema:
+#   client_schema:
+#     - name: "client_id"
+#       type: "secret-input"
+#       required: true
+#       url: https://example.com/oauth/authorize
+#       placeholder:
+#         en_US: "Please input your Client ID"
+#         zh_Hans: "请输入你的 Client ID"
+#         pt_BR: "Insira seu Client ID"
+#       help:
+#         en_US: "Client ID is used to authenticate requests to the example.com API."
+#         zh_Hans: "Client ID 用于认证请求到 example.com API。"
+#         pt_BR: "Client ID é usado para autenticar solicitações à API do example.com."
+#       label:
+#         zh_Hans: "Client ID"
+#         en_US: "Client ID"
+#     - name: "client_secret"
+#       type: "secret-input"
+#       required: true
+#       url: https://example.com/oauth/authorize
+#       placeholder:
+#         en_US: "Please input your Client Secret"
+#         zh_Hans: "请输入你的 Client Secret"
+#         pt_BR: "Insira seu Client Secret"
+#       help:
+#         en_US: "Client Secret is used to authenticate requests to the example.com API."
+#         zh_Hans: "Client Secret 用于认证请求到 example.com API。"
+#         pt_BR: "Client Secret é usado para autenticar solicitações à API do example.com."
+#       label:
+#         zh_Hans: "Client Secret"
+#         en_US: "Client Secret"
+#   credentials_schema:
+#     - name: "access_token"
+#       type: "secret-input"
+#       label:
+#         zh_Hans: "Access Token"
+#         en_US: "Access Token"
+
+tools:
+  - tools/gpt-image.yaml
+  - tools/gpt-image-edit.yaml
+  - tools/imagen.yaml
+  - tools/flux-kontext.yaml
+  - tools/qwen-image.yaml
+  - tools/qwen-image-edit.yaml
+  - tools/doubao.yaml
+  - tools/ernie-irag.yaml
+  - tools/ernie-irag-edit.yaml
+extra:
+  python:
+    source: provider/aihubmix-image.py

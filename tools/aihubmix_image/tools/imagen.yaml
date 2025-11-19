@@ -1,0 +1,137 @@
+identity:
+  name: "imagen"
+  author: "xinrui"
+  label:
+    en_US: "Google Imagen 4 Series"
+    zh_Hans: "Google Imagen 4 系列"
+    pt_BR: "Google Imagen 4 Series"
+    ja_JP: "Google Imagen 4 シリーズ"
+description:
+  human:
+    en_US: "Google Imagen 4 Series Image Generation Models, including: Imagen 4.0, Imagen 4.0 Fast and Imagen 4.0 Ultra"
+    zh_Hans: "Google Imagen 4 系列图像生成模型，包括：Imagen 4.0、Imagen 4.0 Fast 和 Imagen 4.0 Ultra"
+    pt_BR: "Modelos de geração de imagens da série Google Imagen 4, incluindo: Imagen 4.0, Imagen 4.0 Fast e Imagen 4.0 Ultra"
+    ja_JP: "Google Imagen 4 シリーズの画像生成モデル（Imagen 4.0、Imagen 4.0 Fast、Imagen 4.0 Ultraを含む）"
+  llm: "Generate image using Google Imagen models with high quality and various variants"
+parameters:
+  - name: prompt
+    type: string
+    required: true
+    label:
+      en_US: "Prompt"
+      zh_Hans: "提示词"
+      pt_BR: "Prompt"
+      ja_JP: "プロンプト"
+    human_description:
+      en_US: "Text description of image you want to generate"
+      zh_Hans: "您想要生成的图像的文字描述"
+      pt_BR: "Descrição textual da imagem que você deseja gerar"
+      ja_JP: "生成したい画像のテキスト説明"
+    llm_description: "Text prompt for Google Imagen image generation, describing the desired image content"
+    form: llm
+  
+  - name: model
+    type: select
+    required: false
+    label:
+      en_US: "Imagen Model"
+      zh_Hans: "Imagen 模型"
+      pt_BR: "Modelo Imagen"
+      ja_JP: "Imagenモデル"
+    human_description:
+      en_US: "Choose Google Imagen model variant"
+      zh_Hans: "选择 Google Imagen 模型变体"
+      pt_BR: "Escolha a variante do modelo Google Imagen"
+      ja_JP: "Google Imagenモデルのバリアントを選択"
+    llm_description: "Google Imagen model selection. Different variants offer different quality and speed trade-offs"
+    form: form
+    default: "imagen-4.0-fast-generate-001"
+    options:
+      - value: "imagen-4.0-ultra-generate-001"
+        label:
+          en_US: "Imagen 4.0 Ultra (Highest Quality)"
+          zh_Hans: "Imagen 4.0 Ultra（最高质量）"
+          pt_BR: "Imagen 4.0 Ultra (Qualidade Máxima)"
+          ja_JP: "Imagen 4.0 Ultra（最高品質）"
+      - value: "imagen-4.0-generate-001"
+        label:
+          en_US: "Imagen 4.0 (High Quality)"
+          zh_Hans: "Imagen 4.0（高质量）"
+          pt_BR: "Imagen 4.0 (Alta Qualidade)"
+          ja_JP: "Imagen 4.0（高品質）"
+      - value: "imagen-4.0-fast-generate-001"
+        label:
+          en_US: "Imagen 4.0 Fast (Balanced)"
+          zh_Hans: "Imagen 4.0 Fast（平衡）"
+          pt_BR: "Imagen 4.0 Fast (Equilibrado)"
+          ja_JP: "Imagen 4.0 Fast（バランス）"
+  
+  - name: num_images
+    type: number
+    required: false
+    label:
+      en_US: "Number of Images"
+      zh_Hans: "生成数量"
+      pt_BR: "Número de Imagens"
+      ja_JP: "画像数"
+    human_description:
+      en_US: "Number of images to generate (1-4)"
+      zh_Hans: "生成图像的数量 (1-4)"
+      pt_BR: "Número de imagens para gerar (1-4)"
+      ja_JP: "生成する画像の数 (1-4)"
+    llm_description: "Number of Google Imagen images to generate. Range: 1-4"
+    form: form
+    default: 1
+    min: 1
+    max: 4
+  
+  - name: aspect_ratio
+    type: select
+    required: false
+    label:
+      en_US: "Aspect Ratio"
+      zh_Hans: "宽高比"
+      pt_BR: "Proporção"
+      ja_JP: "アスペクト比"
+    human_description:
+      en_US: "Image aspect ratio"
+      zh_Hans: "图像宽高比"
+      pt_BR: "Proporção da imagem"
+      ja_JP: "画像のアスペクト比"
+    llm_description: "Output image aspect ratio for Google Imagen generation"
+    form: form
+    default: "1:1"
+    options:
+      - value: "1:1"
+        label:
+          en_US: "1:1 (Square)"
+          zh_Hans: "1:1 (正方形)"
+          pt_BR: "1:1 (Quadrado)"
+          ja_JP: "1:1 (正方形)"
+      - value: "4:3"
+        label:
+          en_US: "4:3 (Landscape)"
+          zh_Hans: "4:3 (横向)"
+          pt_BR: "4:3 (Paisagem)"
+          ja_JP: "4:3 (横向)"
+      - value: "3:4"
+        label:
+          en_US: "3:4 (Portrait)"
+          zh_Hans: "3:4 (纵向)"
+          pt_BR: "3:4 (Retrato)"
+          ja_JP: "3:4 (縦向)"
+      - value: "16:9"
+        label:
+          en_US: "16:9 (Widescreen)"
+          zh_Hans: "16:9 (宽屏)"
+          pt_BR: "16:9 (Widescreen)"
+          ja_JP: "16:9 (ワイドスクリーン)"
+      - value: "9:16"
+        label:
+          en_US: "9:16 (Vertical)"
+          zh_Hans: "9:16 (竖屏)"
+          pt_BR: "9:16 (Vertical)"
+          ja_JP: "9:16 (縦長)"
+extra:
+  python:
+    source: tools/imagen.py

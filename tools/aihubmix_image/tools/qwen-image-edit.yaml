@@ -1,0 +1,67 @@
+identity:
+  name: "qwen-image-edit"
+  author: "xinrui"
+  label:
+    en_US: "Qwen Image Edit"
+    zh_Hans: "Qwen Image Edit"
+    pt_BR: "Qwen Image Edit"
+    ja_JP: "Qwen 画像編集"
+description:
+  human:
+    en_US: "Qwen Image Editing Model"
+    zh_Hans: "Qwen Image 图像编辑模型"
+    pt_BR: "Modelo de Edição Qwen Image"
+    ja_JP: "Qwen Image 画像編集モデル"
+  llm: "Edit image using Qwen Image Edit model (qianfan/qwen-image-edit) with image-to-image generation capabilities"
+parameters:
+  - name: prompt
+    type: string
+    required: true
+    label:
+      en_US: "Edit Prompt"
+      zh_Hans: "编辑提示词"
+      pt_BR: "Prompt de Edição"
+      ja_JP: "編集プロンプト"
+    human_description:
+      en_US: "Text description of the edits you want to make to the image"
+      zh_Hans: "您想要对图像进行的编辑的文字描述"
+      pt_BR: "Descrição textual das edições que você deseja fazer na imagem"
+      ja_JP: "画像に加えたい編集のテキスト説明"
+    llm_description: "Text prompt for Qwen Image Edit, describing the desired edits to the input image"
+    form: llm
+  - name: image
+    type: string
+    required: true
+    label:
+      en_US: "Input Image URL"
+      zh_Hans: "输入图像URL"
+      pt_BR: "URL da Imagem de Entrada"
+      ja_JP: "入力画像URL"
+    human_description:
+      en_US: "URL of the image to edit"
+      zh_Hans: "要编辑的图像的URL"
+      pt_BR: "URL da imagem a ser editada"
+      ja_JP: "編集する画像のURL"
+    llm_description: "URL of the input image to be edited using Qwen Image Edit"
+    form: llm
+  - name: guidance
+    type: number
+    required: false
+    label:
+      en_US: "Guidance Scale"
+      zh_Hans: "引导强度"
+      pt_BR: "Escala de Orientação"
+      ja_JP: "ガイダンススケール"
+    human_description:
+      en_US: "Guidance scale for image editing (1.0-20.0)"
+      zh_Hans: "图像编辑的引导强度 (1.0-20.0)"
+      pt_BR: "Escala de orientação para edição de imagem (1.0-20.0)"
+      ja_JP: "画像編集のガイダンススケール (1.0-20.0)"
+    llm_description: "Guidance scale for Qwen Image Edit. Higher values follow the prompt more closely. Range: 1.0-20.0"
+    form: form
+    default: 7.5
+    min: 1.0
+    max: 20.0
+extra:
+  python:
+    source: tools/qwen-image-edit.py

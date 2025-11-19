@@ -1,0 +1,138 @@
+identity:
+  name: "gpt-image"
+  author: "xinrui"
+  label:
+    en_US: "GPT Image"
+    zh_Hans: "GPT Image"
+    pt_BR: "GPT Image"
+    ja_JP: "GPT Image"
+description:
+  human:
+    en_US: "GPT Image Image Generation Model, supporting gpt-image-1 and gpt-image-1-mini"
+    zh_Hans: "GPT Image 图像生成模型，支持 gpt-image-1 和 gpt-image-1-mini "
+    pt_BR: "Modelo de geração de imagens GPT Image, suportando gpt-image-1 e gpt-image-1-mini"
+    ja_JP: "GPT Image 画像生成モデル、gpt-image-1 と gpt-image-1-mini をサポート"
+  llm: "Generate image using GPT Image model (gpt-image-1 and gpt-image-1-mini) with fast processing and good quality"
+parameters:
+  - name: prompt
+    type: string
+    required: true
+    label:
+      en_US: "Prompt"
+      zh_Hans: "提示词"
+      pt_BR: "Prompt"
+      ja_JP: "プロンプト"
+    human_description:
+      en_US: "Text description of image you want to generate"
+      zh_Hans: "您想要生成的图像的文字描述"
+      pt_BR: "Descrição textual da imagem que você deseja gerar"
+      ja_JP: "生成したい画像のテキスト説明"
+    llm_description: "Text prompt for GPT Image generation, describing the desired image content"
+    form: llm
+
+  - name: model
+    type: select
+    required: false
+    label:
+      en_US: "Model"
+      zh_Hans: "模型"
+      pt_BR: "Modelo"
+      ja_JP: "モデル"
+    human_description:
+      en_US: "GPT Image model to use"
+      zh_Hans: "要使用的GPT Image模型"
+      pt_BR: "Modelo GPT Image a ser usado"
+      ja_JP: "使用するGPT Imageモデル"
+    llm_description: "GPT Image model selection for image generation"
+    form: form
+    default: "gpt-image-1"
+    options:
+      - value: "gpt-image-1"
+        label:
+          en_US: "gpt-image-1"
+          zh_Hans: "gpt-image-1"
+          pt_BR: "gpt-image-1"
+          ja_JP: "gpt-image-1"
+      - value: "gpt-image-1-mini"
+        label:
+          en_US: "gpt-image-1-mini"
+          zh_Hans: "gpt-image-1-mini"
+          pt_BR: "gpt-image-1-mini"
+          ja_JP: "gpt-image-1-mini"
+  
+  - name: resolution
+    type: select
+    required: false
+    label:
+      en_US: "Resolution"
+      zh_Hans: "分辨率"
+      pt_BR: "Resolução"
+      ja_JP: "解像度"
+    human_description:
+      en_US: "Image resolution"
+      zh_Hans: "图像分辨率"
+      pt_BR: "Resolução da imagem"
+      ja_JP: "画像解像度"
+    llm_description: "Output image resolution for GPT Image generation"
+    form: form
+    default: "1024x1024"
+    options:
+      - value: "1024x1024"
+        label:
+          en_US: "1024x1024"
+          zh_Hans: "1024x1024"
+          pt_BR: "1024x1024"
+          ja_JP: "1024x1024"
+      - value: "1536x1024"
+        label:
+          en_US: "1536x1024"
+          zh_Hans: "1536x1024"
+          pt_BR: "1536x1024"
+          ja_JP: "1536x1024"
+      - value: "1024x2048"
+        label:
+          en_US: "1024x1536"
+          zh_Hans: "1024x1536"
+          pt_BR: "1024x1536"
+          ja_JP: "1024x1536"
+  
+  - name: num_images
+    type: number
+    required: false
+    label:
+      en_US: "Number of Images"
+      zh_Hans: "生成数量"
+      pt_BR: "Número de Imagens"
+      ja_JP: "画像数"
+    human_description:
+      en_US: "Number of images to generate (1-4)"
+      zh_Hans: "生成图像的数量 (1-4)"
+      pt_BR: "Número de imagens para gerar (1-4)"
+      ja_JP: "生成する画像の数 (1-4)"
+    llm_description: "Number of GPT Image images to generate. Range: 1-4"
+    form: form
+    default: 1
+    min: 1
+    max: 4
+  
+  - name: moderation_level
+    type: number
+    required: false
+    label:
+      en_US: "Moderation Level"
+      zh_Hans: "审核宽松度"
+      pt_BR: "Nível de Moderação"
+      ja_JP: "モデレーションレベル"
+    human_description:
+      en_US: "Content moderation strictness (0-6, where 0 is most strict)"
+      zh_Hans: "内容审核严格程度 (0-6，0为最严格)"
+      pt_BR: "Nível de rigor da moderação de conteúdo (0-6, onde 0 é mais rigoroso)"
+      ja_JP: "コンテンツモデレーションの厳しさ (0-6、0が最も厳格)"
+    llm_description: "Content moderation level for GPT Image generation. Range: 0-6, where 0 is most strict and 6 is most lenient"
+    form: form
+    default: 3
+    min: 0
+    max: 6
+extra:
+  python:
+    source: tools/gpt-image.py
