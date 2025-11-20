@@ -27,6 +27,146 @@ from dify_plugin.entities.model.llm import LLMModelConfig
 from dify_plugin.entities.model.message import UserPromptMessage
 
 
+# Technology Synonyms Dictionary (Standard Term → Synonyms List)
+# Used for bidirectional matching: JD keyword → Resume variations
+# This is defined at module level so it can be imported by other tools
+TECH_SYNONYMS = {
+    # Programming Languages
+    "Python": ["python", "Python3", "Python2", "py", "Python编程"],
+    "JavaScript": ["javascript", "js", "JS", "ECMAScript"],
+    "TypeScript": ["typescript", "ts", "TS"],
+    "Java": ["java", "JAVA"],
+    "Go": ["golang", "Golang"],
+    "C++": ["c++", "cpp", "CPP"],
+    "C#": ["c#", "csharp", "C Sharp"],
+    "R": ["r语言"],
+    "PHP": ["php"],
+    "Ruby": ["ruby"],
+    "Swift": ["swift"],
+    "Kotlin": ["kotlin"],
+    "Rust": ["rust"],
+    "Scala": ["scala"],
+
+    # Frontend Frameworks
+    "React": ["react", "react.js", "ReactJS", "React.js"],
+    "Vue.js": ["vue", "vuejs", "Vue", "vue.js"],
+    "Angular": ["angular", "angularjs", "AngularJS"],
+    "Next.js": ["nextjs", "next", "next.js"],
+    "Nuxt.js": ["nuxtjs", "nuxt", "nuxt.js"],
+
+    # Backend Frameworks
+    "Django": ["django"],
+    "Flask": ["flask"],
+    "FastAPI": ["fastapi", "fast api"],
+    "Spring": ["spring", "spring boot", "springboot", "Spring Boot"],
+    "Express.js": ["express", "expressjs", "express.js"],
+    "NestJS": ["nestjs", "nest.js", "nest"],
+    "Laravel": ["laravel"],
+    "Ruby on Rails": ["rails", "ruby on rails", "RoR"],
+
+    # Machine Learning / AI Frameworks
+    "TensorFlow": ["tensorflow", "tf", "TF", "Tensorflow"],
+    "PyTorch": ["pytorch", "torch", "Pytorch"],
+    "Keras": ["keras"],
+    "Scikit-learn": ["scikit-learn", "sklearn", "scikit learn"],
+    "XGBoost": ["xgboost", "xgb"],
+    "LightGBM": ["lightgbm", "lgbm"],
+    "Hugging Face": ["huggingface", "hugging face", "transformers"],
+
+    # Databases
+    "PostgreSQL": ["postgresql", "postgres", "pg", "Postgres"],
+    "MySQL": ["mysql", "My SQL"],
+    "MongoDB": ["mongodb", "mongo", "Mongo"],
+    "Redis": ["redis"],
+    "Elasticsearch": ["elasticsearch", "elastic search", "ES", "ElasticSearch"],
+    "Oracle": ["oracle"],
+    "SQL Server": ["sql server", "mssql", "MS SQL"],
+    "SQLite": ["sqlite"],
+    "Cassandra": ["cassandra"],
+    "DynamoDB": ["dynamodb", "dynamo db"],
+
+    # Cloud Services
+    "AWS": ["aws", "Amazon Web Services", "亚马逊云"],
+    "GCP": ["gcp", "Google Cloud", "谷歌云", "Google Cloud Platform"],
+    "Azure": ["azure", "微软云", "Microsoft Azure"],
+    "Alibaba Cloud": ["阿里云", "aliyun", "alibaba cloud"],
+    "Tencent Cloud": ["腾讯云", "tencent cloud"],
+
+    # DevOps / Infrastructure
+    "Docker": ["docker", "容器化", "containerization"],
+    "Kubernetes": ["kubernetes", "k8s", "K8s", "K8S", "容器编排"],
+    "CI/CD": ["ci/cd", "cicd", "持续集成", "持续部署", "CI CD"],
+    "Jenkins": ["jenkins"],
+    "GitLab CI": ["gitlab ci", "gitlab-ci", "GitLab CI/CD"],
+    "GitHub Actions": ["github actions", "github action"],
+    "Terraform": ["terraform"],
+    "Ansible": ["ansible"],
+    "Prometheus": ["prometheus"],
+    "Grafana": ["grafana"],
+    "Nginx": ["nginx"],
+    "Apache": ["apache"],
+
+    # Machine Learning / AI Concepts
+    "Machine Learning": ["machine learning", "ml", "ML", "机器学习"],
+    "Deep Learning": ["deep learning", "dl", "DL", "深度学习", "神经网络"],
+    "Natural Language Processing": ["nlp", "NLP", "自然语言处理", "文本处理"],
+    "Computer Vision": ["cv", "CV", "计算机视觉", "图像处理"],
+    "Artificial Intelligence": ["ai", "AI", "人工智能"],
+    "Reinforcement Learning": ["reinforcement learning", "rl", "RL", "强化学习"],
+    "Transfer Learning": ["transfer learning", "迁移学习"],
+    "Large Language Model": ["llm", "LLM", "大语言模型", "大模型"],
+
+    # Methodologies
+    "Agile": ["agile", "敏捷开发", "敏捷"],
+    "Scrum": ["scrum"],
+    "DevOps": ["devops", "dev ops"],
+    "Microservices": ["microservices", "微服务", "micro services"],
+    "RESTful API": ["restful", "rest api", "RESTful", "REST"],
+    "GraphQL": ["graphql"],
+    "Test-Driven Development": ["tdd", "TDD", "test-driven development", "测试驱动开发"],
+
+    # Tools
+    "Git": ["git"],
+    "GitHub": ["github"],
+    "GitLab": ["gitlab"],
+    "Bitbucket": ["bitbucket"],
+    "Jira": ["jira"],
+    "Confluence": ["confluence"],
+    "Slack": ["slack"],
+    "VS Code": ["vscode", "vs code", "visual studio code"],
+    "PyCharm": ["pycharm"],
+    "IntelliJ IDEA": ["intellij", "intellij idea", "idea"],
+
+    # Data Science / Big Data
+    "Pandas": ["pandas"],
+    "NumPy": ["numpy"],
+    "Matplotlib": ["matplotlib"],
+    "Seaborn": ["seaborn"],
+    "Jupyter": ["jupyter", "jupyter notebook"],
+    "Apache Spark": ["spark", "apache spark", "pyspark"],
+    "Hadoop": ["hadoop"],
+    "Kafka": ["kafka", "apache kafka"],
+    "Airflow": ["airflow", "apache airflow"],
+
+    # Mobile Development
+    "React Native": ["react native", "react-native", "reactnative"],
+    "Flutter": ["flutter"],
+    "iOS": ["ios"],
+    "Android": ["android"],
+    "SwiftUI": ["swiftui", "swift ui"],
+
+    # Other
+    "Linux": ["linux"],
+    "Unix": ["unix"],
+    "Shell": ["shell", "bash", "zsh"],
+    "SQL": ["sql"],
+    "NoSQL": ["nosql", "no sql"],
+    "API": ["api"],
+    "Blockchain": ["blockchain", "区块链"],
+    "Cryptocurrency": ["cryptocurrency", "crypto", "加密货币"],
+}
+
+
 class KeywordExtraction(Tool):
     """
     Dual-Engine Keyword Extractor: Dictionary Matching + LLM Semantic Analysis
@@ -42,6 +182,7 @@ class KeywordExtraction(Tool):
     CASE_SENSITIVE_KEYWORDS = {"Go", "R"}
 
     # Synonym mapping for normalization (K8s→Kubernetes, etc.)
+    # This is used for backward compatibility with existing code
     SYNONYM_MAP = {
         "k8s": "Kubernetes",
         "js": "JavaScript",
