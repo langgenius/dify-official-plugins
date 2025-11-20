@@ -33,9 +33,11 @@
 - anthropic/claude-3-sonnet
 - google/gemini-3-pro-preview
 - google/gemini-2.5-pro
+- google/gemini-2.5-flash-preview-09-2025
 - google/gemini-2.5-flash
 - google/gemini-2.5-flash-image-preview
 - google/gemini-2.5-flash-image-preview:free
+- google/gemini-2.5-flash-lite-preview-09-2025
 - google/gemini-2.5-flash-lite
 - google/gemini-2.5-flash-lite-preview-06-17
 - google/gemini-2.0-flash-lite-001
@@ -77,6 +79,7 @@
 - deepseek/deepseek-v3-base
 - moonshotai/kimi-k2-0905
 - moonshotai/kimi-k2-0711
+- x-ai/grok-4.1-fast
 - x-ai/grok-4-fast
 - x-ai/grok-4-fast:free
 - x-ai/grok-3-beta
