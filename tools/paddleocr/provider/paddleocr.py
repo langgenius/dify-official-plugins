@@ -4,8 +4,6 @@ from dify_plugin import ToolProvider
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
 from tools.text_recognition import TextRecognitionTool
-from tools.document_parsing import DocumentParsingTool
-from tools.document_parsing_vl import DocumentParsingVlTool
 
 
 class PaddleocrProvider(ToolProvider):
@@ -15,13 +13,9 @@ class PaddleocrProvider(ToolProvider):
 
         api_url_keys = (
             "text_recognition_api_url",
-            "document_parsing_api_url",
-            "document_parsing_vl_api_url",
         )
         tool_classes = (
             TextRecognitionTool, 
-            DocumentParsingTool, 
-            DocumentParsingVlTool,
         )
         test_file = "https://paddle-model-ecology.bj.bcebos.com/paddlex/imgs/demo_image/general_ocr_002.png"
 
