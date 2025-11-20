@@ -90,6 +90,15 @@ jobs:
             fi
           fi
 
+      - name: Type Check Changed Plugin
+        run: |
+          # Setup development dependencies for type checking
+          uv sync --group dev
+          
+          # Run type check on the changed plugin path
+          echo "Running type check on plugin: ${{ env.PLUGIN_PATH }}"
+          ./dev/basedpyright-check "${{ env.PLUGIN_PATH }}"
+
       - name: Test Changed Plugin
         run: |
           if [ -d "tests/${{ env.PLUGIN_PATH }}" ]; then
