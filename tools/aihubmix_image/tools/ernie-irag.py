@@ -96,9 +96,7 @@ class ErnieIragTool(Tool):
                     if "url" in item:
                         images.append({"url": item["url"]})
             
-            # Debug: print the actual response structure
             if not images:
-                print(f"Debug - Response data: {json.dumps(data, indent=2)}")
                 raise InvokeError("No images were generated")
             
             # Create image messages for direct display in Dify

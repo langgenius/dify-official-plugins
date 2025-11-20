@@ -107,7 +107,6 @@ class ImagenTool(Tool):
                             yield self.create_image_message(data_url)
                             
                         except Exception as e:
-                            print(f"Error processing image {i+1}: {e}")
                             continue
                     
                     if images:

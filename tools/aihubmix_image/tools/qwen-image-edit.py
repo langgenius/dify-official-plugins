@@ -32,9 +32,6 @@ class QwenImageEditTool(Tool):
             if not image_url:
                 raise InvokeError("Input image URL is required")
             
-            # Debug: Log the image URL to help with debugging
-            yield self.create_text_message(f"Debug: Processing image URL: {image_url}")
-            
             # Additional validation for image URL format
             if not (image_url.startswith('http://') or image_url.startswith('https://') or image_url.startswith('data:image/')):
                 raise InvokeError(f"Invalid image URL format: {image_url}. URL must start with http://, https://, or data:image/")
@@ -85,8 +82,6 @@ class QwenImageEditTool(Tool):
                         error_msg += f": {error_data['error'].get('message', 'Unknown error')}"
                 except:
                     pass
-                # Debug: Log the full response for better debugging
-                yield self.create_text_message(f"Debug: API Response: {response.text}")
                 raise InvokeError(error_msg)
             
             data = response.json()
