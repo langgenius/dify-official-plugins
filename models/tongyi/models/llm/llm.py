@@ -1,4 +1,5 @@
 import base64
+import logging
 import os
 import tempfile
 import uuid
@@ -60,9 +61,15 @@ from dify_plugin.errors.model import (
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from openai import OpenAI
 
+logger = logging.getLogger(__name__)
+
 
 class TongyiLargeLanguageModel(LargeLanguageModel):
     tokenizers = {}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self._temp_files = []
 
     def _invoke(
         self,
@@ -266,26 +273,29 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param prompt_messages: prompt messages
         :return: llm response
         """
-        if response.status_code not in {200, HTTPStatus.OK}:
-            self._handle_error_response(response.status_code, response.message)
-        resp_content = response.output.choices[0].message.content
-        # special for qwen-vl
-        if isinstance(resp_content, list):
-            resp_content = resp_content[0]["text"]
-        assistant_prompt_message = AssistantPromptMessage(content=resp_content)
-        usage = self._calc_response_usage(
-            model,
-            credentials,
-            response.usage.input_tokens,
-            response.usage.output_tokens,
-        )
-        result = LLMResult(
-            model=model,
-            message=assistant_prompt_message,
-            prompt_messages=prompt_messages,
-            usage=usage,
-        )
-        return result
+        try:
+            if response.status_code not in {200, HTTPStatus.OK}:
+                self._handle_error_response(response.status_code, response.message)
+            resp_content = response.output.choices[0].message.content
+            # special for qwen-vl
+            if isinstance(resp_content, list):
+                resp_content = resp_content[0]["text"]
+            assistant_prompt_message = AssistantPromptMessage(content=resp_content)
+            usage = self._calc_response_usage(
+                model,
+                credentials,
+                response.usage.input_tokens,
+                response.usage.output_tokens,
+            )
+            result = LLMResult(
+                model=model,
+                message=assistant_prompt_message,
+                prompt_messages=prompt_messages,
+                usage=usage,
+            )
+            return result
+        finally:
+            self._cleanup_temp_files()
 
     def _handle_tool_call_stream(self, response, tool_calls, incremental_output):
         tool_calls_stream = response.output.choices[0].message["tool_calls"]
@@ -331,83 +341,86 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         # This is used to handle unincremental output correctly
         full_text = ""
         tool_calls = []
-        for index, response in enumerate(responses):
-            if response.status_code not in {200, HTTPStatus.OK}:
-                self._handle_error_response(response.status_code, response.message, model)
-            resp_finish_reason = response.output.choices[0].finish_reason
-            if resp_finish_reason is not None and resp_finish_reason != "null":
-                resp_content = response.output.choices[0].message.content
-                assistant_prompt_message = AssistantPromptMessage(content="")
-                if "tool_calls" in response.output.choices[0].message:
-                    self._handle_tool_call_stream(response, tool_calls, incremental_output)
-                elif resp_content:
-                    if isinstance(resp_content, list):
-                        resp_content = resp_content[0]["text"]
-                    if incremental_output:
-                        assistant_prompt_message.content = resp_content
-                        full_text += resp_content
-                    else:
-                        assistant_prompt_message.content = resp_content.replace(
-                            full_text, "", 1
-                        )
-                        full_text = resp_content
-                elif is_reasoning:
-                    assistant_prompt_message.content = "\n</think>"
-                    full_text += "\n</think>"
-                if tool_calls:
-                    message_tool_calls = []
-                    for tool_call_obj in tool_calls:
-                        message_tool_call = AssistantPromptMessage.ToolCall(
-                            id=tool_call_obj["function"]["name"],
-                            type="function",
-                            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                name=tool_call_obj["function"]["name"],
-                                arguments=tool_call_obj["function"]["arguments"],
-                            ),
-                        )
-                        message_tool_calls.append(message_tool_call)
-                    assistant_prompt_message.tool_calls = message_tool_calls
-                usage = response.usage
-                usage = self._calc_response_usage(
-                    model, credentials, usage.input_tokens, usage.output_tokens
-                )
-                yield LLMResultChunk(
-                    model=model,
-                    prompt_messages=prompt_messages,
-                    delta=LLMResultChunkDelta(
-                        index=index,
-                        message=assistant_prompt_message,
-                        finish_reason=resp_finish_reason,
-                        usage=usage,
-                    ),
-                )
-            else:
-                message = response.output.choices[0].message
-
-                resp_content, is_reasoning = self._wrap_thinking_by_reasoning_content(
-                    message, is_reasoning
-                )
-                if not resp_content:
+        try:
+            for index, response in enumerate(responses):
+                if response.status_code not in {200, HTTPStatus.OK}:
+                    self._handle_error_response(response.status_code, response.message, model)
+                resp_finish_reason = response.output.choices[0].finish_reason
+                if resp_finish_reason is not None and resp_finish_reason != "null":
+                    resp_content = response.output.choices[0].message.content
+                    assistant_prompt_message = AssistantPromptMessage(content="")
                     if "tool_calls" in response.output.choices[0].message:
                         self._handle_tool_call_stream(response, tool_calls, incremental_output)
-                    continue
-                if incremental_output:
-                    delta = resp_content
-                    full_text += delta
+                    elif resp_content:
+                        if isinstance(resp_content, list):
+                            resp_content = resp_content[0]["text"]
+                        if incremental_output:
+                            assistant_prompt_message.content = resp_content
+                            full_text += resp_content
+                        else:
+                            assistant_prompt_message.content = resp_content.replace(
+                                full_text, "", 1
+                            )
+                            full_text = resp_content
+                    elif is_reasoning:
+                        assistant_prompt_message.content = "\n</think>"
+                        full_text += "\n</think>"
+                    if tool_calls:
+                        message_tool_calls = []
+                        for tool_call_obj in tool_calls:
+                            message_tool_call = AssistantPromptMessage.ToolCall(
+                                id=tool_call_obj["function"]["name"],
+                                type="function",
+                                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                    name=tool_call_obj["function"]["name"],
+                                    arguments=tool_call_obj["function"]["arguments"],
+                                ),
+                            )
+                            message_tool_calls.append(message_tool_call)
+                        assistant_prompt_message.tool_calls = message_tool_calls
+                    usage = response.usage
+                    usage = self._calc_response_usage(
+                        model, credentials, usage.input_tokens, usage.output_tokens
+                    )
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(
+                            index=index,
+                            message=assistant_prompt_message,
+                            finish_reason=resp_finish_reason,
+                            usage=usage,
+                        ),
+                    )
                 else:
-                    delta = resp_content.replace(full_text, "", 1)
-                    full_text = resp_content
+                    message = response.output.choices[0].message
 
-                assistant_prompt_message = AssistantPromptMessage(
-                    content=delta
-                )
-                yield LLMResultChunk(
-                    model=model,
-                    prompt_messages=prompt_messages,
-                    delta=LLMResultChunkDelta(
-                        index=index, message=assistant_prompt_message
-                    ),
-                )
+                    resp_content, is_reasoning = self._wrap_thinking_by_reasoning_content(
+                        message, is_reasoning
+                    )
+                    if not resp_content:
+                        if "tool_calls" in response.output.choices[0].message:
+                            self._handle_tool_call_stream(response, tool_calls, incremental_output)
+                        continue
+                    if incremental_output:
+                        delta = resp_content
+                        full_text += delta
+                    else:
+                        delta = resp_content.replace(full_text, "", 1)
+                        full_text = resp_content
+
+                    assistant_prompt_message = AssistantPromptMessage(
+                        content=delta
+                    )
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(
+                            index=index, message=assistant_prompt_message
+                        ),
+                    )
+        finally:
+            self._cleanup_temp_files()
 
     def _to_credential_kwargs(self, credentials: dict) -> dict:
         """
@@ -582,7 +595,18 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         temp_dir = tempfile.gettempdir()
         file_path = os.path.join(temp_dir, f"{uuid.uuid4()}.{mime_type.split('/')[1]}")
         Path(file_path).write_bytes(base64.b64decode(encoded_string))
+        self._temp_files.append(file_path)
         return f"file://{file_path}"
+
+    def _cleanup_temp_files(self):
+        """Clean up temporary files"""
+        for file_path in self._temp_files:
+            try:
+                if os.path.exists(file_path):
+                    os.remove(file_path)
+            except Exception as e:
+                logger.warning(f"Failed to remove temporary file {file_path}: {e}")
+        self._temp_files.clear()
 
     def _upload_file_to_tongyi(
         self, credentials: dict, message_content: DocumentPromptMessageContent
@@ -603,22 +627,33 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 api_key=credentials.dashscope_api_key,
                 base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
             )
-        with tempfile.NamedTemporaryFile(delete=False) as temp_file:
-            if message_content.base64_data:
-                file_content = base64.b64decode(message_content.base64_data)
-                temp_file.write(file_content)
-            else:
+        temp_file_path = None
+        try:
+            with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+                temp_file_path = temp_file.name
+                if message_content.base64_data:
+                    file_content = base64.b64decode(message_content.base64_data)
+                    temp_file.write(file_content)
+                else:
+                    try:
+                        response = requests.get(message_content.url, timeout=60)
+                        response.raise_for_status()
+                        temp_file.write(response.content)
+                    except Exception as ex:
+                        raise ValueError(
+                            f"Failed to fetch data from url {message_content.url}, {ex}"
+                        ) from ex
+                temp_file.flush()
+                temp_file.seek(0)
+                response = client.files.create(file=temp_file, purpose="file-extract")
+                return response.id
+        finally:
+            # Clean up temporary file after upload
+            if temp_file_path and os.path.exists(temp_file_path):
                 try:
-                    response = requests.get(message_content.url, timeout=60)
-                    response.raise_for_status()
-                    temp_file.write(response.content)
-                except Exception as ex:
-                    raise ValueError(
-                        f"Failed to fetch data from url {message_content.url}, {ex}"
-                    ) from ex
-            temp_file.flush()
-        response = client.files.create(file=temp_file, purpose="file-extract")
-        return response.id
+                    os.remove(temp_file_path)
+                except Exception as e:
+                    logger.warning(f"Failed to remove temporary file {temp_file_path}: {e}")
 
     def _convert_tools(self, tools: list[PromptMessageTool]) -> list[dict]:
         """
