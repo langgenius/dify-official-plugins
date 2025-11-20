@@ -279,6 +279,32 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_HIGH
 
     @staticmethod
+    def _set_image_config(
+        *, config: types.GenerateContentConfig, model_parameters: Mapping[str, Any], model: str
+    ):
+        if model not in IMAGE_GENERATION_MODELS:
+            return
+
+        aspect_ratio = model_parameters.get("aspect_ratio")
+        if (
+            not aspect_ratio
+            or not isinstance(aspect_ratio, str)
+            or aspect_ratio
+            not in ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"]
+        ):
+            aspect_ratio = None
+
+        image_size = model_parameters.get("image_size")
+        if (
+            not image_size
+            or not isinstance(image_size, str)
+            or image_size not in ["1K", "2K", "4K"]
+        ):
+            image_size = None
+
+        config.image_config = types.ImageConfig(image_size=image_size, aspect_ratio=aspect_ratio)
+
+    @staticmethod
     def _set_thinking_config(
         *, config: types.GenerateContentConfig, model_parameters: Mapping[str, Any], model_name: str
     ) -> None:
@@ -884,6 +910,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             config=config,
             file_server_url_prefix=file_server_url_prefix,
         )
+
+        # == ImageConfig == #
+
+        self._set_image_config(config=config, model_parameters=model_parameters, model=model)
 
         # == ThinkingConfig == #
 
