@@ -10,7 +10,7 @@ from .._common import _CommonZhipuaiAI
 
 class ZhipuAITextEmbeddingModel(_CommonZhipuaiAI, TextEmbeddingModel):
     """
-    Model class for ZhipuAI text embedding model.
+    Model class for Z.AI text embedding model.
     """
 
     def _invoke(
@@ -72,7 +72,7 @@ class ZhipuAITextEmbeddingModel(_CommonZhipuaiAI, TextEmbeddingModel):
             raise CredentialsValidateFailedError(str(ex))
 
     def embed_documents(self, model: str, client: ZhipuAiClient, texts: list[str]) -> tuple[list[list[float]], int]:
-        """Call out to ZhipuAI's embedding endpoint.
+        """Call out to Z.AI's embedding endpoint.
 
         Args:
             texts: The list of texts to embed.
