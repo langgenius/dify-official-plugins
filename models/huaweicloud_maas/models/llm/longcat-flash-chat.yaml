@@ -1,7 +1,6 @@
 model: longcat-flash-chat
 label:
-  zh_Hans: longcat-flash-chat
-  en_US: longcat-flash-chat
+  en_US: LongCat-Flash-Chat
 model_type: llm
 features:
   - tool-call
@@ -22,6 +21,16 @@ parameter_rules:
     min: 1
     max: 16384
     default: 16384
+  - name: frequency_penalty
+    use_template: frequency_penalty
+    min: -2
+    max: 2
+    default: 0
+  - name: presence_penalty
+    use_template: presence_penalty
+    min: -2
+    max: 2
+    default: 0
 pricing:
   input: "0.086"
   output: "0.344"

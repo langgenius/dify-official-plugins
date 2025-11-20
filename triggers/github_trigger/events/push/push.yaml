@@ -1,0 +1,329 @@
+identity:
+  name: push
+  author: langgenius
+  label:
+    en_US: Push
+    zh_Hans: 推送
+    ja_JP: プッシュ
+
+description:
+  en_US: Triggers when commits are pushed to a repository branch or tag
+  zh_Hans: 当提交被推送到仓库分支或标签时触发
+  ja_JP: リポジトリのブランチまたはタグにコミットがプッシュされたときにトリガーします
+
+parameters:
+- name: ref
+  label:
+    en_US: Full Ref
+    zh_Hans: 完整引用
+    ja_JP: フルリファレンス
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for these Git refs (e.g., refs/heads/main, refs/tags/v1.0; comma-separated)."
+    zh_Hans: "仅当 Git 引用匹配时触发（如 refs/heads/main、refs/tags/v1.0，逗号分隔）。"
+    ja_JP: "これらの Git リファレンスの場合のみトリガー（例: refs/heads/main, refs/tags/v1.0、カンマ区切り）。"
+
+- name: branch
+  label:
+    en_US: Branch Name
+    zh_Hans: 分支名称
+    ja_JP: ブランチ名
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for these branch names (comma-separated)."
+    zh_Hans: "仅当分支名称匹配时触发（逗号分隔）。"
+    ja_JP: "これらのブランチ名の場合のみトリガー（カンマ区切り）。"
+
+- name: pusher
+  label:
+    en_US: Pusher
+    zh_Hans: 推送者
+    ja_JP: プッシャー
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if pushed by these users (comma-separated GitHub usernames or pusher names)."
+    zh_Hans: "仅当由这些用户推送时触发（逗号分隔 GitHub 用户名或推送者名称）。"
+    ja_JP: "これらのユーザーによってプッシュされた場合のみトリガー（GitHub ユーザー名またはプッシャー名、カンマ区切り）。"
+
+- name: deleted
+  label:
+    en_US: Branch Deleted
+    zh_Hans: 分支删除
+    ja_JP: ブランチ削除
+  type: boolean
+  required: false
+  description:
+    en_US: "Filter by deletion flag: true only for branch deletions, false for normal pushes. Leave empty for both."
+    zh_Hans: "按删除标记过滤：true 仅分支删除，false 仅普通推送。留空则两者都触发。"
+    ja_JP: "削除フラグでフィルタ：true はブランチ削除のみ、false は通常のプッシュのみ。空の場合は両方。"
+
+- name: forced
+  label:
+    en_US: Forced Push
+    zh_Hans: 强制推送
+    ja_JP: 強制プッシュ
+  type: boolean
+  required: false
+  description:
+    en_US: "Filter by force-push flag: true only for force pushes, false for non-forced pushes. Leave empty for both."
+    zh_Hans: "按强制推送标记过滤：true 仅强制推送，false 仅非强制推送。留空则两者都触发。"
+    ja_JP: "強制プッシュフラグでフィルタ：true は強制プッシュのみ、false は通常のプッシュのみ。空の場合は両方。"
+
+- name: commit_message_contains
+  label:
+    en_US: Commit Message Contains
+    zh_Hans: 提交信息包含
+    ja_JP: コミットメッセージに含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if any commit message contains these keywords (comma-separated, case-insensitive)."
+    zh_Hans: "仅当任一提交信息包含这些关键词时触发（逗号分隔，不区分大小写）。"
+    ja_JP: "いずれかのコミットメッセージにこれらのキーワードが含まれる場合のみトリガー（カンマ区切り、大小無視）。"
+
+- name: files_glob
+  label:
+    en_US: Changed Files Glob
+    zh_Hans: 变更文件匹配
+    ja_JP: 変更ファイルのグロブ
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if any changed file matches these glob patterns (comma-separated), e.g., 'docs/**,**/*.md,infra/**'."
+    zh_Hans: "仅当任一变更文件匹配这些 glob 模式时触发（逗号分隔），例如：'docs/**,**/*.md,infra/**'。"
+    ja_JP: "変更ファイルがこれらのグロブパターンに一致する場合のみトリガー（カンマ区切り）。例: 'docs/**,**/*.md,infra/**'。"
+
+output_schema:
+  type: object
+  properties:
+    ref:
+      type: string
+      description: The full Git ref that was pushed
+    before:
+      type: string
+      description: Commit SHA before the push
+    after:
+      type: string
+      description: Commit SHA after the push
+    created:
+      type: boolean
+      description: Whether the ref was created by this push
+    deleted:
+      type: boolean
+      description: Whether the ref was deleted by this push
+    forced:
+      type: boolean
+      description: Whether the push was forced
+    compare:
+      type: string
+      format: uri
+      description: URL to compare changes introduced by the push
+    commits:
+      type: array
+      description: List of commits included in the push
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          tree_id:
+            type: string
+          message:
+            type: string
+          timestamp:
+            type: string
+            format: date-time
+          author:
+            type: object
+            properties:
+              name:
+                type: string
+              email:
+                type: string
+          committer:
+            type: object
+            properties:
+              name:
+                type: string
+              email:
+                type: string
+          added:
+            type: array
+            items:
+              type: string
+          removed:
+            type: array
+            items:
+              type: string
+          modified:
+            type: array
+            items:
+              type: string
+    head_commit:
+      type: object
+      description: The head commit after the push
+    repository:
+      type: object
+      description: Repository information
+      properties:
+        id:
+          type: integer
+          format: int64
+        node_id:
+          type: string
+        name:
+          type: string
+        full_name:
+          type: string
+        private:
+          type: boolean
+        owner:
+          type: object
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+            node_id:
+              type: string
+            avatar_url:
+              type: string
+              format: uri
+            html_url:
+              type: string
+              format: uri
+            type:
+              type: string
+              enum:
+              - Bot
+              - User
+              - Organization
+            site_admin:
+              type: boolean
+          required:
+          - id
+          - login
+        html_url:
+          type: string
+          format: uri
+        description:
+          type:
+          - string
+          - "null"
+        fork:
+          type: boolean
+        url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        pushed_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+        stargazers_count:
+          type: integer
+        watchers_count:
+          type: integer
+        language:
+          type:
+          - string
+          - "null"
+        forks_count:
+          type: integer
+        open_issues_count:
+          type: integer
+        default_branch:
+          type: string
+        topics:
+          type: array
+          items:
+            type: string
+        visibility:
+          type: string
+          enum:
+          - public
+          - private
+          - internal
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - private
+      - owner
+      - html_url
+      - url
+      - created_at
+      - updated_at
+      - fork
+      - default_branch
+      - visibility
+    pusher:
+      type: object
+      description: Pusher identity reported by GitHub
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+    sender:
+      type: object
+      description: The GitHub user who triggered the push
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        node_id:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        html_url:
+          type: string
+          format: uri
+        type:
+          type: string
+          enum:
+          - Bot
+          - User
+          - Organization
+        site_admin:
+          type: boolean
+      required:
+      - id
+      - login
+      - type
+    organization:
+      type: object
+      description: Organization context if applicable
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+    installation:
+      type: object
+      description: Installation that triggered the event if coming from a GitHub App
+      properties:
+        id:
+          type: integer
+
+  required:
+  - ref
+  - after
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/push/push.py

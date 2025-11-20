@@ -1,0 +1,123 @@
+subscription_schema: []
+
+subscription_constructor:
+  parameters: []
+  credentials_schema:
+    access_tokens:
+      help:
+        en_US: Get your Access Tokens from Azure
+        ja_JP: Azure からアクセストークンを取得してください
+        zh_Hans: 从 Azure 获取您的 Access Tokens
+      label:
+        en_US: Access Tokens
+        ja_JP: アクセストークン
+        zh_Hans: Access Tokens
+      placeholder:
+        en_US: Please input your Azure Access Tokens
+        ja_JP: Azure のアクセストークンを入力してください
+        zh_Hans: 请输入你的 Azure Access Tokens
+      required: true
+      type: secret-input
+      url: https://entra.microsoft.com/#home
+    refresh_token:
+      help:
+        en_US: Get your Refresh Tokens from Azure
+        ja_JP: Azure からリフレッシュトークンを取得してください
+        zh_Hans: 从 Azure 获取您的 Refresh Tokens
+      label:
+        en_US: Refresh Tokens
+        ja_JP: リフレッシュトークン
+        zh_Hans: Refresh Tokens
+      placeholder:
+        en_US: Please input your Azure Refresh Tokens
+        ja_JP: Azure のリフレッシュトークンを入力してください
+        zh_Hans: 请输入你的 Azure Refresh Tokens
+      required: true
+      type: secret-input
+      url: https://entra.microsoft.com/#home
+  oauth_schema:
+    client_schema:
+    - name: "tenant_id"
+      type: "secret-input"
+      required: true
+      url: https://portal.azure.com
+      placeholder:
+        en_US: "Please input your Azure Tenant ID"
+        zh_Hans: "请输入你的 Azure Tenant ID"
+        ja_JP: "Azure テナントIDを入力してください"
+      help:
+        en_US: "Tenant ID for your Azure AD directory."
+        zh_Hans: "你的 Azure AD 目录的 Tenant ID。"
+        ja_JP: "あなたの Azure AD ディレクトリのテナントIDです。"
+      label:
+        en_US: "Tenant ID"
+        zh_Hans: "Tenant ID"
+        ja_JP: "テナントID"
+    - name: "client_id"
+      type: "secret-input"
+      required: true
+      url: https://portal.azure.com
+      placeholder:
+        en_US: "Please input your Azure Client ID"
+        zh_Hans: "请输入你的 Azure Client ID"
+        ja_JP: "Azure クライアントIDを入力してください"
+      help:
+        en_US: "Client ID for your Azure application."
+        zh_Hans: "你的 Azure 应用程序的 Client ID。"
+        ja_JP: "あなたの Azure アプリケーションのクライアントIDです。"
+      label:
+        en_US: "Client ID"
+        zh_Hans: "Client ID"
+        ja_JP: "クライアントID"
+    - name: "client_secret"
+      type: "secret-input"
+      required: true
+      url: https://portal.azure.com
+      placeholder:
+        en_US: "Please input your Azure Client Secret"
+        zh_Hans: "请输入你的 Azure Client Secret"
+        ja_JP: "Azure クライアントシークレットを入力してください"
+      help:
+        en_US: "Client Secret for your Azure application."
+        zh_Hans: "你的 Azure 应用程序的 Client Secret。"
+        ja_JP: "あなたの Azure アプリケーションのクライアントシークレットです。"
+      label:
+        en_US: "Client Secret"
+        zh_Hans: "Client Secret"
+        ja_JP: "クライアントシークレット"
+    credentials_schema:
+    - name: "access_tokens"
+      type: "secret-input"
+      label:
+        zh_Hans: "Access Token"
+        en_US: "Access Token"
+        ja_JP: "アクセストークン"
+    - name: "refresh_token"
+      type: "secret-input"
+      label:
+        zh_Hans: "Refresh Token"
+        en_US: "Refresh Token"
+        ja_JP: "リフレッシュトークン"
+  extra:
+    python:
+      source: provider/outlook.py
+
+events:
+  - events/email_received.yaml
+
+identity:
+  author: langgenius
+  description:
+    en_US: Outlook Trigger is a plugin that allows you to trigger actions based on Outlook events.
+    ja_JP: Outlook Triggerは、Outlookイベントに基づいてアクションをトリガーするプラグインです。
+    zh_Hans: Outlook Trigger是一个插件，允许您基于Outlook事件触发操作。
+  icon: icon.svg
+  label:
+    en_US: Outlook Triggers
+    zh_Hans: Outlook 触发器
+    ja_JP: Outlook トリガー
+  name: outlook_trigger
+
+extra:
+  python:
+    source: provider/outlook.py

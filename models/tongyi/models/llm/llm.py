@@ -665,7 +665,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             required_properties = tool.parameters["required"]
             properties_definitions = {}
             for p_key, p_val in properties.items():
-                desc = p_val["description"]
+                desc = p_val.get("description") or ""
                 if "enum" in p_val:
                     desc += f"; Only accepts one of the following predefined options: [{', '.join(p_val['enum'])}]"
                 properties_definitions[p_key] = {
