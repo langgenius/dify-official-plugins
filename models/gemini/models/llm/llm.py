@@ -268,6 +268,16 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         config.temperature = model_parameters.get("temperature", None)
         config.max_output_tokens = model_parameters.get("max_output_tokens", None)
 
+        if media_resolution := model_parameters.get("media_resolution", ""):
+            if media_resolution in ["Default"]:
+                config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_UNSPECIFIED
+            elif media_resolution in ["Low"]:
+                config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_LOW
+            elif media_resolution in ["Medium"]:
+                config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_MEDIUM
+            elif media_resolution in ["High"]:
+                config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_HIGH
+
     @staticmethod
     def _set_thinking_config(
         *, config: types.GenerateContentConfig, model_parameters: Mapping[str, Any], model_name: str
