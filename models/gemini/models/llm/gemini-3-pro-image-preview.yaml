@@ -44,7 +44,7 @@ parameter_rules:
     help:
       en_US: Aspect ratio of the generated images.
       zh_Hans: 生成图片的宽高比。
-  - name: image_size
+  - name: resolution
     type: string
     required: true
     default: "1K"
@@ -53,11 +53,23 @@ parameter_rules:
       - "2K"
       - "4K"
     label:
-      en_US: Image size
-      zh_Hans: 图片大小
+      en_US: Resolution
+      zh_Hans: 分辨率
     help:
-      en_US: Size of the generated images. Defaults to 1K.
-      zh_Hans: 生成图片的大小。默认 1K。
+      en_US: Resolution of the generated images. Defaults to 1K.
+      zh_Hans: 生成图片的分辨率。默认为 1K。
+  - name: grounding
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: Grounding
+      zh_Hans: 事实核查
+      ja_JP: 事実チェック
+    help:
+      en_US: Use Google Search
+      zh_Hans: 使用 Google 搜索
+      ja_JP: 事実チェック
   - name: max_output_tokens
     type: float
     required: true
@@ -72,8 +84,11 @@ parameter_rules:
       zh_Hans: 最大生成 tokens 数
 # https://ai.google.dev/gemini-api/docs/pricing#gemini-3-pro-image-preview
 pricing:
-  # todo: fix pricing
-  input: '0.30'
-  output: '30.0'
+  # Image input is set at 560 tokens or $0.067 per image.
+  # Image output is priced at $120 per 1,000,000 tokens.
+  # Output images from 1024x1024px (1K) and up to 2048x2048px (2K) consume 1120 tokens and are equivalent to $0.134 per image.
+  # Output images up to 4096x4096px (4K) consume 2000 tokens.
+  input: '2.0'
+  output: '120.0'
   unit: '0.000001'
   currency: USD
