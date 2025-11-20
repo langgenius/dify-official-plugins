@@ -1,6 +1,6 @@
-model: x-ai/grok-4-fast
+model: google/gemini-2.5-flash-preview-09-2025
 label:
-  en_US: grok-4-fast
+  en_US: gemini-2.5-flash-preview-09-2025
 model_type: llm
 features:
   - multi-tool-call
@@ -9,7 +9,7 @@ features:
   - vision
 model_properties:
   mode: chat
-  context_size: 2000000
+  context_size: 1048576
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -28,6 +28,11 @@ parameter_rules:
     use_template: presence_penalty
   - name: frequency_penalty
     use_template: frequency_penalty
+  - name: max_tokens
+    use_template: max_tokens
+    default: 65536
+    min: 1
+    max: 65536
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -44,28 +49,29 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
   - name: enable_thinking
-    label:
-      zh_Hans: 开启思考模式
-      en_US: Enable thinking mode
-    type: boolean
-    default: true
-    help:
-      zh_Hans: 是否开启默认思考模式
-      en_US: Whether to enable the default thinking mode
     required: false
-  - name: reasoning_effort
-    label:
-      zh_Hans: 推理程度
-      en_US: Reasoning Effort
     type: string
+    default: dynamic
+    label:
+      zh_Hans: 思考模式
+      en_US: Thinking mode
     help:
-      zh_Hans: 指定模型推理的难度
-      en_US: specifying the difficulty of the model's reasoning
-    required: false
+      zh_Hans: 是否开启思考模式。
+      en_US: Whether to enable thinking mode.
     options:
-      - high
-      - medium
-      - low
+      - dynamic
+      - manual
+  - name: reasoning_budget
+    label:
+      zh_Hans: 思考预算
+      en_US: Reasoning budget
+    type: int
+    help:
+      zh_Hans: 思考预算，单位为 token
+      en_US: Reasoning budget, in tokens
+    required: false
+    min: 0
+    max: 24576
   - name: exclude_reasoning_tokens
     label:
       zh_Hans: 隐藏思考过程
@@ -77,7 +83,7 @@ parameter_rules:
       en_US: Whether to hide the thought process.
     required: false
 pricing:
-  input: "0.2"
-  output: "0.5"
+  input: "0.3"
+  output: "2.5"
   unit: "0.000001"
   currency: USD
