@@ -6,6 +6,7 @@ from openai import OpenAI
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from dify_plugin.errors.model import InvokeError
 
 
 class GptImageEditTool(Tool):
@@ -22,11 +23,11 @@ class GptImageEditTool(Tool):
             # Extract and validate parameters
             prompt = tool_parameters.get("prompt", "").strip()
             if not prompt:
-                raise Exception("Edit prompt is required")
+                raise InvokeError("Edit prompt is required")
             
             image_file = tool_parameters.get("image", "").strip()
             if not image_file:
-                raise Exception("Input image is required")
+                raise InvokeError("Input image is required")
             
             model = tool_parameters.get("model", "gpt-image-1")
             size = tool_parameters.get("size", "1024x1024")
@@ -34,12 +35,12 @@ class GptImageEditTool(Tool):
             
             # Validate parameters
             if n < 1 or n > 4:
-                raise Exception("Number of images must be between 1 and 4")
+                raise InvokeError("Number of images must be between 1 and 4")
             
             # Get API key from credentials
             api_key = self.runtime.credentials.get("api_key")
             if not api_key:
-                raise Exception("API Key is required")
+                raise InvokeError("API Key is required")
             
             yield self.create_text_message(f"Editing image with GPT Image Edit using model: {model}...")
             
@@ -64,9 +65,9 @@ class GptImageEditTool(Tool):
                     if response.status_code == 200:
                         image_data = response.content
                     else:
-                        raise Exception(f"Failed to download image from URL: {image_file}")
+                        raise InvokeError(f"Failed to download image from URL: {image_file}")
                 except Exception as e:
-                    raise Exception(f"Error downloading image from URL: {str(e)}")
+                    raise InvokeError(f"Error downloading image from URL: {str(e)}")
             else:
                 # Assume it's a file path or base64 string
                 try:
@@ -78,10 +79,10 @@ class GptImageEditTool(Tool):
                         with open(image_file, 'rb') as f:
                             image_data = f.read()
                 except Exception as e:
-                    raise Exception(f"Error processing image input: {str(e)}")
+                    raise InvokeError(f"Error processing image input: {str(e)}")
             
             if not image_data:
-                raise Exception("Failed to process image input")
+                raise InvokeError("Failed to process image input")
             
             # Save image data to temporary file for OpenAI client
             import tempfile
@@ -117,7 +118,7 @@ class GptImageEditTool(Tool):
                         continue
                 
                 if not result:
-                    raise Exception("Failed to edit image after multiple attempts")
+                    raise InvokeError("Failed to edit image after multiple attempts")
                 
                 # Extract image data from response
                 images = []
@@ -128,7 +129,7 @@ class GptImageEditTool(Tool):
                         images.append({"b64_json": item.b64_json})
                 
                 if not images:
-                    raise Exception("No edited images were generated")
+                    raise InvokeError("No edited images were generated")
                 
                 # Create image messages for direct display in Dify
                 for img in images:
@@ -191,4 +192,4 @@ class GptImageEditTool(Tool):
             else:
                 error_msg = f"GPT Image Edit failed: {error_msg}"
             
-            raise Exception(error_msg)
+            raise InvokeError(error_msg)

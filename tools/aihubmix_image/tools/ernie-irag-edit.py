@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from dify_plugin.errors.model import InvokeError
 
 
 class ErnieIragEditTool(Tool):
@@ -25,23 +26,23 @@ class ErnieIragEditTool(Tool):
             # Extract and validate parameters
             prompt = tool_parameters.get("prompt", "").strip()
             if not prompt:
-                raise Exception("Edit prompt is required")
+                raise InvokeError("Edit prompt is required")
             
             image_url = tool_parameters.get("image", "").strip()
             if not image_url:
-                raise Exception("Input image URL is required")
+                raise InvokeError("Input image URL is required")
             
             guidance = float(tool_parameters.get("guidance", 7.5))
             watermark = tool_parameters.get("watermark", False)
             
             # Validate parameters
             if guidance < 1.0 or guidance > 20.0:
-                raise Exception("Guidance scale must be between 1.0 and 20.0")
+                raise InvokeError("Guidance scale must be between 1.0 and 20.0")
             
             # Get API key from credentials
             api_key = self.runtime.credentials.get("api_key")
             if not api_key:
-                raise Exception("API Key is required")
+                raise InvokeError("API Key is required")
             
             # Prepare headers
             headers = {
@@ -76,9 +77,9 @@ class ErnieIragEditTool(Tool):
                     error_data = response.json()
                     if "error" in error_data:
                         error_msg += f": {error_data['error'].get('message', 'Unknown error')}"
-                except:
+                except requests.exceptions.JSONDecodeError:
                     pass
-                raise Exception(error_msg)
+                raise InvokeError(error_msg)
             
             data = response.json()
             
@@ -92,7 +93,7 @@ class ErnieIragEditTool(Tool):
             # Debug: print the actual response structure
             if not images:
                 print(f"Debug - Response data: {json.dumps(data, indent=2)}")
-                raise Exception("No edited images were generated")
+                raise InvokeError("No edited images were generated")
             
             # Create image messages for direct display in Dify
             for img in images:
@@ -116,4 +117,4 @@ class ErnieIragEditTool(Tool):
             yield self.create_text_message(f"ERNIE iRAG Edit generated {len(images)} edited image(s):\n{image_urls}")
                 
         except Exception as e:
-            raise Exception(f"ERNIE iRAG Edit failed: {str(e)}")
+            raise InvokeError(f"ERNIE iRAG Edit failed: {str(e)}")

@@ -85,24 +85,24 @@ parameters:
     min: 1
     max: 4
   
-  - name: moderation_level
-    type: number
-    required: false
-    label:
-      en_US: "Moderation Level"
-      zh_Hans: "审核宽松度"
-      pt_BR: "Nível de Moderação"
-      ja_JP: "モデレーションレベル"
-    human_description:
-      en_US: "Content moderation strictness (0-6, where 0 is most strict)"
-      zh_Hans: "内容审核严格程度 (0-6，0为最严格)"
-      pt_BR: "Nível de rigor da moderação de conteúdo (0-6, onde 0 é mais rigoroso)"
-      ja_JP: "コンテンツモデレーションの厳しさ (0-6、0が最も厳格)"
-    llm_description: "Content moderation level for Qwen Image generation. Range: 0-6, where 0 is most strict and 6 is most lenient"
-    form: form
-    default: 3
-    min: 0
-    max: 6
+  # - name: moderation_level
+  #   type: number
+  #   required: false
+  #   label:
+  #     en_US: "Moderation Level"
+  #     zh_Hans: "审核宽松度"
+  #     pt_BR: "Nível de Moderação"
+  #     ja_JP: "モデレーションレベル"
+  #   human_description:
+  #     en_US: "Content moderation strictness (0-6, where 0 is most strict)"
+  #     zh_Hans: "内容审核严格程度 (0-6，0为最严格)"
+  #     pt_BR: "Nível de rigor da moderação de conteúdo (0-6, onde 0 é mais rigoroso)"
+  #     ja_JP: "コンテンツモデレーションの厳しさ (0-6、0が最も厳格)"
+  #   llm_description: "Content moderation level for Qwen Image generation. Range: 0-6, where 0 is most strict and 6 is most lenient"
+  #   form: form
+  #   default: 3
+  #   min: 0
+  #   max: 6
 extra:
   python:
     source: tools/qwen-image.py

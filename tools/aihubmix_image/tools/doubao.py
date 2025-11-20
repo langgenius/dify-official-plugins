@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from dify_plugin.errors.model import InvokeError
 
 
 class DoubaoTool(Tool):
@@ -25,7 +26,7 @@ class DoubaoTool(Tool):
             # Extract and validate parameters
             prompt = tool_parameters.get("prompt", "").strip()
             if not prompt:
-                raise Exception("Prompt is required")
+                raise InvokeError("Prompt is required")
             
             size = tool_parameters.get("size", "2K")
             sequential_image_generation = tool_parameters.get("sequential_image_generation", "disabled")
@@ -36,7 +37,7 @@ class DoubaoTool(Tool):
             # Get API key from credentials
             api_key = self.runtime.credentials.get("api_key")
             if not api_key:
-                raise Exception("API Key is required")
+                raise InvokeError("API Key is required")
             
             # Prepare headers
             headers = {
@@ -74,7 +75,7 @@ class DoubaoTool(Tool):
                         error_msg += f": {error_data['error'].get('message', 'Unknown error')}"
                 except:
                     pass
-                raise Exception(error_msg)
+                raise InvokeError(error_msg)
             
             data = response.json()
             
@@ -86,7 +87,7 @@ class DoubaoTool(Tool):
                         images.append({"url": item["url"]})
             
             if not images:
-                raise Exception("No images were generated")
+                raise InvokeError("No images were generated")
             
             # Create image messages for direct display in Dify
             for img in images:
@@ -111,4 +112,4 @@ class DoubaoTool(Tool):
             yield self.create_text_message(f"Doubao Seedream generated {len(images)} image(s):\n{image_urls}")
                 
         except Exception as e:
-            raise Exception(f"Doubao Seedream image generation failed: {str(e)}")
+            raise InvokeError(f"Doubao Seedream image generation failed: {str(e)}")

@@ -28,10 +28,10 @@ credentials_schema:
       pt_BR: "Digite sua chave API AIHubMix"
       ja_JP: "AIHubMix APIキーを入力してください"
     help:
-      en_US: "API Key is used to authenticate requests to the AIHubMix API. Get your API key from https://docs.aihubmix.com"
-      zh_Hans: "API 密钥用于认证请求到 AIHubMix API。请从 https://docs.aihubmix.com 获取您的 API 密钥"
-      pt_BR: "A chave API é usada para autenticar solicitações à API AIHubMix. Obtenha sua chave em https://docs.aihubmix.com"
-      ja_JP: "APIキーはAIHubMix APIへのリクエスト認証に使用されます。https://docs.aihubmix.com からAPIキーを取得してください"
+      en_US: "API Key is used to authenticate requests to the AIHubMix API. Get your API key from https://docs.aihubmix.com/token"
+      zh_Hans: "API 密钥用于认证请求到 AIHubMix API。请从 https://docs.aihubmix.com/token 获取您的 API 密钥"
+      pt_BR: "A chave API é usada para autenticar solicitações à API AIHubMix. Obtenha sua chave em https://docs.aihubmix.com/token"
+      ja_JP: "APIキーはAIHubMix APIへのリクエスト認証に使用されます。https://docs.aihubmix.com/token からAPIキーを取得してください"
 
 #########################################################################################
 # OAuth configuration can be enabled by uncommenting the section below

@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from dify_plugin.errors.model import InvokeError
 
 
 class QwenImageEditTool(Tool):
@@ -25,22 +26,30 @@ class QwenImageEditTool(Tool):
             # Extract and validate parameters
             prompt = tool_parameters.get("prompt", "").strip()
             if not prompt:
-                raise Exception("Edit prompt is required")
+                raise InvokeError("Edit prompt is required")
             
             image_url = tool_parameters.get("image", "").strip()
             if not image_url:
-                raise Exception("Input image URL is required")
+                raise InvokeError("Input image URL is required")
+            
+            # Debug: Log the image URL to help with debugging
+            yield self.create_text_message(f"Debug: Processing image URL: {image_url}")
+            
+            # Additional validation for image URL format
+            if not (image_url.startswith('http://') or image_url.startswith('https://') or image_url.startswith('data:image/')):
+                raise InvokeError(f"Invalid image URL format: {image_url}. URL must start with http://, https://, or data:image/")
             
             guidance = float(tool_parameters.get("guidance", 7.5))
+            watermark = tool_parameters.get("watermark", False)
             
             # Validate parameters
             if guidance < 1.0 or guidance > 20.0:
-                raise Exception("Guidance scale must be between 1.0 and 20.0")
+                raise InvokeError("Guidance scale must be between 1.0 and 20.0")
             
             # Get API key from credentials
             api_key = self.runtime.credentials.get("api_key")
             if not api_key:
-                raise Exception("API Key is required")
+                raise InvokeError("API Key is required")
             
             # Prepare headers
             headers = {
@@ -53,7 +62,8 @@ class QwenImageEditTool(Tool):
                 "input": {
                     "prompt": prompt,
                     "image": image_url,
-                    "guidance": guidance
+                    "guidance": guidance,
+                    "watermark": watermark
                 }
             }
             
@@ -75,7 +85,9 @@ class QwenImageEditTool(Tool):
                         error_msg += f": {error_data['error'].get('message', 'Unknown error')}"
                 except:
                     pass
-                raise Exception(error_msg)
+                # Debug: Log the full response for better debugging
+                yield self.create_text_message(f"Debug: API Response: {response.text}")
+                raise InvokeError(error_msg)
             
             data = response.json()
             
@@ -87,7 +99,7 @@ class QwenImageEditTool(Tool):
                         images.append({"url": item["url"]})
             
             if not images:
-                raise Exception("No edited images were generated")
+                raise InvokeError("No edited images were generated")
             
             # Create image messages for direct display in Dify
             for img in images:
@@ -101,7 +113,8 @@ class QwenImageEditTool(Tool):
                 "input_image": image_url,
                 "num_images": len(images),
                 "images": images,
-                "guidance": guidance
+                "guidance": guidance,
+                "watermark": watermark
             })
             
             # Also create text message with image URLs
@@ -109,4 +122,4 @@ class QwenImageEditTool(Tool):
             yield self.create_text_message(f"Qwen Image Edit generated {len(images)} edited image(s):\n{image_urls}")
                 
         except Exception as e:
-            raise Exception(f"Qwen Image Edit failed: {str(e)}")
+            raise InvokeError(f"Qwen Image Edit failed: {str(e)}")

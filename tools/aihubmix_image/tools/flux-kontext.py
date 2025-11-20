@@ -4,6 +4,7 @@ from typing import Any, Dict
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from dify_plugin.errors.model import InvokeError
 
 
 class FluxKontextTool(Tool):
@@ -26,7 +27,7 @@ class FluxKontextTool(Tool):
             # Extract and validate parameters
             prompt = tool_parameters.get("prompt", "").strip()
             if not prompt:
-                raise Exception("Prompt is required")
+                raise InvokeError("Prompt is required")
             
             model = tool_parameters.get("model", "FLUX.1-Kontext-pro")
             resolution = tool_parameters.get("resolution", "1024x1024")
@@ -35,15 +36,15 @@ class FluxKontextTool(Tool):
             
             # Validate parameters
             if num_images < 1 or num_images > 4:
-                raise Exception("Number of images must be between 1 and 4")
+                raise InvokeError("Number of images must be between 1 and 4")
             
             if moderation_level < 0 or moderation_level > 6:
-                raise Exception("Moderation level must be between 0 and 6")
+                raise InvokeError("Moderation level must be between 0 and 6")
             
             # Get API key from credentials
             api_key = self.runtime.credentials.get("api_key")
             if not api_key:
-                raise Exception("API Key is required")
+                raise InvokeError("API Key is required")
             
             # Prepare headers
             headers = {
@@ -55,7 +56,7 @@ class FluxKontextTool(Tool):
             yield from self._generate_sync(headers, model, prompt, resolution, num_images, moderation_level)
                 
         except Exception as e:
-            raise Exception(f"Flux image generation failed: {str(e)}")
+            raise InvokeError(f"Flux image generation failed: {str(e)}")
     
     def _generate_sync(self, headers: Dict[str, str], model: str, prompt: str, resolution: str, num_images: int, moderation_level: int) -> Generator[ToolInvokeMessage]:
         """
@@ -67,6 +68,8 @@ class FluxKontextTool(Tool):
         payload = {
             "prompt": prompt,
             "model": model,
+            "n": num_images,
+            "size": resolution,
             "safety_tolerance": moderation_level
         }
         
@@ -88,7 +91,7 @@ class FluxKontextTool(Tool):
                     error_msg += f": {error_data['error'].get('message', 'Unknown error')}"
             except:
                 pass
-            raise Exception(error_msg)
+            raise InvokeError(error_msg)
         
         data = response.json()
         
@@ -103,7 +106,7 @@ class FluxKontextTool(Tool):
                     images.append({"url": item["url"]})
         
         if not images:
-            raise Exception("No images were generated")
+            raise InvokeError("No images were generated")
         
         # Create image messages for direct display in Dify
         for img in images:

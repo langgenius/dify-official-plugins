@@ -9,13 +9,14 @@ from io import BytesIO
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from dify_plugin.errors.model import InvokeError
 
 try:
     from google import genai
     from google.genai import types
     from PIL import Image
 except ImportError:
-    raise ImportError("Required packages not found. Please install: pip install google-genai Pillow")
+    raise InvokeError("Required packages not found. Please install: pip install google-genai Pillow")
 
 
 class ImagenTool(Tool):
@@ -38,7 +39,7 @@ class ImagenTool(Tool):
             # Extract and validate parameters
             prompt = tool_parameters.get("prompt", "").strip()
             if not prompt:
-                raise Exception("Prompt is required")
+                raise InvokeError("Prompt is required")
             
             model = tool_parameters.get("model", "imagen-4.0-fast-generate-001")
             num_images = int(tool_parameters.get("num_images", 1))
@@ -46,17 +47,17 @@ class ImagenTool(Tool):
             
             # Validate parameters
             if num_images < 1 or num_images > 4:
-                raise Exception("Number of images must be between 1 and 4")
+                raise InvokeError("Number of images must be between 1 and 4")
             
             # Validate aspect ratio
             valid_ratios = ["1:1", "9:16", "16:9", "3:4", "4:3"]
             if aspect_ratio not in valid_ratios:
-                raise Exception(f"Aspect ratio must be one of: {', '.join(valid_ratios)}")
+                raise InvokeError(f"Aspect ratio must be one of: {', '.join(valid_ratios)}")
             
             # Get API key from credentials
             api_key = self.runtime.credentials.get("api_key")
             if not api_key:
-                raise Exception("API Key is required")
+                raise InvokeError("API Key is required")
             
             yield self.create_text_message(f"Generating {num_images} image(s) with Google Imagen ({model})...")
             
@@ -281,7 +282,7 @@ class ImagenTool(Tool):
             
             # If all methods failed
             if not success:
-                raise Exception(f"All API methods failed. Last error: {last_error}")
+                raise InvokeError(f"All API methods failed. Last error: {last_error}")
                 
         except Exception as e:
             # Provide more detailed error information
@@ -293,4 +294,4 @@ class ImagenTool(Tool):
             elif "429" in str(e):
                 error_msg += "\nPossible causes:\n1. Rate limit exceeded\n2. Too many requests"
             
-            raise Exception(error_msg)
+            raise InvokeError(error_msg)
