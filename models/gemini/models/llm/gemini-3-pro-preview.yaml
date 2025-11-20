@@ -15,42 +15,34 @@ features:
 model_properties:
   mode: chat
   context_size: 1048576
+# Documentation: https://ai.google.dev/gemini-api/docs/gemini-3?hl=zh-cn
 parameter_rules:
   - name: temperature
-    use_template: temperature
+    type:  float
+    required: true
     default: 1
     min: 0
     max: 2
-  - name: top_p
-    use_template: top_p
-  - name: top_k
     label:
-      zh_Hans: 取样数量
-      en_US: Top k
-    type: int
+      en_US: Temperature
+      zh_Hans: 温度
     help:
-      zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
-      en_US: Only sample from the top K options for each subsequent token.
-    required: false
-  - name: max_output_tokens
-    use_template: max_tokens
-    default: 65536
-    min: 1
-    max: 65536
+      en_US: For Gemini 3, best results at default 1.0. Lower values may impact reasoning.
+      zh_Hans: 对于 Gemini 3，使用默认值 1.0 可获得最佳效果。数值过低可能会影响推理能力。
   - name: include_thoughts
     type: boolean
-    required: false
+    required: true
     default: false
     label:
       en_US: Include thoughts
       zh_Hans: 返回思考过程
     help:
-      en_US: Indicates whether to include thoughts in the response. If true, thoughts are returned only if the model supports thought and thoughts are available.
-      zh_Hans: 是否返回思考过程。若为 true 则只有模型支持思考且启动思考模式时才返回思考过程。
+      en_US: Indicates whether to include thoughts in the response. If true, thoughts are returned only if the model supports thought and thoughts are available. Default is false.
+      zh_Hans: 是否返回思考过程。若为 true 则只有模型支持思考且启动思考模式时才返回思考过程。默认为 false。
   - name: thinking_level
     type: string
-    required: false
-    default: "Low"
+    required: true
+    default: "High"
     options:
       - Low
       - High
@@ -58,8 +50,8 @@ parameter_rules:
       en_US: Thinking level
       zh_Hans: 思考层级
     help:
-      en_US: Indicates the thinking level
-      zh_Hans: 思考层级
+      en_US: Indicates the thinking level. Default is High.
+      zh_Hans: 思考层级。默认为 High。
   - name: grounding
     type: boolean
     required: true
@@ -96,8 +88,18 @@ parameter_rules:
       en_US: Lets Gemini use code to solve complex tasks
       zh_Hans: 让 Gemini 使用代码来解决复杂任务。
       ja_JP: Gemini にコードを使って複雑なタスクを解決させましょう。
-  - name: json_schema
-    use_template: json_schema
+  - name: max_output_tokens
+    type: float
+    required: true
+    default: 65536
+    min: 1
+    max: 65536
+    label:
+      en_US: Output length
+      zh_Hans: 输出长度
+    help:
+      en_US: The maximum number of tokens to generate in the response.
+      zh_Hans: 模型单次输出的最大 tokens 数。
 # https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-3-pro
 pricing:
   # $ > 200K tokens

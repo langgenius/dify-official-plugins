@@ -851,6 +851,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator[LLMResultChunk]]:
 
+        print(f"{json.dumps(model_parameters, indent=2, ensure_ascii=False)}")
+
         # Validate and adjust feature compatibility
         model_parameters = self._validate_feature_compatibility(model_parameters, tools)
 
