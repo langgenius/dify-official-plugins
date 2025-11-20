@@ -58,6 +58,16 @@ parameter_rules:
     help:
       en_US: Resolution of the generated images. Defaults to 1K.
       zh_Hans: 生成图片的分辨率。默认为 1K。
+  - name: include_thoughts
+    type: boolean
+    required: true
+    default: true
+    label:
+      en_US: Include thoughts
+      zh_Hans: 返回思考过程
+    help:
+      en_US: Indicates whether to include thoughts in the response. If true, thoughts are returned only if the model supports thought and thoughts are available. Default is false.
+      zh_Hans: 是否返回思考过程。若为 true 则只有模型支持思考且启动思考模式时才返回思考过程。默认为 false。
   - name: grounding
     type: boolean
     required: true
