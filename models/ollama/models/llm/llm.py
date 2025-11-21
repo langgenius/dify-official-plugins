@@ -392,6 +392,32 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
         tool_calls_by_index = {}  # use dict aggregator to avoid sparse large lists
         tool_phase = False  # switch to delta-only text after detecting tool_calls
         micro_chunk_size = _MICRO_CHUNK_SIZE  # mimic pure text small increments
+        is_reasoning_started = False
+
+        def _wrap_thinking_by_reasoning_content(message_obj: dict, is_reasoning: bool) -> tuple[str, bool]:
+            """
+            If the reasoning response is from delta.get("reasoning_content"), we wrap
+            it with HTML think tag.
+
+            :param delta: delta dictionary from LLM streaming response
+            :param is_reasoning: is reasoning
+            :return: tuple of (processed_content, is_reasoning)
+            """
+
+            content = message_obj.get("content") or ""
+            thinking_content = message_obj.get("thinking")
+
+            if thinking_content:
+                if not is_reasoning:
+                    content = "<think>\n" + thinking_content
+                    is_reasoning = True
+                else:
+                    content = thinking_content
+            elif is_reasoning and content:
+                content = "\n</think>" + content
+                is_reasoning = False
+            print(f"is_reasoning: {is_reasoning} content: {content} ")
+            return content, is_reasoning
 
         def _yield_micro_chunks(s: str, size: int, min_size: int = 4) -> list[str]:
             """
@@ -459,7 +485,9 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                 if chunk_json.get("response") is not None:
                     text = chunk_json.get("response", "")
                 else:
-                    text = message_obj.get("content", "")
+                    text, is_reasoning_started = _wrap_thinking_by_reasoning_content(
+                        message_obj, is_reasoning_started
+                     )
 
                 # If this chunk contains tool_calls, yield a dedicated tool_calls delta (like Tongyi)
                 if "tool_calls" in message_obj and message_obj.get("tool_calls"):
