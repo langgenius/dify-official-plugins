@@ -47,6 +47,7 @@ IMAGE_GENERATION_MODELS = {
     "gemini-2.0-flash-preview-image-generation",
     "gemini-2.5-flash-image-preview",
     "gemini-2.5-flash-image",
+    "gemini-3-pro-image-preview",
 }
 
 
@@ -294,15 +295,15 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         ):
             aspect_ratio = None
 
-        image_size = model_parameters.get("image_size")
+        resolution = model_parameters.get("resolution")
         if (
-            not image_size
-            or not isinstance(image_size, str)
-            or image_size not in ["1K", "2K", "4K"]
+            not resolution
+            or not isinstance(resolution, str)
+            or resolution not in ["1K", "2K", "4K"]
         ):
-            image_size = None
+            resolution = None
 
-        config.image_config = types.ImageConfig(image_size=image_size, aspect_ratio=aspect_ratio)
+        config.image_config = types.ImageConfig(image_size=resolution, aspect_ratio=aspect_ratio)
 
     @staticmethod
     def _set_thinking_config(
