@@ -56,8 +56,8 @@ parameter_rules:
       - High
     required: false
     help:
-      zh_Hans: 控制模型推理深度。High 提供更深入的推理，Low 适合简单任务。默认为 High。注意：此参数仅适用于 Gemini 3，与 thinking_budget 互斥。
-      en_US: Controls the maximum depth of the model's reasoning. High provides deeper reasoning, Low is suitable for simpler tasks. Defaults to High. Note: This parameter is only for Gemini 3 and is mutually exclusive with thinking_budget.
+      zh_Hans: 控制模型推理深度。High 提供更深入的推理，Low 适合简单任务。默认为 High。注意此参数仅适用于 Gemini 3，与 thinking_budget 互斥。
+      en_US: Controls the maximum depth of the model's reasoning. High provides deeper reasoning, Low is suitable for simpler tasks. Defaults to High. Note this parameter is only for Gemini 3 and is mutually exclusive with thinking_budget.
   - name: include_thoughts
     type: boolean
     required: false
