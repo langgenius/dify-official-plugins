@@ -45,7 +45,7 @@ from google.genai import types
 from PIL import Image
 
 
-GLOBAL_ONLY_MODELS_DEFAULT = ["gemini-2.5-pro-preview-06-05","gemini-2.5-flash-lite-preview-06-17","gemini-2.5-flash-preview-09-2025","gemini-2.5-flash-lite-preview-09-2025"]
+GLOBAL_ONLY_MODELS_DEFAULT = ["gemini-2.5-pro-preview-06-05","gemini-2.5-flash-lite-preview-06-17","gemini-2.5-flash-preview-09-2025","gemini-2.5-flash-lite-preview-09-2025","gemini-3-pro-preview"]
 # For more information about the models, please refer to https://ai.google.dev/gemini-api/docs/thinking
 DEFAULT_NO_THINKING_MODELS = ["gemini-2.5-flash-lite"]
 
@@ -462,7 +462,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         tools_config = []
         thinking_config = {}
         for field in list(config_kwargs):
-            if field in ["include_thoughts", "thinking_budget"]:
+            if field in ["include_thoughts", "thinking_budget", "thinking_level"]:
                 thinking_config[field] = config_kwargs.pop(field)
             elif field == "grounding_search":
                 if config_kwargs.pop("grounding_search", False):
@@ -473,11 +473,39 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 config_kwargs["response_mime_type"] = "application/json"
             elif field == "response_mime_type":
                 config_kwargs["response_mime_type"] = config_kwargs.pop("response_mime_type")
+            elif field == "media_resolution":
+                media_res = config_kwargs.pop("media_resolution")
+                if media_res == "Default":
+                    config_kwargs["media_resolution"] = types.MediaResolution.MEDIA_RESOLUTION_UNSPECIFIED
+                elif media_res == "Low":
+                    config_kwargs["media_resolution"] = types.MediaResolution.MEDIA_RESOLUTION_LOW
+                elif media_res == "Medium":
+                    config_kwargs["media_resolution"] = types.MediaResolution.MEDIA_RESOLUTION_MEDIUM
+                elif media_res == "High":
+                    config_kwargs["media_resolution"] = types.MediaResolution.MEDIA_RESOLUTION_HIGH
         if tools:
             tools_config.append(self._convert_tools_to_genai_tool(tools))
 
         # Build config
         if thinking_config:
+            # Handle thinking_level conversion for Gemini 3
+            thinking_level_str = thinking_config.get("thinking_level")
+            if isinstance(thinking_level_str, str):
+                if thinking_level_str == "Low":
+                    thinking_config["thinking_level"] = types.ThinkingLevel.LOW
+                elif thinking_level_str == "High":
+                    thinking_config["thinking_level"] = types.ThinkingLevel.HIGH
+                else:
+                    thinking_config.pop("thinking_level", None)
+
+            # thinking_budget and thinking_level are mutually exclusive
+            # Gemini 3 uses thinking_level, older models use thinking_budget
+            if "thinking_budget" in thinking_config and "thinking_level" in thinking_config:
+                if "gemini-3" in model:
+                    thinking_config.pop("thinking_budget", None)
+                else:
+                    thinking_config.pop("thinking_level", None)
+
             if thinking_config.get("include_thoughts", False) and \
                 thinking_config.get("thinking_budget", 1) == 0:
                 raise InvokeBadRequestError("Include Thoughts is only enabled when thinking budget is greater than 0.")
@@ -538,6 +566,9 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         
         for msg in prompt_messages:
                 content = self._format_message_to_genai_content(msg)
+                # Skip None values (e.g., SystemPromptMessage returns None)
+                if content is None:
+                    continue
                 # Merge consecutive messages from the same role
                 if contents and contents[-1].get("role") == content.get("role"):
                     # Merge parts from the same role
