@@ -585,7 +585,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 contents=contents,
                 config=config
             )
-            return self._handle_generate_stream_response(model, credentials, response, prompt_messages, system_instruction)
+            return self._handle_generate_stream_response(model, credentials, response, prompt_messages, system_instruction, client)
         else:
             response = client.models.generate_content(
                 model=model,
@@ -641,7 +641,8 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         return result
 
     def _handle_generate_stream_response(
-        self, model: str, credentials: dict, response: Generator, prompt_messages: list[PromptMessage], system_instruction: str
+        self, model: str, credentials: dict, response: Generator, prompt_messages: list[PromptMessage], system_instruction: str,
+        genai_client: genai.Client
     ) -> Generator:
         """
         Handle llm stream response
@@ -651,8 +652,12 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :param response: response stream generator
         :param prompt_messages: prompt messages
         :param system_instruction: system instruction
+        :param genai_client: genai client to keep alive during streaming
         :return: llm response chunk generator result
         """
+        # Keep a reference to the client to prevent it from being garbage collected
+        # while the generator is still active
+        _client_ref = genai_client
         index = -1
         is_first_gemini2_response = True
         is_thinking = False
