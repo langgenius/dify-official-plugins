@@ -459,7 +459,28 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                 if chunk_json.get("response") is not None:
                     text = chunk_json.get("response", "")
                 else:
-                    text = message_obj.get("content", "")
+                    thinking_text = message_obj.get("thinking", "")
+                    if thinking_text:
+                        # 如果是第一个thinking chunk，添加开始标签
+                        if not hasattr(self, '_thinking_started'):
+                            self._thinking_started = True
+                            text = f"<think>{thinking_text}"
+                        else:
+                            # 不是第一个thinking chunk，直接使用内容
+                            text = thinking_text
+                    else:
+                        # 没有thinking，检查content
+                        content_text = message_obj.get("content", "")
+                        if content_text:
+                            # 如果之前有thinking阶段，先结束thinking，再添加content
+                            if hasattr(self, '_thinking_started'):
+                                text = f"</think>{content_text}"
+                                delattr(self, '_thinking_started')
+                            else:
+                                text = content_text
+                        else:
+                            # thinking和content都没有
+                            text = ""
 
                 # If this chunk contains tool_calls, yield a dedicated tool_calls delta (like Tongyi)
                 if "tool_calls" in message_obj and message_obj.get("tool_calls"):
