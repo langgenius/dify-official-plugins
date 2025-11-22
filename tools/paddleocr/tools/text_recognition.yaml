@@ -1,14 +1,14 @@
 identity:
-  name: paddleocr_text_recognition
+  name: text_recognition
   author: langgenius
   label:
-    en_US: PaddleOCR Text Recognition
-    zh_Hans: PaddleOCR 文字识别
+    en_US: Text Recognition
+    zh_Hans: 文字识别
 description:
   human:
-    en_US: PaddleOCR text recognition plugin that provides text recognition capabilities for multiple scenarios and various text types
-    zh_Hans: PaddleOCR 文字识别插件，提供多场景、多文字类型的文字识别能力
-  llm: PaddleOCR text recognition plugin that provides text recognition capabilities for multiple scenarios and various text types
+    en_US: PaddleOCR text recognition tool that provides text recognition capabilities for multiple scenarios and various text types
+    zh_Hans: PaddleOCR 文字识别工具，提供多场景、多文字类型的文字识别能力
+  llm: PaddleOCR text recognition tool that provides text recognition capabilities for multiple scenarios and various text types
 parameters:
   - name: file
     type: string
@@ -18,7 +18,7 @@ parameters:
       zh_Hans: 文件
     human_description:
       en_US: The URL of an image or PDF file, or the Base64-encoded result of the content of such a file.
-      zh_Hans: 图像文件或PDF文件的URL，或上述类型文件内容的Base64编码结果。
+      zh_Hans: 图像文件或 PDF 文件的 URL，或上述类型文件内容的 Base64 编码结果。
     llm_description: The URL of an image or PDF file, or the Base64-encoded result of the content of such a file.
     form: llm
   - name: fileType
@@ -29,7 +29,7 @@ parameters:
       zh_Hans: 文件类型
     human_description:
       en_US: File type. 0 indicates a PDF file, and 1 indicates an image file. If not specified, the file type will be inferred from the URL.
-      zh_Hans: 文件类型。0表示PDF文件，1表示图像文件。若不设置，则将根据URL推断文件类型。
+      zh_Hans: 文件类型。0 表示 PDF 文件，1 表示图像文件。若不设置，则将根据 URL 推断文件类型。
     llm_description: File type. 0 indicates a PDF file, and 1 indicates an image file. If not specified, the file type will be inferred from the URL.
     form: llm
   - name: useDocOrientationClassify
@@ -162,7 +162,7 @@ parameters:
   - name: visualize
     type: boolean
     required: false
-    default: true
+    default: false
     label:
       en_US: Whether to Return Visualization Results
       zh_Hans: 是否返回可视化结果
@@ -173,4 +173,4 @@ parameters:
     form: llm
 extra:
   python:
-    source: tools/paddleocr_text_recognition.py
+    source: tools/text_recognition.py
