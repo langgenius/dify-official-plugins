@@ -1,0 +1,137 @@
+identity:
+  name: "gpt-image-edit"
+  author: "langgenius"
+  label:
+    en_US: "GPT Image Edit"
+    zh_Hans: "GPT Image Edit"
+    pt_BR: "GPT Image Edit"
+    ja_JP: "GPT Image Edit"
+description:
+  human:
+    en_US: "GPT Image Editing Model, supporting gpt-image-1 and gpt-image-1-mini"
+    zh_Hans: "GPT Image 图像编辑模型，支持gpt-image-1 和 gpt-image-1-mini"
+    pt_BR: "Modelo de Edição GPT Image, suportando gpt-image-1 e gpt-image-1-mini"
+    ja_JP: "GPT Image 画像編集モデル、gpt-image-1 と gpt-image-1-mini をサポート"
+  llm: "Edit image using GPT Image Edit model (gpt-image-1 and gpt-image-1-mini) with image masking and editing capabilities"
+parameters:
+  - name: prompt
+    type: string
+    required: true
+    label:
+      en_US: "Edit Prompt"
+      zh_Hans: "编辑提示词"
+      pt_BR: "Prompt de Edição"
+      ja_JP: "編集プロンプト"
+    human_description:
+      en_US: "Text description of the edits you want to make to the image"
+      zh_Hans: "您想要对图像进行的编辑的文字描述"
+      pt_BR: "Descrição textual das edições que você deseja fazer na imagem"
+      ja_JP: "画像に加えたい編集のテキスト説明"
+    llm_description: "Text prompt for GPT Image Edit, describing the desired edits to the input image"
+    form: llm
+  
+  - name: image
+    type: string
+    required: true
+    label:
+      en_US: "Input Image"
+      zh_Hans: "输入图像"
+      pt_BR: "Imagem de Entrada"
+      ja_JP: "入力画像"
+    human_description:
+      en_US: "The image to edit (can be URL, base64 data, or file path)"
+      zh_Hans: "要编辑的图像（可以是URL、base64数据或文件路径）"
+      pt_BR: "A imagem a ser editada (pode ser URL, dados base64 ou caminho de arquivo)"
+      ja_JP: "編集する画像（URL、base64データ、またはファイルパス）"
+    llm_description: "Input image to be edited using GPT Image Edit. Supports URL, base64 data, or file path"
+    form: llm
+  
+  
+  - name: model
+    type: select
+    required: false
+    label:
+      en_US: "Model"
+      zh_Hans: "模型"
+      pt_BR: "Modelo"
+      ja_JP: "モデル"
+    human_description:
+      en_US: "GPT Image Edit model to use"
+      zh_Hans: "要使用的GPT Image Edit模型"
+      pt_BR: "Modelo GPT Image Edit a ser usado"
+      ja_JP: "使用するGPT Image Editモデル"
+    llm_description: "GPT Image Edit model selection for image editing"
+    form: form
+    default: "gpt-image-1"
+    options:
+      - value: "gpt-image-1"
+        label:
+          en_US: "gpt-image-1"
+          zh_Hans: "gpt-image-1"
+          pt_BR: "gpt-image-1"
+          ja_JP: "gpt-image-1"
+      - value: "gpt-image-1-mini"
+        label:
+          en_US: "gpt-image-1-mini"
+          zh_Hans: "gpt-image-1-mini"
+          pt_BR: "gpt-image-1-mini"
+          ja_JP: "gpt-image-1-mini"
+  
+  - name: size
+    type: select
+    required: false
+    label:
+      en_US: "Image Size"
+      zh_Hans: "图像尺寸"
+      pt_BR: "Tamanho da Imagem"
+      ja_JP: "画像サイズ"
+    human_description:
+      en_US: "Output image size"
+      zh_Hans: "输出图像尺寸"
+      pt_BR: "Tamanho da imagem de saída"
+      ja_JP: "出力画像サイズ"
+    llm_description: "Output image size for GPT Image Edit"
+    form: form
+    default: "1024x1024"
+    options:
+      - value: "1024x1024"
+        label:
+          en_US: "1024x1024"
+          zh_Hans: "1024x1024"
+          pt_BR: "1024x1024"
+          ja_JP: "1024x1024"
+      - value: "1024x1792"
+        label:
+          en_US: "1024x1792"
+          zh_Hans: "1024x1792"
+          pt_BR: "1024x1792"
+          ja_JP: "1024x1792"
+      - value: "1792x1024"
+        label:
+          en_US: "1792x1024"
+          zh_Hans: "1792x1024"
+          pt_BR: "1792x1024"
+          ja_JP: "1792x1024"
+  
+  - name: n
+    type: number
+    required: false
+    label:
+      en_US: "Number of Images"
+      zh_Hans: "生成数量"
+      pt_BR: "Número de Imagens"
+      ja_JP: "画像数"
+    human_description:
+      en_US: "Number of edited images to generate (1-4)"
+      zh_Hans: "生成编辑图像的数量 (1-4)"
+      pt_BR: "Número de imagens editadas para gerar (1-4)"
+      ja_JP: "生成する編集画像の数 (1-4)"
+    llm_description: "Number of edited images to generate using GPT Image Edit. Range: 1-4"
+    form: form
+    default: 1
+    min: 1
+    max: 4
+
+extra:
+  python:
+    source: tools/gpt-image-edit.py

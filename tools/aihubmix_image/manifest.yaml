@@ -1,0 +1,40 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: aihubmix-image
+label:
+  en_US: AIHubMix Image
+  ja_JP: AIHubMix Image
+  zh_Hans: AIHubMix Image
+  pt_BR: AIHubMix Image
+description:
+  en_US: The image generation API provided by AIHubMix supports multiple models, including GPT-Image, Google Imagen 4 series, Flux Kontext, and others.
+  ja_JP: AIHubMix が提供する画像生成 API は、GPT-Image、Google Imagen 4シリーズ、Flux Kontextなど複数のモデルに対応しています。
+  zh_Hans: AIHubMix 提供的图像生成 API， 支持多种模型，包括 GPT-Image、Google Imagen 4 系列、Flux Kontext等。
+  pt_BR: iA API de geração de imagens fornecida pelo AIHubMix oferece suporte a vários modelos, incluindo GPT-Image, Google Imagen 4 séries, Flux Kontext e outros.
+icon: icon.svg
+icon_dark: icon-dark.svg
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+    storage:
+      enabled: true
+      size: 1048576
+plugins:
+  tools:
+    - provider/aihubmix-image.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: null
+created_at: "2025-11-17T14:28:15.552452+08:00"
+privacy: PRIVACY.md
+verified: false

@@ -1,0 +1,141 @@
+identity:
+  name: "ernie-irag"
+  author: "langgenius"
+  label:
+    en_US: "ERNIE iRAG"
+    zh_Hans: "ERNIE iRAG"
+    pt_BR: "ERNIE iRAG"
+    ja_JP: "ERNIE iRAG"
+description:
+  human:
+    en_US: "ERNIE iRAG Image Generation Model"
+    zh_Hans: "ERNIE iRAG 图像生成模型"
+    pt_BR: "Modelo de Geração ERNIE iRAG"
+    ja_JP: "ERNIE iRAG 画像生成モデル"
+  llm: "Generate image using ERNIE iRAG model with advanced Chinese language understanding and high-quality output"
+parameters:
+  - name: prompt
+    type: string
+    required: true
+    label:
+      en_US: "Prompt"
+      zh_Hans: "提示词"
+      pt_BR: "Prompt"
+      ja_JP: "プロンプト"
+    human_description:
+      en_US: "Text description of image you want to generate"
+      zh_Hans: "您想要生成的图像的文字描述"
+      pt_BR: "Descrição textual da imagem que você deseja gerar"
+      ja_JP: "生成したい画像のテキスト説明"
+    llm_description: "Text prompt for ERNIE iRAG image generation, describing the desired image content. Optimized for Chinese prompts"
+    form: llm
+  
+  - name: refer_image
+    type: string
+    required: false
+    label:
+      en_US: "Reference Image URL"
+      zh_Hans: "参考图像URL"
+      pt_BR: "URL da Imagem de Referência"
+      ja_JP: "参考画像URL"
+    human_description:
+      en_US: "URL of reference image for style guidance (optional)"
+      zh_Hans: "用于风格指导的参考图像URL（可选）"
+      pt_BR: "URL da imagem de referência para orientação de estilo (opcional)"
+      ja_JP: "スタイルガイダンスのための参考画像URL（オプション）"
+    llm_description: "URL of reference image for ERNIE iRAG to use as style guidance. Leave empty for pure text-to-image generation"
+    form: llm
+  
+  - name: resolution
+    type: select
+    required: false
+    label:
+      en_US: "Resolution"
+      zh_Hans: "分辨率"
+      pt_BR: "Resolução"
+      ja_JP: "解像度"
+    human_description:
+      en_US: "Image resolution"
+      zh_Hans: "图像分辨率"
+      pt_BR: "Resolução da imagem"
+      ja_JP: "画像解像度"
+    llm_description: "Output image resolution for ERNIE iRAG generation"
+    form: form
+    default: "1024x1024"
+    options:
+      - value: "1024x1024"
+        label:
+          en_US: "1024x1024"
+          zh_Hans: "1024x1024"
+          pt_BR: "1024x1024"
+          ja_JP: "1024x1024"
+      - value: "768x1024"
+        label:
+          en_US: "768x1024"
+          zh_Hans: "768x1024"
+          pt_BR: "768x1024"
+          ja_JP: "768x1024"
+      - value: "1024x2048"
+        label:
+          en_US: "1024x2048"
+          zh_Hans: "1024x2048"
+          pt_BR: "1024x2048"
+          ja_JP: "1024x2048"
+  
+  - name: num_images
+    type: number
+    required: false
+    label:
+      en_US: "Number of Images"
+      zh_Hans: "生成数量"
+      pt_BR: "Número de Imagens"
+      ja_JP: "画像数"
+    human_description:
+      en_US: "Number of images to generate (1-4)"
+      zh_Hans: "生成图像的数量 (1-4)"
+      pt_BR: "Número de imagens para gerar (1-4)"
+      ja_JP: "生成する画像の数 (1-4)"
+    llm_description: "Number of ERNIE iRAG images to generate. Range: 1-4"
+    form: form
+    default: 1
+    min: 1
+    max: 4
+  
+  - name: guidance
+    type: number
+    required: false
+    label:
+      en_US: "Guidance Scale"
+      zh_Hans: "引导强度"
+      pt_BR: "Escala de Orientação"
+      ja_JP: "ガイダンススケール"
+    human_description:
+      en_US: "Guidance scale for image generation (1.0-20.0)"
+      zh_Hans: "图像生成的引导强度 (1.0-20.0)"
+      pt_BR: "Escala de orientação para geração de imagem (1.0-20.0)"
+      ja_JP: "画像生成のガイダンススケール (1.0-20.0)"
+    llm_description: "Guidance scale for ERNIE iRAG generation. Higher values follow the prompt more closely. Range: 1.0-20.0"
+    form: form
+    default: 7.5
+    min: 1.0
+    max: 20.0
+  
+  - name: watermark
+    type: boolean
+    required: false
+    label:
+      en_US: "Add Watermark"
+      zh_Hans: "添加水印"
+      pt_BR: "Adicionar Marca d'água"
+      ja_JP: "透かしを追加"
+    human_description:
+      en_US: "Whether to add watermark to the generated image"
+      zh_Hans: "是否在生成的图像中添加水印"
+      pt_BR: "Se deve adicionar marca d'água à imagem gerada"
+      ja_JP: "生成された画像に透かしを追加するかどうか"
+    llm_description: "Whether to add watermark to the generated image using ERNIE iRAG"
+    form: form
+    default: false
+extra:
+  python:
+    source: tools/ernie-irag.py
