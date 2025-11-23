@@ -5,16 +5,16 @@ description:
   en_US: "Models provided by Databricks."
   zh_Hans: "Databricks 提供的模型。"
 icon_small:
-  en_US: "icon.svg"
+  en_US: "databricks-logo.svg"
 icon_large:
-  en_US: "icon-dark.svg"
+  en_US: "databricks-logo-l.png"
 background: "#E5E7EB"
 help:
   title:
     en_US: "Get your API Key from databricks"
     zh_Hans: "从 Databricks 获取 API Key"
   url:
-    en_US: "https://__put_your_url_here__/account/api-keys"
+    en_US: "https://docs.databricks.com/aws/en/dev-tools/auth/pat"
 supported_model_types:
   - llm
 configurate_methods:

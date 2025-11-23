@@ -1,10 +1,9 @@
-## databricks
+## Overview
 
-**Author:** jovi
-**Version:** 0.0.1
-**Type:** model
+This plugin provides access to models hosted on Databricks.
 
-### Description
+## Configure
 
+After installing the plugin, configure API key and API base.
 
-
+![](./_assets/databricks-configure.png)
