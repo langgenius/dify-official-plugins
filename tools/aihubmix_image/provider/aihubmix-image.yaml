@@ -77,6 +77,7 @@ credentials_schema:
 #         en_US: "Access Token"
 
 tools:
+  - tools/gemini-3-pro-image-preview.yaml
   - tools/gpt-image.yaml
   - tools/gpt-image-edit.yaml
   - tools/imagen.yaml
