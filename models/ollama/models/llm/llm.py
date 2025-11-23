@@ -392,34 +392,6 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
         tool_calls_by_index = {}  # use dict aggregator to avoid sparse large lists
         tool_phase = False  # switch to delta-only text after detecting tool_calls
         micro_chunk_size = _MICRO_CHUNK_SIZE  # mimic pure text small increments
-        is_reasoning_started = 0  # 0 not started, 1 started, 2 ended
-
-        def _wrap_thinking_by_reasoning_content(message_obj: dict, is_reasoning: int) -> tuple[str, int]:
-            """
-            If the reasoning response is from message_obj.get("thinking"), we wrap
-            it with HTML think tag.
-
-            :param message_obj: message_obj dictionary from LLM streaming response
-            :param is_reasoning: 0 not started, 1 started, 2 ended
-            :return: tuple of (processed_content, is_reasoning)
-            """
-
-            content = message_obj.get("content") or ""
-            thinking_content = message_obj.get("thinking")
-
-            if thinking_content:
-                if 0 == is_reasoning:
-                    content = "<think>\n" + thinking_content
-                    is_reasoning = 1
-                elif 1 == is_reasoning:
-                    content = thinking_content
-                else:
-                    logger.warning(f"Unexpected reasoning state is_reasoning: {is_reasoning} "
-                                   f"content: {content} thinking_content: {thinking_content}")
-            elif 1 == is_reasoning and content:
-                content = "\n</think>" + content
-                is_reasoning = 2
-            return content, is_reasoning
 
         def _yield_micro_chunks(s: str, size: int, min_size: int = 4) -> list[str]:
             """
@@ -487,9 +459,28 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                 if chunk_json.get("response") is not None:
                     text = chunk_json.get("response", "")
                 else:
-                    text, is_reasoning_started = _wrap_thinking_by_reasoning_content(
-                        message_obj, is_reasoning_started
-                     )
+                    thinking_text = message_obj.get("thinking", "")
+                    if thinking_text:
+                        # 如果是第一个thinking chunk，添加开始标签
+                        if not hasattr(self, '_thinking_started'):
+                            self._thinking_started = True
+                            text = f"<think>{thinking_text}"
+                        else:
+                            # 不是第一个thinking chunk，直接使用内容
+                            text = thinking_text
+                    else:
+                        # 没有thinking，检查content
+                        content_text = message_obj.get("content", "")
+                        if content_text:
+                            # 如果之前有thinking阶段，先结束thinking，再添加content
+                            if hasattr(self, '_thinking_started'):
+                                text = f"</think>{content_text}"
+                                delattr(self, '_thinking_started')
+                            else:
+                                text = content_text
+                        else:
+                            # thinking和content都没有
+                            text = ""
 
                 # If this chunk contains tool_calls, yield a dedicated tool_calls delta (like Tongyi)
                 if "tool_calls" in message_obj and message_obj.get("tool_calls"):
