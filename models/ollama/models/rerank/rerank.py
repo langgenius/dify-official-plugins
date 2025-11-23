@@ -57,10 +57,9 @@ class OllamaRerankModel(RerankModel):
             return RerankResult(model=model, docs=[])
 
         headers = {"Content-Type": "application/json"}
-        endpoint_url = credentials.get("base_url", "")
-        if endpoint_url and not endpoint_url.endswith("/"):
-            endpoint_url += "/"
-        endpoint_url = urljoin(endpoint_url, "api/rerank")
+        endpoint_url = credentials.get("base_url", "").rstrip("/")
+        if not endpoint_url.endswith("/rerank"):
+            endpoint_url = endpoint_url + "/api/rerank"
 
         payload = {
             "model": model,
