@@ -1,0 +1,61 @@
+identity:
+  name: calendar_acl_deleted_v4
+  author: langgenius
+  label:
+    en_US: Calendar Access Revoked
+    zh_Hans: 日历权限移除
+    ja_JP: カレンダー権限が削除されました
+
+description:
+  en_US: Fires when access to a calendar is revoked, providing the removed scope and recipients.
+  zh_Hans: 当日历访问被撤销时触发，提供被移除的范围和接收者信息。
+  ja_JP: カレンダーへのアクセスが取り消されたときに発火し、削除された対象と権限を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    acl_id:
+      type: string
+      description: ACL identifier for the revoked permission
+
+    role:
+      type: string
+      description: Role that was removed from the recipients
+
+    scope_type:
+      type: string
+      description: Scope type affected (user, chat, department)
+
+    scope_user_id:
+      type: string
+      description: User ID of the revoked scope when applicable
+
+    scope_open_id:
+      type: string
+      description: Open ID of the revoked scope when applicable
+
+    scope_union_id:
+      type: string
+      description: Union ID of the revoked scope when applicable
+
+    affected_users:
+      type: array
+      description: Users who lost access
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+            description: User ID
+          open_id:
+            type: string
+            description: Open ID
+          union_id:
+            type: string
+            description: Union ID
+
+extra:
+  python:
+    source: events/calendar/calendar_acl_deleted_v4.py

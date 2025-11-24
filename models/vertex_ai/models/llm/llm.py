@@ -2,7 +2,7 @@ import base64
 import io
 import json
 import time
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from typing import Optional, Union, cast
 import google.auth.transport.requests
 import requests
@@ -45,7 +45,9 @@ from google.genai import types
 from PIL import Image
 
 
-GLOBAL_ONLY_MODELS_DEFAULT = ["gemini-2.5-pro-preview-06-05","gemini-2.5-flash-lite-preview-06-17"]
+GLOBAL_ONLY_MODELS_DEFAULT = ["gemini-2.5-pro-preview-06-05","gemini-2.5-flash-lite-preview-06-17","gemini-2.5-flash-preview-09-2025","gemini-2.5-flash-lite-preview-09-2025","gemini-3-pro-preview"]
+# For more information about the models, please refer to https://ai.google.dev/gemini-api/docs/thinking
+DEFAULT_NO_THINKING_MODELS = ["gemini-2.5-flash-lite"]
 
 class VertexAiLargeLanguageModel(LargeLanguageModel):
     def _invoke(
@@ -118,7 +120,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             location = vertex_anthropic_location
         elif vertex_location:
             location = vertex_location
-        elif any(m in model for m in ["opus", "claude-3-5-sonnet", "claude-3-7-sonnet", "claude-sonnet-4"]):
+        elif any(m in model for m in ["opus", "claude-3-5-sonnet", "claude-3-7-sonnet", "claude-sonnet-4", "claude-haiku-4-5", "claude-sonnet-4-5"]):
             location = "us-east5"
         else:
             location = "us-central1"
@@ -349,7 +351,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         text = "".join((self._convert_one_message_to_text(message) for message in messages))
         return text.rstrip()
 
-    def _convert_tools_to_genai_tool(self, tools: list[PromptMessageTool]) -> list[types.Tool]:
+    def _convert_tools_to_genai_tool(self, tools: list[PromptMessageTool]) -> types.Tool:
         """
         Convert tool messages to genai tools
 
@@ -405,17 +407,8 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             }
             tool_declarations.append(function_declaration)
 
-        return [types.Tool(function_declarations=tool_declarations)] if tool_declarations else None
+        return types.Tool(function_declarations=tool_declarations) if tool_declarations else None
 
-    def _convert_grounding_to_genai_tool(self, dynamic_threshold: Optional[float]) -> list[types.Tool]:
-        """
-        Convert grounding messages to genai tools
-
-        :param dynamic_threshold: grounding messages
-        :return: genai tools
-        """
-        # GenAI SDK uses GoogleSearch tool for grounding
-        return [types.Tool(google_search=types.GoogleSearch())]
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
@@ -465,19 +458,70 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         config_kwargs = model_parameters.copy()
         config_kwargs["max_output_tokens"] = config_kwargs.pop("max_tokens_to_sample", None)
         
-        response_schema = None
-        if "json_schema" in config_kwargs:
-            response_schema = self._convert_schema_for_vertex(config_kwargs.pop("json_schema"))
-        elif "response_schema" in config_kwargs:
-            response_schema = self._convert_schema_for_vertex(config_kwargs.pop("response_schema"))
-            
-        if "response_schema" in config_kwargs:
-            config_kwargs.pop("response_schema")
-            
-        dynamic_threshold = config_kwargs.pop("grounding", None)
+        # parse config kwargs
+        tools_config = []
+        thinking_config = {}
+        for field in list(config_kwargs):
+            if field in ["include_thoughts", "thinking_budget", "thinking_level"]:
+                thinking_config[field] = config_kwargs.pop(field)
+            elif field == "grounding_search":
+                if config_kwargs.pop("grounding_search", False):
+                    tools_config.append(types.Tool(google_search=types.GoogleSearch()))
+            elif field in ["json_schema", "response_schema"]:
+                schema = self._convert_schema_for_vertex(config_kwargs.pop(field))
+                config_kwargs["response_schema"] = schema
+                config_kwargs["response_mime_type"] = "application/json"
+            elif field == "response_mime_type":
+                config_kwargs["response_mime_type"] = config_kwargs.pop("response_mime_type")
+            elif field == "media_resolution":
+                media_res = config_kwargs.pop("media_resolution")
+                if media_res == "Default":
+                    config_kwargs["media_resolution"] = types.MediaResolution.MEDIA_RESOLUTION_UNSPECIFIED
+                elif media_res == "Low":
+                    config_kwargs["media_resolution"] = types.MediaResolution.MEDIA_RESOLUTION_LOW
+                elif media_res == "Medium":
+                    config_kwargs["media_resolution"] = types.MediaResolution.MEDIA_RESOLUTION_MEDIUM
+                elif media_res == "High":
+                    config_kwargs["media_resolution"] = types.MediaResolution.MEDIA_RESOLUTION_HIGH
+        if tools:
+            tools_config.append(self._convert_tools_to_genai_tool(tools))
+
+        # Build config
+        if thinking_config:
+            # Handle thinking_level conversion for Gemini 3
+            thinking_level_str = thinking_config.get("thinking_level")
+            if isinstance(thinking_level_str, str):
+                if thinking_level_str == "Low":
+                    thinking_config["thinking_level"] = types.ThinkingLevel.LOW
+                elif thinking_level_str == "High":
+                    thinking_config["thinking_level"] = types.ThinkingLevel.HIGH
+                else:
+                    thinking_config.pop("thinking_level", None)
+
+            # thinking_budget and thinking_level are mutually exclusive
+            # Gemini 3 uses thinking_level, older models use thinking_budget
+            if "thinking_budget" in thinking_config and "thinking_level" in thinking_config:
+                if "gemini-3" in model:
+                    thinking_config.pop("thinking_budget", None)
+                else:
+                    thinking_config.pop("thinking_level", None)
+
+            if thinking_config.get("include_thoughts", False) and \
+                thinking_config.get("thinking_budget", 1) == 0:
+                raise InvokeBadRequestError("Include Thoughts is only enabled when thinking budget is greater than 0.")
+            # For models with thinking disabled by default, thinkingBudget must be set.
+            # please refer to https://ai.google.dev/gemini-api/docs/thinking
+            if thinking_config.get("include_thoughts", False) and \
+                (model in DEFAULT_NO_THINKING_MODELS and "thinking_budget" not in thinking_config):
+                raise InvokeBadRequestError(f"The {model} does not enable thinking by default. Include Thoughts is only enabled when thinking budget is set.")
+            config_kwargs["thinking_config"] = types.ThinkingConfig(**thinking_config)
+        if tools_config:
+            config_kwargs["tools"] = tools_config
         if stop:
             config_kwargs["stop_sequences"] = stop
-        
+        if system_instruction := self._get_system_instruction(prompt_messages=prompt_messages):
+            config_kwargs["system_instruction"] = system_instruction
+
         service_account_info = (
             json.loads(base64.b64decode(service_account_key))
             if (
@@ -519,13 +563,12 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             
         # Process messages and build content
         contents = []
-        system_instruction = None
         
         for msg in prompt_messages:
-            if isinstance(msg, SystemPromptMessage):
-                system_instruction = msg.content
-            else:
                 content = self._format_message_to_genai_content(msg)
+                # Skip None values (e.g., SystemPromptMessage returns None)
+                if content is None:
+                    continue
                 # Merge consecutive messages from the same role
                 if contents and contents[-1].get("role") == content.get("role"):
                     # Merge parts from the same role
@@ -533,27 +576,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 else:
                     contents.append(content)
 
-        # Build config
-        genai_tools = None
-        if dynamic_threshold is not None:
-            genai_tools = self._convert_grounding_to_genai_tool(dynamic_threshold=dynamic_threshold)
-        elif tools:
-            genai_tools = self._convert_tools_to_genai_tool(tools)
-        
-        mime_type = config_kwargs.pop("response_mime_type", None)
-        generation_config_params = config_kwargs.copy()
-
-        if response_schema:
-            generation_config_params["response_schema"] = response_schema
-            generation_config_params["response_mime_type"] = "application/json"
-        elif mime_type:
-            generation_config_params["response_mime_type"] = mime_type
-
-        config = types.GenerateContentConfig(
-            **generation_config_params,
-            system_instruction=system_instruction,
-            tools=genai_tools
-        )
+        config = types.GenerateContentConfig(**config_kwargs)
 
         # Generate content
         if stream:
@@ -562,7 +585,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 contents=contents,
                 config=config
             )
-            return self._handle_generate_stream_response(model, credentials, response, prompt_messages, system_instruction)
+            return self._handle_generate_stream_response(model, credentials, response, prompt_messages, system_instruction, client)
         else:
             response = client.models.generate_content(
                 model=model,
@@ -584,7 +607,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :return: llm response
         """
         assistant_prompt_message = AssistantPromptMessage(content="", tool_calls=[])
-        
+        is_thinking = False
         # Access the first candidate and its content parts
         if response.candidates and len(response.candidates) > 0:
             candidate = response.candidates[0]
@@ -603,6 +626,12 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                         assistant_prompt_message.tool_calls.append(tool_call)
                     # Check for text
                     elif hasattr(part, 'text') and part.text:
+                        if part.thought is True and not is_thinking:
+                            assistant_prompt_message.content += "<think>\n\n"
+                            is_thinking = True
+                        elif part.thought is None and is_thinking:
+                            assistant_prompt_message.content += "\n\n</think>"
+                            is_thinking = False
                         assistant_prompt_message.content += part.text
 
         prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
@@ -612,7 +641,8 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         return result
 
     def _handle_generate_stream_response(
-        self, model: str, credentials: dict, response: Generator, prompt_messages: list[PromptMessage], system_instruction: str
+        self, model: str, credentials: dict, response: Generator, prompt_messages: list[PromptMessage], system_instruction: str,
+        genai_client: genai.Client
     ) -> Generator:
         """
         Handle llm stream response
@@ -622,11 +652,15 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :param response: response stream generator
         :param prompt_messages: prompt messages
         :param system_instruction: system instruction
+        :param genai_client: genai client to keep alive during streaming
         :return: llm response chunk generator result
         """
+        # Keep a reference to the client to prevent it from being garbage collected
+        # while the generator is still active
+        _client_ref = genai_client
         index = -1
         is_first_gemini2_response = True
-        
+        is_thinking = False
         for chunk in response:
             # GenAI SDK returns GenerateContentResponse objects
             if not hasattr(chunk, 'candidates') or not chunk.candidates:
@@ -654,6 +688,12 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                     )
                 # Check for text
                 elif hasattr(part, 'text') and part.text:
+                    if part.thought is True and not is_thinking:
+                        assistant_prompt_message.content += "<think>\n\n"
+                        is_thinking = True
+                    elif part.thought is None and is_thinking:
+                        assistant_prompt_message.content += "\n\n</think>"
+                        is_thinking = False
                     assistant_prompt_message.content += part.text
 
                 index += 1
@@ -802,6 +842,8 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                     }
                 ]
             }
+        elif isinstance(message, SystemPromptMessage):
+            return None    
         else:
             raise ValueError(f"Got unknown type {message}")
 
@@ -986,3 +1028,31 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 return schema
             else:
                  raise ValueError(f"Invalid schema component type: {type(schema).__name__}")
+
+    def _get_system_instruction(self, *, prompt_messages: Sequence[PromptMessage]) -> str:
+        # `prompt_messages` should be a sequence containing at least one
+        # `SystemPromptMessage`.
+        # If the sequence is empty or the first element is not a
+        # `SystemPromptMessage`,
+        # the method returns an empty string, effectively indicating the
+        # absence of a system instruction.
+        if len(prompt_messages) == 0:
+            return ""
+        if not isinstance(prompt_messages[0], SystemPromptMessage):
+            return ""
+        system_instruction = ""
+        prompt = prompt_messages[0]
+        if isinstance(prompt.content, str):
+            system_instruction = prompt.content
+        elif isinstance(prompt.content, list):
+            system_instruction = ""
+            for content in prompt.content:
+                if isinstance(content, TextPromptMessageContent):
+                    system_instruction += content.data
+                else:
+                    raise InvokeBadRequestError(
+                        "system prompt content does not support image, document, video, audio"
+                    )
+        else:
+            raise InvokeBadRequestError("system prompt content must be a string or a list of strings")
+        return system_instruction

@@ -47,6 +47,7 @@ IMAGE_GENERATION_MODELS = {
     "gemini-2.0-flash-preview-image-generation",
     "gemini-2.5-flash-image-preview",
     "gemini-2.5-flash-image",
+    "gemini-3-pro-image-preview",
 }
 
 
@@ -251,13 +252,14 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         model_parameters: Mapping[str, Any],
         stop: List[str] | None = None,
     ) -> None:
-        if schema := model_parameters.get("json_schema"):
-            try:
-                schema = json.loads(schema)
-            except (TypeError, ValueError) as exc:
-                raise InvokeError("Invalid JSON Schema") from exc
-            config.response_schema = schema
+        if "json_schema" in model_parameters:
             config.response_mime_type = "application/json"
+            if schema := model_parameters.get("json_schema"):
+                try:
+                    schema = json.loads(schema)
+                except (TypeError, ValueError) as exc:
+                    raise InvokeError("Invalid JSON Schema") from exc
+                config.response_schema = schema
 
         if stop:
             config.stop_sequences = stop
@@ -266,6 +268,42 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         config.top_k = model_parameters.get("top_k", None)
         config.temperature = model_parameters.get("temperature", None)
         config.max_output_tokens = model_parameters.get("max_output_tokens", None)
+
+        if media_resolution := model_parameters.get("media_resolution", ""):
+            if media_resolution in ["Default"]:
+                config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_UNSPECIFIED
+            elif media_resolution in ["Low"]:
+                config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_LOW
+            elif media_resolution in ["Medium"]:
+                config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_MEDIUM
+            elif media_resolution in ["High"]:
+                config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_HIGH
+
+    @staticmethod
+    def _set_image_config(
+        *, config: types.GenerateContentConfig, model_parameters: Mapping[str, Any], model: str
+    ):
+        if model not in IMAGE_GENERATION_MODELS:
+            return
+
+        aspect_ratio = model_parameters.get("aspect_ratio")
+        if (
+            not aspect_ratio
+            or not isinstance(aspect_ratio, str)
+            or aspect_ratio
+            not in ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"]
+        ):
+            aspect_ratio = None
+
+        resolution = model_parameters.get("resolution")
+        if (
+            not resolution
+            or not isinstance(resolution, str)
+            or resolution not in ["1K", "2K", "4K"]
+        ):
+            resolution = None
+
+        config.image_config = types.ImageConfig(image_size=resolution, aspect_ratio=aspect_ratio)
 
     @staticmethod
     def _set_thinking_config(
@@ -291,6 +329,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         include_thoughts = model_parameters.get("include_thoughts", None)
         thinking_budget = model_parameters.get("thinking_budget", None)
         thinking_mode = model_parameters.get("thinking_mode", None)
+        thinking_level = model_parameters.get("thinking_level", None)
 
         # Must be explicitly handled here, where the three states True, False, and None each have specific meanings.
         if thinking_mode is None:
@@ -304,8 +343,18 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             ):
                 thinking_budget = -1
 
+        if isinstance(thinking_level, str):
+            if thinking_level in ["Low"]:
+                thinking_level = types.ThinkingLevel.LOW
+            elif thinking_level in ["High"]:
+                thinking_level = types.ThinkingLevel.HIGH
+        if not isinstance(thinking_level, types.ThinkingLevel):
+            thinking_level = None
+
         config.thinking_config = types.ThinkingConfig(
-            include_thoughts=include_thoughts, thinking_budget=thinking_budget
+            include_thoughts=include_thoughts,
+            thinking_budget=thinking_budget,
+            thinking_level=thinking_level,
         )
 
     @staticmethod
@@ -634,7 +683,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # Keep a reference to the client to prevent it from being garbage collected
         # while the generator is still active
         _client_ref = genai_client
-        
+
         index = -1
         self.is_thinking = False
 
@@ -862,6 +911,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             config=config,
             file_server_url_prefix=file_server_url_prefix,
         )
+
+        # == ImageConfig == #
+
+        self._set_image_config(config=config, model_parameters=model_parameters, model=model)
 
         # == ThinkingConfig == #
 

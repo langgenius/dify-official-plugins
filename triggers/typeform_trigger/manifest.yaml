@@ -1,0 +1,37 @@
+author: langgenius
+created_at: "2025-10-12T21:00:00.000000000Z"
+description:
+  en_US: Typeform webhook triggers for form response submissions.
+  ja_JP: Typeform のフォーム送信を受け取る Webhook トリガーです。
+  zh_Hans: Typeform 表单提交的 Webhook 触发器。
+icon: image.png
+label:
+  en_US: Typeform
+  ja_JP: Typeform
+  zh_Hans: Typeform
+meta:
+  arch:
+  - amd64
+  - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: "3.12"
+  version: 0.0.1
+  minimum_dify_version: 1.10.0
+name: typeform_trigger
+plugins:
+  triggers:
+  - provider/typeform_simple.yaml
+resource:
+  memory: 1048576
+  permission:
+    model:
+      enabled: true
+      llm: true
+    tool:
+      enabled: true
+tags:
+- productivity
+type: plugin
+version: 0.1.1

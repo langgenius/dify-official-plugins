@@ -133,6 +133,16 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         if isinstance(verbosity, str) and verbosity in ["low", "medium", "high"]:
             model_parameters["verbosity"] = verbosity
 
+    @staticmethod
+    def _set_json_schema_params(model_parameters: dict):
+        response_format = model_parameters.get("response_format")
+        if response_format and response_format == "json_schema":
+            json_schema_str = model_parameters.get("json_schema")
+            if json_schema_str:
+                json_schema = json.loads(json_schema_str)
+                schema = json_schema.get('schema') if 'schema' in json_schema else json_schema
+                model_parameters['json_schema'] = json.dumps({'name': 'output', 'schema': schema})
+
     def _invoke(
         self,
         model: str,
@@ -156,6 +166,7 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         else:
             self._set_reasoning_params(model_parameters)
             self._set_verbosity_params(model_parameters)
+            self._set_json_schema_params(model_parameters)
         return self._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:

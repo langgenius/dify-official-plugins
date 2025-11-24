@@ -1,0 +1,69 @@
+identity:
+  name: meeting_ended_v1
+  author: langgenius
+  label:
+    en_US: Meeting Ended
+    zh_Hans: 会议结束
+    ja_JP: 会議終了
+
+description:
+  en_US: This event activates when a video conference meeting ends.
+  zh_Hans: 当视频会议结束时激活。
+  ja_JP: ビデオ会議が終了したときにアクティブになります。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    meeting_id:
+      type: string
+      description: ID of the meeting
+    
+    meeting_no:
+      type: string
+      description: Meeting number
+    
+    topic:
+      type: string
+      description: Meeting topic
+    
+    meeting_url:
+      type: string
+      description: Meeting URL
+    
+    start_time:
+      type: string
+      description: Meeting start time
+    
+    end_time:
+      type: string
+      description: Meeting end time
+    
+    participant_count:
+      type: number
+      description: Final number of participants
+    
+    participant_count_accumulated:
+      type: number
+      description: Total accumulated participants
+    
+    host_user_id:
+      type: string
+      description: Host user ID
+    
+    host_user_type:
+      type: string
+      description: Host user type
+    
+    operator_id:
+      type: string
+      description: Operator ID
+    
+    operator_user_type:
+      type: string
+      description: Operator user type
+
+extra:
+  python:
+    source: events/vc/meeting_ended_v1.py

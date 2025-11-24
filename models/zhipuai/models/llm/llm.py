@@ -1,6 +1,7 @@
 import json
 from collections.abc import Generator
 from typing import Optional, Union
+
 from dify_plugin.entities.model.llm import (
     LLMResult,
     LLMResultChunk,
@@ -196,16 +197,23 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
             else:
                 new_prompt_messages.append(copy_prompt_message)
         if "web_search" in model_parameters:
-            enable_web_search = model_parameters.get("web_search")
-            model_parameters.pop("web_search")
-            web_search_params = {
-                "type": "web_search",
-                "web_search": {"enable": enable_web_search},
-            }
-            if "tools" in model_parameters:
-                model_parameters["tools"].append(web_search_params)
-            else:
-                model_parameters["tools"] = [web_search_params]
+            enable_web_search = model_parameters.pop("web_search")
+            if enable_web_search:
+                web_search_params = {
+                    "type": "web_search",
+                    "web_search": {
+                        "enable": "True",
+                        "search_engine": "search_pro",
+                        "search_result": "True",
+                        "count": "5",
+                        "search_recency_filter": "noLimit",
+                        "content_size": "high"
+                    }
+                }
+                if "tools" in model_parameters:
+                    model_parameters["tools"].append(web_search_params)
+                else:
+                    model_parameters["tools"] = [web_search_params]
 
         if "response_format" in model_parameters:
             response_format = model_parameters.get("response_format")
@@ -235,6 +243,8 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                 model_parameters["thinking"] = {"type": "enabled"}
             else:
                 model_parameters["thinking"] = {"type": "disabled"}
+        if "stream_options" in model_parameters:
+            del model_parameters["stream_options"]
         if model in viso_models:
             params = self._construct_glm_4v_parameter(
                 model, new_prompt_messages, model_parameters
@@ -374,11 +384,7 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
                             )
                         )
             if choice.message.reasoning_content:
-                text += (
-                    "<think>\n"
-                    + choice.message.reasoning_content
-                    + "\n</think>"
-                )
+                text += "<think>\n" + choice.message.reasoning_content + "\n</think>"
             text += choice.message.content or ""
         prompt_usage = response.usage.prompt_tokens
         completion_usage = response.usage.completion_tokens
@@ -420,15 +426,14 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
             if (
                 delta.finish_reason is None
                 and (delta.delta.content is None or delta.delta.content == "")
-                and (
-                    delta.delta.reasoning_content is None
-                    or delta.delta.reasoning_content == ""
-                )
+                and (delta.delta.reasoning_content is None or delta.delta.reasoning_content == "")
+                and delta.delta.tool_calls is None
             ):
                 continue
 
             # Remove BOX_TOKEN from the channel of the `glm-4.5v`
-            # In final_answer, the model will not directly output the complete `TOKEN_BEGIN_OF_BOX` or `TOKEN_END_OF_BOX` within a single chunk.
+            # In final_answer, the model will not directly output
+            # the complete `TOKEN_BEGIN_OF_BOX` or `TOKEN_END_OF_BOX` within a single chunk.
             # Therefore, there's no need to worry about contaminating the integrity of the response.
             if delta.delta.content == TOKEN_BEGIN_OF_BOX or delta.delta.content == TOKEN_END_OF_BOX:
                 continue

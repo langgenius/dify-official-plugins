@@ -1,0 +1,224 @@
+identity:
+  name: pull_request_review_comment_created
+  author: langgenius
+  label:
+    en_US: Pull Request Review Comment Created
+    zh_Hans: Pull Request 审查评论已创建
+    ja_JP: Pull Request レビューコメント作成
+
+description:
+  en_US: Triggers when a review comment is created on a pull request diff
+  zh_Hans: 当在拉取请求差异上创建审查评论时触发
+  ja_JP: プルリクエストの差分にレビューコメントが作成されたときにトリガーします
+
+parameters:
+- name: body_contains
+  label:
+    en_US: Comment Body Contains
+    zh_Hans: 评论内容包含
+    ja_JP: コメント本文に含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if the comment body contains these keywords (comma-separated)."
+    zh_Hans: "仅当评论内容包含这些关键词时触发（逗号分隔）。"
+    ja_JP: "コメント本文にこれらのキーワードが含まれる場合のみトリガー（カンマ区切り）。"
+
+- name: commenter
+  label:
+    en_US: Commenter
+    zh_Hans: 评论者
+    ja_JP: コメント投稿者
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if created by these users (comma-separated GitHub usernames)."
+    zh_Hans: "仅当由这些用户创建时触发（逗号分隔 GitHub 用户名）。"
+    ja_JP: "これらのユーザーによって作成された場合のみトリガー（GitHub ユーザー名、カンマ区切り）。"
+
+- name: path
+  label:
+    en_US: File Path
+    zh_Hans: 文件路径
+    ja_JP: ファイルパス
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for comments on these file paths (comma-separated)."
+    zh_Hans: "仅当评论位于这些文件路径时触发（逗号分隔）。"
+    ja_JP: "これらのファイルパスへのコメントの場合のみトリガー（カンマ区切り）。"
+
+- name: position
+  label:
+    en_US: Diff Position
+    zh_Hans: 差异位置
+    ja_JP: 差分位置
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for these diff positions or lines (comma-separated integers)."
+    zh_Hans: "仅当差异位置或行号匹配时触发（逗号分隔整数）。"
+    ja_JP: "これらの差分位置または行番号の場合のみトリガー（整数、カンマ区切り）。"
+
+- name: author
+  label:
+    en_US: Pull Request Author
+    zh_Hans: Pull Request 作者
+    ja_JP: Pull Request 作成者
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for pull requests created by these users (comma-separated GitHub usernames)."
+    zh_Hans: "仅当拉取请求由这些用户创建时触发（逗号分隔 GitHub 用户名）。"
+    ja_JP: "これらのユーザーが作成したプルリクエストの場合のみトリガー（GitHub ユーザー名、カンマ区切り）。"
+
+- name: pull_request_numbers
+  label:
+    en_US: Pull Request Numbers
+    zh_Hans: Pull Request 编号
+    ja_JP: Pull Request 番号
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for these pull request numbers (comma-separated)."
+    zh_Hans: "仅当拉取请求编号匹配时触发（逗号分隔）。"
+    ja_JP: "これらのプルリクエスト番号の場合のみトリガー（カンマ区切り）。"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      description: The action that triggered this event
+    comment:
+      type: object
+      description: The review comment that was created
+      properties:
+        id:
+          type: integer
+        body:
+          type: string
+        user:
+          type: object
+          properties:
+            login:
+              type: string
+            id:
+              type: integer
+        path:
+          type: string
+        position:
+          type: integer
+        original_position:
+          type: integer
+        diff_hunk:
+          type: string
+        html_url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - body
+      - user
+      - path
+      - html_url
+      - created_at
+
+    pull_request:
+      type: object
+      description: The pull request the comment belongs to
+      properties:
+        id:
+          type: integer
+        number:
+          type: integer
+        title:
+          type: string
+        state:
+          type: string
+        user:
+          type: object
+          properties:
+            login:
+              type: string
+            id:
+              type: integer
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - number
+      - title
+      - state
+      - user
+      - html_url
+
+    repository:
+      type: object
+      description: Repository information
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+
+    sender:
+      type: object
+      description: The user who triggered the event
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+    organization:
+      type: object
+      description: Organization context if applicable
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+
+    installation:
+      type: object
+      description: Installation that triggered the event if coming from a GitHub App
+      properties:
+        id:
+          type: integer
+
+    review:
+      type: object
+      description: The review thread this comment is part of, if provided
+
+    changes:
+      type: object
+      description: Change details provided by GitHub (present on edited events)
+
+  required:
+  - action
+  - comment
+  - pull_request
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/pull_request_review_comment/pull_request_review_comment_created.py
