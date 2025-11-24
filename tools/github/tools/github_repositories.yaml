@@ -1,10 +1,12 @@
 description:
   human:
     en_US: Search the GitHub repository to retrieve the open source projects you need
-    pt_BR: Pesquise o repositório do GitHub para recuperar os projetos de código aberto
+    pt_BR:
+      Pesquise o repositório do GitHub para recuperar os projetos de código aberto
       necessários.
     zh_Hans: 搜索GitHub仓库，检索你需要的开源项目。
-  llm: A tool when you wants to search for popular warehouses or open source projects
+  llm:
+    A tool when you wants to search for popular warehouses or open source projects
     for any keyword. format query condition like "keywords+language:js", language
     can be other dev languages.
 extra:
@@ -19,36 +21,56 @@ identity:
     zh_Hans: 仓库搜索
   name: github_repositories
 parameters:
-- form: llm
-  human_description:
-    en_US: You want to find the project development language, keywords, For example.
-      Find 10 Python developed PDF document parsing projects.
-    pt_BR: Você deseja encontrar a linguagem de desenvolvimento do projeto, palavras-chave,
-      Por exemplo. Encontre 10 projetos de análise de documentos PDF desenvolvidos
-      em Python.
-    zh_Hans: 你想要找的项目开发语言、关键字，如：找10个Python开发的PDF文档解析项目。
-  label:
-    en_US: query
-    pt_BR: consulta
-    zh_Hans: 关键字
-  llm_description: The query of you want to search, format query condition like "keywords+language:js",
-    language can be other dev languages.
-  name: query
-  required: true
-  type: string
-- default: 5
-  form: llm
-  human_description:
-    en_US: Number of records returned by sorting based on stars. 5 is returned by
-      default.
-    pt_BR: Número de registros retornados por classificação com base em estrelas.
-      5 é retornado por padrão.
-    zh_Hans: 基于stars排序返回的记录数, 默认返回5条。
-  label:
-    en_US: Top N
-    pt_BR: Topo N
-    zh_Hans: Top N
-  llm_description: Extract the first N records from the returned result.
-  name: top_n
-  required: true
-  type: number
+  - form: llm
+    human_description:
+      en_US: The GitHub username to get repositories for. The name is not case sensitive.
+      pt_BR: O nome de usuário do GitHub para obter repositórios. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 要获取仓库的GitHub用户名。名称不区分大小写。
+    label:
+      en_US: Username
+      pt_BR: Nome de usuário
+      zh_Hans: 用户名
+    llm_description: The GitHub username to get repositories for. The name is not case sensitive.
+    name: username
+    required: true
+    type: dynamic-select
+
+  - form: llm
+    human_description:
+      en_US:
+        You want to find the project development language, keywords, For example.
+        Find 10 Python developed PDF document parsing projects.
+      pt_BR:
+        Você deseja encontrar a linguagem de desenvolvimento do projeto, palavras-chave,
+        Por exemplo. Encontre 10 projetos de análise de documentos PDF desenvolvidos
+        em Python.
+      zh_Hans: 你想要找的项目开发语言、关键字，如：找10个Python开发的PDF文档解析项目。
+    label:
+      en_US: query
+      pt_BR: consulta
+      zh_Hans: 关键字
+    llm_description:
+      The query of you want to search, format query condition like "keywords+language:js",
+      language can be other dev languages.
+    name: query
+    required: true
+    type: string
+
+  - default: 5
+    form: llm
+    human_description:
+      en_US:
+        Number of records returned by sorting based on stars. 5 is returned by
+        default.
+      pt_BR:
+        Número de registros retornados por classificação com base em estrelas.
+        5 é retornado por padrão.
+      zh_Hans: 基于stars排序返回的记录数, 默认返回5条。
+    label:
+      en_US: Top N
+      pt_BR: Topo N
+      zh_Hans: Top N
+    llm_description: Extract the first N records from the returned result.
+    name: top_n
+    required: true
+    type: number

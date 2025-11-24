@@ -24,8 +24,9 @@ class GithubProvider(ToolProvider):
         params = {
             "client_id": system_credentials["client_id"],
             "redirect_uri": redirect_uri,
-            "scope": system_credentials.get("scope", "read:user"),
+            "scope": system_credentials.get("scope", "read:user repo"),
             "state": state,
+            # Optionally: allow_signup, login, etc.
         }
         return f"{self._AUTH_URL}?{urllib.parse.urlencode(params)}"
 
@@ -38,6 +39,7 @@ class GithubProvider(ToolProvider):
         code = request.args.get("code")
         if not code:
             raise ToolProviderOAuthError("No code provided")
+        # Optionally: validate state here
 
         data = {
             "client_id": system_credentials["client_id"],
@@ -57,6 +59,10 @@ class GithubProvider(ToolProvider):
     def _oauth_refresh_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
     ) -> ToolOAuthCredentials:
+        """
+        Refresh the credentials
+        """
+        # TODO: Implement the refresh credentials logic
         return ToolOAuthCredentials(credentials=credentials, expires_at=-1)
 
     def _validate_credentials(self, credentials: dict) -> None:

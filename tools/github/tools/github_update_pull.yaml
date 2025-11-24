@@ -1,0 +1,122 @@
+description:
+  human:
+    en_US: Update an existing pull request (title, body, state, base branch)
+    pt_BR: Atualizar um pull request existente (título, corpo, estado, branch base)
+    zh_Hans: 更新现有的Pull Request（标题、正文、状态、目标分支）
+  llm: A tool to update an existing pull request's title, body, state (open/closed), or base branch
+extra:
+  python:
+    source: tools/github_update_pull.py
+identity:
+  author: langgenius
+  icon: icon.svg
+  label:
+    en_US: Update Pull Request
+    pt_BR: Atualizar Pull Request
+    zh_Hans: 更新PR
+  name: github_update_pull
+parameters:
+  - form: llm
+    human_description:
+      en_US: The account owner of the repository. The name is not case sensitive.
+      pt_BR: O proprietário da conta do repositório. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库的账户所有者。名称不区分大小写。
+    label:
+      en_US: Owner
+      pt_BR: Proprietário
+      zh_Hans: 所有者
+    llm_description: The account owner of the repository. The name is not case sensitive.
+    name: owner
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: The name of the repository without the .git extension. The name is not case sensitive.
+      pt_BR: O nome do repositório sem a extensão .git. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库名称不带.git扩展名。名称不区分大小写。
+    label:
+      en_US: Repository
+      pt_BR: Repositório
+      zh_Hans: 仓库
+    llm_description: The name of the repository without the .git extension. The name is not case sensitive.
+    name: repo
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: The number that identifies the pull request.
+      pt_BR: O número que identifica o pull request.
+      zh_Hans: Pull Request的编号。
+    label:
+      en_US: Pull Request Number
+      pt_BR: Número do Pull Request
+      zh_Hans: PR编号
+    llm_description: The number that identifies the pull request.
+    name: pull_number
+    required: true
+    type: number
+  - form: llm
+    human_description:
+      en_US: The new title of the pull request.
+      pt_BR: O novo título do pull request.
+      zh_Hans: PR的新标题。
+    label:
+      en_US: Title
+      pt_BR: Título
+      zh_Hans: 标题
+    llm_description: The new title of the pull request.
+    name: title
+    required: false
+    type: string
+  - form: llm
+    human_description:
+      en_US: The new body/description of the pull request.
+      pt_BR: O novo corpo/descrição do pull request.
+      zh_Hans: PR的新正文/描述。
+    label:
+      en_US: Body
+      pt_BR: Corpo
+      zh_Hans: 正文
+    llm_description: The new body/description of the pull request. Supports markdown.
+    name: body
+    required: false
+    type: string
+  - form: llm
+    human_description:
+      en_US: State of the pull request. Can be open or closed.
+      pt_BR: Estado do pull request. Pode ser open ou closed.
+      zh_Hans: PR的状态。可以是 open 或 closed。
+    label:
+      en_US: State
+      pt_BR: Estado
+      zh_Hans: 状态
+    llm_description: State of the pull request. Either 'open' or 'closed'. Use 'closed' to close a PR without merging.
+    name: state
+    required: false
+    type: string
+  - form: llm
+    human_description:
+      en_US: The name of the branch you want the changes pulled into.
+      pt_BR: O nome do branch para o qual você deseja que as alterações sejam mescladas.
+      zh_Hans: 要合并到的目标分支名称。
+    label:
+      en_US: Base Branch
+      pt_BR: Branch Base
+      zh_Hans: 目标分支
+    llm_description: The name of the branch you want the changes pulled into. This can only be changed if the PR has not been merged.
+    name: base
+    required: false
+    type: string
+  - form: llm
+    human_description:
+      en_US: Indicates whether maintainers can modify the pull request.
+      pt_BR: Indica se os mantenedores podem modificar o pull request.
+      zh_Hans: 是否允许维护者修改此PR。
+    label:
+      en_US: Maintainer Can Modify
+      pt_BR: Mantenedor Pode Modificar
+      zh_Hans: 允许维护者修改
+    llm_description: Indicates whether maintainers can modify the pull request.
+    name: maintainer_can_modify
+    required: false
+    type: boolean
