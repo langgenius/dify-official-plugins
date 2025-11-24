@@ -518,10 +518,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             if message.role == PromptMessageRole.ASSISTANT:
                 _content = re.sub(r"^<think>.*?</think>\s*", "", _content, count=1, flags=re.DOTALL)
             if _content:
-                _unsafe_text_part = types.Part.from_text(text=_content)
+                _unverified_part = types.Part.from_text(text=_content)
                 if is_assistant_tree:
-                    _unsafe_text_part.thought_signature = DEFAULT_THOUGHT_SIGNATURE
-                text_parts.append(_unsafe_text_part)
+                    _unverified_part.thought_signature = DEFAULT_THOUGHT_SIGNATURE
+                text_parts.append(_unverified_part)
             return text_parts
 
         # Helper function to build parts from content
@@ -552,9 +552,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                         uri, mime_type = self._upload_file_content_to_google(
                             obj, genai_client, file_server_url_prefix
                         )
-                        _unsafe_text_part = types.Part.from_uri(file_uri=uri, mime_type=mime_type)
-                        _unsafe_text_part.thought_signature = DEFAULT_THOUGHT_SIGNATURE
-                        parts_.append(_unsafe_text_part)
+                        _unverified_part = types.Part.from_uri(file_uri=uri, mime_type=mime_type)
+                        if is_assistant_tree:
+                            _unverified_part.thought_signature = DEFAULT_THOUGHT_SIGNATURE
+                        parts_.append(_unverified_part)
                     else:
                         # Log skipped files for debugging
                         logging.debug(
@@ -958,9 +959,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         self._set_tool_calling(config=config, model_parameters=model_parameters, tools=tools)
 
         # == InvokeModel == #
-        print("-----------------------------------------------")
-        print(contents)
-        print("-----------------------------------------------")
 
         if stream:
             response = genai_client.models.generate_content_stream(

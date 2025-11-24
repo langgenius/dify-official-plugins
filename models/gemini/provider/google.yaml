@@ -21,7 +21,7 @@ icon_large:
 icon_small:
   en_US: icon_s_en.svg
 label:
-  en_US: Gemini dev
+  en_US: Gemini
 models:
   llm:
     position: models/llm/_position.yaml
