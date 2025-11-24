@@ -1,0 +1,176 @@
+identity:
+  name: text_recognition
+  author: langgenius
+  label:
+    en_US: Text Recognition
+    zh_Hans: 文字识别
+description:
+  human:
+    en_US: PaddleOCR text recognition tool that provides text recognition capabilities for multiple scenarios and various text types
+    zh_Hans: PaddleOCR 文字识别工具，提供多场景、多文字类型的文字识别能力
+  llm: PaddleOCR text recognition tool that provides text recognition capabilities for multiple scenarios and various text types
+parameters:
+  - name: file
+    type: string
+    required: true
+    label:
+      en_US: File
+      zh_Hans: 文件
+    human_description:
+      en_US: The URL of an image or PDF file, or the Base64-encoded result of the content of such a file.
+      zh_Hans: 图像文件或 PDF 文件的 URL，或上述类型文件内容的 Base64 编码结果。
+    llm_description: The URL of an image or PDF file, or the Base64-encoded result of the content of such a file.
+    form: llm
+  - name: fileType
+    type: number
+    required: false
+    label:
+      en_US: File Type
+      zh_Hans: 文件类型
+    human_description:
+      en_US: File type. 0 indicates a PDF file, and 1 indicates an image file. If not specified, the file type will be inferred from the URL.
+      zh_Hans: 文件类型。0 表示 PDF 文件，1 表示图像文件。若不设置，则将根据 URL 推断文件类型。
+    llm_description: File type. 0 indicates a PDF file, and 1 indicates an image file. If not specified, the file type will be inferred from the URL.
+    form: llm
+  - name: useDocOrientationClassify
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Whether to Enable Document Orientation Classification
+      zh_Hans: 是否启用文档方向分类
+    human_description:
+      en_US: Whether to enable the document orientation classification function. Enabling this feature allows the input image to be automatically rotated to the correct orientation.
+      zh_Hans: 是否启用文档方向分类功能。启用该功能可以将输入图像自动转正。
+    llm_description: Whether to enable the document orientation classification function. Enabling this feature allows the input image to be automatically rotated to the correct orientation. Keep this feature disabled unless the user ask for it.
+    form: llm
+  - name: useDocUnwarping
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Whether to Enable Text Image Unwarping
+      zh_Hans: 是否启用文本图像矫正
+    human_description:
+      en_US: Whether to enable the text image unwarping function. Enabling this feature allows automatic correction of distorted text images.
+      zh_Hans: 是否启用文本图像矫正功能。启用该功能可以对发生畸变的文本图像进行自动矫正。
+    llm_description: Whether to enable the text image unwarping function. Enabling this feature allows automatic correction of distorted text images. Keep this feature disabled unless the user ask for it.
+    form: llm
+  - name: useTextlineOrientation
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: Whether to Enable Text Line Orientation Classification
+      zh_Hans: 是否启用文本行方向分类
+    human_description:
+      en_US: Whether to enable the text line orientation classification function. Enabling this feature allows automatic orientation correction for each recognized text line.
+      zh_Hans: 是否启用文本行方向分类功能。启用该功能可以自动对识别到的每个文本行进行方向转正。
+    llm_description: Whether to enable the text line orientation classification function. Enabling this feature allows automatic orientation correction for each recognized text line.
+    form: llm
+  - name: textDetLimitSideLen
+    type: number
+    required: false
+    default: 64
+    label:
+      en_US: Image Side Length Limit for Text Detection
+      zh_Hans: 文本检测的图像边长限制
+    human_description:
+      en_US: Image side length limit for text detection.
+      zh_Hans: 文本检测的图像边长限制。
+    llm_description: Image side length limit for text detection.
+    form: llm
+  - name: textDetLimitType
+    type: select
+    required: false
+    default: min
+    options:
+      - label: 
+          en_US: min
+        value: min
+      - label:
+          en_US: max
+        value: max
+    label:
+      en_US: Type of Side Length Limit for Text Detection
+      zh_Hans: 文本检测的边长度限制类型
+    human_description:
+      en_US: Type of side length limit for text detection. Supports "min" or "max", indicating that the shortest side of the image will be no less than `textDetLimitSideLen`, or the longest side will be no greater than `textDetLimitSideLen`, respectively.
+      zh_Hans: 文本检测的边长度限制类型。支持为"min"或者"max"，分别表示保证图像最短边不小于`textDetLimitSideLen`和保证图像最长边不大于`textDetLimitSideLen`。
+    llm_description: Type of side length limit for text detection. Supports "min" or "max", indicating that the shortest side of the image will be no less than `textDetLimitSideLen`, or the longest side will be no greater than `textDetLimitSideLen`, respectively.
+    form: llm
+  - name: textDetThresh
+    type: number
+    required: false
+    default: 0.3
+    label:
+      en_US: Text Detection Pixel Threshold
+      zh_Hans: 文本检测像素阈值
+    human_description:
+      en_US: Pixel threshold for text detection. In the output probability map, only pixels with scores higher than this threshold are considered text pixels.
+      zh_Hans: 文本检测像素阈值。输出的概率图中，得分大于该阈值的像素点才会被认为是文字像素点。
+    llm_description: Pixel threshold for text detection. In the output probability map, only pixels with scores higher than this threshold are considered text pixels.
+    form: llm
+  - name: textDetBoxThresh
+    type: number
+    required: false
+    default: 0.6
+    label:
+      en_US: Text Detection Box Threshold
+      zh_Hans: 文本检测框阈值
+    human_description:
+      en_US: Bounding box threshold for text detection. A detected box is considered a text region if the average score of all pixels within the box exceeds this threshold.
+      zh_Hans: 文本检测框阈值。检测结果边框内，所有像素点的平均得分大于该阈值时，该结果会被认为是文字区域。
+    llm_description: Bounding box threshold for text detection. A detected box is considered a text region if the average score of all pixels within the box exceeds this threshold.
+    form: llm
+  - name: textDetUnclipRatio
+    type: number
+    required: false
+    default: 1.5
+    label:
+      en_US: Text Detection Unclipping Ratio
+      zh_Hans: 文本检测扩张系数
+    human_description:
+      en_US: Unclipping ratio for text detection. When unclipping text regions, a larger value results in a greater unclipping area.
+      zh_Hans: 文本检测扩张系数。对文字区域进行扩张时，该值越大，扩张的面积越大。
+    llm_description: Unclipping ratio for text detection. When unclipping text regions, a larger value results in a greater unclipping area.
+    form: llm
+  - name: textRecScoreThresh
+    type: number
+    required: false
+    default: 0.0
+    label:
+      en_US: Text Recognition Threshold
+      zh_Hans: 文本识别阈值
+    human_description:
+      en_US: Threshold for text recognition. Text results with scores higher than this threshold will be retained.
+      zh_Hans: 文本识别阈值。得分大于该阈值的文本结果会被保留。
+    llm_description: Threshold for text recognition. Text results with scores higher than this threshold will be retained.
+    form: llm
+  - name: returnWordBox
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Whether to Return Word Boxes
+      zh_Hans: 是否返回文字框
+    human_description:
+      en_US: Whether or not to return word boxes.
+      zh_Hans: 是否返回文字框。
+    llm_description: Whether or not to return word boxes.
+    form: llm
+  - name: visualize
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Whether to Return Visualization Results
+      zh_Hans: 是否返回可视化结果
+    human_description:
+      en_US: Whether or not to return visualization results.
+      zh_Hans: 是否返回可视化结果。
+    llm_description: Whether or not to return visualization results.
+    form: llm
+extra:
+  python:
+    source: tools/text_recognition.py

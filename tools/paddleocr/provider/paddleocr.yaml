@@ -1,0 +1,69 @@
+identity:
+  author: "langgenius"
+  name: "paddleocr"
+  label:
+    en_US: "PaddleOCR"
+    zh_Hans: "PaddleOCR"
+  description:
+    en_US: "PaddleOCR plugin provides several capabilities from PaddleOCR, including text recognition, document parsing, and more"
+    zh_Hans: "PaddleOCR 插件提供 PaddleOCR 的多项能力，包括文字识别、文档解析等"
+  icon: "icon.png"
+
+tools:
+  - tools/text_recognition.yaml
+  - tools/document_parsing.yaml
+  - tools/document_parsing_vl.yaml
+extra:
+  python:
+    source: provider/paddleocr.py
+
+credentials_for_provider:
+    aistudio_access_token:
+        type: secret-input
+        required: true
+        label:
+            en_US: AI Studio Access Token
+            zh_Hans: 星河社区访问令牌
+        placeholder:
+            en_US: AI Studio Access Token
+            zh_Hans: 请输入您的星河社区访问令牌
+        help:
+            en_US: Get your AI Studio access token
+            zh_Hans: 获取星河社区访问令牌
+        url: https://aistudio.baidu.com/index/accessToken
+    text_recognition_api_url:
+        type: text-input
+        label:
+            en_US: Text Recognition API URL
+            zh_Hans: 文字识别 API URL
+        placeholder:
+            en_US: Text Recognition API URL
+            zh_Hans: 文字识别 API URL
+        help:
+            en_US: Click the "API" button in the upper-left corner, select "Text recognition(PP-OCRv5)", and copy the `API_URL`.
+            zh_Hans: 点击左上角的“API”，选择“文字识别（PP-OCRv5）”并复制 `API_URL`
+        url: https://aistudio.baidu.com/paddleocr/task
+    document_parsing_api_url:
+        type: text-input
+        label:
+            en_US: Document Parsing API URL
+            zh_Hans: 文档解析 API URL
+        placeholder:
+            en_US: Document Parsing API URL
+            zh_Hans: 文档解析 API URL
+        help:
+            en_US: Click the "API" button in the upper-left corner, select "Document parsing(PP-StructureV3)", and copy the `API_URL`.
+            zh_Hans: 点击左上角的“API”，选择“文档解析（PP-StructureV3）”并复制 `API_URL`
+        url: https://aistudio.baidu.com/paddleocr/task
+    document_parsing_vl_api_url:
+        type: text-input
+        label:
+            en_US: Large Model Document Parsing API URL
+            zh_Hans: 大模型文档解析 API URL
+        placeholder:
+            en_US: Large Model Document Parsing API URL
+            zh_Hans: 大模型文档解析 API URL
+        help:
+            en_US: Click the "API" button in the upper-left corner, select "Large Model document parsing(PaddleOCR-VL)", and copy the `API_URL`.
+            zh_Hans: 点击左上角的“API”，选择“大模型文档解析（PaddleOCR-VL）”并复制 `API_URL`
+        url: https://aistudio.baidu.com/paddleocr/task
