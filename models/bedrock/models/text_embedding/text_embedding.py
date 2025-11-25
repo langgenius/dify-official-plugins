@@ -4,7 +4,7 @@ import logging
 import time
 import tiktoken
 from typing import Optional
-
+from google.cloud import aiplatform
 from botocore.exceptions import (
     ClientError,
     EndpointConnectionError,
@@ -435,9 +435,9 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
                     underlying_model_id = first_model_arn.split("foundation-model/")[1]
                     model_prefix = underlying_model_id.split(".")[0]
                 else:
-                    raise InvokeError(f"Could not determine model type from inference profile")
+                    raise InvokeError("Could not determine model type from inference profile")
             else:
-                raise InvokeError(f"No underlying models found in inference profile")
+                raise InvokeError("No underlying models found in inference profile")
         else:
             # Traditional model - use model directly
             model_prefix = model.split(".")[0]
@@ -459,14 +459,11 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
                     image_format = self._get_image_format(image)
                     if image_format not in ["jpeg", "png", "gif", "webp"]:
                         raise ValueError(f"Unsupported image format: {image_format}")
-                    if image.startswith("data:"):
-                        b64_str = image.split(",")[1]
-                    img_bytes = base64.b64decode(b64_str)
                     body = {
                         "image": {
                             "format": image_format,
                             "source": {
-                                "bytes": img_bytes,
+                                "bytes": image,
                             }
                         }
                     }
@@ -477,6 +474,7 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
                     "schemaVersion": "nova-multimodal-embed-v1",
                     "taskType": "SINGLE_EMBEDDING",
                     "singleEmbeddingParams":{
+                        "embeddingDimension": 1024,
                         "embeddingPurpose": "GENERIC_INDEX" if input_type == EmbeddingInputType.DOCUMENT else "GENERIC_RETRIEVAL",
                         **body,
                     }
@@ -484,7 +482,7 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
 
                 response_body = self._invoke_bedrock_embedding(model_id, bedrock_runtime, request_body)
                 embeddings.extend([response_body.get("embeddings")[0].get("embedding")])
-                token_usage += response_body.get("inputTextTokenCount")
+                token_usage += response_body.get("inputTextTokenCount") if response_body.get("inputTextTokenCount") else 0
             logger.warning(f"Total Tokens: {token_usage}")
             result = MultiModalEmbeddingResult(
                 model=model,

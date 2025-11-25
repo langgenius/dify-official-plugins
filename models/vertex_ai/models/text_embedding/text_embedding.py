@@ -5,6 +5,7 @@ from decimal import Decimal
 from typing import Optional
 
 import tiktoken
+import vertexai
 from dify_plugin import TextEmbeddingModel
 from dify_plugin.entities.model import (
     AIModelEntity,
@@ -19,6 +20,7 @@ from dify_plugin.entities.model import (
 from dify_plugin.entities.model.text_embedding import (
     EmbeddingUsage,
     MultiModalContent,
+    MultiModalContentType,
     MultiModalEmbeddingResult,
     TextEmbeddingResult,
 )
@@ -26,6 +28,7 @@ from dify_plugin.errors.model import CredentialsValidateFailedError
 from google import genai
 from google.genai import types
 from google.oauth2 import service_account
+from vertexai.vision_models import Image, MultiModalEmbeddingModel
 
 from models.common import CommonVertexAi
 
@@ -53,47 +56,51 @@ class VertexAiTextEmbeddingModel(CommonVertexAi, TextEmbeddingModel):
         :param input_type: input type
         :return: embeddings result
         """
-        service_account_info = (
-            json.loads(base64.b64decode(service_account_key))
-            if (
-                service_account_key := credentials.get("vertex_service_account_key", "")
-            )
-            else None
-        )
-        project_id = credentials["vertex_project_id"]
-        location = credentials["vertex_location"]
-        
-        # Initialize GenAI client
-        if service_account_info:
-            SCOPES = [
-                "https://www.googleapis.com/auth/cloud-platform",
-                "https://www.googleapis.com/auth/generative-language"
-            ]
-            credential = service_account.Credentials.from_service_account_info(
-                service_account_info,
-                scopes=SCOPES
-            )
-            client = genai.Client(
-                vertexai=True,
-                project=project_id,
-                location=location,
-                credentials=credential
-            )
+        if model.startswith("multimodalembedding@"):
+            result = self._invoke_multimodal(model, credentials, [MultiModalContent(content=text, content_type=MultiModalContentType.TEXT) for text in texts], user, input_type)
+            return TextEmbeddingResult(embeddings=result.embeddings, usage=result.usage, model=model)
         else:
-            client = genai.Client(
-                vertexai=True,
-                project=project_id,
-                location=location
+            service_account_info = (
+                json.loads(base64.b64decode(service_account_key))
+                if (
+                    service_account_key := credentials.get("vertex_service_account_key", "")
+                )
+                else None
             )
-        
-        (embeddings_batch, embedding_used_tokens) = self._embedding_invoke(
-            client=client, 
-            model=model,
-            texts=texts,
-            input_type=input_type
-        )
-        usage = self._calc_response_usage(model=model, credentials=credentials, tokens=embedding_used_tokens)
-        return TextEmbeddingResult(embeddings=embeddings_batch, usage=usage, model=model)
+            project_id = credentials["vertex_project_id"]
+            location = credentials["vertex_location"]
+            
+            # Initialize GenAI client
+            if service_account_info:
+                SCOPES = [
+                    "https://www.googleapis.com/auth/cloud-platform",
+                    "https://www.googleapis.com/auth/generative-language"
+                ]
+                credential = service_account.Credentials.from_service_account_info(
+                    service_account_info,
+                    scopes=SCOPES
+                )
+                client = genai.Client(
+                    vertexai=True,
+                    project=project_id,
+                    location=location,
+                    credentials=credential
+                )
+            else:
+                client = genai.Client(
+                    vertexai=True,
+                    project=project_id,
+                    location=location
+                )
+            
+            (embeddings_batch, embedding_used_tokens) = self._embedding_invoke(
+                client=client, 
+                model=model,
+                texts=texts,
+                input_type=input_type
+            )
+            usage = self._calc_response_usage(model=model, credentials=credentials, tokens=embedding_used_tokens)
+            return TextEmbeddingResult(embeddings=embeddings_batch, usage=usage, model=model)
 
     def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
         """
@@ -206,8 +213,8 @@ class VertexAiTextEmbeddingModel(CommonVertexAi, TextEmbeddingModel):
                 
                 # Estimate token count (GenAI SDK doesn't always provide token count)
                 # Use tiktoken as fallback
-                if hasattr(response, 'usage_metadata') and hasattr(response.usage_metadata, 'prompt_token_count'):
-                    token_usage += response.usage_metadata.prompt_token_count
+                if response.metadata and response.metadata.billable_character_count:
+                    token_usage += int(response.metadata.billable_character_count)
                 else:
                     # Fallback to estimation
                     try:
@@ -263,13 +270,13 @@ class VertexAiTextEmbeddingModel(CommonVertexAi, TextEmbeddingModel):
             ),
         )
         return entity
-    
+
     def _invoke_multimodal(
         self,
-        model: str, 
-        credentials: dict, 
-        documents: list[MultiModalContent], 
-        user: str | None = None, 
+        model: str,
+        credentials: dict,
+        documents: list[MultiModalContent],
+        user: str | None = None,
         input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT) -> MultiModalEmbeddingResult:
         """
         Invoke multimodal embedding model
@@ -283,8 +290,7 @@ class VertexAiTextEmbeddingModel(CommonVertexAi, TextEmbeddingModel):
         )
         project_id = credentials["vertex_project_id"]
         location = credentials["vertex_location"]
-        
-        # Initialize GenAI client
+
         if service_account_info:
             SCOPES = [
                 "https://www.googleapis.com/auth/cloud-platform",
@@ -294,22 +300,18 @@ class VertexAiTextEmbeddingModel(CommonVertexAi, TextEmbeddingModel):
                 service_account_info,
                 scopes=SCOPES
             )
-            client = genai.Client(
-                vertexai=True,
+            vertexai.init(
                 project=project_id,
                 location=location,
                 credentials=credential
             )
         else:
-            client = genai.Client(
-                vertexai=True,
-                project=project_id,
-                location=location
-            )
+            vertexai.init(project=project_id, location=location)
         
+        multimodal_model = MultiModalEmbeddingModel.from_pretrained(model)
+
         (embeddings_batch, embedding_used_tokens) = self._multimodal_embedding_invoke(
-            client=client, 
-            model=model,
+            multimodal_model=multimodal_model,
             documents=documents,
             input_type=input_type
         )
@@ -322,9 +324,8 @@ class VertexAiTextEmbeddingModel(CommonVertexAi, TextEmbeddingModel):
         return result
 
     def _multimodal_embedding_invoke(
-        self, 
-        client: genai.Client, 
-        model: str,
+        self,
+        multimodal_model: MultiModalEmbeddingModel,
         documents: list[MultiModalContent],
         input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT
     ) -> tuple[list[list[float]], int]:
@@ -337,58 +338,29 @@ class VertexAiTextEmbeddingModel(CommonVertexAi, TextEmbeddingModel):
         :param input_type: input type
         :return: embeddings and used tokens
         """
-        # Map Dify input types to GenAI task types
-        task_type_mapping = {
-            EmbeddingInputType.DOCUMENT: "RETRIEVAL_DOCUMENT",
-            EmbeddingInputType.QUERY: "RETRIEVAL_QUERY",
-        }
-        task_type = task_type_mapping.get(input_type, "RETRIEVAL_DOCUMENT")
-        
         embeddings = []
         token_usage = 0
 
         # Process each text individually with GenAI SDK
         for document in documents:
-            response = client.models.embed_content(
-                model=model,
-                contents=document.content,
-                config=types.EmbedContentConfig(
-                    task_type=task_type
-                )
-            )
-            
-            # Extract embeddings
-            if hasattr(response, 'embeddings') and response.embeddings:
-                embedding_values = response.embeddings[0].values
-                embeddings.append(embedding_values)
-                
-                # Estimate token count (GenAI SDK doesn't always provide token count)
-                # Use tiktoken as fallback
-                if hasattr(response, 'usage_metadata') and hasattr(response.usage_metadata, 'prompt_token_count'):
-                    token_usage += response.usage_metadata.prompt_token_count
-                else:
-                    # Fallback to estimation for multimodal content
-                    content_text = ""
-                    if isinstance(document.content, str):
-                        content_text = document.content
-                    elif isinstance(document.content, list):
-                        # Extract text from multimodal content parts
-                        for part in document.content:
-                            if isinstance(part, dict) and 'text' in part:
-                                content_text += part.get('text', '')
-                            elif isinstance(part, str):
-                                content_text += part
-                    
-                    if content_text:
-                        try:
-                            enc = tiktoken.get_encoding("cl100k_base")
-                            token_usage += len(enc.encode(content_text))
-                        except Exception:
-                            # Rough estimation: 1 token ≈ 4 characters
-                            token_usage += len(content_text) // 4
-                    else:
-                        # For image-only content, estimate based on typical image token count
-                        # Most vision models use ~85 tokens per image at standard resolution
-                        token_usage += 85
-        
+            if document.content_type == MultiModalContentType.TEXT:
+                response = multimodal_model.get_embeddings(contextual_text=document.content)
+                embeddings.append(response.text_embedding)
+                # Estimate token count for text (multimodalembedding API doesn't return token count)
+                try:
+                    enc = tiktoken.get_encoding("cl100k_base")
+                    token_usage += len(enc.encode(document.content))
+                except Exception:
+                    # Rough estimation: 1 token ≈ 4 characters
+                    token_usage += len(document.content) // 4
+            elif document.content_type == MultiModalContentType.IMAGE:
+                image = Image(image_bytes=base64.b64decode(document.content))
+                response = multimodal_model.get_embeddings(image=image)
+                embeddings.append(response.image_embedding)
+                # For image embeddings, use standard estimation
+                # Multimodal embedding models typically use ~85 tokens per image
+                token_usage += 85
+            else:
+                raise ValueError(f"Unsupported content type: {document.content_type}")
+
         return (embeddings, token_usage)
