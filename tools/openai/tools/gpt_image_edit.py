@@ -44,8 +44,8 @@ class GPTImageEditTool(Tool):
             return
 
         model = tool_parameters.get("model", "gpt-image-1")
-        if model not in {"gpt-image-1", "gpt-image-1-mini"}:
-            yield self.create_text_message("Invalid model. Choose gpt-image-1 or gpt-image-1-mini.")
+        if model not in (allowed_models := {"gpt-image-1", "gpt-image-1-mini"}):
+            yield self.create_text_message(f"Invalid model. Choose from: {', '.join(sorted(allowed_models))}.")
             return
 
         image = tool_parameters.get("image")

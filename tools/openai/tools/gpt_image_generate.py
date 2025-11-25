@@ -37,8 +37,8 @@ class GPTImageGenerateTool(Tool):
             return
         # --- Parameter Extraction and Validation --- 
         model = tool_parameters.get("model", "gpt-image-1")
-        if model not in {"gpt-image-1", "gpt-image-1-mini"}:
-            yield self.create_text_message("Invalid model. Choose gpt-image-1 or gpt-image-1-mini.")
+        if model not in (allowed_models := {"gpt-image-1", "gpt-image-1-mini"}):
+            yield self.create_text_message(f"Invalid model. Choose from: {', '.join(sorted(allowed_models))}.")
             return
         generation_args: Dict[str, Any] = {
             "model": model,
