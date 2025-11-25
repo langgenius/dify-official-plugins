@@ -36,8 +36,12 @@ class GPTImageGenerateTool(Tool):
             yield self.create_text_message("Please input prompt")
             return
         # --- Parameter Extraction and Validation --- 
+        model = tool_parameters.get("model", "gpt-image-1")
+        if model not in {"gpt-image-1", "gpt-image-1-mini"}:
+            yield self.create_text_message("Invalid model. Choose gpt-image-1 or gpt-image-1-mini.")
+            return
         generation_args: Dict[str, Any] = {
-            "model": "gpt-image-1",
+            "model": model,
             "prompt": prompt,
         }
 
