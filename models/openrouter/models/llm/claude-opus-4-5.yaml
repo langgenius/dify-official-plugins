@@ -1,3 +1,4 @@
+# https://openrouter.ai/anthropic/claude-opus-4.5
 model: anthropic/claude-opus-4.5
 label:
   en_US: Claude Opus 4.5
