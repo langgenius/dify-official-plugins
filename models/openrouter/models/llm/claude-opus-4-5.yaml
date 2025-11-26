@@ -1,7 +1,7 @@
-model: anthropic/claude-sonnet-4.5
+model: anthropic/claude-opus-4.5
 label:
-  en_US: Claude Sonnet 4.5
-  zh_Hans: Claude Sonnet 4.5
+  en_US: Claude Opus 4.5
+  zh_Hans: Claude Opus 4.5
 model_type: llm
 features:
   - agent-thought
@@ -12,7 +12,7 @@ features:
   - document
 model_properties:
   mode: chat
-  context_size: 1000000
+  context_size: 200000
 parameter_rules:
   - name: temperature
     type: float
@@ -51,23 +51,23 @@ parameter_rules:
     required: true
     default: 2000
     min: 1024
-    max: 64000
+    max: 32000
     label:
       en_US: Thinking Budget
       zh_Hans: 推理预算
     help:
-      en_US: Budget limit for thinking (minimum 1024), must be less than max_tokens. Only available when thinking mode is enabled.
-      zh_Hans: 推理的预算限制（最小1024），必须小于max_tokens。仅在推理模式启用时可用。
+      en_US: The budget limit for thinking (minimum 1024), must be less than max_tokens. Only valid in thinking mode.
+      zh_Hans: 推理的预算限制（最小1024），必须小于max_tokens。仅在推理模式时有效。
   - name: max_tokens
     use_template: max_tokens
     required: true
-    default: 64000
+    default: 32000
     min: 1
-    max: 64000
+    max: 32000
   - name: response_format
     use_template: response_format
 pricing:
-  input: '3.00'
-  output: '15.00'
+  input: '5.00'
+  output: '25.00'
   unit: '0.000001'
   currency: USD
