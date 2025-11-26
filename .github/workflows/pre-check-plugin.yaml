@@ -71,6 +71,13 @@ jobs:
             exit 1
           fi
 
+      - name: Check for Disallowed Virtualenv Directories
+        run: |
+          if find "${{ env.PLUGIN_PATH }}" -maxdepth 1 -type d \( -name ".venv*" -o -name "venv*" \) | grep -q .; then
+            echo "!!! Please remove .venv or venv* directory in plugin path before submitting the PR"
+            exit 1
+          fi
+
       - name: Check If Version Exists
         run: |
           # get version, author, name
