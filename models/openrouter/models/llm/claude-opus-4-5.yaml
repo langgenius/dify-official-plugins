@@ -1,8 +1,8 @@
-# https://openrouter.ai/anthropic/claude-sonnet-4.5
-model: anthropic/claude-sonnet-4.5
+# https://openrouter.ai/anthropic/claude-opus-4.5
+model: anthropic/claude-opus-4.5
 label:
-  en_US: Claude Sonnet 4.5
-  zh_Hans: Claude Sonnet 4.5
+  en_US: Claude Opus 4.5
+  zh_Hans: Claude Opus 4.5
 model_type: llm
 features:
   - agent-thought
@@ -13,7 +13,7 @@ features:
   - document
 model_properties:
   mode: chat
-  context_size: 1000000
+  context_size: 200000
 parameter_rules:
   - name: temperature
     type: float
@@ -52,7 +52,7 @@ parameter_rules:
     required: true
     default: 2000
     min: 1024
-    max: 64000
+    max: 32000
     label:
       en_US: Thinking Budget
       zh_Hans: 推理预算
@@ -62,13 +62,13 @@ parameter_rules:
   - name: max_tokens
     use_template: max_tokens
     required: true
-    default: 64000
+    default: 32000
     min: 1
-    max: 64000
+    max: 32000
   - name: response_format
     use_template: response_format
 pricing:
-  input: '3.00'
-  output: '15.00'
+  input: '5.00'
+  output: '25.00'
   unit: '0.000001'
   currency: USD
