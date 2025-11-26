@@ -121,6 +121,8 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
 
         if isinstance(enable_thinking, bool):
             reasoning_params["enabled"] = enable_thinking
+        elif isinstance(enable_thinking, str):
+            reasoning_params["enabled"] = True
 
         if isinstance(exclude_reasoning_tokens, bool):
             reasoning_params["exclude"] = exclude_reasoning_tokens
