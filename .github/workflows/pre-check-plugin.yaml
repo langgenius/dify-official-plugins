@@ -127,6 +127,11 @@ jobs:
           fi
           cd -
           uv run python .scripts/validator/test-plugin-install.py -d ${{ env.PLUGIN_PATH }}
+      
+      - name: Clean Venv Created by uv
+        run: |
+          cd ${{ env.PLUGIN_PATH }}
+          rm -rf .venv
 
       - name: Check Packaging
         run: |
