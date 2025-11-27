@@ -50,6 +50,26 @@ parameters:
   required: false
   type: file
   # mime_types: ["image/png"]
+- default: gpt-image-1
+  form: form
+  human_description:
+    en_US: Select the GPT Image model. GPT Image 1 Mini is more cost-effective.
+    zh_Hans: 选择 GPT Image 模型。GPT Image 1 Mini 更具成本效益。
+  label:
+    en_US: Model
+    zh_Hans: 模型
+  name: model
+  options:
+  - label:
+      en_US: GPT Image 1
+      zh_Hans: GPT Image 1
+    value: gpt-image-1
+  - label:
+      en_US: GPT Image 1 Mini
+      zh_Hans: GPT Image 1 Mini
+    value: gpt-image-1-mini
+  required: false
+  type: select
 - default: auto
   form: form
   human_description:
