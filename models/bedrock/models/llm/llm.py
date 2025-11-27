@@ -382,7 +382,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             prompt_messages,
             model_id=cache_config_model_id,
             system_cache_checkpoint=system_cache_checkpoint,
-            latest_two_messages_cache_checkpoint=latest_two_messages_cache_checkpoint
+            latest_two_messages_cache_checkpoint=latest_two_messages_cache_checkpoint,
+            tools=tools
         )
         inference_config, additional_model_fields = self._convert_converse_api_model_parameters(model_parameters, stop)
 
@@ -425,7 +426,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 )
                 placeholder_tool = PromptMessageTool(
                     name="__no_more_tools_available__",
-                    description="This is a placeholder tool. No more tools are available for this conversation. Please provide a final answer based on the information already gathered.",
+                    description="No tools are currently available for use. Please respond without using any tools.",
                     parameters={
                         "type": "object",
                         "properties": {},
@@ -774,7 +775,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         return inference_config, additional_model_fields
 
     def _convert_converse_prompt_messages(self, prompt_messages: list[PromptMessage], model_id: str = None,
-        system_cache_checkpoint: bool = True, latest_two_messages_cache_checkpoint: bool = False) -> tuple[list, list[dict]]:
+        system_cache_checkpoint: bool = True, latest_two_messages_cache_checkpoint: bool = False,
+        tools: Optional[list[PromptMessageTool]] = None) -> tuple[list, list[dict]]:
         """
         Convert prompt messages to dict list and system
         Add cache points for supported models when enable_cache is True
@@ -810,6 +812,25 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         for message in other_messages:
             message_dict = self._convert_prompt_message_to_dict(message)
             prompt_message_dicts.append(message_dict)
+
+        # Check if we're in the final iteration of function calling.
+        # This is specifically for Bedrock/Claude which requires toolConfig when messages contain tool use.
+        has_tool_history = any(
+            isinstance(msg, ToolPromptMessage) or (isinstance(msg, AssistantPromptMessage) and msg.tool_calls)
+            for msg in prompt_messages
+        )
+        is_final_iteration = not tools and has_tool_history
+        # If this is the final iteration, append an instruction for the user.
+        if is_final_iteration:
+            final_instruction_text = (
+                "IMPORTANT: DO NOT call any more tools. Summarize the information you have gathered from previous tool calls."
+            )
+            final_instruction_message = {
+                "role": "user",
+                "content": [{"text": final_instruction_text}]
+            }
+            # Append to the end of prompt_message_dicts
+            prompt_message_dicts.append(final_instruction_message)
 
             # Only add cache point to messages if supported and latest_two_messages_cache_checkpoint is enabled
         if cache_config and "messages" in cache_config["supported_fields"] and latest_two_messages_cache_checkpoint:
