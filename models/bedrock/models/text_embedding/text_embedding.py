@@ -80,6 +80,7 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
                 raise InvokeError(f"No underlying models found in inference profile")
         else:
             # Traditional model - use model directly
+            model_package_arn = model
             model_prefix = model.split(".")[0]
             
         bedrock_runtime = get_bedrock_client("bedrock-runtime", credentials)
