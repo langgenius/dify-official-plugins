@@ -516,9 +516,34 @@ class ReActAgentStrategy(AgentStrategy):
             )
             result = ""
             additional_messages = []  # Collect messages that need to be yielded
-            for response in tool_invoke_responses:
+            # Collect all responses first to detect duplicates
+            responses_list = list(tool_invoke_responses)
+            # Check if there's a JSON response
+            has_json_response = any(
+                r.type == ToolInvokeMessage.MessageType.JSON
+                for r in responses_list
+            )
+            json_content = None
+            if has_json_response:
+                # Get the JSON content for comparison
+                for r in responses_list:
+                    if r.type == ToolInvokeMessage.MessageType.JSON:
+                        json_content = json.dumps(
+                            cast(
+                                ToolInvokeMessage.JsonMessage,
+                                r.message,
+                            ).json_object,
+                            ensure_ascii=False,
+                        )
+                        break
+
+            for response in responses_list:
                 if response.type == ToolInvokeMessage.MessageType.TEXT:
-                    result += cast(ToolInvokeMessage.TextMessage, response.message).text
+                    text_content = cast(ToolInvokeMessage.TextMessage, response.message).text
+                    # Skip TEXT response if it duplicates JSON content
+                    if has_json_response and json_content and text_content == json_content:
+                        continue
+                    result += text_content
                 elif response.type == ToolInvokeMessage.MessageType.LINK:
                     result += (
                         f"result link: {cast(ToolInvokeMessage.TextMessage, response.message).text}."
@@ -540,13 +565,8 @@ class ReActAgentStrategy(AgentStrategy):
                         + "Please inform the user that the image has been created successfully."
                     )
                 elif response.type == ToolInvokeMessage.MessageType.JSON:
-                    text = json.dumps(
-                        cast(
-                            ToolInvokeMessage.JsonMessage, response.message
-                        ).json_object,
-                        ensure_ascii=False,
-                    )
-                    result += f"tool response: {text}."
+                    if json_content:
+                        result += json_content
                 elif response.type == ToolInvokeMessage.MessageType.BLOB:
                     result += "Generated file with ... "
                     additional_messages.append(response)

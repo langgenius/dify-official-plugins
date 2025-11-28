@@ -359,15 +359,40 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                             },
                         )
                         tool_result = ""
-                        for tool_invoke_response in tool_invoke_responses:
+                        # Collect all responses first to detect duplicates
+                        responses_list = list(tool_invoke_responses)
+                        # Check if there's a JSON response
+                        has_json_response = any(
+                            r.type == ToolInvokeMessage.MessageType.JSON
+                            for r in responses_list
+                        )
+                        json_content = None
+                        if has_json_response:
+                            # Get the JSON content for comparison
+                            for r in responses_list:
+                                if r.type == ToolInvokeMessage.MessageType.JSON:
+                                    json_content = json.dumps(
+                                        cast(
+                                            ToolInvokeMessage.JsonMessage,
+                                            r.message,
+                                        ).json_object,
+                                        ensure_ascii=False,
+                                    )
+                                    break
+
+                        for tool_invoke_response in responses_list:
                             if (
                                 tool_invoke_response.type
                                 == ToolInvokeMessage.MessageType.TEXT
                             ):
-                                tool_result += cast(
+                                text_content = cast(
                                     ToolInvokeMessage.TextMessage,
                                     tool_invoke_response.message,
                                 ).text
+                                # Skip TEXT response if it duplicates JSON content
+                                if has_json_response and json_content and text_content == json_content:
+                                    continue
+                                tool_result += text_content
                             elif (
                                 tool_invoke_response.type
                                 == ToolInvokeMessage.MessageType.LINK
@@ -425,14 +450,8 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                 tool_invoke_response.type
                                 == ToolInvokeMessage.MessageType.JSON
                             ):
-                                text = json.dumps(
-                                    cast(
-                                        ToolInvokeMessage.JsonMessage,
-                                        tool_invoke_response.message,
-                                    ).json_object,
-                                    ensure_ascii=False,
-                                )
-                                tool_result += f"tool response: {text}."
+                                if json_content:
+                                    tool_result += json_content
                             elif (
                                 tool_invoke_response.type
                                 == ToolInvokeMessage.MessageType.BLOB
