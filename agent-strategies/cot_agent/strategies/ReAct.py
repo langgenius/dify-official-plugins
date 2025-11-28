@@ -546,12 +546,20 @@ class ReActAgentStrategy(AgentStrategy):
                         ).json_object,
                         ensure_ascii=False,
                     )
-                    result += f"tool response: {text}."
+                    result += text
                 elif response.type == ToolInvokeMessage.MessageType.BLOB:
                     result += "Generated file with ... "
                     additional_messages.append(response)
                 else:
                     result += f"tool response: {response.message!r}."
+
+            # Remove duplicate content after "tool response:" pattern
+            # e.g., {"data":"value"}tool response: {"data":"value"}. -> {"data":"value"}
+            if "tool response:" in result:
+                # Find the position of "tool response:"
+                split_pos = result.find("tool response:")
+                # Keep only the content before "tool response:"
+                result = result[:split_pos]
         except Exception as e:
             result = f"tool invoke error: {e!s}"
             additional_messages = []

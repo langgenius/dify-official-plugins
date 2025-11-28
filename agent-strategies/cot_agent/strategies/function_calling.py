@@ -432,7 +432,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                     ).json_object,
                                     ensure_ascii=False,
                                 )
-                                tool_result += f"tool response: {text}."
+                                tool_result += text
                             elif (
                                 tool_invoke_response.type
                                 == ToolInvokeMessage.MessageType.BLOB
@@ -444,6 +444,14 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                 tool_result += (
                                     f"tool response: {tool_invoke_response.message!r}."
                                 )
+
+                        # Remove duplicate content after "tool response:" pattern
+                        # e.g., {"data":"value"}tool response: {"data":"value"}. -> {"data":"value"}
+                        if "tool response:" in tool_result:
+                            # Find the position of "tool response:"
+                            split_pos = tool_result.find("tool response:")
+                            # Keep only the content before "tool response:"
+                            tool_result = tool_result[:split_pos]
                     except Exception as e:
                         tool_result = f"tool invoke error: {e!s}"
                     tool_response = {
