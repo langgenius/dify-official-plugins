@@ -62,7 +62,7 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
         if inference_profile_id:
             # Get the full ARN from the profile ID
             profile_info = get_inference_profile_info(inference_profile_id, credentials)
-            model_id = profile_info.get("inferenceProfileArn")
+            model_package_arn = profile_info.get("inferenceProfileArn")
             if not model_id:
                 raise InvokeError(f"Could not get ARN for inference profile {inference_profile_id}")
             logger.info(f"Using inference profile ARN: {model_id}")
@@ -102,7 +102,7 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
                         }
                     }
                 }
-                response_body = self._invoke_bedrock_embedding(model_id, bedrock_runtime, body)
+                response_body = self._invoke_bedrock_embedding(model_package_arn, bedrock_runtime, body)
                 embedding_data = response_body.get("embeddings", [{}])[0]
                 embeddings.extend([embedding_data.get("embedding")])
                 token_usage += len(text.split())
@@ -120,7 +120,7 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
                 body = {
                     "inputText": text,
                 }
-                response_body = self._invoke_bedrock_embedding(model_id, bedrock_runtime, body)
+                response_body = self._invoke_bedrock_embedding(model_package_arn, bedrock_runtime, body)
                 embeddings.extend([response_body.get("embedding")])
                 token_usage += response_body.get("inputTextTokenCount")
             logger.warning(f"Total Tokens: {token_usage}")
@@ -138,7 +138,7 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
                     "texts": [text],
                     "input_type": input_type,
                 }
-                response_body = self._invoke_bedrock_embedding(model_id, bedrock_runtime, body)
+                response_body = self._invoke_bedrock_embedding(model_package_arn, bedrock_runtime, body)
                 embeddings.extend(response_body.get("embeddings"))
                 token_usage += len(text)
             result = TextEmbeddingResult(
