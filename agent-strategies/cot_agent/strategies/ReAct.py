@@ -525,7 +525,27 @@ class ReActAgentStrategy(AgentStrategy):
             )
             result = ""
             additional_messages = []  # Collect messages that need to be yielded
-            for response in tool_invoke_responses:
+            # Collect all responses first to detect duplicates
+            responses_list = list(tool_invoke_responses)
+            # Check if there's a JSON response
+            has_json_response = any(
+                r.type == ToolInvokeMessage.MessageType.JSON for r in responses_list
+            )
+            json_content = None
+            if has_json_response:
+                # Get the JSON content for comparison
+                for r in responses_list:
+                    if r.type == ToolInvokeMessage.MessageType.JSON:
+                        json_content = json.dumps(
+                            cast(
+                                ToolInvokeMessage.JsonMessage,
+                                r.message,
+                            ).json_object,
+                            ensure_ascii=False,
+                        )
+                        break
+
+            for response in responses_list:
                 if response.type == ToolInvokeMessage.MessageType.TEXT:
                     # Skip TEXT response as workflow always returns both TEXT and JSON
                     continue
