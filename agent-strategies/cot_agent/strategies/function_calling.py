@@ -359,11 +359,24 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                             },
                         )
                         tool_result = ""
-                        for tool_invoke_response in tool_invoke_responses:
+                        # Collect all responses to detect and handle TEXT+JSON duplicates
+                        responses_list = list(tool_invoke_responses)
+
+                        # Check if both TEXT and JSON responses exist
+                        has_text = any(r.type == ToolInvokeMessage.MessageType.TEXT for r in responses_list)
+                        has_json = any(r.type == ToolInvokeMessage.MessageType.JSON for r in responses_list)
+
+                        # If both TEXT and JSON exist, skip TEXT to avoid duplication
+                        skip_text = has_text and has_json
+
+                        for tool_invoke_response in responses_list:
                             if (
                                 tool_invoke_response.type
                                 == ToolInvokeMessage.MessageType.TEXT
                             ):
+                                # Skip TEXT response if JSON response also exists
+                                if skip_text:
+                                    continue
                                 tool_result += cast(
                                     ToolInvokeMessage.TextMessage,
                                     tool_invoke_response.message,
@@ -444,14 +457,6 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                 tool_result += (
                                     f"tool response: {tool_invoke_response.message!r}."
                                 )
-
-                        # Remove duplicate content after "tool response:" pattern
-                        # e.g., {"data":"value"}tool response: {"data":"value"}. -> {"data":"value"}
-                        if "tool response:" in tool_result:
-                            # Find the position of "tool response:"
-                            split_pos = tool_result.find("tool response:")
-                            # Keep only the content before "tool response:"
-                            tool_result = tool_result[:split_pos]
                     except Exception as e:
                         tool_result = f"tool invoke error: {e!s}"
                     tool_response = {

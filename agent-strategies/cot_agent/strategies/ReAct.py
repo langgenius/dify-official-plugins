@@ -516,8 +516,21 @@ class ReActAgentStrategy(AgentStrategy):
             )
             result = ""
             additional_messages = []  # Collect messages that need to be yielded
-            for response in tool_invoke_responses:
+            # Collect all responses to detect and handle TEXT+JSON duplicates
+            responses_list = list(tool_invoke_responses)
+
+            # Check if both TEXT and JSON responses exist
+            has_text = any(r.type == ToolInvokeMessage.MessageType.TEXT for r in responses_list)
+            has_json = any(r.type == ToolInvokeMessage.MessageType.JSON for r in responses_list)
+
+            # If both TEXT and JSON exist, skip TEXT to avoid duplication
+            skip_text = has_text and has_json
+
+            for response in responses_list:
                 if response.type == ToolInvokeMessage.MessageType.TEXT:
+                    # Skip TEXT response if JSON response also exists
+                    if skip_text:
+                        continue
                     result += cast(ToolInvokeMessage.TextMessage, response.message).text
                 elif response.type == ToolInvokeMessage.MessageType.LINK:
                     result += (
@@ -552,14 +565,6 @@ class ReActAgentStrategy(AgentStrategy):
                     additional_messages.append(response)
                 else:
                     result += f"tool response: {response.message!r}."
-
-            # Remove duplicate content after "tool response:" pattern
-            # e.g., {"data":"value"}tool response: {"data":"value"}. -> {"data":"value"}
-            if "tool response:" in result:
-                # Find the position of "tool response:"
-                split_pos = result.find("tool response:")
-                # Keep only the content before "tool response:"
-                result = result[:split_pos]
         except Exception as e:
             result = f"tool invoke error: {e!s}"
             additional_messages = []
