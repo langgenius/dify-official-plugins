@@ -203,7 +203,7 @@ model_credential_schema:
           value: llm
       label:
         zh_Hans: 函数调用类型
-        en_US: Function calling
+        en_US: Function Call Type
       type: select
       required: false
       default: no_call
@@ -211,11 +211,11 @@ model_credential_schema:
         - value: function_call
           label:
             en_US: Function Call
-            zh_Hans: Function 调用
+            zh_Hans: 函数调用
         - value: tool_call
           label:
             en_US: Tool Call
-            zh_Hans: Tool 调用
+            zh_Hans: 工具调用
         - value: no_call
           label:
             en_US: Not Support
