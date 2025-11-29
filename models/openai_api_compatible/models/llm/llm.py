@@ -92,18 +92,18 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         # Only add the enable_thinking parameter if the model supports both modes
         # If only_thinking_supported, the parameter is not needed (forced behavior)
         if agent_though_support == "supported":
-                entity.parameter_rules += [
-                    ParameterRule(
-                        name="enable_thinking",
-                        label=I18nObject(en_US="Thinking mode", zh_Hans="思考模式"),
-                        help=I18nObject(
-                            en_US="Whether to enable thinking mode, applicable to various thinking mode models deployed on reasoning frameworks such as vLLM and SGLang, for example Qwen3.",
-                            zh_Hans="是否开启思考模式，适用于vLLM和SGLang等推理框架部署的多种思考模式模型，例如Qwen3。",
-                        ),
-                        type=ParameterType.BOOLEAN,
-                        required=False,
-                    )
-                ]
+            entity.parameter_rules.append(
+                ParameterRule(
+                    name="enable_thinking",
+                    label=I18nObject(en_US="Thinking mode", zh_Hans="思考模式"),
+                    help=I18nObject(
+                        en_US="Whether to enable thinking mode, applicable to various thinking mode models deployed on reasoning frameworks such as vLLM and SGLang, for example Qwen3.",
+                        zh_Hans="是否开启思考模式，适用于vLLM和SGLang等推理框架部署的多种思考模式模型，例如Qwen3。",
+                    ),
+                    type=ParameterType.BOOLEAN,
+                    required=False,
+                )
+            )
         
         return entity
 
