@@ -210,12 +210,12 @@ model_credential_schema:
       options:
         - value: function_call
           label:
-            en_US: Function 调用
-            zh_Hans: Function Call
+            en_US: Function Call
+            zh_Hans: Function 调用
         - value: tool_call
           label:
-            en_US: Tool 调用
-            zh_Hans: Tool Call
+            en_US: Tool Call
+            zh_Hans: Tool 调用
         - value: no_call
           label:
             en_US: Not Support

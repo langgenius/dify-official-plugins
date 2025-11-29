@@ -85,30 +85,28 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         # Configure thinking mode parameter based on model support
         agent_though_support = credentials.get("agent_though_support", "not_supported")
         
-        # Only add the enable_thinking parameter if the model supports both modes
-        # If only_thinking or only_non_thinking, the parameter is not needed (forced behavior)
-        if agent_though_support == "supported":
+        # Add AGENT_THOUGHT feature if thinking mode is supported (either mode)
+        if agent_though_support in ["supported", "only_thinking_supported"]:
             try:
                 entity.features.index(ModelFeature.AGENT_THOUGHT)
             except ValueError:
                 entity.features.append(ModelFeature.AGENT_THOUGHT)
-            entity.parameter_rules += [
-                ParameterRule(
-                    name="enable_thinking",
-                    label=I18nObject(en_US="Thinking mode", zh_Hans="思考模式"),
-                    help=I18nObject(
-                        en_US="Whether to enable thinking mode, applicable to various thinking mode models deployed on reasoning frameworks such as vLLM and SGLang, for example Qwen3.",
-                        zh_Hans="是否开启思考模式，适用于vLLM和SGLang等推理框架部署的多种思考模式模型，例如Qwen3。",
-                    ),
-                    type=ParameterType.BOOLEAN,
-                    required=False,
-                )
-            ]
-        elif agent_though_support == "only_thinking_supported":
-            try:
-                entity.features.index(ModelFeature.AGENT_THOUGHT)
-            except ValueError:
-                entity.features.append(ModelFeature.AGENT_THOUGHT)
+            
+            # Only add the enable_thinking parameter if the model supports both modes
+            # If only_thinking_supported, the parameter is not needed (forced behavior)
+            if agent_though_support == "supported":
+                entity.parameter_rules += [
+                    ParameterRule(
+                        name="enable_thinking",
+                        label=I18nObject(en_US="Thinking mode", zh_Hans="思考模式"),
+                        help=I18nObject(
+                            en_US="Whether to enable thinking mode, applicable to various thinking mode models deployed on reasoning frameworks such as vLLM and SGLang, for example Qwen3.",
+                            zh_Hans="是否开启思考模式，适用于vLLM和SGLang等推理框架部署的多种思考模式模型，例如Qwen3。",
+                        ),
+                        type=ParameterType.BOOLEAN,
+                        required=False,
+                    )
+                ]
         
         return entity
 
