@@ -188,6 +188,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 
         if enable_thinking_value is not None:
             model_parameters.setdefault("chat_template_kwargs", {})["enable_thinking"] = enable_thinking_value
+            # Add From: https://github.com/langgenius/dify-official-plugins/pull/2151
+            model_parameters.setdefault("chat_template_kwargs", {})["thinking"] = enable_thinking_value
         
         # Remove thinking content from assistant messages for better performance.
         with suppress(Exception):
