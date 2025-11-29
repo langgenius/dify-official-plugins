@@ -6,6 +6,7 @@ from typing import Any
 import requests
 
 from dify_plugin import Tool
+from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.model import InvokeError
 
@@ -17,6 +18,7 @@ class GithubRepositoryInfoTool(Tool):
         """
         owner = tool_parameters.get("owner", "")
         repo = tool_parameters.get("repo", "")
+        credential_type = self.runtime.credential_type
 
         if not owner:
             yield self.create_text_message("Please input owner")
@@ -25,8 +27,12 @@ class GithubRepositoryInfoTool(Tool):
             yield self.create_text_message("Please input repo")
             return
 
-        if "access_tokens" not in self.runtime.credentials:
+        if credential_type == CredentialType.API_KEY and "access_tokens" not in self.runtime.credentials:
             yield self.create_text_message("GitHub API Access Tokens is required.")
+            return
+
+        if credential_type == CredentialType.OAUTH and "access_tokens" not in self.runtime.credentials:
+            yield self.create_text_message("GitHub OAuth Access Tokens is required.")
             return
 
         access_token = self.runtime.credentials.get("access_tokens")
@@ -49,6 +55,7 @@ class GithubRepositoryInfoTool(Tool):
             if response.status_code == 200:
                 response_data = response.json()
 
+                # Extract key information
                 repo_info = {
                     "name": response_data.get("name", ""),
                     "full_name": response_data.get("full_name", ""),

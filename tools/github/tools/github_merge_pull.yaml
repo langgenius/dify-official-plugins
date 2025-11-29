@@ -1,0 +1,110 @@
+description:
+  human:
+    en_US: Merge a pull request in a GitHub repository
+    pt_BR: Mesclar um pull request em um repositório do GitHub
+    zh_Hans: 合并GitHub仓库中的Pull Request
+  llm: A tool to merge a pull request with options for merge method (merge, squash, or rebase) and commit message
+extra:
+  python:
+    source: tools/github_merge_pull.py
+identity:
+  author: langgenius
+  icon: icon.svg
+  label:
+    en_US: Merge Pull Request
+    pt_BR: Mesclar Pull Request
+    zh_Hans: 合并PR
+  name: github_merge_pull
+parameters:
+  - form: llm
+    human_description:
+      en_US: The account owner of the repository. The name is not case sensitive.
+      pt_BR: O proprietário da conta do repositório. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库的账户所有者。名称不区分大小写。
+    label:
+      en_US: Owner
+      pt_BR: Proprietário
+      zh_Hans: 所有者
+    llm_description: The account owner of the repository. The name is not case sensitive.
+    name: owner
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: The name of the repository without the .git extension. The name is not case sensitive.
+      pt_BR: O nome do repositório sem a extensão .git. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库名称不带.git扩展名。名称不区分大小写。
+    label:
+      en_US: Repository
+      pt_BR: Repositório
+      zh_Hans: 仓库
+    llm_description: The name of the repository without the .git extension. The name is not case sensitive.
+    name: repo
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: The number that identifies the pull request.
+      pt_BR: O número que identifica o pull request.
+      zh_Hans: Pull Request的编号。
+    label:
+      en_US: Pull Request Number
+      pt_BR: Número do Pull Request
+      zh_Hans: PR编号
+    llm_description: The number that identifies the pull request.
+    name: pull_number
+    required: true
+    type: number
+  - default: merge
+    form: llm
+    human_description:
+      en_US: The merge method to use. Can be merge, squash, or rebase.
+      pt_BR: O método de mesclagem a ser usado. Pode ser merge, squash ou rebase.
+      zh_Hans: 合并方法。可以是 merge、squash 或 rebase。
+    label:
+      en_US: Merge Method
+      pt_BR: Método de Mesclagem
+      zh_Hans: 合并方法
+    llm_description: "The merge method to use: 'merge' creates a merge commit, 'squash' squashes all commits into one, 'rebase' rebases commits onto the base branch."
+    name: merge_method
+    required: false
+    type: string
+  - form: llm
+    human_description:
+      en_US: Title for the automatic merge commit message.
+      pt_BR: Título para a mensagem do commit de mesclagem automática.
+      zh_Hans: 合并提交的标题。
+    label:
+      en_US: Commit Title
+      pt_BR: Título do Commit
+      zh_Hans: 提交标题
+    llm_description: Title for the automatic merge commit message. If not provided, GitHub will generate a default title.
+    name: commit_title
+    required: false
+    type: string
+  - form: llm
+    human_description:
+      en_US: Extra detail to append to automatic commit message.
+      pt_BR: Detalhe extra para anexar à mensagem de commit automática.
+      zh_Hans: 附加到合并提交消息的额外详情。
+    label:
+      en_US: Commit Message
+      pt_BR: Mensagem do Commit
+      zh_Hans: 提交消息
+    llm_description: Extra detail to append to automatic commit message.
+    name: commit_message
+    required: false
+    type: string
+  - form: llm
+    human_description:
+      en_US: SHA that pull request head must match to allow merge.
+      pt_BR: SHA que o head do pull request deve corresponder para permitir a mesclagem.
+      zh_Hans: PR头部必须匹配的SHA值才能允许合并。
+    label:
+      en_US: SHA
+      pt_BR: SHA
+      zh_Hans: SHA
+    llm_description: SHA that pull request head must match to allow merge. This is used to prevent merging if the PR has been updated since you last checked.
+    name: sha
+    required: false
+    type: string

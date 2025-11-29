@@ -5,6 +5,7 @@ from typing import Any
 import requests
 
 from dify_plugin import Tool
+from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.model import InvokeError
 
@@ -19,13 +20,18 @@ class GithubSearchCodeTool(Tool):
         sort = tool_parameters.get("sort", "")
         order = tool_parameters.get("order", "desc")
 
+        credential_type = self.runtime.credential_type
 
         if not query:
             yield self.create_text_message("Please input search query")
             return
 
-        if "access_tokens" not in self.runtime.credentials:
+        if credential_type == CredentialType.API_KEY and "access_tokens" not in self.runtime.credentials:
             yield self.create_text_message("GitHub API Access Tokens is required.")
+            return
+
+        if credential_type == CredentialType.OAUTH and "access_tokens" not in self.runtime.credentials:
+            yield self.create_text_message("GitHub OAuth Access Tokens is required.")
             return
 
         access_token = self.runtime.credentials.get("access_tokens")
