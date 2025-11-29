@@ -1,10 +1,10 @@
-version: 0.0.25
+version: 0.0.26
 type: plugin
 author: "langgenius"
 name: "openai_api_compatible"
 description:
-  en_US: Model providers compatible with OpenAI's API standard, such as LM Studio.
-  zh_Hans: 兼容 OpenAI API 的模型供应商，例如 LM Studio 。
+  en_US: Model providers compatible with OpenAI's API standard, such as LM Studio or llama.cpp Service.
+  zh_Hans: 兼容 OpenAI API 的模型供应商，例如 LM Studio、llama.cpp 服务。
 label:
   en_US: "OpenAI-API-compatible"
 created_at: "2024-07-12T08:03:44.658609186Z"
