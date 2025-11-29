@@ -86,15 +86,12 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         agent_though_support = credentials.get("agent_though_support", "not_supported")
         
         # Add AGENT_THOUGHT feature if thinking mode is supported (either mode)
-        if agent_though_support in ["supported", "only_thinking_supported"]:
-            try:
-                entity.features.index(ModelFeature.AGENT_THOUGHT)
-            except ValueError:
-                entity.features.append(ModelFeature.AGENT_THOUGHT)
-            
-            # Only add the enable_thinking parameter if the model supports both modes
-            # If only_thinking_supported, the parameter is not needed (forced behavior)
-            if agent_though_support == "supported":
+        if agent_though_support in ["supported", "only_thinking_supported"] and ModelFeature.AGENT_THOUGHT not in entity.features:
+            entity.features.append(ModelFeature.AGENT_THOUGHT)
+        
+        # Only add the enable_thinking parameter if the model supports both modes
+        # If only_thinking_supported, the parameter is not needed (forced behavior)
+        if agent_though_support == "supported":
                 entity.parameter_rules += [
                     ParameterRule(
                         name="enable_thinking",
@@ -176,19 +173,22 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
 
         # Handle thinking mode based on model support configuration
         agent_though_support = credentials.get("agent_though_support", "not_supported")
-        
+        enable_thinking_value = None
         if agent_though_support == "only_thinking_supported":
             # Force enable thinking mode
-            model_parameters["chat_template_kwargs"] = {"enable_thinking": True}
+            enable_thinking_value = True
         elif agent_though_support == "not_supported":
             # Force disable thinking mode
-            model_parameters["chat_template_kwargs"] = {"enable_thinking": False}
+            enable_thinking_value = False
         else:
             # Both modes supported - use user's preference
             user_enable_thinking = model_parameters.pop("enable_thinking", None)
             if user_enable_thinking is not None:
-                model_parameters["chat_template_kwargs"] = {"enable_thinking": bool(user_enable_thinking)}
-
+                enable_thinking_value = bool(user_enable_thinking)
+                
+        if enable_thinking_value is not None:
+            model_parameters.setdefault("chat_template_kwargs", {})["enable_thinking"] = enable_thinking_value
+        
         # Remove thinking content from assistant messages for better performance.
         with suppress(Exception):
             self._drop_analyze_channel(prompt_messages)
