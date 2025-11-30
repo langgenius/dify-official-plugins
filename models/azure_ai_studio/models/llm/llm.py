@@ -1,11 +1,10 @@
 import logging
 from collections.abc import Generator, Sequence
 from typing import Any, Optional, Union
+
 from azure.ai.inference import ChatCompletionsClient
 from azure.ai.inference.models import (
     StreamingChatCompletionsUpdate,
-    SystemMessage,
-    UserMessage,
 )
 from azure.core.credentials import AzureKeyCredential
 from azure.core.exceptions import (
@@ -25,6 +24,7 @@ from dify_plugin.entities.model import (
     AIModelEntity,
     FetchFrom,
     I18nObject,
+    ModelFeature,
     ModelPropertyKey,
     ModelType,
     ParameterRule,
@@ -39,7 +39,11 @@ from dify_plugin.entities.model.llm import (
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
+    PromptMessageContentType,
     PromptMessageTool,
+    SystemPromptMessage,
+    ToolPromptMessage,
+    UserPromptMessage,
 )
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -61,6 +65,100 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
 
     client: Any = None
     from azure.ai.inference.models import StreamingChatCompletionsUpdate
+
+    def _convert_prompt_message_to_dict(self, message: PromptMessage) -> dict:
+        """
+        Convert PromptMessage to dictionary format for Azure AI Studio API
+
+        :param message: prompt message
+        :return: message dict
+        """
+        if isinstance(message, UserPromptMessage):
+            if isinstance(message.content, str):
+                return {"role": "user", "content": message.content}
+            elif isinstance(message.content, list):
+                # Handle multimodal messages
+                content = []
+                for message_content in message.content:
+                    if message_content.type == PromptMessageContentType.TEXT:
+                        content.append({"type": "text", "text": message_content.data})
+                    elif message_content.type == PromptMessageContentType.IMAGE:
+                        # The content is a data URI (e.g., "data:image/png;base64,..."), which can be used directly.
+                        content.append(
+                            {
+                                "type": "image_url",
+                                "image_url": {"url": message_content.data},
+                            }
+                        )
+                return {"role": "user", "content": content}
+            else:
+                return {"role": "user", "content": ""}
+        elif isinstance(message, AssistantPromptMessage):
+            message_dict = {"role": "assistant", "content": message.content or ""}
+            if message.tool_calls:
+                message_dict["tool_calls"] = [
+                    {
+                        "id": tool_call.id,
+                        "type": tool_call.type or "function",
+                        "function": {
+                            "name": tool_call.function.name,
+                            "arguments": tool_call.function.arguments,
+                        },
+                    }
+                    for tool_call in message.tool_calls
+                ]
+            return message_dict
+        elif isinstance(message, SystemPromptMessage):
+            return {"role": "system", "content": message.content}
+        elif isinstance(message, ToolPromptMessage):
+            return {
+                "role": "tool",
+                "content": message.content,
+                "tool_call_id": message.tool_call_id,
+            }
+        else:
+            raise ValueError(f"Unknown message type {type(message)}")
+
+    def _convert_tools(self, tools: Sequence[PromptMessageTool]) -> list[dict]:
+        """
+        Convert PromptMessageTool to Azure AI Studio tool format
+
+        :param tools: tool messages
+        :return: tool dicts
+        """
+        return [
+            {
+                "type": "function",
+                "function": {
+                    "name": tool.name,
+                    "description": tool.description,
+                    "parameters": tool.parameters,
+                },
+            }
+            for tool in tools
+        ]
+
+    def _convert_tool_calls(self, tool_calls) -> list[AssistantPromptMessage.ToolCall]:
+        """
+        Convert API tool calls to AssistantPromptMessage.ToolCall objects
+
+        :param tool_calls: tool calls from API response
+        :return: list of AssistantPromptMessage.ToolCall
+        """
+        result = []
+        for tool_call in tool_calls:
+            if hasattr(tool_call, "function"):
+                result.append(
+                    AssistantPromptMessage.ToolCall(
+                        id=tool_call.id or "",
+                        type="function",
+                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                            name=tool_call.function.name or "",
+                            arguments=tool_call.function.arguments or "",
+                        ),
+                    )
+                )
+        return result
 
     def _invoke(
         self,
@@ -89,24 +187,32 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
         if not self.client:
             endpoint = str(credentials.get("endpoint"))
             api_key = str(credentials.get("api_key"))
+            api_version = credentials.get("api_version", "2024-05-01-preview")
+
             self.client = ChatCompletionsClient(
-                endpoint=endpoint, credential=AzureKeyCredential(api_key)
+                endpoint=endpoint,
+                credential=AzureKeyCredential(api_key),
+                api_version=api_version,
             )
         messages = [
-            {"role": msg.role.value, "content": msg.content} for msg in prompt_messages
+            self._convert_prompt_message_to_dict(msg) for msg in prompt_messages
         ]
+        optional_fields = {}
+        # GPT O series model don't support max_tokens parameter
+        if "max_tokens" in model_parameters:
+            optional_fields["max_tokens"] = model_parameters["max_tokens"]
         payload = {
             "messages": messages,
-            "max_tokens": model_parameters.get("max_tokens", 4096),
             "temperature": model_parameters.get("temperature", 0),
             "top_p": model_parameters.get("top_p", 1),
             "stream": stream,
             "model": model,
+            **optional_fields,
         }
         if stop:
             payload["stop"] = stop
         if tools:
-            payload["tools"] = [tool.model_dump() for tool in tools]
+            payload["tools"] = self._convert_tools(tools)
         try:
             response = self.client.complete(**payload)
             if stream:
@@ -125,6 +231,8 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
             if isinstance(chunk, StreamingChatCompletionsUpdate):
                 if chunk.choices:
                     delta = chunk.choices[0].delta
+
+                    # Handle content updates
                     if delta.content:
                         yield LLMResultChunk(
                             model=model,
@@ -137,6 +245,21 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
                             ),
                         )
 
+                    # Handle tool calls if present
+                    if hasattr(delta, "tool_calls") and delta.tool_calls:
+                        tool_calls = self._convert_tool_calls(delta.tool_calls)
+                        if tool_calls:
+                            yield LLMResultChunk(
+                                model=model,
+                                prompt_messages=list(prompt_messages),
+                                delta=LLMResultChunkDelta(
+                                    index=0,
+                                    message=AssistantPromptMessage(
+                                        content="", tool_calls=tool_calls
+                                    ),
+                                ),
+                            )
+
     def _handle_non_stream_response(
         self,
         response,
@@ -144,8 +267,18 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
         prompt_messages: Sequence[PromptMessage],
         credentials: dict,
     ) -> LLMResult:
-        assistant_text = response.choices[0].message.content
-        assistant_prompt_message = AssistantPromptMessage(content=assistant_text)
+        choice = response.choices[0]
+        assistant_text = choice.message.content or ""
+
+        # Handle tool calls if present
+        tool_calls = []
+        if hasattr(choice.message, "tool_calls") and choice.message.tool_calls:
+            tool_calls = self._convert_tool_calls(choice.message.tool_calls)
+
+        assistant_prompt_message = AssistantPromptMessage(
+            content=assistant_text, tool_calls=tool_calls
+        )
+
         usage = self._calc_response_usage(
             model,
             credentials,
@@ -191,13 +324,15 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
         try:
             endpoint = str(credentials.get("endpoint"))
             api_key = str(credentials.get("api_key"))
+            api_version = credentials.get("api_version", "2024-05-01-preview")
             client = ChatCompletionsClient(
-                endpoint=endpoint, credential=AzureKeyCredential(api_key)
+                endpoint=endpoint,
+                credential=AzureKeyCredential(api_key),
+                api_version=api_version,
             )
             client.complete(
                 messages=[
-                    SystemMessage(content="I say 'ping', you say 'pong'"),
-                    UserMessage(content="ping"),
+                    {"role": "user", "content": "I say 'ping', you say 'pong'.ping"},
                 ],
                 model=model,
             )
@@ -258,14 +393,25 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
                 label=I18nObject(zh_Hans="最大生成长度", en_US="Max Tokens"),
             ),
         ]
+
+        # Add features based on credentials
+        features = []
+        if credentials.get("vision_support") == "true":
+            features.append(ModelFeature.VISION)
+        if credentials.get("function_call_support") == "true":
+            features.append(ModelFeature.TOOL_CALL)
+            features.append(ModelFeature.MULTI_TOOL_CALL)
+
         entity = AIModelEntity(
             model=model,
             label=I18nObject(en_US=model),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.LLM,
-            features=[],
+            features=features,
             model_properties={
-                ModelPropertyKey.CONTEXT_SIZE: int(credentials.get("context_size", "4096")),
+                ModelPropertyKey.CONTEXT_SIZE: int(
+                    credentials.get("context_size", "4096")
+                ),
                 ModelPropertyKey.MODE: credentials.get("mode", LLMMode.CHAT),
             },
             parameter_rules=rules,

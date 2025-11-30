@@ -119,8 +119,14 @@ class AzureOpenAITextEmbeddingModel(_CommonAzureOpenAI, TextEmbeddingModel):
             raise CredentialsValidateFailedError(
                 "Azure OpenAI API Base Endpoint is required"
             )
-        if "openai_api_key" not in credentials:
-            raise CredentialsValidateFailedError("Azure OpenAI API key is required")
+        
+        # Check authentication method
+        auth_method = credentials.get("auth_method", "api_key")
+        if auth_method == "api_key" and "openai_api_key" not in credentials:
+            raise CredentialsValidateFailedError(
+                "Azure OpenAI API key is required when using API Key authentication"
+            )
+        
         if "base_model_name" not in credentials:
             raise CredentialsValidateFailedError("Base Model Name is required")
         if not self._get_ai_model_entity(credentials["base_model_name"], model):

@@ -38,9 +38,6 @@ logger = logging.getLogger(__name__)
 
 
 class BedrockTextEmbeddingModel(TextEmbeddingModel):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.started_at = time.perf_counter()
     def _invoke(
         self,
         model: str,
@@ -65,10 +62,10 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
         if inference_profile_id:
             # Get the full ARN from the profile ID
             profile_info = get_inference_profile_info(inference_profile_id, credentials)
-            model_id = profile_info.get("inferenceProfileArn")
-            if not model_id:
+            model_package_arn = profile_info.get("inferenceProfileArn")
+            if not model_package_arn:
                 raise InvokeError(f"Could not get ARN for inference profile {inference_profile_id}")
-            logger.info(f"Using inference profile ARN: {model_id}")
+            logger.info(f"Using inference profile ARN: {model_package_arn}")
             
             # Determine model prefix from underlying models
             underlying_models = profile_info.get("models", [])
@@ -83,6 +80,7 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
                 raise InvokeError(f"No underlying models found in inference profile")
         else:
             # Traditional model - use model directly
+            model_package_arn = model
             model_prefix = model.split(".")[0]
             
         bedrock_runtime = get_bedrock_client("bedrock-runtime", credentials)
@@ -90,12 +88,40 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
         embeddings = []
         token_usage = 0
 
-        if model_prefix == "amazon":
+        # Nova MME model
+        if model_prefix == "amazon" and "nova" in model_id.lower():
+            embedding_purpose = "GENERIC_INDEX" 
+            for text in texts:
+                body = {
+                    "taskType": "SINGLE_EMBEDDING",
+                    "singleEmbeddingParams": {
+                        "embeddingPurpose": embedding_purpose,
+                        "embeddingDimension": 1024,
+                        "text": {
+                            "truncationMode": "END",
+                            "value": text
+                        }
+                    }
+                }
+                response_body = self._invoke_bedrock_embedding(model_package_arn, bedrock_runtime, body)
+                embedding_data = response_body.get("embeddings", [{}])[0]
+                embeddings.extend([embedding_data.get("embedding")])
+                token_usage += len(text.split())
+            logger.warning(f"Total Tokens: {token_usage}")
+            result = TextEmbeddingResult(
+                model=model,
+                embeddings=embeddings,
+                usage=self._calc_response_usage(model=model, credentials=credentials, tokens=token_usage),
+            )
+            return result
+
+        # Titan embedding models
+        if model_prefix == "amazon" and "titan" in model_id.lower():
             for text in texts:
                 body = {
                     "inputText": text,
                 }
-                response_body = self._invoke_bedrock_embedding(model_id, bedrock_runtime, body)
+                response_body = self._invoke_bedrock_embedding(model_package_arn, bedrock_runtime, body)
                 embeddings.extend([response_body.get("embedding")])
                 token_usage += response_body.get("inputTextTokenCount")
             logger.warning(f"Total Tokens: {token_usage}")
@@ -113,7 +139,7 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
                     "texts": [text],
                     "input_type": input_type,
                 }
-                response_body = self._invoke_bedrock_embedding(model_id, bedrock_runtime, body)
+                response_body = self._invoke_bedrock_embedding(model_package_arn, bedrock_runtime, body)
                 embeddings.extend(response_body.get("embeddings"))
                 token_usage += len(text)
             result = TextEmbeddingResult(

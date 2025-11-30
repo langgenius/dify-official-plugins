@@ -49,6 +49,11 @@ from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 
 logger = logging.getLogger(__name__)
 
+# Module-level constants for readability and maintainability
+_MAX_TOOL_CALLS = 1000
+_MICRO_CHUNK_SIZE = 16
+_TRUTHY_VALUES = {"true", "supported", "yes", "1"}
+
 
 class OllamaLargeLanguageModel(LargeLanguageModel):
     """
@@ -301,6 +306,69 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
         )
         return result
 
+    def _handle_tool_call_stream(self, chunk_json: dict, tool_calls_by_index: dict):
+        """
+        Handle tool call stream response using index-based aggregation (Tongyi-like).
+        
+        :param chunk_json: chunk json from Ollama response
+        :param tool_calls_by_index: accumulated tool calls dict keyed by index
+        """
+        
+        # normalize arguments to string for stability
+        def _normalize_arguments(args):
+            if args is None:
+                return ""
+            if isinstance(args, (dict, list)):
+                try:
+                    return json.dumps(args, ensure_ascii=False)
+                except Exception as e:
+                    logger.warning(f"Failed to serialize arguments to JSON: {e}")
+                    return str(args)  # Fallback to string conversion
+            return str(args)
+        
+        tool_calls_stream = chunk_json.get("message", {}).get("tool_calls")
+        if not tool_calls_stream:
+            return
+        
+        for tool_call_stream in tool_calls_stream:
+            function_data = tool_call_stream.get("function", {})
+            func_name = function_data.get("name")
+            args_chunk = _normalize_arguments(function_data.get("arguments"))
+            idx = tool_call_stream.get("index")
+            # default to append order if index missing
+            if not isinstance(idx, int):
+                # place at next available position according to current max index
+                if tool_calls_by_index:
+                    idx = max(tool_calls_by_index.keys()) + 1
+                else:
+                    idx = 0
+
+            # Prevent excessive index values from consuming memory
+            if idx >= _MAX_TOOL_CALLS:
+                logger.warning(f"Tool call index {idx} exceeds maximum allowed size {_MAX_TOOL_CALLS}.")
+                continue
+
+            # create new entry if it doesn't exist
+            existing = tool_calls_by_index.get(idx)
+            if existing is None:
+                tc_id_value = tool_call_stream.get("id") or str(idx)
+                tool_calls_by_index[idx] = AssistantPromptMessage.ToolCall(
+                    id=tc_id_value,
+                    type="function",
+                    function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                        name=func_name or "",
+                        arguments=args_chunk,
+                    ),
+                )
+            else:
+                # merge into existing entry
+                tool_call_obj = existing
+                if func_name:
+                    # overwrite name to avoid duplication
+                    tool_call_obj.function.name = func_name
+                if args_chunk:
+                    tool_call_obj.function.arguments += args_chunk
+
     def _handle_generate_stream_response(
         self,
         model: str,
@@ -321,6 +389,63 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
         """
         full_text = ""
         chunk_index = 0
+        tool_calls_by_index = {}  # use dict aggregator to avoid sparse large lists
+        tool_phase = False  # switch to delta-only text after detecting tool_calls
+        micro_chunk_size = _MICRO_CHUNK_SIZE  # mimic pure text small increments
+        is_reasoning_started = 0  # 0 not started, 1 started, 2 ended
+
+        def _wrap_thinking_by_reasoning_content(message_obj: dict, is_reasoning: int) -> tuple[str, int]:
+            """
+            If the reasoning response is from message_obj.get("thinking"), we wrap
+            it with HTML think tag.
+
+            :param message_obj: message_obj dictionary from LLM streaming response
+            :param is_reasoning: 0 not started, 1 started, 2 ended
+            :return: tuple of (processed_content, is_reasoning)
+            """
+
+            content = message_obj.get("content") or ""
+            thinking_content = message_obj.get("thinking")
+
+            if thinking_content:
+                if 0 == is_reasoning:
+                    content = "<think>\n" + thinking_content
+                    is_reasoning = 1
+                elif 1 == is_reasoning:
+                    content = thinking_content
+                else:
+                    logger.warning(f"Unexpected reasoning state is_reasoning: {is_reasoning} "
+                                   f"content: {content} thinking_content: {thinking_content}")
+            elif 1 == is_reasoning and content:
+                content = "\n</think>" + content
+                is_reasoning = 2
+            return content, is_reasoning
+
+        def _yield_micro_chunks(s: str, size: int, min_size: int = 4) -> list[str]:
+            """
+            Split by natural boundaries (spaces/newlines) to mimic pure text streaming.
+            Group tokens to approx `size` without emitting chunks smaller than `min_size` (except for newlines).
+            """
+            parts: list[str] = []
+            buffer = ""
+            # Split into whitespace and non-whitespace tokens, preserving separators
+            tokens = re.split(r"(\s+)", s)
+            for tok in tokens:
+                if not tok:
+                    continue
+                # If current token would exceed size and buffer is not empty, flush
+                if buffer and len(buffer) + len(tok) > size:
+                    parts.append(buffer)
+                    buffer = tok
+                else:
+                    buffer += tok
+                # Prefer to flush at newline boundaries for responsiveness (respect min_size)
+                if "\n" in tok and len(buffer) >= max(min_size, size // 2):
+                    parts.append(buffer)
+                    buffer = ""
+            if buffer:
+                parts.append(buffer)
+            return parts
 
         def create_final_llm_result_chunk(
             index: int, message: AssistantPromptMessage, finish_reason: str
@@ -357,17 +482,83 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
             if completion_type is LLMMode.CHAT:
                 if not chunk_json:
                     continue
-                if "message" not in chunk_json:
-                    text = ""
+                message_obj = chunk_json.get("message") or {}
+                # Prefer incremental `response` for streaming; fallback to final `message.content`
+                if chunk_json.get("response") is not None:
+                    text = chunk_json.get("response", "")
                 else:
-                    text = chunk_json.get("message").get("content", "")
+                    text, is_reasoning_started = _wrap_thinking_by_reasoning_content(
+                        message_obj, is_reasoning_started
+                     )
+
+                # If this chunk contains tool_calls, yield a dedicated tool_calls delta (like Tongyi)
+                if "tool_calls" in message_obj and message_obj.get("tool_calls"):
+                    self._handle_tool_call_stream(chunk_json, tool_calls_by_index)
+                    logger.info("[Ollama] stream tool_calls detected: %s", message_obj.get("tool_calls"))
+                    tool_phase = True
+                    assistant_prompt_message = AssistantPromptMessage(content="")
+                    if tool_calls_by_index:
+                        assistant_prompt_message.tool_calls = [
+                            tool_calls_by_index[i]
+                            for i in sorted(tool_calls_by_index)
+                            if tool_calls_by_index[i] is not None
+                        ]
+                    yield LLMResultChunk(
+                        model=chunk_json.get("model", model or "default_model"),
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(
+                            index=chunk_index,
+                            message=assistant_prompt_message,
+                            finish_reason="tool_calls",
+                        ),
+                    )
+                    chunk_index += 1
             else:
                 if not chunk_json:
                     continue
-                text = chunk_json["response"]
-            assistant_prompt_message = AssistantPromptMessage(content=text)
-            full_text += text
-            if chunk_json["done"]:
+                text = chunk_json.get("response", "")
+                
+            # normal text streaming: compute delta/full first, then micro-chunk uniformly
+            if text:
+                text_to_yield = ""
+                if tool_phase:
+                    # delta-only: only yield newly added part after tool_calls
+                    if full_text and text.startswith(full_text):
+                        text_to_yield = text[len(full_text):]
+                        full_text = text
+                    else:
+                        # If startswith fails, find longest common prefix
+                        common_prefix_len = 0
+                        for i in range(min(len(full_text), len(text))):
+                            if full_text[i] == text[i]:
+                                common_prefix_len += 1
+                            else:
+                                break
+                        text_to_yield = text[common_prefix_len:]
+                        full_text = text
+                else:
+                    # pure text phase: yield text as-is
+                    text_to_yield = text
+                    full_text += text_to_yield
+
+                if text_to_yield:
+                    # Micro-chunk for finer granularity and consistent UX
+                    for piece in _yield_micro_chunks(text_to_yield, micro_chunk_size):
+                        if not piece:
+                            continue
+                        assistant_prompt_message = AssistantPromptMessage(content=piece)
+                        yield LLMResultChunk(
+                            model=chunk_json.get("model", model or "default_model"),
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=chunk_index,
+                                message=assistant_prompt_message,
+                            ),
+                        )
+                        chunk_index += 1
+            
+            if chunk_json.get("done"):
+                # compute usage and emit final chunk with finish_reason
                 if "prompt_eval_count" in chunk_json:
                     prompt_tokens = chunk_json["prompt_eval_count"]
                 else:
@@ -391,25 +582,20 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                 usage = self._calc_response_usage(
                     model, credentials, prompt_tokens, completion_tokens
                 )
+                # final chunk: include finish_reason and usage, no extra tool_calls
                 yield LLMResultChunk(
-                    model=chunk_json["model"],
+                    model=chunk_json.get("model", model or "default_model"),
                     prompt_messages=prompt_messages,
                     delta=LLMResultChunkDelta(
                         index=chunk_index,
-                        message=assistant_prompt_message,
+                        message=AssistantPromptMessage(content=""),
                         finish_reason="stop",
                         usage=usage,
                     ),
                 )
-            else:
-                yield LLMResultChunk(
-                    model=chunk_json["model"],
-                    prompt_messages=prompt_messages,
-                    delta=LLMResultChunkDelta(
-                        index=chunk_index, message=assistant_prompt_message
-                    ),
-                )
-            chunk_index += 1
+                chunk_index += 1
+                break
+            
 
     def _convert_prompt_message_tool_to_dict(self, tool: PromptMessageTool) -> dict:
         """
@@ -465,6 +651,9 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
         elif isinstance(message, ToolPromptMessage):
             message = cast(ToolPromptMessage, message)
             message_dict = {"role": "tool", "content": message.content}
+            # 关联到具体的函数调用以符合 OpenAI/Ollama 规范
+            if hasattr(message, "tool_call_id") and message.tool_call_id:
+                message_dict["tool_call_id"] = message.tool_call_id
         else:
             raise ValueError(f"Got unknown type {message}")
         return message_dict
@@ -516,15 +705,23 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
 
         :return: model schema
         """
-        extras: dict[str, Any] = {"features": []}
-        if "vision_support" in credentials and credentials["vision_support"] == "true":
-            extras["features"].append(ModelFeature.VISION)
-        if (
-            "function_call_support" in credentials
-            and credentials["function_call_support"] == "true"
-        ):
-            extras["features"].append(ModelFeature.TOOL_CALL)
-            extras["features"].append(ModelFeature.MULTI_TOOL_CALL)
+        # Build features from credentials and pass into AIModelEntity
+        features: list[ModelFeature] = []
+        if credentials.get("vision_support") == "true":
+            features.append(ModelFeature.VISION)
+        # 支持 true/supported/yes/1 形式开启函数调用
+        fc_supported = str(credentials.get("function_call_support", "")).lower() in _TRUTHY_VALUES
+        if fc_supported:
+            features.append(ModelFeature.TOOL_CALL)
+            features.append(ModelFeature.MULTI_TOOL_CALL)
+            # 说明：Dify 的 Ollama 配置页没有单独的 stream_function_calling 项；
+            # 若支持 function_call，则默认也支持流式工具调用（如需关闭，可在凭据中显式提供 false）。
+            stream_fc_cfg = credentials.get("stream_function_calling")
+            if stream_fc_cfg is None:
+                features.append(ModelFeature.STREAM_TOOL_CALL)
+            else:
+                if str(stream_fc_cfg).lower() in _TRUTHY_VALUES:
+                    features.append(ModelFeature.STREAM_TOOL_CALL)
         entity = AIModelEntity(
             model=model,
             label=I18nObject(zh_Hans=model, en_US=model),
@@ -542,13 +739,6 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                     use_template=DefaultParameterName.TEMPERATURE.value,
                     label=I18nObject(en_US="Temperature", zh_Hans="温度"),
                     type=ParameterType.FLOAT,
-                    help=I18nObject(
-                        en_US="The temperature of the model. Increasing the temperature will make the model answer more creatively. (Default: 0.8)",
-                        zh_Hans="模型的温度。增加温度将使模型的回答更具创造性。（默认值：0.8）",
-                    ),
-                    default=0.1,
-                    min=0,
-                    max=1,
                 ),
                 ParameterRule(
                     name=DefaultParameterName.TOP_P.value,
@@ -740,7 +930,7 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                 unit=Decimal(credentials.get("unit", 0)),
                 currency=credentials.get("currency", "USD"),
             ),
-            **extras,
+            features=features,
         )
         return entity
 

@@ -1,0 +1,97 @@
+identity:
+  name: shipping_query_received
+  author: langgenius
+  label:
+    en_US: Shipping Query Received
+    zh_Hans: 收到运费查询
+    ja_JP: 送料クエリ受信
+description:
+  en_US: Triggers when Telegram sends a shipping query for goods.
+  zh_Hans: 当 Telegram 发送运费查询时触发。
+  ja_JP: Telegram が配送情報の確認を依頼したときにトリガーします。
+parameters: []
+output_schema:
+  type: object
+  additionalProperties: false
+  required:
+  - update_id
+  - shipping_query
+  properties:
+    update_id:
+      type: integer
+      description: Unique identifier for the Telegram update.
+    shipping_query:
+      type: object
+      additionalProperties: false
+      description: Shipping query data provided by Telegram.
+      required:
+      - id
+      - from
+      - invoice_payload
+      - shipping_address
+      properties:
+        id:
+          type: string
+          description: Unique query identifier.
+        from:
+          type: object
+          description: Telegram User object.
+          additionalProperties: true
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for this user or bot.
+            is_bot:
+              type: boolean
+              description: True if this user is a bot.
+            first_name:
+              type: string
+              description: User first name.
+            last_name:
+              type: string
+              description: User last name.
+            username:
+              type: string
+              description: Username of the user, if any.
+            language_code:
+              type: string
+              description: IETF language tag of the user's language.
+            is_premium:
+              type: boolean
+              description: True if the user is a Telegram Premium subscriber.
+        invoice_payload:
+          type: string
+          description: Bot specified invoice payload.
+        shipping_address:
+          type: object
+          description: Shipping address submitted by the user.
+          additionalProperties: false
+          required:
+          - country_code
+          - state
+          - city
+          - street_line1
+          - street_line2
+          - post_code
+          properties:
+            country_code:
+              type: string
+              description: ISO 3166-1 alpha-2 country code.
+            state:
+              type: string
+              description: State, if applicable.
+            city:
+              type: string
+              description: City name.
+            street_line1:
+              type: string
+              description: First line for the address.
+            street_line2:
+              type: string
+              description: Second line for the address.
+            post_code:
+              type: string
+              description: Post code of the address.
+extra:
+  python:
+    source: events/payments/shipping_query_received.py

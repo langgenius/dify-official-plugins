@@ -1,0 +1,107 @@
+identity:
+  name: chat_boost_removed
+  author: langgenius
+  label:
+    en_US: Chat Boost Removed
+    zh_Hans: 会话助力移除
+    ja_JP: チャットブースト削除
+description:
+  en_US: Triggers when Telegram reports that a boost was removed from a chat.
+  zh_Hans: 当 Telegram 报告会话助力被移除时触发。
+  ja_JP: チャットからブーストが削除されたときにトリガーします。
+parameters: []
+output_schema:
+  type: object
+  additionalProperties: false
+  required:
+  - update_id
+  - removed_chat_boost
+  properties:
+    update_id:
+      type: integer
+      description: Unique identifier for the Telegram update.
+    removed_chat_boost:
+      type: object
+      additionalProperties: false
+      description: Details about the removed chat boost.
+      required:
+      - chat
+      - boost_id
+      - remove_date
+      - source
+      properties:
+        chat:
+          type: object
+          description: Telegram Chat object.
+          additionalProperties: true
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for this chat.
+            type:
+              type: string
+              description: Type of chat, such as private, group, supergroup, or channel.
+            title:
+              type: string
+              description: Chat title for supergroups, channels, and group chats.
+            username:
+              type: string
+              description: Username of the chat if available.
+            first_name:
+              type: string
+              description: First name of the other party in a private chat.
+            last_name:
+              type: string
+              description: Last name of the other party in a private chat.
+        boost_id:
+          type: string
+          description: Identifier of the removed boost.
+        remove_date:
+          type: integer
+          description: Date when the boost was removed in Unix time.
+        source:
+          type: object
+          description: Source that granted the boost.
+          additionalProperties: true
+          properties:
+            source:
+              type: string
+              description: Boost origin type such as premium, gift_code, or giveaway.
+            user:
+              type: object
+              description: Telegram User object.
+              additionalProperties: true
+              properties:
+                id:
+                  type: integer
+                  description: Unique identifier for this user or bot.
+                is_bot:
+                  type: boolean
+                  description: True if this user is a bot.
+                first_name:
+                  type: string
+                  description: User first name.
+                last_name:
+                  type: string
+                  description: User last name.
+                username:
+                  type: string
+                  description: Username of the user, if any.
+                language_code:
+                  type: string
+                  description: IETF language tag of the user's language.
+                is_premium:
+                  type: boolean
+                  description: True if the user is a Telegram Premium subscriber.
+            giveaway_message_id:
+              type: integer
+              description: Identifier of the giveaway message that granted the boost.
+            prize_star_count:
+              type: integer
+              description: Star count prize for giveaway boosts.
+            is_unclaimed:
+              type: boolean
+              description: True if the giveaway prize was not claimed.
+extra:
+  python:
+    source: events/boosts/chat_boost_removed.py

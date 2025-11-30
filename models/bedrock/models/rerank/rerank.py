@@ -1,5 +1,6 @@
 from typing import Optional
 import logging
+import json
 
 from botocore.exceptions import ClientError
 
@@ -61,8 +62,7 @@ class BedrockRerankModel(RerankModel):
             return RerankResult(model=model, docs=docs)
 
         # initialize client
-        bedrock_runtime = get_bedrock_client("bedrock-agent-runtime", credentials)
-        queries = [{"type": "TEXT", "textQuery": {"text": query}}]
+        bedrock_runtime = get_bedrock_client("bedrock-runtime", credentials)
         text_sources = []
         for text in docs:
             text_sources.append(
@@ -76,6 +76,7 @@ class BedrockRerankModel(RerankModel):
                     },
                 }
             )
+        
         # Check if using inference profile
         model_id = model
         inference_profile_id = credentials.get("inference_profile_id")
@@ -93,27 +94,37 @@ class BedrockRerankModel(RerankModel):
             if not region:
                 raise InvokeBadRequestError("aws_region is required in credentials")
             model_package_arn = f"arn:aws:bedrock:{region}::foundation-model/{model_id}"
-        rerankingConfiguration = {
-            "type": "BEDROCK_RERANKING_MODEL",
-            "bedrockRerankingConfiguration": {
-                "numberOfResults": min(len(text_sources) if top_n is None else top_n, len(text_sources)),
-                "modelConfiguration": {
-                    "modelArn": model_package_arn,
-                },
-            },
+
+        numberOfResults = min(len(text_sources) if top_n is None else top_n, len(text_sources))
+
+        body_dict = {
+            "query": query,
+            "documents": docs
         }
-        response = bedrock_runtime.rerank(
-            queries=queries, sources=text_sources, rerankingConfiguration=rerankingConfiguration
+
+        # Only add api_version for Cohere models
+        if "cohere" in model_id.lower():
+            body_dict["api_version"] = 2
+        
+        body = json.dumps(body_dict)
+    
+        response = bedrock_runtime.invoke_model(
+            modelId=model_package_arn,
+            body=body
         )
 
+        body_content = json.loads(response['body'].read())
+
+        results_to_process = body_content['results'][:numberOfResults]
+
         rerank_documents = []
-        for idx, result in enumerate(response["results"]):
+        for idx, result in enumerate(results_to_process):
             # format document
             index = result["index"]
             rerank_document = RerankDocument(
                 index=index,
                 text=docs[index],
-                score=result["relevanceScore"],
+                score=result["relevance_score"],
             )
 
             # score threshold check

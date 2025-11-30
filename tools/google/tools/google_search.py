@@ -1,89 +1,109 @@
-import json
-
 from collections.abc import Generator
 from typing import Any
 
 import requests
-
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+from loguru import logger
 
-import os
-
-SERP_API_URL = "https://serpapi.com/search"
-
-
-def get_file_path(filename: str) -> str:
-    return os.path.join(os.path.dirname(os.path.abspath(__file__)), filename)
+from tools.utils import to_refs, VALID_LANGUAGES, VALID_COUNTRIES, InstantSearchResponse
 
 
-# Load valid country codes from google-countries.json
-def load_valid_countries(filename: str) -> set:
-    with open(filename) as file:
-        countries = json.load(file)
-        return {country['country_code'] for country in countries}
-
-
-# Load valid language codes from google-languages.json
-def load_valid_languages(filename: str) -> set:
-    with open(filename) as file:
-        languages = json.load(file)
-        return {language['language_code'] for language in languages}
-
-
-VALID_COUNTRIES = load_valid_countries(get_file_path("google-countries.json"))
-VALID_LANGUAGES = load_valid_languages(get_file_path("google-languages.json"))
+def _parse_results(results: dict) -> dict:
+    """
+    [deprecated function]
+    Parse search results into legacy format for backward compatibility.
+    The new response protocol wraps data in new fields (refs), but we keep the old fields
+    to prevent unexpected issues with existing integrations.
+    
+    :param results:
+    :return:
+    """
+    result = {}
+    if "knowledge_graph" in results:
+        result["title"] = results["knowledge_graph"].get("title", "")
+        result["description"] = results["knowledge_graph"].get("description", "")
+    if "organic_results" in results:
+        result["organic_results"] = [
+            {
+                "title": item.get("title", ""),
+                "link": item.get("link", ""),
+                "snippet": item.get("snippet", ""),
+            }
+            for item in results["organic_results"]
+        ]
+    return result
 
 
 class GoogleSearchTool(Tool):
-    def _parse_response(self, response: dict) -> dict:
-        result = {}
-        if "knowledge_graph" in response:
-            result["title"] = response["knowledge_graph"].get("title", "")
-            result["description"] = response["knowledge_graph"].get("description", "")
-        if "organic_results" in response:
-            result["organic_results"] = [
-                {
-                    "title": item.get("title", ""),
-                    "link": item.get("link", ""),
-                    "snippet": item.get("snippet", ""),
-                }
-                for item in response["organic_results"]
-            ]
-        return result
+    SERP_API_URL = "https://serpapi.com/search"
+
+    @staticmethod
+    def _set_params_language_code(params: dict, tool_parameters: dict):
+        try:
+            language_code = tool_parameters.get("language_code") or tool_parameters.get("hl")
+            if (
+                language_code
+                and isinstance(language_code, str)
+                and isinstance(VALID_LANGUAGES, set)
+                and language_code in VALID_LANGUAGES
+            ):
+                params["hl"] = language_code
+        except Exception as e:
+            logger.warning(f"Failed to set language code parameter: {e}")
+
+    @staticmethod
+    def _set_params_country_code(params: dict, tool_parameters: dict):
+        try:
+            country_code = tool_parameters.get("country_code") or tool_parameters.get("gl")
+            if (
+                country_code
+                and isinstance(country_code, str)
+                and VALID_COUNTRIES
+                and isinstance(VALID_COUNTRIES, set)
+                and country_code in VALID_COUNTRIES
+            ):
+                params["gl"] = country_code
+        except Exception as e:
+            logger.warning(f"Failed to set country code parameter: {e}")
 
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
-        hl = tool_parameters.get("hl", "en")
-        gl = tool_parameters.get("gl", "us")
-        location = tool_parameters.get("location", "")
-        imgsz = tool_parameters.get("imgsz", "m")
+        as_agent_tool = tool_parameters.get("as_agent_tool", False)
 
-        # Validate 'hl' (language) code
-        if hl not in VALID_LANGUAGES:
-            yield self.create_text_message(
-                f"Invalid 'hl' parameter: {hl}. Please refer to https://serpapi.com/google-languages for a list of valid language codes.")
-
-        # Validate 'gl' (country) code
-        if gl not in VALID_COUNTRIES:
-            yield self.create_text_message(
-                f"Invalid 'gl' parameter: {gl}. Please refer to https://serpapi.com/google-countries for a list of valid country codes.")
-
+        query = tool_parameters.get("query", "")
         params = {
             "api_key": self.runtime.credentials["serpapi_api_key"],
-            "q": tool_parameters["query"],
+            "q": query,
             "engine": "google",
             "google_domain": "google.com",
-            "gl": gl,
-            "hl": hl,
-            "imgsz": imgsz
+            "num": 10,
         }
-        if location:
-            params["location"] = location
+        self._set_params_country_code(params, tool_parameters)
+        self._set_params_language_code(params, tool_parameters)
+
         try:
-            response = requests.get(url=SERP_API_URL, params=params)
+            response = requests.get(url=self.SERP_API_URL, params=params)
             response.raise_for_status()
-            valuable_res = self._parse_response(response.json())
-            yield self.create_json_message(valuable_res)
+
+            tool_invoke_results = response.json()
+
+            isr = InstantSearchResponse(refs=to_refs(tool_invoke_results))
+
+            if not as_agent_tool:
+                isr_json_parts = isr.to_dify_json_message()
+                # Merge deprecated fields for backward compatibility
+                # The new protocol uses 'refs' to wrap the response, but legacy fields are retained
+                # to prevent unexpected issues with existing workflows
+                if deprecated_parts := _parse_results(tool_invoke_results):
+                    isr_json_parts.update(deprecated_parts)
+                yield self.create_json_message(json=isr_json_parts)
+            else:
+                yield self.create_text_message(text=isr.to_dify_text_message())
+
         except requests.exceptions.RequestException as e:
             yield self.create_text_message(
-                f"An error occurred while invoking the tool: {str(e)}. Please refer to https://serpapi.com/locations-api for the list of valid locations.")
+                f"An error occurred while invoking the tool: {str(e)}. "
+                "Please refer to https://serpapi.com/locations-api for the list of valid locations."
+            )
+        except Exception as e:
+            yield self.create_text_message(f"An error occurred while invoking the tool: {str(e)}.")

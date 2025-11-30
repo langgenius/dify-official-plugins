@@ -1,0 +1,62 @@
+identity:
+  name: comment_updated
+  author: langgenius
+  label:
+    en_US: Comment Updated
+    zh_Hans: 评论更新
+    ja_JP: コメント更新
+
+description:
+  en_US: Triggers when a comment is edited in Linear
+  zh_Hans: 当在 Linear 中编辑评论时触发
+  ja_JP: Linearでコメントが編集されたときにトリガーされます
+
+parameters:
+- name: body_contains
+  label:
+    en_US: Body Contains
+    zh_Hans: 内容包含
+    ja_JP: 本文に含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if comment body contains keywords (comma-separated). Leave empty for all comments."
+    zh_Hans: "仅当评论内容包含关键词时触发（逗号分隔）。留空则触发所有评论。"
+    ja_JP: "コメント本文にキーワードが含まれる場合のみトリガー（カンマ区切り）。空の場合は全コメントでトリガー。"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [update]
+    type:
+      type: string
+      enum: [Comment]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        body:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        editedAt:
+          type: string
+        userId:
+          type: string
+        issueId:
+          type: string
+    actor:
+      type: object
+  required:
+  - action
+  - type
+  - data
+
+extra:
+  python:
+    source: events/comment/comment_updated.py

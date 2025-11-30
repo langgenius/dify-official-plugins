@@ -1,0 +1,29 @@
+model: qwen3-235b-a22b-thinking-2507
+label:
+  zh_Hans: qwen3-235b-a22b-thinking-2507
+  en_US: qwen3-235b-a22b-thinking-2507
+model_type: llm
+features:
+  - agent-thought
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 256000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    default: 0.6
+  - name: top_p
+    use_template: top_p
+    default: 0.95
+  - name: max_tokens
+    use_template: max_tokens
+    min: 1
+    max: 8192
+    default: 8192
+pricing:
+  input: "0.280"
+  output: "2.800"
+  unit: "0.000001"
+  currency: USD

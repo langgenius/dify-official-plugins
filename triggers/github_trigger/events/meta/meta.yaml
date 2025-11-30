@@ -1,0 +1,103 @@
+identity:
+  name: meta
+  author: langgenius
+  label:
+    en_US: Meta (Unified)
+    zh_Hans: 元数据（统一）
+    ja_JP: メタ（統合）
+
+description:
+  en_US: Unified meta event for webhook metadata notifications
+  zh_Hans: 用于 webhook 元数据通知的统一 meta 事件
+  ja_JP: webhook メタデータ通知向けの統合 meta イベント
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default: []
+  options:
+  - value: deleted
+    label:
+      en_US: Deleted
+      zh_Hans: 删除
+      ja_JP: 削除
+  - value: edited
+    label:
+      en_US: Edited
+      zh_Hans: 编辑
+      ja_JP: 編集
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type:
+      - string
+      - "null"
+    hook_id:
+      type:
+      - integer
+      - "null"
+    hook:
+      type:
+      - object
+      - "null"
+      properties:
+        id:
+          type: integer
+        type:
+          type:
+          - string
+          - "null"
+        active:
+          type:
+          - boolean
+          - "null"
+        events:
+          type:
+          - array
+          - "null"
+          items:
+            type: string
+        config:
+          type:
+          - object
+          - "null"
+    repository:
+      type:
+      - object
+      - "null"
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+    sender:
+      type:
+      - object
+      - "null"
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+
+extra:
+  python:
+    source: events/meta/meta.py
+  help:
+    en_US: Optional filter for meta webhook changes like edited or deleted. Leave empty to accept any meta.
+    zh_Hans: 可选过滤 webhook 元数据变化 如 edited 或 deleted。留空表示不过滤。
+    ja_JP: webhook メタの変更を任意で絞り込み。edited や deleted など。未設定で全て許可。

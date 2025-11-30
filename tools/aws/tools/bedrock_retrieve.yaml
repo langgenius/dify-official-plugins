@@ -176,7 +176,7 @@ parameters:
       en_US: 'JSON formatted filter conditions for metadata (e.g., {"greaterThan": {"key: "aaa", "value": 10}})'
       zh_Hans: '元数据的JSON格式过滤条件（例如，{{"greaterThan": {"key: "aaa", "value": 10}}）'
       pt_BR: 'JSON formatted filter conditions for metadata (e.g., {"greaterThan": {"key: "aaa", "value": 10}})'
-    form: form
+    form: llm
 extra:
   python:
     source: tools/bedrock_retrieve.py

@@ -1,0 +1,58 @@
+identity:
+  name: article_unpublished
+  author: langgenius
+  label:
+    en_US: Article Unpublished
+    zh_Hans: 文章下线
+    ja_JP: 記事非公開
+
+description:
+  en_US: Triggered when a Zendesk help center article is unpublished
+  zh_Hans: 当 Zendesk 文章下线时触发
+  ja_JP: Zendesk ヘルプセンター記事が非公開になったときにトリガーされます
+
+parameters:
+- name: brand_ids
+  label:
+    en_US: Brand IDs
+    zh_Hans: 品牌 ID
+    ja_JP: ブランド ID
+  type: string
+  required: false
+  description:
+    en_US: Comma separated Zendesk brand IDs to match. Leave blank for any brand.
+    zh_Hans: 逗号分隔的 Zendesk 品牌 ID。留空表示任意品牌。
+    ja_JP: カンマ区切りの Zendesk ブランド ID。空の場合はすべて。
+
+- name: user_ids
+  label:
+    en_US: User IDs
+    zh_Hans: 用户 ID
+    ja_JP: ユーザー ID
+  type: string
+  required: false
+  description:
+    en_US: Comma separated user IDs who can unpublish. Leave blank for any user.
+    zh_Hans: 逗号分隔的下线用户 ID。留空表示任意用户。
+    ja_JP: カンマ区切りの非公開操作を行ったユーザー ID。空の場合はすべて。
+
+output_schema:
+  type: object
+  properties:
+    article:
+      type: object
+      properties:
+        id:
+          type: string
+        brand_id:
+          type: ["string", "null"]
+        user_id:
+          type: ["string", "null"]
+        unpublished_at:
+          type: ["string", "null"]
+  required:
+  - article
+
+extra:
+  python:
+    source: events/article/article_unpublished.py

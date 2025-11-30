@@ -1,0 +1,102 @@
+identity:
+  name: initiative_update_updated
+  author: langgenius
+  label:
+    en_US: Initiative Update Updated
+    zh_Hans: Initiative 更新更新
+    ja_JP: イニシアチブアップデート更新
+description:
+  en_US: Triggers when a initiative_update is updated
+  zh_Hans: 当在 Linear 中更新 Initiative 更新时触发
+  ja_JP: Linear でイニシアチブアップデートが更新されたときにトリガーされます
+parameters:
+- name: body_contains
+  label:
+    en_US: Body Contains
+    zh_Hans: 正文包含
+    ja_JP: 本文に含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if the update body contains the provided keywords (comma-separated)."
+    zh_Hans: "仅当更新正文包含指定关键词时触发（逗号分隔）。"
+    ja_JP: "アップデート本文に指定したキーワードが含まれる場合のみトリガーします（カンマ区切り）。"
+- name: health_filter
+  label:
+    en_US: Health Filter
+    zh_Hans: 健康度过滤
+    ja_JP: ヘルスフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Restrict to updates with specific health statuses (comma-separated)."
+    zh_Hans: "仅保留指定健康状态的更新（逗号分隔）。"
+    ja_JP: "特定のヘルスステータスのアップデートのみ対象にします（カンマ区切り）。"
+- name: initiative_filter
+  label:
+    en_US: Initiative Filter
+    zh_Hans: Initiative 过滤
+    ja_JP: イニシアチブフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the update belongs to specific initiative IDs (comma-separated)."
+    zh_Hans: "仅当更新属于指定 Initiative ID 时触发（逗号分隔）。"
+    ja_JP: "指定したイニシアチブ ID のアップデートのみトリガーします（カンマ区切り）。"
+- name: author_filter
+  label:
+    en_US: Author Filter
+    zh_Hans: 作者过滤
+    ja_JP: 作成者フィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the update is written by specific user IDs (comma-separated)."
+    zh_Hans: "仅当更新由指定用户 ID 撰写时触发（逗号分隔）。"
+    ja_JP: "指定ユーザー ID が作成したアップデートのみトリガーします（カンマ区切り）。"
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [update]
+    type:
+      type: string
+      enum: [InitiativeUpdate]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        body:
+          type: string
+        bodyData:
+          type: string
+        health:
+          type: string
+        initiativeId:
+          type: string
+        slugId:
+          type: string
+        url:
+          type: string
+        userId:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        editedAt:
+          type: string
+        reactionData:
+          type: object
+        initiative:
+          type: object
+        user:
+          type: object
+    actor:
+      type: object
+  required: [action, type, data]
+extra:
+  python:
+    source: events/initiative_update/initiative_update_updated.py
