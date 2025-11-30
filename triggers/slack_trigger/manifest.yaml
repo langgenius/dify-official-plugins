@@ -1,0 +1,37 @@
+author: langgenius
+created_at: "2024-09-20T08:03:44.658609186Z"
+description:
+  en_US: Slack trigger plugin example for receiving workspace events.
+  ja_JP: Slack ワークスペースのイベントを受信するためのトリガープラグインのサンプルです。
+  zh_Hans: Slack 工作区事件触发器插件示例。
+icon: icon.svg
+label:
+  en_US: Slack
+  ja_JP: Slack
+  zh_Hans: Slack
+meta:
+  arch:
+    - amd64
+    - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: "3.12"
+  version: 0.0.1
+  minimum_dify_version: 1.10.0
+name: slack_trigger
+plugins:
+  triggers:
+    - provider/slack.yaml
+resource:
+  memory: 1048576
+  permission:
+    model:
+      enabled: true
+      llm: true
+    tool:
+      enabled: true
+tags:
+  - utilities
+type: plugin
+version: 0.0.1

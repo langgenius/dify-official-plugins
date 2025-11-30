@@ -10,6 +10,26 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 class BedrockRetrieveAndGenerateTool(Tool):
     bedrock_client: Any = None
 
+    def _format_text_with_citations(self, result: dict[str, Any]) -> str:
+        """Convert output text and citations dict into a readable plain text."""
+        lines = []
+        if output := result.get("output"):
+            lines.append(output)
+
+        citations = result.get("citations", [])
+        if citations:
+            lines.append("\n[References]")
+            for idx, citation in enumerate(citations, start=1):
+                ref_lines = []
+                for ref in citation.get("references", []):
+                    location = ref.get("location") or ""
+                    ref_lines.append(f"- {ref.get('content', '').strip()} {location}".rstrip())
+                text = citation.get("text", "").strip()
+                joined_refs = "\n".join(ref_lines) if ref_lines else "- (metadata only)"
+                lines.append(f"[{idx}] {text}\n{joined_refs}")
+
+        return "\n".join(lines) if lines else ""
+
     def _invoke(
         self,
         tool_parameters: dict[str, Any],
@@ -52,7 +72,7 @@ class BedrockRetrieveAndGenerateTool(Tool):
                 retrieve_generate_config["knowledgeBaseConfiguration"] = kb_config
             else:  # EXTERNAL_SOURCES
                 es_config_str = tool_parameters.get("external_sources_configuration")
-                es_config = json.loads(kb_config_str) if es_config_str else None
+                es_config = json.loads(es_config_str) if es_config_str else None
                 retrieve_generate_config["externalSourcesConfiguration"] = es_config
 
             request_config["retrieveAndGenerateConfiguration"] = retrieve_generate_config
@@ -99,7 +119,8 @@ class BedrockRetrieveAndGenerateTool(Tool):
             if result_type == "json":
                 yield self.create_json_message(result)
             elif result_type == "text-with-citations":
-                yield self.create_text_message(result)
+                text_with_refs = self._format_text_with_citations(result)
+                yield self.create_text_message(text_with_refs)
             else:
                 yield self.create_text_message(result.get("output"))
         except json.JSONDecodeError as e:

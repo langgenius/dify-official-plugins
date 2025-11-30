@@ -23,47 +23,52 @@ parameters:
       en_US: used for searching
       zh_Hans: 用于搜索网页内容
       pt_BR: used for searching
-    llm_description: key words for searching
+    llm_description: keywords for searching
     form: llm
-  - name: hl
+  # parameter: hl
+  - name: language_code
     type: string
     required: false
     label:
-      en_US: Language
-      zh_Hans: 语言
-      pt_BR: Language
+      en_US: Language code
+      zh_Hans: 语言代码
+      pt_BR: Language code
     human_description:
       en_US: Parameter defines the language to use for the Google search. It's a two-letter language code. (e.g., en for English, es for Spanish, or fr for French). Head to https://serpapi.com/google-languages for a full list of supported Google languages.
       zh_Hans: 此参数定义用于 Google 搜索的语言。它是一个两字母的语言代码。 (例如，en 代表英语，es 代表西班牙语，fr 代表法语)。请前往 https://serpapi.com/google-languages 查看完整的支持 Google 语言列表。
       pt_BR: Parameter defines the language to use for the Google search. It's a two-letter language code. (e.g., en for English, es for Spanish, or fr for French). Head to https://serpapi.com/google-languages for a full list of supported Google languages.
-    llm_description: Language
+    llm_description: "(Optional) This parameter specifies the language used for Google searches. In most cases, you don't need to explicitly specify this parameter. Some effective examples: zh-cn, en, ja."
     form: llm
-  - name: gl
+
+  # parameter: gl
+  - name: country_code
     type: string
     required: false
     label:
-      en_US: Country
-      zh_Hans: 国家
-      pt_BR: Country
+      en_US: Country code
+      zh_Hans: 国家代码
+      pt_BR: Country code
     human_description:
       en_US: Parameter defines the country to use for the Google search. It's a two-letter country code. (e.g., us for the United States, uk for United Kingdom, or fr for France). Head to the https://serpapi.com/google-countries for a full list of supported Google countries.
       zh_Hans: 此参数定义用于 Google 搜索的国家。它是一个两字母的国家代码。 (例如，us 代表美国，uk 代表英国，fr 代表法国)。请前往 https://serpapi.com/google-countries 查看完整的支持 Google 国家列表。
       pt_BR: Parameter defines the country to use for the Google search. It's a two-letter country code. (e.g., us for the United States, uk for United Kingdom, or fr for France). Head to the https://serpapi.com/google-countries for a full list of supported Google countries.
-    llm_description: Country
+    llm_description: "(Optional) This parameter defines the country used for Google search. In most cases, you don't need to explicitly specify this parameter. Some effective examples: cn, us, uk, jp."
     form: llm
-  - name: location
-    type: string
+
+  - name: as_agent_tool
+    type: boolean
     required: false
+    default: false
+    form: form
     label:
-      en_US: Location
-      zh_Hans: 位置
-      pt_BR: Location
+      en_US: Used in Agent nodes
+      zh_Hans: 在 Agent 节点中使用
+      pt_BR: Used in Agent nodes
     human_description:
-      en_US: Parameter defines from where you want the search to originate. If several locations match the location requested, we'll pick the most popular one. Head to the /locations.json API if you need more precise control. The location and uule parameters can't be used together. It is recommended to specify location at the city level in order to simulate a real user’s search. If location is omitted, the search may take on the location of the proxy.
-      zh_Hans: 此参数定义搜索的位置。如果有多个位置与请求的位置匹配，我们将选择最受欢迎的一个。如果需要更精确的控制，请前往 /locations.json API。location 和 uule 参数不能同时使用。建议在城市级别指定位置，以模拟真实用户的搜索。如果省略位置，则搜索可能会采用代理的位置。
-      pt_BR: Parameter defines from where you want the search to originate. If several locations match the location requested, we'll pick the most popular one. Head to the /locations.json API if you need more precise control. The location and uule parameters can't be used together. It is recommended to specify location at the city level in order to simulate a real user’s search. If location is omitted, the search may take on the location of the proxy.
-    llm_description: Location
-    form: llm
+      en_US: Default is False. The node behaves differently in workflow/chatflow calls versus when used as a tool within an Agent, resulting in different return formats. In Agent mode, the context template is optimized to clearly highlight key information. Make sure to enable this parameter when using the Agent mode.
+      zh_Hans: 默认为 False，直接在 workflow 或 chatflow 中调用还是在 Agent 中作为工具使用，两种模式触发不同的返回格式。在 Agent 模式下，优化上下文模板，明确关键信息。 在 Agent 模式下请务必启动这个参数。
+      pt_BR: Default is False. The node behaves differently in workflow/chatflow calls versus when used as a tool within an Agent, resulting in different return formats. In Agent mode, the context template is optimized to clearly highlight key information. Make sure to enable this parameter when using the Agent mode.
+    llm_description: Default is False. The node behaves differently in workflow/chatflow calls versus when used as a tool within an Agent, resulting in different return formats. In Agent mode, the context template is optimized to clearly highlight key information. Make sure to enable this parameter when using the Agent mode.
 extra:
   python:
     source: tools/google_search.py

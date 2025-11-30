@@ -1,0 +1,5 @@
+path: "/"
+method: "GET"
+extra:
+  python:
+    source: "endpoints/wecom_verify.py"

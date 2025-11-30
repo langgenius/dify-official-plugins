@@ -1,0 +1,125 @@
+identity:
+  name: "create_case"
+  author: "langgenius"
+  label:
+    en_US: "Create Case"
+    zh_Hans: "创建案例"
+    pt_BR: "Criar Caso"
+    ja_JP: "ケース作成"
+description:
+  human:
+    en_US: "Create a new case in Salesforce"
+    zh_Hans: "在 Salesforce 中创建新案例"
+    pt_BR: "Criar um novo caso no Salesforce"
+    ja_JP: "Salesforce で新しいケースを作成します"
+  llm: "Creates a new case in Salesforce with the specified subject, description, priority, and status. Returns the created case ID and details."
+parameters:
+  - name: subject
+    type: string
+    required: true
+    label:
+      en_US: Subject
+      zh_Hans: 主题
+      pt_BR: Assunto
+      ja_JP: 件名
+    human_description:
+      en_US: "The subject/title of the case"
+      zh_Hans: "案例的主题/标题"
+      pt_BR: "O assunto/título do caso"
+      ja_JP: "ケースの件名/タイトル"
+    llm_description: "The subject or title of the case. Should be a brief summary of the issue or request."
+    form: llm
+  - name: description
+    type: string
+    required: true
+    label:
+      en_US: Description
+      zh_Hans: 描述
+      pt_BR: Descrição
+      ja_JP: 説明
+    human_description:
+      en_US: "Detailed description of the case"
+      zh_Hans: "案例的详细描述"
+      pt_BR: "Descrição detalhada do caso"
+      ja_JP: "ケースの詳細な説明"
+    llm_description: "A detailed description of the case, including all relevant information about the issue or request."
+    form: llm
+  - name: priority
+    type: string
+    required: false
+    label:
+      en_US: Priority
+      zh_Hans: 优先级
+      pt_BR: Prioridade
+      ja_JP: 優先度
+    human_description:
+      en_US: "Priority level of the case (High, Medium, Low)"
+      zh_Hans: "案例的优先级（高、中、低）"
+      pt_BR: "Nível de prioridade do caso (Alto, Médio, Baixo)"
+      ja_JP: "ケースの優先度（高、中、低）"
+    llm_description: "The priority level of the case. Valid values are 'High', 'Medium', or 'Low'. Defaults to 'Medium' if not specified."
+    form: llm
+  - name: status
+    type: string
+    required: false
+    label:
+      en_US: Status
+      zh_Hans: 状态
+      pt_BR: Status
+      ja_JP: ステータス
+    human_description:
+      en_US: "Current status of the case (New, In Progress, Closed)"
+      zh_Hans: "案例的当前状态（新建、进行中、已关闭）"
+      pt_BR: "Status atual do caso (Novo, Em Progresso, Fechado)"
+      ja_JP: "ケースの現在のステータス（新規、進行中、完了）"
+    llm_description: "The current status of the case. Common values include 'New', 'In Progress', 'Escalated', 'Closed'. Defaults to 'New' if not specified."
+    form: llm
+  - name: origin
+    type: string
+    required: false
+    label:
+      en_US: Origin
+      zh_Hans: 来源
+      pt_BR: Origem
+      ja_JP: ソース
+    human_description:
+      en_US: "Origin of the case (Phone, Email, Web, Chat)"
+      zh_Hans: "案例的来源（电话、电子邮件、网络、聊天）"
+      pt_BR: "Origem do caso (Telefone, E-mail, Web, Chat)"
+      ja_JP: "ケースのソース（電話、Eメール、Web、チャット）"
+    llm_description: "The origin or channel through which the case was created. Common values include 'Phone', 'Email', 'Web', 'Chat'."
+    form: llm
+  - name: contact_id
+    type: string
+    required: false
+    label:
+      en_US: Contact ID
+      zh_Hans: 联系人 ID
+      pt_BR: ID do Contato
+      ja_JP: コンタクト ID
+    human_description:
+      en_US: "Salesforce Contact ID associated with this case"
+      zh_Hans: "与此案例关联的 Salesforce 联系人 ID"
+      pt_BR: "ID do contato Salesforce associado a este caso"
+      ja_JP: "このケースに関連する Salesforce コンタクト ID"
+    llm_description: "The Salesforce Contact ID (18-character ID) to associate with this case. This links the case to a specific contact in Salesforce."
+    form: llm
+  - name: account_id
+    type: string
+    required: false
+    label:
+      en_US: Account ID
+      zh_Hans: 客户 ID
+      pt_BR: ID da Conta
+      ja_JP: アカウント ID
+    human_description:
+      en_US: "Salesforce Account ID associated with this case"
+      zh_Hans: "与此案例关联的 Salesforce 客户 ID"
+      pt_BR: "ID da conta Salesforce associado a este caso"
+      ja_JP: "このケースに関連する Salesforce アカウント ID"
+    llm_description: "The Salesforce Account ID (18-character ID) to associate with this case. This links the case to a specific account in Salesforce."
+    form: llm
+extra:
+  python:
+    source: tools/create_case.py
+

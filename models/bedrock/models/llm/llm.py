@@ -33,6 +33,7 @@ from dify_plugin.entities.model.llm import (
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     ImagePromptMessageContent,
+    DocumentPromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
     PromptMessageTool,
@@ -287,26 +288,21 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 credentials['model_parameters'] = {}
             credentials['model_parameters']['model_name'] = model_name
             
-            if model_parameters.pop('cross-region', False):
-                region_name = credentials['aws_region']
-                
-                # Check if the model supports global prefix (currently mainly Claude 4 series)
-                supports_global = any(model_id.startswith(prefix) for prefix in [
-                    'anthropic.claude-sonnet-4', 'anthropic.claude-opus-4'
-                ])
-                
-                if supports_global:
-                    # Prefer using global prefix
-                    region_prefix = model_ids.get_region_area(region_name, prefer_global=True)
-                else:
-                    # Use traditional regional prefix
-                    region_prefix = model_ids.get_region_area(region_name, prefer_global=False)
+            # Get region prefix for model ID construction
+            region_name = credentials['aws_region']
+            region_prefix = None
+            cross_region = model_parameters.pop('cross-region', 'disabled')
+            
+            if cross_region in ('geographic', 'global'):
+                # Cross-region inference enabled
+                prefer_global = (cross_region == 'global')
+                region_prefix = model_ids.get_region_area(region_name, prefer_global=prefer_global)
                 
                 if not region_prefix:
-                    raise InvokeError(f'Failed to get cross-region Inference predix for {region_name}')
+                    raise InvokeError(f'Failed to get cross-region inference prefix for region {region_name}')
 
                 if not model_ids.is_support_cross_region(model_id):
-                    raise InvokeError(f"Model - {model_id} doesn't support cross-region Inference")
+                    raise InvokeError(f"Model {model_id} doesn't support cross-region inference")
                 
                 model_id = "{}.{}".format(region_prefix, model_id)
 
@@ -384,8 +380,43 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         if model_info["support_system_prompts"] and system and len(system) > 0:
             parameters["system"] = system
 
-        if model_info["support_tool_use"] and tools:
-            parameters["toolConfig"] = self._convert_converse_tool_config(tools=tools)
+        # Check if message history contains tool-related content
+        # AWS Bedrock requires toolConfig when messages contain toolUse or toolResult blocks
+        has_tool_content_in_messages = False
+        if model_info["support_tool_use"]:
+            for msg in prompt_messages:
+                if isinstance(msg, AssistantPromptMessage) and msg.tool_calls:
+                    has_tool_content_in_messages = True
+                    break
+                if isinstance(msg, ToolPromptMessage):
+                    has_tool_content_in_messages = True
+                    break
+
+        # Add toolConfig based on tools and message history
+        if model_info["support_tool_use"]:
+            if tools:
+                # Normal case: tools provided
+                parameters["toolConfig"] = self._convert_converse_tool_config(tools=tools)
+            elif has_tool_content_in_messages:
+                # WORKAROUND for Dify Agent issue:
+                # In the last iteration, Dify sets tools=[] but messages contain tool history
+                # AWS Bedrock requires toolConfig.tools to have at least 1 element
+                # Create a placeholder tool that LLM won't call, allowing agent to finish gracefully
+                logger.info(
+                    "Message history contains tool calls but no tools provided. "
+                    "Creating placeholder tool to satisfy AWS Bedrock API requirements. "
+                    "This prevents the agent from making further tool calls."
+                )
+                placeholder_tool = PromptMessageTool(
+                    name="__no_more_tools_available__",
+                    description="This is a placeholder tool. No more tools are available for this conversation. Please provide a final answer based on the information already gathered.",
+                    parameters={
+                        "type": "object",
+                        "properties": {},
+                        "required": []
+                    }
+                )
+                parameters["toolConfig"] = self._convert_converse_tool_config(tools=[placeholder_tool])
         try:
             # for issue #10976
             conversations_list = parameters["messages"]
@@ -693,7 +724,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             inference_config["temperature"] = model_parameters["temperature"]
 
         if "top_p" in model_parameters:
-            inference_config["topP"] = model_parameters["temperature"]
+            inference_config["topP"] = model_parameters["top_p"]
 
         if stop:
             inference_config["stopSequences"] = stop
@@ -820,7 +851,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 message_dict = {"role": "user", "content": [{"text": message.content}]}
             else:
                 sub_messages = []
-                for message_content in message.content:
+                for idx, message_content in enumerate(message.content):
                     if message_content.type == PromptMessageContentType.TEXT:
                         message_content = cast(TextPromptMessageContent, message_content)
                         sub_message_dict = {"text": message_content.data}
@@ -840,6 +871,22 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
                         sub_message_dict = {
                             "image": {"format": mime_type.replace("image/", ""), "source": {"bytes": image_content}}
+                        }
+                        sub_messages.append(sub_message_dict)
+                    elif message_content.type == PromptMessageContentType.DOCUMENT:
+                        message_content = cast(DocumentPromptMessageContent, message_content)
+                        doc_bytes = base64.b64decode(message_content.base64_data)
+                        mime_type = message_content.mime_type
+
+                        SUPPORTED_DOC_MIME_TYPES = ["application/pdf"]
+                        if mime_type not in SUPPORTED_DOC_MIME_TYPES:
+                            raise ValueError(
+                                f"Unsupported document type {mime_type}, "
+                                f"only support application/pdf"
+                            )
+
+                        sub_message_dict = {
+                            "document": {"format": mime_type.replace("application/", ""), "name": f"pdf-{idx}", "source": {"bytes": doc_bytes}}
                         }
                         sub_messages.append(sub_message_dict)
 
@@ -898,12 +945,18 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :param tools: tools for tool calling
         :return:md = genai.GenerativeModel(model)
         """
+        model_parts = model.split(".")
+        
+        prefix = ""
+        model_name = ""
         if model.startswith('us.') or model.startswith('eu.'):
-            prefix = model.split(".")[1]
-            model_name = model.split(".")[2]
+            if len(model_parts) >= 3:
+                prefix = model_parts[1]
+                model_name = model_parts[2]
         else:
-            prefix = model.split(".")[0]
-            model_name = model.split(".")[1]
+            if len(model_parts) >= 2:
+                prefix = model_parts[0]
+                model_name = model_parts[1]
 
         if isinstance(prompt_messages, str):
             prompt = prompt_messages
@@ -1034,26 +1087,22 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         :param credentials: model credentials
         :return:
         """
+        if 'auth_method' not in credentials:
+            raise CredentialsValidateFailedError("Authentication method 'auth_method' is missing in credentials.")
+
         try:
-            # Check if this is an inference profile based custom model
-            inference_profile_id = credentials.get("inference_profile_id")
-            if inference_profile_id:
-                # Validate inference profile directly
-                validate_inference_profile(inference_profile_id, credentials)
-                logger.info(f"Successfully validated inference profile: {inference_profile_id}")
+            if credentials['auth_method'] == 'IAM_Role':
                 return
-            
-            # Traditional model validation
-            foundation_model_ids = self._list_foundation_models(credentials=credentials)
-            cris_prefix = model_ids.get_region_area(credentials.get("aws_region"))
-            if cris_prefix and model.startswith(cris_prefix + "."):
-                model = model.split('.', 1)[1]
-            logger.info(f"get model_ids: {foundation_model_ids}")
-            if model not in foundation_model_ids:
-                raise ValueError(f"model id: {model} not found in bedrock")
+            elif credentials['auth_method'] == 'Access_Secret_Key':
+                if credentials['aws_access_key_id'] and credentials['aws_secret_access_key']:
+                    return 
+            elif credentials['auth_method'] == 'API_Key':
+                if credentials['bedrock_api_key']:
+                    return
+
+            raise CredentialsValidateFailedError(f"Invalid or incomplete credentials for auth_method: {credentials.get('auth_method')}")
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
-
 
     def _list_foundation_models(self, credentials: dict) -> list[str]:
         """

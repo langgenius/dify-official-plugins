@@ -1,0 +1,8 @@
+model: qwen3-reranker-0.6b
+model_type: rerank
+model_properties:
+  context_size: 32768
+pricing:
+  input: '0.11'
+  unit: '0.000001'
+  currency: USD

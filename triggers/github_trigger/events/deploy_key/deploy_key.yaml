@@ -1,0 +1,141 @@
+identity:
+  name: deploy_key
+  author: langgenius
+  label:
+    en_US: Deploy Key (Unified)
+    zh_Hans: 部署密钥（统一）
+    ja_JP: デプロイキー（統合）
+
+description:
+  en_US: Triggered when a deploy key is created or deleted
+  zh_Hans: 当部署密钥创建或删除时触发
+  ja_JP: デプロイキーの作成または削除時にトリガー
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - created
+  - deleted
+  options:
+  - value: created
+    label:
+      en_US: Created
+      zh_Hans: 创建
+      ja_JP: 作成
+  - value: deleted
+    label:
+      en_US: Deleted
+      zh_Hans: 删除
+      ja_JP: 削除
+  description:
+    en_US: Multi select filter for deploy key lifecycle created or deleted.
+    zh_Hans: 多选过滤部署密钥生命周期事件 如 创建 或 删除。
+    ja_JP: デプロイキーのライフサイクルを複数選択で絞り込み 作成 または 削除。
+
+- name: title
+  label:
+    en_US: Key Title
+    zh_Hans: 密钥标题
+    ja_JP: キータイトル
+  type: string
+  required: false
+  description:
+    en_US: Exact match on deploy key title. Comma separated allowed.
+    zh_Hans: 部署密钥标题精确匹配。支持逗号分隔。
+    ja_JP: デプロイキーのタイトル完全一致。カンマ区切り可。
+
+- name: fingerprint
+  label:
+    en_US: Key Fingerprint
+    zh_Hans: 密钥指纹
+    ja_JP: キーフィンガープリント
+  type: string
+  required: false
+  description:
+    en_US: Exact match on key fingerprint. Comma separated allowed.
+    zh_Hans: 按密钥指纹精确匹配。支持逗号分隔。
+    ja_JP: キーのフィンガープリント完全一致。カンマ区切り可。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    key:
+      type: object
+      properties:
+        id:
+          type: integer
+        key:
+          type:
+          - string
+          - "null"
+        title:
+          type:
+          - string
+          - "null"
+        url:
+          type:
+          - string
+          - "null"
+          format: uri
+        read_only:
+          type:
+          - boolean
+          - "null"
+        created_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+        fingerprint:
+          type:
+          - string
+          - "null"
+      required:
+      - id
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+    sender:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - key
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/deploy_key/deploy_key.py

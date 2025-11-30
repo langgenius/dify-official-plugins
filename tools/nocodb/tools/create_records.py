@@ -33,9 +33,6 @@ class CreateRecordsTool(Tool):
             yield self.create_text_message(f"Invalid JSON data: {str(e)}")
             return
         
-        # Normalize table name so first letter of each word is uppercase
-        table_name = ' '.join(word.capitalize() for word in table_name.split(' '))
-        
         # Validate data structure
         if bulk:
             if not isinstance(data, list):

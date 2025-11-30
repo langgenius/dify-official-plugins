@@ -1,0 +1,75 @@
+identity:
+  name: "dicom_multiframe"
+  author: "langgenius"
+  label:
+    en_US: "DICOM Multiframe"
+    zh_Hans: "DICOM 多帧解析"
+description:
+  human:
+    en_US: "Report the number of frames and preview a selected frame."
+    zh_Hans: "返回多帧影像的帧数，并可预览指定帧。"
+  llm: "Inspect multi-frame DICOMs, preview a chosen frame."
+parameters:
+  - name: dicom_file
+    type: file
+    required: true
+    label:
+      en_US: "DICOM file"
+      zh_Hans: "DICOM 文件"
+    human_description:
+      en_US: "Upload the DICOM file (.dcm)."
+      zh_Hans: "上传 DICOM 文件（.dcm）。"
+    llm_description: "Provide the DICOM file."
+    form: llm
+  - name: frame_index
+    type: number
+    required: false
+    default: 0
+    label:
+      en_US: "Frame index"
+      zh_Hans: "帧索引"
+    human_description:
+      en_US: "0-based frame index to preview."
+      zh_Hans: "用于预览的 0 基帧索引。"
+    llm_description: "Frame to preview."
+    form: form
+  - name: include_shapes
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: "Include array shape"
+      zh_Hans: "包含数组形状"
+    human_description:
+      en_US: "Return the raw pixel array shape."
+      zh_Hans: "返回原始像素数组的形状。"
+    llm_description: "Set true to include shape."
+    form: form
+  - name: include_preview_image
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: "Include preview image"
+      zh_Hans: "包含预览图像"
+    human_description:
+      en_US: "Return a downsampled PNG preview."
+      zh_Hans: "返回缩略 PNG 预览。"
+    llm_description: "Set true to include preview."
+    form: form
+  - name: max_preview_edge
+    type: number
+    required: false
+    default: 256
+    label:
+      en_US: "Max preview edge"
+      zh_Hans: "预览最大边长"
+    human_description:
+      en_US: "Maximum edge size for the preview image."
+      zh_Hans: "预览图的最大边长。"
+    llm_description: "Maximum edge length for preview."
+    form: form
+extra:
+  python:
+    source: tools/dicom_multiframe.py
+

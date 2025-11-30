@@ -82,7 +82,7 @@ parameter_rules:
       - text
       - json_object
 pricing:
-  input: '0.003'
-  output: '0.009'
+  input: '0.0016'
+  output: '0.004'
   unit: '0.001'
   currency: RMB

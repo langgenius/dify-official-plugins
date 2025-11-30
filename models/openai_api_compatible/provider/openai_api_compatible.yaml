@@ -34,12 +34,55 @@ model_credential_schema:
         en_US: The display name of the model in the interface.
     - variable: api_key
       label:
+        zh_Hans: API Key
         en_US: API Key
       type: secret-input
       required: false
       placeholder:
         zh_Hans: 在此输入您的 API Key
         en_US: Enter your API Key
+    - variable: language
+      label:
+        en_US: Language
+        zh_Hans: 语言
+      type: select
+      default: zh
+      required: false
+      show_on:
+        - variable: __model_type
+          value: speech2text
+      placeholder:
+        zh_Hans: 模型支持的语言，例如 zh,en
+        en_US: The language supported by the model, e.g. zh,en
+      options:
+        - value: zh
+          label:
+            en_US: zh-Hans
+            zh_Hans: 中文
+        - value: en
+          label:
+            en_US: en-US
+            zh_Hans: 英文
+        - value: ja
+          label:
+            en_US: ja-JP
+            zh_Hans: 日语
+        - value: ko
+          label:
+            en_US: ko-KR
+            zh_Hans: 韩语
+    - variable: initial_prompt
+      label:
+        en_US: Initial Prompt
+        zh_Hans: 初始提示
+      type: text-input
+      required: false
+      show_on:
+        - variable: __model_type
+          value: speech2text
+      placeholder:
+        zh_Hans: 模型在对话开始时的初始提示
+        en_US: The initial prompt for the model at the start of the conversation.
     - variable: endpoint_url
       label:
         zh_Hans: API endpoint URL
@@ -63,6 +106,7 @@ model_credential_schema:
         - variable: __model_type
           value: llm
       label:
+        zh_Hans: 对话类型
         en_US: Completion mode
       type: select
       required: false
@@ -132,25 +176,34 @@ model_credential_schema:
         - variable: __model_type
           value: llm
       label:
-        en_US: Agent Thought
+        en_US: Thinking Mode Support
+        zh_Hans: 思考模式支持
       type: select
       required: false
       default: not_supported
       options:
-        - value: supported
+        - value: only_thinking_supported
           label:
-            en_US: Support
-            zh_Hans: 支持
+            en_US: Only Thinking Mode
+            zh_Hans: 仅支持思考模式
         - value: not_supported
           label:
-            en_US: Not Support
-            zh_Hans: 不支持
+            en_US: Only Non-Thinking Mode
+            zh_Hans: 仅支持非思考模式
+        - value: supported
+          label:
+            en_US: Both Modes
+            zh_Hans: 两种模式都支持
+      help:
+        en_US: Configure whether the model supports thinking mode, non-thinking mode, or both. This will control the availability of the thinking mode toggle.
+        zh_Hans: 配置模型是否支持思考模式、非思考模式或两者都支持。这将控制思考模式开关的可用性。
     - variable: function_calling_type
       show_on:
         - variable: __model_type
           value: llm
       label:
-        en_US: Function calling
+        zh_Hans: 函数调用类型
+        en_US: Function Call Type
       type: select
       required: false
       default: no_call
@@ -158,11 +211,11 @@ model_credential_schema:
         - value: function_call
           label:
             en_US: Function Call
-            zh_Hans: Function Call
+            zh_Hans: 函数调用
         - value: tool_call
           label:
             en_US: Tool Call
-            zh_Hans: Tool Call
+            zh_Hans: 工具调用
         - value: no_call
           label:
             en_US: Not Support
@@ -172,6 +225,7 @@ model_credential_schema:
         - variable: __model_type
           value: llm
       label:
+        zh_Hans: 流式函数调用
         en_US: Stream function calling
       type: select
       required: false
@@ -190,7 +244,7 @@ model_credential_schema:
         - variable: __model_type
           value: llm
       label:
-        zh_Hans: Vision 支持
+        zh_Hans: 视觉支持
         en_US: Vision Support
       type: select
       required: false
@@ -209,6 +263,7 @@ model_credential_schema:
         - variable: __model_type
           value: llm
       label:
+        zh_Hans: 结构化输出
         en_US: Structured Output
       type: select
       required: false
@@ -227,6 +282,7 @@ model_credential_schema:
         - variable: __model_type
           value: llm
       label:
+        zh_Hans: 流模式授权
         en_US: Stream mode auth
       type: select
       required: false
@@ -265,6 +321,32 @@ model_credential_schema:
       help:
         en_US: "List voice names separated by commas. First voice will be used as default."
         zh_Hans: "用英文逗号分隔的声音列表。第一个声音将作为默认值。"
+    - variable: document_prefix
+      label:
+        zh_Hans: 文档前缀
+        en_US: Document prefix
+      required: false
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+      type: text-input
+      default: ""
+      placeholder:
+        zh_Hans: "输入您的文档前缀, 例如 document:"
+        en_US: "Enter your Document prefix, e.g. document:"
+    - variable: query_prefix
+      label:
+        zh_Hans: 查询前缀
+        en_US: Query prefix
+      required: false
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+      type: text-input
+      default: ""
+      placeholder:
+        zh_Hans: "请输入您的查询前缀, 例如 query:"
+        en_US: "Enter your Query prefix, e.g. query:"
 extra:
   python:
     provider_source: provider/openai_api_compatible.py

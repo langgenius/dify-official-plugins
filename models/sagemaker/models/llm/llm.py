@@ -147,7 +147,16 @@ class SageMakerLargeLanguageModel(LargeLanguageModel):
         full_response = ""
         buffer = ""
         for chunk_bytes in resp:
-            chunk_json_str = chunk_bytes.decode("utf-8")
+            # Handle None or empty chunks from sporadic model output anomalies
+            if not chunk_bytes:
+                logger.warning("Received empty or None chunk from SageMaker stream, skipping...")
+                continue
+
+            try:
+                chunk_json_str = chunk_bytes.decode("utf-8")
+            except (UnicodeDecodeError, AttributeError) as e:
+                logger.warning(f"Failed to decode chunk: {e}, skipping...")
+                continue
             if chunk_json_str.startswith("data: "):
                 chunk_json_str = chunk_json_str[len("data: "):]
 

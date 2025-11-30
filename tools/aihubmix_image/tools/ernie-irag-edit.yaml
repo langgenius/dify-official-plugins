@@ -1,0 +1,86 @@
+identity:
+  name: "ernie-irag-edit"
+  author: "langgenius"
+  label:
+    en_US: "ERNIE iRAG Edit"
+    zh_Hans: "ERNIE iRAG Edit"
+    pt_BR: "ERNIE iRAG Edit"
+    ja_JP: "ERNIE iRAG 編集"
+description:
+  human:
+    en_US: "ERNIE iRAG Image Editing Model"
+    zh_Hans: "ERNIE iRAG 图像编辑模型"
+    pt_BR: "Modelo de Edição ERNIE iRAG"
+    ja_JP: "ERNIE iRAG 画像編集モデル"
+  llm: "Edit image using ERNIE iRAG Edit model with advanced Chinese language understanding and image-to-image capabilities"
+parameters:
+  - name: prompt
+    type: string
+    required: true
+    label:
+      en_US: "Edit Prompt"
+      zh_Hans: "编辑提示词"
+      pt_BR: "Prompt de Edição"
+      ja_JP: "編集プロンプト"
+    human_description:
+      en_US: "Text description of the edits you want to make to the image"
+      zh_Hans: "您想要对图像进行的编辑的文字描述"
+      pt_BR: "Descrição textual das edições que você deseja fazer na imagem"
+      ja_JP: "画像に加えたい編集のテキスト説明"
+    llm_description: "Text prompt for ERNIE iRAG Edit, describing the desired edits to the input image"
+    form: llm
+  
+  - name: image
+    type: string
+    required: true
+    label:
+      en_US: "Input Image URL"
+      zh_Hans: "输入图像URL"
+      pt_BR: "URL da Imagem de Entrada"
+      ja_JP: "入力画像URL"
+    human_description:
+      en_US: "URL of the image to edit"
+      zh_Hans: "要编辑的图像的URL"
+      pt_BR: "URL da imagem a ser editada"
+      ja_JP: "編集する画像のURL"
+    llm_description: "URL of the input image to be edited using ERNIE iRAG Edit"
+    form: llm
+  
+  - name: guidance
+    type: number
+    required: false
+    label:
+      en_US: "Guidance Scale"
+      zh_Hans: "引导强度"
+      pt_BR: "Escala de Orientação"
+      ja_JP: "ガイダンススケール"
+    human_description:
+      en_US: "Guidance scale for image editing (1.0-20.0)"
+      zh_Hans: "图像编辑的引导强度 (1.0-20.0)"
+      pt_BR: "Escala de orientação para edição de imagem (1.0-20.0)"
+      ja_JP: "画像編集のガイダンススケール (1.0-20.0)"
+    llm_description: "Guidance scale for ERNIE iRAG Edit. Higher values follow the prompt more closely. Range: 1.0-20.0"
+    form: form
+    default: 7.5
+    min: 1.0
+    max: 20.0
+  
+  - name: watermark
+    type: boolean
+    required: false
+    label:
+      en_US: "Add Watermark"
+      zh_Hans: "添加水印"
+      pt_BR: "Adicionar Marca d'água"
+      ja_JP: "透かしを追加"
+    human_description:
+      en_US: "Whether to add watermark to the edited image"
+      zh_Hans: "是否在编辑后的图像中添加水印"
+      pt_BR: "Se deve adicionar marca d'água à imagem editada"
+      ja_JP: "編集された画像に透かしを追加するかどうか"
+    llm_description: "Whether to add watermark to the edited image using ERNIE iRAG Edit"
+    form: form
+    default: false
+extra:
+  python:
+    source: tools/ernie-irag-edit.py

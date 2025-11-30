@@ -1,0 +1,70 @@
+identity:
+  name: security_and_analysis
+  author: langgenius
+  label:
+    en_US: Security and Analysis (Unified)
+    zh_Hans: 安全与分析（统一）
+    ja_JP: セキュリティと分析（統合）
+
+description:
+  en_US: Triggered when repository security and analysis settings change
+  zh_Hans: 当仓库安全与分析设置更改时触发
+  ja_JP: リポジトリのセキュリティと分析設定が変更された時にトリガー
+
+parameters:
+- name: settings
+  label:
+    en_US: Settings Changed (names)
+    zh_Hans: 更改的设置（名称）
+    ja_JP: 変更された設定名
+  type: string
+  required: false
+  description:
+    en_US: Comma separated setting names to watch. Triggers only when any of these settings change.
+    zh_Hans: 逗号分隔的设置名称白名单。仅当这些设置发生变化时触发。
+    ja_JP: 監視する設定名をカンマ区切りで。指定のいずれかが変更された場合のみ発火。
+
+output_schema:
+  type: object
+  properties:
+    changes:
+      type:
+      - object
+      - "null"
+      description: Changed settings with before/after values (shape varies)
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+    sender:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/security_and_analysis/security_and_analysis.py

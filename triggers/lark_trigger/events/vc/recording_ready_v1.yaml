@@ -1,0 +1,57 @@
+identity:
+  name: recording_ready_v1
+  author: langgenius
+  label:
+    en_US: Recording Ready
+    zh_Hans: 录制准备就绪
+    ja_JP: 録画準備完了
+
+description:
+  en_US: This event activates when a meeting recording is ready for download.
+  zh_Hans: 当会议录制准备好下载时激活。
+  ja_JP: 会議の録画がダウンロード可能になったときにアクティブになります。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    recording_url:
+      type: string
+      description: URL to download the recording
+    
+    duration:
+      type: number
+      description: Recording duration in seconds
+    
+    meeting_id:
+      type: string
+      description: ID of the meeting
+    
+    meeting_no:
+      type: string
+      description: Meeting number
+    
+    topic:
+      type: string
+      description: Meeting topic
+    
+    start_time:
+      type: string
+      description: Meeting start time
+    
+    end_time:
+      type: string
+      description: Meeting end time
+    
+    host_user_id:
+      type: string
+      description: Host user ID
+    
+    host_user_type:
+      type: string
+      description: Host user type
+
+extra:
+  python:
+    source: events/vc/recording_ready_v1.py
