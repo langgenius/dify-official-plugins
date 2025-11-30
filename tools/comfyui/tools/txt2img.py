@@ -172,7 +172,7 @@ class ComfyuiTxt2Img(Tool):
 
         # send a query to ComfyUI
         try:
-            output_images = self.comfyui.generate(workflow.json())
+            output_images = self.comfyui.generate(workflow)
         except Exception as e:
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         for img in output_images:

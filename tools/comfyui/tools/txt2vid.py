@@ -156,7 +156,7 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_prompt("7", config.negative_prompt)
 
         try:
-            output_images = self.comfyui.generate(workflow.json())
+            output_images = self.comfyui.generate(workflow)
         except Exception as e:
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
@@ -203,7 +203,7 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_prompt(None, config.prompt)
 
         try:
-            output_images = self.comfyui.generate(workflow.json())
+            output_images = self.comfyui.generate(workflow)
         except Exception as e:
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
@@ -242,7 +242,7 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_empty_hunyuan(None, config.width, config.height, config.frameN)
 
         try:
-            output_images = self.comfyui.generate(workflow.json())
+            output_images = self.comfyui.generate(workflow)
         except Exception as e:
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
@@ -262,7 +262,7 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_empty_hunyuan(None, config.width, config.height, config.frameN)
 
         try:
-            output_images = self.comfyui.generate(workflow.json())
+            output_images = self.comfyui.generate(workflow)
         except Exception as e:
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
@@ -285,7 +285,7 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_property(wan2_2, "inputs/length", config.frameN)
 
         try:
-            output_images = self.comfyui.generate(workflow.json())
+            output_images = self.comfyui.generate(workflow)
         except Exception as e:
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
@@ -322,7 +322,7 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_property(ltxv_node_id, "inputs/length", config.frameN)
 
         try:
-            output_images = self.comfyui.generate(workflow.json())
+            output_images = self.comfyui.generate(workflow)
         except Exception as e:
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images

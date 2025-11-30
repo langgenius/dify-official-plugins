@@ -1,6 +1,5 @@
 import dataclasses
 import json
-import os
 import secrets
 from copy import deepcopy
 from typing import Optional
@@ -32,7 +31,7 @@ class ComfyUIModel:
 
 
 class ComfyUiWorkflow:
-    def __init__(self, workflow_json: str | dict):
+    def __init__(self, workflow_json: str | dict, object_info: dict | None = None):
         if type(workflow_json) is str:
 
             def clean_json_string(string: str) -> str:
@@ -51,10 +50,9 @@ class ComfyUiWorkflow:
         self._workflow_original = workflow_json
         self.models_to_download: list[ComfyUIModel] = []
         if "nodes" in workflow_json:
-            try:
-                self._workflow_api = self.convert_to_api_ready(workflow_json)
-            except Exception as e:
-                raise Exception(f"Failed to convert Workflow to API ready. {str(e)}")
+            if object_info is None:
+                raise Exception("object_info needed.")
+            self._workflow_api = self.generate_api_ready(object_info)
             for node in workflow_json["nodes"]:
                 if "properties" in node and "models" in node["properties"]:
                     for model in node["properties"]["models"]:
@@ -65,29 +63,33 @@ class ComfyUiWorkflow:
     def __str__(self):
         return json.dumps(self._workflow_api)
 
-    def convert_to_api_ready(self, workflow_json: dict) -> dict:
+    def generate_api_ready(self, object_info: dict) -> dict:
+        def get_widget_values(class_type: str) -> list[str]:
+            result: list[str] = []
+            if class_type not in object_info:
+                return []
+            data = object_info[class_type]
+            for k in data["input_order"]["required"]:
+                input_type = data["input"]["required"][k][0]
+                if input_type in ["INT", "FLOAT", "STRING", "COMBO"] or type(input_type) is list:
+                    result.append(k)
+            return result
+
         result = {}
-        current_dir = os.path.dirname(os.path.realpath(__file__))
-        widgets_value_path = os.path.join(current_dir, "json", "widgets_value_names.json")
-        with open(widgets_value_path, encoding="UTF-8") as f:
-            widgets_value_names = json.loads(f.read())
-        nodes = workflow_json["nodes"]
-        links = workflow_json["links"]
+        nodes = self.json_original()["nodes"]
+        links = self.json_original()["links"]
         for node in nodes:
             if node["mode"] == 4:  # Disabled node
                 continue
             inputs = {}
             class_type = node["type"]
-            if class_type in ["MarkdownNote"]:
+            if class_type in ["Note", "MarkdownNote"]:
                 continue
+            if class_type == "KSampler":
+                del node["widgets_values"][1]
             # Set input values
-            if class_type in widgets_value_names:
-                for i, value_name in enumerate(widgets_value_names[class_type]):
-                    inputs[value_name] = node["widgets_values"][i]
-            elif class_type in ["Note"]:
-                continue
-            else:
-                raise Exception(f"{class_type} not found in widgets_value_names.")
+            for i, value_name in enumerate(get_widget_values(class_type)):
+                inputs[value_name] = node["widgets_values"][i]
 
             # Set links
             for input in node["inputs"]:
@@ -99,15 +101,14 @@ class ComfyUiWorkflow:
                         break
                 if link is None:
                     continue
-                link_id, source_id, port_idx, _, _, type = link
+                link_id, source_id, port_idx, _, _, _ = link
                 inputs[input["name"]] = [str(source_id), port_idx]
             result[str(node["id"])] = {
                 "class_type": class_type,
                 "_meta": {"title": "TITLE"},
                 "inputs": inputs,
             }
-        result = {key: result[key] for key in sorted(result, key=lambda k: int(k))}
-        return result
+        return {key: result[key] for key in sorted(result, key=lambda k: int(k))}
 
     def json(self) -> dict:
         return self._workflow_api

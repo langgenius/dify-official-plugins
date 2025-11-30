@@ -43,7 +43,7 @@ class Txt2Aud(Tool):
             1.0,
         )
 
-        results = cli.generate(workflow.json())
+        results = cli.generate(workflow)
         for file in results:
             yield self.create_blob_message(
                 blob=file.blob,

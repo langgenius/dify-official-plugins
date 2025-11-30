@@ -71,7 +71,7 @@ class ComfyuiImg2Any(Tool):
         for image_name in image_names:
             workflow.set_property("8", "inputs/image", image_name)
             try:
-                output_images.append(self.comfyui.generate(workflow.json())[0])
+                output_images.append(self.comfyui.generate(workflow)[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
                     f"Failed to generate image: {str(e)}."
@@ -88,7 +88,7 @@ class ComfyuiImg2Any(Tool):
         for image_name in image_names:
             workflow.set_property("3", "inputs/image", image_name)
             try:
-                output_images.append(self.comfyui.generate(workflow.json())[0])
+                output_images.append(self.comfyui.generate(workflow)[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
                     f"Failed to generate image: {str(e)}."
@@ -103,7 +103,7 @@ class ComfyuiImg2Any(Tool):
         workflow.set_property("15", "inputs/image", image_name1)
         workflow.set_property("22", "inputs/image", image_name2)
         try:
-            output_images = self.comfyui.generate(workflow.json())
+            output_images = self.comfyui.generate(workflow)
         except Exception as e:
             raise ToolProviderCredentialValidationError(
                 f"Failed to generate image: {str(e)}."
@@ -125,7 +125,7 @@ class ComfyuiImg2Any(Tool):
         for image_name in image_names:
             workflow.set_property("16", "inputs/image", image_name)
             try:
-                output_images.append(self.comfyui.generate(workflow.json())[0])
+                output_images.append(self.comfyui.generate(workflow)[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
                     f"Failed to generate image: {str(e)}."

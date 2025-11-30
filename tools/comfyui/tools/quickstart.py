@@ -152,7 +152,7 @@ class QuickStart(Tool):
         for i, lora_name in enumerate(ui.lora_names):
             workflow.add_lora_node("3", "6", "7", lora_name, ui.lora_strengths[i])
 
-        output_images = self.comfyui.generate(workflow.json())
+        output_images = self.comfyui.generate(workflow)
         return workflow.json_str(), output_images
 
     def qwen_image_edit(self, ui: QuickStartConfig):
@@ -201,7 +201,7 @@ class QuickStart(Tool):
             1.0,
         )
 
-        output_images = self.comfyui.generate(workflow.json())
+        output_images = self.comfyui.generate(workflow)
         return workflow.json_str(), output_images
 
     def qwen_image_edit_2509(self, ui: QuickStartConfig):
@@ -257,7 +257,7 @@ class QuickStart(Tool):
             1.0,
         )
 
-        output_images = self.comfyui.generate(workflow.json())
+        output_images = self.comfyui.generate(workflow)
         return workflow.json_str(), output_images
 
     def flux_dev_fp8(self, ui: QuickStartConfig):
@@ -282,7 +282,7 @@ class QuickStart(Tool):
         for i, lora_name in enumerate(ui.lora_names):
             workflow.add_lora_node("31", "6", "33", lora_name, ui.lora_strengths[i])
 
-        output_images = self.comfyui.generate(workflow.json())
+        output_images = self.comfyui.generate(workflow)
         return workflow.json_str(), output_images
 
     def flux_schnell_fp8(self, ui: QuickStartConfig):
@@ -314,7 +314,7 @@ class QuickStart(Tool):
         for i, lora_name in enumerate(ui.lora_names):
             workflow.add_lora_node("31", "6", "33", lora_name, ui.lora_strengths[i])
 
-        output_images = self.comfyui.generate(workflow.json())
+        output_images = self.comfyui.generate(workflow)
         return workflow.json_str(), output_images
 
     def get_civitai_workflow(self, ui: QuickStartConfig) -> ComfyUiWorkflow:
@@ -342,7 +342,7 @@ class QuickStart(Tool):
             8.5,
             1.0,
         )
-        output_images = self.comfyui.generate(workflow.json())
+        output_images = self.comfyui.generate(workflow)
         return workflow.json_str(), output_images
 
     def majicmix_realistic(self, ui: QuickStartConfig):
@@ -358,7 +358,7 @@ class QuickStart(Tool):
             1.0,
         )
 
-        output_images = self.comfyui.generate(workflow.json())
+        output_images = self.comfyui.generate(workflow)
         return workflow.json_str(), output_images
 
     def wai_illustrious(self, ui: QuickStartConfig):
@@ -368,5 +368,5 @@ class QuickStart(Tool):
         workflow.set_model_loader(None, civitai_model.name)
         workflow.set_k_sampler(None, 30, "euler_ancestral", "normal", 6.0, 1.0)
 
-        output_images = self.comfyui.generate(workflow.json())
+        output_images = self.comfyui.generate(workflow)
         return workflow.json_str(), output_images
