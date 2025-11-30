@@ -30,7 +30,7 @@ class ModelManager:
         self._comfyui_cli = comfyui_cli
         self._civitai_api_key = civitai_api_key
         self._hf_api_key = hf_api_key
-        self._session = CachedSession("model_manager", expire_after=expire_after)
+        self._session = CachedSession(backend="memory", expire_after=expire_after)
 
     def get_civitai_api_key(self):
         if self._civitai_api_key is None:
