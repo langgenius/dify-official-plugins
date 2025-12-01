@@ -1,0 +1,43 @@
+identity:
+  name: coupon_created
+  author: langgenius
+  label:
+    en_US: Coupon Created
+    zh_Hans: 优惠券创建
+    ja_JP: クーポン作成
+description:
+  en_US: Triggered when a promotion code is created or published in WooCommerce.
+  zh_Hans: 当 WooCommerce 新建或发布优惠券时触发。
+  ja_JP: WooCommerce でクーポンが作成・公開されたときにトリガーされます。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    coupon:
+      type: object
+      description: WooCommerce coupon payload including amount, usage limits, and metadata.
+      additionalProperties: true
+    webhook:
+      type: object
+      description: Metadata derived from X-WC-Webhook headers.
+      properties:
+        id:
+          type: string
+        delivery_id:
+          type: string
+        resource:
+          type: string
+        event:
+          type: string
+        topic:
+          type: string
+        source:
+          type: string
+  required:
+    - coupon
+
+extra:
+  python:
+    source: events/coupon/coupon_created.py

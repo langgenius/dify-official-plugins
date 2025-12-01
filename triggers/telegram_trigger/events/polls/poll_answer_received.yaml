@@ -1,0 +1,91 @@
+identity:
+  name: poll_answer_received
+  author: langgenius
+  label:
+    en_US: Poll Answer Received
+    zh_Hans: 收到投票回答
+    ja_JP: 投票回答受信
+description:
+  en_US: Triggers when a user votes in a poll sent by the bot.
+  zh_Hans: 当用户在机器人发送的投票中投票时触发。
+  ja_JP: ボットが送信した投票にユーザーが回答したときにトリガーします。
+parameters: []
+output_schema:
+  type: object
+  additionalProperties: false
+  required:
+  - update_id
+  - poll_answer
+  properties:
+    update_id:
+      type: integer
+      description: Unique identifier for the Telegram update.
+    poll_answer:
+      type: object
+      additionalProperties: false
+      description: Information about the user who changed their answer in a non-anonymous
+        poll.
+      required:
+      - poll_id
+      - option_ids
+      properties:
+        poll_id:
+          type: string
+          description: Unique poll identifier.
+        user:
+          type: object
+          description: Telegram User object.
+          additionalProperties: true
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for this user or bot.
+            is_bot:
+              type: boolean
+              description: True if this user is a bot.
+            first_name:
+              type: string
+              description: User first name.
+            last_name:
+              type: string
+              description: User last name.
+            username:
+              type: string
+              description: Username of the user, if any.
+            language_code:
+              type: string
+              description: IETF language tag of the user's language.
+            is_premium:
+              type: boolean
+              description: True if the user is a Telegram Premium subscriber.
+        voter_chat:
+          type: object
+          description: Telegram Chat object.
+          additionalProperties: true
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for this chat.
+            type:
+              type: string
+              description: Type of chat, such as private, group, supergroup, or channel.
+            title:
+              type: string
+              description: Chat title for supergroups, channels, and group chats.
+            username:
+              type: string
+              description: Username of the chat if available.
+            first_name:
+              type: string
+              description: First name of the other party in a private chat.
+            last_name:
+              type: string
+              description: Last name of the other party in a private chat.
+        option_ids:
+          type: array
+          description: 0-based identifiers of chosen answer options.
+          items:
+            type: integer
+extra:
+  python:
+    source: events/polls/poll_answer_received.py

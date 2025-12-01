@@ -19,6 +19,16 @@ parameter_rules:
     min: 1
     max: 8192
     default: 8192
+  - name: frequency_penalty
+    use_template: frequency_penalty
+    min: -2
+    max: 2
+    default: 0
+  - name: presence_penalty
+    use_template: presence_penalty
+    min: -2
+    max: 2
+    default: 0
 pricing:
   input: '16'
   output: '48'

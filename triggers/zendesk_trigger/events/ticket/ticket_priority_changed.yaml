@@ -1,0 +1,60 @@
+identity:
+  name: ticket_priority_changed
+  author: langgenius
+  label:
+    en_US: Ticket Priority Changed
+    zh_Hans: 工单优先级变更
+    ja_JP: チケット優先度変更
+
+description:
+  en_US: Triggered when a ticket's priority changes
+  zh_Hans: 当工单优先级发生变化时触发
+  ja_JP: チケットの優先度が変更されたときにトリガーされます
+
+parameters:
+- name: from_priority
+  label:
+    en_US: From Priority
+    zh_Hans: 从优先级
+    ja_JP: 変更前優先度
+  type: string
+  required: false
+  description:
+    en_US: Filter by previous priority (e.g., low,normal). Leave empty for any.
+    zh_Hans: 按之前的优先级过滤（例如 low,normal）。留空表示任意优先级。
+    ja_JP: 以前の優先度でフィルター（例 low,normal）。空の場合は任意。
+
+- name: to_priority
+  label:
+    en_US: To Priority
+    zh_Hans: 到优先级
+    ja_JP: 変更後優先度
+  type: string
+  required: false
+  description:
+    en_US: Filter by new priority (e.g., urgent,high). Leave empty for any.
+    zh_Hans: 按新优先级过滤（例如 urgent,high）。留空表示任意优先级。
+    ja_JP: 新しい優先度でフィルター（例 urgent,high）。空の場合は任意。
+
+output_schema:
+  type: object
+  properties:
+    ticket:
+      type: object
+      properties:
+        current:
+          type: object
+          properties:
+            priority:
+              type: string
+        previous:
+          type: object
+          properties:
+            priority:
+              type: string
+  required:
+  - ticket
+
+extra:
+  python:
+    source: events/ticket/ticket_priority_changed.py

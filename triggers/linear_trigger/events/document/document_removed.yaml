@@ -1,0 +1,58 @@
+identity:
+  name: document_removed
+  author: langgenius
+  label:
+    en_US: Document Removed
+    zh_Hans: 文档删除
+    ja_JP: ドキュメント削除
+
+description:
+  en_US: Triggers when a document is deleted or archived in Linear
+  zh_Hans: 当在 Linear 中删除或归档文档时触发
+  ja_JP: Linearでドキュメントが削除またはアーカイブされたときにトリガーされます
+
+parameters:
+- name: title_contains
+  label:
+    en_US: Title Contains
+    zh_Hans: 标题包含
+    ja_JP: タイトルに含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if document title contains keywords (comma-separated). Leave empty for all removals."
+    zh_Hans: "仅当文档标题包含关键词时触发（逗号分隔）。留空则触发所有删除。"
+    ja_JP: "ドキュメントタイトルにキーワードが含まれる場合のみトリガー（カンマ区切り）。空の場合は全削除でトリガー。"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [remove]
+    type:
+      type: string
+      enum: [Document]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        archivedAt:
+          type: string
+        trashed:
+          type: boolean
+        projectId:
+          type: string
+    actor:
+      type: object
+  required:
+  - action
+  - type
+  - data
+
+extra:
+  python:
+    source: events/document/document_removed.py

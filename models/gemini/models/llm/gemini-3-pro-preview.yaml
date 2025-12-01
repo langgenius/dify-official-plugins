@@ -1,0 +1,142 @@
+# https://ai.google.dev/gemini-api/docs/models?hl=zh-cn#gemini-3-pro
+model: gemini-3-pro-preview
+label:
+  en_US: Gemini 3 Pro Preview
+model_type: llm
+features:
+  - tool-call
+  - multi-tool-call
+  - agent-thought
+  - vision
+  - stream-tool-call
+  - document
+  - video
+  - audio
+model_properties:
+  mode: chat
+  context_size: 1048576
+# Documentation: https://ai.google.dev/gemini-api/docs/gemini-3?hl=zh-cn
+parameter_rules:
+  - name: temperature
+    type: float
+    required: true
+    default: 1
+    min: 0
+    max: 2
+    label:
+      en_US: Temperature
+      zh_Hans: 温度
+    help:
+      en_US: For Gemini 3, best results at default 1.0. Lower values may impact reasoning.
+      zh_Hans: 对于 Gemini 3，使用默认值 1.0 可获得最佳效果。数值过低可能会影响推理能力。
+  - name: include_thoughts
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: Include thoughts
+      zh_Hans: 返回思考过程
+    help:
+      en_US: Indicates whether to include thoughts in the response. If true, thoughts are returned only if the model supports thought and thoughts are available. Default is false.
+      zh_Hans: 是否返回思考过程。若为 true 则只有模型支持思考且启动思考模式时才返回思考过程。默认为 false。
+  - name: media_resolution
+    type: string
+    required: true
+    default: "Default"
+    options:
+      - Default
+      - Low
+      - Medium
+      - High
+    label:
+      en_US: Media resolution
+      zh_Hans: 媒体分辨率
+    help:
+      en_US: |
+        Gemini 3 introduces fine-grained control over multimodal visual processing via the `media_resolution` parameter. Higher resolution improves the model's ability to read small text or recognize fine details, but increases token usage and latency.
+
+        Recommended Settings:
+        - Images: `media_resolution_high` (1120 tokens) - Recommended for most image analysis tasks to ensure best quality.
+        - PDF: `media_resolution_medium` (560 tokens) - Great for document understanding; quality usually saturates at medium.
+        - Video (Regular): `media_resolution_low` or `medium` (70 tokens/frame) - Sufficient for most action recognition and description tasks.
+        - Video (Text-heavy): `media_resolution_high` (280 tokens/frame) - Needed only when use cases involve reading dense text (OCR) or tiny details in video frames.
+
+        Note: If not specified, the model uses the best default value based on the media type.
+      zh_Hans: |
+        Gemini 3 通过 `media_resolution` 参数引入了对多模态视觉处理的精细控制。分辨率越高，模型读取细小文本或识别细微细节的能力就越强，但会增加令牌用量和延迟时间。
+
+        推荐设置：
+        - 图片：`media_resolution_high` (1120 tokens) - 建议用于大多数图片分析任务，以确保获得最佳质量。
+        - PDF：`media_resolution_medium` (560 tokens) - 非常适合文档理解；质量通常在 medium 时达到饱和。
+        - 视频（常规）：`media_resolution_low` 或 `medium` (70 tokens/帧) - 对于大多数动作识别和描述任务来说已经足够。
+        - 视频（文字较多）：`media_resolution_high` (280 tokens/帧) - 仅当用例涉及读取密集文本 (OCR) 或视频帧中的微小细节时才需要。
+
+        注意：如果不指定，模型会根据媒体类型使用最佳默认值。
+  - name: thinking_level
+    type: string
+    required: true
+    default: "High"
+    options:
+      - Low
+      - High
+    label:
+      en_US: Thinking level
+      zh_Hans: 思考层级
+    help:
+      en_US: Indicates the thinking level. Default is High.
+      zh_Hans: 思考层级。默认为 High。
+  - name: grounding
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: Grounding
+      zh_Hans: 事实核查
+      ja_JP: 事実チェック
+    help:
+      en_US: Grounding with Google Search
+      zh_Hans: Google 事实核查
+      ja_JP: Google検索に基づいた応答をします。
+  - name: url_context
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: URL context
+      zh_Hans: 链接详情
+      ja_JP: 網羅閲覧
+    help:
+      en_US: Browse the url context
+      zh_Hans: 获取并分析该链接的详细信息，为回答提供参考依据。
+      ja_JP: リンク先の詳細情報を取得し、文脈を理解します。
+  - name: code_execution
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: Code execution
+      zh_Hans: 代码执行
+      ja_JP: コード実行
+    help:
+      en_US: Lets Gemini use code to solve complex tasks
+      zh_Hans: 让 Gemini 使用代码来解决复杂任务。
+      ja_JP: Gemini にコードを使って複雑なタスクを解決させましょう。
+  - name: max_output_tokens
+    type: float
+    required: true
+    default: 65536
+    min: 1
+    max: 65536
+    label:
+      en_US: Output length
+      zh_Hans: 输出长度
+    help:
+      en_US: The maximum number of tokens to generate in the response.
+      zh_Hans: 模型单次输出的最大 tokens 数。
+# https://ai.google.dev/gemini-api/docs/pricing#gemini-3-pro-preview
+pricing:
+  # prompts <= 200k tokens
+  input: '2.0'
+  output: '12.00'
+  unit: '0.000001'
+  currency: USD

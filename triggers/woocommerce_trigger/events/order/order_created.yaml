@@ -1,0 +1,43 @@
+identity:
+  name: order_created
+  author: langgenius
+  label:
+    en_US: Order Created
+    zh_Hans: 订单创建
+    ja_JP: 注文作成
+description:
+  en_US: Triggered whenever a new WooCommerce order is created.
+  zh_Hans: 当新的 WooCommerce 订单创建时触发。
+  ja_JP: WooCommerce で新しい注文が作成されたときにトリガーされます。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    order:
+      type: object
+      description: Raw WooCommerce order payload with line items, totals, status, billing, and shipping data.
+      additionalProperties: true
+    webhook:
+      type: object
+      description: Metadata derived from X-WC-Webhook headers.
+      properties:
+        id:
+          type: string
+        delivery_id:
+          type: string
+        resource:
+          type: string
+        event:
+          type: string
+        topic:
+          type: string
+        source:
+          type: string
+  required:
+    - order
+
+extra:
+  python:
+    source: events/order/order_created.py

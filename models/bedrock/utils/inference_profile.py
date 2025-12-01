@@ -46,6 +46,7 @@ def get_inference_profile_info(inference_profile_id: str, credentials: dict) -> 
                 del _inference_profile_cache[cache_key]
     
     try:
+        logger.debug(f"[get_inference_profile_info] credentials: {credentials}")
         bedrock_client = get_bedrock_client("bedrock", credentials)
         
         # Call get-inference-profile API

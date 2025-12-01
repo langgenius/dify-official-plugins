@@ -78,6 +78,6 @@ parameter_rules:
       - json_object
 pricing:
   input: "2"
-  output: "8"
+  output: "3"
   unit: "0.000001"
   currency: RMB

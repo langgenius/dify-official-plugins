@@ -1,0 +1,143 @@
+identity:
+  name: project_card
+  author: langgenius
+  label:
+    en_US: Project Card (Unified)
+    zh_Hans: 项目卡片（统一）
+    ja_JP: プロジェクトカード（統合）
+
+description:
+  en_US: Unified project_card event with actions filter
+  zh_Hans: 带 actions 过滤的统一 project_card 事件
+  ja_JP: アクションフィルタ付きの統合 project_card イベント
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - created
+  - edited
+  - deleted
+  - moved
+  - converted
+  options:
+  - value: created
+    label:
+      en_US: Created
+      zh_Hans: 创建
+      ja_JP: 作成
+  - value: edited
+    label:
+      en_US: Edited
+      zh_Hans: 编辑
+      ja_JP: 編集
+  - value: deleted
+    label:
+      en_US: Deleted
+      zh_Hans: 删除
+      ja_JP: 削除
+  - value: moved
+    label:
+      en_US: Moved
+      zh_Hans: 移动
+      ja_JP: 移動
+  - value: converted
+    label:
+      en_US: Converted
+      zh_Hans: 转换
+      ja_JP: 変換
+  description:
+    en_US: Multi select filter for card actions like created edited deleted moved converted.
+    zh_Hans: 多选过滤卡片动作 如 创建 编辑 删除 移动 转换。
+    ja_JP: カードのアクションを複数選択で絞り込み 作成 編集 削除 移動 変換。
+
+- name: note_contains
+  label:
+    en_US: Note Contains
+    zh_Hans: 备注包含
+    ja_JP: ノートに含む
+  type: string
+  required: false
+  description:
+    en_US: Match keywords in card note. Comma separated any match passes.
+    zh_Hans: 匹配卡片备注中的关键字。逗号分隔 任一命中即可。
+    ja_JP: カードのノートに含まれるキーワード。カンマ区切りでいずれか一致。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    project_card:
+      type: object
+      properties:
+        id:
+          type: integer
+        note:
+          type:
+          - string
+          - "null"
+        column_id:
+          type: integer
+        content_url:
+          type:
+          - string
+          - "null"
+          format: uri
+        archived:
+          type:
+          - boolean
+          - "null"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - column_id
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+    sender:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - project_card
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/project_card/project_card.py

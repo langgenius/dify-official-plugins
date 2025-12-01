@@ -1,0 +1,170 @@
+identity:
+  name: ticket_created
+  author: langgenius
+  label:
+    en_US: Ticket Created
+    zh_Hans: 工单创建
+    ja_JP: チケット作成
+
+description:
+  en_US: Triggered when a new support ticket is created
+  zh_Hans: 当创建新的支持工单时触发
+  ja_JP: 新しいサポートチケットが作成されたときにトリガーされます
+
+parameters:
+- name: status
+  label:
+    en_US: Status Filter
+    zh_Hans: 状态过滤
+    ja_JP: ステータスフィルター
+  type: string
+  required: false
+  description:
+    en_US: Comma separated status values (e.g., new,open,pending). Leave empty to accept all.
+    zh_Hans: 逗号分隔的状态值（例如 new,open,pending）。留空表示接受所有状态。
+    ja_JP: カンマ区切りのステータス値（例 new,open,pending）。空の場合は全て受け入れます。
+
+- name: priority
+  label:
+    en_US: Priority Filter
+    zh_Hans: 优先级过滤
+    ja_JP: 優先度フィルター
+  type: string
+  required: false
+  description:
+    en_US: Comma separated priority values (e.g., urgent,high). Leave empty to accept all.
+    zh_Hans: 逗号分隔的优先级值（例如 urgent,high）。留空表示接受所有优先级。
+    ja_JP: カンマ区切りの優先度値（例 urgent,high）。空の場合は全て受け入れます。
+
+- name: tags
+  label:
+    en_US: Required Tags
+    zh_Hans: 必需标签
+    ja_JP: 必須タグ
+  type: string
+  required: false
+  description:
+    en_US: Comma separated tag names. Trigger only if ticket has all these tags.
+    zh_Hans: 逗号分隔的标签名。仅当工单包含所有这些标签时触发。
+    ja_JP: カンマ区切りのタグ名。チケットに全て含まれる場合のみトリガーします。
+
+- name: type
+  label:
+    en_US: Ticket Type
+    zh_Hans: 工单类型
+    ja_JP: チケットタイプ
+  type: string
+  required: false
+  description:
+    en_US: Comma separated ticket types (e.g., problem,incident,question,task).
+    zh_Hans: 逗号分隔的工单类型（例如 problem,incident,question,task）。
+    ja_JP: カンマ区切りのチケットタイプ（例 problem,incident,question,task）。
+
+- name: subject_contains
+  label:
+    en_US: Subject Contains
+    zh_Hans: 主题包含
+    ja_JP: 件名に含む
+  type: string
+  required: false
+  description:
+    en_US: Comma separated keywords. Trigger if subject contains any keyword.
+    zh_Hans: 逗号分隔的关键词。如果主题包含任何关键词则触发。
+    ja_JP: カンマ区切りのキーワード。件名にいずれかが含まれる場合トリガーします。
+
+- name: description_contains
+  label:
+    en_US: Description Contains
+    zh_Hans: 描述包含
+    ja_JP: 説明に含む
+  type: string
+  required: false
+  description:
+    en_US: Comma separated keywords. Trigger if description contains any keyword.
+    zh_Hans: 逗号分隔的关键词。如果描述包含任何关键词则触发。
+    ja_JP: カンマ区切りのキーワード。説明にいずれかが含まれる場合トリガーします。
+
+output_schema:
+  type: object
+  properties:
+    ticket:
+      type: object
+      properties:
+        current:
+          type: object
+          description: Current ticket data
+          properties:
+            id:
+              type: integer
+              format: int64
+            url:
+              type: string
+              format: uri
+            external_id:
+              type: ["string", "null"]
+            type:
+              type: ["string", "null"]
+              enum: ["problem", "incident", "question", "task", null]
+            subject:
+              type: string
+            description:
+              type: string
+            priority:
+              type: ["string", "null"]
+              enum: ["urgent", "high", "normal", "low", null]
+            status:
+              type: string
+              enum: ["new", "open", "pending", "hold", "solved", "closed"]
+            recipient:
+              type: ["string", "null"]
+            requester_id:
+              type: integer
+            submitter_id:
+              type: integer
+            assignee_id:
+              type: ["integer", "null"]
+            organization_id:
+              type: ["integer", "null"]
+            group_id:
+              type: ["integer", "null"]
+            collaborator_ids:
+              type: array
+              items:
+                type: integer
+            follower_ids:
+              type: array
+              items:
+                type: integer
+            tags:
+              type: array
+              items:
+                type: string
+            created_at:
+              type: string
+              format: date-time
+            updated_at:
+              type: string
+              format: date-time
+          required:
+          - id
+          - subject
+          - status
+          - priority
+          - created_at
+    current_user:
+      type: object
+      description: User who triggered the event
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        email:
+          type: string
+          format: email
+  required:
+  - ticket
+
+extra:
+  python:
+    source: events/ticket/ticket_created.py
