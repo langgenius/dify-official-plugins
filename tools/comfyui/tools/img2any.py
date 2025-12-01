@@ -115,7 +115,7 @@ class ComfyuiImg2Any(Tool):
         output_images = []
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "upscale.json")) as file:
-            workflow = file.read()
+            workflow = ComfyUiWorkflow(file.read(), object_info=self.comfyui.get_object_info())
         if "esrgan" in feature:
             model_name = self.model_manager.download_model(
                 "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth",
