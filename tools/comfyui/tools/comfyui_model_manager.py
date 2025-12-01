@@ -200,7 +200,7 @@ class ModelManager:
             return "", "", "", ""
 
     def download_from_json(self, workflow_json: str) -> list[str]:
-        workflow = ComfyUiWorkflow(workflow_json)
+        workflow = ComfyUiWorkflow(workflow_json, object_info=self._comfyui_cli.get_object_info())
         model_names = []
         for model in workflow.get_models_to_download():
             self.download_model_autotoken(model.url, model.directory, model.name)

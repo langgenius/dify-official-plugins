@@ -51,7 +51,7 @@ class ComfyUiWorkflow:
         self.models_to_download: list[ComfyUIModel] = []
         if "nodes" in workflow_json:
             if object_info is None:
-                raise Exception("object_info needed.")
+                raise Exception("This json is not API ready and object_info is needed.")
             self._workflow_api = self.generate_api_ready(object_info)
             for node in workflow_json["nodes"]:
                 if "properties" in node and "models" in node["properties"]:

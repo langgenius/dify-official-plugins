@@ -255,7 +255,7 @@ class ComfyUiClient:
     def convert_webp2mp4(self, webp_blob: bytes, fps: int):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "webp2mp4.json")) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), object_info=self.get_object_info())
 
         uploaded_image = self.upload_image("input.webp", webp_blob, "image/webp")
         workflow.set_property("25", "inputs/frame_rate", fps)

@@ -112,7 +112,7 @@ class ComfyuiTxt2Img(Tool):
         if is_hiresfix_enabled:
             workflow_template_path = os.path.join(current_dir, "json", "txt2img_hiresfix.json")
         with open(workflow_template_path) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), self.comfyui.get_object_info())
 
         workflow.set_k_sampler(
             "3",

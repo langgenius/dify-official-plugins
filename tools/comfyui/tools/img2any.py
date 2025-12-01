@@ -62,7 +62,7 @@ class ComfyuiImg2Any(Tool):
         output_images = []
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "depth_pro.json")) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), object_info=self.comfyui.get_object_info())
         precision = "fp16"
         if "fp32" in feature:
             precision = "fp32"
@@ -83,7 +83,7 @@ class ComfyuiImg2Any(Tool):
         output_images = []
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "depth_anything.json")) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), object_info=self.comfyui.get_object_info())
         workflow.set_property("2", "inputs/model", feature)
         for image_name in image_names:
             workflow.set_property("3", "inputs/image", image_name)
@@ -99,7 +99,7 @@ class ComfyuiImg2Any(Tool):
     def face_swap(self, image_name1, image_name2) -> list[ComfyUiResultFile]:
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "face_swap.json")) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), object_info=self.comfyui.get_object_info())
         workflow.set_property("15", "inputs/image", image_name1)
         workflow.set_property("22", "inputs/image", image_name2)
         try:
@@ -115,7 +115,7 @@ class ComfyuiImg2Any(Tool):
         output_images = []
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "upscale.json")) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = file.read()
         if "esrgan" in feature:
             model_name = self.model_manager.download_model(
                 "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth",

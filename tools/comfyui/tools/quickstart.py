@@ -134,7 +134,7 @@ class QuickStart(Tool):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         filepath = os.path.join(current_dir, "json", "qwen_image.json")
         with open(filepath, encoding="utf-8") as f:
-            workflow = ComfyUiWorkflow(json.load(f))
+            workflow = ComfyUiWorkflow(json.load(f), object_info=self.comfyui.get_object_info())
 
         workflow.set_prompt("6", ui.prompt)
         workflow.set_prompt("7", ui.negative_prompt)
@@ -187,8 +187,7 @@ class QuickStart(Tool):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         filepath = os.path.join(current_dir, "json", "qwen_image_edit.json")
         with open(filepath, encoding="utf-8") as f:
-            workflow = ComfyUiWorkflow(json.load(f))
-
+            workflow = ComfyUiWorkflow(json.load(f), object_info=self.comfyui.get_object_info())
         workflow.set_property("76", "inputs/prompt", ui.prompt)
         workflow.set_property("77", "inputs/prompt", ui.negative_prompt)
         workflow.set_image_names(ui.image_names)
@@ -243,8 +242,7 @@ class QuickStart(Tool):
         elif imageN > 3:
             raise ToolProviderCredentialValidationError("Too many input images")
         with open(filepath, encoding="utf-8") as f:
-            workflow = ComfyUiWorkflow(json.load(f))
-
+            workflow = ComfyUiWorkflow(json.load(f), object_info=self.comfyui.get_object_info())
         workflow.set_property("111", "inputs/prompt", ui.prompt)
         workflow.set_property("110", "inputs/prompt", ui.negative_prompt)
         workflow.set_image_names(ui.image_names)
@@ -274,8 +272,7 @@ class QuickStart(Tool):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         filepath = os.path.join(current_dir, "json", "flux_dev_fp8.json")
         with open(filepath, encoding="utf-8") as f:
-            workflow = ComfyUiWorkflow(json.load(f))
-
+            workflow = ComfyUiWorkflow(json.load(f), object_info=self.comfyui.get_object_info())
         workflow.set_prompt("6", ui.prompt)
         workflow.set_prompt("33", ui.negative_prompt)
         workflow.set_k_sampler(None, 20, "euler", "simple", 1.0, 1.0)
@@ -299,7 +296,7 @@ class QuickStart(Tool):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         filepath = os.path.join(current_dir, "json", "flux_schnell_fp8.json")
         with open(filepath, encoding="utf-8") as f:
-            workflow = ComfyUiWorkflow(json.load(f))
+            workflow = ComfyUiWorkflow(json.load(f), object_info=self.comfyui.get_object_info())
 
         workflow.set_prompt("6", ui.prompt)
         workflow.set_prompt("33", ui.negative_prompt)
@@ -321,7 +318,7 @@ class QuickStart(Tool):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         filepath = os.path.join(current_dir, "json", "txt2img.json")
         with open(filepath, encoding="utf-8") as f:
-            workflow = ComfyUiWorkflow(json.load(f))
+            workflow = ComfyUiWorkflow(json.load(f), object_info=self.comfyui.get_object_info())
 
         workflow.set_prompt("6", ui.prompt)
         workflow.set_prompt("7", ui.negative_prompt)
