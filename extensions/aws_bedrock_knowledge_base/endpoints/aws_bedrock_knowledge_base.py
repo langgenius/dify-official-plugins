@@ -4,12 +4,16 @@ import botocore
 from werkzeug.wrappers import Request, Response
 from dify_plugin import Endpoint
 from typing import Mapping
-from datetime import datetime
+import logging
+from dify_plugin.config.logger_format import plugin_logger_handler
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(plugin_logger_handler)
 
 
 def log(msg):
-    with open('/tmp/bedrock.log', 'a') as f:
-        f.write(f"[{datetime.now()}] {msg}\n")
+    logger.info(msg)
 
 
 class Knowledgebaseretrieval(Endpoint):
