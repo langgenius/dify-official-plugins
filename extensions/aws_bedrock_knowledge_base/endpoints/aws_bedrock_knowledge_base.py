@@ -4,15 +4,43 @@ import botocore
 from werkzeug.wrappers import Request, Response
 from dify_plugin import Endpoint
 from typing import Mapping
+from datetime import datetime
+
+
+def log(msg):
+    with open('/tmp/bedrock.log', 'a') as f:
+        f.write(f"[{datetime.now()}] {msg}\n")
 
 
 class Knowledgebaseretrieval(Endpoint):
     def _invoke(self, r: Request, values: Mapping, settings: Mapping) -> Response:
+        log("info")
+        log(f"Request: method={r.method}, url={r.url}, headers={dict(r.headers)}, data={r.get_data(as_text=True)}")
+        
+        data = r.get_data(as_text=True)
+        if not data:
+            log("Request data is empty, returning empty records")
+            return Response(
+                response=json.dumps({"records": []}),
+                status=200,
+                content_type="application/json"
+            )
+        
         body = r.get_json()
 
         retrieval_setting = body.get('retrieval_setting')
         query = body.get('query')
         knowledge_id = body.get('knowledge_id')
+
+        log(f"Received request - knowledge_id: {knowledge_id}, query: {query}, retrieval_setting: {retrieval_setting}")
+
+        if not knowledge_id:
+            log("knowledge_id is empty, returning empty records")
+            return Response(
+                response=json.dumps({"records": []}),
+                status=200,
+                content_type="application/json"
+            )
 
         client = boto3.client(
             "bedrock-agent-runtime",
@@ -22,6 +50,7 @@ class Knowledgebaseretrieval(Endpoint):
         )
 
         try:
+            log(f"Calling bedrock-agent-runtime retrieve API with knowledgeBaseId: {knowledge_id}")
             response = client.retrieve(
                 knowledgeBaseId=knowledge_id,
                 retrievalConfiguration={
@@ -31,10 +60,13 @@ class Knowledgebaseretrieval(Endpoint):
                 retrievalQuery={"text": query},
             )
 
+            log(f"API response status: {response.get('ResponseMetadata', {}).get('HTTPStatusCode')}")
+
             results = []
             if response.get("ResponseMetadata") and response.get("ResponseMetadata").get("HTTPStatusCode") == 200:
                 if response.get("retrievalResults"):
                     retrieval_results = response.get("retrievalResults")
+                    log(f"Retrieved {len(retrieval_results)} results from knowledge base")
                     for retrieval_result in retrieval_results:
                         # filter out results with score less than threshold
                         if retrieval_result.get("score") < retrieval_setting.get("score_threshold", .0):
@@ -47,6 +79,7 @@ class Knowledgebaseretrieval(Endpoint):
                         }
                         results.append(result)
 
+            log(f"Returning {len(results)} results after filtering")
             return Response(
                 response=json.dumps({"records": results}),
                 status=200,
@@ -55,6 +88,7 @@ class Knowledgebaseretrieval(Endpoint):
 
         except botocore.exceptions.ClientError as error:
             error_code = error.response['Error']['Code']
+            log(f"AWS ClientError: {error_code} - {error.response['Error'].get('Message')}")
             if error_code == "InvalidSignatureException":
                 return Response(
                     response=json.dumps({"error_code": 1002, "error_msg": "Wrong AWS secret access key"}),
