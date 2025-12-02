@@ -1,0 +1,30 @@
+identity:
+  name: get_issue_project
+  author: langgenius
+  label:
+    en_US: Get Jira Issues by Projects
+    zh_Hans: 获取指定 Jira 项目的所有问题
+    pt_BR: Obter Issues do Projeto
+description:
+  human:
+    en_US: Lists all issues in a specific Jira project.
+    zh_Hans: 列出指定 Jira 项目中的所有问题。
+    pt_BR: Lista todas as issues em um projeto específico do Jira.
+  llm: Retrieves a list of all issues in the specified Jira project using JQL query. Returns a simplified list of issues containing key information like summary, status, and description.
+parameters:
+  - name: project_key
+    type: string
+    required: true
+    label:
+      en_US: Project Key
+      zh_Hans: 项目键值
+      pt_BR: Chave do Projeto
+    human_description:
+      en_US: The project key in Jira (e.g. CRM, DEV).
+      zh_Hans: Jira 中的项目键值（例如：CRM、DEV）。
+      pt_BR: "A chave do projeto no Jira (ex: CRM, DEV)."
+    llm_description: The project identifier in Jira, case-sensitive (e.g. CRM, DEV).
+    form: llm
+extra:
+  python:
+    source: tools/get_issue_project.py
