@@ -32,4 +32,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.30
+version: 0.0.31
