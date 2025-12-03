@@ -255,6 +255,9 @@ Resume Content:
 
     def _optimize_resume_with_llm(self, resume_content: str, target_position: str, detected_issues: str, language: str) -> str:
         """Use LLM to generate resume optimization suggestions."""
+        import json
+        import traceback
+
         try:
             # Build detected issues section
             detected_issues_section = ""
@@ -292,12 +295,21 @@ Resume Content:
                 }
             }
 
+            # 🔍 DEBUG: 打印配置信息
+            print(f"🔍 DEBUG [resume_optimizer] LLM Config: {json.dumps(llm_config, indent=2, ensure_ascii=False)}")
+            print(f"🔍 DEBUG [resume_optimizer] Prompt length: {len(prompt)} chars")
+            print(f"🔍 DEBUG [resume_optimizer] Session type: {type(self.session)}")
+            print(f"🔍 DEBUG [resume_optimizer] Session.model type: {type(self.session.model)}")
+            print(f"🔍 DEBUG [resume_optimizer] Session.model.llm type: {type(self.session.model.llm)}")
+
             # Retry logic for LLM invocation
             max_retries = 3
             retry_delay = 1  # Initial delay in seconds
 
             for attempt in range(max_retries):
                 try:
+                    print(f"🔍 DEBUG [resume_optimizer] Attempt {attempt + 1}/{max_retries} - Calling LLM...")
+
                     # Invoke LLM
                     llm_result = self.session.model.llm.invoke(
                         model_config=LLMModelConfig(**llm_config),
@@ -305,9 +317,16 @@ Resume Content:
                         stream=False
                     )
 
+                    # 🔍 DEBUG: 打印原始响应信息
+                    print(f"🔍 DEBUG [resume_optimizer] llm_result type: {type(llm_result)}")
+                    print(f"🔍 DEBUG [resume_optimizer] llm_result: {llm_result}")
+                    if hasattr(llm_result, '__dict__'):
+                        print(f"🔍 DEBUG [resume_optimizer] llm_result.__dict__: {llm_result.__dict__}")
+
                     # Extract result
                     if llm_result and hasattr(llm_result, 'message') and hasattr(llm_result.message, 'content'):
                         response_text = llm_result.message.content.strip()
+                        print(f"🔍 DEBUG [resume_optimizer] Response text length: {len(response_text)} chars")
 
                         # Check for empty response
                         if not response_text:
@@ -323,6 +342,7 @@ Resume Content:
                         return response_text
                     else:
                         # No valid response - retry
+                        print(f"⚠️ DEBUG [resume_optimizer] Invalid response structure")
                         if attempt < max_retries - 1:
                             print(f"⚠️ LLM returned invalid response (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...")
                             time.sleep(retry_delay)
@@ -333,6 +353,19 @@ Resume Content:
 
                 except Exception as e:
                     error_details = str(e)
+
+                    # 🔍 DEBUG: 打印完整异常信息
+                    print(f"❌ DEBUG [resume_optimizer] Exception type: {type(e).__name__}")
+                    print(f"❌ DEBUG [resume_optimizer] Exception args: {e.args}")
+                    print(f"❌ DEBUG [resume_optimizer] Full traceback:\n{traceback.format_exc()}")
+
+                    # 尝试获取更多异常信息
+                    if hasattr(e, 'response'):
+                        print(f"❌ DEBUG [resume_optimizer] e.response: {e.response}")
+                    if hasattr(e, '__cause__'):
+                        print(f"❌ DEBUG [resume_optimizer] e.__cause__: {e.__cause__}")
+                    if hasattr(e, '__context__'):
+                        print(f"❌ DEBUG [resume_optimizer] e.__context__: {e.__context__}")
 
                     # Check if it's a configuration error (don't retry)
                     if "Provider" in error_details and "does not exist" in error_details:
@@ -353,4 +386,5 @@ Resume Content:
 
         except Exception as e:
             error_details = str(e)
+            print(f"❌ DEBUG [resume_optimizer] Outer exception: {traceback.format_exc()}")
             return f"优化过程出错: {error_details}" if language == 'zh_Hans' else f"Optimization error: {error_details}"
