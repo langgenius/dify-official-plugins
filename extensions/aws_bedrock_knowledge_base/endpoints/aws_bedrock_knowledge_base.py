@@ -18,7 +18,7 @@ def log(msg):
 
 class Knowledgebaseretrieval(Endpoint):
     def _invoke(self, r: Request, values: Mapping, settings: Mapping) -> Response:
-        log("info")
+        log("Knowledge base retrieval invoked.")
         log(f"Request: method={r.method}, url={r.url}, headers={dict(r.headers)}, data={r.get_data(as_text=True)}")
         
         data = r.get_data(as_text=True)
