@@ -18,19 +18,19 @@ def log(msg):
 
 class Knowledgebaseretrieval(Endpoint):
     def _invoke(self, r: Request, values: Mapping, settings: Mapping) -> Response:
-        log("Knowledge base retrieval invoked.")
-        log(f"Request: method={r.method}, url={r.url}, headers={dict(r.headers)}, data={r.get_data(as_text=True)}")
+        log("Knowledge base retrieval invoked.22")
         
-        data = r.get_data(as_text=True)
-        if not data:
-            log("Request data is empty, returning empty records")
+        try:
+            body = r.get_json()
+        except Exception as e:
+            log(f"Failed to parse JSON: {e}")
             return Response(
                 response=json.dumps({"records": []}),
                 status=200,
                 content_type="application/json"
             )
         
-        body = r.get_json()
+        log(f"Request: method={r.method}, url={r.url}, headers={dict(r.headers)}, data={body}")
 
         retrieval_setting = body.get('retrieval_setting')
         query = body.get('query')
