@@ -1,0 +1,124 @@
+description:
+  human:
+    en_US: Create a new pull request in a GitHub repository
+    pt_BR: Criar um novo pull request em um repositório do GitHub
+    zh_Hans: 在GitHub仓库中创建新的Pull Request
+  llm: A tool to create a new pull request with title, body, head branch, and base branch
+extra:
+  python:
+    source: tools/github_create_pull.py
+identity:
+  author: langgenius
+  icon: icon.svg
+  label:
+    en_US: Create Pull Request
+    pt_BR: Criar Pull Request
+    zh_Hans: 创建PR
+  name: github_create_pull
+parameters:
+  - form: llm
+    human_description:
+      en_US: The account owner of the repository. The name is not case sensitive.
+      pt_BR: O proprietário da conta do repositório. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库的账户所有者。名称不区分大小写。
+    label:
+      en_US: Owner
+      pt_BR: Proprietário
+      zh_Hans: 所有者
+    llm_description: The account owner of the repository. The name is not case sensitive.
+    name: owner
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: The name of the repository without the .git extension. The name is not case sensitive.
+      pt_BR: O nome do repositório sem a extensão .git. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库名称不带.git扩展名。名称不区分大小写。
+    label:
+      en_US: Repository
+      pt_BR: Repositório
+      zh_Hans: 仓库
+    llm_description: The name of the repository without the .git extension. The name is not case sensitive.
+    name: repo
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: The title of the new pull request.
+      pt_BR: O título do novo pull request.
+      zh_Hans: 新Pull Request的标题。
+    label:
+      en_US: Title
+      pt_BR: Título
+      zh_Hans: 标题
+    llm_description: The title of the new pull request.
+    name: title
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: The name of the branch where your changes are implemented. For cross-repository pull requests, prefix with username:branch.
+      pt_BR: O nome do branch onde suas alterações estão implementadas. Para pull requests entre repositórios, prefixe com username:branch.
+      zh_Hans: 包含更改的分支名称。对于跨仓库的PR，使用username:branch格式。
+    label:
+      en_US: Head Branch
+      pt_BR: Branch de Origem
+      zh_Hans: 源分支
+    llm_description: The name of the branch where your changes are implemented. For cross-repository pull requests in the same network, namespace head with a user like this - username:branch.
+    name: head
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: The name of the branch you want the changes pulled into (usually main or master).
+      pt_BR: O nome do branch para o qual você deseja que as alterações sejam mescladas (geralmente main ou master).
+      zh_Hans: 要合并到的目标分支名称（通常是main或master）。
+    label:
+      en_US: Base Branch
+      pt_BR: Branch de Destino
+      zh_Hans: 目标分支
+    llm_description: The name of the branch you want the changes pulled into. This should be an existing branch on the current repository.
+    name: base
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: The contents of the pull request body/description.
+      pt_BR: O conteúdo do corpo/descrição do pull request.
+      zh_Hans: Pull Request的正文/描述内容。
+    label:
+      en_US: Body
+      pt_BR: Corpo
+      zh_Hans: 正文
+    llm_description: The contents of the pull request body/description. Supports markdown.
+    name: body
+    required: false
+    type: string
+  - default: false
+    form: llm
+    human_description:
+      en_US: Indicates whether the pull request is a draft.
+      pt_BR: Indica se o pull request é um rascunho.
+      zh_Hans: 是否创建为草稿PR。
+    label:
+      en_US: Draft
+      pt_BR: Rascunho
+      zh_Hans: 草稿
+    llm_description: Indicates whether the pull request is a draft. Draft pull requests cannot be merged.
+    name: draft
+    required: false
+    type: boolean
+  - default: true
+    form: llm
+    human_description:
+      en_US: Indicates whether maintainers can modify the pull request.
+      pt_BR: Indica se os mantenedores podem modificar o pull request.
+      zh_Hans: 是否允许维护者修改此PR。
+    label:
+      en_US: Maintainer Can Modify
+      pt_BR: Mantenedor Pode Modificar
+      zh_Hans: 允许维护者修改
+    llm_description: Indicates whether maintainers can modify the pull request.
+    name: maintainer_can_modify
+    required: false
+    type: boolean

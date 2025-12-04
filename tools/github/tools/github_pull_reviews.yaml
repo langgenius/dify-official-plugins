@@ -1,0 +1,71 @@
+description:
+  human:
+    en_US: Get reviews on a pull request including approval status and reviewer information
+    pt_BR: Obter revisões em um pull request incluindo status de aprovação e informações do revisor
+    zh_Hans: 获取Pull Request的Review信息，包括审批状态和审阅者信息
+  llm: A tool to get all reviews on a pull request including review state (approved, changes_requested, commented, etc.), reviewer, and review body
+extra:
+  python:
+    source: tools/github_pull_reviews.py
+identity:
+  author: langgenius
+  icon: icon.svg
+  label:
+    en_US: Get Pull Request Reviews
+    pt_BR: Obter Revisões do Pull Request
+    zh_Hans: 获取PR Review
+  name: github_pull_reviews
+parameters:
+  - form: llm
+    human_description:
+      en_US: The account owner of the repository. The name is not case sensitive.
+      pt_BR: O proprietário da conta do repositório. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库的账户所有者。名称不区分大小写。
+    label:
+      en_US: Owner
+      pt_BR: Proprietário
+      zh_Hans: 所有者
+    llm_description: The account owner of the repository. The name is not case sensitive.
+    name: owner
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: The name of the repository without the .git extension. The name is not case sensitive.
+      pt_BR: O nome do repositório sem a extensão .git. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库名称不带.git扩展名。名称不区分大小写。
+    label:
+      en_US: Repository
+      pt_BR: Repositório
+      zh_Hans: 仓库
+    llm_description: The name of the repository without the .git extension. The name is not case sensitive.
+    name: repo
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: The number that identifies the pull request.
+      pt_BR: O número que identifica o pull request.
+      zh_Hans: Pull Request的编号。
+    label:
+      en_US: Pull Request Number
+      pt_BR: Número do Pull Request
+      zh_Hans: PR编号
+    llm_description: The number that identifies the pull request.
+    name: pull_number
+    required: true
+    type: number
+  - default: 30
+    form: llm
+    human_description:
+      en_US: The number of results per page (max 100).
+      pt_BR: O número de resultados por página (máximo 100).
+      zh_Hans: 每页结果数量（最大100）。
+    label:
+      en_US: Per Page
+      pt_BR: Por Página
+      zh_Hans: 每页数量
+    llm_description: The number of results per page (max 100).
+    name: per_page
+    required: false
+    type: number
