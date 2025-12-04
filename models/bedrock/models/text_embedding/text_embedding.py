@@ -1,10 +1,8 @@
-import base64
 import json
 import logging
 import time
 import tiktoken
 from typing import Optional
-from google.cloud import aiplatform
 from botocore.exceptions import (
     ClientError,
     EndpointConnectionError,
@@ -28,7 +26,6 @@ from dify_plugin.errors.model import (
 )
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from provider.get_bedrock_client import get_bedrock_client
-from . import model_ids
 from utils.inference_profile import (
     get_inference_profile_info,
     validate_inference_profile,
