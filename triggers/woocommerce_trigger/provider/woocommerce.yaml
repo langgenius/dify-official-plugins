@@ -1,0 +1,175 @@
+subscription_schema:
+- name: "webhook_secret"
+  type: "secret-input"
+  required: false
+  label:
+    en_US: "Webhook Secret"
+    zh_Hans: "Webhook 密钥"
+    ja_JP: "Webhookシークレット"
+  help:
+    en_US: "Optional signing secret used to validate incoming WooCommerce webhook deliveries. If left empty, Dify will generate a random secret and store it with the subscription."
+    zh_Hans: "可选的签名密钥，用于校验 WooCommerce Webhook 的签名。留空则由 Dify 自动生成随机密钥并与订阅一起保存。"
+    ja_JP: "WooCommerce Webhook の署名検証に使用する任意のシークレットです。空の場合は Dify がランダムな値を生成してサブスクリプションに保存します。"
+  url: https://woocommerce.com/document/woocommerce-rest-api/#webhooks
+
+subscription_constructor:
+  parameters:
+  - name: "events"
+    label:
+      en_US: "Events"
+      zh_Hans: "事件"
+      ja_JP: "イベント"
+    type: "checkbox"
+    required: true
+    multiple: true
+    default:
+    - "order.created"
+    - "order.updated"
+    - "product.updated"
+    options:
+    - value: "order.created"
+      label:
+        en_US: "Order Created"
+        zh_Hans: "订单创建"
+        ja_JP: "注文作成"
+    - value: "order.updated"
+      label:
+        en_US: "Order Updated"
+        zh_Hans: "订单更新"
+        ja_JP: "注文更新"
+    - value: "order.deleted"
+      label:
+        en_US: "Order Deleted"
+        zh_Hans: "订单删除"
+        ja_JP: "注文削除"
+    - value: "product.created"
+      label:
+        en_US: "Product Created"
+        zh_Hans: "商品创建"
+        ja_JP: "商品作成"
+    - value: "product.updated"
+      label:
+        en_US: "Product Updated"
+        zh_Hans: "商品更新"
+        ja_JP: "商品更新"
+    - value: "product.deleted"
+      label:
+        en_US: "Product Deleted"
+        zh_Hans: "商品删除"
+        ja_JP: "商品削除"
+    - value: "customer.created"
+      label:
+        en_US: "Customer Created"
+        zh_Hans: "客户创建"
+        ja_JP: "顧客作成"
+    - value: "customer.updated"
+      label:
+        en_US: "Customer Updated"
+        zh_Hans: "客户更新"
+        ja_JP: "顧客更新"
+    - value: "customer.deleted"
+      label:
+        en_US: "Customer Deleted"
+        zh_Hans: "客户删除"
+        ja_JP: "顧客削除"
+    - value: "coupon.created"
+      label:
+        en_US: "Coupon Created"
+        zh_Hans: "优惠券创建"
+        ja_JP: "クーポン作成"
+    - value: "coupon.updated"
+      label:
+        en_US: "Coupon Updated"
+        zh_Hans: "优惠券更新"
+        ja_JP: "クーポン更新"
+    - value: "coupon.deleted"
+      label:
+        en_US: "Coupon Deleted"
+        zh_Hans: "优惠券删除"
+        ja_JP: "クーポン削除"
+    description:
+      en_US: "WooCommerce webhook topics to subscribe to. A separate webhook is created for each topic using the same delivery URL and secret."
+      zh_Hans: "选择需要订阅的 WooCommerce Webhook 主题。Dify 会为每个主题创建单独的 Webhook，并使用相同的回调地址与密钥。"
+      ja_JP: "購読したい WooCommerce Webhook トピックを選択してください。同じデリバリー URL とシークレットでトピックごとに Webhook を作成します。"
+
+  credentials_schema:
+    url:
+      label:
+        en_US: "Store URL"
+        zh_Hans: "商店 URL"
+        ja_JP: "ストア URL"
+      placeholder:
+        en_US: "https://shop.example.com"
+        zh_Hans: "https://shop.example.com"
+        ja_JP: "https://shop.example.com"
+      type: text-input
+      required: true
+      help:
+        en_US: "Base URL of your WooCommerce site, including https."
+        zh_Hans: "WooCommerce 站点的基础 URL，需包含 https。"
+        ja_JP: "WooCommerce サイトのベース URL（https を含む）"
+    consumer_key:
+      label:
+        en_US: "Consumer Key"
+        zh_Hans: "Consumer Key"
+        ja_JP: "Consumer Key"
+      type: secret-input
+      required: true
+      help:
+        en_US: "Generated under WooCommerce → Settings → Advanced → REST API."
+        zh_Hans: "可在 WooCommerce → 设置 → 高级 → REST API 中创建。"
+        ja_JP: "WooCommerce → 設定 → 詳細 → REST API で発行した値を入力してください。"
+    consumer_secret:
+      label:
+        en_US: "Consumer Secret"
+        zh_Hans: "Consumer Secret"
+        ja_JP: "Consumer Secret"
+      type: secret-input
+      required: true
+      help:
+        en_US: "Generated together with the consumer key."
+        zh_Hans: "与 Consumer Key 同时生成。"
+        ja_JP: "Consumer Key と一緒に発行される値です。"
+    include_credentials_in_query:
+      label:
+        en_US: "Include credentials in query string"
+        zh_Hans: "以查询参数方式传递凭据"
+        ja_JP: "クエリストリングに認証情報を含める"
+      type: boolean
+      required: false
+      default: false
+      help:
+        en_US: "Enable this only if your host strips the Authorization header. When enabled, the consumer key & secret will be appended to each REST request as query parameters."
+        zh_Hans: "仅当服务器无法正确解析 Authorization 头时启用。启用后，Consumer Key/Secret 会以查询参数的方式附加到每个 REST 请求。"
+        ja_JP: "サーバーが Authorization ヘッダーを破棄してしまう場合のみ有効化してください。有効化すると、Consumer Key/Secret がクエリパラメータとして付与されます。"
+
+events:
+- events/order/order_created.yaml
+- events/order/order_updated.yaml
+- events/order/order_deleted.yaml
+- events/product/product_created.yaml
+- events/product/product_updated.yaml
+- events/product/product_deleted.yaml
+- events/customer/customer_created.yaml
+- events/customer/customer_updated.yaml
+- events/customer/customer_deleted.yaml
+- events/coupon/coupon_created.yaml
+- events/coupon/coupon_updated.yaml
+- events/coupon/coupon_deleted.yaml
+
+identity:
+  author: langgenius
+  description:
+    en_US: WooCommerce trigger provider with automatic webhook provisioning and signature validation.
+    zh_Hans: 带有自动 Webhook 创建与签名校验的 WooCommerce 触发器提供者。
+    ja_JP: Webhook の自動作成と署名検証に対応した WooCommerce トリガープロバイダーです。
+  icon: icon.png
+  label:
+    en_US: WooCommerce Triggers
+    zh_Hans: WooCommerce 触发器
+    ja_JP: WooCommerce トリガー
+  name: woocommerce_trigger
+
+extra:
+  python:
+    source: provider/woocommerce.py

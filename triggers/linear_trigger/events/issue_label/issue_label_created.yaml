@@ -1,0 +1,99 @@
+identity:
+  name: issue_label_created
+  author: langgenius
+  label:
+    en_US: Issue Label Created
+    zh_Hans: Issue 标签创建
+    ja_JP: イシューラベル作成
+description:
+  en_US: Triggers when an issue label is created
+  zh_Hans: 当在 Linear 中创建新的 Issue 标签时触发
+  ja_JP: Linear で新しいイシューラベルが作成されたときにトリガーされます
+parameters:
+- name: name_contains
+  label:
+    en_US: Name Contains
+    zh_Hans: 名称包含
+    ja_JP: 名前に含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the label name contains specific keywords (comma-separated)."
+    zh_Hans: "仅当标签名称包含指定关键词时触发（逗号分隔）。"
+    ja_JP: "ラベル名に特定のキーワードが含まれる場合のみトリガーします（カンマ区切り）。"
+- name: color_filter
+  label:
+    en_US: Color Filter
+    zh_Hans: 颜色过滤
+    ja_JP: カラーフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Restrict to labels with specific colors (comma-separated color values such as #FF0000)."
+    zh_Hans: "仅保留具有特定颜色的标签（逗号分隔的颜色值，例如 #FF0000）。"
+    ja_JP: "特定の色を持つラベルのみ対象にします（例: #FF0000。カンマ区切り）。"
+- name: team_filter
+  label:
+    en_US: Team Filter
+    zh_Hans: 团队过滤
+    ja_JP: チームフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for labels that belong to specific team IDs (comma-separated)."
+    zh_Hans: "仅当标签属于指定的团队 ID 时触发（逗号分隔）。"
+    ja_JP: "指定したチーム ID に属するラベルのみトリガーします（カンマ区切り）。"
+- name: group_only
+  label:
+    en_US: Group Labels Only
+    zh_Hans: 仅限分组标签
+    ja_JP: グループラベルのみ
+  type: boolean
+  required: false
+  default: false
+  description:
+    en_US: "Enable to trigger only when the created label is a label group."
+    zh_Hans: "启用后，仅当创建的是分组标签时触发。"
+    ja_JP: "有効にすると、グループラベルが作成された場合のみトリガーします。"
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [create]
+    type:
+      type: string
+      enum: [IssueLabel]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        color:
+          type: string
+        teamId:
+          type: string
+        parentId:
+          type: string
+        creatorId:
+          type: string
+        inheritedFromId:
+          type: string
+        isGroup:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        archivedAt:
+          type: string
+    actor:
+      type: object
+  required: [action, type, data]
+extra:
+  python:
+    source: events/issue_label/issue_label_created.py

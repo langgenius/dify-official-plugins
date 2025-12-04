@@ -291,20 +291,12 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             # Get region prefix for model ID construction
             region_name = credentials['aws_region']
             region_prefix = None
+            cross_region = model_parameters.pop('cross-region', 'disabled')
             
-            if model_parameters.pop('cross-region', False):
+            if cross_region in ('geographic', 'global'):
                 # Cross-region inference enabled
-                # Check if the model supports global prefix (currently mainly Claude 4 series)
-                supports_global = any(model_id.startswith(prefix) for prefix in [
-                    'anthropic.claude-sonnet-4', 'anthropic.claude-sonnet-4-5'
-                ])
-                
-                if supports_global:
-                    # Prefer using global prefix
-                    region_prefix = model_ids.get_region_area(region_name, prefer_global=True)
-                else:
-                    # Use traditional regional prefix
-                    region_prefix = model_ids.get_region_area(region_name, prefer_global=False)
+                prefer_global = (cross_region == 'global')
+                region_prefix = model_ids.get_region_area(region_name, prefer_global=prefer_global)
                 
                 if not region_prefix:
                     raise InvokeError(f'Failed to get cross-region inference prefix for region {region_name}')
@@ -312,14 +304,6 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 if not model_ids.is_support_cross_region(model_id):
                     raise InvokeError(f"Model {model_id} doesn't support cross-region inference")
                 
-                model_id = "{}.{}".format(region_prefix, model_id)
-            elif model_ids.is_support_cross_region(model_id):
-                # Cross-region inference not enabled, but still add region prefix for all models
-                region_prefix = model_ids.get_region_area(region_name, prefer_global=False)
-                
-                if not region_prefix:
-                    raise InvokeError(f'Failed to get region prefix for region {region_name}')
-
                 model_id = "{}.{}".format(region_prefix, model_id)
 
 
@@ -396,8 +380,43 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         if model_info["support_system_prompts"] and system and len(system) > 0:
             parameters["system"] = system
 
-        if model_info["support_tool_use"] and tools:
-            parameters["toolConfig"] = self._convert_converse_tool_config(tools=tools)
+        # Check if message history contains tool-related content
+        # AWS Bedrock requires toolConfig when messages contain toolUse or toolResult blocks
+        has_tool_content_in_messages = False
+        if model_info["support_tool_use"]:
+            for msg in prompt_messages:
+                if isinstance(msg, AssistantPromptMessage) and msg.tool_calls:
+                    has_tool_content_in_messages = True
+                    break
+                if isinstance(msg, ToolPromptMessage):
+                    has_tool_content_in_messages = True
+                    break
+
+        # Add toolConfig based on tools and message history
+        if model_info["support_tool_use"]:
+            if tools:
+                # Normal case: tools provided
+                parameters["toolConfig"] = self._convert_converse_tool_config(tools=tools)
+            elif has_tool_content_in_messages:
+                # WORKAROUND for Dify Agent issue:
+                # In the last iteration, Dify sets tools=[] but messages contain tool history
+                # AWS Bedrock requires toolConfig.tools to have at least 1 element
+                # Create a placeholder tool that LLM won't call, allowing agent to finish gracefully
+                logger.info(
+                    "Message history contains tool calls but no tools provided. "
+                    "Creating placeholder tool to satisfy AWS Bedrock API requirements. "
+                    "This prevents the agent from making further tool calls."
+                )
+                placeholder_tool = PromptMessageTool(
+                    name="__no_more_tools_available__",
+                    description="This is a placeholder tool. No more tools are available for this conversation. Please provide a final answer based on the information already gathered.",
+                    parameters={
+                        "type": "object",
+                        "properties": {},
+                        "required": []
+                    }
+                )
+                parameters["toolConfig"] = self._convert_converse_tool_config(tools=[placeholder_tool])
         try:
             # for issue #10976
             conversations_list = parameters["messages"]
@@ -705,7 +724,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             inference_config["temperature"] = model_parameters["temperature"]
 
         if "top_p" in model_parameters:
-            inference_config["topP"] = model_parameters["temperature"]
+            inference_config["topP"] = model_parameters["top_p"]
 
         if stop:
             inference_config["stopSequences"] = stop

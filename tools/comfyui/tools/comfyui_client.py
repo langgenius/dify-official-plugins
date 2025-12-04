@@ -89,6 +89,16 @@ class ComfyUiClient:
         """
         return self.get_model_dirs("loras")
 
+    def get_object_info(self) -> dict:
+        try:
+            api_url = str(self.base_url / "object_info")
+            response = requests.get(url=api_url, timeout=(2, 10), headers=self._get_headers())  # Add headers
+            if response.status_code == 200:
+                return response.json()
+        except Exception as e:
+            pass
+        return {}
+
     def get_samplers(self) -> list[str]:
         """
         get samplers
@@ -214,7 +224,8 @@ class ComfyUiClient:
                     if data["node"] is None and data["prompt_id"] == prompt_id:
                         break  # Execution is done
 
-    def generate(self, workflow_json: dict) -> list[ComfyUiResultFile]:
+    def generate(self, workflow: ComfyUiWorkflow) -> list[ComfyUiResultFile]:
+        workflow_json = workflow.json()
         try:
             ws, client_id = self.open_websocket_connection()
         except Exception as e:
@@ -244,14 +255,14 @@ class ComfyUiClient:
     def convert_webp2mp4(self, webp_blob: bytes, fps: int):
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "webp2mp4.json")) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), object_info=self.get_object_info())
 
         uploaded_image = self.upload_image("input.webp", webp_blob, "image/webp")
         workflow.set_property("25", "inputs/frame_rate", fps)
         workflow.set_image_names([uploaded_image])
 
         try:
-            output_files = self.generate(workflow.json())
+            output_files = self.generate(workflow)
         except Exception as e:
             raise ToolProviderCredentialValidationError(
                 f"Failed to download: {str(e)}. "

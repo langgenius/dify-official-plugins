@@ -1,0 +1,149 @@
+identity:
+  name: "gemini-3-pro-image-preview"
+  author: "langgenius"
+  label:
+    en_US: "Gemini 3 Pro Image Preview"
+    zh_Hans: "Gemini 3 Pro Image Preview"
+    pt_BR: "Gemini 3 Pro Image Preview"
+    ja_JP: "Gemini 3 Pro Image Preview"
+description:
+  human:
+    en_US: "Gemini 3 Pro Image Preview model with support for aspect ratio and resolution customization"
+    zh_Hans: "Gemini 3 Pro Image Preview 模型，支持宽高比和分辨率自定义"
+    pt_BR: "Modelo Gemini 3 Pro Image Preview com suporte para personalização de proporção e resolução"
+    ja_JP: "Gemini 3 Pro Image Preview モデル、アスペクト比と解像度のカスタマイズをサポート"
+  llm: "Generate image using Gemini 3 Pro Image Preview model with customizable aspect ratio and resolution"
+parameters:
+  - name: prompt
+    type: string
+    required: true
+    label:
+      en_US: "Prompt"
+      zh_Hans: "提示词"
+      pt_BR: "Prompt"
+      ja_JP: "プロンプト"
+    human_description:
+      en_US: "Text description of image you want to generate"
+      zh_Hans: "您想要生成的图像的文字描述"
+      pt_BR: "Descrição textual da imagem que você deseja gerar"
+      ja_JP: "生成したい画像のテキスト説明"
+    llm_description: "Text prompt for Gemini 3 Pro Image Preview generation, describing the desired image content"
+    form: llm
+
+  - name: aspect_ratio
+    type: select
+    required: false
+    label:
+      en_US: "Aspect Ratio"
+      zh_Hans: "宽高比"
+      pt_BR: "Proporção"
+      ja_JP: "アスペクト比"
+    human_description:
+      en_US: "Image aspect ratio"
+      zh_Hans: "图像宽高比"
+      pt_BR: "Proporção da imagem"
+      ja_JP: "画像のアスペクト比"
+    llm_description: "Aspect ratio for Gemini 3 Pro Image Preview generation"
+    form: form
+    default: "1:1"
+    options:
+      - value: "1:1"
+        label:
+          en_US: "1:1 (Square)"
+          zh_Hans: "1:1 (正方形)"
+          pt_BR: "1:1 (Quadrado)"
+          ja_JP: "1:1 (正方形)"
+      - value: "2:3"
+        label:
+          en_US: "2:3 (Portrait)"
+          zh_Hans: "2:3 (竖版)"
+          pt_BR: "2:3 (Retrato)"
+          ja_JP: "2:3 (縦長)"
+      - value: "3:2"
+        label:
+          en_US: "3:2 (Landscape)"
+          zh_Hans: "3:2 (横版)"
+          pt_BR: "3:2 (Paisagem)"
+          ja_JP: "3:2 (横長)"
+      - value: "3:4"
+        label:
+          en_US: "3:4 (Portrait)"
+          zh_Hans: "3:4 (竖版)"
+          pt_BR: "3:4 (Retrato)"
+          ja_JP: "3:4 (縦長)"
+      - value: "4:3"
+        label:
+          en_US: "4:3 (Landscape)"
+          zh_Hans: "4:3 (横版)"
+          pt_BR: "4:3 (Paisagem)"
+          ja_JP: "4:3 (横長)"
+      - value: "4:5"
+        label:
+          en_US: "4:5 (Portrait)"
+          zh_Hans: "4:5 (竖版)"
+          pt_BR: "4:5 (Retrato)"
+          ja_JP: "4:5 (縦長)"
+      - value: "5:4"
+        label:
+          en_US: "5:4 (Landscape)"
+          zh_Hans: "5:4 (横版)"
+          pt_BR: "5:4 (Paisagem)"
+          ja_JP: "5:4 (横長)"
+      - value: "9:16"
+        label:
+          en_US: "9:16 (Portrait)"
+          zh_Hans: "9:16 (竖版)"
+          pt_BR: "9:16 (Retrato)"
+          ja_JP: "9:16 (縦長)"
+      - value: "16:9"
+        label:
+          en_US: "16:9 (Landscape)"
+          zh_Hans: "16:9 (横版)"
+          pt_BR: "16:9 (Paisagem)"
+          ja_JP: "16:9 (横長)"
+      - value: "21:9"
+        label:
+          en_US: "21:9 (Ultra-wide)"
+          zh_Hans: "21:9 (超宽)"
+          pt_BR: "21:9 (Ultra-largo)"
+          ja_JP: "21:9 (超ワイド)"
+
+  - name: resolution
+    type: select
+    required: false
+    label:
+      en_US: "Resolution"
+      zh_Hans: "分辨率"
+      pt_BR: "Resolução"
+      ja_JP: "解像度"
+    human_description:
+      en_US: "Image resolution quality"
+      zh_Hans: "图像分辨率质量"
+      pt_BR: "Qualidade de resolução da imagem"
+      ja_JP: "画像解像度の品質"
+    llm_description: "Output image resolution for Gemini 3 Pro Image Preview generation"
+    form: form
+    default: "4K"
+    options:
+      - value: "1K"
+        label:
+          en_US: "1K (Standard)"
+          zh_Hans: "1K (标准)"
+          pt_BR: "1K (Padrão)"
+          ja_JP: "1K (標準)"
+      - value: "2K"
+        label:
+          en_US: "2K (High)"
+          zh_Hans: "2K (高)"
+          pt_BR: "2K (Alto)"
+          ja_JP: "2K (高)"
+      - value: "4K"
+        label:
+          en_US: "4K (Ultra High)"
+          zh_Hans: "4K (超高)"
+          pt_BR: "4K (Ultra Alto)"
+          ja_JP: "4K (超高)"
+
+extra:
+  python:
+    source: tools/gemini-3-pro-image-preview.py

@@ -1,0 +1,38 @@
+identity:
+  name: gmail_label_removed
+  author: langgenius
+  label:
+    en_US: Gmail Label Removed
+    zh_Hans: Gmail 标签移除
+    ja_JP: Gmail ラベル削除
+
+description:
+  en_US: Emits label removals on messages since last checkpoint.
+  zh_Hans: 自上次位点以来在消息上移除的标签。
+  ja_JP: 直近チェックポイント以降のメッセージからのラベル削除。
+
+parameters: []
+
+extra:
+  python:
+    source: events/gmail_label_removed/gmail_label_removed.py
+
+output_schema:
+  type: object
+  properties:
+    history_id:
+      type: string
+    changes:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          threadId:
+            type: string
+          labelIds:
+            type: array
+            items:
+              type: string
+

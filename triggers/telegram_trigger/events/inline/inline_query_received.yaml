@@ -1,0 +1,97 @@
+identity:
+  name: inline_query_received
+  author: langgenius
+  label:
+    en_US: Inline Query Received
+    zh_Hans: 收到行内查询
+    ja_JP: インラインクエリ受信
+description:
+  en_US: Triggers when your bot receives a new inline query.
+  zh_Hans: 当机器人收到新的行内查询时触发。
+  ja_JP: ボットが新しいインラインクエリを受信したときにトリガーします。
+parameters: []
+output_schema:
+  type: object
+  additionalProperties: false
+  required:
+  - update_id
+  - inline_query
+  properties:
+    update_id:
+      type: integer
+      description: Unique identifier for the Telegram update.
+    inline_query:
+      type: object
+      additionalProperties: false
+      description: Inline query payload sent by Telegram.
+      required:
+      - id
+      - from
+      - query
+      - offset
+      properties:
+        id:
+          type: string
+          description: Unique identifier for this inline query.
+        from:
+          type: object
+          description: Telegram User object.
+          additionalProperties: true
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for this user or bot.
+            is_bot:
+              type: boolean
+              description: True if this user is a bot.
+            first_name:
+              type: string
+              description: User first name.
+            last_name:
+              type: string
+              description: User last name.
+            username:
+              type: string
+              description: Username of the user, if any.
+            language_code:
+              type: string
+              description: IETF language tag of the user's language.
+            is_premium:
+              type: boolean
+              description: True if the user is a Telegram Premium subscriber.
+        location:
+          type: object
+          description: Geographical location provided with the query.
+          additionalProperties: false
+          properties:
+            latitude:
+              type: number
+              description: Latitude in degrees.
+            longitude:
+              type: number
+              description: Longitude in degrees.
+            horizontal_accuracy:
+              type: number
+              description: Uncertainty radius for the location in meters.
+            live_period:
+              type: integer
+              description: Period in seconds for which the location can be updated.
+            heading:
+              type: integer
+              description: Direction in which the user is moving.
+            proximity_alert_radius:
+              type: integer
+              description: Maximum distance for proximity alerts about approaching
+                another chat member.
+        chat_type:
+          type: string
+          description: Type of chat from which the inline query was sent.
+        query:
+          type: string
+          description: Text of the query from the user.
+        offset:
+          type: string
+          description: Offset of the results to be returned, transmitted from Telegram.
+extra:
+  python:
+    source: events/inline/inline_query_received.py

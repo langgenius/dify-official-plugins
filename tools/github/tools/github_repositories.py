@@ -7,6 +7,8 @@ from urllib.parse import quote
 import requests
 
 from dify_plugin import Tool
+from dify_plugin.entities import I18nObject, ParameterOption
+from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.tool import ToolInvokeMessage
 
 
@@ -17,17 +19,22 @@ class GithubRepositoriesTool(Tool):
         """
         top_n = tool_parameters.get("top_n", 5)
         query = tool_parameters.get("query", "")
+        credential_type = self.runtime.credential_type
         if not query:
             yield self.create_text_message("Please input symbol")
 
-        if "access_tokens" not in self.runtime.credentials:
+        if credential_type == CredentialType.API_KEY and "access_tokens" not in self.runtime.credentials:
             yield self.create_text_message("GitHub API Access Tokens is required.")
+
+        if credential_type == CredentialType.OAUTH and "access_tokens" not in self.runtime.credentials:
+            yield self.create_text_message("GitHub OAuth Access Tokens is required.")
 
         access_token = self.runtime.credentials.get("access_tokens")
         try:
             headers = {
                 "Content-Type": "application/vnd.github+json",
                 "Authorization": f"Bearer {access_token}",
+                # fixed api version
                 "X-GitHub-Api-Version": "2022-11-28",
             }
             s = requests.session()
@@ -72,3 +79,17 @@ class GithubRepositoriesTool(Tool):
                 yield self.create_text_message(response.json().get("message"))
         except Exception as e:
             yield self.create_text_message(f"GitHub API Key and Api Version is invalid. {e}")
+
+    def _fetch_parameter_options(self, parameter: str) -> list[ParameterOption]:
+        return [
+            ParameterOption(
+                value="iamjoel",
+                label=I18nObject(en_US="Joel"),
+                icon="https://avatars.githubusercontent.com/u/2120155?s=40&v=4",
+            ),
+            ParameterOption(
+                value="yeuoly",
+                label=I18nObject(en_US="Yeuoly"),
+                icon="https://avatars.githubusercontent.com/u/45712896?s=60&v=4",
+            ),
+        ]

@@ -1,0 +1,53 @@
+identity:
+  name: chat_disbanded_v1
+  author: langgenius
+  label:
+    en_US: Chat Disbanded
+    zh_Hans: 群聊解散
+    ja_JP: チャット解散
+
+description:
+  en_US: This event activates when a chat group is permanently disbanded or dissolved, providing details about the disbanded chat.
+  zh_Hans: 当群聊被永久解散或解除时激活，提供解散的群聊详细信息。
+  ja_JP: チャットグループが永久に解散または解除されたときにアクティブになり、解散したチャットの詳細を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    chat_id:
+      type: string
+      description: ID of the disbanded chat
+    
+    name:
+      type: string
+      description: Name of the disbanded chat
+    
+    external:
+      type: string
+      description: Whether the chat is external
+    
+    operator_tenant_key:
+      type: string
+      description: Tenant key of the operator
+    
+    operator_user_id:
+      type: string
+      description: User ID of the operator who disbanded the chat
+    
+    operator_open_id:
+      type: string
+      description: Open ID of the operator
+    
+    operator_union_id:
+      type: string
+      description: Union ID of the operator
+    
+    i18n_names:
+      type: string
+      description: Internationalized names (JSON format)
+
+extra:
+  python:
+    source: events/im/chat_disbanded_v1.py

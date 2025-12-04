@@ -47,7 +47,11 @@ IMAGE_GENERATION_MODELS = {
     "gemini-2.0-flash-preview-image-generation",
     "gemini-2.5-flash-image-preview",
     "gemini-2.5-flash-image",
+    "gemini-3-pro-image-preview",
 }
+
+# https://ai.google.dev/gemini-api/docs/thought-signatures#faqs
+DEFAULT_THOUGHT_SIGNATURE: bytes = b"skip_thought_signature_validator"
 
 
 class GoogleLargeLanguageModel(LargeLanguageModel):
@@ -251,13 +255,14 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         model_parameters: Mapping[str, Any],
         stop: List[str] | None = None,
     ) -> None:
-        if schema := model_parameters.get("json_schema"):
-            try:
-                schema = json.loads(schema)
-            except (TypeError, ValueError) as exc:
-                raise InvokeError("Invalid JSON Schema") from exc
-            config.response_schema = schema
+        if "json_schema" in model_parameters:
             config.response_mime_type = "application/json"
+            if schema := model_parameters.get("json_schema"):
+                try:
+                    schema = json.loads(schema)
+                except (TypeError, ValueError) as exc:
+                    raise InvokeError("Invalid JSON Schema") from exc
+                config.response_schema = schema
 
         if stop:
             config.stop_sequences = stop
@@ -266,6 +271,42 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         config.top_k = model_parameters.get("top_k", None)
         config.temperature = model_parameters.get("temperature", None)
         config.max_output_tokens = model_parameters.get("max_output_tokens", None)
+
+        if media_resolution := model_parameters.get("media_resolution", ""):
+            if media_resolution in ["Default"]:
+                config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_UNSPECIFIED
+            elif media_resolution in ["Low"]:
+                config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_LOW
+            elif media_resolution in ["Medium"]:
+                config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_MEDIUM
+            elif media_resolution in ["High"]:
+                config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_HIGH
+
+    @staticmethod
+    def _set_image_config(
+        *, config: types.GenerateContentConfig, model_parameters: Mapping[str, Any], model: str
+    ):
+        if model not in IMAGE_GENERATION_MODELS:
+            return
+
+        aspect_ratio = model_parameters.get("aspect_ratio")
+        if (
+            not aspect_ratio
+            or not isinstance(aspect_ratio, str)
+            or aspect_ratio
+            not in ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"]
+        ):
+            aspect_ratio = None
+
+        resolution = model_parameters.get("resolution")
+        if (
+            not resolution
+            or not isinstance(resolution, str)
+            or resolution not in ["1K", "2K", "4K"]
+        ):
+            resolution = None
+
+        config.image_config = types.ImageConfig(image_size=resolution, aspect_ratio=aspect_ratio)
 
     @staticmethod
     def _set_thinking_config(
@@ -291,6 +332,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         include_thoughts = model_parameters.get("include_thoughts", None)
         thinking_budget = model_parameters.get("thinking_budget", None)
         thinking_mode = model_parameters.get("thinking_mode", None)
+        thinking_level = model_parameters.get("thinking_level", None)
 
         # Must be explicitly handled here, where the three states True, False, and None each have specific meanings.
         if thinking_mode is None:
@@ -304,8 +346,18 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             ):
                 thinking_budget = -1
 
+        if isinstance(thinking_level, str):
+            if thinking_level in ["Low"]:
+                thinking_level = types.ThinkingLevel.LOW
+            elif thinking_level in ["High"]:
+                thinking_level = types.ThinkingLevel.HIGH
+        if not isinstance(thinking_level, types.ThinkingLevel):
+            thinking_level = None
+
         config.thinking_config = types.ThinkingConfig(
-            include_thoughts=include_thoughts, thinking_budget=thinking_budget
+            include_thoughts=include_thoughts,
+            thinking_budget=thinking_budget,
+            thinking_level=thinking_level,
         )
 
     @staticmethod
@@ -457,25 +509,32 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: Gemini Content representation of message
         """
 
-        def _build_text_parts(_content: str | TextPromptMessageContent) -> List[types.Part]:
+        def _build_text_parts(
+            _content: str | TextPromptMessageContent, *, is_assistant_tree: bool = False
+        ) -> List[types.Part]:
             text_parts = []
             if isinstance(_content, TextPromptMessageContent):
                 _content = _content.data
             if message.role == PromptMessageRole.ASSISTANT:
                 _content = re.sub(r"^<think>.*?</think>\s*", "", _content, count=1, flags=re.DOTALL)
             if _content:
-                text_parts.append(types.Part.from_text(text=_content))
+                _unverified_part = types.Part.from_text(text=_content)
+                if is_assistant_tree:
+                    _unverified_part.thought_signature = DEFAULT_THOUGHT_SIGNATURE
+                text_parts.append(_unverified_part)
             return text_parts
 
         # Helper function to build parts from content
-        def build_parts(content: str | List[PromptMessageContentUnionTypes]) -> List[types.Part]:
+        def build_parts(
+            content: str | List[PromptMessageContentUnionTypes], *, is_assistant_tree: bool = False
+        ) -> List[types.Part]:
             if isinstance(content, str):
-                return _build_text_parts(content)
+                return _build_text_parts(content, is_assistant_tree=is_assistant_tree)
 
             parts_ = []
             for obj in content:
                 if obj.type == PromptMessageContentType.TEXT:
-                    parts_.extend(_build_text_parts(obj))
+                    parts_.extend(_build_text_parts(obj, is_assistant_tree=is_assistant_tree))
                 else:
                     # Filter files based on type and supported formats
                     should_upload = True
@@ -493,7 +552,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                         uri, mime_type = self._upload_file_content_to_google(
                             obj, genai_client, file_server_url_prefix
                         )
-                        parts_.append(types.Part.from_uri(file_uri=uri, mime_type=mime_type))
+                        _unverified_part = types.Part.from_uri(file_uri=uri, mime_type=mime_type)
+                        if is_assistant_tree:
+                            _unverified_part.thought_signature = DEFAULT_THOUGHT_SIGNATURE
+                        parts_.append(_unverified_part)
                     else:
                         # Log skipped files for debugging
                         logging.debug(
@@ -511,17 +573,17 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
             # Handle text content (remove thinking tags)
             if message.content:
-                parts.extend(build_parts(message.content))
+                parts.extend(build_parts(message.content, is_assistant_tree=True))
 
             # Handle tool calls
             # https://ai.google.dev/gemini-api/docs/function-calling?hl=zh-cn&example=chart#how-it-works
             if message.tool_calls:
                 call = message.tool_calls[0]
-                parts.append(
-                    types.Part.from_function_call(
-                        name=call.function.name, args=json.loads(call.function.arguments)
-                    )
+                _unsafe_part = types.Part.from_function_call(
+                    name=call.function.name, args=json.loads(call.function.arguments)
                 )
+                _unsafe_part.thought_signature = DEFAULT_THOUGHT_SIGNATURE
+                parts.append(_unsafe_part)
 
             return types.Content(role="model", parts=parts)
 
@@ -634,7 +696,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # Keep a reference to the client to prevent it from being garbage collected
         # while the generator is still active
         _client_ref = genai_client
-        
+
         index = -1
         self.is_thinking = False
 
@@ -862,6 +924,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             config=config,
             file_server_url_prefix=file_server_url_prefix,
         )
+
+        # == ImageConfig == #
+
+        self._set_image_config(config=config, model_parameters=model_parameters, model=model)
 
         # == ThinkingConfig == #
 

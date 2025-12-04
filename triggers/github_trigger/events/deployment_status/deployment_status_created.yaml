@@ -1,0 +1,277 @@
+identity:
+  name: deployment_status_created
+  author: langgenius
+  label:
+    en_US: Deployment Status Created
+    zh_Hans: 部署状态已创建
+    ja_JP: デプロイメントステータス作成
+
+description:
+  en_US: Triggers when a deployment status is created
+  zh_Hans: 当部署状态被创建时触发
+  ja_JP: デプロイメントステータスが作成されたときにトリガーします
+
+parameters:
+- name: environment
+  label:
+    en_US: Environment
+    zh_Hans: 环境
+    ja_JP: 環境
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for these environments (comma-separated, e.g., dev,staging,production)."
+    zh_Hans: "仅当环境匹配时触发（逗号分隔，如 dev、staging、production）。"
+    ja_JP: "これらの環境の場合のみトリガー（カンマ区切り、例: dev,staging,production）。"
+
+- name: state
+  label:
+    en_US: Deployment State
+    zh_Hans: 部署状态
+    ja_JP: デプロイメント状態
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for these states (pending,in_progress,queued,success,failure,error,inactive,skipped; comma-separated)."
+    zh_Hans: "仅当状态匹配时触发（pending、in_progress、queued、success、failure、error、inactive、skipped；逗号分隔）。"
+    ja_JP: "これらの状態の場合のみトリガー（pending,in_progress,queued,success,failure,error,inactive,skipped、カンマ区切り）。"
+
+- name: ref
+  label:
+    en_US: Ref
+    zh_Hans: 引用
+    ja_JP: リファレンス
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for these refs (comma-separated, e.g., main,release-*,SHA)."
+    zh_Hans: "仅当引用匹配时触发（逗号分隔，例如 main、release-*、SHA）。"
+    ja_JP: "これらのリファレンスの場合のみトリガー（カンマ区切り、例: main,release-*,SHA）。"
+
+- name: creator
+  label:
+    en_US: Creator
+    zh_Hans: 创建者
+    ja_JP: 作成者
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if created by these users (comma-separated GitHub usernames)."
+    zh_Hans: "仅当由这些用户创建时触发（逗号分隔 GitHub 用户名）。"
+    ja_JP: "これらのユーザーによって作成された場合のみトリガー（GitHub ユーザー名、カンマ区切り）。"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    deployment_status:
+      type: object
+      properties:
+        id:
+          type: integer
+        state:
+          type: string
+        description:
+          type:
+          - string
+          - "null"
+        target_url:
+          type:
+          - string
+          - "null"
+          format: uri
+        environment:
+          type: string
+        environment_url:
+          type:
+          - string
+          - "null"
+          format: uri
+        log_url:
+          type:
+          - string
+          - "null"
+          format: uri
+        auto_inactive:
+          type:
+          - boolean
+          - "null"
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+      required:
+      - id
+      - state
+    deployment:
+      type: object
+      properties:
+        id:
+          type: integer
+        sha:
+          type: string
+        ref:
+          type: string
+        environment:
+          type: string
+        creator:
+          type: object
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+        created_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - sha
+      - ref
+      - environment
+    repository:
+      type: object
+      description: The repository where the deployment status was created
+      properties:
+        id:
+          type: integer
+          format: int64
+        node_id:
+          type: string
+        name:
+          type: string
+        full_name:
+          type: string
+        private:
+          type: boolean
+        owner:
+          type: object
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+            node_id:
+              type: string
+            avatar_url:
+              type: string
+              format: uri
+            html_url:
+              type: string
+              format: uri
+            type:
+              type: string
+              enum:
+              - Bot
+              - User
+              - Organization
+            site_admin:
+              type: boolean
+          required:
+          - id
+          - login
+        html_url:
+          type: string
+          format: uri
+        description:
+          type:
+          - string
+          - "null"
+        fork:
+          type: boolean
+        url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        pushed_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+        stargazers_count:
+          type: integer
+        watchers_count:
+          type: integer
+        language:
+          type:
+          - string
+          - "null"
+        forks_count:
+          type: integer
+        open_issues_count:
+          type: integer
+        default_branch:
+          type: string
+        topics:
+          type: array
+          items:
+            type: string
+        visibility:
+          type: string
+          enum:
+          - public
+          - private
+          - internal
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - private
+      - owner
+      - html_url
+      - url
+      - created_at
+      - updated_at
+      - fork
+      - default_branch
+      - visibility
+    sender:
+      type: object
+      description: The user who triggered the event
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        node_id:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        html_url:
+          type: string
+          format: uri
+        type:
+          type: string
+          enum:
+          - Bot
+          - User
+          - Organization
+        site_admin:
+          type: boolean
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - deployment_status
+  - deployment
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/deployment_status/deployment_status_created.py

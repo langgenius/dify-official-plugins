@@ -1,0 +1,98 @@
+identity:
+  name: message_receive_v1
+  author: langgenius
+  label:
+    en_US: Message Received
+    zh_Hans: 收到消息
+    ja_JP: メッセージ受信
+
+description:
+  en_US: This event activates when a message is received in a group chat where the bot is a member, providing the message content and sender information.
+  zh_Hans: 当机器人所在的群聊收到消息时激活，提供消息内容和发送者信息。
+  ja_JP: ボットがメンバーになっているグループチャットでメッセージを受信したときにアクティブになり、メッセージの内容と送信者情報を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    sender_id:
+      type: object
+      properties:
+        user_id:
+          type: string
+        open_id:
+          type: string
+        union_id:
+          type: string
+      description: ID of the message sender
+
+    sender_type:
+      type: string
+      description: Type of sender (user or bot)
+
+    tenant_key:
+      type: string
+      description: Tenant key of the sender
+
+    message_id:
+      type: string
+      description: Unique message identifier
+
+    root_id:
+      type: string
+      description: Root message ID if this is a reply
+
+    parent_id:
+      type: string
+      description: Parent message ID for threaded replies
+
+    chat_id:
+      type: string
+      description: Chat where message was sent
+
+    chat_type:
+      type: string
+      description: Type of chat (group or P2P)
+
+    message_type:
+      type: string
+      description: Type of message content
+
+    content:
+      type: string
+      description: Message content
+
+    create_time:
+      type: string
+      description: Message creation timestamp
+
+    update_time:
+      type: string
+      description: Message update timestamp
+
+    mentions:
+      type: array
+      items:
+        type: object
+        properties:
+          key:
+            type: string
+          id:
+            type: object
+            properties:
+              user_id:
+                type: string
+              open_id:
+                type: string
+              union_id:
+                type: string
+          name:
+            type: string
+          tenant_key:
+            type: string
+      description: List of mentioned users or bots
+
+extra:
+  python:
+    source: events/im/message_receive_v1.py

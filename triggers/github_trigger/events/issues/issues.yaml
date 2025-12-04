@@ -1,0 +1,453 @@
+identity:
+  name: issues
+  author: langgenius
+  label:
+    en_US: Issues (Unified)
+    zh_Hans: 议题（统一）
+    ja_JP: イシュー（統合）
+
+description:
+  en_US: Unified issues event with actions filter
+  zh_Hans: 带 actions 过滤的统一 issues 事件
+  ja_JP: アクションフィルタ付きの統合イシューイベント
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - opened
+  - edited
+  - closed
+  - reopened
+  - assigned
+  - unassigned
+  - labeled
+  - unlabeled
+  options:
+  - value: opened
+    label:
+      en_US: Opened
+      zh_Hans: 打开
+      ja_JP: オープン
+  - value: edited
+    label:
+      en_US: Edited
+      zh_Hans: 编辑
+      ja_JP: 編集
+  - value: closed
+    label:
+      en_US: Closed
+      zh_Hans: 关闭
+      ja_JP: クローズ
+  - value: reopened
+    label:
+      en_US: Reopened
+      zh_Hans: 重新打开
+      ja_JP: 再オープン
+  - value: assigned
+    label:
+      en_US: Assigned
+      zh_Hans: 指派
+      ja_JP: 割り当て
+  - value: unassigned
+    label:
+      en_US: Unassigned
+      zh_Hans: 取消指派
+      ja_JP: 割り当て解除
+  - value: labeled
+    label:
+      en_US: Labeled
+      zh_Hans: 添加标签
+      ja_JP: ラベル付け
+  - value: unlabeled
+    label:
+      en_US: Unlabeled
+      zh_Hans: 移除标签
+      ja_JP: ラベル削除
+  description:
+    en_US: Multi select filter for issue actions. Leave empty to accept all actions. Implemented by matching payload action.
+    zh_Hans: 多选过滤要关注的议题动作。留空表示不过滤。通过匹配 payload 的 action 字段实现。
+    ja_JP: 対象のアクションを複数選択で絞り込みます。未設定なら全て受け入れ。ペイロードの action による判定です。
+
+- name: labels
+  label:
+    en_US: Required Labels
+    zh_Hans: 必需标签
+    ja_JP: 必須ラベル
+  type: string
+  required: false
+  description:
+    en_US: Comma separated label names. Trigger only if the issue includes all these labels.
+    zh_Hans: 逗号分隔的标签名。仅当议题包含这些标签时触发。
+    ja_JP: カンマ区切りのラベル名。イシューに全て含まれる場合のみ発火します。
+
+- name: assignee
+  label:
+    en_US: Assignee Filter
+    zh_Hans: 受理人过滤
+    ja_JP: 担当者フィルター
+  type: string
+  required: false
+  description:
+    en_US: Comma separated GitHub logins. Trigger only when assigned user matches.
+    zh_Hans: 逗号分隔的 GitHub 登录名。仅当指派的用户命中时触发。
+    ja_JP: カンマ区切りの GitHub ログイン。担当者が一致した場合のみ発火します。
+
+- name: authors
+  label:
+    en_US: Authors
+    zh_Hans: 作者
+    ja_JP: 作成者
+  type: string
+  required: false
+  description:
+    en_US: Comma separated authors by login. Filters by issue author.
+    zh_Hans: 逗号分隔的作者登录名。按议题作者过滤。
+    ja_JP: 作成者のログインをカンマ区切りで。イシュー作成者でフィルタします。
+
+- name: milestone
+  label:
+    en_US: Milestone
+    zh_Hans: 里程碑
+    ja_JP: マイルストーン
+  type: string
+  required: false
+  description:
+    en_US: Milestone title filter. Match exact milestone title when present.
+    zh_Hans: 里程碑标题过滤。与议题关联的里程碑标题精确匹配。
+    ja_JP: マイルストーンのタイトルでフィルタします。完全一致です。
+
+- name: title_contains
+  label:
+    en_US: Title Contains
+    zh_Hans: 标题包含
+    ja_JP: タイトルに含む
+  type: string
+  required: false
+  description:
+    en_US: Substring match in issue title. Use comma separated keywords to match any.
+    zh_Hans: 议题标题包含关键字。可用逗号分隔多个关键字，任一命中即通过。
+    ja_JP: タイトルの部分一致。カンマ区切りのキーワードいずれか一致で通過。
+
+- name: body_contains
+  label:
+    en_US: Body Contains
+    zh_Hans: 正文包含
+    ja_JP: 本文に含む
+  type: string
+  required: false
+  description:
+    en_US: Substring match in issue body. Use comma separated keywords to match any.
+    zh_Hans: 议题正文包含关键字。支持多个关键字，逗号分隔，任一命中即通过。
+    ja_JP: 本文の部分一致。カンマ区切りでいずれか一致。
+
+- name: state
+  label:
+    en_US: State
+    zh_Hans: 状态
+    ja_JP: 状態
+  type: string
+  required: false
+  description:
+    en_US: State filter such as open or closed. Comma separated to allow multiple values.
+    zh_Hans: 状态过滤，如 open 或 closed。支持逗号分隔多值。
+    ja_JP: open や closed などの状態でフィルタ。カンマ区切りで複数指定可。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    issue:
+      type: object
+      description: The issue itself
+      properties:
+        id:
+          type: integer
+          format: int64
+        node_id:
+          type: string
+        number:
+          type: integer
+        title:
+          type: string
+        body:
+          type:
+          - string
+          - "null"
+        state:
+          type: string
+        state_reason:
+          type:
+          - string
+          - "null"
+        locked:
+          type: boolean
+        active_lock_reason:
+          type:
+          - string
+          - "null"
+        comments:
+          type: integer
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        closed_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+        author_association:
+          type: string
+        user:
+          type:
+          - object
+          - "null"
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+            node_id:
+              type: string
+            avatar_url:
+              type: string
+              format: uri
+            html_url:
+              type: string
+              format: uri
+            type:
+              type: string
+              enum:
+              - Bot
+              - User
+              - Organization
+            site_admin:
+              type: boolean
+        assignee:
+          type:
+          - object
+          - "null"
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+            avatar_url:
+              type: string
+              format: uri
+            html_url:
+              type: string
+              format: uri
+            type:
+              type: string
+              enum:
+              - Bot
+              - User
+              - Organization
+        assignees:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              login:
+                type: string
+              avatar_url:
+                type: string
+                format: uri
+              html_url:
+                type: string
+                format: uri
+        labels:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: integer
+              name:
+                type: string
+              color:
+                type: string
+              description:
+                type:
+                - string
+                - "null"
+        milestone:
+          type:
+          - object
+          - "null"
+          properties:
+            id:
+              type: integer
+            number:
+              type: integer
+            title:
+              type: string
+            state:
+              type: string
+            due_on:
+              type:
+              - string
+              - "null"
+              format: date-time
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - number
+      - title
+      - state
+      - html_url
+    repository:
+      type: object
+      description: The repository where the issue event occurred
+      properties:
+        id:
+          type: integer
+          format: int64
+        node_id:
+          type: string
+        name:
+          type: string
+        full_name:
+          type: string
+        private:
+          type: boolean
+        owner:
+          type: object
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+            node_id:
+              type: string
+            avatar_url:
+              type: string
+              format: uri
+            html_url:
+              type: string
+              format: uri
+            type:
+              type: string
+              enum:
+              - Bot
+              - User
+              - Organization
+            site_admin:
+              type: boolean
+          required:
+          - id
+          - login
+        html_url:
+          type: string
+          format: uri
+        description:
+          type:
+          - string
+          - "null"
+        fork:
+          type: boolean
+        url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        pushed_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+        stargazers_count:
+          type: integer
+        watchers_count:
+          type: integer
+        language:
+          type:
+          - string
+          - "null"
+        forks_count:
+          type: integer
+        open_issues_count:
+          type: integer
+        default_branch:
+          type: string
+        topics:
+          type: array
+          items:
+            type: string
+        visibility:
+          type: string
+          enum:
+          - public
+          - private
+          - internal
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - private
+      - owner
+      - html_url
+      - url
+      - created_at
+      - updated_at
+      - fork
+      - default_branch
+      - visibility
+    sender:
+      type: object
+      description: The user who triggered the event
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        node_id:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        html_url:
+          type: string
+          format: uri
+        type:
+          type: string
+          enum:
+          - Bot
+          - User
+          - Organization
+        site_admin:
+          type: boolean
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - issue
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/issues/issues.py

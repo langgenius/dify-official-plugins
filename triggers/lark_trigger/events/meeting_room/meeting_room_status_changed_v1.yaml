@@ -1,0 +1,29 @@
+identity:
+  name: meeting_room_status_changed_v1
+  author: langgenius
+  label:
+    en_US: Meeting Room Status Changed
+    zh_Hans: 会议室状态更改
+    ja_JP: 会議室ステータス変更
+
+description:
+  en_US: This event activates when a meeting room's status changes.
+  zh_Hans: 当会议室状态更改时激活。
+  ja_JP: 会議室のステータスが変更されたときにアクティブになります。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    room_id:
+      type: string
+      description: ID of the meeting room
+    
+    room_name:
+      type: string
+      description: Name of the meeting room
+
+extra:
+  python:
+    source: events/meeting_room/meeting_room_status_changed_v1.py

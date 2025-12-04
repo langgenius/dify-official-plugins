@@ -1,0 +1,37 @@
+subscription_schema:
+- name: "api_key"
+  type: "secret-input"
+  required: false
+  label:
+    zh_Hans: "API Key"
+    en_US: "API Key"
+    ja_JP: "APIキー"
+  placeholder:
+    en_US: "Enter your API key"
+    zh_Hans: "输入你的 API 密钥"
+    ja_JP: "API キーを入力してください"
+  url: https://rss.app/webhooks
+  help:
+    en_US: "Optional shared secret for verifying RssHub webhook requests. Leave empty to accept unauthenticated posts."
+    zh_Hans: "可选：用于校验 RssHub Webhook 请求的共享密钥。留空则接受未鉴权的请求。"
+    ja_JP: "任意：RssHub Webhook リクエスト検証用の共有シークレット。未入力の場合は認証なしで受け付けます。"
+
+events:
+- events/feed_update.yaml
+
+identity:
+  author: langgenius
+  description:
+    en_US: RSS Hub webhook trigger to receive feed update notifications.
+    ja_JP: フィード更新通知を受信する RSS Hub Webhook トリガー。
+    zh_Hans: 接收订阅源更新通知的 RSS Hub Webhook 触发器。
+  icon: icon.svg
+  label:
+    en_US: RSS Hub Webhooks
+    zh_Hans: RSS Hub Webhook
+    ja_JP: RSS Hub Webhooks
+  name: rsshub_trigger
+
+extra:
+  python:
+    source: provider/rsshub.py

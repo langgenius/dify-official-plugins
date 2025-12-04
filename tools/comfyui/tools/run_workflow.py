@@ -25,7 +25,7 @@ class ComfyUIWorkflowTool(Tool):
         )
 
         images = tool_parameters.get("images") or []
-        workflow = ComfyUiWorkflow(tool_parameters.get("workflow_json", ""))
+        workflow = ComfyUiWorkflow(tool_parameters.get("workflow_json", ""), comfyui.get_object_info())
         yield self.create_json_message(workflow.json())
 
         if tool_parameters.get("enable_download", False):
@@ -58,7 +58,7 @@ class ComfyUIWorkflowTool(Tool):
             workflow.randomize_seed()
 
         try:
-            output_images = comfyui.generate(workflow.json())
+            output_images = comfyui.generate(workflow)
         except Exception as e:
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}.")
 
