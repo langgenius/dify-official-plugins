@@ -248,9 +248,9 @@ class ShengsuanyunTextEmbeddingModel(TextEmbeddingModel):
                 credentials_kwargs["base_url"] = api_base + "/v1"
             else:
                 credentials_kwargs["base_url"] = api_base
-        credentials["extra_headers"] = {
-            "HTTP-Referer": "https://dify.ai/",
-            "X-Title": "Dify"
+        credentials_kwargs["default_headers"] = {
+            "HTTP-Referer": "https://dify.ai",
+            "X-Title": "Dify Plugin",
         }
         return credentials_kwargs
 

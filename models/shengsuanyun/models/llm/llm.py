@@ -28,15 +28,20 @@ logger = logging.getLogger(__name__)
 
 class ShengsuanyunLargeLanguageModel(OAICompatLargeLanguageModel):
     def _update_credential(self, model: str, credentials: dict):
-        credentials["endpoint_url"] = "https://router.shengsuanyun.com/api/v1"
-        if credentials.get("base_url"):
-            api_base = credentials["base_url"].rstrip("/")
-            credentials_kwargs["base_url"] = api_base + "/v1"
+        base_url = credentials.get("base_url")
+        if base_url:
+            api_base = base_url.rstrip("/")
+            if not api_base.endswith("/v1"):
+                credentials["endpoint_url"] = f"{api_base}/v1"
+            else:
+                credentials["endpoint_url"] = api_base
+        else:
+            credentials["endpoint_url"] = "https://router.shengsuanyun.com/api/v1"
             
         credentials["mode"] = self.get_model_mode(model).value
-        credentials["extra_headers"] = {
-            "HTTP-Referer": "https://dify.ai/",
-            "X-Title": "Dify"
+        credentials["default_headers"] = {
+            "HTTP-Referer": "https://dify.ai",
+            "X-Title": "Dify Plugin"
         }
         logger.info("ShengsuanyunLargeLanguageModel._update_credential()")
 
@@ -241,10 +246,16 @@ class ShengsuanyunLargeLanguageModel(OAICompatLargeLanguageModel):
             prompt_tokens = usage["prompt_tokens"]
             completion_tokens = usage["completion_tokens"]
         else:
-            assert prompt_messages[0].content is not None
-            prompt_tokens = self._num_tokens_from_string(model, prompt_messages[0].content)
-            assert assistant_message.content is not None
-            completion_tokens = self._num_tokens_from_string(model, assistant_message.content)
+            prompt_text = ""
+            for msg in prompt_messages:
+                if isinstance(msg.content, str):
+                    prompt_text += msg.content
+                elif isinstance(msg.content, list):
+                    for content_part in msg.content:
+                        if isinstance(content_part, TextPromptMessageContent):
+                            prompt_text += content_part.data
+            prompt_tokens = self._num_tokens_from_string(model, prompt_text)
+            completion_tokens = self._num_tokens_from_string(model, response_content)
 
         usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
         result = LLMResult(

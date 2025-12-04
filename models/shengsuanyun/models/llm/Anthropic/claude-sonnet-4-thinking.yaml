@@ -1,6 +1,6 @@
 model: anthropic/claude-sonnet-4:thinking
 label:
-  en_US: Claude Sonnet 4 ( Thinking )
+  en_US: Claude Sonnet 4 (Thinking)
 model_type: llm
 features:
   - agent-thought

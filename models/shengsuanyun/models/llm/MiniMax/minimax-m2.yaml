@@ -1,6 +1,6 @@
 model: minimax/minimax-m2
 label:
-  en_US: 'MiniMax M2 '
+  en_US: MiniMax M2
 model_type: llm
 features:
   - agent-thought

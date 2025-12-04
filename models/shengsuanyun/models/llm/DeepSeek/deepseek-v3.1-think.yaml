@@ -1,6 +1,6 @@
 model: deepseek/deepseek-v3.1-think
 label:
-  en_US: ' DeepSeek V3.1 Think'
+  en_US: DeepSeek V3.1 Think
 model_type: llm
 features:
   - agent-thought

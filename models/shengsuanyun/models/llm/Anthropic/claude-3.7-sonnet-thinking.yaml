@@ -1,6 +1,6 @@
 model: anthropic/claude-3.7-sonnet:thinking
 label:
-  en_US: Claude-3.7-sonnet（Thinking）
+  en_US: Claude-3.7-sonnet (Thinking)
 model_type: llm
 features:
   - agent-thought

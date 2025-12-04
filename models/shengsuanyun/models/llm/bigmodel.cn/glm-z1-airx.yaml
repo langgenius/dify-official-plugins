@@ -1,6 +1,6 @@
 model: bigmodel/glm-z1-airx
 label:
-  en_US: ​​GLM-Z1-AirX
+  en_US: GLM-Z1-AirX
 model_type: llm
 features:
   - agent-thought

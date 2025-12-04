@@ -1,6 +1,6 @@
 model: baidu/ernie-4.5-turbo-128k
 label:
-  en_US: ' ERNIE-4.5-Turbo-128K'
+  en_US: ERNIE-4.5-Turbo-128K
 model_type: llm
 features:
   - agent-thought
