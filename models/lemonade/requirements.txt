@@ -105,7 +105,7 @@ typing-inspection==0.4.2
     #   pydantic-settings
 urllib3==2.5.0
     # via requests
-werkzeug==3.0.6
+werkzeug==3.1.4
     # via
     #   dify-plugin
     #   flask

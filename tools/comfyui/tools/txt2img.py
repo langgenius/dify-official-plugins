@@ -112,7 +112,7 @@ class ComfyuiTxt2Img(Tool):
         if is_hiresfix_enabled:
             workflow_template_path = os.path.join(current_dir, "json", "txt2img_hiresfix.json")
         with open(workflow_template_path) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), self.comfyui.get_object_info())
 
         workflow.set_k_sampler(
             "3",
@@ -172,7 +172,7 @@ class ComfyuiTxt2Img(Tool):
 
         # send a query to ComfyUI
         try:
-            output_images = self.comfyui.generate(workflow.json())
+            output_images = self.comfyui.generate(workflow)
         except Exception as e:
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         for img in output_images:

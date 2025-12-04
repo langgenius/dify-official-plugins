@@ -251,14 +251,70 @@ class KeywordExtraction(Tool):
         """Load and flatten the keyword dictionary."""
         with open(dictionary_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
-        
+
         # Flatten all categories into a single list
         all_keywords = []
         for category, keywords in data.get("keywords", {}).items():
             all_keywords.extend(keywords)
-        
+
         return all_keywords
-    
+
+    @staticmethod
+    def _clean_json_response(response_text: str) -> str:
+        """Clean up LLM response to extract valid JSON."""
+        # Remove markdown code blocks
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]
+        if response_text.startswith("```"):
+            response_text = response_text[3:]
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+
+        # Remove any leading/trailing whitespace
+        response_text = response_text.strip()
+
+        # Try to find JSON object boundaries
+        start_idx = response_text.find('{')
+        if start_idx > 0:
+            response_text = response_text[start_idx:]
+
+        return response_text
+
+    @staticmethod
+    def _repair_truncated_json(json_str: str) -> str | None:
+        """
+        Attempt to repair truncated JSON by closing open brackets.
+
+        Returns repaired JSON string or None if repair failed.
+        """
+        try:
+            # Count open brackets
+            open_braces = json_str.count('{') - json_str.count('}')
+            open_brackets = json_str.count('[') - json_str.count(']')
+
+            # If severely unbalanced, try to find last complete entry
+            if open_braces > 2 or open_brackets > 2:
+                # Find the last complete keyword entry (ends with })
+                last_complete = json_str.rfind('},')
+                if last_complete > 0:
+                    json_str = json_str[:last_complete + 1]
+                    # Recount after truncation
+                    open_braces = json_str.count('{') - json_str.count('}')
+                    open_brackets = json_str.count('[') - json_str.count(']')
+
+            # Remove trailing comma if present
+            json_str = json_str.rstrip().rstrip(',')
+
+            # Close brackets
+            json_str += ']' * open_brackets
+            json_str += '}' * open_braces
+
+            # Validate by parsing
+            json.loads(json_str)
+            return json_str
+        except Exception:
+            return None
+
     @staticmethod
     def _prepare_text_for_matching(text: str) -> str:
         """
@@ -418,7 +474,7 @@ class KeywordExtraction(Tool):
                 "mode": "chat",
                 "completion_params": {
                     "temperature": 0.3,  # Lower temperature for more precise extraction
-                    "max_tokens": 2000
+                    "max_tokens": 4000  # Increased to avoid truncation
                 }
             }
 
@@ -450,17 +506,20 @@ class KeywordExtraction(Tool):
                                 print(f"❌ LLM returned empty response after {max_retries} attempts")
                                 return []
 
-                        # Remove markdown code blocks if present
-                        if response_text.startswith("```json"):
-                            response_text = response_text[7:]
-                        if response_text.startswith("```"):
-                            response_text = response_text[3:]
-                        if response_text.endswith("```"):
-                            response_text = response_text[:-3]
-                        response_text = response_text.strip()
+                        # Clean up response text
+                        response_text = self._clean_json_response(response_text)
 
-                        # Parse JSON
-                        llm_data = json.loads(response_text)
+                        # Parse JSON with repair attempt
+                        try:
+                            llm_data = json.loads(response_text)
+                        except json.JSONDecodeError:
+                            # Try to repair truncated JSON
+                            repaired = self._repair_truncated_json(response_text)
+                            if repaired:
+                                llm_data = json.loads(repaired)
+                            else:
+                                raise
+
                         keywords = llm_data.get("keywords", [])
 
                         if keywords:

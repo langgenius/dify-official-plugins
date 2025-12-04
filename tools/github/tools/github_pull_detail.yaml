@@ -1,0 +1,57 @@
+description:
+  human:
+    en_US: Get detailed information about a specific pull request by its number
+    pt_BR: Obter informações detalhadas sobre um pull request específico pelo número
+    zh_Hans: 根据编号获取特定Pull Request的详细信息
+  llm: A tool to get detailed information about a specific pull request including title, body, state, commits, files changed, and merge status
+extra:
+  python:
+    source: tools/github_pull_detail.py
+identity:
+  author: langgenius
+  icon: icon.svg
+  label:
+    en_US: Get Pull Request Detail
+    pt_BR: Obter Detalhes do Pull Request
+    zh_Hans: 获取PR详情
+  name: github_pull_detail
+parameters:
+  - form: llm
+    human_description:
+      en_US: The account owner of the repository. The name is not case sensitive.
+      pt_BR: O proprietário da conta do repositório. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库的账户所有者。名称不区分大小写。
+    label:
+      en_US: Owner
+      pt_BR: Proprietário
+      zh_Hans: 所有者
+    llm_description: The account owner of the repository. The name is not case sensitive.
+    name: owner
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: The name of the repository without the .git extension. The name is not case sensitive.
+      pt_BR: O nome do repositório sem a extensão .git. O nome não diferencia maiúsculas de minúsculas.
+      zh_Hans: 仓库名称不带.git扩展名。名称不区分大小写。
+    label:
+      en_US: Repository
+      pt_BR: Repositório
+      zh_Hans: 仓库
+    llm_description: The name of the repository without the .git extension. The name is not case sensitive.
+    name: repo
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: The number that identifies the pull request.
+      pt_BR: O número que identifica o pull request.
+      zh_Hans: Pull Request的编号。
+    label:
+      en_US: Pull Request Number
+      pt_BR: Número do Pull Request
+      zh_Hans: PR编号
+    llm_description: The number that identifies the pull request.
+    name: pull_number
+    required: true
+    type: number
