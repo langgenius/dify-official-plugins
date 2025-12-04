@@ -1,4 +1,4 @@
-version: 0.0.1
+version: 0.1.1
 type: plugin
 author: shengsuanyun
 name: shengsuanyun
@@ -22,7 +22,7 @@ plugins:
   models:
     - provider/shengsuanyun.yaml
 meta:
-  version: 0.0.1
+  version: 0.1.1
   arch:
     - amd64
     - arm64
