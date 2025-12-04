@@ -1916,7 +1916,7 @@ LLM_BASE_MODELS = [
                     type="string",
                     help=I18nObject(
                         zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
+                        en_US="Specifies the format that the model must output.",
                     ),
                     required=False,
                     options=["text", "json_object", "json_schema"],
