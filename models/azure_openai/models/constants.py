@@ -1923,11 +1923,11 @@ LLM_BASE_MODELS = [
                 ),
                 ParameterRule(
                     name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
+                    label=I18nObject(zh_Hans="JSON Schema", en_US="JSON Schema"),
                     type="text",
                     help=I18nObject(
                         zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                        en_US="Set a response JSON schema to ensure the LLM will adhere to it.",
                     ),
                     required=False,
                 ),
