@@ -3,7 +3,6 @@ model: openai/text-embedding-ada-002
 model_type: text-embedding
 model_properties:
   context_size: 0
-  max_chunks: 1
 pricing:
   input: '0.0011'
   unit: '0.000001'

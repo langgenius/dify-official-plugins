@@ -1,0 +1,24 @@
+model: minimax/minimax-m1
+label:
+  en_US: MiniMax-M1
+model_type: llm
+features:
+  - agent-thought
+  - vision
+model_properties:
+  mode: chat
+  context_size: 1000000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 80000
+    min: 1
+    max: 80000
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '0.001133'
+  output: '0.011336'
+  currency: CNY
+  unit: '0.000001'

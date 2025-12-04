@@ -3,7 +3,6 @@ model: baai/bge-m3
 model_type: text-embedding
 model_properties:
   context_size: 0
-  max_chunks: 1
 pricing:
   input: '0.005'
   unit: '0.000001'

@@ -1,0 +1,23 @@
+model: bigmodel/glm-4.5
+label:
+  en_US: GLM-4.5
+model_type: llm
+features:
+  - agent-thought
+model_properties:
+  mode: chat
+  context_size: 128000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 96000
+    min: 1
+    max: 96000
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '0.002834'
+  output: '0.011336'
+  currency: CNY
+  unit: '0.000001'
