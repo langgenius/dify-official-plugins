@@ -1,4 +1,4 @@
-version: 0.0.1
+version: 0.0.2
 type: plugin
 author: langgenius
 name: llamacloud
@@ -9,9 +9,9 @@ label:
   pt_BR: Llamacloud
 description:
   en_US: LlamaCloud client as API Endpoint to connect Dify External Knowledge Base
-  ja_JP: LlamaCloud client as API Endpoint to connect Dify External Knowledge Base
-  zh_Hans: LlamaCloud client as API Endpoint to connect Dify External Knowledge Base
-  pt_BR: LlamaCloud client as API Endpoint to connect Dify External Knowledge Base
+  ja_JP: Dify外部ナレッジベースに接続するためのLlamaCloud APIエンドポイントクライアント
+  zh_Hans: 作为API端点连接Dify外部知识库的LlamaCloud客户端
+  pt_BR: Cliente LlamaCloud como endpoint de API para conectar à Base de Conhecimento Externa do Dify
 icon: icon.svg
 resource:
   memory: 268435456
