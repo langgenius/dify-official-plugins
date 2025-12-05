@@ -41,6 +41,11 @@ configs: dict[str, ModelConfig] = {
                   ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL, ModelFeature.STRUCTURED_OUTPUT],
         pricing=PriceConfig(input=Decimal("0.0008"), output=Decimal("0.0080"), unit=Decimal("0.001"), currency="RMB"),
     ),
+    "DeepSeek-V3.2": ModelConfig(
+        properties=ModelProperties(context_size=131072, max_tokens=32768, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+        pricing=PriceConfig(input=Decimal("0.0020"), output=Decimal("0.0030"), unit=Decimal("0.001"), currency="RMB"),
+    ),
     "DeepSeek-V3.1": ModelConfig(
         properties=ModelProperties(context_size=131072, max_tokens=32768, mode=LLMMode.CHAT),
         features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
