@@ -140,8 +140,8 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
         
         entity = super().get_customizable_model_schema(model, customized_credentials)
 
-        agent_though_support = credentials.get("agent_though_support", "not_supported")
-        if agent_though_support == "supported":
+        agent_thought_support = credentials.get("agent_thought_support", "not_supported")
+        if agent_thought_support == "supported":
             try:
                 entity.features.index(ModelFeature.AGENT_THOUGHT)
             except ValueError:

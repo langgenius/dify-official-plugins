@@ -43,7 +43,7 @@ model_credential_schema:
       placeholder:
         zh_Hans: 在此输入您的模型上下文长度
         en_US: Enter your Model context size
-    - variable: agent_though_support
+    - variable: agent_thought_support
       show_on:
         - variable: __model_type
           value: llm
