@@ -1,0 +1,24 @@
+model: x-ai/grok-4-fast
+label:
+  en_US: Grok 4 Fast
+model_type: llm
+features:
+  - agent-thought
+  - vision
+model_properties:
+  mode: chat
+  context_size: 2000000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 30000
+    min: 1
+    max: 30000
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '0.002'
+  output: '0.005'
+  currency: CNY
+  unit: '0.000001'

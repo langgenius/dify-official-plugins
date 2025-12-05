@@ -1,0 +1,6 @@
+  - baai/bge-m3
+  - openai/text-embedding-3-small
+  - openai/text-embedding-3-large
+  - openai/text-embedding-ada-002
+  - bytedance/doubao-embedding-large
+  - bytedance/doubao-embedding
