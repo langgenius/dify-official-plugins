@@ -179,9 +179,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
-        if credentials.get("use_international_endpoint", "false") == "true":
-            import dashscope
-            dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
         credentials_kwargs = self._to_credential_kwargs(credentials)
         mode = self.get_model_mode(model, credentials)
         if model in {"qwen-turbo-chat", "qwen-plus-chat"}:
@@ -234,11 +231,13 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         if thinking_business_qwen3 or model.startswith(("qwen3-", "qwq-", "qvq-")):
             incremental_output = True
 
+        base_address =  "https://dashscope-intl.aliyuncs.com/api/v1" if credentials.get("use_international_endpoint") == "true" else None
+
         if ModelFeature.VISION in (model_schema.features or []):
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages, rich_content=True
             )
-            response = MultiModalConversation.call(**params, stream=stream, incremental_output=incremental_output)
+            response = MultiModalConversation.call(**params, stream=stream, incremental_output=incremental_output, base_address=base_address)
         else:
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages
@@ -248,6 +247,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 result_format="message",
                 stream=stream,
                 incremental_output=incremental_output,
+                base_address=base_address
             )
         if stream:
             return self._handle_generate_stream_response(
