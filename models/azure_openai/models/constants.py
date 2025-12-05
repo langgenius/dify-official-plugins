@@ -1890,6 +1890,86 @@ LLM_BASE_MODELS = [
         ),
     ),
     AzureBaseModel(
+        base_model_name="gpt-5.1",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 400000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="Specifies the format that the model must output.",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(zh_Hans="JSON Schema", en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response JSON schema to ensure the LLM will adhere to it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制推理模型的推理工作",
+                        en_US="constrains effort on reasoning for reasoning models",
+                    ),
+                    required=False,
+                    options=["none", "low", "medium", "high"],
+                    default="none",
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                                "支持的值包括low、medium和high",
+                        en_US="Constrains the verbosity of the model's response. "
+                              "Lower values will result in more concise responses, "
+                              "while higher values will result in more verbose responses. "
+                              "Currently supported values are low, medium, and high",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
+                ),
+                _get_o1_max_tokens(default=8192, min_val=1, max_val=128000),
+            ],
+            pricing=PriceConfig(
+                input=1.25,
+                output=10,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
         base_model_name="gpt-5",
         entity=AIModelEntity(
             model="fake-deployment-name",

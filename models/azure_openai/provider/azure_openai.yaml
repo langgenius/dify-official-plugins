@@ -165,6 +165,12 @@ model_credential_schema:
         zh_Hans: 基础模型
       options:
         - label:
+            en_US: gpt-5.1
+          show_on:
+            - value: llm
+              variable: __model_type
+          value: gpt-5.1
+        - label:
             en_US: gpt-5
           show_on:
             - value: llm
