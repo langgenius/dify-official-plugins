@@ -13,7 +13,7 @@ class LlamacloudEndpoint(Endpoint):
         if settings.get("api_key"):
             if r.headers.get("Authorization") != f"Bearer {settings.get("api_key")}":
                 return Response(
-                    status=500,
+                    status=403,
                     content_type="application/json"
                 )
         if not r.is_json:
