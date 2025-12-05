@@ -2165,17 +2165,14 @@ LLM_BASE_MODELS = [
                     required=False,
                 ),
                 ParameterRule(
-                    name="reasoning_effort",
-                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
-                    type="string",
-                    help=I18nObject(
-                        zh_Hans="限制推理模型的推理工作",
-                        en_US="constrains effort on reasoning for reasoning models",
-                    ),
-                    required=False,
-                    options=["minimal", "low", "medium", "high"],
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
                 ),
-                _get_o1_max_tokens(default=4096, min_val=1, max_val=16384),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                ),
+                _get_max_tokens(default=4096, min_val=1, max_val=16384),
             ],
             pricing=PriceConfig(
                 input=1.25,
