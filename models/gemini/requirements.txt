@@ -175,7 +175,7 @@ typing-inspection==0.4.2
     #   pydantic-settings
 uritemplate==4.2.0
     # via google-api-python-client
-urllib3==2.5.0
+urllib3==2.6.0
     # via requests
 websockets==15.0.1
     # via google-genai
