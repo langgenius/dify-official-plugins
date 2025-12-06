@@ -57,9 +57,14 @@ parameters:
       ja_JP: Gemini モデル
     options:
       - label:
-          en_US: gemini-2.5-flash-image-preview
-          zh_Hans: gemini-2.5-flash-image-preview
-          ja_JP: gemini-2.5-flash-image-preview
+          en_US: Nano Banana
+          zh_Hans: Nano Banana
+          ja_JP: Nano Banana
         value: "gemini-2.5-flash-image-preview"
+      - label:
+          en_US: Nano Banana Pro
+          zh_Hans: Nano Banana Pro
+          ja_JP: Nano Banana Pro
+        value: "gemini-3-pro-image-preview"
     required: false
     type: select
