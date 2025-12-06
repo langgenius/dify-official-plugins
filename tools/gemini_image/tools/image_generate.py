@@ -8,6 +8,8 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 
 
 class ImageGenerateTool(Tool):
+    _BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+
     def _invoke(
         self,
         tool_parameters: dict[str, Any],
@@ -49,7 +51,7 @@ class ImageGenerateTool(Tool):
             )
 
     def txt2img(self, prompt: str, model: str) -> tuple[list[bytes], list[str]]:
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+        url = f"{self._BASE_URL}/{model}:generateContent"
         headers = {"x-goog-api-key": self._gemini_api_key,
                    "Content-Type": "application/json"}
 
@@ -72,7 +74,7 @@ class ImageGenerateTool(Tool):
     def img2img(self, prompt: str, image_blobs: list[bytes], mime_types: list[str], model: str) -> tuple[list[bytes], list[str]]:
         if len(image_blobs) != len(mime_types):
             raise Exception("Number of image_blobs and mime_types does not match!")
-        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+        url = f"{self._BASE_URL}/{model}:generateContent"
         headers = {"x-goog-api-key": self._gemini_api_key, "Content-Type": "application/json"}
         parts = [{"text": prompt}]
         for i in range(len(image_blobs)):
