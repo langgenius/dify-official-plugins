@@ -29,12 +29,12 @@ class ImageGenerateTool(Tool):
         generated_blobs: list[bytes] = []
         generated_texts: list[str] = []
         if len(images) == 0:
-            generated_blobs, generated_texts = self.txt2img(prompt)
+            generated_blobs, generated_texts = self.txt2img(prompt, model)
         else:
             if len(images) > 3:
                 # https://ai.google.dev/gemini-api/docs/image-generation#limitations
                 yield self.create_text_message("Warning: The number of input images should be three or less.")
-            generated_blobs, generated_texts = self.img2img(prompt, [img.blob for img in images], [img.mime_type for img in images])
+            generated_blobs, generated_texts = self.img2img(prompt, [img.blob for img in images], [img.mime_type for img in images], model)
 
         for text in generated_texts:
             yield self.create_text_message(text=text)
@@ -48,8 +48,8 @@ class ImageGenerateTool(Tool):
                 },
             )
 
-    def txt2img(self, prompt: str) -> tuple[list[bytes], list[str]]:
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent"
+    def txt2img(self, prompt: str, model: str) -> tuple[list[bytes], list[str]]:
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
         headers = {"x-goog-api-key": self._gemini_api_key,
                    "Content-Type": "application/json"}
 
@@ -69,10 +69,10 @@ class ImageGenerateTool(Tool):
                     image_blobs.append(base64.b64decode(inline_data["data"]))
         return image_blobs, texts
 
-    def img2img(self, prompt: str, image_blobs: list[bytes], mime_types: list[str]) -> tuple[list[bytes], list[str]]:
+    def img2img(self, prompt: str, image_blobs: list[bytes], mime_types: list[str], model: str) -> tuple[list[bytes], list[str]]:
         if len(image_blobs) != len(mime_types):
             raise Exception("Number of image_blobs and mime_types does not match!")
-        url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image-preview:generateContent"
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
         headers = {"x-goog-api-key": self._gemini_api_key, "Content-Type": "application/json"}
         parts = [{"text": prompt}]
         for i in range(len(image_blobs)):

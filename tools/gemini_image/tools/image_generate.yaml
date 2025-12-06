@@ -61,5 +61,10 @@ parameters:
           zh_Hans: gemini-2.5-flash-image-preview
           ja_JP: gemini-2.5-flash-image-preview
         value: "gemini-2.5-flash-image-preview"
+      - label:
+          en_US: gemini-3-pro-image-preview
+          zh_Hans: gemini-3-pro-image-preview
+          ja_JP: gemini-3-pro-image-preview
+        value: "gemini-3-pro-image-preview"
     required: false
     type: select
