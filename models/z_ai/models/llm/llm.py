@@ -20,7 +20,7 @@ from dify_plugin.entities.model.message import (
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
-from zai import ZhipuAiClient
+from zai import ZaiClient
 from zai.core import StreamResponse
 from zai.types.chat import ChatCompletionChunk, Completion, ChoiceDelta
 
@@ -143,9 +143,9 @@ class ZhipuAILargeLanguageModel(_CommonZhipuaiAI, LargeLanguageModel):
         """
         extra_model_kwargs = {}
         # request to glm-4v-plus with stop words will always respond "finish_reason":"network_error"
-        if stop and model != "glm-4v-plus":
-            extra_model_kwargs["stop"] = stop
-        client = ZhipuAiClient(api_key=credentials_kwargs["api_key"], base_url=credentials_kwargs.get("base_url"))
+        # if stop and model != "glm-4v-plus":
+        #     extra_model_kwargs["stop"] = stop
+        client = ZaiClient(api_key=credentials_kwargs["api_key"], base_url=credentials_kwargs.get("base_url"))
         if len(prompt_messages) == 0:
             raise ValueError("At least one message is required")
         if prompt_messages[0].role == PromptMessageRole.SYSTEM:
