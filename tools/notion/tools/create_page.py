@@ -35,11 +35,20 @@ class CreatePageTool(Tool):
             client = NotionClient(integration_token)
             
             # Prepare parent object based on parent_type
+            # Note: For 2025-09-03 API, database parents will be converted to data_source_id 
+            # automatically by the NotionClient.create_page method
             parent_object = {}
             if parent_id:
                 if parent_type.lower() == "database":
+                    # The client will automatically convert this to data_source_id
                     parent_object = {
                         "database_id": parent_id
+                    }
+                elif parent_type.lower() == "data_source":
+                    # Direct data_source_id (for 2025-09-03 API)
+                    parent_object = {
+                        "type": "data_source_id",
+                        "data_source_id": parent_id
                     }
                 else:  # Default to page
                     parent_object = {
@@ -52,8 +61,8 @@ class CreatePageTool(Tool):
                 }
                 
             # Prepare properties based on parent_type
-            if parent_type.lower() == "database":
-                # For database parents, use the "Name" property as title
+            if parent_type.lower() in ["database", "data_source"]:
+                # For database/data_source parents, use the "Name" property as title
                 properties = {
                     "Name": {
                         "title": [
@@ -122,4 +131,4 @@ class CreatePageTool(Tool):
                 
         except Exception as e:
             yield self.create_text_message(f"Error creating Notion page: {str(e)}")
-            return 
+            return
