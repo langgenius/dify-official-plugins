@@ -269,14 +269,8 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             if not is_reasoning:
                 output = "<think>\n" + reasoning_content
                 is_reasoning = True
-                if content:
-                    output += "\n</think>" + content
-                    is_reasoning = False
             else:
                 output = reasoning_content
-                if content:
-                    output += "\n</think>" + content
-                    is_reasoning = False
         else:
             if is_reasoning:
                 is_reasoning = False
