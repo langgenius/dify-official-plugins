@@ -251,6 +251,42 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             return _handle_chat_response()
         return _handle_stream_chat_response()
 
+
+    def _wrap_thinking_by_reasoning_content(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
+        """
+        If the reasoning response is from delta.get("reasoning_content"), we wrap
+        it with HTML think tag.
+
+        :param delta: delta dictionary from LLM streaming response
+        :param is_reasoning: is reasoning
+        :return: tuple of (processed_content, is_reasoning)
+        """
+
+        content = delta.get("content") or ""
+        reasoning_content = delta.get("reasoning_content")
+        output = content
+        if reasoning_content:
+            if not is_reasoning:
+                output = "<think>\n" + reasoning_content
+                is_reasoning = True
+                if content:
+                    output += "\n</think>" + content
+                    is_reasoning = False
+            else:
+                output = reasoning_content
+                if content:
+                    output += "\n</think>" + content
+                    is_reasoning = False
+        else:
+            if is_reasoning:
+                is_reasoning = False
+                if not reasoning_content:
+                    output = "\n</think>"
+                if content:
+                    output += content
+            
+        return output, is_reasoning
+
     def wrap_thinking(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
         content = ""
         reasoning_content = None
