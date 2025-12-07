@@ -5,7 +5,7 @@ extra:
   python:
     model_sources:
       - models/llm/llm.py
-      # - models/text_embedding/text_embedding.py
+      - models/text_embedding/text_embedding.py
     provider_source: provider/z_ai.py
 help:
   title:
@@ -26,10 +26,10 @@ models:
     position: models/llm/_position.yaml
     predefined:
       - models/llm/*.yaml
-  # text_embedding:
-  #   position: models/text_embedding/_position.yaml
-  #   predefined:
-  #     - models/text_embedding/*.yaml
+  text_embedding:
+    position: models/text_embedding/_position.yaml
+    predefined:
+      - models/text_embedding/*.yaml
 provider: z_ai
 provider_credential_schema:
   credential_form_schemas:
@@ -54,4 +54,4 @@ provider_credential_schema:
 
 supported_model_types:
   - llm
-  # - text-embedding
+  - text-embedding

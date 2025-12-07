@@ -11,13 +11,11 @@ class _CommonZhipuaiAI:
         :return:
         """
         credentials_kwargs = {
-            "api_key": credentials["api_key"] if "api_key" in credentials else credentials.get("zhipuai_api_key"),
+            "api_key": credentials["api_key"] if "api_key" in credentials else credentials.get("zai_api_key"),
         }
 
         if "base_url" in credentials:
             credentials_kwargs["base_url"] = credentials["base_url"]
-        elif "zhipuai_base_url" in credentials:
-            credentials_kwargs["base_url"] = credentials["zhipuai_base_url"]
 
         return credentials_kwargs
 
