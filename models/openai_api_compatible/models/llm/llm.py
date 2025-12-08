@@ -83,15 +83,15 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             )
 
         # Configure thinking mode parameter based on model support
-        agent_though_support = credentials.get("agent_though_support", "not_supported")
+        agent_thought_support = credentials.get("agent_thought_support", "not_supported")
         
         # Add AGENT_THOUGHT feature if thinking mode is supported (either mode)
-        if agent_though_support in ["supported", "only_thinking_supported"] and ModelFeature.AGENT_THOUGHT not in entity.features:
+        if agent_thought_support in ["supported", "only_thinking_supported"] and ModelFeature.AGENT_THOUGHT not in entity.features:
             entity.features.append(ModelFeature.AGENT_THOUGHT)
         
         # Only add the enable_thinking parameter if the model supports both modes
         # If only_thinking_supported, the parameter is not needed (forced behavior)
-        if agent_though_support == "supported":
+        if agent_thought_support == "supported":
             entity.parameter_rules.append(
                 ParameterRule(
                     name="enable_thinking",
@@ -172,12 +172,12 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     prompt_messages.insert(0, SystemPromptMessage(content=structured_output_prompt))
 
         # Handle thinking mode based on model support configuration
-        agent_though_support = credentials.get("agent_though_support", "not_supported")
+        agent_thought_support = credentials.get("agent_thought_support", "not_supported")
         enable_thinking_value = None
-        if agent_though_support == "only_thinking_supported":
+        if agent_thought_support == "only_thinking_supported":
             # Force enable thinking mode
             enable_thinking_value = True
-        elif agent_though_support == "not_supported":
+        elif agent_thought_support == "not_supported":
             # Force disable thinking mode
             enable_thinking_value = False
         else:
