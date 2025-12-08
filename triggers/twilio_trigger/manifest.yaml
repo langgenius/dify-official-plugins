@@ -1,4 +1,4 @@
-author: community
+author: langgenius
 created_at: "2024-12-08T00:00:00.000000000Z"
 description:
   en_US: Trigger workflows on Twilio SMS, Call, and WhatsApp events
@@ -18,7 +18,7 @@ meta:
     language: python
     version: "3.12"
   version: 0.0.1
-  minimum_dify_version: 1.7.0
+  minimum_dify_version: 1.10.0
 name: twilio_trigger
 plugins:
   triggers:
