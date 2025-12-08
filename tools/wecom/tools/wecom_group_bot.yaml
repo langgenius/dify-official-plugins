@@ -30,30 +30,17 @@ parameters:
   type: secret-input
 - form: llm
   human_description:
-    en_US: Content to sent to the group (required for text/markdown message types).
-    pt_BR: Content to sent to the group (required for text/markdown message types).
-    zh_Hans: 群消息文本（文本/Markdown类型消息必填）
+    en_US: Content to sent to the group.
+    pt_BR: Content to sent to the group.
+    zh_Hans: 群消息文本
   label:
     en_US: content
     pt_BR: content
     zh_Hans: 消息内容
-  llm_description: Content of the message (required for text/markdown message types)
+  llm_description: Content of the message
   name: content
-  required: false
+  required: true
   type: string
-- form: llm
-  human_description:
-    en_US: File to send to the group (required for file message type, max 20MB).
-    pt_BR: File to send to the group (required for file message type, max 20MB).
-    zh_Hans: 要发送到群的文件（文件类型消息必填，最大20MB）
-  label:
-    en_US: file
-    pt_BR: file
-    zh_Hans: 文件
-  llm_description: File to send to the group (required for file message type)
-  name: file
-  required: false
-  type: file
 - default: text
   form: form
   human_description:
@@ -81,10 +68,5 @@ parameters:
       pt_BR: Markdown V2
       zh_Hans: Markdown V2
     value: markdown_v2
-  - label:
-      en_US: File
-      pt_BR: File
-      zh_Hans: 文件
-    value: file
   required: true
   type: select
