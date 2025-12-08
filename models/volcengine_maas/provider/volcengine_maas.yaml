@@ -124,6 +124,12 @@ model_credential_schema:
         - variable: __model_type
           value: llm
     - label:
+        en_US: DeepSeek-V3.2
+      value: DeepSeek-V3.2
+      show_on:
+        - variable: __model_type
+          value: llm          
+    - label:
         en_US: DeepSeek-V3.1
       value: DeepSeek-V3.1
       show_on:
