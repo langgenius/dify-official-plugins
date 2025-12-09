@@ -21,7 +21,7 @@ from werkzeug import Request, Response
 
 from dify_plugin.config.logger_format import plugin_logger_handler
 from dify_plugin.entities import I18nObject, ParameterOption
-from dify_plugin.entities.oauth import TriggerOAuthCredentials
+from dify_plugin.entities.oauth import OAuthCredentials, TriggerOAuthCredentials
 from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.trigger import EventDispatch, Subscription, UnsubscribeResult
 from dify_plugin.errors.trigger import (
@@ -42,7 +42,9 @@ logger.addHandler(plugin_logger_handler)
 class LinearTrigger(Trigger):
     """Handle Linear webhook event dispatch."""
 
-    def _dispatch_event(self, subscription: Subscription, request: Request) -> EventDispatch:
+    def _dispatch_event(
+        self, subscription: Subscription, request: Request
+    ) -> EventDispatch:
         """
         Dispatch Linear webhook events.
 
@@ -60,7 +62,9 @@ class LinearTrigger(Trigger):
         payload: Mapping[str, Any] = self._validate_payload(request)
 
         # Get event type and action
-        event_type: str | None = request.headers.get("Linear-Event") or payload.get("type")
+        event_type: str | None = request.headers.get("Linear-Event") or payload.get(
+            "type"
+        )
         action: str | None = payload.get("action")
 
         if not event_type or not action:
@@ -70,7 +74,9 @@ class LinearTrigger(Trigger):
         event: str = self._map_event_name(event_type=event_type, action=action)
 
         # Respond with success
-        response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
+        response = Response(
+            response='{"status": "ok"}', status=200, mimetype="application/json"
+        )
 
         return EventDispatch(events=[event] if event else [], response=response)
 
@@ -124,9 +130,7 @@ class LinearTrigger(Trigger):
         # Compute expected signature
         raw_body = request.get_data()
         expected_signature = hmac.new(
-            webhook_secret.encode(),
-            raw_body,
-            hashlib.sha256
+            webhook_secret.encode(), raw_body, hashlib.sha256
         ).hexdigest()
 
         # Compare signatures using timing-safe comparison
@@ -154,7 +158,9 @@ class LinearTrigger(Trigger):
 
             # Check if timestamp is within 60 seconds
             if abs(current_time - webhook_time) > 60:
-                raise TriggerValidationError("Webhook timestamp is too old or too far in the future")
+                raise TriggerValidationError(
+                    "Webhook timestamp is too old or too far in the future"
+                )
 
         except TriggerValidationError:
             raise
@@ -173,14 +179,16 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
     _API_URL = "https://api.linear.app/graphql"
     _WEBHOOK_TTL = 365 * 24 * 60 * 60  # 1 year (webhooks don't auto-expire in Linear)
 
-    def _oauth_refresh_credentials(self, credentials: Mapping[str, Any]) -> TriggerOAuthCredentials:
+    def oauth_refresh_credentials(
+        self,
+        redirect_uri: str,
+        system_credentials: Mapping[str, Any],
+        credentials: Mapping[str, Any],
+    ) -> OAuthCredentials:
         """
         Refresh Linear OAuth credentials.
         """
-        return TriggerOAuthCredentials(
-            credentials=credentials,
-            expires_at=-1
-        )
+        return OAuthCredentials(credentials=credentials, expires_at=-1)
 
     def _validate_api_key(self, credentials: Mapping[str, Any]) -> None:
         """
@@ -188,7 +196,9 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
         """
         api_key = credentials.get("api_key")
         if not api_key:
-            raise TriggerProviderCredentialValidationError("Linear API Key is required.")
+            raise TriggerProviderCredentialValidationError(
+                "Linear API Key is required."
+            )
 
         # Test the API key with a simple query
         query = """
@@ -202,20 +212,30 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
         """
 
         try:
-            response = self._graphql_request(api_key, query, credential_type=CredentialType.API_KEY)
+            response = self._graphql_request(
+                api_key, query, credential_type=CredentialType.API_KEY
+            )
             if "errors" in response:
                 error_msg = response["errors"][0].get("message", "Unknown error")
-                raise TriggerProviderCredentialValidationError(f"Invalid API key: {error_msg}")
+                raise TriggerProviderCredentialValidationError(
+                    f"Invalid API key: {error_msg}"
+                )
 
             if "data" not in response or "viewer" not in response["data"]:
-                raise TriggerProviderCredentialValidationError("Invalid API key: Could not fetch user info")
+                raise TriggerProviderCredentialValidationError(
+                    "Invalid API key: Could not fetch user info"
+                )
 
         except TriggerProviderCredentialValidationError:
             raise
         except Exception as exc:
-            raise TriggerProviderCredentialValidationError(f"Failed to validate API key: {exc}") from exc
+            raise TriggerProviderCredentialValidationError(
+                f"Failed to validate API key: {exc}"
+            ) from exc
 
-    def _oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
+    def _oauth_get_authorization_url(
+        self, redirect_uri: str, system_credentials: Mapping[str, Any]
+    ) -> str:
         """
         Generate OAuth authorization URL for Linear.
 
@@ -239,17 +259,16 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
             "redirect_uri": redirect_uri,
             "response_type": "code",
             "scope": "read,write,admin",  # Linear OAuth scopes
-            "state": state
+            "state": state,
         }
 
-        auth_url = f"https://linear.app/oauth/authorize?{urllib.parse.urlencode(params)}"
+        auth_url = (
+            f"https://linear.app/oauth/authorize?{urllib.parse.urlencode(params)}"
+        )
         return auth_url
 
     def _oauth_get_credentials(
-        self,
-        redirect_uri: str,
-        system_credentials: Mapping[str, Any],
-        request: Request
+        self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
     ) -> TriggerOAuthCredentials:
         """
         Exchange authorization code for access token.
@@ -265,7 +284,9 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
         # Extract authorization code from callback
         code = request.args.get("code")
         if not code:
-            raise TriggerProviderOAuthError("No authorization code provided in callback")
+            raise TriggerProviderOAuthError(
+                "No authorization code provided in callback"
+            )
 
         client_id = system_credentials.get("client_id")
         client_secret = system_credentials.get("client_secret")
@@ -280,7 +301,7 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
             "client_secret": client_secret,
             "code": code,
             "redirect_uri": redirect_uri,
-            "grant_type": "authorization_code"
+            "grant_type": "authorization_code",
         }
         headers = {"Accept": "application/json"}
 
@@ -289,7 +310,7 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
                 "https://api.linear.app/oauth/token",
                 data=data,  # Use data= for form-urlencoded (not json=)
                 headers=headers,
-                timeout=10
+                timeout=10,
             )
 
             data = response.json()
@@ -307,15 +328,19 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
             # Linear access tokens are long-lived and don't expire
             return TriggerOAuthCredentials(
                 credentials={"access_tokens": access_token},
-                expires_at=-1  # Never expires
+                expires_at=-1,  # Never expires
             )
 
         except TriggerProviderOAuthError:
             raise
         except requests.RequestException as exc:
-            raise TriggerProviderOAuthError(f"Network error during token exchange: {exc}") from exc
+            raise TriggerProviderOAuthError(
+                f"Network error during token exchange: {exc}"
+            ) from exc
         except Exception as exc:
-            raise TriggerProviderOAuthError(f"Unexpected error during OAuth: {exc}") from exc
+            raise TriggerProviderOAuthError(
+                f"Unexpected error during OAuth: {exc}"
+            ) from exc
 
     def _create_subscription(
         self,
@@ -358,8 +383,7 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
 
         if not team_id:
             raise SubscriptionError(
-                "team_id is required to create webhook",
-                error_code="MISSING_TEAM_ID"
+                "team_id is required to create webhook", error_code="MISSING_TEAM_ID"
             )
 
         # Get authentication token based on credential type
@@ -370,13 +394,12 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
         else:
             raise SubscriptionError(
                 f"Unsupported credential type: {credential_type}",
-                error_code="UNSUPPORTED_CREDENTIAL_TYPE"
+                error_code="UNSUPPORTED_CREDENTIAL_TYPE",
             )
 
         if not api_token:
             raise SubscriptionError(
-                "Authentication token is required",
-                error_code="MISSING_TOKEN"
+                "Authentication token is required", error_code="MISSING_TOKEN"
             )
 
         # Generate webhook secret
@@ -408,12 +431,14 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
                 "url": endpoint,
                 "teamId": team_id,
                 "resourceTypes": resource_types,
-                "secret": webhook_secret
+                "secret": webhook_secret,
             }
         }
 
         try:
-            response = self._graphql_request(api_token, mutation, variables, credential_type=credential_type)
+            response = self._graphql_request(
+                api_token, mutation, variables, credential_type=credential_type
+            )
 
             # Check for GraphQL errors
             if "errors" in response:
@@ -421,7 +446,7 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
                 raise SubscriptionError(
                     f"Failed to create webhook: {error_msg}",
                     error_code="WEBHOOK_CREATION_FAILED",
-                    external_response=response
+                    external_response=response,
                 )
 
             # Extract webhook data
@@ -430,7 +455,7 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
                 raise SubscriptionError(
                     "Webhook creation returned success=false",
                     error_code="WEBHOOK_CREATION_FAILED",
-                    external_response=response
+                    external_response=response,
                 )
 
             webhook = webhook_data["webhook"]
@@ -455,7 +480,7 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
         except Exception as exc:
             raise SubscriptionError(
                 f"Unexpected error creating webhook: {exc}",
-                error_code="WEBHOOK_CREATION_ERROR"
+                error_code="WEBHOOK_CREATION_ERROR",
             ) from exc
 
     def _delete_subscription(
@@ -475,7 +500,7 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
             # If webhook ID is missing, just return success (idempotent)
             return UnsubscribeResult(
                 success=True,
-                message="Webhook ID not found (may have been manually deleted)"
+                message="Webhook ID not found (may have been manually deleted)",
             )
 
         # Get authentication token based on credential type
@@ -487,14 +512,14 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
             raise UnsubscribeError(
                 message=f"Unsupported credential type: {credential_type}",
                 error_code="UNSUPPORTED_CREDENTIAL_TYPE",
-                external_response=None
+                external_response=None,
             )
 
         if not api_token:
             raise UnsubscribeError(
                 message="Authentication token is required",
                 error_code="MISSING_TOKEN",
-                external_response=None
+                external_response=None,
             )
 
         # Prepare GraphQL mutation
@@ -509,7 +534,9 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
         variables = {"id": external_id}
 
         try:
-            response = self._graphql_request(api_token, mutation, variables, credential_type=credential_type)
+            response = self._graphql_request(
+                api_token, mutation, variables, credential_type=credential_type
+            )
 
             # Check for GraphQL errors
             if "errors" in response:
@@ -517,28 +544,26 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
                 # If webhook not found, still return success (idempotent)
                 if "not found" in error_msg.lower():
                     return UnsubscribeResult(
-                        success=True,
-                        message="Webhook already deleted"
+                        success=True, message="Webhook already deleted"
                     )
 
                 raise UnsubscribeError(
                     message=f"Failed to delete webhook: {error_msg}",
                     error_code="WEBHOOK_DELETION_FAILED",
-                    external_response=response
+                    external_response=response,
                 )
 
             # Check success flag
             delete_data = response["data"]["webhookDelete"]
             if delete_data.get("success"):
                 return UnsubscribeResult(
-                    success=True,
-                    message=f"Successfully deleted webhook {external_id}"
+                    success=True, message=f"Successfully deleted webhook {external_id}"
                 )
             else:
                 raise UnsubscribeError(
                     message="Webhook deletion returned success=false",
                     error_code="WEBHOOK_DELETION_FAILED",
-                    external_response=response
+                    external_response=response,
                 )
 
         except UnsubscribeError:
@@ -547,7 +572,7 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
             raise UnsubscribeError(
                 message=f"Unexpected error deleting webhook: {exc}",
                 error_code="WEBHOOK_DELETION_ERROR",
-                external_response=None
+                external_response=None,
             ) from exc
 
     def _refresh_subscription(
@@ -608,7 +633,9 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
         """
 
         try:
-            response = self._graphql_request(api_token, query, credential_type=credential_type)
+            response = self._graphql_request(
+                api_token, query, credential_type=credential_type
+            )
 
             if "errors" in response:
                 error_msg = response["errors"][0].get("message", "Unknown error")
@@ -627,7 +654,7 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
                     ParameterOption(
                         value=team["id"],
                         label=I18nObject(en_US=label_text),
-                        icon=team.get("icon")
+                        icon=team.get("icon"),
                     )
                 )
 
@@ -664,10 +691,7 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
             payload["variables"] = variables
 
         response = requests.post(
-            self._API_URL,
-            headers=headers,
-            json=payload,
-            timeout=30
+            self._API_URL, headers=headers, json=payload, timeout=30
         )
 
         # Always return JSON, even on non-200 status
@@ -676,7 +700,7 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
         except Exception:
             # If JSON parsing fails, return error structure
             return {
-                "errors": [{
-                    "message": f"HTTP {response.status_code}: {response.text[:200]}"
-                }]
+                "errors": [
+                    {"message": f"HTTP {response.status_code}: {response.text[:200]}"}
+                ]
             }

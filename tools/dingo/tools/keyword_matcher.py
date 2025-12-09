@@ -1,24 +1,22 @@
 """
 Keyword Matcher Tool for Dingo - ATS-Optimized Resume-JD Matching
 
-Implements simple match rate algorithm with synonym recognition, validated against Jobscan.
+v0.5.0 - Semantic Analysis with Negative Constraints Support
+
+Features:
+1. LLM-powered semantic analysis (not just string matching)
+2. Negative Constraint Recognition ("No need for X" → Excluded)
+3. Evidence-based matching (quotes from resume)
+4. Weighted scoring (Required × 2, Nice-to-have × 1)
+5. Four match types: Exact, Substring, Semantic, Alias
 
 Algorithm:
-1. Dual-Engine Extraction: Extract keywords from both resume and JD using keyword_extraction logic
-2. Three-Tier Matching: Exact match → Synonym match → No match
-3. Simple Match Rate: (Exact + Synonym) / Total JD Keywords × 100%
-4. Synonym Recognition: Identify variations (k8s → Kubernetes) and suggest standardization
-5. Actionable Suggestions: Generate specific optimization recommendations
-
-Design Philosophy:
-- Simple and transparent: Match rate = matched keywords / total keywords
-- Validated against Jobscan: 60.8% vs 62% (1.2% difference)
-- Focus on core value: Synonym recognition (Dingo's unique advantage)
-- User-friendly: Clear, intuitive scoring that users can understand
+- Score = (Required_Matched × 2 + Nice_Matched × 1) / (Required_Total × 2 + Nice_Total × 1) × 100%
+- Excluded skills do NOT affect the score
+- Negative_Hit warning when resume has Excluded skills
 
 Reference:
-- Resume-Matcher/apps/backend/app/services/score_improvement_service.py
-- Validated against Jobscan (industry-standard ATS testing tool)
+- Benchmarked against Jobscan for accuracy validation
 """
 
 import re
@@ -31,24 +29,83 @@ from collections.abc import Generator
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.entities.model.llm import LLMModelConfig
-from dify_plugin.entities.model.message import UserPromptMessage
+from dify_plugin.entities.model.message import UserPromptMessage, SystemPromptMessage
 
-# Import TECH_SYNONYMS dictionary (not the class to avoid multiple Tool subclasses)
-from .keyword_extraction import TECH_SYNONYMS
+# ============================================================================
+# SYSTEM PROMPT - Core LLM Analysis Logic
+# ============================================================================
+
+SYSTEM_PROMPT_TEMPLATE = """You are an expert ATS (Applicant Tracking System) Analyzer. Your goal is to assess how well a candidate's resume matches a specific Job Description (JD).
+
+### 1. KNOWN ALIASES (Synonyms)
+Use these strict mappings for matching. If the resume uses an alias, count it as a match.
+{synonym_map_str}
+
+### 2. ANALYSIS LOGIC (Step-by-Step)
+
+**Step 1: JD Extraction & Classification**
+Extract technical skills/keywords from the JD and classify their importance:
+- **Required**: Core skills, "must have", "proficient in", "X years of experience in"
+- **Nice-to-have**: "Plus", "preferred", "bonus", "familiarity with"
+- **Excluded**: Negative constraints like "No need for X", "Not X", "Unlike X", "We don't use X", "X is not required"
+
+**Step 2: Evidence Verification**
+For each skill found in JD, search the Resume for evidence:
+- **Exact**: String appears exactly (case-insensitive). Example: JD "Python" → Resume "Python"
+- **Substring**: Keyword exists inside a phrase. Example: JD "SQL" → Resume "MySQL" or "PostgreSQL"
+- **Semantic**: Different words but same meaning. Example: JD "GPU Optimization" → Resume "TensorRT" (because TensorRT IS a GPU optimization tool)
+- **Alias**: Known synonym from the alias list. Example: JD "Kubernetes" → Resume "k8s"
+
+**Step 3: Frequency Count**
+Count how many times the keyword appears in both JD and Resume.
+
+### 3. OUTPUT SCHEMA (Strict JSON)
+Return ONLY a valid JSON object. No markdown, no code blocks, no commentary.
+
+{{
+  "jd_analysis": {{
+    "job_title": "String (extracted job title, or null if not found)",
+    "skills_total": Integer
+  }},
+  "keyword_analysis": [
+    {{
+      "keyword": "String (normalized form, e.g., 'Kubernetes' not 'k8s')",
+      "importance": "Required" | "Nice-to-have" | "Excluded",
+      "match_status": "Matched" | "Missing",
+      "match_type": "Exact" | "Substring" | "Semantic" | "Alias" | "None",
+      "evidence": "String (max 50 chars quote from resume, or null if missing)",
+      "reasoning": "String (ONLY for Semantic match, explain why they are related, else null)",
+      "frequency": {{
+        "jd": Integer,
+        "resume": Integer
+      }}
+    }}
+  ]
+}}
+
+### 4. IMPORTANT RULES
+1. **Excluded + Matched**: If a skill is Excluded in JD but present in Resume, set match_status to "Matched". (Python logic will flag this as a warning)
+2. **Excluded + Missing**: If a skill is Excluded in JD and NOT in Resume, set match_status to "Missing". (This is GOOD - user correctly lacks excluded skill)
+3. **Focus on HARD SKILLS**: Do not extract generic terms like "Communication", "Teamwork", "Problem Solving" unless explicitly technical context.
+4. **Alias Priority**: If resume uses an alias (e.g., "k8s"), normalize to standard form ("Kubernetes") in keyword field, set match_type to "Alias".
+5. **Evidence Length**: Keep evidence under 50 characters. Truncate with "..." if needed.
+6. **Reasoning**: ONLY provide reasoning for Semantic matches. For Exact/Substring/Alias, set reasoning to null.
+"""
 
 
 class KeywordMatcher(Tool):
     """
-    ATS-Optimized Keyword Matcher: Simple Match Rate + Synonym Recognition
+    ATS-Optimized Keyword Matcher with Semantic Analysis
 
-    Implements simple, transparent matching algorithm validated against Jobscan.
-    Focus on synonym recognition as Dingo's core competitive advantage.
+    Features:
+    - LLM-powered semantic matching (not just string matching)
+    - Negative Constraint Recognition (Excluded skills)
+    - Evidence-based matching (quotes from resume)
+    - Weighted scoring (Required × 2, Nice-to-have × 1)
+    - Graceful fallback to simple matching when LLM fails
     """
-    
-    # Keywords that need case-sensitive matching
-    CASE_SENSITIVE_KEYWORDS = {"Go", "R"}
-    
-    # Synonym mapping (same as keyword_extraction)
+
+    # Complete synonym mapping (injected into LLM prompt)
     SYNONYM_MAP = {
         "k8s": "Kubernetes",
         "js": "JavaScript",
@@ -56,90 +113,550 @@ class KeywordMatcher(Tool):
         "py": "Python",
         "tf": "TensorFlow",
         "react.js": "React",
+        "reactjs": "React",
         "vue.js": "Vue.js",
+        "vuejs": "Vue.js",
         "node.js": "Node.js",
+        "nodejs": "Node.js",
         "next.js": "Next.js",
+        "nextjs": "Next.js",
         "express.js": "Express.js",
+        "expressjs": "Express.js",
         "nest.js": "NestJS",
+        "nestjs": "NestJS",
+        "postgres": "PostgreSQL",
         "postgresql": "PostgreSQL",
         "mysql": "MySQL",
+        "mongo": "MongoDB",
         "mongodb": "MongoDB",
-        "aws": "AWS",
-        "gcp": "GCP",
+        "aws": "Amazon Web Services",
+        "gcp": "Google Cloud Platform",
+        "azure": "Microsoft Azure",
         "ci/cd": "CI/CD",
+        "cicd": "CI/CD",
         "ml": "Machine Learning",
+        "dl": "Deep Learning",
         "ai": "Artificial Intelligence",
         "nlp": "Natural Language Processing",
         "cv": "Computer Vision",
+        "golang": "Go",
+        "cpp": "C++",
+        "csharp": "C#",
+        "dotnet": ".NET",
+        "tf": "TensorFlow",
+        "pt": "PyTorch",
+        "pytorch": "PyTorch",
+        "sklearn": "scikit-learn",
+        "scikit-learn": "scikit-learn",
     }
-    
+
+    # Keywords that require case-sensitive matching (short names that could be common words)
+    CASE_SENSITIVE_KEYWORDS = {"Go", "R", "C", "C++", "C#", ".NET"}
+
+    # Fallback keywords when external dictionary is unavailable
+    FALLBACK_KEYWORDS = [
+        # Programming Languages
+        "Python", "Java", "JavaScript", "TypeScript", "Go", "Rust", "C++", "C#", "Ruby", "PHP", "Swift", "Kotlin",
+        # Frameworks
+        "React", "Vue.js", "Angular", "Django", "Flask", "Spring Boot", "Node.js", "Express.js", "FastAPI",
+        # Databases
+        "MySQL", "PostgreSQL", "MongoDB", "Redis", "Elasticsearch", "SQLite", "Oracle", "SQL Server",
+        # Cloud & DevOps
+        "AWS", "Azure", "GCP", "Docker", "Kubernetes", "Terraform", "Jenkins", "GitHub Actions", "CI/CD",
+        # AI/ML
+        "Machine Learning", "Deep Learning", "TensorFlow", "PyTorch", "NLP", "Computer Vision", "LLM",
+        # Data
+        "Pandas", "NumPy", "Spark", "Hadoop", "ETL", "Data Pipeline", "SQL", "NoSQL",
+        # Tools
+        "Git", "Linux", "REST API", "GraphQL", "Microservices", "Agile", "Scrum",
+    ]
+
+    # ========================================================================
+    # Helper Methods
+    # ========================================================================
+
+    def _generate_synonym_str(self) -> str:
+        """Format SYNONYM_MAP for prompt injection."""
+        return "\n".join([f"  - {k} → {v}" for k, v in self.SYNONYM_MAP.items()])
+
+    def _clean_json_response(self, response_text: str) -> str:
+        """Clean LLM response to extract valid JSON."""
+        text = response_text.strip()
+        # Remove markdown code blocks
+        if text.startswith("```json"):
+            text = text[7:]
+        elif text.startswith("```"):
+            text = text[3:]
+        if text.endswith("```"):
+            text = text[:-3]
+        # Find JSON object boundaries
+        start = text.find('{')
+        end = text.rfind('}')
+        if start != -1 and end != -1:
+            text = text[start:end+1]
+        return text.strip()
+
+    # ========================================================================
+    # Main Entry Point
+    # ========================================================================
+
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
+        """
+        Main entry point for the KeywordMatcher tool.
+
+        Flow:
+        1. Validate inputs
+        2. Try LLM semantic analysis
+        3. If LLM fails, fallback to simple string matching
+        4. Calculate weighted score
+        5. Generate summary and return results
+        """
         try:
             resume_text = tool_parameters.get('resume_text', '').strip()
-            resume_keywords_json = tool_parameters.get('resume_keywords', '').strip()
             jd_text = tool_parameters.get('jd_text', '').strip()
-            position_name = tool_parameters.get('position_name', '').strip()
             use_llm = tool_parameters.get('use_llm', True)
 
+            # Validate inputs
             if not resume_text:
-                yield self.create_text_message("❌ Resume text cannot be empty")
+                yield self.create_text_message("[Error] Resume text cannot be empty")
                 return
 
-            # Must provide either jd_text or position_name
-            if not jd_text and not position_name:
-                yield self.create_text_message("❌ 必须提供 jd_text（完整职位描述）或 position_name（职位名称）之一")
+            if not jd_text:
+                yield self.create_text_message(
+                    "[Error] Job description (jd_text) is required.\n\n"
+                    "For accurate ATS matching, please provide the complete job description text.\n"
+                    "Auto-generated JDs may not reflect the specific requirements of your target position."
+                )
                 return
 
-            # Load keyword dictionary
-            current_dir = Path(__file__).parent.parent
-            dictionary_path = current_dir / "data" / "onet_keywords.json"
-            keywords = self._load_dictionary(dictionary_path)
-
-            # 1. Get resume keywords (reuse if provided, otherwise extract)
-            if resume_keywords_json:
-                # Try to parse the input intelligently
-                resume_keywords = self._parse_resume_keywords_input(resume_keywords_json)
-
-                if resume_keywords is None:
-                    # Parsing failed, extract from resume text instead
-                    resume_keywords = self._extract_keywords_dual_engine(resume_text, use_llm, keywords)
+            # Main analysis
+            if use_llm:
+                try:
+                    result = self._analyze_with_llm(resume_text, jd_text)
+                except Exception as e:
+                    print(f"[Warning] LLM analysis failed: {e}, falling back to simple matching")
+                    result = self._analyze_with_simple_matching(resume_text, jd_text)
+                    result['warning'] = f"LLM 分析失败，已降级到基础匹配模式: {str(e)}"
             else:
-                # Extract keywords from resume
-                resume_keywords = self._extract_keywords_dual_engine(resume_text, use_llm, keywords)
+                result = self._analyze_with_simple_matching(resume_text, jd_text)
 
-            # 2. Get JD keywords: either from provided JD text or generate from position name
-            if jd_text:
-                # User provided full JD text
-                jd_keywords = self._extract_keywords_dual_engine(jd_text, use_llm, keywords)
-                jd_source = "用户提供的职位描述"
-            else:
-                # User only provided position name, use LLM to generate standard requirements
-                if not use_llm:
-                    yield self.create_text_message("❌ 使用职位名称生成标准要求时，必须启用 LLM（use_llm=true）")
-                    return
+            # Generate summary
+            summary = self._create_summary_v2(result)
 
-                generated_jd = self._generate_standard_jd_requirements(position_name)
-                jd_keywords = self._extract_keywords_from_generated_jd(generated_jd)
-                jd_source = f"LLM 生成的标准职位要求（{position_name}）"
-                # Use generated JD as jd_text for display
-                jd_text = generated_jd
-
-            # 3. Perform matching analysis
-            match_result = self._calculate_match_score(
-                resume_keywords, jd_keywords, resume_text, jd_text, use_llm, jd_source
-            )
-
-            # Create summary text
-            summary = self._create_summary(match_result, True)
-
-            # Yield results
-            json_message = self.create_json_message(match_result)
-            text_message = self.create_text_message(summary)
-            yield from [json_message, text_message]
+            # Return results
+            yield self.create_json_message(result)
+            yield self.create_text_message(summary)
 
         except Exception as e:
-            yield self.create_text_message(f"❌ Keyword matching failed: {str(e)}")
-    
+            yield self.create_text_message(f"[Error] 关键词匹配失败: {str(e)}")
+
+    # ========================================================================
+    # Core Analysis Methods
+    # ========================================================================
+
+    def _analyze_with_llm(self, resume_text: str, jd_text: str) -> dict:
+        """
+        Perform semantic analysis using LLM.
+
+        Steps:
+        1. Construct prompt with SYNONYM_MAP context
+        2. Call LLM with JD + Resume
+        3. Parse JSON response
+        4. Calculate weighted score
+        5. Return structured result
+        """
+        # Build prompt
+        synonyms_context = self._generate_synonym_str()
+        system_prompt = SYSTEM_PROMPT_TEMPLATE.format(synonym_map_str=synonyms_context)
+
+        user_content = f"""### JOB DESCRIPTION:
+{jd_text}
+
+### RESUME:
+{resume_text}
+
+Please analyze and output JSON."""
+
+        # LLM configuration
+        llm_config = {
+            "provider": "deepseek",
+            "model": "deepseek-chat",
+            "mode": "chat",
+            "completion_params": {
+                "temperature": 0.2,  # Low temperature for consistent JSON output
+                "max_tokens": 4000
+            }
+        }
+
+        # Retry logic
+        max_retries = 3
+        retry_delay = 1
+
+        for attempt in range(max_retries):
+            try:
+                # Call LLM
+                llm_result = self.session.model.llm.invoke(
+                    model_config=LLMModelConfig(**llm_config),
+                    prompt_messages=[
+                        SystemPromptMessage(content=system_prompt),
+                        UserPromptMessage(content=user_content)
+                    ],
+                    stream=False
+                )
+
+                response_text = llm_result.message.content.strip()
+
+                if not response_text:
+                    if attempt < max_retries - 1:
+                        print(f"[Warning] LLM returned empty response (attempt {attempt + 1}/{max_retries})")
+                        time.sleep(retry_delay)
+                        retry_delay *= 2
+                        continue
+                    else:
+                        raise ValueError("LLM returned empty response after all retries")
+
+                # Clean and parse JSON
+                clean_json = self._clean_json_response(response_text)
+                llm_data = json.loads(clean_json)
+
+                # Process result
+                return self._process_llm_result(llm_data)
+
+            except json.JSONDecodeError as e:
+                if attempt < max_retries - 1:
+                    print(f"[Warning] JSON parsing failed (attempt {attempt + 1}/{max_retries}): {e}")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+                    continue
+                else:
+                    raise ValueError(f"JSON parsing failed after all retries: {e}")
+
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    print(f"[Warning] LLM call failed (attempt {attempt + 1}/{max_retries}): {e}")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+                    continue
+                else:
+                    raise
+
+        raise ValueError("LLM analysis failed after all retries")
+
+    def _process_llm_result(self, llm_data: dict) -> dict:
+        """
+        Process LLM JSON output and calculate weighted score.
+
+        Score Formula:
+        (Required_Matched × 2 + Nice_Matched × 1) / (Required_Total × 2 + Nice_Total × 1) × 100
+
+        Excluded skills do NOT affect the score.
+        """
+        keywords = llm_data.get("keyword_analysis", [])
+        jd_analysis = llm_data.get("jd_analysis", {})
+
+        # Counters
+        required_total = 0
+        required_matched = 0
+        nice_total = 0
+        nice_matched = 0
+
+        # Categorized results
+        matched_keywords = []
+        missing_keywords = []
+        negative_hits = []  # Excluded but Matched (warning)
+        compliant_excluded = []  # Excluded and Missing (good)
+
+        for item in keywords:
+            importance = item.get("importance", "Nice-to-have")
+            status = item.get("match_status", "Missing")
+            keyword = item.get("keyword", "")
+
+            # Force normalize via SYNONYM_MAP (insurance layer)
+            keyword = self.SYNONYM_MAP.get(keyword.lower(), keyword)
+
+            # Build display item
+            display_item = {
+                "skill": keyword,
+                "importance": importance,
+                "match_type": item.get("match_type", "None"),
+                "evidence": item.get("evidence"),
+                "reasoning": item.get("reasoning"),
+                "frequency": item.get("frequency", {"jd": 0, "resume": 0})
+            }
+
+            # Handle Excluded skills
+            if importance == "Excluded":
+                if status == "Matched":
+                    # BAD: User has a skill that JD explicitly excludes
+                    display_item["warning"] = "[Warning] JD 明确排除此技能，但简历中包含"
+                    negative_hits.append(display_item)
+                else:
+                    # GOOD: User correctly lacks this excluded skill
+                    display_item["status"] = "[OK] 合规"
+                    compliant_excluded.append(display_item)
+                continue  # Do NOT add to score calculation
+
+            # Handle Required skills
+            if importance == "Required":
+                required_total += 1
+                if status == "Matched":
+                    required_matched += 1
+                    matched_keywords.append(display_item)
+                else:
+                    display_item["priority"] = "高优先级"
+                    missing_keywords.append(display_item)
+
+            # Handle Nice-to-have skills
+            elif importance == "Nice-to-have":
+                nice_total += 1
+                if status == "Matched":
+                    nice_matched += 1
+                    matched_keywords.append(display_item)
+                else:
+                    display_item["priority"] = "建议补充"
+                    missing_keywords.append(display_item)
+
+        # Calculate weighted score
+        total_possible = (required_total * 2) + (nice_total * 1)
+        earned_points = (required_matched * 2) + (nice_matched * 1)
+
+        if total_possible > 0:
+            match_rate = round((earned_points / total_possible) * 100, 1)
+        else:
+            match_rate = 0.0
+
+        # Determine recommendation
+        has_negative_hits = len(negative_hits) > 0
+
+        if match_rate >= 80 and not has_negative_hits:
+            status = "strongly_recommended"
+            recommendation = "[PASS] 强烈推荐投递：简历高度匹配"
+        elif match_rate >= 70 and not has_negative_hits:
+            status = "recommended"
+            recommendation = "[PASS] 推荐投递：简历匹配度良好"
+        elif match_rate >= 60:
+            status = "consider"
+            recommendation = "[REVIEW] 可以考虑：建议优化后投递"
+        else:
+            status = "not_recommended"
+            recommendation = "[FAIL] 不推荐投递：匹配度较低，建议优化"
+
+        if has_negative_hits:
+            recommendation += f"\n[Warning] 简历中包含 {len(negative_hits)} 个 JD 明确排除的技能"
+
+        return {
+            "match_analysis": {
+                "match_rate": match_rate,
+                "weighted_score": f"{earned_points}/{total_possible}",
+                "status": status,
+                "recommendation": recommendation,
+                "required": {"matched": required_matched, "total": required_total},
+                "nice_to_have": {"matched": nice_matched, "total": nice_total},
+                "has_negative_constraints_violation": has_negative_hits
+            },
+            "match_details": {
+                "matched": matched_keywords,
+                "missing": missing_keywords,
+                "negative_warnings": negative_hits,
+                "excluded_compliant": compliant_excluded
+            },
+            "jd_analysis": jd_analysis,
+            "source": "LLM_Semantic_Analysis"
+        }
+
+    def _analyze_with_simple_matching(self, resume_text: str, jd_text: str) -> dict:
+        """
+        Fallback: Simple string matching when LLM fails.
+
+        Uses dictionary + synonym matching (legacy logic).
+        Falls back to FALLBACK_KEYWORDS if external dictionary is unavailable.
+        """
+        # Try to load external dictionary, fall back to built-in keywords
+        current_dir = Path(__file__).parent.parent
+        dictionary_path = current_dir / "data" / "onet_keywords.json"
+        keywords = self._load_dictionary(dictionary_path)
+
+        # Use fallback if dictionary loading failed or returned empty
+        if not keywords:
+            keywords = self.FALLBACK_KEYWORDS
+
+        # Extract keywords from both texts
+        jd_keywords = self._extract_with_dictionary(jd_text, keywords)
+        resume_keywords_set = set()
+
+        # Build resume keywords set
+        for kw in self._extract_with_dictionary(resume_text, keywords):
+            resume_keywords_set.add(kw['skill'].lower())
+
+        # Match
+        matched = []
+        missing = []
+
+        for jd_kw in jd_keywords:
+            skill = jd_kw['skill']
+            count, match_type = self._count_mentions(skill, resume_text)
+
+            if count > 0:
+                matched.append({
+                    "skill": skill,
+                    "importance": "Nice-to-have",  # Cannot determine without LLM
+                    "match_type": "Exact" if match_type == "exact" else "Alias",
+                    "evidence": None,
+                    "reasoning": None,
+                    "frequency": {"jd": jd_kw.get('mentions', 1), "resume": count}
+                })
+            else:
+                missing.append({
+                    "skill": skill,
+                    "importance": "Nice-to-have",
+                    "match_type": "None",
+                    "evidence": None,
+                    "reasoning": None,
+                    "frequency": {"jd": jd_kw.get('mentions', 1), "resume": 0},
+                    "priority": "建议补充"
+                })
+
+        # Simple score (no weighting in fallback mode)
+        total = len(jd_keywords)
+        matched_count = len(matched)
+        match_rate = round((matched_count / total * 100) if total > 0 else 0, 1)
+
+        if match_rate >= 70:
+            status = "recommended"
+            recommendation = "[PASS] 推荐投递（基础匹配模式）"
+        elif match_rate >= 50:
+            status = "consider"
+            recommendation = "[REVIEW] 可以考虑（基础匹配模式）"
+        else:
+            status = "not_recommended"
+            recommendation = "[FAIL] 建议优化后投递（基础匹配模式）"
+
+        return {
+            "match_analysis": {
+                "match_rate": match_rate,
+                "weighted_score": f"{matched_count}/{total}",
+                "status": status,
+                "recommendation": recommendation,
+                "required": {"matched": 0, "total": 0},
+                "nice_to_have": {"matched": matched_count, "total": total},
+                "has_negative_constraints_violation": False
+            },
+            "match_details": {
+                "matched": matched,
+                "missing": missing,
+                "negative_warnings": [],
+                "excluded_compliant": []
+            },
+            "jd_analysis": {"job_title": None, "skills_total": total},
+            "source": "Fallback_Simple_Match"
+        }
+
+    def _create_summary_v2(self, result: dict) -> str:
+        """Create human-readable summary for v2 (semantic analysis)."""
+        analysis = result.get("match_analysis", {})
+        details = result.get("match_details", {})
+
+        match_rate = analysis.get("match_rate", 0)
+        source = result.get("source", "Unknown")
+
+        # Status indicator based on score
+        if match_rate >= 80:
+            indicator = "[PASS]"
+        elif match_rate >= 70:
+            indicator = "[GOOD]"
+        elif match_rate >= 60:
+            indicator = "[REVIEW]"
+        else:
+            indicator = "[FAIL]"
+
+        lines = [
+            "# ATS Semantic Analysis Report",
+            "",
+            f"## {indicator} Match Rate: {match_rate}%",
+            "",
+            analysis.get("recommendation", ""),
+            "",
+            "---",
+            "",
+            "## Match Details",
+            "",
+            f"- **Required Skills**: {analysis.get('required', {}).get('matched', 0)}/{analysis.get('required', {}).get('total', 0)} matched",
+            f"- **Nice-to-have Skills**: {analysis.get('nice_to_have', {}).get('matched', 0)}/{analysis.get('nice_to_have', {}).get('total', 0)} matched",
+            f"- **Weighted Score**: {analysis.get('weighted_score', 'N/A')}",
+            "",
+        ]
+
+        # Negative warnings
+        negative_warnings = details.get("negative_warnings", [])
+        if negative_warnings:
+            lines.extend([
+                "## [Warning] Negative Constraint Violations",
+                "",
+                "The following skills are explicitly NOT wanted by JD, but found in your resume:",
+                "",
+            ])
+            for item in negative_warnings:
+                lines.append(f"- **{item['skill']}**: {item.get('evidence', 'Found in resume')}")
+            lines.append("")
+
+        # Matched keywords
+        matched = details.get("matched", [])
+        if matched:
+            lines.extend([
+                "## [OK] Matched Keywords",
+                "",
+            ])
+            for item in matched[:10]:
+                match_type = item.get("match_type", "")
+                evidence = item.get("evidence", "")
+                if evidence:
+                    lines.append(f"- **{item['skill']}** ({match_type}): \"{evidence}\"")
+                else:
+                    lines.append(f"- **{item['skill']}** ({match_type})")
+            if len(matched) > 10:
+                lines.append(f"  ...and {len(matched) - 10} more")
+            lines.append("")
+
+        # Missing keywords
+        missing = details.get("missing", [])
+        if missing:
+            lines.extend([
+                "## [Missing] Keywords Not Found",
+                "",
+            ])
+            # Separate by priority
+            required_missing = [m for m in missing if m.get("importance") == "Required"]
+            nice_missing = [m for m in missing if m.get("importance") == "Nice-to-have"]
+
+            if required_missing:
+                lines.append("### Required Skills (High Priority)")
+                for item in required_missing[:5]:
+                    lines.append(f"- **{item['skill']}**")
+                if len(required_missing) > 5:
+                    lines.append(f"  ...and {len(required_missing) - 5} more")
+                lines.append("")
+
+            if nice_missing:
+                lines.append("### Nice-to-have Skills (Recommended)")
+                for item in nice_missing[:5]:
+                    lines.append(f"- {item['skill']}")
+                if len(nice_missing) > 5:
+                    lines.append(f"  ...and {len(nice_missing) - 5} more")
+                lines.append("")
+
+        # Footer
+        lines.extend([
+            "---",
+            "",
+            "## Notes",
+            "",
+            f"- **Analysis Mode**: {source}",
+            "- **Scoring Formula**: (Required x 2 + Nice-to-have x 1) / Total x 100%",
+            "- **Match Types**: Exact | Substring | Semantic | Alias",
+        ])
+
+        return "\n".join(lines)
+
     def _load_dictionary(self, dictionary_path: Path) -> list[str]:
         """Load O*NET keyword dictionary"""
         with open(dictionary_path, 'r', encoding='utf-8') as f:
@@ -194,8 +711,15 @@ class KeywordMatcher(Tool):
         if exact_count > 0:
             return exact_count, "exact"
 
-        # 2. Synonym match
-        synonyms = TECH_SYNONYMS.get(keyword, [])
+        # 2. Synonym match (using SYNONYM_MAP)
+        # Build reverse mapping: standard form -> list of aliases
+        reverse_synonyms = {}
+        for alias, standard in self.SYNONYM_MAP.items():
+            if standard not in reverse_synonyms:
+                reverse_synonyms[standard] = []
+            reverse_synonyms[standard].append(alias)
+
+        synonyms = reverse_synonyms.get(keyword, [])
         synonym_count = 0
         matched_synonym = None
 
@@ -240,625 +764,15 @@ class KeywordMatcher(Tool):
 
         return results
 
-    def _extract_with_llm(self, text: str) -> list[dict[str, Any]]:
-        """Extract keywords using LLM semantic analysis (Engine 2)"""
-        prompt = f"""You are a technical keyword extraction expert. Extract ALL technology keywords from this text.
-
-Output ONLY valid JSON (no markdown, no code blocks):
-{{
-  "keywords": [
-    {{"skill": "Python", "confidence": 1.0, "source": "explicit"}},
-    {{"skill": "Docker", "confidence": 0.85, "source": "inferred"}}
-  ]
-}}
-
-Text:
-{text}"""
-
-        llm_config = {
-            "provider": "deepseek",
-            "model": "deepseek-chat",
-            "mode": "chat",
-            "completion_params": {
-                "temperature": 0.3,
-                "max_tokens": 2000
-            }
-        }
-
-        # Retry logic for LLM invocation
-        max_retries = 3
-        retry_delay = 1  # Initial delay in seconds
-
-        for attempt in range(max_retries):
-            try:
-                llm_result = self.session.model.llm.invoke(
-                    model_config=LLMModelConfig(**llm_config),
-                    prompt_messages=[UserPromptMessage(content=prompt)],
-                    stream=False
-                )
-
-                response_text = llm_result.message.content.strip()
-
-                # Check for empty response
-                if not response_text:
-                    if attempt < max_retries - 1:
-                        print(f"⚠️ LLM returned empty response (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...")
-                        time.sleep(retry_delay)
-                        retry_delay *= 2
-                        continue
-                    else:
-                        print(f"❌ LLM returned empty response after {max_retries} attempts")
-                        return []
-
-                # Clean markdown code blocks
-                response_text = re.sub(r'^```json\s*', '', response_text)
-                response_text = re.sub(r'\s*```$', '', response_text)
-
-                llm_data = json.loads(response_text)
-                keywords = llm_data.get('keywords', [])
-
-                if keywords:
-                    return keywords
-                else:
-                    if attempt < max_retries - 1:
-                        print(f"⚠️ LLM returned empty keywords list (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...")
-                        time.sleep(retry_delay)
-                        retry_delay *= 2
-                        continue
-                    else:
-                        return []
-
-            except json.JSONDecodeError as json_err:
-                if attempt < max_retries - 1:
-                    print(f"⚠️ JSON parsing failed (attempt {attempt + 1}/{max_retries}): {str(json_err)}, retrying in {retry_delay}s...")
-                    time.sleep(retry_delay)
-                    retry_delay *= 2
-                    continue
-                else:
-                    print(f"❌ JSON parsing failed after {max_retries} attempts: {str(json_err)}")
-                    return []
-
-            except Exception as llm_err:
-                if attempt < max_retries - 1:
-                    print(f"⚠️ LLM invocation failed (attempt {attempt + 1}/{max_retries}): {str(llm_err)}, retrying in {retry_delay}s...")
-                    time.sleep(retry_delay)
-                    retry_delay *= 2
-                    continue
-                else:
-                    print(f"❌ LLM invocation failed after {max_retries} attempts: {str(llm_err)}")
-                    return []
-
-        return []
-
-    def _merge_keywords(self, dict_results: list[dict], llm_results: list[dict]) -> list[dict]:
-        """Merge and deduplicate keywords from both engines"""
-        merged = {}
-
-        for kw in dict_results:
-            skill = kw['skill']
-            merged[skill] = kw
-
-        for kw in llm_results:
-            skill = kw['skill']
-            if skill not in merged:
-                merged[skill] = kw
-            else:
-                merged[skill]['confidence'] = max(merged[skill]['confidence'], kw.get('confidence', 0.7))
-
-        return list(merged.values())
-
-    def _extract_keywords_dual_engine(self, text: str, use_llm: bool, keywords: list[str]) -> list[dict]:
-        """Extract keywords using dual-engine architecture"""
-        dict_results = self._extract_with_dictionary(text, keywords)
-
-        if use_llm:
-            llm_results = self._extract_with_llm(text)
-            return self._merge_keywords(dict_results, llm_results)
-        else:
-            return dict_results
-
-
-
-
-
-    def _calculate_match_score(self, resume_keywords: list[dict], jd_keywords: list[dict],
-                               resume_text: str, jd_text: str, use_llm: bool, jd_source: str = "用户提供的职位描述") -> dict:
-        """
-        Calculate ATS match score using simple match rate algorithm
-
-        New algorithm (v0.6.0 - Simplified):
-        1. Match each JD keyword against resume (exact or synonym)
-        2. Calculate simple match rate: (matched / total) × 100%
-        3. Categorize keywords by match type (exact / synonym / missing)
-        4. Generate actionable optimization suggestions
-
-        Args:
-            resume_keywords: Extracted resume keywords
-            jd_keywords: Extracted JD keywords
-            resume_text: Original resume text
-            jd_text: Original JD text
-            use_llm: Whether to use LLM for keyword extraction (not used for scoring)
-            jd_source: Source of JD keywords (for display purposes)
-
-        Returns comprehensive match analysis with:
-        - Simple match rate (validated against Jobscan)
-        - Match type breakdown (exact vs synonym vs missing)
-        - Detailed keyword list for each category
-        - Actionable optimization suggestions
-        """
-        # 1. Match each JD keyword against resume
-        exact_matches = []
-        synonym_matches = []
-        missing_keywords = []
-
-        for jd_kw in jd_keywords:
-            skill = jd_kw['skill']
-            count, match_type = self._count_mentions(skill, resume_text)
-
-            if match_type == "exact":
-                exact_matches.append({
-                    "skill": skill,
-                    "mentions": count
-                })
-            elif match_type.startswith("synonym:"):
-                matched_synonym = match_type.split(":")[1]
-                synonym_matches.append({
-                    "skill": skill,
-                    "matched_as": matched_synonym,
-                    "mentions": count
-                })
-            else:
-                missing_keywords.append({
-                    "skill": skill
-                })
-
-        # 2. Calculate simple match rate
-        total_keywords = len(jd_keywords)
-        exact_count = len(exact_matches)
-        synonym_count = len(synonym_matches)
-        matched_count = exact_count + synonym_count
-        missing_count = len(missing_keywords)
-
-        match_rate = round((matched_count / total_keywords * 100) if total_keywords > 0 else 0, 1)
-
-        # 3. Determine status based on match rate
-        if match_rate >= 80:
-            status = "strongly_recommended"
-            recommendation = "✅ 强烈推荐投递：简历高度匹配"
-        elif match_rate >= 70:
-            status = "recommended"
-            recommendation = "✅ 推荐投递：简历匹配度良好"
-        elif match_rate >= 60:
-            status = "consider"
-            recommendation = "⚠️ 可以考虑：建议优化后投递"
-        else:
-            status = "not_recommended"
-            recommendation = "❌ 不推荐投递：匹配度较低，建议优化"
-
-        # 4. Generate optimization suggestions
-        optimization_suggestions = self._generate_simple_optimization_suggestions(
-            exact_matches, synonym_matches, missing_keywords
-        )
-
-        return {
-            "match_analysis": {
-                "match_rate": match_rate,
-                "status": status,
-                "recommendation": recommendation,
-                "total_keywords": total_keywords,
-                "matched_keywords": matched_count,
-                "exact_matches": exact_count,
-                "synonym_matches": synonym_count,
-                "missing_keywords": missing_count
-            },
-            "match_details": {
-                "exact_matches": exact_matches,
-                "synonym_matches": synonym_matches,
-                "missing_keywords": missing_keywords
-            },
-            "optimization_suggestions": optimization_suggestions,
-            "jd_source": jd_source
-        }
-
-    def _generate_simple_optimization_suggestions(self, exact_matches: list[dict],
-                                                   synonym_matches: list[dict],
-                                                   missing_keywords: list[dict]) -> str:
-        """
-        Generate actionable optimization suggestions based on simple match results
-
-        Suggestions are prioritized by:
-        1. Synonym matches (easy fix - just change wording)
-        2. Missing keywords (need to add content)
-        """
-        suggestions = []
-
-        # 1. Synonym matches (highest priority - easy fix)
-        if synonym_matches:
-            suggestions.append("## ⚠️ 用词优化（提高 ATS 识别率）\n")
-            suggestions.append("**问题**：你使用了同义词或缩写，部分 ATS 系统可能识别不出\n")
-            for match in synonym_matches:
-                standard = match['skill']
-                synonym = match['matched_as']
-                suggestions.append(f"### 关键词：{standard}\n")
-                suggestions.append(f"**改前**：简历中使用了 '{synonym}'")
-                suggestions.append(f"**改后**：修改为 '{standard}' 或 '{standard} ({synonym})'")
-                suggestions.append(f"  - 推荐写法 1：\"{standard}\"（ATS 最易识别）")
-                suggestions.append(f"  - 推荐写法 2：\"{standard} ({synonym})\"（兼顾可读性）")
-                suggestions.append(f"**原因**：部分 ATS 系统可能识别不出缩写，使用标准术语可提高匹配率\n")
-
-        # 2. Missing keywords (show all)
-        if missing_keywords:
-            suggestions.append("## 📝 缺失关键词（建议补充）\n")
-            suggestions.append("**问题**：以下关键词在简历中未找到，补充后可提升匹配度\n")
-
-            # Show first 10 with details
-            for keyword in missing_keywords[:10]:
-                skill = keyword['skill']
-                suggestions.append(f"### 缺失关键词：{skill}\n")
-                suggestions.append(f"**改前**：简历中未提及 '{skill}'")
-                suggestions.append(f"**改后**：如果有相关经验，请在项目或技能列表中添加：")
-                suggestions.append(f"  - 示例：\"使用 {skill} 完成 XXX 项目\"")
-                suggestions.append(f"  - 示例：\"熟练掌握 {skill}，有 X 年实践经验\"\n")
-
-            # List remaining keywords
-            if len(missing_keywords) > 10:
-                suggestions.append(f"**其他缺失关键词** ({len(missing_keywords) - 10} 个)：\n")
-                remaining_skills = [kw['skill'] for kw in missing_keywords[10:]]
-                suggestions.append(", ".join(remaining_skills) + "\n")
-
-        # 3. Summary
-        suggestions.append("## 📊 总结\n")
-        if exact_matches:
-            suggestions.append(f"- ✅ 精确匹配：{len(exact_matches)} 个关键词")
-        if synonym_matches:
-            suggestions.append(f"- ⚠️ 同义词匹配：{len(synonym_matches)} 个关键词（建议修改用词）")
-        if missing_keywords:
-            suggestions.append(f"- ❌ 缺失关键词：{len(missing_keywords)} 个（建议补充）")
-
-        if not synonym_matches and not missing_keywords:
-            suggestions.append("- 🎉 你的简历匹配度很高，可以直接投递！")
-        elif synonym_matches and not missing_keywords:
-            suggestions.append("- 💡 建议：修改同义词用词，可进一步提升 ATS 识别率")
-        else:
-            suggestions.append("- 💡 建议：优先修改同义词用词（快速提升），然后补充缺失关键词")
-
-        return "\n".join(suggestions) if suggestions else "暂无优化建议"
-
-
-
-    def _create_summary(self, match_result: dict, has_jd: bool) -> str:
-        """Create human-readable summary with simple match rate scoring"""
-        if not has_jd:
-            resume_kw_count = len(match_result.get('resume_keywords', []))
-            return f"""# 📋 简历关键词提取结果
-
-✅ 成功提取 {resume_kw_count} 个关键词
-
-💡 **提示**: 提供职位描述（JD）可以获得：
-- ATS 匹配度分析（与 Jobscan 一致）
-- 同义词识别和优化建议
-- 缺失关键词列表
-
-请在参数中添加 `jd_text` 来获取完整的匹配分析。"""
-
-        # Simple match analysis
-        analysis = match_result['match_analysis']
-        match_details = match_result['match_details']
-        optimization = match_result['optimization_suggestions']
-
-        match_rate = analysis['match_rate']
-        status = analysis['status']
-
-        # Score emoji based on match rate
-        if match_rate >= 80:
-            score_emoji = "🟢"
-        elif match_rate >= 70:
-            score_emoji = "🟡"
-        elif match_rate >= 60:
-            score_emoji = "🟠"
-        else:
-            score_emoji = "🔴"
-
-        summary_lines = [
-            "# 🎯 ATS 匹配分析",
-            "",
-            f"## {score_emoji} 匹配率: {match_rate}%",
-            "",
-            analysis['recommendation'],
-            "",
-            "---",
-            "",
-            "## 📊 匹配情况",
-            "",
-            f"- **总关键词数**: {analysis['total_keywords']}",
-            f"- **已匹配**: {analysis['matched_keywords']} ({match_rate}%)",
-            f"  - ✅ 精确匹配: {analysis['exact_matches']} 个",
-            f"  - ⚠️ 同义词匹配: {analysis['synonym_matches']} 个",
-            f"- **未匹配**: {analysis['missing_keywords']} 个",
-            "",
-        ]
-
-        # Show exact matches (first 10)
-        exact_matches = match_details['exact_matches']
-        if exact_matches:
-            summary_lines.append("### ✅ 精确匹配的关键词")
-            exact_list = [f"**{m['skill']}**" for m in exact_matches[:10]]
-            summary_lines.append(", ".join(exact_list))
-            if len(exact_matches) > 10:
-                summary_lines.append(f"...还有 {len(exact_matches) - 10} 个")
-            summary_lines.append("")
-
-        # Show synonym matches
-        synonym_matches = match_details['synonym_matches']
-        if synonym_matches:
-            summary_lines.append("### ⚠️ 同义词匹配的关键词（建议修改用词）")
-            for match in synonym_matches[:5]:
-                summary_lines.append(f"- **{match['skill']}** ← 简历中使用了 '{match['matched_as']}'")
-            if len(synonym_matches) > 5:
-                summary_lines.append(f"...还有 {len(synonym_matches) - 5} 个")
-            summary_lines.append("")
-
-        # Show missing keywords (first 10)
-        missing_keywords = match_details['missing_keywords']
-        if missing_keywords:
-            summary_lines.append("### ❌ 缺失的关键词")
-            missing_list = [f"**{m['skill']}**" for m in missing_keywords[:10]]
-            summary_lines.append(", ".join(missing_list))
-            if len(missing_keywords) > 10:
-                summary_lines.append(f"...还有 {len(missing_keywords) - 10} 个")
-            summary_lines.append("")
-
-        summary_lines.extend([
-            "---",
-            "",
-            "## 💡 优化建议",
-            "",
-            optimization,
-            "",
-            "---",
-            "",
-            "## 📝 说明",
-            "",
-            "- **匹配率算法**: (精确匹配 + 同义词匹配) / 总关键词数 × 100%",
-            "- **验证**: 与 Jobscan 对比测试，差异仅 1.2%（Jobscan 62% vs Dingo 60.8%）",
-            "- **同义词识别**: Dingo 的核心优势，可识别 k8s→Kubernetes 等 150+ 技术缩写",
-            "- **建议**: 优先修改同义词用词（快速提升），然后补充缺失关键词",
-        ])
-
-        return "\n".join(summary_lines)
-
-    def _parse_resume_keywords_input(self, input_str: str) -> list[dict[str, Any]] | None:
-        """
-        Intelligently parse resume_keywords input from various formats.
-
-        Supports:
-        1. JSON array: [{"skill": "Python", "mentions": 3, ...}, ...]
-        2. JSON object: {"keywords": [...], ...}
-        3. Text summary from keyword_extraction tool (parse keywords from markdown)
-
-        Args:
-            input_str: Input string from user
-
-        Returns:
-            List of keyword dicts, or None if parsing fails
-        """
-        input_str = input_str.strip()
-
-        # Try 1: Parse as JSON
-        try:
-            parsed = json.loads(input_str)
-
-            if isinstance(parsed, list):
-                # Direct array: [{"skill": "Python", ...}, ...]
-                return parsed
-            elif isinstance(parsed, dict) and 'keywords' in parsed:
-                # Full result object: {"keywords": [...], ...}
-                return parsed['keywords']
-        except json.JSONDecodeError:
-            pass
-
-        # Try 2: Parse as text summary from keyword_extraction
-        # Look for patterns like: "- **Python** (2 mentions) - explicit mention"
-        keywords = []
-
-        # Pattern 1: "- **Skill** (N mentions) - source"
-        pattern1 = r'-\s+\*\*([^*]+)\*\*\s+\((\d+)\s+mentions?\)\s+-\s+(.+)'
-        matches1 = re.findall(pattern1, input_str)
-        for skill, mentions, source in matches1:
-            keywords.append({
-                "skill": skill.strip(),
-                "mentions": int(mentions),
-                "confidence": 1.0,
-                "source": "parsed_from_text"
-            })
-
-        # Pattern 2: "- **Skill** - description"
-        pattern2 = r'-\s+\*\*([^*]+)\*\*\s+-\s+(.+)'
-        matches2 = re.findall(pattern2, input_str)
-        for skill, description in matches2:
-            # Skip if already matched by pattern1
-            if not any(k['skill'] == skill.strip() for k in keywords):
-                keywords.append({
-                    "skill": skill.strip(),
-                    "mentions": 1,
-                    "confidence": 0.8,
-                    "source": "parsed_from_text"
-                })
-
-        if keywords:
-            return keywords
-
-        # Parsing failed
-        return None
-
-    def _generate_standard_jd_requirements(self, position_name: str) -> str:
-        """
-        Use LLM to generate standard job requirements for a given position name.
-
-        Args:
-            position_name: Job position name (e.g., "算法工程师实习", "前端开发工程师")
-
-        Returns:
-            Generated job description text with standard requirements
-        """
-        prompt = f"""你是一位资深的 HR 和招聘专家。请为"{position_name}"这个职位生成标准的技能要求清单。
-
-请按照以下格式输出：
-
-# {position_name} - 标准职位要求
-
-## 核心技能要求（高优先级）
-列出 3-5 个必须掌握的核心技能，每个技能需要在描述中出现 3 次以上。
-
-## 重要技能要求（中优先级）
-列出 5-8 个建议掌握的重要技能，每个技能需要在描述中出现 2 次。
-
-## 加分技能要求（低优先级）
-列出 3-5 个加分项技能，每个技能出现 1 次即可。
-
-## 职位描述
-用 2-3 段话描述这个职位的工作内容和职责，自然地融入上述技能关键词。
-
-注意：
-1. 技能关键词要具体（例如：Python、TensorFlow、RAG，而不是"编程能力"、"学习能力"）
-2. 根据职位级别调整要求（实习生 vs 高级工程师）
-3. 确保关键词在描述中自然出现指定次数
-4. 使用中文输出
-
-请开始生成："""
-
-        llm_config = {
-            "provider": "deepseek",
-            "model": "deepseek-chat",
-            "mode": "chat",
-            "completion_params": {
-                "temperature": 0.7,
-                "max_tokens": 2000
-            }
-        }
-
-        # Retry logic for LLM invocation
-        max_retries = 3
-        retry_delay = 1  # Initial delay in seconds
-
-        for attempt in range(max_retries):
-            try:
-                llm_result = self.session.model.llm.invoke(
-                    model_config=LLMModelConfig(**llm_config),
-                    prompt_messages=[UserPromptMessage(content=prompt)],
-                    stream=False
-                )
-
-                response_text = llm_result.message.content.strip()
-
-                # Check for empty response
-                if not response_text:
-                    if attempt < max_retries - 1:
-                        print(f"⚠️ LLM returned empty JD (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...")
-                        time.sleep(retry_delay)
-                        retry_delay *= 2
-                        continue
-                    else:
-                        print(f"❌ LLM returned empty JD after {max_retries} attempts, using fallback")
-                        return f"""# {position_name} - 标准职位要求
-
-## 核心技能要求
-根据职位名称，请提供完整的职位描述以获得更准确的匹配分析。
-
-LLM 生成失败: 多次重试后仍返回空响应
-"""
-
-                return response_text
-
-            except Exception as e:
-                if attempt < max_retries - 1:
-                    print(f"⚠️ LLM JD generation failed (attempt {attempt + 1}/{max_retries}): {str(e)}, retrying in {retry_delay}s...")
-                    time.sleep(retry_delay)
-                    retry_delay *= 2
-                    continue
-                else:
-                    print(f"❌ LLM JD generation failed after {max_retries} attempts: {str(e)}")
-                    return f"""# {position_name} - 标准职位要求
-
-## 核心技能要求
-根据职位名称，请提供完整的职位描述以获得更准确的匹配分析。
-
-LLM 生成失败: {str(e)}
-"""
-
-        # Fallback
-        return f"""# {position_name} - 标准职位要求
-
-## 核心技能要求
-根据职位名称，请提供完整的职位描述以获得更准确的匹配分析。
-
-LLM 生成失败: 未知错误
-"""
-
-    def _extract_keywords_from_generated_jd(self, generated_jd: str) -> list[dict[str, Any]]:
-        """
-        Extract keywords from LLM-generated job description.
-        Parse the structured output and create keyword list with priorities.
-
-        Args:
-            generated_jd: LLM-generated job description text
-
-        Returns:
-            List of keyword dictionaries with skill, mentions, priority, weight
-        """
-        keywords = []
-
-        # Parse high-priority skills (mentioned 3+ times in the generated JD)
-        high_priority_pattern = r"## 核心技能要求[^#]+"
-        high_match = re.search(high_priority_pattern, generated_jd, re.DOTALL)
-        if high_match:
-            high_section = high_match.group(0)
-            # Extract skill names (look for technical terms in Chinese/English)
-            skills = re.findall(r'[A-Za-z][A-Za-z0-9+#\.]*(?:\.[A-Za-z]+)?', high_section)
-            for skill in skills:
-                if len(skill) > 1:  # Filter out single letters
-                    keywords.append({
-                        "skill": skill,
-                        "mentions": 3,  # High priority = 3 mentions
-                        "confidence": 1.0,
-                        "source": "llm_generated",
-                        "priority": "high",
-                        "weight": 3.0
-                    })
-
-        # Parse medium-priority skills (mentioned 2 times)
-        medium_priority_pattern = r"## 重要技能要求[^#]+"
-        medium_match = re.search(medium_priority_pattern, generated_jd, re.DOTALL)
-        if medium_match:
-            medium_section = medium_match.group(0)
-            skills = re.findall(r'[A-Za-z][A-Za-z0-9+#\.]*(?:\.[A-Za-z]+)?', medium_section)
-            for skill in skills:
-                if len(skill) > 1 and skill not in [k['skill'] for k in keywords]:
-                    keywords.append({
-                        "skill": skill,
-                        "mentions": 2,  # Medium priority = 2 mentions
-                        "confidence": 1.0,
-                        "source": "llm_generated",
-                        "priority": "medium",
-                        "weight": 2.0
-                    })
-
-        # Parse low-priority skills (mentioned 1 time)
-        low_priority_pattern = r"## 加分技能要求[^#]+"
-        low_match = re.search(low_priority_pattern, generated_jd, re.DOTALL)
-        if low_match:
-            low_section = low_match.group(0)
-            skills = re.findall(r'[A-Za-z][A-Za-z0-9+#\.]*(?:\.[A-Za-z]+)?', low_section)
-            for skill in skills:
-                if len(skill) > 1 and skill not in [k['skill'] for k in keywords]:
-                    keywords.append({
-                        "skill": skill,
-                        "mentions": 1,  # Low priority = 1 mention
-                        "confidence": 1.0,
-                        "source": "llm_generated",
-                        "priority": "low",
-                        "weight": 1.0
-                    })
-
-        return keywords
-
+    # ========================================================================
+    # Legacy methods removed in v0.5.0:
+    # - _extract_with_llm (replaced by _analyze_with_llm)
+    # - _merge_keywords (no longer needed)
+    # - _extract_keywords_dual_engine (no longer needed)
+    # - _calculate_match_score (replaced by _process_llm_result)
+    # - _generate_simple_optimization_suggestions (no longer needed)
+    # - _create_summary (replaced by _create_summary_v2)
+    # - _parse_resume_keywords_input (no longer needed - resume_keywords param removed)
+    # - _generate_standard_jd_requirements (removed - require user to provide JD)
+    # - _extract_keywords_from_generated_jd (removed - no longer needed)
+    # ========================================================================

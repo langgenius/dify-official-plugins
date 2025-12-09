@@ -53,7 +53,6 @@ subscription_constructor:
     - "Customer"
     - "CustomerNeed"
     - "User"
-    - "IssueRelation"
     options:
     # Core Issue-related types
     - value: "Issue"
