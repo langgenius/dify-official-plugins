@@ -164,12 +164,15 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
             "model": model,
             "input": transform_jina_input_multi_modal(model, documents),
         }
-
-        data["task"] = (
-            "retrieval.query"
-            if input_type == EmbeddingInputType.QUERY
-            else "retrieval.passage"
-        )
+        if model == "jina-embeddings-v4":
+            data["task"] = (
+                "retrieval.query"
+                if input_type == EmbeddingInputType.QUERY
+                else "retrieval.passage"
+            )
+        if model == "jina-clip-v2":
+            if input_type == EmbeddingInputType.QUERY:
+                data["task"] = "retrieval.query"
 
         try:
             response = post(url, headers=headers, data=dumps(data))
