@@ -7,3 +7,5 @@ pricing:
   input: '0.000135'
   unit: '0.00001'
   currency: USD
+features:
+  - vision

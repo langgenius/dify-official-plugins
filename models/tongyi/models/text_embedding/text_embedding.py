@@ -3,7 +3,7 @@ from typing import Optional
 import dashscope
 import numpy as np
 from dify_plugin.entities.model import EmbeddingInputType, PriceType
-from dify_plugin.entities.model.text_embedding import EmbeddingUsage, TextEmbeddingResult
+from dify_plugin.entities.model.text_embedding import EmbeddingUsage, MultiModalContent, MultiModalContentType, MultiModalEmbeddingResult, TextEmbeddingResult
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from models._common import _CommonTongyi
@@ -166,3 +166,101 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
             latency=time.perf_counter() - self.started_at,
         )
         return usage
+
+    def _invoke_multimodal(
+        self, 
+        model: str, 
+        credentials: dict, 
+        documents: list[MultiModalContent], 
+        user: Optional[str] = None, 
+        input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT) -> MultiModalEmbeddingResult:
+        """
+        Invoke multimodal text embedding model
+
+        :param model: model name
+        :param credentials: model credentials
+        :param documents: documents to embed
+        :param user: unique user id
+        :param input_type: input type
+        :return: embeddings result
+        """
+        if credentials.get("use_international_endpoint", "false") == "true":
+            dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
+        credentials_kwargs = self._to_credential_kwargs(credentials)
+        (embeddings_batch, embedding_used_tokens) = self.embed_multimodal_documents(
+            credentials_kwargs=credentials_kwargs, model=model, documents=documents
+        )
+        usage = self._calc_response_usage(model=model, credentials=credentials, tokens=embedding_used_tokens)
+        return MultiModalEmbeddingResult(
+            model=model,
+            embeddings=embeddings_batch,
+            usage=usage,
+        )     
+
+    @staticmethod
+    def embed_multimodal_documents(credentials_kwargs: dict, model: str, documents: list[MultiModalContent]) -> tuple[list[list[float]], int]:
+        """Call out to Tongyi's embedding endpoint.
+
+        Args:
+            credentials_kwargs: The credentials to use for the call.
+            model: The model to use for embedding.
+            documents: The list of documents to embed.
+
+        Returns:
+            List of embeddings, one for each text, and tokens usage.
+        """
+        embeddings = []
+        embedding_used_tokens = 0
+        
+        def call_embedding_api(input):
+            try:
+                return dashscope.MultiModalEmbedding.call(
+                    api_key=credentials_kwargs["dashscope_api_key"], 
+                    model=model, 
+                    input=[input], 
+                )
+            except Exception as e:
+                # Return the exception to be handled by the caller
+                return e
+            
+        for document in documents:
+            # First attempt
+            if document.content_type == MultiModalContentType.TEXT:
+                input = {
+                    "text": document.content
+                }
+            elif document.content_type == MultiModalContentType.IMAGE:
+                input = {
+                    "image": document.content
+                }
+            else:
+                raise ValueError(f"Unsupported content type: {document.content_type}")
+            response = call_embedding_api(input)
+            
+            # Handle rate limit error (429)
+            # Check if response is an exception with rate limit info
+            if hasattr(response, 'status_code') and response.status_code == 429:
+                print(f"Rate limit exceeded (429). Response: {response}")
+                time.sleep(10)
+                # Retry once after sleeping
+                response = call_embedding_api(input)
+            
+            # Process response
+            if hasattr(response, 'output') and response.output and "embeddings" in response.output and response.output["embeddings"]:
+                data = response.output["embeddings"][0]
+                if "embedding" in data:
+                    embeddings.append(data["embedding"])
+                else:
+                    raise ValueError(f"Embedding data is missing in the response: {response}")
+            else:
+                raise ValueError(f"Response output is missing or does not contain embeddings: {response}")
+                
+            if hasattr(response, 'usage') and response.usage:
+                if response.output["embeddings"][0]["type"] == "text":
+                    embedding_used_tokens += response.usage["input_tokens"]
+                elif response.output["embeddings"][0]["type"] == "image":
+                    embedding_used_tokens += response.usage["image_tokens"]
+            else:
+                raise ValueError(f"Response usage is missing or does not contain total tokens: {response}")
+                
+        return ([list(map(float, e)) for e in embeddings], embedding_used_tokens)
