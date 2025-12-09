@@ -51,6 +51,19 @@ parameters:
       pt_BR: O ID do tipo de issue do Jira a ser usado para a nova issue.
     llm_description: The unique ID for the Jira issue type that will be assigned to the new issue. This field is mandatory.
     form: llm
+  - name: description
+    type: string
+    required: false
+    label:
+      en_US: Description
+      zh_Hans: 问题描述
+      pt_BR: Descrição
+    human_description:
+      en_US: The detailed description for the new Jira issue.
+      zh_Hans: 新 Jira 问题的详细描述信息。
+      pt_BR: Uma descrição detalhada da issue.
+    llm_description: The detailed description of the issue to be created in Jira. This field is optional.
+    form: llm
 extra:
   python:
     source: tools/create_issue.py
