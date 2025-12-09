@@ -1,4 +1,4 @@
-dify_plugin==0.7.0b1
+dify_plugin==0.7.0
 numpy~=2.2.4
 dashscope~=1.25.2
 openai~=2.3.0
