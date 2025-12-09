@@ -19,6 +19,7 @@ help:
 supported_model_types:
   - llm
   - "text-embedding"
+  - tts
 configurate_methods:
   - predefined-model
   - customizable-model
@@ -106,6 +107,7 @@ provider_credential_schema:
     - label:
         en_US: Base URL
         zh_Hans: Base URL
+      default: https://router.shengsuanyun.com/api/v1
       placeholder:
         en_US: Enter your Base URL, e.g. https://router.shengsuanyun.com/api/v1
         zh_Hans: 在此输入您的 Base URL, 如 https://router.shengsuanyun.com/api/v1
@@ -116,14 +118,19 @@ models:
   llm:
     position: models/llm/_position.yaml
     predefined:
-      - "models/llm/*.yaml"
+      - "models/llm/*/*.yaml"
   text_embedding:
     position: models/text_embedding/_position.yaml
     predefined:
-      - models/text_embedding/*.yaml
+      - "models/text_embedding/*.yaml"
+  tts:
+    position: models/tts/_position.yaml
+    predefined:
+      - models/tts/*/*.yaml
 extra:
   python:
     provider_source: provider/shengsuanyun.py
     model_sources:
       - "models/text_embedding/text_embedding.py"
       - "models/llm/llm.py"
+      - "models/tts/tts.py"

@@ -16,7 +16,11 @@ resource:
     model:
       enabled: true
       llm: true
+      tts: true
+      text_embedding: true
     endpoint:
+      enabled: true
+    tool:
       enabled: true
 plugins:
   models:
