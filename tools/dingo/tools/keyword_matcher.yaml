@@ -2,56 +2,56 @@ identity:
   name: keyword_matcher
   author: Dingo Team
   label:
-    en_US: Keyword Matcher (ATS-Optimized)
-    zh_Hans: 关键词匹配分析（ATS优化）
+    en_US: Keyword Matcher (Semantic Analysis)
+    zh_Hans: 关键词匹配分析（语义分析）
   icon: icon.svg
 
 description:
   human:
     en_US: |
-      ATS-optimized keyword matcher using TF-IDF weighted algorithm (used by 98% Fortune 500 companies).
-      
-      Features:
-      - Dual-engine keyword extraction (Dictionary + LLM)
-      - TF-IDF weighted match scoring
-      - Priority-based keyword classification (High/Medium/Low)
-      - LLM-powered optimization recommendations
-      - Resume-JD gap analysis
-      
+      ATS-optimized keyword matcher with LLM-powered semantic analysis.
+
+      Features (v0.5.0):
+      - Semantic matching (not just string matching)
+      - Negative constraint recognition ("No need for X" → Excluded)
+      - Evidence-based matching (quotes from resume)
+      - Weighted scoring (Required × 2, Nice-to-have × 1)
+      - Four match types: Exact, Substring, Semantic, Alias
+
       Perfect for:
       - Checking ATS compatibility before applying
       - Identifying missing keywords in your resume
-      - Getting actionable optimization suggestions
-      - Improving resume-job description match rate
-      
+      - Understanding WHY keywords match or don't match
+      - Detecting negative constraints in job descriptions
+
     zh_Hans: |
-      基于 TF-IDF 加权算法的 ATS 优化关键词匹配工具（98% 的世界500强公司使用的算法）。
-      
-      功能特性：
-      - 双引擎关键词提取（词典 + LLM）
-      - TF-IDF 加权匹配评分
-      - 基于优先级的关键词分类（高/中/低）
-      - LLM 驱动的优化建议
-      - 简历-JD 差距分析
-      
+      基于 LLM 语义分析的 ATS 优化关键词匹配工具。
+
+      功能特性（v0.5.0）：
+      - 语义匹配（不仅仅是字符串匹配）
+      - 负面约束识别（"不需要 X" → 排除项）
+      - 基于证据的匹配（引用简历原文）
+      - 加权评分（Required × 2, Nice-to-have × 1）
+      - 四种匹配类型：精确、包含、语义、别名
+
       适用场景：
       - 投递前检查 ATS 兼容性
       - 识别简历中缺失的关键词
-      - 获取可操作的优化建议
-      - 提高简历与职位描述的匹配率
+      - 理解关键词为什么匹配或不匹配
+      - 检测职位描述中的负面约束
 
   llm: |
     This tool performs ATS-optimized keyword matching between a resume and job description.
-    It uses the same TF-IDF weighted algorithm used by major ATS systems (Taleo, Workday, Greenhouse).
-    
-    Input: Resume text (required) and Job Description text (optional)
-    Output: Match score, matched/missing keywords, and optimization recommendations
-    
+    It uses LLM-powered semantic analysis to understand context and meaning.
+
+    Input: Resume text (required) and Job Description text (required)
+    Output: Match score, matched/missing keywords with evidence, and negative constraint warnings
+
     Use this when the user wants to:
     - Check how well their resume matches a job description
     - Identify missing keywords for ATS optimization
-    - Get suggestions to improve resume-JD match rate
-    - Analyze ATS compatibility
+    - Understand WHY keywords match (with evidence from resume)
+    - Detect negative constraints ("No need for X")
 
 parameters:
   - name: resume_text
@@ -66,52 +66,16 @@ parameters:
     llm_description: The complete resume text to analyze. Should include all sections (summary, experience, skills, education, etc.)
     form: llm
 
-  - name: resume_keywords
-    type: string
-    required: false
-    label:
-      en_US: Resume Keywords (Optional)
-      zh_Hans: 简历关键词（可选）
-    human_description:
-      en_US: |
-        Pre-extracted resume keywords from keyword_extraction tool.
-        In Dify workflow: use {{keyword_extraction.text}} to pass the text output.
-        Supports both JSON format and text summary format.
-      zh_Hans: |
-        从关键词提取工具预先提取的简历关键词。
-        在 Dify 工作流中：使用 {{keyword_extraction.text}} 传递文本输出。
-        支持 JSON 格式和文本摘要格式。
-    llm_description: |
-      Pre-extracted resume keywords from keyword_extraction tool.
-      Supports multiple formats:
-      1. Text summary from keyword_extraction.text (recommended for Dify workflow)
-      2. JSON array: [{"skill": "Python", "mentions": 3, ...}, ...]
-      3. JSON object: {"keywords": [...], ...}
-      If provided, the tool will reuse these keywords instead of extracting again.
-    form: llm
-
   - name: jd_text
     type: string
-    required: false
+    required: true
     label:
-      en_US: Job Description Text (Optional)
-      zh_Hans: 职位描述文本（可选）
+      en_US: Job Description Text
+      zh_Hans: 职位描述文本
     human_description:
-      en_US: The full job description text to match against. Provide either this or position_name.
-      zh_Hans: 要匹配的完整职位描述文本。提供此项或 position_name。
-    llm_description: The complete job description text to compare with the resume. If provided, the tool will extract JD keywords and calculate match score.
-    form: llm
-
-  - name: position_name
-    type: string
-    required: false
-    label:
-      en_US: Position Name (Optional)
-      zh_Hans: 职位名称（可选）
-    human_description:
-      en_US: Job title (e.g., "Algorithm Engineer Intern"). If only this is provided, LLM will generate standard requirements.
-      zh_Hans: 职位名称（例如"算法工程师实习"）。如果只提供此项，LLM 将生成标准职位要求。
-    llm_description: Job position name. If jd_text is not provided, the tool will use LLM to generate standard job requirements for this position.
+      en_US: The full job description text to match against (required for accurate ATS matching)
+      zh_Hans: 要匹配的完整职位描述文本（准确匹配必需）
+    llm_description: The complete job description text to compare with the resume. Required for accurate ATS keyword matching.
     form: llm
 
   - name: use_llm
