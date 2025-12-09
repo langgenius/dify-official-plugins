@@ -47,7 +47,7 @@ from dify_plugin.entities.model.message import (
     TextPromptMessageContent,
     ToolPromptMessage,
     UserPromptMessage,
-    VideoPromptMessageContent,
+    VideoPromptMessageContent, AudioPromptMessageContent,
 )
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -538,6 +538,15 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             if message_content.data.startswith("data:"):
                                 video_url = self._save_base64_to_file(message_content.data)
                             sub_message_dict = {"video": video_url}
+                            user_messages.append(sub_message_dict)
+                        elif message_content.type == PromptMessageContentType.AUDIO:
+                            message_content = cast(
+                                AudioPromptMessageContent, message_content
+                            )
+                            audio_data = message_content.data
+                            if not audio_data:
+                                raise ValueError("Audio content cannot be empty.")
+                            sub_message_dict = {"audio": audio_data}
                             user_messages.append(sub_message_dict)
                         elif message_content.type == PromptMessageContentType.DOCUMENT:
                             message_content = cast(
