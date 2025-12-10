@@ -275,7 +275,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         """
         try:
             if response.status_code not in {200, HTTPStatus.OK}:
-                self._handle_error_response(response.status_code, response.message)
+                # Get request_id (if present) and forward it to the error handler.
+                request_id = getattr(response, 'request_id', None)
+                self._handle_error_response(response.status_code, response.message, model, request_id)
+            
             resp_content = response.output.choices[0].message.content
             # special for qwen-vl
             if isinstance(resp_content, list):
@@ -344,7 +347,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         try:
             for index, response in enumerate(responses):
                 if response.status_code not in {200, HTTPStatus.OK}:
-                    self._handle_error_response(response.status_code, response.message, model)
+                    # Get request_id (if present) and forward it to the error handler.
+                    request_id = getattr(response, 'request_id', None)
+                    self._handle_error_response(response.status_code, response.message, model, request_id)
+                
                 resp_finish_reason = response.output.choices[0].finish_reason
                 if resp_finish_reason is not None and resp_finish_reason != "null":
                     resp_content = response.output.choices[0].message.content
@@ -736,16 +742,23 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             ) from ex
         return content, is_reasoning
 
-    def _handle_error_response(self, status_code: int, message: str, model: str = None) -> None:
+    def _handle_error_response(self, status_code: int, message: str, model: str = None, request_id: str = None) -> None:
         """
         Handle error response based on HTTP status code
 
         :param status_code: HTTP status code
         :param message: error message
         :param model: model name (optional, for more detailed error messages)
+        :param request_id: request id from Tongyi API response (optional)
         :raises: Appropriate InvokeError based on status code
         """
-        error_msg = f"Failed to invoke model {model}, status code: {status_code}, message: {message}" if model else message
+        if model:
+            error_msg = f"Failed to invoke model {model}, status code: {status_code}, message: {message}"
+        else:
+            error_msg = message
+
+        if request_id:
+            error_msg += f", request_id: {request_id}"
 
         if status_code == 400:
             raise InvokeBadRequestError(error_msg)
