@@ -236,7 +236,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         if common_force_condition or model.startswith(("qwq-", "qvq-")):
             stream = True
         # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder and max variants), QwQ, and QVQ models only supports incremental_output set to True.
-        if common_force_condition or model.startswith("qwq-", "qvq-"):
+        if common_force_condition or model.startswith(("qwq-", "qvq-")):
             incremental_output = True
 
         if ModelFeature.VISION in (model_schema.features or []):
