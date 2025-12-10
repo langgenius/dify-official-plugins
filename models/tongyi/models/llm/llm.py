@@ -226,12 +226,17 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                                             "qwen-turbo-latest", "qwen-turbo-2025-04-28") \
                                   and model_parameters.get("enable_thinking", False)
 
-        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition, QwQ, and QVQ models only supports streaming output.
-        if thinking_business_qwen3 or model.startswith(("qwen3-", "qwq-", "qvq-")):
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder and max variants), QwQ, and QVQ models only supports streaming output.
+        # Note: qwen3-coder-xx and qwen3-max-xx models support non-streaming output.
+        qwen3_requires_stream = (
+            model.startswith("qwen3-") 
+            and not model.startswith(("qwen3-coder-", "qwen3-max-"))
+        )
+        if thinking_business_qwen3 or qwen3_requires_stream or model.startswith(("qwq-", "qvq-")):
             stream = True
 
-        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition and QwQ models only supports incremental_output set to True.
-        if thinking_business_qwen3 or model.startswith(("qwen3-", "qwq-", "qvq-")):
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder and max variants) and QwQ models only supports incremental_output set to True.
+        if thinking_business_qwen3 or qwen3_requires_stream or model.startswith("qwq-"):
             incremental_output = True
 
         if ModelFeature.VISION in (model_schema.features or []):
