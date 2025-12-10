@@ -1,390 +1,552 @@
+"""
+Resume Optimizer Tool - ATS-Focused Resume Optimization
+
+This tool provides two modes:
+1. Targeted Mode: When match_report is provided, injects missing keywords and de-emphasizes negative keywords.
+2. General Mode: When match_report is empty, focuses on STAR polish and date unification only.
+
+Features:
+- Keyword injection (Force inject, Associative inject, Implied skills)
+- Negative keyword de-emphasis
+- Implicit STAR method polishing
+- Silent date format unification (YYYY.MM–YYYY.MM)
+- HTML separator conversion (<hr> → ---)
+- Bilingual support (zh_Hans, en_US)
+- No emoji policy for professional output
+"""
+
 from typing import Any
 from collections.abc import Generator
+import json
 import time
+import traceback
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.entities.model.llm import LLMModelConfig
-from dify_plugin.entities.model.message import UserPromptMessage
+from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
 
 
 class ResumeOptimizerTool(Tool):
     """
-    Resume optimization tool with bilingual support and target position integration.
+    ATS-focused resume optimization tool with dual-mode support.
 
-    This tool helps users optimize their resumes for specific job positions using LLM.
-    It supports both file upload and text input, with bilingual prompts.
+    Targeted Mode: Keyword injection + De-emphasis + STAR polish (when match_report provided)
+    General Mode: STAR polish + Format unification only (when match_report empty)
     """
 
-    PROMPTS = {
-        "zh_Hans": """你是一位资深的简历优化专家。请针对【{target_position}】岗位，直接给出具体的修改建议。
+    # ========== Localization Headers (NO EMOJI) ==========
+    def _get_output_template_headers(self, language: str) -> dict:
+        """
+        Returns localized headers for the output report.
+        STRICTLY NO EMOJIS in any of the values.
+        """
+        if language == 'zh_Hans':
+            return {
+                'report_title': 'ATS 优化报告',
+                'disclaimer': '以下建议假设您确实具备相关技能，请核实准确性。',
+                'strategy_title': '优化策略',
+                'added_label': '高优先级关键词 (已添加)',
+                'associative_label': '关联注入',
+                'de_emphasized_label': '已弱化',
+                'unused_label': '未能融入的建议',
+                'all_matched_text': '所有核心关键词已匹配！',
+                'sections_title': '板块优化对比',
+                'before_label': '修改前',
+                'after_label': '修改后',
+                'changes_label': '变更说明',
+                'no_changes_text': '*(无修改)*',
+                'general_mode_note': '通用优化模式：未提供职位分析，仅进行 STAR 润色和格式统一。',
+                'parse_warning': '警告：match_report 解析失败，已切换为通用模式。',
+            }
+        else:  # en_US
+            return {
+                'report_title': 'ATS Optimization Report',
+                'disclaimer': 'Suggestions assume you possess these skills. Please verify accuracy.',
+                'strategy_title': 'Strategy',
+                'added_label': 'High Priority Keywords (Added)',
+                'associative_label': 'Associative Injection',
+                'de_emphasized_label': 'De-emphasized',
+                'unused_label': 'Unused Suggestions',
+                'all_matched_text': 'All core keywords matched!',
+                'sections_title': 'Section Rewrites',
+                'before_label': 'Before',
+                'after_label': 'After',
+                'changes_label': 'Changes',
+                'no_changes_text': '*(No changes made)*',
+                'general_mode_note': 'General Mode: Optimizing for clarity and STAR method (No JD provided).',
+                'parse_warning': 'Warning: Failed to parse match_report, switched to General Mode.',
+            }
+
+    # ========== Parse match_report JSON ==========
+    def _parse_match_report(self, match_report: str | dict | None) -> tuple[list, list, list, bool]:
+        """
+        Parse the match_report from KeywordMatcher.
+
+        Args:
+            match_report: JSON string or dict from KeywordMatcher
+
+        Returns:
+            tuple: (missing_required, missing_nice, negative_keywords, parse_success)
+        """
+        missing_required = []
+        missing_nice = []
+        negative_keywords = []
+
+        if not match_report:
+            return missing_required, missing_nice, negative_keywords, True  # Empty is valid (General Mode)
+
+        try:
+            # Parse JSON string if needed
+            if isinstance(match_report, str):
+                match_report = json.loads(match_report)
+
+            # Extract from match_details structure
+            match_details = match_report.get('match_details', {})
+
+            # Extract missing keywords
+            missing_list = match_details.get('missing', [])
+            for item in missing_list:
+                skill = item.get('skill', '')
+                importance = item.get('importance', 'Nice-to-have')
+                if skill:
+                    if importance == 'Required':
+                        missing_required.append(skill)
+                    else:
+                        missing_nice.append(skill)
+
+            # Extract negative warnings
+            negative_list = match_details.get('negative_warnings', [])
+            for item in negative_list:
+                skill = item.get('skill', '')
+                if skill:
+                    negative_keywords.append(skill)
+
+            return missing_required, missing_nice, negative_keywords, True
+
+        except (json.JSONDecodeError, TypeError, AttributeError) as e:
+            print(f"[resume_optimizer] Failed to parse match_report: {e}")
+            return [], [], [], False
+
+    # ========== Build System Prompt ==========
+    def _build_system_prompt(
+        self,
+        language: str,
+        target_position: str,
+        missing_required: list,
+        missing_nice: list,
+        negative_keywords: list,
+        is_targeted_mode: bool,
+        parse_failed: bool = False
+    ) -> str:
+        """
+        Build the system prompt for LLM based on mode.
+
+        Args:
+            language: 'zh_Hans' or 'en_US'
+            target_position: Target job position
+            missing_required: List of required missing keywords
+            missing_nice: List of nice-to-have missing keywords
+            negative_keywords: List of negative keywords to de-emphasize
+            is_targeted_mode: True if match_report provided
+            parse_failed: True if match_report parsing failed
+
+        Returns:
+            System prompt string
+        """
+        headers = self._get_output_template_headers(language)
+
+        # Format keyword lists
+        required_str = ', '.join(missing_required) if missing_required else 'None'
+        nice_str = ', '.join(missing_nice) if missing_nice else 'None'
+        negative_str = ', '.join(negative_keywords) if negative_keywords else 'None'
+
+        if language == 'zh_Hans':
+            return self._build_chinese_prompt(
+                headers, target_position, required_str, nice_str, negative_str,
+                is_targeted_mode, parse_failed
+            )
+        else:
+            return self._build_english_prompt(
+                headers, target_position, required_str, nice_str, negative_str,
+                is_targeted_mode, parse_failed
+            )
+
+    def _build_chinese_prompt(
+        self, headers: dict, target_position: str,
+        required_str: str, nice_str: str, negative_str: str,
+        is_targeted_mode: bool, parse_failed: bool
+    ) -> str:
+        """Build Chinese system prompt."""
+        base_prompt = f"""你是一位专业的 ATS（求职跟踪系统）优化专家。
+
+## 重要规则
+- **禁止使用任何 Emoji 符号**。输出必须是纯文本 Markdown。
+- 简历内容保持原语言，不要翻译。
+- 只输出有修改的板块，未修改的板块写 "{headers['no_changes_text']}"。
+- "修改前"和"修改后"都必须输出该板块的**完整文本**，方便用户直接复制替换。
+
+## 格式统一（静默修复）
+1. **日期格式**：统一为 `YYYY.MM–YYYY.MM`（使用 Em dash，无空格）。删除"入学"等多余文字。
+2. **分隔符**：将 HTML `<hr>` 或 `<hr class="...">` 转换为 Markdown `---`。
+3. 在"变更说明"中简要提及这些格式统一操作。
+
+## 润色方法
+使用**隐式 STAR 法则**改善弱句：
+- 不要使用 [Situation]、[Task] 等显式标签
+- 用自然、专业的语言，让句子遵循"背景 → 任务 → 行动 → 结果"的逻辑流
+"""
+
+        if is_targeted_mode:
+            mode_section = f"""
+## 优化模式：针对性优化
 
 目标岗位：{target_position}
 
-{detected_issues_section}
+### 关键词注入策略
 
-## 重要约束
+**P1 - 强制注入（Required）**: {required_str}
+- 这些关键词必须出现在简历中
+- 可以添加到"专业技能"板块
+- 可以在"工作经历"中自然融入（如："使用 **Pandas** 进行数据处理"）
 
-简历内容可能是从 PDF/DOCX 转换为 Markdown 的，可能存在格式转换问题。
+**P2 - 关联注入（Nice-to-have）**: {nice_str}
+- 如果用户有类似工具经验，使用关联提及
+- 例如：用户有 LlamaIndex 经验 → 添加 "LlamaIndex（熟悉 LangChain 生态）"
+- 例如：用户有 MySQL 经验 → 添加 "MySQL（熟悉 PostgreSQL 概念）"
 
-**请只关注简历的实质内容优化**：
-- 关键词匹配度（是否包含岗位要求的核心技术栈和技能）
-- 工作经历和项目经验的描述（是否突出相关经验）
-- 技能展示和量化成果（是否用数据说话）
-- 内容的专业性和针对性（是否符合岗位要求）
+**P3 - 隐含推断**:
+- 如果用户做过 LoRA/SFT → 可以推断并添加 PyTorch
+- 如果用户做过 RAG 项目 → 可以推断并添加"向量数据库"
+- 这些是合理推断，不是造假
 
-**请忽略以下问题，不要在优化建议中提及**：
-- Markdown 格式问题（多余空格、换行、符号丢失、缩进等）
-- 排版和布局问题
-- 文件格式问题
+**P4 - 弱化处理**: {negative_str}
+- 不要删除历史事实
+- 将这些技能移到技能列表末尾
+- 减少相关描述的篇幅
 
-这些格式问题可能是转换工具导致的，在原始文件中不存在。用户会在原始文件中应用你的内容优化建议。
+### 禁止造假规则
+- **绝对禁止**发明不存在的公司、项目或工作经历
+- 如果某个关键词完全无法自然融入，将其放入"未能融入的建议"列表
+"""
+        else:
+            mode_note = headers['parse_warning'] if parse_failed else headers['general_mode_note']
+            mode_section = f"""
+## 优化模式：通用润色
 
-## 输出要求
+> {mode_note}
 
-**不要**自我介绍、不要分析问题、不要介绍工作计划，**直接开始输出优化建议**。
+目标岗位：{target_position if target_position else '未指定'}
 
-按照简历的实际模块结构（如：教育背景、工作经历、项目经验、专业技能等），逐一给出优化建议。
+专注于：
+1. 使用 STAR 法则改善句子表达
+2. 统一日期格式和分隔符
+3. 提升整体专业性和可读性
+"""
 
-每条建议必须包含：
-- **改前**：从简历中摘录需要修改的原文（保持原文格式）
-- **改后**：优化后的表述（可直接复制粘贴使用）
-- **优化理由**：1-2 句话说明为什么这样改更适合【{target_position}】岗位
-
+        output_template = f"""
 ## 输出格式
 
-### 📋 [模块名称]
+请严格按照以下 Markdown 结构输出：
 
-**改前**：
-```
-[从简历中摘录的原文]
-```
+# {headers['report_title']}
 
-**改后**：
-```
-[优化后的表述]
-```
+> **注意**: {headers['disclaimer']}
 
-**优化理由**：[简洁说明]
+## {headers['strategy_title']}
 
----
-
-### 📋 [下一个模块名称]
-
-**改前**：
-```
-[原文]
-```
-
-**改后**：
-```
-[优化后的表述]
-```
-
-**优化理由**：[简洁说明]
+- **{headers['added_label']}**: [关键词列表] (如果为空，写 "{headers['all_matched_text']}")
+- **{headers['associative_label']}**:
+  - [关键词] (检测到您有 XXX 经验，已关联提及)
+- **{headers['de_emphasized_label']}**: [关键词列表] 或 "无"
+- **{headers['unused_label']}**: [关键词列表] 或 "无"
 
 ---
 
-{issues_fix_section}
+## {headers['sections_title']}
 
-## 优化重点
+### [板块名称]
 
-1. **关键词匹配**：确保简历包含【{target_position}】岗位的核心技术栈和关键词
-2. **量化成果**：用数据说话（如：性能提升 X%、处理量 X 万次/日）
-3. **动作动词**：使用"设计、实现、优化、负责"等强动作词，避免"参与、了解"
-4. **岗位相关性**：突出与目标岗位最相关的经验，弱化无关内容
-5. **STAR 法则**：Situation（背景）→ Task（任务）→ Action（行动）→ Result（结果）
+**{headers['before_label']}**:
+[该板块的完整原文]
 
-## 注意事项
+**{headers['after_label']}**:
+[该板块的完整优化文本]
 
-- 只针对**需要优化的内容**给出建议，已经很好的部分可以跳过
-- 每条建议都要**具体、可操作**，用户可以直接复制粘贴
-- 保持简历的**原有结构和风格**，不要大幅改变排版
-- 如果简历中某些模块缺失但对目标岗位重要，可以建议添加
+**{headers['changes_label']}**:
+- [变更点1]
+- [变更点2]
+- 统一了日期格式
 
 ---
 
-**现在开始输出优化建议**（不要任何开场白，直接从第一个模块开始）：
+（对每个修改的板块重复上述格式）
 
-简历内容：
-{resume_content}""",
+### [未修改的板块名称]
+{headers['no_changes_text']}
+"""
 
-        "en_US": """You are a seasoned resume optimization expert. Please provide specific modification suggestions for the [{target_position}] position.
+        return base_prompt + mode_section + output_template
+
+    def _build_english_prompt(
+        self, headers: dict, target_position: str,
+        required_str: str, nice_str: str, negative_str: str,
+        is_targeted_mode: bool, parse_failed: bool
+    ) -> str:
+        """Build English system prompt."""
+        base_prompt = f"""You are a professional ATS (Applicant Tracking System) optimization expert.
+
+## Critical Rules
+- **DO NOT use any Emoji symbols**. Output must be plain text Markdown only.
+- Keep resume content in its original language, do not translate.
+- Only output sections that have been modified. For unchanged sections, write "{headers['no_changes_text']}".
+- Both "Before" and "After" must contain the **FULL TEXT** of that section for easy copy-paste replacement.
+
+## Format Standardization (Silent Fixes)
+1. **Date Format**: Standardize to `YYYY.MM–YYYY.MM` (using Em dash, no spaces). Remove text like "Enrollment".
+2. **Separators**: Convert HTML `<hr>` or `<hr class="...">` to Markdown `---`.
+3. Briefly mention these format standardizations in the "Changes" section.
+
+## Polish Method
+Use **Implicit STAR Method** to improve weak sentences:
+- Do NOT use explicit labels like [Situation], [Task]
+- Use natural, professional language following the logic of "Context → Task → Action → Result"
+"""
+
+        if is_targeted_mode:
+            mode_section = f"""
+## Mode: Targeted Optimization
 
 Target Position: {target_position}
 
-{detected_issues_section}
+### Keyword Injection Strategy
 
-## Important Constraints
+**P1 - Force Inject (Required)**: {required_str}
+- These keywords MUST appear in the resume
+- Can be added to the "Skills" section
+- Can be naturally integrated into "Work Experience" (e.g., "data processing using **Pandas**")
 
-The resume content may have been converted from PDF/DOCX to Markdown, which may introduce format conversion issues.
+**P2 - Associative Injection (Nice-to-have)**: {nice_str}
+- If user has experience with similar tools, use associative mention
+- Example: User has LlamaIndex → Add "LlamaIndex (familiar with LangChain ecosystem)"
+- Example: User has MySQL → Add "MySQL (familiar with PostgreSQL concepts)"
 
-**Please focus ONLY on substantive content optimization**:
-- Keyword matching (does it include core tech stack and skills required for the position)
-- Work experience and project descriptions (does it highlight relevant experience)
-- Skills showcase and quantified achievements (does it use data to demonstrate impact)
-- Content professionalism and relevance (does it align with position requirements)
+**P3 - Implied Skills**:
+- If user has LoRA/SFT experience → Can infer and add PyTorch
+- If user has RAG project → Can infer and add "vector database"
+- These are reasonable inferences, not fabrication
 
-**Please IGNORE the following issues and do NOT mention them in your suggestions**:
-- Markdown formatting issues (extra spaces, line breaks, missing symbols, indentation, etc.)
-- Layout and formatting problems
-- File format issues
+**P4 - De-emphasize**: {negative_str}
+- Do NOT delete historical facts
+- Move these skills to the end of skill lists
+- Reduce the word count of related descriptions
 
-These formatting issues may be caused by conversion tools and do not exist in the original file. Users will apply your content optimization suggestions to their original files.
+### Anti-Fabrication Rules
+- **ABSOLUTELY FORBIDDEN** to invent non-existent companies, projects, or work experience
+- If a keyword cannot be naturally integrated, add it to the "Unused Suggestions" list
+"""
+        else:
+            mode_note = headers['parse_warning'] if parse_failed else headers['general_mode_note']
+            mode_section = f"""
+## Mode: General Polish
 
-## Output Requirements
+> {mode_note}
 
-**Do NOT** introduce yourself, analyze problems, or describe your work plan. **Start directly with optimization suggestions**.
+Target Position: {target_position if target_position else 'Not specified'}
 
-Provide suggestions for each actual section in the resume (e.g., Education, Work Experience, Projects, Skills, etc.).
+Focus on:
+1. Using STAR method to improve sentence expression
+2. Standardizing date format and separators
+3. Improving overall professionalism and readability
+"""
 
-Each suggestion must include:
-- **Before**: Original text from the resume (keep original format)
-- **After**: Optimized version (ready to copy-paste)
-- **Reason**: 1-2 sentences explaining why this change better fits the [{target_position}] position
-
+        output_template = f"""
 ## Output Format
 
-### 📋 [Section Name]
+Please strictly follow this Markdown structure:
 
-**Before**:
-```
-[Original text from resume]
-```
+# {headers['report_title']}
 
-**After**:
-```
-[Optimized version]
-```
+> **Note**: {headers['disclaimer']}
 
-**Reason**: [Brief explanation]
+## {headers['strategy_title']}
 
----
-
-### 📋 [Next Section Name]
-
-**Before**:
-```
-[Original text]
-```
-
-**After**:
-```
-[Optimized version]
-```
-
-**Reason**: [Brief explanation]
+- **{headers['added_label']}**: [Keyword list] (If empty, write "{headers['all_matched_text']}")
+- **{headers['associative_label']}**:
+  - [Keyword] (Detected you have XXX experience, added as context)
+- **{headers['de_emphasized_label']}**: [Keyword list] or "None"
+- **{headers['unused_label']}**: [Keyword list] or "None"
 
 ---
 
-{issues_fix_section}
+## {headers['sections_title']}
 
-## Optimization Focus
+### [Section Name]
 
-1. **Keyword Matching**: Ensure resume includes core tech stack and keywords for [{target_position}]
-2. **Quantified Achievements**: Use data (e.g., improved performance by X%, handled X requests/day)
-3. **Action Verbs**: Use strong verbs like "designed, implemented, optimized, led" instead of "participated, familiar with"
-4. **Job Relevance**: Highlight most relevant experience for target position, de-emphasize irrelevant content
-5. **STAR Method**: Situation → Task → Action → Result
+**{headers['before_label']}**:
+[Full original text of this section]
 
-## Guidelines
+**{headers['after_label']}**:
+[Full optimized text of this section]
 
-- Only provide suggestions for **content that needs improvement**; skip parts that are already good
-- Each suggestion should be **specific and actionable**, ready to copy-paste
-- Maintain the **original structure and style** of the resume, don't drastically change layout
-- If important sections are missing for the target position, suggest adding them
+**{headers['changes_label']}**:
+- [Change 1]
+- [Change 2]
+- Unified date format
 
 ---
 
-**Start outputting optimization suggestions now** (no introduction, start directly from the first section):
+(Repeat the above format for each modified section)
 
-Resume Content:
-{resume_content}"""
-    }
+### [Unchanged Section Name]
+{headers['no_changes_text']}
+"""
 
-    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
+        return base_prompt + mode_section + output_template
+
+
+    # ========== Main Invoke Method ==========
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
-        Invoke the resume optimizer tool.
+        Main entry point for the resume optimizer tool.
 
         Args:
-            tool_parameters: Tool parameters including resume_content, target_position, detected_issues, and language
+            tool_parameters: Tool parameters including resume_content, target_position, match_report, language
 
         Returns:
             Generator of ToolInvokeMessage
         """
+        language = tool_parameters.get('language', 'zh_Hans')
+
         try:
-            # Extract and validate parameters
+            # Extract parameters
+            resume_content = tool_parameters.get('resume_content', '').strip()
             target_position = tool_parameters.get('target_position', '').strip()
-            detected_issues = tool_parameters.get('detected_issues', '').strip()
-            language = tool_parameters.get('language', 'zh_Hans')
+            match_report = tool_parameters.get('match_report', '')
 
-            # Get resume content from file upload or text input
-            resume_content, error_msg = self._get_resume_content(tool_parameters, language)
-            if error_msg:
+            # Validate resume content
+            if not resume_content:
+                error_msg = "请输入简历内容" if language == 'zh_Hans' else "Please input resume content"
                 yield self.create_text_message(error_msg)
                 return
 
-            # Validate required parameters
-            if not target_position:
-                error_msg = "目标岗位不能为空" if language == 'zh_Hans' else "Target position cannot be empty"
-                yield self.create_text_message(error_msg)
-                return
+            # Parse match_report to determine mode
+            missing_required, missing_nice, negative_keywords, parse_success = self._parse_match_report(match_report)
 
-            # Generate optimization suggestions using LLM
-            result = self._optimize_resume_with_llm(resume_content, target_position, detected_issues, language)
+            # Determine mode
+            is_targeted_mode = bool(match_report and parse_success and (missing_required or missing_nice or negative_keywords))
+            parse_failed = bool(match_report and not parse_success)
+
+            # Log mode info
+            mode_str = "Targeted" if is_targeted_mode else ("General (parse failed)" if parse_failed else "General")
+            print(f"[resume_optimizer] Mode: {mode_str}")
+            print(f"[resume_optimizer] Missing Required: {missing_required}")
+            print(f"[resume_optimizer] Missing Nice: {missing_nice}")
+            print(f"[resume_optimizer] Negative: {negative_keywords}")
+
+            # Build system prompt
+            system_prompt = self._build_system_prompt(
+                language=language,
+                target_position=target_position,
+                missing_required=missing_required,
+                missing_nice=missing_nice,
+                negative_keywords=negative_keywords,
+                is_targeted_mode=is_targeted_mode,
+                parse_failed=parse_failed
+            )
+
+            # Call LLM
+            result = self._call_llm(system_prompt, resume_content, language)
             yield self.create_text_message(result)
 
         except Exception as e:
             error_msg = f"优化过程中出现错误: {str(e)}" if language == 'zh_Hans' else f"Error during optimization: {str(e)}"
+            print(f"[resume_optimizer] Error: {traceback.format_exc()}")
             yield self.create_text_message(error_msg)
 
-    def _get_resume_content(self, tool_parameters: dict[str, Any], language: str) -> tuple[str, str]:
+    # ========== LLM Invocation ==========
+    def _call_llm(self, system_prompt: str, resume_content: str, language: str) -> str:
         """
-        Extract resume content from text input.
+        Call the LLM with retry logic.
+
+        Args:
+            system_prompt: The system prompt with instructions
+            resume_content: The user's resume content
+            language: Output language
 
         Returns:
-            tuple: (resume_content, error_message)
+            LLM response text
         """
-        # Get resume content from text input
-        resume_content = tool_parameters.get('resume_content', '').strip()
-        if not resume_content:
-            error_msg = "请输入简历内容" if language == 'zh_Hans' else "Please input resume content"
-            return "", error_msg
-
-        return resume_content, ""
-
-    def _optimize_resume_with_llm(self, resume_content: str, target_position: str, detected_issues: str, language: str) -> str:
-        """Use LLM to generate resume optimization suggestions."""
-        import json
-        import traceback
-
-        try:
-            # Build detected issues section
-            detected_issues_section = ""
-            issues_fix_section = ""
-
-            if detected_issues:
-                if language == 'zh_Hans':
-                    detected_issues_section = f"## 已检测到的问题\n\n{detected_issues}\n"
-                    issues_fix_section = "\n5. **问题修复** - 针对上述检测到的问题提供具体修复建议"
-                else:
-                    detected_issues_section = f"## Detected Issues\n\n{detected_issues}\n"
-                    issues_fix_section = "\n5. **Issue Resolution** - Specific fixes for the detected issues above"
-
-            # Build prompt using template
-            prompt_template = self.PROMPTS.get(language, self.PROMPTS['zh_Hans'])
-            prompt = prompt_template.format(
-                target_position=target_position,
-                resume_content=resume_content,
-                detected_issues_section=detected_issues_section,
-                issues_fix_section=issues_fix_section
-            )
-
-            # Prepare LLM request
-            prompt_messages = [UserPromptMessage(content=prompt)]
-
-            # Use system-configured LLM (user should configure DeepSeek in Dify settings)
-            # This approach follows Dify's best practices for plugin LLM usage
-            llm_config = {
-                "provider": "deepseek",
-                "model": "deepseek-chat",
-                "mode": "chat",
-                "completion_params": {
-                    "temperature": 0.7,
-                    "max_tokens": 2000
-                }
+        # LLM Configuration
+        llm_config = {
+            "provider": "deepseek",
+            "model": "deepseek-chat",
+            "mode": "chat",
+            "completion_params": {
+                "temperature": 0.5,
+                "max_tokens": 8192
             }
+        }
 
-            # 🔍 DEBUG: 打印配置信息
-            print(f"🔍 DEBUG [resume_optimizer] LLM Config: {json.dumps(llm_config, indent=2, ensure_ascii=False)}")
-            print(f"🔍 DEBUG [resume_optimizer] Prompt length: {len(prompt)} chars")
-            print(f"🔍 DEBUG [resume_optimizer] Session type: {type(self.session)}")
-            print(f"🔍 DEBUG [resume_optimizer] Session.model type: {type(self.session.model)}")
-            print(f"🔍 DEBUG [resume_optimizer] Session.model.llm type: {type(self.session.model.llm)}")
+        # Prepare messages
+        prompt_messages = [
+            SystemPromptMessage(content=system_prompt),
+            UserPromptMessage(content=f"请优化以下简历：\n\n{resume_content}" if language == 'zh_Hans' else f"Please optimize the following resume:\n\n{resume_content}")
+        ]
 
-            # Retry logic for LLM invocation
-            max_retries = 3
-            retry_delay = 1  # Initial delay in seconds
+        # Retry logic
+        max_retries = 3
+        retry_delay = 1
 
-            for attempt in range(max_retries):
-                try:
-                    print(f"🔍 DEBUG [resume_optimizer] Attempt {attempt + 1}/{max_retries} - Calling LLM...")
+        for attempt in range(max_retries):
+            try:
+                print(f"[resume_optimizer] Attempt {attempt + 1}/{max_retries} - Calling LLM...")
 
-                    # Invoke LLM
-                    llm_result = self.session.model.llm.invoke(
-                        model_config=LLMModelConfig(**llm_config),
-                        prompt_messages=prompt_messages,
-                        stream=False
-                    )
+                # Invoke LLM
+                llm_result = self.session.model.llm.invoke(
+                    model_config=LLMModelConfig(**llm_config),
+                    prompt_messages=prompt_messages,
+                    stream=False
+                )
 
-                    # 🔍 DEBUG: 打印原始响应信息
-                    print(f"🔍 DEBUG [resume_optimizer] llm_result type: {type(llm_result)}")
-                    print(f"🔍 DEBUG [resume_optimizer] llm_result: {llm_result}")
-                    if hasattr(llm_result, '__dict__'):
-                        print(f"🔍 DEBUG [resume_optimizer] llm_result.__dict__: {llm_result.__dict__}")
+                # Extract response
+                if llm_result and hasattr(llm_result, 'message') and hasattr(llm_result.message, 'content'):
+                    response_text = llm_result.message.content.strip()
+                    print(f"[resume_optimizer] Response length: {len(response_text)} chars")
 
-                    # Extract result
-                    if llm_result and hasattr(llm_result, 'message') and hasattr(llm_result.message, 'content'):
-                        response_text = llm_result.message.content.strip()
-                        print(f"🔍 DEBUG [resume_optimizer] Response text length: {len(response_text)} chars")
-
-                        # Check for empty response
-                        if not response_text:
-                            if attempt < max_retries - 1:
-                                print(f"⚠️ LLM returned empty optimization suggestions (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...")
-                                time.sleep(retry_delay)
-                                retry_delay *= 2
-                                continue
-                            else:
-                                print(f"❌ LLM returned empty optimization suggestions after {max_retries} attempts")
-                                return "LLM调用返回空结果，请稍后重试" if language == 'zh_Hans' else "LLM returned empty result, please retry later"
-
-                        return response_text
-                    else:
-                        # No valid response - retry
-                        print(f"⚠️ DEBUG [resume_optimizer] Invalid response structure")
+                    if not response_text:
                         if attempt < max_retries - 1:
-                            print(f"⚠️ LLM returned invalid response (attempt {attempt + 1}/{max_retries}), retrying in {retry_delay}s...")
+                            print(f"[resume_optimizer] Empty response, retrying in {retry_delay}s...")
                             time.sleep(retry_delay)
                             retry_delay *= 2
                             continue
                         else:
-                            return "LLM调用返回空结果" if language == 'zh_Hans' else "LLM returned empty result"
+                            return "LLM 返回空结果，请稍后重试" if language == 'zh_Hans' else "LLM returned empty result, please retry later"
 
-                except Exception as e:
-                    error_details = str(e)
-
-                    # 🔍 DEBUG: 打印完整异常信息
-                    print(f"❌ DEBUG [resume_optimizer] Exception type: {type(e).__name__}")
-                    print(f"❌ DEBUG [resume_optimizer] Exception args: {e.args}")
-                    print(f"❌ DEBUG [resume_optimizer] Full traceback:\n{traceback.format_exc()}")
-
-                    # 尝试获取更多异常信息
-                    if hasattr(e, 'response'):
-                        print(f"❌ DEBUG [resume_optimizer] e.response: {e.response}")
-                    if hasattr(e, '__cause__'):
-                        print(f"❌ DEBUG [resume_optimizer] e.__cause__: {e.__cause__}")
-                    if hasattr(e, '__context__'):
-                        print(f"❌ DEBUG [resume_optimizer] e.__context__: {e.__context__}")
-
-                    # Check if it's a configuration error (don't retry)
-                    if "Provider" in error_details and "does not exist" in error_details:
-                        return f"请在Dify设置中配置DeepSeek提供商: {error_details}" if language == 'zh_Hans' else f"Please configure DeepSeek provider in Dify settings: {error_details}"
-
-                    # For other errors, retry
+                    return response_text
+                else:
                     if attempt < max_retries - 1:
-                        print(f"⚠️ LLM invocation failed (attempt {attempt + 1}/{max_retries}): {error_details}, retrying in {retry_delay}s...")
+                        print(f"[resume_optimizer] Invalid response structure, retrying...")
                         time.sleep(retry_delay)
                         retry_delay *= 2
                         continue
                     else:
-                        print(f"❌ LLM invocation failed after {max_retries} attempts: {error_details}")
-                        return f"LLM调用失败: {error_details}" if language == 'zh_Hans' else f"LLM invocation failed: {error_details}"
+                        return "LLM 返回无效响应" if language == 'zh_Hans' else "LLM returned invalid response"
 
-            # Fallback (should not reach here)
-            return "LLM调用失败，请稍后重试" if language == 'zh_Hans' else "LLM invocation failed, please retry later"
+            except Exception as e:
+                error_details = str(e)
+                print(f"[resume_optimizer] LLM error: {error_details}")
 
-        except Exception as e:
-            error_details = str(e)
-            print(f"❌ DEBUG [resume_optimizer] Outer exception: {traceback.format_exc()}")
-            return f"优化过程出错: {error_details}" if language == 'zh_Hans' else f"Optimization error: {error_details}"
+                # Check for configuration error
+                if "Provider" in error_details and "does not exist" in error_details:
+                    return f"请在 Dify 设置中配置 DeepSeek 提供商: {error_details}" if language == 'zh_Hans' else f"Please configure DeepSeek provider in Dify settings: {error_details}"
+
+                if attempt < max_retries - 1:
+                    print(f"[resume_optimizer] Retrying in {retry_delay}s...")
+                    time.sleep(retry_delay)
+                    retry_delay *= 2
+                    continue
+                else:
+                    return f"LLM 调用失败: {error_details}" if language == 'zh_Hans' else f"LLM invocation failed: {error_details}"
+
+        return "LLM 调用失败，请稍后重试" if language == 'zh_Hans' else "LLM invocation failed, please retry later"

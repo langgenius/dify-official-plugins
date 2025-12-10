@@ -1,5 +1,5 @@
 identity:
-  author: langgenius
+  author: dingo
   name: resume_optimizer
   label:
     en_US: Resume Optimizer
@@ -7,42 +7,52 @@ identity:
 
 description:
   human:
-    en_US: Optimize resumes with AI-powered suggestions tailored to specific job positions. Input your resume in markdown format and target position for personalized optimization advice.
-    zh_Hans: 使用AI为特定岗位提供简历优化建议。输入markdown格式的简历和目标岗位，获得个性化的优化建议。
-  llm: Optimize resumes with targeted suggestions for specific job positions, including keyword optimization, content improvement, and structural enhancements.
+    en_US: |
+      ATS-focused resume optimizer with dual-mode support.
+      - Targeted Mode: When match_report is provided, injects missing keywords, de-emphasizes negative keywords, and applies STAR polish.
+      - General Mode: When match_report is empty, focuses on STAR polish and date/format unification only.
+    zh_Hans: |
+      ATS 导向的简历优化器，支持双模式运行。
+      - 针对性优化模式：提供 match_report 时，注入缺失关键词、弱化负面关键词、应用 STAR 润色。
+      - 通用优化模式：不提供 match_report 时，仅进行 STAR 润色和格式统一。
+  llm: Optimize resumes for ATS scoring with keyword injection, de-emphasis of negative keywords, and STAR method polishing. Supports dual-mode (Targeted/General) based on whether match_report is provided.
 
 parameters:
   - name: resume_content
     type: string
-    required: false
+    required: true
     label:
       en_US: Resume Content
       zh_Hans: 简历内容
     human_description:
-      en_US: Your resume content in markdown format (used if no file uploaded)
-      zh_Hans: 您的简历内容（markdown格式，未上传文件时使用）
+      en_US: Your resume content in markdown format
+      zh_Hans: 您的简历内容（markdown 格式）
     form: llm
 
   - name: target_position
     type: string
-    required: true
+    required: false
     label:
       en_US: Target Position
       zh_Hans: 目标岗位
     human_description:
-      en_US: The job position you are applying for
-      zh_Hans: 您要应聘的岗位
+      en_US: The job position you are applying for (optional, used for context)
+      zh_Hans: 您要应聘的岗位（可选，用于上下文理解）
     form: llm
 
-  - name: detected_issues
+  - name: match_report
     type: string
     required: false
     label:
-      en_US: Detected Issues
-      zh_Hans: 检测问题
+      en_US: Keyword Match Report
+      zh_Hans: 关键词匹配报告
     human_description:
-      en_US: Quality issues detected by Resume Quality Checker (optional, will be used to provide targeted optimization)
-      zh_Hans: 简历质量检测器检测出的问题（可选，将用于提供针对性优化建议）
+      en_US: |
+        JSON output from KeywordMatcher tool. If provided, enables Targeted Mode with keyword injection and de-emphasis.
+        If empty or invalid, runs in General Mode (STAR polish only).
+      zh_Hans: |
+        KeywordMatcher 工具的 JSON 输出。如果提供，启用针对性优化模式（关键词注入和弱化）。
+        如果为空或无效，运行通用优化模式（仅 STAR 润色）。
     form: llm
 
   - name: language
@@ -50,11 +60,11 @@ parameters:
     required: false
     default: zh_Hans
     label:
-      en_US: Language
-      zh_Hans: 语言
+      en_US: Output Language
+      zh_Hans: 输出语言
     human_description:
-      en_US: Choose the language for optimization suggestions
-      zh_Hans: 选择优化建议的语言
+      en_US: Choose the language for the optimization report
+      zh_Hans: 选择优化报告的语言
     form: form
     options:
       - value: zh_Hans
@@ -64,7 +74,7 @@ parameters:
       - value: en_US
         label:
           en_US: English
-          zh_Hans: 英文
+          zh_Hans: English
 
 extra:
   python:
