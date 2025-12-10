@@ -546,6 +546,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             audio_data = message_content.data
                             if not audio_data:
                                 raise ValueError("Audio content cannot be empty.")
+                            if audio_data.startswith("data:"):
+                                audio_data = self._save_base64_to_file(audio_data)
                             sub_message_dict = {"audio": audio_data}
                             user_messages.append(sub_message_dict)
                         elif message_content.type == PromptMessageContentType.DOCUMENT:
