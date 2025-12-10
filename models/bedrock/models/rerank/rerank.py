@@ -87,6 +87,19 @@ class BedrockRerankModel(RerankModel):
             if not model_package_arn:
                 raise InvokeError(f"Could not get ARN for inference profile {inference_profile_id}")
             logger.info(f"Using inference profile ARN: {model_package_arn}")
+
+            # Determine model prefix from underlying models
+            underlying_models = profile_info.get("models", [])
+            if underlying_models:
+                first_model_arn = underlying_models[0].get("modelArn", "")
+                if "foundation-model/" in first_model_arn:
+                    underlying_model_id = first_model_arn.split("foundation-model/")[1]
+                    # Update model_id to the actual foundation model ARN
+                    model_id = underlying_model_id
+                else:
+                    raise InvokeError(f"Could not determine model type from inference profile")
+            else:
+                raise InvokeError(f"No underlying models found in inference profile")
         else:
             # Traditional model - build ARN
             region = credentials.get("aws_region")

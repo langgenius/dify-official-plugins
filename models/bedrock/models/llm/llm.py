@@ -1090,6 +1090,11 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         if 'auth_method' not in credentials:
             raise CredentialsValidateFailedError("Authentication method 'auth_method' is missing in credentials.")
 
+        inference_profile_id = credentials.get("inference_profile_id")
+        if inference_profile_id:
+            validate_inference_profile(inference_profile_id, credentials)
+            logger.info(f"Successfully validated inference profile: {inference_profile_id}")
+
         try:
             if credentials['auth_method'] == 'IAM_Role':
                 return

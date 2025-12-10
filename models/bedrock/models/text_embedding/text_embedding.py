@@ -72,6 +72,8 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
                 if "foundation-model/" in first_model_arn:
                     underlying_model_id = first_model_arn.split("foundation-model/")[1]
                     model_prefix = underlying_model_id.split(".")[0]
+                    # Update model_id to the actual foundation model ARN
+                    model_id = underlying_model_id
                 else:
                     raise InvokeError(f"Could not determine model type from inference profile")
             else:
