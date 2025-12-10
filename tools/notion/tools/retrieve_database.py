@@ -27,12 +27,22 @@ class RetrieveDatabaseTool(Tool):
             # Initialize the Notion client
             client = NotionClient(integration_token)
             
-            # Retrieve the database
+            # Retrieve the database (returns database info with data_sources list in 2025-09-03)
             try:
                 database_data = client.retrieve_database(database_id)
                 
+                # Get data sources list
+                data_sources = database_data.get("data_sources", [])
+                
+                # For 2025-09-03 API: retrieve the default data source to get properties
+                data_source_data = None
+                if data_sources:
+                    default_data_source_id = data_sources[0].get("id", "")
+                    if default_data_source_id:
+                        data_source_data = client.retrieve_data_source(default_data_source_id)
+                
                 # Format the database data
-                formatted_database = self._format_database_data(database_data)
+                formatted_database = self._format_database_data(database_data, data_source_data, data_sources)
                 
                 # Add URL
                 formatted_database["url"] = client.format_page_url(database_id)
@@ -53,7 +63,9 @@ class RetrieveDatabaseTool(Tool):
             yield self.create_text_message(f"Error retrieving Notion database: {str(e)}")
             return
     
-    def _format_database_data(self, database_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _format_database_data(self, database_data: Dict[str, Any], 
+                               data_source_data: Dict[str, Any] = None,
+                               data_sources: List[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Format the database data for the response."""
         result = {
             "id": database_data.get("id", ""),
@@ -61,20 +73,30 @@ class RetrieveDatabaseTool(Tool):
             "last_edited_time": database_data.get("last_edited_time", ""),
             "title": "",
             "description": "",
-            "properties": {}
+            "properties": {},
+            "data_sources": data_sources or []  # Include data sources list
         }
         
-        # Extract title and description
+        # Extract title from database
         title = database_data.get("title", [])
         if title:
             result["title"] = "".join([text.get("plain_text", "") for text in title])
             
+        # Extract description from database
         description = database_data.get("description", [])
         if description:
             result["description"] = "".join([text.get("plain_text", "") for text in description])
+        
+        # Get properties from data source (2025-09-03 API) or database (fallback)
+        properties = {}
+        if data_source_data:
+            properties = data_source_data.get("properties", {})
+            # Add data source specific info
+            result["default_data_source_id"] = data_source_data.get("id", "")
+        else:
+            # Fallback for backward compatibility
+            properties = database_data.get("properties", {})
             
-        # Format properties schema
-        properties = database_data.get("properties", {})
         formatted_properties = {}
         
         for prop_name, prop_data in properties.items():
@@ -101,7 +123,10 @@ class RetrieveDatabaseTool(Tool):
             elif prop_type == "formula":
                 property_info["expression"] = prop_data.get("formula", {}).get("expression")
             elif prop_type == "relation":
-                property_info["database_id"] = prop_data.get("relation", {}).get("database_id")
+                # Include both database_id and data_source_id for relation properties
+                relation_data = prop_data.get("relation", {})
+                property_info["database_id"] = relation_data.get("database_id")
+                property_info["data_source_id"] = relation_data.get("data_source_id")
             elif prop_type == "rollup":
                 rollup = prop_data.get("rollup", {})
                 property_info["rollup_property_name"] = rollup.get("rollup_property_name")
@@ -111,4 +136,4 @@ class RetrieveDatabaseTool(Tool):
             formatted_properties[prop_name] = property_info
             
         result["properties"] = formatted_properties
-        return result 
+        return result

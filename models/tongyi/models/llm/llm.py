@@ -47,7 +47,7 @@ from dify_plugin.entities.model.message import (
     TextPromptMessageContent,
     ToolPromptMessage,
     UserPromptMessage,
-    VideoPromptMessageContent,
+    VideoPromptMessageContent, AudioPromptMessageContent,
 )
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -226,12 +226,17 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                                             "qwen-turbo-latest", "qwen-turbo-2025-04-28") \
                                   and model_parameters.get("enable_thinking", False)
 
-        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition, QwQ, and QVQ models only supports streaming output.
-        if thinking_business_qwen3 or model.startswith(("qwen3-", "qwq-", "qvq-")):
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder and max variants), QwQ, and QVQ models only supports streaming output.
+        # Note: qwen3-coder-xx and qwen3-max-xx models support non-streaming output.
+        qwen3_requires_stream = (
+            model.startswith("qwen3-") 
+            and not model.startswith(("qwen3-coder-", "qwen3-max-"))
+        )
+        common_force_condition = thinking_business_qwen3 or qwen3_requires_stream
+        if common_force_condition or model.startswith(("qwq-", "qvq-")):
             stream = True
-
-        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition and QwQ models only supports incremental_output set to True.
-        if thinking_business_qwen3 or model.startswith(("qwen3-", "qwq-", "qvq-")):
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder and max variants), QwQ, and QVQ models only supports incremental_output set to True.
+        if common_force_condition or model.startswith("qwq-", "qvq-"):
             incremental_output = True
 
         if ModelFeature.VISION in (model_schema.features or []):
@@ -275,7 +280,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         """
         try:
             if response.status_code not in {200, HTTPStatus.OK}:
-                self._handle_error_response(response.status_code, response.message)
+                # Get request_id (if present) and forward it to the error handler.
+                request_id = getattr(response, 'request_id', None)
+                self._handle_error_response(response.status_code, response.message, model, request_id)
+            
             resp_content = response.output.choices[0].message.content
             # special for qwen-vl
             if isinstance(resp_content, list):
@@ -344,7 +352,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         try:
             for index, response in enumerate(responses):
                 if response.status_code not in {200, HTTPStatus.OK}:
-                    self._handle_error_response(response.status_code, response.message, model)
+                    # Get request_id (if present) and forward it to the error handler.
+                    request_id = getattr(response, 'request_id', None)
+                    self._handle_error_response(response.status_code, response.message, model, request_id)
+                
                 resp_finish_reason = response.output.choices[0].finish_reason
                 if resp_finish_reason is not None and resp_finish_reason != "null":
                     resp_content = response.output.choices[0].message.content
@@ -539,6 +550,17 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                                 video_url = self._save_base64_to_file(message_content.data)
                             sub_message_dict = {"video": video_url}
                             user_messages.append(sub_message_dict)
+                        elif message_content.type == PromptMessageContentType.AUDIO:
+                            message_content = cast(
+                                AudioPromptMessageContent, message_content
+                            )
+                            audio_data = message_content.data
+                            if not audio_data:
+                                raise ValueError("Audio content cannot be empty.")
+                            if audio_data.startswith("data:"):
+                                audio_data = self._save_base64_to_file(audio_data)
+                            sub_message_dict = {"audio": audio_data}
+                            user_messages.append(sub_message_dict)
                         elif message_content.type == PromptMessageContentType.DOCUMENT:
                             message_content = cast(
                                 DocumentPromptMessageContent, message_content
@@ -725,16 +747,23 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             ) from ex
         return content, is_reasoning
 
-    def _handle_error_response(self, status_code: int, message: str, model: str = None) -> None:
+    def _handle_error_response(self, status_code: int, message: str, model: str = None, request_id: str = None) -> None:
         """
         Handle error response based on HTTP status code
 
         :param status_code: HTTP status code
         :param message: error message
         :param model: model name (optional, for more detailed error messages)
+        :param request_id: request id from Tongyi API response (optional)
         :raises: Appropriate InvokeError based on status code
         """
-        error_msg = f"Failed to invoke model {model}, status code: {status_code}, message: {message}" if model else message
+        if model:
+            error_msg = f"Failed to invoke model {model}, status code: {status_code}, message: {message}"
+        else:
+            error_msg = message
+
+        if request_id:
+            error_msg += f", request_id: {request_id}"
 
         if status_code == 400:
             raise InvokeBadRequestError(error_msg)
