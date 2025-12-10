@@ -230,7 +230,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         # Note: qwen3-coder-xx and qwen3-max-xx models support non-streaming output.
         qwen3_requires_stream = (
             model.startswith("qwen3-") 
-            and not model.startswith(("qwen3-coder-", "qwen3-max-"))
+            and not model.startswith(("qwen3-coder", "qwen3-max"))
         )
         common_force_condition = thinking_business_qwen3 or qwen3_requires_stream
         if common_force_condition or model.startswith(("qwq-", "qvq-")):
