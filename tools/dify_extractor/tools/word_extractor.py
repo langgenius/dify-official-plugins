@@ -12,8 +12,8 @@ import requests
 from dify_plugin import Tool
 from docx import Document as DocxDocument
 
-from tools.extractor_base import BaseExtractor
 from tools.document import Document, ExtractorResult
+from tools.extractor_base import BaseExtractor
 
 logger = logging.getLogger(__name__)
 
@@ -57,14 +57,18 @@ class WordExtractor(BaseExtractor):
         image_count = 0
         image_map = {}
         img_list = []
-        for rel in doc.part.rels.values():
+        for rId, rel in doc.part.rels.items():
             if "image" in rel.target_ref:
                 image_count += 1
                 if rel.is_external:
                     url = rel.target_ref
                     if not self._is_valid_url(url):
                         continue
-                    response = requests.get(url)
+                    try:
+                        response = requests.get(url)
+                    except Exception:
+                        continue
+                        
                     if response.status_code == 200:
                         image_ext = mimetypes.guess_extension(
                             response.headers["Content-Type"]
@@ -76,10 +80,10 @@ class WordExtractor(BaseExtractor):
                         mime_type, _ = mimetypes.guess_type(file_name)
 
                         file_res = self._tool.session.file.upload(
-                            file_name, response.content, mime_type
+                            file_name, response.content, mime_type or "application/octet-stream"
                         )
-                    else:
-                        continue
+                        image_map[rId] = f"![image]({file_res.preview_url})"
+                        img_list.append(file_res)
                 else:
                     image_ext = rel.target_ref.split(".")[-1]
                     if image_ext is None:
@@ -90,11 +94,11 @@ class WordExtractor(BaseExtractor):
                     mime_type, _ = mimetypes.guess_type(file_name)
 
                     file_res = self._tool.session.file.upload(
-                        file_name, rel.target_part.blob, mime_type
+                        file_name, rel.target_part.blob, mime_type or "application/octet-stream"
                     )
 
-                image_map[rel.target_part] = f"![image]({file_res.preview_url})"
-                img_list.append(file_res)
+                    image_map[rel.target_part] = f"![image]({file_res.preview_url})"
+                    img_list.append(file_res)
 
         return image_map, img_list
 
@@ -152,11 +156,17 @@ class WordExtractor(BaseExtractor):
                     )
                     if not image_id:
                         continue
-                    image_part = paragraph.part.rels[image_id].target_part
-
-                    if image_part in image_map:
-                        image_link = image_map[image_part]
-                        paragraph_content.append(image_link)
+                    
+                    if image_id in paragraph.part.rels:
+                        rel = paragraph.part.rels[image_id]
+                        if rel.is_external:
+                            if image_id in image_map:
+                                paragraph_content.append(image_map[image_id])
+                        else:
+                            image_part = rel.target_part
+                            if image_part in image_map:
+                                image_link = image_map[image_part]
+                                paragraph_content.append(image_link)
             else:
                 paragraph_content.append(run.text)
         return "".join(paragraph_content).strip()
@@ -227,9 +237,12 @@ class WordExtractor(BaseExtractor):
                                 "{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed"
                             )
                             if embed_id:
-                                image_part = doc.part.related_parts.get(embed_id)
-                                if image_part in image_map:
-                                    paragraph_content.append(image_map[image_part])
+                                if embed_id in image_map:
+                                    paragraph_content.append(image_map[embed_id])
+                                else:
+                                    image_part = doc.part.related_parts.get(embed_id)
+                                    if image_part in image_map:
+                                        paragraph_content.append(image_map[image_part])
                 if run.text.strip():
                     paragraph_content.append(run.text.strip())
             return "".join(paragraph_content) if paragraph_content else ""
