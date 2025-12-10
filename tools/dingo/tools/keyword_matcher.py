@@ -1,4 +1,4 @@
-"""
+﻿"""
 Keyword Matcher Tool for Dingo - ATS-Optimized Resume-JD Matching
 
 v0.5.0 - Semantic Analysis with Negative Constraints Support
@@ -229,6 +229,9 @@ class KeywordMatcher(Tool):
                 )
                 return
 
+            # Get output format parameter
+            output_format = tool_parameters.get('output_format', 'markdown')
+
             # Main analysis
             if use_llm:
                 try:
@@ -240,12 +243,19 @@ class KeywordMatcher(Tool):
             else:
                 result = self._analyze_with_simple_matching(resume_text, jd_text)
 
-            # Generate summary
-            summary = self._create_summary_v2(result)
-
-            # Return results
+            # Always output JSON message (for future Dify UI compatibility)
             yield self.create_json_message(result)
-            yield self.create_text_message(summary)
+
+            # Conditional text output based on output_format
+            if output_format == 'json':
+                # Workflow mode: Output JSON string to bypass Dify UI type filtering
+                # This allows ResumeOptimizer to receive the data as a String variable
+                json_str = json.dumps(result, ensure_ascii=False, indent=2)
+                yield self.create_text_message(json_str)
+            else:
+                # Chat mode (default): Output human-readable Markdown report
+                summary = self._create_summary_v2(result)
+                yield self.create_text_message(summary)
 
         except Exception as e:
             yield self.create_text_message(f"[Error] 关键词匹配失败: {str(e)}")

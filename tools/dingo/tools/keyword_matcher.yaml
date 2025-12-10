@@ -91,6 +91,33 @@ parameters:
     llm_description: Whether to use LLM for semantic keyword extraction and generating optimization recommendations. Recommended for best results.
     form: form
 
+  - name: output_format
+    type: select
+    required: false
+    default: markdown
+    label:
+      en_US: Output Format
+      zh_Hans: 输出格式
+    human_description:
+      en_US: |
+        Choose output format for the text result:
+        - markdown: Human-readable report (Best for Chat)
+        - json: Raw JSON string (Best for Workflow/Automation, can be passed to ResumeOptimizer)
+      zh_Hans: |
+        选择文本输出格式：
+        - markdown: 人类可读报告（适合 Chat 对话）
+        - json: 原始 JSON 字符串（适合 Workflow 自动化，可传递给 ResumeOptimizer）
+    form: form
+    options:
+      - value: markdown
+        label:
+          en_US: Markdown Report
+          zh_Hans: Markdown 报告
+      - value: json
+        label:
+          en_US: JSON String (for Workflow)
+          zh_Hans: JSON 字符串（用于 Workflow）
+
 extra:
   python:
     source: tools/keyword_matcher.py
