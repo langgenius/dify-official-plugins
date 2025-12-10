@@ -66,9 +66,9 @@ class WordExtractor(BaseExtractor):
                         continue
                     try:
                         response = requests.get(url)
-                    except Exception:
+                    except requests.exceptions.RequestException as e:
+                        logger.exception("Failed to download image from URL: %s, error: %s", url, e)
                         continue
-                        
                     if response.status_code == 200:
                         image_ext = mimetypes.guess_extension(
                             response.headers["Content-Type"]
