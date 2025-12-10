@@ -409,27 +409,39 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     resp_content, is_reasoning = self._wrap_thinking_by_reasoning_content(
                         message, is_reasoning
                     )
-                    if not resp_content:
-                        if "tool_calls" in response.output.choices[0].message:
-                            self._handle_tool_call_stream(response, tool_calls, incremental_output)
-                        continue
-                    if incremental_output:
-                        delta = resp_content
-                        full_text += delta
-                    else:
-                        delta = resp_content.replace(full_text, "", 1)
-                        full_text = resp_content
+                    
+                    if resp_content:
+                        if incremental_output:
+                            delta = resp_content
+                            full_text += delta
+                        else:
+                            delta = resp_content.replace(full_text, "", 1)
+                            full_text = resp_content
 
-                    assistant_prompt_message = AssistantPromptMessage(
-                        content=delta
-                    )
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(
-                            index=index, message=assistant_prompt_message
-                        ),
-                    )
+                        assistant_prompt_message = AssistantPromptMessage(
+                            content=delta
+                        )
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=index, message=assistant_prompt_message
+                            ),
+                        )
+
+                    if "tool_calls" in response.output.choices[0].message:
+                        if is_reasoning:
+                            assistant_prompt_message = AssistantPromptMessage(content="\n</think>")
+                            full_text += "\n</think>"
+                            is_reasoning = False
+                            yield LLMResultChunk(
+                                model=model,
+                                prompt_messages=prompt_messages,
+                                delta=LLMResultChunkDelta(
+                                    index=index, message=assistant_prompt_message
+                                ),
+                            )
+                        self._handle_tool_call_stream(response, tool_calls, incremental_output)
         finally:
             self._cleanup_temp_files()
 
