@@ -741,12 +741,13 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param request_id: request id from Tongyi API response (optional)
         :raises: Appropriate InvokeError based on status code
         """
-        # Construct base error message (as before)
-        error_msg = f"Failed to invoke model {model}, status code: {status_code}, message: {message}" if model else message
+        if model:
+            error_msg = f"Failed to invoke model {model}, status code: {status_code}, message: {message}"
+        else:
+            error_msg = message
 
-        # append request_id to the error message.
         if request_id:
-            error_msg = f"{error_msg}, request_id: {request_id}"
+            error_msg += f", request_id: {request_id}"
 
         if status_code == 400:
             raise InvokeBadRequestError(error_msg)
