@@ -423,6 +423,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     if "tool_calls" in message:
                         if is_reasoning:
                             content_to_yield.append("\n</think>")
+                            # In incremental mode (stream=True), full_text accumulates the generated content.
+                            # In non-incremental mode, full_text tracks the raw API response state for delta calculation.
+                            # Since "\n</think>" is synthesized locally and not part of the API response,
+                            # we must NOT update full_text in non-incremental mode to avoid sync issues.
                             if incremental_output:
                                 full_text += "\n</think>"
                             is_reasoning = False
