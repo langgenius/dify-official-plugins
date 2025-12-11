@@ -240,7 +240,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             incremental_output = True
 
         # The parameter `enable_omni_output_audio_url` must be set to true when using the Omni model in non-streaming mode.
-        if "omni" in model and not stream:
+        if model.startswith("qwen3-omni-") and not stream:
             params["enable_omni_output_audio_url"] = True
 
         if ModelFeature.VISION in (model_schema.features or []):
