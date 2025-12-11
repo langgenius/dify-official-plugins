@@ -68,9 +68,31 @@ parameters:
     llm_description: Optional ID of the parent page or database where the new page will be created. If not provided, the page will be created at the top level.
     form: llm
   - name: parent_type
-    type: string
+    type: select
     required: false
     default: page
+    options:
+      - label:
+          en_US: page
+          zh_Hans: 页面
+          pt_BR: Página
+          ja_JP: ページ
+          zh_Hant: 頁面
+        value: page
+      - label:
+          en_US: database
+          zh_Hans: 数据库
+          pt_BR: Banco de Dados
+          ja_JP: データベース
+          zh_Hant: 資料庫
+        value: database
+      - label:
+          en_US: data_source
+          zh_Hans: 数据源
+          pt_BR: Fonte de Dados
+          ja_JP: データソース
+          zh_Hant: 資料來源
+        value: data_source  
     label:
       en_US: Parent Type
       zh_Hans: 父级类型
@@ -78,12 +100,12 @@ parameters:
       ja_JP: 親タイプ
       zh_Hant: 父級類型
     human_description:
-      en_US: Type of parent (page or database)
-      zh_Hans: 父级的类型（页面或数据库）
-      pt_BR: Tipo de pai (página ou banco de dados)
-      ja_JP: 親のタイプ（ページまたはデータベース）
-      zh_Hant: 父級的類型（頁面或資料庫）
-    llm_description: Type of the parent - either 'page' or 'database'. Default is 'page'. This determines how the new page will be created.
+      en_US: Type of parent (page, database, or data_source)
+      zh_Hans: 父级的类型（页面、数据库或数据源）
+      pt_BR: Tipo de pai (página, banco de dados ou fonte de dados)
+      ja_JP: 親のタイプ（ページ、データベース、またはデータソース）
+      zh_Hant: 父級的類型（頁面、資料庫或資料來源）
+    llm_description: Type of the parent - 'page', 'database', or 'data_source'. Default is 'page'. For Notion API 2025-09-03, 'database' will be automatically converted to 'data_source'. Use 'data_source' if you have a specific data source ID.
     form: llm
 extra:
   python:
