@@ -423,7 +423,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     if "tool_calls" in message:
                         if is_reasoning:
                             content_to_yield.append("\n</think>")
-                            full_text += "\n</think>"
+                            if incremental_output:
+                                full_text += "\n</think>"
                             is_reasoning = False
                         self._handle_tool_call_stream(response, tool_calls, incremental_output)
                     
