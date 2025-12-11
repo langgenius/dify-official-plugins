@@ -410,6 +410,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                         message, is_reasoning
                     )
                     
+                    content_to_yield = []
                     if resp_content:
                         if incremental_output:
                             delta = resp_content
@@ -417,9 +418,18 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                         else:
                             delta = resp_content.replace(full_text, "", 1)
                             full_text = resp_content
+                        content_to_yield.append(delta)
 
+                    if "tool_calls" in message:
+                        if is_reasoning:
+                            content_to_yield.append("\n</think>")
+                            full_text += "\n</think>"
+                            is_reasoning = False
+                        self._handle_tool_call_stream(response, tool_calls, incremental_output)
+                    
+                    for content in content_to_yield:
                         assistant_prompt_message = AssistantPromptMessage(
-                            content=delta
+                            content=content
                         )
                         yield LLMResultChunk(
                             model=model,
@@ -428,20 +438,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                                 index=index, message=assistant_prompt_message
                             ),
                         )
-
-                    if "tool_calls" in message:
-                        if is_reasoning:
-                            assistant_prompt_message = AssistantPromptMessage(content="\n</think>")
-                            full_text += "\n</think>"
-                            is_reasoning = False
-                            yield LLMResultChunk(
-                                model=model,
-                                prompt_messages=prompt_messages,
-                                delta=LLMResultChunkDelta(
-                                    index=index, message=assistant_prompt_message
-                                ),
-                            )
-                        self._handle_tool_call_stream(response, tool_calls, incremental_output)
         finally:
             self._cleanup_temp_files()
 
