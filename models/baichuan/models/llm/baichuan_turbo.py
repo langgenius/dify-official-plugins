@@ -28,6 +28,8 @@ class BaichuanModel:
             "baichuan4": "Baichuan4",
             "baichuan4-turbo": "Baichuan4-Turbo",
             "baichuan4-air": "Baichuan4-Air",
+            "baichuan-m2": "Baichuan-M2",
+            "baichuan-m2-plus": "Baichuan-M2-Plus",
         }
 
     @property
