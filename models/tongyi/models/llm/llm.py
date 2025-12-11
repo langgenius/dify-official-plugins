@@ -432,9 +432,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             is_reasoning = False
                         self._handle_tool_call_stream(response, tool_calls, incremental_output)
                     
-                    for content in content_to_yield:
+                    if content_to_yield:
                         assistant_prompt_message = AssistantPromptMessage(
-                            content=content
+                            content="".join(content_to_yield)
                         )
                         yield LLMResultChunk(
                             model=model,
