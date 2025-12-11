@@ -429,7 +429,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             ),
                         )
 
-                    if "tool_calls" in response.output.choices[0].message:
+                    if "tool_calls" in message:
                         if is_reasoning:
                             assistant_prompt_message = AssistantPromptMessage(content="\n</think>")
                             full_text += "\n</think>"
