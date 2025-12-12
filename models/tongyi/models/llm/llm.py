@@ -60,6 +60,7 @@ from dify_plugin.errors.model import (
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from openai import OpenAI
+from ..constant import BURY_POINT_HEADER
 
 logger = logging.getLogger(__name__)
 
@@ -243,13 +244,18 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages, rich_content=True
             )
-            response = MultiModalConversation.call(**params, stream=stream, incremental_output=incremental_output)
+            response = MultiModalConversation.call(
+                **params,
+                stream=stream,
+                headers=BURY_POINT_HEADER,
+                incremental_output=incremental_output)
         else:
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages
             )
             response = Generation.call(
                 **params,
+                headers=BURY_POINT_HEADER,
                 result_format="message",
                 stream=stream,
                 incremental_output=incremental_output,
