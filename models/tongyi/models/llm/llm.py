@@ -239,6 +239,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         if common_force_condition or model.startswith(("qwq-", "qvq-")):
             incremental_output = True
 
+        # The parameter `enable_omni_output_audio_url` must be set to true when using the Omni model in non-streaming mode.
+        if model.startswith("qwen3-omni-") and not stream:
+            params["enable_omni_output_audio_url"] = True
+
         if ModelFeature.VISION in (model_schema.features or []):
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages, rich_content=True
@@ -283,7 +287,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 # Get request_id (if present) and forward it to the error handler.
                 request_id = getattr(response, 'request_id', None)
                 self._handle_error_response(response.status_code, response.message, model, request_id)
-            
+
             resp_content = response.output.choices[0].message.content
             # special for qwen-vl
             if isinstance(resp_content, list):
@@ -355,7 +359,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     # Get request_id (if present) and forward it to the error handler.
                     request_id = getattr(response, 'request_id', None)
                     self._handle_error_response(response.status_code, response.message, model, request_id)
-                
+
                 resp_finish_reason = response.output.choices[0].finish_reason
                 if resp_finish_reason is not None and resp_finish_reason != "null":
                     resp_content = response.output.choices[0].message.content
