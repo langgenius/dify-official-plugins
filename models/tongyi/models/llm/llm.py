@@ -413,27 +413,40 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     resp_content, is_reasoning = self._wrap_thinking_by_reasoning_content(
                         message, is_reasoning
                     )
-                    if not resp_content:
-                        if "tool_calls" in response.output.choices[0].message:
-                            self._handle_tool_call_stream(response, tool_calls, incremental_output)
-                        continue
-                    if incremental_output:
-                        delta = resp_content
-                        full_text += delta
-                    else:
-                        delta = resp_content.replace(full_text, "", 1)
-                        full_text = resp_content
+                    
+                    content_to_yield = []
+                    if resp_content:
+                        if incremental_output:
+                            delta = resp_content
+                            full_text += delta
+                        else:
+                            delta = resp_content.replace(full_text, "", 1)
+                            full_text = resp_content
+                        content_to_yield.append(delta)
 
-                    assistant_prompt_message = AssistantPromptMessage(
-                        content=delta
-                    )
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(
-                            index=index, message=assistant_prompt_message
-                        ),
-                    )
+                    if "tool_calls" in message:
+                        if is_reasoning:
+                            content_to_yield.append("\n</think>")
+                            # In incremental mode (stream=True), full_text accumulates the generated content.
+                            # In non-incremental mode, full_text tracks the raw API response state for delta calculation.
+                            # Since "\n</think>" is synthesized locally and not part of the API response,
+                            # we must NOT update full_text in non-incremental mode to avoid sync issues.
+                            if incremental_output:
+                                full_text += "\n</think>"
+                            is_reasoning = False
+                        self._handle_tool_call_stream(response, tool_calls, incremental_output)
+                    
+                    if content_to_yield:
+                        assistant_prompt_message = AssistantPromptMessage(
+                            content="".join(content_to_yield)
+                        )
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=index, message=assistant_prompt_message
+                            ),
+                        )
         finally:
             self._cleanup_temp_files()
 
