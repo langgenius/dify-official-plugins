@@ -6,6 +6,7 @@ from typing import IO, Optional
 import dashscope
 from dify_plugin import OAICompatSpeech2TextModel
 from dashscope.audio.asr import *
+from ..constant import BURY_POINT_HEADER
 
 class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
     """
@@ -41,7 +42,7 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
                 sample_rate=int(sample_rate),
                 callback=None,
             )
-            result = recognition.call(file_path)
+            result = recognition.call(file=file_path, headers=BURY_POINT_HEADER)
             sentence_list = result.get_sentence()
             if sentence_list is None:
                 return ''

@@ -7,7 +7,7 @@ from dify_plugin.entities.model.text_embedding import EmbeddingUsage, MultiModal
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from models._common import _CommonTongyi
-
+from ..constant import BURY_POINT_HEADER
 
 class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
     """
@@ -109,7 +109,8 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                 return dashscope.TextEmbedding.call(
                     api_key=credentials_kwargs["dashscope_api_key"], 
                     model=model, 
-                    input=text, 
+                    input=text,
+                    headers=BURY_POINT_HEADER,
                     text_type="document"
                 )
             except Exception as e:
@@ -119,7 +120,6 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         for text in texts:
             # First attempt
             response = call_embedding_api(text)
-            
             # Handle rate limit error (429)
             # Check if response is an exception with rate limit info
             if hasattr(response, 'status_code') and response.status_code == 429:
