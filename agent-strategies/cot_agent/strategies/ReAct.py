@@ -28,8 +28,10 @@ from output_parser.cot_output_parser import CotAgentOutputParser
 from prompt.template import REACT_PROMPT_TEMPLATES
 from pydantic import BaseModel, Field
 
+
 class LogMetadata:
     """Metadata keys for logging"""
+
     STARTED_AT = "started_at"
     PROVIDER = "provider"
     FINISHED_AT = "finished_at"
@@ -37,6 +39,7 @@ class LogMetadata:
     TOTAL_PRICE = "total_price"
     CURRENCY = "currency"
     TOTAL_TOKENS = "total_tokens"
+
 
 ignore_observation_providers = ["wenxin"]
 
@@ -250,15 +253,15 @@ class ReActAgentStrategy(AgentStrategy):
                     LogMetadata.FINISHED_AT: time.perf_counter(),
                     LogMetadata.ELAPSED_TIME: time.perf_counter() - model_started_at,
                     LogMetadata.PROVIDER: model.provider,
-                    LogMetadata.TOTAL_PRICE: usage_dict["usage"].total_price
-                    if usage_dict["usage"]
-                    else 0,
-                    LogMetadata.CURRENCY: usage_dict["usage"].currency
-                    if usage_dict["usage"]
-                    else "",
-                    LogMetadata.TOTAL_TOKENS: usage_dict["usage"].total_tokens
-                    if usage_dict["usage"]
-                    else 0,
+                    LogMetadata.TOTAL_PRICE: (
+                        usage_dict["usage"].total_price if usage_dict["usage"] else 0
+                    ),
+                    LogMetadata.CURRENCY: (
+                        usage_dict["usage"].currency if usage_dict["usage"] else ""
+                    ),
+                    LogMetadata.TOTAL_TOKENS: (
+                        usage_dict["usage"].total_tokens if usage_dict["usage"] else 0
+                    ),
                 },
             )
             if not scratchpad.action:
@@ -285,11 +288,11 @@ class ReActAgentStrategy(AgentStrategy):
                         data={},
                         metadata={
                             LogMetadata.STARTED_AT: time.perf_counter(),
-                            LogMetadata.PROVIDER: tool_instances[
-                                tool_name
-                            ].identity.provider
-                            if tool_instances.get(tool_name)
-                            else "",
+                            LogMetadata.PROVIDER: (
+                                tool_instances[tool_name].identity.provider
+                                if tool_instances.get(tool_name)
+                                else ""
+                            ),
                         },
                         parent=round_log,
                         status=ToolInvokeMessage.LogMessage.LogStatus.START,
@@ -318,11 +321,11 @@ class ReActAgentStrategy(AgentStrategy):
                         },
                         metadata={
                             LogMetadata.STARTED_AT: tool_call_started_at,
-                            LogMetadata.PROVIDER: tool_instances[
-                                tool_name
-                            ].identity.provider
-                            if tool_instances.get(tool_name)
-                            else "",
+                            LogMetadata.PROVIDER: (
+                                tool_instances[tool_name].identity.provider
+                                if tool_instances.get(tool_name)
+                                else ""
+                            ),
                             LogMetadata.FINISHED_AT: time.perf_counter(),
                             LogMetadata.ELAPSED_TIME: time.perf_counter()
                             - tool_call_started_at,
@@ -337,12 +340,12 @@ class ReActAgentStrategy(AgentStrategy):
             yield self.finish_log_message(
                 log=round_log,
                 data={
-                    "action_name": scratchpad.action.action_name
-                    if scratchpad.action
-                    else "",
-                    "action_input": scratchpad.action.action_input
-                    if scratchpad.action
-                    else "",
+                    "action_name": (
+                        scratchpad.action.action_name if scratchpad.action else ""
+                    ),
+                    "action_input": (
+                        scratchpad.action.action_input if scratchpad.action else ""
+                    ),
                     "thought": scratchpad.thought,
                     "observation": scratchpad.observation,
                 },
@@ -350,15 +353,15 @@ class ReActAgentStrategy(AgentStrategy):
                     LogMetadata.STARTED_AT: round_started_at,
                     LogMetadata.FINISHED_AT: time.perf_counter(),
                     LogMetadata.ELAPSED_TIME: time.perf_counter() - round_started_at,
-                    LogMetadata.TOTAL_PRICE: usage_dict["usage"].total_price
-                    if usage_dict["usage"]
-                    else 0,
-                    LogMetadata.CURRENCY: usage_dict["usage"].currency
-                    if usage_dict["usage"]
-                    else "",
-                    LogMetadata.TOTAL_TOKENS: usage_dict["usage"].total_tokens
-                    if usage_dict["usage"]
-                    else 0,
+                    LogMetadata.TOTAL_PRICE: (
+                        usage_dict["usage"].total_price if usage_dict["usage"] else 0
+                    ),
+                    LogMetadata.CURRENCY: (
+                        usage_dict["usage"].currency if usage_dict["usage"] else ""
+                    ),
+                    LogMetadata.TOTAL_TOKENS: (
+                        usage_dict["usage"].total_tokens if usage_dict["usage"] else 0
+                    ),
                 },
             )
             iteration_step += 1
@@ -395,15 +398,21 @@ class ReActAgentStrategy(AgentStrategy):
         yield self.create_json_message(
             {
                 "execution_metadata": {
-                    LogMetadata.TOTAL_PRICE: llm_usage["usage"].total_price
-                    if llm_usage["usage"] is not None
-                    else 0,
-                    LogMetadata.CURRENCY: llm_usage["usage"].currency
-                    if llm_usage["usage"] is not None
-                    else "",
-                    LogMetadata.TOTAL_TOKENS: llm_usage["usage"].total_tokens
-                    if llm_usage["usage"] is not None
-                    else 0,
+                    LogMetadata.TOTAL_PRICE: (
+                        llm_usage["usage"].total_price
+                        if llm_usage["usage"] is not None
+                        else 0
+                    ),
+                    LogMetadata.CURRENCY: (
+                        llm_usage["usage"].currency
+                        if llm_usage["usage"] is not None
+                        else ""
+                    ),
+                    LogMetadata.TOTAL_TOKENS: (
+                        llm_usage["usage"].total_tokens
+                        if llm_usage["usage"] is not None
+                        else 0
+                    ),
                 }
             }
         )
@@ -516,9 +525,30 @@ class ReActAgentStrategy(AgentStrategy):
             )
             result = ""
             additional_messages = []  # Collect messages that need to be yielded
-            for response in tool_invoke_responses:
+            # Collect all responses first to detect duplicates
+            responses_list = list(tool_invoke_responses)
+            # Check if there's a JSON response
+            has_json_response = any(
+                r.type == ToolInvokeMessage.MessageType.JSON for r in responses_list
+            )
+            json_content = None
+            if has_json_response:
+                # Get the JSON content for comparison
+                for r in responses_list:
+                    if r.type == ToolInvokeMessage.MessageType.JSON:
+                        json_content = json.dumps(
+                            cast(
+                                ToolInvokeMessage.JsonMessage,
+                                r.message,
+                            ).json_object,
+                            ensure_ascii=False,
+                        )
+                        break
+
+            for response in responses_list:
                 if response.type == ToolInvokeMessage.MessageType.TEXT:
-                    result += cast(ToolInvokeMessage.TextMessage, response.message).text
+                    # Skip TEXT response as workflow always returns both TEXT and JSON
+                    continue
                 elif response.type == ToolInvokeMessage.MessageType.LINK:
                     result += (
                         f"result link: {cast(ToolInvokeMessage.TextMessage, response.message).text}."
@@ -546,7 +576,7 @@ class ReActAgentStrategy(AgentStrategy):
                         ).json_object,
                         ensure_ascii=False,
                     )
-                    result += f"tool response: {text}."
+                    result += text
                 elif response.type == ToolInvokeMessage.MessageType.BLOB:
                     result += "Generated file with ... "
                     additional_messages.append(response)

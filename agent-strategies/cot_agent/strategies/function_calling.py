@@ -29,8 +29,10 @@ from dify_plugin.interfaces.agent import (
 )
 from pydantic import BaseModel
 
+
 class LogMetadata:
     """Metadata keys for logging"""
+
     STARTED_AT = "started_at"
     PROVIDER = "provider"
     FINISHED_AT = "finished_at"
@@ -39,8 +41,10 @@ class LogMetadata:
     CURRENCY = "currency"
     TOTAL_TOKENS = "total_tokens"
 
+
 class ExecutionMetadata(BaseModel):
     """Execution metadata with default values"""
+
     total_price: float = 0.0
     currency: str = ""
     total_tokens: int = 0
@@ -53,13 +57,13 @@ class ExecutionMetadata(BaseModel):
     completion_price_unit: float = 0.0
     completion_price: float = 0.0
     latency: float = 0.0
-    
+
     @classmethod
     def from_llm_usage(cls, usage: Optional[LLMUsage]) -> "ExecutionMetadata":
         """Create ExecutionMetadata from LLMUsage, handling None case"""
         if usage is None:
             return cls()
-        
+
         return cls(
             total_price=float(usage.total_price),
             currency=usage.currency,
@@ -72,8 +76,9 @@ class ExecutionMetadata(BaseModel):
             completion_unit_price=float(usage.completion_unit_price),
             completion_price_unit=float(usage.completion_price_unit),
             completion_price=float(usage.completion_price),
-            latency=usage.latency
+            latency=usage.latency,
         )
+
 
 class ContextItem(BaseModel):
     content: str
@@ -284,15 +289,15 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     LogMetadata.FINISHED_AT: time.perf_counter(),
                     LogMetadata.ELAPSED_TIME: time.perf_counter() - model_started_at,
                     LogMetadata.PROVIDER: model.provider,
-                    LogMetadata.TOTAL_PRICE: current_llm_usage.total_price
-                    if current_llm_usage
-                    else 0,
-                    LogMetadata.CURRENCY: current_llm_usage.currency
-                    if current_llm_usage
-                    else "",
-                    LogMetadata.TOTAL_TOKENS: current_llm_usage.total_tokens
-                    if current_llm_usage
-                    else 0,
+                    LogMetadata.TOTAL_PRICE: (
+                        current_llm_usage.total_price if current_llm_usage else 0
+                    ),
+                    LogMetadata.CURRENCY: (
+                        current_llm_usage.currency if current_llm_usage else ""
+                    ),
+                    LogMetadata.TOTAL_TOKENS: (
+                        current_llm_usage.total_tokens if current_llm_usage else 0
+                    ),
                 },
             )
 
@@ -359,15 +364,34 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                             },
                         )
                         tool_result = ""
-                        for tool_invoke_response in tool_invoke_responses:
+                        # Collect all responses first to detect duplicates
+                        responses_list = list(tool_invoke_responses)
+                        # Check if there's a JSON response
+                        has_json_response = any(
+                            r.type == ToolInvokeMessage.MessageType.JSON
+                            for r in responses_list
+                        )
+                        json_content = None
+                        if has_json_response:
+                            # Get the JSON content for comparison
+                            for r in responses_list:
+                                if r.type == ToolInvokeMessage.MessageType.JSON:
+                                    json_content = json.dumps(
+                                        cast(
+                                            ToolInvokeMessage.JsonMessage,
+                                            r.message,
+                                        ).json_object,
+                                        ensure_ascii=False,
+                                    )
+                                    break
+
+                        for tool_invoke_response in responses_list:
                             if (
                                 tool_invoke_response.type
                                 == ToolInvokeMessage.MessageType.TEXT
                             ):
-                                tool_result += cast(
-                                    ToolInvokeMessage.TextMessage,
-                                    tool_invoke_response.message,
-                                ).text
+                                # Skip TEXT response as workflow always returns both TEXT and JSON
+                                continue
                             elif (
                                 tool_invoke_response.type
                                 == ToolInvokeMessage.MessageType.LINK
@@ -432,7 +456,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                     ).json_object,
                                     ensure_ascii=False,
                                 )
-                                tool_result += f"tool response: {text}."
+                                tool_result += text
                             elif (
                                 tool_invoke_response.type
                                 == ToolInvokeMessage.MessageType.BLOB
@@ -500,15 +524,15 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     LogMetadata.STARTED_AT: round_started_at,
                     LogMetadata.FINISHED_AT: time.perf_counter(),
                     LogMetadata.ELAPSED_TIME: time.perf_counter() - round_started_at,
-                    LogMetadata.TOTAL_PRICE: current_llm_usage.total_price
-                    if current_llm_usage
-                    else 0,
-                    LogMetadata.CURRENCY: current_llm_usage.currency
-                    if current_llm_usage
-                    else "",
-                    LogMetadata.TOTAL_TOKENS: current_llm_usage.total_tokens
-                    if current_llm_usage
-                    else 0,
+                    LogMetadata.TOTAL_PRICE: (
+                        current_llm_usage.total_price if current_llm_usage else 0
+                    ),
+                    LogMetadata.CURRENCY: (
+                        current_llm_usage.currency if current_llm_usage else ""
+                    ),
+                    LogMetadata.TOTAL_TOKENS: (
+                        current_llm_usage.total_tokens if current_llm_usage else 0
+                    ),
                 },
             )
             # If max_iteration_steps=1, need to return tool responses
@@ -545,11 +569,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             )
 
         metadata = ExecutionMetadata.from_llm_usage(llm_usage["usage"])
-        yield self.create_json_message(
-            {
-                "execution_metadata": metadata.model_dump()
-            }
-        )
+        yield self.create_json_message({"execution_metadata": metadata.model_dump()})
 
     def check_tool_calls(self, llm_result_chunk: LLMResultChunk) -> bool:
         """
@@ -648,11 +668,15 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             ):
                 prompt_message.content = "\n".join(
                     [
-                        content.data
-                        if content.type == PromptMessageContentType.TEXT
-                        else "[image]"
-                        if content.type == PromptMessageContentType.IMAGE
-                        else "[file]"
+                        (
+                            content.data
+                            if content.type == PromptMessageContentType.TEXT
+                            else (
+                                "[image]"
+                                if content.type == PromptMessageContentType.IMAGE
+                                else "[file]"
+                            )
+                        )
                         for content in prompt_message.content
                     ]
                 )
