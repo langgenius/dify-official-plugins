@@ -2,7 +2,7 @@ from dify_plugin.integration.run import (
     PluginRunner,
 )
 
-from tests.models.__mockserver.openai import OPENAI_MOCK_SERVER_PORT
+from tests.models.z_mockserver.openai import OPENAI_MOCK_SERVER_PORT
 from dify_plugin.config.integration_config import IntegrationConfig
 from dify_plugin.core.entities.plugin.request import (
     ModelActions,

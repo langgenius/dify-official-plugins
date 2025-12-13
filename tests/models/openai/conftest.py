@@ -2,7 +2,7 @@
 Pytest configuration and fixtures for OpenAI tests.
 """
 import pytest
-from tests.models.__mockserver.openai import OpenAIMockServer
+from tests.models.z_mockserver.openai import OpenAIMockServer
 from dify_plugin.integration.run import PluginRunner
 from dify_plugin.config.integration_config import IntegrationConfig
 

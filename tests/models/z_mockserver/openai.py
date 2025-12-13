@@ -11,6 +11,7 @@ flask.cli.show_server_banner = lambda *args: None
 app = Flask(__name__)
 
 
+
 @app.post("/v1/chat/completions")
 def openai_server_mock():
     request_body = request.get_json(force=True)
@@ -195,7 +196,7 @@ class OpenAIMockServer:
                 "-m",
                 "flask",
                 "--app",
-                "tests.models.__mockserver.openai:app",
+                "tests.models.z_mockserver.openai:app",
                 "run",
                 "--port",
                 str(OPENAI_MOCK_SERVER_PORT),
