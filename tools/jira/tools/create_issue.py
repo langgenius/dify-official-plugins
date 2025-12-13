@@ -1,9 +1,10 @@
 from collections.abc import Generator
 from typing import Any
 
-from atlassian.jira import Jira
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+
+from tools.auth import auth
 
 from utils.md2adf import markdown_to_adf
 
@@ -11,20 +12,12 @@ from utils.md2adf import markdown_to_adf
 class CreateIssueTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
 
-        jira_url = self.runtime.credentials.get("jira_url")
-        username = self.runtime.credentials.get("username")
-        api_token = self.runtime.credentials.get("api_token")
+        jira = auth(self.runtime.credentials)
 
         summary = tool_parameters.get("summary")
         project_key: str = tool_parameters.get("project_key")
         issue_type_id = tool_parameters.get("issue_type_id")
         description: str = tool_parameters.get("description")
-
-        jira = Jira(
-            url=jira_url,
-            username=username,
-            password=api_token,
-        )
 
         fields: dict[str, Any] = {
             "summary": summary,
