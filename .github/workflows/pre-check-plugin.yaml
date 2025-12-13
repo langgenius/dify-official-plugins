@@ -142,20 +142,10 @@ jobs:
         run: |
           cd ${{ env.PLUGIN_PATH }}
           if [ -f requirements.txt ]; then
-              uv pip install packaging
               uv pip install -r requirements.txt
-              dify_version=$(uv pip list | grep -E 'dify-plugin|dify_plugin' | awk '{print $2}')
-              target_version="0.0.1b64"
-              result=$(uv run python -c "from packaging.version import Version; print(0 if Version('$dify_version') > Version('$target_version') else 1)")
-              if [ $result == 0 ]; then
-                  export INSTALL_METHOD=serverless
-                  export SERVERLESS_PORT=8080
-                  export SERVERLESS_HOST=0.0.0.0
-              else
-                  export INSTALL_METHOD=aws_lambda
-                  export AWS_LAMBDA_PORT=8080
-                  export AWS_LAMBDA_HOST=0.0.0.0
-              fi
+              export INSTALL_METHOD=serverless
+              export SERVERLESS_PORT=8080
+              export SERVERLESS_HOST=0.0.0.0
           fi
           cd -
           uv run python .scripts/validator/test-plugin-install.py -d ${{ env.PLUGIN_PATH }}
