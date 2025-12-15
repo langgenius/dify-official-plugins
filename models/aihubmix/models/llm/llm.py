@@ -41,22 +41,33 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
             "APP-Code": "Dify2025"
         }
 
-    def _prepare_model_parameters(self, model: str, model_parameters: dict) -> dict:
+    def _prepare_model_parameters(
+        self,
+        model: str,
+        model_parameters: dict
+    ) -> dict:
         params = dict(model_parameters)
 
-        if model.startswith("claude") or model.startswith(RESPONSE_SERIES_COMPATIBILITY):
+        # Claude and RESPONSE_SERIES models do not require any parameter mapping
+        if (
+            model.startswith("claude")
+            or model.startswith(RESPONSE_SERIES_COMPATIBILITY)
+        ):
             return params
-        
+
+        # Nothing to do if max_tokens is not provided
         if "max_tokens" not in params:
+            logger.warning(f"max_tokens not found in params, using default behavior. params=%s", params)
             return params
-        
-        # For THINKING_SERIES, max_tokens always takes precedence and overwrites.
+
+        # For THINKING_SERIES, max_tokens always takes precedence and overwrites
         if model.startswith(THINKING_SERIES_COMPATIBILITY):
             params["max_completion_tokens"] = params.pop("max_tokens")
-        # For other models, only map if max_completion_tokens is not already set.
+
+        # For other models, only map if max_completion_tokens is not already set
         elif "max_completion_tokens" not in params:
             params["max_completion_tokens"] = params.pop("max_tokens")
-            
+
         return params
 
     def _dispatch_to_appropriate_model(
