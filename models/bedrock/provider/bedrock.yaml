@@ -219,6 +219,62 @@ model_credential_schema:
         en_US: For inference profiles, this will be auto-populated based on the inference profile name
         zh_Hans: 对于推理配置文件，此字段将根据推理配置文件名称自动填充
   credential_form_schemas:
+    - variable: auth_method
+      required: true
+      label:
+        en_US: Authentication Method
+        zh_Hans: 认证方式
+      type: select
+      default: IAM_Role
+      options:
+        - value: IAM_Role
+          label:
+            en_US: IAM Role
+            zh_Hans: IAM 角色
+        - value: Access_Secret_Key
+          label:
+            en_US: Access-Secret Key
+            zh_Hans: Access-Secret 密钥
+        - value: API_Key
+          label:
+            en_US: Bedrock API Key
+            zh_Hans: Bedrock API 密钥
+    - variable: aws_access_key_id
+      required: true
+      show_on:
+        - variable: auth_method
+          value: Access_Secret_Key
+      label:
+        en_US: Access Key (If not provided, credentials are obtained from the running environment.)
+        zh_Hans: Access Key
+      type: secret-input
+      placeholder:
+        en_US: Enter your Access Key
+        zh_Hans: 在此输入您的 Access Key
+    - variable: aws_secret_access_key
+      required: true
+      show_on:
+        - variable: auth_method
+          value: Access_Secret_Key
+      label:
+        en_US: Secret Access Key
+        zh_Hans: Secret Access Key
+      type: secret-input
+      placeholder:
+        en_US: Enter your Secret Access Key
+        zh_Hans: 在此输入您的 Secret Access Key
+    - variable: bedrock_api_key
+      required: true
+      show_on:
+        - variable: auth_method
+          value: API_Key
+      label:
+        en_US: Bedrock API Key
+        zh_Hans: Bedrock API Key
+      type: secret-input
+      placeholder:
+        en_US: Enter your Bedrock API Key
+        zh_Hans: 在此输入您的 Bedrock API Key
     - variable: inference_profile_id
       label:
         en_US: Inference Profile ID

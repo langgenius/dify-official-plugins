@@ -20,6 +20,5 @@ tools:
   - tools/text_quality_evaluator.yaml
   - tools/resume_optimizer.yaml
   - tools/resume_quality_checker.yaml
-  - tools/keyword_extraction.yaml
   - tools/keyword_matcher.yaml
 
