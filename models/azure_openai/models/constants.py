@@ -2639,7 +2639,7 @@ LLM_BASE_MODELS = [
                     name="frequency_penalty",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.FREQUENCY_PENALTY],
                 ),
-                _get_max_tokens(default=4096, min_val=1, max_val=128000),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
                 ParameterRule(
                     name="seed",
                     label=I18nObject(zh_Hans="种子", en_US="Seed"),
@@ -2749,7 +2749,7 @@ LLM_BASE_MODELS = [
                     name="frequency_penalty",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.FREQUENCY_PENALTY],
                 ),
-                _get_max_tokens(default=4096, min_val=1, max_val=128000),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
                 ParameterRule(
                     name="seed",
                     label=I18nObject(zh_Hans="种子", en_US="Seed"),

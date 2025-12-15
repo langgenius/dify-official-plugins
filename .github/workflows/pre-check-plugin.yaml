@@ -53,17 +53,46 @@ jobs:
 
       - name: Get PR Path
         run: |
-          export PR_FILES=$(gh pr view -R ${{ env.REPO_NAME }} ${{ github.event.pull_request.number }} --json files --jq '.files | map(select(.path | startswith("tests/") | not))')
-
-          if PLUGIN_PATH=$(uv run python .scripts/validator/check-prefix.py); then
-              echo $PLUGIN_PATH
-              echo "PLUGIN_PATH=$PLUGIN_PATH" >> $GITHUB_ENV
+          # 1. Get files excluding tests
+          export PR_FILES_NO_TESTS=$(gh pr view -R ${{ env.REPO_NAME }} ${{ github.event.pull_request.number }} --json files --jq '.files | map(select(.path | startswith("tests/") | not))')
+          
+          # 2. Check if we have standard plugin files
+          if [ "$(echo $PR_FILES_NO_TESTS | jq 'length')" -gt "0" ]; then
+              export PR_FILES=$PR_FILES_NO_TESTS
+              if PLUGIN_PATH=$(uv run python .scripts/validator/check-prefix.py); then
+                  echo $PLUGIN_PATH
+                  echo "PLUGIN_PATH=$PLUGIN_PATH" >> $GITHUB_ENV
+              else
+                  echo "PR files cross different plugin directories, skip upload."
+                  exit 1
+              fi
           else
-            echo "PR files cross different plugin directories, skip upload."
-            exit 1
+              # 3. No plugin files, check if we have test files only
+              ALL_FILES=$(gh pr view -R ${{ env.REPO_NAME }} ${{ github.event.pull_request.number }} --json files --jq '.files')
+              if [ "$(echo $ALL_FILES | jq 'length')" -gt "0" ]; then
+                  # Infer path from the first file, assuming all belong to same plugin if simple test change
+                  FIRST_FILE=$(echo $ALL_FILES | jq -r '.[0].path')
+                  if [[ $FIRST_FILE == tests/* ]]; then
+                       # Remove tests/ prefix and get first two path components (e.g., tests/models/openai -> models/openai)
+                       # Logic: remove "tests/", then take field 1 and 2
+                       REL_PATH=${FIRST_FILE#tests/}
+                       PLUGIN_PATH=$(echo $REL_PATH | cut -d/ -f1,2)
+                       
+                       echo "Detected test-only change for $PLUGIN_PATH"
+                       echo "PLUGIN_PATH=$PLUGIN_PATH" >> $GITHUB_ENV
+                       echo "SKIP_CHECKS=true" >> $GITHUB_ENV
+                  else
+                       echo "Unknown file modification pattern."
+                       exit 1
+                  fi
+              else
+                  echo "No relevant files found."
+                  exit 0
+              fi
           fi
 
       - name: Check Plugin Manifest
+        if: env.SKIP_CHECKS != 'true'
         run: |
           # manifest.yaml author must be langgenius
           if ! yq '.author' ${{ env.PLUGIN_PATH }}/manifest.yaml | grep -q "langgenius"; then
@@ -72,6 +101,7 @@ jobs:
           fi
 
       - name: Check for Disallowed Virtualenv Directories
+        if: env.SKIP_CHECKS != 'true'
         run: |
           if find "${{ env.PLUGIN_PATH }}" -maxdepth 1 -type d \( -name ".venv*" -o -name "venv*" \) | grep -q .; then
             echo "!!! Please remove .venv or venv* directory in plugin path before submitting the PR"
@@ -79,6 +109,7 @@ jobs:
           fi
 
       - name: Check If Version Exists
+        if: env.SKIP_CHECKS != 'true'
         run: |
           # get version, author, name
           VERSION=$(yq '.version' ${{ env.PLUGIN_PATH }}/manifest.yaml)
@@ -107,6 +138,7 @@ jobs:
           fi
 
       - name: Check Plugin Install
+        if: env.SKIP_CHECKS != 'true'
         run: |
           cd ${{ env.PLUGIN_PATH }}
           if [ -f requirements.txt ]; then
@@ -134,5 +166,6 @@ jobs:
           rm -rf .venv
 
       - name: Check Packaging
+        if: env.SKIP_CHECKS != 'true'
         run: |
           uv run python .scripts/uploader/upload-package.py -d ${{ env.PLUGIN_PATH }} -t ${{ env.MARKETPLACE_TOKEN }} --plugin-daemon-path /usr/local/bin/dify -u ${{ env.MARKETPLACE_BASE_URL }} -f --test
