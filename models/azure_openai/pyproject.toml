@@ -1,0 +1,20 @@
+[project]
+name = "azure_openai"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+
+# uv pip compile pyproject.toml -o ./requirements.txt
+dependencies = [
+    "dify_plugin<0.6.0,>=0.5.0",
+    "openai~=2.3.0",
+    "tiktoken~=0.8.0",
+    "numpy~=2.2.4",
+    "pillow~=11.3.0",
+    "azure-identity~=1.19.0",
+]
+
+# uv run black . -C -l 100 && uv run ruff check --fix
+[dependency-groups]
+dev = []
