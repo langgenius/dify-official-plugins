@@ -41,6 +41,26 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
             "APP-Code": "Dify2025"
         }
 
+    def _prepare_model_parameters(self, model: str, model_parameters: dict) -> dict:
+        params = dict(model_parameters)
+        
+        if model.startswith("claude"):
+            return params
+        
+        if model.startswith(THINKING_SERIES_COMPATIBILITY):
+            if "max_tokens" in params:
+                params["max_completion_tokens"] = params["max_tokens"]
+                del params["max_tokens"]
+        elif model.startswith(RESPONSE_SERIES_COMPATIBILITY):
+            pass
+
+        else:
+            if "max_completion_tokens" not in params and "max_tokens" in params:
+                params["max_completion_tokens"] = params["max_tokens"]
+                del params["max_tokens"]
+                
+        return params
+
     def _dispatch_to_appropriate_model(
         self,
         model: str,
@@ -53,6 +73,9 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None
     ) -> Union[LLMResult, Generator]:
         """根据模型名称分发到适当的模型处理类"""
+        # 预处理模型参数
+        model_parameters = self._prepare_model_parameters(model, model_parameters)
+        
         # 检查模型名称是否以 "claude" 开头
         if model.startswith("claude"):
             return anthropic_llm._invoke(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
@@ -60,14 +83,7 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
         # 检查模型名称是否以 "gemini" 开头且不以 "-nothink" 或 "-search" 结尾
         if model.startswith("gemini") and not (model.endswith("-nothink") or model.endswith("-search")):
             return google_llm._invoke(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
-        
-        # thinking models compatibility for max_completion_tokens (all starting with "o" or "gpt-5")
-        if model.startswith(THINKING_SERIES_COMPATIBILITY):
-            if "max_tokens" in model_parameters:
-                model_parameters["max_completion_tokens"] = model_parameters[
-                    "max_tokens"
-                ]
-                del model_parameters["max_tokens"]
+                
         # 走 response 接口，其他模型走 generate 接口
         if model.startswith(RESPONSE_SERIES_COMPATIBILITY):
             # 使用 Responses API（委托给 openai_response 封装；支持流式/非流式）
@@ -137,7 +153,26 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         self._update_credential(model, credentials)
-        return super().validate_credentials(model, credentials)
+        
+        if model.startswith(THINKING_SERIES_COMPATIBILITY):
+            try:
+                from openai import OpenAI
+                client = OpenAI(
+                    api_key=credentials.get("api_key"),
+                    base_url=credentials.get("endpoint_url"),
+                    timeout=10.0,
+                    max_retries=1,
+                )
+                
+                models = client.models.list()
+                return
+            except Exception as e:
+                if "max_tokens" in str(e) and "max_completion_tokens" in str(e):
+                    return
+                else:
+                    raise InvokeAuthorizationError(f"Credentials validation failed: {str(e)}")
+        else:
+            return super().validate_credentials(model, credentials)
 
     def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
         self._update_credential(model, credentials)
@@ -170,6 +205,3 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
             InvokeAuthorizationError: [Exception],
             InvokeBadRequestError: [Exception],
         }
-
-    
-    
