@@ -43,22 +43,20 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def _prepare_model_parameters(self, model: str, model_parameters: dict) -> dict:
         params = dict(model_parameters)
-        
-        if model.startswith("claude"):
+
+        if model.startswith("claude") or model.startswith(RESPONSE_SERIES_COMPATIBILITY):
             return params
         
+        if "max_tokens" not in params:
+            return params
+        
+        # For THINKING_SERIES, max_tokens always takes precedence and overwrites.
         if model.startswith(THINKING_SERIES_COMPATIBILITY):
-            if "max_tokens" in params:
-                params["max_completion_tokens"] = params["max_tokens"]
-                del params["max_tokens"]
-        elif model.startswith(RESPONSE_SERIES_COMPATIBILITY):
-            pass
-
-        else:
-            if "max_completion_tokens" not in params and "max_tokens" in params:
-                params["max_completion_tokens"] = params["max_tokens"]
-                del params["max_tokens"]
-                
+            params["max_completion_tokens"] = params.pop("max_tokens")
+        # For other models, only map if max_completion_tokens is not already set.
+        elif "max_completion_tokens" not in params:
+            params["max_completion_tokens"] = params.pop("max_tokens")
+            
         return params
 
     def _dispatch_to_appropriate_model(
@@ -168,6 +166,7 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
                 return
             except Exception as e:
                 if "max_tokens" in str(e) and "max_completion_tokens" in str(e):
+                    logger.warning(f"Ignoring expected validation error: {e}")
                     return
                 else:
                     raise InvokeAuthorizationError(f"Credentials validation failed: {str(e)}")
