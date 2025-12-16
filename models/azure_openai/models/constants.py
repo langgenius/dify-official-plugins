@@ -2291,6 +2291,69 @@ LLM_BASE_MODELS = [
         ),
     ),
     AzureBaseModel(
+        base_model_name="gpt-5-pro",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_US="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.VISION,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 400000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型必须输出的格式",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制推理模型的推理工作",
+                        en_US="constrains effort on reasoning for reasoning models",
+                    ),
+                    required=False,
+                    options=["minimal", "low", "medium", "high"],
+                ),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
+            ],
+            pricing=PriceConfig(
+                input=15,
+                output=120,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
         base_model_name="grok-3",
         entity=AIModelEntity(
             model="fake-deployment-name",
