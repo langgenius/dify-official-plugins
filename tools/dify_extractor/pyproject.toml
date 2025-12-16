@@ -1,5 +1,5 @@
 [project]
-name = "dify-dify-extractor"
+name = "dify_extractor"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
@@ -8,7 +8,7 @@ requires-python = ">=3.12"
 # uv pip compile pyproject.toml -o ./requirements.txt
 dependencies = [
     "dify_plugin==0.5.0b15",
-    "pandas[excel,output-formatting,performance]~=2.2.5",
+    "pandas[excel,output-formatting,performance]~=2.3.3",
     "chardet~=5.1.0",
     "python-docx~=1.1.0",
     "python-pptx~=1.0.2",

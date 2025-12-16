@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 
 # uv pip compile pyproject.toml -o ./requirements.txt
 dependencies = [
-    "dify_plugin>=0.1.0,<0.2.0",
+    "dify_plugin~=0.6.2",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix
