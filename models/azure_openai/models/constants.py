@@ -2826,6 +2826,191 @@ LLM_BASE_MODELS = [
             ),
         ),
     ),
+    # GPT-5.2 Series
+    AzureBaseModel(
+        base_model_name="gpt-5.2",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                zh_Hans="gpt-5.2",
+                en_US="gpt-5.2",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 400000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                ),
+                ParameterRule(
+                    name="presence_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.PRESENCE_PENALTY],
+                ),
+                ParameterRule(
+                    name="frequency_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.FREQUENCY_PENALTY],
+                ),
+                _get_max_tokens(default=4096, min_val=1, max_val=128000),
+                ParameterRule(
+                    name="seed",
+                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    type="int",
+                    help=AZURE_DEFAULT_PARAM_SEED_HELP,
+                    required=False,
+                    precision=0,
+                    min=0,
+                    max=2147483647,
+                ),
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型按格式输出，如选择JSON格式，需在System Message或User Message中"
+                        "指引模型输出JSON格式，如：“请按照json格式输出。”",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制推理模型的推理工作",
+                        en_US="constrains effort on reasoning for reasoning models",
+                    ),
+                    required=False,
+                    options=["none", "minimal", "low", "medium", "high"],
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制模型响应的详细程度。",
+                        en_US="Constrains the verbosity of the model's response. ",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                ),
+            ],
+            pricing=PriceConfig(
+                input=1.75,
+                output=14,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-5.2-chat",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                zh_Hans="gpt-5.2",
+                en_US="gpt-5.2",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 128000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                ),
+                ParameterRule(
+                    name="presence_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.PRESENCE_PENALTY],
+                ),
+                ParameterRule(
+                    name="frequency_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.FREQUENCY_PENALTY],
+                ),
+                _get_max_tokens(default=4096, min_val=1, max_val=16384),
+                ParameterRule(
+                    name="seed",
+                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    type="int",
+                    help=AZURE_DEFAULT_PARAM_SEED_HELP,
+                    required=False,
+                    precision=0,
+                    min=0,
+                    max=2147483647,
+                ),
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="指定模型按格式输出，如选择JSON格式，需在System Message或User Message中"
+                        "指引模型输出JSON格式，如：“请按照json格式输出。”",
+                        en_US="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_US="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_Hans="设置返回的json schema，llm将按照它返回",
+                        en_US="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制模型响应的详细程度。",
+                        en_US="Constrains the verbosity of the model's response. ",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                ),
+            ],
+            pricing=PriceConfig(
+                input=1.75,
+                output=14,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
 ]
 EMBEDDING_BASE_MODELS = [
     AzureBaseModel(
