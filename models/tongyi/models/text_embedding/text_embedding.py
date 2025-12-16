@@ -11,6 +11,8 @@ from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from models._common import _CommonTongyi
 from ..constant import BURY_POINT_HEADER
 
+vision_models = dict()
+
 class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
     """
     Model class for Tongyi text embedding model.
@@ -162,22 +164,24 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         Args:
             model: The model name
         """
-        try:
-            current_dir = os.path.dirname(os.path.abspath(__file__))
-            yaml_file_path = os.path.join(current_dir, f"{model}.yaml")
+        if model not in vision_models:
+            try:
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                yaml_file_path = os.path.join(current_dir, f"{model}.yaml")
 
-            if os.path.exists(yaml_file_path):
-                with open(yaml_file_path, 'r', encoding='utf-8') as f:
-                    yaml_content = yaml.safe_load(f)
+                if os.path.exists(yaml_file_path):
+                    with open(yaml_file_path, 'r', encoding='utf-8') as f:
+                        yaml_content = yaml.safe_load(f)
 
-                if (yaml_content and
-                        'features' in yaml_content and
-                        isinstance(yaml_content['features'], list) and
-                        'vision' in yaml_content['features']):
-                    return True
-        except:
-            pass
-        return False
+                    if (yaml_content and
+                            'features' in yaml_content and
+                            isinstance(yaml_content['features'], list) and
+                            'vision' in yaml_content['features']):
+                        vision_models[model] = True
+            except Exception:
+                pass
+            vision_models[model] = False
+        return vision_models[model]
 
     def _calc_response_usage(self, model: str, credentials: dict, tokens: int) -> EmbeddingUsage:
         """
