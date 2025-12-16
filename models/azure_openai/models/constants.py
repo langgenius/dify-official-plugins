@@ -2231,8 +2231,7 @@ LLM_BASE_MODELS = [
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
                     type="string",
                     help=I18nObject(
-                        zh_Hans="指定模型按格式输出，如选择JSON格式，需在System Message或User Message中"
-                                "指引模型输出JSON格式，如：“请按照json格式输出。”",
+                        zh_Hans="指定模型必须输出的格式",
                         en_US="specifying the format that the model must output",
                     ),
                     required=False,
@@ -2312,6 +2311,33 @@ LLM_BASE_MODELS = [
             },
             parameter_rules=[
                 ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                ),
+                ParameterRule(
+                    name="presence_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.PRESENCE_PENALTY],
+                ),
+                ParameterRule(
+                    name="frequency_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.FREQUENCY_PENALTY],
+                ),
+                _get_max_tokens(default=4096, min_val=1, max_val=128000),
+                ParameterRule(
+                    name="seed",
+                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    type="int",
+                    help=AZURE_DEFAULT_PARAM_SEED_HELP,
+                    required=False,
+                    precision=0,
+                    min=0,
+                    max=2147483647,
+                ),
+                ParameterRule(
                     name="response_format",
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
                     type="string",
@@ -2342,6 +2368,28 @@ LLM_BASE_MODELS = [
                     ),
                     required=False,
                     options=["minimal", "low", "medium", "high"],
+                ),
+                ParameterRule(
+                    name="reasoning_summary",
+                    label=I18nObject(zh_Hans="推理摘要", en_US="reasoning_summary"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="模型执行推理的摘要。",
+                        en_US="A summary of the reasoning performed by the model. ",
+                    ),
+                    required=False,
+                    options=["auto", "detailed"],
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_Hans="详细程度", en_US="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_Hans="限制模型响应的详细程度。",
+                        en_US="Constrains the verbosity of the model's response. ",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
                 ),
                 _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
             ],
