@@ -180,9 +180,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
-        if credentials.get("use_international_endpoint", "false") == "true":
-            import dashscope
-            dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
         credentials_kwargs = self._to_credential_kwargs(credentials)
         mode = self.get_model_mode(model, credentials)
         if model in {"qwen-turbo-chat", "qwen-plus-chat"}:
@@ -240,6 +237,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         if common_force_condition or model.startswith(("qwq-", "qvq-")):
             incremental_output = True
 
+        base_address =  "https://dashscope-intl.aliyuncs.com/api/v1" if credentials.get("use_international_endpoint") == "true" else None
+        
         # The parameter `enable_omni_output_audio_url` must be set to true when using the Omni model in non-streaming mode.
         if model.startswith("qwen3-omni-") and not stream:
             params["enable_omni_output_audio_url"] = True
@@ -252,7 +251,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 **params,
                 stream=stream,
                 headers=BURY_POINT_HEADER,
-                incremental_output=incremental_output)
+                incremental_output=incremental_output,
+                base_address=base_address)
         else:
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages
@@ -263,6 +263,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 result_format="message",
                 stream=stream,
                 incremental_output=incremental_output,
+                base_address=base_address
             )
         if stream:
             return self._handle_generate_stream_response(
