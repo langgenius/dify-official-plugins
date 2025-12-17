@@ -19,8 +19,8 @@ class MimoProvider(ModelProvider):
             model_instance.validate_credentials(
                 model="mimo-v2-flash", credentials=credentials
             )
-        except CredentialsValidateFailedError as ex:
-            raise ex
+        except CredentialsValidateFailedError:
+            raise
         except Exception as ex:
             logger.exception(
                 f"{self.get_provider_schema().provider} credentials validate failed"

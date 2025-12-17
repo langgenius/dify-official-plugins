@@ -3,7 +3,6 @@ from typing import Optional, Union
 from dify_plugin.entities.model.llm import LLMResult, LLMMode
 from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
 from dify_plugin import OAICompatLargeLanguageModel
-from yarl import URL
 
 
 class MimoLargeLanguageModel(OAICompatLargeLanguageModel):
@@ -30,8 +29,6 @@ class MimoLargeLanguageModel(OAICompatLargeLanguageModel):
         super().validate_credentials(model, credentials)
 
     @staticmethod
-    def _add_custom_parameters(credentials) -> None:
-        credentials["endpoint_url"] = str(
-            URL(credentials.get("endpoint_url", "https://api.xiaomimimo.com/v1"))
-        )
+    def _add_custom_parameters(credentials: dict) -> None:
+        credentials["endpoint_url"] = "https://api.xiaomimimo.com/v1"
         credentials["mode"] = LLMMode.CHAT.value
