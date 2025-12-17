@@ -27,9 +27,9 @@ resource:
       enabled: true
       llm: true
       moderation: false
-      rerank: true
+      rerank: false
       speech2text: false
-      text_embedding: true
+      text_embedding: false
       tts: false
     tool:
       enabled: true
