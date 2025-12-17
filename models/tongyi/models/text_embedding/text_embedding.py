@@ -1,3 +1,4 @@
+import base64
 import time
 from typing import Optional
 import dashscope
@@ -105,14 +106,22 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         embedding_used_tokens = 0
         
         def call_embedding_api(text):
+
             try:
-                return dashscope.TextEmbedding.call(
-                    api_key=credentials_kwargs["dashscope_api_key"], 
-                    model=model, 
-                    input=text,
-                    headers=BURY_POINT_HEADER,
-                    text_type="document"
-                )
+                if model in ["multimodal-embedding-v1"]:
+                    return dashscope.MultiModalEmbedding.call(
+                        api_key=credentials_kwargs["dashscope_api_key"], 
+                        model=model, 
+                        input=[{"text": text}],
+                    )
+                else:
+                    return dashscope.TextEmbedding.call(
+                        api_key=credentials_kwargs["dashscope_api_key"], 
+                        model=model, 
+                        input=text,
+                        headers=BURY_POINT_HEADER,
+                        text_type="document"
+                    )
             except Exception as e:
                 # Return the exception to be handled by the caller
                 return e
@@ -141,8 +150,13 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
             if hasattr(response, 'usage') and response.usage and "total_tokens" in response.usage:
                 embedding_used_tokens += response.usage["total_tokens"]
             else:
-                raise ValueError(f"Response usage is missing or does not contain total tokens: {response}")
-                
+                if hasattr(response, 'usage') and response.usage:
+                    if response.output["embeddings"][0]["type"] == "text":
+                        embedding_used_tokens += response.usage["input_tokens"]
+                    elif response.output["embeddings"][0]["type"] == "image":
+                        embedding_used_tokens += response.usage["image_tokens"]
+                else:
+                    raise ValueError(f"Response usage is missing or does not contain total tokens: {response}")
         return ([list(map(float, e)) for e in embeddings], embedding_used_tokens)
 
     def _calc_response_usage(self, model: str, credentials: dict, tokens: int) -> EmbeddingUsage:
@@ -209,6 +223,29 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         Returns:
             List of embeddings, one for each text, and tokens usage.
         """
+        def detect_image_format(base64_str: str) -> str:
+            """
+            Detect image format from base664 string
+
+            :param base64_str: base64 string
+            :return: image format
+            """
+            try:
+                if "," in base64_str:
+                    base64_str = base64_str.split(",", 1)[1]
+
+                data = base64.b64decode(base64_str, validate=True)
+
+                if data.startswith(b"\xFF\xD8\xFF"):
+                    return "jpeg"
+                elif data.startswith(b"\x89PNG\r\n\x1a\n"):
+                    return "png"
+                elif data.startswith(b"BM"):
+                    return "bmp"
+                else:
+                    return "unknown"
+            except Exception:
+                return "unknown"
         embeddings = []
         embedding_used_tokens = 0
         
@@ -230,8 +267,11 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                     "text": document.content
                 }
             elif document.content_type == MultiModalContentType.IMAGE:
+                image_format = detect_image_format(document.content)
+                if image_format not in ["jpeg", "png", "bmp"]:
+                    raise ValueError(f"Unsupported image format: {image_format}")
                 input = {
-                    "image": document.content
+                    "image": "data:image/" + image_format + ";base64," + document.content
                 }
             else:
                 raise ValueError(f"Unsupported content type: {document.content_type}")
