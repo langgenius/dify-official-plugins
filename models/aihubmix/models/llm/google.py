@@ -463,7 +463,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             if isinstance(_content, TextPromptMessageContent):
                 _content = _content.data
             if message.role == PromptMessageRole.ASSISTANT:
-                _content = re.sub(r"^</think>.*?</think>\s*", "", _content, count=1, flags=re.DOTALL)
+                _content = re.sub(r"^<think>.*?</think>\s*", "", _content, count=1, flags=re.DOTALL)
             if _content:
                 _unverified_part = types.Part.from_text(text=_content)
                 if is_assistant_tree:
