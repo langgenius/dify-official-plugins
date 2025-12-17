@@ -1,4 +1,6 @@
 import time
+import os
+import yaml
 from typing import Optional
 import dashscope
 import numpy as np
@@ -8,6 +10,8 @@ from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from models._common import _CommonTongyi
 from ..constant import BURY_POINT_HEADER
+
+vision_models = dict()
 
 class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
     """
@@ -101,6 +105,13 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         Returns:
             List of embeddings, one for each text, and tokens usage.
         """
+
+        # If the model is vision model, it has different endpoint
+        # transfer and call embed_multimodal_documents
+        if TongyiTextEmbeddingModel._is_vision_model(model):
+            documents = [MultiModalContent(content_type=MultiModalContentType.TEXT, content=text) for text in texts]
+            return TongyiTextEmbeddingModel.embed_multimodal_documents(credentials_kwargs, model, documents)
+
         embeddings = []
         embedding_used_tokens = 0
         
@@ -144,6 +155,33 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                 raise ValueError(f"Response usage is missing or does not contain total tokens: {response}")
                 
         return ([list(map(float, e)) for e in embeddings], embedding_used_tokens)
+
+    @staticmethod
+    def _is_vision_model(model: str) -> bool:
+        """
+        Check whether there is a YAML configuration file in the current directory and whether it includes vision features.
+
+        Args:
+            model: The model name
+        """
+        if model not in vision_models:
+            try:
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                yaml_file_path = os.path.join(current_dir, f"{model}.yaml")
+
+                if os.path.exists(yaml_file_path):
+                    with open(yaml_file_path, 'r', encoding='utf-8') as f:
+                        yaml_content = yaml.safe_load(f)
+
+                    if (yaml_content and
+                            'features' in yaml_content and
+                            isinstance(yaml_content['features'], list) and
+                            'vision' in yaml_content['features']):
+                        vision_models[model] = True
+            except Exception:
+                pass
+            vision_models[model] = False
+        return vision_models[model]
 
     def _calc_response_usage(self, model: str, credentials: dict, tokens: int) -> EmbeddingUsage:
         """
@@ -231,7 +269,9 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                 }
             elif document.content_type == MultiModalContentType.IMAGE:
                 input = {
-                    "image": document.content
+                    # The multimodal-embedding-v1 model requires this format,
+                    # and the image type does not affect the embedding result.
+                    "image": "data:image/png;base64," + document.content
                 }
             else:
                 raise ValueError(f"Unsupported content type: {document.content_type}")
