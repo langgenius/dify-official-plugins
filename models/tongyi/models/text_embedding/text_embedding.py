@@ -269,7 +269,9 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                 }
             elif document.content_type == MultiModalContentType.IMAGE:
                 input = {
-                    "image": document.content
+                    # The multimodal-embedding-v1 model requires this format,
+                    # and the image type does not affect the embedding result.
+                    "image": "data:image/png;base64," + document.content
                 }
             else:
                 raise ValueError(f"Unsupported content type: {document.content_type}")
