@@ -12,6 +12,7 @@ from .text_splitter import (
     Set,
     TokenTextSplitter,
     Union,
+    _split_text_with_regex,
 )
 
 
@@ -89,14 +90,7 @@ class FixedRecursiveCharacterTextSplitter(EnhanceRecursiveCharacterTextSplitter)
                 break
 
         # Now that we have the separator, split the text
-        if separator:
-            if separator == " ":
-                splits = text.split()
-            else:
-                splits = text.split(separator)
-        else:
-            splits = list(text)
-        splits = [s for s in splits if (s not in {"", "\n"})]
+        splits = _split_text_with_regex(text, separator, self._keep_separator)
         _good_splits = []
         _good_splits_lengths = []  # cache the lengths of the splits
         _separator = "" if self._keep_separator else separator
