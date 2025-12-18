@@ -251,7 +251,6 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             return _handle_chat_response()
         return _handle_stream_chat_response()
 
-
     def _wrap_thinking_by_reasoning_content(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
         """
         If the reasoning response is from delta.get("reasoning_content"), we wrap
@@ -278,7 +277,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     output = "\n</think>"
                 if content:
                     output += content
-            
+
         return output, is_reasoning
 
     def wrap_thinking(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
@@ -617,7 +616,8 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                 )
             )
         elif base_model.lower() in ("doubao-1.5-thinking-vision-pro", "doubao-seed-1.6-flash", "deepseek-v3.1",
-                                    "doubao-seed-1.6-vision", "doubao-seed-1.6-lite", "deepseek-v3.2"):
+                                    "doubao-seed-1.6-vision", "doubao-seed-1.6-lite", "deepseek-v3.2",
+                                    "doubao-seed-1.8"):
             rules.append(
                 ParameterRule(
                     name="thinking",
@@ -627,7 +627,7 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     options=["enabled", "disabled"],
                 )
             )
-        if base_model.lower() in ("doubao-seed-1.6-lite", "doubao-seed-1.6"):
+        if base_model.lower() in ("doubao-seed-1.6-lite", "doubao-seed-1.6", "doubao-seed-1.8"):
             rules.append(
                 ParameterRule(
                     name="reasoning_effort",
