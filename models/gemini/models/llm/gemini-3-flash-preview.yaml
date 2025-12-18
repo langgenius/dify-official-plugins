@@ -125,7 +125,7 @@ parameter_rules:
       zh_Hans: 让 Gemini 使用代码来解决复杂任务。
       ja_JP: Gemini にコードを使って複雑なタスクを解決させましょう。
   - name: max_output_tokens
-    type: float
+    type: int
     required: true
     default: 65536
     min: 1

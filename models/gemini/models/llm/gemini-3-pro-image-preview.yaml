@@ -82,7 +82,7 @@ parameter_rules:
       zh_Hans: 使用 Google 搜索
       ja_JP: 事実チェック
   - name: max_output_tokens
-    type: float
+    type: int
     required: true
     default: 32768
     min: 1
