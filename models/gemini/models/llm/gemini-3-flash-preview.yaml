@@ -1,7 +1,7 @@
-# https://ai.google.dev/gemini-api/docs/models?hl=zh-cn#gemini-3-pro
-model: gemini-3-pro-preview
+# https://ai.google.dev/gemini-api/docs/models?hl=zh-cn#gemini-3-flash
+model: gemini-3-flash-preview
 label:
-  en_US: Gemini 3 Pro Preview
+  en_US: Gemini 3 Flash Preview
 model_type: llm
 features:
   - tool-call
@@ -78,7 +78,9 @@ parameter_rules:
     required: true
     default: "High"
     options:
+      - Minimal
       - Low
+      - Medium
       - High
     label:
       en_US: Thinking level
@@ -136,10 +138,10 @@ parameter_rules:
       zh_Hans: 模型单次输出的最大 tokens 数。
   - name: json_schema
     use_template: json_schema
-# https://ai.google.dev/gemini-api/docs/pricing#gemini-3-pro-preview
+# https://ai.google.dev/gemini-api/docs/pricing#gemini-3-flash-preview
 pricing:
   # prompts <= 200k tokens
-  input: '2.0'
-  output: '12.00'
+  input: '0.5'
+  output: '3.00'
   unit: '0.000001'
   currency: USD
