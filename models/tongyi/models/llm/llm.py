@@ -60,6 +60,7 @@ from dify_plugin.errors.model import (
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from openai import OpenAI
+from ..constant import BURY_POINT_HEADER
 
 logger = logging.getLogger(__name__)
 
@@ -179,9 +180,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
-        if credentials.get("use_international_endpoint", "false") == "true":
-            import dashscope
-            dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
         credentials_kwargs = self._to_credential_kwargs(credentials)
         mode = self.get_model_mode(model, credentials)
         if model in {"qwen-turbo-chat", "qwen-plus-chat"}:
@@ -230,29 +228,42 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         # Note: qwen3-coder-xx and qwen3-max-xx models support non-streaming output.
         qwen3_requires_stream = (
             model.startswith("qwen3-") 
-            and not model.startswith(("qwen3-coder-", "qwen3-max-"))
+            and not model.startswith(("qwen3-coder", "qwen3-max"))
         )
         common_force_condition = thinking_business_qwen3 or qwen3_requires_stream
         if common_force_condition or model.startswith(("qwq-", "qvq-")):
             stream = True
         # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder and max variants), QwQ, and QVQ models only supports incremental_output set to True.
-        if common_force_condition or model.startswith("qwq-", "qvq-"):
+        if common_force_condition or model.startswith(("qwq-", "qvq-")):
             incremental_output = True
+
+        base_address =  "https://dashscope-intl.aliyuncs.com/api/v1" if credentials.get("use_international_endpoint") == "true" else None
+        
+        # The parameter `enable_omni_output_audio_url` must be set to true when using the Omni model in non-streaming mode.
+        if model.startswith("qwen3-omni-") and not stream:
+            params["enable_omni_output_audio_url"] = True
 
         if ModelFeature.VISION in (model_schema.features or []):
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages, rich_content=True
             )
-            response = MultiModalConversation.call(**params, stream=stream, incremental_output=incremental_output)
+            response = MultiModalConversation.call(
+                **params,
+                stream=stream,
+                headers=BURY_POINT_HEADER,
+                incremental_output=incremental_output,
+                base_address=base_address)
         else:
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages
             )
             response = Generation.call(
                 **params,
+                headers=BURY_POINT_HEADER,
                 result_format="message",
                 stream=stream,
                 incremental_output=incremental_output,
+                base_address=base_address
             )
         if stream:
             return self._handle_generate_stream_response(
@@ -283,7 +294,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 # Get request_id (if present) and forward it to the error handler.
                 request_id = getattr(response, 'request_id', None)
                 self._handle_error_response(response.status_code, response.message, model, request_id)
-            
+
             resp_content = response.output.choices[0].message.content
             # special for qwen-vl
             if isinstance(resp_content, list):
@@ -355,7 +366,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     # Get request_id (if present) and forward it to the error handler.
                     request_id = getattr(response, 'request_id', None)
                     self._handle_error_response(response.status_code, response.message, model, request_id)
-                
+
                 resp_finish_reason = response.output.choices[0].finish_reason
                 if resp_finish_reason is not None and resp_finish_reason != "null":
                     resp_content = response.output.choices[0].message.content
@@ -409,27 +420,40 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     resp_content, is_reasoning = self._wrap_thinking_by_reasoning_content(
                         message, is_reasoning
                     )
-                    if not resp_content:
-                        if "tool_calls" in response.output.choices[0].message:
-                            self._handle_tool_call_stream(response, tool_calls, incremental_output)
-                        continue
-                    if incremental_output:
-                        delta = resp_content
-                        full_text += delta
-                    else:
-                        delta = resp_content.replace(full_text, "", 1)
-                        full_text = resp_content
+                    
+                    content_to_yield = []
+                    if resp_content:
+                        if incremental_output:
+                            delta = resp_content
+                            full_text += delta
+                        else:
+                            delta = resp_content.replace(full_text, "", 1)
+                            full_text = resp_content
+                        content_to_yield.append(delta)
 
-                    assistant_prompt_message = AssistantPromptMessage(
-                        content=delta
-                    )
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(
-                            index=index, message=assistant_prompt_message
-                        ),
-                    )
+                    if "tool_calls" in message:
+                        if is_reasoning:
+                            content_to_yield.append("\n</think>")
+                            # In incremental mode (stream=True), full_text accumulates the generated content.
+                            # In non-incremental mode, full_text tracks the raw API response state for delta calculation.
+                            # Since "\n</think>" is synthesized locally and not part of the API response,
+                            # we must NOT update full_text in non-incremental mode to avoid sync issues.
+                            if incremental_output:
+                                full_text += "\n</think>"
+                            is_reasoning = False
+                        self._handle_tool_call_stream(response, tool_calls, incremental_output)
+                    
+                    if content_to_yield:
+                        assistant_prompt_message = AssistantPromptMessage(
+                            content="".join(content_to_yield)
+                        )
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=index, message=assistant_prompt_message
+                            ),
+                        )
         finally:
             self._cleanup_temp_files()
 

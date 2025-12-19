@@ -28,6 +28,7 @@ from .._common import _CommonZhipuaiAI
 
 viso_models = [
     "glm-4.5v",
+    "glm-4.6v",
     "glm-4v",
     "glm-4v-plus",
     "glm-4v-plus-0111",

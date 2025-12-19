@@ -66,9 +66,27 @@ class GitHubDataSource(OnlineDocumentDatasource):
         workspace_id = str(user_info.get('id', ''))
         
         pages = []
+        visibility = datasource_parameters.get("visibility", "all")
+        if visibility not in {"all", "public", "private"}:
+            raise ValueError(f"Invalid 'visibility' parameter: {visibility}. Allowed values are: all, public, private.")
+
+        affiliation = datasource_parameters.get("affiliation", "owner,collaborator,organization_member")
+        if affiliation:
+            allowed_affiliations = {"owner", "collaborator", "organization_member"}
+            parts = {p.strip() for p in affiliation.split(',') if p.strip()}
+            if not parts and affiliation.strip():
+                raise ValueError(f"Invalid 'affiliation' parameter: '{affiliation}' resolved to an empty set.")
+            if not parts.issubset(allowed_affiliations):
+                raise ValueError(
+                    f"Invalid 'affiliation' parts: {', '.join(parts - allowed_affiliations)}. Allowed: {', '.join(allowed_affiliations)}.")
+
+        _type = datasource_parameters.get("type", "all")
+        if _type not in {"all", "owner", "public", "private", "member"}:
+            raise ValueError(
+                f"Invalid 'type' parameter: {_type}. Allowed values are: all, owner, public, private, member.")
         
         # Get user repositories
-        repos = self._get_repositories()
+        repos = self._get_repositories(visibility=visibility, affiliation=affiliation, _type=_type)
         for repo in repos:
             # Add repository as page
             pages.append({
@@ -164,9 +182,19 @@ class GitHubDataSource(OnlineDocumentDatasource):
         
         return DatasourceGetPagesResponse(result=[online_document_info])
     
-    def _get_repositories(self, max_repos: int = 20) -> List[Dict]:
+    def _get_repositories(self,
+                          max_repos: int = 20,
+                          visibility: str | None = None,
+                          affiliation: str | None = None,
+                          _type: str | None = None) -> List[Dict]:
         """Get user repository list"""
         params = {"per_page": max_repos, "sort": "updated", "direction": "desc"}
+        if visibility:
+            params["visibility"] = visibility
+        if affiliation:
+            params["affiliation"] = affiliation
+        if _type:
+            params["type"] = _type
         repos = self._make_request(f"{self.base_url}/user/repos", params)
         return repos
     

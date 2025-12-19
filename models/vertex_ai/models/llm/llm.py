@@ -45,7 +45,7 @@ from google.genai import types
 from PIL import Image
 
 
-GLOBAL_ONLY_MODELS_DEFAULT = ["gemini-2.5-pro-preview-06-05","gemini-2.5-flash-lite-preview-06-17","gemini-2.5-flash-preview-09-2025","gemini-2.5-flash-lite-preview-09-2025","gemini-3-pro-preview"]
+GLOBAL_ONLY_MODELS_DEFAULT = ["gemini-2.5-pro-preview-06-05","gemini-2.5-flash-lite-preview-06-17","gemini-2.5-flash-preview-09-2025","gemini-2.5-flash-lite-preview-09-2025","gemini-3-pro-preview","gemini-3-flash-preview"]
 # For more information about the models, please refer to https://ai.google.dev/gemini-api/docs/thinking
 DEFAULT_NO_THINKING_MODELS = ["gemini-2.5-flash-lite"]
 

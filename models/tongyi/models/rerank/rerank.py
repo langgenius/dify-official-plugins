@@ -19,7 +19,7 @@ from dify_plugin.errors.model import (
     InvokeServerUnavailableError,
 )
 from dify_plugin.interfaces.model.rerank_model import RerankModel
-
+from ..constant import BURY_POINT_HEADER
 
 class GTERerankModel(RerankModel):
     """
@@ -54,7 +54,7 @@ class GTERerankModel(RerankModel):
             dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
         dashscope.api_key = credentials["dashscope_api_key"]
         response = dashscope.TextReRank.call(
-            query=query, documents=docs, model=model, top_n=top_n, return_documents=True
+            query=query, headers=BURY_POINT_HEADER, documents=docs, model=model, top_n=top_n, return_documents=True
         )
         rerank_documents = []
         if not response.output:

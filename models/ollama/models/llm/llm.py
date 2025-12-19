@@ -493,6 +493,20 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
 
                 # If this chunk contains tool_calls, yield a dedicated tool_calls delta (like Tongyi)
                 if "tool_calls" in message_obj and message_obj.get("tool_calls"):
+                    if is_reasoning_started == 1:
+                        # Yield the end of the thinking tag
+                        assistant_prompt_message = AssistantPromptMessage(content="\n</think>")
+                        yield LLMResultChunk(
+                            model=chunk_json.get("model", model or "default_model"),
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=chunk_index,
+                                message=assistant_prompt_message,
+                            ),
+                        )
+                        chunk_index += 1
+                        is_reasoning_started = 2  # Mark reasoning as ended
+
                     self._handle_tool_call_stream(chunk_json, tool_calls_by_index)
                     logger.info("[Ollama] stream tool_calls detected: %s", message_obj.get("tool_calls"))
                     tool_phase = True
