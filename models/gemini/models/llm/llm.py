@@ -347,10 +347,15 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 thinking_budget = -1
 
         if isinstance(thinking_level, str):
-            if thinking_level in ["Low"]:
-                thinking_level = types.ThinkingLevel.LOW
-            elif thinking_level in ["High"]:
-                thinking_level = types.ThinkingLevel.HIGH
+            level_map = {
+                "Minimal": types.ThinkingLevel.MINIMAL,
+                "Low": types.ThinkingLevel.LOW,
+                "Medium": types.ThinkingLevel.MEDIUM,
+                "High": types.ThinkingLevel.HIGH,
+            }
+            thinking_level = level_map.get(
+                thinking_level, types.ThinkingLevel.THINKING_LEVEL_UNSPECIFIED
+            )
         if not isinstance(thinking_level, types.ThinkingLevel):
             thinking_level = None
 
