@@ -464,7 +464,7 @@ Please strictly follow this Markdown structure:
                 "mode": "chat",
                 "completion_params": {
                     "temperature": 0.5,
-                    "max_tokens": 8192  # Increased for long resumes
+                    "max_tokens": 8192
                 }
             }
 
@@ -479,7 +479,7 @@ Please strictly follow this Markdown structure:
             # LLMResultChunk structure: chunk.delta.message.content
             has_content = False
             for chunk in response_generator:
-                if hasattr(chunk, 'delta') and hasattr(chunk.delta, 'message'):
+                if hasattr(chunk, 'delta') and chunk.delta and hasattr(chunk.delta, 'message') and chunk.delta.message:
                     content = chunk.delta.message.content
                     if content:
                         has_content = True
