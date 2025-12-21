@@ -42,10 +42,7 @@ class SiliconflowLargeLanguageModel(OAICompatLargeLanguageModel):
     ) -> Union[LLMResult, Generator]:
         self._add_custom_parameters(credentials)
         self._add_function_call(model, credentials)
-        
-        # Clean messages to avoid SiliconFlow 20015 error (consecutive identical roles)
         prompt_messages = self._clean_messages(prompt_messages)
-        
         return super()._invoke(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream
         )
@@ -70,11 +67,9 @@ class SiliconflowLargeLanguageModel(OAICompatLargeLanguageModel):
                 cleaned_messages.append(msg)
                 continue
 
+            # Try to merge if the new message has the same type as the last one
             if isinstance(msg, AssistantPromptMessage) and isinstance(last_msg, AssistantPromptMessage):
-                # Merge Assistant: content + new content, tool_calls + new tool_calls
-                new_content = (last_msg.content or "") + ("\n" + msg.content if msg.content else "")
-                # Handle edge case where first content is empty string, avoid leading newline if not needed.
-                # Actually simpler: join filtered non-empty parts.
+                # Merge Assistant messages: combine content and tool_calls
                 parts = [c for c in [last_msg.content, msg.content] if c]
                 new_content = "\n".join(parts)
                 
@@ -83,16 +78,14 @@ class SiliconflowLargeLanguageModel(OAICompatLargeLanguageModel):
                 # Update the last message in place
                 cleaned_messages[-1] = AssistantPromptMessage(content=new_content, tool_calls=new_tool_calls)
 
-            elif isinstance(msg, UserPromptMessage) and isinstance(last_msg, UserPromptMessage):
-                # Merge User: only if both are simple strings
-                if isinstance(last_msg.content, str) and isinstance(msg.content, str):
-                    new_content = last_msg.content + "\n" + msg.content
-                    cleaned_messages[-1] = UserPromptMessage(content=new_content)
-                else:
-                    # If one contains complex content (like images), do not merge to be safe
-                    cleaned_messages.append(msg)
+            elif isinstance(msg, UserPromptMessage) and isinstance(last_msg, UserPromptMessage) and \
+                 isinstance(last_msg.content, str) and isinstance(msg.content, str):
+                # Merge User messages, but only if both contents are simple strings
+                new_content = last_msg.content + "\n" + msg.content
+                cleaned_messages[-1] = UserPromptMessage(content=new_content)
             else:
-                # Other types (System, Tool) usually don't need merging or shouldn't be consecutive
+                # If types are different, or they are of a type that shouldn't be merged (e.g., System, Tool),
+                # or User messages with complex content, just append the new message.
                 cleaned_messages.append(msg)
 
         return cleaned_messages
