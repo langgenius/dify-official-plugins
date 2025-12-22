@@ -634,10 +634,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: llm response
         """
         # transform assistant message to prompt message
-        if model in IMAGE_GENERATION_MODELS:
-            assistant_prompt_message = self._parse_parts(response.candidates[0].content.parts)
-        else:
-            assistant_prompt_message = AssistantPromptMessage(content=response.text)
+        # Always use _parse_parts to ensure consistent response format (list of PromptMessageContent)
+        # This fixes the "'str' object has no attribute 'get'" error that occurs when
+        # downstream code expects structured content but receives a plain string
+        assistant_prompt_message = self._parse_parts(response.candidates[0].content.parts)
 
         # calculate num tokens
         prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
