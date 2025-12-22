@@ -1,6 +1,6 @@
-model: google/gemini-3-pro-preview
+model: google/gemini-3-flash-preview
 label:
-  en_US: gemini-3-pro-preview
+  en_US: gemini-3-flash-preview
 model_type: llm
 features:
   - multi-tool-call
@@ -72,9 +72,11 @@ parameter_rules:
     required: false
     options:
       - high
+      - medium
       - low
+      - minimal
 pricing:
-  input: "2"
-  output: "12"
+  input: "0.5"
+  output: "3"
   unit: "0.000001"
   currency: USD
