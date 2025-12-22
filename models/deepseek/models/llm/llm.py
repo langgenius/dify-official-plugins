@@ -12,6 +12,7 @@ from dify_plugin.entities.model.message import (
 )
 from yarl import URL
 from dify_plugin import OAICompatLargeLanguageModel
+import re
 
 class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
     # Pattern to match <think>...</think> blocks (case-insensitive, non-greedy)
