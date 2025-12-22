@@ -1,5 +1,6 @@
 import base64
 import logging
+import json
 import os
 import tempfile
 import uuid
@@ -250,7 +251,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             response = MultiModalConversation.call(
                 **params,
                 stream=stream,
-                headers=BURY_POINT_HEADER,
+                headers=self._get_market_bury_point_header(params["messages"]),
                 incremental_output=incremental_output,
                 base_address=base_address)
         else:
@@ -259,7 +260,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             )
             response = Generation.call(
                 **params,
-                headers=BURY_POINT_HEADER,
+                headers=self._get_market_bury_point_header(params["messages"]),
                 result_format="message",
                 stream=stream,
                 incremental_output=incremental_output,
@@ -897,3 +898,45 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 ),
             ],
         )
+
+    def _get_market_bury_point_header(self, messages: list[dict]) -> dict:
+        """
+        Extract market bury point header information from messages
+
+        This function parses system role messages in the messages list to extract productCode and buyerUid,
+        constructs the bury point header, and cleans up the marketParams tag content from the original message.
+
+        Args:
+            messages (list[dict]): Message list, each element contains role and content fields
+
+        Returns:
+            dict: Bury point header information dictionary containing moduleCode, accountId and other fields;
+                  If no valid information can be extracted, returns the default BURY_POINT_HEADER
+        """
+        system_entries = [entry for entry in messages if entry['role'] == 'system']
+        if system_entries:
+            system_entry = system_entries[0].get('content', '')
+            if system_entry:
+                try:
+                    system_entry_split = system_entry.split("||||||")
+                    if len(system_entry_split) >= 2:
+                        burn = system_entry_split[0].split(',')
+                        bury_point_header = json.loads(BURY_POINT_HEADER.get('x-dashscope-euid'))
+                        if len(burn) == 1:
+                            product_code = burn[0]
+                            buyer_uid = ""
+                            bury_point_header['moduleCode'] = f'market_{product_code}'.strip()
+                            bury_point_header['accountId'] = buyer_uid
+                        if len(burn) == 2:
+                            product_code = burn[0]
+                            buyer_uid = burn[1]
+                            bury_point_header['moduleCode'] = f'market_{product_code}'.strip()
+                            bury_point_header['accountId'] = buyer_uid.strip()
+
+                        system_entries[0]['content'] = "".join(system_entry_split[1:])
+                        return {'x-dashscope-euid': json.dumps(bury_point_header)}
+                except Exception:
+                    return BURY_POINT_HEADER
+
+        return BURY_POINT_HEADER
+
