@@ -13,10 +13,6 @@ from dify_plugin.entities.model.message import (
 from yarl import URL
 from dify_plugin import OAICompatLargeLanguageModel
 
-logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
-logger.addHandler(plugin_logger_handler)
-
 class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
     # Pattern to match <think>...</think> blocks (case-insensitive, non-greedy)
     _THINK_PATTERN = re.compile(r"<think>(.*?)</think>", re.DOTALL | re.IGNORECASE)
@@ -165,7 +161,6 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
             if "reasoner" in model_name or reasoning_content:
                 message_dict["reasoning_content"] = reasoning_content or ""
                 message_dict["content"] = content
-                logger.debug(f"DeepSeek - Formatted assistant message with reasoning_content (Model: {model_name})")
                 
         return message_dict
 
