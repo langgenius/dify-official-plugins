@@ -922,14 +922,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     if len(system_entry_split) >= 2:
                         burn = system_entry_split[0].split(',')
                         bury_point_header = json.loads(BURY_POINT_HEADER.get('x-dashscope-euid'))
-                        if len(burn) == 1:
+                        if len(burn) in (1, 2):
                             product_code = burn[0]
-                            buyer_uid = ""
-                            bury_point_header['moduleCode'] = product_code.strip()
-                            bury_point_header['accountId'] = buyer_uid
-                        if len(burn) == 2:
-                            product_code = burn[0]
-                            buyer_uid = burn[1]
+                            buyer_uid = burn[1] if len(burn) == 2 else ""
                             bury_point_header['moduleCode'] = product_code.strip()
                             bury_point_header['accountId'] = buyer_uid.strip()
 
