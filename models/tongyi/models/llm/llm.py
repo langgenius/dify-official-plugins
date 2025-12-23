@@ -925,12 +925,12 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                         if len(burn) == 1:
                             product_code = burn[0]
                             buyer_uid = ""
-                            bury_point_header['moduleCode'] = f'market_{product_code}'.strip()
+                            bury_point_header['moduleCode'] = product_code.strip()
                             bury_point_header['accountId'] = buyer_uid
                         if len(burn) == 2:
                             product_code = burn[0]
                             buyer_uid = burn[1]
-                            bury_point_header['moduleCode'] = f'market_{product_code}'.strip()
+                            bury_point_header['moduleCode'] = product_code.strip()
                             bury_point_header['accountId'] = buyer_uid.strip()
 
                         system_entries[0]['content'] = "".join(system_entry_split[1:])
