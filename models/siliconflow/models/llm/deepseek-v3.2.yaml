@@ -6,12 +6,25 @@ features:
   - agent-thought
   - tool-call
   - stream-tool-call
+  - multi-tool-call
+  - document
+  - structured-output
 model_properties:
   mode: chat
   context_size: 163840
 parameter_rules:
   - name: temperature
-    use_template: temperature
+    type: float
+    required: true
+    default: 1
+    min: 0
+    max: 2
+    label:
+      en_US: Temperature
+      zh_Hans: 温度
+    help:
+      en_US: For Gemini 3, best results at default 1.0. Lower values may impact reasoning.
+      zh_Hans: 对于 Gemini 3，使用默认值 1.0 可获得最佳效果。数值过低可能会影响推理能力。
   - name: max_tokens
     use_template: max_tokens
     type: int
@@ -21,19 +34,6 @@ parameter_rules:
     help:
       zh_Hans: 指定生成结果长度的上限。如果生成结果截断，可以调大该参数。
       en_US: Specifies the upper limit on the length of generated results. If the generated results are truncated, you can increase this parameter.
-  - name: top_p
-    use_template: top_p
-  - name: top_k
-    label:
-      zh_Hans: 取样数量
-      en_US: Top k
-    type: int
-    help:
-      zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
-      en_US: Only sample from the top K options for each subsequent token.
-    required: false
-  - name: frequency_penalty
-    use_template: frequency_penalty
   - name: response_format
     label:
       zh_Hans: 回复格式
