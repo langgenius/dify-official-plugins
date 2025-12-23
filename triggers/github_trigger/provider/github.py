@@ -23,7 +23,6 @@ from dify_plugin.errors.trigger import (
     TriggerProviderCredentialValidationError,
     TriggerProviderOAuthError,
     TriggerValidationError,
-    UnsubscribeError,
 )
 from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstructor
 
@@ -298,24 +297,28 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
     def _delete_subscription(
         self, subscription: Subscription, credentials: Mapping[str, Any], credential_type: CredentialType
     ) -> UnsubscribeResult:
-        external_id = subscription.properties.get("external_id")
-        repository = subscription.properties.get("repository")
+        # Get properties with fallback to empty dict
+        properties = subscription.properties or {}
+        external_id = properties.get("external_id")
+        repository = properties.get("repository")
+
+        # Fallback: try to get repository from parameters if not in properties
+        if not repository and subscription.parameters:
+            repository = subscription.parameters.get("repository")
 
         if not external_id or not repository:
-            raise UnsubscribeError(
-                message="Missing webhook ID or repository information",
-                error_code="MISSING_PROPERTIES",
-                external_response=None,
+            return UnsubscribeResult(
+                success=False,
+                message="Missing webhook ID or repository information. The subscription may have been created with an older version or is corrupted.",
             )
 
         try:
             owner, repo = repository.split("/")
-        except ValueError:
-            raise UnsubscribeError(
-                message="Invalid repository format in properties",
-                error_code="INVALID_REPOSITORY",
-                external_response=None,
-            ) from None
+        except (ValueError, AttributeError):
+            return UnsubscribeResult(
+                success=False,
+                message=f"Invalid repository format: {repository}. Expected format: owner/repo",
+            )
 
         url = f"https://api.github.com/repos/{owner}/{repo}/hooks/{external_id}"
         headers = {
@@ -326,11 +329,10 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
         try:
             response = requests.delete(url, headers=headers, timeout=10)
         except requests.RequestException as exc:
-            raise UnsubscribeError(
+            return UnsubscribeResult(
+                success=False,
                 message=f"Network error while deleting webhook: {exc}",
-                error_code="NETWORK_ERROR",
-                external_response=None,
-            ) from exc
+            )
 
         if response.status_code == 204:
             return UnsubscribeResult(
@@ -338,16 +340,19 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
             )
 
         if response.status_code == 404:
-            raise UnsubscribeError(
-                message=f"Webhook {external_id} not found in repository {repository}",
-                error_code="WEBHOOK_NOT_FOUND",
-                external_response=response.json(),
+            return UnsubscribeResult(
+                success=False,
+                message=f"Webhook {external_id} not found in repository {repository}. It may have been deleted manually.",
             )
 
-        raise UnsubscribeError(
-            message=f"Failed to delete webhook: {response.json().get('message', 'Unknown error')}",
-            error_code="WEBHOOK_DELETION_FAILED",
-            external_response=response.json(),
+        try:
+            error_message = response.json().get("message", "Unknown error")
+        except Exception:
+            error_message = f"HTTP {response.status_code}"
+
+        return UnsubscribeResult(
+            success=False,
+            message=f"Failed to delete webhook: {error_message}",
         )
 
     def _refresh_subscription(
