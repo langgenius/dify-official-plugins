@@ -1,5 +1,4 @@
 import json
-import re
 from collections.abc import Generator
 from typing import Union
 
@@ -38,21 +37,6 @@ class CotAgentOutputParser:
             except Exception:
                 return json_str or ""
 
-        def extra_json_from_code_block(
-            code_block,
-        ) -> Generator[Union[str, AgentScratchpadUnit.Action], None, None]:
-            code_blocks = re.findall(r"```(.*?)```", code_block, re.DOTALL)
-            if not code_blocks:
-                return
-            for block in code_blocks:
-                json_text = re.sub(
-                    r"^[a-zA-Z]+\n", "", block.strip(), flags=re.MULTILINE
-                )
-                yield parse_action(json_text)
-
-        code_block_cache = ""
-        code_block_delimiter_count = 0
-        in_code_block = False
         json_cache = ""
         json_quote_count = 0
         in_json = False
@@ -79,25 +63,10 @@ class CotAgentOutputParser:
             index = 0
             while index < len(response_content):
                 steps = 1
-                delta = response_content[index : index + steps]
+                delta = response_content[index: index + steps]
                 yield_delta = False
 
-                if delta == "`":
-                    last_character = delta
-                    code_block_cache += delta
-                    code_block_delimiter_count += 1
-                else:
-                    if not in_code_block:
-                        if code_block_delimiter_count > 0:
-                            last_character = delta
-                            yield code_block_cache
-                        code_block_cache = ""
-                    else:
-                        last_character = delta
-                        code_block_cache += delta
-                    code_block_delimiter_count = 0
-
-                if not in_code_block and not in_json:
+                if not in_json:
                     if delta.lower() == action_str[action_idx] and action_idx == 0:
                         if last_character not in {"\n", " ", ""}:
                             yield_delta = True
@@ -160,53 +129,40 @@ class CotAgentOutputParser:
                         yield delta
                         continue
 
-                if code_block_delimiter_count == 3:
-                    if in_code_block:
-                        last_character = delta
-                        yield from extra_json_from_code_block(code_block_cache)
-                        code_block_cache = ""
-
-                    in_code_block = not in_code_block
-                    code_block_delimiter_count = 0
-
-                if not in_code_block:
-                    # handle single json
-                    if delta == "{":
-                        json_quote_count += 1
-                        in_json = True
-                        last_character = delta
-                        json_cache += delta
-                    elif delta == "}":
-                        last_character = delta
-                        json_cache += delta
-                        if json_quote_count > 0:
-                            json_quote_count -= 1
-                            if json_quote_count == 0:
-                                in_json = False
-                                got_json = True
-                                index += steps
-                                continue
-                    else:
-                        if in_json:
-                            last_character = delta
-                            json_cache += delta
-
-                    if got_json:
-                        got_json = False
-                        last_character = delta
-                        yield parse_action(json_cache)
-                        json_cache = ""
-                        json_quote_count = 0
-                        in_json = False
-
-                if not in_code_block and not in_json:
+                # handle single json
+                if delta == "{":
+                    json_quote_count += 1
+                    in_json = True
                     last_character = delta
-                    yield delta.replace("`", "")
+                    json_cache += delta
+                elif delta == "}":
+                    last_character = delta
+                    json_cache += delta
+                    if json_quote_count > 0:
+                        json_quote_count -= 1
+                        if json_quote_count == 0:
+                            in_json = False
+                            got_json = True
+                            index += steps
+                            continue
+                else:
+                    if in_json:
+                        last_character = delta
+                        json_cache += delta
+
+                if got_json:
+                    got_json = False
+                    last_character = delta
+                    yield parse_action(json_cache)
+                    json_cache = ""
+                    json_quote_count = 0
+                    in_json = False
+
+                if not in_json:
+                    last_character = delta
+                    yield delta
 
                 index += steps
-
-        if code_block_cache:
-            yield code_block_cache
 
         if json_cache:
             yield parse_action(json_cache)

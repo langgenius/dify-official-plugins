@@ -770,3 +770,162 @@ class TestBuildGeminiContents:
         assert len(contents[0].parts) == 2
         assert contents[0].parts[0].text == "Check this document"
         assert contents[0].parts[1].file_data.file_uri == "gs://test-bucket/document.pdf"
+
+
+class TestHandleGenerateResponse:
+    """Test suite for the _handle_generate_response method
+
+    This class tests that non-streaming responses return structured content
+    (list of PromptMessageContent) instead of plain strings, fixing the
+    "'str' object has no attribute 'get'" error (issue #29977).
+    """
+
+    def setup_method(self):
+        """Setup test fixtures"""
+        self.llm = GoogleLargeLanguageModel([])
+        self.credentials = {"google_api_key": "test_key"}
+
+    def test_non_streaming_response_returns_structured_content(self):
+        """Test that non-streaming response returns content as list of PromptMessageContent
+
+        This is the core test for issue #29977. Previously, non-image models would return
+        AssistantPromptMessage(content=response.text) where content is a string.
+        Now all models use _parse_parts which returns content as a list.
+        """
+        # Create mock response with text content
+        mock_part = Mock()
+        mock_part.text = "Hello, I am Gemini!"
+        mock_part.thought = None
+        mock_part.executable_code = None
+        mock_part.code_execution_result = None
+        mock_part.function_call = None
+        mock_part.inline_data = None
+
+        mock_content = Mock()
+        mock_content.parts = [mock_part]
+
+        mock_candidate = Mock()
+        mock_candidate.content = mock_content
+
+        mock_usage = Mock()
+        mock_usage.prompt_tokens_details = []
+        mock_usage.thoughts_token_count = 0
+        mock_usage.candidates_token_count = 10
+
+        mock_response = Mock()
+        mock_response.candidates = [mock_candidate]
+        mock_response.usage_metadata = mock_usage
+
+        prompt_messages = [UserPromptMessage(content="Hello")]
+
+        result = self.llm._handle_generate_response(
+            model="gemini-2.0-flash",
+            credentials=self.credentials,
+            response=mock_response,
+            prompt_messages=prompt_messages,
+        )
+
+        # The key assertion: content should be a list, not a string
+        assert isinstance(result.message.content, list), \
+            "Response content should be a list of PromptMessageContent, not a string"
+        assert len(result.message.content) == 1
+        assert isinstance(result.message.content[0], TextPromptMessageContent)
+        assert result.message.content[0].data == "Hello, I am Gemini!"
+
+    def test_non_streaming_response_with_function_call(self):
+        """Test non-streaming response with function call returns structured content"""
+        mock_function_call = Mock()
+        mock_function_call.name = "get_weather"
+        mock_function_call.args = {"location": "Tokyo"}
+
+        mock_part = Mock()
+        mock_part.text = None
+        mock_part.thought = None
+        mock_part.executable_code = None
+        mock_part.code_execution_result = None
+        mock_part.function_call = mock_function_call
+        mock_part.inline_data = None
+
+        mock_content = Mock()
+        mock_content.parts = [mock_part]
+
+        mock_candidate = Mock()
+        mock_candidate.content = mock_content
+
+        mock_usage = Mock()
+        mock_usage.prompt_tokens_details = []
+        mock_usage.thoughts_token_count = 0
+        mock_usage.candidates_token_count = 5
+
+        mock_response = Mock()
+        mock_response.candidates = [mock_candidate]
+        mock_response.usage_metadata = mock_usage
+
+        prompt_messages = [UserPromptMessage(content="What's the weather?")]
+
+        result = self.llm._handle_generate_response(
+            model="gemini-2.0-flash",
+            credentials=self.credentials,
+            response=mock_response,
+            prompt_messages=prompt_messages,
+        )
+
+        # Content should be a list (possibly empty if only function call)
+        assert isinstance(result.message.content, list)
+        # Should have tool calls
+        assert len(result.message.tool_calls) == 1
+        assert result.message.tool_calls[0].function.name == "get_weather"
+
+    def test_non_streaming_response_with_mixed_content(self):
+        """Test non-streaming response with text and function call"""
+        mock_function_call = Mock()
+        mock_function_call.name = "search"
+        mock_function_call.args = {"query": "test"}
+
+        mock_text_part = Mock()
+        mock_text_part.text = "Let me search for that."
+        mock_text_part.thought = None
+        mock_text_part.executable_code = None
+        mock_text_part.code_execution_result = None
+        mock_text_part.function_call = None
+        mock_text_part.inline_data = None
+
+        mock_func_part = Mock()
+        mock_func_part.text = None
+        mock_func_part.thought = None
+        mock_func_part.executable_code = None
+        mock_func_part.code_execution_result = None
+        mock_func_part.function_call = mock_function_call
+        mock_func_part.inline_data = None
+
+        mock_content = Mock()
+        mock_content.parts = [mock_text_part, mock_func_part]
+
+        mock_candidate = Mock()
+        mock_candidate.content = mock_content
+
+        mock_usage = Mock()
+        mock_usage.prompt_tokens_details = []
+        mock_usage.thoughts_token_count = 0
+        mock_usage.candidates_token_count = 15
+
+        mock_response = Mock()
+        mock_response.candidates = [mock_candidate]
+        mock_response.usage_metadata = mock_usage
+
+        prompt_messages = [UserPromptMessage(content="Search for something")]
+
+        result = self.llm._handle_generate_response(
+            model="gemini-2.0-flash",
+            credentials=self.credentials,
+            response=mock_response,
+            prompt_messages=prompt_messages,
+        )
+
+        # Content should be a list with text content
+        assert isinstance(result.message.content, list)
+        assert len(result.message.content) == 1
+        assert result.message.content[0].data == "Let me search for that."
+        # Should also have tool calls
+        assert len(result.message.tool_calls) == 1
+        assert result.message.tool_calls[0].function.name == "search"
