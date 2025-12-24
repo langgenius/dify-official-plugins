@@ -1,16 +1,34 @@
 import json
 from collections.abc import Generator
+from enum import Enum
 from typing import Union
 
 from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.interfaces.agent import AgentScratchpadUnit
 
 
+class ReactState(Enum):
+    THINKING = ("thought:", "THINKING")
+    ACTION = ("action:", "ACTION")
+    ANSWER = ("answer:", "ANSWER")
+    IDLE = (None, "IDLE")
+
+    def __init__(self, prefix: str, state: str):
+        self.prefix = prefix
+        self.state = state
+
+
+class ReactChunk:
+    def __init__(self, state: ReactState, content: str):
+        self.state = state
+        self.content = content
+
+
 class CotAgentOutputParser:
     @classmethod
     def handle_react_stream_output(
         cls, llm_response: Generator[LLMResultChunk, None, None], usage_dict: dict
-    ) -> Generator[Union[str, AgentScratchpadUnit.Action], None, None]:
+    ) -> Generator[Union[ReactChunk, AgentScratchpadUnit.Action], None, None]:
         def parse_action(json_str):
             try:
                 action = json.loads(json_str, strict=False)
@@ -43,13 +61,18 @@ class CotAgentOutputParser:
         got_json = False
 
         action_cache = ""
-        action_str = "action:"
+        action_str = ReactState.ACTION.prefix
         action_idx = 0
 
         thought_cache = ""
-        thought_str = "thought:"
+        thought_str = ReactState.THINKING.prefix
         thought_idx = 0
 
+        answer_cache = ""
+        answer_str = ReactState.ANSWER.prefix
+        answer_idx = 0
+
+        cur_state = ReactState.THINKING
         last_character = ""
 
         for response in llm_response:
@@ -91,9 +114,38 @@ class CotAgentOutputParser:
                     else:
                         if action_cache:
                             last_character = delta
-                            yield action_cache
+                            yield ReactChunk(cur_state, action_cache)
                             action_cache = ""
                             action_idx = 0
+
+                    if delta.lower() == answer_str[answer_idx] and answer_idx == 0:
+                        if last_character not in {"\n", " ", ""}:
+                            yield_delta = True
+                        else:
+                            last_character = delta
+                            answer_cache += delta
+                            answer_idx += 1
+                            if answer_idx == len(answer_str):
+                                answer_cache = ""
+                                answer_idx = 0
+                            index += steps
+                            continue
+                    elif delta.lower() == answer_str[answer_idx] and answer_idx > 0:
+                        last_character = delta
+                        answer_cache += delta
+                        answer_idx += 1
+                        if answer_idx == len(answer_str):
+                            answer_cache = ""
+                            answer_idx = 0
+                            cur_state = ReactState.ANSWER
+                        index += steps
+                        continue
+                    else:
+                        if answer_cache:
+                            last_character = delta
+                            yield ReactChunk(cur_state, answer_cache)
+                            answer_cache = ""
+                            answer_idx = 0
 
                     if delta.lower() == thought_str[thought_idx] and thought_idx == 0:
                         if last_character not in {"\n", " ", ""}:
@@ -114,19 +166,20 @@ class CotAgentOutputParser:
                         if thought_idx == len(thought_str):
                             thought_cache = ""
                             thought_idx = 0
+                            cur_state = ReactState.THINKING
                         index += steps
                         continue
                     else:
                         if thought_cache:
                             last_character = delta
-                            yield thought_cache
+                            yield ReactChunk(cur_state, thought_cache)
                             thought_cache = ""
                             thought_idx = 0
 
                     if yield_delta:
                         index += steps
                         last_character = delta
-                        yield delta
+                        yield ReactChunk(cur_state, delta)
                         continue
 
                 # handle single json
@@ -153,16 +206,24 @@ class CotAgentOutputParser:
                 if got_json:
                     got_json = False
                     last_character = delta
-                    yield parse_action(json_cache)
+                    parsed_result = parse_action(json_cache)
+                    if isinstance(parsed_result, AgentScratchpadUnit.Action):
+                        yield parsed_result
+                    else:
+                        yield ReactChunk(cur_state, json_cache)
                     json_cache = ""
                     json_quote_count = 0
                     in_json = False
 
                 if not in_json:
                     last_character = delta
-                    yield delta
+                    yield ReactChunk(cur_state, delta)
 
                 index += steps
 
         if json_cache:
-            yield parse_action(json_cache)
+            parsed_result = parse_action(json_cache)
+            if isinstance(parsed_result, AgentScratchpadUnit.Action):
+                yield parsed_result
+            else:
+                yield ReactChunk(cur_state, json_cache)

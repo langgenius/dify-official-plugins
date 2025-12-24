@@ -24,7 +24,7 @@ from dify_plugin.interfaces.agent import (
     AgentStrategy,
     ToolEntity,
 )
-from output_parser.cot_output_parser import CotAgentOutputParser
+from output_parser.cot_output_parser import ReactChunk, ReactState, CotAgentOutputParser
 from prompt.template import REACT_PROMPT_TEMPLATES
 from pydantic import BaseModel, Field
 
@@ -208,20 +208,27 @@ class ReActAgentStrategy(AgentStrategy):
             )
             yield model_log
 
-            for chunk in react_chunks:
-                if isinstance(chunk, AgentScratchpadUnit.Action):
-                    action = chunk
+            for react_chunk in react_chunks:
+                if isinstance(react_chunk, AgentScratchpadUnit.Action):
+                    action = react_chunk
                     # detect action
                     assert scratchpad.agent_response is not None
-                    scratchpad.agent_response += json.dumps(chunk.model_dump())
+                    scratchpad.agent_response += json.dumps(react_chunk.model_dump())
 
-                    scratchpad.action_str = json.dumps(chunk.model_dump())
+                    scratchpad.action_str = json.dumps(react_chunk.model_dump())
                     scratchpad.action = action
                 else:
-                    scratchpad.agent_response = scratchpad.agent_response or ""
-                    scratchpad.thought = scratchpad.thought or ""
-                    scratchpad.agent_response += chunk
-                    scratchpad.thought += chunk
+                    assert isinstance(react_chunk, ReactChunk)
+                    chunk_state = react_chunk.state
+                    chunk = react_chunk.content
+                    yield self.create_text_message(chunk)
+                    if chunk_state == ReactState.ANSWER:
+                        final_answer += chunk
+                    else:
+                        scratchpad.agent_response = scratchpad.agent_response or ""
+                        scratchpad.thought = scratchpad.thought or ""
+                        scratchpad.agent_response += chunk
+                        scratchpad.thought += chunk
             scratchpad.thought = (
                 scratchpad.thought.strip()
                 if scratchpad.thought
@@ -264,70 +271,58 @@ class ReActAgentStrategy(AgentStrategy):
             if not scratchpad.action:
                 final_answer = scratchpad.thought
             else:
-                if scratchpad.action.action_name.lower() == "final answer":
-                    # action is final answer, return final answer directly
-                    try:
-                        if isinstance(scratchpad.action.action_input, dict):
-                            final_answer = json.dumps(scratchpad.action.action_input)
-                        elif isinstance(scratchpad.action.action_input, str):
-                            final_answer = scratchpad.action.action_input
-                        else:
-                            final_answer = f"{scratchpad.action.action_input}"
-                    except json.JSONDecodeError:
-                        final_answer = f"{scratchpad.action.action_input}"
-                else:
-                    run_agent_state = True
-                    # action is tool call, invoke tool
-                    tool_call_started_at = time.perf_counter()
-                    tool_name = scratchpad.action.action_name
-                    tool_call_log = self.create_log_message(
-                        label=f"CALL {tool_name}",
-                        data={},
-                        metadata={
-                            LogMetadata.STARTED_AT: time.perf_counter(),
-                            LogMetadata.PROVIDER: tool_instances[
-                                tool_name
-                            ].identity.provider
-                            if tool_instances.get(tool_name)
-                            else "",
-                        },
-                        parent=round_log,
-                        status=ToolInvokeMessage.LogMessage.LogStatus.START,
-                    )
-                    yield tool_call_log
-                    (
-                        tool_invoke_response,
-                        tool_invoke_parameters,
-                        additional_messages,
-                    ) = self._handle_invoke_action(
-                        action=scratchpad.action,
-                        tool_instances=tool_instances,
-                        message_file_ids=message_file_ids,
-                    )
-                    scratchpad.observation = tool_invoke_response
-                    scratchpad.agent_response = tool_invoke_response
+                run_agent_state = True
+                # action is tool call, invoke tool
+                tool_call_started_at = time.perf_counter()
+                tool_name = scratchpad.action.action_name
+                tool_call_log = self.create_log_message(
+                    label=f"CALL {tool_name}",
+                    data={},
+                    metadata={
+                        LogMetadata.STARTED_AT: time.perf_counter(),
+                        LogMetadata.PROVIDER: tool_instances[
+                            tool_name
+                        ].identity.provider
+                        if tool_instances.get(tool_name)
+                        else "",
+                    },
+                    parent=round_log,
+                    status=ToolInvokeMessage.LogMessage.LogStatus.START,
+                )
+                yield tool_call_log
+                (
+                    tool_invoke_response,
+                    tool_invoke_parameters,
+                    additional_messages,
+                ) = self._handle_invoke_action(
+                    action=scratchpad.action,
+                    tool_instances=tool_instances,
+                    message_file_ids=message_file_ids,
+                )
+                scratchpad.observation = tool_invoke_response
+                scratchpad.agent_response = tool_invoke_response
 
-                    # TODO: convert to agent invoke message
-                    yield from additional_messages
-                    yield self.finish_log_message(
-                        log=tool_call_log,
-                        data={
-                            "tool_name": tool_name,
-                            "tool_call_args": tool_invoke_parameters,
-                            "output": tool_invoke_response,
-                        },
-                        metadata={
-                            LogMetadata.STARTED_AT: tool_call_started_at,
-                            LogMetadata.PROVIDER: tool_instances[
-                                tool_name
-                            ].identity.provider
-                            if tool_instances.get(tool_name)
-                            else "",
-                            LogMetadata.FINISHED_AT: time.perf_counter(),
-                            LogMetadata.ELAPSED_TIME: time.perf_counter()
-                            - tool_call_started_at,
-                        },
-                    )
+                # TODO: convert to agent invoke message
+                yield from additional_messages
+                yield self.finish_log_message(
+                    log=tool_call_log,
+                    data={
+                        "tool_name": tool_name,
+                        "tool_call_args": tool_invoke_parameters,
+                        "output": tool_invoke_response,
+                    },
+                    metadata={
+                        LogMetadata.STARTED_AT: tool_call_started_at,
+                        LogMetadata.PROVIDER: tool_instances[
+                            tool_name
+                        ].identity.provider
+                        if tool_instances.get(tool_name)
+                        else "",
+                        LogMetadata.FINISHED_AT: time.perf_counter(),
+                        LogMetadata.ELAPSED_TIME: time.perf_counter()
+                        - tool_call_started_at,
+                    },
+                )
 
                 # update prompt tool message
                 for prompt_tool in self._prompt_messages_tools:
@@ -363,7 +358,7 @@ class ReActAgentStrategy(AgentStrategy):
             )
             iteration_step += 1
 
-        yield self.create_text_message(final_answer)
+        # yield self.create_text_message(final_answer)
 
         # If context is a list of dict, create retriever resource message
         if isinstance(react_params.context, list):
