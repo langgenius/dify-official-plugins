@@ -224,7 +224,7 @@ class ReActAgentStrategy(AgentStrategy):
                     yield self.create_text_message(chunk)
                     if chunk_state == ReactState.ANSWER:
                         final_answer += chunk
-                    else:
+                    elif chunk_state == ReactState.THINKING:
                         scratchpad.agent_response = scratchpad.agent_response or ""
                         scratchpad.thought = scratchpad.thought or ""
                         scratchpad.agent_response += chunk
