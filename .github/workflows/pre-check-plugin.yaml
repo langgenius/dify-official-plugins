@@ -68,7 +68,8 @@ jobs:
               fi
           else
               # 3. No plugin files, check if we have test files only
-              ALL_FILES=$(gh pr view -R ${{ env.REPO_NAME }} ${{ github.event.pull_request.number }} --json files --jq '.files')
+              # Exclude __mockserver from detection to avoid inferring it as a plugin path
+              ALL_FILES=$(gh pr view -R ${{ env.REPO_NAME }} ${{ github.event.pull_request.number }} --json files --jq '.files | map(select(.path | contains("__mockserver") | not))')
               if [ "$(echo $ALL_FILES | jq 'length')" -gt "0" ]; then
                   # Infer path from the first file, assuming all belong to same plugin if simple test change
                   FIRST_FILE=$(echo $ALL_FILES | jq -r '.[0].path')
@@ -86,7 +87,7 @@ jobs:
                        exit 1
                   fi
               else
-                  echo "No relevant files found."
+                  echo "No relevant files found (or only mockserver files changed)."
                   exit 0
               fi
           fi
@@ -142,20 +143,10 @@ jobs:
         run: |
           cd ${{ env.PLUGIN_PATH }}
           if [ -f requirements.txt ]; then
-              uv pip install packaging
               uv pip install -r requirements.txt
-              dify_version=$(uv pip list | grep -E 'dify-plugin|dify_plugin' | awk '{print $2}')
-              target_version="0.0.1b64"
-              result=$(uv run python -c "from packaging.version import Version; print(0 if Version('$dify_version') > Version('$target_version') else 1)")
-              if [ $result == 0 ]; then
-                  export INSTALL_METHOD=serverless
-                  export SERVERLESS_PORT=8080
-                  export SERVERLESS_HOST=0.0.0.0
-              else
-                  export INSTALL_METHOD=aws_lambda
-                  export AWS_LAMBDA_PORT=8080
-                  export AWS_LAMBDA_HOST=0.0.0.0
-              fi
+              export INSTALL_METHOD=serverless
+              export SERVERLESS_PORT=8080
+              export SERVERLESS_HOST=0.0.0.0
           fi
           cd -
           uv run python .scripts/validator/test-plugin-install.py -d ${{ env.PLUGIN_PATH }}

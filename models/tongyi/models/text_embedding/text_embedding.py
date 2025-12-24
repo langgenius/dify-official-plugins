@@ -1,4 +1,7 @@
+import base64
 import time
+import os
+import yaml
 from typing import Optional
 import dashscope
 import numpy as np
@@ -7,7 +10,9 @@ from dify_plugin.entities.model.text_embedding import EmbeddingUsage, MultiModal
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from models._common import _CommonTongyi
+from ..constant import BURY_POINT_HEADER
 
+vision_models = dict()
 
 class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
     """
@@ -101,17 +106,33 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         Returns:
             List of embeddings, one for each text, and tokens usage.
         """
+
+        # If the model is vision model, it has different endpoint
+        # transfer and call embed_multimodal_documents
+        if TongyiTextEmbeddingModel._is_vision_model(model):
+            documents = [MultiModalContent(content_type=MultiModalContentType.TEXT, content=text) for text in texts]
+            return TongyiTextEmbeddingModel.embed_multimodal_documents(credentials_kwargs, model, documents)
+
         embeddings = []
         embedding_used_tokens = 0
         
         def call_embedding_api(text):
+
             try:
-                return dashscope.TextEmbedding.call(
-                    api_key=credentials_kwargs["dashscope_api_key"], 
-                    model=model, 
-                    input=text, 
-                    text_type="document"
-                )
+                if model in ["multimodal-embedding-v1"]:
+                    return dashscope.MultiModalEmbedding.call(
+                        api_key=credentials_kwargs["dashscope_api_key"],
+                        model=model,
+                        input=[{"text": text}],
+                    )
+                else:
+                    return dashscope.TextEmbedding.call(
+                        api_key=credentials_kwargs["dashscope_api_key"],
+                        model=model,
+                        input=text,
+                        headers=BURY_POINT_HEADER,
+                        text_type="document"
+                    )
             except Exception as e:
                 # Return the exception to be handled by the caller
                 return e
@@ -119,7 +140,6 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         for text in texts:
             # First attempt
             response = call_embedding_api(text)
-            
             # Handle rate limit error (429)
             # Check if response is an exception with rate limit info
             if hasattr(response, 'status_code') and response.status_code == 429:
@@ -141,9 +161,41 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
             if hasattr(response, 'usage') and response.usage and "total_tokens" in response.usage:
                 embedding_used_tokens += response.usage["total_tokens"]
             else:
-                raise ValueError(f"Response usage is missing or does not contain total tokens: {response}")
-                
+                if hasattr(response, 'usage') and response.usage:
+                    if response.output["embeddings"][0]["type"] == "text":
+                        embedding_used_tokens += response.usage["input_tokens"]
+                    elif response.output["embeddings"][0]["type"] == "image":
+                        embedding_used_tokens += response.usage["image_tokens"]
+                else:
+                    raise ValueError(f"Response usage is missing or does not contain total tokens: {response}")
         return ([list(map(float, e)) for e in embeddings], embedding_used_tokens)
+
+    @staticmethod
+    def _is_vision_model(model: str) -> bool:
+        """
+        Check whether there is a YAML configuration file in the current directory and whether it includes vision features.
+
+        Args:
+            model: The model name
+        """
+        if model not in vision_models:
+            try:
+                current_dir = os.path.dirname(os.path.abspath(__file__))
+                yaml_file_path = os.path.join(current_dir, f"{model}.yaml")
+
+                if os.path.exists(yaml_file_path):
+                    with open(yaml_file_path, 'r', encoding='utf-8') as f:
+                        yaml_content = yaml.safe_load(f)
+
+                    if (yaml_content and
+                            'features' in yaml_content and
+                            isinstance(yaml_content['features'], list) and
+                            'vision' in yaml_content['features']):
+                        vision_models[model] = True
+            except Exception:
+                pass
+            vision_models[model] = False
+        return vision_models[model]
 
     def _calc_response_usage(self, model: str, credentials: dict, tokens: int) -> EmbeddingUsage:
         """
@@ -209,6 +261,29 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         Returns:
             List of embeddings, one for each text, and tokens usage.
         """
+        def detect_image_format(base64_str: str) -> str:
+            """
+            Detect image format from base664 string
+
+            :param base64_str: base64 string
+            :return: image format
+            """
+            try:
+                if "," in base64_str:
+                    base64_str = base64_str.split(",", 1)[1]
+
+                data = base64.b64decode(base64_str, validate=True)
+
+                if data.startswith(b"\xFF\xD8\xFF"):
+                    return "jpeg"
+                elif data.startswith(b"\x89PNG\r\n\x1a\n"):
+                    return "png"
+                elif data.startswith(b"BM"):
+                    return "bmp"
+                else:
+                    return "unknown"
+            except Exception:
+                return "unknown"
         embeddings = []
         embedding_used_tokens = 0
         
@@ -230,8 +305,11 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                     "text": document.content
                 }
             elif document.content_type == MultiModalContentType.IMAGE:
+                image_format = detect_image_format(document.content)
+                if image_format not in ["jpeg", "png", "bmp"]:
+                    raise ValueError(f"Unsupported image format: {image_format}")
                 input = {
-                    "image": document.content
+                    "image": "data:image/" + image_format + ";base64," + document.content
                 }
             else:
                 raise ValueError(f"Unsupported content type: {document.content_type}")
