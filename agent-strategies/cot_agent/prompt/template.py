@@ -24,7 +24,7 @@ Action: $JSON_BLOB
 Observation: action result
 ... (repeat Thought/Action/Observation N times)
 Thought: I know what to respond
-Answer: final response to human
+FinalAnswer: final response to human
 
 Begin! Reminder to ALWAYS respond with a valid json blob of a single action. Use tools if necessary. Respond directly if appropriate. Format is Action: $JSON_BLOB then Observation:.
 {{historic_messages}}
@@ -62,7 +62,7 @@ Action: $JSON_BLOB
 Observation: action result
 ... (repeat Thought/Action/Observation N times)
 Thought: I know what to respond
-Answer: final response to human
+FinalAnswer: final response to human
 
 Begin! Reminder to ALWAYS respond with a valid json blob of a single action. Use tools if necessary. Respond directly if appropriate. Format is Action: $JSON_BLOB then Observation:.
 """  # noqa: E501
