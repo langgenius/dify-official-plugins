@@ -10,11 +10,11 @@ meta:
 name: tongyi
 author: langgenius
 label:
-  en_US: TONGYI
-  zh_Hans: 通义千问
+  en_US: tongyi
+  zh_Hans: 通义
 description:
-  en_US: TONGYI
-  zh_Hans: 通义千问
+  en_US: tongyi
+  zh_Hans: 通义
 icon: icon_s_en.png
 plugins:
   models:
