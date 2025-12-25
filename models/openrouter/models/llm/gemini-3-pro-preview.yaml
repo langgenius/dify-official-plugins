@@ -61,6 +61,18 @@ parameter_rules:
       zh_Hans: 是否隐藏思考过程。
       en_US: Whether to hide the thought process.
     required: false
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理程度
+      en_US: Reasoning Effort
+    type: string
+    help:
+      zh_Hans: 指定模型推理的难度
+      en_US: specifying the difficulty of the model's reasoning
+    required: false
+    options:
+      - high
+      - low
 pricing:
   input: "2"
   output: "12"

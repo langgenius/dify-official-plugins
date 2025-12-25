@@ -43,19 +43,37 @@ class SearchNotionTool(Tool):
             # Format results
             formatted_results = []
             for result in results:
+                # In 2025-09-03 API, search returns "data_source" instead of "database"
                 object_type = result.get("object")
                 result_id = result.get("id")
                 
                 # Get title based on object type
                 title = "Untitled"
                 if object_type == "page":
-                    title_content = result.get("properties", {}).get("title", {}).get("title", [])
+                    # Try to get title from properties
+                    properties = result.get("properties", {})
+                    # Check common title property names
+                    title_content = (
+                        properties.get("title", {}).get("title", []) or
+                        properties.get("Name", {}).get("title", []) or
+                        properties.get("Title", {}).get("title", [])
+                    )
                     if title_content:
                         title = client.extract_plain_text(title_content)
                 elif object_type == "database":
+                    # Legacy: database objects (might still appear in some cases)
                     title_content = result.get("title", [])
                     if title_content:
                         title = client.extract_plain_text(title_content)
+                elif object_type == "data_source":
+                    # New in 2025-09-03: data_source objects replace database in search results
+                    title_content = result.get("title", [])
+                    if title_content:
+                        title = client.extract_plain_text(title_content)
+                    # Get parent database info if available
+                    parent = result.get("parent", {})
+                    if parent.get("type") == "database_id":
+                        object_type = "data_source"  # Keep as data_source for clarity
                 
                 # Create URL
                 url = client.format_page_url(result_id)
@@ -75,4 +93,4 @@ class SearchNotionTool(Tool):
             
         except Exception as e:
             yield self.create_text_message(f"Error searching Notion: {str(e)}")
-            return 
+            return

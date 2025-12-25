@@ -66,7 +66,7 @@ class DocumentParsingTool(Tool):
         try:
             resp = requests.post(
                 api_url,
-                headers={"Authorization": f"Bearer {access_token}"},
+                headers={"Authorization": f"token {access_token}"},
                 json=params,
             )
             resp.raise_for_status()

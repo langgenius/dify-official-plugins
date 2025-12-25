@@ -20,6 +20,7 @@
 - openai/gpt-4
 - openai/gpt-4-32k
 - openai/gpt-3.5-turbo
+- anthropic/claude-opus-4.5
 - anthropic/claude-opus-4
 - anthropic/claude-opus-4.1
 - anthropic/claude-sonnet-4.5
@@ -32,6 +33,7 @@
 - anthropic/claude-3-opus
 - anthropic/claude-3-sonnet
 - google/gemini-3-pro-preview
+- google/gemini-3-flash-preview
 - google/gemini-2.5-pro
 - google/gemini-2.5-flash-preview-09-2025
 - google/gemini-2.5-flash

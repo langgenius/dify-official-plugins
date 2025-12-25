@@ -99,7 +99,8 @@ class ComfyuiImg2Img(Tool):
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "img2img.json")) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), self.comfyui.get_object_info())
+
         workflow.set_k_sampler(
             None,
             steps,
@@ -124,7 +125,7 @@ class ComfyuiImg2Img(Tool):
         for _ in range(batch_size):
             workflow.randomize_seed()
             try:
-                output_images = self.comfyui.generate(workflow.json())
+                output_images = self.comfyui.generate(workflow)
             except Exception as e:
                 raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
             for img in output_images:

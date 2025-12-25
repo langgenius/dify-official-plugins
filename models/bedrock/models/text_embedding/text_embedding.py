@@ -3,7 +3,6 @@ import logging
 import time
 import tiktoken
 from typing import Optional
-
 from botocore.exceptions import (
     ClientError,
     EndpointConnectionError,
@@ -13,7 +12,7 @@ from botocore.exceptions import (
 )
 
 from dify_plugin.entities.model import EmbeddingInputType, PriceType, AIModelEntity, FetchFrom, ModelType
-from dify_plugin.entities.model.text_embedding import EmbeddingUsage, TextEmbeddingResult
+from dify_plugin.entities.model.text_embedding import EmbeddingUsage, MultiModalContent, MultiModalContentType, MultiModalEmbeddingResult, TextEmbeddingResult
 from dify_plugin.entities import I18nObject
 
 from dify_plugin.errors.model import (
@@ -27,7 +26,6 @@ from dify_plugin.errors.model import (
 )
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from provider.get_bedrock_client import get_bedrock_client
-from . import model_ids
 from utils.inference_profile import (
     get_inference_profile_info,
     validate_inference_profile,
@@ -62,10 +60,10 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
         if inference_profile_id:
             # Get the full ARN from the profile ID
             profile_info = get_inference_profile_info(inference_profile_id, credentials)
-            model_id = profile_info.get("inferenceProfileArn")
-            if not model_id:
+            model_package_arn = profile_info.get("inferenceProfileArn")
+            if not model_package_arn:
                 raise InvokeError(f"Could not get ARN for inference profile {inference_profile_id}")
-            logger.info(f"Using inference profile ARN: {model_id}")
+            logger.info(f"Using inference profile ARN: {model_package_arn}")
             
             # Determine model prefix from underlying models
             underlying_models = profile_info.get("models", [])
@@ -74,12 +72,15 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
                 if "foundation-model/" in first_model_arn:
                     underlying_model_id = first_model_arn.split("foundation-model/")[1]
                     model_prefix = underlying_model_id.split(".")[0]
+                    # Update model_id to the actual foundation model ARN
+                    model_id = underlying_model_id
                 else:
                     raise InvokeError(f"Could not determine model type from inference profile")
             else:
                 raise InvokeError(f"No underlying models found in inference profile")
         else:
             # Traditional model - use model directly
+            model_package_arn = model
             model_prefix = model.split(".")[0]
             
         bedrock_runtime = get_bedrock_client("bedrock-runtime", credentials)
@@ -102,7 +103,7 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
                         }
                     }
                 }
-                response_body = self._invoke_bedrock_embedding(model_id, bedrock_runtime, body)
+                response_body = self._invoke_bedrock_embedding(model_package_arn, bedrock_runtime, body)
                 embedding_data = response_body.get("embeddings", [{}])[0]
                 embeddings.extend([embedding_data.get("embedding")])
                 token_usage += len(text.split())
@@ -120,7 +121,7 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
                 body = {
                     "inputText": text,
                 }
-                response_body = self._invoke_bedrock_embedding(model_id, bedrock_runtime, body)
+                response_body = self._invoke_bedrock_embedding(model_package_arn, bedrock_runtime, body)
                 embeddings.extend([response_body.get("embedding")])
                 token_usage += response_body.get("inputTextTokenCount")
             logger.warning(f"Total Tokens: {token_usage}")
@@ -138,7 +139,7 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
                     "texts": [text],
                     "input_type": input_type,
                 }
-                response_body = self._invoke_bedrock_embedding(model_id, bedrock_runtime, body)
+                response_body = self._invoke_bedrock_embedding(model_package_arn, bedrock_runtime, body)
                 embeddings.extend(response_body.get("embeddings"))
                 token_usage += len(text)
             result = TextEmbeddingResult(
@@ -403,3 +404,111 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
     
+
+
+    def _invoke_multimodal(
+        self, 
+        model: str, 
+        credentials: dict, 
+        documents: list[MultiModalContent], 
+        user: str | None = None, 
+        input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT) -> MultiModalEmbeddingResult:
+        """
+        Invoke multimodal embedding model
+        """
+        # Check if using inference profile
+        model_id = model
+        inference_profile_id = credentials.get("inference_profile_id")
+        if inference_profile_id:
+            # Get the full ARN from the profile ID
+            profile_info = get_inference_profile_info(inference_profile_id, credentials)
+            model_id = profile_info.get("inferenceProfileArn")
+            if not model_id:
+                raise InvokeError(f"Could not get ARN for inference profile {inference_profile_id}")
+            logger.info(f"Using inference profile ARN: {model_id}")
+            
+            # Determine model prefix from underlying models
+            underlying_models = profile_info.get("models", [])
+            if underlying_models:
+                first_model_arn = underlying_models[0].get("modelArn", "")
+                if "foundation-model/" in first_model_arn:
+                    underlying_model_id = first_model_arn.split("foundation-model/")[1]
+                    model_prefix = underlying_model_id.split(".")[0]
+                else:
+                    raise InvokeError("Could not determine model type from inference profile")
+            else:
+                raise InvokeError("No underlying models found in inference profile")
+        else:
+            # Traditional model - use model directly
+            model_prefix = model.split(".")[0]
+            
+        bedrock_runtime = get_bedrock_client("bedrock-runtime", credentials)
+
+        embeddings = []
+        token_usage = 0
+
+        if model_prefix == "amazon":
+            for document in documents:
+                if document.content_type == MultiModalContentType.TEXT:
+                    text = document.content
+                    body = {
+                        "inputText": text,
+                    }
+                elif document.content_type == MultiModalContentType.IMAGE:
+                    image = document.content
+                    image_format = self._get_image_format(image)
+                    if image_format not in ["jpeg", "png", "gif", "webp"]:
+                        raise ValueError(f"Unsupported image format: {image_format}")
+                    body = {
+                        "image": {
+                            "format": image_format,
+                            "source": {
+                                "bytes": image,
+                            }
+                        }
+                    }
+                else:
+                    raise ValueError(f"Unsupported content type: {document.content_type}")
+                
+                request_body = {
+                    "schemaVersion": "nova-multimodal-embed-v1",
+                    "taskType": "SINGLE_EMBEDDING",
+                    "singleEmbeddingParams":{
+                        "embeddingDimension": 1024,
+                        "embeddingPurpose": "GENERIC_INDEX" if input_type == EmbeddingInputType.DOCUMENT else "GENERIC_RETRIEVAL",
+                        **body,
+                    }
+                }
+
+                response_body = self._invoke_bedrock_embedding(model_id, bedrock_runtime, request_body)
+                embeddings.extend([response_body.get("embeddings")[0].get("embedding")])
+                token_usage += response_body.get("inputTextTokenCount") if response_body.get("inputTextTokenCount") else 0
+            logger.warning(f"Total Tokens: {token_usage}")
+            result = MultiModalEmbeddingResult(
+                model=model,
+                embeddings=embeddings,
+                usage=self._calc_response_usage(model=model, credentials=credentials, tokens=token_usage),
+            )
+            return result
+        # others
+        raise ValueError(f"Got unknown model prefix {model_prefix} when handling block response")
+
+    def _get_image_format(self, base64_string: str) -> str:
+        if ',' in base64_string:
+            base64_string = base64_string.split(',')[1]
+        
+        # 取前15个字符进行判断
+        prefix = base64_string[:15]
+
+        if prefix.startswith("/9j/"):
+            return "jpeg"
+        elif prefix.startswith("iVBORw0KGgo"):
+            return "png"
+        elif prefix.startswith("R0lGOD"):
+            return "gif"
+        elif prefix.startswith("UklGR"):
+            return "webp"
+        elif prefix.startswith("Qk0"):
+            return "bmp"
+        else:
+            return "unknown"

@@ -8,7 +8,7 @@ from dashscope.audio.tts import ResultCallback, SpeechSynthesisResult
 from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeBadRequestError
 from dify_plugin.interfaces.model.tts_model import TTSModel
 from models._common import _CommonTongyi
-
+from ..constant import BURY_POINT_HEADER
 
 class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
     """
@@ -117,6 +117,7 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
             sample_rate=48000,
             api_key=credentials.get("dashscope_api_key"),
             text=sentence.strip(),
+            headers=BURY_POINT_HEADER,
             format=audio_type,
         )
         if isinstance(response.get_audio_data(), bytes):

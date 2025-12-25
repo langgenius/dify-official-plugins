@@ -34,6 +34,7 @@ model_credential_schema:
         en_US: The display name of the model in the interface.
     - variable: api_key
       label:
+        zh_Hans: API Key
         en_US: API Key
       type: secret-input
       required: false
@@ -105,6 +106,7 @@ model_credential_schema:
         - variable: __model_type
           value: llm
       label:
+        zh_Hans: 对话类型
         en_US: Completion mode
       type: select
       required: false
@@ -169,30 +171,39 @@ model_credential_schema:
           value: llm
       default: "4096"
       type: text-input
-    - variable: agent_though_support
+    - variable: agent_thought_support
       show_on:
         - variable: __model_type
           value: llm
       label:
-        en_US: Agent Thought
+        en_US: Thinking Mode Support
+        zh_Hans: 思考模式支持
       type: select
       required: false
       default: not_supported
       options:
-        - value: supported
+        - value: only_thinking_supported
           label:
-            en_US: Support
-            zh_Hans: 支持
+            en_US: Only Thinking Mode
+            zh_Hans: 仅支持思考模式
         - value: not_supported
           label:
-            en_US: Not Support
-            zh_Hans: 不支持
+            en_US: Only Non-Thinking Mode
+            zh_Hans: 仅支持非思考模式
+        - value: supported
+          label:
+            en_US: Both Modes
+            zh_Hans: 两种模式都支持
+      help:
+        en_US: Configure whether the model supports thinking mode, non-thinking mode, or both. This will control the availability of the thinking mode toggle.
+        zh_Hans: 配置模型是否支持思考模式、非思考模式或两者都支持。这将控制思考模式开关的可用性。
     - variable: function_calling_type
       show_on:
         - variable: __model_type
           value: llm
       label:
-        en_US: Function calling
+        zh_Hans: 函数调用类型
+        en_US: Function Call Type
       type: select
       required: false
       default: no_call
@@ -200,11 +211,11 @@ model_credential_schema:
         - value: function_call
           label:
             en_US: Function Call
-            zh_Hans: Function Call
+            zh_Hans: 函数调用
         - value: tool_call
           label:
             en_US: Tool Call
-            zh_Hans: Tool Call
+            zh_Hans: 工具调用
         - value: no_call
           label:
             en_US: Not Support
@@ -214,6 +225,7 @@ model_credential_schema:
         - variable: __model_type
           value: llm
       label:
+        zh_Hans: 流式函数调用
         en_US: Stream function calling
       type: select
       required: false
@@ -232,7 +244,7 @@ model_credential_schema:
         - variable: __model_type
           value: llm
       label:
-        zh_Hans: Vision 支持
+        zh_Hans: 视觉支持
         en_US: Vision Support
       type: select
       required: false
@@ -251,6 +263,7 @@ model_credential_schema:
         - variable: __model_type
           value: llm
       label:
+        zh_Hans: 结构化输出
         en_US: Structured Output
       type: select
       required: false
@@ -269,6 +282,7 @@ model_credential_schema:
         - variable: __model_type
           value: llm
       label:
+        zh_Hans: 流模式授权
         en_US: Stream mode auth
       type: select
       required: false

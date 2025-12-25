@@ -31,13 +31,6 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
     ) -> AIModelEntity:
         entity = super().get_customizable_model_schema(model, credentials)
 
-        agent_though_support = credentials.get("agent_though_support", "not_supported")
-        if agent_though_support == "supported":
-            try:
-                entity.features.index(ModelFeature.AGENT_THOUGHT)
-            except ValueError:
-                entity.features.append(ModelFeature.AGENT_THOUGHT)
-
         structured_output_support = credentials.get("structured_output_support", "not_supported")
         if structured_output_support == "supported":
             # ----
@@ -57,10 +50,23 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     label=I18nObject(en_US="Response Format", zh_Hans="回复格式"),
                     help=I18nObject(
                         en_US="Specifying the format that the model must output.",
-                        zh_Hans="指定模型必须输出的格式。",
+                        zh_Hans="指定模型必须输出的回复格式。",
                     ),
                     type=ParameterType.STRING,
                     options=["text", "json_object", "json_schema"],
+                    required=False,
+                )
+            )
+            entity.parameter_rules.append(
+                ParameterRule(
+                    name="reasoning_format",
+                    label=I18nObject(en_US="Reasoning Format", zh_Hans="推理格式"),
+                    help=I18nObject(
+                        en_US="Specifying the format that the model must output reasoning.",
+                        zh_Hans="指定模型必须输出的推理格式。",
+                    ),
+                    type=ParameterType.STRING,
+                    options=["none", "auto", "deepseek", "deepseek-legacy"],
                     required=False,
                 )
             )
@@ -76,18 +82,29 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 en_US=credentials["display_name"], zh_Hans=credentials["display_name"]
             )
 
-        entity.parameter_rules += [
-            ParameterRule(
-                name="enable_thinking",
-                label=I18nObject(en_US="Thinking mode", zh_Hans="思考模式"),
-                help=I18nObject(
-                    en_US="Whether to enable thinking mode, applicable to various thinking mode models deployed on reasoning frameworks such as vLLM and SGLang, for example Qwen3.",
-                    zh_Hans="是否开启思考模式，适用于vLLM和SGLang等推理框架部署的多种思考模式模型，例如Qwen3。",
-                ),
-                type=ParameterType.BOOLEAN,
-                required=False,
+        # Configure thinking mode parameter based on model support
+        agent_thought_support = credentials.get("agent_thought_support", "not_supported")
+        
+        # Add AGENT_THOUGHT feature if thinking mode is supported (either mode)
+        if agent_thought_support in ["supported", "only_thinking_supported"] and ModelFeature.AGENT_THOUGHT not in entity.features:
+            entity.features.append(ModelFeature.AGENT_THOUGHT)
+        
+        # Only add the enable_thinking parameter if the model supports both modes
+        # If only_thinking_supported, the parameter is not needed (forced behavior)
+        if agent_thought_support == "supported":
+            entity.parameter_rules.append(
+                ParameterRule(
+                    name="enable_thinking",
+                    label=I18nObject(en_US="Thinking mode", zh_Hans="思考模式"),
+                    help=I18nObject(
+                        en_US="Whether to enable thinking mode, applicable to various thinking mode models deployed on reasoning frameworks such as vLLM and SGLang, for example Qwen3.",
+                        zh_Hans="是否开启思考模式，适用于vLLM和SGLang等推理框架部署的多种思考模式模型，例如Qwen3。",
+                    ),
+                    type=ParameterType.BOOLEAN,
+                    required=False,
+                )
             )
-        ]
+        
         return entity
 
     @classmethod
@@ -154,10 +171,26 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 else:
                     prompt_messages.insert(0, SystemPromptMessage(content=structured_output_prompt))
 
-        enable_thinking = model_parameters.pop("enable_thinking", None)
-        if enable_thinking is not None:
-            model_parameters["chat_template_kwargs"] = {"enable_thinking": bool(enable_thinking)}
-
+        # Handle thinking mode based on model support configuration
+        agent_thought_support = credentials.get("agent_thought_support", "not_supported")
+        enable_thinking_value = None
+        if agent_thought_support == "only_thinking_supported":
+            # Force enable thinking mode
+            enable_thinking_value = True
+        elif agent_thought_support == "not_supported":
+            # Force disable thinking mode
+            enable_thinking_value = False
+        else:
+            # Both modes supported - use user's preference
+            user_enable_thinking = model_parameters.pop("enable_thinking", None)
+            if user_enable_thinking is not None:
+                enable_thinking_value = bool(user_enable_thinking)
+                
+        if enable_thinking_value is not None:
+            model_parameters.setdefault("chat_template_kwargs", {})["enable_thinking"] = enable_thinking_value
+            # Add From: https://github.com/langgenius/dify-official-plugins/pull/2151
+            model_parameters.setdefault("chat_template_kwargs", {})["thinking"] = enable_thinking_value
+        
         # Remove thinking content from assistant messages for better performance.
         with suppress(Exception):
             self._drop_analyze_channel(prompt_messages)

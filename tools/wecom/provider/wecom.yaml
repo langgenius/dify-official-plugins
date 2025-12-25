@@ -17,3 +17,4 @@ identity:
   - social
 tools:
 - tools/wecom_group_bot.yaml
+- tools/wecom_group_bot_file.yaml

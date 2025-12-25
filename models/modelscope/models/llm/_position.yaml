@@ -35,6 +35,7 @@
 - deepseek-r1-distill-qwen-7b
 - deepseek-r1-distill-qwen-14b
 - deepseek-r1-distill-qwen-32b
+- deepseek-v3.2
 - deepseek-v3.1
 - deepseek-v3
 - ernie-4.5-0.3b-pt
@@ -43,6 +44,7 @@
 - ernie-4.5-vl-28b-a3b-pt
 - glm-4.5
 - glm-4.6
+- glm-4.6v
 - llama-4-maverick-17b-128e-instruct
 - llama-4-scout-17b-16e-instruct
 - minmax-m1-80k

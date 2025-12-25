@@ -1,4 +1,5 @@
 from collections.abc import Generator
+import re
 from typing import Optional, cast
 
 from volcenginesdkarkruntime import Ark  # type: ignore
@@ -94,6 +95,35 @@ class ArkClientV3:
         client.endpoint_id = credentials["endpoint_id"]
         return client
 
+    # Pattern to match <think>...</think> blocks (case-insensitive, non-greedy)
+    _THINK_PATTERN = re.compile(r"<think>(.*?)</think>", re.DOTALL | re.IGNORECASE)
+
+    @staticmethod
+    def _extract_reasoning_content(text: str) -> tuple[str, Optional[str]]:
+        """
+        Extract content from <think>...</think> blocks and return cleaner text and reasoning content.
+
+        Args:
+            text: Text that may contain <think> blocks
+
+        Returns:
+            Tuple of (clean_text, reasoning_content)
+        """
+        if not text:
+            return text, None
+
+        # Find all <think>...</think> blocks
+        matches = ArkClientV3._THINK_PATTERN.findall(text)
+        reasoning_content = "\n".join(match.strip() for match in matches) if matches else None
+
+        # Remove all <think>...</think> blocks from original text
+        clean_text = ArkClientV3._THINK_PATTERN.sub("", text)
+
+        # Clean up extra whitespace
+        clean_text = re.sub(r"\n\s*\n", "\n\n", clean_text).strip()
+
+        return clean_text, reasoning_content
+
     @staticmethod
     def convert_prompt_message(message: PromptMessage) -> ChatCompletionMessageParam:
         """Converts a PromptMessage to a ChatCompletionMessageParam"""
@@ -135,8 +165,14 @@ class ArkClientV3:
             message_dict = ChatCompletionUserMessageParam(role="user", content=content)
         elif isinstance(message, AssistantPromptMessage):
             message = cast(AssistantPromptMessage, message)
+            # Extract <think> tags content to reasoning_content field
+            content = message.content
+            reasoning_content = None
+            if isinstance(content, str):
+                content, reasoning_content = ArkClientV3._extract_reasoning_content(content)
+
             message_dict = ChatCompletionAssistantMessageParam(
-                content=message.content,
+                content=content,
                 role="assistant",
                 tool_calls=None
                 if not message.tool_calls
@@ -149,6 +185,9 @@ class ArkClientV3:
                     for call in message.tool_calls
                 ],
             )
+            if reasoning_content:
+                # Manually add reasoning_content as it might not be in the TypedDict definition yet
+                message_dict["reasoning_content"] = reasoning_content  # type: ignore
         elif isinstance(message, SystemPromptMessage):
             message = cast(SystemPromptMessage, message)
             message_dict = ChatCompletionSystemMessageParam(content=message.content, role="system")

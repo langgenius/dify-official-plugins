@@ -1,5 +1,6 @@
 import base64
 import logging
+import json
 import os
 import tempfile
 import uuid
@@ -47,7 +48,7 @@ from dify_plugin.entities.model.message import (
     TextPromptMessageContent,
     ToolPromptMessage,
     UserPromptMessage,
-    VideoPromptMessageContent,
+    VideoPromptMessageContent, AudioPromptMessageContent,
 )
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -60,6 +61,7 @@ from dify_plugin.errors.model import (
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from openai import OpenAI
+from ..constant import BURY_POINT_HEADER
 
 logger = logging.getLogger(__name__)
 
@@ -179,9 +181,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
-        if credentials.get("use_international_endpoint", "false") == "true":
-            import dashscope
-            dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
         credentials_kwargs = self._to_credential_kwargs(credentials)
         mode = self.get_model_mode(model, credentials)
         if model in {"qwen-turbo-chat", "qwen-plus-chat"}:
@@ -226,28 +225,46 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                                             "qwen-turbo-latest", "qwen-turbo-2025-04-28") \
                                   and model_parameters.get("enable_thinking", False)
 
-        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition, QwQ, and QVQ models only supports streaming output.
-        if thinking_business_qwen3 or model.startswith(("qwen3-", "qwq-", "qvq-")):
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder and max variants), QwQ, and QVQ models only supports streaming output.
+        # Note: qwen3-coder-xx and qwen3-max-xx models support non-streaming output.
+        qwen3_requires_stream = (
+            model.startswith("qwen3-") 
+            and not model.startswith(("qwen3-coder", "qwen3-max"))
+        )
+        common_force_condition = thinking_business_qwen3 or qwen3_requires_stream
+        if common_force_condition or model.startswith(("qwq-", "qvq-")):
             stream = True
-
-        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition and QwQ models only supports incremental_output set to True.
-        if thinking_business_qwen3 or model.startswith(("qwen3-", "qwq-", "qvq-")):
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder and max variants), QwQ, and QVQ models only supports incremental_output set to True.
+        if common_force_condition or model.startswith(("qwq-", "qvq-")):
             incremental_output = True
+
+        base_address =  "https://dashscope-intl.aliyuncs.com/api/v1" if credentials.get("use_international_endpoint") == "true" else None
+        
+        # The parameter `enable_omni_output_audio_url` must be set to true when using the Omni model in non-streaming mode.
+        if model.startswith("qwen3-omni-") and not stream:
+            params["enable_omni_output_audio_url"] = True
 
         if ModelFeature.VISION in (model_schema.features or []):
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages, rich_content=True
             )
-            response = MultiModalConversation.call(**params, stream=stream, incremental_output=incremental_output)
+            response = MultiModalConversation.call(
+                **params,
+                stream=stream,
+                headers=self._get_market_bury_point_header(params["messages"]),
+                incremental_output=incremental_output,
+                base_address=base_address)
         else:
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages
             )
             response = Generation.call(
                 **params,
+                headers=self._get_market_bury_point_header(params["messages"]),
                 result_format="message",
                 stream=stream,
                 incremental_output=incremental_output,
+                base_address=base_address
             )
         if stream:
             return self._handle_generate_stream_response(
@@ -275,7 +292,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         """
         try:
             if response.status_code not in {200, HTTPStatus.OK}:
-                self._handle_error_response(response.status_code, response.message)
+                # Get request_id (if present) and forward it to the error handler.
+                request_id = getattr(response, 'request_id', None)
+                self._handle_error_response(response.status_code, response.message, model, request_id)
+
             resp_content = response.output.choices[0].message.content
             # special for qwen-vl
             if isinstance(resp_content, list):
@@ -344,7 +364,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         try:
             for index, response in enumerate(responses):
                 if response.status_code not in {200, HTTPStatus.OK}:
-                    self._handle_error_response(response.status_code, response.message, model)
+                    # Get request_id (if present) and forward it to the error handler.
+                    request_id = getattr(response, 'request_id', None)
+                    self._handle_error_response(response.status_code, response.message, model, request_id)
+
                 resp_finish_reason = response.output.choices[0].finish_reason
                 if resp_finish_reason is not None and resp_finish_reason != "null":
                     resp_content = response.output.choices[0].message.content
@@ -398,27 +421,40 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     resp_content, is_reasoning = self._wrap_thinking_by_reasoning_content(
                         message, is_reasoning
                     )
-                    if not resp_content:
-                        if "tool_calls" in response.output.choices[0].message:
-                            self._handle_tool_call_stream(response, tool_calls, incremental_output)
-                        continue
-                    if incremental_output:
-                        delta = resp_content
-                        full_text += delta
-                    else:
-                        delta = resp_content.replace(full_text, "", 1)
-                        full_text = resp_content
+                    
+                    content_to_yield = []
+                    if resp_content:
+                        if incremental_output:
+                            delta = resp_content
+                            full_text += delta
+                        else:
+                            delta = resp_content.replace(full_text, "", 1)
+                            full_text = resp_content
+                        content_to_yield.append(delta)
 
-                    assistant_prompt_message = AssistantPromptMessage(
-                        content=delta
-                    )
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(
-                            index=index, message=assistant_prompt_message
-                        ),
-                    )
+                    if "tool_calls" in message:
+                        if is_reasoning:
+                            content_to_yield.append("\n</think>")
+                            # In incremental mode (stream=True), full_text accumulates the generated content.
+                            # In non-incremental mode, full_text tracks the raw API response state for delta calculation.
+                            # Since "\n</think>" is synthesized locally and not part of the API response,
+                            # we must NOT update full_text in non-incremental mode to avoid sync issues.
+                            if incremental_output:
+                                full_text += "\n</think>"
+                            is_reasoning = False
+                        self._handle_tool_call_stream(response, tool_calls, incremental_output)
+                    
+                    if content_to_yield:
+                        assistant_prompt_message = AssistantPromptMessage(
+                            content="".join(content_to_yield)
+                        )
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=index, message=assistant_prompt_message
+                            ),
+                        )
         finally:
             self._cleanup_temp_files()
 
@@ -538,6 +574,17 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             if message_content.data.startswith("data:"):
                                 video_url = self._save_base64_to_file(message_content.data)
                             sub_message_dict = {"video": video_url}
+                            user_messages.append(sub_message_dict)
+                        elif message_content.type == PromptMessageContentType.AUDIO:
+                            message_content = cast(
+                                AudioPromptMessageContent, message_content
+                            )
+                            audio_data = message_content.data
+                            if not audio_data:
+                                raise ValueError("Audio content cannot be empty.")
+                            if audio_data.startswith("data:"):
+                                audio_data = self._save_base64_to_file(audio_data)
+                            sub_message_dict = {"audio": audio_data}
                             user_messages.append(sub_message_dict)
                         elif message_content.type == PromptMessageContentType.DOCUMENT:
                             message_content = cast(
@@ -725,16 +772,23 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             ) from ex
         return content, is_reasoning
 
-    def _handle_error_response(self, status_code: int, message: str, model: str = None) -> None:
+    def _handle_error_response(self, status_code: int, message: str, model: str = None, request_id: str = None) -> None:
         """
         Handle error response based on HTTP status code
 
         :param status_code: HTTP status code
         :param message: error message
         :param model: model name (optional, for more detailed error messages)
+        :param request_id: request id from Tongyi API response (optional)
         :raises: Appropriate InvokeError based on status code
         """
-        error_msg = f"Failed to invoke model {model}, status code: {status_code}, message: {message}" if model else message
+        if model:
+            error_msg = f"Failed to invoke model {model}, status code: {status_code}, message: {message}"
+        else:
+            error_msg = message
+
+        if request_id:
+            error_msg += f", request_id: {request_id}"
 
         if status_code == 400:
             raise InvokeBadRequestError(error_msg)
@@ -844,3 +898,40 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 ),
             ],
         )
+
+    def _get_market_bury_point_header(self, messages: list[dict]) -> dict:
+        """
+        Extract market bury point header information from messages
+
+        This function parses system role messages in the messages list to extract productCode and buyerUid,
+        constructs the bury point header, and cleans up the marketParams tag content from the original message.
+
+        Args:
+            messages (list[dict]): Message list, each element contains role and content fields
+
+        Returns:
+            dict: Bury point header information dictionary containing moduleCode, accountId and other fields;
+                  If no valid information can be extracted, returns the default BURY_POINT_HEADER
+        """
+        system_entries = [entry for entry in messages if entry['role'] == 'system']
+        if system_entries:
+            system_entry = system_entries[0].get('content', '')
+            if system_entry:
+                try:
+                    system_entry_split = system_entry.split("||||||")
+                    if len(system_entry_split) >= 2:
+                        burn = system_entry_split[0].split(',')
+                        bury_point_header = json.loads(BURY_POINT_HEADER.get('x-dashscope-euid'))
+                        if len(burn) in (1, 2):
+                            product_code = burn[0]
+                            buyer_uid = burn[1] if len(burn) == 2 else ""
+                            bury_point_header['moduleCode'] = product_code.strip()
+                            bury_point_header['accountId'] = buyer_uid.strip()
+
+                        system_entries[0]['content'] = "".join(system_entry_split[1:])
+                        return {'x-dashscope-euid': json.dumps(bury_point_header)}
+                except Exception:
+                    return BURY_POINT_HEADER
+
+        return BURY_POINT_HEADER
+

@@ -50,6 +50,9 @@ IMAGE_GENERATION_MODELS = {
     "gemini-3-pro-image-preview",
 }
 
+# https://ai.google.dev/gemini-api/docs/thought-signatures#faqs
+DEFAULT_THOUGHT_SIGNATURE: bytes = b"skip_thought_signature_validator"
+
 
 class GoogleLargeLanguageModel(LargeLanguageModel):
     is_thinking = None
@@ -344,10 +347,15 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 thinking_budget = -1
 
         if isinstance(thinking_level, str):
-            if thinking_level in ["Low"]:
-                thinking_level = types.ThinkingLevel.LOW
-            elif thinking_level in ["High"]:
-                thinking_level = types.ThinkingLevel.HIGH
+            level_map = {
+                "Minimal": types.ThinkingLevel.MINIMAL,
+                "Low": types.ThinkingLevel.LOW,
+                "Medium": types.ThinkingLevel.MEDIUM,
+                "High": types.ThinkingLevel.HIGH,
+            }
+            thinking_level = level_map.get(
+                thinking_level, types.ThinkingLevel.THINKING_LEVEL_UNSPECIFIED
+            )
         if not isinstance(thinking_level, types.ThinkingLevel):
             thinking_level = None
 
@@ -506,25 +514,32 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: Gemini Content representation of message
         """
 
-        def _build_text_parts(_content: str | TextPromptMessageContent) -> List[types.Part]:
+        def _build_text_parts(
+            _content: str | TextPromptMessageContent, *, is_assistant_tree: bool = False
+        ) -> List[types.Part]:
             text_parts = []
             if isinstance(_content, TextPromptMessageContent):
                 _content = _content.data
             if message.role == PromptMessageRole.ASSISTANT:
                 _content = re.sub(r"^<think>.*?</think>\s*", "", _content, count=1, flags=re.DOTALL)
             if _content:
-                text_parts.append(types.Part.from_text(text=_content))
+                _unverified_part = types.Part.from_text(text=_content)
+                if is_assistant_tree:
+                    _unverified_part.thought_signature = DEFAULT_THOUGHT_SIGNATURE
+                text_parts.append(_unverified_part)
             return text_parts
 
         # Helper function to build parts from content
-        def build_parts(content: str | List[PromptMessageContentUnionTypes]) -> List[types.Part]:
+        def build_parts(
+            content: str | List[PromptMessageContentUnionTypes], *, is_assistant_tree: bool = False
+        ) -> List[types.Part]:
             if isinstance(content, str):
-                return _build_text_parts(content)
+                return _build_text_parts(content, is_assistant_tree=is_assistant_tree)
 
             parts_ = []
             for obj in content:
                 if obj.type == PromptMessageContentType.TEXT:
-                    parts_.extend(_build_text_parts(obj))
+                    parts_.extend(_build_text_parts(obj, is_assistant_tree=is_assistant_tree))
                 else:
                     # Filter files based on type and supported formats
                     should_upload = True
@@ -542,7 +557,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                         uri, mime_type = self._upload_file_content_to_google(
                             obj, genai_client, file_server_url_prefix
                         )
-                        parts_.append(types.Part.from_uri(file_uri=uri, mime_type=mime_type))
+                        _unverified_part = types.Part.from_uri(file_uri=uri, mime_type=mime_type)
+                        if is_assistant_tree:
+                            _unverified_part.thought_signature = DEFAULT_THOUGHT_SIGNATURE
+                        parts_.append(_unverified_part)
                     else:
                         # Log skipped files for debugging
                         logging.debug(
@@ -560,17 +578,17 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
             # Handle text content (remove thinking tags)
             if message.content:
-                parts.extend(build_parts(message.content))
+                parts.extend(build_parts(message.content, is_assistant_tree=True))
 
             # Handle tool calls
             # https://ai.google.dev/gemini-api/docs/function-calling?hl=zh-cn&example=chart#how-it-works
             if message.tool_calls:
                 call = message.tool_calls[0]
-                parts.append(
-                    types.Part.from_function_call(
-                        name=call.function.name, args=json.loads(call.function.arguments)
-                    )
+                _unsafe_part = types.Part.from_function_call(
+                    name=call.function.name, args=json.loads(call.function.arguments)
                 )
+                _unsafe_part.thought_signature = DEFAULT_THOUGHT_SIGNATURE
+                parts.append(_unsafe_part)
 
             return types.Content(role="model", parts=parts)
 
@@ -616,10 +634,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: llm response
         """
         # transform assistant message to prompt message
-        if model in IMAGE_GENERATION_MODELS:
-            assistant_prompt_message = self._parse_parts(response.candidates[0].content.parts)
-        else:
-            assistant_prompt_message = AssistantPromptMessage(content=response.text)
+        # Always use _parse_parts to ensure consistent response format (list of PromptMessageContent)
+        # This fixes the "'str' object has no attribute 'get'" error that occurs when
+        # downstream code expects structured content but receives a plain string
+        assistant_prompt_message = self._parse_parts(response.candidates[0].content.parts)
 
         # calculate num tokens
         prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(

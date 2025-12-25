@@ -4,8 +4,6 @@
 
 **[PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR) is an industry-leading, production-ready OCR and document AI engine, offering end-to-end solutions from text extraction to intelligent document understanding.** This plugin provides several capabilities from PaddleOCR, including text recognition, document parsing, and more.
 
-> In version 0.0.1, only the text recognition tool was available, and the plugin was called "PaddleOCR Text Recognition". Starting from version 0.1.0, the plugin was refactored into an all-in-one solution that includes not only the text recognition tool but also additional capabilities such as the document parsing tool.
-
 ## Configuration
 
 ### 1. Get the PaddleOCR plugin from Plugin Marketplace
