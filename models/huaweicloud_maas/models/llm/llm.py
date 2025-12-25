@@ -64,7 +64,7 @@ class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
         )
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
-        self._add_custom_parameters(credentials)
+        self._add_custom_parameters(model, credentials)
         super().validate_credentials(model, credentials)
 
     def _add_custom_parameters(self, model: str, credentials: dict) -> None:
