@@ -173,7 +173,7 @@ class CotAgentOutputParser:
                         last_character = delta
                         index += steps
                         continue
-                    if delta not in {" ", "\n", "\t", "\r"}:
+                    if not delta.isspace():
                         pending_action_json = False
 
                 if in_json:
