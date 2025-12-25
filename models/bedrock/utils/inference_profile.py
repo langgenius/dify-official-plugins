@@ -58,6 +58,10 @@ def get_inference_profile_info(inference_profile_id: str, credentials: dict) -> 
                 # Remove expired cache entry
                 logger.debug(f"Cache expired for inference profile {inference_profile_id}, fetching fresh data")
                 del _inference_profile_cache[cache_key]
+                # Clean up fetch lock if no process is waiting on it (prevents unbounded memory growth)
+                with _fetch_locks_lock:
+                    if cache_key in _fetch_locks and not _fetch_locks[cache_key].locked():
+                        del _fetch_locks[cache_key]
 
     # Get per-key lock to prevent thundering herd
     # Only one thread will fetch for a given cache_key at a time
