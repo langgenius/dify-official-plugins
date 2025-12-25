@@ -7,6 +7,31 @@ from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
 
 
 class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
+    endpoint_mapping = {
+        "deepseek-v3.2": "https://api.modelarts-maas.com/v2",
+        "deepseek-v3.2-exp": "https://api.modelarts-maas.com/v2",
+        "deepseek-v3.1": "https://api.modelarts-maas.com/v2",
+        "DeepSeek-V3": "https://api.modelarts-maas.com/v2",
+        "deepseek-r1-250528": "https://api.modelarts-maas.com/v2",
+        "DeepSeek-R1": "https://api.modelarts-maas.com/v2",
+        "qwen3-235b-a22b": "https://api.modelarts-maas.com/v1",
+        "qwen3-32b": "https://api.modelarts-maas.com/v1",
+        "qwen3-30b-a3b": "https://api.modelarts-maas.com/v1",
+        "qwen2.5-vl-72b": "https://api.modelarts-maas.com/v1",
+        "qwen3-coder-480b-a35b-instruct": "https://api.modelarts-maas.com/v1",
+        "Kimi-K2": "https://api.modelarts-maas.com/v2",
+        "longcat-flash-chat": "https://api.modelarts-maas.com/v2",
+    }
+
+    thinking_mapping = {
+        "deepseek-v3.2": "thinking.type.enabled",
+        "deepseek-v3.2-exp": "thinking.type.enabled",
+        "deepseek-v3.1": "thinking.type.enabled",
+        "qwen3-235b-a22b": "chat_template_kwargs.enable_thinking.true",
+        "qwen3-32b": "chat_template_kwargs.enable_thinking.true",
+        "qwen3-30b-a3b": "chat_template_kwargs.enable_thinking.true",
+    }
+
     def _invoke(
         self,
         model: str,
@@ -18,17 +43,21 @@ class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
-        self._add_custom_parameters(credentials)
+        self._add_custom_parameters(model, credentials)
         self._add_function_call(model, credentials)
 
         enable_thinking = model_parameters.pop("enable_thinking", None)
         if enable_thinking is not None:
-            thinking_key = (
-                "thinking" if model.startswith("deepseek-v") else "enable_thinking"
-            )
-            model_parameters["chat_template_kwargs"] = {
-                thinking_key: bool(enable_thinking)
-            }
+            path = HuaweiCloudMaasLargeLanguageModel.thinking_mapping.get(
+                model, "thinking.type.enabled"
+            ).split(".")
+            if bool(enable_thinking) and path[2] == "enabled":
+                value = "enabled"
+            elif not bool(enable_thinking) and path[2] == "enabled":
+                value = "disabled"
+            else:
+                value = bool(enable_thinking)
+            model_parameters[path[0]] = {path[1]: value}
 
         return super()._invoke(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream
@@ -38,12 +67,12 @@ class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
         self._add_custom_parameters(credentials)
         super().validate_credentials(model, credentials)
 
-    @classmethod
-    def _add_custom_parameters(cls, credentials: dict) -> None:
+    def _add_custom_parameters(self, model: str, credentials: dict) -> None:
         credentials["mode"] = "chat"
-        credentials["endpoint_url"] = str(
-            credentials.get("endpoint_url", "https://api.modelarts-maas.com/v1")
+        endpoint_url = HuaweiCloudMaasLargeLanguageModel.endpoint_mapping.get(
+            model, "https://api.modelarts-maas.com/v1"
         )
+        credentials["endpoint_url"] = str(credentials.get("endpoint_url", endpoint_url))
 
     def _add_function_call(self, model: str, credentials: dict) -> None:
         model_schema = self.get_model_schema(model, credentials)
