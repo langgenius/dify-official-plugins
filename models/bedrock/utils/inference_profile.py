@@ -5,6 +5,7 @@ import logging
 import threading
 import time
 from typing import Dict, Any
+from collections import OrderedDict
 from botocore.exceptions import ClientError
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from provider.get_bedrock_client import get_bedrock_client
@@ -19,14 +20,23 @@ _cache_lock = threading.Lock()
 # Per-key locks to prevent thundering herd (multiple threads fetching same profile)
 _fetch_locks: dict = {}
 _fetch_locks_lock = threading.Lock()
-
+_MAX_FETCH_LOCKS = 1000 
 
 def _get_fetch_lock(cache_key: str) -> threading.Lock:
     """Get or create a lock for a specific cache key to prevent thundering herd"""
     with _fetch_locks_lock:
-        if cache_key not in _fetch_locks:
-            _fetch_locks[cache_key] = threading.Lock()
-        return _fetch_locks[cache_key]
+        if cache_key in _fetch_locks:
+            # Most recently used
+            _fetch_locks.move_to_end(cache_key)
+            return _fetch_locks[cache_key]
+        
+        # Evict oldest if at capacity
+        while len(_fetch_locks) >= _MAX_FETCH_LOCKS:
+            _fetch_locks.popitem(last=False)
+
+        lock = threading.Lock()
+        _fetch_locks[cache_key] = lock
+        return lock
 
 
 def get_inference_profile_info(inference_profile_id: str, credentials: dict) -> dict:
@@ -58,10 +68,6 @@ def get_inference_profile_info(inference_profile_id: str, credentials: dict) -> 
                 # Remove expired cache entry
                 logger.debug(f"Cache expired for inference profile {inference_profile_id}, fetching fresh data")
                 del _inference_profile_cache[cache_key]
-                # Clean up fetch lock if no process is waiting on it (prevents unbounded memory growth)
-                with _fetch_locks_lock:
-                    if cache_key in _fetch_locks and not _fetch_locks[cache_key].locked():
-                        del _fetch_locks[cache_key]
 
     # Get per-key lock to prevent thundering herd
     # Only one thread will fetch for a given cache_key at a time
