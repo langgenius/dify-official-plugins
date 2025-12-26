@@ -50,7 +50,7 @@ The integration method for Embedding models is similar to LLM, just change the m
 For more detail, please check [Dify's official document](https://docs.dify.ai/en/use-dify/workspace/model-providers#local-ollama).
 
 #### 5. Integrate Ollama Rerank in Dify
-Hint: ollama officially does not support rerank models, please try locally deploying tools like vllm, llama.cpp, tei xinference, etc., and fill in the complete URL ending with "rerank". Deployment reference [llama.cpp deployment tutorial for Qwen3-Reranker](https://github.com/AuditAIH/rerank_for_dify)
+Hint: ollama officially does not support rerank models, please try locally deploying tools like vllm, llama.cpp, tei, xinference, etc., and fill in the complete URL ending with "rerank". Deployment reference [llama.cpp deployment tutorial for Qwen3-Reranker](https://github.com/AuditAIH/rerank_for_dify)
 
 In `Settings > Model Providers > Ollama`, fill in:
 
