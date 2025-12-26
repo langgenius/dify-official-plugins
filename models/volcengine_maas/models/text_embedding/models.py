@@ -34,6 +34,7 @@ def get_model_config(credentials: dict) -> ModelConfig:
             properties=ModelProperties(
                 context_size=int(credentials.get("context_size", 4096)),
                 max_chunks=int(credentials.get("max_chunks", 1)),
-            )
+            ),
+            features=[],
         )
     return model_configs
