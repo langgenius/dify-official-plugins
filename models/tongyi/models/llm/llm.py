@@ -1,5 +1,6 @@
 import base64
 import logging
+import json
 import os
 import tempfile
 import uuid
@@ -180,9 +181,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
-        if credentials.get("use_international_endpoint", "false") == "true":
-            import dashscope
-            dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
         credentials_kwargs = self._to_credential_kwargs(credentials)
         mode = self.get_model_mode(model, credentials)
         if model in {"qwen-turbo-chat", "qwen-plus-chat"}:
@@ -240,6 +238,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         if common_force_condition or model.startswith(("qwq-", "qvq-")):
             incremental_output = True
 
+        base_address =  "https://dashscope-intl.aliyuncs.com/api/v1" if credentials.get("use_international_endpoint") == "true" else None
+        
         # The parameter `enable_omni_output_audio_url` must be set to true when using the Omni model in non-streaming mode.
         if model.startswith("qwen3-omni-") and not stream:
             params["enable_omni_output_audio_url"] = True
@@ -251,18 +251,20 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             response = MultiModalConversation.call(
                 **params,
                 stream=stream,
-                headers=BURY_POINT_HEADER,
-                incremental_output=incremental_output)
+                headers=self._get_market_bury_point_header(params["messages"]),
+                incremental_output=incremental_output,
+                base_address=base_address)
         else:
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages
             )
             response = Generation.call(
                 **params,
-                headers=BURY_POINT_HEADER,
+                headers=self._get_market_bury_point_header(params["messages"]),
                 result_format="message",
                 stream=stream,
                 incremental_output=incremental_output,
+                base_address=base_address
             )
         if stream:
             return self._handle_generate_stream_response(
@@ -896,3 +898,40 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 ),
             ],
         )
+
+    def _get_market_bury_point_header(self, messages: list[dict]) -> dict:
+        """
+        Extract market bury point header information from messages
+
+        This function parses system role messages in the messages list to extract productCode and buyerUid,
+        constructs the bury point header, and cleans up the marketParams tag content from the original message.
+
+        Args:
+            messages (list[dict]): Message list, each element contains role and content fields
+
+        Returns:
+            dict: Bury point header information dictionary containing moduleCode, accountId and other fields;
+                  If no valid information can be extracted, returns the default BURY_POINT_HEADER
+        """
+        system_entries = [entry for entry in messages if entry['role'] == 'system']
+        if system_entries:
+            system_entry = system_entries[0].get('content', '')
+            if system_entry:
+                try:
+                    system_entry_split = system_entry.split("||||||")
+                    if len(system_entry_split) >= 2:
+                        burn = system_entry_split[0].split(',')
+                        bury_point_header = json.loads(BURY_POINT_HEADER.get('x-dashscope-euid'))
+                        if len(burn) in (1, 2):
+                            product_code = burn[0]
+                            buyer_uid = burn[1] if len(burn) == 2 else ""
+                            bury_point_header['moduleCode'] = product_code.strip()
+                            bury_point_header['accountId'] = buyer_uid.strip()
+
+                        system_entries[0]['content'] = "".join(system_entry_split[1:])
+                        return {'x-dashscope-euid': json.dumps(bury_point_header)}
+                except Exception:
+                    return BURY_POINT_HEADER
+
+        return BURY_POINT_HEADER
+

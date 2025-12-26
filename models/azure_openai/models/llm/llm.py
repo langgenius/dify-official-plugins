@@ -70,8 +70,8 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             and ai_model_entity.entity.model_properties.get(ModelPropertyKey.MODE)
             == LLMMode.CHAT.value
         ):
-            # Use the Responses API for the gpt-5-codex model
-            if base_model_name in ["gpt-5-codex"]:
+            # Use the Responses API for GPT models (gpt-5 series)
+            if base_model_name.startswith(("gpt-5-codex", "gpt-5.1-codex", "gpt-5-pro")):
                 return self._chat_generate_with_responses(
                     model=model,
                     credentials=credentials,
@@ -536,18 +536,26 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 else:
                     # Handle multimodal content
                     content_parts = []
-                    for content_item in message.content:
-                        if hasattr(content_item, 'type'):
-                            if content_item.type == "text":
-                                content_parts.append({
-                                    "type": "input_text",
-                                    "text": content_item.data
-                                })
-                            elif content_item.type == "image_url":
-                                content_parts.append({
-                                    "type": "input_image",
-                                    "image_url": content_item.data
-                                })
+                    for content_item in message.content or []:
+                        if content_item.type == PromptMessageContentType.TEXT:
+                            text_content = cast(TextPromptMessageContent, content_item)
+                            content_parts.append({
+                                "type": "input_text",
+                                "text": text_content.data
+                            })
+                        elif content_item.type == PromptMessageContentType.IMAGE:
+                            image_content = cast(ImagePromptMessageContent, content_item)
+                            image_part = {
+                                "type": "input_image",
+                            }
+                            if image_content.url:
+                                image_part["image_url"] = image_content.url
+                            else:
+                                image_part["image_url"] = image_content.data
+                            if image_content.detail:
+                                image_part["detail"] = image_content.detail.value
+                            content_parts.append(image_part)
+
                     input_messages.append({
                         "role": "user",
                         "content": content_parts
