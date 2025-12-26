@@ -364,6 +364,12 @@ model_credential_schema:
         - variable: __model_type
           value: text-embedding
     - label:
+        en_US: Doubao-embedding-vision
+      value: Doubao-embedding-vision
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+    - label:
         en_US: Custom
         zh_Hans: 自定义
       value: Custom
