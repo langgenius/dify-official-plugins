@@ -64,4 +64,4 @@ In `Settings > Model Providers > Ollama`, fill in:
 - Model Type: `Rerank`
 - Model Context Length: `4096`
 
-Click "Save" to use the model in the application after verifying that there are no errors.
+Click "Add" to use the model in the application after verifying that there are no errors.
