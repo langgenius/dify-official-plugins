@@ -20,7 +20,7 @@ ModelConfigs = {
         properties=ModelProperties(context_size=4096, max_chunks=32), features=[]
     ),
     "Doubao-embedding-vision": ModelConfig(
-        properties=ModelProperties(context_size=131072, max_chunks=32),
+        properties=ModelProperties(context_size=128000, max_chunks=32),
         features=[ModelFeature.VISION],
     ),
 }
