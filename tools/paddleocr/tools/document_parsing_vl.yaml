@@ -99,9 +99,9 @@ parameters:
       en_US: Prompt Type for the VLM
       zh_Hans: VLM 的 prompt 类型
     human_description:
-      en_US: Prompt type for the VLM. Possible values are "ocr", "formula", "table", and "chart".
-      zh_Hans: VLM 的 prompt 类型。可能的值为："ocr"、"formula"、"table"、"chart"。
-    llm_description: Prompt type for the VLM. Possible values are "ocr", "formula", "table", and "chart".
+      en_US: Prompt type for the VLM. Possible values are "ocr", "formula", "table", and "chart". Takes effect only when layout detection is disabled.
+      zh_Hans: VLM 的 prompt 类型。可能的值为："ocr"、"formula"、"table"、"chart"。仅当禁用版面检测时有效。
+    llm_description: Prompt type for the VLM. Possible values are "ocr", "formula", "table", and "chart". Takes effect only when layout detection is disabled.
     form: llm
   - name: formatBlockContent
     type: boolean
