@@ -1,0 +1,17 @@
+[project]
+name = "snowflake"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+
+# uv pip compile pyproject.toml -o ./requirements.txt
+dependencies = [
+    "dify_plugin>=0.4.0,<0.7.0",
+    "snowflake-connector-python==4.0.0",
+    "sqlparse>=0.5.3",
+]
+
+# uv run black . -C -l 100 && uv run ruff check --fix
+[dependency-groups]
+dev = []

@@ -1,0 +1,16 @@
+[project]
+name = "confluence"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+
+# uv pip compile pyproject.toml -o ./requirements.txt
+dependencies = [
+    "atlassian-python-api>=4.0.3",
+    "dify-plugin<0.3.0,>=0.2.1",
+]
+
+# uv run black . -C -l 100 && uv run ruff check --fix
+[dependency-groups]
+dev = []
