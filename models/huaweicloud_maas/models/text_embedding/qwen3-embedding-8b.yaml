@@ -1,5 +1,0 @@
-model: qwen3-embedding-8b
-model_type: text-embedding
-model_properties:
-  context_size: 32768
-  max_chunks: 1
