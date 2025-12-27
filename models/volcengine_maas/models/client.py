@@ -22,6 +22,7 @@ from volcenginesdkarkruntime.types.chat.chat_completion_content_part_video_param
 from volcenginesdkarkruntime.types.chat.chat_completion_message_tool_call_param import Function  # type: ignore
 from volcenginesdkarkruntime.types.chat.completion_create_params import Thinking
 from volcenginesdkarkruntime.types.create_embedding_response import CreateEmbeddingResponse  # type: ignore
+from volcenginesdkarkruntime.types.multimodal_embedding import MultimodalEmbeddingResponse, EmbeddingInputParam
 from volcenginesdkarkruntime.types.shared_params import FunctionDefinition  # type: ignore
 
 from dify_plugin.entities.model.message import (
@@ -281,3 +282,6 @@ class ArkClientV3:
 
     def embeddings(self, texts: list[str]) -> CreateEmbeddingResponse:
         return self.ark.embeddings.create(model=self.endpoint_id, input=texts)
+
+    def multimodal_embeddings(self, input: list[EmbeddingInputParam]) -> MultimodalEmbeddingResponse:
+        return self.ark.multimodal_embeddings.create(model=self.endpoint_id, input=input)

@@ -1,5 +1,5 @@
-dify_plugin<0.6.0,>=0.5.0
-volcengine-python-sdk==4.0.39
+dify_plugin==0.7.0
+volcengine-python-sdk==5.0.1
 pytz==2024.2
 websockets==15.0.1
 websocket-client==1.8.0
