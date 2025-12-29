@@ -13,6 +13,11 @@ from dify_plugin.entities.model.message import (
 from yarl import URL
 from dify_plugin import OAICompatLargeLanguageModel
 import re
+import logging
+import json
+logger = logging.getLogger(__name__)
+logger.addHandler(plugin_logger_handler)
+logger.setLevel(logging.INFO)
 
 class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
     # Pattern to match <think>...</think> blocks (case-insensitive, non-greedy)
@@ -31,8 +36,21 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
     ) -> Union[LLMResult, Generator]:
         self._add_custom_parameters(credentials)
         
+        # Log messages BEFORE cleaning
+        logger.info(f"[DeepSeek] Messages BEFORE _clean_messages ({len(prompt_messages)} messages):")
+        for i, msg in enumerate(prompt_messages):
+            msg_dict = self._log_helper_convert_message(msg)
+            logger.info(f"  [{i}] {json.dumps(msg_dict, ensure_ascii=False)}")
+        
         # Merge consecutive messages with the same role to strictly follow API specs
         prompt_messages = self._clean_messages(prompt_messages)
+        
+        # Log messages AFTER cleaning
+        logger.info(f"[DeepSeek] Messages AFTER _clean_messages ({len(prompt_messages)} messages):")
+        for i, msg in enumerate(prompt_messages):
+            msg_dict = self._log_helper_convert_message(msg)
+            logger.info(f"  [{i}] {json.dumps(msg_dict, ensure_ascii=False)}")
+        
         response = super()._invoke(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream
         )
@@ -63,7 +81,7 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
                         prev.tool_calls.extend(m.tool_calls)
             else:
                 cleaned.append(m.model_copy())
-        return cleaned
+        return cleaned	
 
     def _log_helper_convert_message(self, prompt_message: PromptMessage) -> dict:
         # Helper method for logging
