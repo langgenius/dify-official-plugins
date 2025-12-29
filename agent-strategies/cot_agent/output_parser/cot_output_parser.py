@@ -6,15 +6,16 @@ from typing import Union
 from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.interfaces.agent import AgentScratchpadUnit
 
+PREFIX_DELIMITERS = frozenset({"\n", " ", ""})
+
 
 class ReactState(Enum):
-    THINKING = ("thought:", "THINKING")
-    ACTION = ("action:", "ACTION")
-    ANSWER = ("answer:", "ANSWER")
-    IDLE = (None, "IDLE")
+    THINKING = ("Thought:", "THINKING")
+    ANSWER = ("FinalAnswer:", "ANSWER")
 
     def __init__(self, prefix: str, state: str):
         self.prefix = prefix
+        self.prefix_lower = prefix.lower()
         self.state = state
 
 
@@ -56,24 +57,63 @@ class CotAgentOutputParser:
                 return json_str or ""
 
         json_cache = ""
-        json_quote_count = 0
         in_json = False
         got_json = False
 
-        action_cache = ""
-        action_str = ReactState.ACTION.prefix
-        action_idx = 0
-
-        thought_cache = ""
-        thought_str = ReactState.THINKING.prefix
-        thought_idx = 0
-
-        answer_cache = ""
-        answer_str = ReactState.ANSWER.prefix
-        answer_idx = 0
+        json_in_string = False
+        json_escape = False
+        pending_action_json = False
+        json_stack: list[str] = []
 
         cur_state = ReactState.THINKING
         last_character = ""
+
+        class PrefixMatcher:
+            __slots__ = ("prefix", "state_on_full_match", "cache", "idx")
+
+            def __init__(self, spec: ReactState | str):
+                if isinstance(spec, ReactState):
+                    self.prefix = spec.prefix_lower
+                    self.state_on_full_match = spec
+                else:
+                    self.prefix = spec.lower()
+                    self.state_on_full_match = None
+                self.cache = ""
+                self.idx = 0
+
+            def step(self, delta: str) -> tuple[bool, ReactChunk | None, bool, bool]:
+                nonlocal last_character, cur_state
+
+                yield_raw_delta = False
+                emitted_chunk = None
+                delta_consumed = False
+                matched_full_prefix = False
+
+                if delta.lower() == self.prefix[self.idx]:
+                    if self.idx == 0 and last_character not in PREFIX_DELIMITERS:
+                        yield_raw_delta = True
+                    else:
+                        last_character = delta
+                        self.cache += delta
+                        self.idx += 1
+                        if self.idx == len(self.prefix):
+                            self.cache = ""
+                            self.idx = 0
+                            if self.state_on_full_match is not None:
+                                cur_state = self.state_on_full_match
+                            matched_full_prefix = True
+                        delta_consumed = True
+                elif self.cache:
+                    last_character = delta
+                    emitted_chunk = ReactChunk(cur_state, self.cache)
+                    self.cache = ""
+                    self.idx = 0
+
+                return yield_raw_delta, emitted_chunk, delta_consumed, matched_full_prefix
+
+        action_matcher = PrefixMatcher("action:")
+        answer_matcher = PrefixMatcher(ReactState.ANSWER)
+        thought_matcher = PrefixMatcher(ReactState.THINKING)
 
         for response in llm_response:
             if response.delta.usage:
@@ -90,91 +130,31 @@ class CotAgentOutputParser:
                 yield_delta = False
 
                 if not in_json:
-                    if delta.lower() == action_str[action_idx] and action_idx == 0:
-                        if last_character not in {"\n", " ", ""}:
-                            yield_delta = True
-                        else:
-                            last_character = delta
-                            action_cache += delta
-                            action_idx += 1
-                            if action_idx == len(action_str):
-                                action_cache = ""
-                                action_idx = 0
-                            index += steps
-                            continue
-                    elif delta.lower() == action_str[action_idx] and action_idx > 0:
-                        last_character = delta
-                        action_cache += delta
-                        action_idx += 1
-                        if action_idx == len(action_str):
-                            action_cache = ""
-                            action_idx = 0
+                    yield_raw_delta, emitted_chunk, delta_consumed, matched_action_prefix = action_matcher.step(delta)
+                    if emitted_chunk is not None:
+                        yield emitted_chunk
+                    yield_delta = yield_delta or yield_raw_delta
+                    if matched_action_prefix:
+                        pending_action_json = True
+                    if delta_consumed:
                         index += steps
                         continue
-                    else:
-                        if action_cache:
-                            last_character = delta
-                            yield ReactChunk(cur_state, action_cache)
-                            action_cache = ""
-                            action_idx = 0
 
-                    if delta.lower() == answer_str[answer_idx] and answer_idx == 0:
-                        if last_character not in {"\n", " ", ""}:
-                            yield_delta = True
-                        else:
-                            last_character = delta
-                            answer_cache += delta
-                            answer_idx += 1
-                            if answer_idx == len(answer_str):
-                                answer_cache = ""
-                                answer_idx = 0
-                            index += steps
-                            continue
-                    elif delta.lower() == answer_str[answer_idx] and answer_idx > 0:
-                        last_character = delta
-                        answer_cache += delta
-                        answer_idx += 1
-                        if answer_idx == len(answer_str):
-                            answer_cache = ""
-                            answer_idx = 0
-                            cur_state = ReactState.ANSWER
+                    yield_raw_delta, emitted_chunk, delta_consumed, _ = answer_matcher.step(delta)
+                    if emitted_chunk is not None:
+                        yield emitted_chunk
+                    yield_delta = yield_delta or yield_raw_delta
+                    if delta_consumed:
                         index += steps
                         continue
-                    else:
-                        if answer_cache:
-                            last_character = delta
-                            yield ReactChunk(cur_state, answer_cache)
-                            answer_cache = ""
-                            answer_idx = 0
 
-                    if delta.lower() == thought_str[thought_idx] and thought_idx == 0:
-                        if last_character not in {"\n", " ", ""}:
-                            yield_delta = True
-                        else:
-                            last_character = delta
-                            thought_cache += delta
-                            thought_idx += 1
-                            if thought_idx == len(thought_str):
-                                thought_cache = ""
-                                thought_idx = 0
-                            index += steps
-                            continue
-                    elif delta.lower() == thought_str[thought_idx] and thought_idx > 0:
-                        last_character = delta
-                        thought_cache += delta
-                        thought_idx += 1
-                        if thought_idx == len(thought_str):
-                            thought_cache = ""
-                            thought_idx = 0
-                            cur_state = ReactState.THINKING
+                    yield_raw_delta, emitted_chunk, delta_consumed, _ = thought_matcher.step(delta)
+                    if emitted_chunk is not None:
+                        yield emitted_chunk
+                    yield_delta = yield_delta or yield_raw_delta
+                    if delta_consumed:
                         index += steps
                         continue
-                    else:
-                        if thought_cache:
-                            last_character = delta
-                            yield ReactChunk(cur_state, thought_cache)
-                            thought_cache = ""
-                            thought_idx = 0
 
                     if yield_delta:
                         index += steps
@@ -182,26 +162,44 @@ class CotAgentOutputParser:
                         yield ReactChunk(cur_state, delta)
                         continue
 
-                # handle single json
-                if delta == "{":
-                    json_quote_count += 1
-                    in_json = True
-                    last_character = delta
-                    json_cache += delta
-                elif delta == "}":
-                    last_character = delta
-                    json_cache += delta
-                    if json_quote_count > 0:
-                        json_quote_count -= 1
-                        if json_quote_count == 0:
-                            in_json = False
-                            got_json = True
-                            index += steps
-                            continue
-                else:
-                    if in_json:
+                if not in_json and pending_action_json:
+                    if delta in {"{", "["}:
+                        in_json = True
+                        got_json = False
+                        json_cache = delta
+                        json_in_string = False
+                        json_escape = False
+                        json_stack = ["}" if delta == "{" else "]"]
                         last_character = delta
-                        json_cache += delta
+                        index += steps
+                        continue
+                    if not delta.isspace():
+                        pending_action_json = False
+
+                if in_json:
+                    last_character = delta
+                    json_cache += delta
+
+                    if json_in_string:
+                        if json_escape:
+                            json_escape = False
+                        elif delta == "\\":
+                            json_escape = True
+                        elif delta == '"':
+                            json_in_string = False
+                    else:
+                        if delta == '"':
+                            json_in_string = True
+                        elif delta in {"{", "["}:
+                            json_stack.append("}" if delta == "{" else "]")
+                        elif delta in {"}", "]"} and json_stack and delta == json_stack[-1]:
+                            json_stack.pop()
+                            if not json_stack:
+                                in_json = False
+                                got_json = True
+                                pending_action_json = False
+                                index += steps
+                                continue
 
                 if got_json:
                     got_json = False
@@ -212,8 +210,10 @@ class CotAgentOutputParser:
                     else:
                         yield ReactChunk(cur_state, json_cache)
                     json_cache = ""
-                    json_quote_count = 0
                     in_json = False
+                    json_in_string = False
+                    json_escape = False
+                    json_stack = []
 
                 if not in_json:
                     last_character = delta
