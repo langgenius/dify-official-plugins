@@ -64,6 +64,11 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
             if not m.content and not has_tool_calls:
                 continue
             
+            # Tool messages should NEVER be merged - each has a unique tool_call_id
+            if isinstance(m, ToolPromptMessage):
+                cleaned.append(m.model_copy())
+                continue
+            
             if cleaned and cleaned[-1].role == m.role:
                 prev = cleaned[-1]
                 # Merge content if both are strings
