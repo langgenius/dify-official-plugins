@@ -224,6 +224,6 @@ class MinimaxText2SpeechModel(TTSModel, ABC):
                 process_voices(data.get(voice_type))
             return formatted_voices
 
-        except Exception as e:
-            logger.error(f"Error fetching voices from Minimax: {e}")
+        except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
+            logger.error(f"Error fetching or parsing voices from Minimax: {e}")
             return []
