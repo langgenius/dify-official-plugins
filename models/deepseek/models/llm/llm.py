@@ -37,10 +37,10 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
         self._add_custom_parameters(credentials)
         
         # Log messages BEFORE cleaning
-        logger.info(f"[DeepSeek] Messages BEFORE _clean_messages ({len(prompt_messages)} messages):")
-        for i, msg in enumerate(prompt_messages):
-            msg_dict = self._log_helper_convert_message(msg)
-            logger.info(f"  [{i}] {json.dumps(msg_dict, ensure_ascii=False)}")
+        # logger.info(f"[DeepSeek] Messages BEFORE _clean_messages ({len(prompt_messages)} messages):")
+        # for i, msg in enumerate(prompt_messages):
+        #     msg_dict = self._log_helper_convert_message(msg)
+        #     logger.info(f"  [{i}] {json.dumps(msg_dict, ensure_ascii=False)}")
         
         # Merge consecutive messages with the same role to strictly follow API specs
         prompt_messages = self._clean_messages(prompt_messages)
