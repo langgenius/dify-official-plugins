@@ -220,9 +220,8 @@ class MinimaxText2SpeechModel(TTSModel, ABC):
                         "language": ["zh-Hans", "en-US"]
                     })
 
-            process_voices(data.get("system_voice"))
-            process_voices(data.get("voice_cloning"))
-            process_voices(data.get("voice_generation"))
+            for voice_type in ["system_voice", "voice_cloning", "voice_generation"]:
+                process_voices(data.get(voice_type))
             return formatted_voices
 
         except Exception as e:
