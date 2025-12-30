@@ -182,24 +182,48 @@ class MinimaxText2SpeechModel(TTSModel, ABC):
 
     def get_tts_model_voices(self, model: str, credentials: dict, language: Optional[str] = None) -> list:
         """
-        Get available voices for the model from YAML configuration
+        Get available voices for the model by calling the Minimax API
         """
-        model_entity = self._get_model_entity(model)
-        if not model_entity or not model_entity.model_properties:
+        group_id = credentials.get("minimax_group_id")
+        api_key = credentials.get("minimax_api_key")
+
+        if not group_id or not api_key:
             return []
 
-        voices = model_entity.model_properties.get(ModelPropertyKey.VOICES, [])
+        endpoint_url = credentials.get("endpoint_url", "https://api.minimaxi.com")
+        base_url = endpoint_url.rstrip('/')
+        url = f"{base_url}/v1/get_voice"
+        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
 
-        # Convert YAML voice format to expected format
-        formatted_voices = []
-        for voice in voices:
-            formatted_voice = {
-                "name": voice.get("name", ""),
-                "value": voice.get("mode", ""),
-                "language": voice.get("language", [])
-            }
-            formatted_voices.append(formatted_voice)
+        try:
+            response = requests.post(url, headers=headers, json={"voice_type": "all"}, timeout=10)
+            response.raise_for_status()
+            data = response.json()
 
-        if language:
-            return [v for v in formatted_voices if language in v.get("language", [])]
-        return formatted_voices
+            if data.get("base_resp", {}).get("status_code") != 0:
+                logger.error(f"Failed to fetch voices from Minimax: {data.get('base_resp', {}).get('status_msg')}")
+                return []
+
+            formatted_voices = []
+            
+            # Helper to process voice list
+            def process_voices(voice_list):
+                if not voice_list:
+                    return
+                for v in voice_list:
+                    voice_id = v.get("voice_id")
+                    if not voice_id:
+                        continue
+                    formatted_voices.append({
+                        "name": v.get("voice_name") or voice_id,
+                        "value": voice_id,
+                        "language": ["zh-Hans", "en-US"]
+                    })
+
+            for voice_type in ["system_voice", "voice_cloning", "voice_generation"]:
+                process_voices(data.get(voice_type))
+            return formatted_voices
+
+        except (requests.exceptions.RequestException, json.JSONDecodeError) as e:
+            logger.error(f"Error fetching or parsing voices from Minimax: {e}")
+            return []
