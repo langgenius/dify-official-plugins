@@ -1,0 +1,23 @@
+[project]
+name = "dify_extractor"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+
+# uv pip compile pyproject.toml -o ./requirements.txt
+dependencies = [
+    "dify_plugin==0.5.0b15",
+    "pandas[excel,output-formatting,performance]~=2.3.3",
+    "chardet~=5.1.0",
+    "python-docx~=1.1.0",
+    "python-pptx~=1.0.2",
+    "openpyxl~=3.1.5",
+    "bs4~=0.0.1",
+    "xlrd~=2.0.1",
+    "pypdfium2~=4.30.0",
+]
+
+# uv run black . -C -l 100 && uv run ruff check --fix
+[dependency-groups]
+dev = []

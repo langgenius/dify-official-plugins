@@ -188,3 +188,6 @@ pyrightconfig.json
 
 *.difypkg
 .difyignore
+
+pyproject.toml
+uv.lock

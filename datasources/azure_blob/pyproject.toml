@@ -1,0 +1,20 @@
+[project]
+name = "azure_blob"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+
+# uv pip compile pyproject.toml -o ./requirements.txt
+dependencies = [
+    "dify_plugin<0.6.0,>=0.5.0",
+    "azure-storage-blob>=12.20.0",
+    "azure-identity>=1.14.0",
+    "azure-core>=1.29.0",
+    "python-dateutil>=2.8.0",
+    "requests==2.32.5",
+]
+
+# uv run black . -C -l 100 && uv run ruff check --fix
+[dependency-groups]
+dev = []
