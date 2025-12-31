@@ -72,7 +72,7 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
                         prev.tool_calls.extend(m.tool_calls)
             else:
                 cleaned.append(m.model_copy())
-        return cleaned	
+        return cleaned
 
     def _log_helper_convert_message(self, prompt_message: PromptMessage) -> dict:
         # Helper method for logging
