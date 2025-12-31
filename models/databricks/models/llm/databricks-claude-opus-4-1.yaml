@@ -1,0 +1,26 @@
+model: databricks-claude-opus-4-1
+label:
+  en_US: databricks-claude-opus-4-1
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 200000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    min: 1
+    max: 32000
+pricing:
+  input: '15.00'
+  output: '75.00'
+  unit: '0.000001'
+  currency: USD
