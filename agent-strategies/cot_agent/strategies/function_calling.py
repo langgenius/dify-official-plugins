@@ -296,7 +296,28 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                 },
             )
 
-            if response.strip():
+            # If there are tool calls, merge all tool calls into a single assistant message
+            if tool_calls:
+                tool_call_objects = [
+                    AssistantPromptMessage.ToolCall(
+                        id=tool_call_id,
+                        type="function",
+                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                            name=tool_call_name,
+                            arguments=json.dumps(
+                                tool_call_args, ensure_ascii=False
+                            ),
+                        ),
+                    )
+                    for tool_call_id, tool_call_name, tool_call_args in tool_calls
+                ]
+                assistant_message = AssistantPromptMessage(
+                    content=response,  # Preserve LLM returned content, even if empty
+                    tool_calls=tool_call_objects
+                )
+                current_thoughts.append(assistant_message)
+            elif response.strip():
+                # If no tool calls but has response, add a regular assistant message
                 assistant_message = AssistantPromptMessage(
                     content=response, tool_calls=[]
                 )
@@ -307,23 +328,6 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             # call tools
             tool_responses = []
             for tool_call_id, tool_call_name, tool_call_args in tool_calls:
-                current_thoughts.append(
-                    AssistantPromptMessage(
-                        content="",
-                        tool_calls=[
-                            AssistantPromptMessage.ToolCall(
-                                id=tool_call_id,
-                                type="function",
-                                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                    name=tool_call_name,
-                                    arguments=json.dumps(
-                                        tool_call_args, ensure_ascii=False
-                                    ),
-                                ),
-                            )
-                        ],
-                    )
-                )
                 tool_instance = tool_instances[tool_call_name]
                 tool_call_started_at = time.perf_counter()
                 tool_call_log = self.create_log_message(
