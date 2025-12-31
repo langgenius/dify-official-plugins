@@ -35,22 +35,8 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._add_custom_parameters(credentials)
-        
-        # Log messages BEFORE cleaning
-        # logger.info(f"[DeepSeek] Messages BEFORE _clean_messages ({len(prompt_messages)} messages):")
-        # for i, msg in enumerate(prompt_messages):
-        #     msg_dict = self._log_helper_convert_message(msg)
-        #     logger.info(f"  [{i}] {json.dumps(msg_dict, ensure_ascii=False)}")
-        
         # Merge consecutive messages with the same role to strictly follow API specs
         prompt_messages = self._clean_messages(prompt_messages)
-        
-        # Log messages AFTER cleaning
-        logger.info(f"[DeepSeek] Messages AFTER _clean_messages ({len(prompt_messages)} messages):")
-        for i, msg in enumerate(prompt_messages):
-            msg_dict = self._log_helper_convert_message(msg)
-            logger.info(f"  [{i}] {json.dumps(msg_dict, ensure_ascii=False)}")
-        
         response = super()._invoke(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream
         )
@@ -64,8 +50,8 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
             if not m.content and not has_tool_calls:
                 continue
             
-            # Tool messages should NEVER be merged - each has a unique tool_call_id
-            if isinstance(m, ToolPromptMessage):
+            # Tool and system messages should NEVER be merged - each has a unique tool_call_id
+            if isinstance(m, ToolPromptMessage) or isinstance(m, SystemPromptMessage):
                 cleaned.append(m.model_copy())
                 continue
             
