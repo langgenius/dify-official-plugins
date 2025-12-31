@@ -13,11 +13,6 @@ from dify_plugin.entities.model.message import (
 from yarl import URL
 from dify_plugin import OAICompatLargeLanguageModel
 import re
-import logging
-import json
-logger = logging.getLogger(__name__)
-logger.addHandler(plugin_logger_handler)
-logger.setLevel(logging.INFO)
 
 class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
     # Pattern to match <think>...</think> blocks (case-insensitive, non-greedy)
