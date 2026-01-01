@@ -1,0 +1,43 @@
+identity:
+  name: get_recent_projects
+  author: langgenius
+  label:
+    en_US: Get Recent Projects
+    zh_Hans: 获取最近项目
+    pt_BR: Obter Projetos Recentes
+description:
+  human:
+    en_US: Get the latest updates from Jira Projects. Returns a list of up to 20 projects recently viewed by the user.
+    zh_Hans: 获取 Jira 项目的最新更新。返回用户最近查看的最多 20 个项目列表。
+    pt_BR: Obter as atualizações mais recentes dos Projetos Jira. Retorna uma lista de até 20 projetos visualizados recentemente pelo usuário.
+  llm: Retrieves a list of up to 20 projects recently viewed by the user that are still visible to the user. Returns project details including last issue update time and total issue count.
+parameters:
+  - name: expand
+    type: string
+    required: false
+    label:
+      en_US: Expand Options
+      zh_Hans: 展开选项
+      pt_BR: Opções de Expansão
+    human_description:
+      en_US: Use 'description', 'projectKeys', 'lead', 'issueTypes', 'url' to include additional details in the response. Separate multiple values with commas.
+      zh_Hans: 使用 'description'、'projectKeys'、'lead'、'issueTypes'、'url' 在响应中包含额外详情。多个值用逗号分隔。
+      pt_BR: Use 'description', 'projectKeys', 'lead', 'issueTypes', 'url' para incluir detalhes adicionais na resposta. Separe múltiplos valores com vírgulas.
+    llm_description: Optional comma-separated list of fields to expand in the response. Available options include 'description', 'projectKeys', 'lead', 'issueTypes', 'url'.
+    form: form
+  - name: properties
+    type: string
+    required: false
+    label:
+      en_US: Properties
+      zh_Hans: 属性
+      pt_BR: Propriedades
+    human_description:
+      en_US: A list of project properties to return for each project. Separate multiple property keys with commas.
+      zh_Hans: 要为每个项目返回的项目属性列表。多个属性键用逗号分隔。
+      pt_BR: Uma lista de propriedades do projeto a retornar para cada projeto. Separe múltiplas chaves de propriedade com vírgulas.
+    llm_description: Optional comma-separated list of project property keys to include in the response.
+    form: form
+extra:
+  python:
+    source: tools/get_recent_projects.py
