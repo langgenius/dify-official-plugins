@@ -27,7 +27,7 @@ class GetRecentProjectsTool(Tool):
 
             recent_projects = jira.get("project/recent", params=params)
 
-            if recent_projects is None:
+            if not recent_projects:
                 yield self.create_json_message(
                     {
                         "projects": [],
@@ -44,8 +44,11 @@ class GetRecentProjectsTool(Tool):
             )
 
         except Exception as e:
+            error_details = str(e)
+            if hasattr(e, 'response') and hasattr(e.response, 'text') and e.response.text:
+                error_details = e.response.text
             yield self.create_json_message(
                 {
-                    "error": f"Error occurred while fetching recent projects: {str(e)}",
+                    "error": f"Error occurred while fetching recent projects: {error_details}",
                 }
             )
