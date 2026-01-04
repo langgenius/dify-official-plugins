@@ -1,0 +1,203 @@
+company: Runway
+model: runway/eleven_multilingual_v2
+model_type: tts
+model_properties:
+  default_voice: runway/eleven_multilingual_v2
+  word_limit: 1000
+  voices:
+    - name: Maya
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Arjun
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Serene
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Bernard
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Billy
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Mark
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Clint
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Mabel
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Chad
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Leslie
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Eleanor
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Elias
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Elliot
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Grungle
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Brodie
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Sandra
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Kirk
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Kylie
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Lara
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Lisa
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Malachi
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Marlene
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Martin
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Miriam
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Monster
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Paula
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Pip
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Rusty
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Ragnar
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Xylar
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Maggie
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Jack
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Katie
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Noah
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: James
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Rina
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Ella
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Mariah
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Frank
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Claudia
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Niki
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Vincent
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Kendrick
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Myrna
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Tom
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Wanda
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Benjamin
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Kiana
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans
+    - name: Rachel
+      mode: runway/eleven_multilingual_v2
+      language:
+        - zh-Hans

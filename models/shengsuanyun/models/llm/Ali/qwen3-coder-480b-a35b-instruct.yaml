@@ -1,0 +1,24 @@
+model: ali/qwen3-coder-480b-a35b-instruct
+label:
+  en_US: Qwen3-Coder-480B-A35B-Instruct
+model_type: llm
+features:
+  - agent-thought
+  - vision
+model_properties:
+  mode: chat
+  context_size: 128000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 65536
+    min: 1
+    max: 65536
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '0.008502'
+  output: '0.03401'
+  currency: CNY
+  unit: '0.000001'
