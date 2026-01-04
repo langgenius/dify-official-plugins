@@ -167,6 +167,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
             prompt_messages = self._organize_prompt_messages(
                 history_prompt_messages=history_prompt_messages,
                 current_thoughts=current_thoughts,
+                model=model,
             )
             if model.entity and model.completion_params:
                 self.recalc_llm_max_tokens(
@@ -641,8 +642,13 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         self, prompt_messages: list[PromptMessage]
     ) -> list[PromptMessage]:
         """
-        As for now, gpt supports both fc and vision at the first iteration.
-        We need to remove the image messages from the prompt messages at the first iteration.
+        Clear image messages from prompt messages.
+        Converts image content to "[image]" placeholder text.
+
+        This is needed because:
+        1. Some models don't support vision at all
+        2. Some models support vision in the first iteration but not in subsequent iterations
+            (when tool calls are involved)
         """
         prompt_messages = deepcopy(prompt_messages)
 
@@ -667,12 +673,22 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         self,
         current_thoughts: list[PromptMessage],
         history_prompt_messages: list[PromptMessage],
+        model: AgentModelConfig | None = None,
     ) -> list[PromptMessage]:
         prompt_messages = [
             *history_prompt_messages,
             *current_thoughts,
         ]
-        if len(current_thoughts) != 0:
-            # clear messages after the first iteration
+
+        # Check if model supports vision
+        supports_vision = (
+            ModelFeature.VISION in model.entity.features
+            if model and model.entity and model.entity.features
+            else False
+        )
+
+        # Clear images if: model doesn't support vision OR it's not the first iteration
+        if not supports_vision or len(current_thoughts) != 0:
             prompt_messages = self._clear_user_prompt_image_messages(prompt_messages)
+
         return prompt_messages
