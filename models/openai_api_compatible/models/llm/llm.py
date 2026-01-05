@@ -187,9 +187,16 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 enable_thinking_value = bool(user_enable_thinking)
                 
         if enable_thinking_value is not None:
+            # Support vLLM/SGLang format (chat_template_kwargs)
             model_parameters.setdefault("chat_template_kwargs", {})["enable_thinking"] = enable_thinking_value
             # Add From: https://github.com/langgenius/dify-official-plugins/pull/2151
             model_parameters.setdefault("chat_template_kwargs", {})["thinking"] = enable_thinking_value
+
+            # Support Zhipu AI API format (top-level thinking parameter)
+            # This allows compatibility with Zhipu's official API format: {"thinking": {"type": "enabled/disabled"}}
+            model_parameters["thinking"] = {
+                "type": "enabled" if enable_thinking_value else "disabled"
+            }
         
         # Remove thinking content from assistant messages for better performance.
         with suppress(Exception):
