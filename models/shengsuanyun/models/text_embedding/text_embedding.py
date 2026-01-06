@@ -237,7 +237,7 @@ class ShengsuanyunTextEmbeddingModel(TextEmbeddingModel):
     def _to_credential_kwargs(self, credentials: Mapping) -> dict:
         credentials_kwargs = {
             "api_key": credentials['api_key'],
-            "timeout": Timeout(3150.0, read=3000.0, write=100.0, connect=50.0),
+            "timeout": Timeout(3150.0, read=3000.0, write=200.0, connect=150.0),
             "max_retries": 1,
         }
         credentials_kwargs["base_url"] = 'https://router.shengsuanyun.com/api/v1'

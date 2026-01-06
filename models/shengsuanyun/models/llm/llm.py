@@ -100,6 +100,9 @@ class ShengsuanyunLargeLanguageModel(OAICompatLargeLanguageModel):
         model_schema = self.get_model_schema(model, credentials)
         if not (model_schema and ModelFeature.VISION in (model_schema.features or [])):
             prompt_messages = self._convert_files_to_text(prompt_messages)
+
+        if 'timeout' not in model_parameters:
+            model_parameters['timeout'] = 1200
         return self._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
