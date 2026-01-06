@@ -578,7 +578,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
             # Handle text content (remove thinking tags)
             if message.content:
-                parts.extend(build_parts(message.content, is_assistant_tree=True))
+                part = build_parts(message.content, is_assistant_tree=True)
+                if part:
+                    parts.extend(part)
 
             # Handle tool calls
             # https://ai.google.dev/gemini-api/docs/function-calling?hl=zh-cn&example=chart#how-it-works
@@ -589,6 +591,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 )
                 _unsafe_part.thought_signature = DEFAULT_THOUGHT_SIGNATURE
                 parts.append(_unsafe_part)
+
+            # Filter out assistant messages with empty parts to avoid invalid requests
+            if not parts:
+                return None
 
             return types.Content(role="model", parts=parts)
 
@@ -709,7 +715,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             if (
                 not chunk.candidates
                 or not chunk.candidates[0].content
-                or not chunk.candidates[0].content.parts
+                or (not chunk.candidates[0].content.parts and not chunk.candidates[0].finish_reason)
             ):
                 continue
             candidate = chunk.candidates[0]
