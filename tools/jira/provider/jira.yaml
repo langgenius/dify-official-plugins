@@ -58,6 +58,7 @@ credentials_for_provider:
 tools:
   - tools/list_project.yaml
   - tools/get_project.yaml
+  - tools/get_recent_projects.yaml
   - tools/list_board.yaml
   - tools/get_board.yaml
   - tools/list_issue.yaml
