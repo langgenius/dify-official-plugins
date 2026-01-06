@@ -1,0 +1,37 @@
+author: llamagate
+created_at: "2025-01-05T00:00:00.000000000-00:00"
+description:
+  en_US: LlamaGate is an OpenAI-compatible API gateway for open-source LLMs with credit-based billing. Access 26+ models including Llama, Mistral, DeepSeek, and Qwen at competitive prices.
+  zh_Hans: LlamaGate 是一个 OpenAI 兼容的开源 LLM API 网关，采用信用计费系统。可访问 26+ 个模型，包括 Llama、Mistral、DeepSeek 和 Qwen 等。
+icon: icon_s_en.svg
+label:
+  en_US: LlamaGate
+  zh_Hans: LlamaGate
+meta:
+  arch:
+    - amd64
+    - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: "3.12"
+  version: 0.0.1
+name: llamagate
+plugins:
+  models:
+    - provider/llamagate.yaml
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true
+      moderation: false
+      rerank: false
+      speech2text: false
+      text_embedding: true
+      tts: false
+    tool:
+      enabled: false
+type: plugin
+version: 0.0.1
