@@ -184,7 +184,7 @@ urllib3==2.6.0
     # via requests
 websockets==15.0.1
     # via google-genai
-werkzeug==3.1.4
+werkzeug>=3.0.3,<3.1.dev0
     # via
     #   dify-plugin
     #   flask
