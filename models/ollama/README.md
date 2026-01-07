@@ -56,11 +56,11 @@ In `Settings > Model Providers > Ollama`, fill in:
 
 ![](./_assets/ollama_rerank.png)
 
-- Model Name：`Qwen3-Reranker`
-- Base URL: `http://<your-ollama-endpoint-domain>:11434` or Ending with “rerank” `http://<your-ollama-endpoint-domain>:11434/api/rerank`
-- Enter the base URL where the Ollama service is accessible.
-- If Dify is deployed using Docker, consider using the local network IP address, e.g., `http://192.168.1.100:11434` or `http://172.17.0.1:11434` or `http://host.docker.internal:11434` to access the service.
-- from llama.cpp , consider using the local network `http://host.docker.internal:11435/v1/rerank`
+- Model Name: `Qwen3-Reranker`
+- Base URL: `http://<your-ollama-endpoint-domain>:11434`
+- The plugin appends `/api/rerank` if the URL doesn't end with `/rerank`. For other services like `llama.cpp`, provide the full endpoint URL, e.g., `http://host.docker.internal:11435/v1/rerank`.
+- If Dify is deployed using Docker, consider using a local network IP address, e.g., `http://192.168.1.100:11434` or `http://172.17.0.1:11434` or `http://host.docker.internal:11434` to access the service.
+- 
 - Model Type: `Rerank`
 - Model Context Length: `4096`
 
