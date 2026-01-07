@@ -169,8 +169,11 @@ class SendMailTool(Tool):
             msg[receiver] = "send email success"
             
         # Send the email and get result
-        result = send_mail(send_email_params)
-
+        try:
+            result = send_mail(send_email_params)
+        except Exception as e:
+            yield self.create_text_message(f"Failed to send email: {e}")
+            return
         
         # Process any error results
         if result:
