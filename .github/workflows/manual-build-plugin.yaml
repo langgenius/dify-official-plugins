@@ -1,0 +1,159 @@
+name: Manual Build Plugin
+
+on:
+  workflow_dispatch:
+    inputs:
+      plugin_path:
+        description: 'Plugin path (e.g., models/openai_api_compatible)'
+        required: true
+        type: string
+      skip_upload:
+        description: 'Skip upload to marketplace (test mode)'
+        required: false
+        type: boolean
+        default: true
+
+env:
+  REPO_NAME: langgenius/dify-official-plugins
+  MARKETPLACE_BASE_URL: https://marketplace.dify.ai
+  GH_TOKEN: ${{ github.token }}
+
+jobs:
+  build-plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate Plugin Path
+        run: |
+          if [ ! -f "${{ inputs.plugin_path }}/manifest.yaml" ]; then
+            echo "!!! manifest.yaml not found in ${{ inputs.plugin_path }}"
+            exit 1
+          fi
+          echo "PLUGIN_PATH=${{ inputs.plugin_path }}" >> $GITHUB_ENV
+
+      - name: Clone Marketplace Toolkit
+        run: |
+          gh repo clone langgenius/dify-marketplace-toolkit -- .scripts/
+
+      - name: Download Plugin Daemon
+        run: |
+          gh release download -R langgenius/dify-plugin-daemon --pattern "dify-plugin-linux-amd64" --dir .scripts || gh release download -R langgenius/dify-plugin-daemon --pattern "dify-plugin-linux-amd64" --dir .scripts
+          chmod +x .scripts/dify-plugin-linux-amd64
+          mv .scripts/dify-plugin-linux-amd64 /usr/local/bin/dify
+
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "latest"
+          activate-environment: false
+
+      - name: Setup Global Python
+        run: |
+          uv venv --python 3.12.7
+          uv pip install requests dify_plugin pytest
+
+      - name: yq - portable yaml processor
+        uses: mikefarah/yq@v4.44.5
+
+      - name: Check Plugin Manifest
+        run: |
+          echo "Checking manifest.yaml for ${{ env.PLUGIN_PATH }}"
+
+          # Display plugin info
+          AUTHOR=$(yq '.author' ${{ env.PLUGIN_PATH }}/manifest.yaml)
+          NAME=$(yq '.name' ${{ env.PLUGIN_PATH }}/manifest.yaml)
+          VERSION=$(yq '.version' ${{ env.PLUGIN_PATH }}/manifest.yaml)
+
+          echo "Plugin: $AUTHOR/$NAME"
+          echo "Version: $VERSION"
+
+          # manifest.yaml author must be langgenius
+          if ! yq '.author' ${{ env.PLUGIN_PATH }}/manifest.yaml | grep -q "langgenius"; then
+            echo "!!! Plugin manifest.yaml author must be langgenius"
+            exit 1
+          fi
+
+      - name: Check for Disallowed Virtualenv Directories
+        run: |
+          if find "${{ env.PLUGIN_PATH }}" -maxdepth 1 -type d \( -name ".venv*" -o -name "venv*" \) | grep -q .; then
+            echo "!!! Please remove .venv or venv* directory in plugin path before building"
+            exit 1
+          fi
+
+      - name: Check If Version Exists
+        if: ${{ !inputs.skip_upload }}
+        run: |
+          # get version, author, name
+          VERSION=$(yq '.version' ${{ env.PLUGIN_PATH }}/manifest.yaml)
+          AUTHOR=$(yq '.author' ${{ env.PLUGIN_PATH }}/manifest.yaml)
+          NAME=$(yq '.name' ${{ env.PLUGIN_PATH }}/manifest.yaml)
+          echo "Checking plugin version: $VERSION"
+
+          # Check if the version already exists
+          RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${{ env.MARKETPLACE_BASE_URL }}/api/v1/plugins/$AUTHOR/$NAME/$VERSION")
+
+          if [ "$RESPONSE_CODE" = "200" ]; then
+            RESPONSE=$(curl -s "${{ env.MARKETPLACE_BASE_URL }}/api/v1/plugins/$AUTHOR/$NAME/$VERSION")
+            if [ "$(echo "$RESPONSE" | jq -r '.code')" = "0" ]; then
+              echo "!!! Plugin version $VERSION already exists, please update the version number in manifest.yaml"
+              exit 1
+            fi
+          fi
+
+      - name: Test Plugin
+        run: |
+          if [ -d "tests/${{ env.PLUGIN_PATH }}" ]; then
+            echo "Running tests for ${{ env.PLUGIN_PATH }}"
+            if [ -f "tests/${{ env.PLUGIN_PATH }}/requirements.txt" ]; then
+              uv pip install -r tests/${{ env.PLUGIN_PATH }}/requirements.txt
+            fi
+            PYTHONPATH=. uv run pytest tests/${{ env.PLUGIN_PATH }}
+          else
+            echo "No tests found for ${{ env.PLUGIN_PATH }}, skipping"
+          fi
+
+      - name: Check Plugin Install
+        run: |
+          cd ${{ env.PLUGIN_PATH }}
+          if [ -f requirements.txt ]; then
+              uv pip install -r requirements.txt
+              export INSTALL_METHOD=serverless
+              export SERVERLESS_PORT=8080
+              export SERVERLESS_HOST=0.0.0.0
+          fi
+          cd -
+          uv run python .scripts/validator/test-plugin-install.py -d ${{ env.PLUGIN_PATH }}
+
+      - name: Clean Venv Created by uv
+        run: |
+          cd ${{ env.PLUGIN_PATH }}
+          rm -rf .venv
+
+      - name: Package Plugin (Test Mode)
+        if: ${{ inputs.skip_upload }}
+        run: |
+          echo "Testing packaging for ${{ env.PLUGIN_PATH }}"
+          uv run python .scripts/uploader/upload-package.py -d ${{ env.PLUGIN_PATH }} -t placeholder --plugin-daemon-path /usr/local/bin/dify -u ${{ env.MARKETPLACE_BASE_URL }} -f --test
+
+      - name: Upload Plugin to Marketplace
+        if: ${{ !inputs.skip_upload }}
+        run: |
+          echo "Uploading ${{ env.PLUGIN_PATH }} to marketplace"
+          uv run python .scripts/uploader/upload-package.py -d ${{ env.PLUGIN_PATH }} -t ${{ secrets.MARKETPLACE_TOKEN }} --plugin-daemon-path /usr/local/bin/dify -u ${{ secrets.MARKETPLACE_BASE_URL }} -f
+
+      - name: Build Summary
+        if: always()
+        run: |
+          echo "### Build Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Plugin Path:** \`${{ env.PLUGIN_PATH }}\`" >> $GITHUB_STEP_SUMMARY
+
+          AUTHOR=$(yq '.author' ${{ env.PLUGIN_PATH }}/manifest.yaml)
+          NAME=$(yq '.name' ${{ env.PLUGIN_PATH }}/manifest.yaml)
+          VERSION=$(yq '.version' ${{ env.PLUGIN_PATH }}/manifest.yaml)
+
+          echo "**Plugin:** \`$AUTHOR/$NAME\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Version:** \`$VERSION\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Upload to Marketplace:** \`${{ !inputs.skip_upload }}\`" >> $GITHUB_STEP_SUMMARY
