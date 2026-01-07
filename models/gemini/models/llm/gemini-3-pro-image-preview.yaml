@@ -6,6 +6,7 @@ model_type: llm
 features:
   - vision
   - document
+  - structured-output
 model_properties:
   mode: chat
   context_size: 65536
@@ -81,7 +82,7 @@ parameter_rules:
       zh_Hans: 使用 Google 搜索
       ja_JP: 事実チェック
   - name: max_output_tokens
-    type: float
+    type: int
     required: true
     default: 32768
     min: 1
@@ -92,6 +93,8 @@ parameter_rules:
     help:
       en_US: Maximum number of tokens in response
       zh_Hans: 最大生成 tokens 数
+  - name: json_schema
+    use_template: json_schema
 # https://ai.google.dev/gemini-api/docs/pricing#gemini-3-pro-image-preview
 pricing:
   # Image input is set at 560 tokens or $0.067 per image.

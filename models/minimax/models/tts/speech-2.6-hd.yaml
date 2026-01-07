@@ -1,0 +1,12 @@
+model: speech-2.6-hd
+model_type: tts
+model_properties:
+  default_voice: 'male-qn-qingse'
+  word_limit: 10000
+  audio_type: 'mp3'
+  max_workers: 5
+pricing:
+  input: '1'
+  output: '0'
+  unit: '0.0001'
+  currency: RMB

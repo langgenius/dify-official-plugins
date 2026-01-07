@@ -104,6 +104,21 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     required=False,
                 )
             )
+
+        if agent_thought_support in ["supported", "only_thinking_supported"]:
+            entity.parameter_rules.append(
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(en_US="Reasoning effort", zh_Hans="推理工作"),
+                    help=I18nObject(
+                        en_US="Constrains effort on reasoning for reasoning models.",
+                        zh_Hans="限制推理模型的推理工作。",
+                    ),
+                    type=ParameterType.STRING,
+                    options=["low", "medium", "high"],
+                    required=False,
+                )
+            )
         
         return entity
 
@@ -186,10 +201,26 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             if user_enable_thinking is not None:
                 enable_thinking_value = bool(user_enable_thinking)
                 
+        chat_template_kwargs = model_parameters.setdefault("chat_template_kwargs", {})
         if enable_thinking_value is not None:
-            model_parameters.setdefault("chat_template_kwargs", {})["enable_thinking"] = enable_thinking_value
-            # Add From: https://github.com/langgenius/dify-official-plugins/pull/2151
-            model_parameters.setdefault("chat_template_kwargs", {})["thinking"] = enable_thinking_value
+            # Support vLLM/SGLang format (chat_template_kwargs)
+            chat_template_kwargs["enable_thinking"] = enable_thinking_value
+            chat_template_kwargs["thinking"] = enable_thinking_value
+
+            # Support Zhipu AI API format (top-level thinking parameter)
+            # This allows compatibility with Zhipu's official API format: {"thinking": {"type": "enabled/disabled"}}
+            model_parameters["thinking"] = {
+                "type": "enabled" if enable_thinking_value else "disabled"
+            }
+
+        reasoning_effort_value = model_parameters.pop("reasoning_effort", None)
+        if enable_thinking_value is True and reasoning_effort_value is not None:
+            # Propagate reasoning_effort to both:
+            # - top-level OpenAI Chat Completions param, and
+            # - chat_template_kwargs for runtimes that read template kwargs (e.g., llama.cpp).
+            # Only apply when thinking mode is explicitly enabled.
+            model_parameters["reasoning_effort"] = reasoning_effort_value
+            chat_template_kwargs["reasoning_effort"] = reasoning_effort_value
         
         # Remove thinking content from assistant messages for better performance.
         with suppress(Exception):
