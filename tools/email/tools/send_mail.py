@@ -57,7 +57,9 @@ class SendMailTool(Tool):
                 try:
                     receivers_list = json.loads(receiver_email)
                 except json.JSONDecodeError:
-                    receivers_list = [receiver_email]
+                    yield self.create_text_message("Invalid JSON format for 'send_to' list")
+                    return
+
             else:
                 # Split by comma for comma-separated emails
                 receivers_list = [e.strip() for e in receiver_email.split(',') if e.strip()]
