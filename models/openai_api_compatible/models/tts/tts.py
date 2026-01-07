@@ -4,8 +4,10 @@ from dify_plugin.entities.model import AIModelEntity, I18nObject
 
 from dify_plugin.interfaces.model.openai_compatible.tts import OAICompatText2SpeechModel
 
+from ..common_openai import _CommonOpenAI
 
-class OpenAIText2SpeechModel(OAICompatText2SpeechModel):
+
+class OpenAIText2SpeechModel(_CommonOpenAI, OAICompatText2SpeechModel):
 
     def get_customizable_model_schema(
         self, model: str, credentials: Mapping | dict

@@ -21,7 +21,10 @@ class OpenAISpeech2TextModel(OAICompatSpeech2TextModel):
 
         api_key = credentials.get("api_key")
         if api_key:
-            headers["Authorization"] = f"Bearer {api_key}"
+            # Support custom API key header name and value prefix
+            api_key_header_name = credentials.get("api_key_header_name", "Authorization")
+            api_key_value_prefix = credentials.get("api_key_value_prefix", "Bearer ")
+            headers[api_key_header_name] = f"{api_key_value_prefix}{api_key}"
 
         endpoint_url = credentials.get("endpoint_url", "https://api.openai.com/v1/")
         if not endpoint_url.endswith("/"):

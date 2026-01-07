@@ -21,8 +21,10 @@ from dify_plugin.entities.model.message import (
 from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLanguageModel
 from typing import List
 
+from ..common_openai import _CommonOpenAI
 
-class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
+
+class OpenAILargeLanguageModel(_CommonOpenAI, OAICompatLargeLanguageModel):
     # Pre-compiled regex for better performance
     _THINK_PATTERN = re.compile(r"^<think>.*?</think>\s*", re.DOTALL)
 

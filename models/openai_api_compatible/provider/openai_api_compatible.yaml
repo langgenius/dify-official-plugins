@@ -41,6 +41,32 @@ model_credential_schema:
       placeholder:
         zh_Hans: 在此输入您的 API Key
         en_US: Enter your API Key
+    - variable: api_key_header_name
+      label:
+        zh_Hans: API Key Header 名称
+        en_US: API Key Header Name
+      type: text-input
+      required: false
+      default: "Authorization"
+      placeholder:
+        zh_Hans: 自定义 API Key 的 HTTP Header 名称，默认为 Authorization
+        en_US: Custom HTTP header name for API Key, default is Authorization
+      help:
+        zh_Hans: 某些 API 提供商使用自定义的 header 名称（如 szc-api-key）而非标准的 Authorization
+        en_US: Some API providers use custom header names (e.g., szc-api-key) instead of the standard Authorization
+    - variable: api_key_value_prefix
+      label:
+        zh_Hans: API Key 值前缀
+        en_US: API Key Value Prefix
+      type: text-input
+      required: false
+      default: "Bearer "
+      placeholder:
+        zh_Hans: API Key 值的前缀，默认为 "Bearer "（注意空格）
+        en_US: Prefix for API Key value, default is "Bearer " (note the space)
+      help:
+        zh_Hans: 设置 API Key 值的前缀。标准 OpenAI 格式使用 "Bearer "，某些 API 不需要前缀则留空
+        en_US: Set the prefix for API Key value. Standard OpenAI format uses "Bearer ", leave empty if no prefix is needed
     - variable: language
       label:
         en_US: Language

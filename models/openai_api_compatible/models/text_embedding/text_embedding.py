@@ -5,8 +5,10 @@ from dify_plugin.entities.model.text_embedding import TextEmbeddingResult
 
 from dify_plugin.interfaces.model.openai_compatible.text_embedding import OAICompatEmbeddingModel
 
+from ..common_openai import _CommonOpenAI
 
-class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
+
+class OpenAITextEmbeddingModel(_CommonOpenAI, OAICompatEmbeddingModel):
 
     def get_customizable_model_schema(
         self, model: str, credentials: Mapping | dict

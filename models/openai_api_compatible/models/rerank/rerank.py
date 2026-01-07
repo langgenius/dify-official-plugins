@@ -5,8 +5,10 @@ from dify_plugin.entities.model import AIModelEntity, I18nObject
 from dify_plugin.interfaces.model.openai_compatible.rerank import OAICompatRerankModel
 from dify_plugin.errors.model import CredentialsValidateFailedError
 
+from ..common_openai import _CommonOpenAI
 
-class OpenAIRerankModel(OAICompatRerankModel):
+
+class OpenAIRerankModel(_CommonOpenAI, OAICompatRerankModel):
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
         Validate model credentials
