@@ -10,7 +10,7 @@ from tools.markdown_utils import convert_markdown_to_html
 from tools.send import SendEmailToolParameters, send_mail
 
 
-class SendMailTool(Tool):
+class SendMailBatchTool(Tool):
     def _invoke(
         self, tool_parameters: dict[str, Any]
 
@@ -19,6 +19,8 @@ class SendMailTool(Tool):
         invoke tools
         """
         sender = self.runtime.credentials.get("email_account", "")
+        # Use sender_address if provided, otherwise fall back to email_account
+        sender_address = self.runtime.credentials.get("sender_address", "") or sender
         email_rgx = re.compile("^[a-zA-Z0-9._-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$")
         password = self.runtime.credentials.get("email_password", "")
         smtp_server = self.runtime.credentials.get("smtp_server", "")
@@ -126,13 +128,15 @@ class SendMailTool(Tool):
         if attachments is not None and not isinstance(attachments, list):
             attachments = [attachments]
             
-        # Create email parameters with all fields
+        # Get reply-to address
+        reply_to = tool_parameters.get("reply_to", None)
 
         send_email_params = SendEmailToolParameters(
             smtp_server=smtp_server,
             smtp_port=smtp_port,
             email_account=sender,
             email_password=password,
+            sender_address=sender_address,
             sender_to=receivers_email,
             subject=subject,
             email_content=email_content,
@@ -141,7 +145,8 @@ class SendMailTool(Tool):
             is_html=convert_to_html,
             attachments=attachments,
             cc_recipients=cc_email_list,
-            bcc_recipients=bcc_email_list
+            bcc_recipients=bcc_email_list,
+            reply_to_address=reply_to
         )
         
         # Initialize response message for all recipients
