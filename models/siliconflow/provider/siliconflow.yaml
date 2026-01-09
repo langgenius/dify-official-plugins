@@ -106,6 +106,22 @@ provider_credential_schema:
       required: true
       type: secret-input
       variable: api_key
+    - label:
+        en_US: Use International Endpoint
+        zh_Hans: 使用国际站端点
+      type: radio
+      required: false
+      default: "false"
+      variable: use_international_endpoint
+      options:
+        - label:
+            en_US: "True"
+            zh_Hans: "是"
+          value: "true"
+        - label:
+            en_US: "False"
+            zh_Hans: "否"
+          value: "false"
 supported_model_types:
   - llm
   - text-embedding
