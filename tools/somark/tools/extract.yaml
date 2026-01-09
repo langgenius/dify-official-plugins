@@ -1,0 +1,23 @@
+identity:
+  name: extract
+  author: SoulCode
+  label:
+    en_US: Extract Document
+    zh_Hans: 文档解析
+  description:
+    human:
+      en_US: Extract content from documents using Somark API.
+      zh_Hans: 使用 Somark API 从文档中提取内容。
+    llm: A tool for extracting content from documents (PDF, Doc, etc.) using Somark API.
+
+parameters:
+  - name: file
+    type: file
+    required: true
+    label:
+      en_US: File
+      zh_Hans: 文件
+    human_description:
+      en_US: The file to be extracted.
+      zh_Hans: 需要解析的文件。
+    form: llm

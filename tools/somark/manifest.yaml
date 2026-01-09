@@ -1,0 +1,31 @@
+version: 0.0.1
+type: plugin
+author: SoulCode
+name: somark
+label:
+  en_US: Somark
+  zh_Hans: Somark
+description:
+  en_US: Somark is a powerful document extraction tool.
+  zh_Hans: Somark 是一款强大的文档解析工具，支持从多种格式文档中提取内容。
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission:
+    storage:
+      enabled: true
+      size: 1048576
+    tool:
+      enabled: true
+plugins:
+  tools:
+    - provider/somark.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
