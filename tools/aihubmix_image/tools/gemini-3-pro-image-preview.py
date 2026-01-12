@@ -1,6 +1,5 @@
-import base64
 from collections.abc import Generator
-from typing import Any, Dict, List
+from typing import Any
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
@@ -47,17 +46,18 @@ class Gemini3ProImagePreviewTool(Tool):
             client = OpenAI(
                 api_key=api_key,
                 base_url=self.BASE_URL,
+                timeout=240.0,  # 4 minutes timeout for 4K image generation
             )
-            
+
             system_content = f"aspect_ratio={aspect_ratio}; resolution={resolution}"
-            
+
             response = client.chat.completions.create(
                 model="gemini-3-pro-image-preview",
                 messages=[
                     {"role": "system", "content": system_content},
                     {"role": "user", "content": [{"type": "text", "text": prompt}]},
                 ],
-                modalities=["text", "image"]
+                modalities=["text", "image"],
             )
             
             if not response.choices or not response.choices[0].message:
