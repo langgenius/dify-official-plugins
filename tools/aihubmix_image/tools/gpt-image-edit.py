@@ -15,6 +15,13 @@ class GptImageEditTool(Tool):
     Uses OpenAI's image editing API through AiHubMix service
     """
     
+    def create_image_info(self, base64_data: str, size: str) -> dict:
+        mime_type = "image/png"
+        return {
+            "url": f"data:{mime_type};base64,{base64_data}",
+            "size": size
+        }
+    
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         """
         Main invoke method for GPT Image Edit
@@ -131,14 +138,18 @@ class GptImageEditTool(Tool):
                 if not images:
                     raise InvokeError("No edited images were generated")
                 
-                # Create image messages for direct display in Dify
-                for img in images:
-                    if "url" in img:
+                # Process images - return as blobs for base64 data, or display URLs
+                for idx, img in enumerate(images):
+                    if "b64_json" in img:
+                        # Decode base64 and return as blob
+                        base64_data = img["b64_json"]
+                        image_bytes = base64.b64decode(base64_data)
+                        filename = f"gpt_image_edit_{idx + 1}.png"
+                        mime_type = "image/png"
+                        yield self.create_blob_message(blob=image_bytes, meta={"mime_type": mime_type, "filename": filename})
+                    elif "url" in img:
+                        # For URL responses, create image message
                         yield self.create_image_message(img["url"])
-                    elif "b64_json" in img:
-                        # For base64 images, create data URL
-                        data_url = f"data:image/png;base64,{img['b64_json']}"
-                        yield self.create_image_message(data_url)
                 
                 # Return results as JSON
                 yield self.create_json_message({
