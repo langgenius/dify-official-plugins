@@ -116,7 +116,10 @@ class SiliconFlowText2SpeechModel(_CommonOaiApiCompat, TTSModel):
 
     @classmethod
     def _add_custom_parameters(cls, credentials: dict) -> None:
-        credentials["openai_api_base"] = "https://api.siliconflow.cn"
+        if credentials.get("use_international_endpoint", "false") == "true":
+            credentials["openai_api_base"] = "https://api.siliconflow.com"
+        else:
+            credentials["openai_api_base"] = "https://api.siliconflow.cn"
         credentials["openai_api_key"] = credentials["api_key"]
 
     def _to_credential_kwargs(self, credentials: Mapping) -> dict:
