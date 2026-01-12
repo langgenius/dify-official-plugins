@@ -1,5 +1,7 @@
 from collections.abc import Generator
 from typing import Any
+import base64
+import io
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
@@ -14,12 +16,18 @@ except ImportError:
 class Gemini3ProImagePreviewTool(Tool):
     BASE_URL = "https://aihubmix.com/v1"
     
-    def create_image_info(self, base64_data: str, aspect_ratio: str, resolution: str) -> dict:
+    def create_image_info(self, base64_data: str, aspect_ratio: str, resolution: str, image_format: str = "png") -> dict:
+        mime_type = {
+            "png": "image/png",
+            "jpeg": "image/jpeg",
+            "webp": "image/webp"
+        }.get(image_format, "image/png")
+        
         return {
-            "url": f"data:image/png;base64,{base64_data}",
+            "url": f"data:{mime_type};base64,{base64_data}",
             "aspect_ratio": aspect_ratio,
             "resolution": resolution,
-            "format": "png"
+            "format": image_format
         }
     
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
@@ -30,6 +38,7 @@ class Gemini3ProImagePreviewTool(Tool):
             
             aspect_ratio = tool_parameters.get("aspect_ratio", "1:1")
             resolution = tool_parameters.get("resolution", "4K")
+            image_format = tool_parameters.get("image_format", "png")
             
             valid_ratios = ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"]
             if aspect_ratio not in valid_ratios:
@@ -38,6 +47,10 @@ class Gemini3ProImagePreviewTool(Tool):
             valid_resolutions = ["1K", "2K", "4K"]
             if resolution not in valid_resolutions:
                 raise InvokeError(f"Invalid resolution. Must be one of: {', '.join(valid_resolutions)}")
+            
+            valid_formats = ["png", "jpeg", "webp"]
+            if image_format not in valid_formats:
+                raise InvokeError(f"Invalid image format. Must be one of: {', '.join(valid_formats)}")
             
             api_key = self.runtime.credentials.get("api_key")
             if not api_key:
@@ -49,7 +62,7 @@ class Gemini3ProImagePreviewTool(Tool):
                 timeout=240.0,  # 4 minutes timeout for 4K image generation
             )
 
-            system_content = f"aspect_ratio={aspect_ratio}; resolution={resolution}"
+            system_content = f"aspect_ratio={aspect_ratio}; resolution={resolution}; format={image_format}"
 
             response = client.chat.completions.create(
                 model="gemini-3-pro-image-preview",
@@ -74,7 +87,7 @@ class Gemini3ProImagePreviewTool(Tool):
                             text_content += part["text"]
                         if "inline_data" in part and "data" in part["inline_data"]:
                             image_data = part["inline_data"]["data"]
-                            image_info = self.create_image_info(image_data, aspect_ratio, resolution)
+                            image_info = self.create_image_info(image_data, aspect_ratio, resolution, image_format)
                             images.append(image_info)
             elif hasattr(message, 'content') and message.content:
                 text_content = message.content
@@ -82,14 +95,31 @@ class Gemini3ProImagePreviewTool(Tool):
             if not images:
                 raise InvokeError("No images were generated in the response")
             
+            # Return image files as blobs
+            for idx, image_info in enumerate(images):
+                base64_data = image_info["url"].split(",")[1]
+                image_bytes = base64.b64decode(base64_data)
+                
+                file_extension = image_format if image_format != "jpeg" else "jpg"
+                filename = f"gemini_3_pro_image_{idx + 1}.{file_extension}"
+                
+                mime_type = {
+                    "png": "image/png",
+                    "jpeg": "image/jpeg",
+                    "webp": "image/webp"
+                }.get(image_format, "image/png")
+                
+                yield self.create_blob_message(blob=image_bytes, meta={"mime_type": mime_type, "filename": filename})
+            
+            # Also return metadata as JSON
             yield self.create_json_message({
                 "success": True,
                 "model": "gemini-3-pro-image-preview",
                 "prompt": prompt,
                 "aspect_ratio": aspect_ratio,
                 "resolution": resolution,
+                "image_format": image_format,
                 "num_images": len(images),
-                "images": images,
                 "text_content": text_content
             })
                 
