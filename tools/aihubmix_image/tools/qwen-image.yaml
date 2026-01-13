@@ -85,24 +85,58 @@ parameters:
     min: 1
     max: 4
   
-  # - name: moderation_level
-  #   type: number
-  #   required: false
-  #   label:
-  #     en_US: "Moderation Level"
-  #     zh_Hans: "审核宽松度"
-  #     pt_BR: "Nível de Moderação"
-  #     ja_JP: "モデレーションレベル"
-  #   human_description:
-  #     en_US: "Content moderation strictness (0-6, where 0 is most strict)"
-  #     zh_Hans: "内容审核严格程度 (0-6，0为最严格)"
-  #     pt_BR: "Nível de rigor da moderação de conteúdo (0-6, onde 0 é mais rigoroso)"
-  #     ja_JP: "コンテンツモデレーションの厳しさ (0-6、0が最も厳格)"
-  #   llm_description: "Content moderation level for Qwen Image generation. Range: 0-6, where 0 is most strict and 6 is most lenient"
-  #   form: form
-  #   default: 3
-  #   min: 0
-  #   max: 6
+  - name: watermark
+    type: boolean
+    required: false
+    label:
+      en_US: "Watermark"
+      zh_Hans: "水印"
+      pt_BR: "Marca d'água"
+      ja_JP: "透かし"
+    human_description:
+      en_US: "Whether to add watermark to the generated image"
+      zh_Hans: "是否在生成的图像中添加水印"
+      pt_BR: "Se deve adicionar marca d'água à imagem gerada"
+      ja_JP: "生成された画像に透かしを追加するかどうか"
+    llm_description: "Whether to add watermark to the generated image using Qwen Image"
+    form: form
+    default: false
+
+  - name: image_format
+    type: select
+    required: false
+    label:
+      en_US: "Image Format"
+      zh_Hans: "图片格式"
+      pt_BR: "Formato de Imagem"
+      ja_JP: "画像フォーマット"
+    human_description:
+      en_US: "Output image format"
+      zh_Hans: "输出图片格式"
+      pt_BR: "Formato de saída da imagem"
+      ja_JP: "出力画像フォーマット"
+    llm_description: "Image format for Qwen Image generation"
+    form: form
+    default: "png"
+    options:
+      - value: "png"
+        label:
+          en_US: "PNG"
+          zh_Hans: "PNG"
+          pt_BR: "PNG"
+          ja_JP: "PNG"
+      - value: "jpeg"
+        label:
+          en_US: "JPEG"
+          zh_Hans: "JPEG"
+          pt_BR: "JPEG"
+          ja_JP: "JPEG"
+      - value: "webp"
+        label:
+          en_US: "WebP"
+          zh_Hans: "WebP"
+          pt_BR: "WebP"
+          ja_JP: "WebP"
 extra:
   python:
     source: tools/qwen-image.py
