@@ -70,7 +70,7 @@ class DocumentParsingTool(Tool):
         try:
             resp = requests.post(
                 api_url,
-                headers={"Authorization": f"token {access_token}"},
+                headers={"Client-Platform": "dify", "Authorization": f"token {access_token}"},
                 json=params,
                 timeout=REQUEST_TIMEOUT,
             )

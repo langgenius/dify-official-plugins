@@ -119,7 +119,7 @@ parameters:
           en_US: "3:4 (Portrait)"
           zh_Hans: "3:4 (纵向)"
           pt_BR: "3:4 (Retrato)"
-          ja_JP: "3:4 (縦向)"
+          ja_JP: "3:4 (纵向)"
       - value: "16:9"
         label:
           en_US: "16:9 (Widescreen)"
@@ -132,6 +132,42 @@ parameters:
           zh_Hans: "9:16 (竖屏)"
           pt_BR: "9:16 (Vertical)"
           ja_JP: "9:16 (縦長)"
+
+  - name: image_format
+    type: select
+    required: false
+    label:
+      en_US: "Image Format"
+      zh_Hans: "图片格式"
+      pt_BR: "Formato de Imagem"
+      ja_JP: "画像フォーマット"
+    human_description:
+      en_US: "Output image format"
+      zh_Hans: "输出图片格式"
+      pt_BR: "Formato de saída da imagem"
+      ja_JP: "出力画像フォーマット"
+    llm_description: "Image format for Google Imagen generation"
+    form: form
+    default: "png"
+    options:
+      - value: "png"
+        label:
+          en_US: "PNG"
+          zh_Hans: "PNG"
+          pt_BR: "PNG"
+          ja_JP: "PNG"
+      - value: "jpeg"
+        label:
+          en_US: "JPEG"
+          zh_Hans: "JPEG"
+          pt_BR: "JPEG"
+          ja_JP: "JPEG"
+      - value: "webp"
+        label:
+          en_US: "WebP"
+          zh_Hans: "WebP"
+          pt_BR: "WebP"
+          ja_JP: "WebP"
 extra:
   python:
     source: tools/imagen.py

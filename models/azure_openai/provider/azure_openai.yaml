@@ -219,6 +219,12 @@ model_credential_schema:
               variable: __model_type
           value: gpt-5.1-codex-mini
         - label:
+            en_US: gpt-5.1-codex-max
+          show_on:
+            - value: llm
+              variable: __model_type
+          value: gpt-5.1-codex-max
+        - label:
             en_US: gpt-5.2
           show_on:
             - value: llm
