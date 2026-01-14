@@ -53,10 +53,39 @@ class VoyageTextEmbeddingModel(TextEmbeddingModel):
 
         url = base_url + "/embeddings"
         headers = {"Authorization": "Bearer " + api_key, "Content-Type": "application/json"}
+
+        # Use framework's input type (automatic detection)
         voyage_input_type = "null"
         if input_type is not None:
             voyage_input_type = input_type.value
-        data = {"model": model, "input": texts, "input_type": voyage_input_type}
+
+        # Check if this is a multimodal model
+        is_multimodal = model.startswith("voyage-multimodal")
+
+        # Prepare input data
+        if is_multimodal:
+            # Check for image_url or image_base64 in credentials
+            image_url = credentials.get("image_url", "")
+            image_base64 = credentials.get("image_base64", "")
+
+            # Format input for multimodal model
+            if image_url or image_base64:
+                # Multimodal input format
+                input_list = []
+                for text in texts:
+                    entry = {"text": text}
+                    if image_url:
+                        entry["image_url"] = image_url
+                    elif image_base64:
+                        entry["image_base64"] = image_base64
+                    input_list.append([entry])
+                data = {"model": model, "input": input_list, "input_type": voyage_input_type}
+            else:
+                # Text-only for multimodal model
+                data = {"model": model, "input": texts, "input_type": voyage_input_type}
+        else:
+            # Standard text embedding model
+            data = {"model": model, "input": texts, "input_type": voyage_input_type}
 
         try:
             response = requests.post(url, headers=headers, data=dumps(data))

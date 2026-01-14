@@ -1,4 +1,4 @@
-model: voyage-3.5
+model: voyage-multimodal-3.5
 model_type: text-embedding
 model_properties:
   context_size: 32000
