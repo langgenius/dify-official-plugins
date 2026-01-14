@@ -181,10 +181,11 @@ poetry.toml
 # ruff
 .ruff_cache/
 
-# LSP config files
-pyrightconfig.json
-
 # End of https://www.toptal.com/developers/gitignore/api/python
 mypy.ini
 tox.ini
 *.difypkg
+
+# Type checking artifacts
+.basedpyright_cache/
+.pyright_cache/
