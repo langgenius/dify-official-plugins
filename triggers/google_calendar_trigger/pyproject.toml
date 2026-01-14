@@ -1,0 +1,16 @@
+[project]
+name = "google_calendar_trigger"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+
+# uv pip compile pyproject.toml -o ./requirements.txt
+dependencies = [
+    "requests>=2.31.0",
+    "dify_plugin==0.6.0b14",
+]
+
+# uv run black . -C -l 100 && uv run ruff check --fix
+[dependency-groups]
+dev = []
