@@ -1,4 +1,7 @@
 import os
+from pathlib import Path
+
+import pytest
 
 from dify_plugin.config.integration_config import IntegrationConfig
 from dify_plugin.core.entities.plugin.request import (
@@ -11,7 +14,20 @@ from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.integration.run import PluginRunner
 
 
-def test_llm_invoke() -> None:
+def get_all_models() -> list[str]:
+    """Discover all model names from models/llm/*.yaml files."""
+    models_dir = Path(__file__).parent.parent / "models" / "llm"
+    models: list[str] = []
+    for yaml_file in models_dir.glob("*.yaml"):
+        if yaml_file.name.startswith("_"):
+            continue
+        model_name = yaml_file.stem
+        models.append(model_name)
+    return models
+
+
+@pytest.mark.parametrize("model_name", get_all_models())
+def test_llm_invoke(model_name: str) -> None:
     api_key = os.getenv("ANTHROPIC_API_KEY")
     if not api_key:
         raise ValueError("ANTHROPIC_API_KEY environment variable is required")
@@ -24,7 +40,7 @@ def test_llm_invoke() -> None:
         user_id="test_user",
         provider="anthropic",
         model_type=ModelType.LLM,
-        model="claude-haiku-4-5-20251001",
+        model=model_name,
         credentials={"anthropic_api_key": api_key},
         prompt_messages=[{"role": "user", "content": "Say hello in one word."}],
         model_parameters={"max_tokens": 100},
@@ -45,6 +61,11 @@ def test_llm_invoke() -> None:
         ):
             results.append(result)
 
-        assert len(results) > 0
-        content_chunks = [r for r in results if r.delta.message.content]
-        assert len(content_chunks) > 0
+        # Verify we received multiple chunks
+        assert len(results) > 0, f"No results received for model {model_name}"
+
+        # Verify concatenated content is non-empty
+        full_content = "".join(
+            r.delta.message.content for r in results if r.delta.message.content
+        )
+        assert len(full_content) > 0, f"Empty content for model {model_name}"
