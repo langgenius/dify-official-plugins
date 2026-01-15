@@ -130,8 +130,8 @@ class QwenImageTool(Tool):
             })
             
             # Also create text message with image URLs
-            image_urls = "\n".join([f"- {img['url']}" for img in images])
-            yield self.create_text_message(f"Qwen Image generated {len(images)} image(s):\n{image_urls}")
+            image_urls = "\n".join([img['url'] for img in images])
+            yield self.create_text_message(image_urls)
                 
         except Exception as e:
             raise InvokeError(f"Qwen Image generation failed: {str(e)}")
