@@ -230,6 +230,24 @@ class ReActAgentStrategy(AgentStrategy):
                 if scratchpad.thought
                 else "I am thinking about how to help you"
             )
+
+            # Fallback: if no action detected but thought contains valid action JSON, parse it
+            # This handles models like Tongyi/Qwen that output JSON directly without "Action:" prefix
+            if not scratchpad.action and scratchpad.thought:
+                try:
+                    thought_json = json.loads(scratchpad.thought)
+                    if isinstance(thought_json, dict):
+                        potential_action_name = thought_json.get("action")
+                        potential_action_input = thought_json.get("action_input")
+                        if potential_action_name is not None and potential_action_input is not None:
+                            scratchpad.action = AgentScratchpadUnit.Action(
+                                action_name=str(potential_action_name),
+                                action_input=potential_action_input,
+                            )
+                            scratchpad.action_str = scratchpad.thought
+                except (json.JSONDecodeError, ValueError):
+                    pass
+
             agent_scratchpad.append(scratchpad)
 
             # get llm usage
@@ -265,7 +283,9 @@ class ReActAgentStrategy(AgentStrategy):
                 },
             )
             if not scratchpad.action:
-                final_answer = scratchpad.thought
+                # Prefer final_answer (from ANSWER state) over thought
+                if not (final_answer and final_answer.strip()):
+                    final_answer = scratchpad.thought
             else:
                 if scratchpad.action.action_name.lower() == "final answer":
                     try:
