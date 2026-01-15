@@ -134,6 +134,16 @@ parameter_rules:
     help:
       en_US: The maximum number of tokens to generate in the response.
       zh_Hans: 模型单次输出的最大 tokens 数。
+  - name: use_inline_file
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: Use inline file mode
+      zh_Hans: 使用内嵌文件模式
+    help:
+      en_US: When enabled, files will be embedded directly in the request (inline mode) for better performance. When disabled, files will be uploaded using the Files API. Default is disabled (Files API).
+      zh_Hans: 启用后，文件将直接内嵌在请求中（内联模式）以提高性能。禁用后，文件将使用 Files API 上传。默认为禁用（使用 Files API）。
   - name: json_schema
     use_template: json_schema
 # https://ai.google.dev/gemini-api/docs/pricing#gemini-3-pro-preview

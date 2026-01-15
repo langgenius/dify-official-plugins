@@ -26,7 +26,8 @@ parameter_rules:
     required: true
     default: 4096
     min: 1
-    max: 4096
+    max: 4096- name: use_inline_file
+    use_template: use_inline_file
 pricing:
   input: '0.00'
   output: '0.00'

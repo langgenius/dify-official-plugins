@@ -8,11 +8,11 @@ identity:
     ja_JP: "Qwen 画像編集"
 description:
   human:
-    en_US: "Qwen Image Editing Model"
-    zh_Hans: "Qwen Image 图像编辑模型"
-    pt_BR: "Modelo de Edição Qwen Image"
-    ja_JP: "Qwen Image 画像編集モデル"
-  llm: "Edit image using Qwen Image Edit model (qianfan/qwen-image-edit) with image-to-image generation capabilities"
+    en_US: "Qwen Image Editing Model - Supports URL, Base64, and Dify file variables as input"
+    zh_Hans: "Qwen Image 图像编辑模型 - 支持 URL、Base64 和 Dify 文件变量作为输入"
+    pt_BR: "Modelo de Edição Qwen Image - Suporta URL, Base64 e variáveis de arquivo Dify como entrada"
+    ja_JP: "Qwen Image 画像編集モデル - URL、Base64、Difyファイル変数を入力としてサポート"
+  llm: "Edit image using Qwen Image Edit model (qianfan/qwen-image-edit) with image-to-image generation capabilities. Supports multiple input formats: HTTP/HTTPS URLs, Data URLs (base64), and Dify file transfer variables from workflow connections."
 parameters:
   - name: prompt
     type: string
@@ -33,16 +33,16 @@ parameters:
     type: string
     required: true
     label:
-      en_US: "Input Image URL"
-      zh_Hans: "输入图像URL"
-      pt_BR: "URL da Imagem de Entrada"
-      ja_JP: "入力画像URL"
+      en_US: "Input Image"
+      zh_Hans: "输入图像"
+      pt_BR: "Imagem de Entrada"
+      ja_JP: "入力画像"
     human_description:
-      en_US: "URL of the image to edit"
-      zh_Hans: "要编辑的图像的URL"
-      pt_BR: "URL da imagem a ser editada"
-      ja_JP: "編集する画像のURL"
-    llm_description: "URL of the input image to be edited using Qwen Image Edit"
+      en_US: "Image to edit. Supports: URL (http/https), Data URL (base64), Dify file variable, or base64 string. Connect from other nodes in workflow."
+      zh_Hans: "要编辑的图像。支持：URL（http/https）、Data URL（base64）、Dify 文件变量或 base64 字符串。可从工作流中的其他节点连接。"
+      pt_BR: "Imagem para editar. Suporta: URL (http/https), URL de dados (base64), variável de arquivo Dify ou string base64. Conecte-se de outros nós no fluxo de trabalho."
+      ja_JP: "編集する画像。サポート: URL (http/https)、データURL (base64)、Difyファイル変数、またはbase64文字列。工作フローの他のノードから接続可能。"
+    llm_description: "Input image for Qwen Image Edit. Accepts URLs, base64 data, or Dify file transfer variables. In workflows, connect output from image generation nodes directly."
     form: llm
   - name: guidance
     type: number
