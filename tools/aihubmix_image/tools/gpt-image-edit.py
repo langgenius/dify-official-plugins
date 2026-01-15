@@ -13,6 +13,12 @@ class GptImageEditTool(Tool):
     """
     GPT Image Edit Tool
     Uses OpenAI's image editing API through AiHubMix service
+    
+    Supports multiple input formats:
+    - HTTP/HTTPS URLs
+    - Data URLs (base64 encoded)
+    - Dify file transfer variables
+    - Base64 encoded strings
     """
     
     def create_image_info(self, base64_data: str, size: str) -> dict:
@@ -21,6 +27,70 @@ class GptImageEditTool(Tool):
             "url": f"data:{mime_type};base64,{base64_data}",
             "size": size
         }
+    
+    def _process_image_input(self, image_input: Any) -> str:
+        """
+        Process image input from various sources and return a valid URL for API
+        
+        Args:
+            image_input: Can be URL string, data URL, base64 string, or Dify file object
+            
+        Returns:
+            Valid image URL or data URL for the API
+        """
+        if not image_input:
+            raise InvokeError("Input image is required")
+        
+        image_str = str(image_input).strip()
+        
+        # Check if it's a Dify file transfer variable or file object
+        if isinstance(image_input, dict):
+            # Dify file variable format
+            if "type" in image_input and image_input["type"] == "image":
+                # Extract URL from file object
+                if "transfer_method" in image_input:
+                    if image_input["transfer_method"] == "remote_url":
+                        return image_input.get("url", "")
+                    elif image_input["transfer_method"] == "local_file":
+                        # For local files, we need to use base64
+                        if "base64_data" in image_input:
+                            return f"data:image/png;base64,{image_input['base64_data']}"
+                elif "url" in image_input:
+                    return image_input["url"]
+                elif "base64_data" in image_input:
+                    return f"data:image/png;base64,{image_input['base64_data']}"
+            # Fallback for other dict formats
+            image_str = str(image_input)
+        
+        # Check if text contains URL (for workflow connections where user connected text output)
+        # This handles cases where user connected 'text' output instead of 'files' output
+        import re
+        url_pattern = r'https?://[^\s\)]+'
+        urls = re.findall(url_pattern, image_str)
+        if urls:
+            # Return the first URL found in the text
+            return urls[0]
+        
+        # Already a valid URL format
+        if image_str.startswith('http://') or image_str.startswith('https://'):
+            return image_str
+        
+        # Data URL format
+        if image_str.startswith('data:image/'):
+            return image_str
+        
+        # Base64 encoded image (with or without prefix)
+        if image_str.startswith('iVBORw0KGgo') or '/' in image_str or '=' in image_str:
+            # Likely base64 encoded
+            try:
+                # Try to decode to verify it's valid base64
+                base64.b64decode(image_str)
+                return f"data:image/png;base64,{image_str}"
+            except:
+                pass
+        
+        # If none of the above, return as-is (will be processed by the existing logic)
+        return image_str
     
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         """
@@ -32,7 +102,9 @@ class GptImageEditTool(Tool):
             if not prompt:
                 raise InvokeError("Edit prompt is required")
             
-            image_file = tool_parameters.get("image", "").strip()
+            # Process image input from various sources
+            image_input = tool_parameters.get("image", "")
+            image_file = self._process_image_input(image_input)
             if not image_file:
                 raise InvokeError("Input image is required")
             
@@ -161,15 +233,10 @@ class GptImageEditTool(Tool):
                     "images": images
                 })
                 
-                # Also create text message with image info
-                image_info = []
-                for i, img in enumerate(images, 1):
-                    if "url" in img:
-                        image_info.append(f"- Edited Image {i}: {img['url']}")
-                    elif "b64_json" in img:
-                        image_info.append(f"- Edited Image {i}: [Base64 encoded image data]")
-                
-                yield self.create_text_message(f"GPT Image Edit generated {len(images)} edited image(s):\n" + "\n".join(image_info))
+                # Also create text message with image URLs
+                image_urls = "\n".join([img['url'] for img in images if 'url' in img])
+                if image_urls:
+                    yield self.create_text_message(image_urls)
                 
             finally:
                 # Clean up temporary file

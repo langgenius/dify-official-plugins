@@ -139,5 +139,7 @@ class FluxKontextTool(Tool):
             "moderation_level": moderation_level
         })
         
-        # Also create text message
-        yield self.create_text_message(f"{model} generated {len(images)} image(s)")
+        # Also create text message with image URLs
+        image_urls = "\n".join([img['url'] for img in images if 'url' in img])
+        if image_urls:
+            yield self.create_text_message(image_urls)

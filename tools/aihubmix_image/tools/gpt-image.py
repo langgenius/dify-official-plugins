@@ -148,15 +148,10 @@ class GptImageTool(Tool):
                 "background": background
             })
             
-            # Also create text message with image info
-            image_info = []
-            for i, img in enumerate(images, 1):
-                if "url" in img:
-                    image_info.append(f"- Image {i}: {img['url']}")
-                elif "b64_json" in img:
-                    image_info.append(f"- Image {i}: [Base64 encoded image data]")
-            
-            yield self.create_text_message(f"GPT Image generated {len(images)} image(s):\n" + "\n".join(image_info))
+            # Also create text message with image URLs
+            image_urls = "\n".join([img['url'] for img in images if 'url' in img])
+            if image_urls:
+                yield self.create_text_message(image_urls)
                 
         except Exception as e:
             raise InvokeError(f"GPT Image generation failed: {str(e)}")
