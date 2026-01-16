@@ -6,20 +6,16 @@ anyio==4.11.0
     # via httpx
 blinker==1.9.0
     # via flask
-certifi==2025.11.12
+certifi==2025.10.5
     # via
     #   httpcore
     #   httpx
     #   requests
-cffi==2.0.0
-    # via gevent
-charset-normalizer==3.4.4
+charset-normalizer==3.4.3
     # via requests
-click==8.3.1
+click==8.3.0
     # via flask
-colorama==0.4.6
-    # via click
-dify_plugin>=0.3.0,<0.6.0
+dify-plugin==0.7.1
     # via openrouter-mqh649 (pyproject.toml)
 dpkt==1.9.8
     # via dify-plugin
@@ -55,21 +51,19 @@ packaging==25.0
     # via dify-plugin
 propcache==0.4.1
     # via yarl
-pycparser==2.23
-    # via cffi
-pydantic==2.12.4
+pydantic==2.12.0
     # via
     #   dify-plugin
     #   pydantic-settings
-pydantic-core==2.41.5
+pydantic-core==2.41.1
     # via pydantic
-pydantic-settings==2.12.0
+pydantic-settings==2.11.0
     # via dify-plugin
-python-dotenv==1.2.1
+python-dotenv==1.1.1
     # via pydantic-settings
 pyyaml==6.0.3
     # via dify-plugin
-regex==2025.11.3
+regex==2025.9.18
     # via tiktoken
 requests==2.32.5
     # via
@@ -99,7 +93,7 @@ werkzeug==3.1.5
     #   flask
 yarl==1.22.0
     # via dify-plugin
-zope-event==6.1
+zope-event==6.0
     # via gevent
-zope-interface==8.1.1
+zope-interface==8.0.1
     # via gevent
