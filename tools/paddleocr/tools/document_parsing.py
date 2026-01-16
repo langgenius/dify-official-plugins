@@ -1,13 +1,15 @@
 from collections.abc import Generator
 from typing import Any
 
-import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-from tools.utils import remove_img_from_markdown
-
-REQUEST_TIMEOUT = (10, 600)
+from tools.utils import (
+    convert_file_type,
+    get_markdown_from_result,
+    make_paddleocr_api_request,
+    process_images_from_result,
+)
 
 
 class DocumentParsingTool(Tool):
@@ -67,29 +69,21 @@ class DocumentParsingTool(Tool):
             if optional_param_name in tool_parameters:
                 params[optional_param_name] = tool_parameters[optional_param_name]
 
-        try:
-            resp = requests.post(
-                api_url,
-                headers={"Client-Platform": "dify", "Authorization": f"token {access_token}"},
-                json=params,
-                timeout=REQUEST_TIMEOUT,
-            )
-            resp.raise_for_status()
-            result = resp.json()
-        except requests.exceptions.JSONDecodeError as e:
-            raise RuntimeError(
-                f"Failed to decode JSON response from PaddleOCR API: {resp.text}"
-            ) from e
-        except requests.exceptions.Timeout as e:
-            raise RuntimeError("PaddleOCR API request timed out") from e
-        except requests.exceptions.RequestException as e:
-            raise RuntimeError(f"PaddleOCR API request failed: {e}") from e
+        # Convert fileType parameter
+        if "fileType" in params:
+            params["fileType"] = convert_file_type(params["fileType"])
 
-        markdown_text_list = []
-        for item in result.get("result", {}).get("layoutParsingResults", []):
-            markdown_text = item.get("markdown", {}).get("text")
-            if markdown_text is not None:
-                markdown_text = remove_img_from_markdown(markdown_text)
-                markdown_text_list.append(markdown_text)
-        yield self.create_text_message("\n\n".join(markdown_text_list))
+        result = make_paddleocr_api_request(api_url, params, access_token)
+
+        images, image_path_map, failed_images, blob_messages = (
+            process_images_from_result(result, self)
+        )
+
+        markdown = get_markdown_from_result(result, image_path_map, failed_images)
+
+        for blob_data, blob_meta in blob_messages:
+            yield self.create_blob_message(blob_data, meta=blob_meta)
+
+        yield self.create_variable_message("images", images)
+        yield self.create_text_message(markdown)
         yield self.create_json_message(result)
