@@ -84,32 +84,29 @@ class CotAgentOutputParser:
             def step(self, delta: str) -> tuple[bool, ReactChunk | None, bool, bool]:
                 nonlocal last_character, cur_state
 
-                yield_raw_delta = False
-                emitted_chunk = None
-                delta_consumed = False
+                yield_raw_delta_inner = False
+                emitted_chunk_inner = None
+                delta_consumed_inner = False
                 matched_full_prefix = False
 
                 if delta.lower() == self.prefix[self.idx]:
-                    if self.idx == 0 and last_character not in PREFIX_DELIMITERS:
-                        yield_raw_delta = True
-                    else:
-                        last_character = delta
-                        self.cache += delta
-                        self.idx += 1
-                        if self.idx == len(self.prefix):
-                            self.cache = ""
-                            self.idx = 0
-                            if self.state_on_full_match is not None:
-                                cur_state = self.state_on_full_match
-                            matched_full_prefix = True
-                        delta_consumed = True
+                    last_character = delta
+                    self.cache += delta
+                    self.idx += 1
+                    if self.idx == len(self.prefix):
+                        self.cache = ""
+                        self.idx = 0
+                        if self.state_on_full_match is not None:
+                            cur_state = self.state_on_full_match
+                        matched_full_prefix = True
+                    delta_consumed_inner = True
                 elif self.cache:
                     last_character = delta
-                    emitted_chunk = ReactChunk(cur_state, self.cache)
+                    emitted_chunk_inner = ReactChunk(cur_state, self.cache)
                     self.cache = ""
                     self.idx = 0
 
-                return yield_raw_delta, emitted_chunk, delta_consumed, matched_full_prefix
+                return yield_raw_delta_inner, emitted_chunk_inner, delta_consumed_inner, matched_full_prefix
 
         action_matcher = PrefixMatcher("action:")
         answer_matcher = PrefixMatcher(ReactState.ANSWER)
@@ -169,8 +166,8 @@ class CotAgentOutputParser:
                         json_cache = delta
                         json_in_string = False
                         json_escape = False
-                        json_stack = ["}" if delta == "{" else "]"]
                         last_character = delta
+                        json_stack = ["}" if delta == "{" else "]"]
                         index += steps
                         continue
                     if not delta.isspace():
