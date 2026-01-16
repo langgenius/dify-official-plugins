@@ -20,7 +20,7 @@ dependencies = [
     'deprecated==1.2.18',
     'dify_plugin>=0.1.0,<0.2.0',
     'dpkt==1.9.8',
-    'flask>=3.0.5',
+    'flask>=3.0.5,<4.0',
     'gevent==24.11.1',
     'greenlet==3.2.1; platform_python_implementation == "CPython"',
     'h11==0.16.0',
