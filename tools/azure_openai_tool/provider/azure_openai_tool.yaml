@@ -41,9 +41,9 @@ credentials_for_provider:
       zh_Hans: 请输入你的 Azure OpenAI 图像模型部署名称（例如：gpt-image-1/1.5）
       pt_BR: Insira o nome da implantação do modelo de imagem do Azure OpenAI (ex： gpt-image-1/1.5)
     placeholder:
-      en_US: Please input the name of your Azure OpenAI image model deployment
-      zh_Hans: 请输入你的 Azure OpenAI 图像模型部署名称
-      pt_BR: Insira o nome da implantação do modelo de imagem do Azure OpenAI
+      en_US: Please input the name of your Azure OpenAI image model deployment (e.g., gpt-image-1/1.5)
+      zh_Hans: 请输入你的 Azure OpenAI 图像模型部署名称（例如：gpt-image-1/1.5）
+      pt_BR: Insira o nome da implantação do modelo de imagem do Azure OpenAI (ex： gpt-image-1/1.5)
   azure_openai_base_url:
     type: text-input
     required: true
