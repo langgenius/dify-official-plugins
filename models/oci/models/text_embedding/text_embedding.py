@@ -33,6 +33,9 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
     # Conservative image batch size for OCI embedText(IMAGE)
     MAX_IMAGES_PER_REQUEST = 16
 
+    # Maximum allowed image size (Dify: JPG/PNG/GIF, up to 2MB)
+    MAX_IMAGE_BYTES = 2 * 1024 * 1024
+
     # Safety margin for truncation (tokenizer mismatch between GPT-2 estimate vs Cohere actual)
     TRUNCATION_SAFETY_MARGIN = 0.95
 
@@ -87,8 +90,8 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
         raise CredentialsValidateFailedError(f"unsupported authentication_method: {auth_method}")
 
     # ---------------------------------------------------------
-    # 共通: OCI ServiceError を Dify の InvokeError にマッピング
-    # （常に例外を raise するので NoReturn が適切）
+    # Common: Map OCI ServiceError to Dify's InvokeError
+    # (NoReturn is appropriate as it always raises an exception)
     # ---------------------------------------------------------
     def _raise_invoke_error_from_oci(self, e: Exception) -> NoReturn:
         if isinstance(e, oci.exceptions.ServiceError):
@@ -107,7 +110,7 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
         raise InvokeConnectionError(str(e)) from e
 
     # ---------------------------------------------------------
-    # client 作成（invoke 内で1回だけ生成して使い回す）
+    # Create the client (instantiate once inside invoke and reuse it).
     # ---------------------------------------------------------
     def _create_client(self, credentials: dict) -> oci.generative_ai_inference.GenerativeAiInferenceClient:
         oci_credentials = self._get_oci_credentials(credentials)
@@ -172,7 +175,7 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
         return embeddings, embedding_used_tokens
 
     # ---------------------------------------------------------
-    # テキスト埋め込み
+    # Text embedding
     # ---------------------------------------------------------
     def _invoke(
         self,
@@ -188,7 +191,7 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
             usage = self._calc_response_usage(model=model, credentials=credentials, tokens=0)
             return TextEmbeddingResult(embeddings=[], usage=usage, model=model)
 
-        # client はここで1回だけ生成して使い回す
+        # Create the client once here and reuse it.
         try:
             client = self._create_client(credentials)
         except Exception as e:
@@ -197,7 +200,7 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
         context_size = self._get_context_size(model, credentials)
         max_chunks = self._get_max_chunks(model, credentials)
 
-        # max_chunks が壊れても落ちないようにクランプ
+        # Clamp max_chunks to prevent crashes even if it is misconfigured.
         if not isinstance(max_chunks, int) or max_chunks <= 0:
             max_chunks = 1
 
@@ -242,7 +245,7 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
         return TextEmbeddingResult(embeddings=batched_embeddings, usage=usage, model=model)
 
     # =========================================================
-    # 画像埋め込み（バッチ対応）
+    # Image embedding (batch support)
     # =========================================================
     def _invoke_multimodal(
         self,
@@ -258,7 +261,7 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
             usage = self._calc_response_usage(model=model, credentials=credentials, tokens=0)
             return TextEmbeddingResult(embeddings=[], usage=usage, model=model)
 
-        # client はここで1回だけ生成して使い回す
+        # Create the client once here and reuse it.
         try:
             client = self._create_client(credentials)
         except Exception as e:
@@ -288,7 +291,7 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
         return TextEmbeddingResult(embeddings=embeddings, usage=usage, model=model)
 
     # ---------------------------------------------------------
-    # MultiModalContent 互換ヘルパ
+    # MultiModalContent compatibility helper
     # ---------------------------------------------------------
     def _as_dict_if_possible(self, obj: Any) -> Any:
         if isinstance(obj, dict):
@@ -353,7 +356,7 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
             if ct_lower != "image" and ct_lower not in allowed_mimes:
                 raise InvokeBadRequestError(f"unsupported image content_type: {content_type}")
 
-        max_bytes = 2 * 1024 * 1024
+        max_bytes = self.MAX_IMAGE_BYTES
         try:
             raw = base64.b64decode(image_base64, validate=True)
         except Exception as e:
@@ -374,7 +377,7 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
         return self._detect_image_mime(raw)
 
     # ---------------------------------------------------------
-    # 利用量カウント関連
+    # Usage counting related logic
     # ---------------------------------------------------------
     def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
         return [self._get_num_tokens_by_gpt2(text) for text in texts]
@@ -384,8 +387,8 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
-        Dify が credential を validate する時に呼ばれる。
-        client を1回だけ作成し、軽量なリクエストで疎通確認する。
+        Called when Dify validates credentials.
+        Instantiate the client only once and perform a lightweight request as a connectivity check.
         """
         try:
             client = self._create_client(credentials)
@@ -400,7 +403,7 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
             raise CredentialsValidateFailedError(str(ex)) from ex
 
     # ---------------------------------------------------------
-    # TEXT Embed 呼び出し（client 再利用 + inputType任意）
+    # Text embedding call (reuse client + optional inputType)
     # ---------------------------------------------------------
     def _embedding_invoke(
         self,
@@ -443,14 +446,14 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
                 body=body,
             )
 
-            # chunk 長と embeddings 数の整合性を検証
+            # Verify that the chunk count matches the number of embeddings.
             return self._parse_embed_response(response.data.text, expected_count=len(texts))
 
         except Exception as e:
             self._raise_invoke_error_from_oci(e)
 
     # ---------------------------------------------------------
-    # IMAGE Embed 呼び出し（client 再利用 + fallback + バッチ対応）
+    # Image embedding call (reuse client + fallback + batch support)
     # ---------------------------------------------------------
     def _embedding_invoke_image(
         self,
@@ -497,14 +500,14 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
                 body=body,
             )
 
-            # batch 長と embeddings 数の整合性を検証
+            # Validate consistency between the batch size and the number of embeddings.
             return self._parse_embed_response(response.data.text, expected_count=len(image_data_uris))
 
         except Exception as e:
             self._raise_invoke_error_from_oci(e)
 
     # ---------------------------------------------------------
-    # Usage 計算
+    # Usage calculation
     # ---------------------------------------------------------
     def _calc_response_usage(self, model: str, credentials: dict, tokens: int) -> EmbeddingUsage:
         input_price_info = self.get_price(
