@@ -36,10 +36,6 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
     # Safety margin for truncation (tokenizer mismatch between GPT-2 estimate vs Cohere actual)
     TRUNCATION_SAFETY_MARGIN = 0.95
 
-    # ---------------------------------------------------------
-    # !!! IMPORTANT !!!
-    # 🔒 認証に関わるコードは「そのまま」(ユーザー指示により無修正)
-    # ---------------------------------------------------------
     def _get_oci_credentials(self, credentials: dict) -> dict:
         auth_method = credentials.get("authentication_method")
 
@@ -192,7 +188,7 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
             usage = self._calc_response_usage(model=model, credentials=credentials, tokens=0)
             return TextEmbeddingResult(embeddings=[], usage=usage, model=model)
 
-        # ✅ client はここで1回だけ生成して使い回す
+        # client はここで1回だけ生成して使い回す
         try:
             client = self._create_client(credentials)
         except Exception as e:
@@ -201,7 +197,7 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
         context_size = self._get_context_size(model, credentials)
         max_chunks = self._get_max_chunks(model, credentials)
 
-        # ✅ max_chunks が壊れても落ちないようにクランプ
+        # max_chunks が壊れても落ちないようにクランプ
         if not isinstance(max_chunks, int) or max_chunks <= 0:
             max_chunks = 1
 
@@ -262,7 +258,7 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
             usage = self._calc_response_usage(model=model, credentials=credentials, tokens=0)
             return TextEmbeddingResult(embeddings=[], usage=usage, model=model)
 
-        # ✅ client はここで1回だけ生成して使い回す
+        # client はここで1回だけ生成して使い回す
         try:
             client = self._create_client(credentials)
         except Exception as e:
@@ -447,7 +443,7 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
                 body=body,
             )
 
-            # ✅ chunk 長と embeddings 数の整合性を検証
+            # chunk 長と embeddings 数の整合性を検証
             return self._parse_embed_response(response.data.text, expected_count=len(texts))
 
         except Exception as e:
@@ -501,7 +497,7 @@ class OCITextEmbeddingModel(TextEmbeddingModel):
                 body=body,
             )
 
-            # ✅ batch 長と embeddings 数の整合性を検証
+            # batch 長と embeddings 数の整合性を検証
             return self._parse_embed_response(response.data.text, expected_count=len(image_data_uris))
 
         except Exception as e:
