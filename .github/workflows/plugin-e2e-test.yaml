@@ -33,19 +33,19 @@ jobs:
 
       - id: filter
         name: Detect changed plugins
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          # Determine base SHA for comparison
           if [ "${{ github.event_name }}" == "pull_request" ]; then
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            CHANGED_FILES=$(gh pr view -R ${{ github.repository }} ${{ github.event.pull_request.number }} --json files --jq '.files[].path')
           else
             if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
               BASE_SHA="HEAD~1"
             else
               BASE_SHA="${{ github.event.before }}"
             fi
+            CHANGED_FILES=$(git diff --name-only $BASE_SHA HEAD)
           fi
-
-          CHANGED_FILES=$(git diff --name-only $BASE_SHA HEAD)
 
           # Find all manifest.yaml files
           MANIFESTS=$(find . -name "manifest.yaml" -not -path "*/.*")
