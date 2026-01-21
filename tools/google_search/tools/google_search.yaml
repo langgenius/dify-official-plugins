@@ -1,0 +1,1026 @@
+identity:
+  name: google_search
+  author: Dify
+  label:
+    en_US: Google Search
+    zh_Hans: 谷歌搜索
+description:
+  human:
+    en_US: A tool for performing a Google SERP search and extracting snippets and webpages.Input should be a search query.
+    zh_Hans: 一个用于执行 Google 搜索并提取片段和网页的工具。输入应该是一个搜索查询。
+  llm: A tool for performing a Google SERP search and extracting snippets and webpages.Input should be a search query.
+parameters:
+  - name: q
+    type: string
+    required: true
+    label:
+      en_US: Query
+      zh_Hans: 查询语句
+      pt_BR: Query
+    human_description:
+      en_US: used for searching
+      zh_Hans: 用于搜索网页内容
+      pt_BR: used for searching
+    llm_description: key words for searching
+    form: llm
+  - name: c2coff
+    type: select
+    required: false
+    label:
+      en_US: Enable Chinese Search
+      zh_Hans: 启用中文搜索
+    human_description:
+      en_US: Enable or disable Simplified Chinese and Traditional Chinese search.
+      zh_Hans: 启用或停用简体中文和繁体中文搜索。
+    llm_description: Enable Chinese Search
+    default: "0"
+    options:
+      - value: "1"
+        label:
+          en_US: Disabled
+          zh_Hans: 停用
+      - value: "0"
+        label:
+          en_US: Enabled
+          zh_Hans: 启用
+    form: form
+  - name: cr
+    type: string
+    required: false
+    label:
+      en_US: Restricted area
+      zh_Hans: 限制地区
+    human_description:
+      en_US: "Restricts search results to documents originating in a particular country. You may use Boolean operators in the cr parameter's value.
+Google Search determines the country of a document by analyzing https://developers.google.com/custom-search/docs/json_api_reference#booleanOperators:
+  the top-level domain (TLD) of the document's URL
+  the geographic location of the Web server's IP address
+See the Country Parameter Values page for a list of valid values for this parameter.https://developers.google.com/custom-search/docs/json_api_reference#countryCollections"
+      zh_Hans: "将搜索结果限制为来自特定国家/地区的文档。您可以在 cr 参数值中使用布尔值运算符.https://developers.google.com/custom-search/docs/json_api_reference?hl=zh-cn#booleanOperators
+Google 搜索通过分析以下内容来确定文档所在的国家/地区：
+  文档网址的顶级域名 (TLD)
+  Web 服务器 IP 地址的地理位置
+如需查看此参数的有效值列表，请参阅国家/地区参数值页面。https://developers.google.com/custom-search/docs/json_api_reference?hl=zh-cn#countryCollections"
+    llm_description: Restricts search results to documents originating in a particular country.
+    form: form
+  - name: cx
+    type: string
+    required: true
+    label:
+      en_US: The Programmable Search Engine ID
+      zh_Hans: 可编程搜索引擎 ID
+    human_description:
+      en_US: The Programmable Search Engine ID
+      zh_Hans: 可编程搜索引擎 ID
+    llm_description: The programmable search engine ID to use for this request.
+    form: form
+  - name: dateRestrict
+    type: string
+    required: false
+    label:
+      en_US: Restrict results by date
+      zh_Hans: 按日期限制结果
+    human_description:
+      en_US: Restrict results by date. d[number] past days ,w[number] past weeks ,m[number] past months ,y[number] past years
+      zh_Hans: 按日期限制结果. d[数字] 最近几天, w[数字] 最近几周, m[数字] 最近几月, y[数字] 最近几年
+    llm_description: Restricts results to URLs based on date.
+    form: form
+  - name: exactTerms
+    type: string
+    required: false
+    label:
+      en_US: Phrase required in results
+      zh_Hans: 必须包含的词组
+    human_description:
+      en_US: Identifies a phrase that all documents in the search results must contain
+      zh_Hans: 标识搜索结果中所有文档必须包含的词组
+    llm_description: Identifies a phrase that all documents in the search results must contain.
+    form: form
+  - name: excludeTerms
+    type: string
+    required: false
+    label:
+      en_US: Phrase excluded from results
+      zh_Hans: 排除的词组
+    human_description:
+      en_US: Identifies a word or phrase that should not appear in any documents in the search results
+      zh_Hans: 标识不应在搜索结果的任何文档中出现的字词或词组
+    llm_description: Identifies a word or phrase that should not appear in any documents in the search results.
+    form: form
+  - name: fileType
+    type: string
+    required: false
+    label:
+      en_US: Resulting file type
+      zh_Hans: 结果文件类型
+    human_description:
+      en_US: Restricts results to files of a specified extension.
+      zh_Hans: 将结果限制为指定扩展名的文件
+    llm_description: Restricts results to files of a specified extension.
+    form: form
+  - name: filter
+    type: select
+    required: false
+    label:
+      en_US: duplicate content filter
+      zh_Hans: 重复内容过滤器
+    human_description:
+      en_US: Controls turning on or off the duplicate content filter.
+      zh_Hans: 用于开启或关闭重复内容过滤器的控件
+    llm_description: Controls turning on or off the duplicate content filter.
+    default: "1"
+    options:
+      - value: "0"
+        label:
+          en_US: Disabled
+          zh_Hans: 关闭
+      - value: "1"
+        label:
+          en_US: Enabled
+          zh_Hans: 开启
+    form: form
+  - name: gl
+    type: string
+    required: false
+    label:
+      en_US: Geolocation of end user.
+      zh_Hans: 最终用户的地理位置
+    human_description:
+      en_US: Geolocation of end user.
+      zh_Hans: 最终用户的地理位置
+    llm_description: Geolocation of end user.
+    form: form
+  - name: lowRange
+    type: string
+    required: false
+    label:
+      en_US: Specifies the starting value for a search range
+      zh_Hans: 指定搜索范围的起始值
+    human_description:
+      en_US: Specifies the starting value for a search range
+      zh_Hans: 指定搜索范围的起始值
+    llm_description: Specifies the starting value for a search range.
+    form: form
+  - name: highRange
+    type: string
+    required: false
+    label:
+      en_US: Specifies the ending value for a search range
+      zh_Hans: 指定搜索范围的结束值
+    human_description:
+      en_US: Specifies the ending value for a search range
+      zh_Hans: 指定搜索范围的结束值
+    llm_description: Specifies the ending value for a search range.
+    form: form
+  - name: hl
+    type: select
+    required: false
+    nullable: true
+    label:
+      en_US: Sets the user interface language
+      zh_Hans: 设置界面语言
+    human_description:
+      en_US: Sets the user interface language
+      zh_Hans: 设置界面语言
+    llm_description: Sets the user interface language.
+    options:
+      - value: lang_af
+        label:
+          en_US: Afrikaans
+          zh_Hans: 南非荷兰语
+      - value: lang_sq
+        label:
+          en_US: Albanian
+          zh_Hans: 阿尔巴尼亚语
+      - value: lang_sm
+        label:
+          en_US: Amharic
+          zh_Hans: 阿姆哈拉语
+      - value: lang_ar
+        label:
+          en_US: Arabic
+          zh_Hans: 阿拉伯语
+      - value: lang_az
+        label:
+          en_US: Azerbaijani
+          zh_Hans: 阿塞拜疆语
+      - value: lang_eu
+        label:
+          en_US: Basque
+          zh_Hans: 巴斯克语
+      - value: lang_be
+        label:
+          en_US: Belarusian
+          zh_Hans: 白俄罗斯语
+      - value: lang_bn
+        label:
+          en_US: Bengali
+          zh_Hans: 孟加拉语
+      - value: lang_bh
+        label:
+          en_US: Bihari
+          zh_Hans: 比哈里语
+      - value: lang_bs
+        label:
+          en_US: Bosnian
+          zh_Hans: 波斯尼亚语
+      - value: lang_bg
+        label:
+          en_US: Bulgarian
+          zh_Hans: 保加利亚语
+      - value: lang_ca
+        label:
+          en_US: Catalan
+          zh_Hans: 加泰罗尼亚语
+      - value: lang_zh-CN
+        label:
+          en_US: Chinese (Simplified)
+          zh_Hans: 中文（简体）
+      - value: lang_zh-TW
+        label:
+          en_US: Chinese (Traditional)
+          zh_Hans: 中文（繁体）
+      - value: lang_hr
+        label:
+          en_US: Croatian
+          zh_Hans: 克罗地亚语
+      - value: lang_cs
+        label:
+          en_US: Czech
+          zh_Hans: 捷克语
+      - value: lang_da
+        label:
+          en_US: Danish
+          zh_Hans: 丹麦语
+      - value: lang_nl
+        label:
+          en_US: Dutch
+          zh_Hans: 荷兰语
+      - value: lang_en
+        label:
+          en_US: English
+          zh_Hans: 英语
+      - value: lang_eo
+        label:
+          en_US: Esperanto
+          zh_Hans: 世界语
+      - value: lang_et
+        label:
+          en_US: Estonian
+          zh_Hans: 爱沙尼亚语
+      - value: lang_fo
+        label:
+          en_US: Faroese
+          zh_Hans: 法罗语
+      - value: lang_fi
+        label:
+          en_US: Finnish
+          zh_Hans: 芬兰语
+      - value: lang_fr
+        label:
+          en_US: French
+          zh_Hans: 法语
+      - value: lang_fy
+        label:
+          en_US: Frisian
+          zh_Hans: 弗里斯兰语
+      - value: lang_gl
+        label:
+          en_US: Galician
+          zh_Hans: 加利西亚语
+      - value: lang_ka
+        label:
+          en_US: Georgian
+          zh_Hans: 格鲁吉亚语
+      - value: lang_de
+        label:
+          en_US: German
+          zh_Hans: 德语
+      - value: lang_el
+        label:
+          en_US: Greek
+          zh_Hans: 希腊语
+      - value: lang_gu
+        label:
+          en_US: Gujarati
+          zh_Hans: 古吉拉特语
+      - value: lang_iw
+        label:
+          en_US: Hebrew
+          zh_Hans: 希伯来语
+      - value: lang_hi
+        label:
+          en_US: Hindi
+          zh_Hans: 印地语
+      - value: lang_hu
+        label:
+          en_US: Hungarian
+          zh_Hans: 匈牙利语
+      - value: lang_is
+        label:
+          en_US: Icelandic
+          zh_Hans: 冰岛语
+      - value: lang_id
+        label:
+          en_US: Indonesian
+          zh_Hans: 印度尼西亚语
+      - value: lang_ia
+        label:
+          en_US: Interlingua
+          zh_Hans: 国际语
+      - value: lang_ga
+        label:
+          en_US: Irish
+          zh_Hans: 爱尔兰语
+      - value: lang_it
+        label:
+          en_US: Italian
+          zh_Hans: 意大利语
+      - value: lang_ja
+        label:
+          en_US: Japanese
+          zh_Hans: 日语
+      - value: lang_jw
+        label:
+          en_US: Javanese
+          zh_Hans: 爪哇语
+      - value: lang_kn
+        label:
+          en_US: Kannada
+          zh_Hans: 卡纳达语
+      - value: lang_ko
+        label:
+          en_US: Korean
+          zh_Hans: 韩语
+      - value: lang_la
+        label:
+          en_US: Latin
+          zh_Hans: 拉丁文
+      - value: lang_lv
+        label:
+          en_US: Latvian
+          zh_Hans: 拉脱维亚语
+      - value: lang_lt
+        label:
+          en_US: Lithuanian
+          zh_Hans: 立陶宛语
+      - value: lang_mk
+        label:
+          en_US: Macedonian
+          zh_Hans: 马其顿语
+      - value: lang_ms
+        label:
+          en_US: Malay
+          zh_Hans: 马来语
+      - value: lang_ml
+        label:
+          en_US: Malayalam
+          zh_Hans: 马来亚语
+      - value: lang_mt
+        label:
+          en_US: Maltese
+          zh_Hans: 马耳他语
+      - value: lang_mr
+        label:
+          en_US: Marathi
+          zh_Hans: 马拉地语
+      - value: lang_ne
+        label:
+          en_US: Nepali
+          zh_Hans: 尼泊尔语
+      - value: lang_no
+        label:
+          en_US: Norwegian
+          zh_Hans: 挪威语
+      - value: lang_nn
+        label:
+          en_US: Norwegian (Nynorsk)
+          zh_Hans: 挪威语（尼诺斯克语）
+      - value: lang_oc
+        label:
+          en_US: Occitan
+          zh_Hans: 奥克斯坦语
+      - value: lang_fa
+        label:
+          en_US: Persian
+          zh_Hans: 波斯语
+      - value: lang_pl
+        label:
+          en_US: Polish
+          zh_Hans: 波兰语
+      - value: lang_pt-BR
+        label:
+          en_US: Portuguese (Brazil)
+          zh_Hans: 葡萄牙语（巴西）
+      - value: lang_pt-PT
+        label:
+          en_US: Portuguese (Portugal)
+          zh_Hans: 葡萄牙语（葡萄牙）
+      - value: lang_pa
+        label:
+          en_US: Punjabi
+          zh_Hans: 旁遮普语
+      - value: lang_ro
+        label:
+          en_US: Romanian
+          zh_Hans: 罗马尼亚语
+      - value: lang_ru
+        label:
+          en_US: Russian
+          zh_Hans: 俄语
+      - value: lang_gd
+        label:
+          en_US: Scottish Gaelic
+          zh_Hans: 苏格兰盖尔语
+      - value: lang_sr
+        label:
+          en_US: Serbian
+          zh_Hans: 塞尔维亚语
+      - value: lang_si
+        label:
+          en_US: Sinhala
+          zh_Hans: 僧伽罗语
+      - value: lang_sk
+        label:
+          en_US: Slovak
+          zh_Hans: 斯洛伐克语
+      - value: lang_sl
+        label:
+          en_US: Slovenian
+          zh_Hans: 斯洛文尼亚语
+      - value: lang_es
+        label:
+          en_US: Spanish
+          zh_Hans: 西班牙语
+      - value: lang_su
+        label:
+          en_US: Sundanese
+          zh_Hans: 苏丹语
+      - value: lang_sw
+        label:
+          en_US: Swahili
+          zh_Hans: 斯瓦希里语
+      - value: lang_sv
+        label:
+          en_US: Swedish
+          zh_Hans: 瑞典语
+      - value: lang_tl
+        label:
+          en_US: Tagalog
+          zh_Hans: 塔加路文
+      - value: lang_ta
+        label:
+          en_US: Tamil
+          zh_Hans: 泰米尔文
+      - value: lang_te
+        label:
+          en_US: Telugu
+          zh_Hans: 泰卢固语
+      - value: lang_th
+        label:
+          en_US: Thai
+          zh_Hans: 泰语
+      - value: lang_ti
+        label:
+          en_US: Tigrinya
+          zh_Hans: 提格里尼亚语
+      - value: lang_tr
+        label:
+          en_US: Turkish
+          zh_Hans: 土耳其语
+      - value: lang_uk
+        label:
+          en_US: Ukrainian
+          zh_Hans: 乌克兰语
+      - value: lang_ur
+        label:
+          en_US: Urdu
+          zh_Hans: 乌尔都语
+      - value: lang_uz
+        label:
+          en_US: Uzbek
+          zh_Hans: 乌兹别克语
+      - value: lang_vi
+        label:
+          en_US: Vietnamese
+          zh_Hans: 越南语
+      - value: lang_cy
+        label:
+          en_US: Welsh
+          zh_Hans: 威尔士语
+      - value: lang_xh
+        label:
+          en_US: Xhosa
+          zh_Hans: 科萨语
+      - value: lang_zu
+        label:
+          en_US: Zulu
+          zh_Hans: 祖鲁语
+    form: form
+  - name: hq
+    type: string
+    required: false
+    label:
+      en_US: Add terms with AND
+      zh_Hans: 以 AND 添加词语
+    human_description:
+      en_US: Appends the specified query terms to the query, as if they were combined with a logical AND operator.
+      zh_Hans: 向查询附加指定的查询字词，就像使用逻辑 AND 运算符合并这些字词一样
+    llm_description: Appends the specified query terms to the query, as if they were combined with a logical AND operator.
+    form: form
+  - name: imgColorType
+    type: select
+    required: false
+    nullable: true
+    label:
+      en_US: ColorType
+      zh_Hans: 色彩类型
+    human_description:
+      en_US: Returns black and white, grayscale, transparent, or color images.
+      zh_Hans: 返回黑白、灰度、透明或彩色图片。
+    llm_description: Returns black and white, grayscale, transparent, or color images.
+    options:
+      - value: color
+        label:
+          en_US: color
+          zh_Hans: 彩色
+      - value: gray
+        label:
+          en_US: gray
+          zh_Hans: 灰度
+      - value: mono
+        label:
+          en_US: mono
+          zh_Hans: 黑白
+      - value: trans
+        label:
+          en_US: trans
+          zh_Hans: 透明
+    form: form
+  - name: imgDominantColor
+    type: select
+    required: false
+    nullable: true
+    label:
+      en_US: dominant color
+      zh_Hans: 图片主色
+    human_description:
+      en_US: Returns images of a specific dominant color.
+      zh_Hans: 返回特定主色的图片。
+    llm_description: Returns images of a specific dominant color.
+    options:
+      - value: color
+        label:
+          en_US: color
+          zh_Hans: 彩色
+      - value: black
+        label:
+          en_US: black
+          zh_Hans: 黑色
+      - value: blue
+        label:
+          en_US: blue
+          zh_Hans: 蓝色
+      - value: brown
+        label:
+          en_US: brown
+          zh_Hans: 棕色
+      - value: gray
+        label:
+          en_US: gray
+          zh_Hans: 灰色
+      - value: green
+        label:
+          en_US: green
+          zh_Hans: 绿色
+      - value: orange
+        label:
+          en_US: orange
+          zh_Hans: 橙色
+      - value: pink
+        label:
+          en_US: pink
+          zh_Hans: 粉色
+      - value: purple
+        label:
+          en_US: purple
+          zh_Hans: 紫色
+      - value: red
+        label:
+          en_US: red
+          zh_Hans: 红色
+      - value: teal
+        label:
+          en_US: teal
+          zh_Hans: 青色
+      - value: white
+        label:
+          en_US: white
+          zh_Hans: 白色
+      - value: yellow
+        label:
+          en_US: yellow
+          zh_Hans: 黄色
+    form: form
+  - name: imgSize
+    type: select
+    required: false
+    nullable: true
+    label:
+      en_US: imgSize
+      zh_Hans: 图片尺寸
+    human_description:
+      en_US: Returns images of a specified size.
+      zh_Hans: 返回指定尺寸的图片。
+    llm_description: Returns images of a specified size.
+    options:
+      - value: icon
+        label:
+          en_US: icon
+          zh_Hans: 图标
+      - value: small
+        label:
+          en_US: small
+          zh_Hans: 小
+      - value: medium
+        label:
+          en_US: medium
+          zh_Hans: 中
+      - value: large
+        label:
+          en_US: large
+          zh_Hans: 大
+      - value: xlarge
+        label:
+          en_US: xlarge
+          zh_Hans: 加大
+      - value: xxlarge
+        label:
+          en_US: xxlarge
+          zh_Hans: 特大
+      - value: huge
+        label:
+          en_US: huge
+          zh_Hans: 超大
+          form: form
+    form: form
+  - name: imgType
+    type: select
+    required: false
+    nullable: true
+    label:
+      en_US: Returns images of a type.
+      zh_Hans: 图片类型
+    human_description:
+      en_US: Returns images of a type.
+      zh_Hans: 返回某个类型的图片。
+    llm_description: Returns images of a type.
+    options:
+      - value: clipart
+        label:
+          en_US: clipart
+          zh_Hans: 剪贴画
+      - value: face
+        label:
+          en_US: face
+          zh_Hans: 人脸
+      - value: lineart
+        label:
+          en_US: lineart
+          zh_Hans: 线描
+      - value: stock
+        label:
+          en_US: stock
+          zh_Hans: 素材
+      - value: photo
+        label:
+          en_US: photo
+          zh_Hans: 照片
+      - value: animated
+        label:
+          en_US: animated
+          zh_Hans: 动画
+    form: form
+  - name: linkSite
+    type: string
+    required: false
+    label:
+      en_US: Results must link to URL
+      zh_Hans: 搜索结果必须包含指定网址链接
+    human_description:
+      en_US: Specifies that all search results should contain a link to a particular URL.
+      zh_Hans: 指定所有搜索结果都应包含指向特定网址的链接。
+    llm_description: Specifies that all search results should contain a link to a particular URL.
+    form: form
+  - name: lr
+    type: select
+    required: false
+    nullable: true
+    label:
+      en_US: Results in specific language
+      zh_Hans: 搜索结果限定为特定语言
+    human_description:
+      en_US: Restricts the search to documents written in a particular language.
+      zh_Hans: 将搜索范围限制为以特定语言撰写的文档。
+    llm_description: Restricts the search to documents written in a particular language
+    options:
+      - value: lang_ar
+        label:
+          en_US: Arabic
+          zh_Hans: 阿拉伯语
+      - value: lang_bg
+        label:
+          en_US: Bulgarian
+          zh_Hans: 保加利亚语
+      - value: lang_ca
+        label:
+          en_US: Catalan
+          zh_Hans: 加泰罗尼亚语
+      - value: lang_cs
+        label:
+          en_US: Czech
+          zh_Hans: 捷克语
+      - value: lang_da
+        label:
+          en_US: Danish
+          zh_Hans: 丹麦语
+      - value: lang_de
+        label:
+          en_US: German
+          zh_Hans: 德语
+      - value: lang_el
+        label:
+          en_US: Greek
+          zh_Hans: 希腊语
+      - value: lang_en
+        label:
+          en_US: English
+          zh_Hans: 英语
+      - value: lang_es
+        label:
+          en_US: Spanish
+          zh_Hans: 西班牙语
+      - value: lang_et
+        label:
+          en_US: Estonian
+          zh_Hans: 爱沙尼亚语
+      - value: lang_fi
+        label:
+          en_US: Finnish
+          zh_Hans: 芬兰语
+      - value: lang_fr
+        label:
+          en_US: French
+          zh_Hans: 法语
+      - value: lang_hr
+        label:
+          en_US: Croatian
+          zh_Hans: 克罗地亚语
+      - value: lang_hu
+        label:
+          en_US: Hungarian
+          zh_Hans: 匈牙利语
+      - value: lang_id
+        label:
+          en_US: Indonesian
+          zh_Hans: 印度尼西亚语
+      - value: lang_is
+        label:
+          en_US: Icelandic
+          zh_Hans: 冰岛语
+      - value: lang_it
+        label:
+          en_US: Italian
+          zh_Hans: 意大利语
+      - value: lang_iw
+        label:
+          en_US: Hebrew
+          zh_Hans: 希伯来语
+      - value: lang_ja
+        label:
+          en_US: Japanese
+          zh_Hans: 日语
+      - value: lang_ko
+        label:
+          en_US: Korean
+          zh_Hans: 韩语
+      - value: lang_lt
+        label:
+          en_US: Lithuanian
+          zh_Hans: 立陶宛语
+      - value: lang_lv
+        label:
+          en_US: Latvian
+          zh_Hans: 拉脱维亚语
+      - value: lang_nl
+        label:
+          en_US: Dutch
+          zh_Hans: 荷兰语
+      - value: lang_no
+        label:
+          en_US: Norwegian
+          zh_Hans: 挪威语
+      - value: lang_pl
+        label:
+          en_US: Polish
+          zh_Hans: 波兰语
+      - value: lang_pt
+        label:
+          en_US: Portuguese
+          zh_Hans: 葡萄牙语
+      - value: lang_ro
+        label:
+          en_US: Romanian
+          zh_Hans: 罗马尼亚语
+      - value: lang_ru
+        label:
+          en_US: Russian
+          zh_Hans: 俄语
+      - value: lang_sk
+        label:
+          en_US: Slovak
+          zh_Hans: 斯洛伐克语
+      - value: lang_sl
+        label:
+          en_US: Slovenian
+          zh_Hans: 斯洛文尼亚语
+      - value: lang_sr
+        label:
+          en_US: Serbian
+          zh_Hans: 塞尔维亚语
+      - value: lang_sv
+        label:
+          en_US: Swedish
+          zh_Hans: 瑞典语
+      - value: lang_tr
+        label:
+          en_US: Turkish
+          zh_Hans: 土耳其语
+      - value: lang_zh-CN
+        label:
+          en_US: Chinese (Simplified)
+          zh_Hans: 中文（简体）
+      - value: lang_zh-TW
+        label:
+          en_US: Chinese (Traditional)
+          zh_Hans: 中文（繁体）
+    form: form
+  - name: num
+    type: number
+    required: false
+    label:
+      en_US: Number of search results to return
+      zh_Hans: 要返回的搜索结果数
+    human_description:
+      en_US: Number of search results to return.
+      zh_Hans: 要返回的搜索结果数。
+    llm_description: Number of search results to return.
+    min: 1
+    max: 10
+    default: 10
+    form: form
+  - name: start
+    type: number
+    required: false
+    label:
+      en_US: Starting index of results
+      zh_Hans: 结果起始索引
+    human_description:
+      en_US: The index of the first result to return. The default number of results per page is 10, so &start=11 would start at the top of the second page of results. Note： The JSON API will never return more than 100 results, even if more than 100 documents match the query, so setting the sum of start + num to a number greater than 100 will produce an error. Also note that the maximum value for num is 10.
+      zh_Hans: 要返回的第一个结果的索引。每页的默认结果数为 10，因此 &start=11 将从结果第二页的顶部开始。注意：JSON API 绝不会返回超过 100 个结果，即使与查询匹配的文档超过 100 个，因此将 start + num 的总和设置为大于 100 的数字也会产生错误。
+    llm_description: The index of the first result to return.
+    min: 1
+    max: 90
+    form: llm
+  - name: orTerms
+    type: string
+    required: false
+    label:
+      en_US: Must include one extra term
+      zh_Hans: 必须包含一个附加字词
+    human_description:
+      en_US: Provides additional search terms to check for in a document, where each document in the search results must contain at least one of the additional search terms.
+      zh_Hans: 提供要在文档中检查的其他搜索字词，其中搜索结果中的每个文档都必须至少包含一个其他搜索字词。
+    llm_description: Provides additional search terms to check for in a document, where each document in the search results must contain at least one of the additional search terms.
+    form: form
+  - name: rights
+    type: select
+    required: false
+    nullable: true
+    label:
+      en_US: Filter by license
+      zh_Hans: 许可过滤
+    human_description:
+      en_US: Filter by license
+      zh_Hans: 许可过滤
+    llm_description: Filters based on licensing.
+    options:
+      - value: cc_publicdomain
+        label:
+          en_US: cc_publicdomain
+          zh_Hans: 公共领域
+      - value: cc_attribute
+        label:
+          en_US: cc_attribute
+          zh_Hans: 署名
+      - value: cc_sharealike
+        label:
+          en_US: cc_sharealike
+          zh_Hans: 相同方式共享
+      - value: cc_noncommercial
+        label:
+          en_US: cc_noncommercial
+          zh_Hans: 非商业用途
+      - value: cc_nonderived
+        label:
+          en_US: cc_nonderived
+          zh_Hans: 禁止演绎
+    form: form
+  - name: safe
+    type: select
+    required: false
+    label:
+      en_US: Search safety level
+      zh_Hans: 搜索安全级别
+    human_description:
+      en_US: Search safety level
+      zh_Hans: 搜索安全级别
+    llm_description: Search safety level.
+    options:
+      - value: "active"
+        label:
+          en_US: Enables SafeSearch filtering
+          zh_Hans: 启用安全搜索过滤功能
+      - value: "off"
+        label:
+          en_US: Disables SafeSearch filtering
+          zh_Hans: 停用安全搜索过滤功能
+    default: "off"
+    form: form
+  - name: searchType
+    type: select
+    required: false
+    nullable: true
+    label:
+      en_US: Specifies the search type
+      zh_Hans: 搜索类型
+    human_description:
+      en_US: Specifies the search type
+      zh_Hans: 搜索类型
+    llm_description: Specifies the search type
+    options:
+      - value: searchTypeUndefined
+        label:
+          en_US: searchTypeUndefined
+          zh_Hans: 网页搜索
+      - value: image
+        label:
+          en_US: image
+          zh_Hans: 图片搜索
+    form: form
+  - name: siteSearch
+    type: string
+    required: false
+    label:
+      en_US: Include or exclude a specific site
+      zh_Hans: 包含或排除特定网站
+    human_description:
+      en_US: Specifies a given site which should always be included or excluded from results.
+      zh_Hans: 指定应始终从结果中包含或排除的给定网站。
+    llm_description: Specifies a given site which should always be included or excluded from results.
+    form: form
+  - name: siteSearchFilter
+    type: select
+    required: false
+    nullable: true
+    label:
+      en_US: Include or exclude results from siteSearch
+      zh_Hans: 包含或排除 siteSearch 指定网站的结果
+    human_description:
+      en_US: Controls whether to include or exclude results from the site named in the siteSearch parameter.
+      zh_Hans: 控制是否包含或排除 siteSearch 参数中指定的网站的结果。
+    llm_description: Controls whether to include or exclude results from the site named in the siteSearch parameter.
+    options:
+      - value: e
+        label:
+          en_US: exclude
+          zh_Hans: 排除
+      - value: i
+        label:
+          en_US: include
+          zh_Hans: 包含
+    form: form
+  - name: sort
+    type: string
+    required: false
+    label:
+      en_US: The sort expression to apply to the results.
+      zh_Hans: 要应用于结果的排序表达式
+    human_description:
+      en_US: The sort expression to apply to the results. The sort parameter specifies that the results be sorted according to the specified expression i.e. sort by date. Example sort=date.
+      zh_Hans: 要应用于结果的排序表达式。排序参数指定根据指定表达式对结果进行排序，即按日期排序。示例：sort=date。
+    llm_description: The sort expression to apply to the results. The sort parameter specifies that the results be sorted according to the specified expression i.e. sort by date. Example sort=date.
+    form: form
+extra:
+  python:
+    source: tools/google_search.py
