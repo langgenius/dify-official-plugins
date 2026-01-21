@@ -20,7 +20,8 @@ class SendMailTool(Tool):
         """
         sender = self.runtime.credentials.get("email_account", "")
         # Use sender_address if provided, otherwise fall back to email_account
-        sender_address = self.runtime.credentials.get("sender_address", "") or sender
+        raw_sender_address = self.runtime.credentials.get("sender_address", "")
+        sender_address = raw_sender_address or sender
         email_rgx = re.compile("^[a-zA-Z0-9._-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$")
         password = self.runtime.credentials.get("email_password", "")
         smtp_server = self.runtime.credentials.get("smtp_server", "")
@@ -34,16 +35,15 @@ class SendMailTool(Tool):
         except ValueError:
             yield self.create_text_message("Invalid parameter smtp_port(should be int)")
             return
-
-            
-        if not sender:
-            yield self.create_text_message("please input sender")
-            return
-            
-        if not email_rgx.match(sender):
-            yield self.create_text_message("Invalid parameter userid, the sender is not a mailbox")
-            return
-            
+        
+        if raw_sender_address:
+            if not email_rgx.match(raw_sender_address):
+                yield self.create_text_message("Invalid parameter sender_address(not a valid mailbox address)")
+                return
+        else:
+            if not email_rgx.match(sender):
+                yield self.create_text_message("Invalid parameter email_account(not a valid mailbox address) to skip this validation, configure sender_address")
+                return
 
         receiver_email = tool_parameters.get("send_to", "")
         if not receiver_email:
