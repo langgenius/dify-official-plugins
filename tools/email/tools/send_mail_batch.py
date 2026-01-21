@@ -35,10 +35,6 @@ class SendMailBatchTool(Tool):
         except ValueError:
             yield self.create_text_message("Invalid parameter smtp_port(should be int)")
             return
-
-        if not sender:
-            yield self.create_text_message("please input sender")
-            return
             
         if raw_sender_address:
             if not email_rgx.match(raw_sender_address):
