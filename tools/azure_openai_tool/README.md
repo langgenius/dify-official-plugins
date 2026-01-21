@@ -2,7 +2,7 @@
 
 ## Overview
 
-Azure OpenAI offers powerful AI models for generating and editing images based on text prompts. Dify has integrated tools leveraging these capabilities, including GPT-IMAGE-1, and more general image generation/editing functions. This document outlines the steps to configure and use these Azure OpenAI image tools in Dify.
+Azure OpenAI offers powerful AI models for generating and editing images based on text prompts. Dify has integrated tools leveraging these capabilities for general image generation/editing functions. This document outlines the steps to configure and use these Azure OpenAI image tools in Dify.
 
 ## Configure
 
@@ -10,7 +10,7 @@ Azure OpenAI offers powerful AI models for generating and editing images based o
 
 Please apply for an API Key on the [Azure OpenAI Platform](https://portal.azure.com/#home). This key will be used for all Azure OpenAI image tools.
 
-**Important Note for GPT Image-1 Model:** If you plan to use the GPT-Image-1 model, your organization must complete verification first. Without organization verification, you'll receive a 403 error. To complete verification, please visit the [Azure OpenAI Service gpt-image-1](https://aka.ms/oai/gptimage1access).
+**Important Note:** When configuring the plugin, you need to specify your Azure OpenAI image model deployment name (e.g., gpt-image-1/1.5) in the **Deployment Name** field. This deployment name will be used for both image generation and editing operations.
 
 ### 2. Get Azure OpenAI Image tools from Plugin Marketplace
 
