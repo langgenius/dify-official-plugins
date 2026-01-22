@@ -143,6 +143,10 @@ jobs:
             exit 1
           fi
 
+      - name: Check Packaging
+        run: |
+          uv run --with requests --with dify_plugin python .scripts/uploader/upload-package.py -d "${{ matrix.plugin_path }}" -t "${{ secrets.MARKETPLACE_TOKEN }}" --plugin-daemon-path /home/linuxbrew/.linuxbrew/bin/dify -u "${{ secrets.MARKETPLACE_BASE_URL }}" -f --test
+
       - name: Validate Dependencies with uv
         run: |
           cd "${{ matrix.plugin_path }}"
@@ -154,10 +158,6 @@ jobs:
           export SERVERLESS_PORT=8080
           export SERVERLESS_HOST=0.0.0.0
           uv run --project "${{ matrix.plugin_path }}" --with requests python .scripts/validator/test-plugin-install.py -d "${{ matrix.plugin_path }}"
-
-      - name: Check Packaging
-        run: |
-          uv run --with requests --with dify_plugin python .scripts/uploader/upload-package.py -d "${{ matrix.plugin_path }}" -t "${{ secrets.MARKETPLACE_TOKEN }}" --plugin-daemon-path /home/linuxbrew/.linuxbrew/bin/dify -u "${{ secrets.MARKETPLACE_BASE_URL }}" -f --test
 
       - name: Package plugin
         run: |
