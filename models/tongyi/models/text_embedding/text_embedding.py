@@ -1,4 +1,5 @@
 import base64
+import logging
 import time
 import os
 import yaml
@@ -11,6 +12,9 @@ from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
 from models._common import _CommonTongyi
 from ..constant import BURY_POINT_HEADER
+from ..endpoint_helper import get_base_address
+
+logger = logging.getLogger(__name__)
 
 vision_models = dict()
 
@@ -37,14 +41,13 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         :param input_type: input type
         :return: embeddings result
         """
-        if credentials.get("use_international_endpoint", "false") == "true":
-            dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
         credentials_kwargs = self._to_credential_kwargs(credentials)
         context_size = self._get_context_size(model, credentials)
         max_chunks = self._get_max_chunks(model, credentials)
         inputs = []
         indices = []
         used_tokens = 0
+
         for i, text in enumerate(texts):
             num_tokens = self._get_num_tokens_by_gpt2(text)
             if num_tokens >= context_size:
@@ -57,10 +60,12 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         _iter = range(0, len(inputs), max_chunks)
         for i in _iter:
             (embeddings_batch, embedding_used_tokens) = self.embed_documents(
-                credentials_kwargs=credentials_kwargs, model=model, texts=inputs[i : i + max_chunks]
+                credentials_kwargs=credentials_kwargs, model=model, texts=inputs[i: i + max_chunks],
+                credentials=credentials
             )
             used_tokens += embedding_used_tokens
             batched_embeddings += embeddings_batch
+
         usage = self._calc_response_usage(model=model, credentials=credentials, tokens=used_tokens)
         return TextEmbeddingResult(embeddings=batched_embeddings, usage=usage, model=model)
 
@@ -90,18 +95,19 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         """
         try:
             credentials_kwargs = self._to_credential_kwargs(credentials)
-            self.embed_documents(credentials_kwargs=credentials_kwargs, model=model, texts=["ping"])
+            self.embed_documents(credentials_kwargs=credentials_kwargs, model=model, texts=["ping"], credentials=credentials)
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
     @staticmethod
-    def embed_documents(credentials_kwargs: dict, model: str, texts: list[str]) -> tuple[list[list[float]], int]:
+    def embed_documents(credentials_kwargs: dict, model: str, texts: list[str], credentials: dict = None) -> tuple[list[list[float]], int]:
         """Call out to Tongyi's embedding endpoint.
 
         Args:
             credentials_kwargs: The credentials to use for the call.
             model: The model to use for embedding.
             texts: The list of texts to embed.
+            credentials: Full credentials dict for endpoint configuration.
 
         Returns:
             List of embeddings, one for each text, and tokens usage.
@@ -111,19 +117,26 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         # transfer and call embed_multimodal_documents
         if TongyiTextEmbeddingModel._is_vision_model(model):
             documents = [MultiModalContent(content_type=MultiModalContentType.TEXT, content=text) for text in texts]
-            return TongyiTextEmbeddingModel.embed_multimodal_documents(credentials_kwargs, model, documents)
+            return TongyiTextEmbeddingModel.embed_multimodal_documents(credentials_kwargs, model, documents, credentials)
 
         embeddings = []
         embedding_used_tokens = 0
-        
-        def call_embedding_api(text):
 
+        if credentials is None:
+            # For backward compatibility, use global setting
+            credentials = {}
+
+        # Get base address for this request
+        base_address = get_base_address(credentials)
+
+        def call_embedding_api(text):
             try:
                 if model in ["multimodal-embedding-v1"]:
                     return dashscope.MultiModalEmbedding.call(
                         api_key=credentials_kwargs["dashscope_api_key"],
                         model=model,
                         input=[{"text": text}],
+                        base_address=base_address,
                     )
                 else:
                     return dashscope.TextEmbedding.call(
@@ -131,23 +144,24 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                         model=model,
                         input=text,
                         headers=BURY_POINT_HEADER,
-                        text_type="document"
+                        text_type="document",
+                        base_address=base_address,
                     )
             except Exception as e:
                 # Return the exception to be handled by the caller
                 return e
-            
+
         for text in texts:
             # First attempt
             response = call_embedding_api(text)
             # Handle rate limit error (429)
             # Check if response is an exception with rate limit info
             if hasattr(response, 'status_code') and response.status_code == 429:
-                print(f"Rate limit exceeded (429). Response: {response}")
+                logger.warning(f"Rate limit exceeded (429). Response: {response}")
                 time.sleep(10)
                 # Retry once after sleeping
                 response = call_embedding_api(text)
-            
+
             # Process response
             if hasattr(response, 'output') and response.output and "embeddings" in response.output and response.output["embeddings"]:
                 data = response.output["embeddings"][0]
@@ -157,7 +171,7 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                     raise ValueError(f"Embedding data is missing in the response: {response}")
             else:
                 raise ValueError(f"Response output is missing or does not contain embeddings: {response}")
-                
+
             if hasattr(response, 'usage') and response.usage and "total_tokens" in response.usage:
                 embedding_used_tokens += response.usage["total_tokens"]
             else:
@@ -168,6 +182,7 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                         embedding_used_tokens += response.usage["image_tokens"]
                 else:
                     raise ValueError(f"Response usage is missing or does not contain total tokens: {response}")
+
         return ([list(map(float, e)) for e in embeddings], embedding_used_tokens)
 
     @staticmethod
@@ -236,27 +251,26 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         :param input_type: input type
         :return: embeddings result
         """
-        if credentials.get("use_international_endpoint", "false") == "true":
-            dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
         credentials_kwargs = self._to_credential_kwargs(credentials)
         (embeddings_batch, embedding_used_tokens) = self.embed_multimodal_documents(
-            credentials_kwargs=credentials_kwargs, model=model, documents=documents
+            credentials_kwargs=credentials_kwargs, model=model, documents=documents, credentials=credentials
         )
         usage = self._calc_response_usage(model=model, credentials=credentials, tokens=embedding_used_tokens)
         return MultiModalEmbeddingResult(
             model=model,
             embeddings=embeddings_batch,
             usage=usage,
-        )     
+        )
 
     @staticmethod
-    def embed_multimodal_documents(credentials_kwargs: dict, model: str, documents: list[MultiModalContent]) -> tuple[list[list[float]], int]:
+    def embed_multimodal_documents(credentials_kwargs: dict, model: str, documents: list[MultiModalContent], credentials: dict = None) -> tuple[list[list[float]], int]:
         """Call out to Tongyi's embedding endpoint.
 
         Args:
             credentials_kwargs: The credentials to use for the call.
             model: The model to use for embedding.
             documents: The list of documents to embed.
+            credentials: Full credentials dict for endpoint configuration.
 
         Returns:
             List of embeddings, one for each text, and tokens usage.
@@ -286,18 +300,26 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                 return "unknown"
         embeddings = []
         embedding_used_tokens = 0
-        
+
+        if credentials is None:
+            # For backward compatibility, use global setting
+            credentials = {}
+
+        # Get base address for this request
+        base_address = get_base_address(credentials)
+
         def call_embedding_api(input):
             try:
                 return dashscope.MultiModalEmbedding.call(
-                    api_key=credentials_kwargs["dashscope_api_key"], 
-                    model=model, 
-                    input=[input], 
+                    api_key=credentials_kwargs["dashscope_api_key"],
+                    model=model,
+                    input=[input],
+                    base_address=base_address,
                 )
             except Exception as e:
                 # Return the exception to be handled by the caller
                 return e
-            
+
         for document in documents:
             # First attempt
             if document.content_type == MultiModalContentType.TEXT:
@@ -314,15 +336,15 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
             else:
                 raise ValueError(f"Unsupported content type: {document.content_type}")
             response = call_embedding_api(input)
-            
+
             # Handle rate limit error (429)
             # Check if response is an exception with rate limit info
             if hasattr(response, 'status_code') and response.status_code == 429:
-                print(f"Rate limit exceeded (429). Response: {response}")
+                logger.warning(f"Rate limit exceeded (429). Response: {response}")
                 time.sleep(10)
                 # Retry once after sleeping
                 response = call_embedding_api(input)
-            
+
             # Process response
             if hasattr(response, 'output') and response.output and "embeddings" in response.output and response.output["embeddings"]:
                 data = response.output["embeddings"][0]
@@ -332,7 +354,7 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                     raise ValueError(f"Embedding data is missing in the response: {response}")
             else:
                 raise ValueError(f"Response output is missing or does not contain embeddings: {response}")
-                
+
             if hasattr(response, 'usage') and response.usage:
                 if response.output["embeddings"][0]["type"] == "text":
                     embedding_used_tokens += response.usage["input_tokens"]
@@ -340,5 +362,5 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                     embedding_used_tokens += response.usage["image_tokens"]
             else:
                 raise ValueError(f"Response usage is missing or does not contain total tokens: {response}")
-                
+
         return ([list(map(float, e)) for e in embeddings], embedding_used_tokens)

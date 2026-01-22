@@ -9,6 +9,7 @@ from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeBadRe
 from dify_plugin.interfaces.model.tts_model import TTSModel
 from models._common import _CommonTongyi
 from ..constant import BURY_POINT_HEADER
+from ..endpoint_helper import get_base_address
 
 class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
     """
@@ -110,8 +111,7 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
         :param audio_type: audio file type
         :return: text translated to audio file
         """
-        if credentials.get("use_international_endpoint", "false") == "true":
-            dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
+        base_address = get_base_address(credentials)
         response = dashscope.audio.tts.SpeechSynthesizer.call(
             model=voice,
             sample_rate=48000,
@@ -119,6 +119,7 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
             text=sentence.strip(),
             headers=BURY_POINT_HEADER,
             format=audio_type,
+            base_address=base_address,
         )
         if isinstance(response.get_audio_data(), bytes):
             return response.get_audio_data()

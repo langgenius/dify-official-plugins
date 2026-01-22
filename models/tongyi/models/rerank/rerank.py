@@ -20,6 +20,7 @@ from dify_plugin.errors.model import (
 )
 from dify_plugin.interfaces.model.rerank_model import RerankModel
 from ..constant import BURY_POINT_HEADER
+from ..endpoint_helper import get_base_address
 
 class GTERerankModel(RerankModel):
     """
@@ -50,11 +51,11 @@ class GTERerankModel(RerankModel):
         """
         if len(docs) == 0:
             return RerankResult(model=model, docs=docs)
-        if credentials.get("use_international_endpoint", "false") == "true":
-            dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
         dashscope.api_key = credentials["dashscope_api_key"]
+
+        base_address = get_base_address(credentials)
         response = dashscope.TextReRank.call(
-            query=query, headers=BURY_POINT_HEADER, documents=docs, model=model, top_n=top_n, return_documents=True
+            query=query, headers=BURY_POINT_HEADER, documents=docs, model=model, top_n=top_n, return_documents=True, base_address=base_address
         )
         rerank_documents = []
         if not response.output:

@@ -7,6 +7,7 @@ import dashscope
 from dify_plugin import OAICompatSpeech2TextModel
 from dashscope.audio.asr import *
 from ..constant import BURY_POINT_HEADER
+from ..endpoint_helper import get_base_address
 
 class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
     """
@@ -24,9 +25,10 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
         :return: text for given audio file
         """
         try:
-            if credentials.get("use_international_endpoint", "false") == "true":
-                dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
             dashscope.api_key = credentials["dashscope_api_key"]
+
+            base_address = get_base_address(credentials)
+
             file.seek(0)
             audio = AudioSegment.from_file(file)
             sample_rate = audio.frame_rate
@@ -42,7 +44,7 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
                 sample_rate=int(sample_rate),
                 callback=None,
             )
-            result = recognition.call(file=file_path, headers=BURY_POINT_HEADER)
+            result = recognition.call(file=file_path, headers=BURY_POINT_HEADER, base_address=base_address)
             sentence_list = result.get_sentence()
             if sentence_list is None:
                 return ''
