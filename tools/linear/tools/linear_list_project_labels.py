@@ -28,29 +28,28 @@ class LinearListProjectLabelsTool(Tool):
             name_query = tool_parameters.get("name", "").strip()
             limit = min(int(tool_parameters.get("limit", 10)), 50)
 
-            filter_string = ""
-            if name_query:
-                filter_string = (
-                    f'filter: {{ name: {{ containsIgnoreCase: "{name_query}" }} }}'
-                )
-
-            graphql_query = f"""
-            query GetProjectLabels {{
+            # Use GraphQL variables to prevent injection attacks
+            graphql_query = """
+            query GetProjectLabels($nameQuery: String, $limit: Int!) {
               projectLabels(
-                {filter_string}
-                first: {limit},
+                filter: { name: { containsIgnoreCase: $nameQuery } }
+                first: $limit,
                 orderBy: updatedAt
-              ) {{
-                nodes {{
+              ) {
+                nodes {
                   id
                   name
                   color
-                }}
-              }}
-            }}
+                }
+              }
+            }
             """
 
-            result = linear_client.query_graphql(graphql_query)
+            variables = {"limit": limit}
+            if name_query:
+                variables["nameQuery"] = name_query
+
+            result = linear_client.query_graphql(graphql_query, variables)
 
             if (
                 result

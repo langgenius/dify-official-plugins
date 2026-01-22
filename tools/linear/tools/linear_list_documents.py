@@ -28,30 +28,29 @@ class LinearListDocumentsTool(Tool):
             query_text = tool_parameters.get("query", "").strip()
             limit = min(int(tool_parameters.get("limit", 10)), 50)
 
-            filter_string = ""
-            if query_text:
-                filter_string = (
-                    f'filter: {{ title: {{ containsIgnoreCase: "{query_text}" }} }}'
-                )
-
-            graphql_query = f"""
-            query GetDocuments {{
+            # Use GraphQL variables to prevent injection attacks
+            graphql_query = """
+            query GetDocuments($queryText: String, $limit: Int!) {
               documents(
-                {filter_string}
-                first: {limit},
+                filter: { title: { containsIgnoreCase: $queryText } }
+                first: $limit,
                 orderBy: updatedAt
-              ) {{
-                nodes {{
+              ) {
+                nodes {
                   id
                   title
                   createdAt
                   updatedAt
-                }}
-              }}
-            }}
+                }
+              }
+            }
             """
 
-            result = linear_client.query_graphql(graphql_query)
+            variables = {"limit": limit}
+            if query_text:
+                variables["queryText"] = query_text
+
+            result = linear_client.query_graphql(graphql_query, variables)
 
             if result and "data" in result and "documents" in result.get("data", {}):
                 documents_data = result["data"]["documents"]

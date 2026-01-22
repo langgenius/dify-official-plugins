@@ -28,32 +28,33 @@ class LinearListIssueStatusesTool(Tool):
             team_id = tool_parameters.get("teamId", "").strip()
             limit = min(int(tool_parameters.get("limit", 10)), 50)
 
-            filter_string = ""
-            if team_id:
-                filter_string = f'filter: {{ team: {{ id: {{ eq: "{team_id}" }} }} }}'
-
-            graphql_query = f"""
-            query GetIssueStatuses {{
+            # Use GraphQL variables to prevent injection attacks
+            graphql_query = """
+            query GetIssueStatuses($teamId: String, $limit: Int!) {
               workflowStates(
-                {filter_string}
-                first: {limit},
+                filter: { team: { id: { eq: $teamId } } }
+                first: $limit,
                 orderBy: updatedAt
-              ) {{
-                nodes {{
+              ) {
+                nodes {
                   id
                   name
                   type
                   position
-                  team {{
+                  team {
                     id
                     name
-                  }}
-                }}
-              }}
-            }}
+                  }
+                }
+              }
+            }
             """
 
-            result = linear_client.query_graphql(graphql_query)
+            variables = {"limit": limit}
+            if team_id:
+                variables["teamId"] = team_id
+
+            result = linear_client.query_graphql(graphql_query, variables)
 
             if (
                 result
