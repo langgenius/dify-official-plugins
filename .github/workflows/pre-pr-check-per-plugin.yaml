@@ -47,7 +47,7 @@ jobs:
 
           if [ ${#VALID_PLUGINS[@]} -eq 0 ]; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "plugins=[]" >> $GITHUB_OUTPUT
+            echo "plugins=[\"__no_changes__\"]" >> $GITHUB_OUTPUT
           else
             JSON=$(printf '%s\n' "${VALID_PLUGINS[@]}" | jq -R . | jq -s -c .)
             echo "has_changes=true" >> $GITHUB_OUTPUT
@@ -57,6 +57,7 @@ jobs:
 
   test:
     needs: detect-changes
+    if: needs.detect-changes.outputs.has_changes == 'true'
     runs-on: ubuntu-latest
     strategy:
       matrix:
