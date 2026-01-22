@@ -47,7 +47,7 @@ jobs:
 
           if [ ${#VALID_PLUGINS[@]} -eq 0 ]; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "plugins=[]" >> $GITHUB_OUTPUT
+            echo "plugins=[\"__no_changes__\"]" >> $GITHUB_OUTPUT
           else
             JSON=$(printf '%s\n' "${VALID_PLUGINS[@]}" | jq -R . | jq -s -c .)
             echo "has_changes=true" >> $GITHUB_OUTPUT
@@ -69,27 +69,37 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: No plugin changes
+        if: needs.detect-changes.outputs.has_changes != 'true'
+        run: |
+          echo "No plugin changes detected. Skipping plugin checks."
+
       - name: Clone Marketplace Toolkit
+        if: needs.detect-changes.outputs.has_changes == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
           gh repo clone langgenius/dify-marketplace-toolkit -- .scripts/
 
       - name: Setup Python
+        if: needs.detect-changes.outputs.has_changes == 'true'
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
       - name: Setup uv
+        if: needs.detect-changes.outputs.has_changes == 'true'
         uses: astral-sh/setup-uv@v6
         with:
           version: "latest"
           activate-environment: false
 
       - name: yq - portable yaml processor
+        if: needs.detect-changes.outputs.has_changes == 'true'
         uses: mikefarah/yq@v4.44.5
 
       - name: Install Homebrew and Dify CLI
+        if: needs.detect-changes.outputs.has_changes == 'true'
         run: |
           /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
           echo "/home/linuxbrew/.linuxbrew/bin" >> $GITHUB_PATH
@@ -98,12 +108,14 @@ jobs:
           /home/linuxbrew/.linuxbrew/bin/brew install dify
 
       - name: Export All Secrets to Environment
+        if: needs.detect-changes.outputs.has_changes == 'true'
         uses: oNaiPs/secrets-to-env-action@v1
         with:
           secrets: ${{ toJSON(secrets) }}
           exclude: GITHUB_TOKEN
 
       - name: Check Plugin Manifest Author
+        if: needs.detect-changes.outputs.has_changes == 'true'
         run: |
           if ! yq '.author' "${{ matrix.plugin_path }}/manifest.yaml" | grep -q "langgenius"; then
             echo "!!! Plugin manifest.yaml author must be langgenius"
@@ -111,6 +123,7 @@ jobs:
           fi
 
       - name: Check If Version Exists
+        if: needs.detect-changes.outputs.has_changes == 'true'
         run: |
           VERSION=$(yq '.version' "${{ matrix.plugin_path }}/manifest.yaml")
           AUTHOR=$(yq '.author' "${{ matrix.plugin_path }}/manifest.yaml")
@@ -128,6 +141,7 @@ jobs:
           fi
 
       - name: Check for Disallowed Virtualenv Directories
+        if: needs.detect-changes.outputs.has_changes == 'true'
         run: |
           if find "${{ matrix.plugin_path }}" -maxdepth 1 -type d \( -name ".venv*" -o -name "venv*" \) | grep -q .; then
             echo "!!! Please remove .venv or venv* directory in plugin path before submitting the PR"
@@ -135,6 +149,7 @@ jobs:
           fi
 
       - name: Check Plugin pyproject.toml
+        if: needs.detect-changes.outputs.has_changes == 'true'
         run: |
           cd "${{ matrix.plugin_path }}"
           if [ ! -f "pyproject.toml" ]; then
@@ -143,15 +158,18 @@ jobs:
           fi
 
       - name: Check Packaging
+        if: needs.detect-changes.outputs.has_changes == 'true'
         run: |
           uv run --with requests --with dify_plugin python .scripts/uploader/upload-package.py -d "${{ matrix.plugin_path }}" -t "${{ secrets.MARKETPLACE_TOKEN }}" --plugin-daemon-path /home/linuxbrew/.linuxbrew/bin/dify -u "${{ secrets.MARKETPLACE_BASE_URL }}" -f --test
 
       - name: Validate Dependencies with uv
+        if: needs.detect-changes.outputs.has_changes == 'true'
         run: |
           cd "${{ matrix.plugin_path }}"
           uv sync --all-groups --python 3.12
 
       - name: Check Plugin Install
+        if: needs.detect-changes.outputs.has_changes == 'true'
         run: |
           export INSTALL_METHOD=serverless
           export SERVERLESS_PORT=8080
@@ -159,6 +177,7 @@ jobs:
           uv run --project "${{ matrix.plugin_path }}" --with requests python .scripts/validator/test-plugin-install.py -d "${{ matrix.plugin_path }}"
 
       - name: Package plugin
+        if: needs.detect-changes.outputs.has_changes == 'true'
         run: |
           SAFE_NAME=$(echo "${{ matrix.plugin_path }}" | tr '/' '-')
           PKG_NAME="test-${SAFE_NAME}-package.difypkg"
@@ -176,6 +195,7 @@ jobs:
 
       - name: Check for tests directory
         id: check_tests
+        if: needs.detect-changes.outputs.has_changes == 'true'
         run: |
           if [ -d "${{ env.EXTRACT_DIR }}/tests" ]; then
             echo "has_tests=true" >> $GITHUB_OUTPUT
@@ -185,13 +205,13 @@ jobs:
           fi
 
       - name: Install dependencies
-        if: steps.check_tests.outputs.has_tests == 'true'
+        if: needs.detect-changes.outputs.has_changes == 'true' && steps.check_tests.outputs.has_tests == 'true'
         working-directory: ${{ env.EXTRACT_DIR }}
         run: |
           uv sync --all-groups --python 3.12
 
       - name: Run tests
-        if: steps.check_tests.outputs.has_tests == 'true'
+        if: needs.detect-changes.outputs.has_changes == 'true' && steps.check_tests.outputs.has_tests == 'true'
         working-directory: ${{ env.EXTRACT_DIR }}
         run: |
           PLUGIN_FILE_PATH="$(realpath ../${{ env.PKG_NAME }})" uv run --with pytest pytest
