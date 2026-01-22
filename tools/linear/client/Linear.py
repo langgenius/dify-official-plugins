@@ -10,8 +10,11 @@ from .Exceptions import (
 
 
 class Linear:
-    # Class-level variable to control logging
     _logging_enabled = False
+
+    _ALLOWED_RESOURCES = frozenset(
+        {"teams", "workflowStates", "projects", "issueLabels", "users"}
+    )
 
     @classmethod
     def enable_logging(cls, enabled=True):
@@ -139,10 +142,18 @@ class Linear:
                     f"API request failed. Status code: {response.status_code}, Content: {response.content[:200]}..."
                 )
                 raise LinearApiException(
-                    f"API request failed with status code {response.status_code}"
+                    f"API request failed with status code {response.status_code}. Please check your request and try again."
                 )
 
-            response_data = json.loads(response.content)
+            try:
+                response_data = json.loads(response.content)
+            except json.JSONDecodeError as e:
+                self._log(
+                    f"JSON decode error: {str(e)}, Content: {response.content[:200]}..."
+                )
+                raise LinearApiException(
+                    "Failed to parse API response. The server returned invalid data."
+                ) from e
 
             if "errors" in response_data:
                 self._log(
@@ -156,11 +167,6 @@ class Linear:
         except requests.exceptions.RequestException as e:
             self._log(f"Network error: {str(e)}")
             raise LinearApiException(f"Network error: {str(e)}")
-        except json.JSONDecodeError as e:
-            self._log(
-                f"JSON decode error: {str(e)}, Content: {response.content[:200]}..."
-            )
-            raise LinearApiException(f"Failed to parse response as JSON: {str(e)}")
 
     def query_basic_resource(self, resource="", first=50, after=None, variables=None):
         """
@@ -174,7 +180,15 @@ class Linear:
 
         Returns:
             dict: The resource nodes
+
+        Raises:
+            ValueError: If resource is not in the allowed whitelist
         """
+        if resource not in self._ALLOWED_RESOURCES:
+            raise ValueError(
+                f"Invalid resource '{resource}'. Allowed resources: {', '.join(sorted(self._ALLOWED_RESOURCES))}"
+            )
+
         self._log(
             f"Querying basic resource: {resource}, first: {first}, after: {after}"
         )
@@ -222,8 +236,8 @@ class Linear:
         Create a new issue
 
         Args:
-            title (str): Issue title
-            description (str, optional): Issue description in markdown format
+            title (str): Issue title (max 255 chars)
+            description (str, optional): Issue description in markdown format (max 50000 chars)
             project_id (str, optional): Project ID
             state_id (str, optional): Workflow state ID
             team_id (str, optional): Team ID
@@ -233,7 +247,15 @@ class Linear:
 
         Returns:
             dict: Created issue data including ID and success status
+
+        Raises:
+            ValueError: If input validation fails
         """
+        if len(title) > 255:
+            raise ValueError("Issue title cannot exceed 255 characters")
+        if len(description) > 50000:
+            raise ValueError("Issue description cannot exceed 50000 characters")
+
         self._log(f"Creating issue: '{title}'")
 
         variables = {
@@ -297,15 +319,23 @@ class Linear:
 
         Args:
             issue_id (str): The ID of the issue to update
-            title (str, optional): New title
-            description (str, optional): New description
+            title (str, optional): New title (max 255 chars)
+            description (str, optional): New description (max 50000 chars)
             state_id (str, optional): New workflow state ID
             assignee_id (str, optional): New assignee ID
             priority (int, optional): New priority
 
         Returns:
             dict: Updated issue data
+
+        Raises:
+            ValueError: If input validation fails
         """
+        if title is not None and len(title) > 255:
+            raise ValueError("Issue title cannot exceed 255 characters")
+        if description is not None and len(description) > 50000:
+            raise ValueError("Issue description cannot exceed 50000 characters")
+
         self._log(f"Updating issue: {issue_id}")
 
         variables = {}
