@@ -1,24 +1,10 @@
-name: Plugin E2E Test
+name: Pre PR Check Per Plugin
 
 on:
-  push:
-    branches: [ main ]
-    paths:
-      - '**/manifest.yaml'
-      - '**/provider/**'
-      - '**/models/**'
-      - '**/tools/**'
-      - '**/endpoints/**'
-      - '**/tests/**'
   pull_request:
-    branches: [ main ]
-    paths:
-      - '**/manifest.yaml'
-      - '**/provider/**'
-      - '**/models/**'
-      - '**/tools/**'
-      - '**/endpoints/**'
-      - '**/tests/**'
+    types: [opened, synchronize, ready_for_review, review_requested, edited]
+    branches:
+      - main
 
 jobs:
   detect-changes:
@@ -33,19 +19,19 @@ jobs:
 
       - id: filter
         name: Detect changed plugins
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          # Determine base SHA for comparison
           if [ "${{ github.event_name }}" == "pull_request" ]; then
-            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+            CHANGED_FILES=$(gh pr view -R ${{ github.repository }} ${{ github.event.pull_request.number }} --json files --jq '.files[].path')
           else
             if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
               BASE_SHA="HEAD~1"
             else
               BASE_SHA="${{ github.event.before }}"
             fi
+            CHANGED_FILES=$(git diff --name-only $BASE_SHA HEAD)
           fi
-
-          CHANGED_FILES=$(git diff --name-only $BASE_SHA HEAD)
 
           # Find all manifest.yaml files
           MANIFESTS=$(find . -name "manifest.yaml" -not -path "*/.*")
@@ -84,13 +70,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Clone Marketplace Toolkit
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh repo clone langgenius/dify-marketplace-toolkit -- .scripts/
+
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.12'
 
-      - name: Install uv
-        run: curl -LsSf https://astral.sh/uv/install.sh | sh
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "latest"
+          activate-environment: false
+
+      - name: yq - portable yaml processor
+        uses: mikefarah/yq@v4.44.5
 
       - name: Install Homebrew and Dify CLI
         run: |
@@ -105,6 +103,61 @@ jobs:
         with:
           secrets: ${{ toJSON(secrets) }}
           exclude: GITHUB_TOKEN
+
+      - name: Check Plugin Manifest Author
+        run: |
+          if ! yq '.author' "${{ matrix.plugin_path }}/manifest.yaml" | grep -q "langgenius"; then
+            echo "!!! Plugin manifest.yaml author must be langgenius"
+            exit 1
+          fi
+
+      - name: Check If Version Exists
+        run: |
+          VERSION=$(yq '.version' "${{ matrix.plugin_path }}/manifest.yaml")
+          AUTHOR=$(yq '.author' "${{ matrix.plugin_path }}/manifest.yaml")
+          NAME=$(yq '.name' "${{ matrix.plugin_path }}/manifest.yaml")
+          echo "Checking plugin version: $VERSION"
+
+          RESPONSE_CODE=$(curl -s -o /dev/null -w "%{http_code}" "${{ secrets.MARKETPLACE_BASE_URL }}/api/v1/plugins/$AUTHOR/$NAME/$VERSION")
+
+          if [ "$RESPONSE_CODE" = "200" ]; then
+            RESPONSE=$(curl -s "${{ secrets.MARKETPLACE_BASE_URL }}/api/v1/plugins/$AUTHOR/$NAME/$VERSION")
+            if [ "$(echo "$RESPONSE" | jq -r '.code')" = "0" ]; then
+              echo "!!! Plugin version $VERSION already exists, please update the version number in manifest.yaml"
+              exit 1
+            fi
+          fi
+
+      - name: Check for Disallowed Virtualenv Directories
+        run: |
+          if find "${{ matrix.plugin_path }}" -maxdepth 1 -type d \( -name ".venv*" -o -name "venv*" \) | grep -q .; then
+            echo "!!! Please remove .venv or venv* directory in plugin path before submitting the PR"
+            exit 1
+          fi
+
+      - name: Check Plugin pyproject.toml
+        run: |
+          cd "${{ matrix.plugin_path }}"
+          if [ ! -f "pyproject.toml" ]; then
+            echo "!!! pyproject.toml is required for all plugins"
+            exit 1
+          fi
+
+      - name: Validate Dependencies with uv
+        run: |
+          cd "${{ matrix.plugin_path }}"
+          uv sync --all-groups --python 3.12
+
+      - name: Check Plugin Install
+        run: |
+          export INSTALL_METHOD=serverless
+          export SERVERLESS_PORT=8080
+          export SERVERLESS_HOST=0.0.0.0
+          uv run --project "${{ matrix.plugin_path }}" --with requests python .scripts/validator/test-plugin-install.py -d "${{ matrix.plugin_path }}"
+
+      - name: Check Packaging
+        run: |
+          uv run --with requests --with dify_plugin python .scripts/uploader/upload-package.py -d "${{ matrix.plugin_path }}" -t "${{ secrets.MARKETPLACE_TOKEN }}" --plugin-daemon-path /home/linuxbrew/.linuxbrew/bin/dify -u "${{ secrets.MARKETPLACE_BASE_URL }}" -f --test
 
       - name: Package plugin
         run: |
@@ -136,15 +189,7 @@ jobs:
         if: steps.check_tests.outputs.has_tests == 'true'
         working-directory: ${{ env.EXTRACT_DIR }}
         run: |
-          if [ -f "pyproject.toml" ]; then
-            uv sync --all-groups --python 3.12
-          elif [ -f "requirements.txt" ]; then
-            uv venv --python 3.12
-            uv pip install -r requirements.txt
-          else
-            echo "Error: No pyproject.toml or requirements.txt found"
-            exit 1
-          fi
+          uv sync --all-groups --python 3.12
 
       - name: Run tests
         if: steps.check_tests.outputs.has_tests == 'true'
