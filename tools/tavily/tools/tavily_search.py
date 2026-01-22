@@ -59,29 +59,52 @@ class TavilySearch:
             elif key in [
                 "include_images",
                 "include_image_descriptions",
-                "include_answer",
-                "include_raw_content",
                 "auto_parameters",
                 "include_favicon",
+                "include_usage",
             ]:
                 if isinstance(value, str):
                     processed_params[key] = value.lower() == "true"
                 else:
                     processed_params[key] = bool(value)
-            elif key in ["max_results", "days", "chunks_per_source"]:
+            elif key == "include_answer":
+                # Handle include_answer with enum values: false, true, basic, advanced
+                if isinstance(value, str):
+                    if value.lower() in ["false", ""]:
+                        continue  # Don't include in params
+                    elif value.lower() in ["true", "basic"]:
+                        processed_params[key] = "basic"
+                    elif value.lower() == "advanced":
+                        processed_params[key] = "advanced"
+                    else:
+                        processed_params[key] = value.lower() == "true"
+                elif value:
+                    processed_params[key] = "basic"
+            elif key == "include_raw_content":
+                # Handle include_raw_content with enum values: false, true, markdown, text
+                if isinstance(value, str):
+                    if value.lower() in ["false", ""]:
+                        continue  # Don't include in params
+                    elif value.lower() in ["true", "markdown"]:
+                        processed_params[key] = "markdown"
+                    elif value.lower() == "text":
+                        processed_params[key] = "text"
+                    else:
+                        processed_params[key] = value.lower() == "true"
+                elif value:
+                    processed_params[key] = "markdown"
+            elif key in ["max_results", "chunks_per_source"]:
                 if isinstance(value, str):
                     processed_params[key] = int(value)
                 else:
                     processed_params[key] = value
-            elif key in ["search_depth", "topic", "query", "time_range", "country"]:
+            elif key in ["search_depth", "topic", "query", "time_range", "country", "start_date", "end_date"]:
                 processed_params[key] = value
             else:
                 pass
         processed_params.setdefault("search_depth", "basic")
         processed_params.setdefault("topic", "general")
         processed_params.setdefault("max_results", 5)
-        if processed_params.get("topic") == "news":
-            processed_params.setdefault("days", 7)
         if processed_params.get("search_depth") == "advanced":
             processed_params.setdefault("chunks_per_source", 3)
         return processed_params
@@ -166,9 +189,8 @@ class TavilySearchTool(Tool):
             str: The formatted markdown text.
         """
         output_lines = []
-        if tool_parameters.get("include_answer", False) and search_results.get(
-            "answer"
-        ):
+        include_answer = tool_parameters.get("include_answer", False)
+        if include_answer and include_answer not in [False, "false"] and search_results.get("answer"):
             output_lines.append(f"**Answer:** {search_results['answer']}\n")
 
         if "results" in search_results:
@@ -196,9 +218,8 @@ class TavilySearchTool(Tool):
                 if content:
                     output_lines.append(f"**Content:**\n{content}\n")
 
-                if tool_parameters.get("include_raw_content", False) and result.get(
-                    "raw_content"
-                ):
+                include_raw_content = tool_parameters.get("include_raw_content", False)
+                if include_raw_content and include_raw_content not in [False, "false"] and result.get("raw_content"):
                     output_lines.append(f"**Raw Content:**\n{result['raw_content']}\n")
                 output_lines.append("---\n")
 
