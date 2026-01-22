@@ -23,6 +23,11 @@ class ModelConfig(BaseModel):
 
 
 configs: dict[str, ModelConfig] = {
+    "GLM-4.7": ModelConfig(
+        properties=ModelProperties(context_size=200000, max_tokens=131072, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+        pricing=PriceConfig(input=Decimal("0.0020"), output=Decimal("0.0030"), unit=Decimal("0.001"), currency="RMB"),
+    ),
     "Doubao-Seed-1.8": ModelConfig(
         properties=ModelProperties(context_size=262144, max_tokens=32768, mode=LLMMode.CHAT),
         features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,

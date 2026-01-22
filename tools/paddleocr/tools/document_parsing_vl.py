@@ -5,6 +5,10 @@ import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
+from tools.utils import remove_img_from_markdown
+
+REQUEST_TIMEOUT = (10, 600)
+
 
 class DocumentParsingVlTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
@@ -54,8 +58,9 @@ class DocumentParsingVlTool(Tool):
         try:
             resp = requests.post(
                 api_url,
-                headers={"Authorization": f"Bearer {access_token}"},
+                headers={"Client-Platform": "dify", "Authorization": f"token {access_token}"},
                 json=params,
+                timeout=REQUEST_TIMEOUT,
             )
             resp.raise_for_status()
             result = resp.json()
@@ -63,6 +68,8 @@ class DocumentParsingVlTool(Tool):
             raise RuntimeError(
                 f"Failed to decode JSON response from PaddleOCR API: {resp.text}"
             ) from e
+        except requests.exceptions.Timeout as e:
+            raise RuntimeError("PaddleOCR API request timed out") from e
         except requests.exceptions.RequestException as e:
             raise RuntimeError(f"PaddleOCR API request failed: {e}") from e
 
@@ -70,6 +77,7 @@ class DocumentParsingVlTool(Tool):
         for item in result.get("result", {}).get("layoutParsingResults", []):
             markdown_text = item.get("markdown", {}).get("text")
             if markdown_text is not None:
+                markdown_text = remove_img_from_markdown(markdown_text)
                 markdown_text_list.append(markdown_text)
         yield self.create_text_message("\n\n".join(markdown_text_list))
         yield self.create_json_message(result)

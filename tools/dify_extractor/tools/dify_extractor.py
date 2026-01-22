@@ -28,7 +28,7 @@ class DifyExtractorTool(Tool):
         if file_extension in {".xlsx", ".xls"}:
             extractor = ExcelExtractor(file_bytes, file_name)
         elif file_extension == ".pdf":
-            extractor = PdfExtractor(file_bytes, file_name)
+            extractor = PdfExtractor(self, file_bytes, file_name)
         elif file_extension in {".md", ".markdown", ".mdx"}:
             extractor = MarkdownExtractor(file_bytes, file_name, tool=self, autodetect_encoding=True)
         elif file_extension in {".htm", ".html"}:

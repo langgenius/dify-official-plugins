@@ -127,7 +127,10 @@ class SiliconflowLargeLanguageModel(OAICompatLargeLanguageModel):
     @classmethod
     def _add_custom_parameters(cls, credentials: dict) -> None:
         credentials["mode"] = "chat"
-        credentials["endpoint_url"] = "https://api.siliconflow.cn/v1"
+        if credentials.get("use_international_endpoint", "false") == "true":
+            credentials["endpoint_url"] = "https://api.siliconflow.com/v1"
+        else:
+            credentials["endpoint_url"] = "https://api.siliconflow.cn/v1"
     
     def _add_function_call(self, model: str, credentials: dict) -> None:
         model_schema = self.get_model_schema(model, credentials)

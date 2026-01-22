@@ -5,14 +5,13 @@ on:
     types: [opened, synchronize, ready_for_review, review_requested, edited]
     branches:
       - main
-      - dev
-    paths-ignore:
-      - "migrations/**"
-      - ".scripts/**"
-      - ".github/**"
-      - ".gitignore"
-      - "README.md"
-      - "LICENSE"
+    paths:
+      - "agent-strategies/**"
+      - "datasources/**"
+      - "extensions/**"
+      - "models/**"
+      - "tools/**"
+      - "triggers/**"
 
 env:
   REPO_NAME: langgenius/dify-official-plugins

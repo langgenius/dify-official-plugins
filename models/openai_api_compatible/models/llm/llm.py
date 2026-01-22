@@ -82,6 +82,28 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 en_US=credentials["display_name"], zh_Hans=credentials["display_name"]
             )
 
+        entity.parameter_rules.append(
+            ParameterRule(
+                name="strict_compatibility",
+                label=I18nObject(en_US="Strict compatibility mode", zh_Hans="严格兼容模式"),
+                help=I18nObject(
+                    en_US=(
+                        "Whether to prioritize strict OpenAI compatibility. "
+                        "When True, OpenAI compatibility is prioritized and extended parameters "
+                        "(e.g., thinking, chat_template_kwargs) are not added. "
+                        "Set to False to enable these extensions."
+                    ),
+                    zh_Hans=(
+                        "是否优先严格的 OpenAI 兼容性。"
+                        "为 True 时，将优先 OpenAI 兼容性，并且不会添加扩展参数（例如 thinking、chat_template_kwargs）。"
+                        "设为 False 以启用这些扩展。"
+                    )
+                ),
+                type=ParameterType.BOOLEAN,
+                required=False,
+            )
+        )
+
         # Configure thinking mode parameter based on model support
         agent_thought_support = credentials.get("agent_thought_support", "not_supported")
         
@@ -101,6 +123,21 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                         zh_Hans="是否开启思考模式，适用于vLLM和SGLang等推理框架部署的多种思考模式模型，例如Qwen3。",
                     ),
                     type=ParameterType.BOOLEAN,
+                    required=False,
+                )
+            )
+
+        if agent_thought_support in ["supported", "only_thinking_supported"]:
+            entity.parameter_rules.append(
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(en_US="Reasoning effort", zh_Hans="推理工作"),
+                    help=I18nObject(
+                        en_US="Constrains effort on reasoning for reasoning models.",
+                        zh_Hans="限制推理模型的推理工作。",
+                    ),
+                    type=ParameterType.STRING,
+                    options=["low", "medium", "high"],
                     required=False,
                 )
             )
@@ -185,11 +222,40 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             user_enable_thinking = model_parameters.pop("enable_thinking", None)
             if user_enable_thinking is not None:
                 enable_thinking_value = bool(user_enable_thinking)
-                
-        if enable_thinking_value is not None:
-            model_parameters.setdefault("chat_template_kwargs", {})["enable_thinking"] = enable_thinking_value
-            # Add From: https://github.com/langgenius/dify-official-plugins/pull/2151
-            model_parameters.setdefault("chat_template_kwargs", {})["thinking"] = enable_thinking_value
+
+        user_strict_compatibility = model_parameters.pop("strict_compatibility", None)
+        # Default `strict_compatibility_value` is False.
+        strict_compatibility_value = False
+        if user_strict_compatibility is not None:
+            strict_compatibility_value = bool(user_strict_compatibility)
+
+        if enable_thinking_value is not None and strict_compatibility_value is False:
+            # Only apply when `strict_compatibility_value` is False since
+            # `chat_template_kwargs` and `thinking` are non-standard parameters.
+
+            chat_template_kwargs = model_parameters.setdefault("chat_template_kwargs", {})
+            # Support vLLM/SGLang format (chat_template_kwargs)
+            chat_template_kwargs["enable_thinking"] = enable_thinking_value
+            chat_template_kwargs["thinking"] = enable_thinking_value
+
+            # Support Zhipu AI API format (top-level thinking parameter)
+            # This allows compatibility with Zhipu's official API format: {"thinking": {"type": "enabled/disabled"}}
+            model_parameters["thinking"] = {
+                "type": "enabled" if enable_thinking_value else "disabled"
+            }
+
+        reasoning_effort_value = model_parameters.pop("reasoning_effort", None)
+        if enable_thinking_value is True and reasoning_effort_value is not None:
+            # Propagate reasoning_effort to both:
+            # - top-level OpenAI Chat Completions param, and
+            # - chat_template_kwargs for runtimes that read template kwargs (e.g., llama.cpp).
+            # Only apply when thinking mode is explicitly enabled.
+            model_parameters["reasoning_effort"] = reasoning_effort_value
+            if strict_compatibility_value is False:
+                # Only apply when `strict_compatibility_value` is False since
+                # `chat_template_kwargs` is a non-standard parameter.
+                chat_template_kwargs = model_parameters.setdefault("chat_template_kwargs", {})
+                chat_template_kwargs["reasoning_effort"] = reasoning_effort_value
         
         # Remove thinking content from assistant messages for better performance.
         with suppress(Exception):

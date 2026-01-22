@@ -1,5 +1,6 @@
 import json
 import requests
+import base64
 from collections.abc import Generator
 from typing import Any, Dict, List
 
@@ -18,6 +19,70 @@ class ErnieIragTool(Tool):
     BASE_URL = "https://aihubmix.com/v1"
     PREDICTIONS_ENDPOINT = f"{BASE_URL}/models/qianfan/irag-1.0/predictions"
     
+    def create_image_info(self, base64_data: str, resolution: str) -> dict:
+        mime_type = "image/png"
+        return {
+            "url": f"data:{mime_type};base64,{base64_data}",
+            "resolution": resolution
+        }
+    
+    def _process_image_input(self, image_input: Any) -> str:
+        """
+        Process image input from various sources and return a valid URL/data URL for API
+        
+        Args:
+            image_input: Can be URL string, data URL, base64 string, or Dify file object
+            
+        Returns:
+            Valid image URL or data URL for the API
+        """
+        if not image_input:
+            return ""
+        
+        image_str = str(image_input).strip()
+        
+        # Check if it's a Dify file transfer variable or file object
+        if isinstance(image_input, dict):
+            # Dify file variable format
+            if "type" in image_input and image_input["type"] == "image":
+                # Extract URL from file object
+                if "transfer_method" in image_input:
+                    if image_input["transfer_method"] == "remote_url":
+                        return image_input.get("url", "")
+                    elif image_input["transfer_method"] == "local_file":
+                        # For local files, we need to use base64
+                        if "base64_data" in image_input:
+                            return f"data:image/png;base64,{image_input['base64_data']}"
+                        elif "url" in image_input:
+                            return image_input["url"]
+                elif "url" in image_input:
+                    return image_input["url"]
+                elif "base64_data" in image_input:
+                    return f"data:image/png;base64,{image_input['base64_data']}"
+            # Fallback for other dict formats
+            image_str = str(image_input)
+        
+        # Already a valid URL format
+        if image_str.startswith('http://') or image_str.startswith('https://'):
+            return image_str
+        
+        # Data URL format
+        if image_str.startswith('data:image/'):
+            return image_str
+        
+        # Base64 encoded image (with or without prefix)
+        if image_str.startswith('iVBORw0KGgo') or '/' in image_str or '=' in image_str:
+            # Likely base64 encoded
+            try:
+                # Try to decode to verify it's valid base64
+                base64.b64decode(image_str)
+                return f"data:image/png;base64,{image_str}"
+            except:
+                pass
+        
+        # If none of the above, try as file path or return as-is
+        return image_str
+    
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         """
         Main invoke method for ERNIE iRAG image generation
@@ -28,7 +93,7 @@ class ErnieIragTool(Tool):
             if not prompt:
                 raise InvokeError("Prompt is required")
             
-            refer_image = tool_parameters.get("refer_image", "")
+            refer_image_input = tool_parameters.get("refer_image", "")
             resolution = tool_parameters.get("resolution", "1024x1024")
             num_images = int(tool_parameters.get("num_images", 1))
             guidance = float(tool_parameters.get("guidance", 7.5))
@@ -63,6 +128,9 @@ class ErnieIragTool(Tool):
                 }
             }
             
+            # Process refer_image if provided
+            refer_image = self._process_image_input(refer_image_input) if refer_image_input else ""
+            
             # Only add refer_image if it's provided (non-empty)
             if refer_image:
                 payload["input"]["refer_image"] = refer_image
@@ -89,19 +157,30 @@ class ErnieIragTool(Tool):
             
             data = response.json()
             
-            # Extract image URLs from response
+            # Extract image data from response
             images = []
             if "output" in data and isinstance(data["output"], list):
                 for item in data["output"]:
-                    if "url" in item:
+                    if "b64_json" in item:
+                        images.append({"b64_json": item["b64_json"]})
+                    elif "url" in item:
                         images.append({"url": item["url"]})
             
             if not images:
                 raise InvokeError("No images were generated")
             
-            # Create image messages for direct display in Dify
-            for img in images:
-                yield self.create_image_message(img["url"])
+            # Process images - return as blobs for base64 data, or display URLs
+            for idx, img in enumerate(images):
+                if "b64_json" in img:
+                    # Decode base64 and return as blob
+                    base64_data = img["b64_json"]
+                    image_bytes = base64.b64decode(base64_data)
+                    filename = f"ernie_irag_image_{idx + 1}.png"
+                    mime_type = "image/png"
+                    yield self.create_blob_message(blob=image_bytes, meta={"mime_type": mime_type, "filename": filename})
+                elif "url" in img:
+                    # For URL responses, create image message
+                    yield self.create_image_message(img["url"])
             
             # Return results as JSON
             yield self.create_json_message({
@@ -117,8 +196,8 @@ class ErnieIragTool(Tool):
             })
             
             # Also create text message with image URLs
-            image_urls = "\n".join([f"- {img['url']}" for img in images])
-            yield self.create_text_message(f"ERNIE iRAG generated {len(images)} image(s):\n{image_urls}")
+            image_urls = "\n".join([img['url'] for img in images])
+            yield self.create_text_message(image_urls)
                 
         except Exception as e:
             raise InvokeError(f"ERNIE iRAG image generation failed: {str(e)}")

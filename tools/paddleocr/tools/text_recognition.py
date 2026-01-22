@@ -5,6 +5,8 @@ import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
+REQUEST_TIMEOUT = (10, 600)
+
 
 class TextRecognitionTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
@@ -46,8 +48,9 @@ class TextRecognitionTool(Tool):
         try:
             resp = requests.post(
                 api_url,
-                headers={"Authorization": f"token {access_token}"},
+                headers={"Client-Platform": "dify", "Authorization": f"token {access_token}"},
                 json=params,
+                timeout=REQUEST_TIMEOUT,
             )
             resp.raise_for_status()
             result = resp.json()
@@ -55,6 +58,8 @@ class TextRecognitionTool(Tool):
             raise RuntimeError(
                 f"Failed to decode JSON response from PaddleOCR API: {resp.text}"
             ) from e
+        except requests.exceptions.Timeout as e:
+            raise RuntimeError("PaddleOCR API request timed out") from e
         except requests.exceptions.RequestException as e:
             raise RuntimeError(f"PaddleOCR API request failed: {e}") from e
 

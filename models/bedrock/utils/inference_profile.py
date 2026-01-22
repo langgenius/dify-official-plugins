@@ -18,7 +18,7 @@ _CACHE_TTL = 300  # 5 minutes
 _cache_lock = threading.Lock()
 
 # Per-key locks to prevent thundering herd (multiple threads fetching same profile)
-_fetch_locks: dict = {}
+_fetch_locks: OrderedDict = OrderedDict()
 _fetch_locks_lock = threading.Lock()
 _MAX_FETCH_LOCKS = 1000 
 

@@ -8,11 +8,11 @@ identity:
     ja_JP: "ERNIE iRAG"
 description:
   human:
-    en_US: "ERNIE iRAG Image Generation Model"
-    zh_Hans: "ERNIE iRAG 图像生成模型"
-    pt_BR: "Modelo de Geração ERNIE iRAG"
-    ja_JP: "ERNIE iRAG 画像生成モデル"
-  llm: "Generate image using ERNIE iRAG model with advanced Chinese language understanding and high-quality output"
+    en_US: "ERNIE iRAG Image Generation Model - Supports Text-to-Image, Image Reference, and Dify file variables"
+    zh_Hans: "ERNIE iRAG 图像生成模型 - 支持文生图、图像参考和 Dify 文件变量"
+    pt_BR: "Modelo de Geração ERNIE iRAG - Suporta Texto-para-Imagem, Referência de Imagem e Variáveis de Arquivo Dify"
+    ja_JP: "ERNIE iRAG 画像生成モデル - テキストから画像、画像参照、Difyファイル変数をサポート"
+  llm: "Generate images using ERNIE iRAG model (qianfan/irag-1.0) with advanced Chinese language understanding. Supports image reference for style consistency. Accepts URLs, base64 data, or Dify file transfer variables."
 parameters:
   - name: prompt
     type: string
@@ -34,16 +34,16 @@ parameters:
     type: string
     required: false
     label:
-      en_US: "Reference Image URL"
-      zh_Hans: "参考图像URL"
-      pt_BR: "URL da Imagem de Referência"
-      ja_JP: "参考画像URL"
+      en_US: "Reference Image"
+      zh_Hans: "参考图像"
+      pt_BR: "Imagem de Referência"
+      ja_JP: "参照画像"
     human_description:
-      en_US: "URL of reference image for style guidance (optional)"
-      zh_Hans: "用于风格指导的参考图像URL（可选）"
-      pt_BR: "URL da imagem de referência para orientação de estilo (opcional)"
-      ja_JP: "スタイルガイダンスのための参考画像URL（オプション）"
-    llm_description: "URL of reference image for ERNIE iRAG to use as style guidance. Leave empty for pure text-to-image generation"
+      en_US: "Reference image for style guidance. Supports: URL, Data URL (base64), Dify file variable. Connect from other nodes in workflow."
+      zh_Hans: "用于风格指导的参考图像。支持：URL、Data URL（base64）、Dify 文件变量。可从工作流中的其他节点连接。"
+      pt_BR: "Imagem de referência para orientação de estilo. Suporta: URL, URL de dados (base64), variável de arquivo Dify. Conecte-se de outros nós no fluxo de trabalho."
+      ja_JP: "スタイルガイダンスのための参照画像。サポート: URL、データURL (base64)、Difyファイル変数。工作フローの他のノードから接続可能。"
+    llm_description: "Reference image for ERNIE iRAG to use as style guidance. Accepts URLs, base64 data, or Dify file transfer variables. Leave empty for pure text-to-image generation."
     form: llm
   
   - name: resolution
@@ -136,6 +136,42 @@ parameters:
     llm_description: "Whether to add watermark to the generated image using ERNIE iRAG"
     form: form
     default: false
+
+  - name: image_format
+    type: select
+    required: false
+    label:
+      en_US: "Image Format"
+      zh_Hans: "图片格式"
+      pt_BR: "Formato de Imagem"
+      ja_JP: "画像フォーマット"
+    human_description:
+      en_US: "Output image format"
+      zh_Hans: "输出图片格式"
+      pt_BR: "Formato de saída da imagem"
+      ja_JP: "出力画像フォーマット"
+    llm_description: "Image format for ERNIE iRAG generation"
+    form: form
+    default: "png"
+    options:
+      - value: "png"
+        label:
+          en_US: "PNG"
+          zh_Hans: "PNG"
+          pt_BR: "PNG"
+          ja_JP: "PNG"
+      - value: "jpeg"
+        label:
+          en_US: "JPEG"
+          zh_Hans: "JPEG"
+          pt_BR: "JPEG"
+          ja_JP: "JPEG"
+      - value: "webp"
+        label:
+          en_US: "WebP"
+          zh_Hans: "WebP"
+          pt_BR: "WebP"
+          ja_JP: "WebP"
 extra:
   python:
     source: tools/ernie-irag.py
