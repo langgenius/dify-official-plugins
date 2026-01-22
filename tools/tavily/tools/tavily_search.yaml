@@ -37,7 +37,7 @@ parameters:
     label:
       en_US: Search Depth
       zh_Hans: 搜索深度
-    llm_description: The depth of the search. 'basic' for standard search, 'advanced' for more comprehensive results.
+    llm_description: The depth of the search. 'basic' for standard search, 'advanced' for comprehensive results, 'fast' for quick results, 'ultra-fast' for fastest results with minimal processing.
     options:
       - label:
           en_US: Basic
@@ -47,6 +47,14 @@ parameters:
           en_US: Advanced
           zh_Hans: 高级
         value: advanced
+      - label:
+          en_US: Fast
+          zh_Hans: 快速
+        value: fast
+      - label:
+          en_US: Ultra Fast
+          zh_Hans: 超快速
+        value: ultra-fast
     required: false
     type: select
   - name: topic
@@ -74,21 +82,6 @@ parameters:
         value: finance
     required: false
     type: select
-  - name: days
-    default: 7
-    form: llm
-    human_description:
-      en_US:
-        The number of days back from the current date to include in the search
-        results (only applicable when "topic" is "news").
-      zh_Hans: 从当前日期起向前追溯的天数，以包含在搜索结果中（仅当"topic"为"news"时适用）。
-    label:
-      en_US: Days
-      zh_Hans: 天数
-    llm_description: The number of days back from the current date to include in the search results. Only applicable when "topic" is "news".
-    min: 1
-    required: false
-    type: number
   - name: time_range
     form: llm
     human_description:
@@ -122,6 +115,28 @@ parameters:
     required: false
     default: not_specified
     type: select
+  - name: start_date
+    form: llm
+    human_description:
+      en_US: The start date for filtering results. Required to be written in the format YYYY-MM-DD.
+      zh_Hans: 筛选结果的开始日期。必须以YYYY-MM-DD格式编写。
+    label:
+      en_US: Start Date
+      zh_Hans: 开始日期
+    llm_description: The start date for filtering results. Required to be written in the format YYYY-MM-DD. Results will be filtered to include content from this date onwards.
+    required: false
+    type: string
+  - name: end_date
+    form: llm
+    human_description:
+      en_US: The end date for filtering results. Required to be written in the format YYYY-MM-DD.
+      zh_Hans: 筛选结果的结束日期。必须以YYYY-MM-DD格式编写。
+    label:
+      en_US: End Date
+      zh_Hans: 结束日期
+    llm_description: The end date for filtering results. Required to be written in the format YYYY-MM-DD. Results will be filtered to include content up to this date.
+    required: false
+    type: string
   - name: auto_parameters
     default: false
     form: form
@@ -174,24 +189,70 @@ parameters:
     default: false
     form: form
     human_description:
-      en_US: Include a short answer to the original query in the response.
-      zh_Hans: 在响应中包含对原始查询的简短回答。
+      en_US: Include a short answer to the original query in the response. Use 'basic' or 'true' for a quick answer or 'advanced' for a more detailed, comprehensive answer.
+      zh_Hans: 在回复中包含对原始问题的简短回答。对于简要回答，请使用“基本”或“是”；对于更详细、更全面的回答，请使用“高级”。
     label:
       en_US: Include Answer
       zh_Hans: 包含答案
-    llm_description: When set to true, includes a short answer to the original query in the response.
+    llm_description: When set to true or 'basic', includes a short answer to the original query in the response, 'advanced' for a more detailed comprehensive answer.
+    options:
+      - label:
+          en_US: False
+          zh_Hans: 否
+        value: false
+      - label:
+          en_US: True
+          zh_Hans: 是
+        value: true
+      - label:
+          en_US: Basic
+          zh_Hans: 基本
+        value: basic
+      - label:
+          en_US: Advanced
+          zh_Hans: 高级
+        value: advanced
     required: false
-    type: boolean
+    type: select
   - name: include_raw_content
     default: false
     form: form
     human_description:
-      en_US: Include the cleaned and parsed HTML content of each search result.
-      zh_Hans: 包含每个搜索结果的已清理和解析的HTML内容。
+      en_US: Include the cleaned and parsed HTML content of each search result. Use 'markdown' for markdown format or 'text' for plain text.
+      zh_Hans: 包含每个搜索结果的已清理和解析的HTML内容。使用 Markdown 格式请选择 Markdown 选项，使用纯文本请选择文本选项。
     label:
       en_US: Include Raw Content
       zh_Hans: 包含原始内容
-    llm_description: When set to true, includes the cleaned and parsed HTML content of each search result.
+    llm_description: Include the cleaned and parsed content of each search result. 'false' to disable, 'true' or 'markdown' for markdown format, 'text' for plain text format.
+    options:
+      - label:
+          en_US: False
+          zh_Hans: 否
+        value: false
+      - label:
+          en_US: True
+          zh_Hans: 是
+        value: true
+      - label:
+          en_US: Markdown
+          zh_Hans: Markdown
+        value: markdown
+      - label:
+          en_US: Text
+          zh_Hans: 纯文本
+        value: text
+    required: false
+    type: select
+  - name: include_usage
+    default: false
+    form: form
+    human_description:
+      en_US: Include API usage information (token counts, credits used) in the response.
+      zh_Hans: 在响应中包含API使用信息（token计数、使用的积分）。
+    label:
+      en_US: Include Usage
+      zh_Hans: 包含使用信息
+    llm_description: When set to true, includes API usage information such as token counts and credits used in the response.
     required: false
     type: boolean
   - name: max_results
