@@ -24,7 +24,6 @@ dependencies = [
     'gevent==24.11.1',
     'greenlet==3.2.1; platform_python_implementation == "CPython"',
     'httpcore==1.0.8',
-    'httpx==0.27.3',
     'idna==3.10',
     'itsdangerous==2.2.0',
     'jinja2==3.1.8',
