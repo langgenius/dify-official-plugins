@@ -395,7 +395,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     )
             else:
                 for tool_call_id, tool_call_name, tool_call_args in tool_calls:
-                    tool_instance = tool_instances[tool_call_name]
+                    tool_instance = tool_instances.get(tool_call_name,None)
                     tool_call_started_at = time.perf_counter()
                     tool_call_log = self.create_log_message(
                         label=f"CALL {tool_call_name}",
