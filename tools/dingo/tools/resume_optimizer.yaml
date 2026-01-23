@@ -55,6 +55,28 @@ parameters:
         如果为空或无效，运行通用优化模式（仅 STAR 润色）。
     form: llm
 
+  - name: strategy_context
+    type: string
+    required: false
+    label:
+      en_US: Strategy Context (from Dingo Scout)
+      zh_Hans: 战略上下文（来自 Dingo Scout）
+    human_description:
+      en_US: |
+        JSON output from Dingo Scout tool. If provided, adapts resume tone based on company financial status:
+        - Expansion: Emphasize speed, delivery, "0 to 1"
+        - Stable: Emphasize optimization, processes, stability
+        Also includes interview prep tips and salary negotiation context.
+      zh_Hans: |
+        Dingo Scout 工具的 JSON 输出。如果提供，根据目标公司的财务状态调整简历语气：
+        - 扩张期：强调速度、交付、"从0到1"
+        - 稳健期：强调优化、流程、稳定性
+        同时包含面试准备建议和薪资谈判背景。
+    llm_description: |
+      Strategic context from Dingo Scout tool. Contains target company info, financial status,
+      interview tips, and salary leverage analysis. Used to adapt resume tone.
+    form: llm
+
   - name: language
     type: select
     required: false

@@ -127,6 +127,115 @@ class ResumeOptimizerTool(Tool):
             print(f"[resume_optimizer] Failed to parse match_report: {e}")
             return [], [], [], False
 
+    # ========== Build Strategic Context Section (v0.6.0) ==========
+    def _build_strategic_context_section(self, strategy_context: dict | str | None, language: str) -> str:
+        """
+        Build strategic context section from Dingo Scout output.
+
+        Args:
+            strategy_context: JSON string or dict from Dingo Scout
+            language: 'zh_Hans' or 'en_US'
+
+        Returns:
+            Strategic context section string to inject into prompt
+        """
+        if not strategy_context:
+            return ""
+
+        try:
+            # Parse if string
+            if isinstance(strategy_context, str):
+                strategy_context = json.loads(strategy_context)
+
+            context = strategy_context.get('strategy_context', {})
+            target_companies = context.get('target_companies', [])
+
+            if not target_companies:
+                return ""
+
+            # Use first target company for tone adaptation
+            company = target_companies[0]
+            financial_status = company.get('financial_status', 'stable')
+            company_name = company.get('name', '')
+            interview_tips = company.get('interview_prep_tips', [])
+            salary_leverage = company.get('salary_leverage', '')
+
+            if language == 'zh_Hans':
+                section = f"""
+## 战略上下文 (来自 Dingo Scout)
+
+**目标公司**: {company_name}
+**财务状态**: {financial_status}
+
+### 语气适配规则
+
+"""
+                if financial_status == "expansion":
+                    section += """**扩张期公司** - 强调以下风格：
+- 使用"快速迭代"、"从0到1"、"落地"等词汇
+- 突出项目的交付速度和执行力
+- 强调"主导"、"搭建"、"推动"等动词
+- 增加量化数据（处理量、提升比例、上线时间）
+"""
+                elif financial_status == "stable":
+                    section += """**稳健期公司** - 强调以下风格：
+- 使用"规范化"、"优化"、"体系化"等词汇
+- 突出流程改进和效率提升
+- 强调"维护"、"改进"、"重构"等动词
+- 增加稳定性指标（SLA、可用率、测试覆盖）
+"""
+                else:
+                    section += "**标准风格** - 平衡增长与稳定的描述。\n"
+
+                if interview_tips:
+                    section += "\n### 面试准备建议\n"
+                    for tip in interview_tips[:3]:
+                        section += f"- {tip}\n"
+
+                if salary_leverage:
+                    section += f"\n### 薪资谈判背景\n{salary_leverage}\n"
+
+            else:  # en_US
+                section = f"""
+## Strategic Context (from Dingo Scout)
+
+**Target Company**: {company_name}
+**Financial Status**: {financial_status}
+
+### Tone Adaptation Rules
+
+"""
+                if financial_status == "expansion":
+                    section += """**Expansion-phase Company** - Emphasize:
+- Use terms like "fast iteration", "0 to 1", "deliver"
+- Highlight delivery speed and execution
+- Use action verbs: "led", "built", "drove"
+- Add quantified data (volume, improvement %, launch time)
+"""
+                elif financial_status == "stable":
+                    section += """**Stable-phase Company** - Emphasize:
+- Use terms like "standardized", "optimized", "systematized"
+- Highlight process improvements and efficiency gains
+- Use action verbs: "maintained", "improved", "refactored"
+- Add stability metrics (SLA, uptime, test coverage)
+"""
+                else:
+                    section += "**Standard Style** - Balance growth and stability descriptions.\n"
+
+                if interview_tips:
+                    section += "\n### Interview Prep Tips\n"
+                    for tip in interview_tips[:3]:
+                        section += f"- {tip}\n"
+
+                if salary_leverage:
+                    section += f"\n### Salary Negotiation Context\n{salary_leverage}\n"
+
+            return section
+
+        except (json.JSONDecodeError, TypeError, AttributeError) as e:
+            print(f"[resume_optimizer] Failed to parse strategy_context: {e}")
+            return ""
+
     # ========== Build System Prompt ==========
     def _build_system_prompt(
         self,
@@ -136,7 +245,8 @@ class ResumeOptimizerTool(Tool):
         missing_nice: list,
         negative_keywords: list,
         is_targeted_mode: bool,
-        parse_failed: bool = False
+        parse_failed: bool = False,
+        strategy_context: dict | str | None = None
     ) -> str:
         """
         Build the system prompt for LLM based on mode.
@@ -149,6 +259,7 @@ class ResumeOptimizerTool(Tool):
             negative_keywords: List of negative keywords to de-emphasize
             is_targeted_mode: True if match_report provided
             parse_failed: True if match_report parsing failed
+            strategy_context: Optional strategic context from Dingo Scout (v0.6.0)
 
         Returns:
             System prompt string
@@ -160,21 +271,25 @@ class ResumeOptimizerTool(Tool):
         nice_str = ', '.join(missing_nice) if missing_nice else 'None'
         negative_str = ', '.join(negative_keywords) if negative_keywords else 'None'
 
+        # Build strategic context section (v0.6.0)
+        strategic_section = self._build_strategic_context_section(strategy_context, language)
+
         if language == 'zh_Hans':
             return self._build_chinese_prompt(
                 headers, target_position, required_str, nice_str, negative_str,
-                is_targeted_mode, parse_failed
+                is_targeted_mode, parse_failed, strategic_section
             )
         else:
             return self._build_english_prompt(
                 headers, target_position, required_str, nice_str, negative_str,
-                is_targeted_mode, parse_failed
+                is_targeted_mode, parse_failed, strategic_section
             )
 
     def _build_chinese_prompt(
         self, headers: dict, target_position: str,
         required_str: str, nice_str: str, negative_str: str,
-        is_targeted_mode: bool, parse_failed: bool
+        is_targeted_mode: bool, parse_failed: bool,
+        strategic_section: str = ""
     ) -> str:
         """Build Chinese system prompt."""
         base_prompt = f"""你是一位专业的 ATS（求职跟踪系统）优化专家。
@@ -285,12 +400,13 @@ class ResumeOptimizerTool(Tool):
 {headers['no_changes_text']}
 """
 
-        return base_prompt + mode_section + output_template
+        return base_prompt + strategic_section + mode_section + output_template
 
     def _build_english_prompt(
         self, headers: dict, target_position: str,
         required_str: str, nice_str: str, negative_str: str,
-        is_targeted_mode: bool, parse_failed: bool
+        is_targeted_mode: bool, parse_failed: bool,
+        strategic_section: str = ""
     ) -> str:
         """Build English system prompt."""
         base_prompt = f"""You are a professional ATS (Applicant Tracking System) optimization expert.
@@ -401,8 +517,7 @@ Please strictly follow this Markdown structure:
 {headers['no_changes_text']}
 """
 
-        return base_prompt + mode_section + output_template
-
+        return base_prompt + strategic_section + mode_section + output_template
 
     # ========== Main Invoke Method ==========
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
@@ -411,7 +526,7 @@ Please strictly follow this Markdown structure:
         Refactored to support STREAMING to resolve Dify Cloud timeout issues (TTFB).
 
         Args:
-            tool_parameters: Tool parameters including resume_content, target_position, match_report, language
+            tool_parameters: Tool parameters including resume_content, target_position, match_report, language, strategy_context
 
         Returns:
             Generator of ToolInvokeMessage
@@ -423,6 +538,7 @@ Please strictly follow this Markdown structure:
             resume_content = tool_parameters.get('resume_content', '').strip()
             target_position = tool_parameters.get('target_position', '').strip()
             match_report = tool_parameters.get('match_report', '')
+            strategy_context = tool_parameters.get('strategy_context', '')  # v0.6.0: Scout integration
 
             # 2. Validation
             if not resume_content:
@@ -438,9 +554,10 @@ Please strictly follow this Markdown structure:
             parse_failed = bool(match_report and not parse_success)
 
             # Debug log
-            print(f"[resume_optimizer] Mode: {'Targeted' if is_targeted_mode else 'General'}")
+            has_strategy = bool(strategy_context)
+            print(f"[resume_optimizer] Mode: {'Targeted' if is_targeted_mode else 'General'}, Strategy: {has_strategy}")
 
-            # 5. Build system prompt (Preserve existing logic)
+            # 5. Build system prompt (with strategic context v0.6.0)
             system_prompt = self._build_system_prompt(
                 language=language,
                 target_position=target_position,
@@ -448,7 +565,8 @@ Please strictly follow this Markdown structure:
                 missing_nice=missing_nice,
                 negative_keywords=negative_keywords,
                 is_targeted_mode=is_targeted_mode,
-                parse_failed=parse_failed
+                parse_failed=parse_failed,
+                strategy_context=strategy_context
             )
 
             # 6. Prepare Messages
