@@ -90,13 +90,13 @@ jobs:
       - name: yq - portable yaml processor
         uses: mikefarah/yq@v4.44.5
 
-      - name: Install Homebrew and Dify CLI
+      - name: Download Dify CLI
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-          echo "/home/linuxbrew/.linuxbrew/bin" >> $GITHUB_PATH
-          echo "/home/linuxbrew/.linuxbrew/sbin" >> $GITHUB_PATH
-          /home/linuxbrew/.linuxbrew/bin/brew tap langgenius/dify
-          /home/linuxbrew/.linuxbrew/bin/brew install dify
+          gh release download -R langgenius/dify-plugin-daemon --pattern "dify-plugin-linux-amd64" --dir .scripts
+          chmod +x .scripts/dify-plugin-linux-amd64
+          mv .scripts/dify-plugin-linux-amd64 .scripts/dify
 
       - name: Export All Secrets to Environment
         uses: oNaiPs/secrets-to-env-action@v1
@@ -143,6 +143,10 @@ jobs:
             exit 1
           fi
 
+      - name: Check Packaging
+        run: |
+          uv run --with requests --with dify_plugin python .scripts/uploader/upload-package.py -d "${{ matrix.plugin_path }}" -t "${{ secrets.MARKETPLACE_TOKEN }}" --plugin-daemon-path .scripts/dify -u "${{ secrets.MARKETPLACE_BASE_URL }}" -f --test
+
       - name: Validate Dependencies with uv
         run: |
           cd "${{ matrix.plugin_path }}"
@@ -155,10 +159,6 @@ jobs:
           export SERVERLESS_HOST=0.0.0.0
           uv run --project "${{ matrix.plugin_path }}" --with requests python .scripts/validator/test-plugin-install.py -d "${{ matrix.plugin_path }}"
 
-      - name: Check Packaging
-        run: |
-          uv run --with requests --with dify_plugin python .scripts/uploader/upload-package.py -d "${{ matrix.plugin_path }}" -t "${{ secrets.MARKETPLACE_TOKEN }}" --plugin-daemon-path /home/linuxbrew/.linuxbrew/bin/dify -u "${{ secrets.MARKETPLACE_BASE_URL }}" -f --test
-
       - name: Package plugin
         run: |
           SAFE_NAME=$(echo "${{ matrix.plugin_path }}" | tr '/' '-')
@@ -170,7 +170,7 @@ jobs:
           echo "EXTRACT_DIR=$EXTRACT_DIR" >> $GITHUB_ENV
 
           echo "### Packaging plugin at: ${{ matrix.plugin_path }} ###"
-          dify plugin package ${{ matrix.plugin_path }} --output_path "$PKG_NAME"
+          .scripts/dify plugin package ${{ matrix.plugin_path }} --output_path "$PKG_NAME"
 
           echo "### Extracting package ###"
           unzip -q "$PKG_NAME" -d "$EXTRACT_DIR"
@@ -196,3 +196,31 @@ jobs:
         working-directory: ${{ env.EXTRACT_DIR }}
         run: |
           PLUGIN_FILE_PATH="$(realpath ../${{ env.PKG_NAME }})" uv run --with pytest pytest
+
+  check-complete:
+    name: Check Complete
+    needs:
+      - detect-changes
+      - test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify check results
+        run: |
+          if [ "${{ needs.detect-changes.result }}" != "success" ]; then
+            echo "detect-changes failed."
+            exit 1
+          fi
+
+          if [ "${{ needs.detect-changes.outputs.has_changes }}" != "true" ]; then
+            echo "No plugin changes detected."
+            exit 0
+          fi
+
+          if [ "${{ needs.test.result }}" = "success" ]; then
+            echo "Plugin checks passed."
+            exit 0
+          fi
+
+          echo "Plugin checks failed."
+          exit 1
