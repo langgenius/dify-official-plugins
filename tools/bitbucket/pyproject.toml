@@ -40,7 +40,6 @@ dependencies = [
     'python-dotenv==1.1.0',
     'pyyaml==6.0.3',
     'regex==2024.11.6',
-    'requests==2.32.7',
     'requests-oauthlib==2.0.0',
     'setuptools==79.0.0',
     'six==1.17.0',
