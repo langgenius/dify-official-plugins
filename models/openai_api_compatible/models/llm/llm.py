@@ -265,9 +265,6 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         with suppress(Exception):
             self._drop_analyze_channel(prompt_messages)
 
-        # Store enable_thinking_value for response filtering
-        self._current_enable_thinking = enable_thinking_value
-
         result = super()._invoke(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
         )
@@ -307,18 +304,19 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 if not thinking_started and buffer.startswith("<think>"):
                     in_thinking = True
                     thinking_started = True
-                    continue
+                    # Don't continue here - check for end tag in same iteration
                 
                 # Detect end of thinking block
                 if in_thinking and "</think>" in buffer:
                     # Find the end of thinking block
                     end_idx = buffer.find("</think>") + len("</think>")
                     # Skip whitespace after </think>
-                    while end_idx < len(buffer) and buffer[end_idx] in (' ', '\n', '\r', '\t'):
+                    while end_idx < len(buffer) and buffer[end_idx].isspace():
                         end_idx += 1
                     # Remove thinking block and continue with remaining content
                     buffer = buffer[end_idx:]
                     in_thinking = False
+                    thinking_started = False
                     # Yield remaining content if any
                     if buffer:
                         chunk.delta.message.content = buffer
