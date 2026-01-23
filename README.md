@@ -1,66 +1,131 @@
-![bar](.assets/bar.png)
+# 插件开发和同步流程
 
-<p align="center">
-  <a href="https://cloud.dify.ai">Dify Cloud</a> ·
-  <a href="https://docs.dify.ai/getting-started/install-self-hosted">Self-hosting</a> ·
-  <a href="https://docs.dify.ai">Documentation</a> ·
-  <a href="https://udify.app/chat/22L1zSxg6yW1cWQg">Enterprise inquiry</a>
-</p>
-<p align="center">
-    <a href="https://dify.ai" target="_blank">
-        <img alt="Static Badge" src="https://img.shields.io/badge/Product-F04438"></a>
-    <a href="https://dify.ai/pricing" target="_blank">
-        <img alt="Static Badge" src="https://img.shields.io/badge/free-pricing?logo=free&color=%20%23155EEF&label=pricing&labelColor=%20%23528bff"></a>
-    <a href="https://discord.gg/FngNHpbcY7" target="_blank">
-        <img src="https://img.shields.io/discord/1082486657678311454?logo=discord&labelColor=%20%235462eb&logoColor=%20%23f5f5f5&color=%20%235462eb"
-            alt="chat on Discord"></a>
-    <a href="https://reddit.com/r/difyai" target="_blank">  
-        <img src="https://img.shields.io/reddit/subreddit-subscribers/difyai?style=plastic&logo=reddit&label=r%2Fdifyai&labelColor=white"
-            alt="join Reddit"></a>
-    <a href="https://twitter.com/intent/follow?screen_name=dify_ai" target="_blank">
-        <img src="https://img.shields.io/twitter/follow/dify_ai?logo=X&color=%20%23f5f5f5"
-            alt="follow on X(Twitter)"></a>
-    <a href="https://www.linkedin.com/company/langgenius/" target="_blank">
-        <img src="https://custom-icon-badges.demolab.com/badge/LinkedIn-0A66C2?logo=linkedin-white&logoColor=fff"
-            alt="follow on LinkedIn"></a>
-    <a href="https://hub.docker.com/u/langgenius" target="_blank">
-        <img alt="Docker Pulls" src="https://img.shields.io/docker/pulls/langgenius/dify-web?labelColor=%20%23FDB062&color=%20%23f79009"></a>
-    <a href="https://github.com/langgenius/dify/graphs/commit-activity" target="_blank">
-        <img alt="Commits last month" src="https://img.shields.io/github/commit-activity/m/langgenius/dify?labelColor=%20%2332b583&color=%20%2312b76a"></a>
-    <a href="https://github.com/langgenius/dify/" target="_blank">
-        <img alt="Issues closed" src="https://img.shields.io/github/issues-search?query=repo%3Alanggenius%2Fdify%20is%3Aclosed&label=issues%20closed&labelColor=%20%237d89b0&color=%20%235d6b98"></a>
-    <a href="https://github.com/langgenius/dify/discussions/" target="_blank">
-        <img alt="Discussion posts" src="https://img.shields.io/github/discussions/langgenius/dify?labelColor=%20%239b8afb&color=%20%237a5af8"></a>
-</p>
+### 1. 在开发分支上进行你的改动
 
-### Introduction
+```bash
+# 修改代码后...
 
-[Dify](https://dify.ai/) is an open-source platform for developing LLM-powered AI applications, designed to help developers and businesses efficiently build, deploy, and manage AI-driven solutions. With Dify, users can easily create and test complex AI workflows, integrate a wide range of advanced models and tools, and optimize their performance in real-world applications. The platform offers an intuitive interface, supporting RAG (Retrieval-Augmented Generation) pipelines, intelligent agent capabilities, and robust model management, enabling developers to seamlessly transition from prototype to production. 
+# 查看改动
+git status
 
-Dify's models and tools were originally stored in the [main Dify repository](https://github.com/langgenius/dify). However, starting from Dify v1.0.0 (February 2025), all models and tools have been migrated into plugins and are now stored in this repository. All plugins in this repository will be uploaded to the [Dify Marketplace](https://marketplace.dify.ai/), where they will be maintained and updated by the official Dify team. The plugins in the Marketplace are available for all Dify users to explore and use.
+# 添加改动
+git add .
 
-### Plugin Types
+# 提交改动
+git commit -m "描述你的改动"
 
-#### Models
+# 推送到你的 GitHub(第一次推送需要设置上游)
+git push -u origin dev
+```
 
-Models transform AI model management in Dify. Now you can configure, update and use models as plugins across chatbots, agents, chatflows and workflows.
+### 2. 当原项目有更新时,同步最新代码
 
-#### Tools
+```bash
+# 切换回 main 分支
+git checkout main
 
-Tools add specialized capabilities to Dify apps. Enhance your agents and workflows with domain-specific features for data analysis, content translation, custom integrations and more.
+# 拉取原项目的最新代码
+git fetch upstream
 
-#### Agent Strategies
+# 合并到你的 main 分支
+git merge upstream/main
 
-Agent Strategies provide reasoning strategies for the new [**Agent Nodes**](https://docs.dify.ai/guides/workflow/node/agent) in Dify chatflows / workflows, supporting autonomous tool selection and execution for multi-step reasoning. Create custom reasoning strategies like Chain-of-Thoughts, Tree-of-Thoughts, Function call and ReAct to enhance the problem-solving abilities of your chatflows / workflows.
+# 推送更新到你的 GitHub
+git push origin main
+```
 
-#### Extensions
+### 3. 将更新合并到你的开发分支
 
-Extensions facilitate external integrations through HTTP webhooks. Build custom APIs to handle complex workflows, process data, or connect with external services, making your applications more versatile and powerful.
+```bash
+# 切换到开发分支
+git checkout dev
 
-### Update
+# 合并 main 的更新
+git merge main
 
-In the future, all new official plugins developed by Dify will be updated and maintained in this repository.
+# 如果有冲突,需要手动解决
+# 解决后继续:
+git add .
+git commit -m "合并上游更新"
 
-### Security disclosure
+# 推送到远程
+git push origin dev
+```
 
-To protect your privacy, please avoid posting security issues on GitHub. Instead, send your questions to [security@dify.ai](mailto:security@dify.ai) and we will provide you with a more detailed answer.
+## 开发流程
+
+```bash
+# 开发时
+git checkout dev          # 切换到开发分支
+# ... 修改代码 ...
+git add .
+git commit -m "xxx"
+git push origin dev
+
+# 同步原项目更新时
+git checkout main         # 切换到 main
+git fetch upstream        # 拉取原项目更新
+git merge upstream/main   # 合并到 main
+git push origin main      # 推送到你的 GitHub
+
+git checkout dev          # 切换回开发分支
+git merge main            # 合并 main 的更新到开发分支
+git push origin dev       # 推送
+```
+
+## 注意事项
+
+- **main 分支**: 永远不要在上面直接开发,只用来同步原项目
+- **dev 分支**: 你所有的改动都在这个分支上进行
+
+## 插件工具安装
+
+### 1. 安装开发工具
+
+首先需要下载 Dify 插件开发脚手架工具(CLI):
+
+**下载地址:** https://github.com/langgenius/dify-plugin-daemon/releases
+
+根据你的操作系统选择对应版本:
+- macOS ARM (M系列): `dify-plugin-darwin-arm64`
+- macOS Intel: `dify-plugin-darwin-amd64`
+- Linux: `dify-plugin-linux-amd64`
+- Windows: `.exe` 文件
+
+**安装步骤(以 macOS ARM 为例):**
+
+```bash
+# 下载后进入文件目录,赋予执行权限
+chmod +x dify-plugin-darwin-arm64
+
+# 验证安装
+./dify-plugin-darwin-arm64 version
+```
+
+## 二、打包插件
+
+### 1. 打包命令
+
+确认远程测试完成后,在**插件项目的父目录**运行:
+
+```bash
+# 使用本地文件
+./dify-plugin-darwin-arm64 plugin package ./your-plugin-folder
+
+# 案例：打包Gemini模型插件
+./dify-plugin-darwin-arm64 plugin package ./models/gemini
+```
+
+### 2. 获取插件包
+
+打包成功后,会在当前目录生成 `your-plugin.difypkg` 文件。
+
+## 三、安装使用
+
+### 本地安装
+
+1. 登录 Dify 平台
+2. 进入插件管理页面
+3. 点击"安装插件" → "本地文件安装"
+4. 上传 `.difypkg` 文件或拖拽到页面
+

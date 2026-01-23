@@ -188,3 +188,4 @@ pyrightconfig.json
 mypy.ini
 tox.ini
 *.difypkg
+dify-plugin-darwin-arm64
