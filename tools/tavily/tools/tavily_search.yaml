@@ -197,13 +197,13 @@ parameters:
     llm_description: When set to true or 'basic', includes a short answer to the original query in the response, 'advanced' for a more detailed comprehensive answer.
     options:
       - label:
-          en_US: False
+          en_US: "False"
           zh_Hans: 否
-        value: false
+        value: "false"
       - label:
-          en_US: True
+          en_US: "True"
           zh_Hans: 是
-        value: true
+        value: "true"
       - label:
           en_US: Basic
           zh_Hans: 基本
@@ -226,13 +226,13 @@ parameters:
     llm_description: Include the cleaned and parsed content of each search result. 'false' to disable, 'true' or 'markdown' for markdown format, 'text' for plain text format.
     options:
       - label:
-          en_US: False
+          en_US: "False"
           zh_Hans: 否
-        value: false
+        value: "false"
       - label:
-          en_US: True
+          en_US: "True"
           zh_Hans: 是
-        value: true
+        value: "true"
       - label:
           en_US: Markdown
           zh_Hans: Markdown
