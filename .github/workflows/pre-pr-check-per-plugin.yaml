@@ -47,7 +47,7 @@ jobs:
 
           if [ ${#VALID_PLUGINS[@]} -eq 0 ]; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "plugins=[]" >> $GITHUB_OUTPUT
+            echo "plugins=[\"__no_changes__\"]" >> $GITHUB_OUTPUT
           else
             JSON=$(printf '%s\n' "${VALID_PLUGINS[@]}" | jq -R . | jq -s -c .)
             echo "has_changes=true" >> $GITHUB_OUTPUT
@@ -143,6 +143,10 @@ jobs:
             exit 1
           fi
 
+      - name: Check Packaging
+        run: |
+          uv run --with requests --with dify_plugin python .scripts/uploader/upload-package.py -d "${{ matrix.plugin_path }}" -t "${{ secrets.MARKETPLACE_TOKEN }}" --plugin-daemon-path /home/linuxbrew/.linuxbrew/bin/dify -u "${{ secrets.MARKETPLACE_BASE_URL }}" -f --test
+
       - name: Validate Dependencies with uv
         run: |
           cd "${{ matrix.plugin_path }}"
@@ -154,10 +158,6 @@ jobs:
           export SERVERLESS_PORT=8080
           export SERVERLESS_HOST=0.0.0.0
           uv run --project "${{ matrix.plugin_path }}" --with requests python .scripts/validator/test-plugin-install.py -d "${{ matrix.plugin_path }}"
-
-      - name: Check Packaging
-        run: |
-          uv run --with requests --with dify_plugin python .scripts/uploader/upload-package.py -d "${{ matrix.plugin_path }}" -t "${{ secrets.MARKETPLACE_TOKEN }}" --plugin-daemon-path /home/linuxbrew/.linuxbrew/bin/dify -u "${{ secrets.MARKETPLACE_BASE_URL }}" -f --test
 
       - name: Package plugin
         run: |
@@ -196,3 +196,31 @@ jobs:
         working-directory: ${{ env.EXTRACT_DIR }}
         run: |
           PLUGIN_FILE_PATH="$(realpath ../${{ env.PKG_NAME }})" uv run --with pytest pytest
+
+  check-complete:
+    name: Check Complete
+    needs:
+      - detect-changes
+      - test
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify check results
+        run: |
+          if [ "${{ needs.detect-changes.result }}" != "success" ]; then
+            echo "detect-changes failed."
+            exit 1
+          fi
+
+          if [ "${{ needs.detect-changes.outputs.has_changes }}" != "true" ]; then
+            echo "No plugin changes detected."
+            exit 0
+          fi
+
+          if [ "${{ needs.test.result }}" = "success" ]; then
+            echo "Plugin checks passed."
+            exit 0
+          fi
+
+          echo "Plugin checks failed."
+          exit 1
