@@ -26,7 +26,7 @@ dependencies = [
     'httpcore==1.0.8',
     'idna==3.10',
     'itsdangerous==2.2.0',
-    'jinja2==3.1.8',
+    'jinja2==3.1.6',
     'jmespath==1.0.1',
     'markupsafe==3.0.2',
     'multidict==6.4.3',
