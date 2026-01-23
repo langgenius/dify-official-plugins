@@ -47,7 +47,7 @@ class GitlabFilesTool(Tool):
         tree_url = None
         try:
             if is_repository:
-                encoded_identifier = identifier.replace("/", "%2F")
+                encoded_identifier = urllib.parse.quote(identifier, safe="")
                 tree_url = f"{domain}/api/v4/projects/{encoded_identifier}/repository/tree?path={path}&ref={branch}"
             else:
                 project_id = self.get_project_id(site_url, access_token, identifier)
