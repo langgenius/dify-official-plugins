@@ -402,7 +402,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                         data={},
                         metadata={
                             LogMetadata.STARTED_AT: time.perf_counter(),
-                            LogMetadata.PROVIDER: tool_instance.identity.provider,
+                            LogMetadata.PROVIDER: tool_instance.identity.provider if tool_instance else "",
                         },
                         parent=round_log,
                         status=ToolInvokeMessage.LogMessage.LogStatus.START,
