@@ -8,7 +8,7 @@ import time
 from collections.abc import Generator, Iterator, Sequence
 from contextlib import suppress
 from typing import Any, List, Mapping, Optional, Tuple, TypeVar, Union
-
+from . import upload_utils
 import requests
 from dify_plugin.entities.model.llm import (
     LLMResult,
@@ -206,13 +206,23 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             ):
                 pending_mime_type = "text/markdown"
 
-        file = genai_client.files.upload(
-            file=temp_file.name, config=types.UploadFileConfig(mime_type=pending_mime_type)
+        # file = genai_client.files.upload(
+        #     file=temp_file.name, config=types.UploadFileConfig(mime_type=pending_mime_type)
+        # )
+        file = upload_utils.upload(
+            genai_client.files,
+            file=temp_file.name,
+            config=types.UploadFileConfig(mime_type=pending_mime_type),
+            base_url=genai_client._api_client._http_options.base_url
         )
 
         while file.state.name == "PROCESSING":
-            time.sleep(5)
-            file = genai_client.files.get(name=file.name)
+            time.sleep(3)
+            # file = genai_client.files.get(name=file.name)
+            file = upload_utils.get(
+                genai_client.files,
+                name=file.name
+            )
 
         # google will delete your upload files in 2 days.
         file_cache.setex(key, 47 * 60 * 60, f"{file.uri};{file.mime_type}")
