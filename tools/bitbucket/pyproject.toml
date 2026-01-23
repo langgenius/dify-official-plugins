@@ -23,7 +23,6 @@ dependencies = [
     'flask>=3.0.5,<4.0',
     'gevent==24.11.1',
     'greenlet==3.2.1; platform_python_implementation == "CPython"',
-    'h11==0.16.0',
     'httpcore==1.0.8',
     'httpx==0.27.3',
     'idna==3.10',
