@@ -41,7 +41,7 @@ git push origin main
 git checkout dev
 
 # 合并 main 的更新
-git merge main
+git merge main -m "合并main分支的最新功能到当前分支"
 
 # 如果有冲突,需要手动解决
 # 解决后继续:
