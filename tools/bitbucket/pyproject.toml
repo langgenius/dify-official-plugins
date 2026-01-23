@@ -20,7 +20,6 @@ dependencies = [
     'deprecated==1.2.18',
     'dify_plugin>=0.5.0,<0.8.0',
     'dpkt==1.9.8',
-    'flask>=3.0.5,<4.0',
     'httpcore==1.0.8',
     'idna==3.10',
     'itsdangerous==2.2.0',
