@@ -8,11 +8,11 @@ identity:
     ja_JP: "Gemini 3 Pro Image Preview"
 description:
   human:
-    en_US: "Gemini 3 Pro Image Preview model with support for aspect ratio and resolution customization"
-    zh_Hans: "Gemini 3 Pro Image Preview 模型，支持宽高比和分辨率自定义"
-    pt_BR: "Modelo Gemini 3 Pro Image Preview com suporte para personalização de proporção e resolução"
-    ja_JP: "Gemini 3 Pro Image Preview モデル、アスペクト比と解像度のカスタマイズをサポート"
-  llm: "Generate image using Gemini 3 Pro Image Preview model with customizable aspect ratio and resolution"
+    en_US: "Gemini 3 Pro Image Preview - Supports Text-to-Image, Image-to-Image, and Multi-image Reference"
+    zh_Hans: "Gemini 3 Pro Image Preview - 支持文生图、图生图和多图参考"
+    pt_BR: "Gemini 3 Pro Image Preview - Suporta Texto-para-Imagem, Imagem-para-Imagem e Referência Multi-imagem"
+    ja_JP: "Gemini 3 Pro Image Preview - テキストから画像、画像から画像、複数画像参照をサポート"
+  llm: "Generate or transform images using Gemini 3 Pro Image Preview. Supports text-to-image, image-to-image transformation with reference images, and multi-image input for consistent output. Works with URLs, base64, and Dify file variables."
 parameters:
   - name: prompt
     type: string
@@ -27,8 +27,70 @@ parameters:
       zh_Hans: "您想要生成的图像的文字描述"
       pt_BR: "Descrição textual da imagem que você deseja gerar"
       ja_JP: "生成したい画像のテキスト説明"
-    llm_description: "Text prompt for Gemini 3 Pro Image Preview generation, describing the desired image content"
+    llm_description: "Text prompt for Gemini 3 Pro Image Preview generation, describing the desired image content or transformation instructions"
     form: llm
+
+  - name: generation_mode
+    type: select
+    required: false
+    label:
+      en_US: "Generation Mode"
+      zh_Hans: "生成模式"
+      pt_BR: "Modo de Geração"
+      ja_JP: "生成モード"
+    human_description:
+      en_US: "Choose the image generation mode"
+      zh_Hans: "选择图像生成模式"
+      pt_BR: "Escolha o modo de geração de imagem"
+      ja_JP: "画像生成モードを選択"
+    llm_description: "Generation mode for Gemini 3 Pro. TEXT_TO_IMAGE for pure generation, IMAGE_TO_IMAGE for transformation with reference image(s)"
+    form: form
+    default: "text_to_image"
+    options:
+      - value: "text_to_image"
+        label:
+          en_US: "Text-to-Image (文生图)"
+          zh_Hans: "文生图"
+          pt_BR: "Texto-para-Imagem"
+          ja_JP: "テキストから画像"
+      - value: "image_to_image"
+        label:
+          en_US: "Image-to-Image (图生图)"
+          zh_Hans: "图生图"
+          pt_BR: "Imagem-para-Imagem"
+          ja_JP: "画像から画像"
+
+  - name: image
+    type: string
+    required: false
+    label:
+      en_US: "Reference Image (Single)"
+      zh_Hans: "参考图像（单张）"
+      pt_BR: "Imagem de Referência (Única)"
+      ja_JP: "参照画像（単一）"
+    human_description:
+      en_US: "Single reference image for Image-to-Image mode. Supports URL, Data URL, base64, or Dify file variable."
+      zh_Hans: "图生图模式的单张参考图像。支持 URL、Data URL、base64 或 Dify 文件变量。"
+      pt_BR: "Imagem de referência única para o modo Imagem-para-Imagem. Suporta URL, URL de dados, base64 ou variável de arquivo Dify."
+      ja_JP: "画像から画像モードの単一参照画像。URL、データURL、base64、またはDifyファイル変数をサポート。"
+    llm_description: "Reference image for Image-to-Image transformation mode. Accepts URLs, base64 data, or Dify file transfer variables. Required when generation_mode is IMAGE_TO_IMAGE."
+    form: form
+
+  - name: reference_images
+    type: string
+    required: false
+    label:
+      en_US: "Reference Images (Multiple)"
+      zh_Hans: "参考图像（多张）"
+      pt_BR: "Imagens de Referência (Múltiplas)"
+      ja_JP: "参照画像（複数）"
+    human_description:
+      en_US: "Multiple reference images for multi-image generation or transformation. Comma-separated URLs. Works with both modes."
+      zh_Hans: "多图生成或变换的参考图像。逗号分隔的 URL。两种模式都支持。"
+      pt_BR: "Múltiplas imagens de referência para geração ou transformação multi-imagem. URLs separadas por vírgulas. Funciona com ambos os modos."
+      ja_JP: "複数画像生成または変換用の参照画像。カンマ区切りのURL。両方のモードで動作。"
+    llm_description: "Multiple reference images for consistent multi-image generation. Accepts comma-separated URLs. Useful for style consistency across generations or image-to-image transformation with multiple references."
+    form: form
 
   - name: aspect_ratio
     type: select
@@ -179,6 +241,23 @@ parameters:
           zh_Hans: "WebP"
           pt_BR: "WebP"
           ja_JP: "WebP"
+
+  - name: use_google_search
+    type: boolean
+    required: false
+    label:
+      en_US: "Use Google Search"
+      zh_Hans: "使用 Google 搜索"
+      pt_BR: "Usar Pesquisa Google"
+      ja_JP: "Google検索を使用"
+    human_description:
+      en_US: "Enable Google Search to get real-time information for image generation (e.g., weather, news, current events)"
+      zh_Hans: "启用 Google 搜索以获取实时信息用于图像生成（如天气、新闻、时事）"
+      pt_BR: "Ativar Pesquisa Google para obter informações em tempo real para geração de imagens (por exemplo, clima, notícias, eventos atuais)"
+      ja_JP: "画像生成のためにリアルタイム情報を取得するためにGoogle検索を有効にする（例：天気がく、ニュース、現在の時事）"
+    llm_description: "Enable Google Search tool to fetch real-time information. Useful for generating images based on current events, weather, news, or any time-sensitive content."
+    form: form
+    default: false
 
 extra:
   python:

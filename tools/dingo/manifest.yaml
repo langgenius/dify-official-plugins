@@ -7,7 +7,7 @@ label:
   zh_Hans: Dingo
 description:
   en_US: A Comprehensive AI Data, Model and Application Quality Evaluation Tool
-  zh_Hans: 全面的 AI 数据、模型和应用质量评估工具
+  zh_Hans: 一个综合的AI数据、模型和应用质量评估工具
 icon: icon.svg
 resource:
   memory: 536870912

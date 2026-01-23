@@ -1,6 +1,7 @@
 import base64
 import io
 import json
+import logging
 import time
 from collections.abc import Generator, Sequence
 from typing import Optional, Union, cast
@@ -51,6 +52,8 @@ GLOBAL_ONLY_MODELS_DEFAULT = ["gemini-2.5-pro-preview-06-05", "gemini-2.5-flash-
                               "gemini-2.5-computer-use-preview-10-2025"]
 # For more information about the models, please refer to https://ai.google.dev/gemini-api/docs/thinking
 DEFAULT_NO_THINKING_MODELS = ["gemini-2.5-flash-lite"]
+
+logger = logging.getLogger(__name__)
 
 
 class VertexAiLargeLanguageModel(LargeLanguageModel):
@@ -634,6 +637,12 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                             ),
                         )
                         assistant_prompt_message.tool_calls.append(tool_call)
+                        # Capture thought_signature if the SDK surfaced it on the same part
+                        sig = self._extract_thought_signature(part)
+                        if sig:
+                            if not hasattr(self, "_last_function_call_signatures"):
+                                self._last_function_call_signatures = []
+                            self._last_function_call_signatures.append(sig)
                     # Check for text
                     elif hasattr(part, 'text') and part.text:
                         if part.thought is True and not is_thinking:
@@ -698,6 +707,12 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                             ),
                         )
                     )
+                    # Capture thought_signature if present on the streaming part
+                    sig = self._extract_thought_signature(part)
+                    if sig:
+                        if not hasattr(self, "_last_function_call_signatures"):
+                            self._last_function_call_signatures = []
+                        self._last_function_call_signatures.append(sig)
                 # Check for text
                 elif hasattr(part, 'text') and part.text:
                     if part.thought is True and not is_thinking:
@@ -774,6 +789,32 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                         ),
                     )
 
+    def _extract_thought_signature(self, part) -> Optional[str]:
+        """
+        Best-effort extractor for Vertex AI thought signatures from a Part.
+        Handles snake_case and camelCase, and tries dict/extraContent fallbacks.
+        """
+        # Direct attributes first
+        sig = getattr(part, "thought_signature", None) or getattr(part, "thoughtSignature", None)
+        if isinstance(sig, str) and sig:
+            return sig
+        # Try dict conversion if the SDK object supports it
+        try:
+            d = part.to_dict() if hasattr(part, "to_dict") else (getattr(part, "__dict__", {}) or {})
+            if isinstance(d, dict):
+                sig = d.get("thoughtSignature") or d.get("thought_signature")
+                if not sig:
+                    extra = d.get("extraContent") or d.get("extra_content") or {}
+                    if isinstance(extra, dict):
+                        g = extra.get("google")
+                        if isinstance(g, dict):
+                            sig = g.get("thought_signature")
+                if isinstance(sig, str) and sig:
+                    return sig
+        except Exception as e:
+            logger.warning(e, exc_info=True)
+        return None
+
     def _convert_one_message_to_text(self, message: PromptMessage) -> str:
         """
         Convert a single message to a string.
@@ -830,15 +871,20 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             return {"role": "user", "parts": parts}
         elif isinstance(message, AssistantPromptMessage):
             if message.tool_calls:
-                parts = [
-                    {
+                parts = []
+                for tool_call in message.tool_calls:
+                    part_dict = {
                         "function_call": {
                             "name": tool_call.function.name,
                             "args": json.loads(tool_call.function.arguments),
                         }
                     }
-                    for tool_call in message.tool_calls
-                ]
+                    # Attach thought_signature if we captured one from the previous model output
+                    if hasattr(self, "_last_function_call_signatures") and self._last_function_call_signatures:
+                        sig = self._last_function_call_signatures.pop(0)
+                        if sig:
+                            part_dict["thought_signature"] = sig
+                    parts.append(part_dict)
             else:
                 parts = [{"text": message.content}]
             return {"role": "model", "parts": parts}
