@@ -69,10 +69,15 @@ def upload(
             ' file request.'
         )
     upload_url = response.sdk_http_response.headers['x-goog-upload-url']
-    # 替换网址
-    upload_url = upload_url.replace(
-        "https://generativelanguage.googleapis.com", base_url
-    )
+
+    # ------
+    # base_url不为空时替换上传网址
+    if not _is_str_empty(base_url):
+        upload_url = upload_url.replace(
+            "https://generativelanguage.googleapis.com", base_url
+        )
+    # ------
+
     if isinstance(file, io.IOBase):
         return_file = self._api_client.upload_file(
             file, upload_url, file_obj.size_bytes, http_options=http_options
@@ -153,3 +158,6 @@ def get(
 
     self._api_client._verify_response(return_value)
     return return_value
+
+def _is_str_empty(value: str) -> bool:
+    return value is None or len(value) == 0
