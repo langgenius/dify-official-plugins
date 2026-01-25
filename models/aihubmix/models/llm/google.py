@@ -596,9 +596,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
                     # Upload only if the file type is supported
                     if should_upload:
-                        # 检查是否启用内联文件模式（默认使用 Files API）
+                        # aihubmix 代理不支持 Google Files API，默认使用内联文件模式
+                        # 内联模式直接将文件数据嵌入请求中，无需上传到 Google
                         use_inline_file = (
-                            model_parameters.get("use_inline_file", False) if model_parameters else False
+                            model_parameters.get("use_inline_file", True) if model_parameters else True
                         )
 
                         if use_inline_file:
