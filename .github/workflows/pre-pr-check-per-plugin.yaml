@@ -106,7 +106,7 @@ jobs:
         uses: oNaiPs/secrets-to-env-action@v1
         with:
           secrets: ${{ toJSON(secrets) }}
-          exclude: GITHUB_TOKEN
+          exclude: GITHUB_TOKEN, ORG_SCOPE_GITHUB_TOKEN, RAG_SSH_HOST, MARKETPLACE_TOKEN
 
       - name: Check Plugin Manifest Author
         run: |
