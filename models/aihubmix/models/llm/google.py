@@ -128,11 +128,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             message_content: _MMC, file_server_url_prefix: str | None = None
     ) -> Tuple[bytes, str]:
         """
-        获取文件数据和 MIME 类型，用于内联方式处理
+        Get file data and MIME type for inline processing.
 
-        :param message_content: 消息内容
-        :param file_server_url_prefix: 文件服务器 URL 前缀
-        :return: (文件数据, MIME 类型)
+        :param message_content: Message content
+        :param file_server_url_prefix: File server URL prefix
+        :return: (File data, MIME type)
         """
         if message_content.base64_data:
             file_content = base64.b64decode(message_content.base64_data)
@@ -155,7 +155,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         pending_mime_type = message_content.mime_type
 
-        with suppress(Exception):
+        with suppress(AttributeError, TypeError):
             if (
                     message_content.type == PromptMessageContentType.DOCUMENT
                     and message_content.format in ["md"]
@@ -194,7 +194,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         pending_mime_type = message_content.mime_type
 
-        with suppress(Exception):
+        with suppress(AttributeError, TypeError):
             if (
                 message_content.type == PromptMessageContentType.DOCUMENT
                 and message_content.format in ["md"]
@@ -329,20 +329,22 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             return
 
         aspect_ratio = model_parameters.get("aspect_ratio")
-        if (
-                not aspect_ratio
-                or not isinstance(aspect_ratio, str)
-                or aspect_ratio
-                not in ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"]
-        ):
+        if not isinstance(aspect_ratio, str) or aspect_ratio not in [
+            "1:1",
+            "2:3",
+            "3:2",
+            "3:4",
+            "4:3",
+            "4:5",
+            "5:4",
+            "9:16",
+            "16:9",
+            "21:9",
+        ]:
             aspect_ratio = None
 
         resolution = model_parameters.get("resolution")
-        if (
-                not resolution
-                or not isinstance(resolution, str)
-                or resolution not in ["1K", "2K", "4K"]
-        ):
+        if not isinstance(resolution, str) or resolution not in ["1K", "2K", "4K"]:
             resolution = None
 
         config.image_config = types.ImageConfig(image_size=resolution, aspect_ratio=aspect_ratio)
@@ -596,14 +598,12 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
                     # Upload only if the file type is supported
                     if should_upload:
-                        # aihubmix 代理不支持 Google Files API，默认使用内联文件模式
-                        # 内联模式直接将文件数据嵌入请求中，无需上传到 Google
-                        use_inline_file = (
-                            model_parameters.get("use_inline_file", True) if model_parameters else True
-                        )
+                        # The aihubmix proxy does not support the Google Files API, so inline file mode is used by default.
+                        # Inline mode embeds file data directly in the request, without uploading to Google.
+                        use_inline_file = (model_parameters or {}).get("use_inline_file", True)
 
                         if use_inline_file:
-                            # 使用内联方式：直接将文件数据内嵌在请求中
+                            # Use inline mode: embed file data directly in the request
                             file_data, mime_type = self._get_file_data(obj, file_server_url_prefix)
                             _unverified_part = types.Part.from_bytes(
                                 data=file_data, mime_type=mime_type
@@ -612,7 +612,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                                 _unverified_part.thought_signature = DEFAULT_THOUGHT_SIGNATURE
                             parts_.append(_unverified_part)
                         else:
-                            # 使用 Files API 方式：上传文件到 Google，然后使用 URI 引用
+                            # Use Files API mode: upload the file to Google and reference it using a URI
                             uri, mime_type = self._upload_file_content_to_google(
                                 obj, genai_client, file_server_url_prefix
                             )
@@ -637,9 +637,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
             # Handle text content (remove thinking tags)
             if message.content:
-                part = build_parts(message.content, is_assistant_tree=True)
-                if part:
-                    parts.extend(part)
+                parts.extend(build_parts(message.content, is_assistant_tree=True))
 
             # Handle tool calls
             # https://ai.google.dev/gemini-api/docs/function-calling?hl=zh-cn&example=chart#how-it-works
@@ -764,8 +762,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: llm response chunk generator result
         """
         # Keep a reference to the client to prevent it from being garbage collected
-        # while the generator is still active
-        _client_ref = genai_client
+        # while the generator is still active.
+        _genai_client = genai_client
 
         index = -1
         self.is_thinking = False
