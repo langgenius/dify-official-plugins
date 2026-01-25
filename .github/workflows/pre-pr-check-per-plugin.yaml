@@ -1,7 +1,7 @@
 name: Pre PR Check Per Plugin
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, ready_for_review, review_requested, edited]
     branches:
       - main
