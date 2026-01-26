@@ -75,8 +75,14 @@ class DocumentParsingVlTool(Tool):
             params.pop("promptLabel")
 
         # Convert markdownIgnoreLabels from comma-separated string to list
-        if "markdownIgnoreLabels" in params and isinstance(params["markdownIgnoreLabels"], str):
-            params["markdownIgnoreLabels"] = [label.strip() for label in params["markdownIgnoreLabels"].split(",") if label.strip()]
+        if "markdownIgnoreLabels" in params and isinstance(
+            params["markdownIgnoreLabels"], str
+        ):
+            params["markdownIgnoreLabels"] = [
+                label.strip()
+                for label in params["markdownIgnoreLabels"].split(",")
+                if label.strip()
+            ]
 
         result = make_paddleocr_api_request(api_url, params, access_token)
 
