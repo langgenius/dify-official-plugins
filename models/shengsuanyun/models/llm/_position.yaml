@@ -6,9 +6,7 @@
   - openai/gpt-5.1
   - streamlake/kat-coder-pro-v1
   - streamlake/kat-coder-air-v1
-  - openai/gpt-5.1-codex-mini
   - deepseek/deepseek-v3.2
-  - openai/gpt-5.1-codex
   - minimax/minimax-m2
   - deepseek/deepseek-v3.2-think
   - anthropic/claude-sonnet-4.5
@@ -99,9 +97,7 @@
   - openai/gpt-4.1-nano
   - bigmodel/glm-z1-airx
   - bigmodel/glm-4-plus
-  - bigmodel/glm-z1-air
   - openai/o4-mini
-  - openai/o3-deep-research
   - openai/o4-mini-high
   - meta/llama-4-scout
   - ali/qwen3-235b-a22b
