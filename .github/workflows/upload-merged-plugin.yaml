@@ -2,23 +2,72 @@ name: Upload Merged Plugin
 
 on:
   push:
-    branches: 
+    branches:
       - main
-      - dev
-    paths-ignore:
-      - "migrations/**"
-      - ".scripts/**"
-      - ".github/**"
-      - ".gitignore"
-      - "README.md"
-      - "LICENSE"
-
-env:
-  REPO_NAME: langgenius/dify-official-plugins
+    paths:
+      - "agent-strategies/**"
+      - "datasources/**"
+      - "extensions/**"
+      - "models/**"
+      - "tools/**"
+      - "triggers/**"
 
 jobs:
-  upload-merged-plugin:
+  detect-changes:
     runs-on: ubuntu-latest
+    outputs:
+      plugins: ${{ steps.filter.outputs.plugins }}
+      has_changes: ${{ steps.filter.outputs.has_changes }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - id: filter
+        name: Detect changed plugins
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" == "pull_request" ]; then
+            CHANGED_FILES=$(gh pr view -R ${{ github.repository }} ${{ github.event.pull_request.number }} --json files --jq '.files[].path')
+          else
+            if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
+              BASE_SHA="HEAD~1"
+            else
+              BASE_SHA="${{ github.event.before }}"
+            fi
+            CHANGED_FILES=$(git diff --name-only $BASE_SHA HEAD)
+          fi
+
+          MANIFESTS=$(find . -name "manifest.yaml" -not -path "*/.*")
+
+          VALID_PLUGINS=()
+          for m in $MANIFESTS; do
+            PLUGIN_PATH=$(dirname "$m" | sed 's|^\./||')
+            if echo "$CHANGED_FILES" | grep -q "^$PLUGIN_PATH/"; then
+              VALID_PLUGINS+=("$PLUGIN_PATH")
+            fi
+          done
+
+          if [ ${#VALID_PLUGINS[@]} -eq 0 ]; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "plugins=[]" >> $GITHUB_OUTPUT
+          else
+            JSON=$(printf '%s\n' "${VALID_PLUGINS[@]}" | jq -R . | jq -s -c .)
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "plugins=$JSON" >> $GITHUB_OUTPUT
+            echo "Detected plugins: $JSON"
+          fi
+
+  upload-merged-plugin:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.has_changes == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        plugin_path: ${{ fromJson(needs.detect-changes.outputs.plugins) }}
+      fail-fast: false
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,44 +80,26 @@ jobs:
           GH_TOKEN: ${{ secrets.ORG_SCOPE_GITHUB_TOKEN }}
         run: |
           gh repo clone langgenius/dify-marketplace-toolkit -- .scripts/
-      
-      - name: Download Plugin Daemon
-        env:
-          GH_TOKEN: ${{ secrets.ORG_SCOPE_GITHUB_TOKEN }}
-        run: |
-          gh release download -R langgenius/dify-plugin-daemon --pattern "dify-plugin-linux-amd64" --dir .scripts
-          chmod +x .scripts/dify-plugin-linux-amd64
 
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: 3.12.7
-      
-      - name: Install Python Dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install requests jq
 
-      - name: Get Changed Files from Push
-        id: get_changed_files
-        run: |
-          CHANGED_FILES=$(git diff --name-only ${{ github.event.before }} ${{ github.sha }} | grep -v "^tests/" | jq -R -s -c 'split("\n")[:-1] | map({path: .})')
-          echo "CHANGED_FILES=$CHANGED_FILES" >> $GITHUB_ENV
-          echo "CHANGED_FILES=$CHANGED_FILES"
+      - name: Setup uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          version: "latest"
+          activate-environment: false
 
-      - name: Validate Plugin Path
+      - name: Download Dify CLI
         env:
-          PR_FILES: ${{ env.CHANGED_FILES }}
+          GH_TOKEN: ${{ secrets.ORG_SCOPE_GITHUB_TOKEN }}
         run: |
-          if PLUGIN_PATH=$(python3 .scripts/validator/check-prefix.py); then
-              echo $PLUGIN_PATH
-              echo "PLUGIN_PATH=$PLUGIN_PATH" >> $GITHUB_ENV
-          else
-            echo "Push files cross different plugin directories, skip upload."
-            exit 1
-          fi
+          gh release download -R langgenius/dify-plugin-daemon --pattern "dify-plugin-linux-amd64" --dir .scripts
+          chmod +x .scripts/dify-plugin-linux-amd64
+          mv .scripts/dify-plugin-linux-amd64 .scripts/dify
 
       - name: Upload Plugin
-        if: env.PLUGIN_PATH != ''
         run: |
-          python3 .scripts/uploader/upload-package.py -d ${{ env.PLUGIN_PATH }} -t ${{ secrets.MARKETPLACE_TOKEN }} --plugin-daemon-path .scripts/dify-plugin-linux-amd64 -u ${{ secrets.MARKETPLACE_BASE_URL }} -f
+          uv run --with requests --with dify_plugin python .scripts/uploader/upload-package.py -d "${{ matrix.plugin_path }}" -t "${{ secrets.MARKETPLACE_TOKEN }}" --plugin-daemon-path .scripts/dify -u "${{ secrets.MARKETPLACE_BASE_URL }}" -f
