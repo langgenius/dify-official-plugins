@@ -126,7 +126,6 @@ class ImagenTool(Tool):
                             "aspect_ratio": aspect_ratio,
                             "note": "Images are returned as blobs. Image data is not included in this JSON response for brevity."
                         })
-                        yield self.create_text_message(f"Google Imagen ({model}) successfully generated {len(images)} image(s) with aspect ratio {aspect_ratio}")
                         return
                 
             except Exception as e:
@@ -211,7 +210,6 @@ class ImagenTool(Tool):
                             "aspect_ratio": aspect_ratio,
                             "note": "Images are returned as blobs. Image data is not included in this JSON response for brevity."
                         })
-                        yield self.create_text_message(f"Google Imagen ({model}) successfully generated {len(images)} image(s) with aspect ratio {aspect_ratio}")
                         return
                 else:
                     last_error = f"Predictions endpoint failed: {response.status_code} {response.text}"
@@ -275,7 +273,6 @@ class ImagenTool(Tool):
                             "aspect_ratio": aspect_ratio,
                             "note": "Images are returned as blobs. Image data is not included in this JSON response for brevity."
                         })
-                        yield self.create_text_message(f"Google Imagen ({model}) successfully generated {len(images)} image(s) with aspect ratio {aspect_ratio}")
                         return
                 else:
                     last_error = f"Gemini style failed: {response.status_code} {response.text}"

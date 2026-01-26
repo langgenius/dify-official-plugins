@@ -1,13 +1,12 @@
 import threading
 from queue import Queue
 from typing import Any, Optional
-import dashscope
 from dashscope import SpeechSynthesizer
 from dashscope.api_entities.dashscope_response import SpeechSynthesisResponse
 from dashscope.audio.tts import ResultCallback, SpeechSynthesisResult
 from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeBadRequestError
 from dify_plugin.interfaces.model.tts_model import TTSModel
-from models._common import _CommonTongyi
+from models._common import _CommonTongyi, get_ws_base_address
 from ..constant import BURY_POINT_HEADER
 
 class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
@@ -66,11 +65,12 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
         """
         word_limit = self._get_model_word_limit(model, credentials)
         audio_type = self._get_model_audio_type(model, credentials)
+        ws_base_address = get_ws_base_address(credentials)
         try:
             audio_queue: Queue = Queue()
             callback = Callback(queue=audio_queue)
 
-            def invoke_remote(content, v, api_key, cb, at, wl):
+            def invoke_remote(content, v, api_key, cb, at, wl, base_address):
                 if len(content) < word_limit:
                     sentences = [content]
                 else:
@@ -85,11 +85,20 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
                         format=at,
                         word_timestamp_enabled=True,
                         phoneme_timestamp_enabled=True,
+                        base_address=base_address,
                     )
 
             threading.Thread(
                 target=invoke_remote,
-                args=(content_text, voice, credentials.get("dashscope_api_key"), callback, audio_type, word_limit),
+                args=(
+                    content_text,
+                    voice,
+                    credentials.get("dashscope_api_key"),
+                    callback,
+                    audio_type,
+                    word_limit,
+                    ws_base_address,
+                ),
             ).start()
             while True:
                 audio = audio_queue.get()
@@ -110,15 +119,15 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
         :param audio_type: audio file type
         :return: text translated to audio file
         """
-        if credentials.get("use_international_endpoint", "false") == "true":
-            dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
-        response = dashscope.audio.tts.SpeechSynthesizer.call(
+        ws_base_address = get_ws_base_address(credentials)
+        response = SpeechSynthesizer.call(
             model=voice,
             sample_rate=48000,
             api_key=credentials.get("dashscope_api_key"),
             text=sentence.strip(),
             headers=BURY_POINT_HEADER,
             format=audio_type,
+            base_address=ws_base_address,
         )
         if isinstance(response.get_audio_data(), bytes):
             return response.get_audio_data()
