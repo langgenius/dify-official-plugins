@@ -1,0 +1,249 @@
+description:
+  human:
+    en_US: Crawl a website starting from a base URL to discover and extract content from multiple pages using Tavily Crawl.
+    zh_Hans: 使用 Tavily Crawl 从基础 URL 开始爬取网站，发现并提取多个页面的内容。
+  llm: Crawl a website to discover and extract content from multiple pages, with configurable depth, breadth, and filtering options.
+extra:
+  python:
+    source: tools/tavily_crawl.py
+identity:
+  author: Yash Bhandare
+  label:
+    en_US: Tavily Crawl
+    zh_Hans: Tavily Crawl
+  name: tavily_crawl
+parameters:
+  - name: url
+    form: llm
+    human_description:
+      en_US: The base URL to start crawling from.
+      zh_Hans: 开始爬取的基础 URL。
+    label:
+      en_US: URL
+      zh_Hans: URL
+    llm_description: The base URL to start crawling from. The crawler will follow links from this page.
+    required: true
+    type: string
+  - name: max_depth
+    form: form
+    human_description:
+      en_US: Maximum depth to crawl (how many links deep from the base URL).
+      zh_Hans: 最大爬取深度（从基础 URL 开始的链接深度）。
+    label:
+      en_US: Max Depth
+      zh_Hans: 最大深度
+    llm_description: Maximum depth to crawl - how many levels of links to follow from the base URL.
+    required: false
+    type: number
+    min: 1
+    max: 5
+  - name: max_breadth
+    form: form
+    human_description:
+      en_US: Maximum breadth to crawl (number of links to follow per page).
+      zh_Hans: 最大爬取广度（每页跟踪的链接数）。
+    label:
+      en_US: Max Breadth
+      zh_Hans: 最大广度
+    llm_description: Maximum breadth to crawl - how many links to follow from each page.
+    required: false
+    type: number
+    min: 1
+    max: 100
+  - name: limit
+    form: form
+    human_description:
+      en_US: Maximum total number of pages to crawl.
+      zh_Hans: 要爬取的最大页面总数。
+    label:
+      en_US: Page Limit
+      zh_Hans: 页面限制
+    llm_description: Maximum total number of pages to crawl before stopping.
+    required: false
+    type: number
+    min: 1
+    max: 1000
+  - name: instructions
+    form: llm
+    human_description:
+      en_US: Natural language instructions to guide the crawler on what content to focus on.
+      zh_Hans: 指导爬虫关注哪些内容的自然语言指令。
+    label:
+      en_US: Instructions
+      zh_Hans: 指令
+    llm_description: Natural language instructions for the crawler to focus on specific content or topics.
+    required: false
+    type: string
+  - name: select_paths
+    form: llm
+    human_description:
+      en_US: URL paths to include in the crawl (comma-separated, e.g., "/docs,/blog").
+      zh_Hans: 要包含在爬取中的 URL 路径（逗号分隔，例如"/docs,/blog"）。
+    label:
+      en_US: Select Paths
+      zh_Hans: 选择路径
+    llm_description: Comma-separated URL paths to include in the crawl (e.g., "/docs,/api,/guides").
+    required: false
+    type: string
+  - name: exclude_paths
+    form: llm
+    human_description:
+      en_US: URL paths to exclude from the crawl (comma-separated, e.g., "/login,/admin").
+      zh_Hans: 要从爬取中排除的 URL 路径（逗号分隔，例如"/login,/admin"）。
+    label:
+      en_US: Exclude Paths
+      zh_Hans: 排除路径
+    llm_description: Comma-separated URL paths to exclude from the crawl (e.g., "/login,/admin,/private").
+    required: false
+    type: string
+  - name: select_domains
+    form: llm
+    human_description:
+      en_US: Domains to include in the crawl (comma-separated). Only used when allow_external is true.
+      zh_Hans: 要包含在爬取中的域名（逗号分隔）。仅在 allow_external 为 true 时使用。
+    label:
+      en_US: Select Domains
+      zh_Hans: 选择域名
+    llm_description: Comma-separated domains to include when crawling external links.
+    required: false
+    type: string
+  - name: exclude_domains
+    form: llm
+    human_description:
+      en_US: Domains to exclude from the crawl (comma-separated).
+      zh_Hans: 要从爬取中排除的域名（逗号分隔）。
+    label:
+      en_US: Exclude Domains
+      zh_Hans: 排除域名
+    llm_description: Comma-separated domains to exclude from the crawl.
+    required: false
+    type: string
+  - name: allow_external
+    form: form
+    human_description:
+      en_US: Allow the crawler to follow links to external domains.
+      zh_Hans: 允许爬虫跟踪到外部域名的链接。
+    label:
+      en_US: Allow External
+      zh_Hans: 允许外部链接
+    llm_description: When true, allows the crawler to follow links to external domains.
+    required: false
+    type: boolean
+    default: true
+  - name: include_images
+    form: form
+    human_description:
+      en_US: Include images found on crawled pages in the response.
+      zh_Hans: 在响应中包含在爬取页面上找到的图像。
+    label:
+      en_US: Include Images
+      zh_Hans: 包含图像
+    llm_description: Include images from crawled pages in the response.
+    required: false
+    type: boolean
+    default: false
+  - name: include_favicon
+    form: form
+    human_description:
+      en_US: Include favicon URL for each crawled page.
+      zh_Hans: 包含每个爬取页面的 favicon URL。
+    label:
+      en_US: Include Favicon
+      zh_Hans: 包含 Favicon
+    llm_description: When true, includes the favicon URL for each crawled page.
+    required: false
+    type: boolean
+    default: false
+  - name: categories
+    form: llm
+    human_description:
+      en_US: Page categories to focus on (comma-separated, e.g., "Documentation,Blog,Developer").
+      zh_Hans: 要关注的页面类别（逗号分隔，例如"Documentation,Blog,Developer"）。
+    label:
+      en_US: Categories
+      zh_Hans: 类别
+    llm_description: Comma-separated page categories to focus on. Options include Documentation, Blog, Community, About, Contact, Privacy, Terms, Pricing, Enterprise, Careers, E-Commerce, Developer, Solutions, Partners, Downloads, Media, Events, People.
+    required: false
+    type: string
+  - name: extract_depth
+    form: form
+    human_description:
+      en_US: The depth of content extraction. 'advanced' retrieves more data but may increase latency and costs more credits.
+      zh_Hans: 内容提取的深度。"advanced"检索更多数据，但可能增加延迟和消耗更多积分。
+    label:
+      en_US: Extract Depth
+      zh_Hans: 提取深度
+    llm_description: Extraction depth - 'basic' (default, faster) or 'advanced' (more data, higher cost).
+    required: false
+    type: select
+    options:
+      - label:
+          en_US: Basic
+          zh_Hans: 基本
+        value: basic
+      - label:
+          en_US: Advanced
+          zh_Hans: 高级
+        value: advanced
+    default: basic
+  - name: format
+    form: form
+    human_description:
+      en_US: The format of extracted content.
+      zh_Hans: 提取内容的格式。
+    label:
+      en_US: Content Format
+      zh_Hans: 内容格式
+    llm_description: Format of extracted content - 'markdown' (default) or 'text' (plain text).
+    required: false
+    type: select
+    options:
+      - label:
+          en_US: Markdown
+          zh_Hans: Markdown
+        value: markdown
+      - label:
+          en_US: Text
+          zh_Hans: 文本
+        value: text
+    default: markdown
+  - name: timeout
+    form: form
+    human_description:
+      en_US: Request timeout in seconds.
+      zh_Hans: 请求超时时间（秒）。
+    label:
+      en_US: Timeout
+      zh_Hans: 超时时间
+    llm_description: Request timeout in seconds. Default is 150 seconds.
+    required: false
+    type: number
+    min: 10
+    max: 150
+    default: 150
+  - name: chunks_per_source
+    form: form
+    human_description:
+      en_US: Maximum number of relevant chunks returned per source. Only available when instructions are provided.
+      zh_Hans: 每个来源返回的最大相关块数。仅在提供指令时可用。
+    label:
+      en_US: Chunks Per Source
+      zh_Hans: 每个来源的块数
+    llm_description: Maximum number of relevant chunks returned per source (1-5). Only used when instructions parameter is provided.
+    required: false
+    type: number
+    min: 1
+    max: 5
+    default: 3
+  - name: include_usage
+    form: form
+    human_description:
+      en_US: Include credit usage information in the response.
+      zh_Hans: 在响应中包含积分使用信息。
+    label:
+      en_US: Include Usage
+      zh_Hans: 包含使用信息
+    llm_description: When true, includes credit usage information in the response.
+    required: false
+    type: boolean
+    default: false

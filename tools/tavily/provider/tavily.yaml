@@ -32,3 +32,4 @@ identity:
 tools:
 - tools/tavily_extract.yaml
 - tools/tavily_search.yaml
+- tools/tavily_crawl.yaml
