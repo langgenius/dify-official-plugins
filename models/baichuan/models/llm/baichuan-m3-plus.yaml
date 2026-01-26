@@ -10,7 +10,7 @@ model_properties:
 parameter_rules:
   - name: temperature
     use_template: temperature
-    default: 0.3
+    default: 0.5
   - name: top_p
     use_template: top_p
     default: 0.85
