@@ -192,9 +192,6 @@ parameters:
           zh_Hans: 未定义
         value: undefined
     label:
-      en_US: File Type
-      zh_Hans: 文件类型
-    label:
       en_US: Prompt Type for the VLM
       zh_Hans: VLM 的提示词类型
     human_description:
