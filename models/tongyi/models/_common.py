@@ -1,3 +1,5 @@
+from typing import Mapping
+
 from dashscope.common.error import (
     AuthenticationError,
     InvalidParameter,
@@ -15,6 +17,23 @@ from dify_plugin.errors.model import (
     InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
+
+DEFAULT_HTTP_BASE_ADDRESS = "https://dashscope.aliyuncs.com/api/v1"
+DEFAULT_WS_BASE_ADDRESS = "wss://dashscope.aliyuncs.com/api-ws/v1/inference"
+INTL_HTTP_BASE_ADDRESS = "https://dashscope-intl.aliyuncs.com/api/v1"
+INTL_WS_BASE_ADDRESS = "wss://dashscope-intl.aliyuncs.com/api-ws/v1/inference"
+
+
+def get_http_base_address(credentials: Mapping[str, str]) -> str:
+    if credentials.get("use_international_endpoint", "false") == "true":
+        return INTL_HTTP_BASE_ADDRESS
+    return DEFAULT_HTTP_BASE_ADDRESS
+
+
+def get_ws_base_address(credentials: Mapping[str, str]) -> str:
+    if credentials.get("use_international_endpoint", "false") == "true":
+        return INTL_WS_BASE_ADDRESS
+    return DEFAULT_WS_BASE_ADDRESS
 
 
 class _CommonTongyi:

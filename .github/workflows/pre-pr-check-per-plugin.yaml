@@ -47,7 +47,7 @@ jobs:
 
           if [ ${#VALID_PLUGINS[@]} -eq 0 ]; then
             echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "plugins=[\"__no_changes__\"]" >> $GITHUB_OUTPUT
+            echo "plugins=[]" >> $GITHUB_OUTPUT
           else
             JSON=$(printf '%s\n' "${VALID_PLUGINS[@]}" | jq -R . | jq -s -c .)
             echo "has_changes=true" >> $GITHUB_OUTPUT
@@ -90,13 +90,13 @@ jobs:
       - name: yq - portable yaml processor
         uses: mikefarah/yq@v4.44.5
 
-      - name: Install Homebrew and Dify CLI
+      - name: Download Dify CLI
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-          echo "/home/linuxbrew/.linuxbrew/bin" >> $GITHUB_PATH
-          echo "/home/linuxbrew/.linuxbrew/sbin" >> $GITHUB_PATH
-          /home/linuxbrew/.linuxbrew/bin/brew tap langgenius/dify
-          /home/linuxbrew/.linuxbrew/bin/brew install dify
+          gh release download -R langgenius/dify-plugin-daemon --pattern "dify-plugin-linux-amd64" --dir .scripts
+          chmod +x .scripts/dify-plugin-linux-amd64
+          mv .scripts/dify-plugin-linux-amd64 .scripts/dify
 
       - name: Export All Secrets to Environment
         uses: oNaiPs/secrets-to-env-action@v1
@@ -145,19 +145,7 @@ jobs:
 
       - name: Check Packaging
         run: |
-          uv run --with requests --with dify_plugin python .scripts/uploader/upload-package.py -d "${{ matrix.plugin_path }}" -t "${{ secrets.MARKETPLACE_TOKEN }}" --plugin-daemon-path /home/linuxbrew/.linuxbrew/bin/dify -u "${{ secrets.MARKETPLACE_BASE_URL }}" -f --test
-
-      - name: Validate Dependencies with uv
-        run: |
-          cd "${{ matrix.plugin_path }}"
-          uv sync --all-groups --python 3.12
-
-      - name: Check Plugin Install
-        run: |
-          export INSTALL_METHOD=serverless
-          export SERVERLESS_PORT=8080
-          export SERVERLESS_HOST=0.0.0.0
-          uv run --project "${{ matrix.plugin_path }}" --with requests python .scripts/validator/test-plugin-install.py -d "${{ matrix.plugin_path }}"
+          uv run --with requests --with dify_plugin python .scripts/uploader/upload-package.py -d "${{ matrix.plugin_path }}" -t "${{ secrets.MARKETPLACE_TOKEN }}" --plugin-daemon-path .scripts/dify -u "${{ secrets.MARKETPLACE_BASE_URL }}" -f --test
 
       - name: Package plugin
         run: |
@@ -170,10 +158,22 @@ jobs:
           echo "EXTRACT_DIR=$EXTRACT_DIR" >> $GITHUB_ENV
 
           echo "### Packaging plugin at: ${{ matrix.plugin_path }} ###"
-          dify plugin package ${{ matrix.plugin_path }} --output_path "$PKG_NAME"
+          .scripts/dify plugin package ${{ matrix.plugin_path }} --output_path "$PKG_NAME"
 
           echo "### Extracting package ###"
           unzip -q "$PKG_NAME" -d "$EXTRACT_DIR"
+
+      - name: Validate Dependencies with uv
+        run: |
+          cd "${{ matrix.plugin_path }}"
+          uv sync --all-groups --python 3.12
+
+      - name: Check Plugin Install
+        run: |
+          export INSTALL_METHOD=serverless
+          export SERVERLESS_PORT=8080
+          export SERVERLESS_HOST=0.0.0.0
+          uv run --project "${{ matrix.plugin_path }}" --with requests python .scripts/validator/test-plugin-install.py -d "${{ matrix.plugin_path }}"
 
       - name: Check for tests directory
         id: check_tests
