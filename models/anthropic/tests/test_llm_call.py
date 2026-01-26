@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 
 import pytest
+import yaml
 
 from dify_plugin.config.integration_config import IntegrationConfig
 from dify_plugin.core.entities.plugin.request import (
@@ -15,14 +16,26 @@ from dify_plugin.integration.run import PluginRunner
 
 
 def get_all_models() -> list[str]:
-    """Discover all model names from models/llm/*.yaml files."""
+    """Read model names from models/llm/_position.yaml."""
     models_dir = Path(__file__).parent.parent / "models" / "llm"
+    position_file = models_dir / "_position.yaml"
+    if not position_file.exists():
+        raise FileNotFoundError(f"Missing model position file: {position_file}")
+
+    try:
+        data = yaml.safe_load(position_file.read_text(encoding="utf-8"))
+    except yaml.YAMLError as exc:
+        raise ValueError(f"Invalid YAML in {position_file}") from exc
+
+    if data is None:
+        return []
+    if not isinstance(data, list):
+        raise ValueError(f"Expected a YAML list in {position_file}")
+
     models: list[str] = []
-    for yaml_file in models_dir.glob("*.yaml"):
-        if yaml_file.name.startswith("_"):
-            continue
-        model_name = yaml_file.stem
-        models.append(model_name)
+    for item in data:
+        if isinstance(item, str) and item.strip():
+            models.append(item.strip())
     return models
 
 
