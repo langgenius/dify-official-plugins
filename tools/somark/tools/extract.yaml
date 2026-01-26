@@ -1,0 +1,23 @@
+identity:
+  name: extract
+  author: SoulCode
+  label:
+    en_US: Extract Document
+    zh_Hans: 文档解析
+  description:
+    human:
+      en_US: Convert various document types—including PDFs, images, and more—into structured Markdown or JSON using the Somark API.
+      zh_Hans: 使用 Somark API 将各种文档（如 PDF、图片等）转换为结构化的 Markdown 或 JSON 格式。
+    llm: A precise and reliable tool that utilizes the Somark API to convert documents (including PDFs, images, and DOC files) into clean, structured Markdown or JSON format, preserving the original layout and content hierarchy.
+
+parameters:
+  - name: file
+    type: file
+    required: true
+    label:
+      en_US: File
+      zh_Hans: 文件
+    human_description:
+      en_US: "Supported files: PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM. Max 50MB/50 pages."
+      zh_Hans: "支持的文件: PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM. 大小不超过 50MB/50页。"
+    form: llm
