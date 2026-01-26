@@ -141,8 +141,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 file_url = message_content.url
                 if not file_url:
                     raise ValueError("File URL is missing in message content.")
-                if file_server_url_prefix:
-                    file_url = f"{file_server_url_prefix.rstrip('/')}/files{message_content.url.split('/files')[-1]}"
+                if file_server_url_prefix and not file_url.startswith(("http://", "https://")):
+                    file_url = f"{file_server_url_prefix.rstrip('/')}/files{file_url.split('/files')[-1]}"
                 if not file_url.startswith(("https://", "http://")):
                     raise ValueError("Set FILES_URL env first! Or provide an absolute URL.")
                 response: requests.Response = requests.get(file_url)
