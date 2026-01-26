@@ -402,7 +402,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                         data={},
                         metadata={
                             LogMetadata.STARTED_AT: time.perf_counter(),
-                            LogMetadata.PROVIDER: tool_instance.identity.provider if tool_instance else "",
+                            LogMetadata.PROVIDER: tool_instance.identity.provider if tool_instance and tool_instance.identity else "",
                         },
                         parent=round_log,
                         status=ToolInvokeMessage.LogMessage.LogStatus.START,
@@ -534,7 +534,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                         },
                         metadata={
                             LogMetadata.STARTED_AT: tool_call_started_at,
-                            LogMetadata.PROVIDER: tool_instance.identity.provider,
+                            LogMetadata.PROVIDER: tool_instance.identity.provider if tool_instance and tool_instance.identity else "",
                             LogMetadata.FINISHED_AT: time.perf_counter(),
                             LogMetadata.ELAPSED_TIME: time.perf_counter()
                             - tool_call_started_at,
