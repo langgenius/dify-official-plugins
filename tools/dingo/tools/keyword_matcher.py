@@ -1,4 +1,4 @@
-"""
+﻿"""
 Keyword Matcher Tool for Dingo - ATS-Optimized Resume-JD Matching
 
 v0.5.0 - Semantic Analysis with Negative Constraints Support
