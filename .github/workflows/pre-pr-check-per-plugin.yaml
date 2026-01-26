@@ -1,7 +1,7 @@
 name: Pre PR Check Per Plugin
 
 on:
-  pull_request:
+  pull_request_target:
     types: [opened, synchronize, ready_for_review, review_requested, edited]
     branches:
       - main
@@ -16,13 +16,14 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - id: filter
         name: Detect changed plugins
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ "${{ github.event_name }}" == "pull_request" ]; then
+          if [ "${{ github.event_name }}" == "pull_request" ] || [ "${{ github.event_name }}" == "pull_request_target" ]; then
             CHANGED_FILES=$(gh pr view -R ${{ github.repository }} ${{ github.event.pull_request.number }} --json files --jq '.files[].path')
           else
             if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
@@ -69,6 +70,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
 
       - name: Clone Marketplace Toolkit
         env:
@@ -102,7 +106,7 @@ jobs:
         uses: oNaiPs/secrets-to-env-action@v1
         with:
           secrets: ${{ toJSON(secrets) }}
-          exclude: GITHUB_TOKEN
+          exclude: GITHUB_TOKEN, ORG_SCOPE_GITHUB_TOKEN, RAG_SSH_HOST, MARKETPLACE_TOKEN
 
       - name: Check Plugin Manifest Author
         run: |
