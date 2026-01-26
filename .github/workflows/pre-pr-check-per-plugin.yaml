@@ -102,6 +102,11 @@ jobs:
           chmod +x .scripts/dify-plugin-linux-amd64
           mv .scripts/dify-plugin-linux-amd64 .scripts/dify
 
+      - name: Expose Dify CLI to PATH
+        run: |
+          echo "$GITHUB_WORKSPACE/.scripts" >> $GITHUB_PATH
+          echo "DIFY_CLI_PATH=$GITHUB_WORKSPACE/.scripts/dify" >> $GITHUB_ENV
+
       - name: Export All Secrets to Environment
         uses: oNaiPs/secrets-to-env-action@v1
         with:
@@ -199,7 +204,8 @@ jobs:
         if: steps.check_tests.outputs.has_tests == 'true'
         working-directory: ${{ env.EXTRACT_DIR }}
         run: |
-          PLUGIN_FILE_PATH="$(realpath ../${{ env.PKG_NAME }})" uv run --with pytest pytest
+          export PLUGIN_FILE_PATH="$(realpath ../${{ env.PKG_NAME }})" 
+          uv run --with pytest pytest
 
   check-complete:
     name: Check Complete
