@@ -94,6 +94,29 @@ parameters:
       zh_Hans: 是否启用图表识别功能（识别折线图、柱状图等）。
     llm_description: Whether to enable the chart recognition function (to recognize line charts, bar charts, etc.).
     form: llm
+  - name: useSealRecognition
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Whether to Enable Seal Recognition
+      zh_Hans: 是否启用印章文本识别
+    human_description:
+      en_US: Whether to enable the seal recognition function.
+      zh_Hans: 是否启用印章文本识别功能。
+    llm_description: Whether to enable the seal recognition function.
+    form: llm
+  - name: useOcrForImageBlock
+    type: boolean
+    required: false
+    label:
+      en_US: Whether to Recognize Text in Image Blocks
+      zh_Hans: 是否对图像块中的文字进行识别
+    human_description:
+      en_US: Whether to recognize text in images blocks.
+      zh_Hans: 是否对图像块中的文字进行识别。
+    llm_description: Whether to recognize text in images blocks.
+    form: llm
   - name: layoutNms
     type: boolean
     required: false
@@ -106,16 +129,78 @@ parameters:
       zh_Hans: 是否对版面检测结果进行 NMS。
     llm_description: Whether to perform NMS on layout detection results.
     form: llm
-  - name: promptLabel
-    type: string
+  - name: layoutShapeMode
+    type: select
     required: false
+    default: auto
+    options:
+      - label:
+          en_US: Rectangle
+          zh_Hans: 矩形
+        value: rect
+      - label:
+          en_US: Quadrilateral
+          zh_Hans: 四边形
+        value: quad
+      - label:
+          en_US: Polygon
+          zh_Hans: 多边形
+        value: poly
+      - label:
+          en_US: Auto
+          zh_Hans: 自动
+        value: auto
+    label:
+      en_US: Layout Detection Shape Mode
+      zh_Hans: 版面检测形状模式
+    human_description:
+      en_US: Specifies the geometric representation mode for layout detection results. It defines how the boundaries of detected regions (e.g., text blocks, images, tables) are calculated and displayed. "Rectangle" corresponds to an axis-aligned bounding box (x1, y1, x2, y2) and is suitable for standard horizontally laid-out pages; "Quadrilateral" corresponds to an arbitrary four-sided shape defined by four vertices and is suitable for regions with skew or perspective distortion; "Polygon" corresponds to a closed contour defined by multiple coordinate points and is suitable for irregularly shaped or curved layout elements, offering the highest precision; "Auto" indicates that the system automatically selects the most appropriate shape representation based on the complexity and confidence of the detected targets.
+      zh_Hans: 用于指定版面检测结果的几何形状表示模式。该参数决定了检测区域（如文本块、图片、表格等）边界的计算方式及展示形态。“矩形”对应水平正向的边界框（包含 x1, y1, x2, y2），适用于标准的水平排版版面；“四边形”对应由四个顶点组成的任意四边形，适用于存在倾斜、透视变形的区域；“多边形”对应由多个坐标点组成的闭合轮廓，适用于形状不规则或具有弧度的版面元素，精度最高；“自动”指示系统根据检测目标的复杂程度和置信度，自动选择最合适的形状表达方式。
+    llm_description: Specifies the geometric representation mode for layout detection results. It defines how the boundaries of detected regions (e.g., text blocks, images, tables) are calculated and displayed. "rect" corresponds to an axis-aligned bounding box (x1, y1, x2, y2) and is suitable for standard horizontally laid-out pages; "quad" corresponds to an arbitrary four-sided shape defined by four vertices and is suitable for regions with skew or perspective distortion; "poly" corresponds to a closed contour defined by multiple coordinate points and is suitable for irregularly shaped or curved layout elements, offering the highest precision; "auto" indicates that the system automatically selects the most appropriate shape representation based on the complexity and confidence of the detected targets.
+    form: llm
+  - name: promptLabel
+    type: select
+    required: false
+    default: undefined
+    options:
+      - label:
+          en_US: OCR
+          zh_Hans: OCR
+        value: ocr
+      - label:
+          en_US: Formula Recognition
+          zh_Hans: 公式识别
+        value: formula
+      - label:
+          en_US: Table Recognition
+          zh_Hans: 表格识别
+        value: table
+      - label:
+          en_US: Chart Recognition
+          zh_Hans: 图表识别
+        value: chart
+      - label:
+          en_US: Seal Recognition
+          zh_Hans: 印章文本识别
+        value: seal
+      - label:
+          en_US: Spotting
+          zh_Hans: Spotting
+        value: spotting
+      - label:
+          en_US: Undefined
+          zh_Hans: 未定义
+        value: undefined
+    label:
+      en_US: File Type
+      zh_Hans: 文件类型
     label:
       en_US: Prompt Type for the VLM
-      zh_Hans: VLM 的 prompt 类型
+      zh_Hans: VLM 的提示词类型
     human_description:
-      en_US: Prompt type for the VLM. Possible values are "ocr", "formula", "table", and "chart". Takes effect only when layout detection is disabled.
-      zh_Hans: VLM 的 prompt 类型。可能的值为："ocr"、"formula"、"table"、"chart"。仅当禁用版面检测时有效。
-    llm_description: Prompt type for the VLM. Possible values are "ocr", "formula", "table", and "chart". Takes effect only when layout detection is disabled.
+      en_US: Prompt type for the VLM. Takes effect only when layout detection is disabled.
+      zh_Hans: VLM 的提示词类型。仅当禁用版面检测时有效。
+    llm_description: Prompt type for the VLM. Takes effect only when layout detection is disabled.
     form: llm
   - name: formatBlockContent
     type: boolean
@@ -123,11 +208,11 @@ parameters:
     default: false
     label:
       en_US: Whether to Format Block Content
-      zh_Hans: 是否格式化 block 内容
+      zh_Hans: 是否格式化块内容
     human_description:
-      en_US: Whether to format block content.
-      zh_Hans: 是否格式化 block 内容。
-    llm_description: Whether to format block content.
+      en_US: Whether to convert the block content into Markdown format.
+      zh_Hans: 是否将块内容转换为 Markdown 格式。
+    llm_description: Whether to convert the block content into Markdown format.
     form: llm
   - name: repetitionPenalty
     type: number
@@ -184,6 +269,39 @@ parameters:
       zh_Hans: VLM 预处理时允许的最大像素数。
     llm_description: Maximum number of pixels allowed during VLM preprocessing.
     form: llm
+  - name: maxNewTokens
+    type: number
+    required: false
+    label:
+      en_US: Maximum Number of New Tokens
+      zh_Hans: 最大新令牌数
+    human_description:
+      en_US: Maximum number of new tokens to generate.
+      zh_Hans: 生成的最大新令牌数。
+    llm_description: Maximum number of new tokens to generate.
+    form: llm
+  - name: mergeLayoutBlocks
+    type: boolean
+    required: false
+    label:
+      en_US: Whether to Merge Layout Blocks
+      zh_Hans: 是否合并版面块
+    human_description:
+      en_US: Whether to merge layout blocks.
+      zh_Hans: 是否合并版面块。
+    llm_description: Whether to merge layout blocks.
+    form: llm
+  - name: markdownIgnoreLabels
+    type: string
+    required: false
+    label:
+      en_US: Labels to Ignore in Markdown Output
+      zh_Hans: Markdown 输出中忽略的标签
+    human_description:
+      en_US: 'Comma-separated list of labels to ignore when generating Markdown output. For example: "header,footer,page_number".'
+      zh_Hans: '生成 Markdown 输出时要忽略的标签列表，使用逗号分隔。例如："header,footer,page_number"。'
+    llm_description: 'Comma-separated list of labels to ignore when generating Markdown output. For example: "header,footer,page_number".'
+    form: llm
   - name: prettifyMarkdown
     type: boolean
     required: false
@@ -207,6 +325,42 @@ parameters:
       en_US: Whether to include formula numbers in the output markdown text.
       zh_Hans: 是否在输出的 Markdown 文本中包含公式编号。
     llm_description: Whether to include formula numbers in the output markdown text.
+    form: llm
+  - name: restructurePages
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Whether to Restructure Pages
+      zh_Hans: 是否重构页面
+    human_description:
+      en_US: Whether to restructure pages in the output.
+      zh_Hans: 是否对输出页面进行重构。
+    llm_description: Whether to restructure pages in the output.
+    form: llm
+  - name: mergeTables
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: Whether to Merge Tables across Pages
+      zh_Hans: 是否合并跨页表格
+    human_description:
+      en_US: Whether to merge tables across pages in the output. Takes effect only when restructuring pages is on.
+      zh_Hans: 是否在输出中合并表格。仅在启用页面重构时有效。
+    llm_description: Whether to merge tables across pages in the output. Takes effect only when restructuring pages is on.
+    form: llm
+  - name: relevelTitles
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: Whether to Relevel Titles
+      zh_Hans: 是否重新调整标题级别
+    human_description:
+      en_US: Whether to relevel titles in the output. Takes effect only when restructuring pages is on.
+      zh_Hans: 是否在输出中重新调整标题级别。仅在启用页面重构时有效。
+    llm_description: Whether to relevel titles in the output. Takes effect only when restructuring pages is on.
     form: llm
   - name: visualize
     type: boolean

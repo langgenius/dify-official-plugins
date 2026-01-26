@@ -38,11 +38,13 @@ class DocumentParsingVlTool(Tool):
             "useDocUnwarping",
             "useLayoutDetection",
             "useChartRecognition",
+            "useSealRecognition",
+            "useOcrForImageBlock",
             "layoutThreshold",
             "layoutNms",
             "layoutUnclipRatio",
             "layoutMergeBboxesMode",
-            "textDetLimitSideLen",
+            "layoutShapeMode",
             "promptLabel",
             "formatBlockContent",
             "repetitionPenalty",
@@ -50,8 +52,15 @@ class DocumentParsingVlTool(Tool):
             "topP",
             "minPixels",
             "maxPixels",
+            "maxNewTokens",
+            "mergeLayoutBlocks",
+            "markdownIgnoreLabels",
+            "vlmExtraArgs",
             "prettifyMarkdown",
             "showFormulaNumber",
+            "restructurePages",
+            "mergeTables",
+            "relevelTitles",
             "visualize",
         ]:
             if optional_param_name in tool_parameters:
@@ -60,6 +69,14 @@ class DocumentParsingVlTool(Tool):
         # Convert fileType parameter
         if "fileType" in params:
             params["fileType"] = convert_file_type(params["fileType"])
+
+        # Convert promptLabel parameter
+        if "promptLabel" in params and params["promptLabel"] == "undefined":
+            params.pop("promptLabel")
+
+        # Convert markdownIgnoreLabels from comma-separated string to list
+        if "markdownIgnoreLabels" in params and isinstance(params["markdownIgnoreLabels"], str):
+            params["markdownIgnoreLabels"] = [label.strip() for label in params["markdownIgnoreLabels"].split(",") if label.strip()]
 
         result = make_paddleocr_api_request(api_url, params, access_token)
 

@@ -42,6 +42,7 @@ class DocumentParsingTool(Tool):
             "useFormulaRecognition",
             "useChartRecognition",
             "useRegionDetection",
+            "formatBlockContent",
             "layoutThreshold",
             "layoutNms",
             "layoutUnclipRatio",
@@ -64,6 +65,9 @@ class DocumentParsingTool(Tool):
             "useOcrResultsWithTableCells",
             "useE2eWiredTableRecModel",
             "useE2eWirelessTableRecModel",
+            "markdownIgnoreLabels",
+            "prettifyMarkdown",
+            "showFormulaNumber",
             "visualize",
         ]:
             if optional_param_name in tool_parameters:
@@ -72,6 +76,10 @@ class DocumentParsingTool(Tool):
         # Convert fileType parameter
         if "fileType" in params:
             params["fileType"] = convert_file_type(params["fileType"])
+
+        # Convert markdownIgnoreLabels from comma-separated string to list
+        if "markdownIgnoreLabels" in params and isinstance(params["markdownIgnoreLabels"], str):
+            params["markdownIgnoreLabels"] = [label.strip() for label in params["markdownIgnoreLabels"].split(",") if label.strip()]
 
         result = make_paddleocr_api_request(api_url, params, access_token)
 
