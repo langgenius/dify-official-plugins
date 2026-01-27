@@ -90,12 +90,12 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     en_US=(
                         "Whether to prioritize strict OpenAI compatibility. "
                         "When True, OpenAI compatibility is prioritized and extended parameters "
-                        "(e.g., thinking, chat_template_kwargs) are not added. "
+                        "(e.g., thinking, chat_template_kwargs, enable_thinking) are not added. "
                         "Set to False to enable these extensions."
                     ),
                     zh_Hans=(
                         "是否优先严格的 OpenAI 兼容性。"
-                        "为 True 时，将优先 OpenAI 兼容性，并且不会添加扩展参数（例如 thinking、chat_template_kwargs）。"
+                        "为 True 时，将优先 OpenAI 兼容性，并且不会添加扩展参数（例如 thinking、chat_template_kwargs、enable_thinking）。"
                         "设为 False 以启用这些扩展。"
                     )
                 ),
@@ -231,7 +231,7 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
 
         if enable_thinking_value is not None and strict_compatibility_value is False:
             # Only apply when `strict_compatibility_value` is False since
-            # `chat_template_kwargs` and `thinking` are non-standard parameters.
+            # `chat_template_kwargs` , `thinking` and `enable_thinking` are non-standard parameters.
 
             chat_template_kwargs = model_parameters.setdefault("chat_template_kwargs", {})
             # Support vLLM/SGLang format (chat_template_kwargs)
@@ -243,6 +243,10 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             model_parameters["thinking"] = {
                 "type": "enabled" if enable_thinking_value else "disabled"
             }
+
+            # Support top-level `enable_thinking` parameter
+            # This allows compatibility API format: {"enable_thinking": False/True}
+            model_parameters["enable_thinking"] = enable_thinking_value
 
         reasoning_effort_value = model_parameters.pop("reasoning_effort", None)
         if enable_thinking_value is True and reasoning_effort_value is not None:
