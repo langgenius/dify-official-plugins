@@ -34,9 +34,9 @@ class LinearGetTeamsTool(Tool):
 
             # Use GraphQL variables to prevent injection attacks
             graphql_query = """
-            query GetTeams($nameQuery: String, $limit: Int!) {
+            query GetTeams($filter: TeamFilter, $limit: Int!) {
               teams(
-                filter: { name: { containsIgnoreCase: $nameQuery } }
+                filter: $filter,
                 first: $limit,
                 orderBy: updatedAt
               ) {
@@ -55,7 +55,7 @@ class LinearGetTeamsTool(Tool):
 
             variables = {"limit": limit}
             if name_query:
-                variables["nameQuery"] = name_query
+                variables["filter"] = {"name": {"containsIgnoreCase": name_query}}
 
             # Execute the query
             result = linear_client.query_graphql(graphql_query, variables)

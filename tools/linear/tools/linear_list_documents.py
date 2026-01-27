@@ -30,9 +30,9 @@ class LinearListDocumentsTool(Tool):
 
             # Use GraphQL variables to prevent injection attacks
             graphql_query = """
-            query GetDocuments($queryText: String, $limit: Int!) {
+            query GetDocuments($filter: DocumentFilter, $limit: Int!) {
               documents(
-                filter: { title: { containsIgnoreCase: $queryText } }
+                filter: $filter,
                 first: $limit,
                 orderBy: updatedAt
               ) {
@@ -48,7 +48,7 @@ class LinearListDocumentsTool(Tool):
 
             variables = {"limit": limit}
             if query_text:
-                variables["queryText"] = query_text
+                variables["filter"] = {"title": {"containsIgnoreCase": query_text}}
 
             result = linear_client.query_graphql(graphql_query, variables)
 

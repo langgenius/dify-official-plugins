@@ -30,9 +30,9 @@ class LinearListIssueStatusesTool(Tool):
 
             # Use GraphQL variables to prevent injection attacks
             graphql_query = """
-            query GetIssueStatuses($teamId: String, $limit: Int!) {
+            query GetIssueStatuses($filter: WorkflowStateFilter, $limit: Int!) {
               workflowStates(
-                filter: { team: { id: { eq: $teamId } } }
+                filter: $filter,
                 first: $limit,
                 orderBy: updatedAt
               ) {
@@ -52,7 +52,7 @@ class LinearListIssueStatusesTool(Tool):
 
             variables = {"limit": limit}
             if team_id:
-                variables["teamId"] = team_id
+                variables["filter"] = {"team": {"id": {"eq": team_id}}}
 
             result = linear_client.query_graphql(graphql_query, variables)
 

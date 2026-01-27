@@ -30,9 +30,9 @@ class LinearListProjectsTool(Tool):
 
             # Use GraphQL variables to prevent injection attacks
             graphql_query = """
-            query GetProjects($nameQuery: String, $limit: Int!) {
+            query GetProjects($filter: ProjectFilter, $limit: Int!) {
               projects(
-                filter: { name: { containsIgnoreCase: $nameQuery } }
+                filter: $filter,
                 first: $limit,
                 orderBy: updatedAt
               ) {
@@ -52,7 +52,7 @@ class LinearListProjectsTool(Tool):
 
             variables = {"limit": limit}
             if name_query:
-                variables["nameQuery"] = name_query
+                variables["filter"] = {"name": {"containsIgnoreCase": name_query}}
 
             result = linear_client.query_graphql(graphql_query, variables)
 
