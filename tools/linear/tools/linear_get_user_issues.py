@@ -166,20 +166,19 @@ class LinearGetUserIssuesTool(Tool):
 
                     formatted_issues.append(formatted_issue)
 
-                # If we have a session model, use it for summary
+                # Try to use session model for summary, fall back to basic response
+                summary = None
                 if hasattr(self, "session") and hasattr(self.session, "model"):
                     try:
                         summary = self.session.model.summary(
                             content=json.dumps(formatted_issues, ensure_ascii=False)
                         )
-                        yield self.create_text_message(summary)
-                    except Exception as e:
-                        # Fallback to basic response on error
-                        yield self.create_text_message(
-                            f"Found {len(formatted_issues)} issues for the user. Use a more specific query for detailed results."
-                        )
+                    except Exception:
+                        pass
+
+                if summary:
+                    yield self.create_text_message(summary)
                 else:
-                    # Basic response if no model available
                     yield self.create_text_message(
                         f"Found {len(formatted_issues)} issues for the user. Use a more specific query for detailed results."
                     )
