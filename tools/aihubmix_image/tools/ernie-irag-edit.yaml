@@ -44,7 +44,7 @@ parameters:
       pt_BR: "Imagem para editar. Suporta: URL (http/https), URL de dados (base64), variável de arquivo Dify ou string base64. Conecte-se de outros nós no fluxo de trabalho."
       ja_JP: "編集する画像。サポート: URL (http/https)、データURL (base64)、Difyファイル変数、またはbase64文字列。工作フローの他のノードから接続可能。"
     llm_description: "Input image for ERNIE iRAG Edit. Accepts URLs, base64 data, or Dify file transfer variables. In workflows, connect output from image generation nodes directly."
-    form: llm
+    form: form
   
   - name: guidance
     type: number
