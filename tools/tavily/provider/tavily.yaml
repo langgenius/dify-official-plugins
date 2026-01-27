@@ -34,3 +34,4 @@ tools:
 - tools/tavily_search.yaml
 - tools/tavily_crawl.yaml
 - tools/tavily_map.yaml
+- tools/tavily_research.yaml
