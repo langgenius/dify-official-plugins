@@ -1,0 +1,160 @@
+description:
+  human:
+    en_US: Map a website's structure by discovering all URLs starting from a root URL using Tavily Map.
+    zh_Hans: 使用 Tavily Map 从根 URL 开始发现所有 URL，映射网站结构。
+  llm: Map a website's structure by crawling from a root URL and returning all discovered URLs.
+extra:
+  python:
+    source: tools/tavily_map.py
+identity:
+  author: Yash Bhandare
+  label:
+    en_US: Tavily Map
+    zh_Hans: Tavily Map
+  name: tavily_map
+parameters:
+  - name: url
+    form: llm
+    human_description:
+      en_US: The root URL to begin the mapping from.
+      zh_Hans: 开始映射的根 URL。
+    label:
+      en_US: URL
+      zh_Hans: URL
+    llm_description: The root URL to begin the website mapping from.
+    required: true
+    type: string
+  - name: instructions
+    form: llm
+    human_description:
+      en_US: Natural language guidance for crawling. Using this option doubles API credits (2 per 10 pages vs 1).
+      zh_Hans: 爬取的自然语言指导。使用此选项会使 API 积分翻倍（每10页2个积分，而不是1个）。
+    label:
+      en_US: Instructions
+      zh_Hans: 指令
+    llm_description: Natural language guidance for crawling behavior. Note that using instructions doubles API credit consumption.
+    required: false
+    type: string
+  - name: max_depth
+    form: form
+    human_description:
+      en_US: The exploration distance from the base URL. Higher values discover more pages but take longer.
+      zh_Hans: 从基础 URL 开始的探索深度。较高的值会发现更多页面但需要更长时间。
+    label:
+      en_US: Max Depth
+      zh_Hans: 最大深度
+    llm_description: Exploration distance from base URL. Range is 1-5. Default is 1.
+    required: false
+    type: number
+    min: 1
+    max: 5
+    default: 1
+  - name: max_breadth
+    form: form
+    human_description:
+      en_US: The number of links followed per page level.
+      zh_Hans: 每个页面层级跟踪的链接数量。
+    label:
+      en_US: Max Breadth
+      zh_Hans: 最大广度
+    llm_description: Number of links followed per page level. Range is 1-500. Default is 20.
+    required: false
+    type: number
+    min: 1
+    max: 500
+    default: 20
+  - name: limit
+    form: form
+    human_description:
+      en_US: The total number of links to process before stopping.
+      zh_Hans: 停止前要处理的链接总数。
+    label:
+      en_US: Limit
+      zh_Hans: 限制
+    llm_description: Total links processed before halting. Minimum is 1. Default is 50.
+    required: false
+    type: number
+    min: 1
+    default: 50
+  - name: select_paths
+    form: llm
+    human_description:
+      en_US: Comma-separated regex patterns to select only URLs with specific path patterns.
+      zh_Hans: 逗号分隔的正则表达式模式，仅选择具有特定路径模式的 URL。
+    label:
+      en_US: Select Paths
+      zh_Hans: 选择路径
+    llm_description: Comma-separated regex patterns to filter URLs by path. Only URLs matching these patterns will be included.
+    required: false
+    type: string
+  - name: select_domains
+    form: llm
+    human_description:
+      en_US: Comma-separated regex patterns to filter to particular domains or subdomains.
+      zh_Hans: 逗号分隔的正则表达式模式，过滤到特定域名或子域名。
+    label:
+      en_US: Select Domains
+      zh_Hans: 选择域名
+    llm_description: Comma-separated regex patterns to filter URLs by domain. Only URLs from matching domains will be included.
+    required: false
+    type: string
+  - name: exclude_paths
+    form: llm
+    human_description:
+      en_US: Comma-separated regex patterns to exclude URLs matching specific path patterns.
+      zh_Hans: 逗号分隔的正则表达式模式，排除匹配特定路径模式的 URL。
+    label:
+      en_US: Exclude Paths
+      zh_Hans: 排除路径
+    llm_description: Comma-separated regex patterns to exclude URLs by path. URLs matching these patterns will be omitted.
+    required: false
+    type: string
+  - name: exclude_domains
+    form: llm
+    human_description:
+      en_US: Comma-separated regex patterns to block specific domains from crawling.
+      zh_Hans: 逗号分隔的正则表达式模式，阻止爬取特定域名。
+    label:
+      en_US: Exclude Domains
+      zh_Hans: 排除域名
+    llm_description: Comma-separated regex patterns to exclude URLs by domain. URLs from matching domains will be blocked.
+    required: false
+    type: string
+  - name: allow_external
+    form: form
+    human_description:
+      en_US: Whether to include links to external domains in the results.
+      zh_Hans: 是否在结果中包含指向外部域名的链接。
+    label:
+      en_US: Allow External
+      zh_Hans: 允许外部链接
+    llm_description: When set to true, includes external domain links in results. Default is true.
+    required: false
+    type: boolean
+    default: true
+  - name: timeout
+    form: form
+    human_description:
+      en_US: Maximum wait duration in seconds for the mapping operation.
+      zh_Hans: 映射操作的最大等待时间（秒）。
+    label:
+      en_US: Timeout
+      zh_Hans: 超时时间
+    llm_description: Maximum wait duration in seconds. Range is 10-150. Default is 150.
+    required: false
+    type: number
+    min: 10
+    max: 150
+    default: 150
+  - name: include_usage
+    form: form
+    human_description:
+      en_US: Include API usage information (credit consumption) in the response.
+      zh_Hans: 在响应中包含 API 使用信息（积分消耗）。
+    label:
+      en_US: Include Usage
+      zh_Hans: 包含使用信息
+    llm_description: When set to true, includes API credit usage information in the response.
+    required: false
+    type: boolean
+    default: false
