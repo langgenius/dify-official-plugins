@@ -140,3 +140,14 @@ parameters:
     required: false
     type: boolean
     default: false
+  - name: project_id
+    form: form
+    human_description:
+      en_US: Optional project ID for tracking and analytics purposes. Will be sent as X-Project-ID header.
+      zh_Hans: 用于跟踪和分析目的的可选项目 ID。将作为 X-Project-ID 标头发送。
+    label:
+      en_US: Project ID
+      zh_Hans: 项目 ID
+    llm_description: Optional project ID for usage tracking and analytics.
+    required: false
+    type: string

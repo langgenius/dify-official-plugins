@@ -11,13 +11,14 @@ class TavilySearch:
 
     Args:
         api_key (str): The API key for accessing the Tavily Search API.
+        project_id (str, optional): The project ID for tracking and analytics.
 
     Methods:
         search: Retrieves search results from the Tavily Search API.
     """
 
-    def __init__(self, api_key: str) -> None:
-        self.client = TavilyClient(api_key=api_key)
+    def __init__(self, api_key: str, project_id: str | None = None) -> None:
+        self.client = TavilyClient(api_key=api_key, project_id=project_id)
 
     def search(self, params: dict[str, Any]) -> dict:
         """
@@ -32,6 +33,8 @@ class TavilySearch:
         """
         if "api_key" in params:
             del params["api_key"]
+        if "project_id" in params:
+            del params["project_id"]
 
         processed_params = self._process_params(params)
 
@@ -140,7 +143,8 @@ class TavilySearchTool(Tool):
             yield self.create_text_message("Please input a query.")
             return
 
-        tavily_search = TavilySearch(api_key)
+        project_id = tool_parameters.get("project_id")
+        tavily_search = TavilySearch(api_key, project_id=project_id)
         try:
             search_results = tavily_search.search(tool_parameters)
         except Exception as e:

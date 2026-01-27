@@ -11,13 +11,14 @@ class TavilyExtract:
 
     Args:
         api_key (str): The API key for accessing the Tavily Extract API.
+        project_id (str, optional): The project ID for tracking and analytics.
 
     Methods:
         extract: Retrieves extracted content from the Tavily Extract API.
     """
 
-    def __init__(self, api_key: str) -> None:
-        self.client = TavilyClient(api_key=api_key)
+    def __init__(self, api_key: str, project_id: str | None = None) -> None:
+        self.client = TavilyClient(api_key=api_key, project_id=project_id)
 
     def extract(self, params: dict[str, Any]) -> dict:
         """
@@ -153,7 +154,8 @@ class TavilyExtractTool(Tool):
             yield self.create_text_message("Please input at least one URL to extract.")
             return
 
-        tavily_extract = TavilyExtract(api_key)
+        project_id = tool_parameters.get("project_id")
+        tavily_extract = TavilyExtract(api_key, project_id=project_id)
 
         try:
             extract_results = tavily_extract.extract(tool_parameters)
