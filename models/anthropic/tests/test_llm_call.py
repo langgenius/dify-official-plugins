@@ -78,7 +78,4 @@ def test_llm_invoke(model_name: str) -> None:
         assert len(results) > 0, f"No results received for model {model_name}"
 
         # Verify concatenated content is non-empty
-        full_content = "".join(
-            r.delta.message.content for r in results if r.delta.message.content
-        )
-        assert len(full_content) > 0, f"Empty content for model {model_name}"
+        assert any(not r.delta.message.is_empty() for r in results if r.delta.message.content), f"Empty content for model {model_name}"
