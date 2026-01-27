@@ -9,6 +9,9 @@ identity:
     zh_Hans: "PaddleOCR 插件提供 PaddleOCR 的多项能力，包括文字识别、文档解析等"
   icon: "icon.png"
 
+tags:
+    - productivity
+
 tools:
   - tools/text_recognition.yaml
   - tools/document_parsing.yaml
