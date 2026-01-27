@@ -11,13 +11,14 @@ class TavilyCrawl:
 
     Args:
         api_key (str): The API key for accessing the Tavily Crawl API.
+        project_id (str, optional): The project ID for tracking and analytics.
 
     Methods:
         crawl: Crawls a website starting from the given URL.
     """
 
-    def __init__(self, api_key: str) -> None:
-        self.client = TavilyClient(api_key=api_key)
+    def __init__(self, api_key: str, project_id: str | None = None) -> None:
+        self.client = TavilyClient(api_key=api_key, project_id=project_id)
 
     def crawl(self, params: dict[str, Any]) -> dict:
         """
@@ -37,7 +38,6 @@ class TavilyCrawl:
                 - exclude_domains: Optional list. Domains to exclude from the crawl.
                 - allow_external: Optional boolean. Whether to allow crawling external domains.
                 - include_images: Optional boolean. Whether to include images in results.
-                - categories: Optional list. Page categories to focus on.
                 - extract_depth: Optional string. Extraction depth ('basic' or 'advanced').
                 - format: Optional string. Content format ('markdown' or 'text').
                 - timeout: Optional int. Request timeout in seconds (10-150).
@@ -124,13 +124,6 @@ class TavilyCrawl:
             else:
                 processed_params["include_favicon"] = bool(value)
 
-        if "categories" in params and params["categories"]:
-            value = params["categories"]
-            if isinstance(value, str):
-                processed_params["categories"] = [cat.strip() for cat in value.split(",") if cat.strip()]
-            elif isinstance(value, list):
-                processed_params["categories"] = value
-
         if "extract_depth" in params and params["extract_depth"]:
             extract_depth = params["extract_depth"]
             if extract_depth not in ["basic", "advanced"]:
@@ -164,8 +157,8 @@ class TavilyCrawlTool(Tool):
     A tool for crawling websites using Tavily Crawl.
 
     This tool crawls a website starting from a base URL, following links to discover
-    and extract content from multiple pages. It supports filtering by paths, domains,
-    and categories, with configurable depth and breadth limits.
+    and extract content from multiple pages. It supports filtering by paths and domains,
+    with configurable depth and breadth limits.
     """
 
     def _invoke(
@@ -188,7 +181,6 @@ class TavilyCrawlTool(Tool):
                 - exclude_domains: Optional. Domains to exclude (comma-separated).
                 - allow_external: Optional. Whether to allow external domains (default: true).
                 - include_images: Optional. Whether to include images.
-                - categories: Optional. Page categories to focus on.
                 - extract_depth: Optional. Extraction depth ('basic' or 'advanced').
                 - format: Optional. Content format ('markdown' or 'text').
                 - timeout: Optional. Request timeout in seconds (10-150, default: 150).
@@ -210,7 +202,8 @@ class TavilyCrawlTool(Tool):
             yield self.create_text_message("Please input a URL to crawl.")
             return
 
-        tavily_crawl = TavilyCrawl(api_key)
+        project_id = tool_parameters.get("project_id")
+        tavily_crawl = TavilyCrawl(api_key, project_id=project_id)
 
         try:
             crawl_results = tavily_crawl.crawl(tool_parameters)
