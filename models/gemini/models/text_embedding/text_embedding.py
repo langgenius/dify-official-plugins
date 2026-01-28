@@ -1,3 +1,9 @@
+"""
+FutureWarning:
+All support for the `google.generativeai` package has ended. It will no longer be receiving
+updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
+"""
+
 import re
 import time
 import numpy as np

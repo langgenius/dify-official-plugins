@@ -2,18 +2,48 @@ identity:
   name: "doubao"
   author: "langgenius"
   label:
-    en_US: "Doubao Seedream 4.0"
-    zh_Hans: "Doubao Seedream 4.0"
-    pt_BR: "Doubao Seedream 4.0"
-    ja_JP: "Doubao Seedream 4.0"
+    en_US: "Doubao Seedream"
+    zh_Hans: "Doubao Seedream"
+    pt_BR: "Doubao Seedream"
+    ja_JP: "Doubao Seedream"
 description:
   human:
-    en_US: "Doubao Seedream 4.0 Image Generation Model"
-    zh_Hans: "Doubao Seedream 4.0 图像生成模型"
-    pt_BR: "Modelo de geração de imagens Doubao Seedream 4.0"
-    ja_JP: "Doubao Seedream 4.0 画像生成モデル"
-  llm: "Generate image using Doubao Seedream model with advanced Chinese language understanding and high-quality output"
+    en_US: "Doubao Seedream Image Generation Model - Supports Text-to-Image, Image-to-Image, and Sequential Generation"
+    zh_Hans: "Doubao Seedream 图像生成模型 - 支持文生图、图生图和组图输出"
+    pt_BR: "Modelo de geração de imagens Doubao Seedream - Suporta Texto-para-Imagem, Imagem-para-Imagem e Geração Sequencial"
+    ja_JP: "Doubao Seedream 画像生成モデル - テキストから画像、画像から画像、連続生成をサポート"
+  llm: "Generate or transform images using Doubao Seedream model with advanced Chinese language understanding. Supports text-to-image, image-to-image transformation, and consistent sequential image generation for storyboards."
 parameters:
+  - name: model
+    type: select
+    required: false
+    label:
+      en_US: "Model"
+      zh_Hans: "模型"
+      pt_BR: "Modelo"
+      ja_JP: "モデル"
+    human_description:
+      en_US: "Doubao Seedream model to use"
+      zh_Hans: "要使用的 Doubao Seedream 模型"
+      pt_BR: "Modelo Doubao Seedream a ser usado"
+      ja_JP: "使用するDoubao Seedreamモデル"
+    llm_description: "Doubao Seedream model selection for image generation"
+    form: form
+    default: "doubao-seedream-4-0-250828"
+    options:
+      - value: "doubao-seedream-4-0-250828"
+        label:
+          en_US: "doubao-seedream-4-0-250828"
+          zh_Hans: "doubao-seedream-4-0-250828"
+          pt_BR: "doubao-seedream-4-0-250828"
+          ja_JP: "doubao-seedream-4-0-250828"
+      - value: "doubao-seedream-4-5"
+        label:
+          en_US: "doubao-seedream-4-5"
+          zh_Hans: "doubao-seedream-4-5"
+          pt_BR: "doubao-seedream-4-5"
+          ja_JP: "doubao-seedream-4-5"
+
   - name: prompt
     type: string
     required: true
@@ -23,12 +53,83 @@ parameters:
       pt_BR: "Prompt"
       ja_JP: "プロンプト"
     human_description:
-      en_US: "Text description of image you want to generate"
-      zh_Hans: "您想要生成的图像的文字描述"
-      pt_BR: "Descrição textual da imagem que você deseja gerar"
-      ja_JP: "生成したい画像のテキスト説明"
-    llm_description: "Text prompt for Doubao Seedream image generation, describing the desired image content. Optimized for Chinese prompts"
+      en_US: "Text description of image you want to generate or transform"
+      zh_Hans: "您想要生成或转换的图像的文字描述"
+      pt_BR: "Descrição textual da imagem que você deseja gerar ou transformar"
+      ja_JP: "生成または変換したい画像のテキスト説明"
+    llm_description: "Text prompt for Doubao Seedream image generation. Describe the content you want to create or how to transform the reference image. Optimized for Chinese prompts"
     form: llm
+  
+  - name: generation_mode
+    type: select
+    required: false
+    label:
+      en_US: "Generation Mode"
+      zh_Hans: "生成模式"
+      pt_BR: "Modo de Geração"
+      ja_JP: "生成モード"
+    human_description:
+      en_US: "Choose the image generation mode"
+      zh_Hans: "选择图像生成模式"
+      pt_BR: "Escolha o modo de geração de imagem"
+      ja_JP: "画像生成モードを選択"
+    llm_description: "Image generation mode for Doubao Seedream. TEXT_TO_IMAGE for text-to-image, IMAGE_TO_IMAGE for image transformation, SEQUENTIAL for consistent multi-image generation"
+    form: form
+    default: "text_to_image"
+    options:
+      - value: "text_to_image"
+        label:
+          en_US: "Text-to-Image (文生图)"
+          zh_Hans: "文生图"
+          pt_BR: "Texto-para-Imagem"
+          ja_JP: "テキストから画像"
+      - value: "image_to_image"
+        label:
+          en_US: "Image-to-Image (图生图)"
+          zh_Hans: "图生图"
+          pt_BR: "Imagem-para-Imagem"
+          ja_JP: "画像から画像"
+      - value: "sequential"
+        label:
+          en_US: "Sequential Generation (组图输出)"
+          zh_Hans: "组图输出"
+          pt_BR: "Geração Sequencial"
+          ja_JP: "連続生成"
+  
+  - name: reference_image
+    type: string
+    required: false
+    label:
+      en_US: "Reference Image"
+      zh_Hans: "参考图像"
+      pt_BR: "Imagem de Referência"
+      ja_JP: "参照画像"
+    human_description:
+      en_US: "Reference image for Image-to-Image mode. "
+      zh_Hans: "图生图模式的参考图像。"
+      pt_BR: "Imagem de referência para o modo Imagem-para-Imagem."
+      ja_JP: "画像から画像モードの参照画像。"
+    llm_description: "Reference image for Image-to-Image transformation."
+    form: llm
+  
+  - name: image_strength
+    type: number
+    required: false
+    label:
+      en_US: "Image Strength"
+      zh_Hans: "图像强度"
+      pt_BR: "Força da Imagem"
+      ja_JP: "画像強度"
+    human_description:
+      en_US: "How much to transform the reference image (0.0-1.0). Higher values = more transformation"
+      zh_Hans: "参考图像变换程度 (0.0-1.0)。数值越高变化越大"
+      pt_BR: "Quanto transformar a imagem de referência (0.0-1.0). Valores mais altos = mais transformação"
+      ja_JP: "参照画像を変換する度合い (0.0-1.0)。値が高いほど変換が大きい"
+    llm_description: "Image transformation strength for Image-to-Image mode. Range 0.0-1.0. Lower values preserve more of the original image structure"
+    form: form
+    default: 0.5
+    min: 0.0
+    max: 1.0
   
   - name: size
     type: select
@@ -75,11 +176,11 @@ parameters:
       pt_BR: "Geração Sequencial"
       ja_JP: "連続生成"
     human_description:
-      en_US: "Enable sequential image generation for consistency"
-      zh_Hans: "启用连续图像生成以保持一致性"
-      pt_BR: "Ativar geração de imagem sequencial para consistência"
-      ja_JP: "一貫性のために連続画像生成を有効にする"
-    llm_description: "Sequential image generation setting for Doubao Seedream. ENABLED for consistent multi-image generation"
+      en_US: "Enable sequential image generation for consistent multi-image output"
+      zh_Hans: "启用连续图像生成以输出一致的多图"
+      pt_BR: "Ativar geração de imagem sequencial para saída consistente de múltiplas imagens"
+      ja_JP: "一貫性のある複数画像出力のために連続生成を有効にする"
+    llm_description: "Sequential image generation setting. ENABLED creates consistent variations for storyboards, sequential scenes, or style variations"
     form: form
     default: "disabled"
     options:
@@ -95,6 +196,25 @@ parameters:
           zh_Hans: "禁用"
           pt_BR: "Desativado"
           ja_JP: "無効"
+  
+  - name: max_sequential_images
+    type: number
+    required: false
+    label:
+      en_US: "Max Sequential Images"
+      zh_Hans: "最大连续图像数"
+      pt_BR: "Máximo de Imagens Sequenciais"
+      ja_JP: "最大連続画像数"
+    human_description:
+      en_US: "Maximum number of images to generate in sequential mode (1-8)"
+      zh_Hans: "连续生成模式下的最大图像数量 (1-8)"
+      pt_BR: "Número máximo de imagens para gerar no modo sequencial (1-8)"
+      ja_JP: "連続モードで生成する画像の最大数 (1-8)"
+    llm_description: "Maximum number of images for sequential generation. Range: 1-8. Only applies when sequential_image_generation is ENABLED"
+    form: form
+    default: 4
+    min: 1
+    max: 8
   
   - name: stream
     type: boolean

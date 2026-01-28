@@ -8,8 +8,8 @@ label:
   en_US: Gemini
 meta:
   arch:
-    - amd64
-    - arm64
+  - amd64
+  - arm64
   runner:
     entrypoint: main
     language: python
@@ -19,7 +19,7 @@ meta:
 name: gemini
 plugins:
   models:
-    - provider/google.yaml
+  - provider/google.yaml
 resource:
   memory: 268435456
   permission:
@@ -34,4 +34,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.7.0
+version: 0.7.4

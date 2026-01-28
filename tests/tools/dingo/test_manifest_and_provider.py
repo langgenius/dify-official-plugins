@@ -33,7 +33,7 @@ def test_provider_and_tools_exist():
 
 
 def test_tool_description_llm_and_human_present():
-    tool_yaml = os.path.join(PLUGIN_DIR, 'tools', 'text_quality_evaluator.yaml')
+    tool_yaml = os.path.join(PLUGIN_DIR, 'tools', 'keyword_matcher.yaml')
     with open(tool_yaml, 'r', encoding='utf-8') as f:
         tool = yaml.safe_load(f)
     desc = tool.get('description')

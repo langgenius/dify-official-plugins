@@ -2,7 +2,7 @@ background: '#EFFDFD'
 configurate_methods:
 - predefined-model
 description:
-  en_US: Embedding and Rerank Model Supported
+  en_US: Embedding, Rerank, and Multimodal Model Supported
 extra:
   python:
     model_sources:
@@ -41,6 +41,24 @@ provider_credential_schema:
     required: true
     type: secret-input
     variable: api_key
+  - label:
+      en_US: Image URL
+      zh_Hans: 图片 URL
+    placeholder:
+      en_US: Enter image URL for multimodal models (optional)
+      zh_Hans: 输入多模态模型的图片 URL（可选）
+    required: false
+    type: text-input
+    variable: image_url
+  - label:
+      en_US: Image Base64
+      zh_Hans: 图片 Base64
+    placeholder:
+      en_US: Enter base64-encoded image for multimodal models (optional)
+      zh_Hans: 输入多模态模型的 Base64 编码图片（可选）
+    required: false
+    type: text-input
+    variable: image_base64
 supported_model_types:
 - text-embedding
 - rerank

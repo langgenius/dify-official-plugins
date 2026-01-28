@@ -19,7 +19,7 @@ click==8.3.1
     # via flask
 colorama==0.4.6
     # via click
-dify-plugin==0.5.1
+dify_plugin>=0.3.0,<0.6.0
     # via openrouter-mqh649 (pyproject.toml)
 dpkt==1.9.8
     # via dify-plugin
@@ -91,9 +91,9 @@ typing-inspection==0.4.2
     # via
     #   pydantic
     #   pydantic-settings
-urllib3==2.6.0
+urllib3==2.6.3
     # via requests
-werkzeug==3.0.6
+werkzeug==3.1.5
     # via
     #   dify-plugin
     #   flask

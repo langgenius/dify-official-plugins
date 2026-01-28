@@ -583,10 +583,17 @@ class NotionClient:
         response = requests.get(
             url=f"{self._NOTION_BLOCK_SEARCH}/{block_id}", headers=headers, timeout=__TIMEOUT_SECONDS__
         )
-        response_json = response.json()
+        if response.status_code == 404:
+            # Treat inaccessible parent as a root-level item.
+            return "root"
         if response.status_code != 200:
-            message = response_json.get("message", "unknown error")
+            try:
+                response_json = response.json()
+                message = response_json.get("message", "unknown error")
+            except requests.exceptions.JSONDecodeError:
+                message = response.text or "unknown error"
             raise ValueError(f"Error fetching block parent page ID: {message}")
+        response_json = response.json()
         parent = response_json["parent"]
         parent_type = parent["type"]
         if parent_type == "block_id":

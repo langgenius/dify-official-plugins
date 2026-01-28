@@ -5,6 +5,7 @@ import logging
 import threading
 import time
 from typing import Dict, Any
+from collections import OrderedDict
 from botocore.exceptions import ClientError
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from provider.get_bedrock_client import get_bedrock_client
@@ -12,65 +13,96 @@ from provider.get_bedrock_client import get_bedrock_client
 logger = logging.getLogger(__name__)
 
 # Cache for inference profile info with 5 minutes TTL
-_inference_profile_cache = {}
+_inference_profile_cache: dict = {}
 _CACHE_TTL = 300  # 5 minutes
 _cache_lock = threading.Lock()
 
+# Per-key locks to prevent thundering herd (multiple threads fetching same profile)
+_fetch_locks: OrderedDict = OrderedDict()
+_fetch_locks_lock = threading.Lock()
+_MAX_FETCH_LOCKS = 1000 
+
+def _get_fetch_lock(cache_key: str) -> threading.Lock:
+    """Get or create a lock for a specific cache key to prevent thundering herd"""
+    with _fetch_locks_lock:
+        if cache_key in _fetch_locks:
+            # Most recently used
+            _fetch_locks.move_to_end(cache_key)
+            return _fetch_locks[cache_key]
+        
+        # Evict oldest if at capacity
+        while len(_fetch_locks) >= _MAX_FETCH_LOCKS:
+            _fetch_locks.popitem(last=False)
+
+        lock = threading.Lock()
+        _fetch_locks[cache_key] = lock
+        return lock
+
+
 def get_inference_profile_info(inference_profile_id: str, credentials: dict) -> dict:
     """
-    Get inference profile information from Bedrock API with 5-minute caching
-    High-frequency calls will cause GetInferenceProfile throttling.
+    Get inference profile information from Bedrock API with 5-minute caching.
+    Uses per-key locking to prevent thundering herd problem where high-frequency
+    calls will cause GetInferenceProfile throttling.
 
-    
     :param inference_profile_id: inference profile identifier
     :param credentials: credentials containing AWS access info
     :return: inference profile information
     """
     current_time = time.time()
-    
+
     # Create cache key based on profile ID and AWS region
-    aws_region = credentials.get('aws_region', 'default')
+    aws_region = credentials.get("aws_region", "default")
     cache_key = f"{inference_profile_id}:{aws_region}"
-    
-    # Check if cached data exists and is still valid
+
+    # Quick check without fetch lock (fast path for cache hits)
     with _cache_lock:
-        # Check if cached data exists and is still valid
         if cache_key in _inference_profile_cache:
             cached_data, timestamp = _inference_profile_cache[cache_key]
             if current_time - timestamp < _CACHE_TTL:
+                # Refresh timestamp on hit to keep active profiles cached
+                _inference_profile_cache[cache_key] = (cached_data, current_time)
                 logger.debug(f"Using cached inference profile info for {inference_profile_id}")
                 return cached_data
             else:
                 # Remove expired cache entry
                 logger.debug(f"Cache expired for inference profile {inference_profile_id}, fetching fresh data")
                 del _inference_profile_cache[cache_key]
-    
-    try:
-        logger.debug(f"[get_inference_profile_info] credentials: {credentials}")
-        bedrock_client = get_bedrock_client("bedrock", credentials)
-        
-        # Call get-inference-profile API
-        response = bedrock_client.get_inference_profile(
-            inferenceProfileIdentifier=inference_profile_id
-        )
-        
+
+    # Get per-key lock to prevent thundering herd
+    # Only one thread will fetch for a given cache_key at a time
+    fetch_lock = _get_fetch_lock(cache_key)
+
+    with fetch_lock:
+        # Double-check cache after acquiring fetch lock
+        # Another thread may have populated the cache while we were waiting
+        current_time = time.time()  # Refresh time after potentially waiting on lock
         with _cache_lock:
-            # Double-check again before caching
-            # (another thread might have cached it while we were calling API)
-            if cache_key not in _inference_profile_cache:
+            if cache_key in _inference_profile_cache:
+                cached_data, timestamp = _inference_profile_cache[cache_key]
+                if current_time - timestamp < _CACHE_TTL:
+                    # Refresh timestamp on hit
+                    _inference_profile_cache[cache_key] = (cached_data, current_time)
+                    logger.debug(f"Using cached inference profile info for {inference_profile_id} (after wait)")
+                    return cached_data
+
+        # Only one thread reaches here per cache_key
+        try:
+            bedrock_client = get_bedrock_client("bedrock", credentials)
+
+            response = bedrock_client.get_inference_profile(
+                inferenceProfileIdentifier=inference_profile_id
+            )
+
+            with _cache_lock:
                 _inference_profile_cache[cache_key] = (response, time.time())
                 logger.debug(f"Cached inference profile info for {inference_profile_id} (cache size: {len(_inference_profile_cache)})")
-            else:
-                # Another thread already cached it, that's fine
-                cached_data, _ = _inference_profile_cache[cache_key]
-                logger.debug(f"Another thread cached {inference_profile_id}, using existing cache")
-                return cached_data
-        
-        return response
-        
-    except Exception as e:
-        logger.error(f"Failed to get inference profile info: {str(e)}")
-        raise e
+
+            return response
+
+        except Exception as e:
+            logger.error(f"Failed to get inference profile info: {str(e)}")
+            raise
 
 
 def validate_inference_profile(inference_profile_id: str, credentials: dict) -> None:

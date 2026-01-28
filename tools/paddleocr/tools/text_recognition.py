@@ -1,9 +1,10 @@
 from collections.abc import Generator
 from typing import Any
 
-import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
+
+from tools.utils import convert_file_type, make_paddleocr_api_request
 
 
 class TextRecognitionTool(Tool):
@@ -43,20 +44,11 @@ class TextRecognitionTool(Tool):
             if optional_param_name in tool_parameters:
                 params[optional_param_name] = tool_parameters[optional_param_name]
 
-        try:
-            resp = requests.post(
-                api_url,
-                headers={"Authorization": f"token {access_token}"},
-                json=params,
-            )
-            resp.raise_for_status()
-            result = resp.json()
-        except requests.exceptions.JSONDecodeError as e:
-            raise RuntimeError(
-                f"Failed to decode JSON response from PaddleOCR API: {resp.text}"
-            ) from e
-        except requests.exceptions.RequestException as e:
-            raise RuntimeError(f"PaddleOCR API request failed: {e}") from e
+        # Convert fileType parameter
+        if "fileType" in params:
+            params["fileType"] = convert_file_type(params["fileType"])
+
+        result = make_paddleocr_api_request(api_url, params, access_token)
 
         all_text = []
         for item in result.get("result", {}).get("ocrResults", []):
