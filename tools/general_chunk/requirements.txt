@@ -1,2 +1,1 @@
-dify_plugin==0.5.0b15
-pandas==2.2.5
+dify_plugin==0.5.0

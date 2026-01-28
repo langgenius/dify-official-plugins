@@ -1,5 +1,6 @@
 import json
 import requests
+import base64
 from collections.abc import Generator
 from typing import Any, Dict, List
 
@@ -17,6 +18,13 @@ class QwenImageTool(Tool):
     # API endpoints
     BASE_URL = "https://aihubmix.com/v1"
     PREDICTIONS_ENDPOINT = f"{BASE_URL}/models/qianfan/qwen-image/predictions"
+    
+    def create_image_info(self, base64_data: str, resolution: str) -> dict:
+        mime_type = "image/png"
+        return {
+            "url": f"data:{mime_type};base64,{base64_data}",
+            "resolution": resolution
+        }
     
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         """
@@ -83,19 +91,30 @@ class QwenImageTool(Tool):
             
             data = response.json()
             
-            # Extract image URLs from response
+            # Extract image data from response
             images = []
             if "output" in data and isinstance(data["output"], list):
                 for item in data["output"]:
-                    if "url" in item:
+                    if "b64_json" in item:
+                        images.append({"b64_json": item["b64_json"]})
+                    elif "url" in item:
                         images.append({"url": item["url"]})
             
             if not images:
                 raise InvokeError("No images were generated")
             
-            # Create image messages for direct display in Dify
-            for img in images:
-                yield self.create_image_message(img["url"])
+            # Process images - return as blobs for base64 data, or display URLs
+            for idx, img in enumerate(images):
+                if "b64_json" in img:
+                    # Decode base64 and return as blob
+                    base64_data = img["b64_json"]
+                    image_bytes = base64.b64decode(base64_data)
+                    filename = f"qwen_image_{idx + 1}.png"
+                    mime_type = "image/png"
+                    yield self.create_blob_message(blob=image_bytes, meta={"mime_type": mime_type, "filename": filename})
+                elif "url" in img:
+                    # For URL responses, create image message
+                    yield self.create_image_message(img["url"])
             
             # Return results as JSON
             yield self.create_json_message({
@@ -111,8 +130,8 @@ class QwenImageTool(Tool):
             })
             
             # Also create text message with image URLs
-            image_urls = "\n".join([f"- {img['url']}" for img in images])
-            yield self.create_text_message(f"Qwen Image generated {len(images)} image(s):\n{image_urls}")
+            image_urls = "\n".join([img['url'] for img in images])
+            yield self.create_text_message(image_urls)
                 
         except Exception as e:
             raise InvokeError(f"Qwen Image generation failed: {str(e)}")

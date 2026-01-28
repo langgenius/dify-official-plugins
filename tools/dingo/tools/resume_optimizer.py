@@ -18,7 +18,6 @@ Features:
 from typing import Any
 from collections.abc import Generator
 import json
-import time
 import traceback
 
 from dify_plugin import Tool
@@ -409,6 +408,7 @@ Please strictly follow this Markdown structure:
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         Main entry point for the resume optimizer tool.
+        Refactored to support STREAMING to resolve Dify Cloud timeout issues (TTFB).
 
         Args:
             tool_parameters: Tool parameters including resume_content, target_position, match_report, language
@@ -419,32 +419,28 @@ Please strictly follow this Markdown structure:
         language = tool_parameters.get('language', 'zh_Hans')
 
         try:
-            # Extract parameters
+            # 1. Extract parameters
             resume_content = tool_parameters.get('resume_content', '').strip()
             target_position = tool_parameters.get('target_position', '').strip()
             match_report = tool_parameters.get('match_report', '')
 
-            # Validate resume content
+            # 2. Validation
             if not resume_content:
                 error_msg = "请输入简历内容" if language == 'zh_Hans' else "Please input resume content"
                 yield self.create_text_message(error_msg)
                 return
 
-            # Parse match_report to determine mode
+            # 3. Parse match_report (Preserve existing logic)
             missing_required, missing_nice, negative_keywords, parse_success = self._parse_match_report(match_report)
 
-            # Determine mode
+            # 4. Determine mode
             is_targeted_mode = bool(match_report and parse_success and (missing_required or missing_nice or negative_keywords))
             parse_failed = bool(match_report and not parse_success)
 
-            # Log mode info
-            mode_str = "Targeted" if is_targeted_mode else ("General (parse failed)" if parse_failed else "General")
-            print(f"[resume_optimizer] Mode: {mode_str}")
-            print(f"[resume_optimizer] Missing Required: {missing_required}")
-            print(f"[resume_optimizer] Missing Nice: {missing_nice}")
-            print(f"[resume_optimizer] Negative: {negative_keywords}")
+            # Debug log
+            print(f"[resume_optimizer] Mode: {'Targeted' if is_targeted_mode else 'General'}")
 
-            # Build system prompt
+            # 5. Build system prompt (Preserve existing logic)
             system_prompt = self._build_system_prompt(
                 language=language,
                 target_position=target_position,
@@ -455,98 +451,56 @@ Please strictly follow this Markdown structure:
                 parse_failed=parse_failed
             )
 
-            # Call LLM
-            result = self._call_llm(system_prompt, resume_content, language)
-            yield self.create_text_message(result)
+            # 6. Prepare Messages
+            prompt_messages = [
+                SystemPromptMessage(content=system_prompt),
+                UserPromptMessage(content=f"请优化以下简历：\n\n{resume_content}" if language == 'zh_Hans' else f"Please optimize the following resume:\n\n{resume_content}")
+            ]
+
+            # 7. LLM Configuration
+            llm_config = {
+                "provider": "deepseek",
+                "model": "deepseek-chat",
+                "mode": "chat",
+                "completion_params": {
+                    "temperature": 0.5,
+                    "max_tokens": 8192
+                }
+            }
+
+            # 8. Streaming Invocation (Critical Fix for TTFB timeout)
+            response_generator = self.session.model.llm.invoke(
+                model_config=LLMModelConfig(**llm_config),
+                prompt_messages=prompt_messages,
+                stream=True
+            )
+
+            # 9. Yield Chunks immediately to keep connection alive
+            # LLMResultChunk structure: chunk.delta.message.content
+            has_content = False
+            for chunk in response_generator:
+                if hasattr(chunk, 'delta') and chunk.delta and hasattr(chunk.delta, 'message') and chunk.delta.message:
+                    content = chunk.delta.message.content
+                    if content:
+                        has_content = True
+                        yield self.create_text_message(content)
+
+            # If no content was yielded, show warning
+            if not has_content:
+                error_msg = "LLM 返回了空内容，请重试" if language == 'zh_Hans' else "LLM returned empty content, please retry"
+                yield self.create_text_message(f"\n\n[警告]: {error_msg}" if language == 'zh_Hans' else f"\n\n[Warning]: {error_msg}")
 
         except Exception as e:
-            error_msg = f"优化过程中出现错误: {str(e)}" if language == 'zh_Hans' else f"Error during optimization: {str(e)}"
+            error_details = str(e)
             print(f"[resume_optimizer] Error: {traceback.format_exc()}")
-            yield self.create_text_message(error_msg)
 
-    # ========== LLM Invocation ==========
-    def _call_llm(self, system_prompt: str, resume_content: str, language: str) -> str:
-        """
-        Call the LLM with retry logic.
+            # Localized Error Handling
+            err_prefix = "[系统错误]" if language == 'zh_Hans' else "[System Error]"
 
-        Args:
-            system_prompt: The system prompt with instructions
-            resume_content: The user's resume content
-            language: Output language
-
-        Returns:
-            LLM response text
-        """
-        # LLM Configuration
-        llm_config = {
-            "provider": "deepseek",
-            "model": "deepseek-chat",
-            "mode": "chat",
-            "completion_params": {
-                "temperature": 0.5,
-                "max_tokens": 8192
-            }
-        }
-
-        # Prepare messages
-        prompt_messages = [
-            SystemPromptMessage(content=system_prompt),
-            UserPromptMessage(content=f"请优化以下简历：\n\n{resume_content}" if language == 'zh_Hans' else f"Please optimize the following resume:\n\n{resume_content}")
-        ]
-
-        # Retry logic
-        max_retries = 3
-        retry_delay = 1
-
-        for attempt in range(max_retries):
-            try:
-                print(f"[resume_optimizer] Attempt {attempt + 1}/{max_retries} - Calling LLM...")
-
-                # Invoke LLM
-                llm_result = self.session.model.llm.invoke(
-                    model_config=LLMModelConfig(**llm_config),
-                    prompt_messages=prompt_messages,
-                    stream=False
-                )
-
-                # Extract response
-                if llm_result and hasattr(llm_result, 'message') and hasattr(llm_result.message, 'content'):
-                    response_text = llm_result.message.content.strip()
-                    print(f"[resume_optimizer] Response length: {len(response_text)} chars")
-
-                    if not response_text:
-                        if attempt < max_retries - 1:
-                            print(f"[resume_optimizer] Empty response, retrying in {retry_delay}s...")
-                            time.sleep(retry_delay)
-                            retry_delay *= 2
-                            continue
-                        else:
-                            return "LLM 返回空结果，请稍后重试" if language == 'zh_Hans' else "LLM returned empty result, please retry later"
-
-                    return response_text
-                else:
-                    if attempt < max_retries - 1:
-                        print(f"[resume_optimizer] Invalid response structure, retrying...")
-                        time.sleep(retry_delay)
-                        retry_delay *= 2
-                        continue
-                    else:
-                        return "LLM 返回无效响应" if language == 'zh_Hans' else "LLM returned invalid response"
-
-            except Exception as e:
-                error_details = str(e)
-                print(f"[resume_optimizer] LLM error: {error_details}")
-
-                # Check for configuration error
-                if "Provider" in error_details and "does not exist" in error_details:
-                    return f"请在 Dify 设置中配置 DeepSeek 提供商: {error_details}" if language == 'zh_Hans' else f"Please configure DeepSeek provider in Dify settings: {error_details}"
-
-                if attempt < max_retries - 1:
-                    print(f"[resume_optimizer] Retrying in {retry_delay}s...")
-                    time.sleep(retry_delay)
-                    retry_delay *= 2
-                    continue
-                else:
-                    return f"LLM 调用失败: {error_details}" if language == 'zh_Hans' else f"LLM invocation failed: {error_details}"
-
-        return "LLM 调用失败，请稍后重试" if language == 'zh_Hans' else "LLM invocation failed, please retry later"
+            # Friendly Provider Error
+            if "Provider" in error_details and "does not exist" in error_details:
+                friendly_msg = "请在 Dify 设置中配置 DeepSeek 提供商" if language == 'zh_Hans' else "Please configure DeepSeek provider in Dify settings"
+                yield self.create_text_message(f"\n\n{err_prefix}: {friendly_msg}\n(Details: {error_details})")
+            else:
+                # General Error
+                yield self.create_text_message(f"\n\n{err_prefix}: {error_details}")

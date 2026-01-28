@@ -1,4 +1,5 @@
 import requests
+import base64
 from collections.abc import Generator
 from typing import Any, Dict
 
@@ -18,6 +19,13 @@ class FluxKontextTool(Tool):
     # API endpoints configuration
     BASE_URL = "https://aihubmix.com/v1"
     SYNC_ENDPOINT = f"{BASE_URL}/images/generations"
+    
+    def create_image_info(self, base64_data: str, resolution: str) -> dict:
+        mime_type = "image/png"
+        return {
+            "url": f"data:{mime_type};base64,{base64_data}",
+            "resolution": resolution
+        }
     
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         """
@@ -95,12 +103,11 @@ class FluxKontextTool(Tool):
         
         data = response.json()
         
-        # Extract image URLs from response
+        # Extract image data from response
         images = []
         if "data" in data and isinstance(data["data"], list):
             for item in data["data"]:
                 if "b64_json" in item:
-                    # For base64 response, we'd need to decode and upload, but for now return the base64
                     images.append({"b64_json": item["b64_json"]})
                 elif "url" in item:
                     images.append({"url": item["url"]})
@@ -108,14 +115,18 @@ class FluxKontextTool(Tool):
         if not images:
             raise InvokeError("No images were generated")
         
-        # Create image messages for direct display in Dify
-        for img in images:
-            if "url" in img:
+        # Process images - return as blobs for base64 data, or display URLs
+        for idx, img in enumerate(images):
+            if "b64_json" in img:
+                # Decode base64 and return as blob
+                base64_data = img["b64_json"]
+                image_bytes = base64.b64decode(base64_data)
+                filename = f"flux_kontext_image_{idx + 1}.png"
+                mime_type = "image/png"
+                yield self.create_blob_message(blob=image_bytes, meta={"mime_type": mime_type, "filename": filename})
+            elif "url" in img:
+                # For URL responses, create image message
                 yield self.create_image_message(img["url"])
-            elif "b64_json" in img:
-                # For base64 images, create data URL
-                data_url = f"data:image/png;base64,{img['b64_json']}"
-                yield self.create_image_message(data_url)
         
         # Return results as JSON
         yield self.create_json_message({
@@ -128,5 +139,7 @@ class FluxKontextTool(Tool):
             "moderation_level": moderation_level
         })
         
-        # Also create text message
-        yield self.create_text_message(f"{model} generated {len(images)} image(s)")
+        # Also create text message with image URLs
+        image_urls = "\n".join([img['url'] for img in images if 'url' in img])
+        if image_urls:
+            yield self.create_text_message(image_urls)

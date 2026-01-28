@@ -17,8 +17,7 @@ extra:
     source: provider/dingo.py
 
 tools:
-  - tools/text_quality_evaluator.yaml
+  - tools/dingo_scout.yaml
   - tools/resume_optimizer.yaml
-  - tools/resume_quality_checker.yaml
   - tools/keyword_matcher.yaml
 

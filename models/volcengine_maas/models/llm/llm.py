@@ -616,8 +616,16 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     options=["enabled", "disabled", "auto"],
                 )
             )
-        elif base_model.lower() in ("doubao-1.5-thinking-vision-pro", "doubao-seed-1.6-flash", "deepseek-v3.1",
-                                    "doubao-seed-1.6-vision", "doubao-seed-1.6-lite", "deepseek-v3.2"):
+        elif base_model.lower() in (
+            "doubao-1.5-thinking-vision-pro",
+            "doubao-seed-1.6-flash",
+            "deepseek-v3.1",
+            "doubao-seed-1.6-vision",
+            "doubao-seed-1.6-lite",
+            "deepseek-v3.2",
+            "doubao-seed-1.8",
+            "glm-4.7",
+        ):
             rules.append(
                 ParameterRule(
                     name="thinking",
@@ -627,7 +635,11 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     options=["enabled", "disabled"],
                 )
             )
-        if base_model.lower() in ("doubao-seed-1.6-lite", "doubao-seed-1.6"):
+        if base_model.lower() in (
+            "doubao-seed-1.6-lite",
+            "doubao-seed-1.6",
+            "doubao-seed-1.8",
+        ):
             rules.append(
                 ParameterRule(
                     name="reasoning_effort",

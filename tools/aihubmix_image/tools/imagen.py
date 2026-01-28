@@ -31,6 +31,13 @@ class ImagenTool(Tool):
     # API configuration
     BASE_URL = "https://aihubmix.com/v1"
     
+    def create_image_info(self, base64_data: str, aspect_ratio: str) -> dict:
+        mime_type = "image/png"
+        return {
+            "url": f"data:{mime_type};base64,{base64_data}",
+            "aspect_ratio": aspect_ratio
+        }
+    
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         """
         Main invoke method for Google Imagen image generation
@@ -93,9 +100,6 @@ class ImagenTool(Tool):
                             image_bytes = generated_image.image.image_bytes
                             base64_image = base64.b64encode(image_bytes).decode('utf-8')
                             
-                            # Create data URL for display
-                            data_url = f"data:image/png;base64,{base64_image}"
-                            
                             # Store image info without base64 in JSON (for cleaner output)
                             images.append({
                                 "index": i + 1,
@@ -103,8 +107,10 @@ class ImagenTool(Tool):
                                 "size": len(image_bytes)
                             })
                             
-                            # Create image message for direct display in Dify
-                            yield self.create_image_message(data_url)
+                            # Return image as blob
+                            filename = f"imagen_image_{i + 1}.png"
+                            mime_type = "image/png"
+                            yield self.create_blob_message(blob=image_bytes, meta={"mime_type": mime_type, "filename": filename})
                             
                         except Exception as e:
                             continue
@@ -118,9 +124,8 @@ class ImagenTool(Tool):
                             "num_images": len(images),
                             "images": images,
                             "aspect_ratio": aspect_ratio,
-                            "note": "Images are displayed above in conversation. Image data is not included in this JSON response for brevity."
+                            "note": "Images are returned as blobs. Image data is not included in this JSON response for brevity."
                         })
-                        yield self.create_text_message(f"Google Imagen ({model}) successfully generated {len(images)} image(s) with aspect ratio {aspect_ratio}")
                         return
                 
             except Exception as e:
@@ -203,9 +208,8 @@ class ImagenTool(Tool):
                             "num_images": len(images),
                             "images": images,
                             "aspect_ratio": aspect_ratio,
-                            "note": "Images are displayed above in conversation. Image data is not included in this JSON response for brevity."
+                            "note": "Images are returned as blobs. Image data is not included in this JSON response for brevity."
                         })
-                        yield self.create_text_message(f"Google Imagen ({model}) successfully generated {len(images)} image(s) with aspect ratio {aspect_ratio}")
                         return
                 else:
                     last_error = f"Predictions endpoint failed: {response.status_code} {response.text}"
@@ -267,9 +271,8 @@ class ImagenTool(Tool):
                             "num_images": len(images),
                             "images": images,
                             "aspect_ratio": aspect_ratio,
-                            "note": "Images are displayed above in conversation. Image data is not included in this JSON response for brevity."
+                            "note": "Images are returned as blobs. Image data is not included in this JSON response for brevity."
                         })
-                        yield self.create_text_message(f"Google Imagen ({model}) successfully generated {len(images)} image(s) with aspect ratio {aspect_ratio}")
                         return
                 else:
                     last_error = f"Gemini style failed: {response.status_code} {response.text}"

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any, Optional
+import codecs
 
 from .text_splitter import (
     TS,
@@ -12,6 +13,7 @@ from .text_splitter import (
     Set,
     TokenTextSplitter,
     Union,
+    _split_text_with_regex,
 )
 
 
@@ -52,7 +54,7 @@ class FixedRecursiveCharacterTextSplitter(EnhanceRecursiveCharacterTextSplitter)
     ):
         """Create a new TextSplitter."""
         super().__init__(**kwargs)
-        self._fixed_separator = fixed_separator
+        self._fixed_separator = codecs.decode(fixed_separator, "unicode_escape")
         self._separators = separators or ["\n\n", "\n", " ", ""]
 
     def split_text(self, text: str) -> list[str]:
@@ -89,14 +91,7 @@ class FixedRecursiveCharacterTextSplitter(EnhanceRecursiveCharacterTextSplitter)
                 break
 
         # Now that we have the separator, split the text
-        if separator:
-            if separator == " ":
-                splits = text.split()
-            else:
-                splits = text.split(separator)
-        else:
-            splits = list(text)
-        splits = [s for s in splits if (s not in {"", "\n"})]
+        splits = _split_text_with_regex(text, separator, self._keep_separator)
         _good_splits = []
         _good_splits_lengths = []  # cache the lengths of the splits
         _separator = "" if self._keep_separator else separator

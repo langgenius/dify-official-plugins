@@ -1,0 +1,52 @@
+background: '#faf7f5'
+configurate_methods:
+- predefined-model
+description:
+  en_US: Models provided by Xiaomi MiMo, such as mimo-v2-flash.
+  zh_Hans: Xiaomi MiMo 提供的模型，例如 mimo-v2-flash。
+extra:
+  python:
+    model_sources:
+    - models/llm/llm.py
+    provider_source: provider/mimo.py
+help:
+  title:
+    en_US: Get your API Key from Xiaomi MiMo
+    zh_Hans: 从 Xiaomi MiMo 获取 API Key
+  url:
+    en_US: https://platform.xiaomimimo.com/#/console/api-keys
+icon_large:
+  en_US: icon_l_en.svg
+icon_small:
+  en_US: icon_s_en.png
+label:
+  en_US: Xiaomi MiMo
+  zh_Hans: Xiaomi MiMo
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+    - models/llm/*.yaml
+provider: mimo
+provider_credential_schema:
+  credential_form_schemas:
+  - label:
+      en_US: API Key
+    placeholder:
+      en_US: Enter your API Key
+      zh_Hans: 在此输入您的 API Key
+    required: true
+    type: secret-input
+    variable: api_key
+  - label:
+      en_US: Custom API endpoint URL
+      zh_Hans: 自定义 API endpoint 地址
+    placeholder:
+      en_US: Base URL, e.g. https://api.xiaomimimo.com/v1
+      zh_Hans: Base URL, e.g. https://api.xiaomimimo.com/v1
+    required: false
+    type: text-input
+    default: "https://api.xiaomimimo.com/v1"
+    variable: endpoint_url
+supported_model_types:
+- llm

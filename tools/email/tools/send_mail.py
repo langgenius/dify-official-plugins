@@ -1,6 +1,200 @@
+import json
+import re
+from typing import Any, Generator
+
+from dify_plugin import Tool
+from dify_plugin.entities.tool import ToolInvokeMessage
+from dify_plugin.file.file import File
+from tools.markdown_utils import convert_markdown_to_html
+
+from tools.send import SendEmailToolParameters, send_mail
+
+
+class SendMailTool(Tool):
+    def _invoke(
+        self, tool_parameters: dict[str, Any]
+
+    ) -> Generator[ToolInvokeMessage, None, None]:
+        """
+        invoke tools
+        """
+        sender = self.runtime.credentials.get("email_account", "")
+        # Use sender_address if provided, otherwise fall back to email_account
+        sender_address = self.runtime.credentials.get("sender_address", "") or sender
+        email_rgx = re.compile("^[a-zA-Z0-9._-]+@[a-zA-Z0-9_-]+(\\.[a-zA-Z0-9_-]+)+$")
+        password = self.runtime.credentials.get("email_password", "")
+        smtp_server = self.runtime.credentials.get("smtp_server", "")
+        if not smtp_server:
+            yield self.create_text_message("please input smtp server")
+            return
+
+        smtp_port = self.runtime.credentials.get("smtp_port", "")
+        try:
+            smtp_port = int(smtp_port)
+        except ValueError:
+            yield self.create_text_message("Invalid parameter smtp_port(should be int)")
+            return
+
+            
+        if not sender:
+            yield self.create_text_message("please input sender")
+            return
+            
+        if not email_rgx.match(sender):
+            yield self.create_text_message("Invalid parameter userid, the sender is not a mailbox")
+            return
+            
+
+        receiver_email = tool_parameters.get("send_to", "")
+        if not receiver_email:
+            yield self.create_text_message("please input receiver email")
+            return
+
+        # Handle receiver email - can be single email or comma-separated list
+        if isinstance(receiver_email, str):
+            # Check if it's already JSON format
+            if receiver_email.startswith('['):
+                try:
+                    receivers_list = json.loads(receiver_email)
+                except json.JSONDecodeError:
+                    yield self.create_text_message("Invalid JSON format for 'send_to' list")
+                    return
+
+            else:
+                # Split by comma for comma-separated emails
+                receivers_list = [e.strip() for e in receiver_email.split(',') if e.strip()]
+        else:
+            receivers_list = [receiver_email]
+
+        for receiver in receivers_list:
+            if not email_rgx.match(receiver):
+                yield self.create_text_message(
+                    f"Invalid parameter receiver email, the receiver email({receiver}) is not a mailbox"
+                )
+                return
+
+        email_content = tool_parameters.get("email_content", "")
+        if not email_content:
+            yield self.create_text_message("please input email content")
+            return
+
+        subject = tool_parameters.get("subject", "")
+        if not subject:
+            yield self.create_text_message("please input email subject")
+            return
+
+        encrypt_method = self.runtime.credentials.get("encrypt_method", "")
+        if not encrypt_method:
+            yield self.create_text_message("please input encrypt method")
+            return
+        
+        # Get reply-to address
+        reply_to = tool_parameters.get("reply_to", None)
+            
+        # Process CC recipients
+        cc_email = tool_parameters.get('cc', '')
+        cc_email_list = []
+        if cc_email:
+            try:
+                if cc_email.startswith('['):
+                    cc_email_list = json.loads(cc_email)
+                else:
+                    cc_email_list = [e.strip() for e in cc_email.split(',') if e.strip()]
+                for cc_email_item in cc_email_list:
+                    if not email_rgx.match(cc_email_item):
+                        yield self.create_text_message(
+                            f"Invalid parameter cc email, the cc email({cc_email_item}) is not a mailbox"
+                        )
+                        return
+            except json.JSONDecodeError:
+                yield self.create_text_message("Invalid JSON format for CC list")
+                return
+                
+        # Process BCC recipients
+        bcc_email = tool_parameters.get('bcc', '')
+        bcc_email_list = []
+        if bcc_email:
+            try:
+                if bcc_email.startswith('['):
+                    bcc_email_list = json.loads(bcc_email)
+                else:
+                    bcc_email_list = [e.strip() for e in bcc_email.split(',') if e.strip()]
+                for bcc_email_item in bcc_email_list:
+                    if not email_rgx.match(bcc_email_item):
+                        yield self.create_text_message(
+                            f"Invalid parameter bcc email, the bcc email({bcc_email_item}) is not a mailbox"
+                        )
+                        return
+            except json.JSONDecodeError:
+                yield self.create_text_message("Invalid JSON format for BCC list")
+                return
+        
+        # Check if markdown to HTML conversion is requested
+        convert_to_html = tool_parameters.get("convert_to_html", False)
+        
+        # Store original plain text content before any conversion
+        plain_text_content = email_content
+        
+        if convert_to_html:
+            # Convert content to HTML using shared utility
+            email_content, plain_text_content = convert_markdown_to_html(email_content)
+        
+        # Get attachments from parameters (if any)
+        attachments = tool_parameters.get("attachments", None)
+        
+        # Convert single attachment to list if needed
+        if attachments is not None and not isinstance(attachments, list):
+            attachments = [attachments]
+
+
+        send_email_params = SendEmailToolParameters(
+            smtp_server=smtp_server,
+            smtp_port=smtp_port,
+            email_account=sender,
+            email_password=password,
+            sender_address=sender_address,
+            sender_to=receivers_list,
+            subject=subject,
+            email_content=email_content,
+            plain_text_content=plain_text_content if convert_to_html else None,
+            encrypt_method=encrypt_method,
+            is_html=convert_to_html,
+            attachments=attachments,
+            cc_recipients=cc_email_list,
+            bcc_recipients=bcc_email_list,
+            reply_to_address=reply_to
+        )
+        
+        # Initialize response message for all recipients
+        msg = {}
+        for receiver in receivers_list + cc_email_list + bcc_email_list:
+            msg[receiver] = "send email success"
+            
+        # Send the email and get result
+        try:
+            result = send_mail(send_email_params)
+        except Exception as e:
+            yield self.create_text_message(f"Failed to send email: {e}")
+            return
+        
+        # Process any error results
+        if result:
+            for key, (integer_value, bytes_value) in result.items():
+                msg[key] = f"send email failed: {integer_value} {bytes_value.decode('utf-8')}"
+                
+        # Add attachment information to the response
+        response_text = json.dumps(msg, indent=2)
+        if attachments:
+            attachment_info = f"Email sent with {len(attachments)} attachment(s)"
+            yield self.create_text_message(f"{attachment_info}. Details: {response_text}")
+        else:
+            yield self.create_text_message(response_text)
+
+
+# Legacy function kept for backward compatibility
 def send_email_with_attachments(to, subject, body, attachment_paths=None, cc=None, bcc=None, smtp_config=None):
     """
-    Send an email with attachments using SMTP
+    Send an email with attachments using SMTP (Legacy function - deprecated)
     
     Args:
         to (str or list): Recipient email address(es)

@@ -443,7 +443,14 @@ class XinferenceAILargeLanguageModel(LargeLanguageModel):
                 ModelPropertyKey.MODE: completion_type,
                 ModelPropertyKey.CONTEXT_SIZE: context_length,
             },
-            parameter_rules=rules,
+            parameter_rules=rules
+            + [
+                ParameterRule(
+                    name="think",
+                    type=ParameterType.BOOLEAN,
+                    label=I18nObject(zh_Hans="思考模式", en_US="Think"),
+                ),
+            ],
         )
         return entity
 
@@ -498,23 +505,44 @@ class XinferenceAILargeLanguageModel(LargeLanguageModel):
                     "function": {
                         "name": tool.name,
                         "description": tool.description,
-                        "parameters": tool.parameters
-                    }
+                        "parameters": tool.parameters,
+                    },
                 }
                 for tool in tools
             ]
         vision = credentials.get("support_vision", False)
         if isinstance(xinference_model, RESTfulChatModelHandle):
-            resp = client.chat.completions.create(
-                model=credentials["model_uid"],
-                messages=[
-                    self._convert_prompt_message_to_dict(message)
-                    for message in prompt_messages
-                ],
-                stream=stream,
-                user=user,
-                **generate_config,
-            )
+            extra_body = {}
+            if "think" in model_parameters:
+                think_enabled = bool(model_parameters.get("think"))
+                extra_body = {
+                    "chat_template_kwargs": {"enable_thinking": think_enabled},
+                    "thinking": think_enabled,
+                }
+                del model_parameters["think"]
+            if extra_body:
+                resp = client.chat.completions.create(
+                    model=credentials["model_uid"],
+                    messages=[
+                        self._convert_prompt_message_to_dict(message)
+                        for message in prompt_messages
+                    ],
+                    stream=stream,
+                    user=user,
+                    **generate_config,
+                    extra_body=extra_body,
+                )
+            else:
+                resp = client.chat.completions.create(
+                    model=credentials["model_uid"],
+                    messages=[
+                        self._convert_prompt_message_to_dict(message)
+                        for message in prompt_messages
+                    ],
+                    stream=stream,
+                    user=user,
+                    **generate_config,
+                )
             if stream:
                 return self._handle_chat_stream_response(
                     model=model,
@@ -531,13 +559,31 @@ class XinferenceAILargeLanguageModel(LargeLanguageModel):
                 resp=resp,
             )
         elif isinstance(xinference_model, RESTfulGenerateModelHandle):
-            resp = client.completions.create(
-                model=credentials["model_uid"],
-                prompt=self._convert_prompt_message_to_text(prompt_messages),
-                stream=stream,
-                user=user,
-                **generate_config,
-            )
+            extra_body = {}
+            if "think" in model_parameters:
+                think_enabled = bool(model_parameters.get("think"))
+                extra_body = {
+                    "chat_template_kwargs": {"enable_thinking": think_enabled},
+                    "thinking": think_enabled,
+                }
+                del model_parameters["think"]
+            if extra_body:
+                resp = client.completions.create(
+                    model=credentials["model_uid"],
+                    prompt=self._convert_prompt_message_to_text(prompt_messages),
+                    stream=stream,
+                    user=user,
+                    **generate_config,
+                    extra_body=extra_body,
+                )
+            else:
+                resp = client.completions.create(
+                    model=credentials["model_uid"],
+                    prompt=self._convert_prompt_message_to_text(prompt_messages),
+                    stream=stream,
+                    user=user,
+                    **generate_config,
+                )
             if stream:
                 return self._handle_completion_stream_response(
                     model=model,
