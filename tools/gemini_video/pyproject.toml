@@ -1,0 +1,35 @@
+[project]
+name = "gemini-video"
+version = "0.0.9"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "william.chen", email = "william.chen@originlinks.com" }
+]
+requires-python = ">=3.12"
+dependencies = [
+    "click==8.3.1",
+    "colorama==0.4.6",
+    "dify-plugin>=0.3.0,<0.6.0",
+    "distro==1.9.0",
+    "dpkt==1.9.8",
+    "flask==3.0.3",
+    "gevent==25.5.1",
+    "google-api-python-client==2.187.0",
+    "google-genai==1.57.0",
+    "httpx==0.28.1",
+    "pydantic==2.12.5",
+    "pydantic-settings==2.12.0",
+    "python-dotenv==1.2.1",
+    "pyyaml==6.0.3",
+    "regex==2025.11.3",
+    "requests==2.32.5",
+    "tenacity==9.1.2",
+    "tiktoken==0.8.0",
+    "tqdm==4.67.1",
+    "websockets==15.0.1",
+]
+
+[build-system]
+requires = ["uv_build>=0.9.26,<0.10.0"]
+build-backend = "uv_build"
