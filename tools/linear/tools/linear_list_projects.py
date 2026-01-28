@@ -1,4 +1,3 @@
-import json
 from typing import Any, Generator, Dict
 
 from dify_plugin import Tool
@@ -7,14 +6,13 @@ from client import Linear
 from client.Exceptions import LinearApiException, LinearAuthenticationException
 
 
-class LinearGetTeamsTool(Tool):
-    """Tool for searching teams in Linear."""
+class LinearListProjectsTool(Tool):
+    """Tool for listing projects in Linear."""
 
     def _invoke(
         self, tool_parameters: Dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
-        """Search for teams based on name."""
-        # Check credentials
+        """List projects in Linear, optionally filtered by name."""
         if (
             "linear_api_key" not in self.runtime.credentials
             or not self.runtime.credentials.get("linear_api_key")
@@ -25,17 +23,15 @@ class LinearGetTeamsTool(Tool):
         api_key = self.runtime.credentials.get("linear_api_key")
 
         try:
-            # Initialize Linear client
             linear_client = Linear(api_key)
 
-            # Extract parameters
             name_query = tool_parameters.get("name", "").strip()
-            limit = min(int(tool_parameters.get("limit", 10)), 50)  # Cap results
+            limit = min(int(tool_parameters.get("limit", 10)), 50)
 
             # Use GraphQL variables to prevent injection attacks
             graphql_query = """
-            query GetTeams($filter: TeamFilter, $limit: Int!) {
-              teams(
+            query GetProjects($filter: ProjectFilter, $limit: Int!) {
+              projects(
                 filter: $filter,
                 first: $limit,
                 orderBy: updatedAt
@@ -43,9 +39,10 @@ class LinearGetTeamsTool(Tool):
                 nodes {
                   id
                   name
-                  key
                   description
-                  private
+                  state
+                  startDate
+                  targetDate
                   createdAt
                   updatedAt
                 }
@@ -57,41 +54,40 @@ class LinearGetTeamsTool(Tool):
             if name_query:
                 variables["filter"] = {"name": {"containsIgnoreCase": name_query}}
 
-            # Execute the query
             result = linear_client.query_graphql(graphql_query, variables)
 
-            # Process the response
-            if result and "data" in result and "teams" in result.get("data", {}):
-                teams_data = result["data"]["teams"]
-                teams = teams_data.get("nodes", [])
+            if result and "data" in result and "projects" in result.get("data", {}):
+                projects_data = result["data"]["projects"]
+                projects = projects_data.get("nodes", [])
 
-                if not teams:
+                if not projects:
                     search_criteria = (
                         f"name: {name_query}" if name_query else "(no filter)"
                     )
                     yield self.create_text_message(
-                        f"No teams found matching criteria: {search_criteria}"
+                        f"No projects found matching criteria: {search_criteria}"
                     )
                     return
 
-                # Format teams for better readability
-                formatted_teams = []
-                for team in teams:
-                    formatted_team = {
-                        "id": team.get("id"),
-                        "name": team.get("name"),
-                        "key": team.get("key"),
-                        "description": team.get("description"),
-                        "private": team.get("private"),
-                    }
-                    formatted_teams.append(formatted_team)
+                formatted_projects = []
+                for project in projects:
+                    formatted_projects.append(
+                        {
+                            "id": project.get("id"),
+                            "name": project.get("name"),
+                            "description": project.get("description"),
+                            "state": project.get("state"),
+                            "startDate": project.get("startDate"),
+                            "targetDate": project.get("targetDate"),
+                            "createdAt": project.get("createdAt"),
+                            "updatedAt": project.get("updatedAt"),
+                        }
+                    )
 
-                # Return results as JSON, wrapped in a dictionary
-                yield self.create_json_message({"teams": formatted_teams})
-
+                yield self.create_json_message({"projects": formatted_projects})
             else:
                 yield self.create_text_message(
-                    "Error: Failed to retrieve teams - unknown API response structure."
+                    "Error: Failed to retrieve projects - unknown API response structure."
                 )
 
         except LinearAuthenticationException:
@@ -99,14 +95,8 @@ class LinearGetTeamsTool(Tool):
                 "Authentication failed. Please check your Linear API key."
             )
         except LinearApiException as e:
-            # Provide more specific error if filter is invalid
-            if "Invalid filter" in str(e) or "Unknown argument" in str(e):
-                yield self.create_text_message(
-                    f"Linear API error: The provided filter might be invalid. Details: {str(e)}"
-                )
-            else:
-                yield self.create_text_message(f"Linear API error: {str(e)}")
-        except ValueError as e:  # Catch potential int conversion errors for limit
+            yield self.create_text_message(f"Linear API error: {str(e)}")
+        except ValueError as e:
             yield self.create_text_message(f"Input error: {str(e)}")
         except Exception as e:
             yield self.create_text_message(f"An unexpected error occurred: {str(e)}")

@@ -1,0 +1,39 @@
+identity:
+  name: linear_get_issue
+  author: langgenius
+  label:
+    en_US: Get Linear Issue
+    zh_Hans: 获取 Linear 问题
+    pt_BR: Obter Problema do Linear
+    ja_JP: Linear 課題を取得
+    zh_Hant: 獲取 Linear 問題
+description:
+  human:
+    en_US: Retrieve a specific issue from Linear by ID.
+    zh_Hans: 通过 ID 获取 Linear 中的指定问题。
+    pt_BR: Recuperar um problema específico no Linear pelo ID.
+    ja_JP: ID を指定して Linear の課題を取得します。
+    zh_Hant: 透過 ID 獲取 Linear 中的指定問題。
+  llm: Retrieves a Linear issue by its ID and returns detailed fields.
+parameters:
+  - name: id
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Issue ID
+      zh_Hans: 问题 ID
+      pt_BR: ID do Problema
+      ja_JP: 課題ID
+      zh_Hant: 問題 ID
+    human_description:
+      en_US: ID of the issue to retrieve.
+      zh_Hans: 要获取的问题的 ID。
+      pt_BR: ID do problema a ser recuperado.
+      ja_JP: 取得する課題のID。
+      zh_Hant: 要獲取的問題的 ID。
+    llm_description: The unique identifier of the issue to retrieve.
+extra:
+  python:
+    source: tools/linear_get_issue.py
+    class: LinearGetIssueTool
