@@ -1,0 +1,41 @@
+identity:
+  author: langgenius
+  name: seltz
+  label:
+    en_US: Seltz
+    zh_Hans: Seltz
+    ja_JP: Seltz
+    pt_BR: Seltz
+  description:
+    en_US: Web Knowledge API for AI Agents, delivering real-time web content for smarter reasoning.
+    zh_Hans: 面向 AI 代理的网络知识 API，提供实时网络内容以实现更智能的推理。
+    ja_JP: AIエージェント向けウェブ知識API。よりスマートな推論のためのリアルタイムウェブコンテンツを提供。
+    pt_BR: API de Conhecimento Web para Agentes de IA, fornecendo conteúdo web em tempo real para raciocínio mais inteligente.
+  icon: icon.webp
+  tags:
+    - search
+credentials_for_provider:
+  api_key:
+    type: secret-input
+    required: true
+    label:
+      en_US: Seltz API Key
+      zh_Hans: Seltz API 密钥
+      ja_JP: Seltz API キー
+      pt_BR: Chave de API Seltz
+    placeholder:
+      en_US: Please input your Seltz API key
+      zh_Hans: 请输入您的 Seltz API 密钥
+      ja_JP: Seltz API キーを入力してください
+      pt_BR: Por favor, insira sua chave de API Seltz
+    help:
+      en_US: Get your Seltz API key from the Seltz console.
+      zh_Hans: 从 Seltz 控制台获取 API 密钥。
+      ja_JP: Seltz コンソールから API キーを取得してください。
+      pt_BR: Obtenha sua chave de API Seltz no console Seltz.
+    url: https://console.seltz.ai
+tools:
+  - tools/seltz_search.yaml
+extra:
+  python:
+    source: provider/seltz.py

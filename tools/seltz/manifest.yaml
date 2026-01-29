@@ -1,0 +1,39 @@
+version: 0.0.1
+type: plugin
+author: "langgenius"
+name: "seltz"
+description:
+  en_US: Web Knowledge API for AI Agents, delivering real-time web content for smarter reasoning.
+  zh_Hans: 面向 AI 代理的网络知识 API，提供实时网络内容以实现更智能的推理。
+  ja_JP: AIエージェント向けウェブ知識API。よりスマートな推論のためのリアルタイムウェブコンテンツを提供。
+  pt_BR: API de Conhecimento Web para Agentes de IA, fornecendo conteúdo web em tempo real para raciocínio mais inteligente.
+label:
+  en_US: "Seltz"
+  zh_Hans: "Seltz"
+  ja_JP: "Seltz"
+  pt_BR: "Seltz"
+created_at: "2025-01-27T00:00:00.000000000Z"
+icon: icon.webp
+tags:
+  - search
+  - productivity
+resource:
+  memory: 1048576
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+plugins:
+  tools:
+    - "provider/seltz.yaml"
+meta:
+  version: 0.0.1
+  arch:
+    - "amd64"
+    - "arm64"
+  runner:
+    language: "python"
+    version: "3.12"
+    entrypoint: "main"

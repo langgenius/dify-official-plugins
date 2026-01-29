@@ -1,0 +1,57 @@
+identity:
+  name: linear_list_documents
+  author: langgenius
+  label:
+    en_US: List Linear Documents
+    zh_Hans: 列出 Linear 文档
+    pt_BR: Listar Documentos do Linear
+    ja_JP: Linear ドキュメントを一覧表示
+    zh_Hant: 列出 Linear 文件
+description:
+  human:
+    en_US: List documents in Linear, optionally filtering by title.
+    zh_Hans: 列出 Linear 中的文档，可按标题筛选。
+    pt_BR: Listar documentos no Linear, com opção de filtrar por título.
+    ja_JP: Linear のドキュメントを一覧表示します（タイトルで絞り込み可）。
+    zh_Hant: 列出 Linear 中的文件，可按標題篩選。
+  llm: Lists Linear documents with an optional title filter and result limit.
+parameters:
+  - name: query
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Search Text
+      zh_Hans: 搜索文本
+      pt_BR: Texto de Pesquisa
+      ja_JP: 検索テキスト
+      zh_Hant: 搜索文本
+    human_description:
+      en_US: Text to search in document titles.
+      zh_Hans: 在文档标题中搜索的文本。
+      pt_BR: Texto para pesquisar nos títulos dos documentos.
+      ja_JP: ドキュメントのタイトルで検索するテキスト。
+      zh_Hant: 在文件標題中搜索的文本。
+    llm_description: Optional text to search in document titles.
+  - name: limit
+    type: number
+    required: false
+    default: 10
+    form: llm
+    label:
+      en_US: Result Limit
+      zh_Hans: 结果限制
+      pt_BR: Limite de Resultados
+      ja_JP: 結果制限
+      zh_Hant: 結果限制
+    human_description:
+      en_US: "Maximum number of documents to return (default: 10, max: 50)."
+      zh_Hans: 最多返回的文档数量（默认：10，最大：50）。
+      pt_BR: "Número máximo de documentos a retornar (padrão: 10, máx: 50)."
+      ja_JP: 返すドキュメントの最大数（デフォルト：10、最大：50）。
+      zh_Hant: 最多返回的文件數量（默認：10，最大：50）。
+    llm_description: "Max number of documents to return (default: 10, max: 50)."
+extra:
+  python:
+    source: tools/linear_list_documents.py
+    class: LinearListDocumentsTool

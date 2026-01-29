@@ -178,16 +178,15 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         self,
         *,
         model: str,
-        credentials: Mapping[str, Any],
+        credentials: dict[str, Any],
         prompt_messages: Sequence[PromptMessage],
-        model_parameters: Mapping[str, Any],
+        model_parameters: dict[str, Any],
         tools: Optional[list[PromptMessageTool]] = None,
         stop: Optional[Sequence[str]] = None,
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
-        model_parameters = dict(model_parameters)
-        extra_model_kwargs = {}
+        extra_model_kwargs: dict[str, Any] = {}
         extra_headers = {}
 
         credentials_kwargs = self._to_credential_kwargs(credentials)
@@ -363,7 +362,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
 
             loggable_request = _sanitize_for_logging(request_payload)
             logging.info(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
-            response = client.messages.create(
+            response = client.messages.create( # type: ignore[call-overload]
                 model=model,
                 messages=prompt_message_dicts,
                 stream=stream,
@@ -377,7 +376,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
 
             loggable_request = _sanitize_for_logging(request_payload)
             logging.info(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
-            response = client.messages.create(
+            response = client.messages.create( # type: ignore[call-overload]
                 model=model,
                 messages=prompt_message_dicts,
                 stream=stream,
@@ -498,6 +497,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         """
         Transform json prompts
         """
+        stop = stop or []
         if "```\n" not in stop:
             stop.append("```\n")
         if "\n```" not in stop:
@@ -507,7 +507,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         ):
             prompt_messages[0] = SystemPromptMessage(
                 content=ANTHROPIC_BLOCK_MODE_PROMPT.replace(
-                    "{{instructions}}", prompt_messages[0].content
+                    "{{instructions}}", str(prompt_messages[0].content)
                 ).replace("{{block}}", response_format)
             )
             prompt_messages.append(
@@ -551,7 +551,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         if not prompt_message_dicts:
             prompt_message_dicts.append({"role": "user", "content": "Hello"})
         
-        count_tokens_args = {
+        count_tokens_args: dict[str, Any] = {
             "model": model,
             "messages": prompt_message_dicts
         }
@@ -580,7 +580,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 self._transform_tool_prompt(tool) for tool in tools
             ]
             
-        response = client.messages.count_tokens(**count_tokens_args)
+        response = client.messages.count_tokens(**count_tokens_args) # type: ignore[bad-argument-type]
         return response.input_tokens
 
     def validate_credentials(self, model: str, credentials: Mapping) -> None:
@@ -594,7 +594,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         try:
             self._chat_generate(
                 model=model,
-                credentials=credentials,
+                credentials=dict(credentials),
                 prompt_messages=[UserPromptMessage(content="ping")],
                 model_parameters={"temperature": 0, "max_tokens": 20},
                 stream=False,
@@ -605,7 +605,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     def _handle_chat_generate_response(
         self,
         model: str,
-        credentials: Mapping[str, Any],
+        credentials: dict[str, Any],
         response: Message,
         prompt_messages: Sequence[PromptMessage],
     ) -> LLMResult:
@@ -643,16 +643,14 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 assistant_prompt_message.tool_calls.append(tool_call)
         
         prompt_tokens = (
-            response.usage
-            and response.usage.input_tokens
-            or self.get_num_tokens(
+            response.usage.input_tokens if response.usage else
+            self.get_num_tokens(
                 model=model, credentials=credentials, prompt_messages=prompt_messages
             )
         )
         completion_tokens = (
-            response.usage
-            and response.usage.output_tokens
-            or self.get_num_tokens(
+            response.usage.output_tokens if response.usage else
+            self.get_num_tokens(
                 model=model,
                 credentials=credentials,
                 prompt_messages=[assistant_prompt_message],
@@ -694,7 +692,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     def _handle_chat_generate_stream_response(
         self,
         model: str,
-        credentials: Mapping[str, Any],
+        credentials: dict[str, Any],
         response: Stream[MessageStreamEvent],
         prompt_messages: Sequence[PromptMessage],
     ) -> Generator:
@@ -773,7 +771,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                             
                             for tc in tool_calls:
                                 if tc.id == current_tool_id:
-                                    tc.function.arguments = current_tool_params
+                                    tc.function.arguments = current_tool_params # type: ignore[bad-assignment]
                                     break
                 
                 if chunk.index != current_block_index:
@@ -1190,7 +1188,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     
     def _process_tool_message(self, message: ToolPromptMessage) -> dict:
         """Process tool result message."""
-        tool_result_content = {
+        tool_result_content: dict[str, Any] = {
             "type": "tool_result",
             "tool_use_id": message.tool_call_id,
             "content": message.content

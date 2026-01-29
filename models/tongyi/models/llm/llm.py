@@ -61,6 +61,7 @@ from dify_plugin.errors.model import (
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from openai import OpenAI
+from models._common import get_http_base_address
 from ..constant import BURY_POINT_HEADER
 
 logger = logging.getLogger(__name__)
@@ -238,7 +239,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         if common_force_condition or model.startswith(("qwq-", "qvq-")):
             incremental_output = True
 
-        base_address =  "https://dashscope-intl.aliyuncs.com/api/v1" if credentials.get("use_international_endpoint") == "true" else None
+        base_address = get_http_base_address(credentials)
         
         # The parameter `enable_omni_output_audio_url` must be set to true when using the Omni model in non-streaming mode.
         if model.startswith("qwen3-omni-") and not stream:
@@ -300,7 +301,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             # special for qwen-vl
             if isinstance(resp_content, list):
                 resp_content = resp_content[0]["text"]
-            assistant_prompt_message = AssistantPromptMessage(content=resp_content)
+            assistant_prompt_message = AssistantPromptMessage(
+                content=resp_content,
+                tool_calls=getattr(response.output.choices[0].message, "tool_calls", []),
+            )
             usage = self._calc_response_usage(
                 model,
                 credentials,

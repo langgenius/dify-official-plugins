@@ -1,0 +1,57 @@
+identity:
+  name: linear_list_projects
+  author: langgenius
+  label:
+    en_US: List Linear Projects
+    zh_Hans: 列出 Linear 项目
+    pt_BR: Listar Projetos do Linear
+    ja_JP: Linear プロジェクトを一覧表示
+    zh_Hant: 列出 Linear 專案
+description:
+  human:
+    en_US: List projects in Linear, optionally filtering by name.
+    zh_Hans: 列出 Linear 中的项目，可按名称筛选。
+    pt_BR: Listar projetos no Linear, com opção de filtrar por nome.
+    ja_JP: Linear のプロジェクトを一覧表示します（名前での絞り込み可）。
+    zh_Hant: 列出 Linear 中的專案，可按名稱篩選。
+  llm: Lists Linear projects with an optional name filter and result limit.
+parameters:
+  - name: name
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Name
+      zh_Hans: 名称
+      pt_BR: Nome
+      ja_JP: 名前
+      zh_Hant: 名稱
+    human_description:
+      en_US: Optional partial name to filter projects by (case-insensitive).
+      zh_Hans: 可选的项目名称关键字（不区分大小写）。
+      pt_BR: Nome parcial opcional para filtrar projetos (sem distinção entre maiúsculas e minúsculas).
+      ja_JP: プロジェクト名の部分一致で絞り込み（大文字小文字を区別しない）。
+      zh_Hant: 可選的專案名稱關鍵字（不區分大小寫）。
+    llm_description: Optional partial project name for filtering.
+  - name: limit
+    type: number
+    required: false
+    default: 10
+    form: llm
+    label:
+      en_US: Result Limit
+      zh_Hans: 结果限制
+      pt_BR: Limite de Resultados
+      ja_JP: 結果制限
+      zh_Hant: 結果限制
+    human_description:
+      en_US: "Maximum number of projects to return (default: 10, max: 50)."
+      zh_Hans: 最多返回的项目数量（默认：10，最大：50）。
+      pt_BR: "Número máximo de projetos a retornar (padrão: 10, máx: 50)."
+      ja_JP: 返すプロジェクトの最大数（デフォルト：10、最大：50）。
+      zh_Hant: 最多返回的專案數量（默認：10，最大：50）。
+    llm_description: "Max number of projects to return (default: 10, max: 50)."
+extra:
+  python:
+    source: tools/linear_list_projects.py
+    class: LinearListProjectsTool
