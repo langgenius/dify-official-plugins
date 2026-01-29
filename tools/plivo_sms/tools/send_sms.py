@@ -33,6 +33,9 @@ class SendSmsTool(Tool):
         except plivo.exceptions.PlivoRestError as e:
             yield self.create_text_message(f"Plivo API error: {e}")
             return
+        except Exception as e:
+            yield self.create_text_message(f"An unexpected error occurred: {e}")
+            return
 
         yield self.create_text_message(
             f"SMS sent successfully to {to_number}. Message UUID: {message_uuid}"

@@ -168,5 +168,5 @@ class TestSendSmsReal:
         # Should get an error message, not crash
         assert len(results) >= 1
         # The response should indicate an error
-        result_text = str(results[0]).lower()
+        result_text = results[0].message.text.lower()
         assert any(word in result_text for word in ["error", "invalid", "fail"])

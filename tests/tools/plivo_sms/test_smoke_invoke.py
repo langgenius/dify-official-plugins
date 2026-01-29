@@ -57,6 +57,7 @@ def test_provider_validate_credentials_success():
 def test_provider_validate_credentials_invalid():
     """Test that invalid credentials raise ToolProviderCredentialValidationError."""
     import plivo
+    import pytest
     from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
     provider_py = os.path.join(PLUGIN_DIR, "provider", "plivo_sms.py")
@@ -67,29 +68,24 @@ def test_provider_validate_credentials_invalid():
     mock_client.account.get.side_effect = plivo.exceptions.AuthenticationError("bad creds")
 
     with patch("plivo.RestClient", return_value=mock_client):
-        try:
+        with pytest.raises(ToolProviderCredentialValidationError):
             provider._validate_credentials({
                 "auth_id": "BAD_ID",
                 "auth_token": "BAD_TOKEN",
             })
-            assert False, "Should have raised ToolProviderCredentialValidationError"
-        except ToolProviderCredentialValidationError:
-            pass
 
 
 def test_provider_validate_credentials_missing_key():
     """Test that missing credentials raise ToolProviderCredentialValidationError."""
+    import pytest
     from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
     provider_py = os.path.join(PLUGIN_DIR, "provider", "plivo_sms.py")
     mod = load_module_from_path("plivo_sms_provider", provider_py)
     provider = mod.PlivoSmsProvider.__new__(mod.PlivoSmsProvider)
 
-    try:
+    with pytest.raises(ToolProviderCredentialValidationError):
         provider._validate_credentials({"auth_id": "ONLY_ID"})
-        assert False, "Should have raised ToolProviderCredentialValidationError"
-    except ToolProviderCredentialValidationError:
-        pass
 
 
 def test_send_sms_tool_invoke_success():

@@ -20,7 +20,11 @@ class PlivoSmsProvider(ToolProvider):
             raise ToolProviderCredentialValidationError(
                 f"Missing required credential: {e}"
             ) from e
+        except plivo.exceptions.PlivoRestError as e:
+            raise ToolProviderCredentialValidationError(
+                f"Plivo API error during validation: {e}"
+            ) from e
         except Exception as e:
             raise ToolProviderCredentialValidationError(
-                f"Failed to validate Plivo credentials: {e}"
+                f"An unexpected error occurred while validating Plivo credentials: {e}"
             ) from e
