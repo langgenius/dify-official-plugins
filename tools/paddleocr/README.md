@@ -14,9 +14,7 @@ Open the Plugin Marketplace, search for the PaddleOCR plugin, and install it to 
 
 You can get your AI Studio access token from [this page](https://aistudio.baidu.com/index/accessToken).
 
-For each tool provided by the plugin, there is a corresponding API URL. It is required to provide at least one API URL in order to use the PaddleOCR plugin. To obtain the API URL, visit the [PaddleOCR official website](https://aistudio.baidu.com/paddleocr/task), click the **API** button in the upper-left corner, choose the example code for the tool you want to use (e.g., *Text Recognition (PP-OCRv5)*), and copy the `API_URL`. You do not need to provide URLs for all tools—only for those you intend to use.
-
-![get_api_url](./_assets/get_api_url.png)
+For each tool provided by the plugin, there is a corresponding API URL. It is required to provide at least one API URL in order to use the PaddleOCR plugin. To obtain the API URL, visit the [PaddleOCR official website](https://aistudio.baidu.com/paddleocr), click the **API** button, choose the example code for the tool you want to use (e.g., *PP-OCRv5*), and copy the `API_URL`. You do not need to provide URLs for all tools—only for those you intend to use.
 
 ### 3. Use the plugin
 

@@ -11,13 +11,14 @@ class TavilySearch:
 
     Args:
         api_key (str): The API key for accessing the Tavily Search API.
+        project_id (str, optional): The project ID for tracking and analytics.
 
     Methods:
         search: Retrieves search results from the Tavily Search API.
     """
 
-    def __init__(self, api_key: str) -> None:
-        self.client = TavilyClient(api_key=api_key)
+    def __init__(self, api_key: str, project_id: str | None = None) -> None:
+        self.client = TavilyClient(api_key=api_key, project_id=project_id)
 
     def search(self, params: dict[str, Any]) -> dict:
         """
@@ -32,6 +33,8 @@ class TavilySearch:
         """
         if "api_key" in params:
             del params["api_key"]
+        if "project_id" in params:
+            del params["project_id"]
 
         processed_params = self._process_params(params)
 
@@ -59,29 +62,52 @@ class TavilySearch:
             elif key in [
                 "include_images",
                 "include_image_descriptions",
-                "include_answer",
-                "include_raw_content",
                 "auto_parameters",
                 "include_favicon",
+                "include_usage",
             ]:
                 if isinstance(value, str):
                     processed_params[key] = value.lower() == "true"
                 else:
                     processed_params[key] = bool(value)
-            elif key in ["max_results", "days", "chunks_per_source"]:
+            elif key == "include_answer":
+                # Handle include_answer with enum values: false, true, basic, advanced
+                if isinstance(value, str):
+                    if value.lower() in ["false", ""]:
+                        continue  # Don't include in params
+                    elif value.lower() in ["true", "basic"]:
+                        processed_params[key] = "basic"
+                    elif value.lower() == "advanced":
+                        processed_params[key] = "advanced"
+                    else:
+                        processed_params[key] = value.lower() == "true"
+                elif value:
+                    processed_params[key] = "basic"
+            elif key == "include_raw_content":
+                # Handle include_raw_content with enum values: false, true, markdown, text
+                if isinstance(value, str):
+                    if value.lower() in ["false", ""]:
+                        continue  # Don't include in params
+                    elif value.lower() in ["true", "markdown"]:
+                        processed_params[key] = "markdown"
+                    elif value.lower() == "text":
+                        processed_params[key] = "text"
+                    else:
+                        processed_params[key] = value.lower() == "true"
+                elif value:
+                    processed_params[key] = "markdown"
+            elif key in ["max_results", "chunks_per_source"]:
                 if isinstance(value, str):
                     processed_params[key] = int(value)
                 else:
                     processed_params[key] = value
-            elif key in ["search_depth", "topic", "query", "time_range", "country"]:
+            elif key in ["search_depth", "topic", "query", "time_range", "country", "start_date", "end_date"]:
                 processed_params[key] = value
             else:
                 pass
         processed_params.setdefault("search_depth", "basic")
         processed_params.setdefault("topic", "general")
         processed_params.setdefault("max_results", 5)
-        if processed_params.get("topic") == "news":
-            processed_params.setdefault("days", 7)
         if processed_params.get("search_depth") == "advanced":
             processed_params.setdefault("chunks_per_source", 3)
         return processed_params
@@ -117,7 +143,8 @@ class TavilySearchTool(Tool):
             yield self.create_text_message("Please input a query.")
             return
 
-        tavily_search = TavilySearch(api_key)
+        project_id = tool_parameters.get("project_id")
+        tavily_search = TavilySearch(api_key, project_id=project_id)
         try:
             search_results = tavily_search.search(tool_parameters)
         except Exception as e:
@@ -166,9 +193,8 @@ class TavilySearchTool(Tool):
             str: The formatted markdown text.
         """
         output_lines = []
-        if tool_parameters.get("include_answer", False) and search_results.get(
-            "answer"
-        ):
+        include_answer = tool_parameters.get("include_answer", False)
+        if include_answer and include_answer not in [False, "false"] and search_results.get("answer"):
             output_lines.append(f"**Answer:** {search_results['answer']}\n")
 
         if "results" in search_results:
@@ -196,9 +222,8 @@ class TavilySearchTool(Tool):
                 if content:
                     output_lines.append(f"**Content:**\n{content}\n")
 
-                if tool_parameters.get("include_raw_content", False) and result.get(
-                    "raw_content"
-                ):
+                include_raw_content = tool_parameters.get("include_raw_content", False)
+                if include_raw_content and include_raw_content not in [False, "false"] and result.get("raw_content"):
                     output_lines.append(f"**Raw Content:**\n{result['raw_content']}\n")
                 output_lines.append("---\n")
 
