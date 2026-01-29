@@ -614,10 +614,10 @@ class TestBuildGeminiContents:
     def test_message_with_empty_content(self):
         """Test handling of messages with empty content
 
-        In Gemini message history, both empty parts list and empty string text parts
-        for model messages are valid and won't cause communication errors.
+        Assistant messages with empty parts are filtered out to avoid invalid requests.
+        This ensures clean message history for Gemini API calls.
         """
-        # Test case 1: Assistant message with empty string content
+        # Test case 1: Assistant message with empty string content is filtered out
         messages = [
             AssistantPromptMessage(content=""),
             UserPromptMessage(content="Hello"),
@@ -629,14 +629,12 @@ class TestBuildGeminiContents:
             config=self.mock_config,
         )
 
-        # Empty string content creates an empty parts list, which is valid for Gemini
-        assert len(contents) == 2
-        assert contents[0].role == "model"
-        assert contents[0].parts == []  # Empty parts list is valid
-        assert contents[1].role == "user"
-        assert contents[1].parts[0].text == "Hello"
+        # Empty assistant message is filtered out, only user message remains
+        assert len(contents) == 1
+        assert contents[0].role == "user"
+        assert contents[0].parts[0].text == "Hello"
 
-        # Test case 2: Assistant message with only thinking tags (results in empty content after removal)
+        # Test case 2: Assistant message with only thinking tags is filtered out
         messages = [
             AssistantPromptMessage(content="<think>Internal thoughts only</think>"),
             UserPromptMessage(content="Hi"),
@@ -648,14 +646,12 @@ class TestBuildGeminiContents:
             config=self.mock_config,
         )
 
-        # After removing thinking tags, content is empty - creates empty parts list
-        assert len(contents) == 2
-        assert contents[0].role == "model"
-        assert contents[0].parts == []  # Empty parts list after thinking tag removal
-        assert contents[1].role == "user"
-        assert contents[1].parts[0].text == "Hi"
+        # After removing thinking tags, content is empty and filtered out
+        assert len(contents) == 1
+        assert contents[0].role == "user"
+        assert contents[0].parts[0].text == "Hi"
 
-        # Test case 3: Mixed empty and non-empty assistant messages
+        # Test case 3: Empty assistant message is filtered, non-empty one is kept
         messages = [
             UserPromptMessage(content="Question"),
             AssistantPromptMessage(content=""),
@@ -669,14 +665,12 @@ class TestBuildGeminiContents:
             config=self.mock_config,
         )
 
-        # Should have 3 contents - consecutive assistant messages are merged
+        # Empty assistant message filtered out, remaining messages properly ordered
         assert len(contents) == 3
         assert contents[0].role == "user"
         assert contents[0].parts[0].text == "Question"
         assert contents[1].role == "model"
-        assert (
-            len(contents[1].parts) == 1
-        )  # Empty content doesn't add parts, only "Actual response" does
+        assert len(contents[1].parts) == 1
         assert contents[1].parts[0].text == "Actual response"
         assert contents[2].role == "user"
         assert contents[2].parts[0].text == "Thanks"
