@@ -302,7 +302,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             # special for qwen-vl
             if isinstance(resp_content, list):
                 resp_content = resp_content[0]["text"]
-            assistant_prompt_message = AssistantPromptMessage(content=resp_content)
+            assistant_prompt_message = AssistantPromptMessage(
+                content=resp_content,
+                tool_calls=getattr(response.output.choices[0].message, "tool_calls", []),
+            )
             usage = self._calc_response_usage(
                 model,
                 credentials,
