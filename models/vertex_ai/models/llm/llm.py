@@ -473,9 +473,15 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         for field in list(config_kwargs):
             if field in ["include_thoughts", "thinking_budget", "thinking_level"]:
                 thinking_config[field] = config_kwargs.pop(field)
-            elif field == "grounding_search":
-                if config_kwargs.pop("grounding_search", False):
+            elif field in ["grounding_search", "grounding"]:
+                if config_kwargs.pop(field, False):
                     tools_config.append(types.Tool(google_search=types.GoogleSearch()))
+            elif field == "url_context":
+                if config_kwargs.pop("url_context", False):
+                    tools_config.append(types.Tool(url_context=types.UrlContext()))
+            elif field == "code_execution":
+                if config_kwargs.pop("code_execution", False):
+                    tools_config.append(types.Tool(code_execution=types.ToolCodeExecution()))
             elif field in ["json_schema", "response_schema"]:
                 schema = self._convert_schema_for_vertex(config_kwargs.pop(field))
                 config_kwargs["response_schema"] = schema
@@ -500,11 +506,21 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             # Handle thinking_level conversion for Gemini 3
             thinking_level_str = thinking_config.get("thinking_level")
             if isinstance(thinking_level_str, str):
-                if thinking_level_str == "Low":
-                    thinking_config["thinking_level"] = types.ThinkingLevel.LOW
-                elif thinking_level_str == "High":
-                    thinking_config["thinking_level"] = types.ThinkingLevel.HIGH
+                # Build level_map dynamically to handle SDK version differences
+                level_map = {}
+                if hasattr(types.ThinkingLevel, "MINIMAL"):
+                    level_map["Minimal"] = types.ThinkingLevel.MINIMAL
+                if hasattr(types.ThinkingLevel, "LOW"):
+                    level_map["Low"] = types.ThinkingLevel.LOW
+                if hasattr(types.ThinkingLevel, "MEDIUM"):
+                    level_map["Medium"] = types.ThinkingLevel.MEDIUM
+                if hasattr(types.ThinkingLevel, "HIGH"):
+                    level_map["High"] = types.ThinkingLevel.HIGH
+
+                if thinking_level_str in level_map:
+                    thinking_config["thinking_level"] = level_map[thinking_level_str]
                 else:
+                    # Fallback: remove unsupported thinking_level
                     thinking_config.pop("thinking_level", None)
 
             # thinking_budget and thinking_level are mutually exclusive
