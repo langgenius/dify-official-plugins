@@ -13,10 +13,9 @@ dependencies = [
     "numpy>=2.4.1",
 ]
 
-# uv run black . -C -l 100 && uv run ruff check --fix
+# uv run ruff check --fix && uv run ruff format
 [dependency-groups]
 dev = [
-    "black>=26.1.0",
     "pytest>=9.0.2",
     "ruff>=0.14.14",
     "python-dotenv>=1.2.1",
