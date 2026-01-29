@@ -17,9 +17,9 @@ parameters:
       en_US: File
       zh_Hans: 文件
     human_description:
-      en_US: The URL of an image or PDF file, or the Base64-encoded result of the content of such a file.
-      zh_Hans: 图像文件或 PDF 文件的 URL，或上述类型文件内容的 Base64 编码结果。
-    llm_description: The URL of an image or PDF file, or the Base64-encoded result of the content of such a file.
+      en_US: The URL of an image or PDF file, or the Base64-encoded result of the content of such a file. The URL must be publicly accessible.
+      zh_Hans: 图像文件或 PDF 文件的 URL，或上述类型文件内容的 Base64 编码结果。URL 必须是公网可访问的。
+    llm_description: The URL of an image or PDF file, or the Base64-encoded result of the content of such a file. The URL must be publicly accessible.
     form: llm
   - name: fileType
     type: select
