@@ -4,22 +4,21 @@ import time
 from unittest.mock import Mock, patch
 
 import pytest
-
-from models.llm.llm import GoogleLargeLanguageModel
 from dify_plugin.entities.model.message import (
-    UserPromptMessage,
-    ToolPromptMessage,
     AssistantPromptMessage,
-    SystemPromptMessage,
-    PromptMessageContent,
-    MultiModalPromptMessageContent,
     AudioPromptMessageContent,
     DocumentPromptMessageContent,
     ImagePromptMessageContent,
+    MultiModalPromptMessageContent,
+    PromptMessageContent,
+    SystemPromptMessage,
     TextPromptMessageContent,
+    ToolPromptMessage,
+    UserPromptMessage,
     VideoPromptMessageContent,
 )
 from google.genai import types
+from models.llm.llm import GoogleLargeLanguageModel
 
 
 @dataclasses.dataclass(frozen=True)
@@ -47,10 +46,14 @@ class TestContentConversion:
 
     def test_text_content(self):
         """Test that TextPromptMessageContent is converted to text Part"""
-        message = UserPromptMessage(content=[TextPromptMessageContent(data="Test text content")])
+        message = UserPromptMessage(
+            content=[TextPromptMessageContent(data="Test text content")]
+        )
 
         contents = self.llm._build_gemini_contents(
-            prompt_messages=[message], genai_client=self.mock_client, config=self.mock_config
+            prompt_messages=[message],
+            genai_client=self.mock_client,
+            config=self.mock_config,
         )
 
         assert len(contents) == 1
@@ -109,9 +112,11 @@ class TestContentConversion:
             # Update mock for correct mime type
             self.mock_file.mime_type = c.message.mime_type
 
-            with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"), patch(
-                "requests.get"
-            ) as mock_get:
+            with (
+                patch("tempfile.NamedTemporaryFile"),
+                patch("os.unlink"),
+                patch("requests.get") as mock_get,
+            ):
                 mock_response = Mock()
                 mock_response.content = b"test content"
                 mock_response.raise_for_status = Mock()
@@ -124,11 +129,19 @@ class TestContentConversion:
                     config=self.mock_config,
                 )
 
-                assert len(contents) == 1, f"Test case {idx + 1} failed, type: {type(c.message)}"
+                assert len(contents) == 1, (
+                    f"Test case {idx + 1} failed, type: {type(c.message)}"
+                )
                 assert contents[0].role in ["user"]
                 assert len(contents[0].parts) == 1
-                assert contents[0].parts[0].file_data.file_uri == c.expected.file_data.file_uri
-                assert contents[0].parts[0].file_data.mime_type == c.expected.file_data.mime_type
+                assert (
+                    contents[0].parts[0].file_data.file_uri
+                    == c.expected.file_data.file_uri
+                )
+                assert (
+                    contents[0].parts[0].file_data.mime_type
+                    == c.expected.file_data.mime_type
+                )
 
     def test_multimodal_contents_with_base64(self):
         """Test multimodal content types with base64 data"""
@@ -182,12 +195,20 @@ class TestContentConversion:
                     config=self.mock_config,
                 )
 
-                assert len(contents) == 1, f"Test case {idx} failed, type: {type(c.message)}"
+                assert len(contents) == 1, (
+                    f"Test case {idx} failed, type: {type(c.message)}"
+                )
                 assert contents[0].role == "user"
                 assert len(contents[0].parts) == 1
                 # After upload, content becomes a file URI part
-                assert contents[0].parts[0].file_data.file_uri == c.expected.file_data.file_uri
-                assert contents[0].parts[0].file_data.mime_type == c.expected.file_data.mime_type
+                assert (
+                    contents[0].parts[0].file_data.file_uri
+                    == c.expected.file_data.file_uri
+                )
+                assert (
+                    contents[0].parts[0].file_data.mime_type
+                    == c.expected.file_data.mime_type
+                )
 
     def test_mixed_content_types(self):
         """Test message with mixed text and multimodal content"""
@@ -228,7 +249,9 @@ class TestContentConversion:
 
         with pytest.raises(ValueError, match="Unknown message type"):
             self.llm._format_message_to_gemini_content(
-                message=invalid_message, genai_client=self.mock_client, config=self.mock_config
+                message=invalid_message,
+                genai_client=self.mock_client,
+                config=self.mock_config,
             )
 
     def test_file_upload_with_caching(self):
@@ -242,10 +265,14 @@ class TestContentConversion:
 
         with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
             # First upload
-            uri1, mime1 = self.llm._upload_file_content_to_google(message_content, self.mock_client)
+            uri1, mime1 = self.llm._upload_file_content_to_google(
+                message_content, self.mock_client
+            )
 
             # Second upload (should use cache)
-            uri2, mime2 = self.llm._upload_file_content_to_google(message_content, self.mock_client)
+            uri2, mime2 = self.llm._upload_file_content_to_google(
+                message_content, self.mock_client
+            )
 
             assert uri1 == uri2 == "gs://test-bucket/test-file"
             assert mime1 == mime2 == "image/jpeg"
@@ -260,16 +287,20 @@ class TestContentConversion:
 
         self.mock_file.mime_type = "application/pdf"
 
-        with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"), patch(
-            "requests.get"
-        ) as mock_get:
+        with (
+            patch("tempfile.NamedTemporaryFile"),
+            patch("os.unlink"),
+            patch("requests.get") as mock_get,
+        ):
             mock_response = Mock()
             mock_response.content = b"PDF content"
             mock_response.raise_for_status = Mock()
             mock_get.return_value = mock_response
 
             uri, mime = self.llm._upload_file_content_to_google(
-                message_content, self.mock_client, file_server_url_prefix="https://api.example.com"
+                message_content,
+                self.mock_client,
+                file_server_url_prefix="https://api.example.com",
             )
 
             # Check that the URL was constructed correctly
@@ -285,17 +316,19 @@ class TestContentConversion:
 
         with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
             with pytest.raises(ValueError, match="Set FILES_URL env first!"):
-                self.llm._upload_file_content_to_google(message_content, self.mock_client)
+                self.llm._upload_file_content_to_google(
+                    message_content, self.mock_client
+                )
 
 
 def test_file_url():
     credentials = {"file_url": "http://127.0.0.1/static/"}
     message_content = MultiModalPromptMessageContent(
-        format="png", mime_type="image/png", url="http://127.0.0.1:5001/files/foo/bar.png"
+        format="png",
+        mime_type="image/png",
+        url="http://127.0.0.1:5001/files/foo/bar.png",
     )
-    file_url = (
-        f"{credentials['file_url'].rstrip('/')}/files{message_content.url.split('/files')[-1]}"
-    )
+    file_url = f"{credentials['file_url'].rstrip('/')}/files{message_content.url.split('/files')[-1]}"
     assert file_url == "http://127.0.0.1/static/files/foo/bar.png"
 
 
@@ -313,7 +346,9 @@ class TestBuildGeminiContents:
         messages = [UserPromptMessage(content="Hello, how are you?")]
 
         contents = self.llm._build_gemini_contents(
-            prompt_messages=messages, genai_client=self.mock_client, config=self.mock_config
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
         )
 
         assert len(contents) == 1
@@ -326,7 +361,9 @@ class TestBuildGeminiContents:
         messages = [AssistantPromptMessage(content="I'm doing well, thank you!")]
 
         contents = self.llm._build_gemini_contents(
-            prompt_messages=messages, genai_client=self.mock_client, config=self.mock_config
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
         )
 
         assert len(contents) == 1
@@ -343,7 +380,9 @@ class TestBuildGeminiContents:
         ]
 
         contents = self.llm._build_gemini_contents(
-            prompt_messages=messages, genai_client=self.mock_client, config=self.mock_config
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
         )
 
         assert len(contents) == 1
@@ -359,7 +398,9 @@ class TestBuildGeminiContents:
         ]
 
         contents = self.llm._build_gemini_contents(
-            prompt_messages=messages, genai_client=self.mock_client, config=self.mock_config
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
         )
 
         # System message should set config.system_instruction, not appear in contents
@@ -396,7 +437,9 @@ class TestBuildGeminiContents:
 
         with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
             contents = self.llm._build_gemini_contents(
-                prompt_messages=messages, genai_client=mock_client, config=self.mock_config
+                prompt_messages=messages,
+                genai_client=mock_client,
+                config=self.mock_config,
             )
 
         assert len(contents) == 1
@@ -416,7 +459,9 @@ class TestBuildGeminiContents:
         ]
 
         contents = self.llm._build_gemini_contents(
-            prompt_messages=messages, genai_client=self.mock_client, config=self.mock_config
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
         )
 
         assert len(contents) == 1
@@ -445,7 +490,9 @@ class TestBuildGeminiContents:
         ]
 
         contents = self.llm._build_gemini_contents(
-            prompt_messages=messages, genai_client=self.mock_client, config=self.mock_config
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
         )
 
         assert len(contents) == 1
@@ -466,7 +513,9 @@ class TestBuildGeminiContents:
         ]
 
         contents = self.llm._build_gemini_contents(
-            prompt_messages=messages, genai_client=self.mock_client, config=self.mock_config
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
         )
 
         # Should have 3 contents after merging consecutive user messages
@@ -496,7 +545,9 @@ class TestBuildGeminiContents:
             SystemPromptMessage(content="You are a helpful assistant"),
             UserPromptMessage(content="Hello"),
             AssistantPromptMessage(content="Hello! How can I help you?"),
-            UserPromptMessage(content=[TextPromptMessageContent(data="Get current time")]),
+            UserPromptMessage(
+                content=[TextPromptMessageContent(data="Get current time")]
+            ),
             AssistantPromptMessage(
                 content="Yes, I can help you",
                 tool_calls=[
@@ -515,7 +566,9 @@ class TestBuildGeminiContents:
         ]
 
         contents = self.llm._build_gemini_contents(
-            prompt_messages=messages, genai_client=self.mock_client, config=self.mock_config
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
         )
 
         # System message sets instruction, not in contents
@@ -565,10 +618,15 @@ class TestBuildGeminiContents:
         for model messages are valid and won't cause communication errors.
         """
         # Test case 1: Assistant message with empty string content
-        messages = [AssistantPromptMessage(content=""), UserPromptMessage(content="Hello")]
+        messages = [
+            AssistantPromptMessage(content=""),
+            UserPromptMessage(content="Hello"),
+        ]
 
         contents = self.llm._build_gemini_contents(
-            prompt_messages=messages, genai_client=self.mock_client, config=self.mock_config
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
         )
 
         # Empty string content creates an empty parts list, which is valid for Gemini
@@ -585,7 +643,9 @@ class TestBuildGeminiContents:
         ]
 
         contents = self.llm._build_gemini_contents(
-            prompt_messages=messages, genai_client=self.mock_client, config=self.mock_config
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
         )
 
         # After removing thinking tags, content is empty - creates empty parts list
@@ -604,7 +664,9 @@ class TestBuildGeminiContents:
         ]
 
         contents = self.llm._build_gemini_contents(
-            prompt_messages=messages, genai_client=self.mock_client, config=self.mock_config
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
         )
 
         # Should have 3 contents - consecutive assistant messages are merged
@@ -627,7 +689,9 @@ class TestBuildGeminiContents:
         ]
 
         contents = self.llm._build_gemini_contents(
-            prompt_messages=messages, genai_client=self.mock_client, config=self.mock_config
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
         )
 
         # Two consecutive user messages should be merged into one content
@@ -646,7 +710,9 @@ class TestBuildGeminiContents:
         ]
 
         contents = self.llm._build_gemini_contents(
-            prompt_messages=messages, genai_client=self.mock_client, config=self.mock_config
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
         )
 
         # All four user messages should be merged into one content
@@ -671,7 +737,9 @@ class TestBuildGeminiContents:
         ]
 
         contents = self.llm._build_gemini_contents(
-            prompt_messages=messages, genai_client=self.mock_client, config=self.mock_config
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
         )
 
         # All user messages should be merged into one content with all parts
@@ -711,14 +779,18 @@ class TestBuildGeminiContents:
 
         with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
             contents = self.llm._build_gemini_contents(
-                prompt_messages=messages, genai_client=mock_client, config=self.mock_config
+                prompt_messages=messages,
+                genai_client=mock_client,
+                config=self.mock_config,
             )
 
         assert len(contents) == 1
         assert contents[0].role == "user"
         assert len(contents[0].parts) == 2
         assert contents[0].parts[0].text == "What's in this image?"
-        assert contents[0].parts[1].file_data.file_uri == "gs://test-bucket/test-image.jpg"
+        assert (
+            contents[0].parts[1].file_data.file_uri == "gs://test-bucket/test-image.jpg"
+        )
         assert contents[0].parts[1].file_data.mime_type == "image/jpeg"
 
     def test_file_url_prefix_handling(self):
@@ -730,7 +802,9 @@ class TestBuildGeminiContents:
                 content=[
                     TextPromptMessageContent(data="Check this document"),
                     DocumentPromptMessageContent(
-                        format="pdf", url="/files/document.pdf", mime_type="application/pdf"
+                        format="pdf",
+                        url="/files/document.pdf",
+                        mime_type="application/pdf",
                     ),
                 ]
             )
@@ -745,9 +819,11 @@ class TestBuildGeminiContents:
         mock_client.files.upload.return_value = mock_file
         mock_client.files.get.return_value = mock_file
 
-        with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"), patch(
-            "requests.get"
-        ) as mock_get:
+        with (
+            patch("tempfile.NamedTemporaryFile"),
+            patch("os.unlink"),
+            patch("requests.get") as mock_get,
+        ):
             mock_response = Mock()
             mock_response.content = b"PDF content"
             mock_response.raise_for_status = Mock()
@@ -769,7 +845,9 @@ class TestBuildGeminiContents:
         assert contents[0].role == "user"
         assert len(contents[0].parts) == 2
         assert contents[0].parts[0].text == "Check this document"
-        assert contents[0].parts[1].file_data.file_uri == "gs://test-bucket/document.pdf"
+        assert (
+            contents[0].parts[1].file_data.file_uri == "gs://test-bucket/document.pdf"
+        )
 
 
 class TestHandleGenerateResponse:
@@ -826,8 +904,9 @@ class TestHandleGenerateResponse:
         )
 
         # The key assertion: content should be a list, not a string
-        assert isinstance(result.message.content, list), \
+        assert isinstance(result.message.content, list), (
             "Response content should be a list of PromptMessageContent, not a string"
+        )
         assert len(result.message.content) == 1
         assert isinstance(result.message.content[0], TextPromptMessageContent)
         assert result.message.content[0].data == "Hello, I am Gemini!"
