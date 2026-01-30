@@ -223,7 +223,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         incremental_output = False if tools else stream
 
         thinking_business_qwen3 = model in ("qwen-plus-latest", "qwen-plus-2025-04-28",
-                                            "qwen-turbo-latest", "qwen-turbo-2025-04-28") \
+                                            "qwen-turbo-latest", "qwen-turbo-2025-04-28",
+                                            "qwen3-max-2026-01-23") \
                                   and model_parameters.get("enable_thinking", False)
 
         # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder and max variants), QwQ, and QVQ models only supports streaming output.
