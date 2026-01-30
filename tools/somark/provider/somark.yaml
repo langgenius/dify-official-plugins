@@ -4,8 +4,8 @@ credentials_for_provider:
       en_US: Base URL
       zh_Hans: 服务地址
     placeholder:
-      en_US: https://somark.tech/api/v1/extract
-      zh_Hans: https://somark.tech/api/v1/extract
+      en_US: https://somark.tech/api/v1
+      zh_Hans: https://somark.tech/api/v1
     required: true
     type: text-input
   api_key:

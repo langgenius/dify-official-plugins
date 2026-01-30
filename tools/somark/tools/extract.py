@@ -21,7 +21,7 @@ class ExtractTool(Tool):
         # 2. Get configuration
         base_url = self.runtime.credentials.get("base_url")
         if not base_url:
-            base_url = "https://somark.tech/api/v1/extract"
+            base_url = "https://somark.tech/api/v1"
             
         api_key = self.runtime.credentials.get("api_key")
         if not api_key:
@@ -30,7 +30,7 @@ class ExtractTool(Tool):
 
         # 3. Construct URL
         base_url = base_url.rstrip("/")
-        url = f"{base_url}/acc_sync"
+        url = f"{base_url}/extract/acc_sync"
         
         # 4. Prepare request
         try:
