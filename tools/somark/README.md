@@ -24,7 +24,7 @@ From basic layout segmentation and reading-order recovery to complex elements su
 
 从基础的版面分割和阅读顺序还原，到复杂的元素（如表格、公式、图片，甚至化学符号），所有组件都能被准确提取和重构。输出的是文档的完整、高度结构化的表示。
 
-![](./_assets/chatu1.png)
+![](./_assets/somark-features.png)
 
 Built on this powerful OXR algorithm, SoMark achieves the perfect balance of accuracy, speed, and cost:
 
