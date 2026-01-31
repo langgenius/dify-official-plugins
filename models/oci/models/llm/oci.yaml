@@ -15,7 +15,9 @@ icon_large:
 icon_small:
   en_US: icon_s_en.png
 icon_large:
-  ja_JP: icon_l_en.png
+  ja_JP: icon_l_ja.png
+icon_small:
+  ja_JP: icon_s_ja.png
 
 background: '#FFFFFF'
 
