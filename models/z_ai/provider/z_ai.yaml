@@ -1,0 +1,57 @@
+background: '#EFF1FE'
+configurate_methods:
+  - predefined-model
+extra:
+  python:
+    model_sources:
+      - models/llm/llm.py
+      - models/text_embedding/text_embedding.py
+    provider_source: provider/z_ai.py
+help:
+  title:
+    en_US: Get your API key from Z.AI
+    zh_Hans: 从 Z.AI 获取 API Key
+  url:
+    en_US: https://z.ai/manage-apikey/apikey-list
+# icon_large:
+#   en_US: icon_l_en.svg
+#   zh_Hans: icon_l_zh.svg
+icon_small:
+  en_US: icon_s_en.svg
+label:
+  en_US: Z.AI
+  zh_Hans: Z.AI
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+      - models/llm/*.yaml
+  text_embedding:
+    position: models/text_embedding/_position.yaml
+    predefined:
+      - models/text_embedding/*.yaml
+provider: z_ai
+provider_credential_schema:
+  credential_form_schemas:
+    - label:
+        en_US: APIKey
+      placeholder:
+        en_US: Enter your APIKey
+        zh_Hans: 在此输入您的 APIKey
+      required: true
+      type: secret-input
+      variable: api_key
+
+    - default: https://api.z.ai/api/paas/v4/
+      label:
+        en_US: API Endpoint Host
+      placeholder:
+        en_US: Enter your API Endpoint Host
+        zh_Hans: 输入您的 API Endpoint Host
+      required: false
+      type: text-input
+      variable: base_url
+
+supported_model_types:
+  - llm
+  - text-embedding
