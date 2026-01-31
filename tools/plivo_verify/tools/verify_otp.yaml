@@ -1,0 +1,38 @@
+description:
+  human:
+    en_US: Verify an OTP code entered by the user using Plivo Verify.
+    zh_Hans: 使用 Plivo Verify 验证用户输入的 OTP 验证码。
+  llm: Validate an OTP code against a verification session. Requires the session_id
+    from send_otp and the OTP code entered by the user.
+extra:
+  python:
+    source: tools/verify_otp.py
+identity:
+  author: Plivo
+  label:
+    en_US: Verify OTP
+    zh_Hans: 验证 OTP
+  name: verify_otp
+parameters:
+- form: llm
+  human_description:
+    en_US: The session ID returned from the send_otp tool.
+    zh_Hans: 从 send_otp 工具返回的会话 ID。
+  label:
+    en_US: Session ID
+    zh_Hans: 会话 ID
+  llm_description: The session UUID returned from the send_otp tool response.
+  name: session_id
+  required: true
+  type: string
+- form: llm
+  human_description:
+    en_US: The OTP code entered by the user.
+    zh_Hans: 用户输入的 OTP 验证码。
+  label:
+    en_US: OTP Code
+    zh_Hans: OTP 验证码
+  llm_description: The OTP code entered by the user that needs to be verified.
+  name: otp_code
+  required: true
+  type: string
