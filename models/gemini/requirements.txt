@@ -108,7 +108,7 @@ proto-plus==1.26.1
     # via
     #   google-ai-generativelanguage
     #   google-api-core
-protobuf==5.29.5
+protobuf==6.33.5
     # via
     #   google-ai-generativelanguage
     #   google-api-core
