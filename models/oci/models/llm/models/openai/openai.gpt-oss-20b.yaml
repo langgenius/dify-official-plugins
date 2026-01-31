@@ -1,0 +1,43 @@
+model: openai.gpt-oss-20b
+label:
+  zh_Hans: openai.gpt-oss-20b
+  en_US: openai.gpt-oss-20b
+  ja_JP: openai.gpt-oss-20b
+model_type: llm
+features:
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 128000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    default: 1
+    min: 0
+    max: 2.0
+  - name: topP
+    use_template: top_p
+    default: 1
+    min: 0.05
+    max: 1
+  - name: presencePenalty
+    use_template: presence_penalty
+    min: -2
+    max: 2
+    default: 0
+  - name: frequencyPenalty
+    use_template: frequency_penalty
+    min: -2
+    max: 2
+    default: 0
+  - name: maxTokens
+    use_template: max_tokens
+    default: 4000
+    max: 128000
+pricing:
+  input: '0.07'
+  output: '0.30'
+  unit: '0.000001'
+  currency: USD
