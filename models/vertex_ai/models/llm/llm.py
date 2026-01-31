@@ -53,7 +53,70 @@ GLOBAL_ONLY_MODELS_DEFAULT = ["gemini-2.5-pro-preview-06-05", "gemini-2.5-flash-
 # For more information about the models, please refer to https://ai.google.dev/gemini-api/docs/thinking
 DEFAULT_NO_THINKING_MODELS = ["gemini-2.5-flash-lite"]
 
+# Bypass thought signature validation for function calls in multi-turn conversations.
+# This is officially supported by Google for platforms that manage conversation history.
+# See: https://ai.google.dev/gemini-api/docs/thought-signatures#faqs
+DEFAULT_THOUGHT_SIGNATURE = "skip_thought_signature_validator"
+
+# Separator used to encode thought_signature into ToolCall.id field
+# Format: "{function_name}::sig::{base64_encoded_signature}"
+SIGNATURE_SEPARATOR = "::sig::"
+
 logger = logging.getLogger(__name__)
+
+
+def _encode_tool_call_id(function_name: str, thought_signature: Optional[str]) -> str:
+    """
+    Encode function name and thought_signature into a single ToolCall.id string.
+    This allows persisting the signature across requests since ToolCall.id is preserved by Dify.
+    """
+    if thought_signature:
+        sig_b64 = base64.b64encode(thought_signature.encode()).decode()
+        return f"{function_name}{SIGNATURE_SEPARATOR}{sig_b64}"
+    return function_name
+
+
+def _decode_tool_call_id(tool_call_id: str) -> tuple[str, Optional[str]]:
+    """
+    Decode ToolCall.id back into function name and thought_signature.
+    Returns (function_name, signature) tuple. Signature may be None if not encoded.
+    """
+    if SIGNATURE_SEPARATOR in tool_call_id:
+        parts = tool_call_id.split(SIGNATURE_SEPARATOR, 1)
+        if len(parts) == 2:
+            try:
+                signature = base64.b64decode(parts[1]).decode()
+                return parts[0], signature
+            except Exception:
+                pass
+    return tool_call_id, None
+
+
+def _extract_thought_signature(part) -> Optional[str]:
+    """
+    Best-effort extractor for Vertex AI thought signatures from a Part.
+    Handles snake_case and camelCase, and tries dict/extraContent fallbacks.
+    """
+    # Direct attributes first
+    sig = getattr(part, "thought_signature", None) or getattr(part, "thoughtSignature", None)
+    if isinstance(sig, str) and sig:
+        return sig
+    # Try dict conversion if the SDK object supports it
+    try:
+        d = part.to_dict() if hasattr(part, "to_dict") else (getattr(part, "__dict__", {}) or {})
+        if isinstance(d, dict):
+            sig = d.get("thoughtSignature") or d.get("thought_signature")
+            if not sig:
+                extra = d.get("extraContent") or d.get("extra_content") or {}
+                if isinstance(extra, dict):
+                    g = extra.get("google")
+                    if isinstance(g, dict):
+                        sig = g.get("thought_signature")
+            if isinstance(sig, str) and sig:
+                return sig
+    except Exception:
+        pass
+    return None
 
 
 class VertexAiLargeLanguageModel(LargeLanguageModel):
@@ -473,9 +536,15 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         for field in list(config_kwargs):
             if field in ["include_thoughts", "thinking_budget", "thinking_level"]:
                 thinking_config[field] = config_kwargs.pop(field)
-            elif field == "grounding_search":
-                if config_kwargs.pop("grounding_search", False):
+            elif field in ["grounding_search", "grounding"]:
+                if config_kwargs.pop(field, False):
                     tools_config.append(types.Tool(google_search=types.GoogleSearch()))
+            elif field == "url_context":
+                if config_kwargs.pop("url_context", False):
+                    tools_config.append(types.Tool(url_context=types.UrlContext()))
+            elif field == "code_execution":
+                if config_kwargs.pop("code_execution", False):
+                    tools_config.append(types.Tool(code_execution=types.ToolCodeExecution()))
             elif field in ["json_schema", "response_schema"]:
                 schema = self._convert_schema_for_vertex(config_kwargs.pop(field))
                 config_kwargs["response_schema"] = schema
@@ -500,11 +569,21 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             # Handle thinking_level conversion for Gemini 3
             thinking_level_str = thinking_config.get("thinking_level")
             if isinstance(thinking_level_str, str):
-                if thinking_level_str == "Low":
-                    thinking_config["thinking_level"] = types.ThinkingLevel.LOW
-                elif thinking_level_str == "High":
-                    thinking_config["thinking_level"] = types.ThinkingLevel.HIGH
+                # Build level_map dynamically to handle SDK version differences
+                level_map = {}
+                if hasattr(types.ThinkingLevel, "MINIMAL"):
+                    level_map["Minimal"] = types.ThinkingLevel.MINIMAL
+                if hasattr(types.ThinkingLevel, "LOW"):
+                    level_map["Low"] = types.ThinkingLevel.LOW
+                if hasattr(types.ThinkingLevel, "MEDIUM"):
+                    level_map["Medium"] = types.ThinkingLevel.MEDIUM
+                if hasattr(types.ThinkingLevel, "HIGH"):
+                    level_map["High"] = types.ThinkingLevel.HIGH
+
+                if thinking_level_str in level_map:
+                    thinking_config["thinking_level"] = level_map[thinking_level_str]
                 else:
+                    # Fallback: remove unsupported thinking_level
                     thinking_config.pop("thinking_level", None)
 
             # thinking_budget and thinking_level are mutually exclusive
@@ -627,22 +706,22 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 for part in candidate.content.parts:
                     # Check for function call
                     if hasattr(part, 'function_call') and part.function_call:
+                        # Extract thought_signature and encode it into the ToolCall.id
+                        # This allows the signature to persist across requests
+                        sig = _extract_thought_signature(part)
+                        func_name = part.function_call.name
+                        tool_call_id = _encode_tool_call_id(func_name, sig)
+
                         tool_call = AssistantPromptMessage.ToolCall(
-                            id=part.function_call.name,
+                            id=tool_call_id,
                             type="function",
                             function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                name=part.function_call.name,
+                                name=func_name,
                                 arguments=json.dumps(dict(part.function_call.args)) if hasattr(part.function_call,
                                                                                                'args') else "{}",
                             ),
                         )
                         assistant_prompt_message.tool_calls.append(tool_call)
-                        # Capture thought_signature if the SDK surfaced it on the same part
-                        sig = self._extract_thought_signature(part)
-                        if sig:
-                            if not hasattr(self, "_last_function_call_signatures"):
-                                self._last_function_call_signatures = []
-                            self._last_function_call_signatures.append(sig)
                     # Check for text
                     elif hasattr(part, 'text') and part.text:
                         if part.thought is True and not is_thinking:
@@ -696,23 +775,22 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
 
                 # Check for function call
                 if hasattr(part, 'function_call') and part.function_call:
+                    # Extract thought_signature and encode it into the ToolCall.id
+                    sig = _extract_thought_signature(part)
+                    func_name = part.function_call.name
+                    tool_call_id = _encode_tool_call_id(func_name, sig)
+
                     assistant_prompt_message.tool_calls.append(
                         AssistantPromptMessage.ToolCall(
-                            id=part.function_call.name,
+                            id=tool_call_id,
                             type="function",
                             function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                name=part.function_call.name,
+                                name=func_name,
                                 arguments=json.dumps(dict(part.function_call.args)) if hasattr(part.function_call,
                                                                                                'args') else "{}",
                             ),
                         )
                     )
-                    # Capture thought_signature if present on the streaming part
-                    sig = self._extract_thought_signature(part)
-                    if sig:
-                        if not hasattr(self, "_last_function_call_signatures"):
-                            self._last_function_call_signatures = []
-                        self._last_function_call_signatures.append(sig)
                 # Check for text
                 elif hasattr(part, 'text') and part.text:
                     if part.thought is True and not is_thinking:
@@ -789,32 +867,6 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                         ),
                     )
 
-    def _extract_thought_signature(self, part) -> Optional[str]:
-        """
-        Best-effort extractor for Vertex AI thought signatures from a Part.
-        Handles snake_case and camelCase, and tries dict/extraContent fallbacks.
-        """
-        # Direct attributes first
-        sig = getattr(part, "thought_signature", None) or getattr(part, "thoughtSignature", None)
-        if isinstance(sig, str) and sig:
-            return sig
-        # Try dict conversion if the SDK object supports it
-        try:
-            d = part.to_dict() if hasattr(part, "to_dict") else (getattr(part, "__dict__", {}) or {})
-            if isinstance(d, dict):
-                sig = d.get("thoughtSignature") or d.get("thought_signature")
-                if not sig:
-                    extra = d.get("extraContent") or d.get("extra_content") or {}
-                    if isinstance(extra, dict):
-                        g = extra.get("google")
-                        if isinstance(g, dict):
-                            sig = g.get("thought_signature")
-                if isinstance(sig, str) and sig:
-                    return sig
-        except Exception as e:
-            logger.warning(e, exc_info=True)
-        return None
-
     def _convert_one_message_to_text(self, message: PromptMessage) -> str:
         """
         Convert a single message to a string.
@@ -873,17 +925,19 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             if message.tool_calls:
                 parts = []
                 for tool_call in message.tool_calls:
+                    # Decode thought_signature from ToolCall.id if present
+                    # Falls back to bypass signature if not encoded
+                    _, signature = _decode_tool_call_id(tool_call.id)
+                    if not signature:
+                        signature = DEFAULT_THOUGHT_SIGNATURE
+
                     part_dict = {
                         "function_call": {
                             "name": tool_call.function.name,
                             "args": json.loads(tool_call.function.arguments),
-                        }
+                        },
+                        "thought_signature": signature,
                     }
-                    # Attach thought_signature if we captured one from the previous model output
-                    if hasattr(self, "_last_function_call_signatures") and self._last_function_call_signatures:
-                        sig = self._last_function_call_signatures.pop(0)
-                        if sig:
-                            part_dict["thought_signature"] = sig
                     parts.append(part_dict)
             else:
                 parts = [{"text": message.content}]

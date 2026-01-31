@@ -11,15 +11,23 @@ features:
   - document
   - video
   - audio
+  - structured-output
 model_properties:
   mode: chat
   context_size: 1048576
 parameter_rules:
   - name: temperature
-    use_template: temperature
-    default: 1.0
+    type: float
+    required: true
+    default: 1
     min: 0
     max: 2
+    label:
+      en_US: Temperature
+      zh_Hans: 温度
+    help:
+      en_US: For Gemini 3, best results at default 1.0. Lower values may impact reasoning.
+      zh_Hans: 对于 Gemini 3，使用默认值 1.0 可获得最佳效果。数值过低可能会影响推理能力。
   - name: top_p
     use_template: top_p
   - name: top_k
@@ -32,19 +40,17 @@ parameter_rules:
       en_US: Only sample from the top K options for each subsequent token.
     required: false
   - name: max_output_tokens
-    use_template: max_tokens
+    type: int
+    required: true
     default: 65536
     min: 1
     max: 65536
-  - name: grounding_search
-    type: boolean
-    default: false
     label:
-      en_US: grounding with Google Search
-      zh_Hans: Google联网搜索
+      en_US: Output length
+      zh_Hans: 输出长度
     help:
-      zh_Hans: 模型内置了Google搜索服务，该参数控制模型在生成文本时是否参考使用Google搜索结果。启用Google联网搜索，模型会将搜索结果作为文本生成过程中的参考信息，但模型会基于其内部逻辑"自行判断"是否使用搜索的结果。
-      en_US: The model has a built-in Google search service. This parameter controls whether the model refers to Google search results when generating text. When Google search is enabled, the model will use the search results as reference information in the text generation process, but the model will "judge" whether to use Google search results based on its internal logic.
+      en_US: The maximum number of tokens to generate in the response.
+      zh_Hans: 模型单次输出的最大 tokens 数。
   - name: thinking_level
     label:
       zh_Hans: 思考层级
@@ -52,12 +58,14 @@ parameter_rules:
     type: string
     default: "High"
     options:
+      - Minimal
       - Low
+      - Medium
       - High
     required: false
     help:
-      zh_Hans: 控制模型推理深度。High 提供更深入的推理，Low 适合简单任务。默认为 High。注意此参数仅适用于 Gemini 3，与 thinking_budget 互斥。
-      en_US: Controls the maximum depth of the model's reasoning. High provides deeper reasoning, Low is suitable for simpler tasks. Defaults to High. Note this parameter is only for Gemini 3 and is mutually exclusive with thinking_budget.
+      zh_Hans: 控制模型推理深度。High 提供最深入的推理，Minimal 适合最简单任务。默认为 High。注意此参数仅适用于 Gemini 3，与 thinking_budget 互斥。
+      en_US: Controls the maximum depth of the model's reasoning. High provides deepest reasoning, Minimal is suitable for simplest tasks. Defaults to High. Note this parameter is only for Gemini 3 and is mutually exclusive with thinking_budget.
   - name: include_thoughts
     type: boolean
     required: false
@@ -93,6 +101,36 @@ parameter_rules:
         令牌影响：图片(High: 1120 tokens)，PDF(Medium: 560 tokens)，视频常规(Low/Medium: 70 tokens/帧)，视频文字密集(High: 280 tokens/帧)。
 
         如果不指定，模型会根据媒体类型自动选择最佳分辨率。
+  - name: grounding
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Grounding
+      zh_Hans: 事实核查
+    help:
+      en_US: Grounding with Google Search. The model will use Google search results as reference information.
+      zh_Hans: 使用 Google 搜索进行事实核查。模型会将搜索结果作为参考信息。
+  - name: url_context
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: URL Context
+      zh_Hans: 链接详情
+    help:
+      en_US: Browse the URL context. Get and analyze detailed information from URLs to provide reference for responses.
+      zh_Hans: 获取并分析链接的详细信息，为回答提供参考依据。
+  - name: code_execution
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Code Execution
+      zh_Hans: 代码执行
+    help:
+      en_US: Lets Gemini use code to solve complex tasks.
+      zh_Hans: 让 Gemini 使用代码来解决复杂任务。
   - name: json_schema
     use_template: json_schema
 pricing:

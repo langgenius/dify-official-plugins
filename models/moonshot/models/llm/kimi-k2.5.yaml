@@ -15,13 +15,31 @@ model_properties:
 parameter_rules:
   - name: temperature
     use_template: temperature
+    default: 1.0
+    help:
+      zh_Hans: 采样温度。思考模式下建议使用 1.0，非思考模式下建议使用 0.6。
+      en_US: Sampling temperature. Recommended 1.0 for thinking mode, 0.6 for instant mode.
   - name: top_p
     use_template: top_p
+    default: 0.95
+    help:
+      zh_Hans: 核采样参数。思考模式下建议使用 0.95。
+      en_US: Nucleus sampling parameter. Recommended 0.95 for thinking mode.
   - name: max_tokens
     use_template: max_tokens
     default: 1024
     min: 1
     max: 262144
+  - name: thinking
+    label:
+      zh_Hans: 深度思考
+      en_US: Thinking Mode
+    type: boolean
+    default: true
+    required: false
+    help:
+      zh_Hans: 启用深度思考模式，使模型具备强大的推理能力，适合解决复杂的逻辑推理、数学问题和代码编写等任务。
+      en_US: Enable thinking mode for enhanced reasoning capabilities, suitable for complex logical reasoning, math problems, and coding tasks.
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -36,6 +54,8 @@ parameter_rules:
       - json_object
 pricing:
   input: '4'
-  output: '20'
+  output: '21'
   unit: '0.000001'
   currency: RMB
+
+
