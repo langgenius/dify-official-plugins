@@ -201,7 +201,7 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             if user_enable_thinking is not None:
                 enable_thinking_value = bool(user_enable_thinking)
 
-        compatibility_mode = credentials.get("compatibility_mode", None)
+        compatibility_mode = credentials.get("compatibility_mode", "strict")
         # Default to strict mode, only switch to extended if explicitly set
         strict_compatibility_value: bool = compatibility_mode != "extended"
 
