@@ -438,17 +438,27 @@ class DingoScout(Tool):
                         error_message=str(last_error)
                     )
 
-                # Call LLM
-                llm_result = self.session.model.llm.invoke(
+                # Call LLM with streaming to avoid TTFB timeout
+                response_generator = self.session.model.llm.invoke(
                     model_config=LLMModelConfig(**self._get_llm_config()),
                     prompt_messages=[
                         SystemPromptMessage(content=system_prompt),
                         UserPromptMessage(content=current_prompt)
                     ],
-                    stream=False
+                    stream=True
                 )
 
-                last_response = llm_result.message.content.strip()
+                # Collect all chunks into complete response
+                collected_content = []
+                for chunk in response_generator:
+                    try:
+                        if content := chunk.delta.message.content:
+                            collected_content.append(content)
+                    except AttributeError:
+                        # Skip chunks that don't have the expected .delta.message.content structure
+                        continue
+
+                last_response = "".join(collected_content).strip()
 
                 if not last_response:
                     raise ValueError("LLM returned empty response")
