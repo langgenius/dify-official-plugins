@@ -17,13 +17,11 @@ class VerifyOtpTool(Tool):
 
         try:
             client = plivo.RestClient(auth_id=auth_id, auth_token=auth_token)
-            response = client.verify_session.validate(
+            client.verify_session.validate(
                 session_uuid=session_id,
                 otp=otp_code,
             )
-            # Plivo returns status field indicating verification result
-            # Successful validation typically has no error
-            verified = True
+            # Successful validation is determined by no exception being raised.
         except plivo.exceptions.AuthenticationError:
             yield self.create_text_message("Plivo authentication failed. Please check your credentials.")
             return
@@ -60,6 +58,6 @@ class VerifyOtpTool(Tool):
         )
         yield self.create_json_message({
             "status": "success",
-            "verified": verified,
+            "verified": True,
             "session_id": session_id,
         })
