@@ -4,6 +4,13 @@
 - xai.grok-3-fast
 - xai.grok-3-mini-fast
 
+- google.gemini-2.5-pro
+- google.gemini-2.5-flash
+- google.gemini-2.5-flash-lite
+
+- openai.gpt-oss-120b
+- openai.gpt-oss-20b
+
 - cohere.command-a-03-2025
 - cohere.command-r-plus-08-2024
 - cohere.command-r-08-2024
