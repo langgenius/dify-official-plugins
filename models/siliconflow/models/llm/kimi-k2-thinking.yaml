@@ -1,22 +1,20 @@
-model: Pro/moonshotai/Kimi-K2.5
+model: moonshotai/Kimi-K2-Thinking
 label:
-  zh_Hans: Pro/moonshotai/Kimi-K2.5
-  en_US: Pro/moonshotai/Kimi-K2.5
+  zh_Hans: moonshotai/Kimi-K2-Thinking
+  en_US: moonshotai/Kimi-K2-Thinking
 model_type: llm
 features:
   - tool-call
   - multi-tool-call
   - agent-thought
-  - vision
   - stream-tool-call
-  - video
 model_properties:
   mode: chat
   context_size: 256000
 parameter_rules:
   - name: temperature
     use_template: temperature
-    default: 1.0
+    default: 0.6
   - name: top_p
     use_template: top_p
   - name: top_k
@@ -33,16 +31,6 @@ parameter_rules:
     min: 1
     max: 262144
     default: 8192
-  - name: enable_thinking
-    required: false
-    type: boolean
-    default: false
-    label:
-      zh_Hans: 思考模式
-      en_US: Thinking mode
-    help:
-      zh_Hans: 是否开启思考模式。
-      en_US: Whether to enable thinking mode.
   - name: thinking_budget
     required: false
     type: int
@@ -57,6 +45,6 @@ parameter_rules:
       en_US: The maximum length of the thinking process, only effective when thinking mode is true.
 pricing:
   input: "4"
-  output: "21"
+  output: "16"
   unit: "0.000001"
   currency: RMB

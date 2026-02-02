@@ -1,0 +1,32 @@
+version: 0.0.1
+created_at: '2026-01-30T03:17:37.000000000Z'
+type: plugin
+author: langgenius
+name: somark
+label:
+  en_US: Somark
+  zh_Hans: Somark
+description:
+  en_US: SoMark is a DocAI that can convert diverse documents—such as PDFs, images, and more—into structured Markdown or JSON. It is designed to work seamlessly across all scenarios.
+  zh_Hans: SoMark 是一款 DocAI 产品，能够将各种文档（如 PDF、图片等）转换为结构化的 Markdown 或 JSON 格式。它旨在无缝适用于所有场景。
+icon: icon.png
+resource:
+  memory: 268435456
+  permission:
+    storage:
+      enabled: true
+      size: 1048576
+    tool:
+      enabled: true
+plugins:
+  tools:
+    - provider/somark.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
