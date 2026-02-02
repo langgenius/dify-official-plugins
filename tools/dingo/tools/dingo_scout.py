@@ -19,6 +19,7 @@ Algorithm:
 """
 
 import json
+import os
 import time
 from typing import Any
 from collections.abc import Generator
@@ -305,6 +306,64 @@ class DingoScout(Tool):
 
     MAX_RETRIES = 2
 
+    # Company URL data cache
+    _company_urls: dict = None
+
+    # ========================================================================
+    # Company URL Loading
+    # ========================================================================
+
+    def _load_company_urls(self) -> dict:
+        """
+        Load company recruitment URLs from JSON data file.
+        Returns empty dict if file not found or parse error.
+        """
+        if DingoScout._company_urls is not None:
+            return DingoScout._company_urls
+
+        try:
+            # Get path relative to this script: ../data/company_urls.json
+            current_dir = os.path.dirname(os.path.abspath(__file__))
+            data_path = os.path.join(current_dir, '..', 'data', 'company_urls.json')
+            data_path = os.path.normpath(data_path)
+
+            with open(data_path, 'r', encoding='utf-8') as f:
+                DingoScout._company_urls = json.load(f)
+                print(f"[Scout] Loaded {len(DingoScout._company_urls)} company URLs")
+                return DingoScout._company_urls
+
+        except FileNotFoundError:
+            print(f"[Scout] company_urls.json not found, skipping URL injection")
+            DingoScout._company_urls = {}
+            return {}
+        except json.JSONDecodeError as e:
+            print(f"[Scout] Failed to parse company_urls.json: {e}")
+            DingoScout._company_urls = {}
+            return {}
+        except Exception as e:
+            print(f"[Scout] Error loading company URLs: {e}")
+            DingoScout._company_urls = {}
+            return {}
+
+    def _inject_urls(self, companies: list) -> None:
+        """
+        Inject recruitment URLs into company data.
+        Uses exact match on company name (full name or short name).
+        """
+        url_map = self._load_company_urls()
+        if not url_map:
+            return
+
+        for company in companies:
+            name = company.get("name", "")
+            if not name:
+                continue
+
+            # Exact match lookup
+            url = url_map.get(name)
+            if url:
+                company["recruitment_url"] = url
+
     # ========================================================================
     # Main Entry Point
     # ========================================================================
@@ -459,9 +518,6 @@ class DingoScout(Tool):
                         continue
 
                 last_response = "".join(collected_content).strip()
-
-                if not last_response:
-                    raise ValueError("LLM returned empty response")
 
                 # Try to parse JSON
                 result = self._parse_json_response(last_response)
@@ -713,13 +769,16 @@ class DingoScout(Tool):
                 if company.get("tier") is None:
                     company["tier"] = "Tier 2"
 
-        # 2. Filter by confidence
+        # 2. Inject recruitment URLs
+        self._inject_urls(companies)
+
+        # 3. Filter by confidence
         qualified, insufficient, llm_not_recommended = self._filter_by_confidence(companies)
 
-        # 3. Merge with LLM's not_recommended
+        # 4. Merge with LLM's not_recommended
         all_not_recommended = llm_not_recommended + context.get("not_recommended", [])
 
-        # 4. Sort by score
+        # 5. Sort by score
         qualified.sort(key=lambda x: x.get("match_score", 0), reverse=True)
 
         return {
@@ -826,9 +885,14 @@ class DingoScout(Tool):
 
         lines = [
             f"### {index}. {company.get('name', 'Unknown')}",
-            f"**匹配度**: {score_pct}% | **置信度**: {confidence_pct}%",
-            "",
         ]
+
+        # Recruitment URL (if available)
+        if company.get('recruitment_url'):
+            lines.append(f"🔗 [官方招聘入口]({company.get('recruitment_url')})")
+
+        lines.append(f"**匹配度**: {score_pct}% | **置信度**: {confidence_pct}%")
+        lines.append("")
 
         # Match reasoning
         if company.get('match_reasoning'):
