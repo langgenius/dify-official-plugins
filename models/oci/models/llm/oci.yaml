@@ -3,15 +3,21 @@ author: jin38324
 label:
   en_US: OCI Generative AI Service
   zh_Hans: OCI 生成式 AI 服务
+  ja_JP: OCI Generative AI Service
 
 description:
-  en_US: Models provided by OCI, such as Grok, Cohere Command and Llama.
-  zh_Hans: OCI 提供的模型，例如 Grok、Cohere Command 和 Llama。
+  en_US: Models provided by OCI, such as Grok 3/4, Gemini, gpt-oss, Cohere Command and Llama.
+  zh_Hans: OCI 提供的模型，例如 Grok 3/4、Gemini、gpt-oss、Cohere Command 和 Llama。
+  ja_JP: OCI が提供する Grok 3/4、Gemini、gpt-oss、Llama、Cohere Command などのモデル。
 
 icon_large:
   en_US: icon_l_en.png
 icon_small:
   en_US: icon_s_en.png
+icon_large:
+  ja_JP: icon_l_ja.png
+icon_small:
+  ja_JP: icon_s_ja.png
 
 background: '#FFFFFF'
 
@@ -19,8 +25,10 @@ help:
   title:
     en_US: Get your API Key from OCI
     zh_Hans: 从 OCI 获取 API Key
+    ja_JP: OCI で APIキーを取得する
   url:
     en_US: https://docs.cloud.oracle.com/Content/API/Concepts/sdkconfig.htm
+    ja_JP: https://docs.oracle.com/ja-jp/iaas/Content/API/Concepts/sdkconfig.htm
 
 supported_model_types:
   - llm
@@ -35,6 +43,7 @@ provider_credential_schema:
       label:
         en_US: Default Region
         zh_Hans: 默认区域
+        ja_JP: デフォルト・リージョン
       type: text-input
       required: true
       default: us-chicago-1
@@ -45,6 +54,7 @@ provider_credential_schema:
       label:
         en_US: Compartment OCID
         zh_Hans: 区间 OCID
+        ja_JP: コンパートメント OCID
       type: text-input
       required: true
       placeholder:
@@ -55,6 +65,7 @@ provider_credential_schema:
       label:
         en_US: Authentication Method
         zh_Hans: 认证方法
+        ja_JP: 認証方式
       type: radio
       required: true
       options:
@@ -62,10 +73,12 @@ provider_credential_schema:
           label:
             en_US: Instance Principal Authentication
             zh_Hans: 实例主体认证
+            ja_JP: インスタンス・プリンシパル認証
         - value: api_key_authentication
           label:
             en_US: API Key Authentication
             zh_Hans: API 密钥认证
+            ja_JP: API キー認証
 
     - variable: user_ocid
       show_on:
@@ -74,6 +87,7 @@ provider_credential_schema:
       label:
         en_US: User OCID
         zh_Hans: 用户 OCID
+        ja_JP: ユーザー OCID
       type: text-input
       #required: true
       placeholder:
@@ -86,6 +100,7 @@ provider_credential_schema:
       label:
         en_US: Tenancy OCID
         zh_Hans: 租户 OCID
+        ja_JP: テナンシー OCID
       type: text-input
       #required: true
       placeholder:
@@ -109,6 +124,7 @@ provider_credential_schema:
       label:
         en_US: Key File Content
         zh_Hans: 密钥文件内容文本
+        ja_JP: 秘密鍵ファイルの内容
       type: secret-input
       #required: true      
 
@@ -118,6 +134,8 @@ models:
     position: models/llm/_position.yaml
     predefined:
       - models/llm/models/xai/*.yaml
+      - models/llm/models/google/*.yaml
+      - models/llm/models/openai/*.yaml
       - models/llm/models/cohere/*.yaml
       - models/llm/models/llama/*.yaml
   text_embedding:

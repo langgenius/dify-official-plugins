@@ -82,28 +82,6 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 en_US=credentials["display_name"], zh_Hans=credentials["display_name"]
             )
 
-        entity.parameter_rules.append(
-            ParameterRule(
-                name="strict_compatibility",
-                label=I18nObject(en_US="Strict compatibility mode", zh_Hans="严格兼容模式"),
-                help=I18nObject(
-                    en_US=(
-                        "Whether to prioritize strict OpenAI compatibility. "
-                        "When True, OpenAI compatibility is prioritized and extended parameters "
-                        "(e.g., thinking, chat_template_kwargs, enable_thinking) are not added. "
-                        "Set to False to enable these extensions."
-                    ),
-                    zh_Hans=(
-                        "是否优先严格的 OpenAI 兼容性。"
-                        "为 True 时，将优先 OpenAI 兼容性，并且不会添加扩展参数（例如 thinking、chat_template_kwargs、enable_thinking）。"
-                        "设为 False 以启用这些扩展。"
-                    )
-                ),
-                type=ParameterType.BOOLEAN,
-                required=False,
-            )
-        )
-
         # Configure thinking mode parameter based on model support
         agent_thought_support = credentials.get("agent_thought_support", "not_supported")
         
@@ -223,11 +201,9 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             if user_enable_thinking is not None:
                 enable_thinking_value = bool(user_enable_thinking)
 
-        user_strict_compatibility = model_parameters.pop("strict_compatibility", None)
-        # Default `strict_compatibility_value` is False.
-        strict_compatibility_value = False
-        if user_strict_compatibility is not None:
-            strict_compatibility_value = bool(user_strict_compatibility)
+        compatibility_mode = credentials.get("compatibility_mode", "strict")
+        # Default to strict mode, only switch to extended if explicitly set
+        strict_compatibility_value: bool = compatibility_mode != "extended"
 
         if enable_thinking_value is not None and strict_compatibility_value is False:
             # Only apply when `strict_compatibility_value` is False since
