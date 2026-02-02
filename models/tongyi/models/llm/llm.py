@@ -671,12 +671,12 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :return: file ID in Tongyi
         """
         client = OpenAI(
-            api_key=credentials.dashscope_api_key,
+            api_key=credentials["dashscope_api_key"],
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         )
         if credentials.get("use_international_endpoint", "false") == "true":
             client = OpenAI(
-                api_key=credentials.dashscope_api_key,
+                api_key=credentials["dashscope_api_key"],
                 base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
             )
         temp_file_path = None
@@ -696,9 +696,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             f"Failed to fetch data from url {message_content.url}, {ex}"
                         ) from ex
                 temp_file.flush()
-                temp_file.seek(0)
-                response = client.files.create(file=temp_file, purpose="file-extract")
-                return response.id
+            # Close temp file first, then reopen with open() for OpenAI SDK compatibility
+            with open(temp_file_path, "rb") as f:
+                response = client.files.create(file=f, purpose="file-extract")
+            return response.id
         finally:
             # Clean up temporary file after upload
             if temp_file_path and os.path.exists(temp_file_path):
