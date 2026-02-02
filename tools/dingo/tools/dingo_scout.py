@@ -451,10 +451,12 @@ class DingoScout(Tool):
                 # Collect all chunks into complete response
                 collected_content = []
                 for chunk in response_generator:
-                    if hasattr(chunk, 'delta') and chunk.delta and hasattr(chunk.delta, 'message') and chunk.delta.message:
-                        content = chunk.delta.message.content
-                        if content:
+                    try:
+                        if content := chunk.delta.message.content:
                             collected_content.append(content)
+                    except AttributeError:
+                        # Skip chunks that don't have the expected .delta.message.content structure
+                        continue
 
                 last_response = "".join(collected_content).strip()
 
