@@ -32,78 +32,11 @@ Go to **Tools → Tavily → Authentication** and paste your API key.
 
 ![](./_assets/tavilytool.gif)
 
-## Usage
+### 4. Add a Tool node to your flow
 
-### In Chatflow / Workflow
-
-Add a Tavily node to your flow. All five tools are available:
+Add a Node → Tool → Tavily. All five actions are available:
 
 ![](./_assets/actions.png)
-
-**Example: Search node configuration**
-
-```
-Query: {{user_input}}
-Search Depth: advanced
-Max Results: 5
-Include Answer: true
-```
-
-### In Agent Applications
-
-Add Tavily tools to your agent's toolkit. The agent will autonomously decide when to use each action.
-
-![](./_assets/tavily_3.PNG)
-
-## Action Details
-
-### Search
-
-Returns AI-optimized search results with optional direct answers.
-
-| Parameter         | Type   | Description                                    |
-| ----------------- | ------ | ---------------------------------------------- |
-| `query`           | string | Search query                                   |
-| `search_depth`    | string | `basic` (faster) or `advanced` (more thorough) |
-| `max_results`     | int    | Number of results (1-10)                       |
-| `include_answer`  | bool   | Include AI-generated answer summary            |
-| `include_domains` | array  | Limit search to specific domains               |
-| `exclude_domains` | array  | Exclude specific domains                       |
-
-### Extract
-
-Extracts clean, structured content from one or more URLs.
-
-| Parameter | Type  | Description                          |
-| --------- | ----- | ------------------------------------ |
-| `urls`    | array | List of URLs to extract content from |
-
-### Crawl
-
-Recursively crawls a website starting from a given URL.
-
-| Parameter   | Type   | Description                      |
-| ----------- | ------ | -------------------------------- |
-| `url`       | string | Starting URL for the crawl       |
-| `max_depth` | int    | How many levels deep to crawl    |
-| `limit`     | int    | Maximum number of pages to crawl |
-
-### Map
-
-Returns a complete list of URLs found on a website.
-
-| Parameter | Type   | Description                 |
-| --------- | ------ | --------------------------- |
-| `url`     | string | Root URL of the site to map |
-
-### Research
-
-Conducts autonomous multi-step research and returns a comprehensive report.
-
-| Parameter     | Type   | Description                |
-| ------------- | ------ | -------------------------- |
-| `query`       | string | Research topic or question |
-| `max_results` | int    | Depth of research          |
 
 ## Common Patterns
 
@@ -118,5 +51,6 @@ Competitor URL → Map → Crawl key pages → LLM analyzes
 
 ## Resources
 
-- [Tavily API Docs](https://docs.tavily.com)
+- [Tavily Docs](https://docs.tavily.com/documentation/api-reference/introduction)
 - [Tavily Dashboard](https://app.tavily.com)
+- [Tavily Discord](https://discord.gg/TPu2gkaWp2)
