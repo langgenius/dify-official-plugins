@@ -1,0 +1,57 @@
+identity:
+  name: linear_list_cycles
+  author: langgenius
+  label:
+    en_US: List Linear Cycles
+    zh_Hans: 列出 Linear 周期
+    pt_BR: Listar Ciclos do Linear
+    ja_JP: Linear サイクルを一覧表示
+    zh_Hant: 列出 Linear 週期
+description:
+  human:
+    en_US: List cycles in Linear, optionally filtering by team.
+    zh_Hans: 列出 Linear 中的周期，可按团队筛选。
+    pt_BR: Listar ciclos no Linear, com opção de filtrar por time.
+    ja_JP: Linear のサイクルを一覧表示します（チームで絞り込み可）。
+    zh_Hant: 列出 Linear 中的週期，可按團隊篩選。
+  llm: Lists Linear cycles with an optional team filter and result limit.
+parameters:
+  - name: teamId
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Team ID
+      zh_Hans: 团队 ID
+      pt_BR: ID da Equipe
+      ja_JP: チームID
+      zh_Hant: 團隊 ID
+    human_description:
+      en_US: Optional team ID to filter cycles by.
+      zh_Hans: 可选的团队 ID，用于筛选周期。
+      pt_BR: ID do time para filtrar ciclos (opcional).
+      ja_JP: サイクルを絞り込むためのチームID（任意）。
+      zh_Hant: 可選的團隊 ID，用於篩選週期。
+    llm_description: Optional team ID for filtering cycles.
+  - name: limit
+    type: number
+    required: false
+    default: 10
+    form: llm
+    label:
+      en_US: Result Limit
+      zh_Hans: 结果限制
+      pt_BR: Limite de Resultados
+      ja_JP: 結果制限
+      zh_Hant: 結果限制
+    human_description:
+      en_US: "Maximum number of cycles to return (default: 10, max: 50)."
+      zh_Hans: 最多返回的周期数量（默认：10，最大：50）。
+      pt_BR: "Número máximo de ciclos a retornar (padrão: 10, máx: 50)."
+      ja_JP: 返すサイクルの最大数（デフォルト：10、最大：50）。
+      zh_Hant: 最多返回的週期數量（默認：10，最大：50）。
+    llm_description: "Max number of cycles to return (default: 10, max: 50)."
+extra:
+  python:
+    source: tools/linear_list_cycles.py
+    class: LinearListCyclesTool

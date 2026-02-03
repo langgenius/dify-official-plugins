@@ -1,5 +1,6 @@
 from typing import Any, Union
 from urllib.parse import urlparse
+import mimetypes
 
 import boto3
 
@@ -52,8 +53,18 @@ class S3Operator(Tool):
                 if not text_content:
                     yield self.create_text_message("text_content parameter is required for write operation")
 
+                # Infer content type from file extension
+                content_type, _ = mimetypes.guess_type(key)
+                if not content_type:
+                    content_type = "text/plain; charset=utf-8"
+
                 # Write content to S3
-                self.s3_client.put_object(Bucket=bucket, Key=key, Body=text_content.encode("utf-8"))
+                self.s3_client.put_object(
+                    Bucket=bucket, 
+                    Key=key, 
+                    Body=text_content.encode("utf-8"),
+                    ContentType=content_type
+                )
                 result = f"s3://{bucket}/{key}"
 
                 # Generate presigned URL for the written object if requested

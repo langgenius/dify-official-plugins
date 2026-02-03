@@ -17,20 +17,34 @@ parameters:
       en_US: File
       zh_Hans: 文件
     human_description:
-      en_US: The URL of an image or PDF file, or the Base64-encoded result of the content of such a file.
-      zh_Hans: 图像文件或 PDF 文件的 URL，或上述类型文件内容的 Base64 编码结果。
-    llm_description: The URL of an image or PDF file, or the Base64-encoded result of the content of such a file.
+      en_US: The URL of an image or PDF file, or the Base64-encoded result of the content of such a file. The URL must be publicly accessible.
+      zh_Hans: 图像文件或 PDF 文件的 URL，或上述类型文件内容的 Base64 编码结果。URL 必须是公网可访问的。
+    llm_description: The URL of an image or PDF file, or the Base64-encoded result of the content of such a file. The URL must be publicly accessible.
     form: llm
   - name: fileType
-    type: number
+    type: select
     required: false
+    default: auto
+    options:
+      - label:
+          en_US: Auto Detect
+          zh_Hans: 自动检测
+        value: auto
+      - label:
+          en_US: PDF
+          zh_Hans: PDF
+        value: pdf
+      - label:
+          en_US: Image
+          zh_Hans: 图片
+        value: image
     label:
       en_US: File Type
       zh_Hans: 文件类型
     human_description:
-      en_US: File type. 0 indicates a PDF file, and 1 indicates an image file. If not specified, the file type will be inferred from the URL.
-      zh_Hans: 文件类型。0 表示 PDF 文件，1 表示图像文件。若不设置，则将根据 URL 推断文件类型。
-    llm_description: File type. 0 indicates a PDF file, and 1 indicates an image file. If not specified, the file type will be inferred from the URL.
+      en_US: File type. "Auto Detect" will infer the type from URL, "PDF" for PDF files, "Image" for image files.
+      zh_Hans: 文件类型。"自动检测" 将根据 URL 推断类型，"PDF" 表示 PDF 文件，"图片" 表示图像文件。
+    llm_description: File type. "auto" will infer the type from URL, "pdf" for PDF files, "image" for image files.
     form: llm
   - name: useDocOrientationClassify
     type: boolean
@@ -112,9 +126,9 @@ parameters:
       en_US: Whether to Enable Chart Recognition
       zh_Hans: 是否启用图表识别
     human_description:
-      en_US: Whether to enable the chart recognition function.
-      zh_Hans: 是否启用图表识别功能。
-    llm_description: Whether to enable the chart recognition function.
+      en_US: Whether to enable the chart recognition function (to recognize line charts, bar charts, etc.).
+      zh_Hans: 是否启用图表识别功能（识别折线图、柱状图等）。
+    llm_description: Whether to enable the chart recognition function (to recognize line charts, bar charts, etc.).
     form: llm
   - name: useRegionDetection
     type: boolean
@@ -127,6 +141,18 @@ parameters:
       en_US: Whether to enable the region detection function.
       zh_Hans: 是否启用区域检测功能。
     llm_description: Whether to enable the region detection function.
+    form: llm
+  - name: formatBlockContent
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Whether to Format Block Content
+      zh_Hans: 是否格式化块内容
+    human_description:
+      en_US: Whether to convert the block content into Markdown format.
+      zh_Hans: 是否将块内容转换为 Markdown 格式。
+    llm_description: Whether to convert the block content into Markdown format.
     form: llm
   - name: layoutNms
     type: boolean
@@ -370,6 +396,41 @@ parameters:
       zh_Hans: 是否启用无线表端到端表格识别模式。启用时，不使用单元格检测模型，只使用表格结构识别模型。
     llm_description: Whether to enable end-to-end wireless table recognition mode. When enabled, the cell detection model will not be used, and only the table structure recognition model will be used.
     form: llm
+  - name: markdownIgnoreLabels
+    type: string
+    required: false
+    label:
+      en_US: Labels to Ignore in Markdown Output
+      zh_Hans: Markdown 输出中忽略的标签
+    human_description:
+      en_US: 'Comma-separated list of labels to ignore when generating Markdown output. For example: "header,footer,page_number".'
+      zh_Hans: '生成 Markdown 输出时要忽略的标签列表，使用逗号分隔。例如："header,footer,page_number"。'
+    llm_description: 'Comma-separated list of labels to ignore when generating Markdown output. For example: "header,footer,page_number".'
+    form: llm
+  - name: prettifyMarkdown
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: Whether to Prettify the Output Markdown Text
+      zh_Hans: 是否美化输出的 Markdown 文本
+    human_description:
+      en_US: Whether to prettify the output Markdown text.
+      zh_Hans: 是否美化输出的 Markdown 文本。
+    llm_description: Whether to prettify the output Markdown text.
+    form: llm
+  - name: showFormulaNumber
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Whether to Include Formula Numbers in the Output Markdown Text
+      zh_Hans: 是否在输出的 Markdown 文本中包含公式编号
+    human_description:
+      en_US: Whether to include formula numbers in the output markdown text.
+      zh_Hans: 是否在输出的 Markdown 文本中包含公式编号。
+    llm_description: Whether to include formula numbers in the output markdown text.
+    form: llm
   - name: visualize
     type: boolean
     required: false
@@ -382,6 +443,14 @@ parameters:
       zh_Hans: 是否返回可视化结果。
     llm_description: Whether or not to return visualization results.
     form: llm
+output_schema:
+    type: object
+    properties:
+      images:
+        type: array
+        items:
+          type: object
+        description: The images extracted from the file.
 extra:
   python:
     source: tools/document_parsing.py
