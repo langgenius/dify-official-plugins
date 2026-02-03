@@ -197,6 +197,28 @@ model_credential_schema:
       help:
         en_US: Configure whether the model supports thinking mode, non-thinking mode, or both. This will control the availability of the thinking mode toggle.
         zh_Hans: 配置模型是否支持思考模式、非思考模式或两者都支持。这将控制思考模式开关的可用性。
+    - variable: compatibility_mode
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Compatibility mode
+        zh_Hans: 兼容模式
+      type: select
+      required: false
+      default: strict
+      options:
+        - value: strict
+          label:
+            en_US: OpenAI compatible
+            zh_Hans: 严格（OpenAI 兼容）
+        - value: extended
+          label:
+            en_US: Enable extra settings
+            zh_Hans: 扩展（启用额外设置）
+      help:
+        en_US: Choose strict OpenAI compatibility or extended settings that add extra parameters (e.g., thinking, chat_template_kwargs, enable_thinking).
+        zh_Hans: 选择严格的 OpenAI 兼容或扩展设置（会添加额外参数，例如 thinking、chat_template_kwargs、enable_thinking）。
     - variable: function_calling_type
       show_on:
         - variable: __model_type
