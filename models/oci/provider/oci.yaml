@@ -118,6 +118,8 @@ models:
     position: models/llm/_position.yaml
     predefined:
       - models/llm/models/xai/*.yaml
+      - models/llm/models/google/*.yaml
+      - models/llm/models/openai/*.yaml
       - models/llm/models/cohere/*.yaml
       - models/llm/models/llama/*.yaml
   text_embedding:

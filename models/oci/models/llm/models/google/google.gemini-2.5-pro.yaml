@@ -1,0 +1,48 @@
+model: google.gemini-2.5-pro
+label:
+  zh_Hans: google.gemini-2.5-pro
+  en_US: google.gemini-2.5-pro
+  ja_JP: google.gemini-2.5-pro
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+  - vision
+  - document
+  - audio
+  - video
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    default: 1
+    min: 0
+    max: 2.0
+  - name: topP
+    use_template: top_p
+    default: 1
+    min: 0.05
+    max: 1
+  - name: presencePenalty
+    use_template: presence_penalty
+    min: -2
+    max: 2
+    default: 0
+  - name: frequencyPenalty
+    use_template: frequency_penalty
+    min: -2
+    max: 2
+    default: 0
+  - name: maxTokens
+    use_template: max_tokens
+    default: 4000
+    max: 65536
+pricing:
+  input: '2.50'
+  output: '15.00'
+  unit: '0.000001'
+  currency: USD
