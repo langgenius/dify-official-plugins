@@ -36,7 +36,9 @@ Go to **Tools → Tavily → Authentication** and paste your API key.
 
 Add a Node → Tool → Tavily. All five actions are available:
 
-![](./_assets/actions.png)
+<p align="center">
+  <img src="./_assets/actions.png" />
+</p>
 
 ## Common Patterns
 
