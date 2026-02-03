@@ -1,10 +1,10 @@
 dify_plugin==0.7.0
 anthropic==0.42.0
-google-genai==1.51.0
-google-api-core==2.23.0
+google-genai==1.56.0
+google-api-core>=2.23.0
 Pillow==11.3.0
 tiktoken==0.8.0
 google-cloud-aiplatform[all]==1.128.0
 sentencepiece==0.2.1
-google-auth==2.29.0
+google-auth>=2.45.0
 anthropic[vertex]==0.42.0

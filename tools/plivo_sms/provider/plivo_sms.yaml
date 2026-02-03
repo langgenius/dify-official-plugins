@@ -1,0 +1,42 @@
+credentials_for_provider:
+  auth_id:
+    label:
+      en_US: Plivo Auth ID
+      zh_Hans: Plivo Auth ID
+    placeholder:
+      en_US: Please input your Plivo Auth ID
+      zh_Hans: 请输入您的 Plivo Auth ID
+    help:
+      en_US: Your Plivo Auth ID from the Plivo console.
+      zh_Hans: 从 Plivo 控制台获取的 Auth ID。
+    required: true
+    type: secret-input
+  auth_token:
+    label:
+      en_US: Plivo Auth Token
+      zh_Hans: Plivo Auth Token
+    placeholder:
+      en_US: Please input your Plivo Auth Token
+      zh_Hans: 请输入您的 Plivo Auth Token
+    help:
+      en_US: Your Plivo Auth Token from the Plivo console.
+      zh_Hans: 从 Plivo 控制台获取的 Auth Token。
+    required: true
+    type: secret-input
+extra:
+  python:
+    source: provider/plivo_sms.py
+identity:
+  author: Plivo
+  description:
+    en_US: Send SMS messages using Plivo's messaging platform.
+    zh_Hans: 使用 Plivo 消息平台发送短信。
+  icon: icon.svg
+  label:
+    en_US: Plivo SMS
+    zh_Hans: Plivo SMS
+  name: plivo_sms
+  tags:
+  - social
+tools:
+- tools/send_sms.yaml
