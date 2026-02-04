@@ -1,0 +1,50 @@
+identity:
+  name: seltz_search
+  author: langgenius
+  label:
+    en_US: Seltz Search
+    zh_Hans: Seltz 搜索
+    ja_JP: Seltz 検索
+    pt_BR: Pesquisa Seltz
+description:
+  human:
+    en_US: Search for real-time web knowledge using Seltz and retrieve relevant documents.
+    zh_Hans: 使用 Seltz 搜索实时网络知识并检索相关文档。
+    ja_JP: Seltz を使用してリアルタイムのウェブ知識を検索し、関連ドキュメントを取得します。
+    pt_BR: Pesquise conhecimento web em tempo real usando Seltz e recupere documentos relevantes.
+  llm: Search for real-time web knowledge using Seltz to find relevant documents and content based on a query. Returns URLs and content from matching documents.
+parameters:
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: Search Query
+      zh_Hans: 搜索查询
+      ja_JP: 検索クエリ
+      pt_BR: Consulta de Pesquisa
+    human_description:
+      en_US: The search query text to find relevant documents.
+      zh_Hans: 用于查找相关文档的搜索查询文本。
+      ja_JP: 関連ドキュメントを検索するための検索クエリテキスト。
+      pt_BR: O texto da consulta de pesquisa para encontrar documentos relevantes.
+    llm_description: The search query text to find relevant documents and content.
+    form: llm
+  - name: max_documents
+    type: number
+    required: false
+    default: 10
+    label:
+      en_US: Max Documents
+      zh_Hans: 最大文档数
+      ja_JP: 最大ドキュメント数
+      pt_BR: Documentos Máximos
+    human_description:
+      en_US: Maximum number of documents to return (default 10).
+      zh_Hans: 返回的最大文档数量（默认 10）。
+      ja_JP: 返すドキュメントの最大数（デフォルト 10）。
+      pt_BR: Número máximo de documentos a retornar (padrão 10).
+    llm_description: Maximum number of documents to return from the search.
+    form: form
+extra:
+  python:
+    source: tools/seltz_search.py

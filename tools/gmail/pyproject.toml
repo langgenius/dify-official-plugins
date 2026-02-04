@@ -8,8 +8,6 @@ requires-python = ">=3.12"
 # uv pip compile pyproject.toml -o ./requirements.txt
 dependencies = [
     "dify_plugin>=0.4.2,<0.5.0",
-    "requests>=2.32.7",
-    "werkzeug>=2.0.0",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix

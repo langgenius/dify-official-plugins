@@ -1,0 +1,57 @@
+identity:
+  name: linear_list_issue_statuses
+  author: langgenius
+  label:
+    en_US: List Linear Issue Statuses
+    zh_Hans: 列出 Linear 问题状态
+    pt_BR: Listar Status de Problemas do Linear
+    ja_JP: Linear 課題ステータスを一覧表示
+    zh_Hant: 列出 Linear 問題狀態
+description:
+  human:
+    en_US: List issue statuses in Linear, optionally filtering by team.
+    zh_Hans: 列出 Linear 中的问题状态，可按团队筛选。
+    pt_BR: Listar status de problemas no Linear, com opção de filtrar por time.
+    ja_JP: Linear の課題ステータスを一覧表示します（チームで絞り込み可）。
+    zh_Hant: 列出 Linear 中的問題狀態，可按團隊篩選。
+  llm: Lists Linear issue statuses with an optional team filter and result limit.
+parameters:
+  - name: teamId
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Team ID
+      zh_Hans: 团队 ID
+      pt_BR: ID da Equipe
+      ja_JP: チームID
+      zh_Hant: 團隊 ID
+    human_description:
+      en_US: Optional team ID to filter issue statuses by.
+      zh_Hans: 可选的团队 ID，用于筛选问题状态。
+      pt_BR: ID do time para filtrar status de problemas (opcional).
+      ja_JP: 課題ステータスを絞り込むためのチームID（任意）。
+      zh_Hant: 可選的團隊 ID，用於篩選問題狀態。
+    llm_description: Optional team ID for filtering issue statuses.
+  - name: limit
+    type: number
+    required: false
+    default: 10
+    form: llm
+    label:
+      en_US: Result Limit
+      zh_Hans: 结果限制
+      pt_BR: Limite de Resultados
+      ja_JP: 結果制限
+      zh_Hant: 結果限制
+    human_description:
+      en_US: "Maximum number of issue statuses to return (default: 10, max: 50)."
+      zh_Hans: 最多返回的问题状态数量（默认：10，最大：50）。
+      pt_BR: "Número máximo de status de problemas a retornar (padrão: 10, máx: 50)."
+      ja_JP: 返す課題ステータスの最大数（デフォルト：10、最大：50）。
+      zh_Hant: 最多返回的問題狀態數量（默認：10，最大：50）。
+    llm_description: "Max number of issue statuses to return (default: 10, max: 50)."
+extra:
+  python:
+    source: tools/linear_list_issue_statuses.py
+    class: LinearListIssueStatusesTool

@@ -17,6 +17,7 @@ extra:
     source: provider/dingo.py
 
 tools:
+  - tools/dingo_scout.yaml
   - tools/resume_optimizer.yaml
   - tools/keyword_matcher.yaml
 
