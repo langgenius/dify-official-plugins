@@ -8,6 +8,7 @@ from seltz import (
     SeltzConfigurationError,
     SeltzConnectionError,
 )
+from seltz.types import Includes
 
 
 class SeltzProvider(ToolProvider):
@@ -24,7 +25,7 @@ class SeltzProvider(ToolProvider):
         try:
             # Perform a test search to validate credentials
             client = Seltz(api_key=api_key)
-            client.search(text="test", max_documents=1)
+            client.search("test", includes=Includes(max_documents=1))
         except SeltzAuthenticationError:
             raise ToolProviderCredentialValidationError(
                 "Invalid Seltz API key."
