@@ -1,5 +1,5 @@
 [project]
-name = "neo4j"
+name = "dify-neo4j"
 version = "0.1.0"
 description = "Neo4j graph database plugin for Dify"
 readme = "README.md"
