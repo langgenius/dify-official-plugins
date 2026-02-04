@@ -1,8 +1,7 @@
 author: langgenius
-created_at: "2024-09-20T08:03:44.658609186Z"
+created_at: '2024-09-20T08:03:44.658609186Z'
 description:
-  en_US:
-    A powerful AI-native search engine and web content extraction tool that provides
+  en_US: A powerful AI-native search engine and web content extraction tool that provides
     highly relevant search results and raw content extraction from web pages.
   zh_Hans: 一个强大的原生AI搜索引擎和网页内容提取工具，提供高度相关的搜索结果和网页原始内容提取。
 icon: icon.png
@@ -11,17 +10,17 @@ label:
   zh_Hans: Tavily
 meta:
   arch:
-    - amd64
-    - arm64
+  - amd64
+  - arm64
   runner:
     entrypoint: main
     language: python
-    version: "3.12"
+    version: '3.12'
   version: 0.0.1
 name: tavily
 plugins:
   tools:
-    - provider/tavily.yaml
+  - provider/tavily.yaml
 resource:
   memory: 1048576
   permission:
@@ -31,6 +30,6 @@ resource:
     tool:
       enabled: true
 tags:
-  - search
+- search
 type: plugin
 version: 0.1.4
