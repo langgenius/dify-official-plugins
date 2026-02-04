@@ -1,0 +1,37 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: neo4j
+label:
+  en_US: Neo4j
+  ja_JP: Neo4j
+  zh_Hans: Neo4j
+  pt_BR: Neo4j
+description:
+  en_US: Interact with Neo4j graph database. Execute Cypher queries, explore database schema, and leverage Graph Data Science algorithms for advanced graph analytics.
+  ja_JP: Neo4j グラフデータベースと連携します。Cypher クエリの実行、データベーススキーマの探索、高度なグラフ分析のためのグラフデータサイエンスアルゴリズムの活用が可能です。
+  zh_Hans: 与 Neo4j 图数据库交互。执行 Cypher 查询、探索数据库模式，并利用图数据科学算法进行高级图分析。
+  pt_BR: Interaja com o banco de dados de grafos Neo4j. Execute consultas Cypher, explore o esquema do banco de dados e aproveite os algoritmos de Ciencia de Dados de Grafos para analises avancadas de grafos.
+icon: icon.svg
+icon_dark: icon-dark.svg
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+tags:
+  - business
+plugins:
+  tools:
+    - provider/neo4j.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+created_at: 2026-02-02T20:40:44.080989+09:00
+privacy: PRIVACY.md
