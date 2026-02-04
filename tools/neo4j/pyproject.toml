@@ -1,0 +1,16 @@
+[project]
+name = "neo4j"
+version = "0.1.0"
+description = "Neo4j graph database plugin for Dify"
+readme = "README.md"
+requires-python = ">=3.12"
+
+# uv pip compile pyproject.toml -o ./requirements.txt
+dependencies = [
+    "dify_plugin",
+    "neo4j",
+]
+
+# uv run black . -C -l 100 && uv run ruff check --fix
+[dependency-groups]
+dev = []
