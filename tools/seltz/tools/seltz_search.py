@@ -11,6 +11,7 @@ from seltz import (
     SeltzRateLimitError,
     SeltzTimeoutError,
 )
+from seltz.types import Includes
 
 
 class SeltzSearchTool(Tool):
@@ -56,7 +57,7 @@ class SeltzSearchTool(Tool):
             client = Seltz(api_key=api_key)
 
             # Perform search
-            response = client.search(text=query, max_documents=max_documents)
+            response = client.search(query, includes=Includes(max_documents=max_documents))
 
             # Check if we have results
             if not response.documents:
