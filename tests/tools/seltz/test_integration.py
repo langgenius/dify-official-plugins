@@ -27,10 +27,11 @@ def api_key():
 def test_seltz_client_search(api_key):
     """Test basic Seltz client search functionality."""
     from seltz import Seltz
+    from seltz.types import Includes
 
     client = Seltz(api_key=api_key)
 
-    response = client.search(text="Python programming", max_documents=3)
+    response = client.search("Python programming", includes=Includes(max_documents=3))
 
     assert response is not None
     assert hasattr(response, "documents")
@@ -48,10 +49,11 @@ def test_seltz_client_search(api_key):
 def test_seltz_search_different_query(api_key):
     """Test search with a different query."""
     from seltz import Seltz
+    from seltz.types import Includes
 
     client = Seltz(api_key=api_key)
 
-    response = client.search(text="climate change solutions", max_documents=5)
+    response = client.search("climate change solutions", includes=Includes(max_documents=5))
 
     assert response is not None
     assert hasattr(response, "documents")
