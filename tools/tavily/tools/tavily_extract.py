@@ -11,13 +11,14 @@ class TavilyExtract:
 
     Args:
         api_key (str): The API key for accessing the Tavily Extract API.
+        project_id (str, optional): The project ID for tracking and analytics.
 
     Methods:
         extract: Retrieves extracted content from the Tavily Extract API.
     """
 
-    def __init__(self, api_key: str) -> None:
-        self.client = TavilyClient(api_key=api_key)
+    def __init__(self, api_key: str, project_id: str | None = None) -> None:
+        self.client = TavilyClient(api_key=api_key, project_id=project_id)
 
     def extract(self, params: dict[str, Any]) -> dict:
         """
@@ -26,11 +27,15 @@ class TavilyExtract:
         Args:
             params (Dict[str, Any]): The extraction parameters, which may include:
                 - urls: Required. A string or list of URLs to extract content from.
+                - query: Optional string. User intent for reranking extracted content chunks.
                 - include_images: Optional boolean. Whether to include images in the response. Default is False.
                 - include_favicon: Optional boolean. Whether to include favicon URLs. Default is False.
                 - extract_depth: Optional string. The depth of extraction ('basic' or 'advanced'). Default is 'basic'.
                   Advanced extraction retrieves more data but costs more credits and may increase latency.
                 - format: Optional string. The format of extracted content ('markdown' or 'text'). Default is 'markdown'.
+                - chunks_per_source: Optional integer. Max content chunks per source (1-5). Default is 3.
+                - timeout: Optional float. Request timeout in seconds (1.0-60.0).
+                - include_usage: Optional boolean. Whether to include credit usage info. Default is False.
 
         Returns:
             dict: The extracted content with results.
@@ -77,10 +82,32 @@ class TavilyExtract:
             processed_params["extract_depth"] = extract_depth
 
         if "format" in params:
-            format = params["format"]
-            if format not in ["markdown", "text"]:
+            format_value = params["format"]
+            if format_value not in ["markdown", "text"]:
                 raise ValueError("format must be either 'markdown' or 'text'")
-            processed_params["format"] = format
+            processed_params["format"] = format_value
+
+        if "query" in params and params["query"]:
+            processed_params["query"] = params["query"]
+
+        if "chunks_per_source" in params:
+            chunks = params["chunks_per_source"]
+            if isinstance(chunks, str):
+                chunks = int(chunks)
+            if chunks < 1 or chunks > 5:
+                raise ValueError("chunks_per_source must be between 1 and 5")
+            processed_params["chunks_per_source"] = chunks
+
+        if "timeout" in params and params["timeout"]:
+            timeout = params["timeout"]
+            if isinstance(timeout, str):
+                timeout = float(timeout)
+            if timeout < 1.0 or timeout > 60.0:
+                raise ValueError("timeout must be between 1.0 and 60.0 seconds")
+            processed_params["timeout"] = timeout
+
+        if "include_usage" in params:
+            processed_params["include_usage"] = params["include_usage"]
 
         return processed_params
 
@@ -103,8 +130,14 @@ class TavilyExtractTool(Tool):
         Args:
             tool_parameters (Dict[str, Any]): The parameters for the Tavily Extract tool.
                 - urls: Required. A comma-separated list of URLs to extract content from.
+                - query: Optional. User intent for reranking content chunks.
                 - include_images: Optional. Whether to include images in the response.
+                - include_favicon: Optional. Whether to include favicon URLs.
                 - extract_depth: Optional. The depth of extraction ('basic' or 'advanced').
+                - format: Optional. The format of extracted content ('markdown' or 'text').
+                - chunks_per_source: Optional. Max content chunks per source (1-5).
+                - timeout: Optional. Request timeout in seconds (1.0-60.0).
+                - include_usage: Optional. Whether to include credit usage info.
 
         Yields:
             ToolInvokeMessage: The result of the Tavily Extract tool invocation.
@@ -121,7 +154,8 @@ class TavilyExtractTool(Tool):
             yield self.create_text_message("Please input at least one URL to extract.")
             return
 
-        tavily_extract = TavilyExtract(api_key)
+        project_id = tool_parameters.get("project_id")
+        tavily_extract = TavilyExtract(api_key, project_id=project_id)
 
         try:
             extract_results = tavily_extract.extract(tool_parameters)

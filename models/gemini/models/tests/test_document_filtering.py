@@ -38,7 +38,11 @@ except ImportError:
 load_dotenv()
 
 # Shared test configuration for minimal cost
-GEMINI_TEST_CONFIG = {"model": "gemini-2.5-flash-lite", "max_output_tokens": 5, "temperature": 0.1}
+GEMINI_TEST_CONFIG = {
+    "model": "gemini-2.5-flash-lite",
+    "max_output_tokens": 5,
+    "temperature": 0.1,
+}
 
 
 class MemoryFileCache:
@@ -198,9 +202,10 @@ class TestDocumentFilteringUnit:
         self.mock_file.mime_type = "application/pdf"
 
         with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
-
             contents = self.llm._build_gemini_contents(
-                prompt_messages=[message], genai_client=self.mock_client, config=self.config
+                prompt_messages=[message],
+                genai_client=self.mock_client,
+                config=self.config,
             )
 
         # Should have text + PDF
@@ -226,9 +231,10 @@ class TestDocumentFilteringUnit:
         self.mock_file.mime_type = "text/plain"
 
         with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
-
             contents = self.llm._build_gemini_contents(
-                prompt_messages=[message], genai_client=self.mock_client, config=self.config
+                prompt_messages=[message],
+                genai_client=self.mock_client,
+                config=self.config,
             )
 
         assert len(contents) == 1
@@ -251,9 +257,10 @@ class TestDocumentFilteringUnit:
         self.mock_file.mime_type = "text/html"
 
         with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
-
             contents = self.llm._build_gemini_contents(
-                prompt_messages=[message], genai_client=self.mock_client, config=self.config
+                prompt_messages=[message],
+                genai_client=self.mock_client,
+                config=self.config,
             )
 
         assert len(contents) == 1
@@ -276,9 +283,10 @@ class TestDocumentFilteringUnit:
         self.mock_file.mime_type = "text/markdown"
 
         with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
-
             contents = self.llm._build_gemini_contents(
-                prompt_messages=[message], genai_client=self.mock_client, config=self.config
+                prompt_messages=[message],
+                genai_client=self.mock_client,
+                config=self.config,
             )
 
         assert len(contents) == 1
@@ -301,12 +309,15 @@ class TestDocumentFilteringUnit:
             ]
         )
 
-        with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"), patch(
-            "logging.debug"
-        ) as mock_log:
-
+        with (
+            patch("tempfile.NamedTemporaryFile"),
+            patch("os.unlink"),
+            patch("logging.debug") as mock_log,
+        ):
             contents = self.llm._build_gemini_contents(
-                prompt_messages=[message], genai_client=self.mock_client, config=self.config
+                prompt_messages=[message],
+                genai_client=self.mock_client,
+                config=self.config,
             )
 
         # Should only have text, DOCX filtered out
@@ -323,11 +334,20 @@ class TestDocumentFilteringUnit:
         """Test that all Microsoft Office documents are filtered out."""
         office_docs = [
             ("doc", "application/msword"),
-            ("docx", "application/vnd.openxmlformats-officedocument.wordprocessingml.document"),
+            (
+                "docx",
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            ),
             ("xls", "application/vnd.ms-excel"),
-            ("xlsx", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"),
+            (
+                "xlsx",
+                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            ),
             ("ppt", "application/vnd.ms-powerpoint"),
-            ("pptx", "application/vnd.openxmlformats-officedocument.presentationml.presentation"),
+            (
+                "pptx",
+                "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            ),
         ]
 
         for format_ext, mime_type in office_docs:
@@ -342,9 +362,10 @@ class TestDocumentFilteringUnit:
             )
 
             with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
-
                 contents = self.llm._build_gemini_contents(
-                    prompt_messages=[message], genai_client=self.mock_client, config=self.config
+                    prompt_messages=[message],
+                    genai_client=self.mock_client,
+                    config=self.config,
                 )
 
             # Should be filtered out
@@ -367,9 +388,10 @@ class TestDocumentFilteringUnit:
             )
 
             with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
-
                 contents = self.llm._build_gemini_contents(
-                    prompt_messages=[message], genai_client=self.mock_client, config=self.config
+                    prompt_messages=[message],
+                    genai_client=self.mock_client,
+                    config=self.config,
                 )
 
             # Should be filtered out
@@ -392,9 +414,10 @@ class TestDocumentFilteringUnit:
             )
 
             with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
-
                 contents = self.llm._build_gemini_contents(
-                    prompt_messages=[message], genai_client=self.mock_client, config=self.config
+                    prompt_messages=[message],
+                    genai_client=self.mock_client,
+                    config=self.config,
                 )
 
             # Should be filtered regardless of case
@@ -409,19 +432,25 @@ class TestDocumentFilteringUnit:
                 # Supported PDF
                 DocumentPromptMessageContent(
                     format="pdf",
-                    base64_data=base64.b64encode(DocumentGenerator.create_pdf_bytes()).decode(),
+                    base64_data=base64.b64encode(
+                        DocumentGenerator.create_pdf_bytes()
+                    ).decode(),
                     mime_type="application/pdf",
                 ),
                 # Unsupported DOCX
                 DocumentPromptMessageContent(
                     format="docx",
-                    base64_data=base64.b64encode(DocumentGenerator.create_docx_bytes()).decode(),
+                    base64_data=base64.b64encode(
+                        DocumentGenerator.create_docx_bytes()
+                    ).decode(),
                     mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 ),
                 # Supported plain text
                 DocumentPromptMessageContent(
                     format="txt",
-                    base64_data=base64.b64encode(DocumentGenerator.create_text_bytes()).decode(),
+                    base64_data=base64.b64encode(
+                        DocumentGenerator.create_text_bytes()
+                    ).decode(),
                     mime_type="text/plain",
                 ),
                 TextPromptMessageContent(data="What do you see?"),
@@ -452,9 +481,10 @@ class TestDocumentFilteringUnit:
         self.mock_client.files.upload.side_effect = upload_side_effect
 
         with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
-
             contents = self.llm._build_gemini_contents(
-                prompt_messages=[message], genai_client=self.mock_client, config=self.config
+                prompt_messages=[message],
+                genai_client=self.mock_client,
+                config=self.config,
             )
 
         # Should have: text + PDF + text file + final text (DOCX filtered out)
@@ -479,9 +509,10 @@ class TestDocumentFilteringUnit:
         )
 
         with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
-
             contents = self.llm._build_gemini_contents(
-                prompt_messages=[message], genai_client=self.mock_client, config=self.config
+                prompt_messages=[message],
+                genai_client=self.mock_client,
+                config=self.config,
             )
 
         # All content filtered out
@@ -493,15 +524,18 @@ class TestDocumentFilteringUnit:
         message = UserPromptMessage(
             content=[
                 DocumentPromptMessageContent(
-                    format="txt", base64_data=base64.b64encode(b"test").decode(), mime_type=""
+                    format="txt",
+                    base64_data=base64.b64encode(b"test").decode(),
+                    mime_type="",
                 )
             ]
         )
 
         with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
-
             contents = self.llm._build_gemini_contents(
-                prompt_messages=[message], genai_client=self.mock_client, config=self.config
+                prompt_messages=[message],
+                genai_client=self.mock_client,
+                config=self.config,
             )
 
         # Should handle gracefully
@@ -530,15 +564,22 @@ class TestDocumentFilteringUnit:
         print(f"Cache exists before: {self.memory_cache.exists(cache_key)}")
 
         with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
-
             # First upload - should call mock
-            uri1, mime1 = self.llm._upload_file_content_to_google(content, self.mock_client)
-            print(f"After first upload - call count: {self.mock_client.files.upload.call_count}")
+            uri1, mime1 = self.llm._upload_file_content_to_google(
+                content, self.mock_client
+            )
+            print(
+                f"After first upload - call count: {self.mock_client.files.upload.call_count}"
+            )
             print(f"Cache exists after first: {self.memory_cache.exists(cache_key)}")
 
             # Second upload (should use cache)
-            uri2, mime2 = self.llm._upload_file_content_to_google(content, self.mock_client)
-            print(f"After second upload - call count: {self.mock_client.files.upload.call_count}")
+            uri2, mime2 = self.llm._upload_file_content_to_google(
+                content, self.mock_client
+            )
+            print(
+                f"After second upload - call count: {self.mock_client.files.upload.call_count}"
+            )
 
         assert uri1 == uri2 == "gs://test-bucket/test-file"
         assert mime1 == mime2 == "application/pdf"
@@ -568,7 +609,8 @@ class TestDocumentFilteringIntegration:
         # Validate credentials first
         try:
             self.llm.validate_credentials(
-                model=GEMINI_TEST_CONFIG["model"], credentials={"google_api_key": self.api_key}
+                model=GEMINI_TEST_CONFIG["model"],
+                credentials={"google_api_key": self.api_key},
             )
         except Exception as e:
             pytest.skip(f"Invalid GEMINI_API_KEY: {e}")
@@ -663,7 +705,9 @@ class TestDocumentFilteringIntegration:
     @pytest.mark.integration
     def test_real_text_document_upload(self):
         """Test real text document upload."""
-        text_bytes = DocumentGenerator.create_text_bytes("This is a test document for analysis.")
+        text_bytes = DocumentGenerator.create_text_bytes(
+            "This is a test document for analysis."
+        )
         base64_data = base64.b64encode(text_bytes).decode()
 
         message = UserPromptMessage(
@@ -732,19 +776,25 @@ class TestDocumentFilteringIntegration:
                 # Supported PDF
                 DocumentPromptMessageContent(
                     format="pdf",
-                    base64_data=base64.b64encode(DocumentGenerator.create_pdf_bytes()).decode(),
+                    base64_data=base64.b64encode(
+                        DocumentGenerator.create_pdf_bytes()
+                    ).decode(),
                     mime_type="application/pdf",
                 ),
                 # Unsupported DOCX (should be filtered)
                 DocumentPromptMessageContent(
                     format="docx",
-                    base64_data=base64.b64encode(DocumentGenerator.create_docx_bytes()).decode(),
+                    base64_data=base64.b64encode(
+                        DocumentGenerator.create_docx_bytes()
+                    ).decode(),
                     mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 ),
                 # Supported HTML
                 DocumentPromptMessageContent(
                     format="html",
-                    base64_data=base64.b64encode(DocumentGenerator.create_html_bytes()).decode(),
+                    base64_data=base64.b64encode(
+                        DocumentGenerator.create_html_bytes()
+                    ).decode(),
                     mime_type="text/html",
                 ),
             ]
@@ -777,7 +827,9 @@ class TestDocumentFilteringIntegration:
                 # Only unsupported DOCX
                 DocumentPromptMessageContent(
                     format="docx",
-                    base64_data=base64.b64encode(DocumentGenerator.create_docx_bytes()).decode(),
+                    base64_data=base64.b64encode(
+                        DocumentGenerator.create_docx_bytes()
+                    ).decode(),
                     mime_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
                 ),
             ]

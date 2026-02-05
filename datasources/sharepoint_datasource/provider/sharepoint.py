@@ -10,12 +10,32 @@ from flask import Request
 
 
 class SharePointDatasourceProvider(DatasourceProvider):
-    _AUTH_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
-    _TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
     _API_BASE_URL = "https://graph.microsoft.com/v1.0"
     # SharePoint permission configuration - supports site-specific and general permissions
     _GENERAL_SCOPES = "openid offline_access User.Read Sites.Read.All Files.Read.All"
-    
+
+    def _get_tenant_id_for_auth(self, system_credentials: Mapping[str, Any]) -> str:
+        """
+        Get tenant ID for authorization from system credentials.
+        Defaults to 'common' for multi-tenant apps if not specified.
+        """
+        return system_credentials.get("tenant_id") or "common"
+
+    def _get_tenant_id_for_token(self, credentials: Mapping[str, Any]) -> str:
+        """
+        Get tenant ID for token refresh from saved credentials.
+        For backward compatibility, defaults to 'common' if not saved.
+        """
+        return credentials.get("tenant_id") or "common"
+
+    def _get_auth_url(self, tenant_id: str) -> str:
+        """Get the OAuth authorization URL with the appropriate tenant ID."""
+        return f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/authorize"
+
+    def _get_token_url(self, tenant_id: str) -> str:
+        """Get the OAuth token URL with the appropriate tenant ID."""
+        return f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/token"
+
     def _get_sharepoint_scopes(self, subdomain: str) -> str:
         """
         Generate SharePoint permission scopes based on subdomain
@@ -44,10 +64,12 @@ class SharePointDatasourceProvider(DatasourceProvider):
         subdomain = system_credentials.get("subdomain")
         if not subdomain:
             raise DatasourceOAuthError("Missing SharePoint subdomain configuration")
-            
+
         state = secrets.token_urlsafe(32)
         scopes = self._get_sharepoint_scopes(subdomain)
-        
+        tenant_id = self._get_tenant_id_for_auth(system_credentials)
+        auth_url = self._get_auth_url(tenant_id)
+
         params = {
             "client_id": system_credentials["client_id"],
             "redirect_uri": redirect_uri,
@@ -56,7 +78,7 @@ class SharePointDatasourceProvider(DatasourceProvider):
             "state": state,
             "response_mode": "query"
         }
-        return f"{self._AUTH_URL}?{urllib.parse.urlencode(params)}"
+        return f"{auth_url}?{urllib.parse.urlencode(params)}"
 
     def _oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
@@ -86,8 +108,12 @@ class SharePointDatasourceProvider(DatasourceProvider):
         if not subdomain:
             raise DatasourceOAuthError("Missing SharePoint subdomain configuration")
 
+        # Get tenant ID for this authorization (will be saved to credentials)
+        tenant_id = self._get_tenant_id_for_auth(system_credentials)
+
         # Use the same permission scopes as the authorization URL
         scopes = self._get_sharepoint_scopes(subdomain)
+        token_url = self._get_token_url(tenant_id)
 
         token_data = {
             "grant_type": "authorization_code",
@@ -97,14 +123,14 @@ class SharePointDatasourceProvider(DatasourceProvider):
             "redirect_uri": redirect_uri,
             "scope": scopes
         }
-        
+
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
             "Accept": "application/json"
         }
-        
+
         try:
-            response = requests.post(self._TOKEN_URL, data=token_data, headers=headers, timeout=30)
+            response = requests.post(token_url, data=token_data, headers=headers, timeout=30)
             response.raise_for_status()
             response_data = response.json()
             
@@ -140,7 +166,8 @@ class SharePointDatasourceProvider(DatasourceProvider):
                     "access_token": access_token,
                     "refresh_token": refresh_token,
                     "token_type": response_data.get("token_type", "bearer"),
-                    "subdomain": subdomain  # Save subdomain to credentials
+                    "subdomain": subdomain,  # Save subdomain to credentials
+                    "tenant_id": tenant_id,  # Save tenant_id to credentials for consistent token refresh
                 },
             )
             
@@ -170,9 +197,14 @@ class SharePointDatasourceProvider(DatasourceProvider):
         if not subdomain:
             raise DatasourceOAuthError("Missing SharePoint subdomain configuration")
 
+        # Get tenant_id from saved credentials for consistent token refresh
+        # For backward compatibility, defaults to "common" if not found
+        tenant_id = self._get_tenant_id_for_token(credentials)
+
         # Use the same permission scopes as initial authorization
         scopes = self._get_sharepoint_scopes(subdomain)
-        
+        token_url = self._get_token_url(tenant_id)
+
         token_data = {
             "grant_type": "refresh_token",
             "refresh_token": refresh_token,
@@ -180,14 +212,14 @@ class SharePointDatasourceProvider(DatasourceProvider):
             "client_secret": system_credentials["client_secret"],
             "scope": scopes
         }
-        
+
         headers = {
             "Content-Type": "application/x-www-form-urlencoded",
             "Accept": "application/json"
         }
-        
+
         try:
-            response = requests.post(self._TOKEN_URL, data=token_data, headers=headers, timeout=30)
+            response = requests.post(token_url, data=token_data, headers=headers, timeout=30)
             response.raise_for_status()
             response_data = response.json()
             
@@ -222,6 +254,7 @@ class SharePointDatasourceProvider(DatasourceProvider):
                 "client_id": system_credentials.get("client_id") or credentials.get("client_id"),
                 "client_secret": system_credentials.get("client_secret") or credentials.get("client_secret"),
                 "subdomain": subdomain,
+                "tenant_id": tenant_id,  # Keep the same tenant_id for consistent token refresh
                 "user_email": user_email,
             }
                 

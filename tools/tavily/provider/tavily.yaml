@@ -16,7 +16,7 @@ extra:
   python:
     source: provider/tavily.py
 identity:
-  author: Yash Parmar, Kalo Chin
+  author: Yash Bhandare,Yash Parmar, Kalo Chin
   description:
     en_US: A powerful AI-native search engine and web content extraction tool that
       provides highly relevant search results and raw content extraction from web
@@ -32,3 +32,6 @@ identity:
 tools:
 - tools/tavily_extract.yaml
 - tools/tavily_search.yaml
+- tools/tavily_crawl.yaml
+- tools/tavily_map.yaml
+- tools/tavily_research.yaml
