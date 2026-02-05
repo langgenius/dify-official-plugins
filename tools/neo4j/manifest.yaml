@@ -1,4 +1,4 @@
-version: 0.0.1
+version: 0.0.2
 type: plugin
 author: langgenius
 name: neo4j
@@ -25,7 +25,7 @@ plugins:
   tools:
     - provider/neo4j.yaml
 meta:
-  version: 0.0.1
+  version: 0.0.2
   arch:
     - amd64
     - arm64
