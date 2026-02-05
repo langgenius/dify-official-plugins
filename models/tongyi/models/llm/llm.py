@@ -260,7 +260,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
 
         if ModelFeature.VISION in (model_schema.features or []):
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
-                credentials, prompt_messages, rich_content=True
+                model, credentials, prompt_messages, rich_content=True
             )
             response = MultiModalConversation.call(
                 **params,
@@ -271,7 +271,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             )
         else:
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
-                credentials, prompt_messages
+                model, credentials, prompt_messages
             )
             response = Generation.call(
                 **params,
@@ -544,6 +544,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
 
     def _convert_prompt_messages_to_tongyi_messages(
         self,
+        model: str,
         credentials: dict,
         prompt_messages: list[PromptMessage],
         rich_content: bool = False,
@@ -551,7 +552,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         """
         Convert prompt messages to tongyi messages
 
+        :param model: model name
+        :param credentials: model credentials
         :param prompt_messages: prompt messages
+        :param rich_content: whether to use rich content format
         :return: tongyi messages
         """
         tongyi_messages = []
@@ -661,6 +665,13 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 )
             else:
                 raise ValueError(f"Got unknown type {prompt_message}")
+
+        # Kimi series models require at least one user message in the input
+        if model.startswith("kimi-") or model.startswith("Moonshot-Kimi-"):
+            has_user_message = any(msg.get("role") == "user" for msg in tongyi_messages)
+            if not has_user_message:
+                tongyi_messages.append({"role": "user", "content": " "})
+
         return tongyi_messages
 
     def _save_base64_to_file(self, base64_data: str) -> str:
