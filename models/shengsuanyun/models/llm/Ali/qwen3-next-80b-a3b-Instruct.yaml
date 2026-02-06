@@ -1,0 +1,23 @@
+model: ali/qwen3-next-80b-a3b-Instruct
+label:
+  en_US: Qwen3 Next 80B A3B Instruct
+model_type: llm
+features:
+  - agent-thought
+model_properties:
+  mode: chat
+  context_size: 131072
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 32768
+    min: 1
+    max: 32768
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '0.001417'
+  output: '0.014171'
+  currency: CNY
+  unit: '0.000001'
