@@ -58,6 +58,7 @@ def test_llm_invoke(model_name: str) -> None:
         stop=None,
         tools=None,
         stream=True,
+        model_parameters={},
     )
 
     with PluginRunner(
