@@ -76,6 +76,6 @@ def test_llm_invoke(model_name: str) -> None:
         assert len(results) > 0, f"No results received for model {model_name}"
 
         full_content = "".join(
-            r.delta.message.content for r in results if r.delta.message.content
+            str(r.delta.message.content) for r in results if r.delta.message.content
         )
         assert len(full_content) > 0, f"Empty content for model {model_name}"
