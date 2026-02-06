@@ -16,4 +16,7 @@ dependencies = [
 
 # uv run black . -C -l 100 && uv run ruff check --fix
 [dependency-groups]
-dev = []
+dev = [
+    "pyrefly>=0.50.0",
+    "pytest>=9.0.2",
+]
