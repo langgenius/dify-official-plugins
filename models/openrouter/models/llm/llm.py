@@ -29,8 +29,27 @@ IMAGE_GENERATION_MODELS = {
 
 
 class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
+    DEFAULT_ENDPOINT_URL = "https://openrouter.ai/api/v1"
+
+    @staticmethod
+    def _normalize_endpoint_url(raw_endpoint_url: Any) -> str:
+        endpoint_url = OpenRouterLargeLanguageModel.DEFAULT_ENDPOINT_URL
+
+        if isinstance(raw_endpoint_url, str):
+            candidate = raw_endpoint_url.strip()
+            if candidate:
+                endpoint_url = candidate
+
+        endpoint_url = endpoint_url.rstrip("/")
+        if not endpoint_url:
+            endpoint_url = OpenRouterLargeLanguageModel.DEFAULT_ENDPOINT_URL.rstrip("/")
+        if not endpoint_url.endswith("/v1"):
+            endpoint_url = f"{endpoint_url}/v1"
+        return endpoint_url
+
     def _update_credential(self, model: str, credentials: dict):
-        credentials["endpoint_url"] = "https://openrouter.ai/api/v1"
+        credentials["endpoint_url"] = self._normalize_endpoint_url(credentials.get("endpoint_url"))
+
         credentials["mode"] = self.get_model_mode(model).value
         schema = self.get_model_schema(model, credentials)
         if schema and {ModelFeature.TOOL_CALL, ModelFeature.MULTI_TOOL_CALL}.intersection(
