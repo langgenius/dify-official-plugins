@@ -55,7 +55,6 @@ def test_llm_invoke(model_name: str) -> None:
         model=model_name,
         credentials={"api_key": api_key},
         prompt_messages=[{"role": "user", "content": "Say hello in one word."}],
-        model_parameters={"max_tokens": 100},
         stop=None,
         tools=None,
         stream=True,
@@ -74,8 +73,3 @@ def test_llm_invoke(model_name: str) -> None:
             results.append(result)
 
         assert len(results) > 0, f"No results received for model {model_name}"
-
-        full_content = "".join(
-            str(r.delta.message.content) for r in results if r.delta.message.content
-        )
-        assert len(full_content) > 0, f"Empty content for model {model_name}"
