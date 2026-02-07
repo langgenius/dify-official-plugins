@@ -8,23 +8,19 @@ anyio==4.11.0
     #   httpx
 blinker==1.9.0
     # via flask
-cachetools==6.2.1
-    # via google-auth
 certifi==2025.10.5
     # via
     #   httpcore
     #   httpx
     #   requests
 cffi==2.0.0
-    # via gevent
+    # via cryptography
 charset-normalizer==3.4.3
     # via requests
 click==8.3.0
     # via flask
-colorama==0.4.6
-    # via
-    #   click
-    #   tqdm
+cryptography==46.0.4
+    # via google-auth
 dify-plugin==0.5.1
     # via gemini-g9cie8 (pyproject.toml)
 distro==1.9.0
@@ -44,7 +40,7 @@ google-api-core==2.26.0
     #   google-generativeai
 google-api-python-client==2.184.0
     # via google-generativeai
-google-auth==2.45.0
+google-auth==2.48.0
     # via
     #   google-ai-generativelanguage
     #   google-api-core
@@ -54,7 +50,7 @@ google-auth==2.45.0
     #   google-generativeai
 google-auth-httplib2==0.2.0
     # via google-api-python-client
-google-genai==1.56.0
+google-genai==1.60.0
     # via gemini-g9cie8 (pyproject.toml)
 google-generativeai==0.8.5
     # via gemini-g9cie8 (pyproject.toml)
@@ -98,7 +94,7 @@ markupsafe==3.0.3
     #   werkzeug
 multidict==6.7.0
     # via yarl
-numpy==2.3.3
+numpy==2.4.1
     # via gemini-g9cie8 (pyproject.toml)
 packaging==25.0
     # via dify-plugin
@@ -122,7 +118,7 @@ pyasn1==0.6.1
     #   rsa
 pyasn1-modules==0.4.2
     # via google-auth
-pycparser==2.23
+pycparser==3.0
     # via cffi
 pydantic==2.12.0
     # via
@@ -184,7 +180,7 @@ urllib3==2.6.0
     # via requests
 websockets==15.0.1
     # via google-genai
-werkzeug>=3.0.3,<3.1.dev0
+werkzeug==3.0.6
     # via
     #   dify-plugin
     #   flask

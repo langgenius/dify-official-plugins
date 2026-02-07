@@ -31,8 +31,8 @@ parameter_rules:
   - name: max_tokens
     use_template: max_tokens
     min: 1
-    max: 32768
-    default: 32768
+    max: 262144
+    default: 8192
   - name: enable_thinking
     required: false
     type: boolean
@@ -46,9 +46,9 @@ parameter_rules:
   - name: thinking_budget
     required: false
     type: int
-    default: 512
+    default: 4096
     min: 1
-    max: 8192
+    max: 262144
     label:
       zh_Hans: 思考长度限制
       en_US: Thinking budget

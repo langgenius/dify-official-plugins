@@ -44,7 +44,7 @@ parameters:
       pt_BR: "A imagem a ser editada (pode ser URL, dados base64 ou caminho de arquivo)"
       ja_JP: "編集する画像（URL、base64データ、またはファイルパス）"
     llm_description: "Input image to be edited using GPT Image Edit. Supports URL, base64 data, or file path"
-    form: llm
+    form: form
   
   
   - name: model

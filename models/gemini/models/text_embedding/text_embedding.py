@@ -16,12 +16,17 @@ from google.generativeai.embedding import to_task_type
 
 from dify_plugin import TextEmbeddingModel
 from dify_plugin.entities.model import EmbeddingInputType, PriceType
-from dify_plugin.entities.model.text_embedding import EmbeddingUsage, TextEmbeddingResult
+from dify_plugin.entities.model.text_embedding import (
+    EmbeddingUsage,
+    TextEmbeddingResult,
+)
 from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 
 from ..common_gemini import _CommonGemini
 
-type EmbeddingTokenPair = tuple[list[float], Optional[int]]  # Embedding and number of tokens used
+type EmbeddingTokenPair = tuple[
+    list[float], Optional[int]
+]  # Embedding and number of tokens used
 
 
 class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
@@ -70,7 +75,10 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         splitted_embeddings: list[list[EmbeddingTokenPair]] = []
         for batch in batched_texts:
             embeddings_batch = self._embedding_invoke(
-                model=model, client=client, texts=[text for _, text in batch], input_type=input_type
+                model=model,
+                client=client,
+                texts=[text for _, text in batch],
+                input_type=input_type,
             )
             for i, (j, _) in enumerate(batch):
                 if j >= len(splitted_embeddings):
@@ -94,14 +102,20 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
             used_tokens += sum(
                 [
                     used_token or chunk_size
-                    for used_token, [_, chunk_size] in zip(num_tokens, splitted_texts[i])
+                    for used_token, [_, chunk_size] in zip(
+                        num_tokens, splitted_texts[i]
+                    )
                 ]
             )
 
         # calc usage
-        usage = self._calc_response_usage(model=model, credentials=credentials, tokens=used_tokens)
+        usage = self._calc_response_usage(
+            model=model, credentials=credentials, tokens=used_tokens
+        )
 
-        return TextEmbeddingResult(embeddings=merged_embeddings, usage=usage, model=model)
+        return TextEmbeddingResult(
+            embeddings=merged_embeddings, usage=usage, model=model
+        )
 
     def _split_texts_to_fit_model_specs(
         self, client: genai.Client, model: str, texts: list[str], context_size: int
@@ -139,7 +153,9 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
                 splitted_text.append((text, num_tokens))
         return splitted_text
 
-    def get_num_tokens(self, model: str, credentials: dict, texts: list[str]) -> list[int]:
+    def get_num_tokens(
+        self, model: str, credentials: dict, texts: list[str]
+    ) -> list[int]:
         """
         Get number of tokens for given prompt messages
 
@@ -210,7 +226,9 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         # call embedding model
         task_type = to_task_type(input_type.value)
         config = EmbedContentConfig(task_type=task_type.name) if task_type else None
-        response = client.models.embed_content(model=model, contents=texts, config=config)
+        response = client.models.embed_content(
+            model=model, contents=texts, config=config
+        )
 
         if response.embeddings is None:
             raise InvokeError(f"Unable to get embeddings from '{model}' model")
@@ -218,12 +236,16 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         result: list[tuple[list[float], Optional[int]]] = []
         for embedding in response.embeddings:
             embeddings = embedding.values or []
-            used_tokens = embedding.statistics.token_count if embedding.statistics else None
+            used_tokens = (
+                embedding.statistics.token_count if embedding.statistics else None
+            )
             result.append((embeddings, int(used_tokens) if used_tokens else None))
 
         return result
 
-    def _calc_response_usage(self, model: str, credentials: dict, tokens: int) -> EmbeddingUsage:
+    def _calc_response_usage(
+        self, model: str, credentials: dict, tokens: int
+    ) -> EmbeddingUsage:
         """
         Calculate response usage
 
@@ -234,7 +256,10 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         """
         # get input price info
         input_price_info = self.get_price(
-            model=model, credentials=credentials, price_type=PriceType.INPUT, tokens=tokens
+            model=model,
+            credentials=credentials,
+            price_type=PriceType.INPUT,
+            tokens=tokens,
         )
 
         # transform usage
