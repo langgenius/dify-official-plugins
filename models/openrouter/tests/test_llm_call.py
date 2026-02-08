@@ -1,5 +1,7 @@
 import os
+import time
 from pathlib import Path
+from threading import Thread
 
 import pytest
 import yaml
@@ -68,16 +70,18 @@ def test_llm_invoke(model_name: str) -> None:
         while failure_count < 3:
             try:
                 results: list[LLMResultChunk] = []
-                runner.invoke(
-                    access_type=PluginInvokeType.Model,
-                    access_action=ModelActions.InvokeLLM,
-                    payload=payload,
-                    response_type=LLMResultChunk,
-                )
+                for result in runner.invoke(
+                        access_type=PluginInvokeType.Model,
+                        access_action=ModelActions.InvokeLLM,
+                        payload=payload,
+                        response_type=LLMResultChunk,
+                ):
+                    results.append(result)
                 assert len(results) > 0, f"No results received for model {model_name}"
                 break
             except Exception as e:
                 failure_count += 1
+                time.sleep(1)
                 if failure_count >= 3:
                     raise e
 
