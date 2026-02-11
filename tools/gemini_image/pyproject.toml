@@ -1,0 +1,8 @@
+[project]
+name = "gemini-image"
+version = "0.1.0"
+description = "Gemini Image Generation and Editing"
+requires-python = ">=3.12"
+dependencies = [
+    "dify-plugin>=0.3.0,<0.5.0",
+]
