@@ -76,7 +76,8 @@ class DownloadAttachmentTool(Tool):
                 return
 
             # Check size limit (25MB is Gmail's practical attachment limit)
-            if size_bytes > 25 * 1024 * 1024:
+            MAX_ATTACHMENT_SIZE_BYTES = 25 * 1024 * 1024
+            if size_bytes > MAX_ATTACHMENT_SIZE_BYTES:
                 yield self.create_text_message(
                     f"Warning: Attachment size ({size_bytes} bytes) exceeds 25MB. "
                     "This may cause issues with some operations."
