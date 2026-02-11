@@ -125,5 +125,5 @@ class DownloadAttachmentTool(Tool):
                 data += "=" * (4 - missing_padding)
 
             return base64.urlsafe_b64decode(data)
-        except Exception as e:
-            raise ValueError(f"Failed to decode base64url data: {str(e)}")
+        except (binascii.Error, TypeError) as e:
+            raise ValueError(f"Failed to decode base64url data: {e}") from e
