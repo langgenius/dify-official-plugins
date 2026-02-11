@@ -20,7 +20,7 @@ plugins:
   tools:
     - provider/dify-gmail.yaml
 meta:
-  version: 0.2.0
+  version: 0.3.0
   arch:
     - amd64
     - arm64
