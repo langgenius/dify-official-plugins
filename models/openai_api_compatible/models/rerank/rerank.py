@@ -3,9 +3,13 @@ import re
 from typing import Mapping, Optional, Union, Any
 
 from dify_plugin.entities.model import AIModelEntity, I18nObject, ModelFeature
-from dify_plugin.entities.model.rerank import RerankDocument, RerankResult, RerankUsage
-
+from dify_plugin.entities.model.rerank import RerankDocument, RerankResult
+from dify_plugin.entities.model.text_embedding import (
+    MultiModalContent,
+    MultiModalContentType,
+)
 from dify_plugin.interfaces.model.openai_compatible.rerank import OAICompatRerankModel
+from dify_plugin.interfaces.model.rerank_model import MultiModalRerankResult
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
     InvokeError,
@@ -54,8 +58,11 @@ class OpenAIRerankModel(OAICompatRerankModel):
 
         # Add vision feature if vision support is enabled
         vision_support = credentials.get("vision_support", "no_support")
-        if vision_support == "support" and ModelFeature.VISION not in entity.features:
-            entity.features.append(ModelFeature.VISION)
+        if vision_support == "support":
+            if entity.features is None:
+                entity.features = []
+            if ModelFeature.VISION not in entity.features:
+                entity.features.append(ModelFeature.VISION)
 
         return entity
 
@@ -70,34 +77,10 @@ class OpenAIRerankModel(OAICompatRerankModel):
         user: Optional[str] = None,
     ) -> RerankResult:
         """
-        Invoke rerank model with multimodal support.
-
-        Supports both text-only and multimodal (text + image) inputs.
-        When vision_support is enabled, query and docs can contain JSON with "text" and "image" fields.
-
-        :param model: model name
-        :param credentials: model credentials
-        :param query: query text (can be JSON with image for multimodal)
-        :param docs: documents to rerank (can be JSON with images for multimodal)
-        :param score_threshold: score threshold
-        :param top_n: top n documents to return
-        :param user: unique user id
-        :return: rerank result
+        Invoke rerank model (text-only mode).
         """
         if not docs:
-            return RerankResult(
-                model=model,
-                docs=[],
-                usage=RerankUsage(total_tokens=0),
-            )
-
-        # Check if vision support is enabled
-        vision_support = credentials.get("vision_support", "no_support")
-        vision_enabled = vision_support == "support"
-
-        # Process query and documents
-        processed_query = self._process_input(query, vision_enabled)
-        processed_docs = [self._process_input(doc, vision_enabled) for doc in docs]
+            return RerankResult(model=model, docs=[])
 
         # Build API request
         endpoint_url = credentials.get("endpoint_url", "").rstrip("/")
@@ -109,25 +92,32 @@ class OpenAIRerankModel(OAICompatRerankModel):
             "Authorization": f"Bearer {api_key}" if api_key else "",
         }
 
-        # Build payload
+        # Simple string format for text-only mode
         payload = {
             "model": endpoint_model_name,
-            "query": processed_query,
-            "documents": processed_docs,
+            "query": query,
+            "documents": docs,
             "top_n": top_n if top_n else len(docs),
-            "return_documents": True,
         }
 
-        if score_threshold is not None:
-            payload["score_threshold"] = score_threshold
-
         try:
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.info(f"Rerank API Request (text mode) to {endpoint_url}/rerank")
+
             response = requests.post(
                 f"{endpoint_url}/rerank",
                 headers=headers,
                 json=payload,
                 timeout=60,
             )
+
+            if response.status_code != 200:
+                logger.error(
+                    f"Rerank API Error {response.status_code}: {response.text[:1000]}"
+                )
+
             response.raise_for_status()
 
             result = response.json()
@@ -137,14 +127,13 @@ class OpenAIRerankModel(OAICompatRerankModel):
             for item in result.get("results", []):
                 index = item.get("index", 0)
                 score = item.get("relevance_score", 0.0)
-                document = item.get("document", {})
 
                 if index < len(docs):
                     rerank_docs.append(
                         RerankDocument(
                             index=index,
                             score=score,
-                            text=document.get("text", docs[index]),
+                            text=docs[index],
                         )
                     )
 
@@ -161,12 +150,9 @@ class OpenAIRerankModel(OAICompatRerankModel):
                     doc for doc in rerank_docs if doc.score >= score_threshold
                 ]
 
-            total_tokens = result.get("usage", {}).get("total_tokens", 0)
-
             return RerankResult(
                 model=model,
                 docs=rerank_docs,
-                usage=RerankUsage(total_tokens=total_tokens),
             )
 
         except requests.exceptions.RequestException as ex:
@@ -174,134 +160,256 @@ class OpenAIRerankModel(OAICompatRerankModel):
         except Exception as ex:
             raise InvokeError(str(ex))
 
-    def _process_input(self, text: str, vision_enabled: bool) -> Union[str, dict, list]:
+    def _invoke_multimodal(
+        self,
+        model: str,
+        credentials: dict,
+        query: MultiModalContent,
+        docs: list[MultiModalContent],
+        score_threshold: Optional[float] = None,
+        top_n: Optional[int] = None,
+        user: Optional[str] = None,
+    ) -> MultiModalRerankResult:
         """
-        Process input text, detecting and handling multimodal content.
+        Invoke rerank model with multimodal support.
 
-        :param text: input text which may contain JSON with image data
-        :param vision_enabled: whether vision support is enabled
-        :return: processed content (str, dict, or list) for API
+        API Format (from vLLM/Qwen3-VL-Reranker docs):
+        {
+            "query": "query text string",  # Query is plain text string
+            "documents": [  # Documents use ScoreMultiModalParam format
+                {
+                    "content": [
+                        {"type": "text", "text": "..."},
+                        {"type": "image_url", "image_url": {"url": "..."}}
+                    ]
+                }
+            ]
+        }
+
+        Note: Query with image is NOT supported by this model architecture.
+        Only documents can contain images.
         """
-        if not vision_enabled:
-            return text
-
-        # Try to parse as JSON
-        try:
-            data = json.loads(text)
-            if isinstance(data, dict):
-                return self._format_multimodal_content(data)
-        except json.JSONDecodeError:
-            pass
-
-        # Try to detect markdown image syntax: ![desc](url)
-        content = self._extract_markdown_images(text)
-        if content != text:
-            return content
-
-        # Try to detect plain image URLs
-        if self._is_image_url(text):
-            return {"type": "image_url", "image_url": {"url": text}}
-
-        return text
-
-    def _format_multimodal_content(self, data: dict) -> Union[str, dict, list]:
-        """
-        Format multimodal content dict to API format.
-
-        Expected formats:
-        - {"text": "...", "image": "url_or_path"}
-        - {"image": "url_or_path"}
-        - {"text": "..."}
-        """
-        text = data.get("text", "")
-        image = data.get("image", "")
-
-        if image and text:
-            # Both text and image
-            image_url = self._process_image_url(image)
-            return {
-                "type": "multimodal",
-                "text": text,
-                "images": [image_url] if image_url else [],
-            }
-        elif image:
-            # Only image
-            image_url = self._process_image_url(image)
-            return (
-                {"type": "image_url", "image_url": {"url": image_url}}
-                if image_url
-                else ""
+        if not docs:
+            return MultiModalRerankResult(
+                model=model,
+                docs=[],
             )
+
+        # Check if query is an image - this is not supported
+        if query.content_type == MultiModalContentType.IMAGE:
+            import logging
+
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                "Query with image is not supported by Qwen3-VL-Reranker. Converting to text."
+            )
+            # Convert image query to text description
+            query_text = f"[Image: {query.content}]"
         else:
-            # Only text
-            return text
+            query_text = (
+                query.content if isinstance(query.content, str) else str(query.content)
+            )
+
+        # Build API request
+        endpoint_url = credentials.get("endpoint_url", "").rstrip("/")
+        api_key = credentials.get("api_key", "")
+        endpoint_model_name = credentials.get("endpoint_model_name", "") or model
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}" if api_key else "",
+        }
+
+        import logging
+
+        logger = logging.getLogger(__name__)
+
+        # Convert documents to ScoreMultiModalParam format
+        documents_params = []
+        for i, doc in enumerate(docs):
+            doc_param = self._to_score_multimodal_param(doc)
+            documents_params.append(doc_param)
+            logger.debug(
+                f"Document {i}: {json.dumps(doc_param, ensure_ascii=False)[:200]}"
+            )
+
+        # Build payload according to vLLM/Qwen3 format
+        payload = {
+            "model": endpoint_model_name,
+            "query": query_text,  # Plain text string
+            "documents": documents_params,  # ScoreMultiModalParam format
+            "top_n": top_n if top_n else len(docs),
+        }
+
+        try:
+            logger.info(
+                f"Rerank API Request (multimodal mode) to {endpoint_url}/rerank"
+            )
+            logger.info(f"Query: {query_text[:100]}")
+            logger.info(f"Documents count: {len(documents_params)}")
+            logger.debug(f"Payload: {json.dumps(payload, ensure_ascii=False)[:1000]}")
+
+            response = requests.post(
+                f"{endpoint_url}/rerank",
+                headers=headers,
+                json=payload,
+                timeout=60,
+            )
+
+            if response.status_code != 200:
+                logger.error(
+                    f"Rerank API Error {response.status_code}: {response.text[:1000]}"
+                )
+
+            response.raise_for_status()
+
+            result = response.json()
+
+            # Parse rerank results
+            rerank_docs = []
+            for item in result.get("results", []):
+                index = item.get("index", 0)
+                score = item.get("relevance_score", 0.0)
+
+                if index < len(docs):
+                    doc_content = (
+                        docs[index].content
+                        if isinstance(docs[index].content, str)
+                        else str(docs[index].content)
+                    )
+                    rerank_docs.append(
+                        RerankDocument(
+                            index=index,
+                            score=score,
+                            text=doc_content,
+                        )
+                    )
+
+            # Sort by score (highest first)
+            rerank_docs.sort(key=lambda x: x.score, reverse=True)
+
+            # Apply top_n if specified
+            if top_n:
+                rerank_docs = rerank_docs[:top_n]
+
+            # Apply score threshold
+            if score_threshold is not None:
+                rerank_docs = [
+                    doc for doc in rerank_docs if doc.score >= score_threshold
+                ]
+
+            return MultiModalRerankResult(
+                model=model,
+                docs=rerank_docs,
+            )
+
+        except requests.exceptions.RequestException as ex:
+            raise InvokeServerUnavailableError(str(ex))
+        except Exception as ex:
+            raise InvokeError(str(ex))
+
+    def _to_score_multimodal_param(self, content: MultiModalContent) -> dict:
+        """
+        Convert MultiModalContent to ScoreMultiModalParam format.
+
+        ScoreMultiModalParam format (from vLLM docs):
+        {
+            "content": [
+                {"type": "text", "text": "..."},
+                {"type": "image_url", "image_url": {"url": "..."}}
+            ]
+        }
+        """
+        content_list = []
+
+        if content.content_type == MultiModalContentType.TEXT:
+            text_content = (
+                content.content
+                if isinstance(content.content, str)
+                else str(content.content)
+            )
+            content_list.append({"type": "text", "text": text_content})
+        elif content.content_type == MultiModalContentType.IMAGE:
+            # Process image URL
+            image_url = content.content
+            if isinstance(content.content, str):
+                if not content.content.startswith(
+                    ("http://", "https://", "data:image", "file://")
+                ):
+                    image_url = self._process_image_url(content.content)
+            elif isinstance(content.content, dict) and "url" in content.content:
+                image_url = content.content["url"]
+            else:
+                image_url = str(content.content)
+
+            content_list.append({"type": "image_url", "image_url": {"url": image_url}})
+        else:
+            # Default to text
+            text_content = str(content.content) if content.content else ""
+            content_list.append({"type": "text", "text": text_content})
+
+        return {"content": content_list}
 
     def _process_image_url(self, image: str) -> str:
         """
         Process image URL or path.
-
-        Supports:
-        - HTTP/HTTPS URLs
-        - Local file paths (converted to file://)
-        - Base64 data URIs
         """
         if not image:
             return ""
 
-        # Already a URL
-        if image.startswith(("http://", "https://", "data:image")):
+        # Already a URL or data URI
+        if image.startswith(("http://", "https://", "data:image", "file://")):
             return image
 
-        # Already file://
-        if image.startswith("file://"):
-            return image
+        # Check if it's a base64 encoded image
+        if self._is_base64_image(image):
+            image_format = self._detect_image_format_from_base64(image)
+            return f"data:image/{image_format};base64,{image}"
 
-        # Assume it's a local file path
-        import os
+        # Assume it's a URL or path
+        return image
 
-        abs_path = os.path.abspath(image)
-        return f"file://{abs_path}"
-
-    def _extract_markdown_images(self, text: str) -> Union[str, list]:
+    def _is_base64_image(self, text: str) -> bool:
         """
-        Extract markdown image syntax: ![description](url)
-
-        :param text: text potentially containing markdown images
-        :return: processed content
+        Check if text is a base64 encoded image.
         """
-        pattern = r"!\[([^\]]*)\]\(([^\)]+)\)"
+        import base64
 
-        matches = list(re.finditer(pattern, text))
-        if not matches:
-            return text
+        if not text or len(text) < 100:
+            return False
 
-        content = []
-        last_end = 0
+        if "," in text:
+            text = text.split(",", 1)[1]
 
-        for match in matches:
-            # Add text before image
-            if match.start() > last_end:
-                text_part = text[last_end : match.start()].strip()
-                if text_part:
-                    content.append({"type": "text", "text": text_part})
+        try:
+            decoded = base64.b64decode(text, validate=True)
+            return len(decoded) > 100
+        except Exception:
+            return False
 
-            # Add image
-            image_url = match.group(2)
-            content.append({"type": "image_url", "image_url": {"url": image_url}})
+    def _detect_image_format_from_base64(self, base64_str: str) -> str:
+        """
+        Detect image format from base64 string.
+        """
+        import base64
 
-            last_end = match.end()
+        if "," in base64_str:
+            base64_str = base64_str.split(",", 1)[1]
 
-        # Add remaining text
-        if last_end < len(text):
-            text_part = text[last_end:].strip()
-            if text_part:
-                content.append({"type": "text", "text": text_part})
+        try:
+            data = base64.b64decode(base64_str, validate=True)
 
-        return content
-
-    def _is_image_url(self, text: str) -> bool:
-        """Check if text is an image URL."""
-        image_extensions = (".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp", ".svg")
-        return text.startswith(("http://", "https://")) and any(
-            text.lower().endswith(ext) for ext in image_extensions
-        )
+            if data.startswith(b"\xff\xd8\xff"):
+                return "jpeg"
+            elif data.startswith(b"\x89PNG\r\n\x1a\n"):
+                return "png"
+            elif data.startswith(b"GIF87a") or data.startswith(b"GIF89a"):
+                return "gif"
+            elif data.startswith(b"RIFF") and data[8:12] == b"WEBP":
+                return "webp"
+            elif data.startswith(b"BM"):
+                return "bmp"
+            else:
+                return "jpeg"
+        except Exception:
+            return "jpeg"

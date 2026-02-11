@@ -29,8 +29,11 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
 
         # Add vision feature if vision support is enabled
         vision_support = credentials.get("vision_support", "no_support")
-        if vision_support == "support" and ModelFeature.VISION not in entity.features:
-            entity.features.append(ModelFeature.VISION)
+        if vision_support == "support":
+            if entity.features is None:
+                entity.features = []
+            if ModelFeature.VISION not in entity.features:
+                entity.features.append(ModelFeature.VISION)
 
         return entity
 
@@ -69,8 +72,136 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
         if prefix:
             processed_inputs = self._add_prefix_to_inputs(processed_inputs, prefix)
 
-        # Call parent with processed inputs
-        return self._invoke_multimodal(model, credentials, processed_inputs, user)
+        # Get context size and max chunks from credentials or model properties
+        context_size = self._get_context_size(model, credentials)
+        max_chunks = self._get_max_chunks(model, credentials)
+
+        # Truncate long texts (similar to Tongyi's approach)
+        inputs = []
+        for input_data in processed_inputs:
+            if isinstance(input_data, list):
+                # Multimodal - convert to text first
+                text_parts = []
+                for content in input_data:
+                    if content.get("type") == "text":
+                        text_parts.append(content.get("text", ""))
+                    elif content.get("type") == "image_url":
+                        text_parts.append(
+                            f"[Image: {content.get('image_url', {}).get('url', '')}]"
+                        )
+                text = " ".join(text_parts) if text_parts else ""
+            else:
+                text = input_data if isinstance(input_data, str) else str(input_data)
+
+            # Check token count and truncate if necessary
+            num_tokens = self._get_num_tokens_by_gpt2(text)
+            if num_tokens >= context_size:
+                # Truncate to fit within context size
+                cutoff = int(len(text) * (context_size / num_tokens))
+                text = text[0:cutoff]
+
+            inputs.append(text)
+
+        # Call API in batches
+        return self._embed_in_batches(model, credentials, inputs, user, input_type)
+
+    def _embed_in_batches(
+        self,
+        model: str,
+        credentials: dict,
+        inputs: list[str],
+        user: Optional[str] = None,
+        input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT,
+    ) -> TextEmbeddingResult:
+        """
+        Embed texts in batches, handling API limits.
+        """
+        import requests
+        import logging
+        from dify_plugin.errors.model import InvokeError, InvokeServerUnavailableError
+        from dify_plugin.entities.model.text_embedding import EmbeddingUsage
+
+        endpoint_url = credentials.get("endpoint_url", "").rstrip("/")
+        api_key = credentials.get("api_key", "")
+        endpoint_model_name = credentials.get("endpoint_model_name", "") or model
+        max_chunks = self._get_max_chunks(model, credentials)
+
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}" if api_key else "",
+        }
+
+        batched_embeddings = []
+        used_tokens = 0
+        logger = logging.getLogger(__name__)
+
+        try:
+            # Process in batches
+            for i in range(0, len(inputs), max_chunks):
+                batch = inputs[i : i + max_chunks]
+
+                payload = {
+                    "model": endpoint_model_name,
+                    "input": batch,
+                }
+
+                # Add encoding_format only if specified in credentials
+                encoding_format = credentials.get("encoding_format")
+                if encoding_format:
+                    payload["encoding_format"] = encoding_format
+
+                # Add user if provided
+                if user:
+                    payload["user"] = user
+
+                logger.info(
+                    f"Embedding API Request to {endpoint_url}/embeddings (batch {i // max_chunks + 1}/{(len(inputs) + max_chunks - 1) // max_chunks})"
+                )
+
+                response = requests.post(
+                    f"{endpoint_url}/embeddings",
+                    headers=headers,
+                    json=payload,
+                    timeout=60,
+                )
+
+                # Debug: log response on error
+                if response.status_code != 200:
+                    logger.error(
+                        f"Embedding API Error {response.status_code}: {response.text[:1000]}"
+                    )
+
+                response.raise_for_status()
+
+                result = response.json()
+
+                # Extract embeddings
+                for data in result["data"]:
+                    batched_embeddings.append(data["embedding"])
+
+                # Extract token count
+                usage = result.get("usage") or {}
+                tokens = usage.get("prompt_tokens") or usage.get("total_tokens") or 0
+                used_tokens += tokens
+
+            return TextEmbeddingResult(
+                embeddings=batched_embeddings,
+                model=model,
+                usage=EmbeddingUsage(
+                    tokens=used_tokens,
+                    total_tokens=used_tokens,
+                    unit_price=0.0,
+                    price_unit=0.0,
+                    total_price=0.0,
+                    currency="USD",
+                    latency=0.0,
+                ),
+            )
+
+        except requests.exceptions.RequestException as ex:
+            raise InvokeServerUnavailableError(str(ex))
+        except Exception as ex:
+            raise InvokeError(str(ex))
 
     def _process_input(self, text: str, vision_enabled: bool) -> Union[str, list]:
         """
@@ -130,12 +261,12 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
         Supports:
         - HTTP/HTTPS URLs
         - Local file paths (converted to file://)
-        - Base64 data URIs
+        - Base64 data URIs (with or without prefix)
         """
         if not image:
             return ""
 
-        # Already a URL
+        # Already a URL or data URI
         if image.startswith(("http://", "https://", "data:image")):
             return image
 
@@ -143,8 +274,70 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
         if image.startswith("file://"):
             return image
 
+        # Check if it's a base64 encoded image (without data URI prefix)
+        if self._is_base64_image(image):
+            image_format = self._detect_image_format_from_base64(image)
+            return f"data:image/{image_format};base64,{image}"
+
         # Assume it's a local file path
         return f"file://{image}"
+
+    def _is_base64_image(self, text: str) -> bool:
+        """
+        Check if text is a base64 encoded image (without data URI prefix).
+
+        :param text: text to check
+        :return: True if it's a base64 image string
+        """
+        import base64
+
+        if not text or len(text) < 100:
+            return False
+
+        # Remove potential data URI prefix if present
+        if "," in text:
+            text = text.split(",", 1)[1]
+
+        try:
+            # Try to decode as base64
+            decoded = base64.b64decode(text, validate=True)
+            # Check if it looks like an image (at least 100 bytes)
+            return len(decoded) > 100
+        except Exception:
+            return False
+
+    def _detect_image_format_from_base64(self, base64_str: str) -> str:
+        """
+        Detect image format from base64 string by checking magic bytes.
+
+        :param base64_str: base64 encoded image string
+        :return: image format (jpeg, png, gif, webp, bmp)
+        """
+        import base64
+
+        # Remove data URI prefix if present
+        if "," in base64_str:
+            base64_str = base64_str.split(",", 1)[1]
+
+        try:
+            data = base64.b64decode(base64_str, validate=True)
+
+            # Check magic bytes
+            if data.startswith(b"\xff\xd8\xff"):
+                return "jpeg"
+            elif data.startswith(b"\x89PNG\r\n\x1a\n"):
+                return "png"
+            elif data.startswith(b"GIF87a") or data.startswith(b"GIF89a"):
+                return "gif"
+            elif data.startswith(b"RIFF") and data[8:12] == b"WEBP":
+                return "webp"
+            elif data.startswith(b"BM"):
+                return "bmp"
+            else:
+                # Default to jpeg if unknown
+                return "jpeg"
+        except Exception:
+            return "jpeg"
 
     def _extract_markdown_images(self, text: str) -> Union[str, list]:
         """
@@ -222,68 +415,29 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
         credentials: dict,
         inputs: list,
         user: Optional[str] = None,
+        input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT,
     ) -> TextEmbeddingResult:
         """
         Invoke embedding model with potentially multimodal inputs.
-
-        This overrides the parent method to support multimodal content.
+        This method is kept for compatibility but delegates to _invoke.
         """
-        import requests
-        from dify_plugin.errors.model import InvokeError, InvokeServerUnavailableError
-        from dify_plugin.entities.model.text_embedding import EmbeddingUsage
-
-        endpoint_url = credentials.get("endpoint_url", "").rstrip("/")
-        api_key = credentials.get("api_key", "")
-        endpoint_model_name = credentials.get("endpoint_model_name", "") or model
-
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}" if api_key else "",
-        }
-
-        embeddings = []
-        total_tokens = 0
-
-        try:
-            for input_data in inputs:
-                # Build payload
-                if isinstance(input_data, list):
-                    # Multimodal input
-                    payload = {
-                        "model": endpoint_model_name,
-                        "input": input_data,
-                        "encoding_format": credentials.get("encoding_format", "float"),
-                    }
-                else:
-                    # Text-only input
-                    payload = {
-                        "model": endpoint_model_name,
-                        "input": input_data,
-                        "encoding_format": credentials.get("encoding_format", "float"),
-                    }
-
-                response = requests.post(
-                    f"{endpoint_url}/embeddings",
-                    headers=headers,
-                    json=payload,
-                    timeout=60,
+        # Convert inputs back to texts format and use _invoke
+        texts = []
+        for input_data in inputs:
+            if isinstance(input_data, list):
+                # Multimodal - convert to text
+                text_parts = []
+                for content in input_data:
+                    if content.get("type") == "text":
+                        text_parts.append(content.get("text", ""))
+                    elif content.get("type") == "image_url":
+                        text_parts.append(
+                            f"[Image: {content.get('image_url', {}).get('url', '')}]"
+                        )
+                texts.append(" ".join(text_parts) if text_parts else "")
+            else:
+                texts.append(
+                    input_data if isinstance(input_data, str) else str(input_data)
                 )
-                response.raise_for_status()
 
-                result = response.json()
-                embedding = result["data"][0]["embedding"]
-                tokens = result.get("usage", {}).get("prompt_tokens", 0)
-
-                embeddings.append(embedding)
-                total_tokens += tokens
-
-            return TextEmbeddingResult(
-                embeddings=embeddings,
-                model=model,
-                usage=EmbeddingUsage(tokens=total_tokens),
-            )
-
-        except requests.exceptions.RequestException as ex:
-            raise InvokeServerUnavailableError(str(ex))
-        except Exception as ex:
-            raise InvokeError(str(ex))
+        return self._invoke(model, credentials, texts, user, input_type)
