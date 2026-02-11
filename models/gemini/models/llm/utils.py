@@ -31,7 +31,9 @@ class FileCache:
             return {}
 
     def _save_cache(self, cache):
-        cleaned_cache = {k: v for k, v in cache.items() if v.get("expires_at", 0) > time.time()}
+        cleaned_cache = {
+            k: v for k, v in cache.items() if v.get("expires_at", 0) > time.time()
+        }
         with open(self.cache_file, "w") as f:
             json.dump(cleaned_cache, f)
 

@@ -1,0 +1,31 @@
+identity:
+  author: "william_chen"
+  name: "gemini_video"
+  label:
+    en_US: "Gemini Video"
+    zh_Hans: "Gemini 视频"
+  description:
+    en_US: "gemini video generation support for Veo 3.1"
+    zh_Hans: "gemini 视频支持"
+  icon: "icon.jpg"
+  tags:
+    - videos
+    - productivity
+credentials_for_provider:
+  gemini_api_key:
+    type: secret-input
+    required: true
+    label:
+      en_US: Gemini API Key
+      zh_Hans: Gemini API 密钥
+    help:
+      en_US: Please input your Gemini API Key
+      zh_Hans: 请输入你的 Gemini API 密钥
+    placeholder:
+      en_US: Please input your Gemini API key
+      zh_Hans: 请输入你的 Gemini API key
+tools:
+  - tools/gemini_video.yaml
+extra:
+  python:
+    source: provider/gemini_video.py

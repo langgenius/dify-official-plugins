@@ -1,0 +1,34 @@
+identity:
+  name: list_gds_procedures
+  author: langgenius
+  label:
+    en_US: List GDS Procedures
+    zh_Hans: 列出 GDS 过程
+    pt_BR: Listar Procedimentos GDS
+    ja_JP: GDS プロシージャ一覧
+description:
+  human:
+    en_US: List available Graph Data Science (GDS) procedures in the Neo4j instance
+    zh_Hans: 列出 Neo4j 实例中可用的图数据科学 (GDS) 过程
+    pt_BR: Listar procedimentos de Ciencia de Dados de Grafos (GDS) disponiveis na instancia Neo4j
+    ja_JP: Neo4j インスタンスで利用可能なグラフデータサイエンス (GDS) プロシージャを一覧表示します
+  llm: List all available Graph Data Science (GDS) library procedures in the Neo4j instance. GDS provides algorithms for graph analytics including centrality measures (PageRank, Betweenness), community detection (Louvain, Label Propagation), pathfinding (Shortest Path, A*), similarity algorithms, and machine learning features. Returns empty list if GDS library is not installed.
+parameters:
+  - name: filter
+    type: string
+    required: false
+    label:
+      en_US: Filter
+      zh_Hans: 过滤器
+      pt_BR: Filtro
+      ja_JP: フィルター
+    human_description:
+      en_US: Optional filter to search for specific procedures (e.g., "pagerank", "community", "path")
+      zh_Hans: 可选过滤器，用于搜索特定过程（例如 "pagerank"、"community"、"path"）
+      pt_BR: Filtro opcional para pesquisar procedimentos especificos (ex. "pagerank", "community", "path")
+      ja_JP: 特定のプロシージャを検索するためのオプションフィルター（例：「pagerank」、「community」、「path」）
+    llm_description: Optional filter string to search for specific GDS procedures. For example, use "pagerank" to find PageRank-related procedures, "community" for community detection algorithms, "path" for pathfinding algorithms, or "similarity" for similarity algorithms.
+    form: llm
+extra:
+  python:
+    source: tools/list_gds_procedures.py

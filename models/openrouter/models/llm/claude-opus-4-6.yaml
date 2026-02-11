@@ -1,0 +1,74 @@
+# https://openrouter.ai/anthropic/claude-opus-4.6
+model: anthropic/claude-opus-4.6
+label:
+  en_US: Claude Opus 4.6
+  zh_Hans: Claude Opus 4.6
+model_type: llm
+features:
+  - agent-thought
+  - vision
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+  - document
+model_properties:
+  mode: chat
+  context_size: 1000000
+parameter_rules:
+  - name: temperature
+    type: float
+    required: true
+    default: 1
+    min: 0
+    max: 2
+    label:
+      en_US: Temperature
+      zh_Hans: 温度
+    help:
+      en_US: The randomness of the model's output.
+      zh_Hans: 模型生成文本的随机性。
+  - name: exclude_reasoning_tokens
+    type: boolean
+    required: true
+    default: true
+    label:
+      zh_Hans: 隐藏思考过程
+      en_US: Hide the thought process
+    help:
+      zh_Hans: 是否隐藏思考过程。
+      en_US: Whether to hide the thought process.
+  - name: enable_thinking
+    type: boolean
+    required: true
+    default: false
+    label:
+      zh_Hans: 推理模式
+      en_US: Thinking Mode
+    help:
+      zh_Hans: 控制模型的推理能力。启用时，temperature、top_p和top_k将被禁用。
+      en_US: Controls the model's thinking capability. When enabled, temperature, top_p and top_k will be disabled.
+  - name: reasoning_budget
+    type: int
+    required: true
+    default: 2000
+    min: 1
+    max: 64000
+    label:
+      en_US: Thinking Budget
+      zh_Hans: 推理预算
+    help:
+      en_US: The budget limit for thinking (minimum 1024), must be less than max_tokens. Only valid in thinking mode.
+      zh_Hans: 推理的预算限制（最小1024），必须小于max_tokens。仅在推理模式时有效。
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 64000
+    min: 1
+    max: 64000
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '5.00'
+  output: '25.00'
+  unit: '0.000001'
+  currency: USD

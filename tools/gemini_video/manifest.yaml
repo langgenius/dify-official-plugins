@@ -1,0 +1,33 @@
+version: 0.0.9
+type: plugin
+author: langgenius
+name: gemini_video
+label:
+  en_US: Gemini Video
+  zh_Hans: Gemini Video
+description:
+  en_US: gemini video generation support for Veo 3.1
+  zh_Hans: gemini video 支持，当前仅适用于 VEO 3.1
+icon: icon.jpg
+icon_dark: icon.jpg
+resource:
+  memory: 268435456
+  permission:
+    storage:
+      enabled: true
+      size: 1048576
+plugins:
+  tools:
+    - provider/gemini_video.yaml
+meta:
+  version: 0.0.9
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: 0.0.1
+created_at: 2026-01-12T12:32:39.8247667+08:00
+verified: false
