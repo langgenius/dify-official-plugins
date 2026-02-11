@@ -45,7 +45,7 @@ parameters:
     required: false
     type: files
   - name: model
-    default: "gemini-2.5-flash-image-preview"
+    default: "gemini-2.5-flash-image"
     form: form
     human_description:
       en_US: Select the gemini model 
@@ -60,7 +60,7 @@ parameters:
           en_US: Nano Banana
           zh_Hans: Nano Banana
           ja_JP: Nano Banana
-        value: "gemini-2.5-flash-image-preview"
+        value: "gemini-2.5-flash-image"
       - label:
           en_US: Nano Banana Pro
           zh_Hans: Nano Banana Pro
