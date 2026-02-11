@@ -71,8 +71,8 @@ class DownloadAttachmentTool(Tool):
             # Decode the attachment content
             try:
                 decoded_bytes = self._decode_base64url(encoded_data)
-            except Exception as e:
-                yield self.create_text_message(f"Error decoding attachment data: {str(e)}")
+            except ValueError as e:
+                yield self.create_text_message(f"Error decoding attachment data: {e}")
                 return
 
             # Check size limit (25MB is Gmail's practical attachment limit)
