@@ -1,4 +1,4 @@
-version: 0.0.8
+version: 0.0.10
 type: plugin
 author: langgenius
 privacy: PRIVACY.md
@@ -6,13 +6,14 @@ verified: false
 name: oci
 created_at: '2024-09-20T00:13:50.29298939-04:00'
 description:
-  en_US: Models provided by OCI, such as Grok 3/4, Llama, Cohere Command, etc.
-  zh_Hans: OCI上提供的模型，例如 Grok 3/4、Llama、Cohere Command 等。
+  en_US: Models provided by OCI, such as Grok 3/4, Gemini, gpt-oss, Llama, Cohere Command, etc.
+  zh_Hans: OCI上提供的模型，例如 Grok 3/4、Gemini, gpt-oss, Llama、Cohere Command 等。
+  ja_JP: OCI が提供する Grok 3/4、Gemini、gpt-oss、Llama、Cohere Command などのモデル。
 icon: icon_s_en.png
 label:
   en_US: OCI Generative AI
 meta:
-  version: 0.0.8
+  version: 0.0.10
   minimum_dify_version: null
   arch:
     - amd64

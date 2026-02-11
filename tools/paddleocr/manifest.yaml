@@ -1,4 +1,4 @@
-version: 0.1.1
+version: 0.2.1
 type: plugin
 author: langgenius
 name: paddleocr
@@ -16,7 +16,7 @@ plugins:
   tools:
     - provider/paddleocr.yaml
 meta:
-  version: 0.1.1
+  version: 0.0.1
   arch:
     - amd64
     - arm64

@@ -1,37 +1,58 @@
 # Tavily
 
-## Overview
+The Tavily tool connects your Dify agents to an AI-native search engine built specifically for LLMs. Unlike traditional search APIs that return raw links, Tavily delivers clean, structured, and contextually relevant results ready for AI consumption.
 
-Tavily is a search API designed for AI agents and applications, offering precise and context-aware search results. It handles complex search queries and extracts relevant information from the web, providing structured output.
+## Available Actions
+
+| Action       | Description                                      | Best For                                                 |
+| ------------ | ------------------------------------------------ | -------------------------------------------------------- |
+| **Search**   | AI-optimized web search with relevance scoring   | General queries, real-time information, fact-checking    |
+| **Extract**  | Pull structured content from specific URLs       | Reading articles, parsing documentation, data extraction |
+| **Crawl**    | Deep crawl websites following internal links     | Site audits, comprehensive data collection               |
+| **Map**      | Discover and map all URLs within a domain        | Site structure analysis, content discovery               |
+| **Research** | Multi-step autonomous research on complex topics | In-depth reports, market research, due diligence         |
 
 ## Configuration
 
-### 1. Apply for an API Key
+### 1. Get Your API Key
 
-Apply for an API Key at [Tavily](https://app.tavily.com/home).
+Sign up and get your API key at [app.tavily.com](https://app.tavily.com).
 
-### 2. Get Tavily tools from Plugin Marketplace
+Free tier includes **1,000 API credits/month**.
 
-The Tavily tools could be found at the Plugin Marketplace, please install it.
+![](./_assets/apikey.gif)
 
-### 3. Fill in the configuration in Dify
+### 2. Install from Plugin Marketplace
 
-On the Dify navigation page, go to Tools > Tavily > Authentication to fill in the API Key.
+Navigate to **Plugin Marketplace** in Dify and search for "Tavily". Click **Install**.
 
-![](./_assets/tavily_1.PNG)
+### 3. Add Your API Key
 
-### 4. Using the tool
+Go to **Tools → Tavily → Authentication** and paste your API key.
 
-You can use the Tavily tool in the following application types:
+![](./_assets/tavilytool.gif)
 
-#### Chatflow / Workflow applications
+### 4. Add a Tool node to your flow
 
-![](./_assets/tavily_2.PNG)
+Add a Node → Tool → Tavily. All five actions are available:
 
-Both Chatflow and Workflow applications support adding Tavily series tool nodes, providing two tools: extract and search.
+<p align="center">
+  <img src="./_assets/actions.png" />
+</p>
 
-#### Agent applications
+## Common Patterns
 
-![](./_assets/tavily_3.PNG)
+**Fact-checking workflow:**  
+User question → Search (include_answer: true) → LLM validates and responds
 
-Select the Tavily tool you need to add in the Agent application, then enter commands to call the tool.
+**Content aggregation:**  
+Topic → Search → Extract (top URLs) → LLM summarizes
+
+**Competitive analysis:**  
+Competitor URL → Map → Crawl key pages → LLM analyzes
+
+## Resources
+
+- [Tavily Docs](https://docs.tavily.com/documentation/api-reference/introduction)
+- [Tavily Dashboard](https://app.tavily.com)
+- [Tavily Discord](https://discord.gg/TPu2gkaWp2)

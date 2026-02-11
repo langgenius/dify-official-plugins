@@ -29,6 +29,16 @@ parameter_rules:
     min: -2
     max: 2
     default: 0
+  - name: enable_thinking
+    required: false
+    type: boolean
+    default: false
+    label:
+      zh_Hans: 思考模式
+      en_US: Thinking mode
+    help:
+      zh_Hans: 是否开启思考模式。
+      en_US: Whether to enable thinking mode.
 pricing:
   input: "0.75"
   output: "7.5"

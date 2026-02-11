@@ -1,4 +1,4 @@
 dify_plugin<0.6.0,>=0.5.0
 requests==2.32.5
-werkzeug==3.0.6
+werkzeug==3.1.5
 beautifulsoup4

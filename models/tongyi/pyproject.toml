@@ -1,0 +1,19 @@
+[project]
+name = "tongyi"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.12"
+
+# uv pip compile pyproject.toml -o ./requirements.txt
+dependencies = [
+    "dify_plugin==0.7.0",
+    "numpy~=2.2.4",
+    "dashscope~=1.25.2",
+    "openai~=2.3.0",
+    "pydub~=0.25.1",
+]
+
+# uv run black . -C -l 100 && uv run ruff check --fix
+[dependency-groups]
+dev = []

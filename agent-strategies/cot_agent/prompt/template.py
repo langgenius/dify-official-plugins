@@ -18,15 +18,13 @@ Provide only ONE action per $JSON_BLOB, as shown:
 
 Follow this format:
 
-Question: input question to answer
-Thought: consider previous and subsequent steps
-Action: $JSON_BLOB
-Observation: action result
-... (repeat Thought/Action/Observation N times)
-Thought: I know what to respond
-Answer: final response to human
+Thought: [your reasoning]
+Action: {"action": "tool_name", "action_input": {"param": "value"}}
+Observation: [tool output]
+... (repeat as needed)
+FinalAnswer: [your response]
 
-Begin! Reminder to ALWAYS respond with a valid json blob of a single action. Use tools if necessary. Respond directly if appropriate. Format is Action: $JSON_BLOB then Observation:.
+Begin! Use "Action:" only when calling tools. End with "FinalAnswer:".
 {{historic_messages}}
 Question: {{query}}
 {{agent_scratchpad}}
@@ -56,15 +54,13 @@ Provide only ONE action per $JSON_BLOB, as shown:
 
 Follow this format:
 
-Question: input question to answer
-Thought: consider previous and subsequent steps
-Action: $JSON_BLOB
-Observation: action result
-... (repeat Thought/Action/Observation N times)
-Thought: I know what to respond
-Answer: final response to human
+Thought: [your reasoning]
+Action: {"action": "tool_name", "action_input": {"param": "value"}}
+Observation: [tool output]
+... (repeat as needed)
+FinalAnswer: [your response]
 
-Begin! Reminder to ALWAYS respond with a valid json blob of a single action. Use tools if necessary. Respond directly if appropriate. Format is Action: $JSON_BLOB then Observation:.
+Begin! Use "Action:" only when calling tools. End with "FinalAnswer:".
 """  # noqa: E501
 
 

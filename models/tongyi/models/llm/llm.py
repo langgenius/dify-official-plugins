@@ -48,7 +48,8 @@ from dify_plugin.entities.model.message import (
     TextPromptMessageContent,
     ToolPromptMessage,
     UserPromptMessage,
-    VideoPromptMessageContent, AudioPromptMessageContent,
+    VideoPromptMessageContent,
+    AudioPromptMessageContent,
 )
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -61,6 +62,7 @@ from dify_plugin.errors.model import (
 )
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from openai import OpenAI
+from models._common import get_http_base_address
 from ..constant import BURY_POINT_HEADER
 
 logger = logging.getLogger(__name__)
@@ -209,7 +211,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             if len(prompt_messages) > 1:
                 prompt_messages = prompt_messages[-1:]
             if prompt_messages[-1].role != PromptMessageRole.USER:
-                raise ValueError("There is one and only one User Message in the messages array.")
+                raise ValueError(
+                    "There is one and only one User Message in the messages array."
+                )
 
         params = {
             "model": model,
@@ -221,25 +225,35 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
 
         incremental_output = False if tools else stream
 
-        thinking_business_qwen3 = model in ("qwen-plus-latest", "qwen-plus-2025-04-28",
-                                            "qwen-turbo-latest", "qwen-turbo-2025-04-28") \
-                                  and model_parameters.get("enable_thinking", False)
+        thinking_business_qwen3 = model in (
+            "qwen-plus-latest",
+            "qwen-plus-2025-04-28",
+            "qwen-turbo-latest",
+            "qwen-turbo-2025-04-28",
+            "qwen3-max-2026-01-23",
+        ) and model_parameters.get("enable_thinking", False)
 
-        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder and max variants), QwQ, and QVQ models only supports streaming output.
+        # Kimi models with thinking capability: kimi-k2.5 (when enable_thinking=true) and kimi-k2-thinking
+        thinking_kimi = (
+            model == "kimi-k2.5" and model_parameters.get("enable_thinking", False)
+        ) or model == "kimi-k2-thinking"
+
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder and max variants), QwQ, QVQ, and Kimi thinking models only supports streaming output.
         # Note: qwen3-coder-xx and qwen3-max-xx models support non-streaming output.
-        qwen3_requires_stream = (
-            model.startswith("qwen3-") 
-            and not model.startswith(("qwen3-coder", "qwen3-max"))
+        qwen3_requires_stream = model.startswith("qwen3-") and not model.startswith(
+            ("qwen3-coder", "qwen3-max")
         )
-        common_force_condition = thinking_business_qwen3 or qwen3_requires_stream
+        common_force_condition = (
+            thinking_business_qwen3 or qwen3_requires_stream or thinking_kimi
+        )
         if common_force_condition or model.startswith(("qwq-", "qvq-")):
             stream = True
-        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder and max variants), QwQ, and QVQ models only supports incremental_output set to True.
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder and max variants), QwQ, QVQ, and Kimi thinking models only supports incremental_output set to True.
         if common_force_condition or model.startswith(("qwq-", "qvq-")):
             incremental_output = True
 
-        base_address =  "https://dashscope-intl.aliyuncs.com/api/v1" if credentials.get("use_international_endpoint") == "true" else None
-        
+        base_address = get_http_base_address(credentials)
+
         # The parameter `enable_omni_output_audio_url` must be set to true when using the Omni model in non-streaming mode.
         if model.startswith("qwen3-omni-") and not stream:
             params["enable_omni_output_audio_url"] = True
@@ -253,7 +267,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 stream=stream,
                 headers=self._get_market_bury_point_header(params["messages"]),
                 incremental_output=incremental_output,
-                base_address=base_address)
+                base_address=base_address,
+            )
         else:
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(
                 credentials, prompt_messages
@@ -264,11 +279,15 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 result_format="message",
                 stream=stream,
                 incremental_output=incremental_output,
-                base_address=base_address
+                base_address=base_address,
             )
         if stream:
             return self._handle_generate_stream_response(
-                model, credentials, response, prompt_messages, incremental_output,
+                model,
+                credentials,
+                response,
+                prompt_messages,
+                incremental_output,
             )
         return self._handle_generate_response(
             model, credentials, response, prompt_messages
@@ -293,14 +312,19 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         try:
             if response.status_code not in {200, HTTPStatus.OK}:
                 # Get request_id (if present) and forward it to the error handler.
-                request_id = getattr(response, 'request_id', None)
-                self._handle_error_response(response.status_code, response.message, model, request_id)
+                request_id = getattr(response, "request_id", None)
+                self._handle_error_response(
+                    response.status_code, response.message, model, request_id
+                )
 
             resp_content = response.output.choices[0].message.content
             # special for qwen-vl
             if isinstance(resp_content, list):
                 resp_content = resp_content[0]["text"]
-            assistant_prompt_message = AssistantPromptMessage(content=resp_content)
+            assistant_prompt_message = AssistantPromptMessage(
+                content=resp_content,
+                tool_calls=response.output.choices[0].message.get("tool_calls", []),
+            )
             usage = self._calc_response_usage(
                 model,
                 credentials,
@@ -320,24 +344,24 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
     def _handle_tool_call_stream(self, response, tool_calls, incremental_output):
         tool_calls_stream = response.output.choices[0].message["tool_calls"]
         for tool_call_stream in tool_calls_stream:
-            idx = tool_call_stream.get('index')
+            idx = tool_call_stream.get("index")
             if idx >= len(tool_calls):
                 tool_calls.append(tool_call_stream)
             else:
-                if tool_call_stream.get('function'):
-                    func_name = tool_call_stream.get('function').get('name')
+                if tool_call_stream.get("function"):
+                    func_name = tool_call_stream.get("function").get("name")
                     tool_call_obj = tool_calls[idx]
                     if func_name:
                         if incremental_output:
-                            tool_call_obj['function']['name'] += func_name
+                            tool_call_obj["function"]["name"] += func_name
                         else:
-                            tool_call_obj['function']['name'] = func_name
-                    args = tool_call_stream.get('function').get('arguments')
+                            tool_call_obj["function"]["name"] = func_name
+                    args = tool_call_stream.get("function").get("arguments")
                     if args:
                         if incremental_output:
-                            tool_call_obj['function']['arguments'] += args
+                            tool_call_obj["function"]["arguments"] += args
                         else:
-                            tool_call_obj['function']['arguments'] = args
+                            tool_call_obj["function"]["arguments"] = args
 
     def _handle_generate_stream_response(
         self,
@@ -365,15 +389,19 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             for index, response in enumerate(responses):
                 if response.status_code not in {200, HTTPStatus.OK}:
                     # Get request_id (if present) and forward it to the error handler.
-                    request_id = getattr(response, 'request_id', None)
-                    self._handle_error_response(response.status_code, response.message, model, request_id)
+                    request_id = getattr(response, "request_id", None)
+                    self._handle_error_response(
+                        response.status_code, response.message, model, request_id
+                    )
 
                 resp_finish_reason = response.output.choices[0].finish_reason
                 if resp_finish_reason is not None and resp_finish_reason != "null":
                     resp_content = response.output.choices[0].message.content
                     assistant_prompt_message = AssistantPromptMessage(content="")
                     if "tool_calls" in response.output.choices[0].message:
-                        self._handle_tool_call_stream(response, tool_calls, incremental_output)
+                        self._handle_tool_call_stream(
+                            response, tool_calls, incremental_output
+                        )
                     elif resp_content:
                         if isinstance(resp_content, list):
                             resp_content = resp_content[0]["text"]
@@ -418,10 +446,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 else:
                     message = response.output.choices[0].message
 
-                    resp_content, is_reasoning = self._wrap_thinking_by_reasoning_content(
-                        message, is_reasoning
+                    resp_content, is_reasoning = (
+                        self._wrap_thinking_by_reasoning_content(message, is_reasoning)
                     )
-                    
+
                     content_to_yield = []
                     if resp_content:
                         if incremental_output:
@@ -442,8 +470,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             if incremental_output:
                                 full_text += "\n</think>"
                             is_reasoning = False
-                        self._handle_tool_call_stream(response, tool_calls, incremental_output)
-                    
+                        self._handle_tool_call_stream(
+                            response, tool_calls, incremental_output
+                        )
+
                     if content_to_yield:
                         assistant_prompt_message = AssistantPromptMessage(
                             content="".join(content_to_yield)
@@ -488,7 +518,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                         message_text = f"{human_prompt} {sub_message.data}"
                         break
             else:
-                raise TypeError(f"[convert_one_message_to_text] Unexpected content type: {type(content)}")
+                raise TypeError(
+                    f"[convert_one_message_to_text] Unexpected content type: {type(content)}"
+                )
         elif isinstance(message, AssistantPromptMessage):
             message_text = f"{ai_prompt} {content}"
         elif isinstance(message, SystemPromptMessage | ToolPromptMessage):
@@ -563,7 +595,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             )
                             image_url = message_content.data
                             if message_content.data.startswith("data:"):
-                                image_url = self._save_base64_to_file(message_content.data)
+                                image_url = self._save_base64_to_file(
+                                    message_content.data
+                                )
                             sub_message_dict = {"image": image_url}
                             user_messages.append(sub_message_dict)
                         elif message_content.type == PromptMessageContentType.VIDEO:
@@ -572,7 +606,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             )
                             video_url = message_content.data
                             if message_content.data.startswith("data:"):
-                                video_url = self._save_base64_to_file(message_content.data)
+                                video_url = self._save_base64_to_file(
+                                    message_content.data
+                                )
                             sub_message_dict = {"video": video_url}
                             user_messages.append(sub_message_dict)
                         elif message_content.type == PromptMessageContentType.AUDIO:
@@ -666,12 +702,12 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :return: file ID in Tongyi
         """
         client = OpenAI(
-            api_key=credentials.dashscope_api_key,
+            api_key=credentials["dashscope_api_key"],
             base_url="https://dashscope.aliyuncs.com/compatible-mode/v1",
         )
         if credentials.get("use_international_endpoint", "false") == "true":
             client = OpenAI(
-                api_key=credentials.dashscope_api_key,
+                api_key=credentials["dashscope_api_key"],
                 base_url="https://dashscope-intl.aliyuncs.com/compatible-mode/v1",
             )
         temp_file_path = None
@@ -691,16 +727,19 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             f"Failed to fetch data from url {message_content.url}, {ex}"
                         ) from ex
                 temp_file.flush()
-                temp_file.seek(0)
-                response = client.files.create(file=temp_file, purpose="file-extract")
-                return response.id
+            # Close temp file first, then reopen with open() for OpenAI SDK compatibility
+            with open(temp_file_path, "rb") as f:
+                response = client.files.create(file=f, purpose="file-extract")
+            return response.id
         finally:
             # Clean up temporary file after upload
             if temp_file_path and os.path.exists(temp_file_path):
                 try:
                     os.remove(temp_file_path)
                 except Exception as e:
-                    logger.warning(f"Failed to remove temporary file {temp_file_path}: {e}")
+                    logger.warning(
+                        f"Failed to remove temporary file {temp_file_path}: {e}"
+                    )
 
     def _convert_tools(self, tools: list[PromptMessageTool]) -> list[dict]:
         """
@@ -731,7 +770,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             tool_definitions.append(tool_definition)
         return tool_definitions
 
-    def _wrap_thinking_by_reasoning_content(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
+    def _wrap_thinking_by_reasoning_content(
+        self, delta: dict, is_reasoning: bool
+    ) -> tuple[str, bool]:
         """
         If the reasoning response is from delta.get("reasoning_content"), we wrap
         it with HTML think tag.
@@ -767,12 +808,12 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 content = "\n</think>" + content
                 is_reasoning = False
         except Exception as ex:
-            raise ValueError(
-                f"[wrap_thinking_by_reasoning_content-2] {ex}"
-            ) from ex
+            raise ValueError(f"[wrap_thinking_by_reasoning_content-2] {ex}") from ex
         return content, is_reasoning
 
-    def _handle_error_response(self, status_code: int, message: str, model: str = None, request_id: str = None) -> None:
+    def _handle_error_response(
+        self, status_code: int, message: str, model: str = None, request_id: str = None
+    ) -> None:
         """
         Handle error response based on HTTP status code
 
@@ -913,25 +954,26 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             dict: Bury point header information dictionary containing moduleCode, accountId and other fields;
                   If no valid information can be extracted, returns the default BURY_POINT_HEADER
         """
-        system_entries = [entry for entry in messages if entry['role'] == 'system']
+        system_entries = [entry for entry in messages if entry["role"] == "system"]
         if system_entries:
-            system_entry = system_entries[0].get('content', '')
+            system_entry = system_entries[0].get("content", "")
             if system_entry:
                 try:
                     system_entry_split = system_entry.split("||||||")
                     if len(system_entry_split) >= 2:
-                        burn = system_entry_split[0].split(',')
-                        bury_point_header = json.loads(BURY_POINT_HEADER.get('x-dashscope-euid'))
+                        burn = system_entry_split[0].split(",")
+                        bury_point_header = json.loads(
+                            BURY_POINT_HEADER.get("x-dashscope-euid")
+                        )
                         if len(burn) in (1, 2):
                             product_code = burn[0]
                             buyer_uid = burn[1] if len(burn) == 2 else ""
-                            bury_point_header['moduleCode'] = product_code.strip()
-                            bury_point_header['accountId'] = buyer_uid.strip()
+                            bury_point_header["moduleCode"] = product_code.strip()
+                            bury_point_header["accountId"] = buyer_uid.strip()
 
-                        system_entries[0]['content'] = "".join(system_entry_split[1:])
-                        return {'x-dashscope-euid': json.dumps(bury_point_header)}
+                        system_entries[0]["content"] = "".join(system_entry_split[1:])
+                        return {"x-dashscope-euid": json.dumps(bury_point_header)}
                 except Exception:
                     return BURY_POINT_HEADER
 
         return BURY_POINT_HEADER
-

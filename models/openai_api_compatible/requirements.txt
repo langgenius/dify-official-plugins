@@ -17,7 +17,7 @@ charset-normalizer==3.4.3
     # via requests
 click==8.3.0
     # via flask
-dify-plugin==0.7.0
+dify-plugin==0.7.1
     # via openai-api-compatible-gnrzr6cey (pyproject.toml)
 distro==1.9.0
     # via openai
@@ -103,9 +103,9 @@ typing-inspection==0.4.2
     # via
     #   pydantic
     #   pydantic-settings
-urllib3==2.6.0
+urllib3==2.6.3
     # via requests
-werkzeug==3.1.4
+werkzeug==3.1.5
     # via
     #   dify-plugin
     #   flask

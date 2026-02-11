@@ -7,6 +7,31 @@ from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
 
 
 class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
+    _BASE_URL_V1 = "https://api.modelarts-maas.com/v1"
+    _BASE_URL_V2 = "https://api.modelarts-maas.com/v2"
+    _THINKING_PATH_XDS = "thinking.type.enabled"
+    _THINKING_PATH_VLLM = "chat_template_kwargs.enable_thinking.true"
+
+    endpoint_mapping = {
+        "deepseek-v3.2": _BASE_URL_V2,
+        "deepseek-v3.2-exp": _BASE_URL_V2,
+        "deepseek-v3.1": _BASE_URL_V2,
+        "DeepSeek-V3": _BASE_URL_V2,
+        "deepseek-r1-250528": _BASE_URL_V2,
+        "DeepSeek-R1": _BASE_URL_V2,
+        "Kimi-K2": _BASE_URL_V2,
+        "longcat-flash-chat": _BASE_URL_V2,
+    }
+
+    thinking_mapping = {
+        "deepseek-v3.2": _THINKING_PATH_XDS,
+        "deepseek-v3.2-exp": _THINKING_PATH_XDS,
+        "deepseek-v3.1": _THINKING_PATH_XDS,
+        "qwen3-235b-a22b": _THINKING_PATH_VLLM,
+        "qwen3-32b": _THINKING_PATH_VLLM,
+        "qwen3-30b-a3b": _THINKING_PATH_VLLM,
+    }
+
     def _invoke(
         self,
         model: str,
@@ -18,32 +43,36 @@ class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
-        self._add_custom_parameters(credentials)
+        self._add_custom_parameters(model, credentials)
         self._add_function_call(model, credentials)
 
         enable_thinking = model_parameters.pop("enable_thinking", None)
         if enable_thinking is not None:
-            thinking_key = (
-                "thinking" if model.startswith("deepseek-v") else "enable_thinking"
-            )
-            model_parameters["chat_template_kwargs"] = {
-                thinking_key: bool(enable_thinking)
-            }
+            path = HuaweiCloudMaasLargeLanguageModel.thinking_mapping.get(
+                model, HuaweiCloudMaasLargeLanguageModel._THINKING_PATH_XDS
+            ).split(".")
+            if bool(enable_thinking) and path[2] == "enabled":
+                value = "enabled"
+            elif not bool(enable_thinking) and path[2] == "enabled":
+                value = "disabled"
+            else:
+                value = bool(enable_thinking)
+            model_parameters[path[0]] = {path[1]: value}
 
         return super()._invoke(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream
         )
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
-        self._add_custom_parameters(credentials)
+        self._add_custom_parameters(model, credentials)
         super().validate_credentials(model, credentials)
 
-    @classmethod
-    def _add_custom_parameters(cls, credentials: dict) -> None:
+    def _add_custom_parameters(self, model: str, credentials: dict) -> None:
         credentials["mode"] = "chat"
-        credentials["endpoint_url"] = str(
-            credentials.get("endpoint_url", "https://api.modelarts-maas.com/v1")
+        endpoint_url = HuaweiCloudMaasLargeLanguageModel.endpoint_mapping.get(
+            model, HuaweiCloudMaasLargeLanguageModel._BASE_URL_V1
         )
+        credentials["endpoint_url"] = str(credentials.get("endpoint_url", endpoint_url))
 
     def _add_function_call(self, model: str, credentials: dict) -> None:
         model_schema = self.get_model_schema(model, credentials)

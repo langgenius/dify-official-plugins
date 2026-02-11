@@ -112,6 +112,12 @@ model_credential_schema:
       zh_Hans: 基础模型
     options:
     - label:
+        en_US: GLM-4.7
+      value: GLM-4.7
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
         en_US: Doubao-Seed-1.8
       value: Doubao-Seed-1.8
       show_on:
@@ -360,6 +366,12 @@ model_credential_schema:
     - label:
         en_US: Doubao-embedding-large
       value: Doubao-embedding-large
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+    - label:
+        en_US: Doubao-embedding-vision
+      value: Doubao-embedding-vision
       show_on:
         - variable: __model_type
           value: text-embedding

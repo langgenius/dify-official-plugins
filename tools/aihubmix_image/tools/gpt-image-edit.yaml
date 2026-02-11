@@ -44,7 +44,7 @@ parameters:
       pt_BR: "A imagem a ser editada (pode ser URL, dados base64 ou caminho de arquivo)"
       ja_JP: "編集する画像（URL、base64データ、またはファイルパス）"
     llm_description: "Input image to be edited using GPT Image Edit. Supports URL, base64 data, or file path"
-    form: llm
+    form: form
   
   
   - name: model
@@ -131,6 +131,42 @@ parameters:
     default: 1
     min: 1
     max: 4
+
+  - name: image_format
+    type: select
+    required: false
+    label:
+      en_US: "Image Format"
+      zh_Hans: "图片格式"
+      pt_BR: "Formato de Imagem"
+      ja_JP: "画像フォーマット"
+    human_description:
+      en_US: "Output image format"
+      zh_Hans: "输出图片格式"
+      pt_BR: "Formato de saída da imagem"
+      ja_JP: "出力画像フォーマット"
+    llm_description: "Image format for GPT Image Edit generation"
+    form: form
+    default: "png"
+    options:
+      - value: "png"
+        label:
+          en_US: "PNG"
+          zh_Hans: "PNG"
+          pt_BR: "PNG"
+          ja_JP: "PNG"
+      - value: "jpeg"
+        label:
+          en_US: "JPEG"
+          zh_Hans: "JPEG"
+          pt_BR: "JPEG"
+          ja_JP: "JPEG"
+      - value: "webp"
+        label:
+          en_US: "WebP"
+          zh_Hans: "WebP"
+          pt_BR: "WebP"
+          ja_JP: "WebP"
 
 extra:
   python:

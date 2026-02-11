@@ -3,6 +3,9 @@
 - qwq-plus-0305
 - qwq-plus
 - qwq-32b
+- kimi-k2.5
+- kimi-k2-thinking
+- Moonshot-Kimi-K2-Instruct
 - deepseek-r1
 - deepseek-r1-distill-qwen-14b
 - deepseek-r1-distill-qwen-32b
@@ -11,6 +14,7 @@
 - deepseek-v3
 - qwen3-max
 - qwen3-max-2025-09-23
+- qwen3-max-2026-01-23
 - qwen3-max-preview
 - qwen3-coder-plus
 - qwen3-coder-480b-a35b-instruct
@@ -96,5 +100,6 @@
 - qwen-coder-turbo-0919
 - qwen-coder-turbo
 - qwen-flash-2025-07-28
+- glm-4.7
 - qwen-flash
 - farui-plus

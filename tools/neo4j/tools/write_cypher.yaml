@@ -1,0 +1,34 @@
+identity:
+  name: write_cypher
+  author: langgenius
+  label:
+    en_US: Write Cypher Query
+    zh_Hans: 写入 Cypher 查询
+    pt_BR: Consulta Cypher de Escrita
+    ja_JP: 書き込み Cypher クエリ
+description:
+  human:
+    en_US: Execute a write Cypher query on the Neo4j database to create, update, or delete data
+    zh_Hans: 在 Neo4j 数据库上执行写入 Cypher 查询以创建、更新或删除数据
+    pt_BR: Executar uma consulta Cypher de escrita no banco de dados Neo4j para criar, atualizar ou excluir dados
+    ja_JP: Neo4j データベースで書き込み Cypher クエリを実行してデータを作成、更新、または削除します
+  llm: Execute a write Cypher query on the Neo4j database. This tool allows CREATE, MERGE, SET, DELETE, REMOVE, and other write operations to modify the database. Use with caution as changes are permanent. Returns the query results and statistics about what was modified (nodes created, relationships created, properties set, etc.).
+parameters:
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: Cypher Query
+      zh_Hans: Cypher 查询
+      pt_BR: Consulta Cypher
+      ja_JP: Cypher クエリ
+    human_description:
+      en_US: The Cypher query to execute (supports write operations)
+      zh_Hans: 要执行的 Cypher 查询（支持写入操作）
+      pt_BR: A consulta Cypher para executar (suporta operacoes de escrita)
+      ja_JP: 実行する Cypher クエリ（書き込み操作をサポート）
+    llm_description: The Cypher query to execute. 
+    form: llm
+extra:
+  python:
+    source: tools/write_cypher.py

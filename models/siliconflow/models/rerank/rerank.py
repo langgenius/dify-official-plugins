@@ -26,7 +26,12 @@ class SiliconflowRerankModel(RerankModel):
     ) -> RerankResult:
         if len(docs) == 0:
             return RerankResult(model=model, docs=[])
-        base_url = credentials.get("base_url", "https://api.siliconflow.cn/v1")
+        base_url = credentials.get("base_url")
+        if not base_url:
+            if credentials.get("use_international_endpoint", "false") == "true":
+                base_url = "https://api.siliconflow.com/v1"
+            else:
+                base_url = "https://api.siliconflow.cn/v1"
         base_url = base_url.removesuffix("/")
         try:
             response = httpx.post(

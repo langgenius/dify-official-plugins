@@ -1,4 +1,4 @@
-version: 0.5.4
+version: 0.6.4
 type: plugin
 author: langgenius
 name: dingo
@@ -6,8 +6,8 @@ label:
   en_US: Dingo
   zh_Hans: Dingo
 description:
-  en_US: Text data quality tools powered by Dingo rules.
-  zh_Hans: 基于 Dingo 规则的文本质量工具。
+  en_US: A Comprehensive AI Data, Model and Application Quality Evaluation Tool
+  zh_Hans: 一个综合的AI数据、模型和应用质量评估工具
 icon: icon.svg
 resource:
   memory: 536870912
