@@ -40,14 +40,17 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
     def _clean_messages(self, messages: list[PromptMessage]) -> list[PromptMessage]:
         cleaned: list[PromptMessage] = []
         for m in messages:
-            # Keep messages that have content or tool calls
+            # Tool and system messages should NEVER be filtered or merged
+            # - ToolPromptMessage may have empty content (e.g. command succeeded with no output)
+            #   but must be kept to match its tool_call_id
+            # - SystemPromptMessage should always be preserved as-is
+            if isinstance(m, (ToolPromptMessage, SystemPromptMessage)):
+                cleaned.append(m.model_copy())
+                continue
+
+            # Filter out empty messages (no content and no tool calls)
             has_tool_calls = isinstance(m, AssistantPromptMessage) and m.tool_calls
             if not m.content and not has_tool_calls:
-                continue
-            
-            # Tool and system messages should NEVER be merged - each has a unique tool_call_id
-            if isinstance(m, ToolPromptMessage) or isinstance(m, SystemPromptMessage):
-                cleaned.append(m.model_copy())
                 continue
             
             if cleaned and cleaned[-1].role == m.role:

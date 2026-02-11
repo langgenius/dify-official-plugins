@@ -19,7 +19,7 @@ charset-normalizer==3.4.3
     # via requests
 click==8.3.0
     # via flask
-cryptography==46.0.4
+cryptography==46.0.5
     # via google-auth
 dify-plugin==0.5.1
     # via gemini-g9cie8 (pyproject.toml)
