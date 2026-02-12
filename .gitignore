@@ -188,3 +188,4 @@ pyrightconfig.json
 mypy.ini
 tox.ini
 *.difypkg
+models/openai_api_compatible/PR_DESCRIPTION.md

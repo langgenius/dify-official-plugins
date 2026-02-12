@@ -1,6 +1,12 @@
 from typing import Mapping, Optional, Union
+import ipaddress
 import json
 import re
+import logging
+from urllib.parse import urlparse
+
+import requests
+import tiktoken
 
 from dify_plugin.entities.model import (
     AIModelEntity,
@@ -8,11 +14,17 @@ from dify_plugin.entities.model import (
     I18nObject,
     ModelFeature,
 )
-from dify_plugin.entities.model.text_embedding import TextEmbeddingResult
-
+from dify_plugin.entities.model.text_embedding import (
+    TextEmbeddingResult,
+    EmbeddingUsage,
+)
+from dify_plugin.errors.model import InvokeError, InvokeServerUnavailableError
 from dify_plugin.interfaces.model.openai_compatible.text_embedding import (
     OAICompatEmbeddingModel,
 )
+
+
+logger = logging.getLogger(__name__)
 
 
 class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
@@ -116,11 +128,6 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
         """
         Embed texts in batches, handling API limits.
         """
-        import requests
-        import logging
-        from dify_plugin.errors.model import InvokeError, InvokeServerUnavailableError
-        from dify_plugin.entities.model.text_embedding import EmbeddingUsage
-
         endpoint_url = credentials.get("endpoint_url", "").rstrip("/")
         api_key = credentials.get("api_key", "")
         endpoint_model_name = credentials.get("endpoint_model_name", "") or model
@@ -133,7 +140,12 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
 
         batched_embeddings = []
         used_tokens = 0
-        logger = logging.getLogger(__name__)
+        total_price = 0.0
+
+        # Initialize with default values, will be updated from API response if available
+        unit_price = 0.0
+        price_unit = 0.0
+        currency = "USD"
 
         try:
             # Process in batches
@@ -149,10 +161,6 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 encoding_format = credentials.get("encoding_format")
                 if encoding_format:
                     payload["encoding_format"] = encoding_format
-
-                # Add user if provided
-                if user:
-                    payload["user"] = user
 
                 logger.info(
                     f"Embedding API Request to {endpoint_url}/embeddings (batch {i // max_chunks + 1}/{(len(inputs) + max_chunks - 1) // max_chunks})"
@@ -179,10 +187,21 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 for data in result["data"]:
                     batched_embeddings.append(data["embedding"])
 
-                # Extract token count
+                # Extract usage information from API response
                 usage = result.get("usage") or {}
                 tokens = usage.get("prompt_tokens") or usage.get("total_tokens") or 0
                 used_tokens += tokens
+
+                # Extract pricing information if provided by API
+                total_price += usage.get("total_price", 0.0)
+
+                # Use API provided values if available, otherwise keep defaults
+                if "unit_price" in usage:
+                    unit_price = usage.get("unit_price", 0.0)
+                if "price_unit" in usage:
+                    price_unit = usage.get("price_unit", 0.0)
+                if "currency" in usage:
+                    currency = usage.get("currency", "USD")
 
             return TextEmbeddingResult(
                 embeddings=batched_embeddings,
@@ -190,11 +209,11 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 usage=EmbeddingUsage(
                     tokens=used_tokens,
                     total_tokens=used_tokens,
-                    unit_price=0.0,
-                    price_unit=0.0,
-                    total_price=0.0,
-                    currency="USD",
-                    latency=0.0,
+                    unit_price=unit_price,
+                    price_unit=price_unit,
+                    total_price=total_price,
+                    currency=currency,
+                    latency=0.0,  # Latency tracking would require timing each request
                 ),
             )
 
@@ -254,33 +273,118 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
 
         return content if content else data.get("text", "")
 
+    def _validate_image_url(self, url: str) -> str:
+        """
+        Validate image URL to prevent SSRF attacks.
+        Only allows http, https, and data:image URLs.
+        Blocks localhost, private IPs, and internal networks.
+
+        :param url: URL to validate
+        :return: Validated URL or empty string if invalid
+        """
+        if not url:
+            return ""
+
+        # Allow data URIs (base64 encoded images)
+        if url.startswith("data:image"):
+            return url
+
+        # Only allow http/https URLs
+        if not (url.startswith("http://") or url.startswith("https://")):
+            logger.warning(f"Blocked non-HTTP URL: {url[:50]}...")
+            return ""
+
+        # Parse URL to check for SSRF attempts
+        try:
+            parsed = urlparse(url)
+            hostname = parsed.hostname
+
+            if not hostname:
+                return ""
+
+            # Block localhost
+            if hostname in ("localhost", "127.0.0.1", "::1"):
+                logger.warning(f"Blocked localhost URL: {url[:50]}...")
+                return ""
+
+            # Block private IP ranges
+            try:
+                ip = ipaddress.ip_address(hostname)
+                # Check if it's private, loopback, link-local, or reserved
+                if (
+                    ip.is_private
+                    or ip.is_loopback
+                    or ip.is_link_local
+                    or ip.is_reserved
+                ):
+                    logger.warning(f"Blocked private IP URL: {url[:50]}...")
+                    return ""
+            except ValueError:
+                # Not an IP address, it's a hostname - allow it
+                pass
+
+            return url
+        except Exception as e:
+            logger.warning(f"URL validation failed: {e}")
+            return ""
+
+            # Block localhost
+            if hostname in ("localhost", "127.0.0.1", "::1"):
+                logger.warning(f"Blocked localhost URL: {url[:50]}...")
+                return ""
+
+            # Block private IP ranges
+            import ipaddress
+
+            try:
+                ip = ipaddress.ip_address(hostname)
+                # Check if it's private, loopback, link-local, or reserved
+                if (
+                    ip.is_private
+                    or ip.is_loopback
+                    or ip.is_link_local
+                    or ip.is_reserved
+                ):
+                    logger.warning(f"Blocked private IP URL: {url[:50]}...")
+                    return ""
+            except ValueError:
+                # Not an IP address, it's a hostname - allow it
+                pass
+
+            return url
+        except Exception as e:
+            logger.warning(f"URL validation failed: {e}")
+            return ""
+
     def _process_image_url(self, image: str) -> str:
         """
-        Process image URL or path.
+        Process image URL securely.
 
         Supports:
-        - HTTP/HTTPS URLs
-        - Local file paths (converted to file://)
+        - HTTP/HTTPS URLs (with SSRF protection)
         - Base64 data URIs (with or without prefix)
+
+        Security: Blocks file:// URLs, localhost, and private networks.
         """
         if not image:
             return ""
 
-        # Already a URL or data URI
-        if image.startswith(("http://", "https://", "data:image")):
+        # Check if it's already a data URI
+        if image.startswith("data:image"):
             return image
 
-        # Local file path - convert to file://
-        if image.startswith("file://"):
-            return image
+        # Validate and process HTTP/HTTPS URLs
+        if image.startswith(("http://", "https://")):
+            return self._validate_image_url(image)
 
         # Check if it's a base64 encoded image (without data URI prefix)
         if self._is_base64_image(image):
             image_format = self._detect_image_format_from_base64(image)
             return f"data:image/{image_format};base64,{image}"
 
-        # Assume it's a local file path
-        return f"file://{image}"
+        # Reject file:// URLs and local paths (security risk)
+        logger.warning(f"Blocked local file path: {image[:50]}...")
+        return ""
 
     def _is_base64_image(self, text: str) -> bool:
         """
@@ -409,6 +513,22 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
 
         return ""
 
+    def _get_num_tokens_by_gpt2(self, text: str) -> int:
+        """
+        Get token count for text using GPT-2 tokenizer (tiktoken).
+
+        :param text: text to count tokens for
+        :return: number of tokens (approximate)
+        """
+        try:
+            encoding = tiktoken.get_encoding("gpt2")
+            return len(encoding.encode(text))
+        except Exception:
+            # Fallback to character count or a default if tiktoken fails
+            return (
+                len(text) // 4
+            )  # Rough estimate if tiktoken is not available or fails
+
     def _invoke_multimodal(
         self,
         model: str,
@@ -419,7 +539,7 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
     ) -> TextEmbeddingResult:
         """
         Invoke embedding model with potentially multimodal inputs.
-        This method is kept for compatibility but delegates to _invoke.
+        This method delegates to _invoke for processing.
         """
         # Convert inputs back to texts format and use _invoke
         texts = []

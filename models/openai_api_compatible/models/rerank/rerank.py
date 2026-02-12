@@ -1,6 +1,12 @@
+import base64
+import ipaddress
 import json
+import logging
 import re
 from typing import Mapping, Optional, Union, Any
+from urllib.parse import urlparse
+
+import requests
 
 from dify_plugin.entities.model import AIModelEntity, I18nObject, ModelFeature
 from dify_plugin.entities.model.rerank import RerankDocument, RerankResult
@@ -15,7 +21,9 @@ from dify_plugin.errors.model import (
     InvokeError,
     InvokeServerUnavailableError,
 )
-import requests
+
+
+logger = logging.getLogger(__name__)
 
 
 class OpenAIRerankModel(OAICompatRerankModel):
@@ -93,17 +101,15 @@ class OpenAIRerankModel(OAICompatRerankModel):
         }
 
         # Simple string format for text-only mode
+        # Use `top_n if top_n is not None else len(docs)` to correctly handle top_n=0
         payload = {
             "model": endpoint_model_name,
             "query": query,
             "documents": docs,
-            "top_n": top_n if top_n else len(docs),
+            "top_n": top_n if top_n is not None else len(docs),
         }
 
         try:
-            import logging
-
-            logger = logging.getLogger(__name__)
             logger.info(f"Rerank API Request (text mode) to {endpoint_url}/rerank")
 
             response = requests.post(
@@ -197,9 +203,6 @@ class OpenAIRerankModel(OAICompatRerankModel):
 
         # Check if query is an image - this is not supported
         if query.content_type == MultiModalContentType.IMAGE:
-            import logging
-
-            logger = logging.getLogger(__name__)
             logger.warning(
                 "Query with image is not supported by Qwen3-VL-Reranker. Converting to text."
             )
@@ -220,10 +223,6 @@ class OpenAIRerankModel(OAICompatRerankModel):
             "Authorization": f"Bearer {api_key}" if api_key else "",
         }
 
-        import logging
-
-        logger = logging.getLogger(__name__)
-
         # Convert documents to ScoreMultiModalParam format
         documents_params = []
         for i, doc in enumerate(docs):
@@ -234,11 +233,12 @@ class OpenAIRerankModel(OAICompatRerankModel):
             )
 
         # Build payload according to vLLM/Qwen3 format
+        # Use `top_n if top_n is not None else len(docs)` to correctly handle top_n=0
         payload = {
             "model": endpoint_model_name,
             "query": query_text,  # Plain text string
             "documents": documents_params,  # ScoreMultiModalParam format
-            "top_n": top_n if top_n else len(docs),
+            "top_n": top_n if top_n is not None else len(docs),
         }
 
         try:
@@ -288,8 +288,8 @@ class OpenAIRerankModel(OAICompatRerankModel):
             # Sort by score (highest first)
             rerank_docs.sort(key=lambda x: x.score, reverse=True)
 
-            # Apply top_n if specified
-            if top_n:
+            # Apply top_n if specified (check for None to allow top_n=0)
+            if top_n is not None:
                 rerank_docs = rerank_docs[:top_n]
 
             # Apply score threshold
@@ -308,6 +308,61 @@ class OpenAIRerankModel(OAICompatRerankModel):
         except Exception as ex:
             raise InvokeError(str(ex))
 
+    def _validate_image_url(self, url: str) -> str:
+        """
+        Validate image URL to prevent SSRF attacks.
+        Only allows http, https, and data:image URLs.
+        Blocks localhost, private IPs, and internal networks.
+
+        :param url: URL to validate
+        :return: Validated URL or empty string if invalid
+        """
+        if not url:
+            return ""
+
+        # Allow data URIs (base64 encoded images)
+        if url.startswith("data:image"):
+            return url
+
+        # Only allow http/https URLs
+        if not (url.startswith("http://") or url.startswith("https://")):
+            logger.warning(f"Blocked non-HTTP URL: {url[:50]}...")
+            return ""
+
+        # Parse URL to check for SSRF attempts
+        try:
+            parsed = urlparse(url)
+            hostname = parsed.hostname
+
+            if not hostname:
+                return ""
+
+            # Block localhost
+            if hostname in ("localhost", "127.0.0.1", "::1"):
+                logger.warning(f"Blocked localhost URL: {url[:50]}...")
+                return ""
+
+            # Block private IP ranges
+            try:
+                ip = ipaddress.ip_address(hostname)
+                # Check if it's private, loopback, link-local, or reserved
+                if (
+                    ip.is_private
+                    or ip.is_loopback
+                    or ip.is_link_local
+                    or ip.is_reserved
+                ):
+                    logger.warning(f"Blocked private IP URL: {url[:50]}...")
+                    return ""
+            except ValueError:
+                # Not an IP address, it's a hostname - allow it
+                pass
+
+            return url
+        except Exception as e:
+            logger.warning(f"URL validation failed: {e}")
+            return ""
+
     def _to_score_multimodal_param(self, content: MultiModalContent) -> dict:
         """
         Convert MultiModalContent to ScoreMultiModalParam format.
@@ -319,6 +374,8 @@ class OpenAIRerankModel(OAICompatRerankModel):
                 {"type": "image_url", "image_url": {"url": "..."}}
             ]
         }
+
+        Security: URLs are validated to prevent SSRF and LFI attacks.
         """
         content_list = []
 
@@ -330,19 +387,21 @@ class OpenAIRerankModel(OAICompatRerankModel):
             )
             content_list.append({"type": "text", "text": text_content})
         elif content.content_type == MultiModalContentType.IMAGE:
-            # Process image URL
+            # Process image URL securely
             image_url = content.content
             if isinstance(content.content, str):
-                if not content.content.startswith(
-                    ("http://", "https://", "data:image", "file://")
-                ):
-                    image_url = self._process_image_url(content.content)
+                # Validate URL before using
+                image_url = self._validate_image_url(content.content)
             elif isinstance(content.content, dict) and "url" in content.content:
-                image_url = content.content["url"]
+                image_url = self._validate_image_url(content.content["url"])
             else:
-                image_url = str(content.content)
+                image_url = ""
 
-            content_list.append({"type": "image_url", "image_url": {"url": image_url}})
+            # Only add if URL is valid
+            if image_url:
+                content_list.append(
+                    {"type": "image_url", "image_url": {"url": image_url}}
+                )
         else:
             # Default to text
             text_content = str(content.content) if content.content else ""
@@ -352,14 +411,11 @@ class OpenAIRerankModel(OAICompatRerankModel):
 
     def _process_image_url(self, image: str) -> str:
         """
-        Process image URL or path.
-        """
-        if not image:
-            return ""
+        Process image URL securely.
 
-        # Already a URL or data URI
-        if image.startswith(("http://", "https://", "data:image", "file://")):
-            return image
+        Security: Blocks file:// URLs, localhost, and private networks.
+        """
+        return self._validate_image_url(image)
 
         # Check if it's a base64 encoded image
         if self._is_base64_image(image):
@@ -373,8 +429,6 @@ class OpenAIRerankModel(OAICompatRerankModel):
         """
         Check if text is a base64 encoded image.
         """
-        import base64
-
         if not text or len(text) < 100:
             return False
 
@@ -391,8 +445,6 @@ class OpenAIRerankModel(OAICompatRerankModel):
         """
         Detect image format from base64 string.
         """
-        import base64
-
         if "," in base64_str:
             base64_str = base64_str.split(",", 1)[1]
 
