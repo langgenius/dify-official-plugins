@@ -1,4 +1,4 @@
-version: 0.2.6
+version: 0.2.7
 type: plugin
 author: langgenius
 name: azure_blob_datasource

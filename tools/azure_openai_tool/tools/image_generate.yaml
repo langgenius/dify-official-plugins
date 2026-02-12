@@ -1,9 +1,9 @@
 description:
   human:
-    en_US: Azure OpenAI Image Generate (gpt-image-1) is a text to image generation tool
-    pt_BR: Azure OpenAI Image Generate (gpt-image-1) é uma ferramenta de geração de imagem a partir de texto
-    zh_Hans: Azure OpenAI Image Generate (gpt-image-1) 是一个文本到图像的生成工具
-  llm: Azure OpenAI Image Generate is a tool used to generate images from text using OpenAI's gpt-image-1 model
+    en_US: Azure OpenAI Image Generate is a text to image generation tool
+    pt_BR: Azure OpenAI Image Generate é uma ferramenta de geração de imagem a partir de texto
+    zh_Hans: Azure OpenAI Image Generate 是一个文本到图像的生成工具
+  llm: Azure OpenAI Image Generate is a tool used to generate images from text using Azure OpenAI's image model
 extra:
   python:
     source: tools/image_generate.py

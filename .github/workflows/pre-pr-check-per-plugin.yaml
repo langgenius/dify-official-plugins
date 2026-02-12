@@ -177,6 +177,26 @@ jobs:
           cd "${{ matrix.plugin_path }}"
           uv sync --all-groups --python 3.12
 
+      - name: Validate requirements install with uv pip
+        run: |
+          cd "${{ matrix.plugin_path }}"
+
+          if [ ! -f "requirements.txt" ]; then
+            echo "!!! requirements.txt is required for this validation"
+            exit 1
+          fi
+
+          VENV_DIR=".ci-uv-pip-check-venv"
+
+          cleanup() {
+            rm -rf "$VENV_DIR"
+          }
+          trap cleanup EXIT
+
+          rm -rf "$VENV_DIR"
+          uv venv "$VENV_DIR" --python 3.12
+          uv pip install --python "$VENV_DIR/bin/python" -r requirements.txt
+
       - name: Check Plugin Install
         run: |
           export INSTALL_METHOD=serverless
