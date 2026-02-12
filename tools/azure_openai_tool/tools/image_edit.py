@@ -40,7 +40,7 @@ class ImageEditTool(Tool):
             yield self.create_text_message("Error: Input image file is required.")
             return
         edit_args: dict[str, Any] = {
-            "model": "gpt-image-1",
+            "model": self.runtime.credentials["azure_openai_api_model_name"],
             "prompt": prompt,
         }
 
