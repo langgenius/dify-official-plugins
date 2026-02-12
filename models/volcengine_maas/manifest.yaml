@@ -16,6 +16,7 @@ meta:
     language: python
     version: '3.12'
   version: 0.0.1
+  minimum_dify_version: 1.10.0
 name: volcengine_maas
 plugins:
   models:
@@ -34,4 +35,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.42
+version: 0.0.43
