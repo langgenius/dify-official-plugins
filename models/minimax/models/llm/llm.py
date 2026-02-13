@@ -405,8 +405,6 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
         streamed_text: list[str] = []
         streamed_tool_calls: dict[str, AssistantPromptMessage.ToolCall] = {}
         current_thinking_blocks: list[dict[str, Any]] = []
-        current_block_type: Optional[str] = None
-        current_block_index: Optional[int] = None
         emitted_final = False
 
         for event in response:
@@ -450,35 +448,6 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                 delta_type = getattr(delta, "type", "")
                 event_index = int(getattr(event, "index", 0) or 0)
 
-                if current_block_index != event_index:
-                    if current_block_type == "thinking" and current_block_index is not None:
-                        yield LLMResultChunk(
-                            model=model,
-                            prompt_messages=prompt_messages,
-                            delta=LLMResultChunkDelta(
-                                index=current_block_index,
-                                message=AssistantPromptMessage(content="\n</think>"),
-                            ),
-                        )
-
-                    current_block_index = event_index
-                    if delta_type in {"thinking_delta", "signature_delta"}:
-                        current_block_type = "thinking"
-                        yield LLMResultChunk(
-                            model=model,
-                            prompt_messages=prompt_messages,
-                            delta=LLMResultChunkDelta(
-                                index=event_index,
-                                message=AssistantPromptMessage(content="<think>\n"),
-                            ),
-                        )
-                    elif delta_type == "text_delta":
-                        current_block_type = "text"
-                    elif delta_type == "input_json_delta":
-                        current_block_type = "tool_use"
-                    else:
-                        current_block_type = None
-
                 if delta_type == "text_delta":
                     text = getattr(delta, "text", "")
                     if text:
@@ -494,17 +463,16 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                 elif delta_type == "thinking_delta":
                     thinking = getattr(delta, "thinking", "")
                     if thinking:
-                        if current_thinking_blocks and current_thinking_blocks[-1].get("type") == "thinking":
-                            prev = str(current_thinking_blocks[-1].get("thinking", ""))
-                            current_thinking_blocks[-1]["thinking"] = prev + thinking
-                        yield LLMResultChunk(
-                            model=model,
-                            prompt_messages=prompt_messages,
-                            delta=LLMResultChunkDelta(
-                                index=event_index,
-                                message=AssistantPromptMessage(content=thinking),
-                            ),
-                        )
+                        if not current_thinking_blocks or current_thinking_blocks[-1].get("type") != "thinking":
+                            current_thinking_blocks.append(
+                                {
+                                    "type": "thinking",
+                                    "thinking": "",
+                                    "signature": "",
+                                }
+                            )
+                        prev = str(current_thinking_blocks[-1].get("thinking", ""))
+                        current_thinking_blocks[-1]["thinking"] = prev + thinking
                 elif delta_type == "signature_delta":
                     signature = getattr(delta, "signature", "")
                     if signature and current_thinking_blocks and current_thinking_blocks[-1].get("type") == "thinking":
@@ -534,16 +502,6 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                 continue
 
             if event_type == "message_stop":
-                if current_block_type == "thinking" and current_block_index is not None:
-                    yield LLMResultChunk(
-                        model=model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(
-                            index=current_block_index,
-                            message=AssistantPromptMessage(content="\n</think>"),
-                        ),
-                    )
-
                 assistant_text = "".join(streamed_text)
                 if input_tokens == 0:
                     input_tokens = self.get_num_tokens(
