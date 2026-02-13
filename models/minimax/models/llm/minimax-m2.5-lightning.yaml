@@ -1,4 +1,4 @@
-model: minimax-m2.5-lightning
+model: MiniMax-M2.5lightning
 label:
   en_US: MiniMax-M2.5-Lightning
 model_type: llm

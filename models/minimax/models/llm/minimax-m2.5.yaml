@@ -1,4 +1,4 @@
-model: minimax-m2.5
+model: MiniMax-M2.5
 label:
   en_US: MiniMax-M2.5
 model_type: llm
