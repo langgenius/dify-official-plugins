@@ -3,6 +3,7 @@ from collections.abc import Generator
 from typing import Optional
 
 from volcenginesdkarkruntime import Ark  # type: ignore
+from httpx import Timeout  # type: ignore
 
 from dify_plugin.entities.model import (
     AIModelEntity,
@@ -49,7 +50,12 @@ def _to_openai_messages(messages: list[PromptMessage]) -> list[dict]:
 class VolcengineArkLargeLanguageModel(LargeLanguageModel):
     def validate_credentials(self, model: str, credentials: dict) -> None:
         try:
-            client = Ark(base_url=credentials["api_endpoint_host"], api_key=credentials["ark_api_key"])
+            client = Ark(
+                base_url=credentials["api_endpoint_host"],
+                api_key=credentials["ark_api_key"],
+                # Reduce default read timeout (sdk default is ~10 minutes) to avoid hanging validations.
+                timeout=Timeout(connect=10.0, read=60.0, write=60.0, pool=60.0),
+            )
             # minimal non-stream call
             client.chat.completions.create(
                 model=model,
@@ -82,7 +88,12 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
         stream: bool = True,
         user: str | None = None,
     ) -> LLMResult | Generator:
-        client = Ark(base_url=credentials["api_endpoint_host"], api_key=credentials["ark_api_key"])
+        client = Ark(
+            base_url=credentials["api_endpoint_host"],
+            api_key=credentials["ark_api_key"],
+            # Avoid very long hangs on network issues; sdk defaults are very large.
+            timeout=Timeout(connect=10.0, read=120.0, write=120.0, pool=120.0),
+        )
 
         params = {
             "model": model,
