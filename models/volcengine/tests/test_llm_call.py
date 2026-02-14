@@ -21,7 +21,6 @@ def get_all_models() -> list[str]:
     data = yaml.safe_load(position_file.read_text(encoding="utf-8"))
     if not isinstance(data, list):
         raise ValueError(f"Expected list in {position_file}")
-    return []
     return [str(x).strip() for x in data if str(x).strip()]
 
 
