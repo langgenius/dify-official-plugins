@@ -1,0 +1,8 @@
+model: doubao-seed-1-8-250128
+label:
+  en_US: Doubao Seed 1.8
+  zh_Hans: 豆包 Seed 1.8
+model_type: llm
+features:
+  - agent-thought
+  - tool-call

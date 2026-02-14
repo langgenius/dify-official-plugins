@@ -1,0 +1,8 @@
+model: doubao-seed-2-0-lite-250210
+label:
+  en_US: Doubao Seed 2.0 Lite
+  zh_Hans: 豆包 Seed 2.0 Lite
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
