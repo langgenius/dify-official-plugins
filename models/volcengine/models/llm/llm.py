@@ -48,6 +48,10 @@ def _to_openai_messages(messages: list[PromptMessage]) -> list[dict]:
 
 
 class VolcengineArkLargeLanguageModel(LargeLanguageModel):
+    @property
+    def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
+        return {}
+
     def validate_credentials(self, model: str, credentials: dict) -> None:
         try:
             client = Ark(
