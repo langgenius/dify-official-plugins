@@ -52,12 +52,6 @@ def test_llm_invoke(model_name: str) -> None:
         stream=True,
     )
 
-    # Preflight: if the plugin can't even start, fail with actionable diagnostics.
-    # (CI may otherwise show a misleading generic timeout.)
-    import shutil, os as _os
-    _uv = shutil.which("uv")
-    assert _uv, f"uv not found in PATH; dify plugin daemon requires it. PATH={_os.getenv('PATH')}"
-
     with PluginRunner(config=IntegrationConfig(), plugin_package_path=plugin_path) as runner:
         results: list[LLMResultChunk] = []
         for result in runner.invoke(
