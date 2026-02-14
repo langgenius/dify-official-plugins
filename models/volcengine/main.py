@@ -1,8 +1,10 @@
-from dify_plugin import Plugin
+import logging
 
-plugin = Plugin(
-    model_providers=["provider.volcengine.VolcengineProvider"],
-)
+from dify_plugin import DifyPluginEnv, Plugin
+
+logging.basicConfig(level=logging.INFO)
+
+plugin = Plugin(DifyPluginEnv())
 
 if __name__ == "__main__":
     plugin.run()
