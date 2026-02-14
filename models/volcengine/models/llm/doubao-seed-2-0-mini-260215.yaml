@@ -1,0 +1,8 @@
+model: doubao-seed-2-0-mini-260215
+label:
+  en_US: doubao-seed-2-0-mini-260215
+  zh_Hans: doubao-seed-2-0-mini-260215
+model_type: llm
+features:
+  - agent-thought
+  - tool-call

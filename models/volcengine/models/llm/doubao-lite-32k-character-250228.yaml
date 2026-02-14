@@ -1,0 +1,8 @@
+model: doubao-lite-32k-character-250228
+label:
+  en_US: doubao-lite-32k-character-250228
+  zh_Hans: doubao-lite-32k-character-250228
+model_type: llm
+features:
+  - agent-thought
+  - tool-call

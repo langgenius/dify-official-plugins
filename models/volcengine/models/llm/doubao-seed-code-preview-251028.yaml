@@ -1,0 +1,8 @@
+model: doubao-seed-code-preview-251028
+label:
+  en_US: doubao-seed-code-preview-251028
+  zh_Hans: doubao-seed-code-preview-251028
+model_type: llm
+features:
+  - agent-thought
+  - tool-call

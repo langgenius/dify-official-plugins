@@ -1,0 +1,8 @@
+model: kimi-k2-250905
+label:
+  en_US: kimi-k2-250905
+  zh_Hans: kimi-k2-250905
+model_type: llm
+features:
+  - agent-thought
+  - tool-call

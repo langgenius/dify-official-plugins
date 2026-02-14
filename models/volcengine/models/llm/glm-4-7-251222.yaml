@@ -1,0 +1,8 @@
+model: glm-4-7-251222
+label:
+  en_US: glm-4-7-251222
+  zh_Hans: glm-4-7-251222
+model_type: llm
+features:
+  - agent-thought
+  - tool-call

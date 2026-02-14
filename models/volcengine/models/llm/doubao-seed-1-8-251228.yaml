@@ -1,0 +1,8 @@
+model: doubao-seed-1-8-251228
+label:
+  en_US: doubao-seed-1-8-251228
+  zh_Hans: doubao-seed-1-8-251228
+model_type: llm
+features:
+  - agent-thought
+  - tool-call

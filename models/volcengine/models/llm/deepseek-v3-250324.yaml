@@ -1,0 +1,8 @@
+model: deepseek-v3-250324
+label:
+  en_US: deepseek-v3-250324
+  zh_Hans: deepseek-v3-250324
+model_type: llm
+features:
+  - agent-thought
+  - tool-call

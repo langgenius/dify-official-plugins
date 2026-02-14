@@ -1,0 +1,8 @@
+model: doubao-1-5-pro-32k-250115
+label:
+  en_US: doubao-1-5-pro-32k-250115
+  zh_Hans: doubao-1-5-pro-32k-250115
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
