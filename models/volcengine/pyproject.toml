@@ -1,5 +1,5 @@
 [project]
-name = "volcengine_ark"
+name = "volcengine"
 version = "0.0.1"
 description = "Volcengine Ark base-model invocation"
 readme = "README.md"

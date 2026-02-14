@@ -5,8 +5,8 @@ description:
   zh_Hans: 火山方舟基础模型直连调用（无需推理接入点）。使用官方 volcengine-python-sdk[ark]。
 icon: icon_s_en.svg
 label:
-  en_US: Volcengine Ark
-  zh_Hans: 火山方舟（直连）
+  en_US: Volcengine
+  zh_Hans: 火山方舟
 meta:
   arch:
   - amd64
@@ -17,10 +17,10 @@ meta:
     version: '3.12'
   version: 0.0.1
   minimum_dify_version: 1.10.0
-name: volcengine_ark
+name: volcengine
 plugins:
   models:
-  - provider/volcengine_ark.yaml
+  - provider/volcengine.yaml
 resource:
   memory: 268435456
   permission:

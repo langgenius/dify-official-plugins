@@ -8,7 +8,7 @@ extra:
   python:
     model_sources:
     - models/llm/llm.py
-    provider_source: provider/volcengine_ark.py
+    provider_source: provider/volcengine.py
 help:
   title:
     en_US: Get your Ark API Key from Volcengine Console
@@ -57,7 +57,7 @@ models:
     position: models/llm/_position.yaml
     predefined:
     - models/llm/*.yaml
-provider: volcengine_ark
+provider: volcengine
 provider_credential_schema:
   credential_form_schemas:
   - label:

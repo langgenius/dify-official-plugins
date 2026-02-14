@@ -1,7 +1,7 @@
 from dify_plugin import Plugin
 
 plugin = Plugin(
-    model_providers=["provider.volcengine_ark.VolcengineArkProvider"],
+    model_providers=["provider.volcengine.VolcengineProvider"],
 )
 
 if __name__ == "__main__":
