@@ -24,7 +24,13 @@ icon_small:
 label:
   en_US: Volcengine Ark
   zh_Hans: 火山方舟（直连）
-model_credential_schema:
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+    - models/llm/*.yaml
+provider: volcengine
+provider_credential_schema:
   credential_form_schemas:
   - label:
       en_US: API Key
@@ -45,29 +51,5 @@ model_credential_schema:
     required: true
     type: text-input
     variable: api_endpoint_host
-  model:
-    label:
-      en_US: Model
-      zh_Hans: 模型
-    placeholder:
-      en_US: Select a model
-      zh_Hans: 选择模型
-models:
-  llm:
-    position: models/llm/_position.yaml
-    predefined:
-    - models/llm/*.yaml
-provider: volcengine
-provider_credential_schema:
-  credential_form_schemas:
-  - label:
-      en_US: API Key
-      zh_Hans: API Key
-    placeholder:
-      en_US: Enter your Ark API Key
-      zh_Hans: 输入 Ark API Key
-    required: true
-    type: secret-input
-    variable: ark_api_key
 supported_model_types:
 - llm
