@@ -57,8 +57,6 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
             client = Ark(
                 base_url=credentials["api_endpoint_host"],
                 api_key=credentials["ark_api_key"],
-                # Reduce default read timeout (sdk default is ~10 minutes) to avoid hanging validations.
-                timeout=Timeout(connect=10.0, read=60.0, write=60.0, pool=60.0),
             )
             # minimal non-stream call
             client.chat.completions.create(
@@ -95,8 +93,6 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
         client = Ark(
             base_url=credentials["api_endpoint_host"],
             api_key=credentials["ark_api_key"],
-            # Avoid very long hangs on network issues; sdk defaults are very large.
-            timeout=Timeout(connect=10.0, read=120.0, write=120.0, pool=120.0),
         )
 
         params = {
