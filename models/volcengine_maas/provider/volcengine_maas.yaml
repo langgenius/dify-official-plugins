@@ -2,8 +2,8 @@ background: '#F9FAFB'
 configurate_methods:
 - customizable-model
 description:
-  en_US: Volcengine Ark models.
-  zh_Hans: 火山方舟提供的模型，例如 Doubao-pro-4k、Doubao-pro-32k 和 Doubao-pro-128k。
+  en_US: Volcengine Ark endpoint invocation (Endpoint ID). Supports LLM, text embedding, and speech-to-text.
+  zh_Hans: 火山方舟接入点调用（Endpoint ID），支持大模型、向量与语音转文字。
 extra:
   python:
     model_sources:
@@ -13,17 +13,19 @@ extra:
     provider_source: provider/volcengine_maas.py
 help:
   title:
-    en_US: Get your Access Key and Secret Access Key from Volcengine Console
-    zh_Hans: 从火山引擎控制台获取您的 Access Key 和 Secret Access Key
+    en_US: Get your AK/SK (IAM) or Ark API Key from Volcengine Console
+    zh_Hans: 从火山引擎控制台获取 AK/SK（IAM）或 Ark API Key
   url:
     en_US: https://console.volcengine.com/iam/keymanage/
+    zh_Hans: https://console.volcengine.com/iam/keymanage/
 icon_large:
   en_US: icon_l_en.svg
   zh_Hans: icon_l_zh.svg
 icon_small:
   en_US: icon_s_en.svg
 label:
-  en_US: Volcengine
+  en_US: Volcengine Ark (Endpoint)
+  zh_Hans: 火山方舟（接入点）
 model_credential_schema:
   credential_form_schemas:
   - default: aksk
