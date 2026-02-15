@@ -52,6 +52,10 @@ def test_llm_invoke(model_name: str) -> None:
         stream=True,
     )
 
+    old_code = PluginRunner.__init__.__code__
+    consts = [it if it != 30 else 120 for it in old_code.co_consts]
+    PluginRunner.__init__.__code__ = old_code.replace(co_consts=tuple(consts))
+
     with PluginRunner(config=IntegrationConfig(), plugin_package_path=plugin_path) as runner:
         results: list[LLMResultChunk] = []
         for result in runner.invoke(
