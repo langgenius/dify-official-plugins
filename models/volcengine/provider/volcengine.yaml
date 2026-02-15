@@ -2,8 +2,8 @@ background: '#F9FAFB'
 configurate_methods:
 - predefined-model
 description:
-  en_US: Volcengine Ark base-model invocation (no endpoint required).
-  zh_Hans: 火山方舟基础模型直连调用（无需推理接入点）。
+  en_US: Volcengine Ark pre-provided model invocation.
+  zh_Hans: 火山方舟预置模型调用。
 extra:
   python:
     model_sources:
@@ -23,7 +23,7 @@ icon_small:
   en_US: icon_s_en.svg
 label:
   en_US: Volcengine Ark
-  zh_Hans: 火山方舟（直连）
+  zh_Hans: 火山方舟
 models:
   llm:
     position: models/llm/_position.yaml
