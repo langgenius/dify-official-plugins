@@ -12,6 +12,7 @@ from dify_plugin.core.entities.plugin.request import (
 )
 from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.model.llm import LLMResultChunk
+from dify_plugin.entities.model.message import UserPromptMessage
 from dify_plugin.integration.run import PluginRunner
 
 
@@ -45,7 +46,7 @@ def test_llm_invoke(model_name: str) -> None:
                 "VOLCENGINE_API_ENDPOINT", "https://ark.cn-beijing.volces.com/api/v3"
             ),
         },
-        prompt_messages=[{"role": "user", "content": "Say hello in one word."}],
+        prompt_messages=[UserPromptMessage(content="Say hello in one word.")],
         model_parameters={"max_tokens": 32},
         stop=None,
         tools=None,
@@ -68,6 +69,8 @@ def test_llm_invoke(model_name: str) -> None:
 
         assert len(results) > 0, f"No results received for model {model_name}"
         full_content = "".join(
-            str(r.delta.message.content) for r in results
+            r.delta.message.content
+            for r in results
+            if isinstance(r.delta.message.content, str)
         )
         assert len(full_content) > 0, f"Empty content for model {model_name}"
