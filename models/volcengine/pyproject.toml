@@ -12,4 +12,8 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["pytest", "pyyaml"]
+dev = [
+    "pyrefly>=0.52.0",
+    "pytest",
+ "pyyaml",
+]
