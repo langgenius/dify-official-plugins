@@ -1,0 +1,19 @@
+[project]
+name = "volcengine"
+version = "0.0.1"
+description = "Volcengine Ark base-model invocation"
+readme = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+  "bytecode>=0.17.0",
+  "dify-plugin>=0.7.1",
+  "volcengine-python-sdk[ark]>=5.0.1,<6.0.0",
+]
+
+[dependency-groups]
+dev = [
+    "pyrefly>=0.52.0",
+    "pytest",
+ "pyyaml",
+]
