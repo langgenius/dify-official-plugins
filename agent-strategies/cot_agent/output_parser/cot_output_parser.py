@@ -7,6 +7,9 @@ from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.interfaces.agent import AgentScratchpadUnit
 
 PREFIX_DELIMITERS = frozenset({"\n", " ", ""})
+# Tags injected by Gemini when include_thoughts=True; stripped so ReAct sees only Thought:/Action:/FinalAnswer:
+THINK_START = "<think>"
+THINK_END = "</think>"
 
 
 class ReactState(Enum):
@@ -117,6 +120,7 @@ class CotAgentOutputParser:
 
         _in_think = False
         _think_buf = ""
+        _think_depth = 0
         for response in llm_response:
             if response.delta.usage:
                 usage_dict["usage"] = response.delta.usage
@@ -125,39 +129,50 @@ class CotAgentOutputParser:
                 response_content = raw
             elif isinstance(raw, list):
                 # Plugins (e.g. Gemini) send content as list; some items may be non-text (e.g. image)
-                parts = []
-                for c in raw:
-                    s = getattr(c, "data", None) or getattr(c, "text", None)
-                    if isinstance(s, str):
-                        parts.append(s)
+                parts = [
+                    s
+                    for c in raw
+                    if isinstance(s := (getattr(c, "data", None) or getattr(c, "text", None)), str)
+                ]
                 response_content = "".join(parts)
             else:
                 continue
             if not response_content:
                 continue
             # When include_thoughts=True, Gemini injects <think>...</think>; strip across chunks so
-            # ReAct parser only sees Thought:/Action:/FinalAnswer: from the model reply
-            if "<think>" in response_content or "</think>" in response_content or _in_think:
+            # ReAct parser only sees Thought:/Action:/FinalAnswer: from the model reply.
+            # Nested <think> tags are supported via a depth counter.
+            if THINK_START in response_content or THINK_END in response_content or _in_think:
                 buf = _think_buf + response_content
                 _think_buf = ""
                 out = []
                 i = 0
                 while i < len(buf):
                     if _in_think:
-                        j = buf.find("</think>", i)
-                        if j == -1:
+                        end_j = buf.find(THINK_END, i)
+                        start_j = buf.find(THINK_START, i)
+                        if end_j == -1 and start_j == -1:
                             _think_buf = buf[i:]
                             break
-                        _in_think = False
-                        i = j + len("</think>")
+                        if start_j != -1 and (end_j == -1 or start_j < end_j):
+                            _think_depth += 1
+                            i = start_j + len(THINK_START)
+                        else:
+                            j = end_j
+                            _think_depth -= 1
+                            if _think_depth <= 0:
+                                _in_think = False
+                                _think_depth = 0
+                            i = j + len(THINK_END)
                     else:
-                        j = buf.find("<think>", i)
+                        j = buf.find(THINK_START, i)
                         if j == -1:
                             out.append(buf[i:])
                             break
                         out.append(buf[i:j])
                         _in_think = True
-                        i = j + len("<think>")
+                        _think_depth = 1
+                        i = j + len(THINK_START)
                 response_content = "".join(out)
             if not response_content:
                 continue
