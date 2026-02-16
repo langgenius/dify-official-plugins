@@ -115,11 +115,51 @@ class CotAgentOutputParser:
         answer_matcher = PrefixMatcher(ReactState.ANSWER)
         thought_matcher = PrefixMatcher(ReactState.THINKING)
 
+        _in_think = False
+        _think_buf = ""
         for response in llm_response:
             if response.delta.usage:
                 usage_dict["usage"] = response.delta.usage
-            response_content = response.delta.message.content
-            if not isinstance(response_content, str):
+            raw = response.delta.message.content
+            if isinstance(raw, str):
+                response_content = raw
+            elif isinstance(raw, list):
+                # Plugins (e.g. Gemini) send content as list; some items may be non-text (e.g. image)
+                parts = []
+                for c in raw:
+                    s = getattr(c, "data", None) or getattr(c, "text", None)
+                    if isinstance(s, str):
+                        parts.append(s)
+                response_content = "".join(parts)
+            else:
+                continue
+            if not response_content:
+                continue
+            # When include_thoughts=True, Gemini injects <think>...</think>; strip across chunks so
+            # ReAct parser only sees Thought:/Action:/FinalAnswer: from the model reply
+            if "<think>" in response_content or "</think>" in response_content or _in_think:
+                buf = _think_buf + response_content
+                _think_buf = ""
+                out = []
+                i = 0
+                while i < len(buf):
+                    if _in_think:
+                        j = buf.find("</think>", i)
+                        if j == -1:
+                            _think_buf = buf[i:]
+                            break
+                        _in_think = False
+                        i = j + len("</think>")
+                    else:
+                        j = buf.find("<think>", i)
+                        if j == -1:
+                            out.append(buf[i:])
+                            break
+                        out.append(buf[i:j])
+                        _in_think = True
+                        i = j + len("<think>")
+                response_content = "".join(out)
+            if not response_content:
                 continue
 
             # stream

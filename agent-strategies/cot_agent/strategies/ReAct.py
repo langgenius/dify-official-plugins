@@ -121,6 +121,7 @@ class ReActAgentStrategy(AgentStrategy):
         run_agent_state = True
         llm_usage: dict[str, Optional[LLMUsage]] = {"usage": None}
         final_answer = ""
+        final_answer_already_streamed = False  # True when final_answer = thought (no action), already sent as THINKING
         prompt_messages: list[PromptMessage] = []
 
         # Init model
@@ -217,7 +218,9 @@ class ReActAgentStrategy(AgentStrategy):
                     assert isinstance(react_chunk, ReactChunk)
                     chunk_state = react_chunk.state
                     chunk = react_chunk.content
-                    yield self.create_text_message(chunk)
+                    # Stream TEXT only for THINKING; ANSWER is sent once at end via final_answer
+                    if chunk_state != ReactState.ANSWER:
+                        yield self.create_text_message(chunk)
                     if chunk_state == ReactState.ANSWER:
                         final_answer += chunk
                     elif chunk_state == ReactState.THINKING:
@@ -266,6 +269,7 @@ class ReActAgentStrategy(AgentStrategy):
             )
             if not scratchpad.action:
                 final_answer = scratchpad.thought
+                final_answer_already_streamed = True  # thought was already streamed as THINKING chunks
             else:
                 if scratchpad.action.action_name.lower() == "final answer":
                     try:
@@ -419,7 +423,8 @@ class ReActAgentStrategy(AgentStrategy):
             )
             iteration_step += 1
 
-        # yield self.create_text_message(final_answer)
+        if not final_answer_already_streamed and final_answer:
+            yield self.create_text_message(final_answer)
 
         # If context is a list of dict, create retriever resource message
         if isinstance(react_params.context, list):
