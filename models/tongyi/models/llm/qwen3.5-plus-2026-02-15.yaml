@@ -1,15 +1,17 @@
-# for more details, please refer to https://help.aliyun.com/zh/model-studio/getting-started/models
-model: qwen3-4b
+# this model corresponds to qwen3.5-plus, for more details
+# please refer to (https://help.aliyun.com/zh/model-studio/getting-started/models#bb0ffee88bwnk)
+model: qwen3.5-plus-2026-02-15
 label:
-  en_US: qwen3-4b
+  en_US: qwen3.5-plus-2026-02-15(Qwen3.5)
 model_type: llm
 features:
+  - vision
   - multi-tool-call
   - agent-thought
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 131072
+  context_size: 1000000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -19,13 +21,13 @@ parameter_rules:
     max: 2.0
     help:
       zh_Hans: 用于控制随机性和多样性的程度。具体来说，temperature 值控制了生成文本时对每个候选词的概率分布进行平滑的程度。较高的 temperature 值会降低概率分布的峰值，使得更多的低概率词被选择，生成结果更加多样化；而较低的 temperature 值则会增强概率分布的峰值，使得高概率词更容易被选择，生成结果更加确定。
-      en_US: Used to control the degree of randomness and diversity. Specifically, the temperature value controls the degree to which the probability distribution of each candidate word is smoothed when generating text. A higher temperature value will reduce the peak value of the probability distribution, allowing more low-probability words to be selected, and the generated results will be more diverse; while a lower temperature value will enhance the peak value of the probability distribution, making it easier for high-probability words to be selected, the generated results are more certain.
+      en_US: Used to control the degree of randomness and diversity. Specifically, the temperature value controls the degree to which the probability distribution of each candidate word is smoothed when generating text. A higher temperature value will reduce the peak value of the probability distribution, allowing more low-probability words to be selected, and the generated results will be more diverse; while a lower temperature value will enhance the peak value of the probability distribution, making it easier for high-probability words to be selected. , the generated results are more certain.
   - name: max_tokens
     use_template: max_tokens
     type: int
     default: 8192
     min: 1
-    max: 8192
+    max: 65536
     help:
       zh_Hans: 用于指定模型在生成内容时 token 的最大数量，它定义了生成的上限，但不保证每次都会生成到这个数量。
       en_US: It is used to specify the maximum number of tokens when the model generates content. It defines the upper limit of generation, but does not guarantee that this number will be generated every time.
@@ -68,10 +70,19 @@ parameter_rules:
     help:
       zh_Hans: 用于控制模型生成时的重复度。提高 repetition_penalty 时可以降低模型生成的重复度。1.0 表示不做惩罚。
       en_US: Used to control the repeatability when generating models. Increasing repetition_penalty can reduce the duplication of model generation. 1.0 means no punishment.
+  - name: enable_search
+    type: boolean
+    default: false
+    label:
+      zh_Hans: 联网搜索
+      en_US: Web Search
+    help:
+      zh_Hans: 模型内置了互联网搜索服务，该参数控制模型在生成文本时是否参考使用互联网搜索结果。启用互联网搜索，模型会将搜索结果作为文本生成过程中的参考信息，但模型会基于其内部逻辑“自行判断”是否使用互联网搜索结果。
+      en_US: The model has a built-in Internet search service. This parameter controls whether the model refers to Internet search results when generating text. When Internet search is enabled, the model will use the search results as reference information in the text generation process, but the model will "judge" whether to use Internet search results based on its internal logic.
   - name: enable_thinking
     required: false
     type: boolean
-    default: true
+    default: false
     label:
       zh_Hans: 思考模式
       en_US: Thinking mode
@@ -81,9 +92,9 @@ parameter_rules:
   - name: thinking_budget
     required: false
     type: int
-    default: 512
+    default: 2048
     min: 1
-    max: 8192
+    max: 81920
     label:
       zh_Hans: 思考长度限制
       en_US: Thinking budget
@@ -103,8 +114,7 @@ parameter_rules:
       - text
       - json_object
 pricing:
-  input: '0.0003'
-  output: '0.0012'
-#  output_thinking: '0.003'
+  input: '0.0008'
+  output: '0.0048'
   unit: '0.001'
   currency: RMB
