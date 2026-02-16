@@ -212,7 +212,7 @@ parameter_rules:
       - Western Persian
   - name: domains
     label:
-      zh_Hans: 领域提示(只支持英文)
+      zh_Hans: 领域提示 (只支持英文)
       en_US: Domain Tips
     help:
       en_US: If you want the style of the translation to be more in line with the characteristics of a particular domain, you can describe your domain in a piece of natural language text and provide it to the big model as a hint.
