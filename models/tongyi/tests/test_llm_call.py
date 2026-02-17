@@ -15,6 +15,12 @@ from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.integration.run import PluginRunner
 
 
+EXCLUDED_MODELS = {
+    "qwen2.5-1.5b-instruct",
+    "qwen2.5-0.5b-instruct",
+}
+
+
 def get_all_models() -> list[str]:
     models_dir = Path(__file__).parent.parent / "models" / "llm"
     position_file = models_dir / "_position.yaml"
@@ -34,7 +40,10 @@ def get_all_models() -> list[str]:
     models: list[str] = []
     for item in data:
         if isinstance(item, str) and item.strip():
-            models.append(item.strip())
+            model_name = item.strip()
+            if model_name in EXCLUDED_MODELS:
+                continue
+            models.append(model_name)
     return models
 
 
