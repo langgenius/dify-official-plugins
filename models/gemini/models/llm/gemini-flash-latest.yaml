@@ -1,4 +1,3 @@
-# https://ai.google.dev/gemini-api/docs/models#gemini-2.5-flash-preview
 model: gemini-flash-latest
 label:
   en_US: Gemini Flash Latest
@@ -107,7 +106,6 @@ parameter_rules:
       ja_JP: Gemini にコードを使って複雑なタスクを解決させましょう。
   - name: json_schema
     use_template: json_schema
-# https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-2.5-flash-preview
 pricing:
   input: '0.30'
   output: '2.50'

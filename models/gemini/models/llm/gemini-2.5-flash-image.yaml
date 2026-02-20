@@ -1,4 +1,4 @@
-# https://ai.google.dev/gemini-api/docs/models#gemini-2.5-flash-image
+# https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash-image
 model: gemini-2.5-flash-image
 label:
   en_US: Nano Banana
