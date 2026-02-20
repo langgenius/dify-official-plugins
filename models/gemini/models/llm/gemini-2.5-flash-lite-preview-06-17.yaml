@@ -1,4 +1,3 @@
-# https://ai.google.dev/gemini-api/docs/models?hl=zh-cn#gemini-2.5-flash-lite
 model: gemini-2.5-flash-lite-preview-06-17
 label:
   en_US: Gemini 2.5 Flash-Lite Preview 06-17
@@ -83,7 +82,6 @@ parameter_rules:
       ja_JP: Google検索に基づいた応答をします。
   - name: json_schema
     use_template: json_schema
-# https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-2.5-flash-lite
 pricing:
   input: '0.10'
   output: '0.40'
