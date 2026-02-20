@@ -1,4 +1,4 @@
-# https://ai.google.dev/gemini-api/docs/models#gemini-3-pro-image-preview
+# https://ai.google.dev/gemini-api/docs/models/gemini-3-pro-image-preview
 model: gemini-3-pro-image-preview
 label:
   en_US: Nano Banana Pro

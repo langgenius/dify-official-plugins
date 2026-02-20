@@ -1,4 +1,4 @@
-# https://ai.google.dev/gemini-api/docs/models?hl=zh-cn#gemini-3-pro
+# https://ai.google.dev/gemini-api/docs/models/gemini-3-pro-preview
 model: gemini-3-pro-preview
 label:
   en_US: Gemini 3 Pro Preview
@@ -16,7 +16,6 @@ features:
 model_properties:
   mode: chat
   context_size: 1048576
-# Documentation: https://ai.google.dev/gemini-api/docs/gemini-3?hl=zh-cn
 parameter_rules:
   - name: temperature
     type: float

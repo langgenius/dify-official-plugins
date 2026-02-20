@@ -1,3 +1,4 @@
+# https://ai.google.dev/gemini-api/docs/models/gemini-2.0-flash-lite
 model: gemini-2.0-flash-lite
 label:
   en_US: Gemini 2.0 Flash-Lite
@@ -37,6 +38,7 @@ parameter_rules:
     max: 8192
   - name: json_schema
     use_template: json_schema
+# https://ai.google.dev/gemini-api/docs/pricing#gemini-2.0-flash-lite
 pricing:
   input: '0.00'
   output: '0.00'
