@@ -7,9 +7,12 @@ requires-python = ">=3.12"
 
 # uv pip compile pyproject.toml -o ./requirements.txt
 dependencies = [
+    "anthropic>=0.79.0",
     "dify_plugin<0.6.0,>=0.5.0",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix
 [dependency-groups]
-dev = []
+dev = [
+    "pytest>=9.0.2",
+]

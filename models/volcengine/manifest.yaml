@@ -1,0 +1,35 @@
+author: langgenius
+created_at: '2026-02-14T20:15:00+08:00'
+description:
+  en_US: Volcengine Ark base-model invocation (no endpoint required). Uses official volcengine-python-sdk[ark].
+  zh_Hans: 火山方舟基础模型直连调用（无需推理接入点）。使用官方 volcengine-python-sdk[ark]。
+icon: icon_s_en.svg
+label:
+  en_US: Volcengine
+  zh_Hans: 火山方舟
+meta:
+  arch:
+  - amd64
+  - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: '3.12'
+  version: 0.0.1
+name: volcengine
+plugins:
+  models:
+  - provider/volcengine.yaml
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true
+      moderation: false
+      rerank: false
+      speech2text: false
+      text_embedding: false
+      tts: false
+type: plugin
+version: 0.0.1

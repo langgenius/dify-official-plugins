@@ -1,12 +1,12 @@
 author: langgenius
 created_at: '2024-09-20T00:13:50.29298939-04:00'
 description:
-  en_US: Volcengine Ark models.
-  zh_Hans: 火山方舟提供的模型，例如 Doubao-pro-4k、Doubao-pro-32k 和 Doubao-pro-128k。
+  en_US: Call Volcengine Ark endpoints (Endpoint ID) from Dify. Supports LLM, text embedding, and speech-to-text.
+  zh_Hans: 在 Dify 中通过 Endpoint ID 调用火山方舟（Ark）推理接入点，支持大模型、向量与语音转文字。
 icon: icon_s_en.svg
 label:
-  en_US: Volcengine
-  zh_Hans: 火山方舟
+  en_US: Volcengine Ark (Endpoint)
+  zh_Hans: 火山方舟（接入点）
 meta:
   arch:
   - amd64
@@ -16,6 +16,7 @@ meta:
     language: python
     version: '3.12'
   version: 0.0.1
+  minimum_dify_version: 1.10.0
 name: volcengine_maas
 plugins:
   models:
@@ -34,4 +35,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.41
+version: 0.0.44

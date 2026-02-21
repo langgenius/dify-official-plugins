@@ -8,6 +8,8 @@ Based on AWS documentation:
 
 BEDROCK_MODEL_IDS = {
     'anthropic claude': {
+        'Claude 4.6 Sonnet': 'anthropic.claude-sonnet-4-6',
+        'Claude 4.6 Opus': 'anthropic.claude-opus-4-6-v1',
         'Claude 4.5 Opus': 'anthropic.claude-opus-4-5-20251101-v1:0',
         'Claude 4.5 Haiku': 'anthropic.claude-haiku-4-5-20251001-v1:0',
         'Claude 4.5 Sonnet': 'anthropic.claude-sonnet-4-5-20250929-v1:0',
