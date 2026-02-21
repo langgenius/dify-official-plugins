@@ -1,0 +1,24 @@
+model: baidu/ernie-4.0-turbo-128k
+label:
+  en_US: ERNIE-4.0-Turbo-128K
+model_type: llm
+features:
+  - agent-thought
+  - vision
+model_properties:
+  mode: chat
+  context_size: 124000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 4000
+    min: 1
+    max: 4000
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '0.004251'
+  output: '0.012754'
+  currency: CNY
+  unit: '0.000001'
