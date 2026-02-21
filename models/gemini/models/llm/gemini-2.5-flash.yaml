@@ -1,4 +1,4 @@
-# https://ai.google.dev/gemini-api/docs/models#gemini-2.5-flash
+# https://ai.google.dev/gemini-api/docs/models/gemini-2.5-flash
 model: gemini-2.5-flash
 label:
   en_US: Gemini 2.5 Flash
@@ -107,7 +107,7 @@ parameter_rules:
       ja_JP: Gemini にコードを使って複雑なタスクを解決させましょう。
   - name: json_schema
     use_template: json_schema
-# https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-2.5-flash
+# https://ai.google.dev/gemini-api/docs/pricing#gemini-2.5-flash
 pricing:
   input: '0.30'
   output: '2.50'

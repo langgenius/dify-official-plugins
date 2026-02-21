@@ -227,6 +227,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
 
         thinking_business_qwen3 = model in (
             "qwen-plus-latest",
+            "qwen3.5-plus",
+            "qwen3.5-plus-2026-02-15",
             "qwen-plus-2025-04-28",
             "qwen-turbo-latest",
             "qwen-turbo-2025-04-28",
