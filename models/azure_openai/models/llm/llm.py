@@ -399,6 +399,8 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         messages: Any = [
             self._convert_prompt_message_to_dict(m) for m in prompt_messages
         ]
+        if model_parameters.get('reasoning_effort') not in (None, 'none'):
+            model_parameters.pop('temperature', None)
         response = client.chat.completions.create(
             messages=messages,
             model=model,
