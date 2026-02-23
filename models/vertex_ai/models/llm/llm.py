@@ -46,10 +46,16 @@ from google.api_core import exceptions
 from google.genai import types
 from google.oauth2 import service_account
 
-GLOBAL_ONLY_MODELS_DEFAULT = ["gemini-2.5-pro-preview-06-05", "gemini-2.5-flash-lite-preview-06-17",
-                              "gemini-2.5-flash-preview-09-2025", "gemini-2.5-flash-lite-preview-09-2025",
-                              "gemini-3-pro-preview", "gemini-3-flash-preview",
-                              "gemini-2.5-computer-use-preview-10-2025"]
+GLOBAL_ONLY_MODELS_DEFAULT = [
+    "gemini-2.5-computer-use-preview-10-2025",
+    "gemini-2.5-flash-lite-preview-06-17",
+    "gemini-2.5-flash-lite-preview-09-2025",
+    "gemini-2.5-flash-preview-09-2025",
+    "gemini-2.5-pro-preview-06-05",
+    "gemini-3-flash-preview",
+    "gemini-3-pro-preview",
+    "gemini-3.1-pro-preview",
+]
 # For more information about the models, please refer to https://ai.google.dev/gemini-api/docs/thinking
 DEFAULT_NO_THINKING_MODELS = ["gemini-2.5-flash-lite"]
 
