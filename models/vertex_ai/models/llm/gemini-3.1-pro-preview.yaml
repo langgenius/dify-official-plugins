@@ -1,0 +1,140 @@
+model: gemini-3.1-pro-preview
+label:
+  en_US: Gemini 3.1 Pro Preview
+model_type: llm
+features:
+  - tool-call
+  - multi-tool-call
+  - agent-thought
+  - vision
+  - stream-tool-call
+  - document
+  - video
+  - audio
+  - structured-output
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: temperature
+    type: float
+    required: true
+    default: 1
+    min: 0
+    max: 2
+    label:
+      en_US: Temperature
+      zh_Hans: 温度
+    help:
+      en_US: For Gemini 3, best results at default 1.0. Lower values may impact reasoning.
+      zh_Hans: 对于 Gemini 3，使用默认值 1.0 可获得最佳效果。数值过低可能会影响推理能力。
+  - name: top_p
+    use_template: top_p
+  - name: top_k
+    label:
+      zh_Hans: 取样数量
+      en_US: Top k
+    type: int
+    help:
+      zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
+      en_US: Only sample from the top K options for each subsequent token.
+    required: false
+  - name: max_output_tokens
+    type: int
+    required: true
+    default: 65536
+    min: 1
+    max: 65536
+    label:
+      en_US: Output length
+      zh_Hans: 输出长度
+    help:
+      en_US: The maximum number of tokens to generate in the response.
+      zh_Hans: 模型单次输出的最大 tokens 数。
+  - name: thinking_level
+    label:
+      zh_Hans: 思考层级
+      en_US: Thinking Level
+    type: string
+    default: "High"
+    options:
+      - Minimal
+      - Low
+      - Medium
+      - High
+    required: false
+    help:
+      zh_Hans: 控制模型推理深度。High 提供最深入的推理，Minimal 适合最简单任务。默认为 High。注意此参数仅适用于 Gemini 3，与 thinking_budget 互斥。
+      en_US: Controls the maximum depth of the model's reasoning. High provides deepest reasoning, Minimal is suitable for simplest tasks. Defaults to High. Note this parameter is only for Gemini 3 and is mutually exclusive with thinking_budget.
+  - name: include_thoughts
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Include Thoughts
+      zh_Hans: 返回思考过程
+    help:
+      en_US: Indicates whether to include thoughts in the response. If true, thoughts are returned only if the model supports thought and thoughts are available.
+      zh_Hans: 是否返回思考过程。若为 true 则只有模型支持思考且启动思考模式时才返回思考过程。
+  - name: media_resolution
+    type: string
+    required: false
+    default: "Default"
+    options:
+      - Default
+      - Low
+      - Medium
+      - High
+    label:
+      en_US: Media Resolution
+      zh_Hans: 媒体分辨率
+    help:
+      en_US: |
+        Fine-grained control over multimodal visual processing quality. Higher resolution improves small text reading and detail recognition but increases token usage and latency.
+
+        Token Impact: Images (High: 1120 tokens), PDF (Medium: 560 tokens), Video regular (Low/Medium: 70 tokens/frame), Video text-heavy (High: 280 tokens/frame).
+
+        If not specified, the model automatically selects the best resolution based on media type.
+      zh_Hans: |
+        对多模态视觉处理质量的精细控制。分辨率越高，模型读取细小文本和识别细节的能力越强，但会增加令牌用量和延迟。
+
+        令牌影响：图片(High: 1120 tokens)，PDF(Medium: 560 tokens)，视频常规(Low/Medium: 70 tokens/帧)，视频文字密集(High: 280 tokens/帧)。
+
+        如果不指定，模型会根据媒体类型自动选择最佳分辨率。
+  - name: grounding
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Grounding
+      zh_Hans: 事实核查
+    help:
+      en_US: Grounding with Google Search. The model will use Google search results as reference information.
+      zh_Hans: 使用 Google 搜索进行事实核查。模型会将搜索结果作为参考信息。
+  - name: url_context
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: URL Context
+      zh_Hans: 链接详情
+    help:
+      en_US: Browse the URL context. Get and analyze detailed information from URLs to provide reference for responses.
+      zh_Hans: 获取并分析链接的详细信息，为回答提供参考依据。
+  - name: code_execution
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Code Execution
+      zh_Hans: 代码执行
+    help:
+      en_US: Lets Gemini use code to solve complex tasks.
+      zh_Hans: 让 Gemini 使用代码来解决复杂任务。
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: '2.0'
+  output: '12.00'
+  unit: '0.000001'
+  currency: USD
