@@ -3299,7 +3299,7 @@ LLM_BASE_MODELS = [
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
                 ModelPropertyKey.MODE: LLMMode.CHAT.value,
-                ModelPropertyKey.CONTEXT_SIZE: 272000,
+                ModelPropertyKey.CONTEXT_SIZE: 400000,
             },
             parameter_rules=[
                 ParameterRule(
