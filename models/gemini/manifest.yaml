@@ -14,7 +14,7 @@ meta:
     entrypoint: main
     language: python
     version: "3.12"
-  version: 0.0.2
+  version: 0.0.4
   minimum_dify_version: 1.4.0
 name: gemini
 plugins:
@@ -34,4 +34,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.7.8
+version: 0.7.9
