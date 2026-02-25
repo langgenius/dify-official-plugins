@@ -47,7 +47,6 @@ from ..constants import LLM_BASE_MODELS
 logger = logging.getLogger(__name__)
 
 THINKING_SERIES_COMPATIBILITY = ("o", "gpt-5")
-CODE_SERIES_COMPATIBILITY = "gpt-5.1-codex-max"
 
 
 class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
@@ -66,8 +65,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         ai_model_entity = self._get_ai_model_entity(
             base_model_name=base_model_name, model=model
         )
-        # gpt-5.1-codex-max uses Responses API
-        if base_model_name.startswith(CODE_SERIES_COMPATIBILITY):
+        if "codex" in base_model_name:
             return self._chat_generate_with_responses(
                 model=model,
                 credentials=credentials,
@@ -83,29 +81,16 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             and ai_model_entity.entity.model_properties.get(ModelPropertyKey.MODE)
             == LLMMode.CHAT.value
         ):
-            # Use the Responses API for GPT models (gpt-5 series)
-            if base_model_name.startswith(("gpt-5-codex", "gpt-5.1-codex", "gpt-5-pro")):
-                return self._chat_generate_with_responses(
-                    model=model,
-                    credentials=credentials,
-                    prompt_messages=prompt_messages,
-                    model_parameters=model_parameters,
-                    tools=tools,
-                    stop=stop,
-                    stream=stream,
-                    user=user,
-                )
-            else:
-                return self._chat_generate(
-                    model=model,
-                    credentials=credentials,
-                    prompt_messages=prompt_messages,
-                    model_parameters=model_parameters,
-                    tools=tools,
-                    stop=stop,
-                    stream=stream,
-                    user=user,
-                )
+            return self._chat_generate(
+                model=model,
+                credentials=credentials,
+                prompt_messages=prompt_messages,
+                model_parameters=model_parameters,
+                tools=tools,
+                stop=stop,
+                stream=stream,
+                user=user,
+            )
         else:
             return self._generate(
                 model=model,
@@ -164,10 +149,13 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
         try:
             client = AzureOpenAI(**self._to_credential_kwargs(credentials))
-            if (
-                base_model_name.startswith(THINKING_SERIES_COMPATIBILITY)
-                and CODE_SERIES_COMPATIBILITY not in base_model_name
-            ):
+            if "codex" in base_model_name:
+                client.responses.create(
+                    input="ping",
+                    model=model,
+                    stream=False,
+                )
+            elif base_model_name.startswith(THINKING_SERIES_COMPATIBILITY):
                 client.chat.completions.create(
                     messages=[{"role": "user", "content": "ping"}],
                     model=model,
@@ -184,12 +172,6 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     model=model,
                     temperature=0,
                     max_tokens=20,
-                    stream=False,
-                )
-            elif base_model_name.startswith(CODE_SERIES_COMPATIBILITY):
-                client.responses.create(
-                    input="ping",
-                    model=model,
                     stream=False,
                 )
             else:
