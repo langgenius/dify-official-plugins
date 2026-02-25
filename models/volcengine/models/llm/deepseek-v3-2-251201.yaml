@@ -7,6 +7,7 @@ features:
   - agent-thought
   - tool-call
   - stream-tool-call
+  - multi-tool-call
 model_properties:
   mode: chat
   context_size: 128000
@@ -17,3 +18,16 @@ parameter_rules:
     use_template: top_p
   - name: max_tokens
     use_template: max_tokens
+  - name: thinking
+    label:
+      zh_Hans: 深度思考模式
+      en_US: Thinking Mode
+    type: string
+    required: false
+    default: enabled
+    options:
+      - enabled
+      - disabled
+    help:
+      zh_Hans: 启用后模型会在回答前进行系统性分析和多步骤规划，适用于复杂推理任务。
+      en_US: When enabled, the model performs systematic analysis and multi-step planning before answering, suitable for complex reasoning tasks.
