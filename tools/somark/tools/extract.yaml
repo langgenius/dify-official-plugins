@@ -23,6 +23,13 @@ parameters:
       zh_Hans: "支持的文件: PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM. 大小不超过 50MB/50页。"
     form: llm
 
+output_schema:
+  type: object
+  properties:
+    markdown:
+      type: string
+      description: "The parsed content in Markdown format"
+
 extra:
   python:
     source: tools/extract.py

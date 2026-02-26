@@ -74,7 +74,8 @@ class ExtractTool(Tool):
             else:
                 text_content = str(result)
 
-            yield self.create_text_message(text_content)
+            yield self.create_variable_message("markdown", text_content)
+            yield self.create_json_message(result)
 
         except requests.exceptions.RequestException as e:
             logger.error(f"Somark Network Error: {str(e)}")
