@@ -13,9 +13,11 @@
 - openai/gpt-4o-mini
 - openai/gpt-4
 - openai/gpt-3.5-turbo
+- anthropic/claude-opus-4.6
 - anthropic/claude-opus-4.5
 - anthropic/claude-opus-4
 - anthropic/claude-opus-4.1
+- anthropic/claude-sonnet-4.6
 - anthropic/claude-sonnet-4.5
 - anthropic/claude-sonnet-4
 - anthropic/claude-3.7-sonnet:thinking
