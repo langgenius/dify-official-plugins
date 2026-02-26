@@ -121,24 +121,42 @@ SoMark 提供强大的通用识别能力。只需一个 API 调用即可处理�
 
 ### Usage in Workflow / 在工作流中使用
 
-1.  **Add Tool / 添加工具**: In your Dify workflow, add the **Somark > Extract Document** node.
+#### Step 1: Configure the Start Node / 第一步：配置开始节点
 
-    在您的 Dify 工作流中，添加 **Somark > Extract Document** 节点。
-    ![](./_assets/chatu2.jpg)
+In your workflow's **Start** node, add an input variable of type **File** to receive the document uploaded by the user. This variable will be passed downstream to the Somark tool node.
 
-2.  **Configure Input Variables / 配置输入变量**:
+在工作流的 **开始** 节点中，添加一个类型为 **文件** 的输入变量，用于接收用户上传的文档。该变量将被传递给下游的 Somark 工具节点。
 
-    *   **File / 文件**: Click the variable icon `{x}` in the input field and select your file variable (e.g., `sys.files` passed from the "Start" node).
+#### Step 2: Add the Somark Tool Node / 第二步：添加 Somark 工具节点
 
-        点击输入框中的变量图标 `{x}`，选择您的文件变量（例如从 "开始" 节点传递的 `sys.files`）。
-    *   **API Key**: This is automatically handled by the plugin configuration (you don't need to enter it in the node).
+In your Dify workflow, click **"+"** to add a new node, select **"Tools"**, then find and add the **Somark > Extract Document** node.
 
-        这由插件配置自动处理（无需在节点中输入）。
-    ![](./_assets/chatu4.jpg)
+在 Dify 工作流中，点击 **"+"** 添加新节点，选择 **"工具"**，找到并添加 **Somark > Somark文档解析** 节点。
 
-3.  **Output / 输出**: The tool processes the file and returns the content in **Markdown** format by default. You can use this output in subsequent nodes (e.g., as LLM context).
+![](./_assets/workflow-add-tool_new.png)
 
-    工具处理文件后，默认返回 **Markdown** 格式的内容。您可以在后续节点中使用此输出（例如作为 LLM 上下文）。
+#### Step 3: Configure Input Variables / 第三步：配置输入变量
+
+In the **Extract Document** node panel, configure the **File** input:
+
+在 **文档解析** 节点面板中，配置 **文件** 输入：
+
+- Click the variable icon **`{x}`** in the **File** input field.
+  点击 **文件** 输入框中的变量图标 **`{x}`**。
+- Select the file variable you defined in the Start node.
+  选择您在开始节点中定义的文件变量。
+
+**Note / 注意**: The API Key is automatically injected from the plugin configuration — you do **not** need to enter it manually in the node.
+
+API Key 由插件配置自动注入，**无需**在节点中手动输入。
+
+![](./_assets/workflow-config_new.png)
+
+#### Step 4: Reference the Output in Downstream Nodes / 第四步：在下游节点中引用输出
+
+After the node executes, its output variables become available for all downstream nodes (e.g., LLM, Text Splitter, Code node). Click **`{x}`** in any downstream node's input field and select from the Somark node's output variables.
+
+节点执行完成后，其输出变量可在所有下游节点（如 LLM、文本分割、代码节点）中使用。在任意下游节点的输入框中点击 **`{x}`**，即可选择 Somark 节点的输出变量。
 
 #### Input Parameters / 输入参数
 
@@ -146,11 +164,23 @@ SoMark 提供强大的通用识别能力。只需一个 API 调用即可处理�
 | :--- | :--- | :--- | :--- |
 | file | file | Yes / 是 | Supported files: PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM. Max 50MB/50 pages. <br> 支持的文件：PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM。最大 50MB/50 页。 |
 
-#### Output / 输出
+#### Output Variables / 输出变量
 
-The tool returns the extracted **Markdown text** directly. You can use it in subsequent nodes (e.g., LLM context, Text Splitting) as a string variable.
+The node exposes the following output variables:
 
-工具直接返回提取后的 **Markdown 文本**。您可以在后续节点（如 LLM 上下文、文本分割）中作为字符串变量使用。
+节点暴露以下输出变量：
+
+**`markdown`** `string` — The parsed document content in Markdown format, preserving the original layout structure including headings, tables, lists, formulas, and images. 
+
+解析后的文档内容（Markdown 格式），保留原始版面结构，包括标题、表格、列表、公式和图片。
+
+**`json`** `array[object]` — The full raw JSON response from the Somark API, containing detailed structured data for every document element (element type, content, bounding box coordinates, page number, etc.). Useful for advanced processing in a Code node.
+
+Somark API 返回的完整原始 JSON 响应，包含每个文档元素的详细结构化数据（元素类型、内容、坐标框、页码等）。适合在代码节点中进行高级处理。
+
+**`text`** / **`files`** — Dify built-in variables, not populated by this plugin.
+
+Dify 内置变量，本插件不填充这两个变量。
 
 ## Credits / 致谢
 

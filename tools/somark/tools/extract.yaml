@@ -3,7 +3,7 @@ identity:
   author: SoulCode
   label:
     en_US: Extract Document
-    zh_Hans: 文档解析
+    zh_Hans: SoMark文档解析
 
 description:
   human:
@@ -22,6 +22,13 @@ parameters:
       en_US: "Supported files: PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM. Max 50MB/50 pages."
       zh_Hans: "支持的文件: PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM. 大小不超过 50MB/50页。"
     form: llm
+
+output_schema:
+  type: object
+  properties:
+    markdown:
+      type: string
+      description: "The parsed content in Markdown format"
 
 extra:
   python:
