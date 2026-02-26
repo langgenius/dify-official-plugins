@@ -1,7 +1,7 @@
-model: doubao-seed-2-0-code-preview-260215
+model: doubao-seed-code-preview-251028
 label:
-  en_US: doubao-seed-2-0-code-preview-260215
-  zh_Hans: doubao-seed-2-0-code-preview-260215
+  en_US: doubao-seed-code-preview-251028
+  zh_Hans: doubao-seed-code-preview-251028
 model_type: llm
 features:
   - agent-thought
