@@ -8,15 +8,16 @@
 - openai/o3-mini-high
 - openai/o3-mini
 - openai/o3-mini-2025-01-31
-- openai/chatgpt-4o-latest
 - openai/gpt-4o-2024-11-20
 - openai/gpt-4o
 - openai/gpt-4o-mini
 - openai/gpt-4
 - openai/gpt-3.5-turbo
+- anthropic/claude-opus-4.6
 - anthropic/claude-opus-4.5
 - anthropic/claude-opus-4
 - anthropic/claude-opus-4.1
+- anthropic/claude-sonnet-4.6
 - anthropic/claude-sonnet-4.5
 - anthropic/claude-sonnet-4
 - anthropic/claude-3.7-sonnet:thinking
@@ -27,7 +28,6 @@
 - google/gemini-3-pro-preview
 - google/gemini-3-flash-preview
 - google/gemini-2.5-pro
-- google/gemini-2.5-flash-preview-09-2025
 - google/gemini-2.5-flash
 - google/gemini-2.5-flash-lite-preview-09-2025
 - google/gemini-2.5-flash-lite
