@@ -192,6 +192,12 @@ class VolcengineArkLargeLanguageModel(LargeLanguageModel):
             "user": user,
         }
 
+        if model_parameters.get("thinking"):
+            thinking_type = model_parameters["thinking"]
+            params["thinking"] = {"type": thinking_type}
+            if thinking_type == "disabled":
+                params["reasoning_effort"] = "minimal"
+
         if tools:
             params["tools"] = [_convert_prompt_message_tool_to_dict(t) for t in tools]
 
