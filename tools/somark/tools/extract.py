@@ -35,7 +35,7 @@ class ExtractTool(Tool):
         # 4. Prepare request
         try:
             files = {
-                "file": (file.filename, file.blob, file.mimetype)
+                "file": (file.filename, file.blob, file.mime_type)
             }
             
             data = {
