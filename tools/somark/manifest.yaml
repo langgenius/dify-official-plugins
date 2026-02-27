@@ -1,4 +1,4 @@
-version: 0.0.2
+version: 0.0.3
 created_at: '2026-01-30T03:17:37.000000000Z'
 type: plugin
 author: langgenius
@@ -22,7 +22,7 @@ plugins:
   tools:
     - provider/somark.yaml
 meta:
-  version: 0.0.2
+  version: 0.0.3
   arch:
     - amd64
     - arm64
