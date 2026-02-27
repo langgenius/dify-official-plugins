@@ -23,6 +23,30 @@ class ModelConfig(BaseModel):
 
 
 configs: dict[str, ModelConfig] = {
+    "Doubao-Seed-2.0-pro": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=131072, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+        pricing=PriceConfig(input=Decimal("0.0032"), output=Decimal("0.0160"), unit=Decimal("0.001"), currency="RMB"),
+    ),
+    "Doubao-Seed-2.0-lite": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=131072, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+        pricing=PriceConfig(input=Decimal("0.0006"), output=Decimal("0.0036"), unit=Decimal("0.001"), currency="RMB"),
+    ),
+    "Doubao-Seed-2.0-mini": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=131072, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+        pricing=PriceConfig(input=Decimal("0.0002"), output=Decimal("0.0020"), unit=Decimal("0.001"), currency="RMB"),
+    ),
+    "Doubao-Seed-2.0-Code": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=131072, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+        pricing=PriceConfig(input=Decimal("0.0032"), output=Decimal("0.0160"), unit=Decimal("0.001"), currency="RMB"),
+    ),
     "GLM-4.7": ModelConfig(
         properties=ModelProperties(context_size=200000, max_tokens=131072, mode=LLMMode.CHAT),
         features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],

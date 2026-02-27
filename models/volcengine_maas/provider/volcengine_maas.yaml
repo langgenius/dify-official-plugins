@@ -114,6 +114,30 @@ model_credential_schema:
       zh_Hans: 基础模型
     options:
     - label:
+        en_US: Doubao-Seed-2.0-pro
+      value: Doubao-Seed-2.0-pro
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
+        en_US: Doubao-Seed-2.0-lite
+      value: Doubao-Seed-2.0-lite
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
+        en_US: Doubao-Seed-2.0-mini
+      value: Doubao-Seed-2.0-mini
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
+        en_US: Doubao-Seed-2.0-Code
+      value: Doubao-Seed-2.0-Code
+      show_on:
+        - variable: __model_type
+          value: llm
+    - label:
         en_US: GLM-4.7
       value: GLM-4.7
       show_on:
