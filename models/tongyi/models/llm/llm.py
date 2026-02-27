@@ -214,6 +214,16 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 raise ValueError(
                     "There is one and only one User Message in the messages array."
                 )
+        # For models that support enable_thinking parameter, explicitly set it to False if not provided
+        # This overrides API-level defaults (e.g., qwen3.5-plus defaults to thinking mode enabled)
+        thinking_capable_models = {
+            "qwen-plus-latest", "qwen-plus-2025-04-28",
+            "qwen-turbo-latest", "qwen-turbo-2025-04-28",
+            "qwen3-max-2026-01-23",
+            "qwen3.5-plus", "qwen3.5-plus-2026-02-15",
+        }
+        if model in thinking_capable_models and "enable_thinking" not in model_parameters:
+            model_parameters["enable_thinking"] = False
 
         params = {
             "model": model,
