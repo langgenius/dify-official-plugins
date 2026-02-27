@@ -27,16 +27,6 @@ parameter_rules:
     default: 1
     min: 0.05
     max: 1
-  - name: presencePenalty
-    use_template: presence_penalty
-    min: -2
-    max: 2
-    default: 0
-  - name: frequencyPenalty
-    use_template: frequency_penalty
-    min: -2
-    max: 2
-    default: 0
   - name: maxTokens
     use_template: max_tokens
     default: 4000

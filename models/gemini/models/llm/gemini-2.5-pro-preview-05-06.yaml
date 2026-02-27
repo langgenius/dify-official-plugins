@@ -22,15 +22,6 @@ parameter_rules:
     max: 2
   - name: top_p
     use_template: top_p
-  - name: top_k
-    label:
-      zh_Hans: 取样数量
-      en_US: Top k
-    type: int
-    help:
-      zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
-      en_US: Only sample from the top K options for each subsequent token.
-    required: false
   - name: max_output_tokens
     use_template: max_tokens
     default: 65536
@@ -69,7 +60,7 @@ parameter_rules:
     help:
       en_US: Grounding with Google Search
       zh_Hans: Google 事实核查
-      ja_JP: Google検索に基づいた応答をします。
+      ja_JP: Google 検索に基づいた応答をします。
   - name: json_schema
     use_template: json_schema
 pricing:
