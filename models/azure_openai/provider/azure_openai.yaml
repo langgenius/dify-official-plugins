@@ -237,6 +237,12 @@ model_credential_schema:
               variable: __model_type
           value: gpt-5.2-chat
         - label:
+            en_US: gpt-5.2-codex
+          show_on:
+            - value: llm
+              variable: __model_type
+          value: gpt-5.2-codex
+        - label:
             en_US: gpt-35-turbo
           show_on:
             - value: llm
