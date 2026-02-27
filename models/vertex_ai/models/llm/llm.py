@@ -55,6 +55,7 @@ GLOBAL_ONLY_MODELS_DEFAULT = [
     "gemini-3-flash-preview",
     "gemini-3-pro-preview",
     "gemini-3.1-pro-preview",
+    "gemini-3.1-flash-image-preview",
 ]
 # For more information about the models, please refer to https://ai.google.dev/gemini-api/docs/thinking
 DEFAULT_NO_THINKING_MODELS = ["gemini-2.5-flash-lite"]
