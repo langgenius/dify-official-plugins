@@ -240,10 +240,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             model == "kimi-k2.5" and model_parameters.get("enable_thinking", False)
         ) or model == "kimi-k2-thinking"
 
-        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder and max variants), QwQ, QVQ, and Kimi thinking models only supports streaming output.
-        # Note: qwen3-coder-xx and qwen3-max-xx models support non-streaming output.
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder, max, and 3.5 variants), QwQ, QVQ, and Kimi thinking models only supports streaming output.
+        # Note: qwen3-coder-xx, qwen3-max-xx, and qwen3.5-xx models support non-streaming output.
         qwen3_requires_stream = model.startswith("qwen3-") and not model.startswith(
-            ("qwen3-coder", "qwen3-max")
+            ("qwen3-coder", "qwen3-max", "qwen3.5-")
         )
         common_force_condition = (
             thinking_business_qwen3 or qwen3_requires_stream or thinking_kimi
