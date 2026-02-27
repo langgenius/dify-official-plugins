@@ -3,7 +3,7 @@ configurate_methods:
   - predefined-model
 description:
   en_US: Google's Gemini model.
-  zh_Hans: 谷歌提供的 Gemini 模型.
+  zh_Hans: 谷歌提供的 Gemini 模型。
 extra:
   python:
     model_sources:
@@ -54,7 +54,7 @@ provider_credential_schema:
       en_US: Files URL
     placeholder:
       en_US: Enter the Local FILES URL prefix to get better upload performance
-      zh_Hans: 在此输入本地文件地址的URL前缀
+      zh_Hans: 在此输入本地文件地址的 URL 前缀
     required: false
     type: text-input
     variable: file_url
