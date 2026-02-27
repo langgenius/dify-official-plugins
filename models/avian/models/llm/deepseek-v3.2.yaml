@@ -1,0 +1,44 @@
+model: deepseek/deepseek-v3.2
+label:
+  en_US: DeepSeek V3.2
+  zh_Hans: DeepSeek V3.2
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 164000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    default: 4096
+    min: 1
+    max: 65536
+  - name: frequency_penalty
+    use_template: frequency_penalty
+  - name: presence_penalty
+    use_template: presence_penalty
+  - name: response_format
+    label:
+      en_US: Response Format
+      zh_Hans: 回复格式
+    type: string
+    help:
+      en_US: Set a response format, ensure the output from the model is a valid JSON string.
+      zh_Hans: 设置响应格式，确保模型输出的是有效的 JSON 字符串。
+    required: false
+    options:
+      - text
+      - json_object
+pricing:
+  input: '0.26'
+  output: '0.38'
+  unit: '0.000001'
+  currency: USD

@@ -1,0 +1,40 @@
+author: langgenius
+created_at: "2026-02-27T00:00:00.000000000-00:00"
+description:
+  en_US: >-
+    Avian provides an OpenAI-compatible API for accessing a curated set of
+    high-performance LLMs including DeepSeek V3.2, Kimi K2.5, GLM-5, and MiniMax M2.5.
+  zh_Hans: >-
+    Avian 提供 OpenAI 兼容的 API，可访问精选的高性能大语言模型，包括 DeepSeek V3.2、Kimi K2.5、GLM-5 和 MiniMax M2.5。
+icon: icon_s_en.svg
+label:
+  en_US: Avian
+  zh_Hans: Avian
+meta:
+  arch:
+    - amd64
+    - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: "3.12"
+  version: 0.0.1
+name: avian
+plugins:
+  models:
+    - provider/avian.yaml
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true
+      moderation: false
+      rerank: false
+      speech2text: false
+      text_embedding: false
+      tts: false
+    tool:
+      enabled: false
+type: plugin
+version: 0.0.1
