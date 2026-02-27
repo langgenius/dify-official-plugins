@@ -214,6 +214,26 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 raise ValueError(
                     "There is one and only one User Message in the messages array."
                 )
+        # For models that support enable_thinking parameter, explicitly set it to False if not provided
+        # This overrides API-level defaults where some models default to thinking mode enabled
+        # Reference: https://help.aliyun.com/zh/model-studio/deep-thinking
+        thinking_capable_models = {
+            # Qwen Plus/Turbo series (default: thinking disabled, but explicit False ensures consistency)
+            "qwen-plus-latest", "qwen-plus-2025-04-28",
+            "qwen-turbo-latest", "qwen-turbo-2025-04-28",
+            "qwen-flash", "qwen-flash-2025-07-28",
+            # Qwen3 Max series (default: thinking disabled)
+            "qwen3-max-2026-01-23", "qwen3-max-preview",
+            # Qwen3.5 series (default: thinking ENABLED - must explicitly disable)
+            "qwen3.5-plus", "qwen3.5-plus-2026-02-15",
+            "qwen3.5-flash", "qwen3.5-flash-2026-02-23",
+            # GLM series (default: thinking ENABLED - must explicitly disable)
+            "glm-5", "glm-4.7", "glm-4.6", "glm-4.5", "glm-4.5-air",
+            # DeepSeek series (default: thinking disabled)
+            "deepseek-v3.2", "deepseek-v3.2-exp", "deepseek-v3.1",
+        }
+        if model in thinking_capable_models and "enable_thinking" not in model_parameters:
+            model_parameters["enable_thinking"] = False
 
         params = {
             "model": model,
@@ -227,30 +247,36 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
 
         thinking_business_qwen3 = model in (
             "qwen-plus-latest",
-            "qwen3.5-plus",
-            "qwen3.5-plus-2026-02-15",
             "qwen-plus-2025-04-28",
             "qwen-turbo-latest",
             "qwen-turbo-2025-04-28",
-            "qwen3-max-2026-01-23",
+            "qwen-flash", "qwen-flash-2025-07-28",
+            "qwen3-max-2026-01-23", "qwen3-max-preview",
+            "qwen3.5-plus", "qwen3.5-plus-2026-02-15",
+            "qwen3.5-flash", "qwen3.5-flash-2026-02-23",
         ) and model_parameters.get("enable_thinking", False)
+
+        # GLM models with thinking capability (default: thinking enabled)
+        thinking_glm = model in ("glm-5", "glm-4.7", "glm-4.6", "glm-4.5", "glm-4.5-air") \
+                        and model_parameters.get("enable_thinking", False)
 
         # Kimi models with thinking capability: kimi-k2.5 (when enable_thinking=true) and kimi-k2-thinking
         thinking_kimi = (
             model == "kimi-k2.5" and model_parameters.get("enable_thinking", False)
         ) or model == "kimi-k2-thinking"
 
-        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder, max, and 3.5 variants), QwQ, QVQ, and Kimi thinking models only supports streaming output.
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder, max, and 3.5 variants), QwQ, QVQ, Kimi, and GLM thinking models only supports streaming output.
+        # Note: qwen3-coder-xx, qwen3-max-xx, and qwen3.5-xx models support non-streaming output.
         # Note: qwen3-coder-xx, qwen3-max-xx, and qwen3.5-xx models support non-streaming output.
         qwen3_requires_stream = model.startswith("qwen3-") and not model.startswith(
             ("qwen3-coder", "qwen3-max", "qwen3.5-")
         )
         common_force_condition = (
-            thinking_business_qwen3 or qwen3_requires_stream or thinking_kimi
+            thinking_business_qwen3 or qwen3_requires_stream or thinking_kimi or thinking_glm
         )
         if common_force_condition or model.startswith(("qwq-", "qvq-")):
             stream = True
-        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder and max variants), QwQ, QVQ, and Kimi thinking models only supports incremental_output set to True.
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder and max variants), QwQ, QVQ, Kimi, and GLM thinking models only supports incremental_output set to True.
         if common_force_condition or model.startswith(("qwq-", "qvq-")):
             incremental_output = True
 
