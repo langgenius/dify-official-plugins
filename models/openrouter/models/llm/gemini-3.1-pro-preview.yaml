@@ -1,6 +1,6 @@
-model: google/gemini-2.5-flash-lite
+model: google/gemini-3.1-pro-preview
 label:
-  en_US: gemini-2.5-flash-lite
+  en_US: gemini-3.1-pro-preview
 model_type: llm
 features:
   - multi-tool-call
@@ -42,30 +42,6 @@ parameter_rules:
       - json_schema
   - name: json_schema
     use_template: json_schema
-  - name: enable_thinking
-    required: false
-    type: string
-    default: dynamic
-    label:
-      zh_Hans: 思考模式
-      en_US: Thinking mode
-    help:
-      zh_Hans: 切换思考模式。
-      en_US: Switch thinking mode.
-    options:
-      - dynamic
-      - manual
-  - name: reasoning_budget
-    label:
-      zh_Hans: 思考预算
-      en_US: Reasoning budget
-    type: int
-    help:
-      zh_Hans: 思考预算，单位为 token
-      en_US: Reasoning budget, in tokens
-    required: false
-    min: 128
-    max: 32768
   - name: exclude_reasoning_tokens
     label:
       zh_Hans: 隐藏思考过程
@@ -76,8 +52,21 @@ parameter_rules:
       zh_Hans: 是否隐藏思考过程。
       en_US: Whether to hide the thought process.
     required: false
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理程度
+      en_US: Reasoning Effort
+    type: string
+    help:
+      zh_Hans: 指定模型推理的难度
+      en_US: specifying the difficulty of the model's reasoning
+    required: false
+    options:
+      - high
+      - medium
+      - low
 pricing:
-  input: "0.10"
-  output: "0.40"
+  input: "2"
+  output: "12"
   unit: "0.000001"
   currency: USD
