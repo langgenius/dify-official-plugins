@@ -162,7 +162,7 @@ After the node executes, its output variables become available for all downstrea
 
 | Parameter / 参数 | Type / 类型 | Required / 必填 | Description / 描述 |
 | :--- | :--- | :--- | :--- |
-| file | file | Yes / 是 | Supported files: PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM. Max 50MB/50 pages. <br> 支持的文件：PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM。最大 50MB/50 页。 |
+| file | file | Yes / 是 | Supported files: PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM, DOC, DOCX, PPT, PPTX. Max 200MB/300 pages. <br> 支持的文件：PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM, DOC, DOCX, PPT, PPTX。最大 200MB/300 页。 |
 
 #### Output Variables / 输出变量
 
