@@ -1,0 +1,10 @@
+model: BAAI/bge-large-en-v1.5
+model_type: text-embedding
+model_properties:
+  context_size: 8191
+  max_chunks: 32
+pricing:
+  input: '0.034'
+  output: '0.034'
+  unit: '0.000001'
+  currency: USD
