@@ -17,11 +17,11 @@ AZURE_OPENAI_API_VERSION = "2024-02-15-preview"
 
 AZURE_DEFAULT_PARAM_SEED_HELP = I18nObject(
     zh_Hans="如果指定，模型将尽最大努力进行确定性采样，使得重复的具有相同种子和参数的请求应该返回相同的结果。不能保证确定性，"
-            "您应该参考 system_fingerprint 响应参数来监视变化。",
+    "您应该参考 system_fingerprint 响应参数来监视变化。",
     en_US="If specified, model will make a best effort to sample deterministically,"
-          " such that repeated requests with the same seed and parameters should return the same result."
-          " Determinism is not guaranteed, and you should refer to the system_fingerprint response parameter"
-          " to monitor changes in the backend.",
+    " such that repeated requests with the same seed and parameters should return the same result."
+    " Determinism is not guaranteed, and you should refer to the system_fingerprint response parameter"
+    " to monitor changes in the backend.",
 )
 
 
@@ -1948,11 +1948,11 @@ LLM_BASE_MODELS = [
                     type="string",
                     help=I18nObject(
                         zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
-                                "支持的值包括low、medium和high",
+                        "支持的值包括low、medium和high",
                         en_US="Constrains the verbosity of the model's response. "
-                              "Lower values will result in more concise responses, "
-                              "while higher values will result in more verbose responses. "
-                              "Currently supported values are low, medium, and high",
+                        "Lower values will result in more concise responses, "
+                        "while higher values will result in more verbose responses. "
+                        "Currently supported values are low, medium, and high",
                     ),
                     required=False,
                     options=["low", "medium", "high"],
@@ -2027,11 +2027,11 @@ LLM_BASE_MODELS = [
                     type="string",
                     help=I18nObject(
                         zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
-                                "支持的值包括low、medium和high",
+                        "支持的值包括low、medium和high",
                         en_US="Constrains the verbosity of the model's response. "
-                              "Lower values will result in more concise responses, "
-                              "while higher values will result in more verbose responses. "
-                              "Currently supported values are low, medium, and high",
+                        "Lower values will result in more concise responses, "
+                        "while higher values will result in more verbose responses. "
+                        "Currently supported values are low, medium, and high",
                     ),
                     required=False,
                     options=["low", "medium", "high"],
@@ -2106,11 +2106,11 @@ LLM_BASE_MODELS = [
                     type="string",
                     help=I18nObject(
                         zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
-                                "支持的值包括low、medium和high",
+                        "支持的值包括low、medium和high",
                         en_US="Constrains the verbosity of the model's response. "
-                              "Lower values will result in more concise responses, "
-                              "while higher values will result in more verbose responses. "
-                              "Currently supported values are low, medium, and high",
+                        "Lower values will result in more concise responses, "
+                        "while higher values will result in more verbose responses. "
+                        "Currently supported values are low, medium, and high",
                     ),
                     required=False,
                     options=["low", "medium", "high"],
@@ -2617,11 +2617,11 @@ LLM_BASE_MODELS = [
                     type="string",
                     help=I18nObject(
                         zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
-                                "支持的值包括low、medium和high",
+                        "支持的值包括low、medium和high",
                         en_US="Constrains the verbosity of the model's response. "
-                              "Lower values will result in more concise responses, "
-                              "while higher values will result in more verbose responses. "
-                              "Currently supported values are low, medium, and high",
+                        "Lower values will result in more concise responses, "
+                        "while higher values will result in more verbose responses. "
+                        "Currently supported values are low, medium, and high",
                     ),
                     required=False,
                     options=["low", "medium", "high"],
@@ -2697,11 +2697,11 @@ LLM_BASE_MODELS = [
                     type="string",
                     help=I18nObject(
                         zh_Hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
-                                "支持的值包括low、medium和high",
+                        "支持的值包括low、medium和high",
                         en_US="Constrains the verbosity of the model's response. "
-                              "Lower values will result in more concise responses, "
-                              "while higher values will result in more verbose responses. "
-                              "Currently supported values are low, medium, and high",
+                        "Lower values will result in more concise responses, "
+                        "while higher values will result in more verbose responses. "
+                        "Currently supported values are low, medium, and high",
                     ),
                     required=False,
                     options=["low", "medium", "high"],
@@ -2767,7 +2767,7 @@ LLM_BASE_MODELS = [
                     type="string",
                     help=I18nObject(
                         zh_Hans="指定模型按格式输出，如选择JSON格式，需在System Message或User Message中"
-                                "指引模型输出JSON格式，如：“请按照json格式输出。”",
+                        "指引模型输出JSON格式，如：“请按照json格式输出。”",
                         en_US="specifying the format that the model must output",
                     ),
                     required=False,
@@ -2877,7 +2877,7 @@ LLM_BASE_MODELS = [
                     type="string",
                     help=I18nObject(
                         zh_Hans="指定模型按格式输出，如选择JSON格式，需在System Message或User Message中"
-                                "指引模型输出JSON格式，如：“请按照json格式输出。”",
+                        "指引模型输出JSON格式，如：“请按照json格式输出。”",
                         en_US="specifying the format that the model must output",
                     ),
                     required=False,
@@ -3054,7 +3054,7 @@ LLM_BASE_MODELS = [
                     name="frequency_penalty",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.FREQUENCY_PENALTY],
                 ),
-                _get_max_tokens(default=4096, min_val=1, max_val=128000),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
                 ParameterRule(
                     name="seed",
                     label=I18nObject(zh_Hans="种子", en_US="Seed"),
@@ -3152,7 +3152,7 @@ LLM_BASE_MODELS = [
                     name="frequency_penalty",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.FREQUENCY_PENALTY],
                 ),
-                _get_max_tokens(default=4096, min_val=1, max_val=16384),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=16384),
                 ParameterRule(
                     name="seed",
                     label=I18nObject(zh_Hans="种子", en_US="Seed"),
