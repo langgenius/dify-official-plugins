@@ -1,0 +1,45 @@
+background: '#1a1a2e'
+configurate_methods:
+- predefined-model
+description:
+  en_US: >-
+    Avian provides an OpenAI-compatible API for accessing a curated set of
+    high-performance LLMs including DeepSeek V3.2, Kimi K2.5, GLM-5, and MiniMax M2.5.
+  zh_Hans: >-
+    Avian 提供 OpenAI 兼容的 API，可访问精选的高性能大语言模型，包括 DeepSeek V3.2、Kimi K2.5、GLM-5 和 MiniMax M2.5。
+extra:
+  python:
+    model_sources:
+    - models/llm/llm.py
+    provider_source: provider/avian.py
+help:
+  title:
+    en_US: Get your API Key from Avian
+    zh_Hans: 从 Avian 获取 API Key
+  url:
+    en_US: https://avian.io
+icon_large:
+  en_US: icon_l_en.svg
+icon_small:
+  en_US: icon_s_en.svg
+label:
+  en_US: Avian
+  zh_Hans: Avian
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+    - models/llm/*.yaml
+provider: avian
+provider_credential_schema:
+  credential_form_schemas:
+  - label:
+      en_US: API Key
+    placeholder:
+      en_US: Enter your Avian API Key
+      zh_Hans: 在此输入您的 Avian API Key
+    required: true
+    type: secret-input
+    variable: api_key
+supported_model_types:
+- llm

@@ -1,0 +1,44 @@
+model: minimax/minimax-m2.5
+label:
+  en_US: MiniMax M2.5
+  zh_Hans: MiniMax M2.5
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 1000000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    default: 4096
+    min: 1
+    max: 1000000
+  - name: frequency_penalty
+    use_template: frequency_penalty
+  - name: presence_penalty
+    use_template: presence_penalty
+  - name: response_format
+    label:
+      en_US: Response Format
+      zh_Hans: 回复格式
+    type: string
+    help:
+      en_US: Set a response format, ensure the output from the model is a valid JSON string.
+      zh_Hans: 设置响应格式，确保模型输出的是有效的 JSON 字符串。
+    required: false
+    options:
+      - text
+      - json_object
+pricing:
+  input: '0.30'
+  output: '1.10'
+  unit: '0.000001'
+  currency: USD
