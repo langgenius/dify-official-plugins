@@ -1,0 +1,24 @@
+model: ali/qwen-vl-plus
+label:
+  en_US: Qwen-VL-Plus
+model_type: llm
+features:
+  - agent-thought
+  - vision
+model_properties:
+  mode: chat
+  context_size: 131072
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 8192
+    min: 1
+    max: 8192
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '0.002125'
+  output: '0.006377'
+  currency: CNY
+  unit: '0.000001'

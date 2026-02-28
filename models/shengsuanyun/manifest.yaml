@@ -1,0 +1,40 @@
+version: 0.1.1
+type: plugin
+author: langgenius
+name: shengsuanyun
+label:
+  en_US: shengsuanyun
+  zh_Hans: 胜算云
+description:
+  en_US: ShengSuanYun is a professional AI computing power platform. It aims to provide users with affordable GPU computing resources and create a cloud platform integrating development and elastic inference for AI developers and manufacturers. With massive GPU computing resources, it makes AI development easier.
+  zh_Hans: 胜算云是由上海胜算速惠云科技打造的专业AI算力平台，旨在为用户提供经济实惠的GPU算力资源，为AI开发者 和厂商打造集开发与弹性推理为一体的云平台。拥有海量的GPU算力资源，让AI开发变得更加轻松。
+icon: icon.svg
+icon_dark: icon-dark.svg
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true
+      tts: true
+      text_embedding: true
+    endpoint:
+      enabled: true
+    tool:
+      enabled: true
+plugins:
+  models:
+    - provider/shengsuanyun.yaml
+meta:
+  version: 0.1.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: 0.0.1
+created_at: 2025-11-13T10:17:59.833374244+08:00
+repo: https://github.com/shengsuan/dify-official-plugins
+verified: false

@@ -1,0 +1,24 @@
+model: tencent/hunyuan-t1-vision
+label:
+  en_US: Hunyuan-T1-Vision
+model_type: llm
+features:
+  - agent-thought
+  - vision
+model_properties:
+  mode: chat
+  context_size: 32000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 8000
+    min: 1
+    max: 8000
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '0.004251'
+  output: '0.012754'
+  currency: CNY
+  unit: '0.000001'

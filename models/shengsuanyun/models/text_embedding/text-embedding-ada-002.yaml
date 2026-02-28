@@ -1,0 +1,9 @@
+name: text-embedding-ada-002
+model: openai/text-embedding-ada-002
+model_type: text-embedding
+model_properties:
+  context_size: 0
+pricing:
+  input: '0.0011'
+  unit: '0.000001'
+  currency: CNY

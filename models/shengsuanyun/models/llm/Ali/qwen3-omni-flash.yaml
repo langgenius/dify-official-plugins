@@ -1,0 +1,23 @@
+model: ali/qwen3-omni-flash
+label:
+  en_US: Qwen3-Omni-Flash
+model_type: llm
+features:
+  - agent-thought
+model_properties:
+  mode: chat
+  context_size: 65536
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 16384
+    min: 1
+    max: 16384
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '0.00255'
+  output: '0.009778'
+  currency: CNY
+  unit: '0.000001'
