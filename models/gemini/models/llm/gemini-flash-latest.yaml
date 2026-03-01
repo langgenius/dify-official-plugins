@@ -1,3 +1,5 @@
+# Latest alias mapping reference:
+# https://ai.google.dev/gemini-api/docs/changelog?hl=zh-cn#01-21-2026
 model: gemini-flash-latest
 label:
   en_US: Gemini Flash Latest
@@ -11,63 +13,85 @@ features:
   - document
   - video
   - audio
+  - structured-output
 model_properties:
   mode: chat
   context_size: 1048576
 parameter_rules:
   - name: temperature
     use_template: temperature
+    type: float
+    required: true
     default: 1
     min: 0
     max: 2
+    label:
+      en_US: Temperature
+      zh_Hans: 温度
+    help:
+      en_US: For Gemini 3, best results at default 1.0. Lower values may impact reasoning.
+      zh_Hans: 对于 Gemini 3，使用默认值 1.0 可获得最佳效果。数值过低可能会影响推理能力。
   - name: top_p
     use_template: top_p
-  - name: top_k
-    label:
-      zh_Hans: 取样数量
-      en_US: Top k
-    type: int
-    help:
-      zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
-      en_US: Only sample from the top K options for each subsequent token.
-    required: false
-  - name: max_output_tokens
-    use_template: max_tokens
-    default: 65536
-    min: 1
-    max: 65536
+    default: 0.95
   - name: include_thoughts
     type: boolean
-    required: false
+    required: true
     default: false
     label:
       en_US: Include thoughts
       zh_Hans: 返回思考过程
     help:
-      en_US: Indicates whether to include thoughts in the response. If true, thoughts are returned only if the model supports thought and thoughts are available.
-      zh_Hans: 是否返回思考过程。若为 true 则只有模型支持思考且启动思考模式时才返回思考过程。
-  - name: thinking_mode
-    type: boolean
+      en_US: Indicates whether to include thoughts in the response. If true, thoughts are returned only if the model supports thought and thoughts are available. Default is false.
+      zh_Hans: 是否返回思考过程。若为 true 则只有模型支持思考且启动思考模式时才返回思考过程。默认为 false。
+  - name: media_resolution
+    type: string
     required: true
-    default: true
+    default: "Default"
+    options:
+      - Default
+      - Low
+      - Medium
+      - High
     label:
-      en_US: Thinking mode
-      zh_Hans: 思考模式
+      en_US: Media resolution
+      zh_Hans: 媒体分辨率
     help:
-      en_US: Whether to enable thinking mode. If true and thinking_budget is not set, turn on dynamic thinking.
-      zh_Hans: 是否开启思考模式。若为 true 且 thinking_budget 未设置，则开启动态预算推理。
-  - name: thinking_budget
-    type: int
-    required: false
-    default: 8000
-    min: 0
-    max: 24576
+      en_US: |
+        Gemini 3 introduces fine-grained control over multimodal visual processing via the `media_resolution` parameter. Higher resolution improves the model's ability to read small text or recognize fine details, but increases token usage and latency.
+
+        Recommended Settings:
+        - Images: `media_resolution_high` (1120 tokens) - Recommended for most image analysis tasks to ensure best quality.
+        - PDF: `media_resolution_medium` (560 tokens) - Great for document understanding; quality usually saturates at medium.
+        - Video (Regular): `media_resolution_low` or `medium` (70 tokens/frame) - Sufficient for most action recognition and description tasks.
+        - Video (Text-heavy): `media_resolution_high` (280 tokens/frame) - Needed only when use cases involve reading dense text (OCR) or tiny details in video frames.
+
+        Note: If not specified, the model uses the best default value based on the media type.
+      zh_Hans: |
+        Gemini 3 通过 `media_resolution` 参数引入了对多模态视觉处理的精细控制。分辨率越高，模型读取细小文本或识别细微细节的能力就越强，但会增加令牌用量和延迟时间。
+
+        推荐设置：
+        - 图片：`media_resolution_high` (1120 tokens) - 建议用于大多数图片分析任务，以确保获得最佳质量。
+        - PDF：`media_resolution_medium` (560 tokens) - 非常适合文档理解；质量通常在 medium 时达到饱和。
+        - 视频（常规）：`media_resolution_low` 或 `medium` (70 tokens/帧) - 对于大多数动作识别和描述任务来说已经足够。
+        - 视频（文字较多）：`media_resolution_high` (280 tokens/帧) - 仅当用例涉及读取密集文本 (OCR) 或视频帧中的微小细节时才需要。
+
+        注意：如果不指定，模型会根据媒体类型使用最佳默认值。
+  - name: thinking_level
+    type: string
+    required: true
+    default: "High"
+    options:
+      - Minimal
+      - Low
+      - Medium
+      - High
     label:
-      en_US: Set thinking budget
-      zh_Hans: 思考预算
+      en_US: Thinking level
+      zh_Hans: 思考层级
     help:
-      en_US: Indicates the thinking budget in tokens. This value is valid only when thinking mode is enabled. The default values and allowed ranges are model dependent. When enabling the thinking mode, if the thinking budget is not set, the default is to enable dynamic budget reasoning.
-      zh_Hans: 大模型的思考预算。仅在思考模式启动时该值有效。默认值和允许范围取决于模型。开启思考模式时，若未设置思考预算，则默认开启动态预算推理。
+      en_US: Indicates the thinking level. Default is High.
+      zh_Hans: 思考层级。默认为 High。
   - name: grounding
     type: boolean
     required: true
@@ -79,35 +103,64 @@ parameter_rules:
     help:
       en_US: Grounding with Google Search
       zh_Hans: Google 事实核查
-      ja_JP: Google検索に基づいた応答をします。
+      ja_JP: Google 検索に基づいた応答をします。
   - name: url_context
     type: boolean
     required: true
     default: false
     label:
-        en_US: URL context
-        zh_Hans: 链接详情
-        ja_JP: 網羅閲覧
+      en_US: URL context
+      zh_Hans: 链接详情
+      ja_JP: 網羅閲覧
     help:
       en_US: Browse the url context
       zh_Hans: 获取并分析该链接的详细信息，为回答提供参考依据。
       ja_JP: リンク先の詳細情報を取得し、文脈を理解します。
   - name: code_execution
-    type:  boolean
+    type: boolean
     required: true
     default: false
     label:
-        en_US: Code execution
-        zh_Hans: 代码执行
-        ja_JP: コード実行
+      en_US: Code execution
+      zh_Hans: 代码执行
+      ja_JP: コード実行
     help:
       en_US: Lets Gemini use code to solve complex tasks
       zh_Hans: 让 Gemini 使用代码来解决复杂任务。
       ja_JP: Gemini にコードを使って複雑なタスクを解決させましょう。
+  - name: max_output_tokens
+    use_template: max_tokens
+    type: int
+    required: true
+    default: 65536
+    min: 1
+    max: 65536
+    label:
+      en_US: Output length
+      zh_Hans: 输出长度
+    help:
+      en_US: The maximum number of tokens to generate in the response.
+      zh_Hans: 模型单次输出的最大 tokens 数。
+  - name: use_inline_file
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: Use inline file mode
+      zh_Hans: 使用内嵌文件模式
+    help:
+      en_US: |
+        When enabled, files will be embedded directly in the request (inline mode) for better performance.
+        When disabled, files will be uploaded using the Files API. Default is disabled (Files API).
+      zh_Hans: |
+        启用后，文件将直接内嵌在请求中（内联模式）以提高性能。
+        禁用后，文件将使用 Files API 上传。默认为禁用（使用 Files API）。
   - name: json_schema
     use_template: json_schema
+# https://ai.google.dev/gemini-api/docs/pricing#gemini-3-flash-preview
 pricing:
-  input: '0.30'
-  output: '2.50'
+  # prompts <= 200k tokens
+  input: '0.5'
+  output: '3.00'
   unit: '0.000001'
   currency: USD

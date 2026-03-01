@@ -222,11 +222,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             else:
                 extra_headers["anthropic-beta"] = "output-128k-2025-02-19"
 
-        if model == "claude-3-7-sonnet-20250219" and tools:
-            if "anthropic-beta" in extra_headers:
-                extra_headers["anthropic-beta"] += ",token-efficient-tools-2025-02-19"
-            else:
-                extra_headers["anthropic-beta"] = "token-efficient-tools-2025-02-19"
+
 
         if stop:
             extra_model_kwargs["stop_sequences"] = stop
