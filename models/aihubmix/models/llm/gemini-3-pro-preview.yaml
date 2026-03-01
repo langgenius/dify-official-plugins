@@ -1,21 +1,38 @@
-# https://ai.google.dev/gemini-api/docs/models?hl=zh-cn#gemini-3-pro
 model: gemini-3-pro-preview
 label:
   en_US: Gemini 3 Pro Preview
 model_type: llm
 features:
-  - tool-call
-  - multi-tool-call
   - agent-thought
-  - vision
+  - tool-call
   - stream-tool-call
-  - document
-  - video
+  - multi-tool-call
+  - vision
   - audio
+  - video
 model_properties:
   mode: chat
-  context_size: 1048576
+  context_size: 8192
 parameter_rules:
+  - name: thinking
+    label:
+      zh_Hans: 推理模式
+      en_US: Thinking Mode
+    type: boolean
+    default: false
+    required: false
+    help:
+      zh_Hans: 控制模型的推理能力。
+      en_US: Controls the model's thinking capability.
+  - name: thinking_budget
+    label:
+      zh_Hans: 推理预算
+      en_US: Thinking Budget
+    type: int
+    default: 1024
+    min: 0
+    max: 4096
+    required: false
   - name: temperature
     use_template: temperature
     default: 1
@@ -25,74 +42,31 @@ parameter_rules:
     use_template: top_p
   - name: max_output_tokens
     use_template: max_tokens
-    default: 65536
+    default: 4096
     min: 1
-    max: 65536
-  - name: include_thoughts
-    type: boolean
-    required: false
-    default: false
+    max: 4096
+  - name: response_format
     label:
-      en_US: Include thoughts
-      zh_Hans: 返回思考过程
-    help:
-      en_US: Indicates whether to include thoughts in the response. If true, thoughts are returned only if the model supports thought and thoughts are available.
-      zh_Hans: 是否返回思考过程。若为 true 则只有模型支持思考且启动思考模式时才返回思考过程。
-  - name: thinking_level
+      zh_Hans: 回复格式
+      en_US: Response Format
     type: string
     required: false
-    default: "Low"
     options:
-      - Low
-      - High
-    label:
-      en_US: Thinking level
-      zh_Hans: 思考层级
-    help:
-      en_US: Indicates the thinking level
-      zh_Hans: 思考层级
-  - name: grounding
-    type: boolean
-    required: true
-    default: false
-    label:
-      en_US: Grounding
-      zh_Hans: 事实核查
-      ja_JP: 事実チェック
-    help:
-      en_US: Grounding with Google Search
-      zh_Hans: Google 事实核查
-      ja_JP: Google検索に基づいた応答をします。
-  - name: url_context
-    type: boolean
-    required: true
-    default: false
-    label:
-        en_US: URL context
-        zh_Hans: 链接详情
-        ja_JP: 網羅閲覧
-    help:
-      en_US: Browse the url context
-      zh_Hans: 获取并分析该链接的详细信息，为回答提供参考依据。
-      ja_JP: リンク先の詳細情報を取得し、文脈を理解します。
-  - name: code_execution
-    type: boolean
-    required: true
-    default: false
-    label:
-        en_US: Code execution
-        zh_Hans: 代码执行
-        ja_JP: コード実行
-    help:
-      en_US: Lets Gemini use code to solve complex tasks
-      zh_Hans: 让 Gemini 使用代码来解决复杂任务。
-      ja_JP: Gemini にコードを使って複雑なタスクを解決させましょう。
+      - text
+      - json_object
+      - json_schema
   - name: json_schema
     use_template: json_schema
-# https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-3-pro
+  - name: grounding
+    label:
+      en_US: Grounding
+    type: boolean
+    required: true
+    default: false
+    help:
+      en_US: Enables Google Search grounding for real-time answers.
 pricing:
-  # Pricing for contexts larger than 200K tokens
-  input: '2.0'
-  output: '12.00'
+  input: '2'
+  output: '12'
   unit: '0.000001'
   currency: USD

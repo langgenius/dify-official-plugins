@@ -1,6 +1,6 @@
-model: gpt-5.3-codex
+model: claude-opus-4-5-think
 label:
-  en_US: GPT-5.3-Codex
+  en_US: Claude Opus 4.5 Thinking
 model_type: llm
 features:
   - agent-thought
@@ -10,7 +10,7 @@ features:
   - vision
 model_properties:
   mode: chat
-  context_size: 400000
+  context_size: 200000
 parameter_rules:
   - name: thinking
     label:
@@ -39,7 +39,7 @@ parameter_rules:
     use_template: max_tokens
     default: 8192
     min: 1
-    max: 128000
+    max: 32000
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -53,7 +53,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '1.75'
-  output: '14'
+  input: '5'
+  output: '25'
   unit: '0.000001'
   currency: USD

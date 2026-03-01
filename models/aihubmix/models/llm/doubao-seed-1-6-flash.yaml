@@ -1,15 +1,17 @@
-model: DeepSeek-V3.2-Exp
+model: doubao-seed-1-6-flash
 label:
-  en_US: DeepSeek V3.2 Exp
+  en_US: Doubao Seed 1.6 Flash
 model_type: llm
 features:
   - agent-thought
   - tool-call
   - stream-tool-call
   - multi-tool-call
+  - vision
+  - video
 model_properties:
   mode: chat
-  context_size: 163000
+  context_size: 256000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -19,7 +21,7 @@ parameter_rules:
     use_template: max_tokens
     default: 8192
     min: 1
-    max: 163000
+    max: 33000
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -33,7 +35,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '0.274'
-  output: '0.411'
+  input: '0.044'
+  output: '0.44'
   unit: '0.000001'
   currency: USD

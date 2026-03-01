@@ -1,6 +1,6 @@
-model: DeepSeek-V3.2-Exp
+model: kimi-k2-instruct
 label:
-  en_US: DeepSeek V3.2 Exp
+  en_US: Kimi K2 Instruct
 model_type: llm
 features:
   - agent-thought
@@ -9,7 +9,7 @@ features:
   - multi-tool-call
 model_properties:
   mode: chat
-  context_size: 163000
+  context_size: 8192
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -17,9 +17,9 @@ parameter_rules:
     use_template: top_p
   - name: max_tokens
     use_template: max_tokens
-    default: 8192
+    default: 4096
     min: 1
-    max: 163000
+    max: 4096
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -33,7 +33,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '0.274'
-  output: '0.411'
+  input: '0.54'
+  output: '2.16'
   unit: '0.000001'
   currency: USD
