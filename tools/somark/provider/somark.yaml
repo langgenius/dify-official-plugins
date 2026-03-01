@@ -6,6 +6,7 @@ credentials_for_provider:
     placeholder:
       en_US: https://somark.tech/api/v1
       zh_Hans: https://somark.tech/api/v1
+    default: https://somark.tech/api/v1
     required: true
     type: text-input
   api_key:

@@ -19,8 +19,8 @@ parameters:
       en_US: File
       zh_Hans: 文件
     human_description:
-      en_US: "Supported files: PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM. Max 50MB/50 pages."
-      zh_Hans: "支持的文件: PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM. 大小不超过 50MB/50页。"
+      en_US: "Supported files: PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM, DOC, DOCX, PPT, PPTX. Max 200MB/300 pages."
+      zh_Hans: "支持的文件: PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM, DOC, DOCX, PPT, PPTX. 大小不超过 200MB/300页。"
     form: llm
 
 output_schema:
