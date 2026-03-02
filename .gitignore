@@ -189,3 +189,7 @@ mypy.ini
 tox.ini
 *.difypkg
 models/openai_api_compatible/PR_DESCRIPTION.md
+
+# local venv
+models/volcengine/.venv/
+models/volcengine/uv.lock
