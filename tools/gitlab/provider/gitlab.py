@@ -13,13 +13,20 @@ class GitlabProvider(ToolProvider):
                 site_url = "https://gitlab.com"
             else:
                 site_url = credentials.get("site_url")
+            access_token = credentials.get('access_tokens')
             try:
                 headers = {
                     "Content-Type": "application/vnd.text+json",
                     "Authorization": f"Bearer {credentials.get('access_tokens')}",
                 }
                 response = requests.get(url=f"{site_url}/api/v4/user", headers=headers, verify=credentials.get('ssl_verify', True))
-                if response.status_code != 200:
+                if response.status_code == 401:
+                    del headers['Authorization']
+                    headers['PRIVATE-TOKEN'] = access_token
+                    response = requests.get(url=f"{site_url}/api/v4/user", headers=headers, verify=credentials.get('ssl_verify', True))
+                    if response.status_code != 200:
+                        raise ToolProviderCredentialValidationError(response.json().get("message"))
+                elif response.status_code != 200:
                     raise ToolProviderCredentialValidationError(response.json().get("message"))
             except Exception as e:
                 raise ToolProviderCredentialValidationError("Gitlab Access Tokens is invalid. {}".format(e))
