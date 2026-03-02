@@ -1,4 +1,4 @@
-version: 1.0.0
+version: 1.0.1
 type: plugin
 author: langgenius
 name: cometapi
@@ -27,7 +27,7 @@ plugins:
   models:
     - provider/cometapi.yaml
 meta:
-  version: 1.0.0
+  version: 1.0.1
   arch:
     - amd64
     - arm64

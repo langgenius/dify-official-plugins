@@ -39,7 +39,7 @@ parameter_rules:
     min: 1
     max: 32768
     help:
-      zh_Hans: 用于指定模型在生成内容时token的最大数量，它定义了生成的上限，但不保证每次都会生成到这个数量。
+      zh_Hans: 用于指定模型在生成内容时 token 的最大数量，它定义了生成的上限，但不保证每次都会生成到这个数量。
       en_US: It is used to specify the maximum number of tokens when the model generates content. It defines the upper limit of generation, but does not guarantee that this number will be generated every time.
   - name: enable_thinking
     label:
@@ -61,7 +61,7 @@ parameter_rules:
       zh_Hans: 思考长度限制
       en_US: Thinking budget
     help:
-      zh_Hans: 思考过程的最大长度，只在思考模式为true时生效。
+      zh_Hans: 思考过程的最大长度，只在思考模式为 true 时生效。
       en_US: The maximum length of the thinking process, only effective when thinking mode is true.
   - name: response_format
     label:

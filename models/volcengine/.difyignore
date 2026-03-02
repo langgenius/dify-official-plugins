@@ -1,0 +1,23 @@
+# Dify plugin packaging ignore rules
+# Keep the package small and deterministic.
+
+# Local virtualenvs / build caches
+.venv/
+__pycache__/
+.pytest_cache/
+*.pyc
+
+# IDE/editor
+.idea/
+.vscode/
+.DS_Store
+
+# Lockfiles generated locally (CI uses uv internally)
+uv.lock
+
+# Local debug settings
+.env
+
+# Test output
+.coverage
+htmlcov/
