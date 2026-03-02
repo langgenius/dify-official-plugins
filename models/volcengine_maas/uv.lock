@@ -145,7 +145,7 @@ wheels = [
 
 [[package]]
 name = "dify-plugin"
-version = "0.5.1"
+version = "0.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "dpkt" },
@@ -162,9 +162,9 @@ dependencies = [
     { name = "werkzeug" },
     { name = "yarl" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b0/1f/7d8b02be4e5976778d0d40a616b56f386a295bd1535de737dc346256df4a/dify_plugin-0.5.1.tar.gz", hash = "sha256:e5e5e5bd0e5081d5eac6461ee4a1d61c7c29f4378aba1bf9bd4e628c421615b0", size = 304507, upload-time = "2025-10-20T06:44:04.107Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/09/8d/eb95d34865b825c01d914dcf721140e20786b4bae9a51c3771880cfcf62c/dify_plugin-0.7.0.tar.gz", hash = "sha256:8f734cae00cc7ad4a349ad8af1386ad122b4ed2c97e99c21d3369264862bc220", size = 325474, upload-time = "2025-12-09T06:27:04.595Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/87/82/072050dba3b9b1ac29273681a67334439ea8fe1fb38796693c7b28646151/dify_plugin-0.5.1-py3-none-any.whl", hash = "sha256:c965f95431b69f1a64022f743fc6efacffe3d5cd6a33d122885c2bec5f4dae3a", size = 338635, upload-time = "2025-10-20T06:44:02.422Z" },
+    { url = "https://files.pythonhosted.org/packages/ce/a4/ee2273324c86b73c5bda05a978f23331d4ec97ce95148acc853f3dc19d3f/dify_plugin-0.7.0-py3-none-any.whl", hash = "sha256:8335c24bbda6183070bdb187ac13a64461a7a4fddd64e8b8b83355407900f979", size = 356900, upload-time = "2025-12-09T06:27:03.395Z" },
 ]
 
 [[package]]
@@ -958,10 +958,10 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "dify-plugin", specifier = ">=0.5.0,<0.6.0" },
+    { name = "dify-plugin", specifier = "==0.7.0" },
     { name = "pytz", specifier = "==2024.2" },
     { name = "sniffio", specifier = "~=1.3.1" },
-    { name = "volcengine-python-sdk", specifier = "==4.0.29" },
+    { name = "volcengine-python-sdk", specifier = ">=5.0.1,<6.0.0" },
     { name = "websocket-client", specifier = "==1.8.0" },
     { name = "websockets", specifier = "==15.0.1" },
 ]
@@ -971,7 +971,7 @@ dev = []
 
 [[package]]
 name = "volcengine-python-sdk"
-version = "4.0.29"
+version = "5.0.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "certifi" },
@@ -979,9 +979,9 @@ dependencies = [
     { name = "six" },
     { name = "urllib3" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e2/d2/84779d19e330b3218d16ddd51900ab628eddd9fafc1a7ea73bde16f79316/volcengine_python_sdk-4.0.29.tar.gz", hash = "sha256:be5ef197c13710f71bc1a6ebad873e2d75f9235c198071d894a1e114b9151afb", size = 6593354, upload-time = "2025-10-27T12:50:54.752Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/75/a6/2b064e4e843d0438c29b676d29b1f439d79a3405bb1e7f6838a73c061d97/volcengine_python_sdk-5.0.9.tar.gz", hash = "sha256:0cb49610e9049d4f79d80ae325c40e997cf5d0497762ad7bb3b85f250078529e", size = 7686425, upload-time = "2026-02-05T12:06:30.377Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/69/0c/eb5be45ca2d9a8ce7cc8d9179204add7daa254a175c2016e5deec7f4b3c7/volcengine_python_sdk-4.0.29-py2.py3-none-any.whl", hash = "sha256:fd96770b3e2bf4019818f4f52decc5f92402a1f3fe71daf8d7dfd9772ad4a506", size = 25804354, upload-time = "2025-10-28T03:58:11.199Z" },
+    { url = "https://files.pythonhosted.org/packages/86/79/3b798a2cddcf90d3c3539d905658498b7b64a97f0b33de586f5d6e8a728b/volcengine_python_sdk-5.0.9-py2.py3-none-any.whl", hash = "sha256:48c100b143051297c9765c6c0b5a2803130d3c66dd54a26966d83043f52b71d2", size = 30235493, upload-time = "2026-02-05T12:06:25.921Z" },
 ]
 
 [[package]]
@@ -1026,14 +1026,14 @@ wheels = [
 
 [[package]]
 name = "werkzeug"
-version = "3.0.6"
+version = "3.1.5"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markupsafe" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d4/f9/0ba83eaa0df9b9e9d1efeb2ea351d0677c37d41ee5d0f91e98423c7281c9/werkzeug-3.0.6.tar.gz", hash = "sha256:a8dd59d4de28ca70471a34cba79bed5f7ef2e036a76b3ab0835474246eb41f8d", size = 805170, upload-time = "2024-10-25T18:52:31.688Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5a/70/1469ef1d3542ae7c2c7b72bd5e3a4e6ee69d7978fa8a3af05a38eca5becf/werkzeug-3.1.5.tar.gz", hash = "sha256:6a548b0e88955dd07ccb25539d7d0cc97417ee9e179677d22c7041c8f078ce67", size = 864754, upload-time = "2026-01-08T17:49:23.247Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6c/69/05837f91dfe42109203ffa3e488214ff86a6d68b2ed6c167da6cdc42349b/werkzeug-3.0.6-py3-none-any.whl", hash = "sha256:1bc0c2310d2fbb07b1dd1105eba2f7af72f322e1e455f2f93c993bee8c8a5f17", size = 227979, upload-time = "2024-10-25T18:52:30.129Z" },
+    { url = "https://files.pythonhosted.org/packages/ad/e4/8d97cca767bcc1be76d16fb76951608305561c6e056811587f36cb1316a8/werkzeug-3.1.5-py3-none-any.whl", hash = "sha256:5111e36e91086ece91f93268bb39b4a35c1e6f1feac762c9c822ded0a4e322dc", size = 225025, upload-time = "2026-01-08T17:49:21.859Z" },
 ]
 
 [[package]]

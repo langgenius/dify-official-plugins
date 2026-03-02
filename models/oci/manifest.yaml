@@ -1,4 +1,4 @@
-version: 0.0.10
+version: 0.0.11
 type: plugin
 author: langgenius
 privacy: PRIVACY.md
@@ -13,7 +13,7 @@ icon: icon_s_en.png
 label:
   en_US: OCI Generative AI
 meta:
-  version: 0.0.10
+  version: 0.0.11
   minimum_dify_version: null
   arch:
     - amd64

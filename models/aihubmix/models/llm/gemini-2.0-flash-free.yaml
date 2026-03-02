@@ -1,0 +1,53 @@
+model: gemini-2.0-flash-free
+label:
+  en_US: Gemini 2.0 Flash (free)
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+  - multi-tool-call
+  - vision
+  - audio
+  - video
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    default: 1
+    min: 0
+    max: 2
+  - name: top_p
+    use_template: top_p
+  - name: max_output_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 1
+    max: 8192
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+  - name: grounding
+    label:
+      en_US: Grounding
+    type: boolean
+    required: true
+    default: false
+    help:
+      en_US: Enables Google Search grounding for real-time answers.
+pricing:
+  input: '0'
+  output: '0'
+  unit: '0.000001'
+  currency: USD

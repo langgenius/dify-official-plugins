@@ -1,0 +1,55 @@
+background: '#F9FAFB'
+configurate_methods:
+- predefined-model
+description:
+  en_US: Volcengine Ark pre-provided model invocation.
+  zh_Hans: 火山方舟预置模型调用。
+extra:
+  python:
+    model_sources:
+    - models/llm/llm.py
+    provider_source: provider/volcengine.py
+help:
+  title:
+    en_US: Get your Ark API Key from Volcengine Console
+    zh_Hans: 从火山引擎控制台获取 Ark API Key
+  url:
+    en_US: https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey
+    zh_Hans: https://console.volcengine.com/ark/region:ark+cn-beijing/apiKey
+icon_large:
+  en_US: icon_l_en.svg
+  zh_Hans: icon_l_zh.svg
+icon_small:
+  en_US: icon_s_en.svg
+label:
+  en_US: Volcengine Ark
+  zh_Hans: 火山方舟
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+    - models/llm/*.yaml
+provider: volcengine
+provider_credential_schema:
+  credential_form_schemas:
+  - label:
+      en_US: API Key
+      zh_Hans: API Key
+    placeholder:
+      en_US: Enter your Ark API Key
+      zh_Hans: 输入 Ark API Key
+    required: true
+    type: secret-input
+    variable: ark_api_key
+  - default: https://ark.cn-beijing.volces.com/api/v3
+    label:
+      en_US: API Endpoint
+      zh_Hans: API Endpoint
+    placeholder:
+      en_US: https://ark.cn-beijing.volces.com/api/v3
+      zh_Hans: https://ark.cn-beijing.volces.com/api/v3
+    required: true
+    type: text-input
+    variable: api_endpoint_host
+supported_model_types:
+- llm
