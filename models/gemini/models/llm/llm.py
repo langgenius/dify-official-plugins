@@ -243,6 +243,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         """
         Render google search source links
         """
+        if not grounding_metadata or not grounding_metadata.grounding_chunks:
+            return ""
+            
         result = "\n\n**Search Sources:**\n"
         for index, entry in enumerate(grounding_metadata.grounding_chunks, start=1):
             result += f"{index}. [{entry.web.title}]({entry.web.uri})\n"
@@ -284,16 +287,17 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-2.5-pro
         # FIXME: Currently, Dify's pricing model cannot cover the tokens of multimodal resources
         # FIXME: Unable to track caching, Grounding, Live API
-        for _mtc in usage_metadata.prompt_tokens_details:
-            if _mtc.modality in [
-                types.MediaModality.TEXT,
-                types.MediaModality.IMAGE,
-                types.MediaModality.VIDEO,
-                types.MediaModality.MODALITY_UNSPECIFIED,
-                types.MediaModality.AUDIO,
-                types.MediaModality.DOCUMENT,
-            ]:
-                prompt_tokens_standard += _mtc.token_count
+        if usage_metadata.prompt_tokens_details:
+            for _mtc in usage_metadata.prompt_tokens_details:
+                if _mtc.modality in [
+                    types.MediaModality.TEXT,
+                    types.MediaModality.IMAGE,
+                    types.MediaModality.VIDEO,
+                    types.MediaModality.MODALITY_UNSPECIFIED,
+                    types.MediaModality.AUDIO,
+                    types.MediaModality.DOCUMENT,
+                ]:
+                    prompt_tokens_standard += _mtc.token_count
 
         # Number of tokens present in thoughts output.
         thoughts_token_count = usage_metadata.thoughts_token_count or 0
@@ -769,9 +773,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # Always use _parse_parts to ensure consistent response format (list of PromptMessageContent)
         # This fixes the "'str' object has no attribute 'get'" error that occurs when
         # downstream code expects structured content but receives a plain string
-        assistant_prompt_message = self._parse_parts(
-            response.candidates[0].content.parts
-        )
+        parts = response.candidates[0].content.parts if response.candidates[0].content else []
+        assistant_prompt_message = self._parse_parts(parts)
 
         # calculate num tokens
         prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
@@ -852,9 +855,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             ):
                 continue
             candidate = chunk.candidates[0]
-            message = self._parse_parts(candidate.content.parts)
+            parts = candidate.content.parts if candidate.content else []
+            message = self._parse_parts(parts)
 
-            index += len(candidate.content.parts)
+            index += len(parts) if parts else 0
 
             # if the stream is not finished, yield the chunk
             if not candidate.finish_reason:
@@ -902,7 +906,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     ),
                 )
 
-    def _parse_parts(self, parts: Sequence[types.Part], /) -> AssistantPromptMessage:
+    def _parse_parts(self, parts: Sequence[types.Part] | None, /) -> AssistantPromptMessage:
         """
 
         Args:
@@ -926,6 +930,13 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         """
         contents: list[PromptMessageContent] = []
         function_calls = []
+        
+        if not parts:
+            return AssistantPromptMessage(
+                content=contents,
+                tool_calls=function_calls,  # type: ignore
+            )
+            
         for part in parts:
             if part.text:
                 # Check if we need to start thinking mode

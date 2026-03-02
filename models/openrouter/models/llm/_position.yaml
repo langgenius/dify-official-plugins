@@ -1,3 +1,4 @@
+- openrouter/auto
 - openai/gpt-5.1
 - openai/gpt-5.1-chat
 - openai/gpt-5
@@ -42,7 +43,6 @@
 - meta-llama/llama-3-8b-instruct
 - mistralai/mixtral-8x22b-instruct
 - mistralai/mixtral-8x7b-instruct
-- mistralai/mistral-7b-instruct
 - qwen/qwen-2.5-72b-instruct
 - qwen/qwen3-max
 - deepseek/deepseek-chat

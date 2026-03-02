@@ -33,9 +33,6 @@ parameter_rules:
   - name: top_p
     use_template: top_p
     default: 0.95
-  - name: top_k
-    use_template: top_k
-    default: 64
   - name: include_thoughts
     type: boolean
     required: true
@@ -103,7 +100,7 @@ parameter_rules:
     help:
       en_US: Grounding with Google Search
       zh_Hans: Google 事实核查
-      ja_JP: Google検索に基づいた応答をします。
+      ja_JP: Google 検索に基づいた応答をします。
   - name: url_context
     type: boolean
     required: true

@@ -1,0 +1,58 @@
+model: coding-glm-5-free
+label:
+  en_US: Coding GLM 5 (free)
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+  - multi-tool-call
+model_properties:
+  mode: chat
+  context_size: 8192
+parameter_rules:
+  - name: thinking
+    label:
+      zh_Hans: 推理模式
+      en_US: Thinking Mode
+    type: boolean
+    default: false
+    required: false
+    help:
+      zh_Hans: 控制模型的推理能力。
+      en_US: Controls the model's thinking capability.
+  - name: thinking_budget
+    label:
+      zh_Hans: 推理预算
+      en_US: Thinking Budget
+    type: int
+    default: 1024
+    min: 0
+    max: 4096
+    required: false
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    default: 4096
+    min: 1
+    max: 4096
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: '0'
+  output: '0'
+  unit: '0.000001'
+  currency: USD
