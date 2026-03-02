@@ -6,41 +6,11 @@ model_properties:
     - mode: 'alloy'
       name: 'Alloy'
       language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'th-TH', 'id-ID']
-    - mode: 'ash'
-      name: 'Ash'
-      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'th-TH', 'id-ID']
-    - mode: 'ballad'
-      name: 'Ballad'
-      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'th-TH', 'id-ID']
-    - mode: 'coral'
-      name: 'Coral'
-      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'th-TH', 'id-ID']
-    - mode: 'echo'
-      name: 'Echo'
-      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'th-TH', 'id-ID']
-    - mode: 'fable'
-      name: 'Fable'
-      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'th-TH', 'id-ID']
-    - mode: 'onyx'
-      name: 'Onyx'
-      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'th-TH', 'id-ID']
-    - mode: 'nova'
-      name: 'Nova'
-      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'th-TH', 'id-ID']
-    - mode: 'sage'
-      name: 'Sage'
-      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'th-TH', 'id-ID']
-    - mode: 'shimmer'
-      name: 'Shimmer'
-      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'th-TH', 'id-ID']
-    - mode: 'verse'
-      name: 'Verse'
-      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'th-TH', 'id-ID']
   word_limit: 3500
   audio_type: 'mp3'
   max_workers: 5
 pricing:
-  input: '0.03'
-  output: '0'
+  input: '30'
+  output: '30'
   unit: '0.001'
   currency: USD

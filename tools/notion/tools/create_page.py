@@ -14,6 +14,7 @@ class CreatePageTool(Tool):
         content = tool_parameters.get("content", "")
         parent_id = tool_parameters.get("parent_id", "")
         parent_type = tool_parameters.get("parent_type", "page")
+        title_property_name = tool_parameters.get("title_property_name", "Name")
         
         # Validate parameters
         if not title:
@@ -62,9 +63,10 @@ class CreatePageTool(Tool):
                 
             # Prepare properties based on parent_type
             if parent_type.lower() in ["database", "data_source"]:
-                # For database/data_source parents, use the "Name" property as title
+                # For database/data_source parents, use the title_property_name property as title
+                # Default to "Name" if not specified
                 properties = {
-                    "Name": {
+                    title_property_name: {
                         "title": [
                             {
                                 "text": {

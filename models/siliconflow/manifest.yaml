@@ -25,5 +25,5 @@ resource:
     model:
       enabled: false
 type: plugin
-version: 0.0.43
+version: 0.0.44
 created_at: 2024-09-20T00:13:50.29298939-04:00

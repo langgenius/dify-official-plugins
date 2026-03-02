@@ -80,8 +80,8 @@ class GitHubDataSource(OnlineDocumentDatasource):
                 raise ValueError(
                     f"Invalid 'affiliation' parts: {', '.join(parts - allowed_affiliations)}. Allowed: {', '.join(allowed_affiliations)}.")
 
-        _type = datasource_parameters.get("type", "all")
-        if _type not in {"all", "owner", "public", "private", "member"}:
+        _type = datasource_parameters.get("type")
+        if _type and _type not in {"all", "owner", "public", "private", "member"}:
             raise ValueError(
                 f"Invalid 'type' parameter: {_type}. Allowed values are: all, owner, public, private, member.")
         

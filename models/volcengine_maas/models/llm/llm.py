@@ -625,6 +625,10 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             "deepseek-v3.2",
             "doubao-seed-1.8",
             "glm-4.7",
+            "doubao-seed-2.0-pro",
+            "doubao-seed-2.0-lite",
+            "doubao-seed-2.0-mini",
+            "doubao-seed-2.0-code",
         ):
             rules.append(
                 ParameterRule(
@@ -639,6 +643,10 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             "doubao-seed-1.6-lite",
             "doubao-seed-1.6",
             "doubao-seed-1.8",
+            "doubao-seed-2.0-pro",
+            "doubao-seed-2.0-lite",
+            "doubao-seed-2.0-mini",
+            "doubao-seed-2.0-code",
         ):
             rules.append(
                 ParameterRule(

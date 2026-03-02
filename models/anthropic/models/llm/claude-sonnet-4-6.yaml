@@ -1,6 +1,6 @@
-model: claude-3-7-sonnet-20250219
+model: claude-sonnet-4-6
 label:
-  en_US: claude-3-7-sonnet-20250219
+  en_US: claude-sonnet-4-6
 model_type: llm
 features:
   - agent-thought
@@ -10,7 +10,7 @@ features:
   - document
 model_properties:
   mode: chat
-  context_size: 200000
+  context_size: 1000000
 parameter_rules:
   - name: thinking
     label:
@@ -29,7 +29,7 @@ parameter_rules:
     type: int
     default: 1024
     min: 0
-    max: 128000
+    max: 64000
     required: false
     help:
       zh_Hans: 推理的预算限制（最小1024），必须小于max_tokens。仅在推理模式启用时可用。
@@ -52,18 +52,9 @@ parameter_rules:
     required: true
     default: 64000
     min: 1
-    max: 128000
+    max: 64000
   - name: response_format
     use_template: response_format
-  - name: extended_output
-    label:
-      zh_Hans: 扩展输出
-      en_US: Extended Output
-    type: boolean
-    default: false
-    help:
-      zh_Hans: 启用长达128K标记的输出能力。
-      en_US: Enable capability for up to 128K output tokens.
   - name: prompt_caching_message_flow
     label:
       zh_Hans: 大消息自动缓存阈值
@@ -124,6 +115,16 @@ parameter_rules:
     help:
       zh_Hans: 启用工具结果的提示缓存。
       en_US: Enable prompt caching for tool results.
+  - name: context_1m
+    label:
+      zh_Hans: 1M上下文窗口
+      en_US: 1M Context Window
+    type: boolean
+    default: true
+    required: false
+    help:
+      zh_Hans: 启用1M令牌上下文窗口。需要使用层级4或自定义速率限制的组织。注意, 超过200K令牌的请求将按高级费率收费（输入2倍，输出1.5倍定价）, Dify显示的价格计算可能不准确。
+      en_US: Enable 1M token context window. Requires organizations in usage tier 4 or with custom rate limits. Note, Requests exceeding 200K tokens are charged at premium rates (2x input, 1.5x output pricing), Dify's displayed pricing calculations may be inaccurate.
 pricing:
   input: '3.00'
   output: '15.00'
