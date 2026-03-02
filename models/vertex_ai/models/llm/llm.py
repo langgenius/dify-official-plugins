@@ -534,7 +534,8 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         :return: full response or stream response chunk generator result
         """
         config_kwargs = model_parameters.copy()
-        config_kwargs["max_output_tokens"] = config_kwargs.pop("max_tokens_to_sample", None)
+        if "max_tokens_to_sample" in config_kwargs:
+            config_kwargs["max_output_tokens"] = config_kwargs.pop("max_tokens_to_sample")
 
         # parse config kwargs
         tools_config = []

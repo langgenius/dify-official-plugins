@@ -1,0 +1,4 @@
+model: qwen3-reranker-0.6b
+model_type: rerank
+model_properties:
+  context_size: 16000
