@@ -13,6 +13,7 @@ dependencies = [
     "numpy~=2.2.4",
     "pillow~=12.1.1",
     "azure-identity~=1.19.0",
+    "azure-core>=1.38.0",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix
