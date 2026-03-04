@@ -30,6 +30,7 @@ parameter_rules:
       zh_Hans: 对于 Gemini 3，使用默认值 1.0 可获得最佳效果。数值过低可能会影响推理能力。
   - name: top_p
     use_template: top_p
+    default: 0.95
   - name: max_output_tokens
     type: int
     required: true

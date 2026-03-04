@@ -2,6 +2,7 @@ model: google/gemini-2.5-flash-image-preview
 label:
   en_US: gemini-2.5-flash-image-preview
 model_type: llm
+deprecated: true
 features:
   - vision
   - document

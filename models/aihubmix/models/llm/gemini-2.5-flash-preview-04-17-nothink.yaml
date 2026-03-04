@@ -3,6 +3,7 @@ model: gemini-2.5-flash-preview-04-17-nothink
 label:
   en_US: gemini-2.5-flash-preview-04-17-nothink
 model_type: llm
+deprecated: true
 features:
   - vision
   - tool-call

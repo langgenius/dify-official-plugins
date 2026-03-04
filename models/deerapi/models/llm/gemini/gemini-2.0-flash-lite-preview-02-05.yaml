@@ -2,6 +2,7 @@ model: gemini-2.0-flash-lite-preview-02-05
 label:
   en_US: gemini-2.0-flash-lite-preview-02-05
 model_type: llm
+deprecated: true
 features:
   - multi-tool-call
   - stream-tool-call
