@@ -2627,6 +2627,10 @@ LLM_BASE_MODELS = [
                     options=["low", "medium", "high"],
                     default="medium",
                 ),
+                ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                ),
                 _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
             ],
             pricing=PriceConfig(
@@ -3108,6 +3112,10 @@ LLM_BASE_MODELS = [
                     ),
                     required=False,
                     options=["low", "medium", "high"],
+                ),
+                ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
                 ),
             ],
             pricing=PriceConfig(
