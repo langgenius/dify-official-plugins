@@ -1,5 +1,6 @@
 model: gemini-embedding-exp-03-07
 model_type: text-embedding
+deprecated: true
 model_properties:
   context_size: 8191
   max_chunks: 32

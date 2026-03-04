@@ -2,6 +2,7 @@ model: gemini-2.0-flash-001
 label:
   en_US: Gemini 2.0 Flash 001
 model_type: llm
+deprecated: true
 features:
   - agent-thought
   - vision
@@ -21,6 +22,7 @@ parameter_rules:
     max: 2
   - name: top_p
     use_template: top_p
+    default: 0.95
   - name: max_output_tokens
     use_template: max_tokens
     default: 8192

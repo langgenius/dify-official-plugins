@@ -2,6 +2,7 @@ model: gemini-2.0-flash-free
 label:
   en_US: Gemini 2.0 Flash (free)
 model_type: llm
+deprecated: true
 features:
   - agent-thought
   - tool-call
