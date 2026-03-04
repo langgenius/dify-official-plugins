@@ -30,9 +30,6 @@ class JinaReaderTool(Tool):
         target_selector = tool_parameters.get("target_selector")
         if target_selector is not None and target_selector != "":
             headers["X-Target-Selector"] = target_selector
-        content_format = tool_parameters.get("content_format")
-        if content_format is not None and content_format != "default":
-            headers["X-Return-Format"] = content_format
         wait_for_selector = tool_parameters.get("wait_for_selector")
         if wait_for_selector is not None and wait_for_selector != "":
             headers["X-Wait-For-Selector"] = wait_for_selector
@@ -51,6 +48,9 @@ class JinaReaderTool(Tool):
             headers["X-No-Cache"] = "true"
         if tool_parameters.get("no_cache_track", False):
             headers["DNT"] = "1"
+        content_format = tool_parameters.get("content_format")
+        if content_format is not None and content_format != "default":
+            headers["X-Return-Format"] = content_format
         # max_retries = tool_parameters.get("max_retries", 3)
         response = requests.get(
             str(URL(self._jina_reader_endpoint + url)),
