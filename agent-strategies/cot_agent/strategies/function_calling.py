@@ -395,14 +395,14 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                     )
             else:
                 for tool_call_id, tool_call_name, tool_call_args in tool_calls:
-                    tool_instance = tool_instances[tool_call_name]
+                    tool_instance = tool_instances.get(tool_call_name,None)
                     tool_call_started_at = time.perf_counter()
                     tool_call_log = self.create_log_message(
                         label=f"CALL {tool_call_name}",
                         data={},
                         metadata={
                             LogMetadata.STARTED_AT: time.perf_counter(),
-                            LogMetadata.PROVIDER: tool_instance.identity.provider,
+                            LogMetadata.PROVIDER: tool_instance.identity.provider if tool_instance and tool_instance.identity else "",
                         },
                         parent=round_log,
                         status=ToolInvokeMessage.LogMessage.LogStatus.START,
@@ -534,7 +534,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                         },
                         metadata={
                             LogMetadata.STARTED_AT: tool_call_started_at,
-                            LogMetadata.PROVIDER: tool_instance.identity.provider,
+                            LogMetadata.PROVIDER: tool_instance.identity.provider if tool_instance and tool_instance.identity else "",
                             LogMetadata.FINISHED_AT: time.perf_counter(),
                             LogMetadata.ELAPSED_TIME: time.perf_counter()
                             - tool_call_started_at,
