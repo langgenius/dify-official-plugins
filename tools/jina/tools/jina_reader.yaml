@@ -223,7 +223,7 @@ parameters:
       label:
         en_US: Default
         zh_Hans: 默认
-        pt_BR: padrão
+        pt_BR: Padrão
     - value: markdown
       label:
         en_US: Markdown
@@ -248,4 +248,4 @@ parameters:
       label:
         en_US: Pageshot
         zh_Hans: 页面快照
-        pt_BR: Pageshot
+        pt_BR: Snapshot da página

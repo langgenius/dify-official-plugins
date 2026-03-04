@@ -48,8 +48,7 @@ class JinaReaderTool(Tool):
             headers["X-No-Cache"] = "true"
         if tool_parameters.get("no_cache_track", False):
             headers["DNT"] = "1"
-        content_format = tool_parameters.get("content_format")
-        if content_format is not None and content_format != "default":
+        if (content_format := tool_parameters.get("content_format")) and content_format != "default":
             headers["X-Return-Format"] = content_format
         # max_retries = tool_parameters.get("max_retries", 3)
         response = requests.get(
