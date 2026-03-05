@@ -3,6 +3,7 @@ model: gemini-2.5-pro-preview-03-25-search
 label:
   en_US: gemini-2.5-pro-preview-03-25-search
 model_type: llm
+deprecated: true
 features:
   - agent-thought
   - vision
