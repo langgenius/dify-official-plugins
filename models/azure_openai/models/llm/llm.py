@@ -65,7 +65,14 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         ai_model_entity = self._get_ai_model_entity(
             base_model_name=base_model_name, model=model
         )
-        if "codex" in base_model_name:
+        # Check if model should use Responses API
+        # 1. Models with "codex" in the name
+        # 2. gpt-5.x models (excluding chat and codex variants which use different APIs)
+        uses_responses_api = (
+            "codex" in base_model_name
+            or (base_model_name.startswith("gpt-5") and "chat" not in base_model_name and "codex" not in base_model_name)
+        )
+        if uses_responses_api:
             return self._chat_generate_with_responses(
                 model=model,
                 credentials=credentials,
@@ -149,7 +156,12 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
         try:
             client = AzureOpenAI(**self._to_credential_kwargs(credentials))
-            if "codex" in base_model_name:
+            # Check if model should use Responses API
+            uses_responses_api = (
+                "codex" in base_model_name
+                or (base_model_name.startswith("gpt-5") and "chat" not in base_model_name and "codex" not in base_model_name)
+            )
+            if uses_responses_api:
                 client.responses.create(
                     input="ping",
                     model=model,
