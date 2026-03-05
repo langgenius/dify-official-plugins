@@ -1,6 +1,6 @@
 model: gemini-3.1-flash-lite-preview
 label:
-  en_US: Gemini 3.1 Flash Lite Preview
+  en_US: Gemini 3.1 Flash-Lite Preview
 model_type: llm
 features:
   - tool-call
@@ -30,12 +30,13 @@ parameter_rules:
       zh_Hans: 对于 Gemini 3，使用默认值 1.0 可获得最佳效果。数值过低可能会影响推理能力。
   - name: top_p
     use_template: top_p
+    default: 0.95
   - name: max_output_tokens
     type: int
     required: true
-    default: 65535
+    default: 65536
     min: 1
-    max: 65535
+    max: 65536
     label:
       en_US: Output length
       zh_Hans: 输出长度
@@ -125,7 +126,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '0.10'
-  output: '0.40'
+  input: '0.25'
+  output: '1.50'
   unit: '0.000001'
   currency: USD
