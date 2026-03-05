@@ -2,6 +2,7 @@ model: gemini-2.5-flash-preview-09-2025
 label:
   en_US: Gemini 2.5 Flash Preview 09-2025
 model_type: llm
+deprecated: true
 features:
   - agent-thought
   - vision

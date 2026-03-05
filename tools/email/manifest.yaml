@@ -9,8 +9,8 @@ label:
   zh_Hans: 邮件
 meta:
   arch:
-  - amd64
-  - arm64
+    - amd64
+    - arm64
   runner:
     entrypoint: main
     language: python
@@ -20,7 +20,7 @@ meta:
 name: email
 plugins:
   tools:
-  - provider/email.yaml
+    - provider/email.yaml
 resource:
   memory: 1048576
   permission:
@@ -30,6 +30,6 @@ resource:
     tool:
       enabled: true
 tags:
-- utilities
+  - utilities
 type: plugin
-version: 0.0.10
+version: 0.0.11

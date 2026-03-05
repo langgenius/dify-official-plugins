@@ -1,6 +1,6 @@
-model: gemini-3-pro-preview
+model: gemini-3.1-flash-lite-preview
 label:
-  en_US: Gemini 3 Pro Preview
+  en_US: Gemini 3.1 Flash-Lite Preview
 model_type: llm
 features:
   - tool-call
@@ -126,8 +126,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '2.0'
-  output: '12.00'
+  input: '0.25'
+  output: '1.50'
   unit: '0.000001'
   currency: USD
-deprecated: true
