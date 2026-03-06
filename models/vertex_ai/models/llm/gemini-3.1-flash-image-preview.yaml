@@ -73,7 +73,7 @@ parameter_rules:
     required: true
     default: 32768
     min: 1
-    max: 131072
+    max: 32768
     label:
         en_US: Output length
         zh_Hans: 输出长度
