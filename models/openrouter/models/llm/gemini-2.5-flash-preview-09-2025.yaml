@@ -2,6 +2,7 @@ model: google/gemini-2.5-flash-preview-09-2025
 label:
   en_US: gemini-2.5-flash-preview-09-2025
 model_type: llm
+deprecated: true
 features:
   - multi-tool-call
   - agent-thought
