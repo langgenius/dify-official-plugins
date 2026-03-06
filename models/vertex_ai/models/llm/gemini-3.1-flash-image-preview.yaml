@@ -1,4 +1,4 @@
-# https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/3-1-flash-image?hl=zh-cn
+# https://docs.cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/3-1-flash-image
 model: gemini-3.1-flash-image-preview
 label:
   en_US: gemini-3.1-flash-image-preview
