@@ -100,7 +100,7 @@ parameter_rules:
     use_template: json_schema
 # https://ai.google.dev/gemini-api/docs/pricing#gemini-3-pro-image-preview
 pricing:
-  # Image input is set at 560 tokens or $0.067 per image.
+  # Image input is set at 560 tokens or $0.0011 per image.
   # Image output is priced at $120 per 1,000,000 tokens.
   # Output images from 1024x1024px (1K) and up to 2048x2048px (2K) consume 1120 tokens and are equivalent to $0.134 per image.
   # Output images up to 4096x4096px (4K) consume 2000 tokens.
