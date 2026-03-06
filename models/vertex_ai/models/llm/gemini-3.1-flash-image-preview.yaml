@@ -38,6 +38,8 @@ parameter_rules:
       - "5:4"
       - "4:5"
       - "21:9"
+      - "4:1"
+      - "8:1"
     label:
       en_US: Aspect ratio
       zh_Hans: 宽高比
