@@ -21,6 +21,49 @@ parameters:
     en_US: "Comma separated workspace IDs to forward events from. Leave blank to accept all workspaces."
     ja_JP: "イベントを転送するワークスペース ID をカンマ区切りで指定します。空欄の場合はすべてを受け入れます。"
     zh_Hans: "使用逗号分隔的工作区 ID，仅接收这些工作区的事件。留空接收所有工作区。"
+- name: parent_type
+  type: select
+  required: false
+  label:
+    en_US: Parent Type
+    ja_JP: 親タイプ
+    zh_Hans: 父级类型
+  description:
+    en_US: "Filter by parent type. Leave blank to accept all."
+    ja_JP: "親タイプでフィルタします。空欄の場合はすべてを受け入れます。"
+    zh_Hans: "按父级类型过滤。留空接收所有。"
+  options:
+  - value: workspace
+    label:
+      en_US: Workspace
+      ja_JP: ワークスペース
+      zh_Hans: 工作区
+  - value: database_id
+    label:
+      en_US: Database
+      ja_JP: データベース
+      zh_Hans: 数据库
+  - value: page_id
+    label:
+      en_US: Page
+      ja_JP: ページ
+      zh_Hans: 页面
+  - value: block_id
+    label:
+      en_US: Block
+      ja_JP: ブロック
+      zh_Hans: 块
+- name: parent_id
+  type: string
+  required: false
+  label:
+    en_US: Parent ID
+    ja_JP: 親 ID
+    zh_Hans: 父级 ID
+  description:
+    en_US: "Comma separated parent IDs to filter by. Leave blank to accept all."
+    ja_JP: "フィルタする親 ID をカンマ区切りで指定します。空欄の場合はすべてを受け入れます。"
+    zh_Hans: "使用逗号分隔的父级 ID 进行过滤。留空接收所有。"
 
 output_schema:
   type: object

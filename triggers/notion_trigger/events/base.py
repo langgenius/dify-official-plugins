@@ -54,6 +54,7 @@ class NotionBaseEvent():
 
         integration_token = self._resolve_integration_token(parameters)
         entity_content = self._fetch_entity_content(payload, integration_token)
+        self._check_entity_filters(entity_content, parameters)
         block_children = self._maybe_fetch_block_children(payload, integration_token)
 
         result: dict[str, Any] = {**payload}
@@ -63,6 +64,17 @@ class NotionBaseEvent():
             result["block_children"] = block_children
 
         return Variables(variables=result)
+
+    def _check_entity_filters(
+        self,
+        entity_content: "Mapping[str, Any] | None",
+        parameters: "Mapping[str, Any]",
+    ) -> None:
+        """Hook called after entity_content is fetched.
+
+        Subclasses override this to apply event-specific filters.
+        Raise ``EventIgnoreError`` to suppress the event.
+        """
 
     # ------------------------------------------------------------------ #
     # Helpers

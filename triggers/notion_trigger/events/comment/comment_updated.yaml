@@ -21,6 +21,28 @@ parameters:
     en_US: "Comma separated workspace IDs to forward events from. Leave blank to accept all workspaces."
     ja_JP: "イベントを転送するワークスペース ID をカンマ区切りで指定します。空欄の場合はすべてを受け入れます。"
     zh_Hans: "使用逗号分隔的工作区 ID，仅接收这些工作区的事件。留空接收所有工作区。"
+- name: author_id
+  type: string
+  required: false
+  label:
+    en_US: Author ID
+    ja_JP: 作成者 ID
+    zh_Hans: 作者 ID
+  description:
+    en_US: "Comma separated user IDs of comment authors to filter by. Leave blank to accept all."
+    ja_JP: "フィルタするコメント作成者のユーザー ID をカンマ区切りで指定します。空欄の場合はすべてを受け入れます。"
+    zh_Hans: "使用逗号分隔的评论作者用户 ID 进行过滤。留空接收所有。"
+- name: text_contains
+  type: string
+  required: false
+  label:
+    en_US: Text Contains
+    ja_JP: テキスト含む
+    zh_Hans: 文本包含
+  description:
+    en_US: "Filter comments whose text contains this substring (case-insensitive). Leave blank to accept all."
+    ja_JP: "テキストにこの文字列を含むコメントをフィルタします（大文字小文字を区別しない）。空欄の場合はすべてを受け入れます。"
+    zh_Hans: "过滤文本中包含此子字符串的评论（不区分大小写）。留空接收所有。"
 
 output_schema:
   type: object
