@@ -147,9 +147,9 @@ class OpenaiCompatible(Endpoint, BaseAuth):
                 
                 # Add reasoning field if present (for models like qwen3.5 with reasoning capability)
                 if "reasoning" in data:
-                    delta["reasoning"] = data.get("reasoning", "")
+                    delta["reasoning"] = data["reasoning"]
                 elif "thought" in data:
-                    delta["reasoning"] = data.get("thought", "")
+                    delta["reasoning"] = data["thought"]
                 
                 message = {
                     "id": "chatcmpl-" + data.get("message_id", "none"),
