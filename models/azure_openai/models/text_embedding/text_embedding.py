@@ -1,7 +1,7 @@
 import base64
 import copy
 import time
-from typing import Optional, Union
+from typing import Any, Optional, Union
 
 import numpy as np
 import tiktoken
@@ -12,8 +12,6 @@ from dify_plugin.entities.model.text_embedding import (
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
-from openai import AzureOpenAI
-
 from ..common import _CommonAzureOpenAI
 from ..constants import EMBEDDING_BASE_MODELS, AzureBaseModel
 
@@ -38,8 +36,7 @@ class AzureOpenAITextEmbeddingModel(_CommonAzureOpenAI, TextEmbeddingModel):
         :return: embeddings result
         """
         base_model_name = credentials["base_model_name"]
-        credentials_kwargs = self._to_credential_kwargs(credentials)
-        client = AzureOpenAI(**credentials_kwargs)
+        client = self._create_client(credentials)
         extra_model_kwargs = {}
         if user:
             extra_model_kwargs["user"] = user
@@ -134,8 +131,7 @@ class AzureOpenAITextEmbeddingModel(_CommonAzureOpenAI, TextEmbeddingModel):
                 f"Base Model Name {credentials['base_model_name']} is invalid"
             )
         try:
-            credentials_kwargs = self._to_credential_kwargs(credentials)
-            client = AzureOpenAI(**credentials_kwargs)
+            client = self._create_client(credentials)
             self._embedding_invoke(
                 model=model, client=client, texts=["ping"], extra_model_kwargs={}
             )
@@ -153,7 +149,7 @@ class AzureOpenAITextEmbeddingModel(_CommonAzureOpenAI, TextEmbeddingModel):
     @staticmethod
     def _embedding_invoke(
         model: str,
-        client: AzureOpenAI,
+        client: Any,
         texts: Union[list[str], str],
         extra_model_kwargs: dict,
     ) -> tuple[list[list[float]], int]:
