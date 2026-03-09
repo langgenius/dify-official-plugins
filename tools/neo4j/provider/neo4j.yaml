@@ -1,0 +1,77 @@
+identity:
+  author: langgenius
+  name: neo4j
+  label:
+    en_US: Neo4j
+    zh_Hans: Neo4j
+    pt_BR: Neo4j
+    ja_JP: Neo4j
+  description:
+    en_US: Interact with Neo4j graph database. Execute Cypher queries, explore schema, and leverage Graph Data Science algorithms.
+    zh_Hans: 与 Neo4j 图数据库交互。执行 Cypher 查询、探索模式并利用图数据科学算法。
+    pt_BR: Interaja com o banco de dados de grafos Neo4j. Execute consultas Cypher, explore esquemas e aproveite algoritmos de ciência de dados de grafos.
+    ja_JP: Neo4j グラフデータベースと連携します。Cypher クエリの実行、スキーマの探索、グラフデータサイエンスアルゴリズムの活用が可能です。
+  icon: icon.svg
+credentials_for_provider:
+  uri:
+    type: text-input
+    required: true
+    label:
+      en_US: Neo4j URI
+      zh_Hans: Neo4j URI
+      pt_BR: URI do Neo4j
+      ja_JP: Neo4j URI
+    placeholder:
+      en_US: "bolt://localhost:7687 or neo4j+s://xxxx.databases.neo4j.io"
+      zh_Hans: "bolt://localhost:7687 或 neo4j+s://xxxx.databases.neo4j.io"
+      pt_BR: "bolt://localhost:7687 ou neo4j+s://xxxx.databases.neo4j.io"
+      ja_JP: "bolt://localhost:7687 または neo4j+s://xxxx.databases.neo4j.io"
+    help:
+      en_US: The connection URI for your Neo4j database. Use bolt:// for local instances or neo4j+s:// for Neo4j Aura.
+      zh_Hans: Neo4j 数据库的连接 URI。本地实例使用 bolt://，Neo4j Aura 使用 neo4j+s://。
+      pt_BR: O URI de conexao para seu banco de dados Neo4j. Use bolt:// para instancias locais ou neo4j+s:// para Neo4j Aura.
+      ja_JP: Neo4j データベースの接続 URI。ローカルインスタンスには bolt://、Neo4j Aura には neo4j+s:// を使用してください。
+  username:
+    type: text-input
+    required: true
+    label:
+      en_US: Username
+      zh_Hans: 用户名
+      pt_BR: Nome de usuario
+      ja_JP: ユーザー名
+    placeholder:
+      en_US: Enter your Neo4j username
+      zh_Hans: 请输入您的 Neo4j 用户名
+      pt_BR: Insira seu nome de usuario do Neo4j
+      ja_JP: Neo4j ユーザー名を入力してください
+    help:
+      en_US: The username for authenticating with Neo4j. Default is usually 'neo4j'.
+      zh_Hans: 用于 Neo4j 身份验证的用户名。默认通常是 'neo4j'。
+      pt_BR: O nome de usuario para autenticacao com Neo4j. O padrao geralmente e 'neo4j'.
+      ja_JP: Neo4j 認証用のユーザー名。通常、デフォルトは「neo4j」です。
+  password:
+    type: secret-input
+    required: true
+    label:
+      en_US: Password
+      zh_Hans: 密码
+      pt_BR: Senha
+      ja_JP: パスワード
+    placeholder:
+      en_US: Enter your Neo4j password
+      zh_Hans: 请输入您的 Neo4j 密码
+      pt_BR: Insira sua senha do Neo4j
+      ja_JP: Neo4j パスワードを入力してください
+    help:
+      en_US: The password for authenticating with Neo4j.
+      zh_Hans: 用于 Neo4j 身份验证的密码。
+      pt_BR: A senha para autenticacao com Neo4j.
+      ja_JP: Neo4j 認証用のパスワード。
+tools:
+  - tools/get_schema.yaml
+  - tools/read_cypher.yaml
+  - tools/write_cypher.yaml
+  - tools/list_gds_procedures.yaml
+extra:
+  python:
+    source: provider/neo4j.py

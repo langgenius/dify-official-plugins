@@ -46,10 +46,10 @@ provider_credential_schema:
     placeholder:
       en_US: Enter your group ID
       zh_Hans: 在此输入您的 Group ID
-    required: true
+    required: false
     type: text-input
     variable: minimax_group_id
-  - default: https://api.minimaxi.com
+  - default: https://api.minimax.io
     label:
       en_US: API Base
       zh_Hans: API Base

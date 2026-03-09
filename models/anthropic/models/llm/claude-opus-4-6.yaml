@@ -1,6 +1,6 @@
-model: claude-3-7-sonnet-20250219
+model: claude-opus-4-6
 label:
-  en_US: claude-3-7-sonnet-20250219
+  en_US: claude-opus-4-6
 model_type: llm
 features:
   - agent-thought
@@ -28,7 +28,7 @@ parameter_rules:
       en_US: Thinking Budget
     type: int
     default: 1024
-    min: 0
+    min: 1024
     max: 128000
     required: false
     help:
@@ -55,15 +55,6 @@ parameter_rules:
     max: 128000
   - name: response_format
     use_template: response_format
-  - name: extended_output
-    label:
-      zh_Hans: 扩展输出
-      en_US: Extended Output
-    type: boolean
-    default: false
-    help:
-      zh_Hans: 启用长达128K标记的输出能力。
-      en_US: Enable capability for up to 128K output tokens.
   - name: prompt_caching_message_flow
     label:
       zh_Hans: 大消息自动缓存阈值
@@ -125,7 +116,7 @@ parameter_rules:
       zh_Hans: 启用工具结果的提示缓存。
       en_US: Enable prompt caching for tool results.
 pricing:
-  input: '3.00'
-  output: '15.00'
+  input: '5.00'
+  output: '25.00'
   unit: '0.000001'
   currency: USD

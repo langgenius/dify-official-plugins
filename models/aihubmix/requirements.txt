@@ -3,4 +3,5 @@ httpx>=0.28.1,<0.29.dev0
 openai~=2.3.0
 google-genai>=1.56.0
 anthropic~=0.57.1
-pillow~=11.3.0
+pillow~=12.1.1
+urllib3>=2.6.3

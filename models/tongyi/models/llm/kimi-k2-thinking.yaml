@@ -1,0 +1,50 @@
+# for more details, please refer to https://help.aliyun.com/zh/model-studio/kimi-api
+model: kimi-k2-thinking
+label:
+  zh_Hans: kimi-k2-thinking
+  en_US: kimi-k2-thinking
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 262144
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    type: float
+    default: 1.0
+    min: 0.0
+    max: 2.0
+    help:
+      zh_Hans: 采样温度。思考模式下建议使用 1.0。
+      en_US: Sampling temperature. Recommended 1.0 for thinking mode.
+  - name: max_tokens
+    use_template: max_tokens
+    type: int
+    default: 1024
+    min: 1
+    max: 16384
+    help:
+      zh_Hans: 用于指定模型在生成内容时 token 的最大数量，它定义了生成的上限，但不保证每次都会生成到这个数量。
+      en_US: It is used to specify the maximum number of tokens when the model generates content. It defines the upper limit of generation, but does not guarantee that this number will be generated every time.
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - text
+      - json_object
+pricing:
+  input: '4'
+  output: '16'
+  unit: '0.000001'
+  currency: RMB

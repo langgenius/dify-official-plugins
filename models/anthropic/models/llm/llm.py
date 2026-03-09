@@ -222,11 +222,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             else:
                 extra_headers["anthropic-beta"] = "output-128k-2025-02-19"
 
-        if model == "claude-3-7-sonnet-20250219" and tools:
-            if "anthropic-beta" in extra_headers:
-                extra_headers["anthropic-beta"] += ",token-efficient-tools-2025-02-19"
-            else:
-                extra_headers["anthropic-beta"] = "token-efficient-tools-2025-02-19"
+
 
         if stop:
             extra_model_kwargs["stop_sequences"] = stop
@@ -711,7 +707,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         
         current_tool_name = None
         current_tool_id = None
-        current_tool_params = ""
+        tool_params_by_id: dict[str, str] = {}
         
         if not any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
             self.previous_thinking_blocks = []
@@ -743,6 +739,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         current_tool_id = getattr(content_block, 'id', None)
                         
                         if current_tool_name and current_tool_id:
+                            tool_params_by_id[current_tool_id] = ""
                             tool_call = AssistantPromptMessage.ToolCall(
                                 id=current_tool_id,
                                 type="function",
@@ -766,12 +763,12 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 if hasattr(chunk.delta, "type") and chunk.delta.type == "input_json_delta":
                     if hasattr(chunk.delta, "partial_json"):
                         partial_json = chunk.delta.partial_json
-                        if partial_json:
-                            current_tool_params += partial_json
+                        if partial_json and current_tool_id and current_tool_id in tool_params_by_id:
+                            tool_params_by_id[current_tool_id] += partial_json
                             
                             for tc in tool_calls:
                                 if tc.id == current_tool_id:
-                                    tc.function.arguments = current_tool_params # type: ignore[bad-assignment]
+                                    tc.function.arguments = tool_params_by_id[current_tool_id]
                                     break
                 
                 if chunk.index != current_block_index:
@@ -870,12 +867,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         ),
                     )
                 
-                if current_tool_name and current_tool_id and current_tool_params and not tool_calls:
+                fallback_params = tool_params_by_id.get(current_tool_id or "", "")
+                if current_tool_name and current_tool_id and fallback_params and not tool_calls:
                     fallback_tool_call = AssistantPromptMessage.ToolCall(
                         id=current_tool_id,
                         type="function",
                         function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                            name=current_tool_name, arguments=current_tool_params
+                            name=current_tool_name, arguments=fallback_params
                         ),
                     )
                     tool_calls.append(fallback_tool_call)

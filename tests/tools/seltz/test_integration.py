@@ -27,7 +27,7 @@ def api_key():
 def test_seltz_client_search(api_key):
     """Test basic Seltz client search functionality."""
     from seltz import Seltz
-    from seltz.types import Includes
+    from seltz import Includes
 
     client = Seltz(api_key=api_key)
 
@@ -37,6 +37,7 @@ def test_seltz_client_search(api_key):
     assert hasattr(response, "documents")
     # We expect at least one result for a common query
     assert len(response.documents) > 0
+    assert len(response.documents) <= 3
 
     # Check document structure
     for doc in response.documents:
@@ -49,7 +50,7 @@ def test_seltz_client_search(api_key):
 def test_seltz_search_different_query(api_key):
     """Test search with a different query."""
     from seltz import Seltz
-    from seltz.types import Includes
+    from seltz import Includes
 
     client = Seltz(api_key=api_key)
 
@@ -58,6 +59,7 @@ def test_seltz_search_different_query(api_key):
     assert response is not None
     assert hasattr(response, "documents")
     assert len(response.documents) > 0
+    assert len(response.documents) <= 5
 
     # Verify document structure
     doc = response.documents[0]

@@ -26,9 +26,9 @@ class ImageGenerateTool(Tool):
         if not prompt:
             yield self.create_text_message("Please input prompt")
             return
-        # --- Parameter Extraction and Validation --- 
+        # --- Parameter Extraction and Validation ---
         generation_args: Dict[str, Any] = {
-            "model": "gpt-image-1",
+            "model": self.runtime.credentials["azure_openai_api_model_name"],
             "prompt": prompt,
         }
 

@@ -1,0 +1,71 @@
+identity:
+  name: "download_attachment"
+  display_name: "Download Attachment"
+  author: "langgenius"
+  label:
+    en_US: "Download Gmail Attachment"
+    zh_Hans: "下载Gmail附件"
+    pt_BR: "Baixar Anexo do Gmail"
+    ja_JP: "Gmail添付ファイルをダウンロード"
+description:
+  human:
+    en_US: "Download an attachment from a Gmail message by message ID and attachment ID"
+    zh_Hans: "通过邮件ID和附件ID从Gmail邮件下载附件"
+    pt_BR: "Baixar um anexo de uma mensagem do Gmail por ID da mensagem e ID do anexo"
+    ja_JP: "メッセージIDと添付ファイルIDでGmailメッセージから添付ファイルをダウンロード"
+  llm: "Download the content of a specific attachment from a Gmail message. Returns base64-encoded attachment data along with metadata. Requires both message_id and attachment_id which can be obtained from the get_message tool."
+parameters:
+  - name: message_id
+    type: string
+    required: true
+    label:
+      en_US: "Message ID"
+      zh_Hans: "邮件ID"
+      pt_BR: "ID da Mensagem"
+      ja_JP: "メッセージID"
+    human_description:
+      en_US: "The unique identifier of the Gmail message containing the attachment"
+      zh_Hans: "包含附件的Gmail邮件的唯一标识符"
+      pt_BR: "Identificador único da mensagem do Gmail contendo o anexo"
+      ja_JP: "添付ファイルを含むGmailメッセージの一意の識別子"
+    llm_description: "The unique message ID of the Gmail message. This can be obtained from get_message or search_messages tools."
+    form: llm
+  - name: attachment_id
+    type: string
+    required: true
+    label:
+      en_US: "Attachment ID"
+      zh_Hans: "附件ID"
+      pt_BR: "ID do Anexo"
+      ja_JP: "添付ファイルID"
+    human_description:
+      en_US: "The unique identifier of the attachment to download"
+      zh_Hans: "要下载的附件的唯一标识符"
+      pt_BR: "Identificador único do anexo a ser baixado"
+      ja_JP: "ダウンロードする添付ファイルの一意の識別子"
+    llm_description: "The unique attachment ID obtained from get_message tool with include_attachments=True. This ID is found in the 'attachment_id' field of the attachment info."
+    form: llm
+output_schema:
+  type: object
+  properties:
+    status:
+      type: string
+      description: "Status of the download operation"
+    message_id:
+      type: string
+      description: "The message ID from which the attachment was downloaded"
+    attachment_id:
+      type: string
+      description: "The attachment ID that was downloaded"
+    size:
+      type: number
+      description: "Size of the attachment in bytes"
+    data:
+      type: string
+      description: "Base64-encoded attachment content"
+    encoding:
+      type: string
+      description: "Encoding format of the data (base64)"
+extra:
+  python:
+    source: tools/download_attachment.py

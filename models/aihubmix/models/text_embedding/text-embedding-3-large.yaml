@@ -5,5 +5,6 @@ model_properties:
   max_chunks: 32
 pricing:
   input: '0.13'
+  output: '0.13'
   unit: '0.000001'
   currency: USD

@@ -1,4 +1,4 @@
-version: 1.0.0
+version: 1.0.2
 type: plugin
 author: langgenius
 name: deerapi
@@ -27,7 +27,7 @@ plugins:
   models:
     - provider/deerapi.yaml
 meta:
-  version: 1.0.0
+  version: 1.0.2
   arch:
     - amd64
     - arm64

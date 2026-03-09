@@ -11,7 +11,7 @@ from seltz import (
     SeltzRateLimitError,
     SeltzTimeoutError,
 )
-from seltz.types import Includes
+from seltz import Includes
 
 
 class SeltzSearchTool(Tool):

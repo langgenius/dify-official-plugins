@@ -1,0 +1,169 @@
+identity:
+  name: "gemini_video_general"
+  author: "langgenius"
+  label:
+    en_US: "Gemini Video Generation"
+    zh_Hans: "gemini通用视频生成工具"
+description:
+  human:
+    en_US: "gemini video generation support for Veo 3.1"
+    zh_Hans: "Gemini 视频生成，支持 Veo 3.1"
+  llm: "gemini video generation support for Veo 3.1"
+parameters:
+  - name: model
+    type: select
+    required: true
+    label:
+      en_US: Model
+      zh_Hans: 模型
+    human_description:
+      en_US: "select a model to generate video"
+      zh_Hans: "选择一个模型生成视频"
+    form: form
+    options:
+      - value: "veo-3.1-generate-preview"
+        label:
+          en_US: "Veo3.1"
+          zh_Hans: "Veo3.1"
+      - value: "veo-3.1-fast-generate-preview"
+        label:
+          en_US: "Veo3.1 Fast"
+          zh_Hans: "Veo3.1 Fast"
+  - name: prompt
+    type: string
+    required: true
+    label:
+      en_US: Prompt
+      zh_Hans: 提示词
+    human_description:
+      en_US: "Text prompt to guide video generation"
+      zh_Hans: "用于指导视频生成的文本提示词"
+    form: form
+  - name: negative_prompt
+    type: string
+    required: false
+    label:
+      en_US: Negative Prompt
+      zh_Hans: 反向提示词
+    human_description:
+      en_US: "Text prompt to exclude content from video generation"
+      zh_Hans: "用于排除视频生成中不需要的内容的文本提示词"
+    form: form
+  - name: proxy_url
+    type: string
+    required: false
+    label:
+      en_US: proxy url
+      zh_Hans: 代理url
+    human_description:
+      zh_Hans: "代理地址，格式为：http(s)://username:password@ip_address:port"
+      en_US: "proxy url, format: http(s)://username:password@ip_address:port"
+    form: form
+  - name: image
+    type: file
+    required: false
+    label:
+      en_US: Image
+      zh_Hans: 图片
+    human_description:
+      en_US: "Reference image for video generation (initial frame)"
+      zh_Hans: "视频生成的参考图片（初始帧）"
+    form: form
+  - name: last_frame
+    type: file
+    required: false
+    label:
+      en_US: Last Frame
+      zh_Hans: 最后一帧
+    human_description:
+      en_US: "Specify the last frame of the generated video"
+      zh_Hans: "指定生成视频的最后一帧图片"
+    form: form
+  - name: ref_images
+    type: files
+    required: false
+    label:
+      en_US: Reference Images
+      zh_Hans: 参考图片
+    human_description:
+      en_US: "Multiple reference images for video style/ content guidance"
+      zh_Hans: "用于指导视频风格/内容的多张参考图片"
+    form: form
+  - name: ref_video
+    type: file
+    required: false
+    label:
+      en_US: Reference Video for extending video
+      zh_Hans: 用于延长视频的参考视频
+    human_description:
+      en_US: "Reference Video for extending video"
+      zh_Hans: "用于延长视频的参考视频"
+    form: form
+  - name: aspect_ratio
+    type: select
+    required: false
+    label:
+      en_US: Aspect Ratio
+      zh_Hans: 宽高比
+    human_description:
+      en_US: "Aspect ratio of the generated video"
+      zh_Hans: "生成视频的宽高比"
+    form: form
+    options:
+      - value: "16:9"
+        label:
+          en_US: "16:9"
+          zh_Hans: "16:9"
+      - value: "9:16"
+        label:
+          en_US: "9:16"
+          zh_Hans: "9:16"
+    default: "16:9"
+  - name: resolution
+    type: select
+    required: false
+    label:
+      en_US: Resolution
+      zh_Hans: 分辨率
+    human_description:
+      en_US: "Resolution of the generated video"
+      zh_Hans: "生成视频的分辨率"
+    form: form
+    options:
+      - value: "720p"
+        label:
+          en_US: "720p"
+          zh_Hans: "720p"
+      - value: "1080p"
+        label:
+          en_US: "1080p"
+          zh_Hans: "1080p"
+    default: "720p"
+  - name: duration_seconds
+    type: select
+    required: false
+    label:
+      en_US: Duration (seconds)
+      zh_Hans: 时长（秒）
+    human_description:
+      en_US: "Duration of the generated video (in seconds)"
+      zh_Hans: "生成视频的时长（以秒为单位）"
+    form: form
+    options:
+      - value: "4"
+        label:
+          en_US: "4 seconds"
+          zh_Hans: "4秒"
+      - value: "6"
+        label:
+          en_US: "6 seconds"
+          zh_Hans: "6秒"
+      - value: "8"
+        label:
+          en_US: "8 seconds"
+          zh_Hans: "8秒"
+    default: "4"
+
+extra:
+  python:
+    source: tools/gemini_video.py
