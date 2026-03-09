@@ -1,0 +1,113 @@
+description:
+  human:
+    en_US: Edit images with SiliconFlow using the current Qwen Image Edit models.
+    zh_CN: 使用 SiliconFlow 的 Qwen Image Edit 模型编辑图片。
+  llm: This tool uses SiliconFlow's current /v1/images/generations API to edit images with Qwen/Qwen-Image-Edit-2509 or Qwen/Qwen-Image-Edit.
+extra:
+  python:
+    source: tools/image-edit.py
+identity:
+  author: SiliconFlow, Inc.
+  icon: icon.svg
+  label:
+    en_US: Image Edit
+    zh_CN: 图片编辑
+  name: image_edit
+parameters:
+  - form: llm
+    human_description:
+      en_US: The prompt describing the target edit result.
+      zh_Hans: 描述目标编辑结果的提示词。
+    label:
+      en_US: Prompt
+      zh_Hans: 提示词
+    llm_description: Prompt describing the image edit to perform.
+    name: prompt
+    required: true
+    type: string
+  - default: qwen_image_edit_2509
+    form: form
+    human_description:
+      en_US: Select the image edit model.
+      zh_Hans: 选择图片编辑模型。
+    label:
+      en_US: Model
+      zh_Hans: 模型
+    name: model
+    options:
+      - label:
+          en_US: Qwen/Qwen-Image-Edit-2509
+        value: qwen_image_edit_2509
+      - label:
+          en_US: Qwen/Qwen-Image-Edit
+        value: qwen_image_edit
+    required: true
+    type: select
+  - default: 20
+    form: form
+    human_description:
+      en_US: Number of inference steps for image editing.
+      zh_Hans: 图片编辑的推理步数。
+    label:
+      en_US: Inference Steps
+      zh_Hans: 推理步数
+    max: 100
+    min: 1
+    name: num_inference_steps
+    required: false
+    type: number
+  - default: 4
+    form: form
+    human_description:
+      en_US: CFG scale for image editing. The official recommendation is 4.
+      zh_Hans: 图片编辑的 CFG 强度，官方推荐值为 4。
+    label:
+      en_US: CFG Scale
+      zh_Hans: CFG 强度
+    max: 20
+    min: 0.1
+    name: cfg
+    required: false
+    type: number
+  - form: form
+    human_description:
+      en_US: Optional seed for reproducible results.
+      zh_Hans: 可选随机种子，用于复现编辑结果。
+    label:
+      en_US: Seed
+      zh_Hans: 种子
+    max: 9999999999
+    min: 0
+    name: seed
+    required: false
+    type: number
+  - form: form
+    human_description:
+      en_US: First input image URL or base64 data. Required for image editing.
+      zh_Hans: 第一张输入图片的 URL 或 base64 数据，图片编辑时必填。
+    label:
+      en_US: Input Image 1
+      zh_Hans: 输入图片 1
+    name: image
+    required: true
+    type: string
+  - form: form
+    human_description:
+      en_US: Optional second input image URL or base64 data. Only supported by Qwen/Qwen-Image-Edit-2509.
+      zh_Hans: 可选第二张输入图片的 URL 或 base64 数据，仅 Qwen/Qwen-Image-Edit-2509 支持。
+    label:
+      en_US: Input Image 2
+      zh_Hans: 输入图片 2
+    name: image2
+    required: false
+    type: string
+  - form: form
+    human_description:
+      en_US: Optional third input image URL or base64 data. Only supported by Qwen/Qwen-Image-Edit-2509.
+      zh_Hans: 可选第三张输入图片的 URL 或 base64 数据，仅 Qwen/Qwen-Image-Edit-2509 支持。
+    label:
+      en_US: Input Image 3
+      zh_Hans: 输入图片 3
+    name: image3
+    required: false
+    type: string
