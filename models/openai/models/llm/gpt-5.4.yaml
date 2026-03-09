@@ -1,7 +1,8 @@
-model: gpt-5.1
+# https://platform.openai.com/docs/models/gpt-5.4
+model: gpt-5.4
 label:
-  zh_Hans: gpt-5.1
-  en_US: gpt-5.1
+  zh_Hans: gpt-5.4
+  en_US: gpt-5.4
 model_type: llm
 features:
   - multi-tool-call
@@ -10,7 +11,7 @@ features:
   - vision
 model_properties:
   mode: chat
-  context_size: 400000
+  context_size: 1050000
 parameter_rules:
   - name: max_tokens
     use_template: max_tokens
@@ -37,8 +38,8 @@ parameter_rules:
       en_US: Reasoning Effort
     type: string
     help:
-      zh_Hans: 约束推理模型的推理努力程度。支持的值包括 none、low、medium 和 high。降低推理努力可以获得更快的响应和更少的推理 token 使用。GPT-5.1 中默认值为 none。
-      en_US: Constrains effort on reasoning for reasoning models. Currently supported values are none, low, medium, and high. Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response. The default for GPT-5.1 is none.
+      zh_Hans: 约束推理模型的推理努力程度。支持的值包括 none、low、medium、high 和 xhigh。降低推理努力可以获得更快的响应和更少的推理 token 使用。GPT-5.4 中默认值为 none。
+      en_US: Constrains effort on reasoning for reasoning models. Currently supported values are none, low, medium, high, and xhigh. Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response. The default for GPT-5.4 is none.
     required: false
     default: none
     options:
@@ -46,6 +47,7 @@ parameter_rules:
       - low
       - medium
       - high
+      - xhigh
   - name: verbosity
     label:
       zh_Hans: 详细程度
@@ -71,11 +73,7 @@ parameter_rules:
     required: true
     default: true
 pricing:
-  input: '1.25'
-  output: '10.00'
+  input: '2.50'
+  output: '15.00'
   unit: '0.000001'
   currency: USD
-
-
-
-
