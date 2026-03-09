@@ -1,7 +1,7 @@
 version: 0.0.32
 type: plugin
 author: "langgenius"
-name: "agent"
+name: "agent1"
 label:
   en_US: "Dify Agent Strategies"
   zh_Hans: "Dify Agent 策略"
