@@ -2,7 +2,7 @@
 Azure OpenAI Service is a cloud-based platform that provides access to advanced AI models developed by OpenAI, integrated with Microsoft's Azure infrastructure. This plugin allows users to leverage cutting-edge generative AI capabilities such as LLMs, text embedding, speech-to-text (STT), and text-to-speech (TTS) for various applications, ensuring security and compliance through Azure's robust framework.
 
 ## Configure
-Once the plugin is installed, configure your Azure OpenAI Service Model by providing the Model Type, Deployment Name, API Endpoint URL, Authentication Method, the API Version, and the Base Model.
+Once the plugin is installed, configure your Azure OpenAI Service Model by providing the Model Type, Deployment Name, API Endpoint URL, Authentication Method, and the Base Model. The API Version is optional when your endpoint already uses the Azure OpenAI `v1` path, for example `https://<resource>.openai.azure.com/openai/v1/`.
 
 ### Authentication Methods
 

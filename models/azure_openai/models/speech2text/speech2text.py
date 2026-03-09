@@ -3,7 +3,6 @@ from typing import IO, Optional
 from dify_plugin.entities.model import AIModelEntity
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.speech2text_model import Speech2TextModel
-from openai import AzureOpenAI
 from ..common import _CommonAzureOpenAI
 from ..constants import SPEECH2TEXT_BASE_MODELS, AzureBaseModel
 
@@ -53,8 +52,7 @@ class AzureOpenAISpeech2TextModel(_CommonAzureOpenAI, Speech2TextModel):
         :param file: audio file
         :return: text for given audio file
         """
-        credentials_kwargs = self._to_credential_kwargs(credentials)
-        client = AzureOpenAI(**credentials_kwargs)
+        client = self._create_client(credentials)
         response = client.audio.transcriptions.create(model=model, file=file)
         return response.text
 
