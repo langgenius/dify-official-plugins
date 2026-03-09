@@ -15,7 +15,7 @@ charset-normalizer==3.4.5
     # via requests
 click==8.3.1
     # via flask
-dify-plugin==0.7.2
+dify-plugin==0.5.1
     # via siliconflow (pyproject.toml)
 dpkt==1.9.8
     # via dify-plugin
@@ -84,7 +84,7 @@ typing-inspection==0.4.2
     #   pydantic-settings
 urllib3==2.6.3
     # via requests
-werkzeug==3.1.6
+werkzeug==3.0.6
     # via
     #   dify-plugin
     #   flask
