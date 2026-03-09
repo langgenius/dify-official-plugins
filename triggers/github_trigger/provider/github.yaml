@@ -381,64 +381,6 @@ subscription_constructor:
       required: true
       type: secret-input
       url: https://github.com/settings/tokens?type=beta
-  oauth_schema:
-    client_schema:
-    - name: "client_id"
-      type: "secret-input"
-      required: true
-      url: https://github.com/settings/applications/new
-      placeholder:
-        en_US: "Please input your Client ID"
-        zh_Hans: "请输入你的 Client ID"
-        ja_JP: "クライアントIDを入力してください"
-      help:
-        en_US: "Client ID is used to authenticate requests to the GitHub API."
-        zh_Hans: "Client ID 用于认证请求到 GitHub API。"
-        ja_JP: "クライアントIDはGitHub APIへのリクエスト認証に使用されます。"
-      label:
-        zh_Hans: "Client ID"
-        en_US: "Client ID"
-        ja_JP: "クライアントID"
-    - name: "client_secret"
-      type: "secret-input"
-      required: true
-      url: https://github.com/settings/applications/new
-      placeholder:
-        en_US: "Please input your Client Secret"
-        zh_Hans: "请输入你的 Client Secret"
-        ja_JP: "クライアントシークレットを入力してください"
-      help:
-        en_US: "Client Secret is used to authenticate requests to the GitHub API."
-        zh_Hans: "Client Secret 用于认证请求到 GitHub API。"
-        ja_JP: "クライアントシークレットはGitHub APIへのリクエスト認証に使用されます。"
-      label:
-        zh_Hans: "Client Secret"
-        en_US: "Client Secret"
-        ja_JP: "クライアントシークレット"
-    - name: "scope"
-      type: "text-input"
-      required: false
-      default: "read:user admin:repo_hook"
-      url: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps
-      placeholder:
-        en_US: "read:user admin:repo_hook"
-        zh_Hans: "read:user admin:repo_hook"
-        ja_JP: "read:user admin:repo_hook"
-      help:
-        en_US: "OAuth scopes for GitHub API access. Default: read:user admin:repo_hook"
-        zh_Hans: "GitHub API 访问的 OAuth 作用域。默认：read:user admin:repo_hook"
-        ja_JP: "GitHub API アクセスの OAuth スコープ。デフォルト：read:user admin:repo_hook"
-      label:
-        zh_Hans: "OAuth Scope"
-        en_US: "OAuth Scope"
-        ja_JP: "OAuth スコープ"
-    credentials_schema:
-    - name: "access_tokens"
-      type: "secret-input"
-      label:
-        zh_Hans: "Access Token"
-        en_US: "Access Token"
-        ja_JP: "アクセストークン"
   extra:
     python:
       source: provider/github.py
