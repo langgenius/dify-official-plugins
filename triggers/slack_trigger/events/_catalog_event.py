@@ -84,6 +84,8 @@ class CatalogSlackEvent:
             if event_type != expected_event_type:
                 raise EventIgnoreError()
 
+        self._apply_filters(event, parameters)
+
         sanitized_payload = self._sanitize(payload)
         sanitized_event = self._sanitize(event)
 
@@ -122,3 +124,9 @@ class CatalogSlackEvent:
         }
 
         return Variables(variables=variables)
+
+    def _apply_filters(self, event: Mapping[str, Any], parameters: Mapping[str, Any]) -> None:
+        """Hook for subclasses to apply event-specific filters.
+
+        Raise ``EventIgnoreError`` to suppress the event.
+        """

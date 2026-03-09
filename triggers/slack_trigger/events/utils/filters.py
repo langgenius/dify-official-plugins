@@ -105,18 +105,23 @@ def check_reaction(event: Mapping[str, Any], value: Any) -> None:
         raise EventIgnoreError()
 
 
-def check_reaction_item_type(event: Mapping[str, Any], value: Any) -> None:
-    """Raise EventIgnoreError if the reacted-to item type does not match.
-
-    Slack reports ``item.type`` as one of ``message``, ``file``, or
-    ``file_comment``.
-    """
+def _check_item_type(event: Mapping[str, Any], value: Any) -> None:
+    """Raise EventIgnoreError if ``event.item.type`` does not match *value*."""
     if not value:
         return
     item = event.get("item") or {}
     item_type = str(item.get("type") or "") if isinstance(item, Mapping) else ""
     if item_type != str(value):
         raise EventIgnoreError()
+
+
+def check_reaction_item_type(event: Mapping[str, Any], value: Any) -> None:
+    """Raise EventIgnoreError if the reacted-to item type does not match.
+
+    Slack reports ``item.type`` as one of ``message``, ``file``, or
+    ``file_comment``.
+    """
+    _check_item_type(event, value)
 
 
 def check_emoji_subtype(event: Mapping[str, Any], value: Any) -> None:
@@ -137,9 +142,4 @@ def check_star_item_type(event: Mapping[str, Any], value: Any) -> None:
     Slack reports ``item.type`` as one of ``message``, ``file``, ``channel``,
     ``im``, or ``app``.
     """
-    if not value:
-        return
-    item = event.get("item") or {}
-    item_type = str(item.get("type") or "") if isinstance(item, Mapping) else ""
-    if item_type != str(value):
-        raise EventIgnoreError()
+    _check_item_type(event, value)
