@@ -17,8 +17,8 @@ parameters:
       en_US: Operation Type
       zh_Hans: 操作类型
     human_description:
-      en_US: Select the DynamoDB Manager operation type (create table, put item, get item, or delete item)
-      zh_Hans: 选择 DynamoDB 管理器操作类型（创建表、添加项目、获取项目或删除项目）
+      en_US: Select the DynamoDB Manager operation type (create table, put item, get item, delete item, or scan)
+      zh_Hans: 选择 DynamoDB 管理器操作类型（创建表、添加项目、获取项目、删除项目或扫描）
     llm_description: Specify the type of DynamoDB Manager operation to execute
     options:
       - value: create_table
@@ -37,6 +37,10 @@ parameters:
         label:
           en_US: Delete Item
           zh_Hans: 删除项目
+      - value: scan
+        label:
+          en_US: Scan
+          zh_Hans: 扫描
     form: form
   - name: table_name
     type: string
@@ -63,7 +67,7 @@ parameters:
     form: form
   - name: partition_key_name
     type: string
-    required: true
+    required: false
     label:
       en_US: Partition Key Name
       zh_Hans: 主键名称
@@ -74,7 +78,7 @@ parameters:
     form: llm
   - name: partition_key
     type: string
-    required: true
+    required: false
     label:
       en_US: Partition Key
       zh_Hans: 主键值
@@ -115,6 +119,18 @@ parameters:
       en_US: DynamoDB Manager item data (JSON format) for put operations
       zh_Hans: DynamoDB 管理器项目数据（JSON 格式），用于添加操作
     llm_description: JSON formatted item data for DynamoDB Manager put operations
+    form: llm
+  - name: limit
+    type: number
+    required: false
+    label:
+      en_US: Limit
+      zh_Hans: 限制数量
+    human_description:
+      en_US: Maximum number of items to return for scan operations
+      zh_Hans: 扫描操作返回的最大项目数量
+    llm_description: Maximum number of items to return for DynamoDB Manager scan operations
+    default: 100
     form: llm
 extra:
   python:

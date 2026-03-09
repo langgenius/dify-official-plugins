@@ -9,7 +9,7 @@ from dify_plugin.entities.model import EmbeddingInputType, PriceType
 from dify_plugin.entities.model.text_embedding import EmbeddingUsage, MultiModalContent, MultiModalContentType, MultiModalEmbeddingResult, TextEmbeddingResult
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.text_embedding_model import TextEmbeddingModel
-from models._common import _CommonTongyi
+from models._common import _CommonTongyi, get_http_base_address
 from ..constant import BURY_POINT_HEADER
 
 vision_models = dict()
@@ -37,8 +37,7 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         :param input_type: input type
         :return: embeddings result
         """
-        if credentials.get("use_international_endpoint", "false") == "true":
-            dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
+        http_base_address = get_http_base_address(credentials)
         credentials_kwargs = self._to_credential_kwargs(credentials)
         context_size = self._get_context_size(model, credentials)
         max_chunks = self._get_max_chunks(model, credentials)
@@ -57,7 +56,10 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         _iter = range(0, len(inputs), max_chunks)
         for i in _iter:
             (embeddings_batch, embedding_used_tokens) = self.embed_documents(
-                credentials_kwargs=credentials_kwargs, model=model, texts=inputs[i : i + max_chunks]
+                credentials_kwargs=credentials_kwargs,
+                model=model,
+                texts=inputs[i : i + max_chunks],
+                base_address=http_base_address,
             )
             used_tokens += embedding_used_tokens
             batched_embeddings += embeddings_batch
@@ -90,12 +92,23 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         """
         try:
             credentials_kwargs = self._to_credential_kwargs(credentials)
-            self.embed_documents(credentials_kwargs=credentials_kwargs, model=model, texts=["ping"])
+            http_base_address = get_http_base_address(credentials)
+            self.embed_documents(
+                credentials_kwargs=credentials_kwargs,
+                model=model,
+                texts=["ping"],
+                base_address=http_base_address,
+            )
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
     @staticmethod
-    def embed_documents(credentials_kwargs: dict, model: str, texts: list[str]) -> tuple[list[list[float]], int]:
+    def embed_documents(
+        credentials_kwargs: dict,
+        model: str,
+        texts: list[str],
+        base_address: str,
+    ) -> tuple[list[list[float]], int]:
         """Call out to Tongyi's embedding endpoint.
 
         Args:
@@ -111,7 +124,12 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         # transfer and call embed_multimodal_documents
         if TongyiTextEmbeddingModel._is_vision_model(model):
             documents = [MultiModalContent(content_type=MultiModalContentType.TEXT, content=text) for text in texts]
-            return TongyiTextEmbeddingModel.embed_multimodal_documents(credentials_kwargs, model, documents)
+            return TongyiTextEmbeddingModel.embed_multimodal_documents(
+                credentials_kwargs,
+                model,
+                documents,
+                base_address,
+            )
 
         embeddings = []
         embedding_used_tokens = 0
@@ -124,6 +142,7 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                         api_key=credentials_kwargs["dashscope_api_key"],
                         model=model,
                         input=[{"text": text}],
+                        base_address=base_address,
                     )
                 else:
                     return dashscope.TextEmbedding.call(
@@ -131,7 +150,8 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                         model=model,
                         input=text,
                         headers=BURY_POINT_HEADER,
-                        text_type="document"
+                        text_type="document",
+                        base_address=base_address,
                     )
             except Exception as e:
                 # Return the exception to be handled by the caller
@@ -236,11 +256,13 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         :param input_type: input type
         :return: embeddings result
         """
-        if credentials.get("use_international_endpoint", "false") == "true":
-            dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
+        http_base_address = get_http_base_address(credentials)
         credentials_kwargs = self._to_credential_kwargs(credentials)
         (embeddings_batch, embedding_used_tokens) = self.embed_multimodal_documents(
-            credentials_kwargs=credentials_kwargs, model=model, documents=documents
+            credentials_kwargs=credentials_kwargs,
+            model=model,
+            documents=documents,
+            base_address=http_base_address,
         )
         usage = self._calc_response_usage(model=model, credentials=credentials, tokens=embedding_used_tokens)
         return MultiModalEmbeddingResult(
@@ -250,7 +272,12 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
         )     
 
     @staticmethod
-    def embed_multimodal_documents(credentials_kwargs: dict, model: str, documents: list[MultiModalContent]) -> tuple[list[list[float]], int]:
+    def embed_multimodal_documents(
+        credentials_kwargs: dict,
+        model: str,
+        documents: list[MultiModalContent],
+        base_address: str,
+    ) -> tuple[list[list[float]], int]:
         """Call out to Tongyi's embedding endpoint.
 
         Args:
@@ -292,7 +319,8 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                 return dashscope.MultiModalEmbedding.call(
                     api_key=credentials_kwargs["dashscope_api_key"], 
                     model=model, 
-                    input=[input], 
+                    input=[input],
+                    base_address=base_address,
                 )
             except Exception as e:
                 # Return the exception to be handled by the caller

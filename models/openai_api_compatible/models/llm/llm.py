@@ -82,28 +82,6 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 en_US=credentials["display_name"], zh_Hans=credentials["display_name"]
             )
 
-        entity.parameter_rules.append(
-            ParameterRule(
-                name="strict_compatibility",
-                label=I18nObject(en_US="Strict compatibility mode", zh_Hans="严格兼容模式"),
-                help=I18nObject(
-                    en_US=(
-                        "Whether to prioritize strict OpenAI compatibility. "
-                        "When True, OpenAI compatibility is prioritized and extended parameters "
-                        "(e.g., thinking, chat_template_kwargs) are not added. "
-                        "Set to False to enable these extensions."
-                    ),
-                    zh_Hans=(
-                        "是否优先严格的 OpenAI 兼容性。"
-                        "为 True 时，将优先 OpenAI 兼容性，并且不会添加扩展参数（例如 thinking、chat_template_kwargs）。"
-                        "设为 False 以启用这些扩展。"
-                    )
-                ),
-                type=ParameterType.BOOLEAN,
-                required=False,
-            )
-        )
-
         # Configure thinking mode parameter based on model support
         agent_thought_support = credentials.get("agent_thought_support", "not_supported")
         
@@ -223,15 +201,13 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             if user_enable_thinking is not None:
                 enable_thinking_value = bool(user_enable_thinking)
 
-        user_strict_compatibility = model_parameters.pop("strict_compatibility", None)
-        # Default `strict_compatibility_value` is False.
-        strict_compatibility_value = False
-        if user_strict_compatibility is not None:
-            strict_compatibility_value = bool(user_strict_compatibility)
+        compatibility_mode = credentials.get("compatibility_mode", "strict")
+        # Default to strict mode, only switch to extended if explicitly set
+        strict_compatibility_value: bool = compatibility_mode != "extended"
 
         if enable_thinking_value is not None and strict_compatibility_value is False:
             # Only apply when `strict_compatibility_value` is False since
-            # `chat_template_kwargs` and `thinking` are non-standard parameters.
+            # `chat_template_kwargs` , `thinking` and `enable_thinking` are non-standard parameters.
 
             chat_template_kwargs = model_parameters.setdefault("chat_template_kwargs", {})
             # Support vLLM/SGLang format (chat_template_kwargs)
@@ -243,6 +219,10 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             model_parameters["thinking"] = {
                 "type": "enabled" if enable_thinking_value else "disabled"
             }
+
+            # Support top-level `enable_thinking` parameter
+            # This allows compatibility API format: {"enable_thinking": False/True}
+            model_parameters["enable_thinking"] = enable_thinking_value
 
         reasoning_effort_value = model_parameters.pop("reasoning_effort", None)
         if enable_thinking_value is True and reasoning_effort_value is not None:
@@ -261,6 +241,69 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         with suppress(Exception):
             self._drop_analyze_channel(prompt_messages)
 
-        return super()._invoke(
+        result = super()._invoke(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
         )
+
+        # Filter thinking content from responses if thinking mode is disabled
+        # This is necessary for models like Minimax M2.1 that don't support server-side thinking control
+        if enable_thinking_value is False:
+            if stream:
+                return self._filter_thinking_stream(result)
+            else:
+                return self._filter_thinking_result(result)
+        
+        return result
+
+    def _filter_thinking_result(self, result: LLMResult) -> LLMResult:
+        """Filter thinking content from non-streaming result"""
+        if result.message and result.message.content:
+            content = result.message.content
+            if isinstance(content, str) and content.startswith("<think>"):
+                filtered_content = self._THINK_PATTERN.sub("", content, count=1)
+                if filtered_content != content:
+                    result.message.content = filtered_content
+        return result
+
+    def _filter_thinking_stream(self, stream: Generator) -> Generator:
+        """Filter thinking content from streaming result"""
+        buffer = ""
+        in_thinking = False
+        thinking_started = False
+        
+        for chunk in stream:
+            if chunk.delta and chunk.delta.message and chunk.delta.message.content:
+                content = chunk.delta.message.content
+                buffer += content
+                
+                # Detect start of thinking block
+                if not thinking_started and buffer.startswith("<think>"):
+                    in_thinking = True
+                    thinking_started = True
+                    # Don't continue here - check for end tag in same iteration
+                
+                # Detect end of thinking block
+                if in_thinking and "</think>" in buffer:
+                    # Find the end of thinking block
+                    end_idx = buffer.find("</think>") + len("</think>")
+                    # Skip whitespace after </think>
+                    while end_idx < len(buffer) and buffer[end_idx].isspace():
+                        end_idx += 1
+                    # Remove thinking block and continue with remaining content
+                    buffer = buffer[end_idx:]
+                    in_thinking = False
+                    thinking_started = False
+                    # Yield remaining content if any
+                    if buffer:
+                        chunk.delta.message.content = buffer
+                        buffer = ""
+                        yield chunk
+                    continue
+                
+                # If not in thinking block, yield content
+                if not in_thinking:
+                    yield chunk
+                    buffer = ""
+            else:
+                # Yield chunks without content as-is
+                yield chunk

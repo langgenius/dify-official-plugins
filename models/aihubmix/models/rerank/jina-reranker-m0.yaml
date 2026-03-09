@@ -1,4 +1,4 @@
 model: jina-reranker-m0
 model_type: rerank
 model_properties:
-  context_size: 10240
+  context_size: 4096

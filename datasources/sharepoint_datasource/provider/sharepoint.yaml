@@ -47,6 +47,18 @@ oauth_schema:
         zh_Hans: mycompany
         en_US: mycompany
       required: true
+    - name: tenant_id
+      type: text-input
+      label:
+        zh_Hans: 租户 ID
+        en_US: Tenant ID
+      help:
+        zh_Hans: '输入您的 Azure 租户 ID (用于单租户应用)。留空或使用 "common" 表示多租户应用。'
+        en_US: 'Enter your Azure tenant ID (for single-tenant apps). Leave blank or use "common" for multi-tenant apps.'
+      placeholder:
+        zh_Hans: common (多租户) 或您的租户 ID
+        en_US: common (multi-tenant) or your tenant ID
+      required: false
   credentials_schema:
     - name: access_token
       type: secret-input
@@ -63,6 +75,11 @@ oauth_schema:
       label:
         zh_Hans: SharePoint 子域名
         en_US: SharePoint Subdomain
+    - name: tenant_id
+      type: text-input
+      label:
+        zh_Hans: 租户 ID
+        en_US: Tenant ID
 datasources:
   - datasources/docs_in_site.yaml
   - datasources/docs_in_group.yaml

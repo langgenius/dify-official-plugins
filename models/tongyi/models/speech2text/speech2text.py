@@ -1,12 +1,15 @@
 import os
-import uuid
-from pydub import AudioSegment
 import tempfile
+import uuid
 from typing import IO, Optional
-import dashscope
-from dify_plugin import OAICompatSpeech2TextModel
+
 from dashscope.audio.asr import *
+from dify_plugin import OAICompatSpeech2TextModel
+from models._common import get_ws_base_address
+from pydub import AudioSegment
+
 from ..constant import BURY_POINT_HEADER
+
 
 class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
     """
@@ -23,10 +26,9 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
         :param user: unique user id
         :return: text for given audio file
         """
+        file_path = None
         try:
-            if credentials.get("use_international_endpoint", "false") == "true":
-                dashscope.base_http_api_url = "https://dashscope-intl.aliyuncs.com/api/v1"
-            dashscope.api_key = credentials["dashscope_api_key"]
+            ws_base_address = get_ws_base_address(credentials)
             file.seek(0)
             audio = AudioSegment.from_file(file)
             sample_rate = audio.frame_rate
@@ -42,7 +44,12 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
                 sample_rate=int(sample_rate),
                 callback=None,
             )
-            result = recognition.call(file=file_path, headers=BURY_POINT_HEADER)
+            result = recognition.call(
+                file=file_path,
+                headers=BURY_POINT_HEADER,
+                api_key=credentials["dashscope_api_key"],
+                base_address=ws_base_address,
+            )
             sentence_list = result.get_sentence()
             if sentence_list is None:
                 return ''
@@ -55,6 +62,12 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
             raise ValueError(
                 f"[TongyiSpeech2TextModel] {ex}"
             ) from ex
+        finally:
+            if file_path and os.path.exists(file_path):
+                try:
+                    os.remove(file_path)
+                except OSError:
+                    pass
         
     def write_bytes_to_temp_file(self, file: IO[bytes], file_extension: str) -> str:
         temp_dir = tempfile.gettempdir()

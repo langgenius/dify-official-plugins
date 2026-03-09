@@ -36,6 +36,8 @@ class DynamoDBManager(Tool):
                 result = self._get_item(tool_parameters)
             elif operation_type == "delete_item":
                 result = self._delete_item(tool_parameters)
+            elif operation_type == "scan":
+                result = self._scan(tool_parameters)
             else:
                 result = f"Unsupported operation: {operation_type}"
 
@@ -139,3 +141,17 @@ class DynamoDBManager(Tool):
         table = self.dynamodb_resource.Table(table_name)
         table.delete_item(Key=key_data)
         return f"Item deleted from {table_name} successfully"
+
+    def _scan(self, params: dict) -> dict:
+        """Scan DynamoDB table"""
+        table_name = params.get("table_name")
+        limit = params.get("limit", 100)
+        
+        table = self.dynamodb_resource.Table(table_name)
+        response = table.scan(Limit=limit)
+        
+        return {
+            "Items": response.get("Items", []),
+            "Count": response.get("Count", 0),
+            "ScannedCount": response.get("ScannedCount", 0)
+        }

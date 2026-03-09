@@ -105,12 +105,12 @@ parameters:
       pt_BR: "Imagem de Referência"
       ja_JP: "参照画像"
     human_description:
-      en_US: "Reference image for Image-to-Image mode. "
-      zh_Hans: "图生图模式的参考图像。"
-      pt_BR: "Imagem de referência para o modo Imagem-para-Imagem."
-      ja_JP: "画像から画像モードの参照画像。"
-    llm_description: "Reference image for Image-to-Image transformation."
-    form: llm
+      en_US: "Reference image for Image-to-Image mode. Supports workflow variable pool and node connections"
+      zh_Hans: "图生图模式的参考图像。支持工作流变量池和节点连线"
+      pt_BR: "Imagem de referência para o modo Imagem-para-Imagem. Suporta pool de variáveis e conexões de nós"
+      ja_JP: "画像から画像モードの参照画像。ワークフロー変数プールとノード接続をサポート"
+    llm_description: "Reference image for Image-to-Image transformation. Can receive image inputs from other nodes or variable pool"
+    form: form
   
   - name: image_strength
     type: number

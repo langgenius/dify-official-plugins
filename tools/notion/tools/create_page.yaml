@@ -33,6 +33,23 @@ parameters:
       zh_Hant: 新 Notion 頁面的標題
     llm_description: Title for the new Notion page.
     form: llm
+  - name: title_property_name
+    type: string
+    required: false
+    label:
+      en_US: Title Property Name
+      zh_Hans: 标题属性名称
+      pt_BR: Nome da Propriedade do Título
+      ja_JP: タイトルプロパティ名
+      zh_Hant: 標題屬性名稱
+    human_description:
+      en_US: Custom title field name for database pages (e.g., "Task Name", "Project Title"). Defaults to "Name" if not specified.
+      zh_Hans: 数据库页面的自定义标题字段名称（例如"任务名称"、"项目标题"）。如果未指定，默认为"Name"。
+      pt_BR: Nome do campo de título personalizado para páginas de banco de dados. Padrão para "Name" se não especificado.
+      ja_JP: データベースページのカスタムタイトルフィールド名。指定しない場合はデフォルトで「Name」になります。
+      zh_Hant: 資料庫頁面的自訂標題欄位名稱。如果未指定，預設為「Name」。
+    llm_description: The name of the Title property in your Notion database. This is customizable - common names include "Name", "Task Name", "Project Title", etc. If not provided, defaults to "Name".
+    form: llm
   - name: content
     type: string
     required: true
@@ -92,7 +109,7 @@ parameters:
           pt_BR: Fonte de Dados
           ja_JP: データソース
           zh_Hant: 資料來源
-        value: data_source  
+        value: data_source
     label:
       en_US: Parent Type
       zh_Hans: 父级类型
@@ -109,4 +126,4 @@ parameters:
     form: llm
 extra:
   python:
-    source: tools/create_page.py 
+    source: tools/create_page.py

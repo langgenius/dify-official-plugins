@@ -25,6 +25,8 @@ parameter_rules:
     required: true
     default: Claude 4.5 Sonnet
     options:
+      - Claude 4.6 Sonnet
+      - Claude 4.6 Opus
       - Claude 4.5 Opus
       - Claude 4.5 Haiku
       - Claude 4.5 Sonnet

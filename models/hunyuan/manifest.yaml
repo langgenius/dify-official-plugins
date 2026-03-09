@@ -15,7 +15,7 @@ meta:
     entrypoint: main
     language: python
     version: '3.12'
-  version: 0.0.1
+  version: 0.0.2
 name: hunyuan
 plugins:
   models:
@@ -34,4 +34,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.0.6
+version: 0.0.7

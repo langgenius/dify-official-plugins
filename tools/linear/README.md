@@ -12,6 +12,17 @@ This plugin integrates Linear's project management capabilities with Dify, allow
 - **Get Users**: Search for users by name or email to find their details (including ID/UUID).
 - **Get Teams**: Search for teams by name to find their details (including ID).
 - **Get My Profile**: Retrieve the profile information of the currently authenticated user.
+- **List Projects**: List Linear projects with optional name filtering.
+- **List Cycles**: List Linear cycles with optional team filtering.
+- **List Documents**: List Linear documents with optional title filtering.
+- **List Issue Labels**: List issue labels and their colors.
+- **List Issue Statuses**: List workflow states, optionally filtered by team.
+- **List Project Labels**: List project labels and their colors.
+- **Get Issue**: Retrieve issue details by ID.
+- **Get Project**: Retrieve project details by ID.
+- **Get Team**: Retrieve team details by ID.
+- **Get User**: Retrieve user details by ID.
+- **Get Document**: Retrieve document details by ID.
 
 ## Installation
 
@@ -127,9 +138,91 @@ Retrieves the profile information (ID, name, email) of the currently authenticat
 
 No parameters required.
 
+### List Linear Projects
+
+Lists projects in Linear.
+
+Optional parameters:
+- `name`: Partial project name to filter by (case-insensitive).
+- `limit`: Maximum number of projects to return (default: 10, max: 50).
+
+### List Linear Cycles
+
+Lists cycles in Linear.
+
+Optional parameters:
+- `teamId`: Team ID to filter cycles by.
+- `limit`: Maximum number of cycles to return (default: 10, max: 50).
+
+### List Linear Documents
+
+Lists documents in Linear.
+
+Optional parameters:
+- `query`: Text to search in document titles.
+- `limit`: Maximum number of documents to return (default: 10, max: 50).
+
+### List Linear Issue Labels
+
+Lists issue labels in Linear.
+
+Optional parameters:
+- `name`: Partial label name to filter by (case-insensitive).
+- `limit`: Maximum number of labels to return (default: 10, max: 50).
+
+### List Linear Issue Statuses
+
+Lists issue statuses (workflow states) in Linear.
+
+Optional parameters:
+- `teamId`: Team ID to filter issue statuses by.
+- `limit`: Maximum number of statuses to return (default: 10, max: 50).
+
+### List Linear Project Labels
+
+Lists project labels in Linear.
+
+Optional parameters:
+- `name`: Partial label name to filter by (case-insensitive).
+- `limit`: Maximum number of labels to return (default: 10, max: 50).
+
+### Get Linear Issue
+
+Retrieves a specific issue by ID.
+
+Required parameters:
+- `id`: ID of the issue to retrieve.
+
+### Get Linear Project
+
+Retrieves a specific project by ID.
+
+Required parameters:
+- `id`: ID of the project to retrieve.
+
+### Get Linear Team
+
+Retrieves a specific team by ID.
+
+Required parameters:
+- `id`: ID of the team to retrieve.
+
+### Get Linear User
+
+Retrieves a specific user by ID.
+
+Required parameters:
+- `id`: ID of the user to retrieve.
+
+### Get Linear Document
+
+Retrieves a specific document by ID.
+
+Required parameters:
+- `id`: ID of the document to retrieve.
+
 ## License
 
 This plugin is licensed under the [MIT License](LICENSE).
-
 
 

@@ -1,15 +1,8 @@
 [project]
-name = "gemini_image"
+name = "gemini-image"
 version = "0.1.0"
-description = "Add your description here"
-readme = "README.md"
+description = "Gemini Image Generation and Editing"
 requires-python = ">=3.12"
-
-# uv pip compile pyproject.toml -o ./requirements.txt
 dependencies = [
-    "dify_plugin>=0.3.0,<0.5.0",
+    "dify-plugin>=0.3.0,<0.8.0",
 ]
-
-# uv run black . -C -l 100 && uv run ruff check --fix
-[dependency-groups]
-dev = []

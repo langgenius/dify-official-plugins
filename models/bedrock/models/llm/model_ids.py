@@ -8,6 +8,8 @@ Based on AWS documentation:
 
 BEDROCK_MODEL_IDS = {
     'anthropic claude': {
+        'Claude 4.6 Sonnet': 'anthropic.claude-sonnet-4-6',
+        'Claude 4.6 Opus': 'anthropic.claude-opus-4-6-v1',
         'Claude 4.5 Opus': 'anthropic.claude-opus-4-5-20251101-v1:0',
         'Claude 4.5 Haiku': 'anthropic.claude-haiku-4-5-20251001-v1:0',
         'Claude 4.5 Sonnet': 'anthropic.claude-sonnet-4-5-20250929-v1:0',
@@ -23,10 +25,11 @@ BEDROCK_MODEL_IDS = {
         'Claude 3 Opus': 'anthropic.claude-3-opus-20240229-v1:0',
     },
     'amazon nova': {
-        'Nova Pro': 'amazon.nova-pro-v1:0',
-        'Nova Lite': 'amazon.nova-lite-v1:0',
-        'Nova Micro': 'amazon.nova-micro-v1:0',
-        'Nova Premier': 'amazon.nova-premier-v1:0'
+        'Nova Pro V1': 'amazon.nova-pro-v1:0',
+        'Nova Lite V1': 'amazon.nova-lite-v1:0',
+        'Nova Lite V2': 'amazon.nova-2-lite-v1:0',
+        'Nova Micro V1': 'amazon.nova-micro-v1:0',
+        'Nova Premier V1': 'amazon.nova-premier-v1:0'
     },
     'meta': {
         'Llama 3 8B Instruct': 'meta.llama3-8b-instruct-v1:0',
