@@ -1,4 +1,4 @@
-version: 0.0.32
+version: 0.0.323
 type: plugin
 author: "langgenius"
 name: "agent1"
@@ -24,8 +24,8 @@ plugins:
   agent_strategies:
     - "provider/agent.yaml"
 meta:
-  version: 0.0.2
-  minimum_dify_version: "1.7.0"
+  version: 0.0.23
+  minimum_dify_version: "1.7.02"
   arch:
     - "amd64"
     - "arm64"
