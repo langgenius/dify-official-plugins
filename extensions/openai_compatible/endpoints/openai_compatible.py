@@ -139,6 +139,18 @@ class OpenaiCompatible(Endpoint, BaseAuth):
         message_id = ""
         for data in generator:
             if data.get("event") == "agent_message" or data.get("event") == "message":
+                # Build delta object with reasoning support
+                delta: dict[str, Any] = {
+                    "role": "assistant",
+                    "content": data.get("answer", ""),
+                }
+                
+                # Add reasoning field if present (for models like qwen3.5 with reasoning capability)
+                if "reasoning" in data:
+                    delta["reasoning"] = data["reasoning"]
+                elif "thought" in data:
+                    delta["reasoning"] = data["thought"]
+                
                 message = {
                     "id": "chatcmpl-" + data.get("message_id", "none"),
                     "object": "chat.completion.chunk",
@@ -148,10 +160,7 @@ class OpenaiCompatible(Endpoint, BaseAuth):
                     "choices": [
                         {
                             "index": 0,
-                            "delta": {
-                                "role": "assistant",
-                                "content": data.get("answer", ""),
-                            },
+                            "delta": delta,
                             "finish_reason": None,
                         }
                     ],
@@ -213,6 +222,18 @@ class OpenaiCompatible(Endpoint, BaseAuth):
         """
         Handle the chat blocking message
         """
+        # Build the message object with reasoning support
+        message_obj: dict[str, Any] = {
+            "role": "assistant",
+            "content": response.get("answer", ""),
+        }
+        
+        # Add reasoning field if present (for models like qwen3.5 with reasoning capability)
+        if "reasoning" in response:
+            message_obj["reasoning"] = response["reasoning"]
+        elif "thought" in response:
+            message_obj["reasoning"] = response["thought"]
+        
         message = {
             "id": "chatcmpl-" + response.get("id", "none"),
             "object": "chat.completion",
@@ -222,10 +243,7 @@ class OpenaiCompatible(Endpoint, BaseAuth):
             "choices": [
                 {
                     "index": 0,
-                    "message": {
-                        "role": "assistant",
-                        "content": response.get("answer", ""),
-                    },
+                    "message": message_obj,
                     "finish_reason": "stop",
                 }
             ],
