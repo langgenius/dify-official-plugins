@@ -9,7 +9,29 @@ description:
   en_US: "A user joined a public or private channel. See https://api.slack.com/events/member_joined_channel for details."
   ja_JP: "A user joined a public or private channel. See https://api.slack.com/events/member_joined_channel for details."
   zh_Hans: "A user joined a public or private channel. See https://api.slack.com/events/member_joined_channel for details."
-parameters: []
+parameters:
+- name: channel_id
+  label:
+    en_US: Channel ID
+    zh_Hans: 频道 ID
+    ja_JP: チャンネル ID
+  type: string
+  required: false
+  description:
+    en_US: "Comma-separated channel IDs to filter (e.g. C01234567). Leave empty to accept joins from all channels."
+    zh_Hans: "要过滤的频道 ID（逗号分隔）。留空表示不过滤。"
+    ja_JP: "フィルタするチャンネル ID（カンマ区切り）。空の場合は全チャンネルの参加を許可。"
+- name: user_id
+  label:
+    en_US: User ID
+    zh_Hans: 用户 ID
+    ja_JP: ユーザー ID
+  type: string
+  required: false
+  description:
+    en_US: "Comma-separated Slack user IDs. Only trigger when one of these users joins."
+    zh_Hans: "要过滤的用户 ID（逗号分隔）。仅当这些用户加入时触发。"
+    ja_JP: "ユーザー ID（カンマ区切り）。これらのユーザーが参加した場合のみトリガー。"
 output_schema:
   type: "object"
   properties:

@@ -9,7 +9,40 @@ description:
   en_US: "Subscribe to only the message events that mention your app or bot. See https://api.slack.com/events/app_mention for details."
   ja_JP: "Subscribe to only the message events that mention your app or bot. See https://api.slack.com/events/app_mention for details."
   zh_Hans: "Subscribe to only the message events that mention your app or bot. See https://api.slack.com/events/app_mention for details."
-parameters: []
+parameters:
+- name: channel_id
+  label:
+    en_US: Channel ID
+    zh_Hans: 频道 ID
+    ja_JP: チャンネル ID
+  type: string
+  required: false
+  description:
+    en_US: "Comma-separated channel IDs to filter (e.g. C01234567). Leave empty to accept mentions in all channels."
+    zh_Hans: "要过滤的频道 ID（逗号分隔）。留空表示接受所有频道的提及。"
+    ja_JP: "フィルタするチャンネル ID（カンマ区切り）。空の場合は全チャンネルのメンションを許可。"
+- name: user_id
+  label:
+    en_US: User ID
+    zh_Hans: 用户 ID
+    ja_JP: ユーザー ID
+  type: string
+  required: false
+  description:
+    en_US: "Comma-separated Slack user IDs. Only trigger when the mention is from one of these users."
+    zh_Hans: "要过滤的用户 ID（逗号分隔）。仅当提及来自这些用户时触发。"
+    ja_JP: "ユーザー ID（カンマ区切り）。これらのユーザーからのメンションのみトリガー。"
+- name: text_contains
+  label:
+    en_US: Text Contains
+    zh_Hans: 文本包含
+    ja_JP: テキストを含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the mention text contains this substring. Leave empty to accept all mention messages."
+    zh_Hans: "仅当提及文本包含此子字符串时触发。留空表示不过滤。"
+    ja_JP: "メンションテキストがこの文字列を含む場合のみトリガー。空の場合は全メンションを許可。"
 output_schema:
   type: "object"
   properties:
