@@ -24,7 +24,7 @@ plugins:
   agent_strategies:
     - "provider/agent.yaml"
 meta:
-  version: 0.0.23
+  version: 0.0.232
   minimum_dify_version: "1.7.02"
   arch:
     - "amd64"
