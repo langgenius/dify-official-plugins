@@ -10,7 +10,7 @@ class SiliconflowProvider(ToolProvider):
             "accept": "application/json",
             "authorization": f"Bearer {credentials.get('siliconFlow_api_key')}",
         }
-        response = requests.get(url, headers=headers)
+        response = requests.get(url, headers=headers, timeout=30)
         if response.status_code != 200:
             raise ToolProviderCredentialValidationError(
                 "SiliconFlow API key is invalid"

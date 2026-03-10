@@ -33,8 +33,7 @@ class VideoGenerateTool(Tool):
         if isinstance(file_value, str):
             if file_value.startswith("data:image") or file_value.startswith("http"):
                 return file_value
-            with open(file_value, "rb") as file_obj:
-                return f"data:image/png;base64,{base64.b64encode(file_obj.read()).decode('utf-8')}"
+            raise ValueError("Invalid image input: must be a URL or data URI") 
 
         if hasattr(file_value, "url") and file_value.url:
             return file_value.url
@@ -51,8 +50,9 @@ class VideoGenerateTool(Tool):
 
         path = getattr(file_value, "path", None)
         if path:
-            with open(path, "rb") as file_obj:
-                return f"data:image/png;base64,{base64.b64encode(file_obj.read()).decode('utf-8')}"
+            # Ensure the path is validated or restricted to a safe directory if local file access is required.  
+            # For now, raising an error if path traversal is suspected or if direct path access is not intended.  
+            raise ValueError("Direct file path access is not allowed")  
 
         raise ValueError("Unable to read image input")
 
@@ -124,9 +124,7 @@ class VideoGenerateTool(Tool):
                             video_url = first_video.get("url")
                             if isinstance(video_url, str) and video_url:
                                 yield self.create_json_message(status_data)
-                                yield self.create_text_message(
-                                    f"Video URL: {video_url}"
-                                )
+                                yield self.create_image_message(video_url)
                                 yield self.create_text_message(
                                     self._log_message(
                                         "Video generation successful. The returned video URL is valid for 1 hour."
