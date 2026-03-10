@@ -8,7 +8,7 @@ from seltz import (
     SeltzConfigurationError,
     SeltzConnectionError,
 )
-from seltz.types import Includes
+from seltz import Includes
 
 
 class SeltzProvider(ToolProvider):

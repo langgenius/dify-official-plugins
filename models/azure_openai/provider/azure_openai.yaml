@@ -102,6 +102,9 @@ model_credential_schema:
     - label:
         en_US: API Version
         zh_Hans: API 版本
+      help:
+        en_US: Optional when your API Endpoint URL already ends with /openai/v1. Non-v1 Azure endpoints will fall back to the default API version if left empty.
+        zh_Hans: 当 API Endpoint URL 已经以 /openai/v1 结尾时，此项可留空。非 v1 的 Azure endpoint 若留空，会自动回退到默认 API 版本。
       options:
         - label:
             en_US: 2025-04-01-preview
@@ -155,9 +158,9 @@ model_credential_schema:
             en_US: "2024-10-21"
           value: "2024-10-21"
       placeholder:
-        en_US: Select your API Version here
-        zh_Hans: 在此选择您的 API 版本
-      required: true
+        en_US: Select an API Version if you are not using /openai/v1
+        zh_Hans: 若未使用 /openai/v1，请在此选择 API 版本
+      required: false
       type: select
       variable: openai_api_version
     - label:
@@ -242,6 +245,18 @@ model_credential_schema:
             - value: llm
               variable: __model_type
           value: gpt-5.2-codex
+        - label:
+            en_US: gpt-5.4
+          show_on:
+            - value: llm
+              variable: __model_type
+          value: gpt-5.4
+        - label:
+            en_US: gpt-5.4-pro
+          show_on:
+            - value: llm
+              variable: __model_type
+          value: gpt-5.4-pro
         - label:
             en_US: gpt-35-turbo
           show_on:
