@@ -370,7 +370,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             # get model mode
             model_mode = self.get_model_mode(base_model, credentials)
 
-            if credentials.get("api_protocol") == "responses":
+            if credentials.get("api_protocol") == "responses" or model.startswith(THINKING_SERIES_COMPATIBILITY):
                 # models that only support the Responses API
                 client.responses.create(
                     model=model,
@@ -378,14 +378,26 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                     max_output_tokens=20,
                 )
             elif model_mode == LLMMode.CHAT:
-                # chat model
-                client.chat.completions.create(
-                    messages=[{"role": "user", "content": "ping"}],
-                    model=model,
-                    temperature=0,
-                    max_tokens=20,
-                    stream=False,
-                )
+                # chat model — fall back to Responses API if the endpoint rejects 'messages'
+                try:
+                    client.chat.completions.create(
+                        messages=[{"role": "user", "content": "ping"}],
+                        model=model,
+                        temperature=0,
+                        max_tokens=20,
+                        stream=False,
+                    )
+                except Exception as chat_ex:
+                    err_str = str(chat_ex)
+                    if "messages" in err_str and ("unsupported_parameter" in err_str or "input" in err_str):
+                        # endpoint only supports Responses API
+                        client.responses.create(
+                            model=model,
+                            input="ping",
+                            max_output_tokens=20,
+                        )
+                    else:
+                        raise
             else:
                 # text completion model
                 client.completions.create(
@@ -740,17 +752,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         # o1, o3, o4 compatibility
         block_as_stream = False
-        if model.startswith(THINKING_SERIES_COMPATIBILITY):
-            if "max_tokens" in model_parameters:
-                model_parameters["max_completion_tokens"] = model_parameters[
-                    "max_tokens"
-                ]
-                del model_parameters["max_tokens"]
 
-            if "stop" in extra_model_kwargs:
-                del extra_model_kwargs["stop"]
-
-        if credentials.get("api_protocol") == "responses":
+        if credentials.get("api_protocol") == "responses" or model.startswith(THINKING_SERIES_COMPATIBILITY):
             if stream:
                 return self._chat_generate_responses_api_stream(
                     model=model,
