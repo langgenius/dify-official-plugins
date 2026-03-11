@@ -1,0 +1,177 @@
+description:
+  human:
+    en_US: Generate images with SiliconFlow using the current Kolors or Qwen Image models.
+    zh_CN: 使用 SiliconFlow 的 Kolors 或 Qwen Image 模型进行文生图或图生图。
+  llm: This tool uses SiliconFlow's current /v1/images/generations API to generate images with Kwai-Kolors/Kolors or Qwen/Qwen-Image, supporting both text-to-image and image-to-image workflows.
+extra:
+  python:
+    source: tools/image-generate.py
+identity:
+  author: SiliconFlow, Inc.
+  icon: icon.svg
+  label:
+    en_US: Image Generate
+    zh_CN: 图片生成
+  name: image_generate
+parameters:
+  - default: kolors
+    form: form
+    human_description:
+      en_US: Select the image generation model. Kolors supports batch_size and guidance_scale, while Qwen Image uses cfg.
+      zh_Hans: 选择图片生成模型。Kolors 支持 batch_size 和 guidance_scale，Qwen Image 使用 cfg。
+    label:
+      en_US: Model
+      zh_Hans: 模型
+    name: model
+    options:
+      - label:
+          en_US: Kwai-Kolors/Kolors
+        value: kolors
+      - label:
+          en_US: Qwen/Qwen-Image
+        value: qwen_image
+    required: true
+    type: select
+  - form: llm
+    human_description:
+      en_US: The text prompt used to generate the image.
+      zh_Hans: 用于生成图片的文本提示词。
+    label:
+      en_US: Prompt
+      zh_Hans: 提示词
+    llm_description: Text prompt describing the image to generate. Works for both text-to-image and image-to-image generation.
+    name: prompt
+    required: true
+    type: string
+  - form: form
+    human_description:
+      en_US: Optional input image URL or base64 data. Provide this for image-to-image generation; leave empty for text-to-image.
+      zh_Hans: 可选输入图片 URL 或 base64 数据。填写后为图生图；留空则为文生图。
+    label:
+      en_US: Input Image
+      zh_Hans: 输入图片
+    name: image
+    required: false
+    type: string
+  - form: form
+    human_description:
+      en_US: Optional negative prompt describing what should be avoided in the result. Applicable to both Kolors and Qwen Image.
+      zh_Hans: 可选的负面提示词，用于描述不希望出现在结果中的内容。Kolors 和 Qwen Image 都可使用。
+    label:
+      en_US: Negative Prompt
+      zh_Hans: 负面提示词
+    name: negative_prompt
+    required: false
+    type: string
+  - default: 1024x1024
+    form: form
+    human_description:
+      en_US: Image size. Use Kolors-recommended sizes when model=Kolors, and Qwen Image-recommended sizes when model=Qwen Image.
+      zh_Hans: 图片尺寸。选择 Kolors 时使用 Kolors 推荐尺寸；选择 Qwen Image 时使用 Qwen Image 推荐尺寸。
+    label:
+      en_US: Image Size
+      zh_Hans: 图片尺寸
+    name: image_size
+    options:
+      - label:
+          en_US: 1024x1024 (Kolors)
+        value: 1024x1024
+      - label:
+          en_US: 960x1280 (Kolors)
+        value: 960x1280
+      - label:
+          en_US: 768x1024 (Kolors)
+        value: 768x1024
+      - label:
+          en_US: 720x1440 (Kolors)
+        value: 720x1440
+      - label:
+          en_US: 720x1280 (Kolors)
+        value: 720x1280
+      - label:
+          en_US: 1328x1328 (Qwen Image)
+        value: 1328x1328
+      - label:
+          en_US: 1664x928 (Qwen Image)
+        value: 1664x928
+      - label:
+          en_US: 928x1664 (Qwen Image)
+        value: 928x1664
+      - label:
+          en_US: 1472x1140 (Qwen Image)
+        value: 1472x1140
+      - label:
+          en_US: 1140x1472 (Qwen Image)
+        value: 1140x1472
+      - label:
+          en_US: 1584x1056 (Qwen Image)
+        value: 1584x1056
+      - label:
+          en_US: 1056x1584 (Qwen Image)
+        value: 1056x1584
+    required: false
+    type: select
+  - default: 1
+    form: form
+    human_description:
+      en_US: Number of images to generate in one request. Only effective when model=Kolors; ignored by Qwen Image.
+      zh_Hans: 单次请求生成的图片数量。仅在 model=Kolors 时生效；Qwen Image 会忽略该参数。
+    label:
+      en_US: Batch Size
+      zh_Hans: 生成数量
+    max: 4
+    min: 1
+    name: batch_size
+    required: false
+    type: number
+  - default: 20
+    form: form
+    human_description:
+      en_US: Number of inference steps for image generation. Applicable to both Kolors and Qwen Image.
+      zh_Hans: 图片生成的推理步数。Kolors 和 Qwen Image 都可使用。
+    label:
+      en_US: Inference Steps
+      zh_Hans: 推理步数
+    max: 100
+    min: 1
+    name: num_inference_steps
+    required: false
+    type: number
+  - default: 7.5
+    form: form
+    human_description:
+      en_US: Guidance scale for Kolors. Only effective when model=Kolors; ignored by Qwen Image.
+      zh_Hans: Kolors 的引导强度。仅在 model=Kolors 时生效；Qwen Image 会忽略该参数。
+    label:
+      en_US: Guidance Scale
+      zh_Hans: 引导强度
+    max: 20
+    min: 0
+    name: guidance_scale
+    required: false
+    type: number
+  - default: 4
+    form: form
+    human_description:
+      en_US: CFG scale for Qwen Image. Only effective when model=Qwen Image; ignored by Kolors.
+      zh_Hans: Qwen Image 的 CFG 强度。仅在 model=Qwen Image 时生效；Kolors 会忽略该参数。
+    label:
+      en_US: CFG Scale
+      zh_Hans: CFG 强度
+    max: 20
+    min: 0.1
+    name: cfg
+    required: false
+    type: number
+  - form: form
+    human_description:
+      en_US: Optional seed for reproducible results. Applicable to both Kolors and Qwen Image.
+      zh_Hans: 可选随机种子，用于复现生成结果。Kolors 和 Qwen Image 都可使用。
+    label:
+      en_US: Seed
+      zh_Hans: 种子
+    max: 9999999999
+    min: 0
+    name: seed
+    required: false
+    type: number

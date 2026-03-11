@@ -1,0 +1,104 @@
+description:
+  human:
+    en_US: Generate videos with SiliconFlow using the current text-to-video or image-to-video models.
+    zh_CN: 使用 SiliconFlow 当前的文生视频或图生视频模型生成视频。
+  llm: This tool uses SiliconFlow's current /v1/video/submit and /v1/video/status workflow to generate videos, supporting both text-to-video and image-to-video depending on the selected model.
+extra:
+  python:
+    source: tools/video-generate.py
+identity:
+  author: SiliconFlow, Inc.
+  icon: icon.svg
+  label:
+    en_US: Video Generate
+    zh_CN: 视频生成
+  name: video_generate
+parameters:
+  - form: llm
+    human_description:
+      en_US: The detailed text prompt used to generate the video.
+      zh_Hans: 用于生成视频的详细文本描述。
+    label:
+      en_US: Prompt
+      zh_Hans: 提示词
+    llm_description: Prompt used to generate the video.
+    name: prompt
+    required: true
+    type: string
+  - default: Wan-AI/Wan2.2-T2V-A14B
+    form: form
+    human_description:
+      en_US: Select the current SiliconFlow video model. Choose the I2V model when you want image-to-video generation.
+      zh_Hans: 选择当前 SiliconFlow 视频模型。如需图生视频，请选择 I2V 模型。
+    label:
+      en_US: Model
+      zh_Hans: 模型
+    name: model
+    options:
+      - label:
+          en_US: Wan-AI/Wan2.2-T2V-A14B (Text to Video)
+          zh_Hans: Wan-AI/Wan2.2-T2V-A14B（文生视频）
+        value: Wan-AI/Wan2.2-T2V-A14B
+      - label:
+          en_US: Wan-AI/Wan2.2-I2V-A14B (Image to Video)
+          zh_Hans: Wan-AI/Wan2.2-I2V-A14B（图生视频）
+        value: Wan-AI/Wan2.2-I2V-A14B
+    required: true
+    type: select
+  - form: llm
+    human_description:
+      en_US: Source image for image-to-video generation. Required when model is Wan-AI/Wan2.2-I2V-A14B, ignored for text-to-video.
+      zh_Hans: 图生视频所需的源图片。当模型为 Wan-AI/Wan2.2-I2V-A14B 时必填，文生视频时忽略。
+    label:
+      en_US: Source Image
+      zh_Hans: 源图片
+    llm_description: Source image required only for the image-to-video model.
+    name: image
+    required: false
+    type: file
+  - default: 1280x720
+    form: form
+    human_description:
+      en_US: Supported video size for the current SiliconFlow video API.
+      zh_Hans: 当前 SiliconFlow 视频接口支持的视频尺寸。
+    label:
+      en_US: Video Size
+      zh_Hans: 视频尺寸
+    name: video_size
+    options:
+      - label:
+          en_US: 1280x720 (Landscape)
+          zh_Hans: 1280x720（横屏）
+        value: 1280x720
+      - label:
+          en_US: 720x1280 (Portrait)
+          zh_Hans: 720x1280（竖屏）
+        value: 720x1280
+      - label:
+          en_US: 960x960 (Square)
+          zh_Hans: 960x960（方图）
+        value: 960x960
+    required: true
+    type: select
+  - form: form
+    human_description:
+      en_US: Optional seed for reproducible results. Applicable to both supported video models.
+      zh_Hans: 可选随机种子，用于复现结果。
+    label:
+      en_US: Seed
+      zh_Hans: 种子
+    max: 9999999999
+    min: 0
+    name: seed
+    required: false
+    type: number
+  - form: form
+    human_description:
+      en_US: Optional negative prompt for controlling what should be avoided in the video. Applicable to both supported video models.
+      zh_Hans: 可选负面提示词，用于控制不希望出现在视频中的内容。
+    label:
+      en_US: Negative Prompt
+      zh_Hans: 负面提示词
+    name: negative_prompt
+    required: false
+    type: string
