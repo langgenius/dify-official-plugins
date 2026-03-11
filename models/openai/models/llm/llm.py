@@ -63,7 +63,7 @@ if you are not sure about the structure.
 """
 
 # thinking models compatibility for max_completion_tokens (all starting with "o" or "gpt-5")
-THINKING_SERIES_COMPATIBILITY = ("o", "gpt-5")
+# THINKING_SERIES_COMPATIBILITY = ("o", "gpt-5")
 
 class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
     """
@@ -370,7 +370,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             # get model mode
             model_mode = self.get_model_mode(base_model, credentials)
 
-            if credentials.get("api_protocol") == "responses" or model.startswith(THINKING_SERIES_COMPATIBILITY):
+            if credentials.get("api_protocol") == "responses":
                 # models that only support the Responses API
                 client.responses.create(
                     model=model,
@@ -753,7 +753,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         # o1, o3, o4 compatibility
         block_as_stream = False
 
-        if credentials.get("api_protocol") == "responses" or model.startswith(THINKING_SERIES_COMPATIBILITY):
+        if credentials.get("api_protocol") == "responses":
             if stream:
                 return self._chat_generate_responses_api_stream(
                     model=model,
