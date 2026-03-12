@@ -5,7 +5,7 @@ description:
   zh_Hans: 文心一言
 icon: icon_s_en.png
 label:
-  en_US: Ernie
+  en_US: ERNIE
   zh_Hans: 文心大模型
 meta:
   arch:
