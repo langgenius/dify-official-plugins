@@ -5,7 +5,7 @@ description:
   zh_Hans: 文心一言
 icon: icon_s_en.png
 label:
-  en_US: WenXin
+  en_US: Ernie
   zh_Hans: 文心一言
 meta:
   arch:
@@ -24,4 +24,4 @@ resource:
   memory: 268435456
   permission: {}
 type: plugin
-version: 0.1.0
+version: 0.1.1
