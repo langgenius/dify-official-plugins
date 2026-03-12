@@ -1,0 +1,27 @@
+model: Intel/Qwen3-Coder-480B-A35B-Instruct-int4-mixed-ar
+label:
+  en_US: Qwen3 Coder 480B A35B Instruct
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 106000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    default: 4096
+    min: 1
+    max: 16384
+pricing:
+  input: '0.22'
+  output: '0.95'
+  unit: '0.000001'
+  currency: USD

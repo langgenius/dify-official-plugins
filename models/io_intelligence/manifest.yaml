@@ -1,0 +1,39 @@
+author: langgenius
+created_at: "2026-03-12T00:00:00.000000000-00:00"
+description:
+  en_US:
+    IO Intelligence by io.net provides access to 25+ open-source AI models powered
+    by a decentralized GPU network with low-latency inference.
+  zh_Hans: IO Intelligence 由 io.net 提供，通过去中心化 GPU 网络提供 25+ 种开源 AI 模型的低延迟推理服务。
+icon: icon_s_en.svg
+label:
+  en_US: IO Intelligence
+  zh_Hans: IO Intelligence
+meta:
+  arch:
+    - amd64
+    - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: "3.12"
+  version: 0.0.1
+name: io_intelligence
+plugins:
+  models:
+    - provider/io_intelligence.yaml
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true
+      moderation: false
+      rerank: false
+      speech2text: false
+      text_embedding: false
+      tts: false
+    tool:
+      enabled: true
+type: plugin
+version: 0.0.1

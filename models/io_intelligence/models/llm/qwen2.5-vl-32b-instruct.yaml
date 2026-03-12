@@ -1,0 +1,25 @@
+model: Qwen/Qwen2.5-VL-32B-Instruct
+label:
+  en_US: Qwen2.5 VL 32B Instruct
+model_type: llm
+features:
+  - agent-thought
+  - vision
+model_properties:
+  mode: chat
+  context_size: 32000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    default: 4096
+    min: 1
+    max: 16384
+pricing:
+  input: '0.05'
+  output: '0.22'
+  unit: '0.000001'
+  currency: USD

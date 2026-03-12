@@ -1,0 +1,43 @@
+background: '#1A1A2E'
+configurate_methods:
+- predefined-model
+description:
+  en_US: IO Intelligence by io.net provides access to 25+ open-source AI models powered
+    by a decentralized GPU network of 320,000+ GPUs with low-latency inference.
+  zh_Hans: IO Intelligence 由 io.net 提供，通过 320,000+ GPU 的去中心化网络，提供 25+ 种开源 AI 模型的低延迟推理服务。
+extra:
+  python:
+    model_sources:
+    - models/llm/llm.py
+    provider_source: provider/io_intelligence.py
+help:
+  title:
+    en_US: Get your API Key from IO Intelligence
+    zh_Hans: 从 IO Intelligence 获取 API Key
+  url:
+    en_US: https://io.net/intelligence
+icon_large:
+  en_US: icon_l_en.svg
+icon_small:
+  en_US: icon_s_en.svg
+label:
+  en_US: IO Intelligence
+  zh_Hans: IO Intelligence
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+    - models/llm/*.yaml
+provider: io_intelligence
+provider_credential_schema:
+  credential_form_schemas:
+  - label:
+      en_US: API Key
+    placeholder:
+      en_US: Enter your IO Intelligence API Key
+      zh_Hans: 在此输入您的 IO Intelligence API Key
+    required: true
+    type: secret-input
+    variable: api_key
+supported_model_types:
+- llm
