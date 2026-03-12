@@ -62,7 +62,7 @@ def check_item_channel_id(event: Mapping[str, Any], value: Any) -> None:
     allowed = _normalize_ids(value)
     if not allowed:
         return
-    item = event.get("item") or {}
+    item = event.get("item")
     channel = str(item.get("channel") or "") if isinstance(item, Mapping) else ""
     if channel not in allowed:
         raise EventIgnoreError()
