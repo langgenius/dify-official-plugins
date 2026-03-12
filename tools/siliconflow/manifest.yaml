@@ -2,9 +2,8 @@ author: langgenius
 created_at: "2024-09-20T08:03:44.658609186Z"
 description:
   en_US:
-    The image generation API provided by SiliconFlow includes Flux and Stable
-    Diffusion models.
-  zh_CN: 硅基流动提供的图片生成 API，包含 Flux 和 Stable Diffusion 模型。
+    The SiliconFlow plugin provides current image generation, image editing, and video generation tools.
+  zh_CN: 硅基流动插件提供当前可用的图片生成、图片编辑和视频生成工具。
 icon: siliconflow_square.svg
 label:
   en_US: SiliconFlow
@@ -33,4 +32,4 @@ resource:
 tags:
   - image
 type: plugin
-version: 0.0.6
+version: 0.0.7
