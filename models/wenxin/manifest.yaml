@@ -6,7 +6,7 @@ description:
 icon: icon_s_en.png
 label:
   en_US: Ernie
-  zh_Hans: 文心一言
+  zh_Hans: 文心大模型
 meta:
   arch:
     - amd64
