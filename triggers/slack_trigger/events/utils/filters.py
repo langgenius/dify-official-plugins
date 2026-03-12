@@ -53,6 +53,21 @@ def check_channel_id(event: Mapping[str, Any], value: Any, field: str = "channel
         raise EventIgnoreError()
 
 
+def check_item_channel_id(event: Mapping[str, Any], value: Any) -> None:
+    """Raise EventIgnoreError if the channel in ``event.item.channel`` is not in the allowed list.
+
+    Used for reaction events where the channel is nested inside the ``item``
+    object (``event.item.channel``) rather than at the top level.
+    """
+    allowed = _normalize_ids(value)
+    if not allowed:
+        return
+    item = event.get("item") or {}
+    channel = str(item.get("channel") or "") if isinstance(item, Mapping) else ""
+    if channel not in allowed:
+        raise EventIgnoreError()
+
+
 def check_user_id(event: Mapping[str, Any], value: Any, field: str = "user") -> None:
     """Raise EventIgnoreError if the event user is not in the allowed list."""
     allowed = _normalize_ids(value)
