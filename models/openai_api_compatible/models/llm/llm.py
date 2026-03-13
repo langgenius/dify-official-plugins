@@ -21,10 +21,87 @@ from dify_plugin.entities.model.message import (
 from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLanguageModel
 from typing import List
 
+from openai import OpenAI
+from dify_plugin.errors.model import CredentialsValidateFailedError
+
 
 class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
     # Pre-compiled regex for better performance
     _THINK_PATTERN = re.compile(r"^<think>.*?</think>\s*", re.DOTALL)
+    # Heuristic: models that typically require Responses API style token parameter
+    _RESPONSES_MODELS = re.compile(r"^(o1|o3|gpt-5)", re.IGNORECASE)
+
+    def validate_credentials(self, model: str, credentials: dict) -> None:
+        """Validate credentials, adapting token parameter for Responses API models.
+
+        Some providers (e.g. o1/o3/gpt-5 families) validate with Responses API and expect
+        a minimum output token floor. We probe with a safe minimum and the right param
+        to avoid 400s during the "Add model" flow.
+        """
+        try:
+            return super().validate_credentials(model, credentials)
+        except CredentialsValidateFailedError as e:
+            msg = str(e)
+            # Only retry for token-floor or param-name errors
+            should_retry = (
+                "max_output_tokens" in msg
+                or "max_completion_tokens" in msg
+                or "Unsupported parameter: 'max_tokens'" in msg
+                or "integer_below_min_value" in msg
+            )
+            if not should_retry:
+                raise
+
+            endpoint_url = (credentials or {}).get("endpoint_url")
+            api_key = (credentials or {}).get("api_key")
+            extra_headers = (credentials or {}).get("extra_headers") or {}
+            if not endpoint_url:
+                raise
+
+            client = OpenAI(api_key=api_key, base_url=endpoint_url, default_headers=extra_headers)
+            endpoint_model = (credentials or {}).get("endpoint_model_name") or model
+            mode = (credentials or {}).get("mode", "chat")
+
+            SAFE_MIN = 16
+
+            use_responses = bool(self._RESPONSES_MODELS.match(endpoint_model))
+            token_param_name = "max_output_tokens"
+
+            try:
+                if mode == "chat":
+                    if use_responses:
+                        client.responses.create(
+                            model=endpoint_model,
+                            input="user: ping",
+                            **{token_param_name: SAFE_MIN},
+                        )
+                    else:
+                        client.chat.completions.create(
+                            model=endpoint_model,
+                            messages=[{"role": "user", "content": "ping"}],
+                            max_tokens=SAFE_MIN,
+                            stream=False,
+                        )
+                else:
+                    client.completions.create(
+                        model=endpoint_model,
+                        prompt="ping",
+                        max_tokens=SAFE_MIN,
+                        stream=False,
+                    )
+            except Exception as sub_e:
+                if use_responses and "max_output_tokens" in str(sub_e):
+                    try:
+                        client.responses.create(
+                            model=endpoint_model,
+                            input="user: ping",
+                            max_completion_tokens=SAFE_MIN,
+                        )
+                    except Exception as retry_e:
+                        raise CredentialsValidateFailedError(str(retry_e)) from sub_e
+                else:
+                    raise CredentialsValidateFailedError(str(sub_e)) from sub_e
+            return
 
     def get_customizable_model_schema(
         self, model: str, credentials: Mapping | dict
