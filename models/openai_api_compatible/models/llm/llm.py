@@ -30,6 +30,8 @@ from openai import OpenAI
 class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
     # Pre-compiled regex for better performance
     _THINK_PATTERN = re.compile(r"^<think>.*?</think>\s*", re.DOTALL)
+    # Models that require max_completion_tokens (OpenAI Responses API family)
+    _NEEDS_MAX_COMPLETION_TOKENS_PATTERN = re.compile(r"^(o1|o3|gpt-5)", re.IGNORECASE)
 
     # Timeout for validation requests: (connect_timeout, read_timeout) in seconds
     _VALIDATE_TIMEOUT = (10, 300)
