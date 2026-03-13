@@ -1,0 +1,40 @@
+model: Qwen/Qwen3.5-9B
+label:
+  en_US: Qwen/Qwen3.5-9B
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+  - vision
+model_properties:
+  mode: chat
+  context_size: 262144
+parameter_rules:
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - text
+      - json_object
+  - name: enable_thinking
+    required: false
+    type: boolean
+    default: false
+    label:
+      zh_Hans: 思考模式
+      en_US: Thinking mode
+    help:
+      zh_Hans: 是否开启思考模式。
+      en_US: Whether to enable thinking mode.
+pricing:
+  input: "0.5"
+  output: "4"
+  unit: "0.000001"
+  currency: RMB

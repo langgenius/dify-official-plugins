@@ -10,6 +10,17 @@ description:
   ja_JP: "A member has added an emoji reaction to an item. See https://api.slack.com/events/reaction_added for details."
   zh_Hans: "A member has added an emoji reaction to an item. See https://api.slack.com/events/reaction_added for details."
 parameters:
+- name: channel_id
+  label:
+    en_US: Channel ID
+    zh_Hans: 频道 ID
+    ja_JP: チャンネル ID
+  type: string
+  required: false
+  description:
+    en_US: "Comma-separated Slack channel IDs. Only trigger when the reaction was added to an item in one of these channels (matched against item.channel)."
+    zh_Hans: "Slack 频道 ID（逗号分隔）。仅当在这些频道中的项目添加反应时触发。"
+    ja_JP: "Slack チャンネル ID（カンマ区切り）。これらのチャンネル内のアイテムへのリアクションのみトリガー（item.channel で照合）。"
 - name: reaction
   label:
     en_US: Reaction
