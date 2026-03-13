@@ -1,6 +1,6 @@
 ## Overview
 
-xAI is developing a family of Large Language Models (LLMs) called **Grok**. Grok models use next-token prediction to perform tasks, with a focus on providing helpful and insightful responses. Key models include `grok-2-vision-1212` and `grok-2-1212`. Depending on the model specifications, users can interact with Grok models to find answers, interpret images, and generate images. xAI offers an API interface for developers to programmatically interact with Grok models.
+xAI develops the **Grok** family of large language models. The current xAI lineup includes flagship and fast variants such as `grok-4`, `grok-4-fast`, `grok-4.20-beta-latest`, `grok-code-fast-1`, `grok-3`, and `grok-3-mini`. Depending on the model specifications, users can interact with Grok models for reasoning, tool use, structured outputs, live search, code generation, and image understanding.
 
 ## Configuration
 

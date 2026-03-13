@@ -25,6 +25,7 @@ parameter_rules:
     options:
       - DeepSeek R1
       - DeepSeek V3.1
+      - DeepSeek V3.2
   - name: cross-region
     label:
       zh_Hans: 跨区域推理
@@ -84,7 +85,7 @@ parameter_rules:
   - name: response_format
     use_template: response_format
 pricing:
-  input: '0.00058'
-  output: '0.00168'
-  unit: '0.001'
+  input: "0.00058"
+  output: "0.00168"
+  unit: "0.001"
   currency: USD

@@ -25,6 +25,16 @@ parameter_rules:
     default: 512
     min: 1
     max: 32768
+  - name: enable_stream
+    label:
+      zh_Hans: 流式响应
+      en_US: Streaming
+    type: boolean
+    help:
+      zh_Hans: 是否启用流式响应。
+      en_US: Whether to enable streaming responses.
+    required: true
+    default: true
   - name: response_format
     label:
       zh_Hans: 回复格式
