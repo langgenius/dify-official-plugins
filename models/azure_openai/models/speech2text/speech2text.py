@@ -61,10 +61,9 @@ class AzureOpenAISpeech2TextModel(_CommonAzureOpenAI, Speech2TextModel):
     def get_customizable_model_schema(
         self, model: str, credentials: dict
     ) -> Optional[AIModelEntity]:
-        ai_model_entity = self._get_ai_model_entity(
-            credentials["base_model_name"], model
-        )
-        return ai_model_entity.entity
+        base_model_name = self._get_base_model_name(credentials)
+        ai_model_entity = self._get_ai_model_entity(base_model_name, model)
+        return ai_model_entity.entity if ai_model_entity else None
 
     @staticmethod
     def _get_ai_model_entity(base_model_name: str, model: str) -> AzureBaseModel:
@@ -76,9 +75,3 @@ class AzureOpenAISpeech2TextModel(_CommonAzureOpenAI, Speech2TextModel):
                 ai_model_entity_copy.entity.label.zh_Hans = model
                 return ai_model_entity_copy
         return None
-
-    def _get_base_model_name(self, credentials: dict) -> str:
-        base_model_name = credentials.get("base_model_name")
-        if not base_model_name:
-            raise ValueError("Base Model Name is required")
-        return base_model_name

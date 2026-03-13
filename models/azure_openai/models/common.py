@@ -123,3 +123,10 @@ class _CommonAzureOpenAI:
                 openai.APIError,
             ],
         }
+
+    @staticmethod
+    def _get_base_model_name(credentials: dict) -> str:
+        base_model_name = credentials.get("base_model_name")
+        if not base_model_name:
+            raise ValueError("Base Model Name is required")
+        return base_model_name
