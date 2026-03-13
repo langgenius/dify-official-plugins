@@ -1,6 +1,6 @@
 model: grok-4-fast-reasoning
 label:
-  en_US: grok-4-fast-reasoning
+  en_US: grok-4-fast
 model_type: llm
 features:
   - vision
@@ -19,16 +19,6 @@ parameter_rules:
     max: 2.0
   - name: top_p
     use_template: top_p
-  - name: use_encrypted_content
-    label:
-      zh_Hans: 使用加密推理内容
-      en_US: Use Encrypted Content
-    type: boolean
-    help:
-      zh_Hans: 启用后会返回加密的推理过程，可用于后续对话提供上下文
-      en_US: When enabled, returns encrypted reasoning content that can be used for context in subsequent conversations
-    required: false
-    default: false
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -50,8 +40,8 @@ parameter_rules:
     type: text
     default: "{\n  \"mode\": \"auto\"\n}"
     help:
-      zh_Hans: 传递给联网搜索的参数，具体参数见 https://docs.x.ai/docs/api-reference#chat-completions
-      en_US: Parameters to pass to the live search, see https://docs.x.ai/docs/api-reference#chat-completions
+      zh_Hans: 联网搜索的 JSON 参数，支持 mode、max_search_results、return_citations、sources、from_date 和 to_date，详见 https://docs.x.ai/developers/rest-api-reference/inference/chat
+      en_US: JSON parameters for live search. Supported keys include mode, max_search_results, return_citations, sources, from_date, and to_date. See https://docs.x.ai/developers/rest-api-reference/inference/chat
     required: false
 pricing:
   input: "0.20"
