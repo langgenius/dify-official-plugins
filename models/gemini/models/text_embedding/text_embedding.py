@@ -5,6 +5,8 @@ updates or bug fixes. Please switch to the `google.genai` package as soon as pos
 """
 
 import base64
+import binascii
+import logging
 import re
 import time
 import numpy as np
@@ -28,6 +30,8 @@ from dify_plugin.entities.model.text_embedding import (
 from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 
 from ..common_gemini import _CommonGemini
+
+logger = logging.getLogger(__name__)
 
 # Embedding and number of tokens used
 EmbeddingTokenPair = tuple[list[float], Optional[int]]
@@ -328,8 +332,8 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
             return mime
         except ValueError:
             raise
-        except Exception:
-            # Default to jpeg if detection fails
+        except binascii.Error:
+            logger.warning("Failed to decode base64 image data, defaulting to image/jpeg", exc_info=True)
             return "image/jpeg"
 
     def _get_output_dimension(self, model: str, credentials: dict) -> Optional[int]:
@@ -345,7 +349,7 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
             if model_schema and model_schema.model_properties:
                 return model_schema.model_properties.get("output_dimension")
         except Exception:
-            pass
+            logger.warning("Failed to get output_dimension from model schema", exc_info=True)
         return None
 
     def _invoke_multimodal(

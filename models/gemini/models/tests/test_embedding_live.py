@@ -12,9 +12,9 @@ All tests are marked with @pytest.mark.live so they can be skipped
 in CI or when no API key is available.
 """
 
-import base64
 import os
 import struct
+import zlib
 
 import pytest
 from google import genai
@@ -80,8 +80,6 @@ def _make_tiny_jpeg() -> bytes:
 
 def _make_tiny_png() -> bytes:
     """Create a minimal valid PNG image (1x1 red pixel)."""
-    import zlib
-
     def _chunk(chunk_type: bytes, data: bytes) -> bytes:
         c = chunk_type + data
         crc = struct.pack(">I", zlib.crc32(c) & 0xFFFFFFFF)
