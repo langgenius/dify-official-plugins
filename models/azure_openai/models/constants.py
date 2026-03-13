@@ -1,3 +1,5 @@
+from typing import Any
+
 from dify_plugin.entities.model import (
     PARAMETER_RULE_TEMPLATE,
     AIModelEntity,
@@ -55,7 +57,7 @@ class AzureBaseModel(BaseModel):
     # This allows model-specific required parameters (e.g., chunking_strategy) to be defined
     # per base model without modifying the invocation logic.
     # NOTE: Currently, this field is only used in the Speech-to-Text (STT) model implementation.
-    extra_invoke_params: dict = {}
+    extra_invoke_params: dict[str, Any] = {}
 
 
 LLM_BASE_MODELS = [
