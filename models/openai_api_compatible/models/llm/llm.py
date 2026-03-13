@@ -21,10 +21,88 @@ from dify_plugin.entities.model.message import (
 from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLanguageModel
 from typing import List
 
+from openai import OpenAI
+from dify_plugin.errors.model import CredentialsValidateFailedError
+
 
 class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
     # Pre-compiled regex for better performance
     _THINK_PATTERN = re.compile(r"^<think>.*?</think>\s*", re.DOTALL)
+
+    @staticmethod
+    def _needs_max_completion_tokens(m: str) -> bool:
+        return bool(OpenAILargeLanguageModel._NEEDS_MAX_COMPLETION_TOKENS_PATTERN.match(m))
+
+    def validate_credentials(self, model: str, credentials: dict) -> None:
+        """Validate credentials with minimal divergence from base behavior.
+
+        1) Try base validation first (keeps upstream compatibility).
+        2) If it fails specifically due to too-small token floor on Responses API
+           (e.g., "Invalid 'max_output_tokens' ... integer_below_min_value"),
+           retry once with a safe minimum of 16 using the appropriate endpoint/param.
+        """
+        try:
+            return super().validate_credentials(model, credentials)
+        except CredentialsValidateFailedError as e:
+            msg = str(e)
+            should_retry_floor = (
+                "Invalid 'max_output_tokens'" in msg
+                or "integer_below_min_value" in msg
+            )
+            if not should_retry_floor:
+                # Propagate unrelated validation errors
+                raise
+
+            endpoint_url = credentials.get("endpoint_url")
+            if not endpoint_url:
+                # Missing required info; keep original error
+                raise
+
+            api_key = credentials.get("api_key")
+            extra_headers = credentials.get("extra_headers") or {}
+            client = OpenAI(api_key=api_key, base_url=endpoint_url, default_headers=extra_headers)
+
+            endpoint_model = credentials.get("endpoint_model_name") or model
+            mode = credentials.get("mode", "chat")
+
+            # Decide which token param name to use
+            param_pref = credentials.get("token_param_name", "auto")
+
+            use_max_completion = (
+                param_pref == "max_completion_tokens"
+                or (param_pref == "auto" and self._needs_max_completion_tokens(endpoint_model))
+            )
+
+            SAFE_MIN_TOKENS = 16
+
+            try:
+                if mode == "chat":
+                    if use_max_completion:
+                        # Responses API path
+                        client.responses.create(
+                            model=endpoint_model,
+                            input="user: ping",
+                            max_completion_tokens=SAFE_MIN_TOKENS,
+                        )
+                    else:
+                        client.chat.completions.create(
+                            model=endpoint_model,
+                            messages=[{"role": "user", "content": "ping"}],
+                            max_tokens=SAFE_MIN_TOKENS,
+                            stream=False,
+                        )
+                else:
+                    client.completions.create(
+                        model=endpoint_model,
+                        prompt="ping",
+                        max_tokens=SAFE_MIN_TOKENS,
+                        stream=False,
+                    )
+            except Exception as sub_e:
+                # Normalize the retried failure as credential error
+                raise CredentialsValidateFailedError(str(sub_e)) from sub_e
+            # If retry probe succeeded, treat as validated
+            return
 
     def get_customizable_model_schema(
         self, model: str, credentials: Mapping | dict
@@ -240,6 +318,22 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         # Remove thinking content from assistant messages for better performance.
         with suppress(Exception):
             self._drop_analyze_channel(prompt_messages)
+
+        # Map token parameter name when needed (Responses API style)
+        param_pref = credentials.get("token_param_name", "auto")
+
+        def _needs_max_completion_tokens(m: str) -> bool:
+            return bool(re.match(r"^(o1|o3|gpt-5)", m, re.IGNORECASE))
+
+        use_max_completion = (
+            (param_pref == "max_completion_tokens")
+            or (param_pref == "auto" and _needs_max_completion_tokens(model))
+        )
+
+        if use_max_completion:
+            # Only map if caller didn't already provide max_completion_tokens
+            if "max_completion_tokens" not in model_parameters and "max_tokens" in model_parameters:
+                model_parameters["max_completion_tokens"] = model_parameters.pop("max_tokens")
 
         result = super()._invoke(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
