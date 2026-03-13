@@ -4,6 +4,7 @@ All support for the `google.generativeai` package has ended. It will no longer b
 updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
 """
 
+import base64
 import re
 import time
 import numpy as np
@@ -11,6 +12,7 @@ from typing import Optional, Union
 from collections.abc import Mapping
 
 from google import genai
+from google.genai import types
 from google.genai.types import EmbedContentConfig
 from google.generativeai.embedding import to_task_type
 
@@ -18,21 +20,36 @@ from dify_plugin import TextEmbeddingModel
 from dify_plugin.entities.model import EmbeddingInputType, PriceType
 from dify_plugin.entities.model.text_embedding import (
     EmbeddingUsage,
+    MultiModalContent,
+    MultiModalContentType,
+    MultiModalEmbeddingResult,
     TextEmbeddingResult,
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 
 from ..common_gemini import _CommonGemini
 
-type EmbeddingTokenPair = tuple[
-    list[float], Optional[int]
-]  # Embedding and number of tokens used
+# Embedding and number of tokens used
+EmbeddingTokenPair = tuple[list[float], Optional[int]]
 
 
 class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
     """
     Model class for Gemini text embedding model.
     """
+
+    # ---- Gemini Embedding 2 modality-specific limits ----
+    # https://ai.google.dev/gemini-api/docs/embeddings#modality-limits
+    # Image: max 6 per request, PNG/JPEG only
+    MAX_IMAGES_PER_REQUEST = 6
+    SUPPORTED_IMAGE_FORMATS = {"image/jpeg", "image/png"}
+    # Audio: max 80 seconds, MP3/WAV (not yet supported)
+    # Video: max 128 seconds, MP4/MOV, codecs: H264/H265/AV1/VP9 (not yet supported)
+    # Document (PDF): max 6 pages (not yet supported)
+
+    # Fallback token estimate for image content when API does not return statistics.
+    # Google's documentation indicates images are processed at ~258 tokens on average.
+    IMAGE_TOKEN_ESTIMATE = 258
 
     def _invoke(
         self,
@@ -274,3 +291,181 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         )
 
         return usage
+
+    def _detect_image_mime_type(self, base64_str: str, validate_format: bool = False) -> str:
+        """
+        Detect image MIME type from base64 string
+
+        :param base64_str: base64 string
+        :param validate_format: if True, raise error for unsupported formats
+        :return: MIME type (e.g., 'image/jpeg', 'image/png')
+        """
+        try:
+            # Remove data URI prefix if present
+            if "," in base64_str:
+                base64_str = base64_str.split(",", 1)[1]
+
+            data = base64.b64decode(base64_str, validate=True)
+
+            # Check file signatures
+            if data.startswith(b"\xFF\xD8\xFF"):
+                return "image/jpeg"
+            elif data.startswith(b"\x89PNG\r\n\x1a\n"):
+                return "image/png"
+            elif data.startswith(b"GIF87a") or data.startswith(b"GIF89a"):
+                mime = "image/gif"
+            elif data.startswith(b"WEBP", 8):
+                mime = "image/webp"
+            else:
+                mime = "image/jpeg"
+
+            # Validate format for Gemini Embedding 2 (only JPEG and PNG are supported)
+            if validate_format and mime not in self.SUPPORTED_IMAGE_FORMATS:
+                raise ValueError(
+                    f"Unsupported image format: {mime}. "
+                    f"Gemini Embedding 2 only supports: {', '.join(sorted(self.SUPPORTED_IMAGE_FORMATS))}"
+                )
+            return mime
+        except ValueError:
+            raise
+        except Exception:
+            # Default to jpeg if detection fails
+            return "image/jpeg"
+
+    def _get_output_dimension(self, model: str, credentials: dict) -> Optional[int]:
+        """
+        Get output dimension from model properties (for MRL support)
+
+        :param model: model name
+        :param credentials: model credentials
+        :return: output dimension if configured, None otherwise
+        """
+        try:
+            model_schema = self.get_model_schema(model, credentials)
+            if model_schema and model_schema.model_properties:
+                return model_schema.model_properties.get("output_dimension")
+        except Exception:
+            pass
+        return None
+
+    def _invoke_multimodal(
+        self,
+        model: str,
+        credentials: dict,
+        documents: list[MultiModalContent],
+        user: Optional[str] = None,
+        input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT,
+    ) -> MultiModalEmbeddingResult:
+        """
+        Invoke multimodal embedding model
+
+        :param model: model name
+        :param credentials: model credentials
+        :param documents: multimodal documents to embed
+        :param user: unique user id
+        :param input_type: input type
+        :return: embeddings result
+        """
+        self.started_at = time.perf_counter()
+        client = genai.Client(api_key=credentials["google_api_key"])
+
+        # Convert MultiModalContent to Google Genai format, tracking content types
+        contents = []        # converted content for API call
+        content_is_image = []  # parallel list: True if image, False if text
+        original_texts = []   # parallel list: original text string (or None for images)
+        for document in documents:
+            if document.content_type == MultiModalContentType.TEXT:
+                contents.append(document.content)
+                content_is_image.append(False)
+                original_texts.append(document.content)
+            elif document.content_type == MultiModalContentType.IMAGE:
+                # Validate image format (Gemini Embedding 2 only supports JPEG and PNG)
+                mime_type = self._detect_image_mime_type(document.content, validate_format=True)
+                # Decode base64 and create Part object
+                base64_str = document.content
+                if "," in base64_str:
+                    base64_str = base64_str.split(",", 1)[1]
+                image_data = base64.b64decode(base64_str)
+                part = types.Part.from_bytes(data=image_data, mime_type=mime_type)
+                contents.append(part)
+                content_is_image.append(True)
+                original_texts.append(None)
+            else:
+                raise ValueError(
+                    f"Unsupported content type: {document.content_type}. "
+                    f"Gemini Embedding 2 currently supports TEXT and IMAGE."
+                )
+
+        # Get model properties
+        context_size = self._get_context_size(model, credentials)
+        max_chunks = self._get_max_chunks(model, credentials)
+
+        # Batch processing if needed
+        embeddings = []
+        used_tokens = 0
+
+        # Process in batches
+        for i in range(0, len(contents), max_chunks):
+            batch_contents = contents[i : i + max_chunks]
+
+            # Validate per-batch image count limit
+            # Gemini Embedding 2 supports at most 6 images per API request
+            batch_image_count = sum(content_is_image[i : i + max_chunks])
+            if batch_image_count > self.MAX_IMAGES_PER_REQUEST:
+                raise ValueError(
+                    f"Too many images in batch: {batch_image_count}. "
+                    f"Gemini Embedding 2 supports at most {self.MAX_IMAGES_PER_REQUEST} images per request."
+                )
+
+            # Prepare config with optional output_dimension (MRL support)
+            task_type = to_task_type(input_type.value)
+            output_dimension = self._get_output_dimension(model, credentials)
+
+            config_kwargs = {}
+            if task_type:
+                config_kwargs["task_type"] = task_type.name
+            if output_dimension:
+                config_kwargs["output_dimensionality"] = output_dimension
+
+            config = EmbedContentConfig(**config_kwargs) if config_kwargs else None
+
+            # Call embedding API
+            response = client.models.embed_content(
+                model=model, contents=batch_contents, config=config
+            )
+
+            if response.embeddings is None:
+                raise InvokeError(
+                    f"Unable to get embeddings from '{model}' model"
+                )
+
+            # Process embeddings
+            batch_original_texts = original_texts[i : i + max_chunks]
+            batch_is_image = content_is_image[i : i + max_chunks]
+            for j, embedding in enumerate(response.embeddings):
+                embedding_values = embedding.values or []
+                embeddings.append(embedding_values)
+
+                # Count tokens: prefer API statistics, then estimate by content type
+                if embedding.statistics and embedding.statistics.token_count:
+                    used_tokens += embedding.statistics.token_count
+                elif batch_is_image[j]:
+                    # Image: use fixed estimate
+                    used_tokens += self.IMAGE_TOKEN_ESTIMATE
+                elif batch_original_texts[j] is not None:
+                    # Text: estimate using GPT-2 tokenizer
+                    used_tokens += self._get_num_tokens_by_gpt2(batch_original_texts[j])
+                else:
+                    # Final fallback
+                    used_tokens += self.IMAGE_TOKEN_ESTIMATE
+
+        # Calculate usage
+        usage = self._calc_response_usage(
+            model=model, credentials=credentials, tokens=used_tokens
+        )
+
+        return MultiModalEmbeddingResult(
+            model=model,
+            embeddings=embeddings,
+            usage=usage,
+        )
