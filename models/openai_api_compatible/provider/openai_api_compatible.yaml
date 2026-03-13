@@ -257,6 +257,32 @@ model_credential_schema:
       help:
         en_US: Choose strict OpenAI compatibility or extended settings that add extra parameters (e.g., thinking, chat_template_kwargs, enable_thinking).
         zh_Hans: 选择严格的 OpenAI 兼容或扩展设置（会添加额外参数，例如 thinking、chat_template_kwargs、enable_thinking）。
+    - variable: token_param_name
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Token parameter name
+        zh_Hans: token 参数名
+      type: select
+      required: false
+      default: auto
+      options:
+        - value: auto
+          label:
+            en_US: Auto (detect by model)
+            zh_Hans: 自动（按模型判断）
+        - value: max_tokens
+          label:
+            en_US: Use max_tokens
+            zh_Hans: 使用 max_tokens
+        - value: max_completion_tokens
+          label:
+            en_US: Use max_completion_tokens
+            zh_Hans: 使用 max_completion_tokens
+      help:
+        en_US: Some OpenAI-compatible endpoints require max_completion_tokens (Responses API). Choose explicitly if auto-detection is wrong.
+        zh_Hans: 一些兼容端要求使用 max_completion_tokens（Responses API）。若自动判断不准确，可在此显式指定。
     - variable: function_calling_type
       show_on:
         - variable: __model_type
