@@ -51,6 +51,12 @@ class AzureBaseModel(BaseModel):
     base_model_name: str
     entity: AIModelEntity
 
+    # Additional parameters to be passed to the model invocation API for each base model.
+    # This allows model-specific required parameters (e.g., chunking_strategy) to be defined
+    # per base model without modifying the invocation logic.
+    # NOTE: Currently, this field is only used in the Speech-to-Text (STT) model implementation.
+    extra_invoke_params: dict = {}
+
 
 LLM_BASE_MODELS = [
     AzureBaseModel(
@@ -3677,6 +3683,7 @@ SPEECH2TEXT_BASE_MODELS = [
                 ModelPropertyKey.SUPPORTED_FILE_EXTENSIONS: "flac,mp3,mp4,mpeg,mpga,m4a,ogg,wav,webm",
             },
         ),
+        extra_invoke_params={"chunking_strategy": "auto"},
     ),
 ]
 TTS_BASE_MODELS = [
