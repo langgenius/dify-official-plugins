@@ -1,6 +1,7 @@
 # for more details, please refer to https://help.aliyun.com/zh/model-studio/glm
 model: glm-5
 label:
+  zh_Hans: glm-5
   en_US: glm-5
 model_type: llm
 features:
