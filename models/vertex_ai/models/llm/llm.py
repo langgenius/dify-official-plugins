@@ -200,7 +200,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             location = vertex_location
         elif any(m in model for m in
                  ["opus", "claude-3-5-sonnet", "claude-3-7-sonnet", "claude-sonnet-4", "claude-haiku-4-5",
-                  "claude-sonnet-4-5", "claude-opus-4-5"]):
+                  "claude-sonnet-4-5", "claude-opus-4-5", "claude-sonnet-4-6", "claude-opus-4-6"]):
             location = "us-east5"
         else:
             location = "us-central1"

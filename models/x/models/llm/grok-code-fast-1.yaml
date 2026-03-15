@@ -1,6 +1,6 @@
-model: grok-code-fast-1-0825
+model: grok-code-fast-1
 label:
-  en_US: grok-code-fast-1-0825
+  en_US: grok-code-fast-1
 model_type: llm
 features:
   - agent-thought
@@ -37,4 +37,3 @@ pricing:
   output: "1.50"
   unit: "0.000001"
   currency: USD
-deprecated: true
