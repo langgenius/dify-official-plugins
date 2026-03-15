@@ -483,12 +483,13 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     except json.JSONDecodeError:
                         json_schema_data = {}
 
+                raw_schema = json_schema_data.get("schema", {})
+                adapted_schema = self._adapt_schema_for_structured_outputs(raw_schema)
                 responses_params["text"] = {
                     "format": {
                         "type": "json_schema",
                         "name": json_schema_data.get("name", "response"),
-                        "strict": json_schema_data.get("strict", True),
-                        "schema": json_schema_data.get("json_schema", {})
+                        "schema": adapted_schema
                     }
                 }
             else:
@@ -1472,6 +1473,56 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 and "codex" not in base_model_name
             )
         )
+
+    @staticmethod
+    def _adapt_schema_for_structured_outputs(schema: dict) -> dict:
+        """
+        Responses API (Structured Outputs) requires all properties defined in
+        an object schema to be listed in 'required'.
+
+        Fields not in 'required' are treated as optional by converting their type
+        to [original_type, "null"] following the OpenAI recommended approach, then
+        adding them to 'required'. This allows the model to return null when the
+        value is absent, emulating optional fields.
+
+        Reference: https://developers.openai.com/api/docs/guides
+                   /structured-outputs#supported-schemas
+
+        Applied recursively to nested object schemas.
+        """
+        if not isinstance(schema, dict):
+            return schema
+        schema = dict(schema)
+        # Normalize type to a list for uniform handling (e.g. "object" -> ["object"])
+        # This ensures the object check below works even after null union conversion.
+        schema_type = schema.get("type")
+        is_object = schema_type == "object" or (
+            isinstance(schema_type, list) and "object" in schema_type
+        )
+        if is_object and "properties" in schema:
+            required = list(schema.get("required", []))
+            new_properties = {}
+            for key, prop in schema["properties"].items():
+                prop = dict(prop)
+                if key not in required:
+                    # Convert fields not in 'required' to null union type to emulate optional
+                    original_type = prop.get("type")
+                    if original_type is None:
+                        # No type specified: just add to required without type modification
+                        pass
+                    elif isinstance(original_type, list):
+                        # Already an array: append "null" if not already present
+                        if "null" not in original_type:
+                            prop["type"] = original_type + ["null"]
+                    else:
+                        # String type: convert to array and add "null"
+                        prop["type"] = [original_type, "null"]
+                    required.append(key)
+                # Recursively apply to nested schemas
+                new_properties[key] = AzureOpenAILargeLanguageModel._adapt_schema_for_structured_outputs(prop)
+            schema["properties"] = new_properties
+            schema["required"] = required
+        return schema
 
     @staticmethod
     def _azure_wrap_thinking_by_reasoning_content(
