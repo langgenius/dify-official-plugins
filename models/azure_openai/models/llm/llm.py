@@ -1510,9 +1510,16 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         if not isinstance(schema, dict):
             return schema
         schema = dict(schema)
-        # Normalize type to a list for uniform handling (e.g. "object" -> ["object"])
-        # This ensures the object check below works even after null union conversion.
         schema_type = schema.get("type")
+
+        # Handle arrays of objects by recursing into `items`
+        is_array = schema_type == "array" or (
+            isinstance(schema_type, list) and "array" in schema_type
+        )
+        if is_array and "items" in schema and isinstance(schema.get("items"), dict):
+            schema["items"] = AzureOpenAILargeLanguageModel._adapt_schema_for_structured_outputs(schema["items"])
+
+        # Handle objects
         is_object = schema_type == "object" or (
             isinstance(schema_type, list) and "object" in schema_type
         )
