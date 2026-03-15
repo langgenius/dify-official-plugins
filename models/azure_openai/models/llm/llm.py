@@ -65,14 +65,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         ai_model_entity = self._get_ai_model_entity(
             base_model_name=base_model_name, model=model
         )
-        # Check if model should use Responses API
-        # 1. Models with "codex" in the name
-        # 2. gpt-5.x models (excluding chat and codex variants which use different APIs)
-        uses_responses_api = (
-            "codex" in base_model_name
-            or (base_model_name.startswith("gpt-5") and "chat" not in base_model_name and "codex" not in base_model_name)
-        )
-        if uses_responses_api:
+        if self._uses_responses_api(base_model_name):
             return self._chat_generate_with_responses(
                 model=model,
                 credentials=credentials,
@@ -156,12 +149,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
         try:
             client = self._create_client(credentials)
-            # Check if model should use Responses API
-            uses_responses_api = (
-                "codex" in base_model_name
-                or (base_model_name.startswith("gpt-5") and "chat" not in base_model_name and "codex" not in base_model_name)
-            )
-            if uses_responses_api:
+            if self._uses_responses_api(base_model_name):
                 client.responses.create(
                     input="ping",
                     model=model,
@@ -1467,6 +1455,23 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     num_tokens += base_tokens + total_tiles * tile_tokens
 
         return num_tokens
+
+    @staticmethod
+    def _uses_responses_api(base_model_name: str) -> bool:
+        """
+        Determine if the model should use the Responses API.
+
+        1. Models with "codex" in the base name
+        2. gpt-5.x models (excluding chat and codex variants which use different APIs)
+        """
+        return (
+            "codex" in base_model_name
+            or (
+                base_model_name.startswith("gpt-5")
+                and "chat" not in base_model_name
+                and "codex" not in base_model_name
+            )
+        )
 
     @staticmethod
     def _azure_wrap_thinking_by_reasoning_content(
