@@ -566,14 +566,31 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                         "content": content_parts
                     })
             elif isinstance(message, AssistantPromptMessage):
-                input_messages.append({
-                    "role": "assistant",
-                    "content": message.content
-                })
+                # If the assistant message contains tool_calls, emit each as a
+                # Responses API function_call item (type="function_call").
+                # A plain-text assistant turn is emitted as a normal message item.
+                if message.tool_calls:
+                    for tc in message.tool_calls:
+                        input_messages.append({
+                            "type": "function_call",
+                            "call_id": tc.id,
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments,
+                        })
+                else:
+                    if message.content:
+                        input_messages.append({
+                            "role": "assistant",
+                            "content": message.content,
+                        })
             elif isinstance(message, ToolPromptMessage):
+                # Responses API requires tool results as function_call_output items.
+                # The call_id links back to the function_call item
+                # that triggered this tool call.
                 input_messages.append({
-                    "role": "assistant",  # Responses API represents tool calls with the assistant role
-                    "content": message.content
+                    "type": "function_call_output",
+                    "call_id": message.tool_call_id,
+                    "output": message.content,
                 })
 
         return input_messages
