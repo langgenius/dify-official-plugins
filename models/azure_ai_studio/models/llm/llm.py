@@ -246,7 +246,7 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
                     arguments = tool_call.function.arguments or "{}"
                     try:
                         tool_input = json.loads(arguments)
-                    except Exception:
+                    except json.JSONDecodeError:
                         tool_input = {"raw": arguments}
 
                     content_blocks.append(
