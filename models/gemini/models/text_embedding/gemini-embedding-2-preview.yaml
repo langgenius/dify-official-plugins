@@ -1,0 +1,15 @@
+# https://blog.google/innovation-and-ai/models-and-research/gemini-models/gemini-embedding-2/
+# https://github.com/google-gemini/cookbook/blob/main/quickstarts/Embeddings.ipynb
+model: gemini-embedding-2-preview
+model_type: text-embedding
+model_properties:
+  context_size: 8192  # Supports up to 8192 input tokens for text
+  max_chunks: 100
+# https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-embedding-2
+# Note: Pricing may need to be updated based on official documentation
+pricing:
+  input: "0.2"
+  unit: "0.000001"
+  currency: USD
+features:
+  - vision
