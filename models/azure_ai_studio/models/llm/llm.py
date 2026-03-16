@@ -462,7 +462,7 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
                     tool_buffers[data.get("index", 0)] = {
                         "id": block.get("id", ""),
                         "name": block.get("name", ""),
-                        "parts": [json.dumps(block.get("input", {})) if block.get("input") else ""],
+                        "parts": [],
                     }
                 continue
 
