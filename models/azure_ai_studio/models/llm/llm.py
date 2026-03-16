@@ -783,7 +783,7 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
         except urllib_error.HTTPError as ex:
             try:
                 body = ex.read().decode("utf-8")
-            except Exception:
+            except (IOError, UnicodeDecodeError):
                 body = str(ex)
             raise CredentialsValidateFailedError(body)
         except Exception as ex:
