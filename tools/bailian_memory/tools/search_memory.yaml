@@ -1,0 +1,69 @@
+identity:
+  name: search_memory
+  author: 佐井
+  label:
+    en_US: Search Memory
+    zh_Hans: 搜索记忆
+    ja_Jp: メモリ検索
+description:
+  human:
+    en_US: Search related historical memories based on semantic similarity.
+    zh_Hans: 基于语义相似度搜索相关历史记忆。
+    ja_Jp: セマンティック類似性に基づいて関連する履歴メモリを検索します。
+  llm: Search for relevant memories from a user's long-term memory store using semantic similarity. Provide messages or a query to find related past memories.
+parameters:
+  - name: user_id
+    type: string
+    required: true
+    label:
+      en_US: User ID
+      zh_Hans: 用户 ID
+      ja_Jp: ユーザーID
+    human_description:
+      en_US: Custom user identifier
+      zh_Hans: 用户自定义 ID
+      ja_Jp: カスタムユーザー識別子
+    llm_description: The user ID whose memories to search.
+    form: llm
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: Query
+      zh_Hans: 查询内容
+      ja_Jp: クエリ
+    human_description:
+      en_US: The search query text
+      zh_Hans: 搜索查询文本
+      ja_Jp: 検索クエリテキスト
+    llm_description: The query text to search for related memories.
+    form: llm
+  - name: top_k
+    type: number
+    required: false
+    label:
+      en_US: Top K
+      zh_Hans: 最大召回数
+      ja_Jp: Top K
+    human_description:
+      en_US: Maximum number of results to return (default 10)
+      zh_Hans: 最大召回个数（默认 10）
+      ja_Jp: 返す結果の最大数（デフォルト10）
+    llm_description: Maximum number of memory results to return. Default is 10. Recommended range is 3-10.
+    form: llm
+  - name: min_score
+    type: number
+    required: false
+    label:
+      en_US: Min Score
+      zh_Hans: 最小相似度分数
+      ja_Jp: 最小スコア
+    human_description:
+      en_US: Minimum similarity score threshold [0,100]
+      zh_Hans: 最小相似度分数阈值 [0,100]
+      ja_Jp: 最小類似度スコア閾値 [0,100]
+    llm_description: Minimum similarity score threshold, range [0,100]. Only memories with score above this threshold will be returned.
+    form: llm
+extra:
+  python:
+    source: tools/search_memory.py
