@@ -1,0 +1,1264 @@
+app:
+  description: 百炼记忆库插件全功能测试工作流，依次测试全部 11 个工具并验证 JSON 返回结构
+  icon: "\U0001F9E0"
+  icon_background: '#E4FBCC'
+  mode: workflow
+  name: Bailian Memory Plugin Test
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.5
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      enabled: false
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: tool
+      id: start-source-tool1-target
+      source: start
+      sourceHandle: source
+      target: tool1
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: code
+      id: tool1-source-code1-target
+      source: tool1
+      sourceHandle: source
+      target: code1
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: tool
+      id: code1-source-tool2-target
+      source: code1
+      sourceHandle: source
+      target: tool2
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: code
+      id: tool2-source-code2-target
+      source: tool2
+      sourceHandle: source
+      target: code2
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: tool
+      id: code2-source-tool3-target
+      source: code2
+      sourceHandle: source
+      target: tool3
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: tool
+      id: tool3-source-tool4-target
+      source: tool3
+      sourceHandle: source
+      target: tool4
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: tool
+      id: tool4-source-tool5-target
+      source: tool4
+      sourceHandle: source
+      target: tool5
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: tool
+      id: tool5-source-tool6-target
+      source: tool5
+      sourceHandle: source
+      target: tool6
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: code
+      id: tool6-source-code3-target
+      source: tool6
+      sourceHandle: source
+      target: code3
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: tool
+      id: code3-source-tool7-target
+      source: code3
+      sourceHandle: source
+      target: tool7
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: tool
+      id: tool7-source-tool8-target
+      source: tool7
+      sourceHandle: source
+      target: tool8
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: tool
+      id: tool8-source-tool9-target
+      source: tool8
+      sourceHandle: source
+      target: tool9
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: tool
+      id: tool9-source-tool10-target
+      source: tool9
+      sourceHandle: source
+      target: tool10
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: tool
+      id: tool10-source-tool11-target
+      source: tool10
+      sourceHandle: source
+      target: tool11
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: tool
+      id: tool11-source-tool12-target
+      source: tool11
+      sourceHandle: source
+      target: tool12
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: tool
+      id: tool12-source-tool13-target
+      source: tool12
+      sourceHandle: source
+      target: tool13
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: tool
+        targetType: code
+      id: tool13-source-code_validate-target
+      source: tool13
+      sourceHandle: source
+      target: code_validate
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: end
+      id: code_validate-source-end-target
+      source: code_validate
+      sourceHandle: source
+      target: end
+      targetHandle: target
+      type: custom
+      zIndex: 0
+
+    nodes:
+    # ============================================================
+    # Start Node
+    # ============================================================
+    - data:
+        desc: ''
+        selected: false
+        title: 开始
+        type: start
+        variables: []
+      height: 54
+      id: start
+      position:
+        x: 30
+        y: 300
+      positionAbsolute:
+        x: 30
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+
+    # ============================================================
+    # 1. AddMemory (messages格式)
+    # ============================================================
+    - data:
+        desc: '测试从对话消息中自动提取记忆'
+        provider_id: langgenius/bailian_memory/bailian_memory
+        provider_name: langgenius/bailian_memory/bailian_memory
+        provider_type: builtin
+        selected: false
+        title: '1. AddMemory (messages)'
+        tool_configurations: {}
+        tool_label: Add Memory
+        tool_name: add_memory
+        tool_node_version: '2'
+        tool_parameters:
+          user_id:
+            type: constant
+            value: 'dify_workflow_test_user'
+          messages:
+            type: constant
+            value: '[{"role":"user","content":"我叫小明，今年28岁，住在杭州，是一名设计师"},{"role":"assistant","content":"你好小明！杭州很美。"},{"role":"user","content":"每天下午3点提醒我喝咖啡"},{"role":"assistant","content":"好的，已记录。"}]'
+          custom_content:
+            type: constant
+            value: ''
+          profile_schema_id:
+            type: constant
+            value: ''
+          meta_data:
+            type: constant
+            value: ''
+        type: tool
+      height: 90
+      id: tool1
+      position:
+        x: 334
+        y: 300
+      positionAbsolute:
+        x: 334
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+
+    # ============================================================
+    # Code1: 验证AddMemory(messages)返回结构并提取ID
+    # ============================================================
+    - data:
+        code: |
+          def main(raw: list) -> dict:
+              result = raw[0] if isinstance(raw, list) else raw
+              errors = []
+              if "request_id" not in result:
+                  errors.append("AddMemory(messages): missing 'request_id'")
+              if "memory_nodes" not in result:
+                  errors.append("AddMemory(messages): missing 'memory_nodes'")
+              elif not isinstance(result["memory_nodes"], list):
+                  errors.append("AddMemory(messages): 'memory_nodes' is not a list")
+
+              nodes = result.get("memory_nodes", [])
+              first_id = ""
+              all_ids = ""
+              if nodes:
+                  for n in nodes:
+                      if "memory_node_id" not in n:
+                          errors.append("AddMemory(messages): memory_node missing 'memory_node_id'")
+                          break
+                  first_id = nodes[0].get("memory_node_id", "")
+                  all_ids = ",".join([n.get("memory_node_id", "") for n in nodes])
+
+              return {
+                  "first_node_id": first_id,
+                  "all_node_ids": all_ids,
+                  "validation": "PASS" if not errors else "; ".join(errors)
+              }
+        code_language: python3
+        desc: '验证AddMemory(messages)返回结构，提取memory_node_id'
+        outputs:
+          first_node_id:
+            children: null
+            type: string
+          all_node_ids:
+            children: null
+            type: string
+          validation:
+            children: null
+            type: string
+        selected: false
+        title: '验证+提取记忆ID'
+        type: code
+        variables:
+        - value_selector:
+          - tool1
+          - json
+          variable: raw
+      height: 102
+      id: code1
+      position:
+        x: 638
+        y: 300
+      positionAbsolute:
+        x: 638
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+
+    # ============================================================
+    # 2. AddMemory (custom_content格式)
+    # ============================================================
+    - data:
+        desc: '测试自定义内容直接存储为记忆'
+        provider_id: langgenius/bailian_memory/bailian_memory
+        provider_name: langgenius/bailian_memory/bailian_memory
+        provider_type: builtin
+        selected: false
+        title: '2. AddMemory (custom)'
+        tool_configurations: {}
+        tool_label: Add Memory
+        tool_name: add_memory
+        tool_node_version: '2'
+        tool_parameters:
+          user_id:
+            type: constant
+            value: 'dify_workflow_test_user'
+          messages:
+            type: constant
+            value: ''
+          custom_content:
+            type: constant
+            value: '用户周末喜欢去西湖边跑步'
+          profile_schema_id:
+            type: constant
+            value: ''
+          meta_data:
+            type: constant
+            value: '{"source":"dify_test"}'
+        type: tool
+      height: 90
+      id: tool2
+      position:
+        x: 942
+        y: 300
+      positionAbsolute:
+        x: 942
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+
+    # ============================================================
+    # Code2: 验证AddMemory(custom)返回结构并合并ID
+    # ============================================================
+    - data:
+        code: |
+          def main(raw: list, prev_ids: str) -> dict:
+              result = raw[0] if isinstance(raw, list) else raw
+              errors = []
+              if "request_id" not in result:
+                  errors.append("AddMemory(custom): missing 'request_id'")
+              if "memory_nodes" not in result:
+                  errors.append("AddMemory(custom): missing 'memory_nodes'")
+              elif not isinstance(result["memory_nodes"], list):
+                  errors.append("AddMemory(custom): 'memory_nodes' is not a list")
+
+              nodes = result.get("memory_nodes", [])
+              custom_nid = ""
+              if nodes:
+                  custom_nid = nodes[0].get("memory_node_id", "")
+                  if not custom_nid:
+                      errors.append("AddMemory(custom): first node missing 'memory_node_id'")
+
+              all_ids = prev_ids + "," + custom_nid if prev_ids else custom_nid
+              return {
+                  "custom_node_id": custom_nid,
+                  "all_node_ids": all_ids,
+                  "validation": "PASS" if not errors else "; ".join(errors)
+              }
+        code_language: python3
+        desc: '验证AddMemory(custom)返回结构，合并所有记忆ID'
+        outputs:
+          custom_node_id:
+            children: null
+            type: string
+          all_node_ids:
+            children: null
+            type: string
+          validation:
+            children: null
+            type: string
+        selected: false
+        title: '验证+合并记忆ID'
+        type: code
+        variables:
+        - value_selector:
+          - tool2
+          - json
+          variable: raw
+        - value_selector:
+          - code1
+          - all_node_ids
+          variable: prev_ids
+      height: 102
+      id: code2
+      position:
+        x: 1246
+        y: 300
+      positionAbsolute:
+        x: 1246
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+
+    # ============================================================
+    # 3. SearchMemory
+    # ============================================================
+    - data:
+        desc: '测试语义搜索记忆'
+        provider_id: langgenius/bailian_memory/bailian_memory
+        provider_name: langgenius/bailian_memory/bailian_memory
+        provider_type: builtin
+        selected: false
+        title: '3. SearchMemory'
+        tool_configurations: {}
+        tool_label: Search Memory
+        tool_name: search_memory
+        tool_node_version: '2'
+        tool_parameters:
+          user_id:
+            type: constant
+            value: 'dify_workflow_test_user'
+          query:
+            type: constant
+            value: '用户住在哪个城市？'
+          top_k:
+            type: constant
+            value: '5'
+          min_score:
+            type: constant
+            value: ''
+        type: tool
+      height: 90
+      id: tool3
+      position:
+        x: 1550
+        y: 300
+      positionAbsolute:
+        x: 1550
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+
+    # ============================================================
+    # 4. ListMemory
+    # ============================================================
+    - data:
+        desc: '测试分页列出用户记忆'
+        provider_id: langgenius/bailian_memory/bailian_memory
+        provider_name: langgenius/bailian_memory/bailian_memory
+        provider_type: builtin
+        selected: false
+        title: '4. ListMemory'
+        tool_configurations: {}
+        tool_label: List Memory
+        tool_name: list_memory
+        tool_node_version: '2'
+        tool_parameters:
+          user_id:
+            type: constant
+            value: 'dify_workflow_test_user'
+          page_num:
+            type: constant
+            value: '1'
+          page_size:
+            type: constant
+            value: '10'
+        type: tool
+      height: 90
+      id: tool4
+      position:
+        x: 1854
+        y: 300
+      positionAbsolute:
+        x: 1854
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+
+    # ============================================================
+    # 5. UpdateMemory
+    # ============================================================
+    - data:
+        desc: '测试更新记忆内容'
+        provider_id: langgenius/bailian_memory/bailian_memory
+        provider_name: langgenius/bailian_memory/bailian_memory
+        provider_type: builtin
+        selected: false
+        title: '5. UpdateMemory'
+        tool_configurations: {}
+        tool_label: Update Memory
+        tool_name: update_memory
+        tool_node_version: '2'
+        tool_parameters:
+          memory_node_id:
+            type: variable
+            value:
+            - code2
+            - custom_node_id
+          user_id:
+            type: constant
+            value: 'dify_workflow_test_user'
+          custom_content:
+            type: constant
+            value: '用户周末喜欢去西湖边晨跑，通常跑5公里'
+          meta_data:
+            type: constant
+            value: '{"updated_by":"workflow_test"}'
+        type: tool
+      height: 90
+      id: tool5
+      position:
+        x: 2158
+        y: 300
+      positionAbsolute:
+        x: 2158
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+
+    # ============================================================
+    # 6. CreateProfileSchema
+    # ============================================================
+    - data:
+        desc: '测试创建画像模板'
+        provider_id: langgenius/bailian_memory/bailian_memory
+        provider_name: langgenius/bailian_memory/bailian_memory
+        provider_type: builtin
+        selected: false
+        title: '6. CreateProfileSchema'
+        tool_configurations: {}
+        tool_label: Create Profile Schema
+        tool_name: create_profile_schema
+        tool_node_version: '2'
+        tool_parameters:
+          name:
+            type: constant
+            value: 'workflow_test_schema'
+          description:
+            type: constant
+            value: 'Dify工作流测试画像模板'
+          attributes:
+            type: constant
+            value: '[{"name":"年龄","description":"用户年龄"},{"name":"城市","description":"用户所在城市"},{"name":"爱好","description":"用户兴趣爱好"}]'
+        type: tool
+      height: 90
+      id: tool6
+      position:
+        x: 2462
+        y: 300
+      positionAbsolute:
+        x: 2462
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+
+    # ============================================================
+    # Code3: 验证CreateProfileSchema返回结构并提取schema_id
+    # ============================================================
+    - data:
+        code: |
+          def main(raw: list) -> dict:
+              result = raw[0] if isinstance(raw, list) else raw
+              errors = []
+              if "request_id" not in result:
+                  errors.append("CreateProfileSchema: missing 'request_id'")
+              if "profile_schema_id" not in result:
+                  errors.append("CreateProfileSchema: missing 'profile_schema_id'")
+
+              schema_id = result.get("profile_schema_id", "")
+              return {
+                  "schema_id": schema_id,
+                  "validation": "PASS" if not errors else "; ".join(errors)
+              }
+        code_language: python3
+        desc: '验证CreateProfileSchema返回结构，提取schema_id'
+        outputs:
+          schema_id:
+            children: null
+            type: string
+          validation:
+            children: null
+            type: string
+        selected: false
+        title: '验证+提取SchemaID'
+        type: code
+        variables:
+        - value_selector:
+          - tool6
+          - json
+          variable: raw
+      height: 102
+      id: code3
+      position:
+        x: 2766
+        y: 300
+      positionAbsolute:
+        x: 2766
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+
+    # ============================================================
+    # 7. ListProfileSchemas
+    # ============================================================
+    - data:
+        desc: '测试列出画像模板'
+        provider_id: langgenius/bailian_memory/bailian_memory
+        provider_name: langgenius/bailian_memory/bailian_memory
+        provider_type: builtin
+        selected: false
+        title: '7. ListProfileSchemas'
+        tool_configurations: {}
+        tool_label: List Profile Schemas
+        tool_name: list_profile_schemas
+        tool_node_version: '2'
+        tool_parameters:
+          page_num:
+            type: constant
+            value: '1'
+          page_size:
+            type: constant
+            value: '10'
+        type: tool
+      height: 90
+      id: tool7
+      position:
+        x: 3070
+        y: 300
+      positionAbsolute:
+        x: 3070
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+
+    # ============================================================
+    # 8. GetProfileSchema
+    # ============================================================
+    - data:
+        desc: '测试获取画像模板详情'
+        provider_id: langgenius/bailian_memory/bailian_memory
+        provider_name: langgenius/bailian_memory/bailian_memory
+        provider_type: builtin
+        selected: false
+        title: '8. GetProfileSchema'
+        tool_configurations: {}
+        tool_label: Get Profile Schema
+        tool_name: get_profile_schema
+        tool_node_version: '2'
+        tool_parameters:
+          profile_schema_id:
+            type: variable
+            value:
+            - code3
+            - schema_id
+        type: tool
+      height: 90
+      id: tool8
+      position:
+        x: 3374
+        y: 300
+      positionAbsolute:
+        x: 3374
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+
+    # ============================================================
+    # 9. UpdateProfileSchema
+    # ============================================================
+    - data:
+        desc: '测试更新画像模板（添加职业属性）'
+        provider_id: langgenius/bailian_memory/bailian_memory
+        provider_name: langgenius/bailian_memory/bailian_memory
+        provider_type: builtin
+        selected: false
+        title: '9. UpdateProfileSchema'
+        tool_configurations: {}
+        tool_label: Update Profile Schema
+        tool_name: update_profile_schema
+        tool_node_version: '2'
+        tool_parameters:
+          profile_schema_id:
+            type: variable
+            value:
+            - code3
+            - schema_id
+          name:
+            type: constant
+            value: ''
+          description:
+            type: constant
+            value: 'Dify工作流测试画像模板（已更新）'
+          attributes_operations:
+            type: constant
+            value: '[{"op":"add","name":"职业","description":"用户的职业"}]'
+        type: tool
+      height: 90
+      id: tool9
+      position:
+        x: 3678
+        y: 300
+      positionAbsolute:
+        x: 3678
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+
+    # ============================================================
+    # 10. AddMemory with profile_schema (触发画像提取)
+    # ============================================================
+    - data:
+        desc: '测试带画像模板的记忆添加，触发用户画像提取'
+        provider_id: langgenius/bailian_memory/bailian_memory
+        provider_name: langgenius/bailian_memory/bailian_memory
+        provider_type: builtin
+        selected: false
+        title: '10. AddMemory+Profile'
+        tool_configurations: {}
+        tool_label: Add Memory
+        tool_name: add_memory
+        tool_node_version: '2'
+        tool_parameters:
+          user_id:
+            type: constant
+            value: 'dify_workflow_test_user'
+          messages:
+            type: constant
+            value: '[{"role":"user","content":"我是一名设计师，28岁，住在杭州，喜欢跑步"},{"role":"assistant","content":"了解了！"}]'
+          custom_content:
+            type: constant
+            value: ''
+          profile_schema_id:
+            type: variable
+            value:
+            - code3
+            - schema_id
+          meta_data:
+            type: constant
+            value: ''
+        type: tool
+      height: 90
+      id: tool10
+      position:
+        x: 3982
+        y: 300
+      positionAbsolute:
+        x: 3982
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+
+    # ============================================================
+    # 11. GetUserProfile
+    # ============================================================
+    - data:
+        desc: '测试获取用户画像'
+        provider_id: langgenius/bailian_memory/bailian_memory
+        provider_name: langgenius/bailian_memory/bailian_memory
+        provider_type: builtin
+        selected: false
+        title: '11. GetUserProfile'
+        tool_configurations: {}
+        tool_label: Get User Profile
+        tool_name: get_user_profile
+        tool_node_version: '2'
+        tool_parameters:
+          profile_schema_id:
+            type: variable
+            value:
+            - code3
+            - schema_id
+          user_id:
+            type: constant
+            value: 'dify_workflow_test_user'
+        type: tool
+      height: 90
+      id: tool11
+      position:
+        x: 4286
+        y: 300
+      positionAbsolute:
+        x: 4286
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+
+    # ============================================================
+    # DeleteMemory (清理第一个记忆节点)
+    # ============================================================
+    - data:
+        desc: '清理：删除一条测试记忆'
+        provider_id: langgenius/bailian_memory/bailian_memory
+        provider_name: langgenius/bailian_memory/bailian_memory
+        provider_type: builtin
+        selected: false
+        title: '清理: DeleteMemory'
+        tool_configurations: {}
+        tool_label: Delete Memory
+        tool_name: delete_memory
+        tool_node_version: '2'
+        tool_parameters:
+          memory_node_id:
+            type: variable
+            value:
+            - code1
+            - first_node_id
+        type: tool
+      height: 90
+      id: tool12
+      position:
+        x: 4590
+        y: 300
+      positionAbsolute:
+        x: 4590
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+
+    # ============================================================
+    # DeleteProfileSchema (清理画像模板)
+    # ============================================================
+    - data:
+        desc: '清理：删除测试画像模板'
+        provider_id: langgenius/bailian_memory/bailian_memory
+        provider_name: langgenius/bailian_memory/bailian_memory
+        provider_type: builtin
+        selected: false
+        title: '清理: DeleteSchema'
+        tool_configurations: {}
+        tool_label: Delete Profile Schema
+        tool_name: delete_profile_schema
+        tool_node_version: '2'
+        tool_parameters:
+          profile_schema_id:
+            type: variable
+            value:
+            - code3
+            - schema_id
+        type: tool
+      height: 90
+      id: tool13
+      position:
+        x: 4894
+        y: 300
+      positionAbsolute:
+        x: 4894
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+
+    # ============================================================
+    # 综合验证: 检查所有工具JSON返回结构是否符合API预期
+    # ============================================================
+    - data:
+        code: |
+          import json
+
+          def unwrap(raw):
+              return raw[0] if isinstance(raw, list) else raw
+
+          def check_keys(data: dict, required_keys: list, tool_name: str) -> list:
+              errors = []
+              for key in required_keys:
+                  if key not in data:
+                      errors.append(f"{tool_name}: missing '{key}'")
+              return errors
+
+          def main(
+              r1_add_msg: list,
+              r2_add_custom: list,
+              r3_search: list,
+              r4_list: list,
+              r5_update: list,
+              r6_create_schema: list,
+              r7_list_schemas: list,
+              r8_get_schema: list,
+              r9_update_schema: list,
+              r10_add_profile: list,
+              r11_get_profile: list,
+              r12_delete_mem: list,
+              r13_delete_schema: list,
+              v_code1: str,
+              v_code2: str,
+              v_code3: str,
+          ) -> dict:
+              all_errors = []
+
+              d1 = unwrap(r1_add_msg)
+              d2 = unwrap(r2_add_custom)
+              d3 = unwrap(r3_search)
+              d4 = unwrap(r4_list)
+              d5 = unwrap(r5_update)
+              d6 = unwrap(r6_create_schema)
+              d7 = unwrap(r7_list_schemas)
+              d8 = unwrap(r8_get_schema)
+              d9 = unwrap(r9_update_schema)
+              d10 = unwrap(r10_add_profile)
+              d11 = unwrap(r11_get_profile)
+              d12 = unwrap(r12_delete_mem)
+              d13 = unwrap(r13_delete_schema)
+
+              # 1. AddMemory(messages): expect {memory_nodes: [...], request_id}
+              all_errors += check_keys(d1, ["memory_nodes", "request_id"], "AddMemory(messages)")
+              nodes = d1.get("memory_nodes", [])
+              if isinstance(nodes, list) and nodes:
+                  all_errors += check_keys(nodes[0], ["memory_node_id"], "AddMemory(messages).memory_nodes[0]")
+
+              # 2. AddMemory(custom): expect {memory_nodes: [...], request_id}
+              all_errors += check_keys(d2, ["memory_nodes", "request_id"], "AddMemory(custom)")
+
+              # 3. SearchMemory: expect {memory_nodes: [...], request_id}
+              all_errors += check_keys(d3, ["memory_nodes", "request_id"], "SearchMemory")
+
+              # 4. ListMemory: expect {memory_nodes, page_num, page_size, request_id, total}
+              all_errors += check_keys(d4, ["memory_nodes", "page_num", "page_size", "request_id", "total"], "ListMemory")
+
+              # 5. UpdateMemory: expect {request_id}
+              all_errors += check_keys(d5, ["request_id"], "UpdateMemory")
+
+              # 6. CreateProfileSchema: expect {profile_schema_id, request_id}
+              all_errors += check_keys(d6, ["profile_schema_id", "request_id"], "CreateProfileSchema")
+
+              # 7. ListProfileSchemas: expect {profile_schemas, request_id, total}
+              all_errors += check_keys(d7, ["profile_schemas", "request_id", "total"], "ListProfileSchemas")
+
+              # 8. GetProfileSchema: expect {attributes, name, request_id}
+              all_errors += check_keys(d8, ["attributes", "name", "request_id"], "GetProfileSchema")
+
+              # 9. UpdateProfileSchema: expect {request_id}
+              all_errors += check_keys(d9, ["request_id"], "UpdateProfileSchema")
+
+              # 10. AddMemory+Profile: expect {memory_nodes, request_id}
+              all_errors += check_keys(d10, ["memory_nodes", "request_id"], "AddMemory+Profile")
+
+              # 11. GetUserProfile: expect {profile, request_id}
+              all_errors += check_keys(d11, ["profile", "request_id"], "GetUserProfile")
+
+              # 12. DeleteMemory: expect {request_id}
+              all_errors += check_keys(d12, ["request_id"], "DeleteMemory")
+
+              # 13. DeleteProfileSchema: expect {request_id}
+              all_errors += check_keys(d13, ["request_id"], "DeleteProfileSchema")
+
+              # Collect code node validations
+              code_validations = []
+              for label, v in [("code1", v_code1), ("code2", v_code2), ("code3", v_code3)]:
+                  if v != "PASS":
+                      code_validations.append(f"{label}: {v}")
+
+              total_checks = 13
+              failed = len(all_errors) + len(code_validations)
+              passed = total_checks - len(all_errors)
+
+              summary_lines = [f"=== Bailian Memory JSON Validation ==="]
+              summary_lines.append(f"Tools checked: {total_checks}")
+              summary_lines.append(f"Passed: {passed}/{total_checks}")
+
+              if all_errors:
+                  summary_lines.append(f"\nTool Errors:")
+                  for e in all_errors:
+                      summary_lines.append(f"  FAIL: {e}")
+
+              if code_validations:
+                  summary_lines.append(f"\nCode Node Errors:")
+                  for e in code_validations:
+                      summary_lines.append(f"  FAIL: {e}")
+
+              if not all_errors and not code_validations:
+                  summary_lines.append(f"\nAll 13 tools return valid JSON with expected keys!")
+
+              report = "\n".join(summary_lines)
+              return {
+                  "report": report,
+                  "all_passed": "true" if not all_errors and not code_validations else "false",
+                  "error_count": str(failed),
+                  "errors_detail": json.dumps(all_errors + code_validations, ensure_ascii=False) if (all_errors or code_validations) else "[]"
+              }
+        code_language: python3
+        desc: '综合验证所有工具返回的JSON结构是否符合API预期'
+        outputs:
+          report:
+            children: null
+            type: string
+          all_passed:
+            children: null
+            type: string
+          error_count:
+            children: null
+            type: string
+          errors_detail:
+            children: null
+            type: string
+        selected: false
+        title: '综合JSON验证'
+        type: code
+        variables:
+        - value_selector:
+          - tool1
+          - json
+          variable: r1_add_msg
+        - value_selector:
+          - tool2
+          - json
+          variable: r2_add_custom
+        - value_selector:
+          - tool3
+          - json
+          variable: r3_search
+        - value_selector:
+          - tool4
+          - json
+          variable: r4_list
+        - value_selector:
+          - tool5
+          - json
+          variable: r5_update
+        - value_selector:
+          - tool6
+          - json
+          variable: r6_create_schema
+        - value_selector:
+          - tool7
+          - json
+          variable: r7_list_schemas
+        - value_selector:
+          - tool8
+          - json
+          variable: r8_get_schema
+        - value_selector:
+          - tool9
+          - json
+          variable: r9_update_schema
+        - value_selector:
+          - tool10
+          - json
+          variable: r10_add_profile
+        - value_selector:
+          - tool11
+          - json
+          variable: r11_get_profile
+        - value_selector:
+          - tool12
+          - json
+          variable: r12_delete_mem
+        - value_selector:
+          - tool13
+          - json
+          variable: r13_delete_schema
+        - value_selector:
+          - code1
+          - validation
+          variable: v_code1
+        - value_selector:
+          - code2
+          - validation
+          variable: v_code2
+        - value_selector:
+          - code3
+          - validation
+          variable: v_code3
+      height: 102
+      id: code_validate
+      position:
+        x: 5198
+        y: 300
+      positionAbsolute:
+        x: 5198
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+
+    # ============================================================
+    # End Node
+    # ============================================================
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - code_validate
+          - report
+          variable: validation_report
+        - value_selector:
+          - code_validate
+          - all_passed
+          variable: all_passed
+        - value_selector:
+          - code_validate
+          - error_count
+          variable: error_count
+        - value_selector:
+          - code_validate
+          - errors_detail
+          variable: errors_detail
+        - value_selector:
+          - tool1
+          - json
+          variable: result_1_add_memory_messages
+        - value_selector:
+          - tool2
+          - json
+          variable: result_2_add_memory_custom
+        - value_selector:
+          - tool3
+          - json
+          variable: result_3_search_memory
+        - value_selector:
+          - tool4
+          - json
+          variable: result_4_list_memory
+        - value_selector:
+          - tool5
+          - json
+          variable: result_5_update_memory
+        - value_selector:
+          - tool6
+          - json
+          variable: result_6_create_profile_schema
+        - value_selector:
+          - tool7
+          - json
+          variable: result_7_list_profile_schemas
+        - value_selector:
+          - tool8
+          - json
+          variable: result_8_get_profile_schema
+        - value_selector:
+          - tool9
+          - json
+          variable: result_9_update_profile_schema
+        - value_selector:
+          - tool10
+          - json
+          variable: result_10_add_memory_with_profile
+        - value_selector:
+          - tool11
+          - json
+          variable: result_11_get_user_profile
+        - value_selector:
+          - tool12
+          - json
+          variable: result_cleanup_delete_memory
+        - value_selector:
+          - tool13
+          - json
+          variable: result_cleanup_delete_schema
+        selected: false
+        title: 结束
+        type: end
+      height: 300
+      id: end
+      position:
+        x: 5502
+        y: 300
+      positionAbsolute:
+        x: 5502
+        y: 300
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+
+    viewport:
+      x: 0
+      y: 100
+      zoom: 0.5
