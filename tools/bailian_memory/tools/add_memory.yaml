@@ -1,0 +1,82 @@
+identity:
+  name: add_memory
+  author: 佐井
+  label:
+    en_US: Add Memory
+    zh_Hans: 添加记忆
+    ja_Jp: メモリ追加
+description:
+  human:
+    en_US: Store conversation messages or custom content as memory fragments. Automatically extracts key information and builds semantic index.
+    zh_Hans: 将对话消息或自定义内容存储为记忆片段，自动提取关键信息并构建语义索引。
+    ja_Jp: 会話メッセージまたはカスタムコンテンツをメモリフラグメントとして保存します。キー情報を自動抽出し、セマンティックインデックスを構築します。
+  llm: Store conversation messages or custom content as long-term memory. Use this tool to save important information from conversations that should be remembered across sessions. Provide either messages (conversation format) or custom_content (free text).
+parameters:
+  - name: user_id
+    type: string
+    required: true
+    label:
+      en_US: User ID
+      zh_Hans: 用户 ID
+      ja_Jp: ユーザーID
+    human_description:
+      en_US: Custom user identifier
+      zh_Hans: 用户自定义 ID
+      ja_Jp: カスタムユーザー識別子
+    llm_description: The user ID to associate the memory with.
+    form: llm
+  - name: messages
+    type: string
+    required: false
+    label:
+      en_US: Messages (JSON)
+      zh_Hans: 对话消息 (JSON)
+      ja_Jp: メッセージ (JSON)
+    human_description:
+      en_US: "Conversation messages in JSON array format, e.g. [{\"role\":\"user\",\"content\":\"hello\"},{\"role\":\"assistant\",\"content\":\"hi\"}]"
+      zh_Hans: "JSON 数组格式的对话消息，例如 [{\"role\":\"user\",\"content\":\"你好\"},{\"role\":\"assistant\",\"content\":\"你好\"}]"
+      ja_Jp: "JSON配列形式の会話メッセージ"
+    llm_description: "Conversation messages as a JSON array string. Each message has 'role' (user/assistant) and 'content'. Either messages or custom_content is required."
+    form: llm
+  - name: custom_content
+    type: string
+    required: false
+    label:
+      en_US: Custom Content
+      zh_Hans: 自定义内容
+      ja_Jp: カスタムコンテンツ
+    human_description:
+      en_US: Custom text content to store as memory (alternative to messages)
+      zh_Hans: 自定义文本内容存储为记忆（与 messages 二选一）
+      ja_Jp: メモリとして保存するカスタムテキストコンテンツ（messagesの代替）
+    llm_description: Free text content to store as memory. Use this when you want to directly specify what to remember, instead of providing conversation messages.
+    form: llm
+  - name: profile_schema_id
+    type: string
+    required: false
+    label:
+      en_US: Profile Schema ID
+      zh_Hans: 画像模板 ID
+      ja_Jp: プロファイルスキーマID
+    human_description:
+      en_US: Profile schema ID for user profile extraction
+      zh_Hans: 画像模板 ID，用于提取用户画像
+      ja_Jp: ユーザープロファイル抽出用のプロファイルスキーマID
+    llm_description: Optional profile schema ID. When provided, the system will also extract user profile attributes based on the schema template.
+    form: llm
+  - name: meta_data
+    type: string
+    required: false
+    label:
+      en_US: Metadata (JSON)
+      zh_Hans: 自定义元数据 (JSON)
+      ja_Jp: メタデータ (JSON)
+    human_description:
+      en_US: "Custom metadata in JSON format, e.g. {\"location\":\"Beijing\"}"
+      zh_Hans: "JSON 格式的自定义元数据，例如 {\"location\":\"北京\"}"
+      ja_Jp: "JSON形式のカスタムメタデータ"
+    llm_description: "Optional custom metadata as a JSON object string, e.g. {\"location\":\"Beijing\"}."
+    form: llm
+extra:
+  python:
+    source: tools/add_memory.py

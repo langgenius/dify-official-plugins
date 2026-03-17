@@ -217,17 +217,18 @@ class CotAgentOutputParser:
                         yield ReactChunk(cur_state, delta)
                         continue
 
+                if not in_json and delta in {"{", "["}:
+                    in_json = True
+                    got_json = False
+                    json_cache = delta
+                    json_in_string = False
+                    json_escape = False
+                    json_stack = ["}" if delta == "{" else "]"]
+                    last_character = delta
+                    index += steps
+                    continue
+
                 if not in_json and pending_action_json:
-                    if delta in {"{", "["}:
-                        in_json = True
-                        got_json = False
-                        json_cache = delta
-                        json_in_string = False
-                        json_escape = False
-                        json_stack = ["}" if delta == "{" else "]"]
-                        last_character = delta
-                        index += steps
-                        continue
                     if not delta.isspace():
                         pending_action_json = False
 
