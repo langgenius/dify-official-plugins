@@ -1,0 +1,56 @@
+identity:
+  name: list_memory
+  author: 佐井
+  label:
+    en_US: List Memory
+    zh_Hans: 列出记忆
+    ja_Jp: メモリ一覧
+description:
+  human:
+    en_US: List all memories for a user with pagination.
+    zh_Hans: 分页查看用户的所有记忆。
+    ja_Jp: ページネーション付きでユーザーの全メモリを一覧表示します。
+  llm: List all stored memory fragments for a given user. Supports pagination.
+parameters:
+  - name: user_id
+    type: string
+    required: true
+    label:
+      en_US: User ID
+      zh_Hans: 用户 ID
+      ja_Jp: ユーザーID
+    human_description:
+      en_US: Custom user identifier
+      zh_Hans: 用户自定义 ID
+      ja_Jp: カスタムユーザー識別子
+    llm_description: The user ID whose memories to list.
+    form: llm
+  - name: page_num
+    type: number
+    required: false
+    label:
+      en_US: Page Number
+      zh_Hans: 页码
+      ja_Jp: ページ番号
+    human_description:
+      en_US: Page number starting from 1 (default 1)
+      zh_Hans: 页码，从 1 开始（默认 1）
+      ja_Jp: ページ番号、1から開始（デフォルト1）
+    llm_description: Page number, starting from 1. Default is 1.
+    form: llm
+  - name: page_size
+    type: number
+    required: false
+    label:
+      en_US: Page Size
+      zh_Hans: 每页条目数
+      ja_Jp: ページサイズ
+    human_description:
+      en_US: Number of items per page (default 10)
+      zh_Hans: 每页条目数（默认 10）
+      ja_Jp: ページあたりの項目数（デフォルト10）
+    llm_description: Number of items per page. Default is 10.
+    form: llm
+extra:
+  python:
+    source: tools/list_memory.py

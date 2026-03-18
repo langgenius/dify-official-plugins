@@ -65,14 +65,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         ai_model_entity = self._get_ai_model_entity(
             base_model_name=base_model_name, model=model
         )
-        # Check if model should use Responses API
-        # 1. Models with "codex" in the name
-        # 2. gpt-5.x models (excluding chat and codex variants which use different APIs)
-        uses_responses_api = (
-            "codex" in base_model_name
-            or (base_model_name.startswith("gpt-5") and "chat" not in base_model_name and "codex" not in base_model_name)
-        )
-        if uses_responses_api:
+        if self._uses_responses_api(base_model_name):
             return self._chat_generate_with_responses(
                 model=model,
                 credentials=credentials,
@@ -156,12 +149,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
         try:
             client = self._create_client(credentials)
-            # Check if model should use Responses API
-            uses_responses_api = (
-                "codex" in base_model_name
-                or (base_model_name.startswith("gpt-5") and "chat" not in base_model_name and "codex" not in base_model_name)
-            )
-            if uses_responses_api:
+            if self._uses_responses_api(base_model_name):
                 client.responses.create(
                     input="ping",
                     model=model,
@@ -201,9 +189,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         self, model: str, credentials: dict
     ) -> Optional[AIModelEntity]:
         base_model_name = self._get_base_model_name(credentials)
-        ai_model_entity = self._get_ai_model_entity(
-            base_model_name=base_model_name, model=model
-        )
+        ai_model_entity = self._get_ai_model_entity(base_model_name, model)
         return ai_model_entity.entity if ai_model_entity else None
 
     def _generate(
@@ -495,12 +481,13 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     except json.JSONDecodeError:
                         json_schema_data = {}
 
+                raw_schema = json_schema_data.get("schema", {})
+                adapted_schema = self._adapt_schema_for_structured_outputs(raw_schema)
                 responses_params["text"] = {
                     "format": {
                         "type": "json_schema",
                         "name": json_schema_data.get("name", "response"),
-                        "strict": json_schema_data.get("strict", True),
-                        "schema": json_schema_data.get("json_schema", {})
+                        "schema": adapted_schema
                     }
                 }
             else:
@@ -577,14 +564,31 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                         "content": content_parts
                     })
             elif isinstance(message, AssistantPromptMessage):
-                input_messages.append({
-                    "role": "assistant",
-                    "content": message.content
-                })
+                # If the assistant message contains tool_calls, emit each as a
+                # Responses API function_call item (type="function_call").
+                # A plain-text assistant turn is emitted as a normal message item.
+                if message.tool_calls:
+                    for tc in message.tool_calls:
+                        input_messages.append({
+                            "type": "function_call",
+                            "call_id": tc.id,
+                            "name": tc.function.name,
+                            "arguments": tc.function.arguments,
+                        })
+                else:
+                    if message.content:
+                        input_messages.append({
+                            "role": "assistant",
+                            "content": message.content,
+                        })
             elif isinstance(message, ToolPromptMessage):
+                # Responses API requires tool results as function_call_output items.
+                # The call_id links back to the function_call item
+                # that triggered this tool call.
                 input_messages.append({
-                    "role": "assistant",  # Responses API represents tool calls with the assistant role
-                    "content": message.content
+                    "type": "function_call_output",
+                    "call_id": message.tool_call_id,
+                    "output": message.content,
                 })
 
         return input_messages
@@ -1382,12 +1386,6 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 ai_model_entity_copy.entity.label.zh_Hans = model
                 return ai_model_entity_copy
 
-    def _get_base_model_name(self, credentials: dict) -> str:
-        base_model_name = credentials.get("base_model_name")
-        if not base_model_name:
-            raise ValueError("Base Model Name is required")
-        return base_model_name
-
     def _get_image_patches(self, n: int) -> float:
         return (n + 32 - 1) // 32
 
@@ -1467,6 +1465,80 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     num_tokens += base_tokens + total_tiles * tile_tokens
 
         return num_tokens
+
+    @staticmethod
+    def _uses_responses_api(base_model_name: str) -> bool:
+        """
+        Determine if the model should use the Responses API.
+
+        1. Models with "codex" in the base name
+        2. gpt-5.x models (excluding chat and codex variants which use different APIs)
+        """
+        return (
+            "codex" in base_model_name
+            or (
+                base_model_name.startswith("gpt-5")
+                and "chat" not in base_model_name
+                and "codex" not in base_model_name
+            )
+        )
+
+    @staticmethod
+    def _adapt_schema_for_structured_outputs(schema: dict) -> dict:
+        """
+        Responses API (Structured Outputs) requires all properties defined in
+        an object schema to be listed in 'required'.
+
+        Fields not in 'required' are treated as optional by converting their type
+        to [original_type, "null"] following the OpenAI recommended approach, then
+        adding them to 'required'. This allows the model to return null when the
+        value is absent, emulating optional fields.
+
+        Reference: https://developers.openai.com/api/docs/guides
+                   /structured-outputs#supported-schemas
+
+        Applied recursively to nested object schemas.
+        """
+        if not isinstance(schema, dict):
+            return schema
+        schema = dict(schema)
+        schema_type = schema.get("type")
+
+        # Handle arrays of objects by recursing into `items`
+        is_array = schema_type == "array" or (
+            isinstance(schema_type, list) and "array" in schema_type
+        )
+        if is_array and "items" in schema and isinstance(schema.get("items"), dict):
+            schema["items"] = AzureOpenAILargeLanguageModel._adapt_schema_for_structured_outputs(schema["items"])
+
+        # Handle objects
+        is_object = schema_type == "object" or (
+            isinstance(schema_type, list) and "object" in schema_type
+        )
+        if is_object and "properties" in schema:
+            required = list(schema.get("required", []))
+            new_properties = {}
+            for key, prop in schema["properties"].items():
+                prop = dict(prop)
+                if key not in required:
+                    # Convert fields not in 'required' to null union type to emulate optional
+                    original_type = prop.get("type")
+                    if original_type is None:
+                        # No type specified: just add to required without type modification
+                        pass
+                    elif isinstance(original_type, list):
+                        # Already an array: append "null" if not already present
+                        if "null" not in original_type:
+                            prop["type"] = original_type + ["null"]
+                    else:
+                        # String type: convert to array and add "null"
+                        prop["type"] = [original_type, "null"]
+                    required.append(key)
+                # Recursively apply to nested schemas
+                new_properties[key] = AzureOpenAILargeLanguageModel._adapt_schema_for_structured_outputs(prop)
+            schema["properties"] = new_properties
+            schema["required"] = required
+        return schema
 
     @staticmethod
     def _azure_wrap_thinking_by_reasoning_content(

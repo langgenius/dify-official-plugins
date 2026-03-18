@@ -6,9 +6,9 @@ identity:
     zh_Hans: FunctionCalling
     pt_BR: FunctionCalling
 description:
-  en_US: Function Calling is a basic strategy for agent, model will use the tools provided to perform the task.
-  zh_Hans: Function Calling 是一个基本的 Agent 策略，模型将使用提供的工具来执行任务。
-  pt_BR: Function Calling is a basic strategy for agent, model will use the tools provided to perform the task.
+  en_US: "Recommended. Uses the model's native function calling capability for tool invocation. Works best with most modern models (GPT-4o, Claude, Qwen, etc.)."
+  zh_Hans: "推荐使用。通过模型原生的函数调用能力来调用工具，适用于大多数主流模型（GPT-4o、Claude、Qwen 等）。"
+  pt_BR: "Recomendado. Usa a capacidade nativa de chamada de função do modelo para invocar ferramentas. Funciona melhor com a maioria dos modelos modernos (GPT-4o, Claude, Qwen, etc.)."
 features:
   - history-messages
 parameters:
