@@ -189,9 +189,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         self, model: str, credentials: dict
     ) -> Optional[AIModelEntity]:
         base_model_name = self._get_base_model_name(credentials)
-        ai_model_entity = self._get_ai_model_entity(
-            base_model_name=base_model_name, model=model
-        )
+        ai_model_entity = self._get_ai_model_entity(base_model_name, model)
         return ai_model_entity.entity if ai_model_entity else None
 
     def _generate(
@@ -1387,12 +1385,6 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 ai_model_entity_copy.entity.label.en_US = model
                 ai_model_entity_copy.entity.label.zh_Hans = model
                 return ai_model_entity_copy
-
-    def _get_base_model_name(self, credentials: dict) -> str:
-        base_model_name = credentials.get("base_model_name")
-        if not base_model_name:
-            raise ValueError("Base Model Name is required")
-        return base_model_name
 
     def _get_image_patches(self, n: int) -> float:
         return (n + 32 - 1) // 32
