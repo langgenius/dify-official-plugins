@@ -1,7 +1,7 @@
 author: langgenius
 created_at: "2024-09-20T00:13:50.29298939-04:00"
 description:
-  en_US: WenXin
+  en_US: Baidu's ERNIE Model
   zh_Hans: 文心一言
 icon: icon_s_en.png
 label:
@@ -24,4 +24,4 @@ resource:
   memory: 268435456
   permission: {}
 type: plugin
-version: 0.1.1
+version: 0.1.2
