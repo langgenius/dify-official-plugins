@@ -1,0 +1,56 @@
+identity:
+  name: create_profile_schema
+  author: 佐井
+  label:
+    en_US: Create Profile Schema
+    zh_Hans: 创建画像模板
+    ja_Jp: プロファイルスキーマ作成
+description:
+  human:
+    en_US: Create a user profile schema template with custom attributes for structured user profile extraction.
+    zh_Hans: 创建画像模板，定义自定义属性维度，用于从对话中提取结构化用户画像。
+    ja_Jp: カスタム属性を持つユーザープロファイルスキーマテンプレートを作成します。
+  llm: Create a profile schema template that defines what user attributes to extract from conversations (e.g., age, hobbies, location). The schema is used with AddMemory to automatically extract user profiles.
+parameters:
+  - name: name
+    type: string
+    required: true
+    label:
+      en_US: Schema Name
+      zh_Hans: 模板名称
+      ja_Jp: スキーマ名
+    human_description:
+      en_US: Name of the profile schema
+      zh_Hans: 画像模板名称
+      ja_Jp: プロファイルスキーマの名前
+    llm_description: Name of the profile schema template.
+    form: llm
+  - name: description
+    type: string
+    required: false
+    label:
+      en_US: Description
+      zh_Hans: 描述
+      ja_Jp: 説明
+    human_description:
+      en_US: Description of the profile schema
+      zh_Hans: 画像模板描述
+      ja_Jp: プロファイルスキーマの説明
+    llm_description: Optional description of the profile schema template.
+    form: llm
+  - name: attributes
+    type: string
+    required: true
+    label:
+      en_US: Attributes (JSON)
+      zh_Hans: 属性列表 (JSON)
+      ja_Jp: 属性リスト (JSON)
+    human_description:
+      en_US: "JSON array of attributes, e.g. [{\"name\":\"age\",\"description\":\"user age\",\"default_value\":\"unknown\"}]"
+      zh_Hans: "JSON 数组格式的属性列表，例如 [{\"name\":\"年龄\",\"description\":\"用户年龄\",\"default_value\":\"未知\"}]"
+      ja_Jp: "JSON配列形式の属性リスト"
+    llm_description: "JSON array string of attribute definitions. Each attribute has 'name' (required), 'description' (optional), and 'default_value' (optional). Attribute names should be semantically unique."
+    form: llm
+extra:
+  python:
+    source: tools/create_profile_schema.py

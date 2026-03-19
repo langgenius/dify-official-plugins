@@ -1,8 +1,7 @@
 """Unit tests for OpenAILargeLanguageModel.validate_credentials with thinking-mode fallback."""
 
-import json
 import unittest
-from unittest.mock import MagicMock, patch, PropertyMock
+from unittest.mock import MagicMock, patch
 
 from dify_plugin.errors.model import CredentialsValidateFailedError
 from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLanguageModel

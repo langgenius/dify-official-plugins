@@ -1,0 +1,46 @@
+identity:
+  author: 佐井
+  name: bailian_memory
+  label:
+    en_US: Bailian Memory
+    zh_Hans: 百炼记忆库
+    ja_Jp: 百炼メモリ
+  description:
+    en_US: Alibaba Cloud Bailian long-term memory service for AI conversations.
+    zh_Hans: 阿里云百炼长期记忆服务，支持记忆片段管理与用户画像提取。
+    ja_Jp: Alibaba Cloud百炼長期記憶サービス。
+  icon: icon.png
+  tags:
+    - utilities
+credentials_for_provider:
+  dashscope_api_key:
+    type: secret-input
+    required: true
+    label:
+      en_US: DashScope API Key
+      zh_Hans: 百炼 API Key
+      ja_Jp: DashScope APIキー
+    placeholder:
+      en_US: Please input your DashScope API Key
+      zh_Hans: 请输入百炼 API Key
+      ja_Jp: DashScope APIキーを入力してください
+    help:
+      en_US: Get your API Key from Alibaba Cloud Bailian console
+      zh_Hans: 从阿里云百炼控制台获取 API Key
+      ja_Jp: Alibaba Cloud百炼コンソールからAPIキーを取得してください
+    url: https://bailian.console.aliyun.com/
+extra:
+  python:
+    source: provider/bailian_memory.py
+tools:
+  - tools/add_memory.yaml
+  - tools/search_memory.yaml
+  - tools/list_memory.yaml
+  - tools/delete_memory.yaml
+  - tools/update_memory.yaml
+  - tools/create_profile_schema.yaml
+  - tools/list_profile_schemas.yaml
+  - tools/get_profile_schema.yaml
+  - tools/update_profile_schema.yaml
+  - tools/delete_profile_schema.yaml
+  - tools/get_user_profile.yaml

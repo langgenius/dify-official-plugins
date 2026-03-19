@@ -6,7 +6,6 @@ from dify_plugin.interfaces.model.speech2text_model import Speech2TextModel
 from ..common import _CommonAzureOpenAI
 from ..constants import SPEECH2TEXT_BASE_MODELS, AzureBaseModel
 
-
 class AzureOpenAISpeech2TextModel(_CommonAzureOpenAI, Speech2TextModel):
     """
     Model class for OpenAI Speech to text model.
@@ -53,16 +52,18 @@ class AzureOpenAISpeech2TextModel(_CommonAzureOpenAI, Speech2TextModel):
         :return: text for given audio file
         """
         client = self._create_client(credentials)
-        response = client.audio.transcriptions.create(model=model, file=file)
+        base_model_name = self._get_base_model_name(credentials)
+        ai_model_entity = self._get_ai_model_entity(base_model_name, model)
+        extra_params = ai_model_entity.extra_invoke_params if ai_model_entity else {}
+        response = client.audio.transcriptions.create(model=model, file=file, **extra_params)
         return response.text
 
     def get_customizable_model_schema(
         self, model: str, credentials: dict
     ) -> Optional[AIModelEntity]:
-        ai_model_entity = self._get_ai_model_entity(
-            credentials["base_model_name"], model
-        )
-        return ai_model_entity.entity
+        base_model_name = self._get_base_model_name(credentials)
+        ai_model_entity = self._get_ai_model_entity(base_model_name, model)
+        return ai_model_entity.entity if ai_model_entity else None
 
     @staticmethod
     def _get_ai_model_entity(base_model_name: str, model: str) -> AzureBaseModel:

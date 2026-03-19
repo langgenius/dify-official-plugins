@@ -1,0 +1,69 @@
+identity:
+  name: update_memory
+  author: 佐井
+  label:
+    en_US: Update Memory
+    zh_Hans: 更新记忆
+    ja_Jp: メモリ更新
+description:
+  human:
+    en_US: Update the content of an existing memory node.
+    zh_Hans: 更新已有记忆节点的内容。
+    ja_Jp: 既存のメモリノードの内容を更新します。
+  llm: Update the content of an existing memory fragment. You can change the stored text and add metadata.
+parameters:
+  - name: memory_node_id
+    type: string
+    required: true
+    label:
+      en_US: Memory Node ID
+      zh_Hans: 记忆节点 ID
+      ja_Jp: メモリノードID
+    human_description:
+      en_US: The ID of the memory node to update
+      zh_Hans: 要更新的记忆节点 ID
+      ja_Jp: 更新するメモリノードのID
+    llm_description: The ID of the memory node to update.
+    form: llm
+  - name: user_id
+    type: string
+    required: true
+    label:
+      en_US: User ID
+      zh_Hans: 用户 ID
+      ja_Jp: ユーザーID
+    human_description:
+      en_US: Custom user identifier
+      zh_Hans: 用户自定义 ID
+      ja_Jp: カスタムユーザー識別子
+    llm_description: The user ID associated with the memory.
+    form: llm
+  - name: custom_content
+    type: string
+    required: true
+    label:
+      en_US: Content
+      zh_Hans: 记忆内容
+      ja_Jp: コンテンツ
+    human_description:
+      en_US: The new memory content
+      zh_Hans: 新的记忆内容
+      ja_Jp: 新しいメモリコンテンツ
+    llm_description: The new content to replace the existing memory content.
+    form: llm
+  - name: meta_data
+    type: string
+    required: false
+    label:
+      en_US: Metadata (JSON)
+      zh_Hans: 自定义元数据 (JSON)
+      ja_Jp: メタデータ (JSON)
+    human_description:
+      en_US: "Custom metadata in JSON format (incremental update)"
+      zh_Hans: "JSON 格式的自定义元数据（增量更新）"
+      ja_Jp: "JSON形式のカスタムメタデータ（増分更新）"
+    llm_description: "Optional custom metadata as a JSON object string. This is an incremental update."
+    form: llm
+extra:
+  python:
+    source: tools/update_memory.py

@@ -33,6 +33,34 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
     # Models that require max_completion_tokens (OpenAI Responses API family)
     _NEEDS_MAX_COMPLETION_TOKENS_PATTERN = re.compile(r"^(o1|o3|gpt-5)", re.IGNORECASE)
 
+    def _wrap_thinking_by_reasoning_content(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
+        """
+        Override base wrapper to support both legacy 'reasoning_content' and
+        newer 'reasoning' fields (e.g., vLLM >= 0.17.1), emitting <think> blocks
+        compatible with Dify's downstream filters.
+        """
+        # Prefer the new key when present, otherwise fall back to legacy
+        reasoning_piece = delta.get("reasoning") or delta.get("reasoning_content")
+        content_piece = delta.get("content") or ""
+
+        if reasoning_piece:
+            if not is_reasoning:
+                # Open a think block on first reasoning token
+                output = f"<think>\n{reasoning_piece}"
+                is_reasoning = True
+            else:
+                # Continue streaming inside the think block
+                output = str(reasoning_piece)
+        elif is_reasoning:
+            # No reasoning token in this delta, close the think block
+            is_reasoning = False
+            output = f"\n</think>{content_piece}"
+        else:
+            # No reasoning token and not in a reasoning block
+            output = content_piece
+
+        return output, is_reasoning
+
     # Timeout for validation requests: (connect_timeout, read_timeout) in seconds
     _VALIDATE_TIMEOUT = (10, 300)
 

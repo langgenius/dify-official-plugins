@@ -59,6 +59,25 @@ model_credential_schema:
       placeholder:
         zh_Hans: 在此输入您的 API Base
         en_US: Enter your API Base
+    - variable: api_protocol
+      label:
+        zh_Hans: API 协议
+        en_US: API Protocol
+      type: select
+      required: false
+      default: chat
+      options:
+        - value: chat
+          label:
+            zh_Hans: Chat Completions
+            en_US: Chat Completions
+        - value: responses
+          label:
+            zh_Hans: Responses API
+            en_US: Responses API
+      help:
+        zh_Hans: 选择该模型使用的 API 协议。Chat Completions 适用于大多数模型，Responses API 适用于 o3-pro、gpt-5.4 等模型。
+        en_US: Select the API protocol for this model. Use Chat Completions for most models, Responses API for models like o3-pro and gpt-5.4.
 provider_credential_schema:
   credential_form_schemas:
     - variable: openai_api_key
@@ -87,6 +106,34 @@ provider_credential_schema:
       placeholder:
         zh_Hans: 在此输入您的 API Base, 如：https://api.openai.com
         en_US: Enter your API Base, e.g. https://api.openai.com
+    - variable: validate_model
+      label:
+        zh_Hans: 验证模型
+        en_US: Validate Model
+      type: text-input
+      required: false
+      placeholder:
+        zh_Hans: 用于验证凭据的模型名称，如：gpt-4o-mini
+        en_US: Model name used to validate credentials, e.g. gpt-4o-mini
+    - variable: api_protocol
+      label:
+        zh_Hans: API 协议
+        en_US: API Protocol
+      type: select
+      required: false
+      default: chat
+      options:
+        - value: chat
+          label:
+            zh_Hans: Chat Completions
+            en_US: Chat Completions
+        - value: responses
+          label:
+            zh_Hans: Responses API
+            en_US: Responses API
+      help:
+        zh_Hans: 选择该 Provider 使用的 API 协议。Chat Completions 适用于大多数模型，Responses API 适用于 o3-pro、gpt-5 等模型。
+        en_US: Select the API protocol for this provider. Use Chat Completions for most models, Responses API for models like o3-pro and gpt-5.
 models:
   llm:
     predefined:

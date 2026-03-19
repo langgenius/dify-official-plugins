@@ -21,8 +21,9 @@ class OpenAIProvider(ModelProvider):
 
             # Use `gpt-3.5-turbo` model for validate,
             # no matter what model you pass in, text completion model or chat model
+            validate_model = credentials.get("validate_model") or "gpt-4o-mini"
             model_instance.validate_credentials(
-                model="gpt-4o-mini", credentials=credentials
+                model=validate_model, credentials=credentials
             )
         except CredentialsValidateFailedError as ex:
             raise ex

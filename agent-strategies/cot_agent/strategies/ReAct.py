@@ -208,31 +208,20 @@ class ReActAgentStrategy(AgentStrategy):
             for react_chunk in react_chunks:
                 if isinstance(react_chunk, AgentScratchpadUnit.Action):
                     action = react_chunk
-                    # detect action
                     assert scratchpad.agent_response is not None
                     scratchpad.agent_response += json.dumps(react_chunk.model_dump())
-
                     scratchpad.action_str = json.dumps(react_chunk.model_dump())
                     scratchpad.action = action
                 else:
                     assert isinstance(react_chunk, ReactChunk)
-                    chunk_state = react_chunk.state
                     chunk = react_chunk.content
-                    # Stream TEXT only for THINKING; ANSWER is sent once at end via final_answer
-                    if chunk_state != ReactState.ANSWER:
-                        yield self.create_text_message(chunk)
-                    if chunk_state == ReactState.ANSWER:
+                    scratchpad.agent_response = (scratchpad.agent_response or "") + chunk
+                    if react_chunk.state == ReactState.ANSWER and not scratchpad.action:
                         final_answer += chunk
-                    elif chunk_state == ReactState.THINKING:
-                        scratchpad.agent_response = scratchpad.agent_response or ""
-                        scratchpad.thought = scratchpad.thought or ""
-                        scratchpad.agent_response += chunk
-                        scratchpad.thought += chunk
-            scratchpad.thought = (
-                scratchpad.thought.strip()
-                if scratchpad.thought
-                else "I am thinking about how to help you"
-            )
+                        yield self.create_text_message(chunk)
+                    elif not scratchpad.action:
+                        scratchpad.thought = (scratchpad.thought or "") + chunk
+            scratchpad.thought = (scratchpad.thought or "").strip()
             agent_scratchpad.append(scratchpad)
 
             # get llm usage
@@ -268,8 +257,11 @@ class ReActAgentStrategy(AgentStrategy):
                 },
             )
             if not scratchpad.action:
-                final_answer = scratchpad.thought
-                final_answer_already_streamed = True  # thought was already streamed as THINKING chunks
+                if final_answer:
+                    final_answer_already_streamed = True
+                else:
+                    final_answer = scratchpad.thought
+                    final_answer_already_streamed = False
             else:
                 if scratchpad.action.action_name.lower() == "final answer":
                     try:

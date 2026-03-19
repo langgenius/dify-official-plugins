@@ -1,0 +1,36 @@
+version: 0.0.1
+type: plugin
+author: "langgenius"
+name: bailian_memory
+label:
+  en_US: Bailian Memory
+  zh_Hans: 百炼记忆库
+  ja_Jp: 百炼メモリ
+description:
+  en_US: Alibaba Cloud Bailian long-term memory service. Supports automatic extraction and structured storage of memory fragments and user profiles from conversations. Enables AI to achieve persistent understanding across sessions.
+  zh_Hans: 阿里云百炼长期记忆服务。支持从对话中自动提取并结构化存储记忆片段与用户画像，赋能 AI 实现跨会话的持续性理解。
+  ja_Jp: Alibaba Cloud百炼長期記憶サービス。会話からメモリフラグメントとユーザープロファイルの自動抽出と構造化保存をサポートし、AIにセッション間の持続的理解を実現します。
+created_at: 2025-03-16T00:00:00.000Z
+icon: icon.png
+tags:
+  - utilities
+resource:
+  memory: 1048576
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: false
+      llm: false
+plugins:
+  tools:
+    - provider/bailian_memory.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main

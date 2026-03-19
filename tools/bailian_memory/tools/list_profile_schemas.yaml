@@ -1,0 +1,43 @@
+identity:
+  name: list_profile_schemas
+  author: 佐井
+  label:
+    en_US: List Profile Schemas
+    zh_Hans: 获取画像模板列表
+    ja_Jp: プロファイルスキーマ一覧
+description:
+  human:
+    en_US: List all profile schema templates with pagination.
+    zh_Hans: 分页获取所有画像模板列表。
+    ja_Jp: ページネーション付きで全プロファイルスキーマテンプレートを一覧表示します。
+  llm: List all available profile schema templates. Use this to find existing profile schemas before creating new ones.
+parameters:
+  - name: page_num
+    type: number
+    required: false
+    label:
+      en_US: Page Number
+      zh_Hans: 页码
+      ja_Jp: ページ番号
+    human_description:
+      en_US: Page number starting from 1 (default 1)
+      zh_Hans: 页码，从 1 开始（默认 1）
+      ja_Jp: ページ番号、1から開始（デフォルト1）
+    llm_description: Page number, starting from 1. Default is 1.
+    form: llm
+  - name: page_size
+    type: number
+    required: false
+    label:
+      en_US: Page Size
+      zh_Hans: 每页条目数
+      ja_Jp: ページサイズ
+    human_description:
+      en_US: Number of items per page (default 10)
+      zh_Hans: 每页条目数（默认 10）
+      ja_Jp: ページあたりの項目数（デフォルト10）
+    llm_description: Number of items per page. Default is 10.
+    form: llm
+extra:
+  python:
+    source: tools/list_profile_schemas.py
