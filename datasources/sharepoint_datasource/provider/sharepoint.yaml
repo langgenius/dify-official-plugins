@@ -58,6 +58,7 @@ oauth_schema:
       placeholder:
         zh_Hans: common (多租户) 或您的租户 ID
         en_US: common (multi-tenant) or your tenant ID
+      default: common
       required: false
   credentials_schema:
     - name: access_token
