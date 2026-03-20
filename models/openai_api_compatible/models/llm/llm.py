@@ -92,10 +92,12 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         except CredentialsValidateFailedError as e:
             msg = str(e)
 
-            # --- Retry path 1: max_output_tokens / integer_below_min_value ---
+            # --- Retry path 1: token parameter incompatibility ---
             should_retry_floor = (
                 "Invalid 'max_output_tokens'" in msg
                 or "integer_below_min_value" in msg
+                or ("max_tokens" in msg and "unsupported_parameter" in msg)
+                or "'max_tokens' is not supported" in msg
             )
             if should_retry_floor:
                 self._retry_with_safe_min_tokens(model, credentials)
@@ -136,10 +138,11 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         try:
             if mode == "chat":
                 if use_max_completion:
-                    client.responses.create(
+                    client.chat.completions.create(
                         model=endpoint_model,
-                        input="user: ping",
+                        messages=[{"role": "user", "content": "ping"}],
                         max_completion_tokens=SAFE_MIN_TOKENS,
+                        stream=False,
                     )
                 else:
                     client.chat.completions.create(
