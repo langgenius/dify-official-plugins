@@ -87,12 +87,23 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
            (e.g., Poe API requiring budget_tokens for Claude models),
            retry with thinking explicitly disabled.
         """
+        # When max_completion_tokens is explicitly requested, validate directly
+        # instead of letting the base class fail with max_tokens first.
+        param_pref = credentials.get("token_param_name", "auto")
+        endpoint_model = credentials.get("endpoint_model_name") or model
+        if (
+            param_pref == "max_completion_tokens"
+            or (param_pref == "auto" and self._needs_max_completion_tokens(endpoint_model))
+        ):
+            self._retry_with_safe_min_tokens(model, credentials)
+            return
+
         try:
             return super().validate_credentials(model, credentials)
         except CredentialsValidateFailedError as e:
             msg = str(e)
 
-            # --- Retry path 1: max_output_tokens / integer_below_min_value ---
+            # --- Retry path 1: token parameter incompatibility ---
             should_retry_floor = (
                 "Invalid 'max_output_tokens'" in msg
                 or "integer_below_min_value" in msg
@@ -136,10 +147,11 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         try:
             if mode == "chat":
                 if use_max_completion:
-                    client.responses.create(
+                    client.chat.completions.create(
                         model=endpoint_model,
-                        input="user: ping",
+                        messages=[{"role": "user", "content": "ping"}],
                         max_completion_tokens=SAFE_MIN_TOKENS,
+                        stream=False,
                     )
                 else:
                     client.chat.completions.create(
