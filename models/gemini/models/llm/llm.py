@@ -582,7 +582,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             content = self._format_message_to_gemini_content(
                 msg, genai_client, config, file_server_url_prefix, model_parameters
             )
-
             if not content:
                 continue
 
@@ -1137,6 +1136,23 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         )
 
         # == InvokeModel == #
+
+        # Handle empty contents scenario (e.g., only system instruction provided)
+        # Gemini API requires at least one content in the conversation
+        if not contents:
+            if config.system_instruction:
+                # When only system instruction is provided, add it as a user message
+                contents = [
+                    types.Content(
+                        role="user",
+                        parts=[types.Part.from_text(text=config.system_instruction)]
+                    )
+                ]
+            else:
+                raise InvokeBadRequestError(
+                    "No valid content to send to Gemini API. "
+                    "Please provide at least one user message with content."
+                )
 
         if stream:
             response = genai_client.models.generate_content_stream(
