@@ -1,6 +1,6 @@
-model: glm-4.7-flash-free
+model: glm-5-turbo
 label:
-  en_US: GLM 4.7 Flash (free)
+  en_US: GLM 5 Turbo
 model_type: llm
 features:
   - agent-thought
@@ -9,7 +9,7 @@ features:
   - multi-tool-call
 model_properties:
   mode: chat
-  context_size: 8192
+  context_size: 202752
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -33,7 +33,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '0'
-  output: '0'
+  input: '1.2'
+  output: '3.9996'
   unit: '0.000001'
   currency: USD

@@ -1,15 +1,14 @@
-model: glm-4.7-flash-free
+model: mimo-v2-omni
 label:
-  en_US: GLM 4.7 Flash (free)
+  en_US: MiMo V2 Omni
 model_type: llm
 features:
-  - agent-thought
-  - tool-call
-  - stream-tool-call
-  - multi-tool-call
+  - vision
+  - audio
+  - video
 model_properties:
   mode: chat
-  context_size: 8192
+  context_size: 256000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -33,7 +32,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '0'
-  output: '0'
+  input: '0.44'
+  output: '2.2'
   unit: '0.000001'
   currency: USD

@@ -2,7 +2,6 @@ model: gemini-2.0-flash-free
 label:
   en_US: Gemini 2.0 Flash (free)
 model_type: llm
-deprecated: true
 features:
   - agent-thought
   - tool-call
@@ -27,26 +26,20 @@ parameter_rules:
     default: 8192
     min: 1
     max: 8192
-  - name: response_format
-    label:
-      zh_Hans: 回复格式
-      en_US: Response Format
-    type: string
-    required: false
-    options:
-      - text
-      - json_object
-      - json_schema
   - name: json_schema
     use_template: json_schema
   - name: grounding
     label:
       en_US: Grounding
+      zh_Hans: 事实核查
+      ja_JP: 事実チェック
     type: boolean
     required: true
     default: false
     help:
-      en_US: Enables Google Search grounding for real-time answers.
+      en_US: Grounding with Google Search
+      zh_Hans: Google 事实核查
+      ja_JP: Google 検索に基づいた応答をします。
 pricing:
   input: '0'
   output: '0'

@@ -1,15 +1,17 @@
-model: gemini-3-flash-preview-free
+model: gemini-3.1-flash-lite-preview
 label:
-  en_US: Gemini 3 Flash Preview (free)
+  en_US: Gemini 3.1 Flash-Lite Preview
 model_type: llm
 features:
-  - agent-thought
   - tool-call
-  - stream-tool-call
   - multi-tool-call
+  - agent-thought
   - vision
-  - audio
+  - stream-tool-call
+  - document
   - video
+  - audio
+  - structured-output
 model_properties:
   mode: chat
   context_size: 1048576
@@ -78,9 +80,7 @@ parameter_rules:
     required: true
     default: "High"
     options:
-      - Minimal
       - Low
-      - Medium
       - High
     label:
       en_US: Thinking level
@@ -137,24 +137,11 @@ parameter_rules:
     help:
       en_US: The maximum number of tokens to generate in the response.
       zh_Hans: 模型单次输出的最大 tokens 数。
-  - name: use_inline_file
-    type: boolean
-    required: true
-    default: false
-    label:
-      en_US: Use inline file mode
-      zh_Hans: 使用内嵌文件模式
-    help:
-      en_US: |
-        When enabled, files will be embedded directly in the request (inline mode) for better performance.
-        When disabled, files will be uploaded using the Files API. Default is disabled (Files API).
-      zh_Hans: |
-        启用后，文件将直接内嵌在请求中（内联模式）以提高性能。
-        禁用后，文件将使用 Files API 上传。默认为禁用（使用 Files API）。
   - name: json_schema
     use_template: json_schema
+# https://ai.google.dev/gemini-api/docs/pricing#gemini-3.1-flash-lite-preview
 pricing:
-  input: '0'
-  output: '0'
+  input: '0.25'
+  output: '1.5'
   unit: '0.000001'
   currency: USD
