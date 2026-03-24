@@ -1,6 +1,6 @@
-model: MiniMax-M2.5lightning
+model: minimax-m2.7
 label:
-  en_US: MiniMax-M2.5-Lightning
+  en_US: MiniMax-M2.7
 model_type: llm
 features:
   - agent-thought
@@ -31,7 +31,7 @@ parameter_rules:
   - name: frequency_penalty
     use_template: frequency_penalty
 pricing:
-  input: "4.2"
-  output: "16.8"
+  input: "2.1"
+  output: "8.4"
   unit: "0.000001"
   currency: RMB
