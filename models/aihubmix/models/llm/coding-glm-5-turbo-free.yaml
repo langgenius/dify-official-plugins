@@ -1,6 +1,6 @@
-model: glm-4.7-flash-free
+model: coding-glm-5-turbo-free
 label:
-  en_US: GLM 4.7 Flash (free)
+  en_US: Coding GLM 5 Turbo (free)
 model_type: llm
 features:
   - agent-thought

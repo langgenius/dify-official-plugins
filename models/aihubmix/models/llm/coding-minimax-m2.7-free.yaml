@@ -1,6 +1,6 @@
-model: glm-4.7-flash-free
+model: coding-minimax-m2.7-free
 label:
-  en_US: GLM 4.7 Flash (free)
+  en_US: Coding MiniMax M2.7 (free)
 model_type: llm
 features:
   - agent-thought
@@ -9,7 +9,7 @@ features:
   - multi-tool-call
 model_properties:
   mode: chat
-  context_size: 8192
+  context_size: 204800
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -17,9 +17,9 @@ parameter_rules:
     use_template: top_p
   - name: max_tokens
     use_template: max_tokens
-    default: 4096
+    default: 8192
     min: 1
-    max: 4096
+    max: 13100
   - name: response_format
     label:
       zh_Hans: 回复格式

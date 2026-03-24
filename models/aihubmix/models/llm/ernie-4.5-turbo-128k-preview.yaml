@@ -1,12 +1,13 @@
-model: glm-4.7-flash-free
+model: ernie-4.5-turbo-128k-preview
 label:
-  en_US: GLM 4.7 Flash (free)
+  en_US: ERNIE 4.5 Turbo 128K Preview
 model_type: llm
 features:
   - agent-thought
   - tool-call
   - stream-tool-call
   - multi-tool-call
+  - vision
 model_properties:
   mode: chat
   context_size: 8192
@@ -33,7 +34,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '0'
-  output: '0'
+  input: '0.108'
+  output: '0.432'
   unit: '0.000001'
   currency: USD
