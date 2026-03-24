@@ -1,6 +1,6 @@
-model: MiniMax-M2.5lightning
+model: minimax-m2.7-highspeed
 label:
-  en_US: MiniMax-M2.5-Lightning
+  en_US: MiniMax-M2.7-highspeed
 model_type: llm
 features:
   - agent-thought

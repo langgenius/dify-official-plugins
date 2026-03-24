@@ -29,6 +29,10 @@ from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 
 class MinimaxLargeLanguageModel(LargeLanguageModel):
     _MODEL_ALIASES = {
+        "minimax-m2.7": "MiniMax-M2.7",
+        "minimax-m2.7-highspeed": "MiniMax-M2.7-highspeed",
+        "minimax-m2.7lightning": "MiniMax-M2.7-highspeed",
+        "minimax-m2.7-lightning": "MiniMax-M2.7-highspeed",
         "minimax-m2.5": "MiniMax-M2.5",
         "minimax-m2.5lightning": "MiniMax-M2.5-highspeed",
         "minimax-m2.5-lightning": "MiniMax-M2.5-highspeed",
