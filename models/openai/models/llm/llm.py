@@ -822,6 +822,34 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         if reasoning_effort and reasoning_effort != "none":
             params["reasoning"] = {"effort": reasoning_effort}
 
+        # response_format -> text.format (Responses API uses different format)
+        # response_format is incompatible with Responses API, convert to text.format
+        # See: https://community.openai.com/t/response-format-not-available-for-the-responses-api/1147369
+        response_format = params.pop("response_format", None)
+        if response_format:
+            if isinstance(response_format, dict):
+                if response_format.get("type") == "json_schema":
+                    json_schema = response_format.get("json_schema", {})
+                    if isinstance(json_schema, dict) and "schema" in json_schema:
+                        schema_obj = json_schema
+                    else:
+                        schema_obj = {"schema": json_schema}
+
+                    params["text"] = {
+                        "format": {
+                            "type": "json_schema",
+                            "name": schema_obj.get("name", "response"),
+                            "schema": schema_obj.get("schema", json_schema),
+                        }
+                    }
+                    if "strict" in schema_obj:
+                        params["text"]["format"]["strict"] = schema_obj["strict"]
+                else:
+                    params["text"] = {"format": {"type": response_format.get("type", "text")}}
+            elif isinstance(response_format, str):
+                params["text"] = {"format": {"type": response_format}}
+
+        params.pop("json_schema", None)
         # verbosity stays as top-level param (already supported by Responses API)
 
         if user:
