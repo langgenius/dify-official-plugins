@@ -19,7 +19,18 @@ from anthropic.types import (
     MessageStreamEvent,
     completion_create_params,
 )
+from dify_plugin.entities.model import (
+    AIModelEntity,
+    FetchFrom,
+    I18nObject,
+    ModelFeature,
+    ModelPropertyKey,
+    ModelType,
+    ParameterRule,
+    ParameterType,
+)
 from dify_plugin.entities.model.llm import (
+    LLMMode,
     LLMResult,
     LLMResultChunk,
     LLMResultChunkDelta,
@@ -151,6 +162,71 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         self._document_cache_enabled = False
         self._tool_results_cache_enabled = False
         self._message_flow_cache_threshold: int = 0
+
+    def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:
+        """
+        Return schema for a custom model name entered by the user.
+        This allows users to use any Anthropic-compatible model name
+        (e.g. from third-party proxies) without being limited to predefined models.
+        """
+        return AIModelEntity(
+            model=model,
+            label=I18nObject(en_US=model, zh_Hans=model),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.VISION,
+                ModelFeature.TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.CONTEXT_SIZE: int(credentials.get("context_size", 200000)),
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="temperature",
+                    use_template="temperature",
+                    label=I18nObject(en_US="Temperature", zh_Hans="温度"),
+                    type=ParameterType.FLOAT,
+                ),
+                ParameterRule(
+                    name="top_p",
+                    use_template="top_p",
+                    label=I18nObject(en_US="Top P", zh_Hans="Top P"),
+                    type=ParameterType.FLOAT,
+                ),
+                ParameterRule(
+                    name="top_k",
+                    label=I18nObject(en_US="Top K", zh_Hans="取样数量"),
+                    type=ParameterType.INT,
+                ),
+                ParameterRule(
+                    name="max_tokens",
+                    use_template="max_tokens",
+                    default=4096,
+                    min=1,
+                    max=int(credentials.get("max_tokens", 128000)),
+                    label=I18nObject(en_US="Max Tokens", zh_Hans="最大标记"),
+                    type=ParameterType.INT,
+                ),
+                ParameterRule(
+                    name="thinking",
+                    label=I18nObject(en_US="Thinking Mode", zh_Hans="推理模式"),
+                    type=ParameterType.BOOLEAN,
+                    default=False,
+                ),
+                ParameterRule(
+                    name="thinking_budget",
+                    label=I18nObject(en_US="Thinking Budget", zh_Hans="推理预算"),
+                    type=ParameterType.INT,
+                    default=1024,
+                    min=1024,
+                    max=128000,
+                ),
+            ],
+        )
 
     def _invoke(
         self,
