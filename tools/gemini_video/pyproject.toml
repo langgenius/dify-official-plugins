@@ -10,7 +10,7 @@ requires-python = ">=3.12"
 dependencies = [
     "click==8.3.1",
     "colorama==0.4.6",
-    "dify-plugin>=0.3.0,<0.6.0",
+    "dify_plugin>=0.5.0",
     "distro==1.9.0",
     "dpkt==1.9.8",
     "flask==3.0.3",

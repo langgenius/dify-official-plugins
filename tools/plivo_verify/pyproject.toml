@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 
 # uv pip compile pyproject.toml -o ./requirements.txt
 dependencies = [
-    "dify_plugin==0.7.1",
+    "dify_plugin>=0.5.0",
     "plivo==4.59.5",
 ]
 

@@ -45,7 +45,7 @@ dependencies = [
 requires-dist = [
     { name = "bedrock-agentcore", specifier = "~=0.1.4" },
     { name = "boto3", specifier = "~=1.40.45" },
-    { name = "dify-plugin", specifier = ">=0.4.2,<0.5.0" },
+    { name = "dify-plugin", specifier = ">=0.5.0" },
     { name = "jieba", specifier = "~=0.42.1" },
     { name = "nest-asyncio", specifier = "~=1.6.0" },
     { name = "nltk", specifier = "~=3.9.1" },
@@ -225,7 +225,7 @@ wheels = [
 
 [[package]]
 name = "dify-plugin"
-version = "0.4.5"
+version = "0.7.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "dpkt" },
@@ -242,9 +242,9 @@ dependencies = [
     { name = "werkzeug" },
     { name = "yarl" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/fa/43/93689c0c727f3bddbf9e8dfecfab19ced880bb5d166da5eea76b53a9d846/dify_plugin-0.4.5.tar.gz", hash = "sha256:cf29e2873b9628955d7edd632d519d5a252d712a30851289d778b1d3d29104d9", size = 294342, upload-time = "2025-09-08T15:34:06.585Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/33/9d/6cc9049be0025216c6ae9febcd7534459dd11e52b6b0ba63a845d5356145/dify_plugin-0.7.4.tar.gz", hash = "sha256:58123fb32ecdb948749b0c3e009e3f24b57288008be6a162f6f641cca99ab950", size = 327439, upload-time = "2026-03-12T17:08:52.083Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6a/a0/5a311a562b0aef46401be179ad22a1720e9eab67916c0a9ddc82e7e174fd/dify_plugin-0.4.5-py3-none-any.whl", hash = "sha256:ca061cca5291fab42659cd924b47a9a0ff1c7735c4b0b9caa38ebb4d9a30fa82", size = 329011, upload-time = "2025-09-08T15:34:04.97Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/2c/25da143b2b47fbbd27c7de9b3b8119c7b5459621e7f3b5de87e1a3ec55d2/dify_plugin-0.7.4-py3-none-any.whl", hash = "sha256:55855320a4093bbcad6f19014fe0f13277b9c2d8b3331fec27bc3498467a81be", size = 357370, upload-time = "2026-03-12T17:08:50.447Z" },
 ]
 
 [[package]]
@@ -1423,14 +1423,14 @@ wheels = [
 
 [[package]]
 name = "werkzeug"
-version = "3.0.6"
+version = "3.1.7"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "markupsafe" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/d4/f9/0ba83eaa0df9b9e9d1efeb2ea351d0677c37d41ee5d0f91e98423c7281c9/werkzeug-3.0.6.tar.gz", hash = "sha256:a8dd59d4de28ca70471a34cba79bed5f7ef2e036a76b3ab0835474246eb41f8d", size = 805170, upload-time = "2024-10-25T18:52:31.688Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/b5/43/76ded108b296a49f52de6bac5192ca1c4be84e886f9b5c9ba8427d9694fd/werkzeug-3.1.7.tar.gz", hash = "sha256:fb8c01fe6ab13b9b7cdb46892b99b1d66754e1d7ab8e542e865ec13f526b5351", size = 875700, upload-time = "2026-03-24T01:08:07.687Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/6c/69/05837f91dfe42109203ffa3e488214ff86a6d68b2ed6c167da6cdc42349b/werkzeug-3.0.6-py3-none-any.whl", hash = "sha256:1bc0c2310d2fbb07b1dd1105eba2f7af72f322e1e455f2f93c993bee8c8a5f17", size = 227979, upload-time = "2024-10-25T18:52:30.129Z" },
+    { url = "https://files.pythonhosted.org/packages/7f/b2/0bba9bbb4596d2d2f285a16c2ab04118f6b957d8441566e1abb892e6a6b2/werkzeug-3.1.7-py3-none-any.whl", hash = "sha256:4b314d81163a3e1a169b6a0be2a000a0e204e8873c5de6586f453c55688d422f", size = 226295, upload-time = "2026-03-24T01:08:06.133Z" },
 ]
 
 [[package]]
