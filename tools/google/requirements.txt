@@ -76,7 +76,7 @@ pyyaml==6.0.3
     # via dify-plugin
 regex==2025.10.23
     # via tiktoken
-requests==2.32.5
+requests==2.33.0
     # via
     #   dify-plugin
     #   tiktoken
