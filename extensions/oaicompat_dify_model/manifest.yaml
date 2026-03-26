@@ -1,4 +1,4 @@
-version: 0.0.5
+version: 0.0.6
 type: plugin
 author: langgenius
 name: oaicompat_dify_model
