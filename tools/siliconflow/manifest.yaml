@@ -32,4 +32,4 @@ resource:
 tags:
   - image
 type: plugin
-version: 0.0.7
+version: 0.0.8

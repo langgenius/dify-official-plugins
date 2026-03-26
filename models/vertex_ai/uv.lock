@@ -182,7 +182,7 @@ wheels = [
 
 [[package]]
 name = "dify-plugin"
-version = "0.7.0"
+version = "0.7.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "dpkt" },
@@ -199,9 +199,9 @@ dependencies = [
     { name = "werkzeug" },
     { name = "yarl" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/09/8d/eb95d34865b825c01d914dcf721140e20786b4bae9a51c3771880cfcf62c/dify_plugin-0.7.0.tar.gz", hash = "sha256:8f734cae00cc7ad4a349ad8af1386ad122b4ed2c97e99c21d3369264862bc220", size = 325474, upload-time = "2025-12-09T06:27:04.595Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/33/9d/6cc9049be0025216c6ae9febcd7534459dd11e52b6b0ba63a845d5356145/dify_plugin-0.7.4.tar.gz", hash = "sha256:58123fb32ecdb948749b0c3e009e3f24b57288008be6a162f6f641cca99ab950", size = 327439, upload-time = "2026-03-12T17:08:52.083Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/ce/a4/ee2273324c86b73c5bda05a978f23331d4ec97ce95148acc853f3dc19d3f/dify_plugin-0.7.0-py3-none-any.whl", hash = "sha256:8335c24bbda6183070bdb187ac13a64461a7a4fddd64e8b8b83355407900f979", size = 356900, upload-time = "2025-12-09T06:27:03.395Z" },
+    { url = "https://files.pythonhosted.org/packages/c3/2c/25da143b2b47fbbd27c7de9b3b8119c7b5459621e7f3b5de87e1a3ec55d2/dify_plugin-0.7.4-py3-none-any.whl", hash = "sha256:55855320a4093bbcad6f19014fe0f13277b9c2d8b3331fec27bc3498467a81be", size = 357370, upload-time = "2026-03-12T17:08:50.447Z" },
 ]
 
 [[package]]
@@ -1127,11 +1127,11 @@ wheels = [
 
 [[package]]
 name = "pyasn1"
-version = "0.6.1"
+version = "0.6.3"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/ba/e9/01f1a64245b89f039897cb0130016d79f77d52669aae6ee7b159a6c4c018/pyasn1-0.6.1.tar.gz", hash = "sha256:6f580d2bdd84365380830acf45550f2511469f673cb4a5ae3857a3170128b034", size = 145322, upload-time = "2024-09-10T22:41:42.55Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/5c/5f/6583902b6f79b399c9c40674ac384fd9cd77805f9e6205075f828ef11fb2/pyasn1-0.6.3.tar.gz", hash = "sha256:697a8ecd6d98891189184ca1fa05d1bb00e2f84b5977c481452050549c8a72cf", size = 148685, upload-time = "2026-03-17T01:06:53.382Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/c8/f1/d6a797abb14f6283c0ddff96bbdd46937f64122b8c925cab503dd37f8214/pyasn1-0.6.1-py3-none-any.whl", hash = "sha256:0d632f46f2ba09143da3a8afe9e33fb6f92fa2320ab7e886e2d0f7672af84629", size = 83135, upload-time = "2024-09-11T16:00:36.122Z" },
+    { url = "https://files.pythonhosted.org/packages/5d/a0/7d793dce3fa811fe047d6ae2431c672364b462850c6235ae306c0efd025f/pyasn1-0.6.3-py3-none-any.whl", hash = "sha256:a80184d120f0864a52a073acc6fc642847d0be408e7c7252f31390c0f4eadcde", size = 83997, upload-time = "2026-03-17T01:06:52.036Z" },
 ]
 
 [[package]]
@@ -1604,7 +1604,7 @@ dependencies = [
 requires-dist = [
     { name = "anthropic", specifier = "==0.42.0" },
     { name = "anthropic", extras = ["vertex"], specifier = "==0.42.0" },
-    { name = "dify-plugin", specifier = "==0.7.0" },
+    { name = "dify-plugin", specifier = ">=0.5.0" },
     { name = "google-api-core", specifier = "==2.23.0" },
     { name = "google-auth", specifier = "==2.29.0" },
     { name = "google-cloud-aiplatform", extras = ["all"], specifier = "==1.128.0" },

@@ -1,0 +1,43 @@
+identity:
+  name: get_user_profile
+  author: 佐井
+  label:
+    en_US: Get User Profile
+    zh_Hans: 获取用户画像
+    ja_Jp: ユーザープロファイル取得
+description:
+  human:
+    en_US: Get the automatically extracted user profile based on a profile schema.
+    zh_Hans: 获取系统自动提取的用户画像信息。
+    ja_Jp: プロファイルスキーマに基づいて自動抽出されたユーザープロファイルを取得します。
+  llm: Get the user profile that was automatically extracted from conversations based on a profile schema template. Returns structured user attributes like age, hobbies, location etc.
+parameters:
+  - name: profile_schema_id
+    type: string
+    required: true
+    label:
+      en_US: Profile Schema ID
+      zh_Hans: 画像模板 ID
+      ja_Jp: プロファイルスキーマID
+    human_description:
+      en_US: The ID of the profile schema
+      zh_Hans: 画像模板 ID
+      ja_Jp: プロファイルスキーマのID
+    llm_description: The ID of the profile schema template to use for retrieving the user profile.
+    form: llm
+  - name: user_id
+    type: string
+    required: true
+    label:
+      en_US: User ID
+      zh_Hans: 用户 ID
+      ja_Jp: ユーザーID
+    human_description:
+      en_US: Custom user identifier
+      zh_Hans: 用户自定义 ID
+      ja_Jp: カスタムユーザー識別子
+    llm_description: The user ID to get the profile for.
+    form: llm
+extra:
+  python:
+    source: tools/get_user_profile.py
