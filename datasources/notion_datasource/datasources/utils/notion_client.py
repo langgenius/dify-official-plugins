@@ -453,19 +453,7 @@ class NotionClient:
                     title_list = page_result["properties"][key]["title"]
                     if len(title_list) > 0 and "plain_text" in title_list[0]:
                         page_name = title_list[0]["plain_text"]
-            page_icon = page_result["icon"]
-            if page_icon:
-                icon_type = page_icon["type"]
-                if icon_type in {"external", "file"}:
-                    url = page_icon[icon_type]["url"]
-                    icon = {
-                        "type": "url",
-                        "url": url if url.startswith("http") else f"https://www.notion.so{url}",
-                    }
-                else:
-                    icon = {"type": "emoji", "emoji": page_icon[icon_type]}
-            else:
-                icon = None
+            icon = None
             parent = page_result["parent"]
             parent_type = parent["type"]
             if parent_type == "block_id":
@@ -488,19 +476,7 @@ class NotionClient:
             page_id = database_result["id"]
             page_name = database_result["title"][0]["plain_text"] if len(database_result["title"]) > 0 else "Untitled"
 
-            page_icon = database_result["icon"]
-            if page_icon:
-                icon_type = page_icon["type"]
-                if icon_type in {"external", "file"}:
-                    url = page_icon[icon_type]["url"]
-                    icon = {
-                        "type": "url",
-                        "url": url if url.startswith("http") else f"https://www.notion.so{url}",
-                    }
-                else:
-                    icon = {"type": "emoji", "emoji": page_icon[icon_type]}
-            else:
-                icon = None
+            icon = None
             parent = database_result["parent"]
             parent_type = parent["type"]
             if parent_type == "block_id":
