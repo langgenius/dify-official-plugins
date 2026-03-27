@@ -63,15 +63,19 @@ def test_embedding_invoke(model_name: str) -> None:
     with PluginRunner(
         config=IntegrationConfig(), plugin_package_path=plugin_path
     ) as runner:
-        result = runner.invoke(
-            access_type=PluginInvokeType.Model,
-            access_action=ModelActions.InvokeTextEmbedding,
-            payload=payload,
-            response_type=TextEmbeddingResult,
+        results = list(
+            runner.invoke(
+                access_type=PluginInvokeType.Model,
+                access_action=ModelActions.InvokeTextEmbedding,
+                payload=payload,
+                response_type=TextEmbeddingResult,
+            )
         )
+
+        assert len(results) == 1
+        result = results[0]
 
         assert isinstance(result, TextEmbeddingResult)
         assert len(result.embeddings) == 2
         assert len(result.embeddings[0]) > 0
         assert result.usage.total_tokens > 0
-
