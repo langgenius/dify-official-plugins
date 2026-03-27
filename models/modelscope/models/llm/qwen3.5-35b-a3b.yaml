@@ -1,13 +1,13 @@
-model: Qwen/Qwen2.5-VL-32B-Instruct
+model: Qwen/Qwen3.5-35B-A3B
 label:
-  zh_Hans: Qwen/Qwen2.5-VL-32B-Instruct
-  en_US: Qwen/Qwen2.5-VL-32B-Instruct
+  zh_Hans: Qwen/Qwen3.5-35B-A3B
+  en_US: Qwen/Qwen3.5-35B-A3B
 model_type: llm
 features:
-  - vision
+- vision
 model_properties:
   mode: chat
-  context_size: 32768
+  context_size: 262144
 parameter_rules:
   - name: temperature
     use_template: temperature

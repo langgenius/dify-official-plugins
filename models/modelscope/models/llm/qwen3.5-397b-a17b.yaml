@@ -1,10 +1,13 @@
-model: deepseek-ai/DeepSeek-V3
+model: Qwen/Qwen3.5-397B-A17B
 label:
-  en_US: deepseek-ai/DeepSeek-V3
+  zh_Hans: Qwen/Qwen3.5-397B-A17B
+  en_US: Qwen/Qwen3.5-397B-A17B
 model_type: llm
+features:
+- vision
 model_properties:
   mode: chat
-  context_size: 128000
+  context_size: 262144
 parameter_rules:
   - name: temperature
     use_template: temperature

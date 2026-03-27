@@ -1,10 +1,13 @@
-model: Qwen/Qwen2.5-14B-Instruct
+model: moonshotai/Kimi-K2.5
 label:
-  en_US: Qwen/Qwen2.5-14B-Instruct
+  zh_Hans: moonshotai/Kimi-K2.5
+  en_US: moonshotai/Kimi-K2.5
 model_type: llm
+features:
+- vision
 model_properties:
   mode: chat
-  context_size: 32768
+  context_size: 262144
 parameter_rules:
   - name: temperature
     use_template: temperature

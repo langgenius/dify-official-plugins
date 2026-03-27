@@ -1,10 +1,13 @@
-model: ZhipuAI/GLM-4.5
+model: Qwen/Qwen3.5-27B
 label:
-  en_US: ZhipuAI/GLM-4.5
+  zh_Hans: Qwen/Qwen3.5-27B
+  en_US: Qwen/Qwen3.5-27B
 model_type: llm
+features:
+- vision
 model_properties:
   mode: chat
-  context_size: 131072
+  context_size: 262144
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -70,4 +73,3 @@ pricing:
   output: '0.000'
   unit: '0.000'
   currency: RMB
-  
