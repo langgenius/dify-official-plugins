@@ -7,6 +7,7 @@ from dify_plugin.entities.model.message import (
     PromptMessage,
     PromptMessageTool,
     SystemPromptMessage,
+    TextPromptMessageContent,
     ToolPromptMessage,
     UserPromptMessage,
 )
@@ -17,6 +18,24 @@ import re
 class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
     # Pattern to match <think>...</think> blocks (case-insensitive, non-greedy)
     _THINK_PATTERN = re.compile(r"<think>(.*?)</think>", re.DOTALL | re.IGNORECASE)
+
+    @staticmethod
+    def _normalize_text_content(content):
+        if isinstance(content, list) and all(
+            isinstance(item, TextPromptMessageContent) for item in content
+        ):
+            return "".join(item.data or "" for item in content)
+        return content
+
+    def _normalize_prompt_messages(
+        self, messages: list[PromptMessage]
+    ) -> list[PromptMessage]:
+        normalized: list[PromptMessage] = []
+        for message in messages:
+            message_copy = message.model_copy()
+            message_copy.content = self._normalize_text_content(message_copy.content)
+            normalized.append(message_copy)
+        return normalized
 
     def _invoke(
         self,
@@ -30,6 +49,7 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._add_custom_parameters(credentials)
+        prompt_messages = self._normalize_prompt_messages(prompt_messages)
         # Merge consecutive messages with the same role to strictly follow API specs
         prompt_messages = self._clean_messages(prompt_messages)
         response = super()._invoke(
