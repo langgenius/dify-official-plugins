@@ -13,13 +13,23 @@ identity:
     en_US: embedding
   name: embedding
 parameters:
-- default: bge-m3
+- default: Qwen3-Embedding-0.6B
   human_description:
     en_US: Supported Embedding (compatible with OpenAI) interface models
   enum:
+  - Qwen3-Embedding-0.6B
+  - jina-clip-v1
+  - jina-clip-v2
+  - jina-embeddings-v4
   - bge-m3
-  - bge-large-zh-v1.5
+  - Youtu-Embedding
+  - all-mpnet-base-v2
+  - Qwen3-Embedding-8B
+  - bce-embedding-base_v1
   - bge-small-zh-v1.5
+  - Qwen3-Embedding-4B
+  - bge-large-zh-v1.5
+  - nomic-embed-code
   form: form
   in: path
   label:

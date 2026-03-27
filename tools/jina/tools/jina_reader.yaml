@@ -204,3 +204,48 @@ parameters:
   name: max_retries
   required: false
   type: number
+- default: "default"
+  form: form
+  human_description:
+    en_US: Control the level of detail in the response to prevent over-filtering. The default pipeline is optimized for most websites and LLM input.
+    pt_BR: Controle o nível de detalhamento na resposta para evitar filtragem excessiva. O pipeline padrão é otimizado para a maioria dos sites e entradas do LLM.
+    zh_Hans: 控制响应中的细节级别，以防止过度过滤。默认管道针对大多数网站和大模型输入进行了优化。
+  label:
+    en_US: Content Format
+    pt_BR: Formato do conteúdo
+    zh_Hans: 内容格式
+  llm_description: Control the level of detail in the response to prevent over-filtering
+  name: content_format
+  required: false
+  type: select
+  options:
+    - value: default
+      label:
+        en_US: Default
+        zh_Hans: 默认
+        pt_BR: Padrão
+    - value: markdown
+      label:
+        en_US: Markdown
+        zh_Hans: Markdown
+        pt_BR: Markdown
+    - value: html
+      label:
+        en_US: HTML
+        zh_Hans: HTML
+        pt_BR: HTML
+    - value: text
+      label:
+        en_US: Text
+        zh_Hans: Text
+        pt_BR: Text
+    - value: screenshot
+      label:
+        en_US: Screenshot
+        zh_Hans: 截屏
+        pt_BR: Captura de tela
+    - value: pageshot
+      label:
+        en_US: Pageshot
+        zh_Hans: 页面快照
+        pt_BR: Snapshot da página

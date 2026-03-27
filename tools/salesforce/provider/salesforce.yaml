@@ -1,0 +1,99 @@
+identity:
+  author: "langgenius"
+  name: "salesforce"
+  label:
+    en_US: "Salesforce"
+    zh_Hans: "Salesforce"
+    pt_BR: "Salesforce"
+    ja_JP: "Salesforce"
+  description:
+    en_US: "Interact with Salesforce CRM for case management and messaging"
+    zh_Hans: "与 Salesforce CRM 交互以进行案例管理和消息传递"
+    pt_BR: "Interaja com o Salesforce CRM para gerenciamento de casos e mensagens"
+    ja_JP: "Salesforce CRM と連携してケース管理とメッセージングを行います"
+  icon: "icon.svg"
+
+credentials_for_provider:
+  username:
+    type: text-input
+    required: true
+    label:
+      en_US: Username
+      zh_Hans: 用户名
+      pt_BR: Nome de usuário
+      ja_JP: ユーザー名
+    placeholder:
+      en_US: Please input your Salesforce username
+      zh_Hans: 请输入您的 Salesforce 用户名
+      pt_BR: Por favor, insira seu nome de usuário do Salesforce
+      ja_JP: Salesforce ユーザー名を入力してください
+    help:
+      en_US: Your Salesforce account username (email address)
+      zh_Hans: 您的 Salesforce 账户用户名（电子邮件地址）
+      pt_BR: Seu nome de usuário da conta Salesforce (endereço de e-mail)
+      ja_JP: Salesforce アカウントのユーザー名（メールアドレス）
+    url: https://login.salesforce.com
+  password:
+    type: secret-input
+    required: true
+    label:
+      en_US: Password
+      zh_Hans: 密码
+      pt_BR: Senha
+      ja_JP: パスワード
+    placeholder:
+      en_US: Please input your Salesforce password
+      zh_Hans: 请输入您的 Salesforce 密码
+      pt_BR: Por favor, insira sua senha do Salesforce
+      ja_JP: Salesforce パスワードを入力してください
+    help:
+      en_US: Your Salesforce account password
+      zh_Hans: 您的 Salesforce 账户密码
+      pt_BR: Sua senha da conta Salesforce
+      ja_JP: Salesforce アカウントのパスワード
+    url: https://login.salesforce.com
+  security_token:
+    type: secret-input
+    required: true
+    label:
+      en_US: Security Token
+      zh_Hans: 安全令牌
+      pt_BR: Token de Segurança
+      ja_JP: セキュリティトークン
+    placeholder:
+      en_US: Please input your Salesforce security token
+      zh_Hans: 请输入您的 Salesforce 安全令牌
+      pt_BR: Por favor, insira seu token de segurança do Salesforce
+      ja_JP: Salesforce セキュリティトークンを入力してください
+    help:
+      en_US: Get your security token from Salesforce Settings > My Personal Information > Reset My Security Token
+      zh_Hans: 从 Salesforce 设置 > 我的个人信息 > 重置我的安全令牌 获取您的安全令牌
+      pt_BR: Obtenha seu token de segurança em Configurações do Salesforce > Minhas Informações Pessoais > Redefinir Meu Token de Segurança
+      ja_JP: Salesforce 設定 > 個人情報 > セキュリティトークンのリセット からセキュリティトークンを取得してください
+    url: https://login.salesforce.com
+  domain:
+    type: text-input
+    required: false
+    label:
+      en_US: Domain
+      zh_Hans: 域名
+      pt_BR: Domínio
+      ja_JP: ドメイン
+    placeholder:
+      en_US: Leave empty for production, or enter 'test' for sandbox
+      zh_Hans: 生产环境留空，沙盒环境输入 'test'
+      pt_BR: Deixe vazio para produção ou digite 'test' para sandbox
+      ja_JP: 本番環境は空白、サンドボックスの場合は 'test' を入力
+    help:
+      en_US: Use 'test' for sandbox environment, leave empty for production
+      zh_Hans: 沙盒环境使用 'test'，生产环境留空
+      pt_BR: Use 'test' para ambiente sandbox, deixe vazio para produção
+      ja_JP: サンドボックス環境の場合は 'test'、本番環境の場合は空白
+    url: https://login.salesforce.com
+
+tools:
+  - tools/create_case.yaml
+  - tools/send_message.yaml
+extra:
+  python:
+    source: provider/salesforce.py

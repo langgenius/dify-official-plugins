@@ -28,7 +28,7 @@ class Txt2Aud(Tool):
         )
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "stable_audio.json")) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), object_info=cli.get_object_info())
         for model in workflow.get_models_to_download():
             model_manager.download_model_autotoken(model.url, model.directory, model.name)
 
@@ -43,7 +43,7 @@ class Txt2Aud(Tool):
             1.0,
         )
 
-        results = cli.generate(workflow.json())
+        results = cli.generate(workflow)
         for file in results:
             yield self.create_blob_message(
                 blob=file.blob,

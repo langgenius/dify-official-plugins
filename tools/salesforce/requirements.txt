@@ -1,0 +1,2 @@
+dify_plugin>=0.5.1
+simple-salesforce~=1.12.9

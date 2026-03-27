@@ -1,0 +1,70 @@
+# for more details, please refer to https://help.aliyun.com/zh/model-studio/kimi-api
+model: Moonshot-Kimi-K2-Instruct
+label:
+  zh_Hans: Moonshot-Kimi-K2-Instruct
+  en_US: Moonshot-Kimi-K2-Instruct
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 131072
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    type: float
+    default: 0.6
+    min: 0.0
+    max: 2.0
+    help:
+      zh_Hans: 采样温度。
+      en_US: Sampling temperature.
+  - name: top_p
+    use_template: top_p
+    type: float
+    default: 1.0
+    min: 0.0
+    max: 1.0
+    help:
+      zh_Hans: 核采样参数。
+      en_US: Nucleus sampling parameter.
+  - name: presence_penalty
+    type: float
+    default: 0
+    min: -2.0
+    max: 2.0
+    label:
+      zh_Hans: 存在惩罚
+      en_US: Presence Penalty
+    help:
+      zh_Hans: 用于控制模型生成时的主题重复度。正值会鼓励模型讨论新主题。
+      en_US: Controls the tendency to repeat topics. Positive values encourage new topics.
+  - name: max_tokens
+    use_template: max_tokens
+    type: int
+    default: 1024
+    min: 1
+    max: 8192
+    help:
+      zh_Hans: 用于指定模型在生成内容时 token 的最大数量，它定义了生成的上限，但不保证每次都会生成到这个数量。
+      en_US: It is used to specify the maximum number of tokens when the model generates content. It defines the upper limit of generation, but does not guarantee that this number will be generated every time.
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - text
+      - json_object
+pricing:
+  input: '4'
+  output: '16'
+  unit: '0.000001'
+  currency: RMB

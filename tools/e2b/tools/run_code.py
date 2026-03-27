@@ -18,6 +18,9 @@ class RunCodeTool(Tool):
 
         if sandbox_id:
             args["sandbox_id"] = sandbox_id
+            
+        if domain := self.runtime.credentials.get("domain"):
+            args["domain"] = domain
 
         language = tool_parameters.get("language", "python")
         language = language.lower()

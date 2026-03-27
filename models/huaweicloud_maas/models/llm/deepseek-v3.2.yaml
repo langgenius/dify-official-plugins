@@ -1,6 +1,6 @@
-model: deepseek-v3.2-exp
+model: deepseek-v3.2
 label:
-  en_US: DeepSeek-V3.2-Exp
+  en_US: DeepSeek-V3.2
 model_type: llm
 features:
   - agent-thought
@@ -9,7 +9,7 @@ features:
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 64000
+  context_size: 160000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -22,6 +22,16 @@ parameter_rules:
     min: 1
     max: 16384
     default: 16384
+  - name: frequency_penalty
+    use_template: frequency_penalty
+    min: -2
+    max: 2
+    default: 0
+  - name: presence_penalty
+    use_template: presence_penalty
+    min: -2
+    max: 2
+    default: 0
   - name: enable_thinking
     required: false
     type: boolean
@@ -33,7 +43,7 @@ parameter_rules:
       zh_Hans: 是否开启思考模式。
       en_US: Whether to enable thinking mode.
 pricing:
-  input: "4"
-  output: "12"
+  input: "0.86"
+  output: "1.29"
   unit: "0.000001"
   currency: RMB

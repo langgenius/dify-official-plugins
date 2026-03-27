@@ -1,0 +1,93 @@
+identity:
+  name: google_calendar_event_created
+  author: langgenius
+  label:
+    en_US: Google Calendar Event Created
+    zh_Hans: Google 日历事件创建
+    ja_JP: Google カレンダー予定の作成
+
+description:
+  en_US: Emits newly created Google Calendar events detected by incremental sync.
+  zh_Hans: 当检测到新增的 Google 日历事件时触发。
+  ja_JP: 増分同期で検出された新しい Google カレンダー予定を出力します。
+
+parameters: []
+
+extra:
+  python:
+    source: events/google_calendar_event_created.py
+
+output_schema:
+  type: object
+  properties:
+    calendar_id:
+      type: string
+    resource_state:
+      type: string
+    resource_id:
+      type: string
+    channel_id:
+      type: string
+    next_sync_token:
+      type: string
+    include_cancelled:
+      type: boolean
+    events:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          status:
+            type: string
+          summary:
+            type: string
+          description:
+            type: string
+          htmlLink:
+            type: string
+          created:
+            type: string
+          updated:
+            type: string
+          start:
+            type: object
+            properties:
+              date:
+                type: string
+              dateTime:
+                type: string
+              timeZone:
+                type: string
+          end:
+            type: object
+            properties:
+              date:
+                type: string
+              dateTime:
+                type: string
+              timeZone:
+                type: string
+          attendees:
+            type: array
+            items:
+              type: object
+              properties:
+                email:
+                  type: string
+                displayName:
+                  type: string
+                responseStatus:
+                  type: string
+                comment:
+                  type: string
+          organizer:
+            type: object
+            properties:
+              email:
+                type: string
+              displayName:
+                type: string
+          conferenceData:
+            type: object

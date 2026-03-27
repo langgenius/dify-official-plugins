@@ -1,0 +1,169 @@
+identity:
+  name: "agentcore-browser-tool"
+  author: "aws"
+  label:
+    en_US: "AgentCore Browser Tool"
+    zh_Hans: "AgentCore 浏览器工具"
+    pt_BR: "Ferramenta de Navegador AgentCore"
+description:
+  human:
+    en_US: "A managed browser automation tool for web interactions. Supports opening pages, searching, extracting content, filling forms, and executing JavaScript.**Notice:** The script must be written either as: 1. **A single JavaScript expression** (e.g., `document.body.scrollHeight`) 2. **An arrow function** `() => { ... }` if multiple statements are required. **Do not use `return` at the top level.** Use `return` only inside an arrow function. Examples: ✅ `document.title` ✅ `() => { window.scrollTo(0, document.body.scrollHeight); return document.body.scrollHeight; }` ❌ `window.scrollTo(0, document.body.scrollHeight); return document.body.scrollHeight;`"
+    zh_Hans: "一个用于网页交互的托管浏览器自动化工具。支持打开页面、搜索、提取内容、填写表单和执行JavaScript。**注意：** 脚本必须写成以下形式之一：1. **单个JavaScript表达式**（例如，`document.body.scrollHeight`）2. **箭头函数** `() => { ... }`（如果需要多个语句）。**不要在顶层使用`return`。** 只在箭头函数内部使用`return`。示例：✅ `document.title` ✅ `() => { window.scrollTo(0, document.body.scrollHeight); return document.body.scrollHeight; }` ❌ `window.scrollTo(0, document.body.scrollHeight); return document.body.scrollHeight;`"
+    pt_BR: "Uma ferramenta de automação de navegador gerenciada para interações web. Suporta abertura de páginas, pesquisa, extração de conteúdo, preenchimento de formulários e execução de JavaScript.**Aviso:** O script deve ser escrito como: 1. **Uma única expressão JavaScript** (ex., `document.body.scrollHeight`) 2. **Uma função arrow** `() => { ... }` se múltiplas declarações forem necessárias. **Não use `return` no nível superior.** Use `return` apenas dentro de uma função arrow. Exemplos: ✅ `document.title` ✅ `() => { window.scrollTo(0, document.body.scrollHeight); return document.body.scrollHeight; }` ❌ `window.scrollTo(0, document.body.scrollHeight); return document.body.scrollHeight;`"
+  llm: "A managed browser automation tool for web interactions. Supports opening pages, searching, extracting content, filling forms, and executing JavaScript.**Notice:** The script must be written either as: 1. **A single JavaScript expression** (e.g., `document.body.scrollHeight`) 2. **An arrow function** `() => { ... }` if multiple statements are required. **Do not use `return` at the top level.** Use `return` only inside an arrow function. Examples: ✅ `document.title` ✅ `() => { window.scrollTo(0, document.body.scrollHeight); return document.body.scrollHeight; }` ❌ `window.scrollTo(0, document.body.scrollHeight); return document.body.scrollHeight;`"
+parameters:
+  - name: action
+    type: select
+    required: true
+    options:
+      - value: browse_url
+        label:
+          en_US: Browse URL
+          zh_Hans: 浏览网址
+          pt_BR: Navegar URL
+        description:
+          en_US: "Navigate to a specific URL and extract page content"
+          zh_Hans: "导航到指定URL并提取页面内容"
+          pt_BR: "Navegar para uma URL específica e extrair conteúdo da página"
+      - value: search_web
+        label:
+          en_US: Search Web
+          zh_Hans: 网页搜索
+          pt_BR: Pesquisar Web
+        description:
+          en_US: "Perform a Google search and retrieve search results"
+          zh_Hans: "执行Google搜索并获取搜索结果"
+          pt_BR: "Realizar uma pesquisa no Google e recuperar resultados de pesquisa"
+      - value: extract_content
+        label:
+          en_US: Extract Content
+          zh_Hans: 提取内容
+          pt_BR: Extrair Conteúdo
+        description:
+          en_US: "Extract structured content including headings, links, images, and text"
+          zh_Hans: "提取结构化内容，包括标题、链接、图片和文本"
+          pt_BR: "Extrair conteúdo estruturado incluindo títulos, links, imagens e texto"
+      - value: fill_form
+        label:
+          en_US: Fill Form
+          zh_Hans: 填写表单
+          pt_BR: Preencher Formulário
+        description:
+          en_US: "Automatically fill out web forms with provided data"
+          zh_Hans: "使用提供的数据自动填写网页表单"
+          pt_BR: "Preencher automaticamente formulários web com dados fornecidos"
+      - value: execute_script
+        label:
+          en_US: Execute Script
+          zh_Hans: 执行脚本
+          pt_BR: Executar Script
+        description:
+          en_US: "Execute custom JavaScript code on the current webpage"
+          zh_Hans: "在当前网页上执行自定义JavaScript代码"
+          pt_BR: "Executar código JavaScript personalizado na página web atual"
+    label:
+      en_US: Action
+      zh_Hans: 操作
+      pt_BR: Ação
+    human_description:
+      en_US: "The action to perform with the browser tool"
+      zh_Hans: "使用浏览器工具执行的操作"
+      pt_BR: "A ação a ser executada com a ferramenta do navegador"
+    llm_description: "The specific browser action to perform: browse_url (visit a webpage), search_web (search the internet), extract_content (get page text), fill_form (interact with forms), execute_script (run JavaScript)"
+    form: llm
+  - name: browser_session_id
+    type: string
+    required: true
+    label:
+      en_US: Browser Session Id
+      zh_Hans: Browser Session Id
+      pt_BR: Browser Session Id
+    human_description:
+      en_US: "Browser Session Id"
+      zh_Hans: "Browser Session Id"
+      pt_BR: "Browser Session Id"
+    llm_description: "The Browser Session Id for browser interaction environment"
+    form: form
+  - name: aws_region
+    type: string
+    required: true
+    default: "us-west-2"
+    label:
+      en_US: AWS Region
+      zh_Hans: AWS Region
+      pt_BR: AWS Region
+    human_description:
+      en_US: "AWS Region"
+      zh_Hans: "AWS Region"
+      pt_BR: "AWS Region"
+    llm_description: "The aws region for Browser Session"
+    form: form
+  - name: url
+    type: string
+    required: false
+    label:
+      en_US: URL
+      zh_Hans: 网址
+      pt_BR: URL
+    human_description:
+      en_US: "The URL to browse or interact with"
+      zh_Hans: "要浏览或交互的网址"
+      pt_BR: "A URL para navegar ou interagir"
+    llm_description: "The target URL for browse_url, extract_content, or fill_form actions. Optional for extract_content, fill_form, and execute_script if you want to work with the current page"
+    form: llm
+  - name: query
+    type: string
+    required: false
+    label:
+      en_US: Search Query
+      zh_Hans: 搜索查询
+      pt_BR: Consulta de Pesquisa
+    human_description:
+      en_US: "Search query for web search"
+      zh_Hans: "网页搜索的查询语句"
+      pt_BR: "Consulta de pesquisa para busca na web"
+    llm_description: "The search query string when using search_web action"
+    form: llm
+  - name: form_data
+    type: string
+    required: false
+    label:
+      en_US: Form Data
+      zh_Hans: 表单数据
+      pt_BR: Dados do Formulário
+    human_description:
+      en_US: "JSON string containing form field data to fill"
+      zh_Hans: "包含要填写的表单字段数据的JSON字符串"
+      pt_BR: "String JSON contendo dados de campo de formulário para preencher"
+    llm_description: "JSON formatted string containing form field names and values to fill when using fill_form action"
+    form: llm
+  - name: wait_time
+    type: number
+    required: false
+    default: 3
+    label:
+      en_US: Wait Time (seconds)
+      zh_Hans: 等待时间（秒）
+      pt_BR: Tempo de Espera (segundos)
+    human_description:
+      en_US: "Time to wait for page to load (default: 3 seconds)"
+      zh_Hans: "等待页面加载的时间（默认：3秒）"
+      pt_BR: "Tempo para aguardar o carregamento da página (padrão: 3 segundos)"
+    llm_description: "Number of seconds to wait for page loading and JavaScript execution"
+    form: llm
+  - name: script
+    type: string
+    required: false
+    label:
+      en_US: JavaScript Code
+      zh_Hans: JavaScript 代码
+      pt_BR: Código JavaScript
+    human_description:
+      en_US: "JavaScript code to execute on the webpage"
+      zh_Hans: "在网页上执行的JavaScript代码"
+      pt_BR: "Código JavaScript para executar na página web"
+    llm_description: "JavaScript code to execute when using execute_script action"
+    form: llm
+extra:
+  python:
+    source: tools/agentcore-browser-tool.py

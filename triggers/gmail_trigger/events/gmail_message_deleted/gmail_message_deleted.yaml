@@ -1,0 +1,34 @@
+identity:
+  name: gmail_message_deleted
+  author: langgenius
+  label:
+    en_US: Gmail Message Deleted
+    zh_Hans: Gmail 消息删除
+    ja_JP: Gmail メッセージ削除
+
+description:
+  en_US: Emits messages deleted from the mailbox since last checkpoint.
+  zh_Hans: 自上次位点以来从邮箱中删除的消息。
+  ja_JP: 直近チェックポイント以降に削除されたメッセージ。
+
+parameters: []
+
+extra:
+  python:
+    source: events/gmail_message_deleted/gmail_message_deleted.py
+
+output_schema:
+  type: object
+  properties:
+    history_id:
+      type: string
+    messages:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          threadId:
+            type: string
+

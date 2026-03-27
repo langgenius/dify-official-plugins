@@ -1,0 +1,8 @@
+model: voyage-multimodal-3.5
+model_type: text-embedding
+model_properties:
+  context_size: 32000
+pricing:
+  input: '0.06'
+  unit: '1000000'
+  currency: USD

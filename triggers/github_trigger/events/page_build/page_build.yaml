@@ -1,0 +1,122 @@
+identity:
+  name: page_build
+  author: langgenius
+  label:
+    en_US: Page Build
+    zh_Hans: 页面构建
+    ja_JP: ページビルド
+
+description:
+  en_US: Triggered when a GitHub Pages site is built
+  zh_Hans: 当 GitHub Pages 构建时触发
+  ja_JP: GitHub Pages のビルド時にトリガー
+
+parameters:
+- name: status
+  label:
+    en_US: Build Status
+    zh_Hans: 构建状态
+    ja_JP: ビルドステータス
+  type: select
+  required: false
+  multiple: true
+  options:
+  - value: built
+    label:
+      en_US: Built
+      zh_Hans: 构建成功
+      ja_JP: ビルド成功
+  - value: errored
+    label:
+      en_US: Errored
+      zh_Hans: 构建失败
+      ja_JP: 失敗
+
+output_schema:
+  type: object
+  properties:
+    build:
+      type: object
+      properties:
+        id:
+          type: integer
+        status:
+          type: string
+          enum:
+          - built
+          - errored
+        pusher:
+          type:
+          - string
+          - "null"
+        error:
+          type:
+          - object
+          - "null"
+          properties:
+            message:
+              type:
+              - string
+              - "null"
+        commit:
+          type:
+          - string
+          - "null"
+        duration:
+          type:
+          - integer
+          - "null"
+        created_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+        updated_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+      required:
+      - id
+      - status
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+    sender:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - build
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/page_build/page_build.py
+  help:
+    en_US: Filter by page build result. Choose built for success or errored for failures.
+    zh_Hans: 按页面构建结果过滤。built 表示成功 errored 表示失败。
+    ja_JP: ページビルド結果でフィルタ。built は成功 errored は失敗を示します。

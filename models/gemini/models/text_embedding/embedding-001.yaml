@@ -1,5 +1,6 @@
 model: embedding-001
 model_type: text-embedding
+deprecated: true
 model_properties:
   context_size: 2048
   max_chunks: 100

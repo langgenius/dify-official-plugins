@@ -1,0 +1,114 @@
+identity:
+  name: pre_checkout_query_received
+  author: langgenius
+  label:
+    en_US: Pre-Checkout Query Received
+    zh_Hans: 收到结账前查询
+    ja_JP: 決済前クエリ受信
+description:
+  en_US: Triggers when Telegram sends a pre-checkout query before completing a purchase.
+  zh_Hans: 当 Telegram 在完成购买前发送结账前查询时触发。
+  ja_JP: 購入を確定する前に Telegram が決済前クエリを送信したときにトリガーします。
+parameters: []
+output_schema:
+  type: object
+  additionalProperties: false
+  required:
+  - update_id
+  - pre_checkout_query
+  properties:
+    update_id:
+      type: integer
+      description: Unique identifier for the Telegram update.
+    pre_checkout_query:
+      type: object
+      additionalProperties: false
+      description: Pre-checkout query payload.
+      required:
+      - id
+      - from
+      - currency
+      - total_amount
+      - invoice_payload
+      properties:
+        id:
+          type: string
+          description: Unique query identifier.
+        from:
+          type: object
+          description: Telegram User object.
+          additionalProperties: true
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for this user or bot.
+            is_bot:
+              type: boolean
+              description: True if this user is a bot.
+            first_name:
+              type: string
+              description: User first name.
+            last_name:
+              type: string
+              description: User last name.
+            username:
+              type: string
+              description: Username of the user, if any.
+            language_code:
+              type: string
+              description: IETF language tag of the user's language.
+            is_premium:
+              type: boolean
+              description: True if the user is a Telegram Premium subscriber.
+        currency:
+          type: string
+          description: Three-letter ISO 4217 currency code.
+        total_amount:
+          type: integer
+          description: Total price in the smallest units of the currency.
+        invoice_payload:
+          type: string
+          description: Bot specified invoice payload.
+        shipping_option_id:
+          type: string
+          description: Identifier of the chosen shipping option.
+        order_info:
+          type: object
+          description: Order information provided by the user.
+          additionalProperties: false
+          properties:
+            name:
+              type: string
+              description: User name.
+            phone_number:
+              type: string
+              description: User phone number.
+            email:
+              type: string
+              description: User email address.
+            shipping_address:
+              type: object
+              description: Shipping address associated with the order.
+              additionalProperties: false
+              properties:
+                country_code:
+                  type: string
+                  description: ISO 3166-1 alpha-2 country code.
+                state:
+                  type: string
+                  description: State, if applicable.
+                city:
+                  type: string
+                  description: City name.
+                street_line1:
+                  type: string
+                  description: First line for the address.
+                street_line2:
+                  type: string
+                  description: Second line for the address.
+                post_code:
+                  type: string
+                  description: Post code of the address.
+extra:
+  python:
+    source: events/payments/pre_checkout_query_received.py

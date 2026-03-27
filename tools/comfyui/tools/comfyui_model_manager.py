@@ -30,7 +30,7 @@ class ModelManager:
         self._comfyui_cli = comfyui_cli
         self._civitai_api_key = civitai_api_key
         self._hf_api_key = hf_api_key
-        self._session = CachedSession("model_manager", expire_after=expire_after)
+        self._session = CachedSession(backend="memory", expire_after=expire_after)
 
     def get_civitai_api_key(self):
         if self._civitai_api_key is None:
@@ -123,7 +123,7 @@ class ModelManager:
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "download.json")) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), object_info=self._comfyui_cli.get_object_info())
         if filename is None:
             filename = url.split("/")[-1].split("?")[0]
         if token is None:
@@ -131,7 +131,7 @@ class ModelManager:
         workflow.set_asset_downloader(None, url, save_dir, filename, token)
 
         try:
-            _ = self._comfyui_cli.generate(workflow.json())
+            _ = self._comfyui_cli.generate(workflow)
         except Exception as e:
             error = f"Failed to download: {str(e)}."
             if len(self._comfyui_cli.get_model_dirs(save_dir)) == 0:
@@ -180,14 +180,14 @@ class ModelManager:
             id=id,
         )
 
-    def download_civitai(self, model_id: int, version_id: int, save_dir: str) -> CivitAiModel:
+    def download_civitai(self, model_id: int, version_id: int | None, save_dir: str) -> CivitAiModel:
         model = self.search_civitai(model_id, version_id, save_dir)
         self.download_model_autotoken(model.url, model.directory, model.name)
         return model
 
     def download_hugging_face(self, repo_id: str, filepath: str, save_dir: str):
         self.download_model_autotoken(
-            f"https://huggingface.co/{repo_id}/resolve/main/{filepath}", save_dir, filepath.split("/")[-1], None
+            f"https://huggingface.co/{repo_id}/resolve/main/{filepath}", save_dir, filepath.split("/")[-1]
         )
         return filepath.split("/")[-1]
 
@@ -200,7 +200,7 @@ class ModelManager:
             return "", "", "", ""
 
     def download_from_json(self, workflow_json: str) -> list[str]:
-        workflow = ComfyUiWorkflow(workflow_json)
+        workflow = ComfyUiWorkflow(workflow_json, object_info=self._comfyui_cli.get_object_info())
         model_names = []
         for model in workflow.get_models_to_download():
             self.download_model_autotoken(model.url, model.directory, model.name)

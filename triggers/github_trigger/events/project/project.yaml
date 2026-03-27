@@ -1,0 +1,164 @@
+identity:
+  name: project
+  author: langgenius
+  label:
+    en_US: Project (Unified)
+    zh_Hans: 项目（统一）
+    ja_JP: プロジェクト（統合）
+
+description:
+  en_US: Unified project event with actions filter
+  zh_Hans: 带 actions 过滤的统一 project 事件
+  ja_JP: アクションフィルタ付きの統合 project イベント
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - created
+  - edited
+  - deleted
+  - closed
+  - reopened
+  options:
+  - value: created
+    label:
+      en_US: Created
+      zh_Hans: 创建
+      ja_JP: 作成
+  - value: edited
+    label:
+      en_US: Edited
+      zh_Hans: 编辑
+      ja_JP: 編集
+  - value: deleted
+    label:
+      en_US: Deleted
+      zh_Hans: 删除
+      ja_JP: 削除
+  - value: closed
+    label:
+      en_US: Closed
+      zh_Hans: 关闭
+      ja_JP: クローズ
+  - value: reopened
+    label:
+      en_US: Reopened
+      zh_Hans: 重新打开
+      ja_JP: 再オープン
+  description:
+    en_US: Multi select filter for project actions. Leave empty to accept all.
+    zh_Hans: 多选过滤项目动作。留空表示不过滤。
+    ja_JP: プロジェクトのアクションを複数選択で絞り込み。未設定で全て許可。
+
+- name: project_name
+  label:
+    en_US: Project Name
+    zh_Hans: 项目名称
+    ja_JP: プロジェクト名
+  type: string
+  required: false
+  description:
+    en_US: Exact match on project name. Comma separated values supported.
+    zh_Hans: 项目名称精确匹配。支持逗号分隔多值。
+    ja_JP: プロジェクト名の完全一致。カンマ区切りで複数指定可。
+
+- name: state
+  label:
+    en_US: State
+    zh_Hans: 状态
+    ja_JP: 状態
+  type: string
+  required: false
+  description:
+    en_US: Project state filter for values like open or closed.
+    zh_Hans: 项目状态过滤，常见为 open 或 closed。
+    ja_JP: open や closed などの状態でフィルタします。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    project:
+      type: object
+      properties:
+        id:
+          type: integer
+        node_id:
+          type: string
+        name:
+          type: string
+        body:
+          type:
+          - string
+          - "null"
+        state:
+          type: string
+        number:
+          type:
+          - integer
+          - "null"
+        html_url:
+          type: string
+          format: uri
+        columns_url:
+          type:
+          - string
+          - "null"
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - name
+      - state
+      - html_url
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+    sender:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - project
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/project/project.py

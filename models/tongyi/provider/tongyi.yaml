@@ -23,8 +23,8 @@ icon_large:
 icon_small:
   en_US: icon_s_en.png
 label:
-  en_US: TONGYI
-  zh_Hans: 通义千问
+  en_US: Tongyi
+  zh_Hans: 通义
 model_credential_schema:
   credential_form_schemas:
   - label:

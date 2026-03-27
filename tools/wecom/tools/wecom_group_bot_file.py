@@ -1,0 +1,99 @@
+from typing import Any, Generator
+import httpx
+from dify_plugin.entities.tool import ToolInvokeMessage
+from dify_plugin import Tool
+import uuid
+
+
+def is_valid_uuid(uuid_str: str) -> bool:
+    try:
+        uuid.UUID(uuid_str)
+        return True
+    except Exception:
+        return False
+
+
+class WecomGroupBotFileTool(Tool):
+    def _upload_file(
+        self, hook_key: str, file_content: bytes, filename: str
+    ) -> dict:
+        """
+        Upload file to get media_id
+        """
+        upload_url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/upload_media"
+        params = {"key": hook_key, "type": "file"}
+        files = {
+            "media": (filename, file_content, "application/octet-stream")
+        }
+        res = httpx.post(upload_url, params=params, files=files)
+        if res.is_success:
+            return res.json()
+        else:
+            raise Exception(
+                f"Failed to upload file, status code: {res.status_code}, "
+                f"response: {res.text}"
+            )
+
+    def _invoke(
+        self, tool_parameters: dict[str, Any]
+    ) -> Generator[ToolInvokeMessage, None, None]:
+        """
+        invoke tools
+        """
+        hook_key = tool_parameters.get("hook_key", "")
+        if not is_valid_uuid(hook_key):
+            yield self.create_text_message(
+                f"Invalid parameter hook_key ${hook_key}, not a valid UUID"
+            )
+            return
+
+        # Get files parameter
+        files = tool_parameters.get("files")
+        if not files or len(files) == 0:
+            yield self.create_text_message(
+                "Invalid parameter files: at least one file is required"
+            )
+            return
+
+        # Only send the first file (Wecom webhook only supports one file per message)
+        file = files[0]
+        try:
+            # Upload file to get media_id
+            upload_result = self._upload_file(
+                hook_key, file.blob, file.filename or "file"
+            )
+            if upload_result.get("errcode") != 0:
+                yield self.create_text_message(
+                    f"Failed to upload file: "
+                    f"{upload_result.get('errmsg', 'Unknown error')}"
+                )
+                return
+            media_id = upload_result.get("media_id")
+            if not media_id:
+                yield self.create_text_message(
+                    "Failed to get media_id from upload response"
+                )
+                return
+            payload = {"msgtype": "file", "file": {"media_id": media_id}}
+        except Exception as e:
+            yield self.create_text_message(f"Failed to upload file: {e}")
+            return
+
+        api_url = "https://qyapi.weixin.qq.com/cgi-bin/webhook/send"
+        headers = {"Content-Type": "application/json"}
+        params = {"key": hook_key}
+        try:
+            res = httpx.post(
+                api_url, headers=headers, params=params, json=payload
+            )
+            if res.is_success:
+                yield self.create_text_message("File message sent successfully")
+            else:
+                yield self.create_text_message(
+                    f"Failed to send the file message, "
+                    f"status code: {res.status_code}, response: {res.text}"
+                )
+        except Exception as e:
+            yield self.create_text_message(
+                "Failed to send file message to group chat bot. {}".format(e)
+            )

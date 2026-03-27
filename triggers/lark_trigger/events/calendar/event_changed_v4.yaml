@@ -1,0 +1,54 @@
+identity:
+  name: calendar_event_changed_v4
+  author: langgenius
+  label:
+    en_US: Calendar Event Updated
+    zh_Hans: 日历事件更新
+    ja_JP: カレンダーイベント更新
+
+description:
+  en_US: This event activates when changes occur to calendar events, including creation, updates, cancellations, and attendee responses.
+  zh_Hans: 当日历事件发生变化时激活，包括创建、更新、取消和参与者响应。
+  ja_JP: カレンダーイベントに変更が発生したときにアクティブになります。作成、更新、キャンセル、参加者の応答を含みます。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    calendar_id:
+      type: string
+      description: Calendar identifier
+
+    event_id:
+      type: string
+      description: Event identifier
+
+    change_type:
+      type: string
+      description: Type of change (created, updated, deleted)
+
+    affected_users:
+      type: array
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+          open_id:
+            type: string
+          union_id:
+            type: string
+      description: List of affected users
+
+    affected_users_count:
+      type: string
+      description: Number of affected users
+
+    rsvp_responses:
+      type: string
+      description: Attendee response details (JSON format)
+
+extra:
+  python:
+    source: events/calendar/event_changed_v4.py

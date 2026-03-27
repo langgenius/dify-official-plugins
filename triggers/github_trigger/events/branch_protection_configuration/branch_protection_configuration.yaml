@@ -1,0 +1,191 @@
+identity:
+  name: branch_protection_configuration
+  author: langgenius
+  label:
+    en_US: Branch Protection Configuration
+    zh_Hans: 分支保护配置
+    ja_JP: ブランチ保護設定
+
+description:
+  en_US: Triggers when branch protection configuration changes
+  zh_Hans: 当分支保护配置变化时触发
+  ja_JP: ブランチ保護設定の変更でトリガー
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - created
+  - edited
+  - deleted
+  options:
+  - value: created
+    label:
+      en_US: Created
+      zh_Hans: 已创建
+      ja_JP: 作成
+  - value: edited
+    label:
+      en_US: Edited
+      zh_Hans: 已编辑
+      ja_JP: 編集
+  - value: deleted
+    label:
+      en_US: Deleted
+      zh_Hans: 已删除
+      ja_JP: 削除
+  description:
+    en_US: Filter which configuration actions to process. Leave empty to accept created edited deleted.
+    zh_Hans: 选择要处理的配置变更动作。留空接收 created edited deleted。
+    ja_JP: 設定変更のアクションを選択。未設定で created edited deleted を許可。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    repository:
+      type: object
+      description: The repository where the configuration changed
+      properties:
+        id:
+          type: integer
+          format: int64
+        node_id:
+          type: string
+        name:
+          type: string
+        full_name:
+          type: string
+        private:
+          type: boolean
+        owner:
+          type: object
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+            node_id:
+              type: string
+            avatar_url:
+              type: string
+              format: uri
+            html_url:
+              type: string
+              format: uri
+            type:
+              type: string
+              enum:
+              - Bot
+              - User
+              - Organization
+            site_admin:
+              type: boolean
+          required:
+          - id
+          - login
+        html_url:
+          type: string
+          format: uri
+        description:
+          type:
+          - string
+          - "null"
+        fork:
+          type: boolean
+        url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        pushed_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+        stargazers_count:
+          type: integer
+        watchers_count:
+          type: integer
+        language:
+          type:
+          - string
+          - "null"
+        forks_count:
+          type: integer
+        open_issues_count:
+          type: integer
+        default_branch:
+          type: string
+        topics:
+          type: array
+          items:
+            type: string
+        visibility:
+          type: string
+          enum:
+          - public
+          - private
+          - internal
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - private
+      - owner
+      - html_url
+      - url
+      - created_at
+      - updated_at
+      - fork
+      - default_branch
+      - visibility
+    sender:
+      type: object
+      description: The user who triggered the event
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        node_id:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        html_url:
+          type: string
+          format: uri
+        type:
+          type: string
+          enum:
+          - Bot
+          - User
+          - Organization
+        site_admin:
+          type: boolean
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/branch_protection_configuration/branch_protection_configuration.py

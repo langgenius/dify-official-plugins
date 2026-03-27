@@ -28,7 +28,9 @@ def sample_tools():
             description="Get weather information",
             parameters={
                 "type": "object",
-                "properties": {"location": {"type": "string", "description": "City name"}},
+                "properties": {
+                    "location": {"type": "string", "description": "City name"}
+                },
                 "required": ["location"],
             },
         )
@@ -86,8 +88,18 @@ COMPLEX_AUTO_DISABLE_CASES = [
         "grounding and code_execution with preserved params",
     ),
     (
-        {"grounding": True, "url_context": False, "code_execution": True, "max_tokens": 1000},
-        {"grounding": False, "url_context": False, "code_execution": False, "max_tokens": 1000},
+        {
+            "grounding": True,
+            "url_context": False,
+            "code_execution": True,
+            "max_tokens": 1000,
+        },
+        {
+            "grounding": False,
+            "url_context": False,
+            "code_execution": False,
+            "max_tokens": 1000,
+        },
         "selective auto-disable",
     ),
 ]
@@ -100,7 +112,15 @@ class TestFeatureCompatibility:
 
     @pytest.mark.parametrize(
         "model_params",
-        [{}, {"json_schema": None, "grounding": False, "url_context": "", "code_execution": 0}],
+        [
+            {},
+            {
+                "json_schema": None,
+                "grounding": False,
+                "url_context": "",
+                "code_execution": 0,
+            },
+        ],
     )
     def test_no_features_enabled(self, llm, model_params):
         """Test that validation passes when no features are enabled"""
@@ -128,19 +148,26 @@ class TestFeatureCompatibility:
     def test_json_schema_conflicts(self, llm, model_params, conflict_feature):
         """Test that json_schema conflicts with other features"""
         with pytest.raises(
-            InvokeError, match=f"Structured output.*cannot be used with.*{conflict_feature}"
+            InvokeError,
+            match=f"Structured output.*cannot be used with.*{conflict_feature}",
         ):
             llm._validate_feature_compatibility(model_params, None)
 
     def test_json_schema_with_tools_fails(self, llm, sample_tools):
         """Test that json_schema + custom tools is invalid"""
         model_params = {"json_schema": '{"type": "array"}'}
-        with pytest.raises(InvokeError, match="Structured output.*cannot be used with.*tools"):
+        with pytest.raises(
+            InvokeError, match="Structured output.*cannot be used with.*tools"
+        ):
             llm._validate_feature_compatibility(model_params, sample_tools)
 
     def test_json_schema_with_multiple_features_fails(self, llm, sample_tools):
         """Test that json_schema with multiple other features is invalid"""
-        model_params = {"json_schema": '{"type": "object"}', "grounding": True, "url_context": True}
+        model_params = {
+            "json_schema": '{"type": "object"}',
+            "grounding": True,
+            "url_context": True,
+        }
         with pytest.raises(InvokeError) as exc_info:
             llm._validate_feature_compatibility(model_params, sample_tools)
 
@@ -159,12 +186,16 @@ class TestFeatureCompatibility:
     # ========== Test Auto-Disable Tool-Use Features ==========
 
     @pytest.mark.parametrize("model_params,feature_name", AUTO_DISABLE_CASES)
-    def test_features_auto_disabled_with_tools(self, llm, sample_tools, model_params, feature_name):
+    def test_features_auto_disabled_with_tools(
+        self, llm, sample_tools, model_params, feature_name
+    ):
         """Test that tool-use features are auto-disabled when custom tools are present"""
         result = llm._validate_feature_compatibility(model_params, sample_tools)
         assert result[feature_name] is False
 
-    @pytest.mark.parametrize("input_params,expected_params,description", COMPLEX_AUTO_DISABLE_CASES)
+    @pytest.mark.parametrize(
+        "input_params,expected_params,description", COMPLEX_AUTO_DISABLE_CASES
+    )
     def test_complex_auto_disable_scenarios(
         self, llm, sample_tools, input_params, expected_params, description
     ):
@@ -199,11 +230,14 @@ class TestFeatureCompatibility:
     def test_url_context_code_execution_conflicts(self, llm, model_params):
         """Test that url_context + code_execution is invalid (Rule 3)"""
         with pytest.raises(
-            InvokeError, match="`url_context` and `code_execution` cannot be enabled simultaneously"
+            InvokeError,
+            match="`url_context` and `code_execution` cannot be enabled simultaneously",
         ):
             llm._validate_feature_compatibility(model_params, None)
 
-    def test_url_context_code_execution_with_tools_auto_disabled(self, llm, sample_tools):
+    def test_url_context_code_execution_with_tools_auto_disabled(
+        self, llm, sample_tools
+    ):
         """Test that url_context + code_execution are auto-disabled when tools are present"""
         model_params = {"url_context": True, "code_execution": True}
         result = llm._validate_feature_compatibility(model_params, sample_tools)
@@ -289,13 +323,22 @@ class TestFeatureCompatibility:
     @pytest.mark.parametrize(
         "scenario,model_params,tools,expected_features",
         [
-            ("RAG with auto-disable", {"grounding": True}, "sample_tools", {"grounding": False}),
+            (
+                "RAG with auto-disable",
+                {"grounding": True},
+                "sample_tools",
+                {"grounding": False},
+            ),
             ("Function calling", {}, "sample_tools", {}),
             (
                 "Structured output",
-                {"json_schema": '{"type": "object", "properties": {"name": {"type": "string"}}}'},
+                {
+                    "json_schema": '{"type": "object", "properties": {"name": {"type": "string"}}}'
+                },
                 None,
-                {"json_schema": '{"type": "object", "properties": {"name": {"type": "string"}}}'},
+                {
+                    "json_schema": '{"type": "object", "properties": {"name": {"type": "string"}}}'
+                },
             ),
             (
                 "Code analysis",
@@ -326,7 +369,9 @@ class TestFeatureCompatibility:
     def test_static_method_can_be_called_without_instance(self):
         """Test that the static method can be called without an instance"""
         model_params = {"grounding": True}
-        result = GoogleLargeLanguageModel._validate_feature_compatibility(model_params, None)
+        result = GoogleLargeLanguageModel._validate_feature_compatibility(
+            model_params, None
+        )
         assert result == model_params
 
     # ========== Test with Mock Logging ==========
@@ -344,7 +389,9 @@ class TestFeatureCompatibility:
         for patch_path in patch_paths:
             try:
                 with patch(patch_path) as mock_debug:
-                    result = llm._validate_feature_compatibility(model_params, sample_tools)
+                    result = llm._validate_feature_compatibility(
+                        model_params, sample_tools
+                    )
 
                     assert result["grounding"] is False
                     assert result["url_context"] is False

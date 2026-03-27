@@ -1,2 +1,8 @@
-- jina-rerank-m0
-- jina-colbert-v2
+- qwen3-reranker-8b
+- qwen3-reranker-4b
+- jina-reranker-v3
+- jina-reranker-m0
+- bce-reranker-base
+- BAAI/bge-reranker-v2-m3
+- qwen3-reranker-0.6b
+- gte-rerank-v2

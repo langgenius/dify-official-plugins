@@ -14,7 +14,7 @@ class NotionClient:
     """
     
     API_BASE_URL = "https://api.notion.com/v1"
-    API_VERSION = "2022-06-28"  # Using a stable API version
+    API_VERSION = "2025-09-03"  # Updated API version with multi-source database support
     
     def __init__(self, integration_token: str):
         """
@@ -124,27 +124,57 @@ class NotionClient:
             
         return self._make_request("post", "/search", json_data=payload)
     
-    def query_database(self, database_id: str, filter_obj: Optional[Dict[str, Any]] = None, 
-                       sorts: Optional[List[Dict[str, Any]]] = None, 
-                       page_size: int = 10, start_cursor: Optional[str] = None) -> Dict[str, Any]:
+    def get_data_sources(self, database_id: str) -> List[Dict[str, Any]]:
         """
-        Query a Notion database with optional filtering and sorting.
+        Get the list of data sources for a database.
+        In API version 2025-09-03, databases can have multiple data sources.
         
         Args:
-            database_id: The ID of the database to query
+            database_id: The ID of the database
+            
+        Returns:
+            List of data source objects with id and name
+        """
+        database_id = database_id.replace("-", "")
+        response = self._make_request("get", f"/databases/{database_id}")
+        return response.get("data_sources", [])
+    
+    def get_default_data_source_id(self, database_id: str) -> str:
+        """
+        Get the default (first) data source ID for a database.
+        
+        Args:
+            database_id: The ID of the database
+            
+        Returns:
+            The data source ID
+        """
+        data_sources = self.get_data_sources(database_id)
+        if not data_sources:
+            raise ValueError(f"No data sources found for database {database_id}")
+        return data_sources[0].get("id", "")
+    
+    def query_data_source(self, data_source_id: str, filter_obj: Optional[Dict[str, Any]] = None, 
+                          sorts: Optional[List[Dict[str, Any]]] = None, 
+                          page_size: int = 10, start_cursor: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Query a Notion data source with optional filtering and sorting.
+        This is the new API for version 2025-09-03.
+        
+        Args:
+            data_source_id: The ID of the data source to query
             filter_obj: Optional filter object according to Notion API specs
             sorts: Optional sort specifications
             page_size: Maximum number of results to return (max 100)
             start_cursor: Cursor for pagination
             
         Returns:
-            Dictionary containing database query results
+            Dictionary containing data source query results
         """
-        # Clean database_id (remove dashes if present)
-        database_id = database_id.replace("-", "")
+        data_source_id = data_source_id.replace("-", "")
         
         payload = {
-            "page_size": min(page_size, 100)  # Ensure page_size doesn't exceed API limit
+            "page_size": min(page_size, 100)
         }
         
         if filter_obj:
@@ -156,26 +186,63 @@ class NotionClient:
         if start_cursor:
             payload["start_cursor"] = start_cursor
         
-        return self._make_request("post", f"/databases/{database_id}/query", json_data=payload)
+        return self._make_request("post", f"/data_sources/{data_source_id}/query", json_data=payload)
+    
+    def query_database(self, database_id: str, filter_obj: Optional[Dict[str, Any]] = None, 
+                       sorts: Optional[List[Dict[str, Any]]] = None, 
+                       page_size: int = 10, start_cursor: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Query a Notion database with optional filtering and sorting.
+        For API version 2025-09-03, this automatically resolves the data source ID.
+        
+        Args:
+            database_id: The ID of the database to query (will be converted to data_source_id)
+            filter_obj: Optional filter object according to Notion API specs
+            sorts: Optional sort specifications
+            page_size: Maximum number of results to return (max 100)
+            start_cursor: Cursor for pagination
+            
+        Returns:
+            Dictionary containing database query results
+        """
+        # Get the default data source ID for this database
+        data_source_id = self.get_default_data_source_id(database_id)
+        
+        return self.query_data_source(
+            data_source_id=data_source_id,
+            filter_obj=filter_obj,
+            sorts=sorts,
+            page_size=page_size,
+            start_cursor=start_cursor
+        )
     
     def create_page(self, parent: Dict[str, Any], properties: Dict[str, Any], 
                    children: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
         """
         Create a new page in Notion with the specified parent, properties, and content.
+        For API version 2025-09-03, database_id parents are automatically converted to data_source_id.
         
         Args:
-            parent: Parent specification (page_id, database_id, or workspace)
+            parent: Parent specification (page_id, database_id, data_source_id, or workspace)
             properties: Page properties (including title)
             children: Optional list of block contents
             
         Returns:
             Dictionary containing the created page information
         """
-        # Clean any IDs in the parent object
+        # Clean any IDs in the parent object and convert database_id to data_source_id
         if "page_id" in parent:
             parent["page_id"] = parent["page_id"].replace("-", "")
         elif "database_id" in parent:
-            parent["database_id"] = parent["database_id"].replace("-", "")
+            # For 2025-09-03 API, convert database_id to data_source_id
+            database_id = parent["database_id"].replace("-", "")
+            data_source_id = self.get_default_data_source_id(database_id)
+            parent = {
+                "type": "data_source_id",
+                "data_source_id": data_source_id
+            }
+        elif "data_source_id" in parent:
+            parent["data_source_id"] = parent["data_source_id"].replace("-", "")
         
         payload = {
             "parent": parent,
@@ -245,15 +312,31 @@ class NotionClient:
     def retrieve_database(self, database_id: str) -> Dict[str, Any]:
         """
         Retrieve a database by its ID.
+        In API version 2025-09-03, this returns the database with a list of data_sources.
+        To get the properties/schema, use retrieve_data_source with the data_source_id.
         
         Args:
             database_id: The ID of the database to retrieve
             
         Returns:
-            Dictionary containing the database information
+            Dictionary containing the database information including data_sources list
         """
         database_id = database_id.replace("-", "")
         return self._make_request("get", f"/databases/{database_id}")
+    
+    def retrieve_data_source(self, data_source_id: str) -> Dict[str, Any]:
+        """
+        Retrieve a data source by its ID.
+        This is the new API for version 2025-09-03 to get the schema/properties.
+        
+        Args:
+            data_source_id: The ID of the data source to retrieve
+            
+        Returns:
+            Dictionary containing the data source information including properties
+        """
+        data_source_id = data_source_id.replace("-", "")
+        return self._make_request("get", f"/data_sources/{data_source_id}")
     
     def update_page(self, page_id: str, properties: Dict[str, Any], archived: bool = False) -> Dict[str, Any]:
         """
@@ -469,20 +552,24 @@ class NotionClient:
                          properties: Dict[str, Any]) -> Dict[str, Any]:
         """
         Create a new database in a parent page.
+        For API version 2025-09-03, properties go under initial_data_source.
         
         Args:
             parent: The parent object with page_id
             title: The title for the database as rich text array
-            properties: The properties schema for the database
+            properties: The properties schema for the initial data source
             
         Returns:
             The created database object
         """
         endpoint = "/databases"
+        # For 2025-09-03 API, properties go under initial_data_source
         payload = {
             "parent": parent,
             "title": title,
-            "properties": properties
+            "initial_data_source": {
+                "properties": properties
+            }
         }
         
         return self._make_request("POST", endpoint, json_data=payload)
@@ -490,17 +577,54 @@ class NotionClient:
     def update_database(self, database_id: str, title: Optional[List[Dict[str, Any]]] = None,
                          properties: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """
-        Update an existing database.
+        Update an existing database and/or its data source.
+        For API version 2025-09-03:
+        - title updates go to the database endpoint
+        - properties updates go to the data source endpoint
         
         Args:
             database_id: The ID of the database to update
             title: Optional new title for the database
+            properties: Optional properties to update (will update the default data source)
+            
+        Returns:
+            The updated database or data source object
+        """
+        database_id = database_id.replace("-", "")
+        result = {}
+        
+        # Update database-level attributes (title, icon, cover, etc.)
+        if title:
+            endpoint = f"/databases/{database_id}"
+            payload = {"title": title}
+            result = self._make_request("PATCH", endpoint, json_data=payload)
+        
+        # Update data source-level attributes (properties/schema)
+        if properties:
+            data_source_id = self.get_default_data_source_id(database_id)
+            endpoint = f"/data_sources/{data_source_id}"
+            payload = {"properties": properties}
+            result = self._make_request("PATCH", endpoint, json_data=payload)
+            
+        return result
+    
+    def update_data_source(self, data_source_id: str, 
+                           title: Optional[List[Dict[str, Any]]] = None,
+                           properties: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """
+        Update an existing data source directly.
+        This is the new API for version 2025-09-03.
+        
+        Args:
+            data_source_id: The ID of the data source to update
+            title: Optional new title for the data source
             properties: Optional properties to update
             
         Returns:
-            The updated database object
+            The updated data source object
         """
-        endpoint = f"/databases/{database_id}"
+        data_source_id = data_source_id.replace("-", "")
+        endpoint = f"/data_sources/{data_source_id}"
         payload = {}
         
         if title:

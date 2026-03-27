@@ -1,0 +1,39 @@
+identity:
+  name: linear_get_document
+  author: langgenius
+  label:
+    en_US: Get Linear Document
+    zh_Hans: 获取 Linear 文档
+    pt_BR: Obter Documento do Linear
+    ja_JP: Linear ドキュメントを取得
+    zh_Hant: 獲取 Linear 文件
+description:
+  human:
+    en_US: Retrieve a specific document from Linear by ID.
+    zh_Hans: 通过 ID 获取 Linear 中的指定文档。
+    pt_BR: Recuperar um documento específico no Linear pelo ID.
+    ja_JP: ID を指定して Linear のドキュメントを取得します。
+    zh_Hant: 透過 ID 獲取 Linear 中的指定文件。
+  llm: Retrieves a Linear document by its ID and returns detailed fields.
+parameters:
+  - name: id
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Document ID
+      zh_Hans: 文档 ID
+      pt_BR: ID do Documento
+      ja_JP: ドキュメントID
+      zh_Hant: 文件 ID
+    human_description:
+      en_US: ID of the document to retrieve.
+      zh_Hans: 要获取的文档的 ID。
+      pt_BR: ID do documento a ser recuperado.
+      ja_JP: 取得するドキュメントのID。
+      zh_Hant: 要獲取的文件的 ID。
+    llm_description: The unique identifier of the document to retrieve.
+extra:
+  python:
+    source: tools/linear_get_document.py
+    class: LinearGetDocumentTool

@@ -3,12 +3,49 @@ settings:
     type: secret-input
     required: true
     label:
-      en_US: API key
-      zh_Hans: API key
-      pt_BR: API key
+      en_US: Llama Cloud API key
+      zh_Hans: Llama Cloud API 密钥
+      ja_JP: Llama Cloud APIキー
+      pt_BR: Chave de API do Llama Cloud
     placeholder:
-      en_US: Please input your API key
-      zh_Hans: 请输入你的 API key
-      pt_BR: Please input your API key
+      en_US: Please input your Llama Cloud API key
+      zh_Hans: 请输入你的 Llama Cloud API 密钥
+      ja_JP: Llama Cloud APIキーを入力してください
+      pt_BR: Por favor, insira sua chave de API do Llama Cloud
+  - name: api_key
+    type: text-input
+    required: false
+    label:
+      en_US: API key
+      zh_Hans: API 密钥
+      ja_JP: APIキー
+      pt_BR: Chave de API
+    placeholder:
+      en_US: This API key is used to protect your endpoint from unauthorized requests.
+      zh_Hans: 此 API 密钥用于保护你的端点免受未授权请求
+      ja_JP: このAPIキーは、エンドポイントを不正なリクエストから保護するために使用されます
+      pt_BR: Esta chave de API é usada para proteger seu endpoint de solicitações não autorizadas
+  - name: region
+    type: select
+    required: false
+    label:
+      en_US: Region
+      zh_Hans: 区域
+      ja_JP: リージョン
+      pt_BR: Região
+    default: us
+    options:
+    - label:
+        en_US: "Europe (EU)"
+        zh_Hans: "欧洲 (EU)"
+        ja_JP: "ヨーロッパ (EU)"
+        pt_BR: "Europa (EU)"
+      value: "eu"
+    - label:
+        en_US: "United States (US)"
+        zh_Hans: "美国 (US)"
+        ja_JP: "アメリカ (US)"
+        pt_BR: "Estados Unidos (US)"
+      value: "us"
 endpoints:
   - endpoints/llamacloud.yaml

@@ -1,0 +1,91 @@
+identity:
+  name: google_calendar_event_updated
+  author: langgenius
+  label:
+    en_US: Google Calendar Event Updated
+    zh_Hans: Google 日历事件更新
+    ja_JP: Google カレンダー予定の更新
+
+description:
+  en_US: Emits Google Calendar events whose details were modified since the last sync (time, attendees, description, etc.).
+  zh_Hans: 当检测到 Google 日历事件的时间、参与者或描述等信息变更时触发。
+  ja_JP: 時間・参加者・説明などが更新された Google カレンダー予定を通知します。
+
+parameters: []
+
+extra:
+  python:
+    source: events/google_calendar_event_updated.py
+
+output_schema:
+  type: object
+  properties:
+    calendar_id:
+      type: string
+    resource_state:
+      type: string
+    resource_id:
+      type: string
+    channel_id:
+      type: string
+    next_sync_token:
+      type: string
+    include_cancelled:
+      type: boolean
+    events:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          status:
+            type: string
+          summary:
+            type: string
+          description:
+            type: string
+          htmlLink:
+            type: string
+          created:
+            type: string
+          updated:
+            type: string
+          start:
+            type: object
+            properties:
+              date:
+                type: string
+              dateTime:
+                type: string
+              timeZone:
+                type: string
+          end:
+            type: object
+            properties:
+              date:
+                type: string
+              dateTime:
+                type: string
+              timeZone:
+                type: string
+          attendees:
+            type: array
+            items:
+              type: object
+              properties:
+                email:
+                  type: string
+                displayName:
+                  type: string
+                responseStatus:
+                  type: string
+                comment:
+                  type: string
+          organizer:
+            type: object
+            properties:
+              email:
+                type: string
+              displayName:
+                type: string

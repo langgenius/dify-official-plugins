@@ -1,0 +1,112 @@
+description:
+  human:
+    en_US: Create a review on a pull request (approve, request changes, or comment)
+    pt_BR: Criar uma revisão em um pull request (aprovar, solicitar alterações ou comentar)
+    zh_Hans: 在Pull Request上创建Review（批准、请求更改或评论）
+  llm: A tool to create a review on a pull request with options to approve, request changes, or leave a comment
+extra:
+  python:
+    source: tools/github_create_pull_review.py
+identity:
+  author: langgenius
+  icon: icon.svg
+  label:
+    en_US: Create Pull Request Review
+    pt_BR: Criar Revisão do Pull Request
+    zh_Hans: 创建PR Review
+  name: github_create_pull_review
+parameters:
+- form: llm
+  human_description:
+    en_US: The account owner of the repository. The name is not case sensitive.
+    pt_BR: O proprietário da conta do repositório. O nome não diferencia maiúsculas de minúsculas.
+    zh_Hans: 仓库的账户所有者。名称不区分大小写。
+  label:
+    en_US: Owner
+    pt_BR: Proprietário
+    zh_Hans: 所有者
+  llm_description: The account owner of the repository. The name is not case sensitive.
+  name: owner
+  required: true
+  type: string
+- form: llm
+  human_description:
+    en_US: The name of the repository without the .git extension. The name is not case sensitive.
+    pt_BR: O nome do repositório sem a extensão .git. O nome não diferencia maiúsculas de minúsculas.
+    zh_Hans: 仓库名称不带.git扩展名。名称不区分大小写。
+  label:
+    en_US: Repository
+    pt_BR: Repositório
+    zh_Hans: 仓库
+  llm_description: The name of the repository without the .git extension. The name is not case sensitive.
+  name: repo
+  required: true
+  type: string
+- form: llm
+  human_description:
+    en_US: The number that identifies the pull request.
+    pt_BR: O número que identifica o pull request.
+    zh_Hans: Pull Request的编号。
+  label:
+    en_US: Pull Request Number
+    pt_BR: Número do Pull Request
+    zh_Hans: PR编号
+  llm_description: The number that identifies the pull request.
+  name: pull_number
+  required: true
+  type: number
+- form: llm
+  human_description:
+    en_US: "The review action to perform: APPROVE, REQUEST_CHANGES, or COMMENT."
+    pt_BR: "A ação de revisão a ser realizada: APPROVE, REQUEST_CHANGES ou COMMENT."
+    zh_Hans: 要执行的Review操作：APPROVE（批准）、REQUEST_CHANGES（请求更改）或 COMMENT（评论）。
+  label:
+    en_US: Review Event
+    pt_BR: Evento de Revisão
+    zh_Hans: Review操作
+  llm_description: "The review action to perform. Must be one of: APPROVE (approve the PR), REQUEST_CHANGES (request changes before merging), or COMMENT (leave a general comment without approval/rejection)."
+  name: event
+  required: true
+  type: select
+  options:
+  - value: APPROVE
+    label:
+      en_US: APPROVE
+      ja_JP: 承認
+      zh_Hans: 批准
+  - value: REQUEST_CHANGES
+    label:
+      en_US: REQUEST_CHANGES
+      ja_JP: 変更を要求
+      zh_Hans: 请求更改
+  - value: COMMENT
+    label:
+      en_US: COMMENT
+      ja_JP: コメント
+      zh_Hans: 评论
+- form: llm
+  human_description:
+    en_US: The body text of the review. Required when using REQUEST_CHANGES or COMMENT.
+    pt_BR: O texto do corpo da revisão. Obrigatório ao usar REQUEST_CHANGES ou COMMENT.
+    zh_Hans: Review的正文内容。使用 REQUEST_CHANGES 或 COMMENT 时必填。
+  label:
+    en_US: Review Body
+    pt_BR: Corpo da Revisão
+    zh_Hans: Review正文
+  llm_description: The body text of the review. Required when using REQUEST_CHANGES or COMMENT. For APPROVE, this is optional but can be used to add a message.
+  name: body
+  required: false
+  type: string
+- form: llm
+  human_description:
+    en_US: The SHA of the commit to review. Defaults to the latest commit.
+    pt_BR: O SHA do commit a ser revisado. O padrão é o commit mais recente.
+    zh_Hans: 要Review的提交SHA。默认为最新提交。
+  label:
+    en_US: Commit ID
+    pt_BR: ID do Commit
+    zh_Hans: 提交ID
+  llm_description: The SHA of the commit that needs a review. If not provided, the review will be on the latest commit of the PR.
+  name: commit_id
+  required: false
+  type: string

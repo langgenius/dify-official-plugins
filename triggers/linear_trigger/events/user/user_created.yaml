@@ -1,0 +1,111 @@
+identity:
+  name: user_created
+  author: langgenius
+  label:
+    en_US: User Created
+    zh_Hans: 用户创建
+    ja_JP: ユーザー作成
+description:
+  en_US: Triggers when a user is created
+  zh_Hans: 当在 Linear 中创建新用户时触发
+  ja_JP: Linear で新しいユーザーが作成されたときにトリガーされます
+parameters:
+- name: email_contains
+  label:
+    en_US: Email Contains
+    zh_Hans: 邮箱包含
+    ja_JP: メールアドレスに含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the user email includes specific keywords (comma-separated)."
+    zh_Hans: "仅当用户邮箱包含指定关键词时触发（逗号分隔）。"
+    ja_JP: "ユーザーのメールアドレスに指定したキーワードが含まれる場合のみトリガーします（カンマ区切り）。"
+- name: active_only
+  label:
+    en_US: Active Users Only
+    zh_Hans: 仅限活跃用户
+    ja_JP: 有効ユーザーのみ
+  type: boolean
+  required: false
+  default: false
+  description:
+    en_US: "Enable to trigger only when the new user is active."
+    zh_Hans: "启用后，仅在创建活跃用户时触发。"
+    ja_JP: "有効化すると、有効なユーザーが作成された場合のみトリガーします。"
+- name: admin_only
+  label:
+    en_US: Admin Users Only
+    zh_Hans: 仅限管理员
+    ja_JP: 管理者のみ
+  type: boolean
+  required: false
+  default: false
+  description:
+    en_US: "Enable to trigger only when the new user is an administrator."
+    zh_Hans: "启用后，仅在创建管理员用户时触发。"
+    ja_JP: "有効化すると、管理者ユーザーが作成された場合のみトリガーします。"
+- name: guest_only
+  label:
+    en_US: Guest Users Only
+    zh_Hans: 仅限访客用户
+    ja_JP: ゲストユーザーのみ
+  type: boolean
+  required: false
+  default: false
+  description:
+    en_US: "Enable to trigger only when the new user is marked as a guest."
+    zh_Hans: "启用后，仅在创建访客用户时触发。"
+    ja_JP: "有効化すると、ゲストユーザーが作成された場合のみトリガーします。"
+- name: exclude_app_users
+  label:
+    en_US: Exclude App Users
+    zh_Hans: 排除应用用户
+    ja_JP: アプリユーザーを除外
+  type: boolean
+  required: false
+  default: false
+  description:
+    en_US: "Exclude service/app users from triggering this event."
+    zh_Hans: "排除由应用或集成创建的服务用户。"
+    ja_JP: "アプリまたはサービスユーザーをトリガー対象から除外します。"
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [create]
+    type:
+      type: string
+      enum: [User]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        displayName:
+          type: string
+        active:
+          type: boolean
+        admin:
+          type: boolean
+        guest:
+          type: boolean
+        app:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        url:
+          type: string
+    actor:
+      type: object
+  required: [action, type, data]
+extra:
+  python:
+    source: events/user/user_created.py

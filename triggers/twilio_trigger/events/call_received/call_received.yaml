@@ -1,0 +1,120 @@
+identity:
+  name: call_received
+  author: community
+  label:
+    en_US: Call Received
+    zh_Hans: 收到来电
+    ja_JP: 着信受信
+
+description:
+  en_US: Triggered when a voice call is received on the configured Twilio phone number
+  zh_Hans: 当配置的 Twilio 电话号码收到来电时触发
+  ja_JP: 設定された Twilio 電話番号で音声通話を受信したときにトリガーされます
+
+parameters:
+- name: from_filter
+  label:
+    en_US: From Number Filter
+    zh_Hans: 来电号码过滤
+    ja_JP: 発信元番号フィルター
+  type: string
+  required: false
+  description:
+    en_US: Comma-separated phone numbers to filter (e.g., +1234567890,+0987654321). Only trigger when the caller matches.
+    zh_Hans: 逗号分隔的电话号码列表（如 +1234567890,+0987654321）。仅当来电号码匹配时触发。
+    ja_JP: カンマ区切りの電話番号（例：+1234567890,+0987654321）。発信者が一致した場合のみトリガーされます。
+
+- name: call_status_filter
+  label:
+    en_US: Call Status Filter
+    zh_Hans: 通话状态过滤
+    ja_JP: 通話ステータスフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Comma-separated call statuses to filter (e.g., ringing,in-progress,completed). Available statuses: queued, ringing, in-progress, completed, busy, failed, no-answer, canceled"
+    zh_Hans: 逗号分隔的通话状态列表（如 ringing,in-progress,completed）。可用状态：queued, ringing, in-progress, completed, busy, failed, no-answer, canceled
+    ja_JP: "カンマ区切りの通話ステータス（例：ringing,in-progress,completed）。利用可能なステータス：queued, ringing, in-progress, completed, busy, failed, no-answer, canceled"
+
+output_schema:
+  type: object
+  properties:
+    CallSid:
+      type: string
+      description: A unique identifier for this call
+    AccountSid:
+      type: string
+      description: The Twilio Account SID
+    From:
+      type: string
+      description: The phone number that initiated the call
+    To:
+      type: string
+      description: The phone number that received the call
+    CallStatus:
+      type: string
+      description: The status of the call
+      enum:
+      - queued
+      - ringing
+      - in-progress
+      - completed
+      - busy
+      - failed
+      - no-answer
+      - canceled
+    Direction:
+      type: string
+      description: The direction of the call (inbound or outbound)
+      enum:
+      - inbound
+      - outbound-api
+      - outbound-dial
+    CallerName:
+      type: string
+      description: The caller ID name (if available)
+    ApiVersion:
+      type: string
+      description: The version of the Twilio API used
+    ForwardedFrom:
+      type: string
+      description: The number this call was forwarded from (if applicable)
+    FromCity:
+      type: string
+      description: The city of the caller
+    FromState:
+      type: string
+      description: The state/province of the caller
+    FromZip:
+      type: string
+      description: The postal code of the caller
+    FromCountry:
+      type: string
+      description: The country of the caller
+    ToCity:
+      type: string
+      description: The city of the recipient
+    ToState:
+      type: string
+      description: The state/province of the recipient
+    ToZip:
+      type: string
+      description: The postal code of the recipient
+    ToCountry:
+      type: string
+      description: The country of the recipient
+    Caller:
+      type: string
+      description: Same as From (for backwards compatibility)
+    Called:
+      type: string
+      description: Same as To (for backwards compatibility)
+  required:
+  - CallSid
+  - From
+  - To
+  - CallStatus
+
+extra:
+  python:
+    source: events/call_received/call_received.py

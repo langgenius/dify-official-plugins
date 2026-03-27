@@ -1,0 +1,281 @@
+identity:
+  name: drive_change_detected
+  author: langgenius
+  label:
+    en_US: Google Drive Change Detected
+    ja_JP: Google Drive 変更検出
+    zh_Hans: Google 云端硬盘检测到更改
+description:
+  en_US: Fetches Drive change feed entries when Google Drive sends a webhook notification.
+  ja_JP: Google Drive からの Webhook 通知を受け取った際に変更フィードを取得します。
+  zh_Hans: 在收到 Google 云端硬盘的 Webhook 通知时抓取更改列表。
+parameters:
+  - name: change_types
+    type: checkbox
+    multiple: true
+    required: false
+    options:
+      - label:
+          en_US: File change
+          ja_JP: ファイルの変更
+          zh_Hans: 文件更改
+        value: file
+      - label:
+          en_US: Drive change
+          ja_JP: ドライブの変更
+          zh_Hans: 云端硬盘更改
+        value: drive
+    label:
+      en_US: Change types
+      ja_JP: 変更タイプ
+      zh_Hans: 更改类型
+    description:
+      en_US: Only include Drive changes whose type matches the selected values.
+      ja_JP: 選択した種類に一致する Drive の変更のみを含めます。
+      zh_Hans: 仅包含类型与所选值匹配的云端硬盘更改。
+    default:
+      - file
+      - drive
+  - name: file_name_pattern
+    type: string
+    required: false
+    label:
+      en_US: File name pattern
+      ja_JP: ファイル名パターン
+      zh_Hans: 文件名模式
+    description:
+      en_US: Filter results to file names matching the pattern. Supports * and ? wildcards and multiple patterns separated by commas or new lines.
+      ja_JP: パターンに一致するファイル名のみを含めます。*, ? のワイルドカードやカンマ・改行区切りの複数指定をサポートします。
+      zh_Hans: 仅保留匹配该模式的文件名。支持 * 和 ? 通配符，可使用 "," 或换行分隔多个模式。
+    placeholder:
+      en_US: "*.pdf"
+      ja_JP: "*.pdf"
+      zh_Hans: "*.pdf"
+output_schema:
+  type: object
+  properties:
+    changes:
+      type: array
+      description: List of Drive change entries returned by the API.
+      items:
+        type: object
+        properties:
+          change_type:
+            type: string
+            description: Type of change (e.g., "file", "drive").
+          removed:
+            type: boolean
+            description: Whether the file or shared drive was removed.
+          file_id:
+            type: string
+            description: The ID of the file associated with this change.
+          file:
+            type: object
+            description: The latest metadata for the changed file.
+            properties:
+              id:
+                type: string
+                description: The ID of the file.
+              name:
+                type: string
+                description: The name of the file.
+              mimeType:
+                type: string
+                description: The MIME type of the file.
+              createdTime:
+                type: string
+                description: The time at which the file was created (RFC 3339 date-time).
+              modifiedTime:
+                type: string
+                description: The last time the file was modified (RFC 3339 date-time).
+              trashed:
+                type: boolean
+                description: Whether the file has been trashed.
+              parents:
+                type: array
+                description: The IDs of the parent folders.
+                items:
+                  type: string
+              webViewLink:
+                type: string
+                description: A link for opening the file in a web app.
+              iconLink:
+                type: string
+                description: A static, unauthenticated link to the file's icon.
+              ownedByMe:
+                type: boolean
+                description: Whether the user owns the file.
+              owners:
+                type: array
+                description: The owners of the file.
+                items:
+                  type: object
+                  properties:
+                    displayName:
+                      type: string
+                      description: A plain text displayable name for this user.
+                    emailAddress:
+                      type: string
+                      description: The email address of the user.
+                    kind:
+                      type: string
+                      description: Identifies what kind of resource this is (e.g., "drive#user").
+                    me:
+                      type: boolean
+                      description: Whether this user is the same as the authenticated user.
+                    permissionId:
+                      type: string
+                      description: The user's ID as visible in Permission resources.
+                    photoLink:
+                      type: string
+                      description: A link to the user's profile photo.
+              lastModifyingUser:
+                type: object
+                description: The last user to modify the file.
+                properties:
+                  displayName:
+                    type: string
+                    description: A plain text displayable name for this user.
+                  emailAddress:
+                    type: string
+                    description: The email address of the user.
+                  kind:
+                    type: string
+                    description: Identifies what kind of resource this is (e.g., "drive#user").
+                  me:
+                    type: boolean
+                    description: Whether this user is the same as the authenticated user.
+                  permissionId:
+                    type: string
+                    description: The user's ID as visible in Permission resources.
+                  photoLink:
+                    type: string
+                    description: A link to the user's profile photo.
+              capabilities:
+                type: object
+                description: Capabilities the current user has on the file.
+                properties:
+                  canAcceptOwnership:
+                    type: boolean
+                  canAddChildren:
+                    type: boolean
+                  canAddMyDriveParent:
+                    type: boolean
+                  canChangeCopyRequiresWriterPermission:
+                    type: boolean
+                  canChangeItemDownloadRestriction:
+                    type: boolean
+                  canChangeSecurityUpdateEnabled:
+                    type: boolean
+                  canChangeViewersCanCopyContent:
+                    type: boolean
+                  canComment:
+                    type: boolean
+                  canCopy:
+                    type: boolean
+                  canDelete:
+                    type: boolean
+                  canDisableInheritedPermissions:
+                    type: boolean
+                  canDownload:
+                    type: boolean
+                  canEdit:
+                    type: boolean
+                  canEnableInheritedPermissions:
+                    type: boolean
+                  canListChildren:
+                    type: boolean
+                  canModifyContent:
+                    type: boolean
+                  canModifyContentRestriction:
+                    type: boolean
+                  canModifyEditorContentRestriction:
+                    type: boolean
+                  canModifyLabels:
+                    type: boolean
+                  canModifyOwnerContentRestriction:
+                    type: boolean
+                  canMoveChildrenWithinDrive:
+                    type: boolean
+                  canMoveItemIntoTeamDrive:
+                    type: boolean
+                  canMoveItemOutOfDrive:
+                    type: boolean
+                  canMoveItemWithinDrive:
+                    type: boolean
+                  canReadLabels:
+                    type: boolean
+                  canReadRevisions:
+                    type: boolean
+                  canRemoveChildren:
+                    type: boolean
+                  canRemoveContentRestriction:
+                    type: boolean
+                  canRemoveMyDriveParent:
+                    type: boolean
+                  canRename:
+                    type: boolean
+                  canShare:
+                    type: boolean
+                  canTrash:
+                    type: boolean
+                  canUntrash:
+                    type: boolean
+    current_page_token:
+      type: string
+      description: The page token that was used for the API request.
+    next_page_token:
+      type: string
+      description: If present, indicates additional changes available with another request.
+    new_start_page_token:
+      type: string
+      description: Token that should be used for future incremental syncs.
+    headers:
+      type: object
+      description: Google-signed webhook headers forwarded from the trigger.
+    body:
+      type: object
+      description: Raw webhook payload body (if provided by Google Drive).
+    spaces:
+      type: array
+      items:
+        type: string
+      description: Drive spaces that were queried for changes.
+    subscription:
+      type: object
+      description: Metadata captured when the watch channel was created.
+      properties:
+        channel_id:
+          type: string
+          description: UUID of the notification channel.
+        resource_id:
+          type: string
+          description: An opaque ID that identifies the watched resource.
+        watch_expiration:
+          type: string
+          description: Expiration time of the watch channel in milliseconds since epoch.
+        user:
+          type: object
+          description: Information about the authenticated user.
+          properties:
+            displayName:
+              type: string
+              description: A plain text displayable name for this user.
+            emailAddress:
+              type: string
+              description: The email address of the user.
+            kind:
+              type: string
+              description: Identifies what kind of resource this is (e.g., "drive#user").
+            me:
+              type: boolean
+              description: Whether this user is the same as the authenticated user.
+            permissionId:
+              type: string
+              description: The user's ID as visible in Permission resources.
+            photoLink:
+              type: string
+              description: A link to the user's profile photo.
+extra:
+  python:
+    source: events/change_detected/change_detected.py

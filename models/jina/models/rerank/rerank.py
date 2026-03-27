@@ -1,5 +1,7 @@
 from typing import Optional
 
+from dify_plugin.entities.model.text_embedding import MultiModalContent
+from dify_plugin.interfaces.model.rerank_model import MultiModalRerankResult
 import httpx
 
 from dify_plugin import RerankModel
@@ -23,7 +25,7 @@ from dify_plugin.entities.model.rerank import (
     RerankDocument,
     RerankResult,
 )
-from models.shared.input import transform_jina_input_text
+from models.shared.input import transform_jina_input_multi_modal, transform_jina_input_text
 
 
 class JinaRerankModel(RerankModel):
@@ -101,6 +103,77 @@ class JinaRerankModel(RerankModel):
             return RerankResult(model=model, docs=rerank_documents)
         except httpx.HTTPStatusError as e:
             raise InvokeServerUnavailableError(str(e))
+
+    def _invoke_multimodal(
+        self,
+        model: str,
+        credentials: dict,
+        query: MultiModalContent,
+        docs: list[MultiModalContent],
+        score_threshold: float | None = None,
+        top_n: int | None = None,
+        user: str | None = None,
+    ) -> MultiModalRerankResult:
+        """
+        Invoke rerank model
+
+        :param model: model name
+        :param credentials: model credentials
+        :param query: search query
+        :param docs: docs for reranking
+        :param score_threshold: score threshold
+        :param top_n: top n documents to return
+        :param user: unique user id
+        :return: rerank result
+        """
+        api_key = credentials["api_key"]
+        if not api_key:
+            raise CredentialsValidateFailedError("api_key is required")
+
+        if len(docs) == 0:
+            return MultiModalRerankResult(model=model, docs=[])
+
+        base_url = credentials.get("base_url", self.api_base)
+        base_url = base_url.removesuffix("/")
+
+        url = base_url + "/rerank"
+        headers = {
+            "Authorization": f"Bearer {api_key}",
+            "Content-Type": "application/json",
+        }
+
+        data = {
+            "model": model,
+            "query": transform_jina_input_multi_modal(model, [query])[0],
+            "documents": transform_jina_input_multi_modal(model, docs),
+            "top_n": top_n,
+            "return_documents": False,
+        }
+
+        try:
+            response = httpx.post(url, headers=headers, json=data)
+            response.raise_for_status()
+            results = response.json()
+
+            rerank_documents = []
+            for result in results["results"]:
+                original_index = result["index"]
+                rerank_document = RerankDocument(
+                    index=result["index"],
+                    text=docs[original_index].content,
+                    score=result["relevance_score"],
+                )
+                if (
+                    score_threshold is None
+                    or result["relevance_score"] >= score_threshold
+                ):
+                    rerank_documents.append(rerank_document)
+
+            return MultiModalRerankResult(model=model, docs=rerank_documents)
+        except httpx.HTTPStatusError as e:
+            raise InvokeServerUnavailableError(str(e))
+        except Exception as e:
+            raise e
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """

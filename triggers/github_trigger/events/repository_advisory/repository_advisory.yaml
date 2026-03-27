@@ -1,0 +1,189 @@
+identity:
+  name: repository_advisory
+  author: langgenius
+  label:
+    en_US: Repository Advisory (Unified)
+    zh_Hans: 仓库安全公告（统一）
+    ja_JP: リポジトリアドバイザリ（統合）
+
+description:
+  en_US: Triggered when a repository security advisory is published/updated/withdrawn
+  zh_Hans: 当仓库安全公告发布/更新/撤回时触发
+  ja_JP: リポジトリのセキュリティアドバイザリの公開/更新/撤回時にトリガー
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - published
+  - updated
+  - withdrawn
+  options:
+  - value: published
+    label:
+      en_US: Published
+      zh_Hans: 已发布
+      ja_JP: 公開
+  - value: updated
+    label:
+      en_US: Updated
+      zh_Hans: 已更新
+      ja_JP: 更新
+  - value: withdrawn
+    label:
+      en_US: Withdrawn
+      zh_Hans: 已撤回
+      ja_JP: 撤回
+  description:
+    en_US: Multi select filter for advisory lifecycle such as published updated withdrawn.
+    zh_Hans: 多选过滤安全公告生命周期 如 发布 更新 撤回。
+    ja_JP: アドバイザリのライフサイクルを複数選択で絞り込み。公開 更新 撤回。
+
+- name: severity
+  label:
+    en_US: Severity
+    zh_Hans: 严重程度
+    ja_JP: 重大度
+  type: select
+  required: false
+  multiple: true
+  options:
+  - value: critical
+    label:
+      en_US: Critical
+      zh_Hans: 严重
+      ja_JP: クリティカル
+  - value: high
+    label:
+      en_US: High
+      zh_Hans: 高
+      ja_JP: 高
+  - value: moderate
+    label:
+      en_US: Moderate
+      zh_Hans: 中
+      ja_JP: 中
+  - value: low
+    label:
+      en_US: Low
+      zh_Hans: 低
+      ja_JP: 低
+
+- name: ghsa_id
+  label:
+    en_US: GHSA ID
+    zh_Hans: GHSA 编号
+    ja_JP: GHSA ID
+  type: string
+  required: false
+  description:
+    en_US: Exact match on GHSA IDs to include. Comma separated values allowed.
+    zh_Hans: 包含的 GHSA 编号精确匹配。支持逗号分隔。
+    ja_JP: 含める GHSA ID の完全一致。カンマ区切り可。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    repository_advisory:
+      type: object
+      properties:
+        ghsa_id:
+          type:
+          - string
+          - "null"
+        summary:
+          type:
+          - string
+          - "null"
+        description:
+          type:
+          - string
+          - "null"
+        severity:
+          type:
+          - string
+          - "null"
+        cve_id:
+          type:
+          - string
+          - "null"
+        vulnerabilities:
+          type:
+          - array
+          - "null"
+          items:
+            type: object
+            properties:
+              package:
+                type:
+                - object
+                - "null"
+                properties:
+                  ecosystem:
+                    type:
+                    - string
+                    - "null"
+                  name:
+                    type:
+                    - string
+                    - "null"
+              vulnerable_version_range:
+                type:
+                - string
+                - "null"
+              patched_versions:
+                type:
+                - string
+                - "null"
+      required:
+      - ghsa_id
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+    sender:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - repository_advisory
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/repository_advisory/repository_advisory.py
+  help:
+    en_US: Filter by advisory severity. Select the severities you care about.
+    zh_Hans: 按安全公告严重程度过滤。选择你关心的级别。
+    ja_JP: アドバイザリの重大度でフィルタ。関心のある重大度を選択。

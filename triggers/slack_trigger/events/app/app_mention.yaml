@@ -1,0 +1,287 @@
+identity:
+  name: "app_mention"
+  author: "langgenius"
+  label:
+    en_US: "App Mention"
+    ja_JP: "App Mention"
+    zh_Hans: "App Mention"
+description:
+  en_US: "Subscribe to only the message events that mention your app or bot. See https://api.slack.com/events/app_mention for details."
+  ja_JP: "Subscribe to only the message events that mention your app or bot. See https://api.slack.com/events/app_mention for details."
+  zh_Hans: "Subscribe to only the message events that mention your app or bot. See https://api.slack.com/events/app_mention for details."
+parameters:
+- name: channel_id
+  label:
+    en_US: Channel ID
+    zh_Hans: 频道 ID
+    ja_JP: チャンネル ID
+  type: string
+  required: false
+  description:
+    en_US: "Comma-separated channel IDs to filter (e.g. C01234567). Leave empty to accept mentions in all channels."
+    zh_Hans: "要过滤的频道 ID（逗号分隔）。留空表示接受所有频道的提及。"
+    ja_JP: "フィルタするチャンネル ID（カンマ区切り）。空の場合は全チャンネルのメンションを許可。"
+- name: user_id
+  label:
+    en_US: User ID
+    zh_Hans: 用户 ID
+    ja_JP: ユーザー ID
+  type: string
+  required: false
+  description:
+    en_US: "Comma-separated Slack user IDs. Only trigger when the mention is from one of these users."
+    zh_Hans: "要过滤的用户 ID（逗号分隔）。仅当提及来自这些用户时触发。"
+    ja_JP: "ユーザー ID（カンマ区切り）。これらのユーザーからのメンションのみトリガー。"
+- name: text_contains
+  label:
+    en_US: Text Contains
+    zh_Hans: 文本包含
+    ja_JP: テキストを含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the mention text contains this substring. Leave empty to accept all mention messages."
+    zh_Hans: "仅当提及文本包含此子字符串时触发。留空表示不过滤。"
+    ja_JP: "メンションテキストがこの文字列を含む場合のみトリガー。空の場合は全メンションを許可。"
+output_schema:
+  type: "object"
+  properties:
+    event_topic:
+      type: "string"
+      description: "Slack event topic identifier."
+    event_type:
+      type: "string"
+      description: "Slack event type value reported in the payload."
+    event_id:
+      type: "string"
+      description: "Unique Slack event ID."
+    team_id:
+      type: "string"
+      description: "Slack workspace team ID."
+    api_app_id:
+      type: "string"
+      description: "Slack application ID receiving the event."
+    event_time:
+      type: "string"
+      description: "Event timestamp provided by Slack."
+    event_context:
+      type: "string"
+      description: "Slack event context reference."
+    authorizations:
+      type: "array"
+      description: "Authorizations included in the event envelope."
+      items:
+        type: "object"
+        properties:
+          enterprise_id:
+            type: "string"
+            description: "Enterprise ID if enterprise install."
+          is_bot:
+            type: "boolean"
+            description: "Whether the authorization is for a bot user."
+          is_enterprise_install:
+            type: "boolean"
+            description: "Whether this is an enterprise installation."
+          team_id:
+            type: "string"
+            description: "Team ID for the authorization."
+          user_id:
+            type: "string"
+            description: "User ID for the authorization."
+    authed_users:
+      type: "array"
+      description: "Authed user identifiers granted to this app."
+      items:
+        type: "string"
+    authed_teams:
+      type: "array"
+      description: "Authed team identifiers granted to this app."
+      items:
+        type: "string"
+    is_ext_shared_channel:
+      type: "boolean"
+      description: "Whether the event originated from an externally shared channel."
+    channel_type:
+      type: "string"
+      description: "Channel classification associated with the event when applicable."
+    summary:
+      type: "string"
+      description: "Short description of the Slack event."
+    doc_url:
+      type: "string"
+      description: "Documentation URL for the Slack event."
+    scopes_required:
+      type: "array"
+      description: "OAuth scopes required to receive this event."
+      items:
+        type: "string"
+    tokens_allowed:
+      type: "array"
+      description: "Token types allowed to subscribe to this event."
+      items:
+        type: "string"
+    tags:
+      type: "array"
+      description: "Slack metadata tags describing the event."
+      items:
+        type: "string"
+    event_body:
+      type: "object"
+      description: "Sanitized Slack event body content."
+      properties:
+        type:
+          type: "string"
+          description: "Event type (app_mention)."
+        user:
+          type: "string"
+          description: "ID of the user who mentioned the app."
+        text:
+          type: "string"
+          description: "Message text containing the mention."
+        ts:
+          type: "string"
+          description: "Timestamp of the message."
+        channel:
+          type: "string"
+          description: "Channel ID where the mention occurred."
+        team:
+          type: "string"
+          description: "Team ID where the event occurred."
+        event_ts:
+          type: "string"
+          description: "Event timestamp."
+        client_msg_id:
+          type: "string"
+          description: "Client message ID."
+        blocks:
+          type: "array"
+          description: "Structured blocks containing message content."
+          items:
+            type: "object"
+            properties:
+              block_id:
+                type: "string"
+                description: "Unique identifier for the block."
+              type:
+                type: "string"
+                description: "Block type (e.g., rich_text)."
+              elements:
+                type: "array"
+                description: "Elements within the block."
+                items:
+                  type: "object"
+                  properties:
+                    elements:
+                      type: "array"
+                      description: "Nested elements within the element."
+                      items:
+                        type: "object"
+    raw_payload:
+      type: "object"
+      description: "Sanitized Slack event envelope received from Slack."
+      properties:
+        api_app_id:
+          type: "string"
+          description: "Slack application ID."
+        authorizations:
+          type: "array"
+          description: "Authorization details."
+          items:
+            type: "object"
+            properties:
+              enterprise_id:
+                type: "string"
+                description: "Enterprise ID if enterprise install."
+              is_bot:
+                type: "boolean"
+                description: "Whether the authorization is for a bot user."
+              is_enterprise_install:
+                type: "boolean"
+                description: "Whether this is an enterprise installation."
+              team_id:
+                type: "string"
+                description: "Team ID for the authorization."
+              user_id:
+                type: "string"
+                description: "User ID for the authorization."
+        event:
+          type: "object"
+          description: "The actual event data."
+          properties:
+            blocks:
+              type: "array"
+              description: "Message blocks."
+              items:
+                type: "object"
+                properties:
+                  block_id:
+                    type: "string"
+                    description: "Block identifier."
+            channel:
+              type: "string"
+              description: "Channel ID."
+            client_msg_id:
+              type: "string"
+              description: "Client message ID."
+            event_ts:
+              type: "string"
+              description: "Event timestamp."
+            team:
+              type: "string"
+              description: "Team ID."
+            text:
+              type: "string"
+              description: "Message text."
+            ts:
+              type: "string"
+              description: "Message timestamp."
+            type:
+              type: "string"
+              description: "Event type."
+            user:
+              type: "string"
+              description: "User ID who triggered the event."
+        event_context:
+          type: "string"
+          description: "Event context string."
+        event_id:
+          type: "string"
+          description: "Unique event identifier."
+        event_time:
+          type: "number"
+          description: "Unix timestamp of the event."
+        is_ext_shared_channel:
+          type: "boolean"
+          description: "Whether from externally shared channel."
+        team_id:
+          type: "string"
+          description: "Team ID."
+        token:
+          type: "string"
+          description: "Verification token."
+        type:
+          type: "string"
+          description: "Callback type (event_callback)."
+  required:
+    - "event_topic"
+    - "event_type"
+    - "event_id"
+    - "team_id"
+    - "api_app_id"
+    - "event_time"
+    - "event_context"
+    - "authorizations"
+    - "authed_users"
+    - "authed_teams"
+    - "is_ext_shared_channel"
+    - "channel_type"
+    - "summary"
+    - "doc_url"
+    - "scopes_required"
+    - "tokens_allowed"
+    - "tags"
+    - "event_body"
+    - "raw_payload"
+extra:
+  python:
+    source: "events/app/app_mention.py"

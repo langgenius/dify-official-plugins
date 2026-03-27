@@ -1,0 +1,96 @@
+identity:
+  name: department_updated_v3
+  author: langgenius
+  label:
+    en_US: Department Updated
+    zh_Hans: 部门信息更新
+    ja_JP: 部門情報更新
+
+description:
+  en_US: Fires when department metadata changes, providing both the new structure and the previous state for comparison.
+  zh_Hans: 当部门元数据发生变化时触发，提供新结构与之前状态以供对比。
+  ja_JP: 部門メタデータが変更された際に発火し、新旧の状態を比較できるように提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    department_id:
+      type: string
+      description: Department ID
+
+    open_department_id:
+      type: string
+      description: Open department ID
+
+    name:
+      type: string
+      description: Department name
+
+    parent_department_id:
+      type: string
+      description: Parent department ID
+
+    leader_user_id:
+      type: string
+      description: Department leader user ID
+
+    chat_id:
+      type: string
+      description: Associated group chat ID
+
+    order:
+      type: integer
+      description: Department order value
+
+    unit_ids:
+      type: array
+      description: Associated unit IDs
+      items:
+        type: string
+
+    is_deleted:
+      type: boolean
+      description: Whether the department is marked as deleted
+
+    leaders:
+      type: array
+      description: Department leader assignments
+      items:
+        type: object
+        properties:
+          leader_type:
+            type: integer
+            description: Leader type value
+          leader_id:
+            type: string
+            description: Leader identifier
+
+    department_hrbps:
+      type: array
+      description: HRBP users for the department
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+            description: User ID
+          open_id:
+            type: string
+            description: Open ID
+          union_id:
+            type: string
+            description: Union ID
+
+    current_department_json:
+      type: object
+      description: Current department snapshot
+
+    previous_department_json:
+      type: object
+      description: Previous department snapshot before the update
+
+extra:
+  python:
+    source: events/contact/department_updated_v3.py

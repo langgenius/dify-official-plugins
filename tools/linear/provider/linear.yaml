@@ -51,6 +51,17 @@ tools:
   - tools/linear_get_users.yaml
   - tools/linear_get_teams.yaml
   - tools/linear_get_my_profile.yaml
+  - tools/linear_list_projects.yaml
+  - tools/linear_list_cycles.yaml
+  - tools/linear_list_documents.yaml
+  - tools/linear_list_issue_labels.yaml
+  - tools/linear_list_issue_statuses.yaml
+  - tools/linear_list_project_labels.yaml
+  - tools/linear_get_issue.yaml
+  - tools/linear_get_project.yaml
+  - tools/linear_get_team.yaml
+  - tools/linear_get_user.yaml
+  - tools/linear_get_document.yaml
 extra:
   python:
     source: provider/linear.py

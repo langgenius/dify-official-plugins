@@ -1,0 +1,5 @@
+path: "/"
+method: "POST"
+extra:
+  python:
+    source: "endpoints/wecom_message.py"

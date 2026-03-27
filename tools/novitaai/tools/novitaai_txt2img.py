@@ -22,19 +22,15 @@ class NovitaAiTxt2ImgTool(Tool, NovitaAiToolBase):
         client = NovitaClient(api_key=api_key)
         param = self._process_parameters(tool_parameters)
         client_result = client.txt2img_v3(**param)
-        results = []
         for image_encoded, image in zip(client_result.images_encoded, client_result.images):
             if self._is_hit_nsfw_detection(image, 0.8):
-                results = self.create_text_message(text="NSFW detected!")
-                break
-            results.append(
-                self.create_blob_message(
+                yield self.create_text_message(text="NSFW detected!")
+            else:
+                yield self.create_blob_message(
                     blob=b64decode(image_encoded),
                     meta={"mime_type": f"image/{image.image_type}"},
-                    save_as=self.VariableKey.IMAGE.value,
                 )
-            )
-        yield results
+
 
     def _process_parameters(self, parameters: dict[str, Any]) -> dict[str, Any]:
         """

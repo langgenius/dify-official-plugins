@@ -33,6 +33,23 @@ parameters:
       zh_Hant: 新 Notion 頁面的標題
     llm_description: Title for the new Notion page.
     form: llm
+  - name: title_property_name
+    type: string
+    required: false
+    label:
+      en_US: Title Property Name
+      zh_Hans: 标题属性名称
+      pt_BR: Nome da Propriedade do Título
+      ja_JP: タイトルプロパティ名
+      zh_Hant: 標題屬性名稱
+    human_description:
+      en_US: Custom title field name for database pages (e.g., "Task Name", "Project Title"). Defaults to "Name" if not specified.
+      zh_Hans: 数据库页面的自定义标题字段名称（例如"任务名称"、"项目标题"）。如果未指定，默认为"Name"。
+      pt_BR: Nome do campo de título personalizado para páginas de banco de dados. Padrão para "Name" se não especificado.
+      ja_JP: データベースページのカスタムタイトルフィールド名。指定しない場合はデフォルトで「Name」になります。
+      zh_Hant: 資料庫頁面的自訂標題欄位名稱。如果未指定，預設為「Name」。
+    llm_description: The name of the Title property in your Notion database. This is customizable - common names include "Name", "Task Name", "Project Title", etc. If not provided, defaults to "Name".
+    form: llm
   - name: content
     type: string
     required: true
@@ -68,9 +85,31 @@ parameters:
     llm_description: Optional ID of the parent page or database where the new page will be created. If not provided, the page will be created at the top level.
     form: llm
   - name: parent_type
-    type: string
+    type: select
     required: false
     default: page
+    options:
+      - label:
+          en_US: page
+          zh_Hans: 页面
+          pt_BR: Página
+          ja_JP: ページ
+          zh_Hant: 頁面
+        value: page
+      - label:
+          en_US: database
+          zh_Hans: 数据库
+          pt_BR: Banco de Dados
+          ja_JP: データベース
+          zh_Hant: 資料庫
+        value: database
+      - label:
+          en_US: data_source
+          zh_Hans: 数据源
+          pt_BR: Fonte de Dados
+          ja_JP: データソース
+          zh_Hant: 資料來源
+        value: data_source
     label:
       en_US: Parent Type
       zh_Hans: 父级类型
@@ -78,13 +117,13 @@ parameters:
       ja_JP: 親タイプ
       zh_Hant: 父級類型
     human_description:
-      en_US: Type of parent (page or database)
-      zh_Hans: 父级的类型（页面或数据库）
-      pt_BR: Tipo de pai (página ou banco de dados)
-      ja_JP: 親のタイプ（ページまたはデータベース）
-      zh_Hant: 父級的類型（頁面或資料庫）
-    llm_description: Type of the parent - either 'page' or 'database'. Default is 'page'. This determines how the new page will be created.
+      en_US: Type of parent (page, database, or data_source)
+      zh_Hans: 父级的类型（页面、数据库或数据源）
+      pt_BR: Tipo de pai (página, banco de dados ou fonte de dados)
+      ja_JP: 親のタイプ（ページ、データベース、またはデータソース）
+      zh_Hant: 父級的類型（頁面、資料庫或資料來源）
+    llm_description: Type of the parent - 'page', 'database', or 'data_source'. Default is 'page'. For Notion API 2025-09-03, 'database' will be automatically converted to 'data_source'. Use 'data_source' if you have a specific data source ID.
     form: llm
 extra:
   python:
-    source: tools/create_page.py 
+    source: tools/create_page.py

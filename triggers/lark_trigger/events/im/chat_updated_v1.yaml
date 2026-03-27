@@ -1,0 +1,57 @@
+identity:
+  name: chat_updated_v1
+  author: langgenius
+  label:
+    en_US: Chat Updated
+    zh_Hans: 群聊更新
+    ja_JP: チャット更新
+
+description:
+  en_US: This event activates when a chat group's information is modified, providing details about the changes made.
+  zh_Hans: 当群聊信息被修改时激活，提供所做更改的详细信息。
+  ja_JP: チャットグループの情報が変更されたときにアクティブになり、変更内容の詳細を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    chat_id:
+      type: string
+      description: ID of the updated chat
+    
+    external:
+      type: string
+      description: Whether the chat is external
+    
+    operator_tenant_key:
+      type: string
+      description: Tenant key of the operator
+    
+    operator_user_id:
+      type: string
+      description: User ID of the operator who updated the chat
+    
+    operator_open_id:
+      type: string
+      description: Open ID of the operator
+    
+    operator_union_id:
+      type: string
+      description: Union ID of the operator
+    
+    before_change:
+      type: string
+      description: Chat info before the change (JSON format)
+    
+    after_change:
+      type: string
+      description: Chat info after the change (JSON format)
+    
+    moderator_changes:
+      type: string
+      description: Changes to moderator list (JSON format with added/removed)
+
+extra:
+  python:
+    source: events/im/chat_updated_v1.py

@@ -1,0 +1,117 @@
+identity:
+  name: customer_created
+  author: langgenius
+  label:
+    en_US: Customer Created
+    zh_Hans: 客户创建
+    ja_JP: カスタマー作成
+description:
+  en_US: Triggers when a customer is created
+  zh_Hans: 当在 Linear 中创建新的客户时触发
+  ja_JP: Linear で新しいカスタマーが作成されたときにトリガーされます
+parameters:
+- name: name_contains
+  label:
+    en_US: Name Contains
+    zh_Hans: 名称包含
+    ja_JP: 名前に含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the customer name includes specific keywords (comma-separated)."
+    zh_Hans: "仅当客户名称包含指定关键词时触发（逗号分隔）。"
+    ja_JP: "カスタマー名に指定したキーワードが含まれる場合のみトリガーします（カンマ区切り）。"
+- name: status_filter
+  label:
+    en_US: Status Filter
+    zh_Hans: 状态过滤
+    ja_JP: ステータスフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Restrict to customers in specific statuses (comma-separated status IDs or names)."
+    zh_Hans: "仅当客户状态属于指定值时触发（逗号分隔的状态 ID 或名称）。"
+    ja_JP: "指定したステータス（ID または名前）のカスタマーのみ対象にします（カンマ区切り）。"
+- name: tier_filter
+  label:
+    en_US: Tier Filter
+    zh_Hans: 等级过滤
+    ja_JP: ティアーフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the customer tier matches provided IDs or names (comma-separated)."
+    zh_Hans: "仅当客户等级匹配指定 ID 或名称时触发（逗号分隔）。"
+    ja_JP: "カスタマーティアーが指定した ID または名前に一致する場合のみトリガーします（カンマ区切り）。"
+- name: owner_filter
+  label:
+    en_US: Owner Filter
+    zh_Hans: 负责人过滤
+    ja_JP: オーナーフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the customer owner matches the provided user IDs (comma-separated)."
+    zh_Hans: "仅当客户负责人匹配指定用户 ID 时触发（逗号分隔）。"
+    ja_JP: "カスタマーのオーナーが指定ユーザー ID に一致する場合のみトリガーします（カンマ区切り）。"
+- name: domain_contains
+  label:
+    en_US: Domain Contains
+    zh_Hans: 域名包含
+    ja_JP: ドメインに含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when any of the customer's domains include the given keywords (comma-separated)."
+    zh_Hans: "仅当客户的域名包含指定关键词时触发（逗号分隔）。"
+    ja_JP: "カスタマードメインに指定したキーワードが含まれる場合のみトリガーします（カンマ区切り）。"
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [create]
+    type:
+      type: string
+      enum: [Customer]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        domains:
+          type: array
+        ownerId:
+          type: string
+        statusId:
+          type: string
+        status:
+          type: object
+        tierId:
+          type: string
+        tier:
+          type: object
+        revenue:
+          type: number
+        size:
+          type: number
+        slackChannelId:
+          type: string
+        approximateNeedCount:
+          type: number
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        archivedAt:
+          type: string
+        url:
+          type: string
+    actor:
+      type: object
+  required: [action, type, data]
+extra:
+  python:
+    source: events/customer/customer_created.py

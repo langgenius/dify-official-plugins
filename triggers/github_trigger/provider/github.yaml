@@ -1,0 +1,513 @@
+subscription_schema:
+- name: "webhook_secret"
+  type: "secret-input"
+  required: false
+  label:
+    zh_Hans: "Webhook Secret"
+    en_US: "Webhook Secret"
+    ja_JP: "Webhookシークレット"
+  help:
+    en_US: "Optional secret used to validate incoming GitHub webhook requests. If Dify creates the webhook for you, a random secret is generated automatically and stored with the subscription. If you configure the webhook manually under Repository Settings → Webhooks, set the same secret there and paste it here to enable signature verification."
+    ja_JP: "受信する GitHub Webhook リクエストの検証に使用する任意のシークレット。Dify が Webhook を作成する場合はランダムなシークレットが自動生成されサブスクリプションに保存されます。リポジトリの Settings → Webhooks で手動設定する場合は同じシークレットを設定し、ここに貼り付けて署名検証を有効化してください。"
+    zh_Hans: "用于验证 GitHub Webhook 请求的可选密钥。若由 Dify 代为创建 Webhook，将自动生成并保存随机密钥。若你在仓库 设置 → Webhooks 中手动配置，请在 GitHub 中设置同样的密钥并粘贴到此处以启用签名校验。"
+  url: https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
+
+subscription_constructor:
+  parameters:
+  - name: "repository"
+    label:
+      en_US: "Repository"
+      zh_Hans: "仓库"
+      ja_JP: "リポジトリ"
+    type: "dynamic-select"
+    required: true
+    placeholder:
+      en_US: "owner/repo"
+      zh_Hans: "owner/repo"
+      ja_JP: "owner/repo"
+    description:
+      en_US: "GitHub repository in format owner/repo (e.g., microsoft/vscode)"
+      zh_Hans: "GitHub 仓库，格式为 owner/repo（例如：microsoft/vscode）"
+      ja_JP: "GitHubリポジトリは owner/repo 形式で入力してください（例: microsoft/vscode）"
+
+  - name: "events"
+    label:
+      en_US: "Events"
+      zh_Hans: "事件"
+      ja_JP: "イベント"
+    type: "checkbox"
+    required: true
+    multiple: true
+    default:
+    - "branch_protection_configuration"
+    - "branch_protection_rule"
+    - "check_run"
+    - "check_suite"
+    - "code_scanning_alert"
+    - "commit_comment"
+    - "create"
+    - "custom_property_values"
+    - "delete"
+    - "dependabot_alert"
+    - "deploy_key"
+    - "deployment"
+    - "deployment_status"
+    - "discussion"
+    - "discussion_comment"
+    - "fork"
+    - "gollum"
+    - "issue_comment"
+    - "issue_dependencies"
+    - "issues"
+    - "label"
+    - "member"
+    - "merge_group"
+    - "meta"
+    - "milestone"
+    - "package"
+    - "page_build"
+    - "ping"
+    - "project_card"
+    - "project"
+    - "project_column"
+    - "public"
+    - "pull_request"
+    - "pull_request_review_comment"
+    - "pull_request_review"
+    - "pull_request_review_thread"
+    - "push"
+    - "registry_package"
+    - "release"
+    - "repository_advisory"
+    - "repository"
+    - "repository_import"
+    - "repository_ruleset"
+    - "repository_vulnerability_alert"
+    - "secret_scanning_alert"
+    - "secret_scanning_alert_location"
+    - "secret_scanning_scan"
+    - "security_and_analysis"
+    - "star"
+    - "status"
+    - "sub_issues"
+    - "watch"
+    - "workflow_job"
+    - "workflow_run"
+    options:
+    - value: "branch_protection_configuration"
+      label:
+        en_US: "Branch Protection Configuration"
+        zh_Hans: "分支保护配置"
+        ja_JP: "ブランチ保護設定"
+    - value: "branch_protection_rule"
+      label:
+        en_US: "Branch Protection Rule"
+        zh_Hans: "分支保护规则"
+        ja_JP: "ブランチ保護ルール"
+    - value: "check_run"
+      label:
+        en_US: "Check Run"
+        zh_Hans: "检查运行"
+        ja_JP: "チェック実行"
+    - value: "check_suite"
+      label:
+        en_US: "Check Suite"
+        zh_Hans: "检查套件"
+        ja_JP: "チェックスイート"
+    - value: "code_scanning_alert"
+      label:
+        en_US: "Code Scanning Alert"
+        zh_Hans: "代码扫描警报"
+        ja_JP: "コードスキャンアラート"
+    - value: "commit_comment"
+      label:
+        en_US: "Commit Comment"
+        zh_Hans: "提交评论"
+        ja_JP: "コミットコメント"
+    - value: "create"
+      label:
+        en_US: "Create (Branch/Tag)"
+        zh_Hans: "创建（分支/标签）"
+        ja_JP: "作成（ブランチ/タグ）"
+    - value: "custom_property_values"
+      label:
+        en_US: "Custom Property Values"
+        zh_Hans: "自定义属性值"
+        ja_JP: "カスタムプロパティ値"
+    - value: "delete"
+      label:
+        en_US: "Delete (Branch/Tag)"
+        zh_Hans: "删除（分支/标签）"
+        ja_JP: "削除（ブランチ/タグ）"
+    - value: "dependabot_alert"
+      label:
+        en_US: "Dependabot Alert"
+        zh_Hans: "Dependabot 警报"
+        ja_JP: "Dependabotアラート"
+    - value: "deploy_key"
+      label:
+        en_US: "Deploy Key"
+        zh_Hans: "部署密钥"
+        ja_JP: "デプロイキー"
+    - value: "deployment"
+      label:
+        en_US: "Deployment"
+        zh_Hans: "部署"
+        ja_JP: "デプロイメント"
+    - value: "deployment_status"
+      label:
+        en_US: "Deployment Status"
+        zh_Hans: "部署状态"
+        ja_JP: "デプロイメントステータス"
+    - value: "discussion"
+      label:
+        en_US: "Discussion"
+        zh_Hans: "讨论"
+        ja_JP: "ディスカッション"
+    - value: "discussion_comment"
+      label:
+        en_US: "Discussion Comment"
+        zh_Hans: "讨论评论"
+        ja_JP: "ディスカッションコメント"
+    - value: "fork"
+      label:
+        en_US: "Fork"
+        zh_Hans: "Fork"
+        ja_JP: "フォーク"
+    - value: "gollum"
+      label:
+        en_US: "Gollum (Wiki)"
+        zh_Hans: "Wiki 页面"
+        ja_JP: "Gollum（Wiki）"
+    - value: "issue_comment"
+      label:
+        en_US: "Issue Comment"
+        zh_Hans: "议题评论"
+        ja_JP: "イシューコメント"
+    - value: "issue_dependencies"
+      label:
+        en_US: "Issue Dependencies"
+        zh_Hans: "议题依赖"
+        ja_JP: "イシュー依存関係"
+    - value: "issues"
+      label:
+        en_US: "Issues"
+        zh_Hans: "议题"
+        ja_JP: "イシュー"
+    - value: "label"
+      label:
+        en_US: "Label"
+        zh_Hans: "标签"
+        ja_JP: "ラベル"
+    - value: "member"
+      label:
+        en_US: "Member"
+        zh_Hans: "成员"
+        ja_JP: "メンバー"
+    - value: "merge_group"
+      label:
+        en_US: "Merge Group"
+        zh_Hans: "合并组"
+        ja_JP: "マージグループ"
+    - value: "meta"
+      label:
+        en_US: "Meta"
+        zh_Hans: "元数据"
+        ja_JP: "メタ"
+    - value: "milestone"
+      label:
+        en_US: "Milestone"
+        zh_Hans: "里程碑"
+        ja_JP: "マイルストーン"
+    - value: "package"
+      label:
+        en_US: "Package"
+        zh_Hans: "包"
+        ja_JP: "パッケージ"
+    - value: "page_build"
+      label:
+        en_US: "Page Build"
+        zh_Hans: "页面构建"
+        ja_JP: "ページビルド"
+    - value: "ping"
+      label:
+        en_US: "Ping"
+        zh_Hans: "Ping"
+        ja_JP: "Ping"
+    - value: "project_card"
+      label:
+        en_US: "Project Card"
+        zh_Hans: "项目卡片"
+        ja_JP: "プロジェクトカード"
+    - value: "project"
+      label:
+        en_US: "Project"
+        zh_Hans: "项目"
+        ja_JP: "プロジェクト"
+    - value: "project_column"
+      label:
+        en_US: "Project Column"
+        zh_Hans: "项目列"
+        ja_JP: "プロジェクトカラム"
+    - value: "public"
+      label:
+        en_US: "Public"
+        zh_Hans: "公开"
+        ja_JP: "公開"
+    - value: "pull_request"
+      label:
+        en_US: "Pull Request"
+        zh_Hans: "拉取请求"
+        ja_JP: "プルリクエスト"
+    - value: "pull_request_review_comment"
+      label:
+        en_US: "Pull Request Review Comment"
+        zh_Hans: "拉取请求审查评论"
+        ja_JP: "プルリクエストレビューコメント"
+    - value: "pull_request_review"
+      label:
+        en_US: "Pull Request Review"
+        zh_Hans: "拉取请求审查"
+        ja_JP: "プルリクエストレビュー"
+    - value: "pull_request_review_thread"
+      label:
+        en_US: "Pull Request Review Thread"
+        zh_Hans: "拉取请求审查线程"
+        ja_JP: "プルリクエストレビュースレッド"
+    - value: "push"
+      label:
+        en_US: "Push"
+        zh_Hans: "推送"
+        ja_JP: "プッシュ"
+    - value: "registry_package"
+      label:
+        en_US: "Registry Package"
+        zh_Hans: "注册包"
+        ja_JP: "レジストリパッケージ"
+    - value: "release"
+      label:
+        en_US: "Release"
+        zh_Hans: "发布"
+        ja_JP: "リリース"
+    - value: "repository_advisory"
+      label:
+        en_US: "Repository Advisory"
+        zh_Hans: "仓库安全公告"
+        ja_JP: "リポジトリアドバイザリ"
+    - value: "repository"
+      label:
+        en_US: "Repository"
+        zh_Hans: "仓库"
+        ja_JP: "リポジトリ"
+    - value: "repository_import"
+      label:
+        en_US: "Repository Import"
+        zh_Hans: "仓库导入"
+        ja_JP: "リポジトリインポート"
+    - value: "repository_ruleset"
+      label:
+        en_US: "Repository Ruleset"
+        zh_Hans: "仓库规则集"
+        ja_JP: "リポジトリルールセット"
+    - value: "repository_vulnerability_alert"
+      label:
+        en_US: "Repository Vulnerability Alert"
+        zh_Hans: "仓库漏洞警报"
+        ja_JP: "リポジトリ脆弱性アラート"
+    - value: "secret_scanning_alert"
+      label:
+        en_US: "Secret Scanning Alert"
+        zh_Hans: "秘密扫描警报"
+        ja_JP: "シークレットスキャンアラート"
+    - value: "secret_scanning_alert_location"
+      label:
+        en_US: "Secret Scanning Alert Location"
+        zh_Hans: "秘密扫描警报位置"
+        ja_JP: "シークレットスキャンアラート位置"
+    - value: "secret_scanning_scan"
+      label:
+        en_US: "Secret Scanning Scan"
+        zh_Hans: "秘密扫描"
+        ja_JP: "シークレットスキャン"
+    - value: "security_and_analysis"
+      label:
+        en_US: "Security and Analysis"
+        zh_Hans: "安全与分析"
+        ja_JP: "セキュリティと分析"
+    - value: "star"
+      label:
+        en_US: "Star"
+        zh_Hans: "星标"
+        ja_JP: "スター"
+    - value: "status"
+      label:
+        en_US: "Status"
+        zh_Hans: "状态"
+        ja_JP: "ステータス"
+    - value: "sub_issues"
+      label:
+        en_US: "Sub Issues"
+        zh_Hans: "子议题"
+        ja_JP: "サブイシュー"
+    - value: "watch"
+      label:
+        en_US: "Watch"
+        zh_Hans: "关注"
+        ja_JP: "ウォッチ"
+    - value: "workflow_job"
+      label:
+        en_US: "Workflow Job"
+        zh_Hans: "工作流任务"
+        ja_JP: "ワークフロージョブ"
+    - value: "workflow_run"
+      label:
+        en_US: "Workflow Run"
+        zh_Hans: "工作流运行"
+        ja_JP: "ワークフロー実行"
+  credentials_schema:
+    access_tokens:
+      help:
+        en_US: Get your Access Tokens from GitHub
+        ja_JP: GitHub からアクセストークンを取得してください
+        zh_Hans: 从 GitHub 获取您的 Access Tokens
+      label:
+        en_US: Access Tokens
+        ja_JP: アクセストークン
+        zh_Hans: Access Tokens
+      placeholder:
+        en_US: Please input your GitHub Access Tokens
+        ja_JP: GitHub のアクセストークンを入力してください
+        zh_Hans: 请输入你的 GitHub Access Tokens
+      required: true
+      type: secret-input
+      url: https://github.com/settings/tokens?type=beta
+  oauth_schema:
+    client_schema:
+    - name: "client_id"
+      type: "secret-input"
+      required: true
+      url: https://github.com/settings/applications/new
+      placeholder:
+        en_US: "Please input your Client ID"
+        zh_Hans: "请输入你的 Client ID"
+        ja_JP: "クライアントIDを入力してください"
+      help:
+        en_US: "Client ID is used to authenticate requests to the GitHub API."
+        zh_Hans: "Client ID 用于认证请求到 GitHub API。"
+        ja_JP: "クライアントIDはGitHub APIへのリクエスト認証に使用されます。"
+      label:
+        zh_Hans: "Client ID"
+        en_US: "Client ID"
+        ja_JP: "クライアントID"
+    - name: "client_secret"
+      type: "secret-input"
+      required: true
+      url: https://github.com/settings/applications/new
+      placeholder:
+        en_US: "Please input your Client Secret"
+        zh_Hans: "请输入你的 Client Secret"
+        ja_JP: "クライアントシークレットを入力してください"
+      help:
+        en_US: "Client Secret is used to authenticate requests to the GitHub API."
+        zh_Hans: "Client Secret 用于认证请求到 GitHub API。"
+        ja_JP: "クライアントシークレットはGitHub APIへのリクエスト認証に使用されます。"
+      label:
+        zh_Hans: "Client Secret"
+        en_US: "Client Secret"
+        ja_JP: "クライアントシークレット"
+    - name: "scope"
+      type: "text-input"
+      required: false
+      default: "read:user admin:repo_hook"
+      url: https://docs.github.com/en/apps/oauth-apps/building-oauth-apps/scopes-for-oauth-apps
+      placeholder:
+        en_US: "read:user admin:repo_hook"
+        zh_Hans: "read:user admin:repo_hook"
+        ja_JP: "read:user admin:repo_hook"
+      help:
+        en_US: "OAuth scopes for GitHub API access. Default: read:user admin:repo_hook"
+        zh_Hans: "GitHub API 访问的 OAuth 作用域。默认：read:user admin:repo_hook"
+        ja_JP: "GitHub API アクセスの OAuth スコープ。デフォルト：read:user admin:repo_hook"
+      label:
+        zh_Hans: "OAuth Scope"
+        en_US: "OAuth Scope"
+        ja_JP: "OAuth スコープ"
+    credentials_schema:
+    - name: "access_tokens"
+      type: "secret-input"
+      label:
+        zh_Hans: "Access Token"
+        en_US: "Access Token"
+        ja_JP: "アクセストークン"
+  extra:
+    python:
+      source: provider/github.py
+
+events:
+- events/issues/issues.yaml
+- events/issue_comment/issue_comment.yaml
+- events/pull_request/pull_request.yaml
+- events/star/star.yaml
+- events/pull_request_review/pull_request_review.yaml
+- events/pull_request_review_comment/pull_request_review_comment.yaml
+- events/push/push.yaml
+- events/check_suite/check_suite.yaml
+- events/check_run/check_run.yaml
+- events/workflow_run/workflow_run.yaml
+- events/workflow_job/workflow_job.yaml
+- events/deployment/deployment.yaml
+- events/deployment_status/deployment_status_created.yaml
+- events/release/release_published.yaml
+- events/ref_change/ref_change.yaml
+- events/commit_comment/commit_comment.yaml
+- events/code_scanning_alert/code_scanning_alert.yaml
+- events/secret_scanning/secret_scanning.yaml
+- events/dependabot_alert/dependabot_alert.yaml
+- events/repository_vulnerability_alert/repository_vulnerability_alert.yaml
+- events/branch_protection_configuration/branch_protection_configuration.yaml
+- events/branch_protection_rule/branch_protection_rule.yaml
+- events/repository_ruleset/repository_ruleset.yaml
+- events/watch/watch.yaml
+- events/fork/fork.yaml
+- events/label/label.yaml
+- events/milestone/milestone.yaml
+- events/discussion/discussion.yaml
+- events/discussion_comment/discussion_comment.yaml
+- events/project/project.yaml
+- events/project_column/project_column.yaml
+- events/project_card/project_card.yaml
+- events/member/member.yaml
+- events/merge_group/merge_group.yaml
+- events/meta/meta.yaml
+- events/repository/repository.yaml
+- events/repository_import/repository_import.yaml
+- events/public/public.yaml
+- events/pull_request_review_thread/pull_request_review_thread.yaml
+- events/package/package.yaml
+- events/registry_package/registry_package.yaml
+- events/page_build/page_build.yaml
+- events/ping/ping.yaml
+- events/gollum/gollum.yaml
+- events/issue_dependencies/issue_dependencies.yaml
+- events/sub_issues/sub_issues.yaml
+- events/deploy_key/deploy_key.yaml
+- events/custom_property_values/custom_property_values.yaml
+- events/security_and_analysis/security_and_analysis.yaml
+- events/repository_advisory/repository_advisory.yaml
+
+identity:
+  author: langgenius
+  description:
+    en_US: GitHub is an online software source code hosting service with webhook trigger support.
+    ja_JP: GitHub は、オンラインのソフトウェアソースコードホスティングサービスで、webhook トリガーのサポートがあります。
+    zh_Hans: GitHub 是一个在线软件源代码托管服务平台，支持 webhook 触发器。
+  icon: icon.svg
+  label:
+    en_US: GitHub Triggers
+    zh_Hans: GitHub 触发器
+    ja_JP: GitHub トリガー
+  name: github_trigger
+
+extra:
+  python:
+    source: provider/github.py

@@ -9,6 +9,7 @@ BEDROCK_TEXT_EMBEDDING_MODEL_IDS = {
     'amazon': {
         'Titan Embeddings G1 - Text': 'amazon.titan-embed-text-v1',
         'Titan Text Embeddings V2': 'amazon.titan-embed-text-v2:0',
+        'Amazon Nova Multimodal Embeddings': 'amazon.nova-2-multimodal-embeddings-v1:0',
     },
     'cohere': {
         'Embed English v3': 'cohere.embed-english-v3',

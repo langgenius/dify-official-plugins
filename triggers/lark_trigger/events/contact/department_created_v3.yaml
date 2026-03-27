@@ -1,0 +1,76 @@
+identity:
+  name: department_created_v3
+  author: langgenius
+  label:
+    en_US: New Department Created
+    zh_Hans: 新部门创建
+    ja_JP: 新部門作成
+
+description:
+  en_US: This event activates when a new department is created in the organization structure, providing department details.
+  zh_Hans: 当在组织架构中创建新部门时激活，提供部门详细信息。
+  ja_JP: 組織構造に新しい部門が作成されたときにアクティブになり、部門の詳細を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    department_id:
+      type: string
+      description: Department ID
+    
+    open_department_id:
+      type: string
+      description: Open Department ID
+    
+    parent_department_id:
+      type: string
+      description: Parent department ID
+    
+    name:
+      type: string
+      description: Department name
+    
+    chat_id:
+      type: string
+      description: Department group chat ID
+    
+    leader_user_id:
+      type: string
+      description: Department leader ID
+    
+    order:
+      type: number
+      description: Display order
+    
+    status:
+      type: string
+      description: Department status
+    
+    unit_ids:
+      type: array
+      items:
+        type: string
+      description: Unit IDs
+    
+    leaders:
+      type: array
+      items:
+        type: object
+        properties:
+          leader_type:
+            type: number
+          leader_id:
+            type: string
+      description: Department leaders
+    
+    hrbps:
+      type: array
+      items:
+        type: string
+      description: HR business partners
+
+extra:
+  python:
+    source: events/contact/department_created_v3.py

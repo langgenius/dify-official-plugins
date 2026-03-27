@@ -20,8 +20,8 @@ def test_provider_python_loadable_and_tool_present():
     assert hasattr(mod, 'DingoProvider')
 
     # tool python should be importable and define expected class and _invoke
-    tool_py = os.path.join(PLUGIN_DIR, 'tools', 'text_quality_evaluator.py')
-    tmod = load_module_from_path('dingo_text_quality_evaluator', tool_py)
-    tool_cls = getattr(tmod, 'TextQualityEvaluatorTool')
+    tool_py = os.path.join(PLUGIN_DIR, 'tools', 'keyword_matcher.py')
+    tmod = load_module_from_path('dingo_keyword_matcher', tool_py)
+    tool_cls = getattr(tmod, 'KeywordMatcher')
     assert callable(getattr(tool_cls, '_invoke'))
 

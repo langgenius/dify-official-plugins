@@ -1,0 +1,87 @@
+identity:
+  name: "dicom_model_input"
+  author: "langgenius"
+  label:
+    en_US: "DICOM Model Input"
+    zh_Hans: "模型输入处理"
+description:
+  human:
+    en_US: "Prepare the image for AI models with a standard shape [1, C, H, W]; optionally normalize and preview."
+    zh_Hans: "将影像整理为模型标准形状 [1, C, H, W]，可选归一化并预览。"
+  llm: "Report model-ready shape and emit optional preview."
+parameters:
+  - name: dicom_file
+    type: file
+    required: true
+    label:
+      en_US: "DICOM file"
+      zh_Hans: "DICOM 文件"
+    human_description:
+      en_US: "Upload the DICOM file (.dcm)."
+      zh_Hans: "上传 DICOM 文件（.dcm）。"
+    llm_description: "Provide the DICOM file."
+    form: llm
+  - name: frame_index
+    type: number
+    required: false
+    default: 0
+    label:
+      en_US: "Frame index"
+      zh_Hans: "帧索引"
+    human_description:
+      en_US: "0-based frame index to use."
+      zh_Hans: "要处理的 0 基帧索引。"
+    llm_description: "Frame index."
+    form: form
+  - name: channels_first
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: "Channels first (NCHW)"
+      zh_Hans: "通道在前（NCHW）"
+    human_description:
+      en_US: "When true, report shape as [1, C, H, W]; otherwise [1, H, W, C]."
+      zh_Hans: "为真时返回 [1, C, H, W]；否则 [1, H, W, C]。"
+    llm_description: "Whether to return NCHW or NHWC layout."
+    form: form
+  - name: normalize_0_1
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: "Normalize to [0,1]"
+      zh_Hans: "归一化到 [0,1]"
+    human_description:
+      en_US: "Min-max normalize image to [0,1]."
+      zh_Hans: "按最小-最大值将图像归一化到 [0,1]。"
+    llm_description: "Normalize intensities to [0,1]."
+    form: form
+  - name: include_preview_image
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: "Include preview"
+      zh_Hans: "包含预览"
+    human_description:
+      en_US: "Return a small PNG preview of the prepared image."
+      zh_Hans: "返回准备后的 PNG 预览。"
+    llm_description: "Set true to include preview."
+    form: form
+  - name: max_preview_edge
+    type: number
+    required: false
+    default: 256
+    label:
+      en_US: "Max preview edge"
+      zh_Hans: "预览最大边长"
+    human_description:
+      en_US: "Maximum edge size for preview image (32–1024)."
+      zh_Hans: "预览图最大边长（32–1024）。"
+    llm_description: "Maximum edge length for preview."
+    form: form
+extra:
+  python:
+    source: tools/dicom_model_input.py
+

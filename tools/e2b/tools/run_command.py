@@ -18,6 +18,9 @@ class RunCommandTool(Tool):
 
         if sandbox_id:
             args["sandbox_id"] = sandbox_id
+            
+        if domain := self.runtime.credentials.get("domain"):
+            args["domain"] = domain
 
         sandbox = Sandbox(**args)
 

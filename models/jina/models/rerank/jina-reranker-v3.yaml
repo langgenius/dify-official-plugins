@@ -1,0 +1,8 @@
+model: jina-reranker-v3
+model_type: rerank
+model_properties:
+  context_size: 131000
+pricing:
+  input: '0.05'
+  unit: '1000000'
+  currency: USD

@@ -1,0 +1,44 @@
+identity:
+  author: "langgenius"
+  name: "paddleocr_text_recognition"
+  label:
+    en_US: "PaddleOCR Text Recognition"
+    zh_Hans: "PaddleOCR 文字识别"
+  description:
+    en_US: "PaddleOCR text recognition plugin that provides text recognition capabilities for multiple scenarios and various text types"
+    zh_Hans: "PaddleOCR 文字识别插件，提供多场景、多文字类型的文字识别能力"
+  icon: "icon.png"
+
+tools:
+  - tools/paddleocr_text_recognition.yaml
+extra:
+  python:
+    source: provider/paddleocr_text_recognition.py
+
+credentials_for_provider:
+    api_url:
+        type: text-input
+        required: true
+        label:
+            en_US: API URL
+            zh_Hans: API URL
+        placeholder:
+            en_US: API URL
+            zh_Hans: API URL
+        help:
+            en_US: Click the "API" button in the upper-left corner, select "Text recognition(PP-OCRv5)", and copy the `API_URL`.
+            zh_Hans: 点击左上角的“API”，选择“文字识别（PP-OCRv5）”并复制`API_URL`
+        url: https://aistudio.baidu.com/paddleocr/task
+    aistudio_access_token:
+        type: secret-input
+        required: true
+        label:
+            en_US: AI Studio Access Token
+            zh_Hans: 星河社区访问令牌
+        placeholder:
+            en_US: AI Studio Access Token
+            zh_Hans: 请输入您的星河社区访问令牌
+        help:
+            en_US: Get your AI Studio access token
+            zh_Hans: 获取星河社区访问令牌
+        url: https://aistudio.baidu.com/index/accessToken

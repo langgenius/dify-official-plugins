@@ -1,0 +1,54 @@
+identity:
+  name: file_title_updated_v1
+  author: langgenius
+  label:
+    en_US: File Title Updated
+    zh_Hans: 文件标题更新
+    ja_JP: ファイルタイトル更新
+
+description:
+  en_US: This event activates when a file's title is changed.
+  zh_Hans: 当文件标题被更改时激活。
+  ja_JP: ファイルのタイトルが変更されたときにアクティブになります。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    file_token:
+      type: string
+      description: Token of the updated file
+    
+    file_type:
+      type: string
+      description: Type of the updated file
+    
+    operator_user_id:
+      type: string
+      description: User ID of who updated the title
+    
+    operator_open_id:
+      type: string
+      description: Open ID of the operator
+    
+    operator_union_id:
+      type: string
+      description: Union ID of the operator
+    
+    subscribers:
+      type: array
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+          open_id:
+            type: string
+          union_id:
+            type: string
+      description: List of file subscribers
+
+extra:
+  python:
+    source: events/drive/file_title_updated_v1.py

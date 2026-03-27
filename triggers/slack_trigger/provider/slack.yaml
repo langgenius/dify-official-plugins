@@ -1,0 +1,162 @@
+identity:
+  author: langgenius
+  description:
+    en_US: Trigger plugin for Slack, connect Slack events to Dify AI workflows
+    ja_JP: Slack トリガープラグイン、Slack イベントを Dify AI ワークフローに接続
+    zh_Hans: 为 Slack App 设计的触发器插件，将 Slack 中的各类事件与 Dify 的 AI 工作流连接起来
+  icon: icon.svg
+  label:
+    en_US: Slack Triggers
+    zh_Hans: Slack 触发器
+    ja_JP: Slack トリガー
+  name: slack_trigger
+subscription_schema:
+  - name: "signing_secret"
+    type: "secret-input"
+    required: true
+    label:
+      en_US: "Signing Secret"
+      ja_JP: "Signing Secret"
+      zh_Hans: "签名密钥"
+    placeholder:
+      en_US: "Paste your Slack signing secret"
+      ja_JP: "Slack の signing secret を貼り付けてください"
+      zh_Hans: "粘贴你的 Slack signing secret"
+    help:
+      en_US: "Get your signing secret from your Slack app."
+      ja_JP: "Slack の signing secret を取得してください。"
+      zh_Hans: "从你的 Slack app 获取 signing secret。"
+    url: https://api.slack.com/apps/
+  - name: "app_id"
+    type: "text-input"
+    required: true
+    label:
+      en_US: "App ID"
+      ja_JP: "App ID"
+      zh_Hans: "App ID"
+    placeholder:
+      en_US: "Paste your Slack app ID"
+      ja_JP: "Slack の app ID を貼り付けてください"
+      zh_Hans: "粘贴你的 Slack app ID"
+    help:
+      en_US: "Get your app ID from your Slack app."
+      ja_JP: "Slack の app ID を取得してください。"
+      zh_Hans: "从你的 Slack app 获取 app ID。"
+    url: https://api.slack.com/apps/
+  - name: "client_id"
+    type: "text-input"
+    required: true
+    label:
+      en_US: "Client ID"
+      ja_JP: "Client ID"
+      zh_Hans: "Client ID"
+    placeholder:
+      en_US: "Paste your Slack client ID"
+      ja_JP: "Slack の client ID を貼り付けてください"
+      zh_Hans: "粘贴你的 Slack client ID"
+    help:
+      en_US: "Get your client ID from your Slack app."
+      ja_JP: "Slack の client ID を取得してください。"
+      zh_Hans: "从你的 Slack app 获取 client ID。"
+    url: https://api.slack.com/apps/
+  - name: "client_secret"
+    type: "secret-input"
+    required: true
+    label:
+      en_US: "Client Secret"
+      ja_JP: "Client Secret"
+      zh_Hans: "Client Secret"
+    placeholder:
+      en_US: "Paste your Slack client secret"
+      ja_JP: "Slack の client secret を貼り付けてください"
+      zh_Hans: "粘贴你的 Slack client secret"
+    help:
+      en_US: "Get your client secret from your Slack app."
+      ja_JP: "Slack の client secret を取得してください。"
+      zh_Hans: "从你的 Slack app 获取 client secret。"
+    url: https://api.slack.com/apps/
+  - name: "verification_token"
+    type: "secret-input"
+    required: true
+    label:
+      en_US: "Verification Token"
+      ja_JP: "Verification Token"
+      zh_Hans: "Verification Token"
+    placeholder:
+      en_US: "Paste your Slack verification token"
+      ja_JP: "Slack の verification token を貼り付けてください"
+      zh_Hans: "粘贴你的 Slack verification token"
+    help:
+      en_US: "Get your verification token from your Slack app."
+      ja_JP: "Slack の verification token を取得してください。"
+      zh_Hans: "从你的 Slack app 获取 verification token。"
+    url: https://api.slack.com/apps/
+events:
+  - events/app/app_mention.yaml
+  - events/app/app_rate_limited.yaml
+  - events/app/app_uninstalled.yaml
+  - events/channel/channel_archive.yaml
+  - events/channel/channel_created.yaml
+  - events/channel/channel_deleted.yaml
+  - events/channel/channel_history_changed.yaml
+  - events/channel/channel_left.yaml
+  - events/channel/channel_rename.yaml
+  - events/channel/channel_unarchive.yaml
+  - events/dnd/dnd_updated.yaml
+  - events/dnd/dnd_updated_user.yaml
+  - events/email/email_domain_changed.yaml
+  - events/emoji/emoji_changed.yaml
+  - events/file/file_change.yaml
+  - events/file/file_comment_added.yaml
+  - events/file/file_comment_deleted.yaml
+  - events/file/file_comment_edited.yaml
+  - events/file/file_created.yaml
+  - events/file/file_deleted.yaml
+  - events/file/file_public.yaml
+  - events/file/file_shared.yaml
+  - events/file/file_unshared.yaml
+  - events/grid/grid_migration_finished.yaml
+  - events/grid/grid_migration_started.yaml
+  - events/group/group_archive.yaml
+  - events/group/group_close.yaml
+  - events/group/group_history_changed.yaml
+  - events/group/group_left.yaml
+  - events/group/group_open.yaml
+  - events/group/group_rename.yaml
+  - events/group/group_unarchive.yaml
+  - events/im/im_close.yaml
+  - events/im/im_created.yaml
+  - events/im/im_history_changed.yaml
+  - events/im/im_open.yaml
+  - events/link/link_shared.yaml
+  - events/member/member_joined_channel.yaml
+  - events/member/member_left_channel.yaml
+  - events/message/message.yaml
+  - events/message/message_app_home.yaml
+  - events/message/message_channels.yaml
+  - events/message/message_groups.yaml
+  - events/message/message_im.yaml
+  - events/message/message_mpim.yaml
+  - events/pin/pin_added.yaml
+  - events/pin/pin_removed.yaml
+  - events/reaction/reaction_added.yaml
+  - events/reaction/reaction_removed.yaml
+  - events/resources/resources_added.yaml
+  - events/resources/resources_removed.yaml
+  - events/scope/scope_denied.yaml
+  - events/scope/scope_granted.yaml
+  - events/star/star_added.yaml
+  - events/star/star_removed.yaml
+  - events/subteam/subteam_created.yaml
+  - events/subteam/subteam_members_changed.yaml
+  - events/subteam/subteam_self_added.yaml
+  - events/subteam/subteam_self_removed.yaml
+  - events/subteam/subteam_updated.yaml
+  - events/team/team_domain_change.yaml
+  - events/team/team_join.yaml
+  - events/team/team_rename.yaml
+  - events/tokens/tokens_revoked.yaml
+  - events/user/user_change.yaml
+extra:
+  python:
+    source: provider/slack.py

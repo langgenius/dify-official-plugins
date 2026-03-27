@@ -1,0 +1,36 @@
+model: grok-vision-beta
+label:
+  en_US: Grok Vision Beta
+model_type: llm
+features:
+  - vision
+model_properties:
+  mode: chat
+  context_size: 8192
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    default: 4096
+    min: 1
+    max: 4096
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: '5.6'
+  output: '16.8'
+  unit: '0.000001'
+  currency: USD

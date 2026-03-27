@@ -33,7 +33,33 @@ class QueryDatabaseTool(Tool):
             # Prepare filter if both property and value are provided
             filter_obj = None
             if filter_property and filter_value:
-                filter_obj = client.create_simple_text_filter(filter_property, filter_value)
+                # Get database schema to determine the property type
+                try:
+                    data_source_id = client.get_default_data_source_id(database_id)
+                    data_source = client.retrieve_data_source(data_source_id)
+                    properties = data_source.get("properties", {})
+                    
+                    # Find the property type
+                    property_type = None
+                    for prop_name, prop_data in properties.items():
+                        if prop_name == filter_property:
+                            property_type = prop_data.get("type")
+                            break
+                    
+                    # Create filter based on property type
+                    if property_type == "title":
+                        filter_obj = client.create_property_filter(filter_property, "title", "equals", filter_value)
+                    elif property_type == "rich_text":
+                        filter_obj = client.create_property_filter(filter_property, "rich_text", "equals", filter_value)
+                    elif property_type:
+                        # For other text-like properties, try rich_text as fallback
+                        filter_obj = client.create_property_filter(filter_property, "rich_text", "equals", filter_value)
+                    else:
+                        # Property not found, use rich_text as default
+                        filter_obj = client.create_simple_text_filter(filter_property, filter_value)
+                except Exception as e:
+                    # If we can't get the schema, fall back to the old behavior
+                    filter_obj = client.create_simple_text_filter(filter_property, filter_value)
             
             # Query the database
             try:
@@ -97,6 +123,12 @@ class QueryDatabaseTool(Tool):
                         value = prop_data.get("email")
                     elif prop_type == "phone_number":
                         value = prop_data.get("phone_number")
+                    elif prop_type == "status":
+                        status_data = prop_data.get("status", {})
+                        value = status_data.get("name") if status_data else None
+                    elif prop_type == "relation":
+                        relation_data = prop_data.get("relation", [])
+                        value = [item.get("id") for item in relation_data] if relation_data else []
                     else:
                         # For other property types, just note the type
                         value = f"<{prop_type}>"
@@ -118,4 +150,4 @@ class QueryDatabaseTool(Tool):
             
         except Exception as e:
             yield self.create_text_message(f"Error querying Notion database: {str(e)}")
-            return 
+            return

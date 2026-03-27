@@ -47,4 +47,21 @@ Click "Save" to use the model in the application after verifying that there are 
 
 The integration method for Embedding models is similar to LLM, just change the model type to Text Embedding.
 
-For more detail, please check [Dify's official document](https://docs.dify.ai/development/models-integration/ollama).
+For more detail, please check [Dify's official document](https://docs.dify.ai/en/use-dify/workspace/model-providers#local-ollama).
+
+#### 5. Integrate Ollama Rerank in Dify
+Hint: ollama officially does not support rerank models, please try locally deploying tools like vllm, llama.cpp, tei, xinference, etc., and fill in the complete URL ending with "rerank". Deployment reference [llama.cpp deployment tutorial for Qwen3-Reranker](https://github.com/AuditAIH/rerank_for_dify)
+
+In `Settings > Model Providers > Ollama`, fill in:
+
+![](./_assets/ollama_rerank.png)
+
+- Model Name: `Qwen3-Reranker`
+- Base URL: `http://<your-ollama-endpoint-domain>:11434`
+- The plugin appends `/api/rerank` if the URL doesn't end with `/rerank`. For other services like `llama.cpp`, provide the full endpoint URL, e.g., `http://host.docker.internal:11435/v1/rerank`.
+- If Dify is deployed using Docker, consider using a local network IP address, e.g., `http://192.168.1.100:11434` or `http://172.17.0.1:11434` or `http://host.docker.internal:11434` to access the service.
+- 
+- Model Type: `Rerank`
+- Model Context Length: `4096`
+
+Click "Add" to use the model in the application after verifying that there are no errors.

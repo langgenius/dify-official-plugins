@@ -137,7 +137,7 @@ class ComfyuiTxt2Vid(Tool):
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "txt2vid_mochi.json")) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), self.comfyui.get_object_info())
 
         workflow.set_k_sampler(
             None,
@@ -156,7 +156,7 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_prompt("7", config.negative_prompt)
 
         try:
-            output_images = self.comfyui.generate(workflow.json())
+            output_images = self.comfyui.generate(workflow)
         except Exception as e:
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
@@ -187,7 +187,7 @@ class ComfyuiTxt2Vid(Tool):
         )
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "txt2vid_hunyuan.json")) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), self.comfyui.get_object_info())
         workflow.set_k_sampler(
             None,
             config.steps,
@@ -203,7 +203,7 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_prompt(None, config.prompt)
 
         try:
-            output_images = self.comfyui.generate(workflow.json())
+            output_images = self.comfyui.generate(workflow)
         except Exception as e:
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
@@ -229,7 +229,7 @@ class ComfyuiTxt2Vid(Tool):
         )
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "txt2vid_wan2_1.json")) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), self.comfyui.get_object_info())
 
         workflow.set_prompt("6", config.prompt)
         workflow.set_prompt("7", config.negative_prompt)
@@ -242,7 +242,7 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_empty_hunyuan(None, config.width, config.height, config.frameN)
 
         try:
-            output_images = self.comfyui.generate(workflow.json())
+            output_images = self.comfyui.generate(workflow)
         except Exception as e:
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
@@ -253,7 +253,7 @@ class ComfyuiTxt2Vid(Tool):
             os.path.join(current_dir, "json", "txt2vid_wan2_2_14B.json"),
             encoding="UTF-8",
         ) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), self.comfyui.get_object_info())
             self.model_manager.download_from_json(workflow.json_original_str())
 
         workflow.set_prompt("89", config.prompt)
@@ -262,7 +262,7 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_empty_hunyuan(None, config.width, config.height, config.frameN)
 
         try:
-            output_images = self.comfyui.generate(workflow.json())
+            output_images = self.comfyui.generate(workflow)
         except Exception as e:
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
@@ -273,7 +273,7 @@ class ComfyuiTxt2Vid(Tool):
             os.path.join(current_dir, "json", "txt2vid_wan2_2_5B.json"),
             encoding="UTF-8",
         ) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), self.comfyui.get_object_info())
             self.model_manager.download_from_json(workflow.json_original_str())
 
         workflow.set_prompt("6", config.prompt)
@@ -285,7 +285,7 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_property(wan2_2, "inputs/length", config.frameN)
 
         try:
-            output_images = self.comfyui.generate(workflow.json())
+            output_images = self.comfyui.generate(workflow)
         except Exception as e:
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images
@@ -307,7 +307,7 @@ class ComfyuiTxt2Vid(Tool):
 
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "txt2vid_ltxv.json")) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), self.comfyui.get_object_info())
 
         webp_node_id = workflow.identify_node_by_class_type("SaveAnimatedWEBP")
         workflow.set_property(webp_node_id, "inputs/fps", config.fps)
@@ -322,7 +322,7 @@ class ComfyuiTxt2Vid(Tool):
         workflow.set_property(ltxv_node_id, "inputs/length", config.frameN)
 
         try:
-            output_images = self.comfyui.generate(workflow.json())
+            output_images = self.comfyui.generate(workflow)
         except Exception as e:
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         return output_images

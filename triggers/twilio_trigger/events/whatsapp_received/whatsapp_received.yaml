@@ -1,0 +1,134 @@
+identity:
+  name: whatsapp_received
+  author: community
+  label:
+    en_US: WhatsApp Message Received
+    zh_Hans: 收到 WhatsApp 消息
+    ja_JP: WhatsAppメッセージ受信
+
+description:
+  en_US: Triggered when a WhatsApp message is received on the configured Twilio phone number
+  zh_Hans: 当配置的 Twilio 电话号码收到 WhatsApp 消息时触发
+  ja_JP: 設定された Twilio 電話番号で WhatsApp メッセージを受信したときにトリガーされます
+
+parameters:
+- name: from_filter
+  label:
+    en_US: From Number Filter
+    zh_Hans: 发送方号码过滤
+    ja_JP: 送信元番号フィルター
+  type: string
+  required: false
+  description:
+    en_US: "Comma-separated WhatsApp numbers to filter (e.g., whatsapp:+1234567890). Only trigger when the sender matches."
+    zh_Hans: 逗号分隔的 WhatsApp 号码列表（如 whatsapp:+1234567890）。仅当发送方匹配时触发。
+    ja_JP: "カンマ区切りの WhatsApp 番号（例：whatsapp:+1234567890）。送信者が一致した場合のみトリガーされます。"
+
+- name: body_contains
+  label:
+    en_US: Body Contains
+    zh_Hans: 内容包含
+    ja_JP: 本文に含む
+  type: string
+  required: false
+  description:
+    en_US: Filter messages containing this text (case-insensitive)
+    zh_Hans: 过滤包含此文本的消息（不区分大小写）
+    ja_JP: このテキストを含むメッセージをフィルター（大文字小文字を区別しない）
+
+- name: body_regex
+  label:
+    en_US: Body Regex
+    zh_Hans: 内容正则
+    ja_JP: 本文正規表現
+  type: string
+  required: false
+  description:
+    en_US: Filter messages matching this regex pattern
+    zh_Hans: 过滤匹配此正则表达式的消息
+    ja_JP: この正規表現パターンに一致するメッセージをフィルター
+
+- name: profile_name_filter
+  label:
+    en_US: Profile Name Filter
+    zh_Hans: 用户名过滤
+    ja_JP: プロフィール名フィルター
+  type: string
+  required: false
+  description:
+    en_US: Comma-separated WhatsApp profile names to filter. Only trigger when the sender's profile name matches.
+    zh_Hans: 逗号分隔的 WhatsApp 用户名列表。仅当发送方用户名匹配时触发。
+    ja_JP: カンマ区切りの WhatsApp プロフィール名。送信者のプロフィール名が一致した場合のみトリガーされます。
+
+output_schema:
+  type: object
+  properties:
+    MessageSid:
+      type: string
+      description: A unique identifier for this message
+    SmsSid:
+      type: string
+      description: Same as MessageSid (for backwards compatibility)
+    AccountSid:
+      type: string
+      description: The Twilio Account SID
+    From:
+      type: string
+      description: "The WhatsApp number that sent the message (format: whatsapp:+1234567890)"
+    To:
+      type: string
+      description: "The WhatsApp number that received the message (format: whatsapp:+1234567890)"
+    Body:
+      type: string
+      description: The text content of the WhatsApp message
+    NumMedia:
+      type: string
+      description: The number of media items included with the message
+    NumSegments:
+      type: string
+      description: The number of segments that make up the complete message
+    SmsStatus:
+      type: string
+      description: The status of the message (received)
+    ApiVersion:
+      type: string
+      description: The version of the Twilio API used
+    ProfileName:
+      type: string
+      description: The WhatsApp profile name of the sender
+    WaId:
+      type: string
+      description: The WhatsApp ID of the sender (phone number without whatsapp prefix)
+    Forwarded:
+      type: string
+      description: Whether the message was forwarded
+    FrequentlyForwarded:
+      type: string
+      description: Whether the message was frequently forwarded
+    ButtonText:
+      type: string
+      description: The text of the button pressed (if applicable)
+    ButtonPayload:
+      type: string
+      description: The payload of the button pressed (if applicable)
+    Latitude:
+      type: string
+      description: The latitude of a shared location (if applicable)
+    Longitude:
+      type: string
+      description: The longitude of a shared location (if applicable)
+    Address:
+      type: string
+      description: The address of a shared location (if applicable)
+    Label:
+      type: string
+      description: The label of a shared location (if applicable)
+  required:
+  - MessageSid
+  - From
+  - To
+  - Body
+
+extra:
+  python:
+    source: events/whatsapp_received/whatsapp_received.py

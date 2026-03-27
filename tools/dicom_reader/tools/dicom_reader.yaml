@@ -1,0 +1,113 @@
+identity:
+  name: "dicom_reader"
+  author: "langgenius"
+  label:
+    en_US: "DICOM Reader"
+    zh_Hans: "DICOM 读取器"
+    pt_BR: "Leitor DICOM"
+    ja_JP: "DICOMリーダー"
+description:
+  human:
+    en_US: "Inspect DICOM files with metadata extraction, optional pixel statistics, and a downsampled preview."
+    zh_Hans: "通过提取元数据、可选的像素统计和缩略预览来检查 DICOM 文件。"
+    pt_BR: "Inspecione arquivos DICOM com metadados, estatísticas de pixel e prévia reduzida opcionais."
+    ja_JP: "メタデータ抽出とオプションの画素統計・縮小プレビューで DICOM ファイルを確認します。"
+  llm: "Extract DICOM metadata and optionally return pixel statistics or a downsampled preview image."
+parameters:
+  - name: dicom_file
+    type: file
+    required: true
+    label:
+      en_US: "DICOM file"
+      zh_Hans: "DICOM 文件"
+      pt_BR: "Arquivo DICOM"
+      ja_JP: "DICOMファイル"
+    human_description:
+      en_US: "Upload the DICOM Part 10 file (.dcm) or encapsulated object you want to inspect."
+      zh_Hans: "上传需要检查的 DICOM Part 10 文件（.dcm）或封装对象。"
+      pt_BR: "Envie o arquivo DICOM Part 10 (.dcm) ou objeto encapsulado que deseja inspecionar."
+      ja_JP: "確認したい DICOM Part 10 ファイル（.dcm）またはカプセル化オブジェクトをアップロードします。"
+    llm_description: "Provide the DICOM file to inspect."
+    form: llm
+  - name: include_pixel_statistics
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: "Include pixel statistics"
+      zh_Hans: "包含像素统计"
+      pt_BR: "Incluir estatísticas de pixel"
+      ja_JP: "画素統計を含める"
+    human_description:
+      en_US: "When enabled, compute min/mean/max and percentile statistics from the pixel data (sampling if the dataset is large)."
+      zh_Hans: "启用后，将计算像素数据的最小值/平均值/最大值和分位数（对于大型数据集会进行抽样）。"
+      pt_BR: "Quando ativado, calcula mínimo/média/máximo e percentis dos pixels (com amostragem se o conjunto for grande)."
+      ja_JP: "有効にすると、画素データの最小値・平均値・最大値とパーセンタイル（大きなデータセットではサンプリング）を計算します。"
+    llm_description: "Set to true to compute pixel intensity statistics."
+    form: form
+  - name: include_preview_image
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: "Include preview image"
+      zh_Hans: "包含预览图像"
+      pt_BR: "Incluir imagem de prévia"
+      ja_JP: "プレビュー画像を含める"
+    human_description:
+      en_US: "Return a base64-encoded PNG preview generated from the selected frame. The image is downsampled to stay well below 20 MB."
+      zh_Hans: "返回所选帧生成的 PNG 预览（Base64 编码），图像将降采样以确保远低于 20 MB。"
+      pt_BR: "Retorna uma prévia em PNG codificada em Base64 da moldura selecionada, reduzida para ficar bem abaixo de 20 MB."
+      ja_JP: "選択したフレームから生成した PNG プレビュー（Base64）を返します。画像は 20 MB を大きく下回るように縮小します。"
+    llm_description: "Set to true to include a downsampled PNG preview image."
+    form: form
+  - name: preview_frame_index
+    type: number
+    required: false
+    default: 0
+    label:
+      en_US: "Preview frame index"
+      zh_Hans: "预览帧索引"
+      pt_BR: "Índice da moldura de prévia"
+      ja_JP: "プレビューのフレーム番号"
+    human_description:
+      en_US: "0-based frame index to preview for multi-frame studies. Ignored when preview generation is disabled."
+      zh_Hans: "针对多帧影像的预览帧索引（从 0 开始）。在禁用预览生成时忽略。"
+      pt_BR: "Índice de quadro (base 0) para pré-visualizar estudos multiframe. Ignorado se a prévia estiver desativada."
+      ja_JP: "多フレームの検査でプレビューするフレーム番号（0 始まり）。プレビュー生成を無効にしている場合は無視されます。"
+    llm_description: "Frame index to preview when include_preview_image is true."
+    form: form
+  - name: max_preview_edge
+    type: number
+    required: false
+    default: 256
+    label:
+      en_US: "Max preview edge"
+      zh_Hans: "预览最大边长"
+      pt_BR: "Borda máxima da prévia"
+      ja_JP: "プレビューの最大辺長"
+    human_description:
+      en_US: "Maximum pixel dimension for the generated preview. Larger images are proportionally resized to control the output size."
+      zh_Hans: "生成预览时允许的最大像素尺寸，更大的图像会按比例缩放以控制输出大小。"
+      pt_BR: "Dimensão máxima em pixels da prévia gerada. Imagens maiores são redimensionadas proporcionalmente para controlar o tamanho."
+      ja_JP: "生成されるプレビューの最大ピクセル数。大きな画像は出力サイズを抑えるために比例縮小します。"
+    llm_description: "Maximum edge length of the preview image when include_preview_image is true."
+    form: form
+  - name: additional_tags
+    type: string
+    required: false
+    label:
+      en_US: "Additional tags"
+      zh_Hans: "附加标签"
+      pt_BR: "Tags adicionais"
+      ja_JP: "追加タグ"
+    human_description:
+      en_US: "Optional comma-separated DICOM tag names or hex codes (e.g. PatientAge, 0018,5100) to include in the response."
+      zh_Hans: "可选的逗号分隔 DICOM 标签名称或十六进制编码（如 PatientAge、0018,5100），将在结果中返回。"
+      pt_BR: "Tags DICOM opcionais separadas por vírgula ou códigos hexadecimais (ex.: PatientAge, 0018,5100) para incluir na resposta."
+      ja_JP: "応答に含めたい DICOM タグ名や 16 進コード（例: PatientAge, 0018,5100）をカンマ区切りで指定します。"
+    llm_description: "Optional comma-separated DICOM tag names or hex codes to include in the output."
+    form: llm
+extra:
+  python:
+    source: tools/dicom_reader.py

@@ -26,14 +26,18 @@ parameter_rules:
       - GPT OSS 20B
   - name: cross-region
     label:
-      zh_Hans: 使用跨区域推理
-      en_US: Use Cross-Region Inference
-    type: boolean
+      zh_Hans: 跨区域推理
+      en_US: Cross-Region Inference
+    type: string
     required: true
-    default: false
+    default: disabled
+    options:
+      - disabled
+      - geographic
+      - global
     help:
-      zh_Hans: 跨区域推理会自动选择您所在地理区域 AWS 区域 内的最佳位置来处理您的推理请求。
-      en_US: Cross-Region inference automatically selects the optimal AWS Region within your geography to process your inference request.
+      zh_Hans: 跨区域推理会自动选择 AWS 区域内的最佳位置来处理您的推理请求。地理跨区域限于您所在地理区域，全球跨区域可跨所有区域。
+      en_US: Cross-Region inference automatically selects the optimal AWS Region to process your inference request. Geographic limits to your geography, Global spans all regions.
   - name: max_tokens
     use_template: max_tokens
     required: true

@@ -1,0 +1,62 @@
+identity:
+  name: "dicom_stats"
+  author: "langgenius"
+  label:
+    en_US: "DICOM Statistics"
+    zh_Hans: "统计特征提取"
+description:
+  human:
+    en_US: "Compute pixel statistics and histogram for the image or a rectangular ROI."
+    zh_Hans: "对整幅图像或矩形 ROI 计算均值、方差、直方图等统计特征。"
+  llm: "Return basic stats and histogram of pixels or ROI."
+parameters:
+  - name: dicom_file
+    type: file
+    required: true
+    label:
+      en_US: "DICOM file"
+      zh_Hans: "DICOM 文件"
+    human_description:
+      en_US: "Upload the DICOM file (.dcm)."
+      zh_Hans: "上传 DICOM 文件（.dcm）。"
+    llm_description: "Provide the DICOM file."
+    form: llm
+  - name: frame_index
+    type: number
+    required: false
+    default: 0
+    label:
+      en_US: "Frame index"
+      zh_Hans: "帧索引"
+    human_description:
+      en_US: "0-based frame index to analyze."
+      zh_Hans: "要分析的 0 基帧索引。"
+    llm_description: "Frame index."
+    form: form
+  - name: hist_bins
+    type: number
+    required: false
+    default: 64
+    label:
+      en_US: "Histogram bins"
+      zh_Hans: "直方图分箱数"
+    human_description:
+      en_US: "Number of bins for histogram calculation."
+      zh_Hans: "直方图的分箱数量。"
+    llm_description: "How many bins for histogram."
+    form: form
+  - name: roi_bbox
+    type: string
+    required: false
+    label:
+      en_US: "ROI bbox (JSON)"
+      zh_Hans: "ROI 矩形（JSON）"
+    human_description:
+      en_US: "Optional ROI as JSON: {\"x\":0,\"y\":0,\"width\":64,\"height\":64}."
+      zh_Hans: "可选 ROI，JSON 格式：{\"x\":0,\"y\":0,\"width\":64,\"height\":64}。"
+    llm_description: "Rectangular ROI in JSON."
+    form: form
+extra:
+  python:
+    source: tools/dicom_stats.py
+

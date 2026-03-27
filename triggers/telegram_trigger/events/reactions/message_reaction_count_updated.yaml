@@ -1,0 +1,93 @@
+identity:
+  name: message_reaction_count_updated
+  author: langgenius
+  label:
+    en_US: Message Reaction Count Updated
+    zh_Hans: 消息表情计数更新
+    ja_JP: メッセージリアクション数更新
+description:
+  en_US: Triggers when Telegram sends updated aggregate reaction counts for a message.
+  zh_Hans: 当 Telegram 发送消息表情计数更新时触发。
+  ja_JP: Telegram がメッセージのリアクション集計を更新したときにトリガーします。
+parameters: []
+output_schema:
+  type: object
+  additionalProperties: false
+  required:
+  - update_id
+  - message_reaction_count
+  properties:
+    update_id:
+      type: integer
+      description: Unique identifier for the Telegram update.
+    message_reaction_count:
+      type: object
+      additionalProperties: false
+      description: Aggregate reaction counts for a message.
+      required:
+      - chat
+      - message_id
+      - date
+      - reactions
+      properties:
+        chat:
+          type: object
+          description: Telegram Chat object.
+          additionalProperties: true
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for this chat.
+            type:
+              type: string
+              description: Type of chat, such as private, group, supergroup, or channel.
+            title:
+              type: string
+              description: Chat title for supergroups, channels, and group chats.
+            username:
+              type: string
+              description: Username of the chat if available.
+            first_name:
+              type: string
+              description: First name of the other party in a private chat.
+            last_name:
+              type: string
+              description: Last name of the other party in a private chat.
+        message_id:
+          type: integer
+          description: Identifier of the affected message.
+        date:
+          type: integer
+          description: Date the reaction statistics were updated in Unix time.
+        reactions:
+          type: array
+          description: List of reaction types and their counts.
+          items:
+            type: object
+            description: Count of a specific reaction.
+            additionalProperties: false
+            required:
+            - type
+            - total_count
+            properties:
+              type:
+                type: object
+                description: One reaction type definition.
+                additionalProperties: false
+                properties:
+                  type:
+                    type: string
+                    description: Reaction type identifier such as emoji, custom_emoji,
+                      or paid.
+                  emoji:
+                    type: string
+                    description: Emoji value when type is emoji.
+                  custom_emoji_id:
+                    type: string
+                    description: Identifier of the custom emoji when type is custom_emoji.
+              total_count:
+                type: integer
+                description: Total number of times this reaction was used.
+extra:
+  python:
+    source: events/reactions/message_reaction_count_updated.py

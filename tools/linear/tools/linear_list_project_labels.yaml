@@ -1,0 +1,57 @@
+identity:
+  name: linear_list_project_labels
+  author: langgenius
+  label:
+    en_US: List Linear Project Labels
+    zh_Hans: 列出 Linear 项目标签
+    pt_BR: Listar Etiquetas de Projeto do Linear
+    ja_JP: Linear プロジェクトラベルを一覧表示
+    zh_Hant: 列出 Linear 專案標籤
+description:
+  human:
+    en_US: List project labels in Linear, optionally filtering by name.
+    zh_Hans: 列出 Linear 中的项目标签，可按名称筛选。
+    pt_BR: Listar etiquetas de projeto no Linear, com opção de filtrar por nome.
+    ja_JP: Linear のプロジェクトラベルを一覧表示します（名前で絞り込み可）。
+    zh_Hant: 列出 Linear 中的專案標籤，可按名稱篩選。
+  llm: Lists Linear project labels with an optional name filter and result limit.
+parameters:
+  - name: name
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Name
+      zh_Hans: 名称
+      pt_BR: Nome
+      ja_JP: 名前
+      zh_Hant: 名稱
+    human_description:
+      en_US: Optional partial name to filter project labels by (case-insensitive).
+      zh_Hans: 可选的标签名称关键字（不区分大小写）。
+      pt_BR: Nome parcial opcional para filtrar etiquetas (sem distinção entre maiúsculas e minúsculas).
+      ja_JP: ラベル名の部分一致で絞り込み（大文字小文字を区別しない）。
+      zh_Hant: 可選的標籤名稱關鍵字（不區分大小寫）。
+    llm_description: Optional partial project label name for filtering.
+  - name: limit
+    type: number
+    required: false
+    default: 10
+    form: llm
+    label:
+      en_US: Result Limit
+      zh_Hans: 结果限制
+      pt_BR: Limite de Resultados
+      ja_JP: 結果制限
+      zh_Hant: 結果限制
+    human_description:
+      en_US: "Maximum number of project labels to return (default: 10, max: 50)."
+      zh_Hans: 最多返回的项目标签数量（默认：10，最大：50）。
+      pt_BR: "Número máximo de etiquetas de projeto a retornar (padrão: 10, máx: 50)."
+      ja_JP: 返すプロジェクトラベルの最大数（デフォルト：10、最大：50）。
+      zh_Hant: 最多返回的專案標籤數量（默認：10，最大：50）。
+    llm_description: "Max number of project labels to return (default: 10, max: 50)."
+extra:
+  python:
+    source: tools/linear_list_project_labels.py
+    class: LinearListProjectLabelsTool

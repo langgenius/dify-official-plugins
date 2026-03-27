@@ -1,6 +1,7 @@
 from dify_plugin.errors.model import InvokeAuthorizationError, InvokeBadRequestError, InvokeConnectionError, InvokeError, InvokeRateLimitError, InvokeServerUnavailableError
 
 
+
 class _CommonZhipuaiAI:
     def _to_credential_kwargs(self, credentials: dict) -> dict:
         """
@@ -12,6 +13,11 @@ class _CommonZhipuaiAI:
         credentials_kwargs = {
             "api_key": credentials["api_key"] if "api_key" in credentials else credentials.get("zhipuai_api_key"),
         }
+
+        if "base_url" in credentials:
+            credentials_kwargs["base_url"] = credentials["base_url"]
+        elif "zhipuai_base_url" in credentials:
+            credentials_kwargs["base_url"] = credentials["zhipuai_base_url"]
 
         return credentials_kwargs
 

@@ -10,7 +10,7 @@ from tools.markdown_utils import convert_markdown_to_html
 from tools.send import SendEmailToolParameters, send_mail
 
 
-class SendMailTool(Tool):
+class SendMailBatchTool(Tool):
     def _invoke(
         self, tool_parameters: dict[str, Any]
 
@@ -19,6 +19,9 @@ class SendMailTool(Tool):
         invoke tools
         """
         sender = self.runtime.credentials.get("email_account", "")
+        # Use sender_address if provided, otherwise fall back to email_account
+        raw_sender_address = self.runtime.credentials.get("sender_address", "")
+        sender_address = raw_sender_address or sender
         email_rgx = re.compile("^[a-zA-Z0-9._-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$")
         password = self.runtime.credentials.get("email_password", "")
         smtp_server = self.runtime.credentials.get("smtp_server", "")
@@ -32,22 +35,20 @@ class SendMailTool(Tool):
         except ValueError:
             yield self.create_text_message("Invalid parameter smtp_port(should be int)")
             return
-
             
-        if not sender:
-            yield self.create_text_message("please input sender")
-            return
-            
-        if not email_rgx.match(sender):
-            yield self.create_text_message("Invalid parameter userid, the sender is not a mailbox")
-            return
-            
+        if raw_sender_address:
+            if not email_rgx.match(raw_sender_address):
+                yield self.create_text_message("Invalid parameter sender_address(not a valid mailbox address)")
+                return
+        else:
+            if not email_rgx.match(sender):
+                yield self.create_text_message("Invalid parameter email_account(not a valid mailbox address) to skip this validation, configure sender_address")
+                return
 
         receivers_email = tool_parameters["send_to"]
         if not receivers_email:
             yield self.create_text_message("please input receiver email")
             return
-
             
         try:
             receivers_email = json.loads(receivers_email)
@@ -126,13 +127,15 @@ class SendMailTool(Tool):
         if attachments is not None and not isinstance(attachments, list):
             attachments = [attachments]
             
-        # Create email parameters with all fields
+        # Get reply-to address
+        reply_to = tool_parameters.get("reply_to", None)
 
         send_email_params = SendEmailToolParameters(
             smtp_server=smtp_server,
             smtp_port=smtp_port,
             email_account=sender,
             email_password=password,
+            sender_address=sender_address,
             sender_to=receivers_email,
             subject=subject,
             email_content=email_content,
@@ -141,7 +144,8 @@ class SendMailTool(Tool):
             is_html=convert_to_html,
             attachments=attachments,
             cc_recipients=cc_email_list,
-            bcc_recipients=bcc_email_list
+            bcc_recipients=bcc_email_list,
+            reply_to_address=reply_to
         )
         
         # Initialize response message for all recipients

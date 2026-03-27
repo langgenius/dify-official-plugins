@@ -1,0 +1,93 @@
+identity:
+  name: file_permission_member_removed_v1
+  author: langgenius
+  label:
+    en_US: Drive Access Revoked
+    zh_Hans: 云文档共享权限移除
+    ja_JP: ドライブ権限削除
+
+description:
+  en_US: Fires when sharing permissions are revoked on a Drive file, detailing the removed users, chats, and departments.
+  zh_Hans: 当云文档撤销共享权限时触发，提供被移除的用户、群聊和部门信息。
+  ja_JP: ドライブファイルの共有権限が削除された際に発火し、削除されたユーザー、チャット、部門の詳細を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    file_token:
+      type: string
+      description: Token of the affected file
+
+    file_type:
+      type: string
+      description: File type (doc, sheet, slide, etc.)
+
+    operator_user_id:
+      type: string
+      description: User ID of the operator who removed access
+
+    operator_open_id:
+      type: string
+      description: Open ID of the operator
+
+    operator_union_id:
+      type: string
+      description: Union ID of the operator
+
+    removed_users:
+      type: array
+      description: Users who lost access
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+            description: User ID
+          open_id:
+            type: string
+            description: Open ID
+          union_id:
+            type: string
+            description: Union ID
+
+    removed_user_count:
+      type: integer
+      description: Number of users who lost access
+
+    removed_chats:
+      type: array
+      description: Chat IDs removed from access
+      items:
+        type: string
+
+    removed_departments:
+      type: array
+      description: Department IDs removed from access
+      items:
+        type: string
+
+    subscriber_users:
+      type: array
+      description: Subscribers of the file
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+            description: User ID
+          open_id:
+            type: string
+            description: Open ID
+          union_id:
+            type: string
+            description: Union ID
+
+    subscriber_count:
+      type: integer
+      description: Number of subscribers receiving the update
+
+extra:
+  python:
+    source: events/drive/file_permission_member_removed_v1.py

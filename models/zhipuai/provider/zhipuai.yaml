@@ -41,6 +41,17 @@ provider_credential_schema:
       required: true
       type: secret-input
       variable: api_key
+
+    - default: https://open.bigmodel.cn/api/paas/v4/
+      label:
+        en_US: API Endpoint Host
+      placeholder:
+        en_US: Enter your API Endpoint Host
+        zh_Hans: 输入您的 API Endpoint Host
+      required: false
+      type: text-input
+      variable: base_url
+
 supported_model_types:
   - llm
   - text-embedding

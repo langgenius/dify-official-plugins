@@ -1,0 +1,43 @@
+identity:
+  name: customer_updated
+  author: langgenius
+  label:
+    en_US: Customer Updated
+    zh_Hans: 客户更新
+    ja_JP: 顧客更新
+description:
+  en_US: Triggered when a customer's profile, billing information, or addresses are edited.
+  zh_Hans: 当客户资料、账单信息或地址被编辑时触发。
+  ja_JP: 顧客のプロフィール・請求情報・住所などが更新されたときにトリガーされます。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    customer:
+      type: object
+      description: Updated customer payload at the time of change.
+      additionalProperties: true
+    webhook:
+      type: object
+      description: Metadata derived from X-WC-Webhook headers.
+      properties:
+        id:
+          type: string
+        delivery_id:
+          type: string
+        resource:
+          type: string
+        event:
+          type: string
+        topic:
+          type: string
+        source:
+          type: string
+  required:
+    - customer
+
+extra:
+  python:
+    source: events/customer/customer_updated.py

@@ -1,0 +1,237 @@
+identity:
+  name: callback_query_received
+  author: langgenius
+  label:
+    en_US: Callback Query Received
+    zh_Hans: 收到回调查询
+    ja_JP: コールバッククエリ受信
+description:
+  en_US: Triggers when a user presses an inline keyboard button that sends callback
+    data.
+  zh_Hans: 当用户按下发送回调数据的行内键盘按钮时触发。
+  ja_JP: ユーザーがコールバックデータを送信するインラインボタンを押したときにトリガーします。
+parameters: []
+output_schema:
+  type: object
+  additionalProperties: false
+  required:
+  - update_id
+  - callback_query
+  properties:
+    update_id:
+      type: integer
+      description: Unique identifier for the Telegram update.
+    callback_query:
+      type: object
+      additionalProperties: false
+      description: Callback query payload.
+      required:
+      - id
+      - from
+      - chat_instance
+      properties:
+        id:
+          type: string
+          description: Unique identifier for this query.
+        from:
+          type: object
+          description: Telegram User object.
+          additionalProperties: true
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for this user or bot.
+            is_bot:
+              type: boolean
+              description: True if this user is a bot.
+            first_name:
+              type: string
+              description: User first name.
+            last_name:
+              type: string
+              description: User last name.
+            username:
+              type: string
+              description: Username of the user, if any.
+            language_code:
+              type: string
+              description: IETF language tag of the user's language.
+            is_premium:
+              type: boolean
+              description: True if the user is a Telegram Premium subscriber.
+        message:
+          type: object
+          description: Telegram Message object associated with the callback query.
+          additionalProperties: true
+          properties:
+            message_id:
+              type: integer
+              description: Unique message identifier inside this chat.
+            chat:
+              type: object
+              description: Telegram Chat object.
+              additionalProperties: true
+              properties:
+                id:
+                  type: integer
+                  description: Unique identifier for this chat.
+                type:
+                  type: string
+                  description: Type of chat, such as private, group, supergroup, or
+                    channel.
+                title:
+                  type: string
+                  description: Chat title for supergroups, channels, and group chats.
+                username:
+                  type: string
+                  description: Username of the chat if available.
+                first_name:
+                  type: string
+                  description: First name of the other party in a private chat.
+                last_name:
+                  type: string
+                  description: Last name of the other party in a private chat.
+            date:
+              type: integer
+              description: Date the message was sent in Unix time.
+            text:
+              type: string
+              description: Message text, if any.
+            caption:
+              type: string
+              description: Caption for media messages, if any.
+            from:
+              type: object
+              description: Telegram User object.
+              additionalProperties: true
+              properties:
+                id:
+                  type: integer
+                  description: Unique identifier for this user or bot.
+                is_bot:
+                  type: boolean
+                  description: True if this user is a bot.
+                first_name:
+                  type: string
+                  description: User first name.
+                last_name:
+                  type: string
+                  description: User last name.
+                username:
+                  type: string
+                  description: Username of the user, if any.
+                language_code:
+                  type: string
+                  description: IETF language tag of the user's language.
+                is_premium:
+                  type: boolean
+                  description: True if the user is a Telegram Premium subscriber.
+            reply_markup:
+              type: object
+              description: Inline keyboard attached to the message.
+              additionalProperties: false
+              properties:
+                inline_keyboard:
+                  type: array
+                  description: Rows of inline keyboard buttons.
+                  items:
+                    type: array
+                    description: Single row of inline keyboard buttons.
+                    items:
+                      type: object
+                      description: Inline keyboard button definition.
+                      additionalProperties: false
+                      properties:
+                        text:
+                          type: string
+                          description: Label text on the button.
+                        url:
+                          type: string
+                          description: HTTP URL opened when the button is pressed.
+                        callback_data:
+                          type: string
+                          description: Data sent in a callback query to the bot when
+                            button pressed.
+                        web_app:
+                          type: object
+                          description: Description of the Web App launched when the
+                            button is pressed.
+                          additionalProperties: false
+                          properties:
+                            url:
+                              type: string
+                              description: HTTPS URL of the Web App to open.
+                        login_url:
+                          type: object
+                          description: Login URL for authorization.
+                          additionalProperties: false
+                          properties:
+                            url:
+                              type: string
+                              description: HTTP URL used for user authorization.
+                            forward_text:
+                              type: string
+                              description: New text of the button in forwarded messages.
+                            bot_username:
+                              type: string
+                              description: Username of a bot for user authorization.
+                            request_write_access:
+                              type: boolean
+                              description: True if the bot may send messages to the
+                                user.
+                        switch_inline_query:
+                          type: string
+                          description: Inline query inserted in the input field when
+                            the button is pressed.
+                        switch_inline_query_current_chat:
+                          type: string
+                          description: Inline query inserted in the current chat when
+                            the button is pressed.
+                        switch_inline_query_chosen_chat:
+                          type: object
+                          description: Inline query switching to a chosen chat.
+                          additionalProperties: false
+                          properties:
+                            query:
+                              type: string
+                              description: Default inline query to use.
+                            allow_user_chats:
+                              type: boolean
+                              description: True to allow selection of private chats.
+                            allow_bot_chats:
+                              type: boolean
+                              description: True to allow selection of bot chats.
+                            allow_group_chats:
+                              type: boolean
+                              description: True to allow selection of group chats.
+                            allow_channel_chats:
+                              type: boolean
+                              description: True to allow selection of channel chats.
+                        callback_game:
+                          type: object
+                          description: Description of a game launched when the user
+                            presses the button.
+                          additionalProperties: false
+                          properties: {}
+                        pay:
+                          type: boolean
+                          description: True if a Pay button that displays the invoice
+                            is pressed.
+        inline_message_id:
+          type: string
+          description: Identifier of the inline message if the query originates from
+            inline mode.
+        chat_instance:
+          type: string
+          description: Global identifier, uniquely corresponding to the chat to which
+            the message with the callback button was sent.
+        data:
+          type: string
+          description: Data associated with the callback button press.
+        game_short_name:
+          type: string
+          description: Short name of a Game to be returned if the button is a game
+            button.
+extra:
+  python:
+    source: events/callbacks/callback_query_received.py

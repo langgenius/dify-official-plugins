@@ -23,11 +23,63 @@ class ModelConfig(BaseModel):
 
 
 configs: dict[str, ModelConfig] = {
+    "Doubao-Seed-2.0-pro": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=131072, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+        pricing=PriceConfig(input=Decimal("0.0032"), output=Decimal("0.0160"), unit=Decimal("0.001"), currency="RMB"),
+    ),
+    "Doubao-Seed-2.0-lite": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=131072, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+        pricing=PriceConfig(input=Decimal("0.0006"), output=Decimal("0.0036"), unit=Decimal("0.001"), currency="RMB"),
+    ),
+    "Doubao-Seed-2.0-mini": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=131072, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+        pricing=PriceConfig(input=Decimal("0.0002"), output=Decimal("0.0020"), unit=Decimal("0.001"), currency="RMB"),
+    ),
+    "Doubao-Seed-2.0-Code": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=131072, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+        pricing=PriceConfig(input=Decimal("0.0032"), output=Decimal("0.0160"), unit=Decimal("0.001"), currency="RMB"),
+    ),
+    "GLM-4.7": ModelConfig(
+        properties=ModelProperties(context_size=200000, max_tokens=131072, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+        pricing=PriceConfig(input=Decimal("0.0020"), output=Decimal("0.0030"), unit=Decimal("0.001"), currency="RMB"),
+    ),
+    "Doubao-Seed-1.8": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=32768, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL, ModelFeature.STRUCTURED_OUTPUT],
+        pricing=PriceConfig(input=Decimal("0.0008"), output=Decimal("0.0020"), unit=Decimal("0.001"), currency="RMB"),
+    ),
+    "Doubao-Seed-Code": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=32768, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+        pricing=PriceConfig(input=Decimal("0.0012"), output=Decimal("0.008"), unit=Decimal("0.001"), currency="RMB"),
+    ),
+    "Doubao-Seed-1.6-lite": ModelConfig(
+        properties=ModelProperties(context_size=262144, max_tokens=32768, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
+                  ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+        pricing=PriceConfig(input=Decimal("0.0003"), output=Decimal("0.0006"), unit=Decimal("0.001"), currency="RMB"),
+    ),
     "Doubao-Seed-1.6-vision": ModelConfig(
         properties=ModelProperties(context_size=262144, max_tokens=32768, mode=LLMMode.CHAT),
         features=[ModelFeature.AGENT_THOUGHT, ModelFeature.VISION, ModelFeature.VIDEO,
                   ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL, ModelFeature.STRUCTURED_OUTPUT],
         pricing=PriceConfig(input=Decimal("0.0008"), output=Decimal("0.0080"), unit=Decimal("0.001"), currency="RMB"),
+    ),
+    "DeepSeek-V3.2": ModelConfig(
+        properties=ModelProperties(context_size=131072, max_tokens=32768, mode=LLMMode.CHAT),
+        features=[ModelFeature.AGENT_THOUGHT, ModelFeature.TOOL_CALL, ModelFeature.STREAM_TOOL_CALL],
+        pricing=PriceConfig(input=Decimal("0.0020"), output=Decimal("0.0030"), unit=Decimal("0.001"), currency="RMB"),
     ),
     "DeepSeek-V3.1": ModelConfig(
         properties=ModelProperties(context_size=131072, max_tokens=32768, mode=LLMMode.CHAT),
@@ -281,4 +333,6 @@ def get_v3_req_params(credentials: dict, model_parameters: dict, stop: list[str]
         req_params["thinking"] = thinking
     if model_parameters.get("response_format"):
         req_params["response_format"] = model_parameters.get("response_format")
+    if model_parameters.get("reasoning_effort"):
+        req_params["reasoning_effort"] = model_parameters.get("reasoning_effort")
     return req_params

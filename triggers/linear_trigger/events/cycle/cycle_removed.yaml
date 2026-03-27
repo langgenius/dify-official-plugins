@@ -1,0 +1,58 @@
+identity:
+  name: cycle_removed
+  author: langgenius
+  label:
+    en_US: Cycle Removed
+    zh_Hans: 周期删除
+    ja_JP: サイクル削除
+
+description:
+  en_US: Triggers when a cycle is deleted or archived in Linear
+  zh_Hans: 当在 Linear 中删除或归档周期时触发
+  ja_JP: Linearでサイクルが削除またはアーカイブされたときにトリガーされます
+
+parameters:
+- name: name_contains
+  label:
+    en_US: Name Contains
+    zh_Hans: 名称包含
+    ja_JP: 名前に含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if cycle name contains keywords (comma-separated). Leave empty for all removals."
+    zh_Hans: "仅当周期名称包含关键词时触发（逗号分隔）。留空则触发所有删除。"
+    ja_JP: "サイクル名にキーワードが含まれる場合のみトリガー（カンマ区切り）。空の場合は全削除でトリガー。"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [remove]
+    type:
+      type: string
+      enum: [Cycle]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        number:
+          type: number
+        name:
+          type: string
+        archivedAt:
+          type: string
+        teamId:
+          type: string
+    actor:
+      type: object
+  required:
+  - action
+  - type
+  - data
+
+extra:
+  python:
+    source: events/cycle/cycle_removed.py

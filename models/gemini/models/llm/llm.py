@@ -7,24 +7,28 @@ import tempfile
 import time
 from collections.abc import Generator, Iterator, Sequence
 from contextlib import suppress
-from typing import Optional, Union, Mapping, Any, Tuple, List, TypeVar
+from typing import Any, List, Mapping, Optional, Tuple, TypeVar, Union
 
 import requests
-from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
+from dify_plugin.entities.model.llm import (
+    LLMResult,
+    LLMResultChunk,
+    LLMResultChunkDelta,
+)
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
-    PromptMessage,
-    MultiModalPromptMessageContent,
-    PromptMessageContent,
     ImagePromptMessageContent,
-    TextPromptMessageContent,
+    MultiModalPromptMessageContent,
+    PromptMessage,
+    PromptMessageContent,
     PromptMessageContentType,
-    PromptMessageTool,
-    SystemPromptMessage,
-    ToolPromptMessage,
-    UserPromptMessage,
     PromptMessageContentUnionTypes,
     PromptMessageRole,
+    PromptMessageTool,
+    SystemPromptMessage,
+    TextPromptMessageContent,
+    ToolPromptMessage,
+    UserPromptMessage,
 )
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -37,17 +41,19 @@ from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from google import genai
 from google.genai import errors, types
 
-from .utils import FileCache, UNSUPPORTED_DOCUMENT_TYPES, UNSUPPORTED_EXTENSIONS
+from .utils import UNSUPPORTED_DOCUMENT_TYPES, UNSUPPORTED_EXTENSIONS, FileCache
 
 file_cache = FileCache()
 
 _MMC = TypeVar("_MMC", bound=MultiModalPromptMessageContent)
 
 IMAGE_GENERATION_MODELS = {
-    "gemini-2.0-flash-preview-image-generation",
-    "gemini-2.5-flash-image-preview",
     "gemini-2.5-flash-image",
+    "gemini-3-pro-image-preview",
 }
+
+# https://ai.google.dev/gemini-api/docs/thought-signatures#faqs
+DEFAULT_THOUGHT_SIGNATURE: bytes = b"skip_thought_signature_validator"
 
 
 class GoogleLargeLanguageModel(LargeLanguageModel):
@@ -61,7 +67,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: Combined string with necessary human_prompt and ai_prompt tags.
         """
         messages = messages.copy()
-        text = "".join((self._convert_one_message_to_text(message) for message in messages))
+        text = "".join(
+            (self._convert_one_message_to_text(message) for message in messages)
+        )
         return text.rstrip()
 
     @staticmethod
@@ -76,7 +84,10 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         for tool in tools:
             properties = {}
             for key, value in tool.parameters.get("properties", {}).items():
-                property_def = {"type": "STRING", "description": value.get("description", "")}
+                property_def = {
+                    "type": "STRING",
+                    "description": value.get("description", ""),
+                }
                 if "enum" in value:
                     property_def["enum"] = value["enum"]
                 properties[key] = property_def
@@ -109,7 +120,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         ai_prompt = "\n\nmodel:"
         content = message.content
         if isinstance(content, list):
-            content = "".join((c.data for c in content if c.type != PromptMessageContentType.IMAGE))
+            content = "".join(
+                (c.data for c in content if c.type != PromptMessageContentType.IMAGE)
+            )
         if isinstance(message, UserPromptMessage):
             message_text = f"{human_prompt} {content}"
         elif isinstance(message, AssistantPromptMessage):
@@ -121,10 +134,56 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         return message_text
 
     @staticmethod
-    def _upload_file_content_to_google(
-        message_content: _MMC, genai_client: genai.Client, file_server_url_prefix: str | None = None
-    ) -> Tuple[str, str]:
+    def _get_file_data(
+        message_content: _MMC, file_server_url_prefix: str | None = None
+    ) -> Tuple[bytes, str]:
+        """
+        获取文件数据和 MIME 类型，用于内联方式处理
 
+        :param message_content: 消息内容
+        :param file_server_url_prefix: 文件服务器 URL 前缀
+        :return: (文件数据，MIME 类型)
+        """
+        if message_content.base64_data:
+            file_content = base64.b64decode(message_content.base64_data)
+        else:
+            try:
+                file_url = message_content.url
+                if not file_url:
+                    raise ValueError("File URL is missing in message content.")
+                if file_server_url_prefix:
+                    file_url = f"{file_server_url_prefix.rstrip('/')}/files{message_content.url.split('/files')[-1]}"
+                if not file_url.startswith(("https", "http://")):
+                    raise ValueError(
+                        "Set FILES_URL env first! Or provide an absolute URL."
+                    )
+                response: requests.Response = requests.get(file_url)
+                response.raise_for_status()
+                file_content = response.content
+            except requests.exceptions.RequestException as ex:
+                raise ValueError(f"Failed to fetch data from url {file_url}") from ex
+            except (ValueError, AttributeError) as ex:
+                raise ValueError(
+                    f"Failed to process file URL: {message_content.url}"
+                ) from ex
+
+        pending_mime_type = message_content.mime_type
+
+        with suppress(Exception):
+            if (
+                message_content.type == PromptMessageContentType.DOCUMENT
+                and message_content.format in ["md"]
+            ):
+                pending_mime_type = "text/markdown"
+
+        return file_content, pending_mime_type
+
+    @staticmethod
+    def _upload_file_content_to_google(
+        message_content: _MMC,
+        genai_client: genai.Client,
+        file_server_url_prefix: str | None = None,
+    ) -> Tuple[str, str]:
         key = f"{message_content.type.value}:{hash(message_content.data)}"
         if file_cache.exists(key):
             value = file_cache.get(key).split(";")
@@ -139,7 +198,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     file_url = message_content.url
                     if file_server_url_prefix:
                         file_url = f"{file_server_url_prefix.rstrip('/')}/files{message_content.url.split('/files')[-1]}"
-                    if not file_url.startswith("https://") and not file_url.startswith("http://"):
+                    if not file_url.startswith("https://") and not file_url.startswith(
+                        "http://"
+                    ):
                         raise ValueError("Set FILES_URL env first!")
                     response: requests.Response = requests.get(file_url)
                     response.raise_for_status()
@@ -158,7 +219,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 pending_mime_type = "text/markdown"
 
         file = genai_client.files.upload(
-            file=temp_file.name, config=types.UploadFileConfig(mime_type=pending_mime_type)
+            file=temp_file.name,
+            config=types.UploadFileConfig(mime_type=pending_mime_type),
         )
 
         while file.state.name == "PROCESSING":
@@ -181,6 +243,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         """
         Render google search source links
         """
+        if not grounding_metadata or not grounding_metadata.grounding_chunks:
+            return ""
+            
         result = "\n\n**Search Sources:**\n"
         for index, entry in enumerate(grounding_metadata.grounding_chunks, start=1):
             result += f"{index}. [{entry.web.title}]({entry.web.uri})\n"
@@ -222,16 +287,17 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # https://ai.google.dev/gemini-api/docs/pricing?hl=zh-cn#gemini-2.5-pro
         # FIXME: Currently, Dify's pricing model cannot cover the tokens of multimodal resources
         # FIXME: Unable to track caching, Grounding, Live API
-        for _mtc in usage_metadata.prompt_tokens_details:
-            if _mtc.modality in [
-                types.MediaModality.TEXT,
-                types.MediaModality.IMAGE,
-                types.MediaModality.VIDEO,
-                types.MediaModality.MODALITY_UNSPECIFIED,
-                types.MediaModality.AUDIO,
-                types.MediaModality.DOCUMENT,
-            ]:
-                prompt_tokens_standard += _mtc.token_count
+        if usage_metadata.prompt_tokens_details:
+            for _mtc in usage_metadata.prompt_tokens_details:
+                if _mtc.modality in [
+                    types.MediaModality.TEXT,
+                    types.MediaModality.IMAGE,
+                    types.MediaModality.VIDEO,
+                    types.MediaModality.MODALITY_UNSPECIFIED,
+                    types.MediaModality.AUDIO,
+                    types.MediaModality.DOCUMENT,
+                ]:
+                    prompt_tokens_standard += _mtc.token_count
 
         # Number of tokens present in thoughts output.
         thoughts_token_count = usage_metadata.thoughts_token_count or 0
@@ -251,13 +317,14 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         model_parameters: Mapping[str, Any],
         stop: List[str] | None = None,
     ) -> None:
-        if schema := model_parameters.get("json_schema"):
-            try:
-                schema = json.loads(schema)
-            except (TypeError, ValueError) as exc:
-                raise InvokeError("Invalid JSON Schema") from exc
-            config.response_schema = schema
+        if "json_schema" in model_parameters:
             config.response_mime_type = "application/json"
+            if schema := model_parameters.get("json_schema"):
+                try:
+                    schema = json.loads(schema)
+                except (TypeError, ValueError) as exc:
+                    raise InvokeError("Invalid JSON Schema") from exc
+                config.response_schema = schema
 
         if stop:
             config.stop_sequences = stop
@@ -267,9 +334,66 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         config.temperature = model_parameters.get("temperature", None)
         config.max_output_tokens = model_parameters.get("max_output_tokens", None)
 
+        if media_resolution := model_parameters.get("media_resolution", ""):
+            if media_resolution in ["Default"]:
+                config.media_resolution = (
+                    types.MediaResolution.MEDIA_RESOLUTION_UNSPECIFIED
+                )
+            elif media_resolution in ["Low"]:
+                config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_LOW
+            elif media_resolution in ["Medium"]:
+                config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_MEDIUM
+            elif media_resolution in ["High"]:
+                config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_HIGH
+
+    @staticmethod
+    def _set_image_config(
+        *,
+        config: types.GenerateContentConfig,
+        model_parameters: Mapping[str, Any],
+        model: str,
+    ):
+        if model not in IMAGE_GENERATION_MODELS:
+            return
+
+        aspect_ratio = model_parameters.get("aspect_ratio")
+        if (
+            not aspect_ratio
+            or not isinstance(aspect_ratio, str)
+            or aspect_ratio
+            not in [
+                "1:1",
+                "2:3",
+                "3:2",
+                "3:4",
+                "4:3",
+                "4:5",
+                "5:4",
+                "9:16",
+                "16:9",
+                "21:9",
+            ]
+        ):
+            aspect_ratio = None
+
+        resolution = model_parameters.get("resolution")
+        if (
+            not resolution
+            or not isinstance(resolution, str)
+            or resolution not in ["1K", "2K", "4K"]
+        ):
+            resolution = None
+
+        config.image_config = types.ImageConfig(
+            image_size=resolution, aspect_ratio=aspect_ratio
+        )
+
     @staticmethod
     def _set_thinking_config(
-        *, config: types.GenerateContentConfig, model_parameters: Mapping[str, Any], model_name: str
+        *,
+        config: types.GenerateContentConfig,
+        model_parameters: Mapping[str, Any],
+        model_name: str,
     ) -> None:
         # FIXME: 2025-08-21
         # This blacklist is a temporary workaround. A more robust solution is needed
@@ -291,6 +415,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         include_thoughts = model_parameters.get("include_thoughts", None)
         thinking_budget = model_parameters.get("thinking_budget", None)
         thinking_mode = model_parameters.get("thinking_mode", None)
+        thinking_level = model_parameters.get("thinking_level", None)
 
         # Must be explicitly handled here, where the three states True, False, and None each have specific meanings.
         if thinking_mode is None:
@@ -304,14 +429,34 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             ):
                 thinking_budget = -1
 
+        if isinstance(thinking_level, str):
+            level_map = {
+                "Minimal": types.ThinkingLevel.MINIMAL,
+                "Low": types.ThinkingLevel.LOW,
+                "Medium": types.ThinkingLevel.MEDIUM,
+                "High": types.ThinkingLevel.HIGH,
+            }
+            thinking_level = level_map.get(
+                thinking_level, types.ThinkingLevel.THINKING_LEVEL_UNSPECIFIED
+            )
+        if not isinstance(thinking_level, types.ThinkingLevel):
+            thinking_level = None
+
         config.thinking_config = types.ThinkingConfig(
-            include_thoughts=include_thoughts, thinking_budget=thinking_budget
+            include_thoughts=include_thoughts,
+            thinking_budget=thinking_budget,
+            thinking_level=thinking_level,
         )
 
     @staticmethod
-    def _set_response_modalities(*, config: types.GenerateContentConfig, model_name: str) -> None:
+    def _set_response_modalities(
+        *, config: types.GenerateContentConfig, model_name: str
+    ) -> None:
         if model_name in IMAGE_GENERATION_MODELS:
-            config.response_modalities = [types.Modality.TEXT.value, types.Modality.IMAGE.value]
+            config.response_modalities = [
+                types.Modality.TEXT.value,
+                types.Modality.IMAGE.value,
+            ]
         elif model_name in [
             "models/gemini-2.5-flash-preview-native-audio-dialog",
             "models/gemini-2.5-flash-exp-native-audio-thinking-dialog",
@@ -322,7 +467,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
     @staticmethod
     def _validate_feature_compatibility(
-        model_parameters: Mapping[str, Any], tools: Optional[list[PromptMessageTool]] = None
+        model_parameters: Mapping[str, Any],
+        tools: Optional[list[PromptMessageTool]] = None,
     ) -> dict[str, Any]:
         """
         Validate that the requested features are compatible with each other.
@@ -381,7 +527,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         # Rule 3: url_context and code_execution cannot be used together
         if features["url_context"] and features["code_execution"]:
-            raise InvokeError("`url_context` and `code_execution` cannot be enabled simultaneously")
+            raise InvokeError(
+                "`url_context` and `code_execution` cannot be enabled simultaneously"
+            )
 
         # Log enabled features for debugging
         if enabled_features:
@@ -416,6 +564,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         genai_client: genai.Client,
         config: types.GenerateContentConfig,
         file_server_url_prefix: str | None = None,
+        model_parameters: Mapping[str, Any] | None = None,
     ) -> List[types.Content]:
         """
         Build Gemini contents from prompt messages with proper role alternation
@@ -424,15 +573,15 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :param genai_client: Google GenAI client
         :param config: GenerateContentConfig object
         :param file_server_url_prefix: optional file server URL prefix
+        :param model_parameters: model parameters dictionary
         :return: list of Gemini Content objects ready for use
         """
         contents = []
 
         for msg in prompt_messages:
             content = self._format_message_to_gemini_content(
-                msg, genai_client, config, file_server_url_prefix
+                msg, genai_client, config, file_server_url_prefix, model_parameters
             )
-
             if not content:
                 continue
 
@@ -449,33 +598,51 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         genai_client: genai.Client,
         config: types.GenerateContentConfig,
         file_server_url_prefix: str | None = None,
+        model_parameters: Mapping[str, Any] | None = None,
     ) -> types.Content | None:
         """
         Format a single message into Contents for Google GenAI SDK
 
         :param message: one PromptMessage
+        :param genai_client: Google GenAI client
+        :param config: GenerateContentConfig object
+        :param file_server_url_prefix: optional file server URL prefix
+        :param model_parameters: model parameters dictionary
         :return: Gemini Content representation of message
         """
 
-        def _build_text_parts(_content: str | TextPromptMessageContent) -> List[types.Part]:
+        def _build_text_parts(
+            _content: str | TextPromptMessageContent, *, is_assistant_tree: bool = False
+        ) -> List[types.Part]:
             text_parts = []
             if isinstance(_content, TextPromptMessageContent):
                 _content = _content.data
             if message.role == PromptMessageRole.ASSISTANT:
-                _content = re.sub(r"^<think>.*?</think>\s*", "", _content, count=1, flags=re.DOTALL)
+                _content = re.sub(
+                    r"^<think>.*?</think>\s*", "", _content, count=1, flags=re.DOTALL
+                )
             if _content:
-                text_parts.append(types.Part.from_text(text=_content))
+                _unverified_part = types.Part.from_text(text=_content)
+                if is_assistant_tree:
+                    _unverified_part.thought_signature = DEFAULT_THOUGHT_SIGNATURE
+                text_parts.append(_unverified_part)
             return text_parts
 
         # Helper function to build parts from content
-        def build_parts(content: str | List[PromptMessageContentUnionTypes]) -> List[types.Part]:
+        def build_parts(
+            content: str | List[PromptMessageContentUnionTypes],
+            *,
+            is_assistant_tree: bool = False,
+        ) -> List[types.Part]:
             if isinstance(content, str):
-                return _build_text_parts(content)
+                return _build_text_parts(content, is_assistant_tree=is_assistant_tree)
 
             parts_ = []
             for obj in content:
                 if obj.type == PromptMessageContentType.TEXT:
-                    parts_.extend(_build_text_parts(obj))
+                    parts_.extend(
+                        _build_text_parts(obj, is_assistant_tree=is_assistant_tree)
+                    )
                 else:
                     # Filter files based on type and supported formats
                     should_upload = True
@@ -490,10 +657,39 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
                     # Upload only if the file type is supported
                     if should_upload:
-                        uri, mime_type = self._upload_file_content_to_google(
-                            obj, genai_client, file_server_url_prefix
+                        # 检查是否启用内联文件模式（默认使用 Files API）
+                        use_inline_file = (
+                            model_parameters.get("use_inline_file", False)
+                            if model_parameters
+                            else False
                         )
-                        parts_.append(types.Part.from_uri(file_uri=uri, mime_type=mime_type))
+
+                        if use_inline_file:
+                            # 使用内联方式：直接将文件数据内嵌在请求中
+                            file_data, mime_type = self._get_file_data(
+                                obj, file_server_url_prefix
+                            )
+                            _unverified_part = types.Part.from_bytes(
+                                data=file_data, mime_type=mime_type
+                            )
+                            if is_assistant_tree:
+                                _unverified_part.thought_signature = (
+                                    DEFAULT_THOUGHT_SIGNATURE
+                                )
+                            parts_.append(_unverified_part)
+                        else:
+                            # 使用 Files API 方式：上传文件到 Google，然后使用 URI 引用
+                            uri, mime_type = self._upload_file_content_to_google(
+                                obj, genai_client, file_server_url_prefix
+                            )
+                            _unverified_part = types.Part.from_uri(
+                                file_uri=uri, mime_type=mime_type
+                            )
+                            if is_assistant_tree:
+                                _unverified_part.thought_signature = (
+                                    DEFAULT_THOUGHT_SIGNATURE
+                                )
+                            parts_.append(_unverified_part)
                     else:
                         # Log skipped files for debugging
                         logging.debug(
@@ -511,17 +707,23 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
             # Handle text content (remove thinking tags)
             if message.content:
-                parts.extend(build_parts(message.content))
+                part = build_parts(message.content, is_assistant_tree=True)
+                if part:
+                    parts.extend(part)
 
             # Handle tool calls
             # https://ai.google.dev/gemini-api/docs/function-calling?hl=zh-cn&example=chart#how-it-works
             if message.tool_calls:
                 call = message.tool_calls[0]
-                parts.append(
-                    types.Part.from_function_call(
-                        name=call.function.name, args=json.loads(call.function.arguments)
-                    )
+                _unsafe_part = types.Part.from_function_call(
+                    name=call.function.name, args=json.loads(call.function.arguments)
                 )
+                _unsafe_part.thought_signature = DEFAULT_THOUGHT_SIGNATURE
+                parts.append(_unsafe_part)
+
+            # Filter out assistant messages with empty parts to avoid invalid requests
+            if not parts:
+                return None
 
             return types.Content(role="model", parts=parts)
 
@@ -567,10 +769,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :return: llm response
         """
         # transform assistant message to prompt message
-        if model in IMAGE_GENERATION_MODELS:
-            assistant_prompt_message = self._parse_parts(response.candidates[0].content.parts)
-        else:
-            assistant_prompt_message = AssistantPromptMessage(content=response.text)
+        # Always use _parse_parts to ensure consistent response format (list of PromptMessageContent)
+        # This fixes the "'str' object has no attribute 'get'" error that occurs when
+        # downstream code expects structured content but receives a plain string
+        parts = response.candidates[0].content.parts if response.candidates[0].content else []
+        assistant_prompt_message = self._parse_parts(parts)
 
         # calculate num tokens
         prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
@@ -580,7 +783,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # Fallback to manual calculation if tokens are not available
         if prompt_tokens == 0 or completion_tokens == 0:
             prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
-            completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
+            completion_tokens = self.get_num_tokens(
+                model, credentials, [assistant_prompt_message]
+            )
 
         # transform usage
         # copy credentials to avoid modifying the original dict
@@ -605,6 +810,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         credentials: dict,
         response: Iterator[types.GenerateContentResponse],
         prompt_messages: list[PromptMessage],
+        genai_client: genai.Client,
     ) -> Generator[LLMResultChunk]:
         """
         Handle llm stream response
@@ -627,8 +833,13 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         :param credentials: credentials
         :param response: response
         :param prompt_messages: prompt messages
+        :param genai_client: genai client to keep alive during streaming
         :return: llm response chunk generator result
         """
+        # Keep a reference to the client to prevent it from being garbage collected
+        # while the generator is still active
+        _client_ref = genai_client
+
         index = -1
         self.is_thinking = False
 
@@ -636,13 +847,17 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             if (
                 not chunk.candidates
                 or not chunk.candidates[0].content
-                or not chunk.candidates[0].content.parts
+                or (
+                    not chunk.candidates[0].content.parts
+                    and not chunk.candidates[0].finish_reason
+                )
             ):
                 continue
             candidate = chunk.candidates[0]
-            message = self._parse_parts(candidate.content.parts)
+            parts = candidate.content.parts if candidate.content else []
+            message = self._parse_parts(parts)
 
-            index += len(candidate.content.parts)
+            index += len(parts) if parts else 0
 
             # if the stream is not finished, yield the chunk
             if not candidate.finish_reason:
@@ -655,16 +870,20 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             else:
                 # If we're still in thinking mode at the end, close it
                 if self.is_thinking:
-                    message.content.append(TextPromptMessageContent(data="\n\n</think>"))
+                    message.content.append(
+                        TextPromptMessageContent(data="\n\n</think>")
+                    )
 
-                prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
-                    chunk.usage_metadata
+                prompt_tokens, completion_tokens = (
+                    self._calculate_tokens_from_usage_metadata(chunk.usage_metadata)
                 )
 
                 # Fallback to manual calculation if tokens are not available
                 if prompt_tokens == 0 or completion_tokens == 0:
                     prompt_tokens = self.get_num_tokens(
-                        model=model, credentials=credentials, prompt_messages=prompt_messages
+                        model=model,
+                        credentials=credentials,
+                        prompt_messages=prompt_messages,
                     )
                     completion_tokens = self.get_num_tokens(
                         model=model, credentials=credentials, prompt_messages=[message]
@@ -686,7 +905,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     ),
                 )
 
-    def _parse_parts(self, parts: Sequence[types.Part], /) -> AssistantPromptMessage:
+    def _parse_parts(self, parts: Sequence[types.Part] | None, /) -> AssistantPromptMessage:
         """
 
         Args:
@@ -710,6 +929,13 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         """
         contents: list[PromptMessageContent] = []
         function_calls = []
+        
+        if not parts:
+            return AssistantPromptMessage(
+                content=contents,
+                tool_calls=function_calls,  # type: ignore
+            )
+            
         for part in parts:
             if part.text:
                 # Check if we need to start thinking mode
@@ -743,7 +969,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             if part.function_call:
                 function_call_part: types.FunctionCall = part.function_call
                 # Generate a unique ID since Gemini API doesn't provide one
-                function_call_id = f"gemini_call_{function_call_part.name}_{time.time_ns()}"
+                function_call_id = (
+                    f"gemini_call_{function_call_part.name}_{time.time_ns()}"
+                )
                 logging.info(f"Generated function call ID: {function_call_id}")
                 function_call_name = function_call_part.name
                 function_call_args = function_call_part.args
@@ -755,7 +983,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     id=function_call_id,
                     type="function",
                     function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                        name=function_call_name, arguments=json.dumps(function_call_args)
+                        name=function_call_name,
+                        arguments=json.dumps(function_call_args),
                     ),
                 )
                 function_calls.append(tool_call)
@@ -788,7 +1017,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # https://github.com/langgenius/dify-plugin-sdks/issues/41
         # fixed_contents = [content.model_dump(mode="json") for content in contents]
         message = AssistantPromptMessage(
-            content=contents, tool_calls=function_calls  # type: ignore
+            content=contents,
+            tool_calls=function_calls,  # type: ignore
         )
         return message
 
@@ -818,7 +1048,14 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         """
         _ = user
         return self._generate(
-            model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
+            model,
+            credentials,
+            prompt_messages,
+            model_parameters,
+            tools,
+            stop,
+            stream,
+            user,
         )
 
     def _generate(
@@ -832,7 +1069,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator[LLMResultChunk]]:
-
         # Validate and adjust feature compatibility
         model_parameters = self._validate_feature_compatibility(model_parameters, tools)
 
@@ -841,12 +1077,16 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         config = types.GenerateContentConfig()
         genai_client = genai.Client(
             api_key=credentials["google_api_key"],
-            http_options=types.HttpOptions(base_url=credentials.get("google_base_url", None)),
+            http_options=types.HttpOptions(
+                base_url=credentials.get("google_base_url", None)
+            ),
         )
 
         # == ChatConfig == #
 
-        self._set_chat_parameters(config=config, model_parameters=model_parameters, stop=stop)
+        self._set_chat_parameters(
+            config=config, model_parameters=model_parameters, stop=stop
+        )
 
         # Build contents from prompt messages
         file_server_url_prefix = credentials.get("file_url") or None
@@ -855,6 +1095,13 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             genai_client=genai_client,
             config=config,
             file_server_url_prefix=file_server_url_prefix,
+            model_parameters=model_parameters,
+        )
+
+        # == ImageConfig == #
+
+        self._set_image_config(
+            config=config, model_parameters=model_parameters, model=model
         )
 
         # == ThinkingConfig == #
@@ -884,22 +1131,43 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # == ToolUseConfig == #
 
         # Must be executed after `_validate_feature_compatibility`
-        self._set_tool_calling(config=config, model_parameters=model_parameters, tools=tools)
+        self._set_tool_calling(
+            config=config, model_parameters=model_parameters, tools=tools
+        )
 
         # == InvokeModel == #
+
+        # Handle empty contents scenario (e.g., only system instruction provided)
+        # Gemini API requires at least one content in the conversation
+        if not contents:
+            if config.system_instruction:
+                # When only system instruction is provided, add it as a user message
+                contents = [
+                    types.Content(
+                        role="user",
+                        parts=[types.Part.from_text(text=config.system_instruction)]
+                    )
+                ]
+            else:
+                raise InvokeBadRequestError(
+                    "No valid content to send to Gemini API. "
+                    "Please provide at least one user message with content."
+                )
 
         if stream:
             response = genai_client.models.generate_content_stream(
                 model=model, contents=contents, config=config
             )
             return self._handle_generate_stream_response(
-                model, credentials, response, prompt_messages
+                model, credentials, response, prompt_messages, genai_client
             )
 
         response = genai_client.models.generate_content(
             model=model, contents=contents, config=config
         )
-        return self._handle_generate_response(model, credentials, response, prompt_messages)
+        return self._handle_generate_response(
+            model, credentials, response, prompt_messages
+        )
 
     def get_num_tokens(
         self,
@@ -924,7 +1192,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         """
-        Validate model credentials
+        Validate model credentials using actual LLM generation API
+        to ensure credentials work for real usage.
 
         :param model: model name
         :param credentials: model credentials
@@ -933,8 +1202,19 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         try:
             genai_client = genai.Client(
                 api_key=credentials["google_api_key"],
-                http_options=types.HttpOptions(base_url=credentials.get("google_base_url", None)),
+                http_options=types.HttpOptions(
+                    base_url=credentials.get("google_base_url", None)
+                ),
             )
-            genai_client.models.count_tokens(model=model, contents="ping")
+            # Use generate_content instead of count_tokens to validate credentials
+            # This ensures the credentials can actually be used for LLM generation
+            genai_client.models.generate_content(
+                model=model,
+                contents="ping",
+                config=types.GenerateContentConfig(
+                    temperature=0,
+                    max_output_tokens=20,
+                ),
+            )
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))

@@ -1,0 +1,240 @@
+identity:
+  name: check_suite_completed
+  author: langgenius
+  label:
+    en_US: Check Suite Completed
+    zh_Hans: 检查套件已完成
+    ja_JP: チェックスイート完了
+
+description:
+  en_US: Triggers when a check suite completes on a branch
+  zh_Hans: 当分支上的检查套件完成时触发
+  ja_JP: ブランチ上のチェックスイートが完了したときにトリガーします
+
+parameters:
+- name: conclusion
+  label:
+    en_US: Conclusion
+    zh_Hans: 结论
+    ja_JP: 結論
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for these conclusions (success,failure,neutral,cancelled,timed_out,action_required,stale,skipped; comma-separated)."
+    zh_Hans: "仅当结论为这些值时触发（success、failure、neutral、cancelled、timed_out、action_required、stale、skipped；逗号分隔）。"
+    ja_JP: "これらの結論の場合のみトリガー（success,failure,neutral,cancelled,timed_out,action_required,stale,skipped、カンマ区切り）。"
+
+- name: branch
+  label:
+    en_US: Branch
+    zh_Hans: 分支
+    ja_JP: ブランチ
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for these branches (comma-separated)."
+    zh_Hans: "仅当分支匹配时触发（逗号分隔）。"
+    ja_JP: "これらのブランチの場合のみトリガー（カンマ区切り）。"
+
+- name: app_slug
+  label:
+    en_US: App Slug
+    zh_Hans: 应用 Slug
+    ja_JP: アプリスラッグ
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if emitted by these GitHub Apps (comma-separated slugs)."
+    zh_Hans: "仅当由这些 GitHub 应用产生时触发（逗号分隔 slug）。"
+    ja_JP: "これらの GitHub アプリからのチェックのみでトリガー（スラッグ、カンマ区切り）。"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    check_suite:
+      type: object
+      properties:
+        id:
+          type: integer
+        head_branch:
+          type: string
+        head_sha:
+          type: string
+        status:
+          type: string
+        conclusion:
+          type: string
+        before:
+          type:
+          - string
+          - "null"
+        after:
+          type:
+          - string
+          - "null"
+        url:
+          type: string
+          format: uri
+        app:
+          type: object
+          properties:
+            id:
+              type: integer
+            slug:
+              type: string
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+      required:
+      - id
+      - head_branch
+      - head_sha
+      - status
+      - conclusion
+    repository:
+      type: object
+      description: The repository where the check suite ran
+      properties:
+        id:
+          type: integer
+          format: int64
+        node_id:
+          type: string
+        name:
+          type: string
+        full_name:
+          type: string
+        private:
+          type: boolean
+        owner:
+          type: object
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+            node_id:
+              type: string
+            avatar_url:
+              type: string
+              format: uri
+            html_url:
+              type: string
+              format: uri
+            type:
+              type: string
+              enum:
+              - Bot
+              - User
+              - Organization
+            site_admin:
+              type: boolean
+          required:
+          - id
+          - login
+        html_url:
+          type: string
+          format: uri
+        description:
+          type:
+          - string
+          - "null"
+        fork:
+          type: boolean
+        url:
+          type: string
+          format: uri
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        pushed_at:
+          type:
+          - string
+          - "null"
+          format: date-time
+        stargazers_count:
+          type: integer
+        watchers_count:
+          type: integer
+        language:
+          type:
+          - string
+          - "null"
+        forks_count:
+          type: integer
+        open_issues_count:
+          type: integer
+        default_branch:
+          type: string
+        topics:
+          type: array
+          items:
+            type: string
+        visibility:
+          type: string
+          enum:
+          - public
+          - private
+          - internal
+      required:
+      - id
+      - node_id
+      - name
+      - full_name
+      - private
+      - owner
+      - html_url
+      - url
+      - created_at
+      - updated_at
+      - fork
+      - default_branch
+      - visibility
+    sender:
+      type: object
+      description: The user who triggered the event
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        node_id:
+          type: string
+        avatar_url:
+          type: string
+          format: uri
+        html_url:
+          type: string
+          format: uri
+        type:
+          type: string
+          enum:
+          - Bot
+          - User
+          - Organization
+        site_admin:
+          type: boolean
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - check_suite
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/check_suite/check_suite_completed.py

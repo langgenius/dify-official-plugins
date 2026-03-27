@@ -1,0 +1,177 @@
+identity:
+  name: "ernie-irag"
+  author: "langgenius"
+  label:
+    en_US: "ERNIE iRAG"
+    zh_Hans: "ERNIE iRAG"
+    pt_BR: "ERNIE iRAG"
+    ja_JP: "ERNIE iRAG"
+description:
+  human:
+    en_US: "ERNIE iRAG Image Generation Model - Supports Text-to-Image, Image Reference, and Dify file variables"
+    zh_Hans: "ERNIE iRAG 图像生成模型 - 支持文生图、图像参考和 Dify 文件变量"
+    pt_BR: "Modelo de Geração ERNIE iRAG - Suporta Texto-para-Imagem, Referência de Imagem e Variáveis de Arquivo Dify"
+    ja_JP: "ERNIE iRAG 画像生成モデル - テキストから画像、画像参照、Difyファイル変数をサポート"
+  llm: "Generate images using ERNIE iRAG model (qianfan/irag-1.0) with advanced Chinese language understanding. Supports image reference for style consistency. Accepts URLs, base64 data, or Dify file transfer variables."
+parameters:
+  - name: prompt
+    type: string
+    required: true
+    label:
+      en_US: "Prompt"
+      zh_Hans: "提示词"
+      pt_BR: "Prompt"
+      ja_JP: "プロンプト"
+    human_description:
+      en_US: "Text description of image you want to generate"
+      zh_Hans: "您想要生成的图像的文字描述"
+      pt_BR: "Descrição textual da imagem que você deseja gerar"
+      ja_JP: "生成したい画像のテキスト説明"
+    llm_description: "Text prompt for ERNIE iRAG image generation, describing the desired image content. Optimized for Chinese prompts"
+    form: llm
+  
+  - name: refer_image
+    type: string
+    required: false
+    label:
+      en_US: "Reference Image"
+      zh_Hans: "参考图像"
+      pt_BR: "Imagem de Referência"
+      ja_JP: "参照画像"
+    human_description:
+      en_US: "Reference image for style guidance. Supports: URL, Data URL (base64), Dify file variable. Connect from other nodes in workflow."
+      zh_Hans: "用于风格指导的参考图像。支持：URL、Data URL（base64）、Dify 文件变量。可从工作流中的其他节点连接。"
+      pt_BR: "Imagem de referência para orientação de estilo. Suporta: URL, URL de dados (base64), variável de arquivo Dify. Conecte-se de outros nós no fluxo de trabalho."
+      ja_JP: "スタイルガイダンスのための参照画像。サポート: URL、データURL (base64)、Difyファイル変数。工作フローの他のノードから接続可能。"
+    llm_description: "Reference image for ERNIE iRAG to use as style guidance. Accepts URLs, base64 data, or Dify file transfer variables. Leave empty for pure text-to-image generation."
+    form: llm
+  
+  - name: resolution
+    type: select
+    required: false
+    label:
+      en_US: "Resolution"
+      zh_Hans: "分辨率"
+      pt_BR: "Resolução"
+      ja_JP: "解像度"
+    human_description:
+      en_US: "Image resolution"
+      zh_Hans: "图像分辨率"
+      pt_BR: "Resolução da imagem"
+      ja_JP: "画像解像度"
+    llm_description: "Output image resolution for ERNIE iRAG generation"
+    form: form
+    default: "1024x1024"
+    options:
+      - value: "1024x1024"
+        label:
+          en_US: "1024x1024"
+          zh_Hans: "1024x1024"
+          pt_BR: "1024x1024"
+          ja_JP: "1024x1024"
+      - value: "768x1024"
+        label:
+          en_US: "768x1024"
+          zh_Hans: "768x1024"
+          pt_BR: "768x1024"
+          ja_JP: "768x1024"
+      - value: "1024x2048"
+        label:
+          en_US: "1024x2048"
+          zh_Hans: "1024x2048"
+          pt_BR: "1024x2048"
+          ja_JP: "1024x2048"
+  
+  - name: num_images
+    type: number
+    required: false
+    label:
+      en_US: "Number of Images"
+      zh_Hans: "生成数量"
+      pt_BR: "Número de Imagens"
+      ja_JP: "画像数"
+    human_description:
+      en_US: "Number of images to generate (1-4)"
+      zh_Hans: "生成图像的数量 (1-4)"
+      pt_BR: "Número de imagens para gerar (1-4)"
+      ja_JP: "生成する画像の数 (1-4)"
+    llm_description: "Number of ERNIE iRAG images to generate. Range: 1-4"
+    form: form
+    default: 1
+    min: 1
+    max: 4
+  
+  - name: guidance
+    type: number
+    required: false
+    label:
+      en_US: "Guidance Scale"
+      zh_Hans: "引导强度"
+      pt_BR: "Escala de Orientação"
+      ja_JP: "ガイダンススケール"
+    human_description:
+      en_US: "Guidance scale for image generation (1.0-20.0)"
+      zh_Hans: "图像生成的引导强度 (1.0-20.0)"
+      pt_BR: "Escala de orientação para geração de imagem (1.0-20.0)"
+      ja_JP: "画像生成のガイダンススケール (1.0-20.0)"
+    llm_description: "Guidance scale for ERNIE iRAG generation. Higher values follow the prompt more closely. Range: 1.0-20.0"
+    form: form
+    default: 7.5
+    min: 1.0
+    max: 20.0
+  
+  - name: watermark
+    type: boolean
+    required: false
+    label:
+      en_US: "Add Watermark"
+      zh_Hans: "添加水印"
+      pt_BR: "Adicionar Marca d'água"
+      ja_JP: "透かしを追加"
+    human_description:
+      en_US: "Whether to add watermark to the generated image"
+      zh_Hans: "是否在生成的图像中添加水印"
+      pt_BR: "Se deve adicionar marca d'água à imagem gerada"
+      ja_JP: "生成された画像に透かしを追加するかどうか"
+    llm_description: "Whether to add watermark to the generated image using ERNIE iRAG"
+    form: form
+    default: false
+
+  - name: image_format
+    type: select
+    required: false
+    label:
+      en_US: "Image Format"
+      zh_Hans: "图片格式"
+      pt_BR: "Formato de Imagem"
+      ja_JP: "画像フォーマット"
+    human_description:
+      en_US: "Output image format"
+      zh_Hans: "输出图片格式"
+      pt_BR: "Formato de saída da imagem"
+      ja_JP: "出力画像フォーマット"
+    llm_description: "Image format for ERNIE iRAG generation"
+    form: form
+    default: "png"
+    options:
+      - value: "png"
+        label:
+          en_US: "PNG"
+          zh_Hans: "PNG"
+          pt_BR: "PNG"
+          ja_JP: "PNG"
+      - value: "jpeg"
+        label:
+          en_US: "JPEG"
+          zh_Hans: "JPEG"
+          pt_BR: "JPEG"
+          ja_JP: "JPEG"
+      - value: "webp"
+        label:
+          en_US: "WebP"
+          zh_Hans: "WebP"
+          pt_BR: "WebP"
+          ja_JP: "WebP"
+extra:
+  python:
+    source: tools/ernie-irag.py

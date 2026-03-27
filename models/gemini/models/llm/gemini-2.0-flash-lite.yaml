@@ -1,7 +1,9 @@
+# https://ai.google.dev/gemini-api/docs/models/gemini-2.0-flash-lite
 model: gemini-2.0-flash-lite
 label:
   en_US: Gemini 2.0 Flash-Lite
 model_type: llm
+deprecated: true
 features:
   - agent-thought
   - vision
@@ -21,15 +23,7 @@ parameter_rules:
     max: 2
   - name: top_p
     use_template: top_p
-  - name: top_k
-    label:
-      zh_Hans: 取样数量
-      en_US: Top k
-    type: int
-    help:
-      zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
-      en_US: Only sample from the top K options for each subsequent token.
-    required: false
+    default: 0.95
   - name: max_output_tokens
     use_template: max_tokens
     default: 8192
@@ -37,8 +31,9 @@ parameter_rules:
     max: 8192
   - name: json_schema
     use_template: json_schema
+# https://ai.google.dev/gemini-api/docs/pricing#gemini-2.0-flash-lite
 pricing:
-  input: '0.00'
-  output: '0.00'
+  input: '0.075'
+  output: '0.30'
   unit: '0.000001'
   currency: USD

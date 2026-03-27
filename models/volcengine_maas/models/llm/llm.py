@@ -251,6 +251,36 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
             return _handle_chat_response()
         return _handle_stream_chat_response()
 
+
+    def _wrap_thinking_by_reasoning_content(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
+        """
+        If the reasoning response is from delta.get("reasoning_content"), we wrap
+        it with HTML think tag.
+
+        :param delta: delta dictionary from LLM streaming response
+        :param is_reasoning: is reasoning
+        :return: tuple of (processed_content, is_reasoning)
+        """
+
+        content = delta.get("content") or ""
+        reasoning_content = delta.get("reasoning_content")
+        output = content
+        if reasoning_content:
+            if not is_reasoning:
+                output = "<think>\n" + reasoning_content
+                is_reasoning = True
+            else:
+                output = reasoning_content
+        else:
+            if is_reasoning:
+                is_reasoning = False
+                if not reasoning_content:
+                    output = "\n</think>"
+                if content:
+                    output += content
+            
+        return output, is_reasoning
+
     def wrap_thinking(self, delta: dict, is_reasoning: bool) -> tuple[str, bool]:
         content = ""
         reasoning_content = None
@@ -297,6 +327,11 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                 model_parameters["response_format"] = {"type": response_format}
         elif "json_schema" in model_parameters:
             del model_parameters["json_schema"]
+
+        if "thinking" in model_parameters:
+            thinking_type = model_parameters.get("thinking")
+            if thinking_type == "disabled":
+                model_parameters["reasoning_effort"] = "minimal"
 
         req_params = get_v3_req_params(credentials, model_parameters, stop)
         if tools:
@@ -581,8 +616,20 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     options=["enabled", "disabled", "auto"],
                 )
             )
-        elif base_model.lower() in ("doubao-1.5-thinking-vision-pro", "doubao-seed-1.6-flash", "deepseek-v3.1",
-                                    "doubao-seed-1.6-vision"):
+        elif base_model.lower() in (
+            "doubao-1.5-thinking-vision-pro",
+            "doubao-seed-1.6-flash",
+            "deepseek-v3.1",
+            "doubao-seed-1.6-vision",
+            "doubao-seed-1.6-lite",
+            "deepseek-v3.2",
+            "doubao-seed-1.8",
+            "glm-4.7",
+            "doubao-seed-2.0-pro",
+            "doubao-seed-2.0-lite",
+            "doubao-seed-2.0-mini",
+            "doubao-seed-2.0-code",
+        ):
             rules.append(
                 ParameterRule(
                     name="thinking",
@@ -592,7 +639,24 @@ class VolcengineMaaSLargeLanguageModel(LargeLanguageModel):
                     options=["enabled", "disabled"],
                 )
             )
-
+        if base_model.lower() in (
+            "doubao-seed-1.6-lite",
+            "doubao-seed-1.6",
+            "doubao-seed-1.8",
+            "doubao-seed-2.0-pro",
+            "doubao-seed-2.0-lite",
+            "doubao-seed-2.0-mini",
+            "doubao-seed-2.0-code",
+        ):
+            rules.append(
+                ParameterRule(
+                    name="reasoning_effort",
+                    type=ParameterType.STRING,
+                    default="medium",
+                    label=I18nObject(zh_Hans="思考长度", en_US="reasoning_effort"),
+                    options=["minimal", "low", "medium", "high"],
+                )
+            )
         # Add structured output parameters for supported models
         if ModelFeature.STRUCTURED_OUTPUT in model_config.features:
             rules.extend([

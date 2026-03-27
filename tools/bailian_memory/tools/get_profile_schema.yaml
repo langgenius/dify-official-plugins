@@ -1,0 +1,30 @@
+identity:
+  name: get_profile_schema
+  author: 佐井
+  label:
+    en_US: Get Profile Schema
+    zh_Hans: 获取画像模板详情
+    ja_Jp: プロファイルスキーマ詳細取得
+description:
+  human:
+    en_US: Get detailed information of a specific profile schema template.
+    zh_Hans: 获取指定画像模板的详细信息。
+    ja_Jp: 指定されたプロファイルスキーマテンプレートの詳細情報を取得します。
+  llm: Get the detailed information of a profile schema template including all its attribute definitions.
+parameters:
+  - name: profile_schema_id
+    type: string
+    required: true
+    label:
+      en_US: Profile Schema ID
+      zh_Hans: 画像模板 ID
+      ja_Jp: プロファイルスキーマID
+    human_description:
+      en_US: The ID of the profile schema
+      zh_Hans: 画像模板 ID
+      ja_Jp: プロファイルスキーマのID
+    llm_description: The ID of the profile schema template to retrieve.
+    form: llm
+extra:
+  python:
+    source: tools/get_profile_schema.py

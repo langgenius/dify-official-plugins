@@ -48,6 +48,19 @@ parameter_rules:
       - medium
       - low
       - minimal
+  - name: verbosity
+    label:
+      zh_Hans: 回复详细度
+      en_US: Verbosity
+    required: false
+    type: string
+    help:
+      zh_Hans: "控制模型响应的详细程度和长度。值越小，响应越简洁；值越大，响应越详细和全面。 (Default: medium)"
+      en_US: "Controls the verbosity and length of the model response. Lower values produce more concise responses, while higher values produce more detailed and comprehensive responses.  (Default: medium)"
+    options:
+      - low
+      - medium
+      - high
   - name: exclude_reasoning_tokens
     label:
       zh_Hans: 隐藏思考过程

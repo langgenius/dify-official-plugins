@@ -24,10 +24,7 @@ class RetrieveRecordsTool(Tool):
         if not table_name:
             yield self.create_text_message("Table name is required.")
             return
-        
-        # Normalize table name so first letter of each word is uppercase
-        table_name = ' '.join(word.capitalize() for word in table_name.split(' '))
-        
+                
         try:
             # Get credentials
             nocodb_url = self.runtime.credentials.get("nocodb_url")

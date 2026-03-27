@@ -43,13 +43,18 @@ class GPTImageEditTool(Tool):
             yield self.create_text_message("Error: Prompt is required.")
             return
 
+        model = tool_parameters.get("model", "gpt-image-1")
+        if model not in (allowed_models := {"gpt-image-1", "gpt-image-1-mini"}):
+            yield self.create_text_message(f"Invalid model. Choose from: {', '.join(sorted(allowed_models))}.")
+            return
+
         image = tool_parameters.get("image")
         if not image:
             yield self.create_text_message("Error: Input image file is required.")
             return
         
         edit_args: Dict[str, Any] = {
-            "model": "gpt-image-1",  # Explicitly using gpt-image-1 as it supports multiple images
+            "model": model,
             "prompt": prompt,
         }
 
