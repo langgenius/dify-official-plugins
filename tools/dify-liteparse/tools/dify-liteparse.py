@@ -9,21 +9,15 @@ from liteparse import LiteParse # This requires liteparse in requirements.txt
 
 class DifyLiteparseTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
-        # Fetch API key from provider settings if not provided in the node parameters
-        api_key = tool_parameters.get('api_key') or self.provider_credentials.get('api_key')
         file_obj = tool_parameters.get('file')
 
-        if not api_key:
-            yield self.create_text_message("Error: LlamaCloud API Key is missing.")
-            return
-        
         if not file_obj:
             yield self.create_text_message("Error: No file uploaded.")
             return
 
         try:
-            # 2. Initialize LiteParse
-            parser = LiteParse(api_key=api_key)
+            # 2. Initialize LiteParse (Local-first, no API key needed)
+            parser = LiteParse()
 
             # 3. Handle the file
             # Dify provides a file object or a list of file objects.

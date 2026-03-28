@@ -12,17 +12,7 @@ identity:
     - utilities
 
 # This defines the global 'Settings' fields
-credentials_for_provider:
-  api_key:
-    type: secret-input
-    required: true
-    label:
-      en_US: "LlamaCloud API Key"
-      zh_Hans: "LlamaCloud API 密钥"
-    placeholder:
-      en_US: "llx-..."
-    help:
-      en_US: "Get your key from https://cloud.llamaindex.ai/"
+credentials_for_provider: {}
 
 tools:
   - tools/dify-liteparse.yaml

@@ -15,16 +15,6 @@ description:
     ja_JP: "LlamaIndex LiteParseを使用して、PDFや複雑なドキュメントをクリーンなMarkdownに変換します。"
   llm: "Use this tool to extract text and structure from PDF, DOCX, and other documents into Markdown format."
 parameters:
-  - name: api_key
-    type: secret-input
-    required: true
-    label:
-      en_US: "LlamaCloud API Key"
-      zh_Hans: "LlamaCloud API 密钥"
-    human_description:
-      en_US: "Enter your LlamaCloud API Key. You can get one at cloud.llamaindex.ai"
-      zh_Hans: "输入您的 LlamaCloud API 密钥。您可以在 cloud.llamaindex.ai 获取。"
-    form: form
   - name: file
     type: file
     required: true
