@@ -39,7 +39,11 @@ class DifyLiteparseTool(Tool):
                     file_path = file_obj.path
                 elif hasattr(file_obj, 'blob'):
                     # Retrieve the binary content and save to a temporary file
-                    content = file_obj.blob()
+                    if callable(file_obj.blob):
+                        content = file_obj.blob()
+                    else:
+                        content = file_obj.blob
+                    
                     ext = getattr(file_obj, 'extension', '.pdf')
                     if ext and not ext.startswith('.'):
                         ext = f".{ext}"
