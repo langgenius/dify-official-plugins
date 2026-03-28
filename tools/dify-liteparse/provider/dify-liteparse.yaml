@@ -8,6 +8,8 @@ identity:
     en_US: "High-accuracy document parsing via LlamaIndex."
     zh_Hans: "基于 LlamaIndex 的高精度文档解析。"
   icon: "icon.svg"
+  tags:
+    - utilities
 
 # This defines the global 'Settings' fields
 credentials_for_provider:
@@ -23,4 +25,8 @@ credentials_for_provider:
       en_US: "Get your key from https://cloud.llamaindex.ai/"
 
 tools:
-  - tools/dify-liteparse.yaml # Ensure this path matches your tool yaml location
+  - tools/dify-liteparse.yaml
+
+extra:
+  python:
+    source: provider/dify-liteparse.py
