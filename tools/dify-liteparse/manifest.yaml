@@ -1,6 +1,6 @@
 version: 0.0.1
 type: plugin
-author: langgenius
+author: serdalaslantas38
 name: dify-liteparse
 label:
   en_US: LiteParse Document Parser
@@ -13,8 +13,7 @@ description:
   zh_Hans: 基于 Docling 的高性能文档解析。在没有 Node.js 的情况下将 PDF/文档转换为干净的 Markdown。
   pt_BR: Processamento de documentos de alto desempenho via Docling. Converte PDFs/Docs em Markdown sem Node.js.
 icon: icon.svg
-# If you don't have a specific dark mode icon, it's safer to point to the same icon.svg or remove this line
-icon_dark: icon-dark.svg 
+icon_dark: icon-dark.svg
 resource:
   memory: 1073741824 # Increased to 1GB to handle Docling models (torch/transformers)
   permission:
