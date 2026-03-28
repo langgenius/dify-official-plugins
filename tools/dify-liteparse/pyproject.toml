@@ -1,0 +1,14 @@
+[project]
+name = "liteparse-plugin"
+version = "0.1.0"
+description = "Fast, open-source document parsing powered by LiteParse."
+readme = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+    "dify_plugin>=0.4.0",
+    "liteparse",
+]
+
+[dependency-groups]
+dev = []
