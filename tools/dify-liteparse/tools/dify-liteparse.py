@@ -22,10 +22,13 @@ class DifyLiteparseTool(Tool):
             return
 
         try:
-            # Pass common absolute paths to find 'lit' CLI in isolated environments
+            # Pass common absolute paths to find 'liteparse' CLI (or legacy 'lit')
             possible_cli_paths = [
+                "/Users/serdalaslantas/.nvm/versions/node/v24.13.1/bin/liteparse",
                 "/Users/serdalaslantas/.nvm/versions/node/v24.13.1/bin/lit",
+                "/usr/local/bin/liteparse",
                 "/usr/local/bin/lit",
+                "/opt/homebrew/bin/liteparse",
                 "/opt/homebrew/bin/lit",
             ]
             cli_path = None
@@ -37,6 +40,7 @@ class DifyLiteparseTool(Tool):
             if cli_path:
                 parser = LiteParse(cli_path=cli_path)
             else:
+                # Fallback to default but pass debug info if it fails later
                 parser = LiteParse()
 
             # 3. Handle the file
@@ -99,4 +103,16 @@ class DifyLiteparseTool(Tool):
                         pass
 
         except Exception as e:
-            yield self.create_text_message(f"Parsing failed with error: {str(e)}")
+            # Enhanced error message with environment details to debug isolation
+            env_info = f"\n[DEBUG] PATH: {os.environ.get('PATH', 'N/A')}"
+            env_info += f"\n[DEBUG] User: {os.environ.get('USER', 'N/A')}"
+            env_info += f"\n[DEBUG] Files at /: {os.listdir('/')[:10]}..." # First 10 items
+            
+            # Check candidate paths again in the error message for direct feedback
+            best_path = "/Users/serdalaslantas/.nvm/versions/node/v24.13.1/bin/liteparse"
+            if os.path.exists(best_path):
+                 env_info += f"\n[DEBUG] {best_path} exists but failed to execute."
+            else:
+                 env_info += f"\n[DEBUG] {best_path} does not exist in this environment."
+
+            yield self.create_text_message(f"Parsing failed with error: {str(e)}{env_info}")
