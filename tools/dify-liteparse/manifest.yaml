@@ -1,6 +1,6 @@
 version: 0.0.1
 type: plugin
-author: langgenius
+author: serdalaslantas38
 name: dify-liteparse
 label:
   en_US: LiteParse Document Parser

@@ -9,6 +9,12 @@ from liteparse import LiteParse # This requires liteparse in requirements.txt
 
 class DifyLiteparseTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
+        # Update PATH to include Node.js bin directory (NVM)
+        # This is necessary for local Dify installations to find the 'lit' CLI
+        nvm_bin = "/Users/serdalaslantas/.nvm/versions/node/v24.13.1/bin"
+        if os.path.exists(nvm_bin) and nvm_bin not in os.environ.get("PATH", ""):
+            os.environ["PATH"] = nvm_bin + os.pathsep + os.environ.get("PATH", "")
+
         file_obj = tool_parameters.get('file')
 
         if not file_obj:
