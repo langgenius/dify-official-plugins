@@ -19,7 +19,7 @@ class MockToolInvokeMessage:
     def __str__(self):
         return f"Message: {self.message}"
 
-class TestLiteParse:
+class LiteParseTester:
     def __init__(self, api_key: str):
         self.api_key = api_key
         self.provider_credentials = {"api_key": api_key}
@@ -84,7 +84,7 @@ if __name__ == "__main__":
     sample_doc_path = os.path.join(os.path.dirname(__file__), "sample_doc.txt")
     
     # Create the tester
-    tester = TestLiteParse(api_key=api_key)
+    tester = LiteParseTester(api_key=api_key)
     
     # Run the invoke logic
     print("--- Starting Test ---")
