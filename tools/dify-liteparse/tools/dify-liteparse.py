@@ -29,28 +29,50 @@ class DifyLiteparseTool(Tool):
                 file_obj = file_obj[0]
 
             # Extract the local path from the Dify file object.
-            if isinstance(file_obj, dict):
-                file_path = file_obj.get('path')
-            elif isinstance(file_obj, str):
-                file_path = file_obj
-            else:
-                # If it's a Dify File object, it should have a 'path' attribute
-                file_path = getattr(file_obj, 'path', None)
+            temp_file_path = None
+            try:
+                if isinstance(file_obj, dict):
+                    file_path = file_obj.get('path')
+                elif isinstance(file_obj, str):
+                    file_path = file_obj
+                elif hasattr(file_obj, 'path') and file_obj.path:
+                    file_path = file_obj.path
+                elif hasattr(file_obj, 'blob'):
+                    # Retrieve the binary content and save to a temporary file
+                    content = file_obj.blob()
+                    ext = getattr(file_obj, 'extension', '.pdf')
+                    if ext and not ext.startswith('.'):
+                        ext = f".{ext}"
+                    
+                    with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp:
+                        tmp.write(content)
+                        temp_file_path = tmp.name
+                    file_path = temp_file_path
+                else:
+                    file_path = None
 
-            if not file_path:
-                yield self.create_text_message(f"Error: File path could not be determined. Object type: {type(file_obj)}")
-                return
+                if not file_path:
+                    attrs = [a for a in dir(file_obj) if not a.startswith('_')]
+                    yield self.create_text_message(f"Error: File path could not be determined. Object type: {type(file_obj)}. Available attributes: {attrs}")
+                    return
 
-            # 4. Run the parser
-            # liteparse usually returns a list of Document objects
-            print(f"🚀 Parsing file: {file_path}")
-            result = parser.parse(file_path)
-            
-            if not result or not result.text:
-                yield self.create_text_message("Warning: No content extracted.")
-                return
+                # 4. Run the parser
+                print(f"🚀 Parsing file: {file_path}")
+                result = parser.parse(file_path)
                 
-            yield self.create_text_message(result.text)
+                if not result or not result.text:
+                    yield self.create_text_message("Warning: No content extracted.")
+                    return
+                    
+                yield self.create_text_message(result.text)
+
+            finally:
+                # Cleanup temp file if created
+                if temp_file_path and os.path.exists(temp_file_path):
+                    try:
+                        os.unlink(temp_file_path)
+                    except:
+                        pass
 
         except Exception as e:
             yield self.create_text_message(f"Parsing failed with error: {str(e)}")
