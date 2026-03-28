@@ -41,16 +41,14 @@ class DifyLiteparseTool(Tool):
 
             # 4. Run the parser
             # liteparse usually returns a list of Document objects
-            documents = parser.load_data(file_path)
+            print(f"🚀 Parsing file: {file_path}")
+            result = parser.parse(file_path)
             
-            # 5. Extract the text and yield it back to Dify
-            if not documents:
-                yield self.create_text_message("Warning: No content extracted from the document.")
+            if not result or not result.text:
+                yield self.create_text_message("Warning: No content extracted.")
                 return
                 
-            final_text = "\n\n".join([doc.text for doc in documents])
-            
-            yield self.create_text_message(final_text)
+            yield self.create_text_message(result.text)
 
         except Exception as e:
             yield self.create_text_message(f"Parsing failed with error: {str(e)}")
