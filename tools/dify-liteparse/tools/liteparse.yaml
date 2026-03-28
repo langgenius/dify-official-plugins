@@ -1,0 +1,21 @@
+identity:
+  name: "liteparse"
+  author: "serdalaslantas38"
+  label:
+    en_US: "LiteParse"
+  icon: icon.svg
+description:
+  human:
+    en_US: "Convert PDF/Docs to Markdown using Docling."
+  llm: "Extract text from documents into Markdown."
+parameters:
+  - name: file
+    type: file
+    label:
+      en_US: file
+    required: true
+    human_description:
+      en_US: File to parse
+extra:
+  python:
+    source: tools/liteparse.py

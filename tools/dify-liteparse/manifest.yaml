@@ -1,21 +1,21 @@
-version: 0.0.5
+version: 0.1.0
 type: plugin
 author: serdalaslantas38
-name: dify-liteparse
+name: liteparse
 label:
   en_US: LiteParse
-created_at: "2024-03-29T00:04:00.000000000Z"
+created_at: "2024-03-29T00:15:00.000000000Z"
 description:
-  en_US: High-performance document parser.
+  en_US: High-performance document parsing powered by Docling.
 icon: icon.svg
 resource:
-  memory: 1048576 # 1GB in KB (matching ArXiv structure)
+  memory: 1048576 # 1GB in KB
   permission:
     tool:
       enabled: true
 plugins:
   tools:
-    - "provider/dify-liteparse.yaml"
+    - "provider/liteparse.yaml"
 meta:
   arch:
   - amd64
@@ -24,4 +24,4 @@ meta:
     entrypoint: main
     language: python
     version: '3.12'
-  version: 0.0.1
+  version: 0.1.0
