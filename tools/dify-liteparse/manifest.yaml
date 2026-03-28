@@ -1,6 +1,6 @@
 version: 0.0.1
 type: plugin
-author: langgenius
+author: serdalaslantas38
 name: dify-liteparse
 label:
   en_US: LiteParse Document Parser
@@ -37,7 +37,7 @@ meta:
     language: python
     version: "3.12"
     entrypoint: main
-  minimum_dify_version: 0.6.10 # Recommended minimum version for modern plugin support
+  minimum_dify_version: 0.6.0
 created_at: 2026-03-28T17:19:21.765467+02:00
 privacy: PRIVACY.md # Ensure case sensitivity matches your file (privacy.md vs PRIVACY.md)
 verified: false

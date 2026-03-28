@@ -29,14 +29,16 @@ class DifyLiteparseTool(Tool):
                 file_obj = file_obj[0]
 
             # Extract the local path from the Dify file object.
-            # In the Dify Plugin SDK, file objects have a 'path' attribute.
             if isinstance(file_obj, dict):
                 file_path = file_obj.get('path')
+            elif isinstance(file_obj, str):
+                file_path = file_obj
             else:
-                file_path = file_obj # Fallback if it's already a string
+                # If it's a Dify File object, it should have a 'path' attribute
+                file_path = getattr(file_obj, 'path', None)
 
             if not file_path:
-                yield self.create_text_message("Error: File path could not be determined.")
+                yield self.create_text_message(f"Error: File path could not be determined. Object type: {type(file_obj)}")
                 return
 
             # 4. Run the parser
