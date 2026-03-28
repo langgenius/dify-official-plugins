@@ -1,12 +1,11 @@
 identity:
-  author: serdalaslantas38
+  author: langgenius
   name: "dify-liteparse"
   label:
     en_US: "LiteParse"
     zh_Hans: "LiteParse"
   description:
-    en_US: "High-accuracy document parsing via Docling (Python-native)."
-    zh_Hans: "基于 Docling 的高精度文档解析（Python 原生）。"
+    en_US: "Document parsing via Docling (Python-native)."
   icon: "icon.svg"
   tags:
     - utilities

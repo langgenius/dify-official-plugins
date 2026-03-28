@@ -1,6 +1,6 @@
 version: 0.0.1
 type: plugin
-author: serdalaslantas38
+author: langgenius
 name: dify-liteparse
 label:
   en_US: LiteParse Document Parser
@@ -8,10 +8,7 @@ label:
   zh_Hans: LiteParse 文档解析
   pt_BR: LiteParse Processador de Documentos
 description:
-  en_US: High-performance document parsing powered by Docling. Converts PDFs/Docs to clean Markdown without Node.js.
-  ja_JP: Doclingを使用した高性能ドキュメントパース。Node.jsなしでPDF/DocsをクリーンなMarkdownに変換します。
-  zh_Hans: 基于 Docling 的高性能文档解析。在没有 Node.js 的情况下将 PDF/文档转换为干净的 Markdown。
-  pt_BR: Processamento de documentos de alto desempenho via Docling. Converte PDFs/Docs em Markdown sem Node.js.
+  en_US: High-performance document parser powered by Docling. Pure Python.
 icon: icon.svg
 icon_dark: icon-dark.svg
 resource:
