@@ -1,0 +1,9 @@
+# LiteParse Test Document
+
+This is a sample document to test the LlamaIndex LiteParse plugin for Dify.
+It contains some basic text and headings to ensure the parser can handle and extract content correctly.
+
+## Features
+- High-performance parsing
+- Markdown conversion
+- Dify integration
