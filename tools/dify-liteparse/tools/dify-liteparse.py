@@ -22,10 +22,19 @@ class DifyLiteparseTool(Tool):
             return
 
         try:
-            # 2. Initialize LiteParse (Local-first, no API key needed)
-            # Pass the absolute path to the 'lit' CLI directly if it exists
-            cli_path = "/Users/serdalaslantas/.nvm/versions/node/v24.13.1/bin/lit"
-            if os.path.exists(cli_path):
+            # Pass common absolute paths to find 'lit' CLI in isolated environments
+            possible_cli_paths = [
+                "/Users/serdalaslantas/.nvm/versions/node/v24.13.1/bin/lit",
+                "/usr/local/bin/lit",
+                "/opt/homebrew/bin/lit",
+            ]
+            cli_path = None
+            for p in possible_cli_paths:
+                if os.path.exists(p):
+                    cli_path = p
+                    break
+            
+            if cli_path:
                 parser = LiteParse(cli_path=cli_path)
             else:
                 parser = LiteParse()
