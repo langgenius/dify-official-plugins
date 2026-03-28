@@ -6,8 +6,11 @@ from typing import Any
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-# Core Engine: Docling
-from docling.document_converter import DocumentConverter
+# Core Engine: LiteParse (LlamaIndex)
+try:
+    from liteparse import Parser
+except ImportError:
+    Parser = None
 
 class LiteParseTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
@@ -17,11 +20,15 @@ class LiteParseTool(Tool):
             yield self.create_text_message("Error: No file uploaded.")
             return
 
-        # Initialize Docling Converter
+        if Parser is None:
+            yield self.create_text_message("Error: 'liteparse' library is not correctly installed in this environment.")
+            return
+
+        # Initialize LiteParse Parser
         try:
-            converter = DocumentConverter()
+            parser = Parser()
         except Exception as e:
-            yield self.create_text_message(f"Failed to initialize Docling engine: {str(e)}")
+            yield self.create_text_message(f"Failed to initialize LiteParse: {str(e)}")
             return
 
         temp_file_path = None
@@ -51,18 +58,22 @@ class LiteParseTool(Tool):
                 yield self.create_text_message(f"Error: Unsupported file object type: {type(file_obj)}")
                 return
 
-            # Convert document to Markdown using Docling
-            result = converter.convert(file_path)
-            markdown_output = result.document.export_to_markdown()
-            
-            if not markdown_output:
-                yield self.create_text_message("Warning: No content extracted.")
-                return
-            
-            yield self.create_text_message(markdown_output)
+            # Convert document to Markdown using LiteParse
+            try:
+                # liteparse.parse() returns the markdown string
+                markdown_output = parser.parse(file_path)
+                
+                if not markdown_output:
+                    yield self.create_text_message("Warning: No content extracted.")
+                    return
+                
+                yield self.create_text_message(markdown_output)
+            except Exception as e:
+                # This is where the Node.js "CLI not found" error will likely surface
+                yield self.create_text_message(f"LiteParse execution failed: {str(e)}")
 
         except Exception as e:
-            yield self.create_text_message(f"Parsing failed: {str(e)}")
+            yield self.create_text_message(f"Tool error: {str(e)}")
 
         finally:
             if temp_file_path and os.path.exists(temp_file_path):

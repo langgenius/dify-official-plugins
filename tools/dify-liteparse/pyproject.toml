@@ -1,13 +1,13 @@
 [project]
-name = "liteparse"
+name = "liteparse-plugin"
 version = "0.1.0"
-description = "High-performance document parsing powered by Docling."
+description = "Fast, open-source document parsing powered by LiteParse."
 readme = "README.md"
 requires-python = ">=3.12"
 
 dependencies = [
     "dify_plugin>=0.4.0",
-    "docling",
+    "liteparse",
 ]
 
 [dependency-groups]
