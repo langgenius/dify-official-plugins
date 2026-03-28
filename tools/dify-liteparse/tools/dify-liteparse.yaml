@@ -1,0 +1,40 @@
+identity:
+  name: "lite-parse"
+  author: "serdal"
+  label:
+    en_US: "LiteParse Document Parser"
+    zh_Hans: "LiteParse 文档解析"
+    pt_BR: "LiteParse Processador de Documentos"
+    ja_JP: "LiteParse ドキュメントパース"
+  icon: icon.svg
+description:
+  human:
+    en_US: "Convert PDFs and complex documents into clean Markdown using LlamaIndex LiteParse."
+    zh_Hans: "使用 LlamaIndex LiteParse 将 PDF 和复杂文档转换为干净的 Markdown。"
+    pt_BR: "Converta PDFs e documentos complexos em Markdown limpo usando LiteParse."
+    ja_JP: "LlamaIndex LiteParseを使用して、PDFや複雑なドキュメントをクリーンなMarkdownに変換します。"
+  llm: "Use this tool to extract text and structure from PDF, DOCX, and other documents into Markdown format."
+parameters:
+  - name: api_key
+    type: secret-input
+    required: true
+    label:
+      en_US: "LlamaCloud API Key"
+      zh_Hans: "LlamaCloud API 密钥"
+    human_description:
+      en_US: "Enter your LlamaCloud API Key. You can get one at cloud.llamaindex.ai"
+      zh_Hans: "输入您的 LlamaCloud API 密钥。您可以在 cloud.llamaindex.ai 获取。"
+    form: form
+  - name: file
+    type: file
+    required: true
+    label:
+      en_US: "Document File"
+      zh_Hans: "文档文件"
+    human_description:
+      en_US: "The document (PDF, DOCX, etc.) you want to parse."
+      zh_Hans: "您想要解析的文档（PDF、DOCX 等）。"
+    form: form
+extra:
+  python:
+    source: tools/dify-liteparse.py

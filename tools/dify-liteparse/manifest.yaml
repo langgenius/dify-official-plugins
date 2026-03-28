@@ -1,0 +1,43 @@
+version: 0.0.1
+type: plugin
+author: serdal
+name: dify-liteparse
+label:
+  en_US: LiteParse Document Parser
+  ja_JP: LiteParse ドキュメントパース
+  zh_Hans: LiteParse 文档解析
+  pt_BR: LiteParse Processador de Documentos
+description:
+  en_US: High-performance document parsing powered by LlamaIndex LiteParse. Converts PDFs/Docs to clean Markdown.
+  ja_JP: LlamaIndex LiteParseを使用した高性能ドキュメントパース。PDF/DocsをクリーンなMarkdownに変換します。
+  zh_Hans: 基于 LlamaIndex LiteParse 的高性能文档解析。将 PDF/文档转换为干净的 Markdown。
+  pt_BR: Processamento de documentos de alto desempenho via LlamaIndex LiteParse. Converte PDFs/Docs em Markdown.
+icon: icon.svg
+# If you don't have a specific dark mode icon, it's safer to point to the same icon.svg or remove this line
+icon_dark: icon-dark.svg 
+resource:
+  memory: 536870912 # Increased to 512MB to handle LiteParse library overhead and file processing
+  permission:
+    tool:
+      enabled: true
+    # LiteParse is a Tool, it doesn't usually need to provide Model or App features itself. 
+    # Keeping these enabled is fine, but focus on the tool path below.
+    storage:
+      enabled: true
+      size: 10485760 # Increased to 10MB to accommodate larger document uploads
+plugins:
+  tools:
+    - provider/dify-liteparse.yaml # Points to the provider which then points to the tools
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: 0.6.10 # Recommended minimum version for modern plugin support
+created_at: 2026-03-28T17:19:21.765467+02:00
+privacy: PRIVACY.md # Ensure case sensitivity matches your file (privacy.md vs PRIVACY.md)
+verified: false

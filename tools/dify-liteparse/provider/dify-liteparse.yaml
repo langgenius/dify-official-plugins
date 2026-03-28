@@ -1,0 +1,26 @@
+identity:
+  author: "serdal"
+  name: "dify-liteparse"
+  label:
+    en_US: "LiteParse"
+    zh_Hans: "LiteParse"
+  description:
+    en_US: "High-accuracy document parsing via LlamaIndex."
+    zh_Hans: "基于 LlamaIndex 的高精度文档解析。"
+  icon: "icon.svg"
+
+# This defines the global 'Settings' fields
+credentials_for_provider:
+  api_key:
+    type: secret-input
+    required: true
+    label:
+      en_US: "LlamaCloud API Key"
+      zh_Hans: "LlamaCloud API 密钥"
+    placeholder:
+      en_US: "llx-..."
+    help:
+      en_US: "Get your key from https://cloud.llamaindex.ai/"
+
+tools:
+  - tools/dify-liteparse.yaml # Ensure this path matches your tool yaml location
