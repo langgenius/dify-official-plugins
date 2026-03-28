@@ -1,12 +1,12 @@
 identity:
-  name: "dify-liteparse"
-  author: "langgenius"
+  name: "lite-parse"
+  author: "serdalaslantas38"
   label:
     en_US: "LiteParse"
   icon: icon.svg
 description:
   human:
-    en_US: "Convert PDF/Docs to Markdown."
+    en_US: "Convert PDF/Docs to Markdown using Docling."
   llm: "Extract text from documents into Markdown."
 parameters:
   - name: file

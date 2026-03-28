@@ -1,19 +1,14 @@
 identity:
-  author: langgenius
+  author: serdalaslantas38
   name: "dify-liteparse"
   label:
     en_US: "LiteParse"
   description:
-    en_US: "Docling-based document parsing."
+    en_US: "Document parsing via Docling (Python-native)."
   icon: "icon.svg"
-  tags:
-    - utilities
-
+  tags: [utilities]
 credentials_for_provider: {}
-
-tools:
-  - tools/dify-liteparse.yaml
-
+tools: ["tools/dify-liteparse.yaml"]
 extra:
   python:
     source: provider/dify-liteparse.py
