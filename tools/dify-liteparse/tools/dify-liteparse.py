@@ -23,7 +23,12 @@ class DifyLiteparseTool(Tool):
 
         try:
             # 2. Initialize LiteParse (Local-first, no API key needed)
-            parser = LiteParse()
+            # Pass the absolute path to the 'lit' CLI directly if it exists
+            cli_path = "/Users/serdalaslantas/.nvm/versions/node/v24.13.1/bin/lit"
+            if os.path.exists(cli_path):
+                parser = LiteParse(cli_path=cli_path)
+            else:
+                parser = LiteParse()
 
             # 3. Handle the file
             # Dify provides a file object or a list of file objects.
