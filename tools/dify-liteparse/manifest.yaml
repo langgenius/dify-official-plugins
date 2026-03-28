@@ -1,39 +1,27 @@
-version: 0.0.1
+version: 0.0.4
 type: plugin
 author: langgenius
 name: dify-liteparse
 label:
-  en_US: LiteParse Document Parser
-  ja_JP: LiteParse ドキュメントパース
-  zh_Hans: LiteParse 文档解析
-  pt_BR: LiteParse Processador de Documentos
+  en_US: LiteParse
+created_at: "2024-03-28T23:50:00.000000000Z"
 description:
-  en_US: High-performance document parser powered by Docling. Pure Python.
+  en_US: High-performance document parser.
 icon: icon.svg
-icon_dark: icon-dark.svg
 resource:
-  memory: 1073741824 # Increased to 1GB to handle Docling models (torch/transformers)
+  memory: 1048576
   permission:
     tool:
       enabled: true
-    # LiteParse is a Tool, it doesn't usually need to provide Model or App features itself. 
-    # Keeping these enabled is fine, but focus on the tool path below.
-    storage:
-      enabled: true
-      size: 10485760 # Increased to 10MB to accommodate larger document uploads
 plugins:
   tools:
-    - provider/dify-liteparse.yaml # Points to the provider which then points to the tools
+    - provider/dify-liteparse.yaml
 meta:
-  version: 0.0.1
   arch:
-    - amd64
-    - arm64
+  - amd64
+  - arm64
   runner:
-    language: python
-    version: "3.12"
     entrypoint: main
-  minimum_dify_version: 0.6.0
-created_at: 2026-03-28T17:19:21.765467+02:00
-privacy: PRIVACY.md # Ensure case sensitivity matches your file (privacy.md vs PRIVACY.md)
-verified: false
+    language: python
+    version: '3.12'
+  version: 0.0.1

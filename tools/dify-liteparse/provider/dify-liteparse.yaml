@@ -3,14 +3,12 @@ identity:
   name: "dify-liteparse"
   label:
     en_US: "LiteParse"
-    zh_Hans: "LiteParse"
   description:
-    en_US: "Document parsing via Docling (Python-native)."
+    en_US: "Docling-based document parsing."
   icon: "icon.svg"
   tags:
     - utilities
 
-# This defines the global 'Settings' fields
 credentials_for_provider: {}
 
 tools:

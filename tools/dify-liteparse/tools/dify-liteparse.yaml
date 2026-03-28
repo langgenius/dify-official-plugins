@@ -2,28 +2,17 @@ identity:
   name: "dify-liteparse"
   author: "langgenius"
   label:
-    en_US: "LiteParse Document Parser"
-    zh_Hans: "LiteParse 文档解析"
-    pt_BR: "LiteParse Processador de Documentos"
-    ja_JP: "LiteParse ドキュメントパース"
+    en_US: "LiteParse"
   icon: icon.svg
 description:
   human:
-    en_US: "Convert PDF/Docs to Markdown using Docling."
-  llm: "Use this tool to extract text and structure from PDF, DOCX, and other documents into Markdown format."
+    en_US: "Convert PDF/Docs to Markdown."
+  llm: "Extract text from documents into Markdown."
 parameters:
   - name: file
     type: file
-    required: true
     label:
-      en_US: "Document File"
-      zh_Hans: "文档文件"
+      en_US: file
+    required: true
     human_description:
-      en_US: "The document (PDF, DOCX, etc.) you want to parse."
-      zh_Hans: "您想要解析的文档（PDF、DOCX 等）。"
-    form: form
-extra:
-  python:
-    source: tools/dify-liteparse.py
-    dependencies:
-      - dify_plugin>=0.4.0
+      en_US: File to parse
