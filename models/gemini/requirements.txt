@@ -25,7 +25,7 @@ colorama==0.4.6 ; sys_platform == 'win32'
     # via
     #   click
     #   tqdm
-cryptography==46.0.4
+cryptography==46.0.6
     # via google-auth
 dify-plugin==0.7.4
     # via gemini-g9cie8
