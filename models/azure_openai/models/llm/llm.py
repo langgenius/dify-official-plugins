@@ -19,6 +19,7 @@ from dify_plugin.entities.model.llm import (
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     AudioPromptMessageContent,
+    DocumentPromptMessageContent,
     ImagePromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
@@ -417,7 +418,17 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
         Reference: https://platform.openai.com/docs/guides/migrate-to-responses
         """
+        base_model_name = self._get_base_model_name(credentials)
         client = self._create_client(credentials)
+
+        # Whether this model is a pure reasoning model (gpt-5, gpt-5-mini, etc.)
+        # that does NOT support temperature, top_p, or stop sequences.
+        # gpt-5-chat and gpt-5-codex use different APIs and are excluded here.
+        is_reasoning_model = self._uses_responses_api(base_model_name) and (
+            base_model_name.startswith("gpt-5")
+            and "chat" not in base_model_name
+            and "codex" not in base_model_name
+        )
 
         # Convert prompt messages to the Responses API format
         input_messages = self._convert_prompt_messages_to_responses_input(prompt_messages)
@@ -428,11 +439,13 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             "input": input_messages,
         }
 
-        # Map model parameters to the Responses API
-        if "temperature" in model_parameters:
-            responses_params["temperature"] = model_parameters["temperature"]
-        if "top_p" in model_parameters:
-            responses_params["top_p"] = model_parameters["top_p"]
+        # Map model parameters to the Responses API.
+        # temperature and top_p are not supported by gpt-5 reasoning models.
+        if not is_reasoning_model:
+            if "temperature" in model_parameters:
+                responses_params["temperature"] = model_parameters["temperature"]
+            if "top_p" in model_parameters:
+                responses_params["top_p"] = model_parameters["top_p"]
         if "max_tokens" in model_parameters:
             responses_params["max_output_tokens"] = model_parameters["max_tokens"]
         elif "max_completion_tokens" in model_parameters:
@@ -465,8 +478,8 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         if user:
             responses_params["user"] = user
 
-        # Handle stop sequences
-        if stop:
+        # stop sequences are not supported by gpt-5 reasoning models
+        if stop and not is_reasoning_model:
             responses_params["stop"] = stop
 
         # Handle the response format
@@ -558,11 +571,34 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                             if image_content.detail:
                                 image_part["detail"] = image_content.detail.value
                             content_parts.append(image_part)
+                        elif content_item.type == PromptMessageContentType.DOCUMENT:
+                            doc_content = cast(DocumentPromptMessageContent, content_item)
+                            file_part: dict[str, Any] = {"type": "input_file"}
+                            if doc_content.url:
+                                file_part["file_url"] = doc_content.url
+                            elif doc_content.base64_data:
+                                file_part["filename"] = doc_content.filename or "document"
+                                file_part["file_data"] = (
+                                    f"data:{doc_content.mime_type}"
+                                    f";base64,{doc_content.base64_data}"
+                                )
+                            if len(file_part) > 1:
+                                content_parts.append(file_part)
 
-                    input_messages.append({
-                        "role": "user",
-                        "content": content_parts
-                    })
+                    if content_parts:
+                        input_messages.append({
+                            "role": "user",
+                            "content": content_parts
+                        })
+                    else:
+                        # All content items were unsupported types (e.g. VIDEO).
+                        # Do NOT append {"role": "user", "content": []} —
+                        # the Azure Responses API rejects empty content arrays
+                        # with "Unsupported data type".
+                        logger.debug(
+                            "Skipping UserPromptMessage: no content items could be "
+                            "converted to a Responses API format."
+                        )
             elif isinstance(message, AssistantPromptMessage):
                 # If the assistant message contains tool_calls, emit each as a
                 # Responses API function_call item (type="function_call").
