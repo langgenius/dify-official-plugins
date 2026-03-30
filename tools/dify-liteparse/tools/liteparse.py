@@ -1,5 +1,6 @@
 import os
 import tempfile
+import logging
 from collections.abc import Generator
 from typing import Any
 
@@ -12,8 +13,10 @@ try:
 except ImportError:
     Parser = None
 
-class LiteParseTool(Tool):
-    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
+logger = logging.getLogger(__name__)
+
+class LiteparseTool(Tool):
+    def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         file_obj = tool_parameters.get('file')
 
         if not file_obj:
@@ -55,7 +58,7 @@ class LiteParseTool(Tool):
                     temp_file_path = tmp.name
                 file_path = temp_file_path
             else:
-                yield self.create_text_message(f"Error: Unsupported file object type: {type(file_obj)}")
+                yield self.create_text_message(f"Error: Unsupported file object type: {str(type(file_obj))}")
                 return
 
             # Convert document to Markdown using LiteParse
