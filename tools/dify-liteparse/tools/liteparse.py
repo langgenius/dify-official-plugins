@@ -7,11 +7,11 @@ from typing import Any
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-# Core Engine: LiteParse (LlamaIndex)
+# Core Engine: LiteParse
 try:
-    from liteparse import Parser
+    from liteparse import LiteParse
 except ImportError:
-    Parser = None
+    LiteParse = None
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +23,13 @@ class LiteparseTool(Tool):
             yield self.create_text_message("Error: No file uploaded.")
             return
 
-        if Parser is None:
+        if LiteParse is None:
             yield self.create_text_message("Error: 'liteparse' library is not correctly installed in this environment.")
             return
 
-        # Initialize LiteParse Parser
+        # Initialize LiteParse
         try:
-            parser = Parser()
+            parser = LiteParse()
         except Exception as e:
             yield self.create_text_message(f"Failed to initialize LiteParse: {str(e)}")
             return
@@ -63,8 +63,9 @@ class LiteparseTool(Tool):
 
             # Convert document to Markdown using LiteParse
             try:
-                # liteparse.parse() returns the markdown string
-                markdown_output = parser.parse(file_path)
+                # parser.parse() returns a ParseResult
+                result = parser.parse(file_path)
+                markdown_output = result.text if result else ""
                 
                 if not markdown_output:
                     yield self.create_text_message("Warning: No content extracted.")
