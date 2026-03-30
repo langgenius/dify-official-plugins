@@ -1,6 +1,6 @@
 identity:
-  name: "liteparse_tool"
-  author: "serdalaslantas38"
+  name: "liteparse"
+  author: "langgenius"
   label:
     en_US: "LiteParse"
   icon: icon.svg
