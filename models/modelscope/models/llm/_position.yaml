@@ -33,7 +33,7 @@
 - glm-4.7-flash
 - llama-4-maverick-17b-128e-instruct
 - llama-4-scout-17b-16e-instruct
-- minmax-m1-80k
+- minimax-m1-80k
 - minimax-m2.5
 - qwen3.5-27b
 - qwen3.5-35b-a3b
