@@ -1,15 +1,18 @@
-model: ZhipuAI/GLM-4.6
+model: Qwen/Qwen3.5-397B-A17B
 label:
-  en_US: ZhipuAI/GLM-4.6
+  zh_Hans: Qwen/Qwen3.5-397B-A17B
+  en_US: Qwen/Qwen3.5-397B-A17B
 model_type: llm
+features:
+- vision
 model_properties:
   mode: chat
-  context_size: 204800
+  context_size: 262144
 parameter_rules:
   - name: temperature
     use_template: temperature
     type: float
-    default: 1.0
+    default: 0.3
     min: 0.0
     max: 2.0
     help:
@@ -27,7 +30,7 @@ parameter_rules:
   - name: top_p
     use_template: top_p
     type: float
-    default: 0.95
+    default: 0.8
     min: 0.1
     max: 1.0
     help:
@@ -35,7 +38,6 @@ parameter_rules:
       en_US: The probability threshold of the kernel sampling method during the generation process. For example, when the value is 0.8, only the smallest set of the most likely tokens with a sum of probabilities greater than or equal to 0.8 is retained as the candidate set. The value range is (0,1.0). The larger the value, the higher the randomness generated; the lower the value, the higher the certainty generated.
   - name: top_k
     type: int
-    default: 40
     min: 0
     max: 99
     label:
