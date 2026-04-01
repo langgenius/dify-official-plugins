@@ -360,6 +360,21 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             extra_model_kwargs["user"] = user
         if stream:
             extra_model_kwargs["stream_options"] = {"include_usage": True}
+
+        # Handle GPT-5.4/GPT-5.2 parameter compatibility
+        # temperature, top_p, logprobs are only supported when reasoning_effort is "none"
+        # Handle GPT-5.x parameter compatibility for models with reasoning capabilities
+        # temperature, top_p, logprobs are only supported when reasoning_effort is "none"
+        # This applies to gpt-5.4, gpt-5.2, and potentially other gpt-5.x models
+        if base_model_name.startswith(("gpt-5.4", "gpt-5.2", "gpt-5.1", "gpt-5.3", "gpt-5.5")):
+            reasoning_effort = model_parameters.get("reasoning_effort")
+            if reasoning_effort != "none":
+                # Remove unsupported parameters when reasoning_effort is not "none"
+                for param in ["temperature", "top_p", "logprobs"]:
+                    if param in model_parameters:
+                        logger.debug(f"Removing '{param}' from model_parameters for {model} because reasoning_effort='{reasoning_effort}'")
+                        del model_parameters[param]
+
         prompt_messages = self._clear_illegal_prompt_messages(
             base_model_name, prompt_messages
         )
