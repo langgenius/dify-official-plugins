@@ -23,7 +23,7 @@ class ImageGenerateTool(Tool):
         if not prompt:
             yield self.create_text_message("Please input prompt")
             return
-        model = tool_parameters.get("model", "gemini-2.5-flash-image-preview")
+        model = tool_parameters.get("model", "gemini-2.5-flash-image")
         images = tool_parameters.get("images", [])
         if not isinstance(images, list):
             images = [images]  # Make one image to list
@@ -55,7 +55,7 @@ class ImageGenerateTool(Tool):
         headers = {"x-goog-api-key": self._gemini_api_key,
                    "Content-Type": "application/json"}
 
-        response = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, headers=headers).json()
+        response = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, headers=headers, timeout=(5, 300)).json()
         if "error" in response:
             raise Exception(response["error"]["message"])
 
@@ -81,7 +81,7 @@ class ImageGenerateTool(Tool):
             input_base64 = base64.b64encode(image_blobs[i]).decode()
             parts.append({"inline_data": {"mime_type": mime_types[i], "data": input_base64}})
 
-        response = requests.post(url, json={"contents": [{"parts": parts}]}, headers=headers).json()
+        response = requests.post(url, json={"contents": [{"parts": parts}]}, headers=headers, timeout=(5, 300)).json()
         if "error" in response:
             raise Exception(response["error"]["message"])
 

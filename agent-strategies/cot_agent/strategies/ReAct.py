@@ -121,6 +121,7 @@ class ReActAgentStrategy(AgentStrategy):
         run_agent_state = True
         llm_usage: dict[str, Optional[LLMUsage]] = {"usage": None}
         final_answer = ""
+        final_answer_already_streamed = False  # True when final_answer = thought (no action), already sent as THINKING
         prompt_messages: list[PromptMessage] = []
 
         # Init model
@@ -207,29 +208,20 @@ class ReActAgentStrategy(AgentStrategy):
             for react_chunk in react_chunks:
                 if isinstance(react_chunk, AgentScratchpadUnit.Action):
                     action = react_chunk
-                    # detect action
                     assert scratchpad.agent_response is not None
                     scratchpad.agent_response += json.dumps(react_chunk.model_dump())
-
                     scratchpad.action_str = json.dumps(react_chunk.model_dump())
                     scratchpad.action = action
                 else:
                     assert isinstance(react_chunk, ReactChunk)
-                    chunk_state = react_chunk.state
                     chunk = react_chunk.content
-                    yield self.create_text_message(chunk)
-                    if chunk_state == ReactState.ANSWER:
+                    scratchpad.agent_response = (scratchpad.agent_response or "") + chunk
+                    if react_chunk.state == ReactState.ANSWER and not scratchpad.action:
                         final_answer += chunk
-                    elif chunk_state == ReactState.THINKING:
-                        scratchpad.agent_response = scratchpad.agent_response or ""
-                        scratchpad.thought = scratchpad.thought or ""
-                        scratchpad.agent_response += chunk
-                        scratchpad.thought += chunk
-            scratchpad.thought = (
-                scratchpad.thought.strip()
-                if scratchpad.thought
-                else "I am thinking about how to help you"
-            )
+                        yield self.create_text_message(chunk)
+                    elif not scratchpad.action:
+                        scratchpad.thought = (scratchpad.thought or "") + chunk
+            scratchpad.thought = (scratchpad.thought or "").strip()
             agent_scratchpad.append(scratchpad)
 
             # get llm usage
@@ -265,7 +257,11 @@ class ReActAgentStrategy(AgentStrategy):
                 },
             )
             if not scratchpad.action:
-                final_answer = scratchpad.thought
+                if final_answer:
+                    final_answer_already_streamed = True
+                else:
+                    final_answer = scratchpad.thought
+                    final_answer_already_streamed = False
             else:
                 if scratchpad.action.action_name.lower() == "final answer":
                     try:
@@ -419,7 +415,8 @@ class ReActAgentStrategy(AgentStrategy):
             )
             iteration_step += 1
 
-        # yield self.create_text_message(final_answer)
+        if not final_answer_already_streamed and final_answer:
+            yield self.create_text_message(final_answer)
 
         # If context is a list of dict, create retriever resource message
         if isinstance(react_params.context, list):

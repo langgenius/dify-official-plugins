@@ -1,0 +1,43 @@
+credentials_for_provider:
+  auth_id:
+    label:
+      en_US: Plivo Auth ID
+      zh_Hans: Plivo Auth ID
+    placeholder:
+      en_US: Please input your Plivo Auth ID
+      zh_Hans: 请输入您的 Plivo Auth ID
+    help:
+      en_US: Your Plivo Auth ID from the Plivo console.
+      zh_Hans: 从 Plivo 控制台获取的 Auth ID。
+    required: true
+    type: secret-input
+  auth_token:
+    label:
+      en_US: Plivo Auth Token
+      zh_Hans: Plivo Auth Token
+    placeholder:
+      en_US: Please input your Plivo Auth Token
+      zh_Hans: 请输入您的 Plivo Auth Token
+    help:
+      en_US: Your Plivo Auth Token from the Plivo console.
+      zh_Hans: 从 Plivo 控制台获取的 Auth Token。
+    required: true
+    type: secret-input
+extra:
+  python:
+    source: provider/plivo_verify.py
+identity:
+  author: Plivo
+  description:
+    en_US: OTP verification using Plivo's Verify API.
+    zh_Hans: 使用 Plivo Verify API 进行 OTP 验证。
+  icon: icon.svg
+  label:
+    en_US: Plivo Verify
+    zh_Hans: Plivo Verify
+  name: plivo_verify
+  tags:
+  - social
+tools:
+- tools/send_otp.yaml
+- tools/verify_otp.yaml

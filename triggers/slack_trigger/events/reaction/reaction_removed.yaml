@@ -9,7 +9,67 @@ description:
   en_US: "A member removed an emoji reaction. See https://api.slack.com/events/reaction_removed for details."
   ja_JP: "A member removed an emoji reaction. See https://api.slack.com/events/reaction_removed for details."
   zh_Hans: "A member removed an emoji reaction. See https://api.slack.com/events/reaction_removed for details."
-parameters: []
+parameters:
+- name: channel_id
+  label:
+    en_US: Channel ID
+    zh_Hans: 频道 ID
+    ja_JP: チャンネル ID
+  type: string
+  required: false
+  description:
+    en_US: "Comma-separated Slack channel IDs. Only trigger when the reaction was removed from an item in one of these channels (matched against item.channel)."
+    zh_Hans: "Slack 频道 ID（逗号分隔）。仅当从这些频道中的项目删除反应时触发。"
+    ja_JP: "Slack チャンネル ID（カンマ区切り）。これらのチャンネル内のアイテムへのリアクション削除のみトリガー（item.channel で照合）。"
+- name: reaction
+  label:
+    en_US: Reaction
+    zh_Hans: 表情
+    ja_JP: リアクション
+  type: string
+  required: false
+  description:
+    en_US: "Comma-separated emoji names without colons (e.g. thumbsup,white_check_mark). Leave empty to accept all reactions."
+    zh_Hans: "要过滤的表情符号名称（逗号分隔，不带冒号）。留空表示不过滤。"
+    ja_JP: "フィルタする絵文字名（カンマ区切り、コロン不要）。空の場合は全リアクションを許可。"
+- name: item_type
+  label:
+    en_US: Item Type
+    zh_Hans: 项目类型
+    ja_JP: アイテムタイプ
+  type: select
+  required: false
+  options:
+  - value: message
+    label:
+      en_US: Message
+      zh_Hans: 消息
+      ja_JP: メッセージ
+  - value: file
+    label:
+      en_US: File
+      zh_Hans: 文件
+      ja_JP: ファイル
+  - value: file_comment
+    label:
+      en_US: File Comment
+      zh_Hans: 文件评论
+      ja_JP: ファイルコメント
+  description:
+    en_US: "Only trigger when the reaction was removed from this type of item. Leave empty to accept all item types."
+    zh_Hans: "仅当从此类型的项目删除反应时触发。留空表示不过滤。"
+    ja_JP: "このアイテムタイプへのリアクション削除のみトリガー。空の場合は全タイプを許可。"
+- name: user_id
+  label:
+    en_US: User ID
+    zh_Hans: 用户 ID
+    ja_JP: ユーザー ID
+  type: string
+  required: false
+  description:
+    en_US: "Comma-separated Slack user IDs. Only trigger when the reaction is removed by one of these users."
+    zh_Hans: "要过滤的用户 ID（逗号分隔）。仅当反应由这些用户删除时触发。"
+    ja_JP: "ユーザー ID（カンマ区切り）。これらのユーザーによるリアクション削除のみトリガー。"
 output_schema:
   type: "object"
   properties:

@@ -9,7 +9,34 @@ description:
   en_US: "A custom emoji has been added or changed. See https://api.slack.com/events/emoji_changed for details."
   ja_JP: "A custom emoji has been added or changed. See https://api.slack.com/events/emoji_changed for details."
   zh_Hans: "A custom emoji has been added or changed. See https://api.slack.com/events/emoji_changed for details."
-parameters: []
+parameters:
+- name: subtype
+  label:
+    en_US: Subtype
+    zh_Hans: 子类型
+    ja_JP: サブタイプ
+  type: select
+  required: false
+  options:
+  - value: add
+    label:
+      en_US: Add
+      zh_Hans: 添加
+      ja_JP: 追加
+  - value: remove
+    label:
+      en_US: Remove
+      zh_Hans: 删除
+      ja_JP: 削除
+  - value: rename
+    label:
+      en_US: Rename
+      zh_Hans: 重命名
+      ja_JP: リネーム
+  description:
+    en_US: "Only trigger for this emoji change subtype. Leave empty to accept all subtypes (add, remove, rename)."
+    zh_Hans: "仅当表情符号变更为此子类型时触发。留空表示接受所有子类型。"
+    ja_JP: "この変更サブタイプのみトリガー。空の場合は全サブタイプ（add、remove、rename）を許可。"
 output_schema:
   type: "object"
   properties:

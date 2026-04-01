@@ -1,0 +1,131 @@
+identity:
+  name: dingo_scout
+  author: Dingo Team
+  label:
+    en_US: Dingo Scout (Strategic Analysis)
+    zh_Hans: Dingo Scout（战略分析）
+  icon: icon.svg
+
+description:
+  human:
+    en_US: |
+      Strategic job hunting module with transparent scoring.
+
+      Features (v0.6.0):
+      - 5-dimension scoring (skill, risk, stage, location, financial)
+      - Python-weighted calculation
+      - Transparent scoring breakdown
+      - Natural language user profile support
+      - Grounding: All conclusions require source quotes
+
+      How to use:
+      1. Paste an industry/financial report
+      2. Describe yourself naturally (e.g., "I'm a CS Master grad with AI experience...")
+      3. Get personalized company recommendations with evidence
+
+    zh_Hans: |
+      战略级求职侦察模块，支持透明评分。
+
+      功能特性（v0.6.0）：
+      - 5 维度评分（技能、风险、阶段、地点、财务）
+      - Python 加权计算
+      - 透明评分分解
+      - 自然语言用户画像支持
+      - 引用溯源：所有结论需附带原文引用
+
+      使用方式：
+      1. 粘贴行业/财务报告
+      2. 用自然语言描述自己（例如："我是23届CS硕士，有AI经验..."）
+      3. 获得带证据的个性化公司推荐
+
+  llm: |
+    Analyze industry reports and user profiles to generate strategic job hunting recommendations
+    with transparent 5-dimension scoring breakdown.
+
+    Use this tool when:
+    - User provides an industry report and wants job recommendations
+    - User wants to know which companies are hiring
+    - User wants strategic job hunting advice
+    - User describes their background and asks for company matches
+
+parameters:
+  - name: industry_report
+    type: string
+    required: true
+    label:
+      en_US: Industry Report
+      zh_Hans: 行业报告
+    human_description:
+      en_US: Industry/financial report containing company mentions, ROE data, fund flows, etc.
+      zh_Hans: 包含公司提及、ROE 数据、资金流向等的行业/财务报告
+    llm_description: Raw text of industry or financial report to analyze. Should contain company names and financial signals.
+    form: llm
+
+  - name: user_profile
+    type: string
+    required: true
+    label:
+      en_US: User Profile
+      zh_Hans: 用户画像
+    human_description:
+      en_US: |
+        Describe yourself in natural language, for example:
+        "I'm a CS Master's student graduating in 2023, did an internship at ByteDance on LLM applications, know Python and PyTorch, looking for a big company, preferably in Beijing."
+      zh_Hans: |
+        用自然语言描述自己即可，例如：
+        "我是23届的CS硕士，在字节做过大模型应用实习，会Python和PyTorch，想找个大厂，最好在北京。"
+    llm_description: |
+      User's background description in natural language or JSON. Include education, skills, experience, preferences, and location.
+    form: llm
+
+  - name: resume_text
+    type: string
+    required: false
+    label:
+      en_US: Resume Text (Optional)
+      zh_Hans: 个人简历（可选）
+    human_description:
+      en_US: |
+        Paste your full resume text (optional).
+        If provided, skills will be automatically extracted from resume for more accurate matching.
+        If not provided, will rely entirely on user_profile description.
+      zh_Hans: |
+        粘贴您的简历全文（可选）。
+        如果提供，将从简历中自动提取技能列表，提升匹配精度。
+        如果不提供，将完全依赖"用户画像"中的描述。
+    llm_description: |
+      Optional full resume text. If provided, extract detailed skills and experience for more accurate matching.
+      Skills extracted from resume take priority over user_profile description.
+    form: llm
+
+  - name: output_format
+    type: select
+    required: false
+    default: markdown
+    label:
+      en_US: Output Format
+      zh_Hans: 输出格式
+    human_description:
+      en_US: |
+        Choose output format:
+        - markdown: Human-readable strategic report (Best for Chat)
+        - json: Raw JSON string (Best for Workflow/Automation)
+      zh_Hans: |
+        选择输出格式：
+        - markdown: 人类可读战略报告（适合 Chat 对话）
+        - json: 原始 JSON 字符串（适合 Workflow 自动化）
+    form: form
+    options:
+      - value: markdown
+        label:
+          en_US: Markdown Report
+          zh_Hans: Markdown 报告
+      - value: json
+        label:
+          en_US: JSON String (for Workflow)
+          zh_Hans: JSON 字符串（用于 Workflow）
+
+extra:
+  python:
+    source: tools/dingo_scout.py
+

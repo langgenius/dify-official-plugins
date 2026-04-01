@@ -1,0 +1,19 @@
+identity:
+  name: get_schema
+  author: langgenius
+  label:
+    en_US: Get Schema
+    zh_Hans: 获取模式
+    pt_BR: Obter Esquema
+    ja_JP: スキーマ取得
+description:
+  human:
+    en_US: Retrieve the Neo4j database schema including node labels, relationship types, property keys, indexes, and constraints
+    zh_Hans: 检索 Neo4j 数据库模式，包括节点标签、关系类型、属性键、索引和约束
+    pt_BR: Recuperar o esquema do banco de dados Neo4j incluindo rotulos de nos, tipos de relacionamento, chaves de propriedade, indices e restricoes
+    ja_JP: ノードラベル、リレーションシップタイプ、プロパティキー、インデックス、制約を含む Neo4j データベーススキーマを取得します
+  llm: Introspect the Neo4j database to retrieve its schema. Returns node labels (types of nodes), relationship types (how nodes are connected), property keys (attributes stored on nodes and relationships), indexes, and constraints. Use this tool first to understand the structure of the database before writing queries.
+parameters: []
+extra:
+  python:
+    source: tools/get_schema.py

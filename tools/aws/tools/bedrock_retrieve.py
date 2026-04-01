@@ -17,7 +17,7 @@ class BedrockRetrieveTool(Tool):
         result_array = []
         for idx, item in enumerate(kb_repsonse['retrievalResults']):
             # 提取基础字段
-            source_uri = item['metadata']['x-amz-bedrock-kb-source-uri']
+            source_uri = item['location']['s3Location']['uri']
             page_number = item['metadata'].get('x-amz-bedrock-kb-document-page-number', 0)
             data_source_id = item['metadata'].get('x-amz-bedrock-kb-data-source-id', '')
             chunk_id = item['metadata'].get('x-amz-bedrock-kb-chunk-id','')

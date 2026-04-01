@@ -1,0 +1,63 @@
+description:
+  human:
+    en_US: Send an OTP code to a phone number using Plivo Verify.
+    zh_Hans: 使用 Plivo Verify 向手机号码发送 OTP 验证码。
+  llm: Send an OTP verification code to a phone number. Returns a session_id that
+    must be used with verify_otp to validate the code.
+extra:
+  python:
+    source: tools/send_otp.py
+identity:
+  author: Plivo
+  label:
+    en_US: Send OTP
+    zh_Hans: 发送 OTP
+  name: send_otp
+parameters:
+- form: llm
+  human_description:
+    en_US: The destination phone number in E.164 format (e.g., +14155551234).
+    zh_Hans: E.164 格式的目标手机号码（例如：+14155551234）。
+  label:
+    en_US: Phone Number
+    zh_Hans: 手机号码
+  llm_description: The destination phone number to send the OTP to, in E.164 format
+    (e.g., +14155551234).
+  name: phone_number
+  required: true
+  type: string
+- default: sms
+  form: form
+  human_description:
+    en_US: The delivery channel for the OTP code (SMS or Voice call).
+    zh_Hans: OTP 验证码的发送渠道（短信或语音电话）。
+  label:
+    en_US: Channel
+    zh_Hans: 渠道
+  llm_description: The delivery channel for the OTP code. Use "sms" for text message
+    or "voice" for phone call.
+  name: channel
+  options:
+  - label:
+      en_US: SMS
+      zh_Hans: 短信
+    value: sms
+  - label:
+      en_US: Voice
+      zh_Hans: 语音
+    value: voice
+  required: false
+  type: select
+- form: form
+  human_description:
+    en_US: Optional Plivo Verify application UUID. If not specified, uses your account's
+      default Verify application.
+    zh_Hans: 可选的 Plivo Verify 应用 UUID。如果未指定，将使用您账户的默认 Verify 应用。
+  label:
+    en_US: App UUID
+    zh_Hans: 应用 UUID
+  llm_description: Optional Plivo Verify application UUID from the Plivo Console.
+    Allows customizing brand name, OTP length, expiry time, etc.
+  name: app_uuid
+  required: false
+  type: string

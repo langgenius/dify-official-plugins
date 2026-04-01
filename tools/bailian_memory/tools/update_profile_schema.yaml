@@ -1,0 +1,69 @@
+identity:
+  name: update_profile_schema
+  author: 佐井
+  label:
+    en_US: Update Profile Schema
+    zh_Hans: 更新画像模板
+    ja_Jp: プロファイルスキーマ更新
+description:
+  human:
+    en_US: Update a profile schema's name, description, and attributes.
+    zh_Hans: 更新画像模板的名称、描述和属性。
+    ja_Jp: プロファイルスキーマの名前、説明、属性を更新します。
+  llm: Update an existing profile schema template. You can change its name, description, and modify attributes (add, update, or delete).
+parameters:
+  - name: profile_schema_id
+    type: string
+    required: true
+    label:
+      en_US: Profile Schema ID
+      zh_Hans: 画像模板 ID
+      ja_Jp: プロファイルスキーマID
+    human_description:
+      en_US: The ID of the profile schema to update
+      zh_Hans: 要更新的画像模板 ID
+      ja_Jp: 更新するプロファイルスキーマのID
+    llm_description: The ID of the profile schema template to update.
+    form: llm
+  - name: name
+    type: string
+    required: false
+    label:
+      en_US: Schema Name
+      zh_Hans: 模板名称
+      ja_Jp: スキーマ名
+    human_description:
+      en_US: New name for the profile schema
+      zh_Hans: 画像模板的新名称
+      ja_Jp: プロファイルスキーマの新しい名前
+    llm_description: Optional new name for the profile schema.
+    form: llm
+  - name: description
+    type: string
+    required: false
+    label:
+      en_US: Description
+      zh_Hans: 描述
+      ja_Jp: 説明
+    human_description:
+      en_US: New description for the profile schema
+      zh_Hans: 画像模板的新描述
+      ja_Jp: プロファイルスキーマの新しい説明
+    llm_description: Optional new description for the profile schema.
+    form: llm
+  - name: attributes_operations
+    type: string
+    required: false
+    label:
+      en_US: Attribute Operations (JSON)
+      zh_Hans: 属性操作 (JSON)
+      ja_Jp: 属性操作 (JSON)
+    human_description:
+      en_US: "JSON array of attribute operations, e.g. [{\"op\":\"add\",\"name\":\"hobby\",\"description\":\"user hobby\"}]"
+      zh_Hans: "JSON 数组格式的属性操作列表，例如 [{\"op\":\"add\",\"name\":\"爱好\",\"description\":\"用户爱好\"}]"
+      ja_Jp: "JSON配列形式の属性操作リスト"
+    llm_description: "JSON array string of attribute operations. Each operation has 'op' (add/update/delete), and for add: 'name', 'description', 'default_value'; for update: 'attribute_id', 'name', 'description', 'default_value'; for delete: 'attribute_id'."
+    form: llm
+extra:
+  python:
+    source: tools/update_profile_schema.py

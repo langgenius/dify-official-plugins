@@ -2,6 +2,7 @@ model: google/gemini-pro
 label:
   en_US: gemini-pro
 model_type: llm
+deprecated: true
 features:
   - agent-thought
   - tool-call

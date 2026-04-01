@@ -6,9 +6,9 @@ identity:
     zh_Hans: ReAct
     pt_BR: ReAct
 description:
-  en_US: ReAct is a basic strategy for agent, model will use the tools provided to perform the task.
-  zh_Hans: ReAct 是一个基本的 Agent 策略，模型将使用提供的工具来执行任务。
-  pt_BR: ReAct is a basic strategy for agent, model will use the tools provided to perform the task.
+  en_US: "Text-based reasoning strategy (Thought → Action → Observation loop). Best for models that do NOT support function calling. If your model supports function calling, use the FunctionCalling strategy instead for better results."
+  zh_Hans: "基于文本的推理策略（Thought → Action → Observation 循环）。适用于不支持函数调用的模型。如果您的模型支持函数调用，建议使用 FunctionCalling 策略以获得更好的效果。"
+  pt_BR: "Estratégia de raciocínio baseada em texto (ciclo Thought → Action → Observation). Melhor para modelos que NÃO suportam chamada de função. Se seu modelo suporta chamada de função, use a estratégia FunctionCalling para melhores resultados."
 features:
   - history-messages
 parameters:

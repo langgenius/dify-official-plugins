@@ -9,7 +9,18 @@ description:
   en_US: "A channel was unarchived. See https://api.slack.com/events/channel_unarchive for details."
   ja_JP: "A channel was unarchived. See https://api.slack.com/events/channel_unarchive for details."
   zh_Hans: "A channel was unarchived. See https://api.slack.com/events/channel_unarchive for details."
-parameters: []
+parameters:
+- name: channel_id
+  label:
+    en_US: Channel ID
+    zh_Hans: 频道 ID
+    ja_JP: チャンネル ID
+  type: string
+  required: false
+  description:
+    en_US: "Comma-separated channel IDs to filter (e.g. C01234567). Leave empty to accept events from all channels."
+    zh_Hans: "要过滤的频道 ID（逗号分隔）。留空表示不过滤。"
+    ja_JP: "フィルタするチャンネル ID（カンマ区切り）。空の場合は全チャンネルのイベントを許可。"
 output_schema:
   type: "object"
   properties:

@@ -1,39 +1,59 @@
 model: grok-code-fast-1
 label:
-  en_US: grok-code-fast-1
+  en_US: Grok Code Fast 1
 model_type: llm
 features:
   - agent-thought
   - tool-call
-  - multi-tool-call
   - stream-tool-call
+  - multi-tool-call
+  - vision
 model_properties:
   mode: chat
   context_size: 256000
 parameter_rules:
+  - name: thinking
+    label:
+      zh_Hans: 推理模式
+      en_US: Thinking Mode
+    type: boolean
+    default: false
+    required: false
+    help:
+      zh_Hans: 控制模型的推理能力。
+      en_US: Controls the model's thinking capability.
+  - name: thinking_budget
+    label:
+      zh_Hans: 推理预算
+      en_US: Thinking Budget
+    type: int
+    default: 1024
+    min: 0
+    max: 10000
+    required: false
   - name: temperature
     use_template: temperature
-    default: 1.0
-    min: 0.0
-    max: 2.0
   - name: top_p
     use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 1
+    max: 10000
   - name: response_format
     label:
       zh_Hans: 回复格式
       en_US: Response Format
     type: string
-    help:
-      zh_Hans: 指定模型必须输出的格式
-      en_US: specifying the format that the model must output
     required: false
     options:
+      - text
       - json_object
       - json_schema
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: "0.20"
-  output: "1.50"
-  unit: "0.000001"
+  input: '0.2'
+  output: '0.5'
+  unit: '0.000001'
   currency: USD

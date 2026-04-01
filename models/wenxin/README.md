@@ -1,0 +1,2 @@
+## Overview
+ERNIE, developed by Baidu, is a family of large language models with knowledge-enhanced pretraining and strong capabilities in reasoning and multimodal understanding. The ERNIE model family includes models such as ERNIE 4.5 and ERNIE 5.0, which support tasks including deep reasoning, visual understanding, instruction following, creative writing, and agent planning. This plugin enables developers to integrate ERNIE models via API, with support for function calling, web search, and thinking mode switching.

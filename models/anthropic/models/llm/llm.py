@@ -19,7 +19,18 @@ from anthropic.types import (
     MessageStreamEvent,
     completion_create_params,
 )
+from dify_plugin.entities.model import (
+    AIModelEntity,
+    FetchFrom,
+    I18nObject,
+    ModelFeature,
+    ModelPropertyKey,
+    ModelType,
+    ParameterRule,
+    ParameterType,
+)
 from dify_plugin.entities.model.llm import (
+    LLMMode,
     LLMResult,
     LLMResultChunk,
     LLMResultChunkDelta,
@@ -152,6 +163,71 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         self._tool_results_cache_enabled = False
         self._message_flow_cache_threshold: int = 0
 
+    def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:
+        """
+        Return schema for a custom model name entered by the user.
+        This allows users to use any Anthropic-compatible model name
+        (e.g. from third-party proxies) without being limited to predefined models.
+        """
+        return AIModelEntity(
+            model=model,
+            label=I18nObject(en_US=model, zh_Hans=model),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.VISION,
+                ModelFeature.TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.CONTEXT_SIZE: int(credentials.get("context_size", 200000)),
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="temperature",
+                    use_template="temperature",
+                    label=I18nObject(en_US="Temperature", zh_Hans="温度"),
+                    type=ParameterType.FLOAT,
+                ),
+                ParameterRule(
+                    name="top_p",
+                    use_template="top_p",
+                    label=I18nObject(en_US="Top P", zh_Hans="Top P"),
+                    type=ParameterType.FLOAT,
+                ),
+                ParameterRule(
+                    name="top_k",
+                    label=I18nObject(en_US="Top K", zh_Hans="取样数量"),
+                    type=ParameterType.INT,
+                ),
+                ParameterRule(
+                    name="max_tokens",
+                    use_template="max_tokens",
+                    default=4096,
+                    min=1,
+                    max=int(credentials.get("max_tokens", 128000)),
+                    label=I18nObject(en_US="Max Tokens", zh_Hans="最大标记"),
+                    type=ParameterType.INT,
+                ),
+                ParameterRule(
+                    name="thinking",
+                    label=I18nObject(en_US="Thinking Mode", zh_Hans="推理模式"),
+                    type=ParameterType.BOOLEAN,
+                    default=False,
+                ),
+                ParameterRule(
+                    name="thinking_budget",
+                    label=I18nObject(en_US="Thinking Budget", zh_Hans="推理预算"),
+                    type=ParameterType.INT,
+                    default=1024,
+                    min=1024,
+                    max=128000,
+                ),
+            ],
+        )
+
     def _invoke(
         self,
         model: str,
@@ -178,16 +254,15 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         self,
         *,
         model: str,
-        credentials: Mapping[str, Any],
+        credentials: dict[str, Any],
         prompt_messages: Sequence[PromptMessage],
-        model_parameters: Mapping[str, Any],
+        model_parameters: dict[str, Any],
         tools: Optional[list[PromptMessageTool]] = None,
         stop: Optional[Sequence[str]] = None,
         stream: bool = True,
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
-        model_parameters = dict(model_parameters)
-        extra_model_kwargs = {}
+        extra_model_kwargs: dict[str, Any] = {}
         extra_headers = {}
 
         credentials_kwargs = self._to_credential_kwargs(credentials)
@@ -223,11 +298,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             else:
                 extra_headers["anthropic-beta"] = "output-128k-2025-02-19"
 
-        if model == "claude-3-7-sonnet-20250219" and tools:
-            if "anthropic-beta" in extra_headers:
-                extra_headers["anthropic-beta"] += ",token-efficient-tools-2025-02-19"
-            else:
-                extra_headers["anthropic-beta"] = "token-efficient-tools-2025-02-19"
+
 
         if stop:
             extra_model_kwargs["stop_sequences"] = stop
@@ -363,7 +434,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
 
             loggable_request = _sanitize_for_logging(request_payload)
             logging.info(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
-            response = client.messages.create(
+            response = client.messages.create( # type: ignore[call-overload]
                 model=model,
                 messages=prompt_message_dicts,
                 stream=stream,
@@ -377,7 +448,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
 
             loggable_request = _sanitize_for_logging(request_payload)
             logging.info(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
-            response = client.messages.create(
+            response = client.messages.create( # type: ignore[call-overload]
                 model=model,
                 messages=prompt_message_dicts,
                 stream=stream,
@@ -498,6 +569,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         """
         Transform json prompts
         """
+        stop = stop or []
         if "```\n" not in stop:
             stop.append("```\n")
         if "\n```" not in stop:
@@ -507,7 +579,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         ):
             prompt_messages[0] = SystemPromptMessage(
                 content=ANTHROPIC_BLOCK_MODE_PROMPT.replace(
-                    "{{instructions}}", prompt_messages[0].content
+                    "{{instructions}}", str(prompt_messages[0].content)
                 ).replace("{{block}}", response_format)
             )
             prompt_messages.append(
@@ -551,7 +623,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         if not prompt_message_dicts:
             prompt_message_dicts.append({"role": "user", "content": "Hello"})
         
-        count_tokens_args = {
+        count_tokens_args: dict[str, Any] = {
             "model": model,
             "messages": prompt_message_dicts
         }
@@ -580,7 +652,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 self._transform_tool_prompt(tool) for tool in tools
             ]
             
-        response = client.messages.count_tokens(**count_tokens_args)
+        response = client.messages.count_tokens(**count_tokens_args) # type: ignore[bad-argument-type]
         return response.input_tokens
 
     def validate_credentials(self, model: str, credentials: Mapping) -> None:
@@ -594,7 +666,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         try:
             self._chat_generate(
                 model=model,
-                credentials=credentials,
+                credentials=dict(credentials),
                 prompt_messages=[UserPromptMessage(content="ping")],
                 model_parameters={"temperature": 0, "max_tokens": 20},
                 stream=False,
@@ -605,7 +677,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     def _handle_chat_generate_response(
         self,
         model: str,
-        credentials: Mapping[str, Any],
+        credentials: dict[str, Any],
         response: Message,
         prompt_messages: Sequence[PromptMessage],
     ) -> LLMResult:
@@ -643,16 +715,14 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 assistant_prompt_message.tool_calls.append(tool_call)
         
         prompt_tokens = (
-            response.usage
-            and response.usage.input_tokens
-            or self.get_num_tokens(
+            response.usage.input_tokens if response.usage else
+            self.get_num_tokens(
                 model=model, credentials=credentials, prompt_messages=prompt_messages
             )
         )
         completion_tokens = (
-            response.usage
-            and response.usage.output_tokens
-            or self.get_num_tokens(
+            response.usage.output_tokens if response.usage else
+            self.get_num_tokens(
                 model=model,
                 credentials=credentials,
                 prompt_messages=[assistant_prompt_message],
@@ -694,7 +764,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     def _handle_chat_generate_stream_response(
         self,
         model: str,
-        credentials: Mapping[str, Any],
+        credentials: dict[str, Any],
         response: Stream[MessageStreamEvent],
         prompt_messages: Sequence[PromptMessage],
     ) -> Generator:
@@ -713,7 +783,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         
         current_tool_name = None
         current_tool_id = None
-        current_tool_params = ""
+        tool_params_by_id: dict[str, str] = {}
         
         if not any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
             self.previous_thinking_blocks = []
@@ -745,6 +815,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         current_tool_id = getattr(content_block, 'id', None)
                         
                         if current_tool_name and current_tool_id:
+                            tool_params_by_id[current_tool_id] = ""
                             tool_call = AssistantPromptMessage.ToolCall(
                                 id=current_tool_id,
                                 type="function",
@@ -768,12 +839,12 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 if hasattr(chunk.delta, "type") and chunk.delta.type == "input_json_delta":
                     if hasattr(chunk.delta, "partial_json"):
                         partial_json = chunk.delta.partial_json
-                        if partial_json:
-                            current_tool_params += partial_json
+                        if partial_json and current_tool_id and current_tool_id in tool_params_by_id:
+                            tool_params_by_id[current_tool_id] += partial_json
                             
                             for tc in tool_calls:
                                 if tc.id == current_tool_id:
-                                    tc.function.arguments = current_tool_params
+                                    tc.function.arguments = tool_params_by_id[current_tool_id]
                                     break
                 
                 if chunk.index != current_block_index:
@@ -872,12 +943,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         ),
                     )
                 
-                if current_tool_name and current_tool_id and current_tool_params and not tool_calls:
+                fallback_params = tool_params_by_id.get(current_tool_id or "", "")
+                if current_tool_name and current_tool_id and fallback_params and not tool_calls:
                     fallback_tool_call = AssistantPromptMessage.ToolCall(
                         id=current_tool_id,
                         type="function",
                         function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                            name=current_tool_name, arguments=current_tool_params
+                            name=current_tool_name, arguments=fallback_params
                         ),
                     )
                     tool_calls.append(fallback_tool_call)
@@ -1190,7 +1262,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     
     def _process_tool_message(self, message: ToolPromptMessage) -> dict:
         """Process tool result message."""
-        tool_result_content = {
+        tool_result_content: dict[str, Any] = {
             "type": "tool_result",
             "tool_use_id": message.tool_call_id,
             "content": message.content

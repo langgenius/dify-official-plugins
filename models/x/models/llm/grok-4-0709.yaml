@@ -1,6 +1,6 @@
 model: grok-4-0709
 label:
-  en_US: grok-4-0709
+  en_US: grok-4
 model_type: llm
 features:
   - vision
@@ -40,8 +40,8 @@ parameter_rules:
     type: text
     default: "{\n  \"mode\": \"auto\"\n}"
     help:
-      zh_Hans: 传递给联网搜索的参数，具体参数见 https://docs.x.ai/docs/api-reference#chat-completions
-      en_US: Parameters to pass to the live search, see https://docs.x.ai/docs/api-reference#chat-completions
+      zh_Hans: 联网搜索的 JSON 参数，支持 mode、max_search_results、return_citations、sources、from_date 和 to_date，详见 https://docs.x.ai/developers/rest-api-reference/inference/chat
+      en_US: JSON parameters for live search. Supported keys include mode, max_search_results, return_citations, sources, from_date, and to_date. See https://docs.x.ai/developers/rest-api-reference/inference/chat
     required: false
 pricing:
   input: "3.00"

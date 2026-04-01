@@ -1,0 +1,4 @@
+model: rerank-v4.0-fast
+model_type: rerank
+model_properties:
+  context_size: 32768
