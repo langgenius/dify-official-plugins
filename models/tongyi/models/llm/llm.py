@@ -75,6 +75,24 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         super().__init__(*args, **kwargs)
         self._temp_files = []
 
+    @staticmethod
+    def _normalize_text_content(content):
+        if isinstance(content, list) and all(
+            isinstance(item, TextPromptMessageContent) for item in content
+        ):
+            return "".join(item.data or "" for item in content)
+        return content
+
+    def _normalize_prompt_messages(
+        self, messages: list[PromptMessage]
+    ) -> list[PromptMessage]:
+        normalized: list[PromptMessage] = []
+        for message in messages:
+            message_copy = message.model_copy()
+            message_copy.content = self._normalize_text_content(message_copy.content)
+            normalized.append(message_copy)
+        return normalized
+
     def _invoke(
         self,
         model: str,
@@ -183,6 +201,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
+        prompt_messages = self._normalize_prompt_messages(prompt_messages)
         credentials_kwargs = self._to_credential_kwargs(credentials)
         mode = self.get_model_mode(model, credentials)
         if model in {"qwen-turbo-chat", "qwen-plus-chat"}:
