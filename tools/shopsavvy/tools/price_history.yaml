@@ -1,0 +1,56 @@
+description:
+  human:
+    en_US: Get historical price data for a product across retailers. Specify a date range to see how prices changed over time.
+    zh_Hans: 获取产品在各零售商的历史价格数据。指定日期范围以查看价格随时间的变化。
+    pt_BR: Obtenha dados históricos de preços de um produto em varejistas. Especifique um intervalo de datas para ver como os preços mudaram ao longo do tempo.
+  llm: Get historical price data for a product. Returns offers with a history field showing price and availability changes over the specified date range. Use YYYY-MM-DD format for dates.
+extra:
+  python:
+    source: tools/price_history.py
+identity:
+  author: shopsavvy
+  label:
+    en_US: Price History
+    zh_Hans: 价格历史
+    pt_BR: Histórico de Preços
+  name: price_history
+parameters:
+  - form: llm
+    human_description:
+      en_US: Product identifier — barcode/UPC, Amazon ASIN, model number, product URL, or product name
+      zh_Hans: 产品标识符 — 条形码/UPC、亚马逊 ASIN、型号、产品 URL 或产品名称
+      pt_BR: Identificador do produto — código de barras/UPC, ASIN da Amazon, número do modelo, URL do produto ou nome do produto
+    label:
+      en_US: Product Identifier
+      zh_Hans: 产品标识符
+      pt_BR: Identificador do Produto
+    llm_description: The product identifier to get price history for. Can be a barcode/UPC, Amazon ASIN, model number, product URL, or product name.
+    name: identifier
+    required: true
+    type: string
+  - form: form
+    human_description:
+      en_US: Start date for price history in YYYY-MM-DD format
+      zh_Hans: 价格历史开始日期，格式为 YYYY-MM-DD
+      pt_BR: Data de início do histórico de preços no formato AAAA-MM-DD
+    label:
+      en_US: Start Date
+      zh_Hans: 开始日期
+      pt_BR: Data de Início
+    llm_description: Start date for the price history range in YYYY-MM-DD format
+    name: start_date
+    required: false
+    type: string
+  - form: form
+    human_description:
+      en_US: End date for price history in YYYY-MM-DD format
+      zh_Hans: 价格历史结束日期，格式为 YYYY-MM-DD
+      pt_BR: Data de fim do histórico de preços no formato AAAA-MM-DD
+    label:
+      en_US: End Date
+      zh_Hans: 结束日期
+      pt_BR: Data de Fim
+    llm_description: End date for the price history range in YYYY-MM-DD format
+    name: end_date
+    required: false
+    type: string
