@@ -150,10 +150,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -206,10 +214,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -251,10 +267,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -307,10 +331,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -373,10 +405,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -439,10 +479,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -505,10 +553,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -572,10 +628,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -650,10 +714,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -727,10 +799,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -804,10 +884,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -872,10 +960,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -950,10 +1046,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -1028,10 +1132,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -1106,10 +1218,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -1184,10 +1304,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -1262,10 +1390,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -1339,10 +1475,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -1406,10 +1550,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -1468,10 +1620,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -1529,10 +1689,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -1569,10 +1737,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -1668,6 +1844,22 @@ LLM_BASE_MODELS = [
             },
             parameter_rules=[
                 ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
+                ),
+                ParameterRule(
                     name="response_format",
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
                     type="string",
@@ -1729,6 +1921,22 @@ LLM_BASE_MODELS = [
                 ModelPropertyKey.CONTEXT_SIZE: 200000,
             },
             parameter_rules=[
+                ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
+                ),
                 ParameterRule(
                     name="response_format",
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
@@ -1793,6 +2001,22 @@ LLM_BASE_MODELS = [
             },
             parameter_rules=[
                 ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
+                ),
+                ParameterRule(
                     name="response_format",
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
                     type="string",
@@ -1856,6 +2080,22 @@ LLM_BASE_MODELS = [
             },
             parameter_rules=[
                 ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
+                ),
+                ParameterRule(
                     name="response_format",
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
                     type="string",
@@ -1918,6 +2158,22 @@ LLM_BASE_MODELS = [
                 ModelPropertyKey.CONTEXT_SIZE: 272000,
             },
             parameter_rules=[
+                ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
+                ),
                 ParameterRule(
                     name="response_format",
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
@@ -1998,6 +2254,22 @@ LLM_BASE_MODELS = [
             },
             parameter_rules=[
                 ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
+                ),
+                ParameterRule(
                     name="response_format",
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
                     type="string",
@@ -2077,6 +2349,22 @@ LLM_BASE_MODELS = [
             },
             parameter_rules=[
                 ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
+                ),
+                ParameterRule(
                     name="response_format",
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
                     type="string",
@@ -2152,6 +2440,22 @@ LLM_BASE_MODELS = [
             },
             parameter_rules=[
                 ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
+                ),
+                ParameterRule(
                     name="response_format",
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
                     type="string",
@@ -2175,10 +2479,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 _get_max_tokens(default=4096, min_val=1, max_val=16384),
             ],
@@ -2321,10 +2633,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
@@ -2431,10 +2751,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="frequency_penalty",
@@ -2503,10 +2831,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="frequency_penalty",
@@ -2587,6 +2923,22 @@ LLM_BASE_MODELS = [
             },
             parameter_rules=[
                 ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
+                ),
+                ParameterRule(
                     name="response_format",
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
                     type="string",
@@ -2666,6 +3018,22 @@ LLM_BASE_MODELS = [
                 ModelPropertyKey.CONTEXT_SIZE: 111616,
             },
             parameter_rules=[
+                ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
+                ),
                 ParameterRule(
                     name="response_format",
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
@@ -3391,10 +3759,18 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="temperature",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的随机性。仅在 reasoning_effort 为 \"none\" 时有效。当启用推理时，模型会自动处理温度控制。",
+                        en_US='Controls the randomness of the generated text. Only effective when reasoning_effort is "none". When reasoning is enabled, the model automatically handles temperature control.',
+                    ),
                 ),
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                    help=I18nObject(
+                        zh_Hans="控制生成文本的多样性。仅在 reasoning_effort 为 \"none\" 时有效。",
+                        en_US='Controls the diversity of the generated text. Only effective when reasoning_effort is "none".',
+                    ),
                 ),
                 ParameterRule(
                     name="presence_penalty",
