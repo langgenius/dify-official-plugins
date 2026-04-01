@@ -1,0 +1,43 @@
+description:
+  human:
+    en_US: Get current offers and prices for a product across all retailers. Supports barcodes, ASINs, model numbers, URLs, and product names as identifiers.
+    zh_Hans: 获取产品在所有零售商的当前报价和价格。支持条形码、ASIN、型号、URL 和产品名称作为标识符。
+    pt_BR: Obtenha ofertas e preços atuais de um produto em todos os varejistas. Suporta códigos de barras, ASINs, números de modelo, URLs e nomes de produtos como identificadores.
+  llm: Get current offers and prices for a product from thousands of retailers. Pass a barcode/UPC, Amazon ASIN, model number, product URL, or product name. Optionally filter to a single retailer. Returns price, availability, condition, retailer name, and URL for each offer.
+extra:
+  python:
+    source: tools/get_offers.py
+identity:
+  author: shopsavvy
+  label:
+    en_US: Get Offers
+    zh_Hans: 获取报价
+    pt_BR: Obter Ofertas
+  name: get_offers
+parameters:
+  - form: llm
+    human_description:
+      en_US: Product identifier — barcode/UPC, Amazon ASIN, model number, product URL, or product name
+      zh_Hans: 产品标识符 — 条形码/UPC、亚马逊 ASIN、型号、产品 URL 或产品名称
+      pt_BR: Identificador do produto — código de barras/UPC, ASIN da Amazon, número do modelo, URL do produto ou nome do produto
+    label:
+      en_US: Product Identifier
+      zh_Hans: 产品标识符
+      pt_BR: Identificador do Produto
+    llm_description: The product identifier to look up offers for. Can be a barcode/UPC (e.g., "611247373064"), Amazon ASIN (e.g., "B0CHX3TW6K"), model number, product URL, or product name.
+    name: identifier
+    required: true
+    type: string
+  - form: form
+    human_description:
+      en_US: Filter offers to a single retailer domain (e.g., "amazon.com", "bestbuy.com"). Leave empty for all retailers.
+      zh_Hans: 筛选单个零售商域名的报价（例如 "amazon.com"、"bestbuy.com"）。留空以显示所有零售商。
+      pt_BR: Filtrar ofertas para um único domínio de varejista (ex. "amazon.com", "bestbuy.com"). Deixe vazio para todos os varejistas.
+    label:
+      en_US: Retailer Filter
+      zh_Hans: 零售商筛选
+      pt_BR: Filtro de Varejista
+    llm_description: Optional retailer domain to filter offers (e.g., "amazon.com", "walmart.com")
+    name: retailer
+    required: false
+    type: string

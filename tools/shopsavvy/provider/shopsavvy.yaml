@@ -1,0 +1,53 @@
+credentials_for_provider:
+  shopsavvy_api_key:
+    help:
+      en_US: Get your API key from the ShopSavvy Data API Dashboard at shopsavvy.com/data
+      zh_Hans: 从 ShopSavvy 数据 API 仪表板 shopsavvy.com/data 获取您的 API 密钥
+      pt_BR: Obtenha sua chave de API no Painel da API de Dados ShopSavvy em shopsavvy.com/data
+    label:
+      en_US: ShopSavvy API Key
+      zh_Hans: ShopSavvy API 密钥
+      pt_BR: Chave de API ShopSavvy
+    placeholder:
+      en_US: ss_live_...
+      zh_Hans: ss_live_...
+      pt_BR: ss_live_...
+    required: true
+    type: secret-input
+    url: https://shopsavvy.com/data/api-keys
+  base_url:
+    help:
+      en_US: Override the default API base URL (optional, defaults to https://api.shopsavvy.com/v1)
+      zh_Hans: 覆盖默认的 API 基础 URL（可选，默认为 https://api.shopsavvy.com/v1）
+      pt_BR: Substituir a URL base padrão da API (opcional, padrão https://api.shopsavvy.com/v1)
+    label:
+      en_US: API Base URL
+      zh_Hans: API 基础 URL
+      pt_BR: URL Base da API
+    placeholder:
+      en_US: https://api.shopsavvy.com/v1
+      zh_Hans: https://api.shopsavvy.com/v1
+      pt_BR: https://api.shopsavvy.com/v1
+    required: false
+    type: text-input
+extra:
+  python:
+    source: provider/shopsavvy.py
+identity:
+  author: shopsavvy
+  description:
+    en_US: Price comparison and product data API. Search products, compare prices across thousands of retailers, and track price history.
+    zh_Hans: 价格比较和产品数据 API。搜索产品、在数千家零售商之间比较价格并跟踪价格历史。
+    pt_BR: API de comparação de preços e dados de produtos. Pesquise produtos, compare preços em milhares de varejistas e acompanhe o histórico de preços.
+  icon: icon.svg
+  label:
+    en_US: ShopSavvy
+    zh_Hans: ShopSavvy
+    pt_BR: ShopSavvy
+  name: shopsavvy
+  tags:
+    - business
+tools:
+  - tools/search_products.yaml
+  - tools/get_offers.yaml
+  - tools/price_history.yaml
