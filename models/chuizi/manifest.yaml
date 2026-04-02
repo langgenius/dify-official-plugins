@@ -8,7 +8,7 @@ meta:
     version: "3.12"
   version: 0.0.1
 name: chuizi
-author: chuizi-ai
+author: langgenius
 icon: chuizi.svg
 description:
   en_US: Chuizi.AI is a unified AI gateway providing access to 100+ models across 16 providers through a single OpenAI-compatible endpoint.
