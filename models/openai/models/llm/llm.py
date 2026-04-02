@@ -747,18 +747,14 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         if stream:
             extra_model_kwargs["stream_options"] = {"include_usage": True}
 
-        # Handle GPT-5.4/GPT-5.2 parameter compatibility
-        # temperature, top_p, logprobs are only supported when reasoning_effort is "none"
+        # Handle GPT-5.x parameter compatibility: temperature, top_p, and logprobs are not supported when reasoning_effort is enabled (i.e., not "none").
         base_model_for_params = model
         if model.startswith("ft:"):
             base_model_for_params = model.split(":")[1]
 
-        # Handle GPT-5.x parameter compatibility for models with reasoning capabilities
-        # temperature, top_p, logprobs are only supported when reasoning_effort is "none"
-        # This applies to gpt-5.4, gpt-5.2, and potentially other gpt-5.x models
-        if base_model_for_params.startswith(("gpt-5.4", "gpt-5.2", "gpt-5.1", "gpt-5.3", "gpt-5.5")):
+        if base_model_for_params.startswith("gpt-5"):
             reasoning_effort = model_parameters.get("reasoning_effort")
-            if reasoning_effort != "none":
+            if reasoning_effort and reasoning_effort != "none":
                 # Remove unsupported parameters when reasoning_effort is not "none"
                 for param in ["temperature", "top_p", "logprobs"]:
                     if param in model_parameters:
