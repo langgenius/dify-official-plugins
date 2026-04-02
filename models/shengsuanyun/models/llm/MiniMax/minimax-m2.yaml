@@ -1,6 +1,6 @@
 model: minimax/minimax-m2
 label:
-  en_US: MiniMax M2
+  en_US: 'MiniMax M2 '
 model_type: llm
 features:
   - agent-thought
@@ -17,7 +17,7 @@ parameter_rules:
   - name: response_format
     use_template: response_format
 pricing:
-  input: '0.002975'
-  output: '0.011903'
+  input: '0.003057'
+  output: '0.012228'
   currency: CNY
   unit: '0.000001'

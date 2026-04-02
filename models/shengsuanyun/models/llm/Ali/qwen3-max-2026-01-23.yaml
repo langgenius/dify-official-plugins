@@ -1,0 +1,23 @@
+model: ali/qwen3-max-2026-01-23
+label:
+  en_US: Qwen3-Max-2026-01-23
+model_type: llm
+features:
+  - agent-thought
+model_properties:
+  mode: chat
+  context_size: 256000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 32000
+    min: 1
+    max: 32000
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '0.003639'
+  output: '0.014557'
+  currency: CNY
+  unit: '0.000001'

@@ -7,7 +7,7 @@ features:
   - vision
 model_properties:
   mode: chat
-  context_size: 160000
+  context_size: 128000
 parameter_rules:
   - name: max_tokens
     use_template: max_tokens
@@ -18,7 +18,7 @@ parameter_rules:
   - name: response_format
     use_template: response_format
 pricing:
-  input: '0.005668'
-  output: '0.017005'
+  input: '0.005822'
+  output: '0.017468'
   currency: CNY
   unit: '0.000001'

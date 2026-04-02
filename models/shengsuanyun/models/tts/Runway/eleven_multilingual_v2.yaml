@@ -2,7 +2,7 @@ company: Runway
 model: runway/eleven_multilingual_v2
 model_type: tts
 model_properties:
-  default_voice: runway/eleven_multilingual_v2
+  default_voice: Maya
   word_limit: 1000
   voices:
     - name: Maya

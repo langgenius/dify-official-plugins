@@ -6,14 +6,14 @@ features:
   - agent-thought
 model_properties:
   mode: chat
-  context_size: 10000000
+  context_size: 128000
 parameter_rules:
   - name: max_tokens
     use_template: max_tokens
     required: true
-    default: 100000000
+    default: 8000
     min: 1
-    max: 100000000
+    max: 8000
   - name: response_format
     use_template: response_format
 pricing:
