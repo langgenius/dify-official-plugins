@@ -11,7 +11,7 @@ class ChuiziProvider(ModelProvider):
         try:
             model_instance = self.get_model_instance(ModelType.LLM)
             model_instance.validate_credentials(
-                model="anthropic/claude-sonnet-4-6", credentials=credentials
+                model="deepseek/deepseek-chat", credentials=credentials
             )
         except CredentialsValidateFailedError as ex:
             raise ex
