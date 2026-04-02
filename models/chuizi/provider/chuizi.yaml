@@ -1,0 +1,134 @@
+background: '#F59E0B'
+configurate_methods:
+- predefined-model
+- customizable-model
+extra:
+  python:
+    model_sources:
+    - models/llm/llm.py
+    provider_source: provider/chuizi.py
+help:
+  title:
+    en_US: Get your API key from Chuizi.AI
+    zh_Hans: 从 Chuizi.AI 获取 API Key
+  url:
+    en_US: https://app.chuizi.ai/login
+icon_large:
+  en_US: chuizi.svg
+icon_small:
+  en_US: chuizi.svg
+label:
+  en_US: Chuizi.AI
+  zh_Hans: Chuizi.AI
+model_credential_schema:
+  credential_form_schemas:
+  - label:
+      en_US: API Key
+    placeholder:
+      en_US: Enter your Chuizi.AI API Key
+      zh_Hans: 在此输入您的 Chuizi.AI API Key
+    required: true
+    type: secret-input
+    variable: api_key
+  - default: chat
+    label:
+      en_US: Completion mode
+    options:
+    - label:
+        en_US: Completion
+        zh_Hans: 补全
+      value: completion
+    - label:
+        en_US: Chat
+        zh_Hans: 对话
+      value: chat
+    placeholder:
+      en_US: Select completion mode
+      zh_Hans: 选择对话类型
+    required: false
+    show_on:
+    - value: llm
+      variable: __model_type
+    type: select
+    variable: mode
+  - default: '200000'
+    label:
+      en_US: Model context size
+      zh_Hans: 模型上下文长度
+    placeholder:
+      en_US: Enter your Model context size
+      zh_Hans: 在此输入您的模型上下文长度
+    required: true
+    type: text-input
+    variable: context_size
+  - default: '16000'
+    label:
+      en_US: Upper bound for max tokens
+      zh_Hans: 最大 token 上限
+    show_on:
+    - value: llm
+      variable: __model_type
+    type: text-input
+    variable: max_tokens_to_sample
+  - default: no_support
+    label:
+      en_US: Vision Support
+      zh_Hans: 是否支持 Vision
+    options:
+    - label:
+        en_US: 'Yes'
+        zh_Hans: 是
+      value: support
+    - label:
+        en_US: 'No'
+        zh_Hans: 否
+      value: no_support
+    required: false
+    show_on:
+    - value: llm
+      variable: __model_type
+    type: radio
+    variable: vision_support
+  - default: no_call
+    label:
+      en_US: Function calling
+    options:
+      - label:
+          en_US: Not Support
+          zh_Hans: 不支持
+        value: no_call
+      - label:
+          en_US: Support
+          zh_Hans: 支持
+        value: tool_call
+    required: false
+    show_on:
+      - value: llm
+        variable: __model_type
+    type: select
+    variable: function_calling_type
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: Enter model name (e.g. anthropic/claude-sonnet-4-6)
+      zh_Hans: 输入模型名称（如 anthropic/claude-sonnet-4-6）
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+    - models/llm/*.yaml
+provider: chuizi
+provider_credential_schema:
+  credential_form_schemas:
+  - label:
+      en_US: API Key
+    placeholder:
+      en_US: Enter your Chuizi.AI API Key
+      zh_Hans: 在此输入您的 Chuizi.AI API Key
+    required: true
+    type: secret-input
+    variable: api_key
+supported_model_types:
+- llm

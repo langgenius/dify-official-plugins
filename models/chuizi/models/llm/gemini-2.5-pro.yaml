@@ -1,0 +1,34 @@
+model: google/gemini-2.5-pro
+label:
+  en_US: Gemini 2.5 Pro
+  zh_Hans: Gemini 2.5 Pro
+model_type: llm
+features:
+  - agent-thought
+  - vision
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    type: float
+    default: 1
+    min: 0
+    max: 2
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 65536
+    min: 1
+    max: 65536
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: '1.25'
+  output: '10.00'
+  unit: '0.000001'
+  currency: USD

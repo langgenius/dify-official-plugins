@@ -1,0 +1,28 @@
+model: deepseek/deepseek-r1
+label:
+  en_US: DeepSeek R1
+  zh_Hans: DeepSeek R1
+model_type: llm
+features:
+  - agent-thought
+model_properties:
+  mode: chat
+  context_size: 131072
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+    type: float
+    default: 1
+    min: 0
+    max: 2
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 65536
+    min: 1
+    max: 65536
+pricing:
+  input: '0.28'
+  output: '0.42'
+  unit: '0.000001'
+  currency: USD
