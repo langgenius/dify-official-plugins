@@ -70,10 +70,10 @@ jobs:
           tree || ls -R
 
       - name: Checkout target repo
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           # Use author variable for repository
-          repository: ${{steps.get_basic_info.outputs.author}}/dify-plugins
+          repository: shengsuan/dify-plugins
           path: dify-plugins
           token: ${{ secrets.PLUGIN_ACTION }}
           fetch-depth: 1 # Fetch only the last commit to speed up checkout
