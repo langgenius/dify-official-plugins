@@ -776,7 +776,14 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         else:
             # chat model
             messages: Any = [self._convert_prompt_message_to_dict(m) for m in prompt_messages]
-            
+
+            # For models where temperature is only valid when reasoning_effort="none"
+            # (e.g. gpt-5.1/5.2/5.4): strip temperature/top_p when reasoning is active
+            _re = model_parameters.get("reasoning_effort")
+            if _re and _re != "none":
+                model_parameters.pop("temperature", None)
+                model_parameters.pop("top_p", None)
+
             try:
                 response = client.chat.completions.create(
                     messages=messages,
@@ -821,6 +828,10 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         reasoning_effort = params.pop("reasoning_effort", None)
         if reasoning_effort and reasoning_effort != "none":
             params["reasoning"] = {"effort": reasoning_effort}
+            # temperature/top_p/logprobs not supported when reasoning is active
+            params.pop("temperature", None)
+            params.pop("top_p", None)
+            params.pop("logprobs", None)
 
         # response_format -> text.format (Responses API uses different format)
         # response_format is incompatible with Responses API, convert to text.format
