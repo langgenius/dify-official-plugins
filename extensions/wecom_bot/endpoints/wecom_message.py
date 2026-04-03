@@ -115,9 +115,26 @@ class WeComMessageEndpoint(Endpoint):
         except Exception:
             app_id = ""
 
-        # Extract user identity and scope by app_id to maintain Endpoint/App-level multi-turn conversation
-        user_id = payload.get("FromUserName") or payload.get("from")
-        conv_key = f"wecom_conv_{app_id}_{user_id}" if user_id and app_id else None
+        raw_from = payload.get("from")
+        raw_chatid = payload.get("chatid")
+        raw_aibotid = payload.get("aibotid")
+        raw_chattype = payload.get("chattype")
+        raw_userid = raw_from.get("userid") if isinstance(raw_from, Mapping) else None
+        logger.info(
+            "WeCom payload identities: userid=%r, chatid=%r, aibotid=%r, chattype=%r",
+            raw_userid,
+            raw_chatid,
+            raw_aibotid,
+            raw_chattype,
+        )
+
+        # Scope conversation by bot and single/group chat identity.
+        conv_key = None
+        if app_id and raw_aibotid:
+            if raw_chattype == "group" and raw_chatid:
+                conv_key = f"wecom_conv_{app_id}_{raw_aibotid}_{raw_chatid}"
+            elif raw_chattype == "single" and raw_userid:
+                conv_key = f"wecom_conv_{app_id}_{raw_aibotid}_{raw_userid}"
         
         conversation_id = None
         if conv_key and self.session.storage.exist(conv_key):
