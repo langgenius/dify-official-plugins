@@ -820,15 +820,21 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                             )
                     # Check for text
                     elif hasattr(part, 'text') and part.text:
-                        if part.thought is True and not is_thinking:
-                            assistant_prompt_message.content += "<think>\n\n"
-                            is_thinking = True
-                        elif part.thought is None and is_thinking:
-                            assistant_prompt_message.content += "\n\n</think>"
-                            is_thinking = False
                         if isinstance(assistant_prompt_message.content, list):
+                            if part.thought is True and not is_thinking:
+                                assistant_prompt_message.content.append(TextPromptMessageContent(data="<think>\n\n"))
+                                is_thinking = True
+                            elif part.thought is None and is_thinking:
+                                assistant_prompt_message.content.append(TextPromptMessageContent(data="\n\n</think>"))
+                                is_thinking = False
                             assistant_prompt_message.content.append(TextPromptMessageContent(data=part.text))
                         else:
+                            if part.thought is True and not is_thinking:
+                                assistant_prompt_message.content += "<think>\n\n"
+                                is_thinking = True
+                            elif part.thought is None and is_thinking:
+                                assistant_prompt_message.content += "\n\n</think>"
+                                is_thinking = False
                             assistant_prompt_message.content += part.text
 
         prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
