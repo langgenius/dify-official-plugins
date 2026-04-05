@@ -429,10 +429,17 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         }
 
         # Map model parameters to the Responses API
-        if "temperature" in model_parameters:
-            responses_params["temperature"] = model_parameters["temperature"]
-        if "top_p" in model_parameters:
-            responses_params["top_p"] = model_parameters["top_p"]
+        # reasoning_effort controls whether temperature/top_p are supported:
+        # - "none" (or not set): reasoning is disabled, temperature/top_p are valid
+        # - any other value: reasoning is active, temperature/top_p are NOT supported
+        reasoning_effort = model_parameters.get("reasoning_effort")
+        if reasoning_effort and reasoning_effort != "none":
+            responses_params["reasoning"] = {"effort": reasoning_effort}
+        else:
+            if "temperature" in model_parameters:
+                responses_params["temperature"] = model_parameters["temperature"]
+            if "top_p" in model_parameters:
+                responses_params["top_p"] = model_parameters["top_p"]
         if "max_tokens" in model_parameters:
             responses_params["max_output_tokens"] = model_parameters["max_tokens"]
         elif "max_completion_tokens" in model_parameters:
@@ -494,9 +501,6 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 responses_params["text"] = {
                     "format": {"type": response_format}
                 }
-
-        if "reasoning_effort" in model_parameters:
-            responses_params["reasoning"] = {"effort": model_parameters["reasoning_effort"]}
 
         logger.info(
             f"llm request with responses api: model={model}, stream={stream}, "

@@ -17,6 +17,8 @@ parameter_rules:
     default: 8192
     min: 1
     max: 128000
+  - name: temperature
+    use_template: temperature
   - name: response_format
     label:
       zh_Hans: 回复格式
