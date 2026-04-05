@@ -111,12 +111,30 @@ class WeComMessageEndpoint(Endpoint):
 
         try:
             app = settings.get("app")
+            app_id = app.get("app_id") if app else ""
+        except Exception:
+            app_id = ""
+
+        # Extract user identity and scope by app_id to maintain Endpoint/App-level multi-turn conversation
+        user_id = payload.get("FromUserName") or payload.get("from")
+        conv_key = f"wecom_conv_{app_id}_{user_id}" if user_id and app_id else None
+        
+        conversation_id = None
+        if conv_key and self.session.storage.exist(conv_key):
+            conversation_id = self.session.storage.get(conv_key).decode()
+
+        try:
             response = self.session.app.chat.invoke(
-                app_id=app.get("app_id"),
+                app_id=app_id,
                 query=content,
                 inputs={},
                 response_mode="blocking",
+                conversation_id=conversation_id,
             )
+            
+            if conv_key and "conversation_id" in response:
+                self.session.storage.set(conv_key, response["conversation_id"].encode())
+                
             answer = response.get("answer") or json.dumps(response, ensure_ascii=False)
         except Exception as exc:
             answer = f"Errors：{exc}"
