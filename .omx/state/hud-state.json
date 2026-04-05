@@ -1,0 +1,5 @@
+{
+  "last_turn_at": "2026-04-05T02:36:54.564Z",
+  "turn_count": 1,
+  "last_agent_output": "Added an Azure-specific regression test in [models/azure_openai/tests/test_tts.py](/private/tmp/plug"
+}
