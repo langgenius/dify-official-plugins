@@ -6,6 +6,12 @@ on:
     branches:
       - main
 
+  workflow_dispatch:
+    inputs:
+      plugin_path:
+        description: '手动指定要检查的插件路径 (例如: plugins/my_plugin)'
+        required: false
+        default: ''
 jobs:
   detect-changes:
     runs-on: ubuntu-latest

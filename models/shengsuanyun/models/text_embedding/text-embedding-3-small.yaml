@@ -1,0 +1,9 @@
+name: text-embedding-3-small
+model: openai/text-embedding-3-small
+model_type: text-embedding
+model_properties:
+  context_size: 0
+pricing:
+  input: '0.00022'
+  unit: '0.000001'
+  currency: CNY

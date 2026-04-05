@@ -1,0 +1,24 @@
+[project]
+name = "dify-shengsuanyun"
+version = "0.1.0"
+description = "Add ShengSuanYun LLM, tts model and text-embedding model."
+readme = "README.md"
+requires-python = ">=3.12"
+
+# uv pip compile pyproject.toml -o ./requirements.txt
+dependencies = [
+    "dify_plugin>=0.5.0",
+    "tiktoken~=0.8.0",
+    "openai~=2.3.0",
+    "numpy~=1.26.4",
+    "httpx==0.28.1",
+    "pydantic==2.12.4",
+    "requests==2.32.5"
+]
+
+# uv run black . -C -l 100 && uv run ruff check --fix
+[dependency-groups]
+dev = [
+    "pyrefly>=0.50.0",
+    "pytest>=8.0.0",
+]
