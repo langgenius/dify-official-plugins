@@ -135,7 +135,7 @@ class AzureOpenAITTSTestCase(unittest.TestCase):
             captured_kwargs.update(kwargs)
             return _StreamingResponse()
 
-        model = AzureOpenAIText2SpeechModel()
+        model = AzureOpenAIText2SpeechModel.__new__(AzureOpenAIText2SpeechModel)
         model._create_client = Mock(
             return_value=types.SimpleNamespace(
                 audio=types.SimpleNamespace(
