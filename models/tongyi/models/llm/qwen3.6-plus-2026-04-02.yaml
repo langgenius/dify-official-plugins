@@ -1,8 +1,8 @@
-# this model corresponds to qwen3.5-plus, for more details
+# this model corresponds to qwen3.6-plus-2026-04-02, for more details
 # please refer to (https://help.aliyun.com/zh/model-studio/getting-started/models#bb0ffee88bwnk)
-model: qwen3.5-plus
+model: qwen3.6-plus-2026-04-02
 label:
-  en_US: qwen3.5-plus
+  en_US: qwen3.6-plus-2026-04-02(Qwen3.6)
 model_type: llm
 features:
   - vision

@@ -224,7 +224,8 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "qwen-flash", "qwen-flash-2025-07-28",
             # Qwen3 Max series (default: thinking disabled)
             "qwen3-max-2026-01-23", "qwen3-max-preview",
-            # Qwen3.5 series (default: thinking ENABLED - must explicitly disable)
+            # Qwen3.5/3.6 series (default: thinking ENABLED - must explicitly disable)
+            "qwen3.6-plus", "qwen3.6-plus-2026-04-02",
             "qwen3.5-plus", "qwen3.5-plus-2026-02-15",
             "qwen3.5-flash", "qwen3.5-flash-2026-02-23",
             # GLM series (default: thinking ENABLED - must explicitly disable)
@@ -252,6 +253,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "qwen-turbo-2025-04-28",
             "qwen-flash", "qwen-flash-2025-07-28",
             "qwen3-max-2026-01-23", "qwen3-max-preview",
+            "qwen3.6-plus", "qwen3.6-plus-2026-04-02",
             "qwen3.5-plus", "qwen3.5-plus-2026-02-15",
             "qwen3.5-flash", "qwen3.5-flash-2026-02-23",
         ) and model_parameters.get("enable_thinking", False)

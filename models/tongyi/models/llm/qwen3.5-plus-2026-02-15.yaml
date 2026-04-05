@@ -1,4 +1,4 @@
-# this model corresponds to qwen3.5-plus, for more details
+# this model corresponds to qwen3.5-plus-2026-02-15, for more details
 # please refer to (https://help.aliyun.com/zh/model-studio/getting-started/models#bb0ffee88bwnk)
 model: qwen3.5-plus-2026-02-15
 label:
