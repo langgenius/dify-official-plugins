@@ -34,6 +34,8 @@
 - google/gemini-2.5-flash-lite-preview-09-2025
 - google/gemini-2.5-flash-lite
 - google/gemini-2.0-flash-lite-001
+- google/gemma-4-31b-it
+- google/gemma-4-26b-a4b-it
 - google/gemma-3n-e2b-it:free
 - meta-llama/llama-3.2-1b-instruct
 - meta-llama/llama-3.2-3b-instruct
@@ -46,6 +48,7 @@
 - mistralai/mixtral-8x7b-instruct
 - qwen/qwen-2.5-72b-instruct
 - qwen/qwen3-max
+- qwen/qwen3.6-plus:free
 - deepseek/deepseek-chat
 - deepseek/deepseek-chat-v3.1
 - deepseek/deepseek-chat-v3-0324
@@ -54,7 +57,9 @@
 - deepseek/deepseek-r1-distill-llama-70b
 - deepseek/deepseek-r1-distill-qwen-32b
 - moonshotai/kimi-k2-0905
+- x-ai/grok-4.20-multi-agent
 - x-ai/grok-4.1-fast
 - x-ai/grok-4-fast
 - x-ai/grok-3-beta
 - x-ai/grok-3-mini-beta
+- z-ai/glm-5v-turbo
