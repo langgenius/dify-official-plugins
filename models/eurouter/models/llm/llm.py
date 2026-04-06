@@ -46,6 +46,10 @@ class EUrouterLargeLanguageModel(OAICompatLargeLanguageModel):
         )
         credentials["mode"] = "chat"
         credentials["endpoint_url"] = EUROUTER_ENDPOINT_URL
+        credentials["extra_headers"] = {
+            "HTTP-Referer": "https://dify.ai",
+            "X-EUrouter-Title": "Dify",
+        }
 
     def get_customizable_model_schema(
         self, model: str, credentials: dict
