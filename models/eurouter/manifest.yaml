@@ -1,0 +1,37 @@
+meta:
+  arch:
+    - amd64
+    - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: "3.12"
+  version: 0.0.1
+name: eurouter
+author: eurouter
+icon: icon.svg
+description:
+  en_US: EUrouter is a European AI Gateway providing access to EU-hosted, GDPR-friendly AI models through a single OpenAI-compatible API.
+  zh_Hans: EUrouter 是欧洲 AI 网关，通过单一 OpenAI 兼容 API 提供对欧盟托管、符合 GDPR 的 AI 模型的访问。
+  ja_JP: EUrouter は、OpenAI 互換の単一 API を通じて、EU ホスト、GDPR 準拠の AI モデルにアクセスできるヨーロッパの AI ゲートウェイです。
+  pt_BR: EUrouter é um gateway de IA europeu que oferece acesso a modelos de IA hospedados na UE e compatíveis com GDPR através de uma única API compatível com OpenAI.
+label:
+  en_US: EUrouter
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true
+      text_embedding: false
+      rerank: false
+      tts: false
+      speech2text: false
+      moderation: false
+type: plugin
+plugins:
+  models:
+    - provider/eurouter.yaml
+version: 1.0.0
+created_at: 2026-04-06T12:00:00.000000+00:00
+privacy: PRIVACY.md
