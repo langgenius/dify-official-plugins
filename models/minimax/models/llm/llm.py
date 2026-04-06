@@ -5,7 +5,11 @@ from typing import Any, Mapping, Optional, Union
 import anthropic
 from anthropic import Anthropic, Stream
 from anthropic.types import Message
-from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
+from dify_plugin.entities.model.llm import (
+    LLMResult,
+    LLMResultChunk,
+    LLMResultChunkDelta,
+)
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     PromptMessage,
@@ -82,9 +86,17 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
         client = Anthropic(**credentials_kwargs)
 
         model_parameters = dict(model_parameters)
-        if "max_tokens_to_sample" in model_parameters and "max_tokens" not in model_parameters:
-            model_parameters["max_tokens"] = model_parameters.pop("max_tokens_to_sample")
-        if "max_output_tokens" in model_parameters and "max_tokens" not in model_parameters:
+        if (
+            "max_tokens_to_sample" in model_parameters
+            and "max_tokens" not in model_parameters
+        ):
+            model_parameters["max_tokens"] = model_parameters.pop(
+                "max_tokens_to_sample"
+            )
+        if (
+            "max_output_tokens" in model_parameters
+            and "max_tokens" not in model_parameters
+        ):
             model_parameters["max_tokens"] = model_parameters.pop("max_output_tokens")
 
         thinking = model_parameters.pop("thinking", None)
@@ -165,7 +177,9 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
         prompt_messages: list[PromptMessage],
         tools: Optional[list[PromptMessageTool]] = None,
     ) -> int:
-        prompt = "\n".join(self._extract_text_content(message.content) for message in prompt_messages)
+        prompt = "\n".join(
+            self._extract_text_content(message.content) for message in prompt_messages
+        )
         return self._get_num_tokens_by_gpt2(prompt)
 
     def _convert_prompt_messages(
@@ -175,7 +189,9 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
         system_parts: list[str] = []
         message_dicts: list[dict[str, Any]] = []
 
-        if not any(isinstance(message, ToolPromptMessage) for message in prompt_messages):
+        if not any(
+            isinstance(message, ToolPromptMessage) for message in prompt_messages
+        ):
             self._set_previous_thinking_blocks([])
 
         for message in prompt_messages:
@@ -190,7 +206,9 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                 message_dicts.append(converted)
 
         if not message_dicts:
-            message_dicts = [{"role": "user", "content": [{"type": "text", "text": " "}]}]
+            message_dicts = [
+                {"role": "user", "content": [{"type": "text", "text": " "}]}
+            ]
 
         return "\n".join(system_parts), self._merge_consecutive_messages(message_dicts)
 
@@ -240,7 +258,13 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
             tool_call_id = prompt_message.tool_call_id or ""
             return {
                 "role": "user",
-                "content": [{"type": "tool_result", "tool_use_id": tool_call_id, "content": text}],
+                "content": [
+                    {
+                        "type": "tool_result",
+                        "tool_use_id": tool_call_id,
+                        "content": text,
+                    }
+                ],
             }
 
         return None
@@ -281,7 +305,9 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                     text_parts.append(item.data)
                 elif isinstance(item, dict):
                     if item.get("type") == "text":
-                        text_parts.append(str(item.get("data") or item.get("text") or ""))
+                        text_parts.append(
+                            str(item.get("data") or item.get("text") or "")
+                        )
                 elif hasattr(item, "type") and getattr(item, "type", None) == "text":
                     if hasattr(item, "data"):
                         text_parts.append(str(item.data))
@@ -290,7 +316,9 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
             return " ".join(part for part in text_parts if part)
         return str(content)
 
-    def _transform_tool_prompt(self, tools: list[PromptMessageTool]) -> list[dict[str, Any]]:
+    def _transform_tool_prompt(
+        self, tools: list[PromptMessageTool]
+    ) -> list[dict[str, Any]]:
         transformed_tools: list[dict[str, Any]] = []
         for tool in tools:
             input_schema: Any = tool.parameters
@@ -362,7 +390,9 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
             self._set_previous_thinking_blocks([])
 
         assistant_text = "".join(text_chunks)
-        assistant_message = AssistantPromptMessage(content=assistant_text, tool_calls=tool_calls)
+        assistant_message = AssistantPromptMessage(
+            content=assistant_text, tool_calls=tool_calls
+        )
 
         prompt_tokens = int(getattr(response.usage, "input_tokens", 0) or 0)
         completion_tokens = int(getattr(response.usage, "output_tokens", 0) or 0)
@@ -467,7 +497,10 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                 elif delta_type == "thinking_delta":
                     thinking = getattr(delta, "thinking", "")
                     if thinking:
-                        if not current_thinking_blocks or current_thinking_blocks[-1].get("type") != "thinking":
+                        if (
+                            not current_thinking_blocks
+                            or current_thinking_blocks[-1].get("type") != "thinking"
+                        ):
                             current_thinking_blocks.append(
                                 {
                                     "type": "thinking",
@@ -479,30 +512,40 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                         current_thinking_blocks[-1]["thinking"] = prev + thinking
                 elif delta_type == "signature_delta":
                     signature = getattr(delta, "signature", "")
-                    if signature and current_thinking_blocks and current_thinking_blocks[-1].get("type") == "thinking":
+                    if (
+                        signature
+                        and current_thinking_blocks
+                        and current_thinking_blocks[-1].get("type") == "thinking"
+                    ):
                         current_thinking_blocks[-1]["signature"] = signature
                 elif delta_type == "input_json_delta":
                     partial_json = getattr(delta, "partial_json", "")
                     if partial_json:
                         index = str(event_index)
                         if index not in streamed_tool_calls:
-                            streamed_tool_calls[index] = AssistantPromptMessage.ToolCall(
-                                id=f"tool_{index}",
-                                type="function",
-                                function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                    name="",
-                                    arguments="",
-                                ),
+                            streamed_tool_calls[index] = (
+                                AssistantPromptMessage.ToolCall(
+                                    id=f"tool_{index}",
+                                    type="function",
+                                    function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                                        name="",
+                                        arguments="",
+                                    ),
+                                )
                             )
                         streamed_tool_calls[index].function.arguments += partial_json
                 continue
 
             if event_type == "message_delta":
                 delta = getattr(event, "delta", None)
-                finish_reason = self._convert_finish_reason(getattr(delta, "stop_reason", None))
+                finish_reason = self._convert_finish_reason(
+                    getattr(delta, "stop_reason", None)
+                )
                 usage = getattr(event, "usage", None)
                 if usage is not None:
-                    output_tokens = int(getattr(usage, "output_tokens", output_tokens) or output_tokens)
+                    output_tokens = int(
+                        getattr(usage, "output_tokens", output_tokens) or output_tokens
+                    )
                 continue
 
             if event_type == "message_stop":
@@ -539,7 +582,9 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                     prompt_messages=prompt_messages,
                     delta=LLMResultChunkDelta(
                         index=0,
-                        message=AssistantPromptMessage(content="", tool_calls=final_tool_calls),
+                        message=AssistantPromptMessage(
+                            content="", tool_calls=final_tool_calls
+                        ),
                         usage=usage,
                         finish_reason=finish_reason or "stop",
                     ),
@@ -580,7 +625,9 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                 prompt_messages=prompt_messages,
                 delta=LLMResultChunkDelta(
                     index=0,
-                    message=AssistantPromptMessage(content="", tool_calls=final_tool_calls),
+                    message=AssistantPromptMessage(
+                        content="", tool_calls=final_tool_calls
+                    ),
                     usage=usage,
                     finish_reason=finish_reason or "stop",
                 ),
@@ -596,7 +643,9 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                 thinking_blocks.append(item)
         return thinking_blocks
 
-    def _set_previous_thinking_blocks(self, thinking_blocks: list[dict[str, Any]]) -> None:
+    def _set_previous_thinking_blocks(
+        self, thinking_blocks: list[dict[str, Any]]
+    ) -> None:
         setattr(self, "_previous_thinking_blocks", thinking_blocks)
 
     def _to_credential_kwargs(self, credentials: Mapping[str, Any]) -> dict[str, Any]:
@@ -604,8 +653,12 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
         if not api_key:
             raise CredentialsValidateFailedError("Invalid API key")
 
-        endpoint_url = str(credentials.get("endpoint_url") or "https://api.minimax.io").strip()
-        if not endpoint_url.startswith("http://") and not endpoint_url.startswith("https://"):
+        endpoint_url = str(
+            credentials.get("endpoint_url") or "https://api.minimax.chat"
+        ).strip()
+        if not endpoint_url.startswith("http://") and not endpoint_url.startswith(
+            "https://"
+        ):
             endpoint_url = f"https://{endpoint_url}"
         endpoint_url = endpoint_url.rstrip("/")
         if not endpoint_url.endswith("/anthropic"):
@@ -644,7 +697,10 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
             InvokeConnectionError: [anthropic.APIConnectionError],
             InvokeServerUnavailableError: [anthropic.InternalServerError],
             InvokeRateLimitError: [anthropic.RateLimitError],
-            InvokeAuthorizationError: [anthropic.AuthenticationError, anthropic.PermissionDeniedError],
+            InvokeAuthorizationError: [
+                anthropic.AuthenticationError,
+                anthropic.PermissionDeniedError,
+            ],
             InvokeBadRequestError: [
                 anthropic.BadRequestError,
                 anthropic.NotFoundError,
