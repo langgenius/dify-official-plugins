@@ -19,10 +19,10 @@ class EUrouterModelProvider(ModelProvider):
                 model="mistral-large-3",
                 credentials=credentials,
             )
-        except CredentialsValidateFailedError as ex:
-            raise ex
+        except CredentialsValidateFailedError:
+            raise
         except Exception as ex:
             logger.exception(
                 f"{self.get_provider_schema().provider} credentials validate failed"
             )
-            raise ex
+            raise CredentialsValidateFailedError("Provider credentials validation failed.") from ex

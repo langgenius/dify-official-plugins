@@ -55,18 +55,18 @@ class EUrouterLargeLanguageModel(OAICompatLargeLanguageModel):
             label=I18nObject(en_US=model, zh_Hans=model),
             model_type=ModelType.LLM,
             features=(
-                [
+                (
                     ModelFeature.TOOL_CALL,
                     ModelFeature.MULTI_TOOL_CALL,
                     ModelFeature.STREAM_TOOL_CALL,
-                ]
+                )
                 if credentials.get("function_calling_type") == "tool_call"
-                else []
+                else ()
             ),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
                 ModelPropertyKey.CONTEXT_SIZE: int(
-                    credentials.get("context_size", 8000)
+                    credentials.get("context_size") or 8000
                 ),
                 ModelPropertyKey.MODE: LLMMode.CHAT.value,
             },
@@ -82,7 +82,7 @@ class EUrouterLargeLanguageModel(OAICompatLargeLanguageModel):
                     use_template="max_tokens",
                     default=4096,
                     min=1,
-                    max=int(credentials.get("max_tokens", 16384)),
+                    max=int(credentials.get("max_tokens") or 16384),
                     label=I18nObject(en_US="Max Tokens", zh_Hans="Max Tokens"),
                     type=ParameterType.INT,
                 ),
