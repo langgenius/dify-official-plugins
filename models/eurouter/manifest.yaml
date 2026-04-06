@@ -8,7 +8,7 @@ meta:
     version: "3.12"
   version: 0.0.1
 name: eurouter
-author: eurouter
+author: langgenius
 icon: icon.svg
 description:
   en_US: EUrouter is a European AI Gateway providing access to EU-hosted, GDPR-friendly AI models through a single OpenAI-compatible API.
