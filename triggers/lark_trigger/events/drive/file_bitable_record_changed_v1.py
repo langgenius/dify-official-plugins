@@ -46,11 +46,25 @@ class DriveFileBitableRecordChangedV1Event(Event):
             actions = []
             for action in event_data.action_list:
                 if action:
+                    before_value = []
+                    if action.before_value:
+                        for before_value_item in action.before_value:
+                            before_value.append({
+                                "field_id": before_value_item.field_id if before_value_item.field_id else "",
+                                "field_value": before_value_item.field_value if before_value_item.field_value else ""
+                            })
+                    after_value = []
+                    if action.after_value:
+                        for after_value_item in action.after_value:
+                            after_value.append({
+                                "field_id": after_value_item.field_id if after_value_item.field_id else "",
+                                "field_value": after_value_item.field_value if after_value_item.field_id else ""
+                            })
                     action_info = {
                         "action": action.action if action.action else "",
                         "record_id": action.record_id if action.record_id else "",
-                        "before_value": action.before_value if action.before_value else "",
-                        "after_value": action.after_value if action.after_value else "",
+                        "before_value": before_value,
+                        "after_value": after_value,
                     }
                     actions.append(action_info)
             variables_dict["actions"] = actions
