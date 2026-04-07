@@ -71,14 +71,14 @@ output_schema:
           record_id:
             type: string
           before_value:
-            type: object
+            type: array
             properties:
               field_id:
                 type: string
               field_value:
                 type: string
           after_value:
-            type: object
+            type: array
             properties:
               field_id:
                 type: string
