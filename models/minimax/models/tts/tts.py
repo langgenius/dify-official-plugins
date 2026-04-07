@@ -76,7 +76,13 @@ class MinimaxText2SpeechModel(TTSModel, ABC):
             )
 
         # Get endpoint_url from credentials, use correct default if not provided
-        endpoint_url = credentials.get("endpoint_url", "https://api.minimax.chat")
+        endpoint_url = str(
+            credentials.get("endpoint_url") or "https://api.minimax.chat"
+        ).strip()
+        if not endpoint_url.startswith("http://") and not endpoint_url.startswith(
+            "https://"
+        ):
+            endpoint_url = f"https://{endpoint_url}"
         base_url = endpoint_url.rstrip("/")
         url = f"{base_url}/v1/t2a_v2?GroupId={group_id}"
         headers = {
@@ -212,7 +218,13 @@ class MinimaxText2SpeechModel(TTSModel, ABC):
         if not group_id or not api_key:
             return []
 
-        endpoint_url = credentials.get("endpoint_url", "https://api.minimax.chat")
+        endpoint_url = str(
+            credentials.get("endpoint_url") or "https://api.minimax.chat"
+        ).strip()
+        if not endpoint_url.startswith("http://") and not endpoint_url.startswith(
+            "https://"
+        ):
+            endpoint_url = f"https://{endpoint_url}"
         base_url = endpoint_url.rstrip("/")
         url = f"{base_url}/v1/get_voice"
         headers = {
