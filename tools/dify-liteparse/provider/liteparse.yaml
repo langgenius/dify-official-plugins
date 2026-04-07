@@ -1,0 +1,14 @@
+identity:
+  author: langgenius
+  name: "liteparse"
+  label:
+    en_US: "LiteParse"
+  description:
+    en_US: "LiteParse document parsing."
+  icon: "icon.svg"
+  tags: [utilities]
+credentials_for_provider: {}
+tools: ["tools/liteparse.yaml"]
+extra:
+  python:
+    source: provider/liteparse.py
