@@ -58,7 +58,7 @@ class DriveFileBitableRecordChangedV1Event(Event):
                         for after_value_item in action.after_value:
                             after_value.append({
                                 "field_id": after_value_item.field_id if after_value_item.field_id else "",
-                                "field_value": after_value_item.field_value if after_value_item.field_id else ""
+                                "field_value": after_value_item.field_value if after_value_item.field_value else ""
                             })
                     action_info = {
                         "action": action.action if action.action else "",
