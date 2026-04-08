@@ -1,6 +1,7 @@
 import base64
 import logging
 import json
+import json5
 import os
 import tempfile
 import uuid
@@ -63,7 +64,7 @@ from dify_plugin.errors.model import (
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from openai import OpenAI
 from models._common import get_http_base_address
-from ..constant import BURY_POINT_HEADER
+# from ..constant import BURY_POINT_HEADER
 
 logger = logging.getLogger(__name__)
 
@@ -236,6 +237,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         if model in thinking_capable_models and "enable_thinking" not in model_parameters:
             model_parameters["enable_thinking"] = False
 
+        extra_headers_str = ''
+        if model_parameters.get('extra_headers',''):
+            extra_headers_str = model_parameters.pop('extra_headers')
+
         params = {
             "model": model,
             **model_parameters,
@@ -295,7 +300,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             response = MultiModalConversation.call(
                 **params,
                 stream=stream,
-                headers=self._get_market_bury_point_header(params["messages"]),
+                headers=self._get_market_bury_point_header(params["messages"], extra_headers_str),
                 incremental_output=incremental_output,
                 base_address=base_address,
             )
@@ -305,7 +310,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             )
             response = Generation.call(
                 **params,
-                headers=self._get_market_bury_point_header(params["messages"]),
+                headers=self._get_market_bury_point_header(params["messages"], extra_headers_str),
                 result_format="message",
                 stream=stream,
                 incremental_output=incremental_output,
@@ -417,6 +422,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         tool_calls = []
         try:
             for index, response in enumerate(responses):
+                if index == 0:
+                    print('2' * 100)
+                    print(response)
                 if response.status_code not in {200, HTTPStatus.OK}:
                     # Get request_id (if present) and forward it to the error handler.
                     request_id = getattr(response, "request_id", None)
@@ -970,7 +978,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             ],
         )
 
-    def _get_market_bury_point_header(self, messages: list[dict]) -> dict:
+    def _get_market_bury_point_header(self, messages: list[dict], extra_headers_str: str) -> dict:
         """
         Extract market bury point header information from messages
 
@@ -984,6 +992,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             dict: Bury point header information dictionary containing moduleCode, accountId and other fields;
                   If no valid information can be extracted, returns the default BURY_POINT_HEADER
         """
+        res_bury_point_header = {}
         system_entries = [entry for entry in messages if entry["role"] == "system"]
         if system_entries:
             system_entry = system_entries[0].get("content", "")
@@ -1002,8 +1011,16 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             bury_point_header["accountId"] = buyer_uid.strip()
 
                         system_entries[0]["content"] = "".join(system_entry_split[1:])
-                        return {"x-dashscope-euid": json.dumps(bury_point_header)}
+                        res_bury_point_header = {"x-dashscope-euid": json.dumps(bury_point_header)}
                 except Exception:
-                    return BURY_POINT_HEADER
+                    res_bury_point_header = {}
 
-        return BURY_POINT_HEADER
+        if extra_headers_str and res_bury_point_header == {}:
+            try:
+                # Replace non-breaking spaces and other special whitespace characters with regular spaces
+                cleaned_str = extra_headers_str.replace('\xa0', ' ').replace('\u3000', ' ')
+                res_bury_point_header = json5.loads(cleaned_str)
+            except Exception:
+                res_bury_point_header = {}
+
+        return res_bury_point_header
