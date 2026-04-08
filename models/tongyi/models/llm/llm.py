@@ -64,7 +64,7 @@ from dify_plugin.errors.model import (
 from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 from openai import OpenAI
 from models._common import get_http_base_address
-# from ..constant import BURY_POINT_HEADER
+from ..constant import BURY_POINT_HEADER
 
 logger = logging.getLogger(__name__)
 
@@ -422,9 +422,6 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         tool_calls = []
         try:
             for index, response in enumerate(responses):
-                if index == 0:
-                    print('2' * 100)
-                    print(response)
                 if response.status_code not in {200, HTTPStatus.OK}:
                     # Get request_id (if present) and forward it to the error handler.
                     request_id = getattr(response, "request_id", None)
