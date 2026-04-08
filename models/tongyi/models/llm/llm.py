@@ -1,7 +1,6 @@
 import base64
 import logging
 import json
-import json5
 import os
 import tempfile
 import uuid
@@ -1016,7 +1015,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             try:
                 # Replace non-breaking spaces and other special whitespace characters with regular spaces
                 cleaned_str = extra_headers_str.replace('\xa0', ' ').replace('\u3000', ' ')
-                res_bury_point_header = json5.loads(cleaned_str)
+                res_bury_point_header = json.loads(cleaned_str)
             except Exception:
                 res_bury_point_header = {}
 
