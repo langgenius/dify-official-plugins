@@ -1,0 +1,131 @@
+identity:
+  name: user_created_v3
+  author: langgenius
+  label:
+    en_US: New Employee Joined
+    zh_Hans: 新员工入职
+    ja_JP: 新入社員入社
+
+description:
+  en_US: This event activates when a new employee is onboarded to the organization, providing comprehensive employee information.
+  zh_Hans: 当新员工入职到组织时激活，提供全面的员工信息。
+  ja_JP: 新しい従業員が組織に入社したときにアクティブになり、包括的な従業員情報を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    open_id:
+      type: string
+      description: Employee Open ID
+
+    union_id:
+      type: string
+      description: Employee Union ID
+
+    user_id:
+      type: string
+      description: Employee User ID
+
+    name:
+      type: string
+      description: Employee name
+
+    en_name:
+      type: string
+      description: Employee English name
+
+    nickname:
+      type: string
+      description: Employee nickname
+
+    email:
+      type: string
+      description: Personal email
+
+    enterprise_email:
+      type: string
+      description: Work email
+
+    mobile:
+      type: string
+      description: Mobile phone number
+
+    mobile_visible:
+      type: boolean
+      description: Whether mobile is visible to others
+
+    job_title:
+      type: string
+      description: Job title
+
+    employee_no:
+      type: string
+      description: Employee number
+
+    employee_type:
+      type: number
+      description: Employee type
+
+    leader_user_id:
+      type: string
+      description: Direct manager ID
+
+    department_ids:
+      type: array
+      items:
+        type: string
+      description: Department IDs
+
+    city:
+      type: string
+      description: Work city
+
+    country:
+      type: string
+      description: Work country
+
+    work_station:
+      type: string
+      description: Work location
+
+    time_zone:
+      type: string
+      description: Time zone
+
+    join_time:
+      type: number
+      description: Join date timestamp
+
+    gender:
+      type: number
+      description: Gender (0=secret, 1=male, 2=female)
+
+    is_tenant_manager:
+      type: boolean
+      description: Whether is organization admin
+
+    is_frozen:
+      type: boolean
+      description: Whether account is frozen
+
+    is_resigned:
+      type: boolean
+      description: Whether employee has resigned
+
+    is_activated:
+      type: boolean
+      description: Whether account is activated
+
+    job_level_id:
+      type: string
+      description: Job level identifier
+
+    job_family_id:
+      type: string
+      description: Job family identifier
+
+extra:
+  python:
+    source: events/contact/user_created_v3.py

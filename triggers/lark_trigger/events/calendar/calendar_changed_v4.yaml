@@ -1,0 +1,38 @@
+identity:
+  name: calendar_changed_v4
+  author: langgenius
+  label:
+    en_US: Calendar Changed
+    zh_Hans: 日历更改
+    ja_JP: カレンダー変更
+
+description:
+  en_US: This event activates when a calendar's properties are modified, such as name, description, or settings.
+  zh_Hans: 当日历属性被修改时激活，如名称、描述或设置。
+  ja_JP: カレンダーのプロパティ（名前、説明、設定など）が変更されたときにアクティブになります。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    affected_users:
+      type: array
+      items:
+        type: object
+        properties:
+          user_id:
+            type: string
+          open_id:
+            type: string
+          union_id:
+            type: string
+      description: List of users affected by the calendar change
+    
+    affected_users_count:
+      type: number
+      description: Number of affected users
+
+extra:
+  python:
+    source: events/calendar/calendar_changed_v4.py

@@ -1,0 +1,63 @@
+identity:
+  name: "dicom_pixels"
+  author: "langgenius"
+  label:
+    en_US: "DICOM Pixels"
+    zh_Hans: "DICOM 像素提取"
+description:
+  human:
+    en_US: "Summarize the DICOM pixel array and optionally return a downsampled preview."
+    zh_Hans: "汇总 DICOM 像素矩阵信息，并可选返回缩略预览图。"
+  llm: "Return pixel shape/dtype/stats and an optional PNG preview."
+parameters:
+  - name: dicom_file
+    type: file
+    required: true
+    label:
+      en_US: "DICOM file"
+      zh_Hans: "DICOM 文件"
+    human_description:
+      en_US: "Upload the DICOM file (.dcm)."
+      zh_Hans: "上传 DICOM 文件（.dcm）。"
+    llm_description: "Provide the DICOM file."
+    form: llm
+  - name: include_preview_image
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: "Include preview image"
+      zh_Hans: "包含预览图像"
+    human_description:
+      en_US: "Return a PNG preview from the selected frame."
+      zh_Hans: "返回所选帧的 PNG 预览图。"
+    llm_description: "Set true to include a PNG preview."
+    form: form
+  - name: preview_frame_index
+    type: number
+    required: false
+    default: 0
+    label:
+      en_US: "Preview frame index"
+      zh_Hans: "预览帧索引"
+    human_description:
+      en_US: "0-based frame index for multi-frame datasets."
+      zh_Hans: "多帧数据的 0 基预览索引。"
+    llm_description: "Frame index to preview."
+    form: form
+  - name: max_preview_edge
+    type: number
+    required: false
+    default: 256
+    label:
+      en_US: "Max preview edge"
+      zh_Hans: "预览最大边长"
+    human_description:
+      en_US: "Maximum edge size for preview image (32–1024)."
+      zh_Hans: "预览图最大边长（32–1024）。"
+    llm_description: "Maximum edge length for preview."
+    form: form
+extra:
+  python:
+    source: tools/dicom_pixels.py
+

@@ -1,0 +1,257 @@
+{
+  "3": {
+    "inputs": {
+      "seed": 429733820242854,
+      "steps": 4,
+      "cfg": 1,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "denoise": 1,
+      "model": [
+        "75",
+        0
+      ],
+      "positive": [
+        "111",
+        0
+      ],
+      "negative": [
+        "110",
+        0
+      ],
+      "latent_image": [
+        "88",
+        0
+      ]
+    },
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "Kサンプラー"
+    }
+  },
+  "8": {
+    "inputs": {
+      "samples": [
+        "3",
+        0
+      ],
+      "vae": [
+        "39",
+        0
+      ]
+    },
+    "class_type": "VAEDecode",
+    "_meta": {
+      "title": "VAEデコード"
+    }
+  },
+  "37": {
+    "inputs": {
+      "unet_name": "qwen_image_edit_2509_fp8_e4m3fn.safetensors",
+      "weight_dtype": "default"
+    },
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "拡散モデルを読み込む"
+    }
+  },
+  "38": {
+    "inputs": {
+      "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+      "type": "qwen_image",
+      "device": "default"
+    },
+    "class_type": "CLIPLoader",
+    "_meta": {
+      "title": "CLIPを読み込む"
+    }
+  },
+  "39": {
+    "inputs": {
+      "vae_name": "qwen_image_vae.safetensors"
+    },
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "VAEを読み込む"
+    }
+  },
+  "60": {
+    "inputs": {
+      "filename_prefix": "ComfyUI",
+      "images": [
+        "8",
+        0
+      ]
+    },
+    "class_type": "SaveImage",
+    "_meta": {
+      "title": "画像を保存"
+    }
+  },
+  "66": {
+    "inputs": {
+      "shift": 3,
+      "model": [
+        "89",
+        0
+      ]
+    },
+    "class_type": "ModelSamplingAuraFlow",
+    "_meta": {
+      "title": "モデルサンプリングオーラフロー"
+    }
+  },
+  "75": {
+    "inputs": {
+      "strength": 1,
+      "model": [
+        "66",
+        0
+      ]
+    },
+    "class_type": "CFGNorm",
+    "_meta": {
+      "title": "CFGNorm"
+    }
+  },
+  "78": {
+    "inputs": {
+      "image": "tklab.jpg"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "画像を読み込む"
+    }
+  },
+  "88": {
+    "inputs": {
+      "pixels": [
+        "93",
+        0
+      ],
+      "vae": [
+        "39",
+        0
+      ]
+    },
+    "class_type": "VAEEncode",
+    "_meta": {
+      "title": "VAEエンコード"
+    }
+  },
+  "89": {
+    "inputs": {
+      "lora_name": "Qwen-Image-Lightning-4steps-V1.0.safetensors",
+      "strength_model": 1,
+      "model": [
+        "37",
+        0
+      ]
+    },
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": {
+      "title": "LoRAローダーモデルのみ"
+    }
+  },
+  "93": {
+    "inputs": {
+      "upscale_method": "lanczos",
+      "megapixels": 1,
+      "image": [
+        "78",
+        0
+      ]
+    },
+    "class_type": "ImageScaleToTotalPixels",
+    "_meta": {
+      "title": "画像を総ピクセルにスケール"
+    }
+  },
+  "106": {
+    "inputs": {
+      "image": "0_1 (5).png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "画像を読み込む"
+    }
+  },
+  "108": {
+    "inputs": {
+      "image": "pose.png"
+    },
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "画像を読み込む"
+    }
+  },
+  "110": {
+    "inputs": {
+      "prompt": "",
+      "clip": [
+        "38",
+        0
+      ],
+      "vae": [
+        "39",
+        0
+      ],
+      "image1": [
+        "93",
+        0
+      ],
+      "image2": [
+        "106",
+        0
+      ],
+      "image3": [
+        "108",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "TextEncodeQwenImageEditPlus"
+    }
+  },
+  "111": {
+    "inputs": {
+      "prompt": "Grayscale the logo",
+      "clip": [
+        "38",
+        0
+      ],
+      "vae": [
+        "39",
+        0
+      ],
+      "image1": [
+        "93",
+        0
+      ],
+      "image2": [
+        "106",
+        0
+      ],
+      "image3": [
+        "108",
+        0
+      ]
+    },
+    "class_type": "TextEncodeQwenImageEditPlus",
+    "_meta": {
+      "title": "TextEncodeQwenImageEditPlus"
+    }
+  },
+  "112": {
+    "inputs": {
+      "width": 1024,
+      "height": 1024,
+      "batch_size": 1
+    },
+    "class_type": "EmptySD3LatentImage",
+    "_meta": {
+      "title": "空のSD3潜在画像"
+    }
+  }
+}

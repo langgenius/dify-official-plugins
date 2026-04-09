@@ -1,0 +1,183 @@
+subscription_constructor:
+  parameters:
+    - name: allowed_updates
+      label:
+        en_US: Allowed Updates
+        zh_Hans: 允许的更新类型
+        ja_JP: 許可する更新タイプ
+      type: checkbox
+      required: false
+      multiple: true
+      description:
+        en_US: Limit the webhook to specific update types. Leave empty to receive all updates supported by Telegram.
+        zh_Hans: 限定回调仅接收特定类型的更新，留空则接收 Telegram 支持的所有更新。
+        ja_JP: 特定の更新タイプのみ受信します。空の場合は Telegram がサポートするすべての更新を受信します。
+      options:
+        - value: message
+          label:
+            en_US: Message
+            zh_Hans: 消息
+            ja_JP: メッセージ
+        - value: edited_message
+          label:
+            en_US: Edited Message
+            zh_Hans: 已编辑消息
+            ja_JP: 編集済みメッセージ
+        - value: channel_post
+          label:
+            en_US: Channel Post
+            zh_Hans: 频道帖子
+            ja_JP: チャンネル投稿
+        - value: edited_channel_post
+          label:
+            en_US: Edited Channel Post
+            zh_Hans: 已编辑频道帖子
+            ja_JP: 編集済みチャンネル投稿
+        - value: business_connection
+          label:
+            en_US: Business Connection
+            zh_Hans: 商业连接
+            ja_JP: ビジネス接続
+        - value: business_message
+          label:
+            en_US: Business Message
+            zh_Hans: 商业消息
+            ja_JP: ビジネスメッセージ
+        - value: edited_business_message
+          label:
+            en_US: Edited Business Message
+            zh_Hans: 已编辑商业消息
+            ja_JP: 編集済みビジネスメッセージ
+        - value: deleted_business_messages
+          label:
+            en_US: Deleted Business Messages
+            zh_Hans: 被删除的商业消息
+            ja_JP: 削除されたビジネスメッセージ
+        - value: callback_query
+          label:
+            en_US: Callback Query
+            zh_Hans: 回调查询
+            ja_JP: コールバッククエリ
+        - value: inline_query
+          label:
+            en_US: Inline Query
+            zh_Hans: 行内查询
+            ja_JP: インラインクエリ
+        - value: chosen_inline_result
+          label:
+            en_US: Chosen Inline Result
+            zh_Hans: 选择的行内结果
+            ja_JP: 選択されたインライン結果
+        - value: shipping_query
+          label:
+            en_US: Shipping Query
+            zh_Hans: 运费查询
+            ja_JP: 配送クエリ
+        - value: pre_checkout_query
+          label:
+            en_US: Pre-Checkout Query
+            zh_Hans: 结账前查询
+            ja_JP: 決済前クエリ
+        - value: poll
+          label:
+            en_US: Poll
+            zh_Hans: 投票
+            ja_JP: 投票
+        - value: poll_answer
+          label:
+            en_US: Poll Answer
+            zh_Hans: 投票回答
+            ja_JP: 投票回答
+        - value: message_reaction
+          label:
+            en_US: Message Reaction
+            zh_Hans: 消息表情
+            ja_JP: メッセージリアクション
+        - value: message_reaction_count
+          label:
+            en_US: Message Reaction Count
+            zh_Hans: 消息表情计数
+            ja_JP: メッセージリアクション数
+        - value: my_chat_member
+          label:
+            en_US: Bot Chat Member
+            zh_Hans: 机器人成员状态
+            ja_JP: ボットチャットメンバー
+        - value: chat_member
+          label:
+            en_US: Chat Member
+            zh_Hans: 会话成员
+            ja_JP: チャットメンバー
+        - value: chat_join_request
+          label:
+            en_US: Chat Join Request
+            zh_Hans: 入群请求
+            ja_JP: 参加リクエスト
+        - value: chat_boost
+          label:
+            en_US: Chat Boost
+            zh_Hans: 会话助力
+            ja_JP: チャットブースト
+        - value: removed_chat_boost
+          label:
+            en_US: Chat Boost Removed
+            zh_Hans: 会话助力移除
+            ja_JP: チャットブースト削除
+  credentials_schema:
+    bot_token:
+      label:
+        en_US: Bot Token
+        zh_Hans: 机器人 Token
+        ja_JP: ボットトークン
+      placeholder:
+        en_US: 123456:ABC-DEF1234ghIkl-zyx57W2v1u123ew11
+        zh_Hans: 请输入你的 Telegram Bot Token
+        ja_JP: Telegram ボットトークンを入力してください
+      help:
+        en_US: Create a bot with BotFather and copy the access token.
+        zh_Hans: 使用 BotFather 创建机器人并复制访问令牌。
+        ja_JP: BotFather でボットを作成し、発行されたトークンをコピーしてください。
+      required: true
+      type: secret-input
+      url: https://core.telegram.org/bots#botfather
+
+identity:
+  author: langgenius
+  name: telegram_trigger
+  label:
+    en_US: Telegram Triggers
+    zh_Hans: Telegram 触发器
+    ja_JP: Telegram トリガー
+  description:
+    en_US: Receive Telegram updates via the Bot API and start workflows automatically.
+    zh_Hans: 通过 Telegram Bot API 接收更新并自动触发工作流。
+    ja_JP: Telegram Bot API からの更新を受信してワークフローを自動起動します。
+  icon: icon.svg
+
+extra:
+  python:
+    source: provider/telegram.py
+
+events:
+  - events/messages/message_received.yaml
+  - events/messages/message_edited.yaml
+  - events/channel_posts/channel_post_created.yaml
+  - events/channel_posts/channel_post_edited.yaml
+  - events/connections/business_connection_updated.yaml
+  - events/business/business_message_received.yaml
+  - events/business/business_message_edited.yaml
+  - events/business/business_messages_deleted.yaml
+  - events/reactions/message_reaction_updated.yaml
+  - events/reactions/message_reaction_count_updated.yaml
+  - events/inline/inline_query_received.yaml
+  - events/inline/inline_result_chosen.yaml
+  - events/callbacks/callback_query_received.yaml
+  - events/payments/shipping_query_received.yaml
+  - events/payments/pre_checkout_query_received.yaml
+  - events/polls/poll_state_updated.yaml
+  - events/polls/poll_answer_received.yaml
+  - events/chat_members/my_chat_member_updated.yaml
+  - events/chat_members/chat_member_updated.yaml
+  - events/chat_members/chat_join_request_received.yaml
+  - events/boosts/chat_boost_updated.yaml
+  - events/boosts/chat_boost_removed.yaml

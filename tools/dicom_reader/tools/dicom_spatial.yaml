@@ -1,0 +1,27 @@
+identity:
+  name: "dicom_spatial"
+  author: "langgenius"
+  label:
+    en_US: "DICOM Spatial Geometry"
+    zh_Hans: "空间几何信息"
+description:
+  human:
+    en_US: "Extract pixel spacing, slice thickness, orientations and derived voxel volume."
+    zh_Hans: "提取像素间距、切片厚度、方向/位置等信息，并计算体素体积。"
+  llm: "Return spacing/thickness/orientation/position and voxel size if available."
+parameters:
+  - name: dicom_file
+    type: file
+    required: true
+    label:
+      en_US: "DICOM file"
+      zh_Hans: "DICOM 文件"
+    human_description:
+      en_US: "Upload the DICOM file (.dcm)."
+      zh_Hans: "上传 DICOM 文件（.dcm）。"
+    llm_description: "Provide the DICOM file."
+    form: llm
+extra:
+  python:
+    source: tools/dicom_spatial.py
+

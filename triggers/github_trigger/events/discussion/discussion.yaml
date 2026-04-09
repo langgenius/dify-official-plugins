@@ -1,0 +1,199 @@
+identity:
+  name: discussion
+  author: langgenius
+  label:
+    en_US: Discussion (Unified)
+    zh_Hans: 讨论（统一）
+    ja_JP: ディスカッション（統合）
+
+description:
+  en_US: Unified discussion event with actions filter
+  zh_Hans: 带 actions 过滤的统一 discussion 事件
+  ja_JP: アクションフィルタ付きの統合 discussion イベント
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - created
+  - edited
+  - deleted
+  - answered
+  - labeled
+  - unlabeled
+  - category_changed
+  options:
+  - value: created
+    label:
+      en_US: Created
+      zh_Hans: 创建
+      ja_JP: 作成
+  - value: edited
+    label:
+      en_US: Edited
+      zh_Hans: 编辑
+      ja_JP: 編集
+  - value: deleted
+    label:
+      en_US: Deleted
+      zh_Hans: 删除
+      ja_JP: 削除
+  - value: answered
+    label:
+      en_US: Answered
+      zh_Hans: 已回答
+      ja_JP: 回答済
+  - value: labeled
+    label:
+      en_US: Labeled
+      zh_Hans: 添加标签
+      ja_JP: ラベル付け
+  - value: unlabeled
+    label:
+      en_US: Unlabeled
+      zh_Hans: 移除标签
+      ja_JP: ラベル削除
+  - value: category_changed
+    label:
+      en_US: Category Changed
+      zh_Hans: 分类变更
+      ja_JP: カテゴリ変更
+  description:
+    en_US: Multi select filter for discussion actions such as created edited deleted answered labeled.
+    zh_Hans: 多选过滤讨论事件动作 如 创建 编辑 删除 已回答 打标 等。
+    ja_JP: ディスカッションのアクションを複数選択で絞り込み。作成 編集 削除 回答済 など。
+
+- name: category
+  label:
+    en_US: Category Name
+    zh_Hans: 分类名称
+    ja_JP: カテゴリ名
+  type: string
+  required: false
+  description:
+    en_US: Exact match on category name. Comma separated allowed.
+    zh_Hans: 按分类名称精确匹配。支持逗号分隔。
+    ja_JP: カテゴリ名の完全一致。カンマ区切り可。
+
+- name: author
+  label:
+    en_US: Author
+    zh_Hans: 作者
+    ja_JP: 作成者
+  type: string
+  required: false
+  description:
+    en_US: Filter by discussion author login. Comma separated allowed.
+    zh_Hans: 按讨论作者登录名过滤。支持逗号分隔。
+    ja_JP: ディスカッション作成者のログインでフィルタ。カンマ区切り可。
+
+- name: title_contains
+  label:
+    en_US: Title Contains
+    zh_Hans: 标题包含
+    ja_JP: タイトルに含む
+  type: string
+  required: false
+  description:
+    en_US: Substring match in discussion title. Comma separated keywords allowed.
+    zh_Hans: 讨论标题包含关键字。支持逗号分隔多个关键字。
+    ja_JP: タイトルの部分一致。カンマ区切りのキーワード対応。
+
+- name: body_contains
+  label:
+    en_US: Body Contains
+    zh_Hans: 正文包含
+    ja_JP: 本文に含む
+  type: string
+  required: false
+  description:
+    en_US: Substring match in discussion body. Comma separated keywords allowed.
+    zh_Hans: 讨论正文包含关键字。支持逗号分隔关键字。
+    ja_JP: 本文の部分一致。カンマ区切りのキーワードに対応。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    discussion:
+      type: object
+      properties:
+        id:
+          type: integer
+        number:
+          type: integer
+        title:
+          type: string
+        body:
+          type:
+          - string
+          - "null"
+        state:
+          type: string
+        html_url:
+          type: string
+          format: uri
+        user:
+          type: object
+          properties:
+            id:
+              type: integer
+            login:
+              type: string
+        category:
+          type: object
+          properties:
+            id:
+              type: integer
+            name:
+              type: string
+      required:
+      - id
+      - number
+      - title
+      - html_url
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+    sender:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - discussion
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/discussion/discussion.py

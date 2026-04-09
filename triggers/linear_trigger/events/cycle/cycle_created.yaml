@@ -1,0 +1,78 @@
+identity:
+  name: cycle_created
+  author: langgenius
+  label:
+    en_US: Cycle Created
+    zh_Hans: 周期创建
+    ja_JP: サイクル作成
+
+description:
+  en_US: Triggers when a new cycle is created in Linear
+  zh_Hans: 当在 Linear 中创建新周期时触发
+  ja_JP: Linearで新しいサイクルが作成されたときにトリガーされます
+
+parameters:
+- name: name_contains
+  label:
+    en_US: Name Contains
+    zh_Hans: 名称包含
+    ja_JP: 名前に含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if cycle name contains keywords (comma-separated, e.g., Sprint,Q4). Leave empty for all cycles."
+    zh_Hans: "仅当周期名称包含关键词时触发（逗号分隔，例如：Sprint,Q4）。留空则触发所有周期。"
+    ja_JP: "サイクル名にキーワードが含まれる場合のみトリガー（カンマ区切り、例：Sprint,Q4）。空の場合は全サイクルでトリガー。"
+
+- name: team_filter
+  label:
+    en_US: Team Filter
+    zh_Hans: 团队过滤
+    ja_JP: チームフィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for specific team ID. Leave empty for all teams."
+    zh_Hans: "仅触发指定团队 ID。留空则触发所有团队。"
+    ja_JP: "特定のチームIDのみトリガー。空の場合は全チームでトリガー。"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [create]
+    type:
+      type: string
+      enum: [Cycle]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        number:
+          type: number
+        name:
+          type: string
+        description:
+          type: string
+        startsAt:
+          type: string
+        endsAt:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        teamId:
+          type: string
+    actor:
+      type: object
+  required:
+  - action
+  - type
+  - data
+
+extra:
+  python:
+    source: events/cycle/cycle_created.py

@@ -27,6 +27,7 @@ class ClearWorksheetDataTool(Tool):
         workbook_id = tool_parameters.get("workbook_id")
         worksheet_name = tool_parameters.get("worksheet_name")
         range_address = tool_parameters.get("range")
+        site_id = tool_parameters.get("site_id")
 
         if not workbook_id:
             yield self.create_text_message("Workbook ID is required.")
@@ -44,8 +45,15 @@ class ClearWorksheetDataTool(Tool):
         }
 
         try:
+            # Determine base drive URL (personal or SharePoint site drive)
+            base_drive = (
+                f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive"
+                if site_id
+                else "https://graph.microsoft.com/v1.0/me/drive"
+            )
+
             # Clear the worksheet range
-            url = f"https://graph.microsoft.com/v1.0/me/drive/items/{workbook_id}/workbook/worksheets('{worksheet_name}')/range(address='{range_address}')/clear"
+            url = f"{base_drive}/items/{workbook_id}/workbook/worksheets('{worksheet_name}')/range(address='{range_address}')/clear"
 
             payload = {"applyTo": "Contents"}  # Clear only contents, not formatting
 

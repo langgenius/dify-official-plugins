@@ -1,0 +1,56 @@
+identity:
+  name: google_calendar_event_deleted
+  author: langgenius
+  label:
+    en_US: Google Calendar Event Deleted
+    zh_Hans: Google 日历事件删除
+    ja_JP: Google カレンダー予定の削除
+
+description:
+  en_US: Emits events that were cancelled or removed from the monitored Google Calendar since the last sync.
+  zh_Hans: 当监控的 Google 日历事件被取消或删除时触发。
+  ja_JP: 監視対象の Google カレンダー予定がキャンセルまたは削除された場合に発火します。
+
+parameters: []
+
+extra:
+  python:
+    source: events/google_calendar_event_deleted.py
+
+output_schema:
+  type: object
+  properties:
+    calendar_id:
+      type: string
+    resource_state:
+      type: string
+    resource_id:
+      type: string
+    channel_id:
+      type: string
+    next_sync_token:
+      type: string
+    include_cancelled:
+      type: boolean
+    events:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          status:
+            type: string
+          recurringEventId:
+            type: string
+          originalStartTime:
+            type: object
+            properties:
+              date:
+                type: string
+              dateTime:
+                type: string
+              timeZone:
+                type: string
+          updated:
+            type: string

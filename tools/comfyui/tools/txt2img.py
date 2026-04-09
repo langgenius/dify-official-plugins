@@ -52,6 +52,7 @@ class ComfyuiTxt2Img(Tool):
             self.comfyui,
             civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
             hf_api_key=self.runtime.credentials.get("hf_api_key"),
+            expire_after=int(self.runtime.credentials.get("expire_after", 300)),
         )
 
         model_raw = tool_parameters.get("model", "")
@@ -84,19 +85,24 @@ class ComfyuiTxt2Img(Tool):
         cfg = tool_parameters.get("cfg", 7.0)
         ecosystem = tool_parameters.get("ecosystem", ModelType.SD15.name)
 
-        lora_list = []
+        lora_name_list = []
+        lora_strength_list = []
         try:
             for lora_info in tool_parameters.get("loras", "").split(","):
                 lora_info = lora_info.lstrip(" ").rstrip(" ")
                 if lora_info == "":
                     continue
-                lora_list.append(self.model_manager.decode_lora(lora_info))
+                lora_name, lora_strength = self.model_manager.decode_lora(lora_info)
+                lora_name_list.append(lora_name)
+                lora_strength_list.append(lora_strength)
         except Exception as e:
             raise ToolProviderCredentialValidationError(str(e))
+        batch_size = int(tool_parameters.get("batch_size", 1))
 
-        lora_strength_list = []
         if len(tool_parameters.get("lora_strengths", "")) > 0:
-            lora_strength_list = [float(x) for x in tool_parameters.get("lora_strengths").split(",")]
+            lora_strength_list = [
+                float(x.lstrip(" ").rstrip(" ")) for x in tool_parameters.get("lora_strengths").split(",")
+            ]
         batch_size = int(tool_parameters.get("batch_size", 1))
 
         # make workflow json
@@ -106,7 +112,7 @@ class ComfyuiTxt2Img(Tool):
         if is_hiresfix_enabled:
             workflow_template_path = os.path.join(current_dir, "json", "txt2img_hiresfix.json")
         with open(workflow_template_path) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), self.comfyui.get_object_info())
 
         workflow.set_k_sampler(
             "3",
@@ -152,7 +158,7 @@ class ComfyuiTxt2Img(Tool):
             workflow.set_property("5", "class_type", "EmptySD3LatentImage")
 
         # add loras to workflow json
-        for i, lora_info in enumerate(lora_list):
+        for i, lora_info in enumerate(lora_name_list):
             try:
                 strength = lora_strength_list[i]
             except:
@@ -162,9 +168,11 @@ class ComfyuiTxt2Img(Tool):
         if ecosystem == ModelType.FLUX1.name:
             workflow.add_flux_guidance("3", 3.5)
 
+        yield self.create_json_message(workflow.json())
+
         # send a query to ComfyUI
         try:
-            output_images = self.comfyui.generate(workflow.json())
+            output_images = self.comfyui.generate(workflow)
         except Exception as e:
             raise ToolProviderCredentialValidationError(f"Failed to generate image: {str(e)}")
         for img in output_images:
@@ -175,7 +183,6 @@ class ComfyuiTxt2Img(Tool):
                     "mime_type": img.mime_type,
                 },
             )
-        yield self.create_json_message(workflow.json())
 
     def get_runtime_parameters(self) -> list[ToolParameter]:
         parameters = [

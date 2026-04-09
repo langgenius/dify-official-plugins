@@ -1,0 +1,53 @@
+identity:
+  name: message_reaction_added_v1
+  author: langgenius
+  label:
+    en_US: Message Reaction Added
+    zh_Hans: 消息表情回应
+    ja_JP: メッセージリアクション追加
+
+description:
+  en_US: This event activates when a user adds an emoji reaction to a message, providing details about the reaction and who added it.
+  zh_Hans: 当用户对消息添加表情反应时，此事件会被激活，提供反应的详情和添加者信息。
+  ja_JP: ユーザーがメッセージに絵文字リアクションを追加したときにアクティブになり、リアクションと追加者の詳細を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    message_id:
+      type: string
+      description: ID of the message that received a reaction
+
+    emoji_type:
+      type: string
+      description: The emoji used for the reaction
+
+    operator_type:
+      type: string
+      description: Type of operator (user or app)
+
+    reactor_user_id:
+      type: string
+      description: ID of the person who added the reaction
+
+    reactor_open_id:
+      type: string
+      description: Open ID of the person who added the reaction
+
+    reactor_union_id:
+      type: string
+      description: Union ID of the person who added the reaction
+
+    app_id:
+      type: string
+      description: App ID if reaction was added by an app
+
+    action_time:
+      type: string
+      description: Time when the reaction was added
+
+extra:
+  python:
+    source: events/im/message_reaction_added_v1.py

@@ -1,0 +1,50 @@
+identity:
+  name: read_cypher
+  author: langgenius
+  label:
+    en_US: Read Cypher Query
+    zh_Hans: 读取 Cypher 查询
+    pt_BR: Consulta Cypher de Leitura
+    ja_JP: 読み取り Cypher クエリ
+description:
+  human:
+    en_US: Execute a read-only Cypher query on the Neo4j database
+    zh_Hans: 在 Neo4j 数据库上执行只读 Cypher 查询
+    pt_BR: Executar uma consulta Cypher somente leitura no banco de dados Neo4j
+    ja_JP: Neo4j データベースで読み取り専用の Cypher クエリを実行します
+  llm: Execute a read-only Cypher query on the Neo4j database. This tool only allows MATCH, RETURN, WITH, OPTIONAL MATCH, UNWIND, and other read operations. It will reject any write operations (CREATE, MERGE, SET, DELETE, REMOVE) or administrative commands. Use this tool for querying and analyzing data safely without risk of modifying the database.
+parameters:
+  - name: query
+    type: string
+    required: true
+    label:
+      en_US: Cypher Query
+      zh_Hans: Cypher 查询
+      pt_BR: Consulta Cypher
+      ja_JP: Cypher クエリ
+    human_description:
+      en_US: The read-only Cypher query to execute
+      zh_Hans: 要执行的只读 Cypher 查询
+      pt_BR: A consulta Cypher somente leitura para executar
+      ja_JP: 実行する読み取り専用の Cypher クエリ
+    llm_description: The Cypher query to execute. Must be a read-only query using MATCH, RETURN, WITH, OPTIONAL MATCH, UNWIND, or similar read operations. Write operations like CREATE, MERGE, SET, DELETE will be rejected. Example - "MATCH (n:Person) RETURN n.name LIMIT 10"
+    form: llm
+  - name: limit
+    type: number
+    required: false
+    default: 100
+    label:
+      en_US: Result Limit
+      zh_Hans: 结果限制
+      pt_BR: Limite de Resultados
+      ja_JP: 結果制限
+    human_description:
+      en_US: Maximum number of results to return (default 100)
+      zh_Hans: 返回的最大结果数（默认 100）
+      pt_BR: Numero maximo de resultados a retornar (padrao 100)
+      ja_JP: 返す結果の最大数（デフォルト 100）
+    llm_description: Maximum number of results to return. Default is 100. Set a lower value for large result sets to avoid overwhelming the response.
+    form: llm
+extra:
+  python:
+    source: tools/read_cypher.py

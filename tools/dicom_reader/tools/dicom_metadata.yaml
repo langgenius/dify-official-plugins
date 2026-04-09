@@ -1,0 +1,38 @@
+identity:
+  name: "dicom_metadata"
+  author: "langgenius"
+  label:
+    en_US: "DICOM Metadata"
+    zh_Hans: "DICOM 元数据"
+description:
+  human:
+    en_US: "Extract patient/study/series/image tags from a DICOM file with optional extra tags."
+    zh_Hans: "从 DICOM 文件提取病人/检查/序列/影像关键元数据，并可按需返回附加标签。"
+  llm: "Parse DICOM headers and return compact metadata JSON."
+parameters:
+  - name: dicom_file
+    type: file
+    required: true
+    label:
+      en_US: "DICOM file"
+      zh_Hans: "DICOM 文件"
+    human_description:
+      en_US: "Upload the DICOM Part 10 (.dcm) file to inspect."
+      zh_Hans: "上传需要解析的 DICOM Part 10（.dcm）文件。"
+    llm_description: "Provide the DICOM file."
+    form: llm
+  - name: additional_tags
+    type: string
+    required: false
+    label:
+      en_US: "Additional tags"
+      zh_Hans: "附加标签"
+    human_description:
+      en_US: "Comma-separated tag names or hex codes (e.g., PatientAge, 0018,5100)."
+      zh_Hans: "逗号分隔的标签名称或十六进制编码（如 PatientAge, 0018,5100）。"
+    llm_description: "Optional extra tags to include."
+    form: llm
+extra:
+  python:
+    source: tools/dicom_metadata.py
+

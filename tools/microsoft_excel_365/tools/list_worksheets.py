@@ -25,6 +25,7 @@ class ListWorksheetsTool(Tool):
 
         # Extract parameters
         workbook_id = tool_parameters.get("workbook_id")
+        site_id = tool_parameters.get("site_id")
         if not workbook_id:
             yield self.create_text_message("Workbook ID is required.")
             return
@@ -35,8 +36,15 @@ class ListWorksheetsTool(Tool):
         }
 
         try:
+            # Determine base drive URL (personal or SharePoint site drive)
+            base_drive = (
+                f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive"
+                if site_id
+                else "https://graph.microsoft.com/v1.0/me/drive"
+            )
+
             # Get worksheets from the workbook
-            url = f"https://graph.microsoft.com/v1.0/me/drive/items/{workbook_id}/workbook/worksheets"
+            url = f"{base_drive}/items/{workbook_id}/workbook/worksheets"
 
             response = requests.get(url, headers=headers, timeout=30)
 

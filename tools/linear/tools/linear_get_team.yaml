@@ -1,0 +1,39 @@
+identity:
+  name: linear_get_team
+  author: langgenius
+  label:
+    en_US: Get Linear Team
+    zh_Hans: 获取 Linear 团队
+    pt_BR: Obter Time do Linear
+    ja_JP: Linear チームを取得
+    zh_Hant: 獲取 Linear 團隊
+description:
+  human:
+    en_US: Retrieve a specific team from Linear by ID.
+    zh_Hans: 通过 ID 获取 Linear 中的指定团队。
+    pt_BR: Recuperar um time específico no Linear pelo ID.
+    ja_JP: ID を指定して Linear のチームを取得します。
+    zh_Hant: 透過 ID 獲取 Linear 中的指定團隊。
+  llm: Retrieves a Linear team by its ID and returns detailed fields.
+parameters:
+  - name: id
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Team ID
+      zh_Hans: 团队 ID
+      pt_BR: ID da Equipe
+      ja_JP: チームID
+      zh_Hant: 團隊 ID
+    human_description:
+      en_US: ID of the team to retrieve.
+      zh_Hans: 要获取的团队的 ID。
+      pt_BR: ID do time a ser recuperado.
+      ja_JP: 取得するチームのID。
+      zh_Hant: 要獲取的團隊的 ID。
+    llm_description: The unique identifier of the team to retrieve.
+extra:
+  python:
+    source: tools/linear_get_team.py
+    class: LinearGetTeamTool

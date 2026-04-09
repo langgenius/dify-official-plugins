@@ -28,7 +28,12 @@ class BrightdataProvider(WebsiteCrawlDatasource):
             yield self.create_crawl_message(crawl_res)
 
             format = datasource_parameters.get("format", "markdown")
-            markdown_content = self._scrape_as_markdown(url, api_token, format)
+            markdown_content = self._scrape_as_markdown(
+                self.runtime.credentials.get("zone", "dify_plugin"),
+                url,
+                api_token,
+                format,
+            )
             crawl_res.status = "completed"
             crawl_res.web_info_list = [
                 WebSiteInfoDetail(
@@ -45,7 +50,9 @@ class BrightdataProvider(WebsiteCrawlDatasource):
         except Exception as e:
             raise Exception(f"Web scraping failed: {str(e)}")
 
-    def _scrape_as_markdown(self, url: str, api_token: str, format: str) -> str:
+    def _scrape_as_markdown(
+        self, zone: str, url: str, api_token: str, format: str
+    ) -> str:
         """Use exact same API call as Bright Data MCP server"""
 
         headers = {
@@ -57,7 +64,7 @@ class BrightdataProvider(WebsiteCrawlDatasource):
         # Use the same zone as MCP server (hardcoded default)
         payload = {
             "url": url,
-            "zone": "dify_plugin",
+            "zone": zone,
             "format": "raw",
             "data_format": format,
         }

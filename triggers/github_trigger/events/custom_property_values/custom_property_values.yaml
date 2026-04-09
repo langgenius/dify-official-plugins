@@ -1,0 +1,82 @@
+identity:
+  name: custom_property_values
+  author: langgenius
+  label:
+    en_US: Custom Property Values (Unified)
+    zh_Hans: 自定义属性值（统一）
+    ja_JP: カスタムプロパティ値（統合）
+
+description:
+  en_US: Triggered when custom property values change on a repository
+  zh_Hans: 当仓库自定义属性值变化时触发
+  ja_JP: リポジトリのカスタムプロパティ値が変更された時にトリガー
+
+parameters:
+- name: property_name
+  label:
+    en_US: Property Name
+    zh_Hans: 属性名称
+    ja_JP: プロパティ名
+  type: string
+  required: false
+  description:
+    en_US: Filter by property name whose values changed. Comma separated names allowed.
+    zh_Hans: 按发生变更的属性名过滤。支持逗号分隔多个名称。
+    ja_JP: 変更されたプロパティ名でフィルタ。カンマ区切りで複数指定可。
+
+output_schema:
+  type: object
+  properties:
+    property_values:
+      type:
+      - array
+      - "null"
+      items:
+        type: object
+        properties:
+          property_name:
+            type: string
+          value:
+            type:
+            - string
+            - number
+            - boolean
+            - object
+            - array
+            - "null"
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+    sender:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/custom_property_values/custom_property_values.py

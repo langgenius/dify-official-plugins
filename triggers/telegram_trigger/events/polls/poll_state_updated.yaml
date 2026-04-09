@@ -1,0 +1,235 @@
+identity:
+  name: poll_state_updated
+  author: langgenius
+  label:
+    en_US: Poll State Updated
+    zh_Hans: 投票状态更新
+    ja_JP: 投票ステータス更新
+description:
+  en_US: Triggers when Telegram sends an update for a poll created by the bot.
+  zh_Hans: 当 Telegram 发送由机器人创建的投票更新时触发。
+  ja_JP: ボットが作成した投票の更新が Telegram から届いたときにトリガーします。
+parameters: []
+output_schema:
+  type: object
+  additionalProperties: false
+  required:
+  - update_id
+  - poll
+  properties:
+    update_id:
+      type: integer
+      description: Unique identifier for the Telegram update.
+    poll:
+      type: object
+      description: Telegram Poll object as defined in the Bot API.
+      additionalProperties: true
+      properties:
+        id:
+          type: string
+          description: Unique poll identifier.
+        question:
+          type: string
+          description: Poll question text.
+        question_entities:
+          type: array
+          description: Special entities in the question.
+          items:
+            type: object
+            description: Special entity appearing in text.
+            additionalProperties: true
+            properties:
+              type:
+                type: string
+                description: Type of the entity.
+              offset:
+                type: integer
+                description: Offset to the start of the entity in UTF-16 code units.
+              length:
+                type: integer
+                description: Length of the entity in UTF-16 code units.
+              url:
+                type: string
+                description: URL for "text_link" entity.
+              user:
+                type: object
+                description: Telegram User object.
+                additionalProperties: true
+                properties:
+                  id:
+                    type: integer
+                    description: Unique identifier for this user or bot.
+                  is_bot:
+                    type: boolean
+                    description: True if this user is a bot.
+                  first_name:
+                    type: string
+                    description: User first name.
+                  last_name:
+                    type: string
+                    description: User last name.
+                  username:
+                    type: string
+                    description: Username of the user, if any.
+                  language_code:
+                    type: string
+                    description: IETF language tag of the user's language.
+                  is_premium:
+                    type: boolean
+                    description: True if the user is a Telegram Premium subscriber.
+              language:
+                type: string
+                description: Programming language of the entity text.
+              custom_emoji_id:
+                type: string
+                description: Identifier of a custom emoji.
+        options:
+          type: array
+          description: List of poll options.
+          items:
+            type: object
+            description: One answer option in a poll.
+            additionalProperties: true
+            properties:
+              text:
+                type: string
+                description: Option text.
+              voter_count:
+                type: integer
+                description: Number of users that voted for this option.
+              text_entities:
+                type: array
+                description: Special entities appearing in the option text.
+                items:
+                  type: object
+                  description: Special entity appearing in text.
+                  additionalProperties: true
+                  properties:
+                    type:
+                      type: string
+                      description: Type of the entity.
+                    offset:
+                      type: integer
+                      description: Offset to the start of the entity in UTF-16 code
+                        units.
+                    length:
+                      type: integer
+                      description: Length of the entity in UTF-16 code units.
+                    url:
+                      type: string
+                      description: URL for "text_link" entity.
+                    user:
+                      type: object
+                      description: Telegram User object.
+                      additionalProperties: true
+                      properties:
+                        id:
+                          type: integer
+                          description: Unique identifier for this user or bot.
+                        is_bot:
+                          type: boolean
+                          description: True if this user is a bot.
+                        first_name:
+                          type: string
+                          description: User first name.
+                        last_name:
+                          type: string
+                          description: User last name.
+                        username:
+                          type: string
+                          description: Username of the user, if any.
+                        language_code:
+                          type: string
+                          description: IETF language tag of the user's language.
+                        is_premium:
+                          type: boolean
+                          description: True if the user is a Telegram Premium subscriber.
+                    language:
+                      type: string
+                      description: Programming language of the entity text.
+                    custom_emoji_id:
+                      type: string
+                      description: Identifier of a custom emoji.
+        total_voter_count:
+          type: integer
+          description: Total number of users that voted in the poll.
+        is_closed:
+          type: boolean
+          description: True if the poll is closed.
+        is_anonymous:
+          type: boolean
+          description: True if the poll is anonymous.
+        type:
+          type: string
+          description: Poll type, either regular or quiz.
+        allows_multiple_answers:
+          type: boolean
+          description: True if the poll allows multiple answers.
+        correct_option_id:
+          type: integer
+          description: 0-based identifier of the correct option for quiz polls.
+        explanation:
+          type: string
+          description: Text that is shown when a user chooses an incorrect answer
+            or taps the lamp icon.
+        explanation_entities:
+          type: array
+          description: Special entities in the explanation.
+          items:
+            type: object
+            description: Special entity appearing in text.
+            additionalProperties: true
+            properties:
+              type:
+                type: string
+                description: Type of the entity.
+              offset:
+                type: integer
+                description: Offset to the start of the entity in UTF-16 code units.
+              length:
+                type: integer
+                description: Length of the entity in UTF-16 code units.
+              url:
+                type: string
+                description: URL for "text_link" entity.
+              user:
+                type: object
+                description: Telegram User object.
+                additionalProperties: true
+                properties:
+                  id:
+                    type: integer
+                    description: Unique identifier for this user or bot.
+                  is_bot:
+                    type: boolean
+                    description: True if this user is a bot.
+                  first_name:
+                    type: string
+                    description: User first name.
+                  last_name:
+                    type: string
+                    description: User last name.
+                  username:
+                    type: string
+                    description: Username of the user, if any.
+                  language_code:
+                    type: string
+                    description: IETF language tag of the user's language.
+                  is_premium:
+                    type: boolean
+                    description: True if the user is a Telegram Premium subscriber.
+              language:
+                type: string
+                description: Programming language of the entity text.
+              custom_emoji_id:
+                type: string
+                description: Identifier of a custom emoji.
+        open_period:
+          type: integer
+          description: Amount of time in seconds the poll will be active after creation.
+        close_date:
+          type: integer
+          description: Point in time when the poll will be automatically closed.
+extra:
+  python:
+    source: events/polls/poll_state_updated.py

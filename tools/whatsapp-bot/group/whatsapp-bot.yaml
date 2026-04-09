@@ -1,0 +1,56 @@
+settings:
+  - name: access_token
+    type: secret-input
+    required: true
+    label:
+      en_US: WhatsApp Access Token
+      ja_JP: WhatsApp アクセストークン
+      zh_Hans: WhatsApp 访问令牌
+      pt_BR: Token de Acesso do WhatsApp
+    placeholder:
+      en_US: Enter your WhatsApp Cloud API access token
+      ja_JP: WhatsApp Cloud API のアクセストークンを入力してください
+      zh_Hans: 请输入 WhatsApp Cloud API 访问令牌
+      pt_BR: Insira o token de acesso da API do WhatsApp Cloud
+  - name: phone_number_id
+    type: text-input
+    required: true
+    label:
+      en_US: Phone Number ID
+      ja_JP: 電話番号 ID
+      zh_Hans: 号码 ID
+      pt_BR: ID do Número de Telefone
+    placeholder:
+      en_US: Enter your WhatsApp Business Phone Number ID
+      ja_JP: WhatsApp ビジネスの電話番号 ID を入力してください
+      zh_Hans: 请输入 WhatsApp 企业电话号码 ID
+      pt_BR: Insira o ID do número de telefone comercial do WhatsApp
+  - name: verify_token
+    type: secret-input
+    required: true
+    label:
+      en_US: Webhook Verify Token
+      ja_JP: Webhook 検証トークン
+      zh_Hans: Webhook 校验令牌
+      pt_BR: Token de Verificação do Webhook
+    placeholder:
+      en_US: Set a token and use the same on Meta webhook setup
+      ja_JP: トークンを設定し、Meta の Webhook 設定で同じ値を使用してください
+      zh_Hans: 请设置一个令牌，并在 Meta Webhook 配置中使用相同的值
+      pt_BR: Defina um token e use o mesmo na configuração do webhook da Meta
+  - name: app
+    type: app-selector
+    required: false
+    label:
+      en_US: Dify App to handle messages (optional)
+      ja_JP: メッセージを処理する Dify アプリ（任意）
+      zh_Hans: 处理消息的 Dify 应用（可选）
+      pt_BR: App do Dify para processar mensagens (opcional)
+    placeholder:
+      en_US: Select an app to generate replies; leave empty to echo
+      ja_JP: 返信を生成するアプリを選択。空の場合はエコーします
+      zh_Hans: 选择应用以生成回复；留空则回声消息
+      pt_BR: Selecione um app para gerar respostas; deixe vazio para ecoar
+endpoints:
+  - endpoints/whatsapp-bot.yaml
+  - endpoints/whatsapp-webhook-get.yaml

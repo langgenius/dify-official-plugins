@@ -1,0 +1,74 @@
+identity:
+  name: issue_created
+  author: langgenius
+  label:
+    en_US: Issue Created
+    zh_Hans: Issue 创建
+    ja_JP: 課題作成
+
+description:
+  en_US: Triggers when a new issue is created in Linear
+  zh_Hans: 当在 Linear 中创建新 issue 时触发
+  ja_JP: Linearで新しい課題が作成されたときにトリガーされます
+
+parameters:
+- name: priority_filter
+  label:
+    en_US: Priority Filter
+    zh_Hans: 优先级过滤
+    ja_JP: 優先度フィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for priorities: 0=None, 1=Urgent, 2=High, 3=Normal, 4=Low (comma-separated)"
+    zh_Hans: "仅触发优先级：0=无，1=紧急，2=高，3=正常，4=低（逗号分隔）"
+    ja_JP: "優先度のみトリガー：0=なし、1=緊急、2=高、3=通常、4=低（カンマ区切り）"
+
+- name: title_contains
+  label:
+    en_US: Title Contains
+    zh_Hans: 标题包含
+    ja_JP: タイトルに含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if title contains these keywords (e.g., BUG, feature, urgent, comma-separated). Leave empty for no filtering."
+    zh_Hans: "仅当标题包含这些关键词时触发（例如：BUG, feature, urgent，逗号分隔）。留空则不过滤。"
+    ja_JP: "タイトルにこれらのキーワードが含まれる場合のみトリガー（例：BUG, feature, urgent，カンマ区切り）。空の場合はフィルタなし。"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [create]
+    type:
+      type: string
+      enum: [Issue]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        identifier:
+          type: string
+        number:
+          type: number
+        title:
+          type: string
+        description:
+          type: string
+        priority:
+          type: number
+        url:
+          type: string
+    actor:
+      type: object
+  required:
+  - action
+  - type
+  - data
+
+extra:
+  python:
+    source: events/issue/issue_created.py

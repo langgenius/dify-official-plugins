@@ -21,7 +21,8 @@ class DownloadCivitAI(Tool):
         model_manager = ModelManager(
             comfyui,
             civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
-            hf_api_key=None,
+            hf_api_key=self.runtime.credentials.get("hf_api_key"),
+            expire_after=int(self.runtime.credentials.get("expire_after", 300)),
         )
 
         civitai_model = model_manager.search_civitai(
@@ -37,4 +38,9 @@ class DownloadCivitAI(Tool):
         yield self.create_variable_message("type", civitai_model.model_type)
         yield self.create_variable_message("source", civitai_model.source)
 
+        if civitai_model.name in comfyui.get_model_dirs(civitai_model.directory):
+            yield self.create_text_message("Model was found on local. Download skipped.")
+            return
+        yield self.create_text_message("Downloading...")
         model_manager.download_model_autotoken(civitai_model.url, civitai_model.directory, civitai_model.name)
+        yield self.create_text_message("Download Complete.")

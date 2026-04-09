@@ -1,0 +1,102 @@
+identity:
+  name: "agentcore_code_interpreter"
+  author: "aws"
+  label:
+    en_US: "AgentCore Code Interpreter"
+    zh_Hans: "AgentCore 代码执行器"
+    pt_BR: "AgentCore Code Interpreter"
+description:
+  human: 
+    en_US: > 
+      This tool offers an isolated code execution sandbox based on AWS Bedrock AgentCore that allows you to perform various code interpreter actions.
+      Supported actions include:
+      (1) execute python, javascript, or typescript code,
+      (2) execute terminal commands.
+      The tool can automatically create code interpreters and sessions if not provided.
+  llm: agentcore code interpreter is a sandbox to execute command and code
+parameters:
+  - name: language
+    type: select
+    required: true
+    options:
+      - value: python
+        label:
+          en_US: python
+      - value: javascript
+        label:
+          en_US: javascript
+      - value: typescript
+        label:
+          en_US: typescript 
+    label:
+      en_US: language
+    human_description:
+      en_US: programming language of the code (required if code is provided)
+    llm_description: The programming language of the code to execute. Available values include python, javascript, typescript. Required if code parameter is provided.
+    form: llm
+  - name: code
+    type: string
+    required: true
+    label:
+      en_US: code
+    human_description:
+      en_US: code to be executed
+    llm_description: The code to execute in a code interpreter session. This is the source code in the specified programming language that will be executed by the code interpreter.
+    form: llm
+  - name: command
+    type: string
+    required: false
+    label:
+      en_US: command
+    human_description:
+      en_US: command to be executed
+    llm_description: The terminal command to execute in a code interpreter session.
+    form: llm
+  - name: session_id
+    type: string
+    required: false
+    label:
+      en_US: session id
+    human_description:
+      en_US: The unique identifier of the code interpreter session to use.
+    llm_description: The unique ID of the code interpreter session to use. If you want to use a existing or past code interpreter session, please specify the session ID. If you do not specify the session ID, the tool will initiate a new session for you.
+    form: form
+  - name: code_interpreter_id
+    type: string
+    required: false
+    label:
+      en_US: code_interpreter_id
+    human_description:
+      en_US: ID of the Amazon Bedrock AgentCore code interpreter to use
+    llm_description: The ID of the code interpreter to use.
+    form: form 
+  - name: aws_ak
+    type: string
+    required: false
+    label:
+      en_US: aws_ak
+    human_description:
+      en_US: your aws access key
+    llm_description: The AWS access key to access services provided by AWS. If do not specify one, the tool will try to find it in your environment variables.
+    form: form
+  - name: aws_sk
+    type: string
+    required: false
+    label:
+      en_US: aws_sk
+    human_description:
+      en_US: your aws secret key
+    llm_description: The AWS secret key to access services provided by AWS. If do not specify one, the tool will try to find it in your environment variables.
+    form: form
+  - name: aws_region
+    type: string
+    required: false
+    label:
+      en_US: aws_region
+    human_description:
+      en_US: your aws region
+    llm_description: Specify the region for AWS services. If do not specify one, the tool will try to find it in your environment variables.
+    form: form
+extra:
+  python:
+    source: tools/agentcore_code_interpreter.py

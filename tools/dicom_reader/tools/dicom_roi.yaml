@@ -1,0 +1,74 @@
+identity:
+  name: "dicom_roi"
+  author: "langgenius"
+  label:
+    en_US: "DICOM ROI Analysis"
+    zh_Hans: "ROI 区域分析"
+description:
+  human:
+    en_US: "Analyze a rectangular ROI and optionally return an outlined preview."
+    zh_Hans: "分析矩形 ROI 区域，并可返回带 ROI 边框的预览图。"
+  llm: "Compute stats in an ROI with optional preview."
+parameters:
+  - name: dicom_file
+    type: file
+    required: true
+    label:
+      en_US: "DICOM file"
+      zh_Hans: "DICOM 文件"
+    human_description:
+      en_US: "Upload the DICOM file (.dcm)."
+      zh_Hans: "上传 DICOM 文件（.dcm）。"
+    llm_description: "Provide the DICOM file."
+    form: llm
+  - name: frame_index
+    type: number
+    required: false
+    default: 0
+    label:
+      en_US: "Frame index"
+      zh_Hans: "帧索引"
+    human_description:
+      en_US: "0-based frame index to analyze."
+      zh_Hans: "要分析的 0 基帧索引。"
+    llm_description: "Frame index."
+    form: form
+  - name: roi_bbox
+    type: string
+    required: true
+    label:
+      en_US: "ROI bbox (JSON)"
+      zh_Hans: "ROI 矩形（JSON）"
+    human_description:
+      en_US: "JSON: {\"x\":0,\"y\":0,\"width\":64,\"height\":64}."
+      zh_Hans: "JSON 格式：{\"x\":0,\"y\":0,\"width\":64,\"height\":64}。"
+    llm_description: "Rectangular ROI JSON."
+    form: form
+  - name: include_preview_image
+    type: boolean
+    required: false
+    default: true
+    label:
+      en_US: "Include preview"
+      zh_Hans: "包含预览"
+    human_description:
+      en_US: "Return a PNG with ROI outline."
+      zh_Hans: "返回带 ROI 边框的 PNG 预览。"
+    llm_description: "Set true to include preview."
+    form: form
+  - name: max_preview_edge
+    type: number
+    required: false
+    default: 256
+    label:
+      en_US: "Max preview edge"
+      zh_Hans: "预览最大边长"
+    human_description:
+      en_US: "Maximum edge size for preview image (32–1024)."
+      zh_Hans: "预览图最大边长（32–1024）。"
+    llm_description: "Maximum edge length for preview."
+    form: form
+extra:
+  python:
+    source: tools/dicom_roi.py
+

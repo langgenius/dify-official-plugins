@@ -7,7 +7,6 @@ from dify_plugin.errors.model import (
     InvokeBadRequestError,
 )
 from dify_plugin.interfaces.model.tts_model import TTSModel
-from openai import AzureOpenAI
 from ..common import _CommonAzureOpenAI
 from ..constants import TTS_BASE_MODELS, AzureBaseModel
 
@@ -76,8 +75,7 @@ class AzureOpenAIText2SpeechModel(_CommonAzureOpenAI, TTSModel):
         :return: text translated to audio file
         """
         try:
-            credentials_kwargs = self._to_credential_kwargs(credentials)
-            client = AzureOpenAI(**credentials_kwargs)
+            client = self._create_client(credentials)
             max_length = 3500
             if len(content_text) > max_length:
                 sentences = self._split_text_into_sentences(
@@ -119,8 +117,7 @@ class AzureOpenAIText2SpeechModel(_CommonAzureOpenAI, TTSModel):
         :param sentence: text content to be translated
         :return: text translated to audio file
         """
-        credentials_kwargs = self._to_credential_kwargs(credentials)
-        client = AzureOpenAI(**credentials_kwargs)
+        client = self._create_client(credentials)
         response = client.audio.speech.create(
             model=model, voice=voice, input=sentence.strip()
         )
@@ -130,10 +127,9 @@ class AzureOpenAIText2SpeechModel(_CommonAzureOpenAI, TTSModel):
     def get_customizable_model_schema(
         self, model: str, credentials: dict
     ) -> Optional[AIModelEntity]:
-        ai_model_entity = self._get_ai_model_entity(
-            credentials["base_model_name"], model
-        )
-        return ai_model_entity.entity
+        base_model_name = self._get_base_model_name(credentials)
+        ai_model_entity = self._get_ai_model_entity(base_model_name, model)
+        return ai_model_entity.entity if ai_model_entity else None
 
     @staticmethod
     def _get_ai_model_entity(base_model_name: str, model: str) -> AzureBaseModel | None:

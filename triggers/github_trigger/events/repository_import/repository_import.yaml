@@ -1,0 +1,166 @@
+identity:
+  name: repository_import
+  author: langgenius
+  label:
+    en_US: Repository Import (Unified)
+    zh_Hans: 仓库导入（统一）
+    ja_JP: リポジトリインポート（統合）
+
+description:
+  en_US: Unified repository_import event for import status changes
+  zh_Hans: 用于导入状态变更的统一 repository_import 事件
+  ja_JP: インポート状態変更向けの統合 repository_import イベント
+
+parameters:
+- name: status
+  label:
+    en_US: Import Status
+    zh_Hans: 导入状态
+    ja_JP: インポート状態
+  type: select
+  required: false
+  multiple: true
+  options:
+  - value: detected
+    label:
+      en_US: Detected
+      zh_Hans: 已检测
+      ja_JP: 検出
+  - value: importing
+    label:
+      en_US: Importing
+      zh_Hans: 导入中
+      ja_JP: インポート中
+  - value: complete
+    label:
+      en_US: Complete
+      zh_Hans: 完成
+      ja_JP: 完了
+  - value: error
+    label:
+      en_US: Error
+      zh_Hans: 错误
+      ja_JP: エラー
+  - value: cancelled
+    label:
+      en_US: Cancelled
+      zh_Hans: 已取消
+      ja_JP: キャンセル
+
+- name: vcs
+  label:
+    en_US: VCS Type
+    zh_Hans: 版本控制类型
+    ja_JP: VCS タイプ
+  type: select
+  required: false
+  multiple: true
+  options:
+  - value: git
+    label:
+      en_US: Git
+      zh_Hans: Git
+      ja_JP: Git
+  - value: subversion
+    label:
+      en_US: Subversion
+      zh_Hans: Subversion
+      ja_JP: Subversion
+  - value: mercurial
+    label:
+      en_US: Mercurial
+      zh_Hans: Mercurial
+      ja_JP: Mercurial
+
+output_schema:
+  type: object
+  properties:
+    import:
+      type: object
+      properties:
+        status:
+          type: string
+        vcs:
+          type:
+          - string
+          - "null"
+        vcs_url:
+          type:
+          - string
+          - "null"
+          format: uri
+        use_lfs:
+          type:
+          - boolean
+          - "null"
+        has_large_files:
+          type:
+          - boolean
+          - "null"
+        large_files:
+          type:
+          - array
+          - "null"
+          items:
+            type: object
+            properties:
+              path:
+                type: string
+              oid:
+                type: string
+        authors_count:
+          type:
+          - integer
+          - "null"
+        authors_url:
+          type:
+          - string
+          - "null"
+          format: uri
+      required:
+      - status
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+    sender:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - import
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/repository_import/repository_import.py
+  help:
+    en_US: Filter by import status lifecycle such as detected importing complete error cancelled.
+    zh_Hans: 按导入状态过滤 如 detected importing complete error cancelled。
+    ja_JP: インポート状態でフィルタ detected importing complete error cancelled など。
+  help:
+    en_US: Filter by source VCS type like git subversion mercurial.
+    zh_Hans: 按源版本控制类型过滤 如 git subversion mercurial。
+    ja_JP: 元の VCS 種別でフィルタ git subversion mercurial など。

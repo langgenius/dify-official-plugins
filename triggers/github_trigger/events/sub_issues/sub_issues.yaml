@@ -1,0 +1,143 @@
+identity:
+  name: sub_issues
+  author: langgenius
+  label:
+    en_US: Sub Issues (Unified)
+    zh_Hans: 子议题（统一）
+    ja_JP: サブイシュー（統合）
+
+description:
+  en_US: Triggered when sub-issue relationships are added, removed or updated
+  zh_Hans: 当子议题关系添加、移除或更新时触发
+  ja_JP: サブイシュー関係の追加・削除・更新時にトリガー
+
+parameters:
+- name: actions
+  label:
+    en_US: Actions
+    zh_Hans: 动作
+    ja_JP: アクション
+  type: select
+  required: false
+  multiple: true
+  default:
+  - added
+  - removed
+  - updated
+  options:
+  - value: added
+    label:
+      en_US: Added
+      zh_Hans: 已添加
+      ja_JP: 追加
+  - value: removed
+    label:
+      en_US: Removed
+      zh_Hans: 已移除
+      ja_JP: 削除
+  - value: updated
+    label:
+      en_US: Updated
+      zh_Hans: 已更新
+      ja_JP: 更新
+  description:
+    en_US: Multi select filter for sub issue relationship changes such as added removed updated.
+    zh_Hans: 多选过滤子议题关系变化 如 添加 移除 更新。
+    ja_JP: サブイシューの関係変更を複数選択で絞り込み。追加 削除 更新 など。
+
+- name: parent_issue
+  label:
+    en_US: Parent Issue Number(s)
+    zh_Hans: 父议题编号
+    ja_JP: 親課題番号
+  type: string
+  required: false
+  description:
+    en_US: Filter by parent issue numbers. Comma separated integers.
+    zh_Hans: 按父议题编号过滤。逗号分隔整数。
+    ja_JP: 親課題番号でフィルタ。整数のカンマ区切り。
+
+- name: child_issue
+  label:
+    en_US: Child Issue Number(s)
+    zh_Hans: 子议题编号
+    ja_JP: 子課題番号
+  type: string
+  required: false
+  description:
+    en_US: Filter by child issue numbers. Comma separated integers.
+    zh_Hans: 按子议题编号过滤。逗号分隔整数。
+    ja_JP: 子課題番号でフィルタ。整数のカンマ区切り。
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+    parent_issue:
+      type:
+      - object
+      - "null"
+      properties:
+        id:
+          type: integer
+        number:
+          type: integer
+        title:
+          type:
+          - string
+          - "null"
+    sub_issue:
+      type:
+      - object
+      - "null"
+      properties:
+        id:
+          type: integer
+        number:
+          type: integer
+        title:
+          type:
+          - string
+          - "null"
+        state:
+          type:
+          - string
+          - "null"
+    repository:
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int64
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+    sender:
+      type: object
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+  required:
+  - action
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/sub_issues/sub_issues.py

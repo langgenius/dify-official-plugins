@@ -23,6 +23,9 @@ class DownloadFileTool(Tool):
             "sandbox_id": sandbox_id,
             "timeout": tool_parameters.get("timeout", 120),
         }
+        
+        if domain := self.runtime.credentials.get("domain"):
+            args["domain"] = domain
 
         sandbox = Sandbox(**args)
 

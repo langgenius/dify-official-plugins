@@ -14,9 +14,8 @@ identity:
   author: hjlarry, SiliconFlow, Inc.
   description:
     en_US:
-      The image generation API provided by SiliconFlow includes Flux and Stable
-      Diffusion models.
-    zh_CN: 硅基流动提供的图片生成 API，包含 Flux 和 Stable Diffusion 模型。
+      The SiliconFlow plugin provides current image generation, image editing, and video generation tools.
+    zh_CN: 硅基流动插件提供当前可用的图片生成、图片编辑和视频生成工具。
   icon: siliconflow_square.svg
   label:
     en_US: SiliconFlow
@@ -25,8 +24,6 @@ identity:
   tags:
     - image
 tools:
-  - tools/flux.yaml
-  - tools/stable_diffusion.yaml
-  - tools/janus-pro.yaml
-  - tools/image-to-video.yaml
-  - tools/text-to-video.yaml
+  - tools/image-generate.yaml
+  - tools/image-edit.yaml
+  - tools/video-generate.yaml

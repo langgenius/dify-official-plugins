@@ -1,0 +1,78 @@
+identity:
+  name: comment_deleted
+  author: langgenius
+  label:
+    en_US: Comment Deleted
+    ja_JP: Comment Deleted
+    zh_Hans: Comment Deleted
+description:
+  en_US: Triggered when Notion emits the comment.deleted webhook event.
+  ja_JP: Notion で comment.deleted Webhook イベントが発生したときにトリガーされます。
+  zh_Hans: 当 Notion 触发 comment.deleted Webhook 事件时触发。
+parameters:
+- name: workspace_filter
+  type: string
+  required: false
+  label:
+    en_US: Workspace Filter
+    ja_JP: ワークスペースフィルター
+    zh_Hans: 工作区过滤器
+  description:
+    en_US: "Comma separated workspace IDs to forward events from. Leave blank to accept all workspaces."
+    ja_JP: "イベントを転送するワークスペース ID をカンマ区切りで指定します。空欄の場合はすべてを受け入れます。"
+    zh_Hans: "使用逗号分隔的工作区 ID，仅接收这些工作区的事件。留空接收所有工作区。"
+
+output_schema:
+  type: object
+  properties:
+    id:
+      type: string
+    type:
+      type: string
+    timestamp:
+      type: string
+    workspace_id:
+      type: string
+    subscription_id:
+      type: string
+    integration_id:
+      type: string
+    entity:
+      type: object
+    entity_content:
+      type: object
+      description: Full comment object retrieved from Notion API.
+      properties:
+        object:
+          type: string
+          description: Always `comment`.
+        id:
+          type: string
+        parent:
+          type: object
+          description: Page or block that hosts the comment.
+        discussion_id:
+          type: string
+        created_time:
+          type: string
+        last_edited_time:
+          type: string
+        created_by:
+          type: object
+        rich_text:
+          type: array
+          description: Rich text segments composing the comment.
+          items:
+            type: object
+        attachments:
+          type: array
+          items:
+            type: object
+      required: [object, id]
+    data:
+      type: object
+  required: [id, type, timestamp, workspace_id]
+
+extra:
+  python:
+    source: events/comment/comment_deleted.py

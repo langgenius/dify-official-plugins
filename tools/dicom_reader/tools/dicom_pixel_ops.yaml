@@ -1,0 +1,132 @@
+identity:
+  name: "dicom_pixel_ops"
+  author: "langgenius"
+  label:
+    en_US: "DICOM Pixel Ops"
+    zh_Hans: "像素矩阵操作"
+description:
+  human:
+    en_US: "Perform simple pixel operations (normalize, add/subtract, clip, contrast stretch, box blur)."
+    zh_Hans: "执行像素矩阵操作（归一化、加减、裁剪、对比度拉伸、盒式模糊）。"
+  llm: "Apply a basic pixel operation and return stats with a preview."
+parameters:
+  - name: dicom_file
+    type: file
+    required: true
+    label:
+      en_US: "DICOM file"
+      zh_Hans: "DICOM 文件"
+    human_description:
+      en_US: "Upload the DICOM file (.dcm)."
+      zh_Hans: "上传 DICOM 文件（.dcm）。"
+    llm_description: "Provide the DICOM file."
+    form: llm
+  - name: operation
+    type: select
+    required: false
+    default: "normalize"
+    options:
+      - value: normalize
+        label:
+          en_US: Normalize
+          zh_Hans: 归一化
+      - value: add
+        label:
+          en_US: Add
+          zh_Hans: 加
+      - value: subtract
+        label:
+          en_US: Subtract
+          zh_Hans: 减
+      - value: clip
+        label:
+          en_US: Clip
+          zh_Hans: 裁剪
+      - value: contrast_stretch
+        label:
+          en_US: Contrast Stretch
+          zh_Hans: 对比度拉伸
+      - value: box_blur
+        label:
+          en_US: Box Blur
+          zh_Hans: 盒式模糊
+    label:
+      en_US: "Operation"
+      zh_Hans: "操作类型"
+    human_description:
+      en_US: "Choose a pixel operation to apply."
+      zh_Hans: "选择要执行的像素操作。"
+    llm_description: "Operation name."
+    form: form
+  - name: frame_index
+    type: number
+    required: false
+    default: 0
+    label:
+      en_US: "Frame index"
+      zh_Hans: "帧索引"
+    human_description:
+      en_US: "0-based frame index."
+      zh_Hans: "0 基帧索引。"
+    llm_description: "Frame index to process."
+    form: form
+  - name: value
+    type: number
+    required: false
+    label:
+      en_US: "Scalar value"
+      zh_Hans: "标量数值"
+    human_description:
+      en_US: "Scalar used by add/subtract operations."
+      zh_Hans: "用于加减操作的标量。"
+    llm_description: "Scalar value."
+    form: form
+  - name: min_value
+    type: number
+    required: false
+    label:
+      en_US: "Min clip"
+      zh_Hans: "裁剪下限"
+    human_description:
+      en_US: "Lower bound for clip operation."
+      zh_Hans: "用于裁剪操作的下限。"
+    llm_description: "Lower bound for clip."
+    form: form
+  - name: max_value
+    type: number
+    required: false
+    label:
+      en_US: "Max clip"
+      zh_Hans: "裁剪上限"
+    human_description:
+      en_US: "Upper bound for clip operation."
+      zh_Hans: "用于裁剪操作的上限。"
+    llm_description: "Upper bound for clip."
+    form: form
+  - name: kernel_size
+    type: number
+    required: false
+    default: 3
+    label:
+      en_US: "Kernel size"
+      zh_Hans: "卷积核大小"
+    human_description:
+      en_US: "Odd kernel size for box blur."
+      zh_Hans: "盒式模糊的奇数卷积核大小。"
+    llm_description: "Kernel size for blur."
+    form: form
+  - name: max_preview_edge
+    type: number
+    required: false
+    default: 256
+    label:
+      en_US: "Max preview edge"
+      zh_Hans: "预览最大边长"
+    human_description:
+      en_US: "Maximum edge size for preview image (32–1024)."
+      zh_Hans: "预览图最大边长（32–1024）。"
+    llm_description: "Maximum edge length for preview."
+    form: form
+extra:
+  python:
+    source: tools/dicom_pixel_ops.py

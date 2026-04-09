@@ -26,7 +26,7 @@ Once started, Lemonade will be accessible at `http://localhost:8000`.
 
 ### 2. Install Lemonade Plugin in Dify
 
-Go to the [Dify marketplace](https://marketplace.dify.ai/plugins/langgenius/lemonade), search for "Lemonade", and click to install the official plugin.
+Go to the [Dify marketplace](http://localhost/plugins?category=discover), search for "Lemonade", and click to install the official plugin.
 
 ![](./_assets/lemonade-01.png)
 
@@ -48,6 +48,7 @@ Then, fill in the following configuration:
 - **API Endpoint URL**: Base URL where the Lemonade Server
   - For most cases this should be `http://127.0.0.1:8000`
   - If Dify is deployed using Docker, consider using the local network IP address, e.g., `http://192.168.1.100:8000` or `http://host.docker.internal:8000`
+- **Authorization Name**: Leave this field blank. Lemonade uses built-in authentication and does not require an API key.
 - **Model Context Size**: The maximum context size of the model (default: 4096).
 - **Agent Thought Support**: Select "Support" if your model supports reasoning chains
 - **Vision Support**: Select "Support" if your model supports image understanding.
@@ -56,6 +57,7 @@ Then, fill in the following configuration:
 ```
 Model Name: Qwen3-8B-GGUF
 Model Type: llm
+Authorization Name: (leave blank)
 Context Size: 4096
 Agent Thought: Support
 Vision Support: Not Support

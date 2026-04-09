@@ -1,8 +1,8 @@
-model: voyage-3
+model: voyage-3-large
 model_type: text-embedding
 model_properties:
   context_size: 32000
 pricing:
-  input: '0.00018'
-  unit: '0.001'
+  input: '0.18'
+  unit: '1000000'
   currency: USD

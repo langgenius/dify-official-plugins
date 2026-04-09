@@ -69,7 +69,6 @@ class CrawlDatasource(WebsiteCrawlDatasource):
             )
             job_id = _crawl_result["id"]
             crawl_res.status = "processing"
-            print(crawl_res)
             yield self.create_crawl_message(crawl_res)
 
             while True:
@@ -95,7 +94,8 @@ class CrawlDatasource(WebsiteCrawlDatasource):
 
     @staticmethod
     def _process_completed_job(app: FirecrawlApp, status: dict, crawl_res: WebSiteInfo):
-        _format_res = app.format_crawl_status_response(status["status"], status)
+        url_data_list = app._collect_all_crawl_pages(status)
+        _format_res = app.format_crawl_status_response(status["status"], status, url_data_list)
 
         crawl_res.web_info_list = [
             WebSiteInfoDetail(

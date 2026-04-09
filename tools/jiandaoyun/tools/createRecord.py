@@ -13,9 +13,10 @@ class CreateRecordTool(Tool):
     create a record in jiandaoyun
     """
 
-    def create_data(self, data: dict[str, Any], base_url: str) -> dict[str, Any]:
+    def create_data(self, data: dict[str, Any]) -> dict[str, Any]:
         try:
             access_token = self.runtime.credentials["jiandaoyun_api_key"]
+            base_url = self.runtime.credentials["base_url"] or "https://api.jiandaoyun.com/"
         except KeyError:
             raise Exception("jiandaoyun api-key is missing or invalid.")
         httpClient = APIRequestTool(base_url=base_url, token=access_token)
@@ -35,7 +36,6 @@ class CreateRecordTool(Tool):
             raise ValueError("data must be a valid JSON string")
         data = self.create_data(
             {"app_id": app_id, "entry_id": entry_id, "data": loaded_data},
-            tool_parameters.get("base_url"),
         )
         json_data = {
             "status": "success",

@@ -1,0 +1,106 @@
+identity:
+  name: oracle_db_execution
+  author: langgenius
+  label:
+    en_US: "Oracle Database Execution Tool"
+    zh_Hans: "Oracle数据库执行工具"
+description:
+  human:
+    en_US: "Connect to Oracle database and execute SQL statements (INSERT, UPDATE, DELETE, etc.) using Thin Mode."
+    zh_Hans: "使用Thin Mode连接Oracle数据库并执行SQL语句（插入、更新、删除等）。"
+  llm: "A tool for connecting to Oracle database and executing SQL statements (INSERT, UPDATE, DELETE, etc.) using Thin Mode."
+parameters:
+  - name: host
+    type: string
+    required: true
+    label:
+      en_US: Database Host
+      zh_Hans: 数据库主机
+    human_description:
+      en_US: "The hostname or IP address of the Oracle database server."
+      zh_Hans: "Oracle数据库服务器的主机名或IP地址。"
+    llm_description: "The hostname or IP address of the Oracle database server."
+    form: llm
+  - name: port
+    type: number
+    required: false
+    label:
+      en_US: Database Port
+      zh_Hans: 数据库端口
+    human_description:
+      en_US: "The port number of the Oracle database server."
+      zh_Hans: "Oracle数据库服务器的端口号。"
+    llm_description: "The port number of the Oracle database server."
+    form: llm
+  - name: user
+    type: string
+    required: true
+    label:
+      en_US: Username
+      zh_Hans: 用户名
+    human_description:
+      en_US: "The username for connecting to the Oracle database."
+      zh_Hans: "连接Oracle数据库的用户名。"
+    llm_description: "The username for connecting to the Oracle database."
+    form: llm
+  - name: password
+    type: secret-input
+    required: true
+    label:
+      en_US: Password
+      zh_Hans: 密码
+    human_description:
+      en_US: "The password for connecting to the Oracle database."
+      zh_Hans: "连接Oracle数据库的密码。"
+    llm_description: "The password for connecting to the Oracle database."
+    form: llm
+  - name: service_name
+    type: string
+    required: true
+    label:
+      en_US: Service Name
+      zh_Hans: 服务名
+    human_description:
+      en_US: "The service name of the Oracle database."
+      zh_Hans: "Oracle数据库的服务名。"
+    llm_description: "The service name of the Oracle database."
+    form: llm
+  - name: statement
+    type: string
+    required: true
+    label:
+      en_US: SQL Statement
+      zh_Hans: SQL语句
+    human_description:
+      en_US: "The SQL statement to execute (INSERT, UPDATE, DELETE, etc.)."
+      zh_Hans: "要执行的SQL语句（插入、更新、删除等）。"
+    llm_description: "The SQL statement to execute (INSERT, UPDATE, DELETE, etc.)."
+    form: llm
+  - name: output_format
+    type: select
+    required: false
+    default: "JSON"
+    label:
+      en_US: Output Format
+      zh_Hans: 输出格式
+    human_description:
+      en_US: "The format of the execution results."
+      zh_Hans: "执行结果的输出格式。"
+    llm_description: "The format of the execution results."
+    form: llm
+    options:
+      - label:
+          en_US: JSON
+          zh_Hans: JSON
+        value: "JSON"
+      - label:
+          en_US: Text-Markdown
+          zh_Hans: 文本-Markdown
+        value: "Text-Markdown"
+      - label:
+          en_US: Text-CSV
+          zh_Hans: 文本-CSV
+        value: "Text-CSV"
+extra:
+  python:
+    source: tools/execution.py

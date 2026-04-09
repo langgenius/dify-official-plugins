@@ -1,0 +1,30 @@
+identity:
+  name: delete_memory
+  author: 佐井
+  label:
+    en_US: Delete Memory
+    zh_Hans: 删除记忆
+    ja_Jp: メモリ削除
+description:
+  human:
+    en_US: Delete a specific memory node.
+    zh_Hans: 删除指定的记忆节点。
+    ja_Jp: 指定されたメモリノードを削除します。
+  llm: Delete a specific memory fragment by its memory_node_id.
+parameters:
+  - name: memory_node_id
+    type: string
+    required: true
+    label:
+      en_US: Memory Node ID
+      zh_Hans: 记忆节点 ID
+      ja_Jp: メモリノードID
+    human_description:
+      en_US: The ID of the memory node to delete
+      zh_Hans: 要删除的记忆节点 ID
+      ja_Jp: 削除するメモリノードのID
+    llm_description: The ID of the memory node to delete.
+    form: llm
+extra:
+  python:
+    source: tools/delete_memory.py

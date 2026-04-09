@@ -1,0 +1,250 @@
+identity:
+  name: pull_request_closed
+  author: langgenius
+  label:
+    en_US: Pull Request Closed
+    zh_Hans: Pull Request 已关闭
+    ja_JP: Pull Request クローズ
+
+description:
+  en_US: Triggers when a pull request is closed (including merges)
+  zh_Hans: 当拉取请求被关闭（包含合并）时触发
+  ja_JP: プルリクエストがクローズされたときにトリガーします（マージを含む）
+
+parameters:
+- name: base_branch
+  label:
+    en_US: Base Branch
+    zh_Hans: 基准分支
+    ja_JP: ベースブランチ
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for these base branches (comma-separated). Leave empty for any base branch."
+    zh_Hans: "仅当基准分支匹配时触发（逗号分隔）。留空则匹配任意基准分支。"
+    ja_JP: "これらのベースブランチの場合のみトリガー（カンマ区切り）。空の場合はすべてのブランチ。"
+
+- name: head_branch
+  label:
+    en_US: Head Branch
+    zh_Hans: 头部分支
+    ja_JP: ヘッドブランチ
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for these head branches (comma-separated). Leave empty for any head branch."
+    zh_Hans: "仅当头部分支匹配时触发（逗号分隔）。留空则匹配任意头部分支。"
+    ja_JP: "これらのヘッドブランチの場合のみトリガー（カンマ区切り）。空の場合はすべてのブランチ。"
+
+- name: author
+  label:
+    en_US: Author
+    zh_Hans: 作者
+    ja_JP: 作成者
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if the pull request was created by these users (comma-separated GitHub usernames)."
+    zh_Hans: "仅当拉取请求由这些用户创建时触发（逗号分隔 GitHub 用户名）。"
+    ja_JP: "これらのユーザーが作成したプルリクエストの場合のみトリガー（GitHub ユーザー名、カンマ区切り）。"
+
+- name: draft
+  label:
+    en_US: Draft Pull Request
+    zh_Hans: 草稿 Pull Request
+    ja_JP: ドラフトプルリクエスト
+  type: boolean
+  required: false
+  description:
+    en_US: "Filter by draft status at close time: true for draft PRs only, false for ready PRs. Leave empty for both."
+    zh_Hans: "按关闭时的草稿状态过滤：true 仅草稿 PR，false 仅准备好的 PR。留空则两者都触发。"
+    ja_JP: "クローズ時のドラフト状態でフィルタ：true はドラフトのみ、false は通常の PR のみ。空の場合は両方。"
+
+- name: label_names
+  label:
+    en_US: Labels
+    zh_Hans: 标签
+    ja_JP: ラベル
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if the pull request has these labels (comma-separated). Leave empty for any labels."
+    zh_Hans: "仅当拉取请求包含这些标签时触发（逗号分隔）。留空则不过滤标签。"
+    ja_JP: "プルリクエストがこれらのラベルを持つ場合のみトリガー（カンマ区切り）。空の場合はフィルタなし。"
+
+- name: reviewers
+  label:
+    en_US: Requested Reviewers
+    zh_Hans: 请求的审查者
+    ja_JP: リクエストされたレビュー担当者
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if these reviewers or teams are requested (comma-separated usernames or team slugs)."
+    zh_Hans: "仅当请求了这些审查者或团队时触发（逗号分隔用户名或团队 slug）。"
+    ja_JP: "これらのレビュアーまたはチームがリクエストされている場合のみトリガー（ユーザー名またはチームスラッグ、カンマ区切り）。"
+
+- name: pr_size_threshold
+  label:
+    en_US: PR Size Threshold
+    zh_Hans: PR 变更规模阈值
+    ja_JP: PR 規模のしきい値
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if additions+deletions are less than or equal to this integer. Leave empty to ignore."
+    zh_Hans: "仅当（新增+删除）小于等于该整数时触发。留空不生效。"
+    ja_JP: "追加+削除がこの整数以下の場合のみトリガー。空の場合は無視。"
+
+- name: changed_files_glob
+  label:
+    en_US: Changed Files Glob
+    zh_Hans: 变更文件匹配
+    ja_JP: 変更ファイルのグロブ
+  type: string
+  required: false
+  description:
+    en_US: "Trigger only if any changed file matches these glob patterns (comma-separated). Requires file paths in payload; otherwise ignored."
+    zh_Hans: "仅当任一变更文件匹配这些 glob 模式时触发（逗号分隔）。需要 payload 包含文件路径；否则将被忽略。"
+    ja_JP: "変更ファイルがこれらのグロブに一致する場合のみトリガー（カンマ区切り）。payload にファイルパスがない場合は無視。"
+
+- name: merged
+  label:
+    en_US: Merged
+    zh_Hans: 是否合并
+    ja_JP: マージされたか
+  type: boolean
+  required: false
+  description:
+    en_US: "Filter by merge result: true for merged PRs, false for closed without merge. Leave empty for both."
+    zh_Hans: "按合并结果过滤：true 为已合并，false 为关闭但未合并。留空则两者都触发。"
+    ja_JP: "マージ結果でフィルタ：true はマージ済み、false はマージされずにクローズ。空の場合は両方。"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      description: The action that triggered this event
+    number:
+      type: integer
+      description: The pull request number
+    pull_request:
+      type: object
+      description: Details of the pull request
+      properties:
+        id:
+          type: integer
+        number:
+          type: integer
+        title:
+          type: string
+        state:
+          type: string
+        merged:
+          type: boolean
+        draft:
+          type: boolean
+        user:
+          type: object
+          properties:
+            login:
+              type: string
+            id:
+              type: integer
+        base:
+          type: object
+          properties:
+            ref:
+              type: string
+            sha:
+              type: string
+        head:
+          type: object
+          properties:
+            ref:
+              type: string
+            sha:
+              type: string
+        html_url:
+          type: string
+          format: uri
+        merged_by:
+          type: object
+          description: User who merged the pull request if applicable
+          properties:
+            login:
+              type: string
+            id:
+              type: integer
+      required:
+      - id
+      - number
+      - title
+      - state
+      - user
+      - base
+      - head
+      - html_url
+
+    repository:
+      type: object
+      description: Repository information
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+
+    sender:
+      type: object
+      description: The user who triggered the event
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+    organization:
+      type: object
+      description: Organization context if applicable
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+
+    installation:
+      type: object
+      description: Installation that triggered the event if coming from a GitHub App
+      properties:
+        id:
+          type: integer
+
+    changes:
+      type: object
+      description: The changes payload provided by GitHub (present for some actions like edited)
+
+  required:
+  - action
+  - number
+  - pull_request
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/pull_request/pull_request_closed.py

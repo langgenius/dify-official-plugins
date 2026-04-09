@@ -51,7 +51,7 @@ from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 logger = logging.getLogger(__name__)
 
 
-def inference(predictor, messages: list[dict[str, Any]], params: dict[str, Any], stop: list, stream=False):
+def inference(predictor, messages: list[dict[str, Any]], params: dict[str, Any], stop: list, model_id: str, stream=False):
     """
     params:
     predictor : Sagemaker Predictor
@@ -61,6 +61,7 @@ def inference(predictor, messages: list[dict[str, Any]], params: dict[str, Any],
                 {"role": "user", "content": "who are you? what are you doing?"},
             ]
     params (Dict[str,Any]): model parameters for LLM。
+    model_id (str): model identifier。
     stream (bool): False by default。
 
     response:
@@ -68,12 +69,13 @@ def inference(predictor, messages: list[dict[str, Any]], params: dict[str, Any],
     Iterator of Chunks if stream is True
     """
     payload = {
-        "stop": stop,
+        "model": model_id,
         "messages": messages,
         "stream": stream,
         "max_tokens": params.get("max_new_tokens", params.get("max_tokens", 2048)),
         "temperature": params.get("temperature", 0.1),
         "top_p": params.get("top_p", 0.9),
+        "stop": stop,
     }
 
     if not stream:
@@ -147,7 +149,16 @@ class SageMakerLargeLanguageModel(LargeLanguageModel):
         full_response = ""
         buffer = ""
         for chunk_bytes in resp:
-            chunk_json_str = chunk_bytes.decode("utf-8")
+            # Handle None or empty chunks from sporadic model output anomalies
+            if not chunk_bytes:
+                logger.warning("Received empty or None chunk from SageMaker stream, skipping...")
+                continue
+
+            try:
+                chunk_json_str = chunk_bytes.decode("utf-8")
+            except (UnicodeDecodeError, AttributeError) as e:
+                logger.warning(f"Failed to decode chunk: {e}, skipping...")
+                continue
             if chunk_json_str.startswith("data: "):
                 chunk_json_str = chunk_json_str[len("data: "):]
 
@@ -313,9 +324,9 @@ class SageMakerLargeLanguageModel(LargeLanguageModel):
                 serializer=serializers.JSONSerializer(),
             )
 
-        messages: list[dict[str, Any]] = [{"role": p.role.value, "content": p.content} for p in prompt_messages]
+        messages: list[dict[str, Any]] = [self._convert_prompt_message_to_dict(p) for p in prompt_messages]
         response = inference(
-            predictor=self.predictor, messages=messages, params=model_parameters, stop=stop, stream=stream
+            predictor=self.predictor, messages=messages, params=model_parameters, stop=stop, model_id=credentials.get("model_id", ""), stream=stream
         )
 
         if stream:
@@ -515,11 +526,11 @@ class SageMakerLargeLanguageModel(LargeLanguageModel):
 
         features = []
 
-        support_function_call = credentials.get("support_function_call", False)
-        if support_function_call:
+        function_calling_type = credentials.get("function_calling_type", False)
+        if function_calling_type == "tool_call":
             features.append(ModelFeature.TOOL_CALL)
 
-        support_vision = credentials.get("support_vision", False)
+        support_vision = credentials.get("vision_support", False)
         if support_vision:
             features.append(ModelFeature.VISION)
 

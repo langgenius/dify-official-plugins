@@ -1,13 +1,18 @@
 """
 Bedrock model IDs configuration file.
 This file maintains the mapping between model names and their corresponding Bedrock model IDs.
-Based on AWS documentation: 
+Based on AWS documentation:
 - https://docs.aws.amazon.com/bedrock/latest/userguide/models-supported.html
 - https://docs.aws.amazon.com/bedrock/latest/userguide/models-regions.html
 """
 
 BEDROCK_MODEL_IDS = {
     'anthropic claude': {
+        'Claude 4.6 Sonnet': 'anthropic.claude-sonnet-4-6',
+        'Claude 4.6 Opus': 'anthropic.claude-opus-4-6-v1',
+        'Claude 4.5 Opus': 'anthropic.claude-opus-4-5-20251101-v1:0',
+        'Claude 4.5 Haiku': 'anthropic.claude-haiku-4-5-20251001-v1:0',
+        'Claude 4.5 Sonnet': 'anthropic.claude-sonnet-4-5-20250929-v1:0',
         'Claude 4.0 Sonnet': 'anthropic.claude-sonnet-4-20250514-v1:0',
         'Claude 4.0 Opus': 'anthropic.claude-opus-4-20250514-v1:0',
         'Claude 4.1 Opus': 'anthropic.claude-opus-4-1-20250805-v1:0',
@@ -20,10 +25,11 @@ BEDROCK_MODEL_IDS = {
         'Claude 3 Opus': 'anthropic.claude-3-opus-20240229-v1:0',
     },
     'amazon nova': {
-        'Nova Pro': 'amazon.nova-pro-v1:0',
-        'Nova Lite': 'amazon.nova-lite-v1:0',
-        'Nova Micro': 'amazon.nova-micro-v1:0',
-        'Nova Premier': 'amazon.nova-premier-v1:0'
+        'Nova Pro V1': 'amazon.nova-pro-v1:0',
+        'Nova Lite V1': 'amazon.nova-lite-v1:0',
+        'Nova Lite V2': 'amazon.nova-2-lite-v1:0',
+        'Nova Micro V1': 'amazon.nova-micro-v1:0',
+        'Nova Premier V1': 'amazon.nova-premier-v1:0'
     },
     'meta': {
         'Llama 3 8B Instruct': 'meta.llama3-8b-instruct-v1:0',
@@ -46,7 +52,8 @@ BEDROCK_MODEL_IDS = {
     },
     'deepseek': {
         'DeepSeek R1': 'deepseek.r1-v1:0',
-        'DeepSeek V3.1': 'deepseek.v3-v1:0'
+        'DeepSeek V3.1': 'deepseek.v3-v1:0',
+        'DeepSeek V3.2': 'deepseek.v3.2'
     },
     'cohere': {
         'Command': 'cohere.command-text-v14',
@@ -81,11 +88,11 @@ def is_support_cross_region(model_id):
 def get_model_id(model_type, model_name):
     """
     Get the Bedrock model ID for the specified model type and name.
-    
+
     Args:
         model_type (str): The type of model (e.g., 'claude', 'amazon nova')
         model_name (str): The name of the model (e.g., 'Claude 3 Opus')
-        
+
     Returns:
         str: The corresponding Bedrock model ID, or None if not found
     """
@@ -101,12 +108,12 @@ def get_region_area(region_name, prefer_global=False):
     if prefer_global:
         # For regions that support global prefix, prioritize returning global
         global_supported_regions = {
-            'us-west-2', 'us-east-1', 'us-east-2', 
+            'us-west-2', 'us-east-1', 'us-east-2',
             'eu-west-1', 'ap-northeast-1'
         }
         if region_name in global_supported_regions:
             return 'global'
-    
+
     prefix = region_name.split('-')[0].lower()
 
     area_mapping = {

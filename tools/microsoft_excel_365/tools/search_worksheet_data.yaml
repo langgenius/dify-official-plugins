@@ -15,6 +15,19 @@ description:
   llm: Search for specific values in an Excel worksheet and return the locations of matching cells
 
 parameters:
+  - name: site_id
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Site ID
+      zh_Hans: 站点 ID
+      ja_JP: サイトID
+    human_description:
+      en_US: Optional SharePoint site ID. When provided, searches within a workbook under this site's drive instead of personal OneDrive.
+      zh_Hans: 可选的 SharePoint 站点 ID。若提供，则在该站点的驱动器中的工作簿内进行搜索，而非个人 OneDrive。
+      ja_JP: 任意のSharePointサイトID。指定すると個人のOneDriveではなく、このサイトのドライブのワークブック内を検索します。
+    llm_description: Optional SharePoint site ID. If set, use sites/{site_id}/drive instead of me/drive.
   - name: workbook_id
     type: string
     required: true

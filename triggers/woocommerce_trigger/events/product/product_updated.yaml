@@ -1,0 +1,43 @@
+identity:
+  name: product_updated
+  author: langgenius
+  label:
+    en_US: Product Updated
+    zh_Hans: 商品更新
+    ja_JP: 商品更新
+description:
+  en_US: Triggered whenever a product record is edited (price, description, inventory, imagery, etc.).
+  zh_Hans: 当商品记录被编辑（价格、描述、库存、图片等）时触发。
+  ja_JP: 商品の価格・説明・在庫・画像などが編集されたときにトリガーされます。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    product:
+      type: object
+      description: Updated WooCommerce product payload at the moment of change.
+      additionalProperties: true
+    webhook:
+      type: object
+      description: Metadata derived from X-WC-Webhook headers.
+      properties:
+        id:
+          type: string
+        delivery_id:
+          type: string
+        resource:
+          type: string
+        event:
+          type: string
+        topic:
+          type: string
+        source:
+          type: string
+  required:
+    - product
+
+extra:
+  python:
+    source: events/product/product_updated.py

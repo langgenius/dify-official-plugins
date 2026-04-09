@@ -1,0 +1,30 @@
+identity:
+  name: delete_profile_schema
+  author: 佐井
+  label:
+    en_US: Delete Profile Schema
+    zh_Hans: 删除画像模板
+    ja_Jp: プロファイルスキーマ削除
+description:
+  human:
+    en_US: Delete a specific profile schema template.
+    zh_Hans: 删除指定的画像模板。
+    ja_Jp: 指定されたプロファイルスキーマテンプレートを削除します。
+  llm: Delete a profile schema template by its ID.
+parameters:
+  - name: profile_schema_id
+    type: string
+    required: true
+    label:
+      en_US: Profile Schema ID
+      zh_Hans: 画像模板 ID
+      ja_Jp: プロファイルスキーマID
+    human_description:
+      en_US: The ID of the profile schema to delete
+      zh_Hans: 要删除的画像模板 ID
+      ja_Jp: 削除するプロファイルスキーマのID
+    llm_description: The ID of the profile schema template to delete.
+    form: llm
+extra:
+  python:
+    source: tools/delete_profile_schema.py

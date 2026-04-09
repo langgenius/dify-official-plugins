@@ -1,0 +1,263 @@
+identity:
+  name: chat_member_updated
+  author: langgenius
+  label:
+    en_US: Chat Member Updated
+    zh_Hans: 会话成员状态更新
+    ja_JP: チャットメンバー更新
+description:
+  en_US: Triggers when a chat member's status changes.
+  zh_Hans: 当会话成员状态发生变化时触发。
+  ja_JP: チャットメンバーのステータスが変更されたときにトリガーします。
+parameters: []
+output_schema:
+  type: object
+  additionalProperties: false
+  required:
+  - update_id
+  - chat_member
+  properties:
+    update_id:
+      type: integer
+      description: Unique identifier for the Telegram update.
+    chat_member:
+      type: object
+      additionalProperties: false
+      description: Status change information for the bot.
+      required:
+      - chat
+      - from
+      - date
+      - old_chat_member
+      - new_chat_member
+      properties:
+        chat:
+          type: object
+          description: Telegram Chat object.
+          additionalProperties: true
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for this chat.
+            type:
+              type: string
+              description: Type of chat, such as private, group, supergroup, or channel.
+            title:
+              type: string
+              description: Chat title for supergroups, channels, and group chats.
+            username:
+              type: string
+              description: Username of the chat if available.
+            first_name:
+              type: string
+              description: First name of the other party in a private chat.
+            last_name:
+              type: string
+              description: Last name of the other party in a private chat.
+        from:
+          type: object
+          description: Telegram User object.
+          additionalProperties: true
+          properties:
+            id:
+              type: integer
+              description: Unique identifier for this user or bot.
+            is_bot:
+              type: boolean
+              description: True if this user is a bot.
+            first_name:
+              type: string
+              description: User first name.
+            last_name:
+              type: string
+              description: User last name.
+            username:
+              type: string
+              description: Username of the user, if any.
+            language_code:
+              type: string
+              description: IETF language tag of the user's language.
+            is_premium:
+              type: boolean
+              description: True if the user is a Telegram Premium subscriber.
+        date:
+          type: integer
+          description: Date the change happened in Unix time.
+        old_chat_member:
+          type: object
+          description: Information about a chat member's status.
+          additionalProperties: true
+          properties:
+            user:
+              type: object
+              description: Telegram User object.
+              additionalProperties: true
+              properties:
+                id:
+                  type: integer
+                  description: Unique identifier for this user or bot.
+                is_bot:
+                  type: boolean
+                  description: True if this user is a bot.
+                first_name:
+                  type: string
+                  description: User first name.
+                last_name:
+                  type: string
+                  description: User last name.
+                username:
+                  type: string
+                  description: Username of the user, if any.
+                language_code:
+                  type: string
+                  description: IETF language tag of the user's language.
+                is_premium:
+                  type: boolean
+                  description: True if the user is a Telegram Premium subscriber.
+            status:
+              type: string
+              description: Member status, such as creator, administrator, member,
+                restricted, left, or banned.
+            custom_title:
+              type: string
+              description: Custom title for owner or administrator.
+            is_anonymous:
+              type: boolean
+              description: True if the administrator is anonymous.
+            can_be_edited:
+              type: boolean
+              description: True if the administrator's custom title can be edited.
+            can_manage_voice_chats:
+              type: boolean
+              description: True if the administrator can manage video chats.
+            until_date:
+              type: integer
+              description: Date when the restrictions will be lifted for restricted
+                or banned users.
+            is_member:
+              type: boolean
+              description: True if the user is a member of the chat.
+        new_chat_member:
+          type: object
+          description: Information about a chat member's status.
+          additionalProperties: true
+          properties:
+            user:
+              type: object
+              description: Telegram User object.
+              additionalProperties: true
+              properties:
+                id:
+                  type: integer
+                  description: Unique identifier for this user or bot.
+                is_bot:
+                  type: boolean
+                  description: True if this user is a bot.
+                first_name:
+                  type: string
+                  description: User first name.
+                last_name:
+                  type: string
+                  description: User last name.
+                username:
+                  type: string
+                  description: Username of the user, if any.
+                language_code:
+                  type: string
+                  description: IETF language tag of the user's language.
+                is_premium:
+                  type: boolean
+                  description: True if the user is a Telegram Premium subscriber.
+            status:
+              type: string
+              description: Member status, such as creator, administrator, member,
+                restricted, left, or banned.
+            custom_title:
+              type: string
+              description: Custom title for owner or administrator.
+            is_anonymous:
+              type: boolean
+              description: True if the administrator is anonymous.
+            can_be_edited:
+              type: boolean
+              description: True if the administrator's custom title can be edited.
+            can_manage_voice_chats:
+              type: boolean
+              description: True if the administrator can manage video chats.
+            until_date:
+              type: integer
+              description: Date when the restrictions will be lifted for restricted
+                or banned users.
+            is_member:
+              type: boolean
+              description: True if the user is a member of the chat.
+        invite_link:
+          type: object
+          description: Chat invite link that was used to join the chat.
+          additionalProperties: true
+          properties:
+            invite_link:
+              type: string
+              description: Invite link URL.
+            name:
+              type: string
+              description: Optional invite link name.
+            creator:
+              type: object
+              description: Telegram User object.
+              additionalProperties: true
+              properties:
+                id:
+                  type: integer
+                  description: Unique identifier for this user or bot.
+                is_bot:
+                  type: boolean
+                  description: True if this user is a bot.
+                first_name:
+                  type: string
+                  description: User first name.
+                last_name:
+                  type: string
+                  description: User last name.
+                username:
+                  type: string
+                  description: Username of the user, if any.
+                language_code:
+                  type: string
+                  description: IETF language tag of the user's language.
+                is_premium:
+                  type: boolean
+                  description: True if the user is a Telegram Premium subscriber.
+            expire_date:
+              type: integer
+              description: Point in time when the link will expire.
+            member_limit:
+              type: integer
+              description: Maximum number of users that can join using this link.
+            pending_join_request_count:
+              type: integer
+              description: Number of pending join requests created using this link.
+            subscription_period:
+              type: integer
+              description: Subscription period in seconds for paid invite links.
+            subscription_price:
+              type: integer
+              description: Price in stars for paid invite links.
+            creates_join_request:
+              type: boolean
+              description: True if users joining need administrator approval.
+            is_primary:
+              type: boolean
+              description: True if this is the primary invite link.
+            is_revoked:
+              type: boolean
+              description: True if the link has been revoked.
+        via_join_request:
+          type: boolean
+          description: True if the user joined via join request approval.
+        via_chat_folder_invite_link:
+          type: boolean
+          description: True if the user joined via chat folder invite link.
+extra:
+  python:
+    source: events/chat_members/chat_member_updated.py

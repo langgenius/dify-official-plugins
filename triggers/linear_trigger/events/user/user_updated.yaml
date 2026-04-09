@@ -1,0 +1,91 @@
+identity:
+  name: user_updated
+  author: langgenius
+  label:
+    en_US: User Updated
+    zh_Hans: 用户更新
+    ja_JP: ユーザー更新
+description:
+  en_US: Triggers when a user is updated
+  zh_Hans: 当在线性更新用户信息时触发
+  ja_JP: Linear でユーザー情報が更新されたときにトリガーされます
+parameters:
+- name: email_contains
+  label:
+    en_US: Email Contains
+    zh_Hans: 邮箱包含
+    ja_JP: メールアドレスに含む
+  type: string
+  required: false
+- name: active_only
+  label:
+    en_US: Active Users Only
+    zh_Hans: 仅限活跃用户
+    ja_JP: 有効ユーザーのみ
+  type: boolean
+  required: false
+  default: false
+- name: admin_only
+  label:
+    en_US: Admin Users Only
+    zh_Hans: 仅限管理员
+    ja_JP: 管理者のみ
+  type: boolean
+  required: false
+  default: false
+- name: guest_only
+  label:
+    en_US: Guest Users Only
+    zh_Hans: 仅限访客用户
+    ja_JP: ゲストユーザーのみ
+  type: boolean
+  required: false
+  default: false
+- name: exclude_app_users
+  label:
+    en_US: Exclude App Users
+    zh_Hans: 排除应用用户
+    ja_JP: アプリユーザーを除外
+  type: boolean
+  required: false
+  default: false
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [update]
+    type:
+      type: string
+      enum: [User]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        email:
+          type: string
+        name:
+          type: string
+        displayName:
+          type: string
+        active:
+          type: boolean
+        admin:
+          type: boolean
+        guest:
+          type: boolean
+        app:
+          type: boolean
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        url:
+          type: string
+    actor:
+      type: object
+  required: [action, type, data]
+extra:
+  python:
+    source: events/user/user_updated.py

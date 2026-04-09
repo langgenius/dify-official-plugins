@@ -1,0 +1,74 @@
+identity:
+  author: community
+  description:
+    en_US: Twilio is a cloud communications platform that enables SMS, voice, and WhatsApp messaging.
+    ja_JP: Twilio は、SMS、音声、WhatsApp メッセージングを可能にするクラウドコミュニケーションプラットフォームです。
+    zh_Hans: Twilio 是一个云通信平台，支持 SMS、语音和 WhatsApp 消息。
+  icon: icon.svg
+  label:
+    en_US: Twilio Triggers
+    zh_Hans: Twilio 触发器
+    ja_JP: Twilio トリガー
+  name: twilio_trigger
+
+subscription_constructor:
+  parameters:
+  - name: "phone_number"
+    label:
+      en_US: "Phone Number"
+      zh_Hans: "电话号码"
+      ja_JP: "電話番号"
+    type: "dynamic-select"
+    required: true
+    placeholder:
+      en_US: "Select a Twilio phone number"
+      zh_Hans: "选择一个 Twilio 电话号码"
+      ja_JP: "Twilio 電話番号を選択"
+    description:
+      en_US: "Select a Twilio phone number to receive SMS, calls, and WhatsApp messages"
+      zh_Hans: "选择一个 Twilio 电话号码来接收短信、来电和 WhatsApp 消息"
+      ja_JP: "SMS、通話、WhatsApp メッセージを受信する Twilio 電話番号を選択"
+
+  credentials_schema:
+    account_sid:
+      type: "text-input"
+      required: true
+      label:
+        en_US: "Account SID"
+        zh_Hans: "账户 SID"
+        ja_JP: "アカウント SID"
+      placeholder:
+        en_US: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        zh_Hans: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+        ja_JP: "ACxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+      help:
+        en_US: "Your Twilio Account SID, found in your Twilio Console dashboard"
+        zh_Hans: "您的 Twilio 账户 SID，可在 Twilio 控制台仪表板中找到"
+        ja_JP: "Twilio コンソールダッシュボードにある Twilio アカウント SID"
+      url: https://console.twilio.com/
+
+    auth_token:
+      type: "secret-input"
+      required: true
+      label:
+        en_US: "Auth Token"
+        zh_Hans: "Auth Token"
+        ja_JP: "Auth Token"
+      placeholder:
+        en_US: "Your Twilio Auth Token"
+        zh_Hans: "您的 Twilio Auth Token"
+        ja_JP: "Twilio Auth Token"
+      help:
+        en_US: "Your Twilio Auth Token, found in your Twilio Console dashboard"
+        zh_Hans: "您的 Twilio Auth Token，可在 Twilio 控制台仪表板中找到"
+        ja_JP: "Twilio コンソールダッシュボードにある Twilio Auth Token"
+      url: https://console.twilio.com/
+
+events:
+- events/sms_received/sms_received.yaml
+- events/call_received/call_received.yaml
+- events/whatsapp_received/whatsapp_received.yaml
+
+extra:
+  python:
+    source: provider/twilio.py

@@ -15,6 +15,19 @@ description:
   llm: List all worksheets within a specified Excel workbook, showing their names, positions, and visibility status
 
 parameters:
+  - name: site_id
+    type: string
+    required: false
+    form: llm
+    label:
+      en_US: Site ID (only if editing SharePoint Site content)
+      zh_Hans: 站点 ID（仅当要编辑 SharePoint Site 内的内容时需要）
+      ja_JP: サイトID（SharePoint サイト内の内容を編集する場合のみ）
+    human_description:
+      en_US: Optional SharePoint site ID. When provided, reads worksheets from this site's drive instead of personal OneDrive.
+      zh_Hans: 可选的 SharePoint 站点 ID。若提供，则从该站点的驱动器而非个人 OneDrive 读取工作表。
+      ja_JP: 任意のSharePointサイトID。指定すると個人のOneDriveではなく、このサイトのドライブからワークシートを取得します。
+    llm_description: Optional SharePoint site ID. If set, use sites/{site_id}/drive instead of me/drive.
   - name: workbook_id
     type: string
     required: true

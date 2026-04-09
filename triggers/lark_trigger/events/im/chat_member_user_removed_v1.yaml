@@ -1,0 +1,57 @@
+identity:
+  name: chat_member_user_removed_v1
+  author: langgenius
+  label:
+    en_US: Members Left
+    zh_Hans: 成员离开
+    ja_JP: メンバー退出
+
+description:
+  en_US: This event activates when one or more users leave or are removed from a group chat, providing information about who left and who removed them.
+  zh_Hans: 当一个或多个用户离开或被移出群聊时，此事件会被激活，提供离开的成员和操作者的信息。
+  ja_JP: 1人以上のユーザーがグループチャットから退出または削除されたときにアクティブになり、退出したメンバーと削除した人の情報を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    chat_id:
+      type: string
+      description: Group chat identifier
+
+    chat_name:
+      type: string
+      description: Name of the group chat
+
+    is_external:
+      type: string
+      description: Whether the chat includes external users
+
+    operator_user_id:
+      type: string
+      description: ID of the person who removed members
+
+    operator_open_id:
+      type: string
+      description: Open ID of the person who removed members
+
+    operator_union_id:
+      type: string
+      description: Union ID of the person who removed members
+
+    operator_tenant_key:
+      type: string
+      description: Organization key of the operator
+
+    removed_members:
+      type: string
+      description: List of members who left (JSON format)
+
+    removed_members_count:
+      type: string
+      description: Number of members removed
+
+extra:
+  python:
+    source: events/im/chat_member_user_removed_v1.py

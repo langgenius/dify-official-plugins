@@ -14,9 +14,10 @@ class DatagetlistTool(Tool):
     get records list from jiandaoyun
     """
 
-    def getDataList(self, data: dict[str, Any], base_url) -> dict[str, Any]:
+    def getDataList(self, data: dict[str, Any]) -> dict[str, Any]:
         try:
             access_token = self.runtime.credentials["jiandaoyun_api_key"]
+            base_url = self.runtime.credentials["base_url"] or "https://api.jiandaoyun.com/"
         except KeyError:
             raise Exception("apikey is missing or invalid.")
         httpClient = APIRequestTool(base_url=base_url, token=access_token)
@@ -39,7 +40,6 @@ class DatagetlistTool(Tool):
                 "filter": tool_parameters.get("filter", "{}"),
                 "limit": tool_parameters.get("limit", 10),
             },
-            tool_parameters.get("base_url"),
         )
         json_data = {
             "status": "success",

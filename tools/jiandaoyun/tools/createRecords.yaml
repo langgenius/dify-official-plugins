@@ -2,7 +2,7 @@ identity:
   name: "create_records"
   author: "jiandaoyun"
   label:
-    en_US: "create some new records in a row"
+    en_US: "Create records"
     zh_Hans: "新建多条新记录"
     pt_BR: "criar novos dados"
 description:
@@ -70,19 +70,6 @@ parameters:
         },
       } make sure the fields name match, if you don't know the exact widget id, you can use the get_widget tool to get all the widget ids in the entry, and then use the ids in the data_list, "
     form: llm
-  - name: base_url
-    type: secret-input
-    required: false
-    label:
-      en_US: server url
-      zh_Hans: 服务器地址
-      pt_BR: url do servidor
-    human_description:
-      en_US: "the base url of the jiandaoyun server,if not specified,default to https://api.jiandaoyun.com"
-      zh_Hans: "简道云服务器的地址，如果不指定，默认为https://api.jiandaoyun.com"
-      pt_BR: "a URL base do servidor jiandaoyun, se não especificado, padrão para https://api.jiandaoyun.com"
-    llm_description: "the base url of the jiandaoyun server,if not specified,default to https://api.jiandaoyun.com"
-    form: form
 extra:
   python:
     source: tools/createRecords.py

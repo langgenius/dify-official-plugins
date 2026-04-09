@@ -56,9 +56,6 @@ class UpdateRecordsTool(Tool):
             yield self.create_text_message("Either row_id (for single update) or bulk_ids (for bulk update) must be provided.")
             return
         
-        # Normalize table name so first letter of each word is uppercase
-        table_name = ' '.join(word.capitalize() for word in table_name.split(' '))
-        
         try:
             # Get credentials
             nocodb_url = self.runtime.credentials.get("nocodb_url")

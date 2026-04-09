@@ -1,0 +1,51 @@
+identity:
+  name: ping
+  author: langgenius
+  label:
+    en_US: Ping
+    zh_Hans: Ping
+    ja_JP: Ping
+
+description:
+  en_US: Sent to test your GitHub webhook configuration
+  zh_Hans: 用于测试 GitHub Webhook 配置
+  ja_JP: GitHub Webhook 設定のテスト用
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    zen:
+      type:
+      - string
+      - "null"
+    hook_id:
+      type:
+      - integer
+      - "null"
+    hook:
+      type:
+      - object
+      - "null"
+      properties:
+        id:
+          type: integer
+        type:
+          type:
+          - string
+          - "null"
+        active:
+          type:
+          - boolean
+          - "null"
+        events:
+          type:
+          - array
+          - "null"
+          items:
+            type: string
+
+extra:
+  python:
+    source: events/ping/ping.py

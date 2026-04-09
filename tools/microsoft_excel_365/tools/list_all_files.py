@@ -27,6 +27,7 @@ class ListAllFilesTool(Tool):
         folder_path = tool_parameters.get("folder_path", "root")
         file_type_filter = tool_parameters.get("file_type", "all")
         max_results = tool_parameters.get("max_results", 50)
+        site_id = tool_parameters.get("site_id")
 
         headers = {
             "Authorization": f"Bearer {access_token}",
@@ -34,18 +35,25 @@ class ListAllFilesTool(Tool):
         }
 
         try:
+            # Determine base drive URL (personal or SharePoint site drive)
+            base_drive = (
+                f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive"
+                if site_id
+                else "https://graph.microsoft.com/v1.0/me/drive"
+            )
+
             # Build the API URL based on folder path
             if folder_path == "root":
-                url = "https://graph.microsoft.com/v1.0/me/drive/root/children"
+                url = f"{base_drive}/root/children"
             elif folder_path == "recent":
-                url = "https://graph.microsoft.com/v1.0/me/drive/recent"
+                url = f"{base_drive}/recent"
             elif folder_path.startswith("id:"):
                 # If folder_path starts with "id:", treat it as a folder ID
                 folder_id = folder_path[3:]
-                url = f"https://graph.microsoft.com/v1.0/me/drive/items/{folder_id}/children"
+                url = f"{base_drive}/items/{folder_id}/children"
             else:
                 # Try to navigate by path
-                url = f"https://graph.microsoft.com/v1.0/me/drive/root:/{folder_path}:/children"
+                url = f"{base_drive}/root:/{folder_path}:/children"
 
             params = {
                 "$top": str(max_results),

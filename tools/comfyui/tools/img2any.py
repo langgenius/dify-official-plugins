@@ -6,7 +6,7 @@ from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 
-from tools.comfyui_client import ComfyUiClient, ComfyUiFile, FileType
+from tools.comfyui_client import ComfyUiClient, ComfyUiResultFile, FileType
 from tools.comfyui_model_manager import ModelManager
 from tools.comfyui_workflow import ComfyUiWorkflow
 
@@ -25,6 +25,7 @@ class ComfyuiImg2Any(Tool):
             self.comfyui,
             civitai_api_key=self.runtime.credentials.get("civitai_api_key"),
             hf_api_key=self.runtime.credentials.get("hf_api_key"),
+            expire_after=int(self.runtime.credentials.get("expire_after", 300)),
         )
 
         feature: str = tool_parameters.get("feature")
@@ -57,11 +58,11 @@ class ComfyuiImg2Any(Tool):
                 },
             )
 
-    def depth_pro(self, feature, image_names) -> list[ComfyUiFile]:
+    def depth_pro(self, feature, image_names) -> list[ComfyUiResultFile]:
         output_images = []
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "depth_pro.json")) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), object_info=self.comfyui.get_object_info())
         precision = "fp16"
         if "fp32" in feature:
             precision = "fp32"
@@ -70,7 +71,7 @@ class ComfyuiImg2Any(Tool):
         for image_name in image_names:
             workflow.set_property("8", "inputs/image", image_name)
             try:
-                output_images.append(self.comfyui.generate(workflow.json())[0])
+                output_images.append(self.comfyui.generate(workflow)[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
                     f"Failed to generate image: {str(e)}."
@@ -78,16 +79,16 @@ class ComfyuiImg2Any(Tool):
                 )
         return output_images
 
-    def depth_anything(self, feature, image_names) -> list[ComfyUiFile]:
+    def depth_anything(self, feature, image_names) -> list[ComfyUiResultFile]:
         output_images = []
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "depth_anything.json")) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), object_info=self.comfyui.get_object_info())
         workflow.set_property("2", "inputs/model", feature)
         for image_name in image_names:
             workflow.set_property("3", "inputs/image", image_name)
             try:
-                output_images.append(self.comfyui.generate(workflow.json())[0])
+                output_images.append(self.comfyui.generate(workflow)[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
                     f"Failed to generate image: {str(e)}."
@@ -95,14 +96,14 @@ class ComfyuiImg2Any(Tool):
                 )
         return output_images
 
-    def face_swap(self, image_name1, image_name2) -> list[ComfyUiFile]:
+    def face_swap(self, image_name1, image_name2) -> list[ComfyUiResultFile]:
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "face_swap.json")) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), object_info=self.comfyui.get_object_info())
         workflow.set_property("15", "inputs/image", image_name1)
         workflow.set_property("22", "inputs/image", image_name2)
         try:
-            output_images = self.comfyui.generate(workflow.json())
+            output_images = self.comfyui.generate(workflow)
         except Exception as e:
             raise ToolProviderCredentialValidationError(
                 f"Failed to generate image: {str(e)}."
@@ -110,11 +111,11 @@ class ComfyuiImg2Any(Tool):
             )
         return output_images
 
-    def upscale(self, feature, image_names) -> list[ComfyUiFile]:
+    def upscale(self, feature, image_names) -> list[ComfyUiResultFile]:
         output_images = []
         current_dir = os.path.dirname(os.path.realpath(__file__))
         with open(os.path.join(current_dir, "json", "upscale.json")) as file:
-            workflow = ComfyUiWorkflow(file.read())
+            workflow = ComfyUiWorkflow(file.read(), object_info=self.comfyui.get_object_info())
         if "esrgan" in feature:
             model_name = self.model_manager.download_model(
                 "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth",
@@ -124,7 +125,7 @@ class ComfyuiImg2Any(Tool):
         for image_name in image_names:
             workflow.set_property("16", "inputs/image", image_name)
             try:
-                output_images.append(self.comfyui.generate(workflow.json())[0])
+                output_images.append(self.comfyui.generate(workflow)[0])
             except Exception as e:
                 raise ToolProviderCredentialValidationError(
                     f"Failed to generate image: {str(e)}."

@@ -1,0 +1,226 @@
+identity:
+  name: pull_request_review_dismissed
+  author: langgenius
+  label:
+    en_US: Pull Request Review Dismissed
+    zh_Hans: Pull Request 审查已撤销
+    ja_JP: Pull Request レビュー却下
+
+description:
+  en_US: Triggers when a previously submitted pull request review is dismissed
+  zh_Hans: 当已提交的拉取请求审查被撤销时触发
+  ja_JP: 提出済みのプルリクエストレビューが却下されたときにトリガーします
+
+parameters:
+- name: review_state
+  label:
+    en_US: Review State
+    zh_Hans: 审查状态
+    ja_JP: レビュー状態
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if the dismissed review had these states (approved, changes_requested, commented; comma-separated)."
+    zh_Hans: "仅当被撤销审查的状态匹配时触发（approved、changes_requested、commented，逗号分隔）。"
+    ja_JP: "却下されたレビューがこれらの状態の場合のみトリガー（approved, changes_requested, commented、カンマ区切り）。"
+
+- name: reviewer
+  label:
+    en_US: Reviewer
+    zh_Hans: 审查者
+    ja_JP: レビュアー
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if the review belonged to these reviewers (comma-separated GitHub usernames)."
+    zh_Hans: "仅当审查属于这些审查者时触发（逗号分隔 GitHub 用户名）。"
+    ja_JP: "これらのレビュアーのレビューが却下された場合のみトリガー（GitHub ユーザー名、カンマ区切り）。"
+
+- name: author
+  label:
+    en_US: Pull Request Author
+    zh_Hans: Pull Request 作者
+    ja_JP: Pull Request 作成者
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for pull requests created by these users (comma-separated GitHub usernames)."
+    zh_Hans: "仅当拉取请求由这些用户创建时触发（逗号分隔 GitHub 用户名）。"
+    ja_JP: "これらのユーザーが作成したプルリクエストの場合のみトリガー（GitHub ユーザー名、カンマ区切り）。"
+
+- name: pull_request_numbers
+  label:
+    en_US: Pull Request Numbers
+    zh_Hans: Pull Request 编号
+    ja_JP: Pull Request 番号
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger for these pull request numbers (comma-separated)."
+    zh_Hans: "仅当拉取请求编号匹配时触发（逗号分隔）。"
+    ja_JP: "これらのプルリクエスト番号の場合のみトリガー（カンマ区切り）。"
+
+- name: body_contains
+  label:
+    en_US: Review Body Contains
+    zh_Hans: 审查内容包含
+    ja_JP: レビュー本文に含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if the review body contains these keywords (comma-separated)."
+    zh_Hans: "仅当审查内容包含这些关键词时触发（逗号分隔）。"
+    ja_JP: "レビュー本文にこれらのキーワードが含まれる場合のみトリガー（カンマ区切り）。"
+
+- name: dismissed_by
+  label:
+    en_US: Dismissed By
+    zh_Hans: 撤销者
+    ja_JP: 却下者
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if dismissed by these users (comma-separated GitHub usernames)."
+    zh_Hans: "仅当由这些用户撤销时触发（逗号分隔 GitHub 用户名）。"
+    ja_JP: "これらのユーザーによって却下された場合のみトリガー（GitHub ユーザー名、カンマ区切り）。"
+
+- name: dismissal_message_contains
+  label:
+    en_US: Dismissal Message Contains
+    zh_Hans: 撤销消息包含
+    ja_JP: 却下メッセージに含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if the dismissal message contains these keywords (comma-separated)."
+    zh_Hans: "仅当撤销消息包含这些关键词时触发（逗号分隔）。"
+    ja_JP: "却下メッセージにこれらのキーワードが含まれる場合のみトリガー（カンマ区切り）。"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      description: The action that triggered this event
+    review:
+      type: object
+      description: Details of the review that was dismissed
+      properties:
+        id:
+          type: integer
+        user:
+          type: object
+          properties:
+            login:
+              type: string
+            id:
+              type: integer
+        body:
+          type: string
+        state:
+          type: string
+        html_url:
+          type: string
+          format: uri
+        submitted_at:
+          type: string
+          format: date-time
+      required:
+      - id
+      - user
+      - state
+      - submitted_at
+
+    pull_request:
+      type: object
+      description: The pull request associated with the review
+      properties:
+        id:
+          type: integer
+        number:
+          type: integer
+        title:
+          type: string
+        state:
+          type: string
+        draft:
+          type: boolean
+        user:
+          type: object
+          properties:
+            login:
+              type: string
+            id:
+              type: integer
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - number
+      - title
+      - state
+      - user
+      - html_url
+
+    repository:
+      type: object
+      description: Repository information
+      properties:
+        id:
+          type: integer
+        full_name:
+          type: string
+        html_url:
+          type: string
+          format: uri
+      required:
+      - id
+      - full_name
+      - html_url
+
+    sender:
+      type: object
+      description: The user who triggered the webhook event
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+        type:
+          type: string
+      required:
+      - id
+      - login
+      - type
+
+    dismissal_message:
+      type: string
+      description: The dismissal message provided by the actor
+
+    organization:
+      type: object
+      description: Organization context if applicable
+      properties:
+        id:
+          type: integer
+        login:
+          type: string
+
+    installation:
+      type: object
+      description: Installation that triggered the event if coming from a GitHub App
+      properties:
+        id:
+          type: integer
+
+  required:
+  - action
+  - review
+  - pull_request
+  - repository
+  - sender
+
+extra:
+  python:
+    source: events/pull_request_review/pull_request_review_dismissed.py

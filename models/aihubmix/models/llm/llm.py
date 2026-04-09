@@ -1,9 +1,9 @@
 import logging
 from collections.abc import Generator
-from typing import Optional, Union
+from typing import Optional, Union, Any, cast
 from dify_plugin.entities.model import AIModelEntity
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
-from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
+from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool, AssistantPromptMessage
 from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model.message import (
     PromptMessage,
@@ -19,6 +19,7 @@ from dify_plugin.errors.model import (
 )
 from .anthropic import AnthropicLargeLanguageModel
 from .google import GoogleLargeLanguageModel
+from .openai_response import AihubmixOpenAIResponses
 
 # 如果两个类都继承自同一个基类，可以使用相同的初始化方式
 model_schemas = []  # 或者从某处获取适当的模型模式
@@ -28,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 # thinking models compatibility for max_completion_tokens (all starting with "o" or "gpt-5")
 THINKING_SERIES_COMPATIBILITY = ("o", "gpt-5")
+RESPONSE_SERIES_COMPATIBILITY = ("gpt-5-codex", "gpt-5-pro", "o3-pro")
 
 
 class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
@@ -38,6 +40,35 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
         credentials["extra_headers"] = {
             "APP-Code": "Dify2025"
         }
+
+    def _prepare_model_parameters(
+        self,
+        model: str,
+        model_parameters: dict
+    ) -> dict:
+        params = dict(model_parameters)
+
+        # Claude and RESPONSE_SERIES models do not require any parameter mapping
+        if (
+            model.startswith("claude")
+            or model.startswith(RESPONSE_SERIES_COMPATIBILITY)
+        ):
+            return params
+
+        # Nothing to do if max_tokens is not provided
+        if "max_tokens" not in params:
+            logger.warning(f"max_tokens not found in params, using default behavior. params=%s", params)
+            return params
+
+        # For THINKING_SERIES, max_tokens always takes precedence and overwrites
+        if model.startswith(THINKING_SERIES_COMPATIBILITY):
+            params["max_completion_tokens"] = params.pop("max_tokens")
+
+        # For other models, only map if max_completion_tokens is not already set
+        elif "max_completion_tokens" not in params:
+            params["max_completion_tokens"] = params.pop("max_tokens")
+
+        return params
 
     def _dispatch_to_appropriate_model(
         self,
@@ -51,6 +82,9 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None
     ) -> Union[LLMResult, Generator]:
         """根据模型名称分发到适当的模型处理类"""
+        # 预处理模型参数
+        model_parameters = self._prepare_model_parameters(model, model_parameters)
+        
         # 检查模型名称是否以 "claude" 开头
         if model.startswith("claude"):
             return anthropic_llm._invoke(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
@@ -58,15 +92,34 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
         # 检查模型名称是否以 "gemini" 开头且不以 "-nothink" 或 "-search" 结尾
         if model.startswith("gemini") and not (model.endswith("-nothink") or model.endswith("-search")):
             return google_llm._invoke(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
-        
-        # thinking models compatibility for max_completion_tokens (all starting with "o" or "gpt-5")
-        if model.startswith(THINKING_SERIES_COMPATIBILITY):
-            if "max_tokens" in model_parameters:
-                model_parameters["max_completion_tokens"] = model_parameters[
-                    "max_tokens"
-                ]
-                del model_parameters["max_tokens"]
+                
+        # 走 response 接口，其他模型走 generate 接口
+        if model.startswith(RESPONSE_SERIES_COMPATIBILITY):
+            # 使用 Responses API（委托给 openai_response 封装；支持流式/非流式）
+            resp_handler = AihubmixOpenAIResponses(credentials)
+            compute_usage = lambda pt, ct: self._calc_response_usage(
+                model=model,
+                credentials=credentials,
+                prompt_tokens=pt,
+                completion_tokens=ct,
+            )
+            if stream:
+                return resp_handler.stream_llm_chunks(
+                    model=model,
+                    prompt_messages=prompt_messages,
+                    model_parameters=model_parameters,
+                    compute_usage=compute_usage,
+                    user=user,
+                )
 
+            return resp_handler.create_llm_result(
+                model=model,
+                prompt_messages=prompt_messages,
+                model_parameters=model_parameters,
+                compute_usage=compute_usage,
+                user=user,
+            )
+        
         # 默认使用父类的生成方法
         return super()._generate(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
 
@@ -87,6 +140,11 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
             if enable_thinking is not None:
                 model_parameters["chat_template_kwargs"] = {"enable_thinking": bool(enable_thinking)}
 
+            # 将自定义的 enable_stream 参数映射到本地 stream 标志，避免把未知参数透传给上游
+            enable_stream = model_parameters.pop("enable_stream", None)
+            if enable_stream is not None:
+                stream = bool(enable_stream)
+
             return self._dispatch_to_appropriate_model(
                 model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
             )
@@ -104,7 +162,27 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         self._update_credential(model, credentials)
-        return super().validate_credentials(model, credentials)
+        
+        if model.startswith(THINKING_SERIES_COMPATIBILITY):
+            try:
+                from openai import OpenAI
+                client = OpenAI(
+                    api_key=credentials.get("api_key"),
+                    base_url=credentials.get("endpoint_url"),
+                    timeout=10.0,
+                    max_retries=1,
+                )
+                
+                models = client.models.list()
+                return
+            except Exception as e:
+                if "max_tokens" in str(e) and "max_completion_tokens" in str(e):
+                    logger.warning(f"Ignoring expected validation error: {e}")
+                    return
+                else:
+                    raise InvokeAuthorizationError(f"Credentials validation failed: {str(e)}")
+        else:
+            return super().validate_credentials(model, credentials)
 
     def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
         self._update_credential(model, credentials)
@@ -137,6 +215,3 @@ class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
             InvokeAuthorizationError: [Exception],
             InvokeBadRequestError: [Exception],
         }
-
-    
-    

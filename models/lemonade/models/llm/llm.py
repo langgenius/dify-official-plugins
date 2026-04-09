@@ -140,8 +140,8 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
         
         entity = super().get_customizable_model_schema(model, customized_credentials)
 
-        agent_though_support = credentials.get("agent_though_support", "not_supported")
-        if agent_though_support == "supported":
+        agent_thought_support = credentials.get("agent_thought_support", "not_supported")
+        if agent_thought_support == "supported":
             try:
                 entity.features.index(ModelFeature.AGENT_THOUGHT)
             except ValueError:
@@ -269,7 +269,7 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
         :param credentials: model credentials
         """
         # Set endpoint URL for OAI compatibility - crucial for proper routing
-        if "endpoint_url" in credentials:
+        if "endpoint_url" in credentials and "/api/v1" not in credentials["endpoint_url"]:
             endpoint_url = credentials["endpoint_url"].rstrip("/")
             # Set the base URL to include the API version path
             credentials["endpoint_url"] = endpoint_url + "/api/v1"

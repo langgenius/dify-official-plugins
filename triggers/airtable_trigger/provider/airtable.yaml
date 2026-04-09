@@ -1,0 +1,147 @@
+subscription_schema:
+- name: "mac_secret"
+  type: "secret-input"
+  required: false
+  label:
+    zh_Hans: "MAC Secret"
+    en_US: "MAC Secret"
+    ja_JP: "MACシークレット"
+  help:
+    en_US: "Optional secret to validate incoming Airtable webhook notifications using HMAC. If left empty, signature validation will be skipped."
+    ja_JP: "受信する Airtable Webhook 通知の検証に使用する任意の MAC シークレット。空の場合は署名検証をスキップします。"
+    zh_Hans: "用于通过 HMAC 验证 Airtable Webhook 通知的可选密钥。留空则跳过签名校验。"
+  url: https://airtable.com/developers/web/api/webhooks-overview
+
+subscription_constructor:
+  parameters:
+  - name: "base_id"
+    label:
+      en_US: "Base ID"
+      zh_Hans: "Base ID"
+      ja_JP: "ベース ID"
+    type: "string"
+    required: true
+    description:
+      en_US: "The ID of the Airtable base to monitor for changes. You can find this in your base's URL."
+      zh_Hans: "要监控变化的 Airtable base ID。你可以在 base 的 URL 中找到它。"
+      ja_JP: "変更を監視する Airtable ベースの ID。ベースの URL で確認できます。"
+    placeholder:
+      en_US: "appXXXXXXXXXXXXXX"
+      zh_Hans: "appXXXXXXXXXXXXXX"
+      ja_JP: "appXXXXXXXXXXXXXX"
+
+  - name: "record_change_scope"
+    label:
+      en_US: "Record Change Scope (Optional)"
+      zh_Hans: "记录变更范围（可选）"
+      ja_JP: "レコード変更スコープ（オプション）"
+    type: "string"
+    required: false
+    description:
+      en_US: "Specify a Table ID (e.g., tblXXXXXXXXXXXXXX) or View ID (e.g., viwXXXXXXXXXXXXXX) to monitor. Leave empty to monitor all tables. Note: Form view and List view are not supported."
+      zh_Hans: "指定一个表格 ID（例如 tblXXXXXXXXXXXXXX）或视图 ID（例如 viwXXXXXXXXXXXXXX）进行监控。留空则监控所有表格。注意：不支持表单视图和列表视图。"
+      ja_JP: "監視するテーブル ID（例：tblXXXXXXXXXXXXXX）またはビュー ID（例：viwXXXXXXXXXXXXXX）を指定します。空の場合はすべてのテーブルを監視します。注意：フォームビューとリストビューはサポートされていません。"
+    placeholder:
+      en_US: "tblXXXXXXXXXXXXXX or viwXXXXXXXXXXXXXX"
+      zh_Hans: "tblXXXXXXXXXXXXXX 或 viwXXXXXXXXXXXXXX"
+      ja_JP: "tblXXXXXXXXXXXXXX または viwXXXXXXXXXXXXXX"
+
+  - name: "data_types"
+    label:
+      en_US: "Data Types"
+      zh_Hans: "数据类型"
+      ja_JP: "データタイプ"
+    type: "checkbox"
+    required: false
+    multiple: true
+    default:
+    - "tableData"
+    options:
+    - value: "tableData"
+      label:
+        en_US: "Table Data (record and cell value changes)"
+        zh_Hans: "表格数据（记录和单元格值变化）"
+        ja_JP: "テーブルデータ（レコードとセル値の変更）"
+    - value: "tableFields"
+      label:
+        en_US: "Table Fields (field changes)"
+        zh_Hans: "表格字段（字段变化）"
+        ja_JP: "テーブルフィールド（フィールドの変更）"
+    - value: "tableMetadata"
+      label:
+        en_US: "Table Metadata (table name and description changes)"
+        zh_Hans: "表格元数据（表名和描述变化）"
+        ja_JP: "テーブルメタデータ（テーブル名と説明の変更）"
+    description:
+      en_US: "Only generate payloads that contain changes affecting these data types. Leave empty to monitor all types."
+      zh_Hans: "仅生成包含影响这些数据类型的变化的 payload。留空则监控所有类型。"
+      ja_JP: "これらのデータタイプに影響する変更を含むペイロードのみを生成します。空の場合はすべてのタイプを監視します。"
+
+  - name: "change_types"
+    label:
+      en_US: "Change Types (Optional)"
+      zh_Hans: "变更类型（可选）"
+      ja_JP: "変更タイプ（オプション）"
+    type: "checkbox"
+    required: false
+    multiple: true
+    options:
+    - value: "add"
+      label:
+        en_US: "Add"
+        zh_Hans: "添加"
+        ja_JP: "追加"
+    - value: "update"
+      label:
+        en_US: "Update"
+        zh_Hans: "更新"
+        ja_JP: "更新"
+    - value: "remove"
+      label:
+        en_US: "Remove"
+        zh_Hans: "删除"
+        ja_JP: "削除"
+    description:
+      en_US: "Only generate payloads that contain changes of these types. Leave empty to monitor all change types."
+      zh_Hans: "仅生成包含这些类型变化的 payload。留空则监控所有变更类型。"
+      ja_JP: "これらのタイプの変更を含むペイロードのみを生成します。空の場合はすべての変更タイプを監視します。"
+
+  credentials_schema:
+    access_token:
+      help:
+        en_US: Get your Personal Access Token from Airtable account settings. It needs 'webhook:manage', 'data.records:read', and 'schema.bases:read' scopes.
+        ja_JP: Airtable アカウント設定から Personal Access Token を取得してください。'webhook:manage'、'data.records:read'、'schema.bases:read' のスコープが必要です。
+        zh_Hans: 从 Airtable 账户设置中获取你的个人访问令牌（Personal Access Token）。需要 'webhook:manage'、'data.records:read' 和 'schema.bases:read' 权限。
+      label:
+        en_US: Personal Access Token
+        ja_JP: パーソナルアクセストークン
+        zh_Hans: 个人访问令牌
+      placeholder:
+        en_US: Please input your Airtable Personal Access Token
+        ja_JP: Airtable の Personal Access Token を入力してください
+        zh_Hans: 请输入你的 Airtable 个人访问令牌
+      required: true
+      type: secret-input
+      url: https://airtable.com/developers/web/api/authentication
+
+
+events:
+- events/record.yaml
+
+
+identity:
+  author: langgenius
+  description:
+    en_US: Airtable is a cloud-based platform that combines spreadsheet and database functionality with real-time collaboration.
+    ja_JP: Airtable は、スプレッドシートとデータベース機能をリアルタイムコラボレーションで組み合わせたクラウドベースのプラットフォームです。
+    zh_Hans: Airtable 是一个云端平台，结合了电子表格和数据库功能，并支持实时协作。
+  icon: icon.svg
+  label:
+    en_US: Airtable Triggers
+    zh_Hans: Airtable 触发器
+    ja_JP: Airtable トリガー
+  name: airtable_trigger
+
+extra:
+  python:
+    source: provider/airtable.py

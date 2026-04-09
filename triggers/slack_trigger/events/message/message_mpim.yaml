@@ -1,0 +1,167 @@
+identity:
+  name: "message_mpim"
+  author: "langgenius"
+  label:
+    en_US: "Message MPIM"
+    ja_JP: "Message MPIM"
+    zh_Hans: "Message MPIM"
+description:
+  en_US: "A message was posted in a multiparty direct message channel. See https://api.slack.com/events/message.mpim for details."
+  ja_JP: "A message was posted in a multiparty direct message channel. See https://api.slack.com/events/message.mpim for details."
+  zh_Hans: "A message was posted in a multiparty direct message channel. See https://api.slack.com/events/message.mpim for details."
+parameters:
+- name: channel_id
+  label:
+    en_US: Channel ID
+    zh_Hans: 频道 ID
+    ja_JP: チャンネル ID
+  type: string
+  required: false
+  description:
+    en_US: "Comma-separated MPIM channel IDs to filter. Leave empty to accept all multi-party DMs."
+    zh_Hans: "要过滤的多人私信频道 ID（逗号分隔）。留空表示不过滤。"
+    ja_JP: "フィルタするマルチパーティ DM チャンネル ID（カンマ区切り）。空の場合は全 MPIM を許可。"
+- name: user_id
+  label:
+    en_US: User ID
+    zh_Hans: 用户 ID
+    ja_JP: ユーザー ID
+  type: string
+  required: false
+  description:
+    en_US: "Comma-separated Slack user IDs to filter by message sender. Leave empty to accept all users."
+    zh_Hans: "要过滤的用户 ID（逗号分隔）。留空表示不过滤。"
+    ja_JP: "メッセージ送信者のユーザー ID（カンマ区切り）。空の場合は全ユーザーを許可。"
+- name: text_contains
+  label:
+    en_US: Text Contains
+    zh_Hans: 文本包含
+    ja_JP: テキストを含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when the message text contains this substring. Leave empty to accept all messages."
+    zh_Hans: "仅当消息文本包含此子字符串时触发。留空表示不过滤。"
+    ja_JP: "メッセージテキストがこの文字列を含む場合のみトリガー。空の場合は全メッセージを許可。"
+- name: bot_filter
+  label:
+    en_US: Bot Filter
+    zh_Hans: 机器人过滤
+    ja_JP: ボットフィルタ
+  type: select
+  required: false
+  options:
+  - value: any
+    label:
+      en_US: Any (humans and bots)
+      zh_Hans: 所有（人类和机器人）
+      ja_JP: 全て（人間とボット）
+  - value: human_only
+    label:
+      en_US: Human only
+      zh_Hans: 仅人类
+      ja_JP: 人間のみ
+  - value: bot_only
+    label:
+      en_US: Bot only
+      zh_Hans: 仅机器人
+      ja_JP: ボットのみ
+  description:
+    en_US: "Filter by sender type. A message is a bot message when bot_id is present or subtype is bot_message."
+    zh_Hans: "按发送者类型过滤。当 bot_id 存在或 subtype 为 bot_message 时视为机器人消息。"
+    ja_JP: "送信者タイプでフィルタ。bot_id が存在するか subtype が bot_message の場合はボットメッセージ。"
+output_schema:
+  type: "object"
+  properties:
+    event_topic:
+      type: "string"
+      description: "Slack event topic identifier."
+    event_type:
+      type: "string"
+      description: "Slack event type value reported in the payload."
+    event_id:
+      type: "string"
+      description: "Unique Slack event ID."
+    team_id:
+      type: "string"
+      description: "Slack workspace team ID."
+    api_app_id:
+      type: "string"
+      description: "Slack application ID receiving the event."
+    event_time:
+      type: "string"
+      description: "Event timestamp provided by Slack."
+    event_context:
+      type: "string"
+      description: "Slack event context reference."
+    authorizations:
+      type: "array"
+      description: "Authorizations included in the event envelope."
+      items:
+        type: "object"
+    authed_users:
+      type: "array"
+      description: "Authed user identifiers granted to this app."
+      items:
+        type: "string"
+    authed_teams:
+      type: "array"
+      description: "Authed team identifiers granted to this app."
+      items:
+        type: "string"
+    is_ext_shared_channel:
+      type: "boolean"
+      description: "Whether the event originated from an externally shared channel."
+    channel_type:
+      type: "string"
+      description: "Channel classification associated with the event when applicable."
+    summary:
+      type: "string"
+      description: "Short description of the Slack event."
+    doc_url:
+      type: "string"
+      description: "Documentation URL for the Slack event."
+    scopes_required:
+      type: "array"
+      description: "OAuth scopes required to receive this event."
+      items:
+        type: "string"
+    tokens_allowed:
+      type: "array"
+      description: "Token types allowed to subscribe to this event."
+      items:
+        type: "string"
+    tags:
+      type: "array"
+      description: "Slack metadata tags describing the event."
+      items:
+        type: "string"
+    event_body:
+      type: "object"
+      description: "Sanitized Slack event body content."
+    raw_payload:
+      type: "object"
+      description: "Sanitized Slack event envelope received from Slack."
+  required:
+    - "event_topic"
+    - "event_type"
+    - "event_id"
+    - "team_id"
+    - "api_app_id"
+    - "event_time"
+    - "event_context"
+    - "authorizations"
+    - "authed_users"
+    - "authed_teams"
+    - "is_ext_shared_channel"
+    - "channel_type"
+    - "summary"
+    - "doc_url"
+    - "scopes_required"
+    - "tokens_allowed"
+    - "tags"
+    - "event_body"
+    - "raw_payload"
+extra:
+  python:
+    source: "events/message/message_mpim.py"

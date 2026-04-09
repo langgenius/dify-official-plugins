@@ -17,9 +17,9 @@ parameter_rules:
     use_template: top_k
   - name: max_tokens
     use_template: max_tokens
-    default: 512
+    default: 4096
     min: 1
-    max: 4096
+    max: 32766
 pricing:
   input: '0.07'
   output: '0.14'

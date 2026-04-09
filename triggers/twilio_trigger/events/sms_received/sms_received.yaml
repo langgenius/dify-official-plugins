@@ -1,0 +1,119 @@
+identity:
+  name: sms_received
+  author: community
+  label:
+    en_US: SMS Received
+    zh_Hans: 收到短信
+    ja_JP: SMS受信
+
+description:
+  en_US: Triggered when an SMS message is received on the configured Twilio phone number
+  zh_Hans: 当配置的 Twilio 电话号码收到短信时触发
+  ja_JP: 設定された Twilio 電話番号で SMS メッセージを受信したときにトリガーされます
+
+parameters:
+- name: from_filter
+  label:
+    en_US: From Number Filter
+    zh_Hans: 发送方号码过滤
+    ja_JP: 送信元番号フィルター
+  type: string
+  required: false
+  description:
+    en_US: Comma-separated phone numbers to filter (e.g., +1234567890,+0987654321). Only trigger when the sender matches.
+    zh_Hans: 逗号分隔的电话号码列表（如 +1234567890,+0987654321）。仅当发送方匹配时触发。
+    ja_JP: カンマ区切りの電話番号（例：+1234567890,+0987654321）。送信者が一致した場合のみトリガーされます。
+
+- name: body_contains
+  label:
+    en_US: Body Contains
+    zh_Hans: 内容包含
+    ja_JP: 本文に含む
+  type: string
+  required: false
+  description:
+    en_US: Filter messages containing this text (case-insensitive)
+    zh_Hans: 过滤包含此文本的消息（不区分大小写）
+    ja_JP: このテキストを含むメッセージをフィルター（大文字小文字を区別しない）
+
+- name: body_regex
+  label:
+    en_US: Body Regex
+    zh_Hans: 内容正则
+    ja_JP: 本文正規表現
+  type: string
+  required: false
+  description:
+    en_US: Filter messages matching this regex pattern
+    zh_Hans: 过滤匹配此正则表达式的消息
+    ja_JP: この正規表現パターンに一致するメッセージをフィルター
+
+output_schema:
+  type: object
+  properties:
+    MessageSid:
+      type: string
+      description: A unique identifier for this message
+    SmsSid:
+      type: string
+      description: Same as MessageSid (for backwards compatibility)
+    AccountSid:
+      type: string
+      description: The Twilio Account SID
+    MessagingServiceSid:
+      type: string
+      description: The SID of the Messaging Service (if applicable)
+    From:
+      type: string
+      description: The phone number that sent the message
+    To:
+      type: string
+      description: The phone number that received the message
+    Body:
+      type: string
+      description: The text content of the SMS message
+    NumMedia:
+      type: string
+      description: The number of media items (MMS) included with the message
+    NumSegments:
+      type: string
+      description: The number of segments that make up the complete message
+    SmsStatus:
+      type: string
+      description: The status of the message (received)
+    ApiVersion:
+      type: string
+      description: The version of the Twilio API used
+    FromCity:
+      type: string
+      description: The city of the sender
+    FromState:
+      type: string
+      description: The state/province of the sender
+    FromZip:
+      type: string
+      description: The postal code of the sender
+    FromCountry:
+      type: string
+      description: The country of the sender
+    ToCity:
+      type: string
+      description: The city of the recipient
+    ToState:
+      type: string
+      description: The state/province of the recipient
+    ToZip:
+      type: string
+      description: The postal code of the recipient
+    ToCountry:
+      type: string
+      description: The country of the recipient
+  required:
+  - MessageSid
+  - From
+  - To
+  - Body
+
+extra:
+  python:
+    source: events/sms_received/sms_received.py

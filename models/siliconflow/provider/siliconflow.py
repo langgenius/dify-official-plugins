@@ -16,9 +16,9 @@ class SiliconflowProvider(ModelProvider):
         """
         try:
             model_instance = self.get_model_instance(ModelType.LLM)
-            model_instance.validate_credentials(
-                model="deepseek-ai/DeepSeek-V3", credentials=credentials
-            )
+            if isinstance(model_instance, type):
+                model_instance = model_instance(model_schemas=self.provider_schema.models)
+            model_instance.validate_credentials(model="deepseek-ai/DeepSeek-V3", credentials=credentials)
         except CredentialsValidateFailedError as ex:
             raise ex
         except Exception as ex:

@@ -1,0 +1,97 @@
+identity:
+  name: comment_created
+  author: langgenius
+  label:
+    en_US: Comment Created
+    zh_Hans: 评论创建
+    ja_JP: コメント作成
+
+description:
+  en_US: Triggers when a new comment is added in Linear
+  zh_Hans: 当在 Linear 中添加新评论时触发
+  ja_JP: Linearで新しいコメントが追加されたときにトリガーされます
+
+parameters:
+- name: body_contains
+  label:
+    en_US: Body Contains
+    zh_Hans: 内容包含
+    ja_JP: 本文に含む
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger if comment body contains keywords (comma-separated). Leave empty for all comments."
+    zh_Hans: "仅当评论内容包含关键词时触发（逗号分隔）。留空则触发所有评论。"
+    ja_JP: "コメント本文にキーワードが含まれる場合のみトリガー（カンマ区切り）。空の場合は全コメントでトリガー。"
+
+- name: issue_only
+  label:
+    en_US: Issue Comments Only
+    zh_Hans: 仅限 Issue 评论
+    ja_JP: 課題コメントのみ
+  type: boolean
+  required: false
+  default: false
+  description:
+    en_US: "When enabled, only trigger for comments on issues (excludes project updates, documents, etc.)"
+    zh_Hans: "启用时，仅触发 issue 上的评论（排除项目更新、文档等）"
+    ja_JP: "有効にすると、課題のコメントのみトリガー（プロジェクト更新、ドキュメントなどを除外）"
+
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [create]
+    type:
+      type: string
+      enum: [Comment]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        body:
+          type: string
+        createdAt:
+          type: string
+        updatedAt:
+          type: string
+        editedAt:
+          type: string
+        user:
+          type: object
+          properties:
+            id:
+              type: string
+            name:
+              type: string
+            email:
+              type: string
+        userId:
+          type: string
+        issue:
+          type: object
+          properties:
+            id:
+              type: string
+            identifier:
+              type: string
+            title:
+              type: string
+        issueId:
+          type: string
+        parentId:
+          type: string
+        quotedText:
+          type: string
+    actor:
+      type: object
+  required:
+  - action
+  - type
+  - data
+
+extra:
+  python:
+    source: events/comment/comment_created.py

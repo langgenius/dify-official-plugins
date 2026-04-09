@@ -1,0 +1,37 @@
+identity:
+  name: message_recalled_v1
+  author: langgenius
+  label:
+    en_US: Message Recalled
+    zh_Hans: 消息撤回
+    ja_JP: メッセージ撤回
+
+description:
+  en_US: This event activates when a message is recalled (withdrawn) by its sender, providing details about the recalled message.
+  zh_Hans: 当消息被发送者撤回时激活，提供关于撤回消息的详细信息。
+  ja_JP: メッセージが送信者によって撤回されたときにアクティブになり、撤回されたメッセージの詳細を提供します。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    message_id:
+      type: string
+      description: ID of the recalled message
+    
+    chat_id:
+      type: string
+      description: ID of the chat where the message was recalled
+    
+    recall_time:
+      type: string
+      description: Time when the message was recalled
+    
+    recall_type:
+      type: string
+      description: Type of recall operation
+
+extra:
+  python:
+    source: events/im/message_recalled_v1.py

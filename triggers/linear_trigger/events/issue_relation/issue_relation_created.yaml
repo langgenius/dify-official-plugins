@@ -1,0 +1,60 @@
+identity:
+  name: issue_relation_created
+  author: langgenius
+  label:
+    en_US: Issue Relation Created
+    zh_Hans: Issue 关联创建
+    ja_JP: 課題リレーション作成
+description:
+  en_US: Triggers when an issue relation is created
+  zh_Hans: 当在 Linear 中创建新的 Issue 关联时触发
+  ja_JP: Linear で新しい課題リレーションが作成されたときにトリガーされます
+parameters:
+- name: relation_type_filter
+  label:
+    en_US: Relation Type Filter
+    zh_Hans: 关联类型过滤
+    ja_JP: リレーション種類フィルター
+  type: string
+  required: false
+  description:
+    en_US: "Limit triggers to specific relation types (comma-separated, e.g. blocks, duplicates, relates)."
+    zh_Hans: "仅当关联类型属于指定范围时触发（逗号分隔，例如 blocks、duplicates、relates）。"
+    ja_JP: "特定のリレーション種類のみ対象にします（例: blocks, duplicates。カンマ区切り）。"
+- name: issue_filter
+  label:
+    en_US: Issue Filter
+    zh_Hans: Issue 过滤
+    ja_JP: 課題フィルター
+  type: string
+  required: false
+  description:
+    en_US: "Only trigger when either issue in the relation matches the provided issue IDs (comma-separated)."
+    zh_Hans: "仅当关联的任一 Issue ID 在指定列表中时触发（逗号分隔）。"
+    ja_JP: "リレーションに含まれる課題 ID が指定リストに一致する場合のみトリガーします（カンマ区切り）。"
+output_schema:
+  type: object
+  properties:
+    action:
+      type: string
+      enum: [create]
+    type:
+      type: string
+      enum: [IssueRelation]
+    data:
+      type: object
+      properties:
+        id:
+          type: string
+        type:
+          type: string
+        issueId:
+          type: string
+        relatedIssueId:
+          type: string
+    actor:
+      type: object
+  required: [action, type, data]
+extra:
+  python:
+    source: events/issue_relation/issue_relation_created.py

@@ -1,0 +1,85 @@
+identity:
+  name: ticket_marked_as_spam
+  author: langgenius
+  label:
+    en_US: Ticket Marked as Spam
+    zh_Hans: 工单标记为垃圾
+    ja_JP: チケットがスパムとしてマーク
+
+description:
+  en_US: Triggered when a Zendesk ticket is flagged as spam
+  zh_Hans: 当 Zendesk 工单被标记为垃圾时触发
+  ja_JP: Zendesk のチケットがスパムとしてフラグ付けされたときにトリガーされます
+
+parameters:
+- name: status
+  label:
+    en_US: Status Filter
+    zh_Hans: 状态过滤
+    ja_JP: ステータスフィルター
+  type: string
+  required: false
+
+- name: priority
+  label:
+    en_US: Priority Filter
+    zh_Hans: 优先级过滤
+    ja_JP: 優先度フィルター
+  type: string
+  required: false
+
+- name: tags
+  label:
+    en_US: Required Tags
+    zh_Hans: 必需标签
+    ja_JP: 必須タグ
+  type: string
+  required: false
+
+output_schema:
+  type: object
+  properties:
+    ticket:
+      type: object
+      properties:
+        id:
+          type: string
+        subject:
+          type: ["string", "null"]
+        status:
+          type: ["string", "null"]
+        priority:
+          type: ["string", "null"]
+        description:
+          type: ["string", "null"]
+        requester_id:
+          type: ["string", "null"]
+        submitter_id:
+          type: ["string", "null"]
+        assignee_id:
+          type: ["string", "null"]
+        group_id:
+          type: ["string", "null"]
+        organization_id:
+          type: ["string", "null"]
+        tags:
+          type: array
+          items:
+            type: string
+        created_at:
+          type: ["string", "null"]
+        updated_at:
+          type: ["string", "null"]
+        via:
+          type: object
+          properties:
+            channel:
+              type: string
+          required:
+          - channel
+  required:
+  - ticket
+
+extra:
+  python:
+    source: events/ticket/ticket_marked_as_spam.py

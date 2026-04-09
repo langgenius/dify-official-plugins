@@ -23,6 +23,25 @@ credentials_for_provider:
     help:
       en_US: The base URL of your Confluence instance.
       zh_Hans: 您的 Confluence 实例的基础 URL。
+  token_type:
+    type: select
+    required: true
+    default: Bearer
+    label:
+      en_US: Token Type
+      zh_Hans: 令牌类型
+    options:
+      - value: Basic
+        label:
+          en_US: Basic (Confluence Cloud)
+          zh_Hans: Basic (Confluence Cloud)
+      - value: Bearer
+        label:
+          en_US: Bearer (Confluence Server/Data Center)
+          zh_Hans: Bearer (Confluence Server/Data Center)
+    help:
+      en_US: Select the authentication type. Use Basic for Confluence Cloud, Bearer for on-premise installations.
+      zh_Hans: 选择认证类型。Confluence Cloud 使用 Basic，本地部署使用 Bearer。
   token:
     type: secret-input
     required: true
@@ -30,8 +49,8 @@ credentials_for_provider:
       en_US: Access Token
       zh_Hans: 访问令牌
     placeholder:
-      en_US: Please input your Confluence access token with auth method, like "Basic <token>"
-      zh_Hans: 请输入您的带有认证方法的 Confluence 访问令牌，如"Basic <token>"
+      en_US: "e.g., base64(email:token) for Basic, or PAT for Bearer"
+      zh_Hans: "例：Basic 使用 base64(email:token)，Bearer 使用 PAT"
     help:
       en_US: Create an API token from your Atlassian account settings.
       zh_Hans: 从您的 Atlassian 帐户设置创建 API 令牌。

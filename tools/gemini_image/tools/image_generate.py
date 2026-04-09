@@ -1,89 +1,98 @@
 import base64
-import json
-from typing import Any, Optional, Union
-import logging
-from google import genai
-from google.cloud import aiplatform
-from google.genai.types import GenerateContentConfig, Part
-from google.oauth2 import service_account
+from collections.abc import Generator
+from typing import Any
 
-from dify_plugin.file.file import File
+import requests
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
-from collections.abc import Generator
+
 
 class ImageGenerateTool(Tool):
+    _BASE_URL = "https://generativelanguage.googleapis.com/v1beta/models"
+
     def _invoke(
-        self, tool_parameters: dict[str, Any],
+        self,
+        tool_parameters: dict[str, Any],
     ) -> Generator[ToolInvokeMessage, None, None]:
         """
         invoke tools
         """
-        
-        location = self.runtime.credentials["vertex_location"]
-        service_account_info = (
-            json.loads(base64.b64decode(service_account_key))
-            if (service_account_key := self.runtime.credentials.get("vertex_service_account_key", ""))
-            else None
-        )
-        project_id = self.runtime.credentials["vertex_project_id"]
-        if service_account_info:
-            service_accountSA = service_account.Credentials.from_service_account_info(service_account_info)
-            aiplatform.init(credentials=service_accountSA, project=project_id, location=location, api_transport="rest")
-        else:
-            aiplatform.init(project=project_id, location=location, api_transport="rest")
-        SCOPES = [
-            "https://www.googleapis.com/auth/cloud-platform",
-            "https://www.googleapis.com/auth/generative-language",
-        ]
-        credential = service_account.Credentials.from_service_account_info(service_account_info, scopes=SCOPES)
-        client = genai.Client(credentials=credential, project=project_id, location=location, vertexai=True)
+        self._gemini_api_key = self.runtime.credentials["gemini_api_key"]
 
         prompt = tool_parameters.get("prompt", "")
         if not prompt:
             yield self.create_text_message("Please input prompt")
             return
-        model = tool_parameters.get("model", "gemini-2.5-flash-image-preview")
-        images = tool_parameters.get("images")
-        contents = None
-        if images:
-            contents = []
-            if isinstance(images, list):
-                for image in images:
-                    if not isinstance(image, File):
-                        yield self.create_text_message("Error: All input images must be valid files.")
-                        return
-                    try:
-                        contents.append(Part.from_bytes(data=image.blob, mime_type=image.mime_type))
-                    except Exception as e:
-                        yield self.create_text_message(f"Error processing input image: {e}")
-                        return
-            else:
-                if not isinstance(images, File):
-                    yield self.create_text_message("Error: Input image must be a valid file.")
-                    return
-                try:
-                    contents.append(Part.from_bytes(data=images.blob, mime_type=images.mime_type))
-                except Exception as e:
-                    yield self.create_text_message(f"Error processing input image: {e}")
-                    return
-            contents.append(prompt)
-        else:
-            contents = prompt
+        model = tool_parameters.get("model", "gemini-2.5-flash-image")
+        images = tool_parameters.get("images", [])
+        if not isinstance(images, list):
+            images = [images]  # Make one image to list
 
-        try:
-            response = client.models.generate_content(
-                model=model,
-                contents=contents,
-                config=GenerateContentConfig(response_modalities=["TEXT", "IMAGE"], candidate_count=1),
+        generated_blobs: list[bytes] = []
+        generated_texts: list[str] = []
+        if len(images) == 0:
+            generated_blobs, generated_texts = self.txt2img(prompt, model)
+        else:
+            if len(images) > 3:
+                # https://ai.google.dev/gemini-api/docs/image-generation#limitations
+                yield self.create_text_message("Warning: The number of input images should be three or less.")
+            generated_blobs, generated_texts = self.img2img(prompt, [img.blob for img in images], [img.mime_type for img in images], model)
+
+        for text in generated_texts:
+            yield self.create_text_message(text=text)
+
+        for i, blob in enumerate(generated_blobs):
+            yield self.create_blob_message(
+                blob=blob,
+                meta={
+                    "filename": f"output{i}.png",
+                    "mime_type": "image/png",
+                },
             )
-        except Exception as e:
-            yield self.create_text_message(f"Error: {e}")
-        messages = []
-        for part in response.candidates[0].content.parts:
-            if part.text:
-                messages.append(self.create_text_message(part.text))
-            if part.inline_data:
-                messages.append(self.create_blob_message(blob=part.inline_data.data, meta={"mime_type": "image/png"}))
-        for message in messages:
-            yield message
+
+    def txt2img(self, prompt: str, model: str) -> tuple[list[bytes], list[str]]:
+        url = f"{self._BASE_URL}/{model}:generateContent"
+        headers = {"x-goog-api-key": self._gemini_api_key,
+                   "Content-Type": "application/json"}
+
+        response = requests.post(url, json={"contents": [{"parts": [{"text": prompt}]}]}, headers=headers, timeout=(5, 300)).json()
+        if "error" in response:
+            raise Exception(response["error"]["message"])
+
+        image_blobs: list[bytes] = []
+        texts: list[str] = []
+        for candidate in response.get("candidates", []):
+            for part in candidate.get("content", {}).get("parts", []):
+                text = part.get("text")
+                if text:
+                    texts.append(text)
+                inline_data = part.get("inlineData")
+                if inline_data and "data" in inline_data:
+                    image_blobs.append(base64.b64decode(inline_data["data"]))
+        return image_blobs, texts
+
+    def img2img(self, prompt: str, image_blobs: list[bytes], mime_types: list[str], model: str) -> tuple[list[bytes], list[str]]:
+        if len(image_blobs) != len(mime_types):
+            raise Exception("Number of image_blobs and mime_types does not match!")
+        url = f"{self._BASE_URL}/{model}:generateContent"
+        headers = {"x-goog-api-key": self._gemini_api_key, "Content-Type": "application/json"}
+        parts = [{"text": prompt}]
+        for i in range(len(image_blobs)):
+            input_base64 = base64.b64encode(image_blobs[i]).decode()
+            parts.append({"inline_data": {"mime_type": mime_types[i], "data": input_base64}})
+
+        response = requests.post(url, json={"contents": [{"parts": parts}]}, headers=headers, timeout=(5, 300)).json()
+        if "error" in response:
+            raise Exception(response["error"]["message"])
+
+        image_blobs: list[bytes] = []
+        texts: list[str] = []
+        for candidate in response.get("candidates", []):
+            for part in candidate.get("content", {}).get("parts", []):
+                text = part.get("text")
+                if text:
+                    texts.append(text)
+                inline_data = part.get("inlineData")
+                if inline_data and "data" in inline_data:
+                    image_blobs.append(base64.b64decode(inline_data["data"]))
+        return image_blobs, texts

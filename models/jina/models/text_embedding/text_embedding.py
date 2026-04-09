@@ -2,6 +2,7 @@ import time
 from json import JSONDecodeError, dumps
 from typing import Optional
 
+from dify_plugin.interfaces.model.text_embedding_model import MultiModalContent
 from requests import post
 
 from dify_plugin import TextEmbeddingModel
@@ -16,6 +17,7 @@ from dify_plugin.entities.model import (
 )
 from dify_plugin.entities.model.text_embedding import (
     EmbeddingUsage,
+    MultiModalEmbeddingResult,
     TextEmbeddingResult,
 )
 from dify_plugin.errors.model import (
@@ -27,7 +29,7 @@ from dify_plugin.errors.model import (
     InvokeRateLimitError,
     InvokeServerUnavailableError,
 )
-from models.shared.input import transform_jina_input_text
+from models.shared.input import transform_jina_input_multi_modal, transform_jina_input_text
 from models.text_embedding.jina_tokenizer import JinaTokenizer
 
 
@@ -126,6 +128,95 @@ class JinaTextEmbeddingModel(TextEmbeddingModel):
 
         return result
 
+
+    def _invoke_multimodal(
+        self,
+        model: str,
+        credentials: dict,
+        documents: list[MultiModalContent],
+        user: str | None = None,
+        input_type: EmbeddingInputType = EmbeddingInputType.DOCUMENT,
+    ) -> MultiModalEmbeddingResult:
+        """
+        Invoke text embedding model
+
+        :param model: model name
+        :param credentials: model credentials
+        :param texts: texts to embed
+        :param user: unique user id
+        :return: embeddings result
+        """
+        api_key = credentials["api_key"]
+        if not api_key:
+            raise CredentialsValidateFailedError("api_key is required")
+
+        base_url = credentials.get("base_url", self.api_base)
+        if base_url.endswith("/"):
+            base_url = base_url[:-1]
+
+        url = base_url + "/embeddings"
+        headers = {
+            "Authorization": "Bearer " + api_key,
+            "Content-Type": "application/json",
+        }
+
+        data = {
+            "model": model,
+            "input": transform_jina_input_multi_modal(model, documents),
+        }
+        if model == "jina-embeddings-v4":
+            data["task"] = (
+                "retrieval.query"
+                if input_type == EmbeddingInputType.QUERY
+                else "retrieval.passage"
+            )
+        if model == "jina-clip-v2":
+            if input_type == EmbeddingInputType.QUERY:
+                data["task"] = "retrieval.query"
+
+        try:
+            response = post(url, headers=headers, data=dumps(data))
+        except Exception as e:
+            raise InvokeConnectionError(str(e))
+
+        if response.status_code != 200:
+            try:
+                resp = response.json()
+                msg = resp["detail"]
+                if response.status_code == 401:
+                    raise InvokeAuthorizationError(msg)
+                elif response.status_code == 429:
+                    raise InvokeRateLimitError(msg)
+                elif response.status_code == 500:
+                    raise InvokeServerUnavailableError(msg)
+                else:
+                    raise InvokeBadRequestError(msg)
+            except JSONDecodeError as e:
+                raise InvokeServerUnavailableError(
+                    f"Failed to convert response to json: {e} with text: {response.text}"
+                )
+
+        try:
+            resp = response.json()
+            embeddings = resp["data"]
+            usage = resp["usage"]
+        except Exception as e:
+            raise InvokeServerUnavailableError(
+                f"Failed to convert response to json: {e} with text: {response.text}"
+            )
+
+        usage = self._calc_response_usage(
+            model=model, credentials=credentials, tokens=usage["total_tokens"]
+        )
+
+        result = MultiModalEmbeddingResult(
+            model=model,
+            embeddings=[[float(data) for data in x["embedding"]] for x in embeddings],
+            usage=usage,
+        )
+
+        return result
+        
     def get_num_tokens(
         self, model: str, credentials: dict, texts: list[str]
     ) -> list[int]:

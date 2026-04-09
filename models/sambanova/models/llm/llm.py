@@ -5,7 +5,7 @@ from dify_plugin.entities.model.llm import LLMResult
 from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
 
 
-class GroqLargeLanguageModel(OAICompatLargeLanguageModel):
+class SambaNovaLargeLanguageModel(OAICompatLargeLanguageModel):
     def _invoke(
         self,
         model: str,

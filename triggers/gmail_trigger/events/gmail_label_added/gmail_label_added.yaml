@@ -1,0 +1,38 @@
+identity:
+  name: gmail_label_added
+  author: langgenius
+  label:
+    en_US: Gmail Label Added
+    zh_Hans: Gmail 标签新增
+    ja_JP: Gmail ラベル追加
+
+description:
+  en_US: Emits label additions on messages since last checkpoint.
+  zh_Hans: 自上次位点以来在消息上新增的标签。
+  ja_JP: 直近チェックポイント以降のメッセージへのラベル追加。
+
+parameters: []
+
+extra:
+  python:
+    source: events/gmail_label_added/gmail_label_added.py
+
+output_schema:
+  type: object
+  properties:
+    history_id:
+      type: string
+    changes:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          threadId:
+            type: string
+          labelIds:
+            type: array
+            items:
+              type: string
+

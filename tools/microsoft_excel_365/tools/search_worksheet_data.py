@@ -28,6 +28,7 @@ class SearchWorksheetDataTool(Tool):
         worksheet_name = tool_parameters.get("worksheet_name")
         search_value = tool_parameters.get("search_value")
         search_range = tool_parameters.get("range", "A1:Z1000")  # Default search range
+        site_id = tool_parameters.get("site_id")
 
         if not workbook_id:
             yield self.create_text_message("Workbook ID is required.")
@@ -45,8 +46,15 @@ class SearchWorksheetDataTool(Tool):
         }
 
         try:
+            # Determine base drive URL (personal or SharePoint site drive)
+            base_drive = (
+                f"https://graph.microsoft.com/v1.0/sites/{site_id}/drive"
+                if site_id
+                else "https://graph.microsoft.com/v1.0/me/drive"
+            )
+
             # First, read the data from the specified range
-            url = f"https://graph.microsoft.com/v1.0/me/drive/items/{workbook_id}/workbook/worksheets('{worksheet_name}')/range(address='{search_range}')"
+            url = f"{base_drive}/items/{workbook_id}/workbook/worksheets('{worksheet_name}')/range(address='{search_range}')"
 
             response = requests.get(url, headers=headers, timeout=30)
 
