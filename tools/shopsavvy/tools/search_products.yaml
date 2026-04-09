@@ -1,0 +1,44 @@
+description:
+  human:
+    en_US: Search for products by keyword. Returns matching products with titles, brands, categories, barcodes, and images.
+    zh_Hans: 按关键词搜索产品。返回匹配的产品，包括标题、品牌、类别、条形码和图片。
+    pt_BR: Pesquise produtos por palavra-chave. Retorna produtos correspondentes com títulos, marcas, categorias, códigos de barras e imagens.
+  llm: Search for products by keyword or product name. Returns matching products with details like title, brand, category, barcode, ASIN, and images. Use this to find products when you have a name or description but not a specific identifier.
+extra:
+  python:
+    source: tools/search_products.py
+identity:
+  author: shopsavvy
+  label:
+    en_US: Search Products
+    zh_Hans: 搜索产品
+    pt_BR: Pesquisar Produtos
+  name: search_products
+parameters:
+  - form: llm
+    human_description:
+      en_US: Search query or keyword (e.g., "iPhone 15 Pro", "Samsung TV", "Nike shoes")
+      zh_Hans: 搜索查询或关键词（例如"iPhone 15 Pro"、"三星电视"、"耐克鞋"）
+      pt_BR: Consulta de pesquisa ou palavra-chave (ex. "iPhone 15 Pro", "Samsung TV", "Nike shoes")
+    label:
+      en_US: Search Query
+      zh_Hans: 搜索查询
+      pt_BR: Consulta de Pesquisa
+    llm_description: The search query or keyword to find products (e.g., "iPhone 15 Pro", "Samsung TV", "Nike shoes")
+    name: query
+    required: true
+    type: string
+  - default: 5
+    form: form
+    human_description:
+      en_US: Maximum number of results to return (1-100, default 5)
+      zh_Hans: 返回的最大结果数（1-100，默认 5）
+      pt_BR: Número máximo de resultados a retornar (1-100, padrão 5)
+    label:
+      en_US: Max Results
+      zh_Hans: 最大结果数
+      pt_BR: Máximo de Resultados
+    llm_description: Maximum number of product results to return
+    name: max_results
+    required: false
+    type: number
