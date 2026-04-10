@@ -25,7 +25,9 @@ class MinimaxText2SpeechModel(TTSModel, ABC):
     Minimax Text-to-Speech Model
     """
 
-    def validate_credentials(self, model: str, credentials: dict, user: Optional[str] = None) -> None:
+    def validate_credentials(
+        self, model: str, credentials: dict, user: Optional[str] = None
+    ) -> None:
         """
         validate credentials text2speech model
 
@@ -46,7 +48,13 @@ class MinimaxText2SpeechModel(TTSModel, ABC):
             raise CredentialsValidateFailedError(str(ex))
 
     def _invoke(
-        self, model: str, tenant_id: str, credentials: dict, content_text: str, voice: str, user: Optional[str] = None
+        self,
+        model: str,
+        tenant_id: str,
+        credentials: dict,
+        content_text: str,
+        voice: str,
+        user: Optional[str] = None,
     ) -> Iterator[bytes]:
         """
         Invoke TTS model
@@ -63,13 +71,24 @@ class MinimaxText2SpeechModel(TTSModel, ABC):
         api_key = credentials.get("minimax_api_key")
 
         if not group_id or not api_key:
-            raise InvokeAuthorizationError("Missing required credentials: group_id and api_key")
+            raise InvokeAuthorizationError(
+                "Missing required credentials: group_id and api_key"
+            )
 
         # Get endpoint_url from credentials, use correct default if not provided
-        endpoint_url = credentials.get("endpoint_url", "https://api.minimaxi.com")
-        base_url = endpoint_url.rstrip('/')
+        endpoint_url = str(
+            credentials.get("endpoint_url") or "https://api.minimax.chat"
+        ).strip()
+        if not endpoint_url.startswith("http://") and not endpoint_url.startswith(
+            "https://"
+        ):
+            endpoint_url = f"https://{endpoint_url}"
+        base_url = endpoint_url.rstrip("/")
         url = f"{base_url}/v1/t2a_v2?GroupId={group_id}"
-        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
 
         # Build request body with all supported parameters
         body_data = {
@@ -80,14 +99,14 @@ class MinimaxText2SpeechModel(TTSModel, ABC):
                 "voice_id": voice,
                 "speed": float(credentials.get("speed", 1.0)),
                 "vol": float(credentials.get("vol", 1.0)),
-                "pitch": int(credentials.get("pitch", 0))
+                "pitch": int(credentials.get("pitch", 0)),
             },
             "audio_setting": {
                 "sample_rate": int(credentials.get("sample_rate", 32000)),
                 "bitrate": int(credentials.get("bitrate", 128000)),
                 "format": credentials.get("format", "mp3"),
-                "channel": int(credentials.get("channel", 1))
-            }
+                "channel": int(credentials.get("channel", 1)),
+            },
         }
 
         # Add pronunciation dictionary if provided
@@ -104,7 +123,7 @@ class MinimaxText2SpeechModel(TTSModel, ABC):
             # Process streaming response according to correct format
             for chunk in response.raw:
                 if chunk:
-                    if chunk[:5] == b'data:':
+                    if chunk[:5] == b"data:":
                         try:
                             data = json.loads(chunk[5:])
                             if "data" in data and "extra_info" not in data:
@@ -138,10 +157,17 @@ class MinimaxText2SpeechModel(TTSModel, ABC):
         """
         return {
             InvokeConnectionError: [requests.exceptions.ConnectionError],
-            InvokeServerUnavailableError: [requests.exceptions.HTTPError, requests.exceptions.Timeout],
+            InvokeServerUnavailableError: [
+                requests.exceptions.HTTPError,
+                requests.exceptions.Timeout,
+            ],
             InvokeRateLimitError: [requests.exceptions.TooManyRedirects],
             InvokeAuthorizationError: [requests.exceptions.HTTPError, ValueError],
-            InvokeBadRequestError: [requests.exceptions.RequestException, KeyError, json.JSONDecodeError],
+            InvokeBadRequestError: [
+                requests.exceptions.RequestException,
+                KeyError,
+                json.JSONDecodeError,
+            ],
         }
 
     def _get_model_default_voice(self, model: str, credentials: dict) -> Any:
@@ -180,7 +206,9 @@ class MinimaxText2SpeechModel(TTSModel, ABC):
             return model_entity.model_properties.get(ModelPropertyKey.MAX_WORKERS, 5)
         return 5  # fallback
 
-    def get_tts_model_voices(self, model: str, credentials: dict, language: Optional[str] = None) -> list:
+    def get_tts_model_voices(
+        self, model: str, credentials: dict, language: Optional[str] = None
+    ) -> list:
         """
         Get available voices for the model by calling the Minimax API
         """
@@ -190,22 +218,35 @@ class MinimaxText2SpeechModel(TTSModel, ABC):
         if not group_id or not api_key:
             return []
 
-        endpoint_url = credentials.get("endpoint_url", "https://api.minimaxi.com")
-        base_url = endpoint_url.rstrip('/')
+        endpoint_url = str(
+            credentials.get("endpoint_url") or "https://api.minimax.chat"
+        ).strip()
+        if not endpoint_url.startswith("http://") and not endpoint_url.startswith(
+            "https://"
+        ):
+            endpoint_url = f"https://{endpoint_url}"
+        base_url = endpoint_url.rstrip("/")
         url = f"{base_url}/v1/get_voice"
-        headers = {"Content-Type": "application/json", "Authorization": f"Bearer {api_key}"}
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        }
 
         try:
-            response = requests.post(url, headers=headers, json={"voice_type": "all"}, timeout=10)
+            response = requests.post(
+                url, headers=headers, json={"voice_type": "all"}, timeout=10
+            )
             response.raise_for_status()
             data = response.json()
 
             if data.get("base_resp", {}).get("status_code") != 0:
-                logger.error(f"Failed to fetch voices from Minimax: {data.get('base_resp', {}).get('status_msg')}")
+                logger.error(
+                    f"Failed to fetch voices from Minimax: {data.get('base_resp', {}).get('status_msg')}"
+                )
                 return []
 
             formatted_voices = []
-            
+
             # Helper to process voice list
             def process_voices(voice_list):
                 if not voice_list:
@@ -214,11 +255,13 @@ class MinimaxText2SpeechModel(TTSModel, ABC):
                     voice_id = v.get("voice_id")
                     if not voice_id:
                         continue
-                    formatted_voices.append({
-                        "name": v.get("voice_name") or voice_id,
-                        "value": voice_id,
-                        "language": ["zh-Hans", "en-US"]
-                    })
+                    formatted_voices.append(
+                        {
+                            "name": v.get("voice_name") or voice_id,
+                            "value": voice_id,
+                            "language": ["zh-Hans", "en-US"],
+                        }
+                    )
 
             for voice_type in ["system_voice", "voice_cloning", "voice_generation"]:
                 process_voices(data.get(voice_type))

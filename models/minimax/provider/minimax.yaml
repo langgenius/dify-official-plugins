@@ -49,7 +49,7 @@ provider_credential_schema:
     required: false
     type: text-input
     variable: minimax_group_id
-  - default: https://api.minimax.io
+  - default: https://api.minimax.chat
     label:
       en_US: API Base
       zh_Hans: API Base
