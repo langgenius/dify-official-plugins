@@ -1006,6 +1006,10 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         api_url = credentials.get("anthropic_api_url")
         if api_url:
             credentials_kwargs["base_url"] = api_url.rstrip("/")
+            # Spoof the User-Agent if using a third-party proxy (non-official API)
+            if "api.anthropic.com" not in api_url:
+                kwargs["default_headers"] = {"User-Agent": "python-httpx"}
+
         return credentials_kwargs
 
     def _convert_prompt_messages(
