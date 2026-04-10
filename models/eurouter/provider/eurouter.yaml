@@ -1,0 +1,93 @@
+provider: eurouter
+label:
+  en_US: EUrouter
+icon_small:
+  en_US: icon.svg
+icon_large:
+  en_US: icon.svg
+background: "#1a365d"
+help:
+  title:
+    en_US: Get your API Key from EUrouter
+    zh_Hans: "EUrouter \u83B7\u53D6 API Key"
+  url:
+    en_US: https://www.eurouter.ai
+supported_model_types:
+  - llm
+configurate_methods:
+  - predefined-model
+  - customizable-model
+model_credential_schema:
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: "\u6A21\u578B\u540D\u79F0"
+    placeholder:
+      en_US: Enter your model name
+      zh_Hans: "\u8F93\u5165\u6A21\u578B\u540D\u79F0"
+  credential_form_schemas:
+    - variable: eurouter_api_key
+      label:
+        en_US: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        en_US: Enter your EUrouter API Key
+        zh_Hans: "\u5728\u6B64\u8F93\u5165\u60A8\u7684 API Key"
+    - variable: context_size
+      default: "4096"
+      label:
+        en_US: Model context size
+        zh_Hans: "\u6A21\u578B\u4E0A\u4E0B\u6587\u957F\u5EA6"
+      placeholder:
+        en_US: Enter your Model context size
+        zh_Hans: "\u5728\u6B64\u8F93\u5165\u60A8\u7684\u6A21\u578B\u4E0A\u4E0B\u6587\u957F\u5EA6"
+      required: true
+      type: text-input
+    - variable: max_tokens
+      default: "4096"
+      label:
+        en_US: Upper bound for max tokens
+        zh_Hans: "\u6700\u5927 token \u4E0A\u9650"
+      show_on:
+        - variable: __model_type
+          value: llm
+      type: text-input
+    - variable: function_calling_type
+      default: no_call
+      label:
+        en_US: Function calling
+        zh_Hans: "\u51FD\u6570\u8C03\u7528"
+      options:
+        - label:
+            en_US: Not Support
+            zh_Hans: "\u4E0D\u652F\u6301"
+          value: no_call
+        - label:
+            en_US: Support
+            zh_Hans: "\u652F\u6301"
+          value: tool_call
+      required: false
+      show_on:
+        - variable: __model_type
+          value: llm
+      type: select
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: eurouter_api_key
+      label:
+        en_US: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        en_US: Enter your EUrouter API Key
+        zh_Hans: "\u5728\u6B64\u8F93\u5165\u60A8\u7684 API Key"
+models:
+  llm:
+    predefined:
+      - "models/llm/*.yaml"
+extra:
+  python:
+    provider_source: provider/eurouter.py
+    model_sources:
+      - "models/llm/llm.py"

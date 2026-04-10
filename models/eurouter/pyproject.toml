@@ -1,0 +1,15 @@
+[project]
+name = "eurouter"
+version = "1.0.0"
+description = "EUrouter model provider plugin for Dify"
+readme = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+    "dify_plugin>=0.5.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.0.2",
+]
