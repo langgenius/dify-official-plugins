@@ -76,6 +76,7 @@ class AzureOpenAIText2SpeechModel(_CommonAzureOpenAI, TTSModel):
         """
         try:
             client = self._create_client(credentials)
+            audio_type = self._get_model_audio_type(model, credentials)
             max_length = 3500
             if len(content_text) > max_length:
                 sentences = self._split_text_into_sentences(
@@ -88,7 +89,7 @@ class AzureOpenAIText2SpeechModel(_CommonAzureOpenAI, TTSModel):
                     executor.submit(
                         client.audio.speech.with_streaming_response.create,
                         model=model,
-                        response_format="mp3",
+                        response_format=audio_type,
                         input=sentences[i],
                         voice=voice,
                     )
@@ -100,7 +101,7 @@ class AzureOpenAIText2SpeechModel(_CommonAzureOpenAI, TTSModel):
                 response = client.audio.speech.with_streaming_response.create(
                     model=model,
                     voice=voice,
-                    response_format="mp3",
+                    response_format=audio_type,
                     input=content_text.strip(),
                 )
                 yield from response.__enter__().iter_bytes(1024)
@@ -118,8 +119,9 @@ class AzureOpenAIText2SpeechModel(_CommonAzureOpenAI, TTSModel):
         :return: text translated to audio file
         """
         client = self._create_client(credentials)
+        audio_type = self._get_model_audio_type(model, credentials)
         response = client.audio.speech.create(
-            model=model, voice=voice, input=sentence.strip()
+            model=model, voice=voice, response_format=audio_type, input=sentence.strip()
         )
         if isinstance(response.read(), bytes):
             return response.read()
