@@ -115,10 +115,6 @@ class WeComMessageEndpoint(Endpoint):
 
         def safe_set(key: str, val: bytes):
             try:
-                self.session.storage.delete(key)
-            except Exception:
-                pass
-            try:
                 self.session.storage.set(key, val)
             except Exception as e:
                 logger.warning(f"Storage safe_set error for {key}: {e}")
