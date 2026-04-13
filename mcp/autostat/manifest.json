@@ -1,11 +1,24 @@
 {
-  "schema_version": "v1",
-  "name": "autostat",
-  "display_name": "AutoStat 智能统计分析",
-  "description": "自动识别数据类型、检测数据质量、选择统计方法、生成分析报告。",
-  "author": "zyhowe",
-  "repository": "https://github.com/zyhowe/AutoStat",
-  "icon": "https://raw.githubusercontent.com/zyhowe/AutoStat/main/.dify/autostat/icon.png",
-  "mcp_config_url": "https://raw.githubusercontent.com/zyhowe/AutoStat/main/.dify/autostat/mcp_config.json",
-  "readme_url": "https://raw.githubusercontent.com/zyhowe/AutoStat/main/.dify/autostat/README.md"
+    "schema_version": "v1",
+    "name": "autostat",
+    "version": "0.2.0",
+    "display_name": "AutoStat 智能统计分析",
+    "description": "自动识别数据类型、检测数据质量、选择统计方法、生成分析报告。支持 CSV、Excel、JSON、TXT 文件及 SQL Server 数据库。",
+    "author": "zyhowe",
+    "repository": "https://github.com/zyhowe/AutoStat",
+    "license": "MIT",
+    "category": "Data Analysis",
+    "tags": ["statistics", "data-analysis", "mcp", "sql"],
+    "icon": "https://raw.githubusercontent.com/zyhowe/AutoStat/main/.dify/autostat/icon.png",
+    "mcp_config_url": "https://raw.githubusercontent.com/zyhowe/AutoStat/main/.dify/autostat/mcp_config.json",
+    "readme_url": "https://raw.githubusercontent.com/zyhowe/AutoStat/main/.dify/autostat/README.md",
+    "dependencies": {
+        "python": {
+            "packages": ["autostat-mcp"]
+        }
+    },
+    "requirements": {
+        "python_version": ">=3.8",
+        "platforms": ["windows", "macos", "linux"]
+    }
 }
