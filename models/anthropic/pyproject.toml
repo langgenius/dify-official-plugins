@@ -16,5 +16,5 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pyrefly>=0.50.0",
-    "pytest>=8.0.0",
+    "pytest>=9.0.3",
 ]
