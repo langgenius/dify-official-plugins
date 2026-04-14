@@ -138,7 +138,9 @@ class QuickStart(Tool):
         ]
         for model in models:
             self.model_manager.download_model(model.url, model.directory)
-        workflow.set_prompt(None, ui.prompt)
+        workflow.set_prompt("76:67", ui.prompt)
+        if ui.negative_prompt:
+            workflow.set_prompt("76:71", ui.negative_prompt)
         workflow.set_sd3_latent_image(None, ui.width, ui.height)
 
         output_images = self.comfyui.generate(workflow)
