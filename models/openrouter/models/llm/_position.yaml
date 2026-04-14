@@ -22,11 +22,7 @@
 - anthropic/claude-sonnet-4.6
 - anthropic/claude-sonnet-4.5
 - anthropic/claude-sonnet-4
-- anthropic/claude-3.7-sonnet:thinking
-- anthropic/claude-3.7-sonnet
-- anthropic/claude-3.5-sonnet
 - anthropic/claude-haiku-4.5
-- anthropic/claude-3-haiku
 - google/gemini-3.1-pro-preview
 - google/gemini-3.1-flash-lite-preview
 - google/gemini-3-flash-preview
@@ -34,7 +30,6 @@
 - google/gemini-2.5-flash
 - google/gemini-2.5-flash-lite-preview-09-2025
 - google/gemini-2.5-flash-lite
-- google/gemini-2.0-flash-lite-001
 - google/gemma-4-31b-it
 - google/gemma-4-26b-a4b-it
 - google/gemma-3n-e2b-it:free
@@ -43,7 +38,6 @@
 - meta-llama/llama-3.2-11b-vision-instruct
 - meta-llama/llama-3.1-70b-instruct
 - meta-llama/llama-3.1-8b-instruct
-- meta-llama/llama-3-70b-instruct
 - meta-llama/llama-3-8b-instruct
 - mistralai/mixtral-8x22b-instruct
 - mistralai/mixtral-8x7b-instruct
