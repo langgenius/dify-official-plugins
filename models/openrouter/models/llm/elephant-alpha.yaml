@@ -1,15 +1,14 @@
-model: x-ai/grok-4-fast:free
+model: openrouter/elephant-alpha
 label:
-  en_US: grok-4-fast:free
+  en_US: Elephant Alpha
 model_type: llm
 features:
   - multi-tool-call
   - agent-thought
   - stream-tool-call
-  - vision
 model_properties:
   mode: chat
-  context_size: 2000000
+  context_size: 262144
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -28,6 +27,11 @@ parameter_rules:
     use_template: presence_penalty
   - name: frequency_penalty
     use_template: frequency_penalty
+  - name: max_tokens
+    use_template: max_tokens
+    default: 4096
+    min: 1
+    max: 32768
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -40,42 +44,8 @@ parameter_rules:
     options:
       - text
       - json_object
-  - name: enable_thinking
-    label:
-      zh_Hans: 开启思考模式
-      en_US: Enable thinking mode
-    type: boolean
-    default: true
-    help:
-      zh_Hans: 是否开启默认思考模式
-      en_US: Whether to enable the default thinking mode
-    required: false
-  - name: reasoning_effort
-    label:
-      zh_Hans: 推理程度
-      en_US: Reasoning Effort
-    type: string
-    help:
-      zh_Hans: 指定模型推理的难度
-      en_US: specifying the difficulty of the model's reasoning
-    required: false
-    options:
-      - high
-      - medium
-      - low
-  - name: exclude_reasoning_tokens
-    label:
-      zh_Hans: 隐藏思考过程
-      en_US: Hide the thought process
-    type: boolean
-    default: true
-    help:
-      zh_Hans: 是否隐藏思考过程。
-      en_US: Whether to hide the thought process.
-    required: false
 pricing:
   input: "0"
   output: "0"
   unit: "0.000001"
   currency: USD
-deprecated: true
