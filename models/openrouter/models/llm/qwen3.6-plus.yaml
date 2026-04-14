@@ -1,14 +1,15 @@
-model: google/gemini-2.5-flash-lite-preview-06-17
+model: qwen/qwen3.6-plus
 label:
-  en_US: gemini-2.5-flash-lite-preview-06-17
+  en_US: qwen3.6-plus
 model_type: llm
 features:
-  - multi-tool-call
   - agent-thought
+  - tool-call
+  - multi-tool-call
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 1048576
+  context_size: 1000000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -16,7 +17,7 @@ parameter_rules:
     use_template: top_p
   - name: max_tokens
     use_template: max_tokens
-    default: 65536
+    default: 4096
     min: 1
     max: 65536
   - name: response_format
@@ -32,29 +33,15 @@ parameter_rules:
       - text
       - json_object
   - name: enable_thinking
-    required: false
-    type: string
-    default: dynamic
     label:
-      zh_Hans: 思考模式
-      en_US: Thinking mode
+      zh_Hans: 开启思考模式
+      en_US: Enable thinking mode
+    type: boolean
+    default: true
     help:
-      zh_Hans: 是否开启思考模式。
-      en_US: Whether to enable thinking mode.
-    options:
-      - dynamic
-      - manual
-  - name: reasoning_budget
-    label:
-      zh_Hans: 思考预算
-      en_US: Reasoning budget
-    type: int
-    help:
-      zh_Hans: 思考预算，单位为 token
-      en_US: Reasoning budget, in tokens
+      zh_Hans: 是否开启默认思考模式
+      en_US: Whether to enable the default thinking mode
     required: false
-    min: 512
-    max: 24576
   - name: exclude_reasoning_tokens
     label:
       zh_Hans: 隐藏思考过程
@@ -66,8 +53,7 @@ parameter_rules:
       en_US: Whether to hide the thought process.
     required: false
 pricing:
-  input: "0.1"
-  output: "0.4"
+  input: "0.50"
+  output: "3.00"
   unit: "0.000001"
   currency: USD
-deprecated: true
