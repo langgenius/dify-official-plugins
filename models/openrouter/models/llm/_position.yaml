@@ -58,6 +58,9 @@
 - deepseek/deepseek-r1-distill-llama-70b
 - deepseek/deepseek-r1-distill-qwen-32b
 - moonshotai/kimi-k2-0905
+- xiaomi/mimo-v2-omni
+- xiaomi/mimo-v2-pro
+- openrouter/elephant-alpha
 - x-ai/grok-4.20
 - x-ai/grok-4.20-multi-agent
 - x-ai/grok-4.1-fast
