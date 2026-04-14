@@ -16,7 +16,7 @@ dependencies = [
 # uv run ruff check --fix && uv run ruff format
 [dependency-groups]
 dev = [
-    "pytest>=9.0.2",
+    "pytest>=9.0.3",
     "ruff>=0.14.14",
     "python-dotenv>=1.2.1",
     "Pillow>=12.1.0",
