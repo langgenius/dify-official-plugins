@@ -1,19 +1,34 @@
+# Moonshot Models
+- kimi-k2-instruct-0905
+- kimi-k2-thinking
+- kimi-k25
+
+# OpenAI Models
+- openai-gpt-54-pro
+- openai-gpt-54
+- openai-gpt-54-mini
+- openai-gpt-54-nano
+- openai-gpt-oss-120b
+
+# Google Models
+- gemini-31-pro-preview
+- gemini-31-flash-lite-preview
+
+# Anthropic Models
+- claude-opus-46
+- claude-sonnet-46
+
 # DeepSeek Models
 - deepseek-v3-0324
 - deepseek-v31
 - deepseek-v32-exp
 
-# OpenAI Models
-- openai-gpt-oss-120b
-
-# Meta Llama Models
-- llama4-scout-17b-16e-instruct
+# ZAI Models
+- zai-glm5-fp8
+- zai-glm46
 
 # Qwen Models
 - qwen3-coder-480b-a35b-instruct-fp8
 - qwen3-next-80b-a3b-instruct
 - qwen3-235b-a22b-thinking-2507-fp8
 - qwen3-32b-fp8
-
-# ZAI Models
-- zai-glm46
