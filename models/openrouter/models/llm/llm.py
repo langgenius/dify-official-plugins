@@ -27,23 +27,17 @@ from dify_plugin.errors.model import InvokeError
 from dify_plugin.interfaces.model.openai_compatible.llm import _increase_tool_call
 from pydantic import TypeAdapter, ValidationError
 
+from models._endpoint_utils import normalize_endpoint_url
+
 IMAGE_GENERATION_MODELS = {
     "google/gemini-2.5-flash-image-preview",
     "google/gemini-2.5-flash-image-preview:free",
 }
-DEFAULT_ENDPOINT_URL = "https://openrouter.ai/api/v1"
-
-
-def _normalize_endpoint_url(credentials: dict) -> str:
-    endpoint_url = (
-        (credentials.get("endpoint_url") or DEFAULT_ENDPOINT_URL).strip().rstrip("/")
-    )
-    return endpoint_url or DEFAULT_ENDPOINT_URL
 
 
 class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
     def _update_credential(self, model: str, credentials: dict):
-        credentials["endpoint_url"] = _normalize_endpoint_url(credentials)
+        credentials["endpoint_url"] = normalize_endpoint_url(credentials)
         credentials["mode"] = self.get_model_mode(model).value
         schema = self.get_model_schema(model, credentials)
         if schema and {

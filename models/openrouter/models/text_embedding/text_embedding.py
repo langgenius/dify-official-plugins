@@ -4,14 +4,7 @@ from dify_plugin import OAICompatEmbeddingModel
 from dify_plugin.entities.model import EmbeddingInputType
 from dify_plugin.entities.model.text_embedding import TextEmbeddingResult
 
-DEFAULT_ENDPOINT_URL = "https://openrouter.ai/api/v1"
-
-
-def _normalize_endpoint_url(credentials: dict) -> str:
-    endpoint_url = (
-        (credentials.get("endpoint_url") or DEFAULT_ENDPOINT_URL).strip().rstrip("/")
-    )
-    return endpoint_url or DEFAULT_ENDPOINT_URL
+from models._endpoint_utils import normalize_endpoint_url
 
 
 class OpenRouterTextEmbeddingModel(OAICompatEmbeddingModel):
@@ -38,7 +31,7 @@ class OpenRouterTextEmbeddingModel(OAICompatEmbeddingModel):
 
     @staticmethod
     def _update_credentials(credentials: dict) -> None:
-        credentials["endpoint_url"] = _normalize_endpoint_url(credentials)
+        credentials["endpoint_url"] = normalize_endpoint_url(credentials)
         credentials["extra_headers"] = {
             "HTTP-Referer": "https://dify.ai/",
             "X-Title": "Dify",

@@ -8,8 +8,45 @@ from dify_plugin.entities.model.llm import LLMMode
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from models._endpoint_utils import DEFAULT_ENDPOINT_URL, normalize_endpoint_url
 from models.llm.llm import OpenRouterLargeLanguageModel
 from models.text_embedding.text_embedding import OpenRouterTextEmbeddingModel
+
+
+class TestNormalizeEndpointUrl(unittest.TestCase):
+    """Unit tests for the shared normalize_endpoint_url helper."""
+
+    def test_returns_default_when_key_missing(self) -> None:
+        self.assertEqual(normalize_endpoint_url({}), DEFAULT_ENDPOINT_URL)
+
+    def test_returns_default_for_blank_value(self) -> None:
+        self.assertEqual(
+            normalize_endpoint_url({"endpoint_url": "   "}), DEFAULT_ENDPOINT_URL
+        )
+
+    def test_returns_default_for_empty_string(self) -> None:
+        self.assertEqual(
+            normalize_endpoint_url({"endpoint_url": ""}), DEFAULT_ENDPOINT_URL
+        )
+
+    def test_returns_default_for_none(self) -> None:
+        self.assertEqual(
+            normalize_endpoint_url({"endpoint_url": None}), DEFAULT_ENDPOINT_URL
+        )
+
+    def test_strips_whitespace_and_trailing_slash(self) -> None:
+        self.assertEqual(
+            normalize_endpoint_url(
+                {"endpoint_url": " https://example.com/api/v1/ "}
+            ),
+            "https://example.com/api/v1",
+        )
+
+    def test_preserves_clean_url(self) -> None:
+        url = "https://custom.example.com/v1"
+        self.assertEqual(
+            normalize_endpoint_url({"endpoint_url": url}), url
+        )
 
 
 class TestOpenRouterEndpointUrlConfig(unittest.TestCase):
