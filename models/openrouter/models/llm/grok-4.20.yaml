@@ -1,30 +1,33 @@
-model: google/gemini-3-pro-preview
+model: x-ai/grok-4.20
 label:
-  en_US: gemini-3-pro-preview
+  en_US: grok-4.20
 model_type: llm
 features:
   - multi-tool-call
   - agent-thought
   - stream-tool-call
   - vision
-  - document
-  - video
-  - audio
 model_properties:
   mode: chat
-  context_size: 1048576
+  context_size: 2000000
 parameter_rules:
   - name: temperature
     use_template: temperature
-    default: 1
   - name: top_p
     use_template: top_p
-    default: 0.95
-  - name: max_tokens
-    use_template: max_tokens
-    default: 65536
-    min: 1
-    max: 65536
+  - name: top_k
+    label:
+      zh_Hans: 取样数量
+      en_US: Top k
+    type: int
+    help:
+      zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
+      en_US: Only sample from the top K options for each subsequent token.
+    required: false
+  - name: presence_penalty
+    use_template: presence_penalty
+  - name: frequency_penalty
+    use_template: frequency_penalty
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -40,15 +43,15 @@ parameter_rules:
       - json_schema
   - name: json_schema
     use_template: json_schema
-  - name: exclude_reasoning_tokens
+  - name: enable_thinking
     label:
-      zh_Hans: 隐藏思考过程
-      en_US: Hide the thought process
+      zh_Hans: 开启思考模式
+      en_US: Enable thinking mode
     type: boolean
     default: true
     help:
-      zh_Hans: 是否隐藏思考过程。
-      en_US: Whether to hide the thought process.
+      zh_Hans: 是否开启默认思考模式
+      en_US: Whether to enable the default thinking mode
     required: false
   - name: reasoning_effort
     label:
@@ -61,10 +64,20 @@ parameter_rules:
     required: false
     options:
       - high
+      - medium
       - low
+  - name: exclude_reasoning_tokens
+    label:
+      zh_Hans: 隐藏思考过程
+      en_US: Hide the thought process
+    type: boolean
+    default: true
+    help:
+      zh_Hans: 是否隐藏思考过程。
+      en_US: Whether to hide the thought process.
+    required: false
 pricing:
-  input: "2"
-  output: "12"
+  input: "2.00"
+  output: "6.00"
   unit: "0.000001"
   currency: USD
-deprecated: true
