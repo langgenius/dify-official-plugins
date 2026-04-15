@@ -23,6 +23,7 @@ from dify_plugin.entities.model.message import (
     ImagePromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
+    PromptMessageContentUnionTypes,
     PromptMessageFunction,
     PromptMessageTool,
     SystemPromptMessage,
@@ -545,7 +546,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                         "content": message.content
                     })
                 else:
-                    content_parts = self._convert_multimodal_content_to_responses_parts(
+                    content_parts = AzureOpenAILargeLanguageModel._convert_multimodal_content_to_responses_parts(
                         message.content
                     )
                     if content_parts:
@@ -561,7 +562,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     })
                 else:
                     # Handle multimodal content
-                    content_parts = self._convert_multimodal_content_to_responses_parts(
+                    content_parts = AzureOpenAILargeLanguageModel._convert_multimodal_content_to_responses_parts(
                         message.content
                     )
                     if content_parts:
@@ -610,7 +611,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
     @staticmethod
     def _convert_multimodal_content_to_responses_parts(
-        content_items: Any,
+        content_items: Optional[list[PromptMessageContentUnionTypes]],
     ) -> list[dict[str, Any]]:
         content_parts: list[dict[str, Any]] = []
         for content_item in content_items or []:
