@@ -13,3 +13,6 @@ dependencies = [
 # uv run black . -C -l 100 && uv run ruff check --fix
 [dependency-groups]
 dev = []
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

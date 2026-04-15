@@ -28,6 +28,7 @@ from dify_plugin.interfaces.agent import (
     ToolInvokeMeta,
 )
 from pydantic import BaseModel
+from tool_response import append_tool_result, render_tool_invoke_response
 
 class LogMetadata:
     """Metadata keys for logging"""
@@ -429,28 +430,27 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                     **tool_call_args,
                                 },
                             )
-                            tool_result = ""
+                            tool_result_parts: list[str] = []
                             for tool_invoke_response in tool_invoke_responses:
                                 if (
                                     tool_invoke_response.type
                                     == ToolInvokeMessage.MessageType.TEXT
                                 ):
-                                    tool_result += cast(
-                                        ToolInvokeMessage.TextMessage,
-                                        tool_invoke_response.message,
-                                    ).text
+                                    append_tool_result(
+                                        tool_result_parts,
+                                        render_tool_invoke_response(
+                                            tool_invoke_response
+                                        ),
+                                    )
                                 elif (
                                     tool_invoke_response.type
                                     == ToolInvokeMessage.MessageType.LINK
                                 ):
-                                    tool_result += (
-                                        "result link: "
-                                        + cast(
-                                            ToolInvokeMessage.TextMessage,
-                                            tool_invoke_response.message,
-                                        ).text
-                                        + "."
-                                        + " please tell user to check it."
+                                    append_tool_result(
+                                        tool_result_parts,
+                                        render_tool_invoke_response(
+                                            tool_invoke_response
+                                        ),
                                     )
                                 elif tool_invoke_response.type in {
                                     ToolInvokeMessage.MessageType.IMAGE_LINK,
@@ -486,9 +486,12 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                             yield self.create_text_message(
                                                 f"Failed to create blob message: {e}"
                                             )
-                                    tool_result += (
-                                        "image has been created and sent to user already, "
-                                        + "you do not need to create it, just tell the user to check it now."
+                                    append_tool_result(
+                                        tool_result_parts,
+                                        (
+                                            "image has been created and sent to user already, "
+                                            + "you do not need to create it, just tell the user to check it now."
+                                        ),
                                     )
                                     # TODO: convert to agent invoke message
                                     yield tool_invoke_response
@@ -496,25 +499,32 @@ class FunctionCallingAgentStrategy(AgentStrategy):
                                     tool_invoke_response.type
                                     == ToolInvokeMessage.MessageType.JSON
                                 ):
-                                    text = json.dumps(
-                                        cast(
-                                            ToolInvokeMessage.JsonMessage,
-                                            tool_invoke_response.message,
-                                        ).json_object,
-                                        ensure_ascii=False,
+                                    append_tool_result(
+                                        tool_result_parts,
+                                        render_tool_invoke_response(
+                                            tool_invoke_response
+                                        ),
                                     )
-                                    tool_result += f"tool response: {text}."
                                 elif (
                                     tool_invoke_response.type
                                     == ToolInvokeMessage.MessageType.BLOB
                                 ):
-                                    tool_result += "Generated file ... "
+                                    append_tool_result(
+                                        tool_result_parts,
+                                        render_tool_invoke_response(
+                                            tool_invoke_response
+                                        ),
+                                    )
                                     # TODO: convert to agent invoke message
                                     yield tool_invoke_response
                                 else:
-                                    tool_result += (
-                                        f"tool response: {tool_invoke_response.message!r}."
+                                    append_tool_result(
+                                        tool_result_parts,
+                                        render_tool_invoke_response(
+                                            tool_invoke_response
+                                        ),
                                     )
+                            tool_result = "".join(tool_result_parts)
                         except Exception as e:
                             tool_result = f"tool invoke error: {e!s}"
                         tool_response = {
