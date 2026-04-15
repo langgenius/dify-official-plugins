@@ -75,6 +75,22 @@ class TestConvertPromptMessagesToResponsesInput(unittest.TestCase):
         self.assertEqual(result[0]["role"], "developer")
         self.assertEqual(result[0]["content"], "You are helpful.")
 
+    def test_system_text_content_item_becomes_input_text(self):
+        """System prompt multimodal text should use Responses API input_text."""
+        messages = [
+            SystemPromptMessage(
+                content=[TextPromptMessageContent(data="Context from retrieval")]
+            )
+        ]
+        result = self.llm._convert_prompt_messages_to_responses_input(messages)
+
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0]["role"], "developer")
+        content = result[0]["content"]
+        self.assertIsInstance(content, list)
+        self.assertEqual(content[0]["type"], "input_text")
+        self.assertEqual(content[0]["text"], "Context from retrieval")
+
     def test_user_string_message(self):
         messages = [UserPromptMessage(content="Hello")]
         result = self.llm._convert_prompt_messages_to_responses_input(messages)
