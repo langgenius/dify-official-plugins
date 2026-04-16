@@ -509,8 +509,18 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     "format": {"type": response_format}
                 }
 
+        # Handle verbosity
+        if "verbosity" in model_parameters:
+            responses_params["text"]["verbosity"] = model_parameters["verbosity"]
+
+        # Handle reasoning parameters
+        reasoning = {}
         if "reasoning_effort" in model_parameters:
-            responses_params["reasoning"] = {"effort": model_parameters["reasoning_effort"]}
+            reasoning["effort"] = model_parameters["reasoning_effort"]
+        if "reasoning_summary" in model_parameters:
+            reasoning["summary"] = model_parameters["reasoning_summary"]
+        if reasoning:
+            responses_params["reasoning"] = reasoning
 
         logger.info(
             f"llm request with responses api: model={model}, stream={stream}, "
