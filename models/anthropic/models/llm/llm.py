@@ -151,6 +151,14 @@ class PromptCachingHandler:
 
 
 class AnthropicLargeLanguageModel(LargeLanguageModel):
+    # Models that enforce Opus 4.7+ breaking changes:
+    #   - sampling params (temperature/top_p/top_k) rejected with 400
+    #   - extended thinking (thinking.budget_tokens) rejected with 400 — adaptive only
+    #   - assistant prefill rejected with 400
+    #   - thinking content omitted by default — opt in via thinking.display=summarized
+    #   - effort / task_budget delivered via output_config
+    OPUS_4_7_PLUS_MODELS: tuple[str, ...] = ("claude-opus-4-7",)
+
     def __init__(self, model_schemas=None):
         super().__init__(model_schemas or [])
         self.previous_thinking_blocks = []
@@ -163,28 +171,65 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         self._tool_results_cache_enabled = False
         self._message_flow_cache_threshold: int = 0
 
+    def _is_opus_4_7_plus(self, model: str) -> bool:
+        model_id = (model or "").lower()
+        return any(model_id.startswith(prefix) for prefix in self.OPUS_4_7_PLUS_MODELS)
+
     def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:
         """
         Return schema for a custom model name entered by the user.
         This allows users to use any Anthropic-compatible model name
         (e.g. from third-party proxies) without being limited to predefined models.
         """
-        return AIModelEntity(
-            model=model,
-            label=I18nObject(en_US=model, zh_Hans=model),
-            model_type=ModelType.LLM,
-            features=[
-                ModelFeature.AGENT_THOUGHT,
-                ModelFeature.VISION,
-                ModelFeature.TOOL_CALL,
-                ModelFeature.STREAM_TOOL_CALL,
-            ],
-            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
-            model_properties={
-                ModelPropertyKey.CONTEXT_SIZE: int(credentials.get("context_size", 200000)),
-                ModelPropertyKey.MODE: LLMMode.CHAT.value,
-            },
-            parameter_rules=[
+        is_opus_4_7_plus = self._is_opus_4_7_plus(model)
+
+        parameter_rules: list[ParameterRule] = [
+            ParameterRule(
+                name="max_tokens",
+                use_template="max_tokens",
+                default=4096,
+                min=1,
+                max=int(credentials.get("max_tokens", 128000)),
+                label=I18nObject(en_US="Max Tokens", zh_Hans="最大标记"),
+                type=ParameterType.INT,
+            ),
+            ParameterRule(
+                name="thinking",
+                label=I18nObject(en_US="Thinking Mode", zh_Hans="推理模式"),
+                type=ParameterType.BOOLEAN,
+                default=False,
+            ),
+        ]
+
+        if is_opus_4_7_plus:
+            # Opus 4.7+ uses adaptive thinking + output_config(effort/task_budget).
+            # temperature/top_p/top_k/thinking_budget are rejected with 400.
+            parameter_rules.extend([
+                ParameterRule(
+                    name="thinking_display",
+                    label=I18nObject(en_US="Thinking Display", zh_Hans="推理内容展示"),
+                    type=ParameterType.STRING,
+                    default="summarized",
+                    options=["omitted", "summarized"],
+                ),
+                ParameterRule(
+                    name="effort",
+                    label=I18nObject(en_US="Effort", zh_Hans="推理投入等级"),
+                    type=ParameterType.STRING,
+                    default="high",
+                    options=["low", "medium", "high", "xhigh", "max"],
+                ),
+                ParameterRule(
+                    name="task_budget",
+                    label=I18nObject(en_US="Task Budget (beta)", zh_Hans="任务预算 (beta)"),
+                    type=ParameterType.INT,
+                    default=0,
+                    min=0,
+                    max=1000000,
+                ),
+            ])
+        else:
+            parameter_rules.extend([
                 ParameterRule(
                     name="temperature",
                     use_template="temperature",
@@ -203,21 +248,6 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     type=ParameterType.INT,
                 ),
                 ParameterRule(
-                    name="max_tokens",
-                    use_template="max_tokens",
-                    default=4096,
-                    min=1,
-                    max=int(credentials.get("max_tokens", 128000)),
-                    label=I18nObject(en_US="Max Tokens", zh_Hans="最大标记"),
-                    type=ParameterType.INT,
-                ),
-                ParameterRule(
-                    name="thinking",
-                    label=I18nObject(en_US="Thinking Mode", zh_Hans="推理模式"),
-                    type=ParameterType.BOOLEAN,
-                    default=False,
-                ),
-                ParameterRule(
                     name="thinking_budget",
                     label=I18nObject(en_US="Thinking Budget", zh_Hans="推理预算"),
                     type=ParameterType.INT,
@@ -225,7 +255,24 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     min=1024,
                     max=128000,
                 ),
+            ])
+
+        return AIModelEntity(
+            model=model,
+            label=I18nObject(en_US=model, zh_Hans=model),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.VISION,
+                ModelFeature.TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
             ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.CONTEXT_SIZE: int(credentials.get("context_size", 200000)),
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+            },
+            parameter_rules=parameter_rules,
         )
 
     def _invoke(
@@ -275,15 +322,49 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
 
         thinking = model_parameters.pop("thinking", False)
         thinking_budget = model_parameters.pop("thinking_budget", 1024)
+        thinking_display = model_parameters.pop("thinking_display", "summarized")
+        effort = model_parameters.pop("effort", None)
+        task_budget = int(model_parameters.pop("task_budget", 0) or 0)
         context_1m = model_parameters.pop("context_1m", False)
-        
-        if thinking:
-            extra_model_kwargs["thinking"] = {
-                "type": "enabled",
-                "budget_tokens": thinking_budget
-            }
+
+        is_opus_4_7_plus = self._is_opus_4_7_plus(model)
+
+        if is_opus_4_7_plus:
+            # Opus 4.7 rejects non-default sampling params with 400; drop unconditionally.
             for key in ("temperature", "top_p", "top_k"):
                 model_parameters.pop(key, None)
+
+            if thinking:
+                # Extended thinking removed on Opus 4.7 — adaptive is the only supported mode.
+                extra_model_kwargs["thinking"] = {
+                    "type": "adaptive",
+                    "display": thinking_display or "omitted",
+                }
+
+            output_config: dict[str, Any] = {}
+            if effort:
+                output_config["effort"] = effort
+            if task_budget >= 20000:
+                output_config["task_budget"] = {
+                    "type": "tokens",
+                    "total": task_budget,
+                }
+                # task_budget is gated behind a beta header.
+                extra_headers["anthropic-beta"] = (
+                    extra_headers["anthropic-beta"] + ",task-budgets-2026-03-13"
+                    if "anthropic-beta" in extra_headers
+                    else "task-budgets-2026-03-13"
+                )
+            if output_config:
+                extra_model_kwargs["output_config"] = output_config
+        else:
+            if thinking:
+                extra_model_kwargs["thinking"] = {
+                    "type": "enabled",
+                    "budget_tokens": thinking_budget,
+                }
+                for key in ("temperature", "top_p", "top_k"):
+                    model_parameters.pop(key, None)
 
         if context_1m:
             if "anthropic-beta" in extra_headers:
@@ -574,6 +655,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             stop.append("```\n")
         if "\n```" not in stop:
             stop.append("\n```")
+        # Opus 4.7+ rejects assistant prefill with 400 — rely on system prompt only.
+        supports_prefill = not self._is_opus_4_7_plus(model)
+
         if len(prompt_messages) > 0 and isinstance(
             prompt_messages[0], SystemPromptMessage
         ):
@@ -582,9 +666,10 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     "{{instructions}}", str(prompt_messages[0].content)
                 ).replace("{{block}}", response_format)
             )
-            prompt_messages.append(
-                AssistantPromptMessage(content=f"\n```{response_format}")
-            )
+            if supports_prefill:
+                prompt_messages.append(
+                    AssistantPromptMessage(content=f"\n```{response_format}")
+                )
         else:
             prompt_messages.insert(
                 0,
@@ -595,9 +680,10 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     ).replace("{{block}}", response_format)
                 ),
             )
-            prompt_messages.append(
-                AssistantPromptMessage(content=f"\n```{response_format}")
-            )
+            if supports_prefill:
+                prompt_messages.append(
+                    AssistantPromptMessage(content=f"\n```{response_format}")
+                )
 
     def get_num_tokens(
         self,
@@ -639,10 +725,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 break
         
         if has_thinking_blocks:
-            count_tokens_args["thinking"] = {
-                "type": "enabled",
-                "budget_tokens": 4096
-            }
+            if self._is_opus_4_7_plus(model):
+                count_tokens_args["thinking"] = {"type": "adaptive"}
+            else:
+                count_tokens_args["thinking"] = {
+                    "type": "enabled",
+                    "budget_tokens": 4096
+                }
         
         if system:
             count_tokens_args["system"] = system
