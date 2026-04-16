@@ -3263,7 +3263,6 @@ LLM_BASE_MODELS = [
                     default="medium",
                 ),
                 _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
-
             ],
             pricing=PriceConfig(
                 input=1.25,
@@ -3374,7 +3373,8 @@ LLM_BASE_MODELS = [
                 ModelPropertyKey.MODE: LLMMode.CHAT.value,
                 ModelPropertyKey.CONTEXT_SIZE: 400000,
             },
-            parameter_rules=[                ParameterRule(
+            parameter_rules=[
+                ParameterRule(
                     name="response_format",
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
                     type="string",

@@ -511,6 +511,8 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
         # Handle verbosity
         if "verbosity" in model_parameters:
+            if "text" not in responses_params:
+                responses_params["text"] = {}
             responses_params["text"]["verbosity"] = model_parameters["verbosity"]
 
         # Handle reasoning parameters
