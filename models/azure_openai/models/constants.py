@@ -2629,6 +2629,7 @@ LLM_BASE_MODELS = [
                     ),
                     required=False,
                     options=["auto", "concise", "detailed"],
+                    default="auto",
                 ),
                 ParameterRule(
                     name="verbosity",
@@ -2800,6 +2801,7 @@ LLM_BASE_MODELS = [
                     ),
                     required=False,
                     options=["auto", "detailed"],
+                    default="auto",
                 ),
                 ParameterRule(
                     name="verbosity",
@@ -2897,6 +2899,7 @@ LLM_BASE_MODELS = [
                     ),
                     required=False,
                     options=["auto", "detailed"],
+                    default="auto",
                 ),
                 ParameterRule(
                     name="verbosity",
@@ -2984,6 +2987,7 @@ LLM_BASE_MODELS = [
                     ),
                     required=False,
                     options=["auto", "detailed"],
+                    default="auto",
                 ),
                 ParameterRule(
                     name="verbosity",
@@ -3072,6 +3076,7 @@ LLM_BASE_MODELS = [
                     ),
                     required=False,
                     options=["auto", "concise", "detailed"],
+                    default="auto",
                 ),
                 ParameterRule(
                     name="verbosity",
@@ -3243,6 +3248,7 @@ LLM_BASE_MODELS = [
                     ),
                     required=False,
                     options=["auto", "detailed"],
+                    default="auto",
                 ),
                 ParameterRule(
                     name="verbosity",
@@ -3411,6 +3417,7 @@ LLM_BASE_MODELS = [
                     ),
                     required=False,
                     options=["auto", "concise", "detailed"],
+                    default="auto",
                 ),
                 ParameterRule(
                     name="verbosity",
@@ -3503,6 +3510,7 @@ LLM_BASE_MODELS = [
                     ),
                     required=False,
                     options=["auto", "concise", "detailed"],
+                    default="auto",
                 ),
                 ParameterRule(
                     name="verbosity",
@@ -3594,6 +3602,7 @@ LLM_BASE_MODELS = [
                     ),
                     required=False,
                     options=["auto", "concise", "detailed"],
+                    default="auto",
                 ),
                 ParameterRule(
                     name="verbosity",
@@ -3685,6 +3694,7 @@ LLM_BASE_MODELS = [
                     ),
                     required=False,
                     options=["auto", "concise", "detailed"],
+                    default="auto",
                 ),
                 ParameterRule(
                     name="verbosity",
@@ -3776,6 +3786,7 @@ LLM_BASE_MODELS = [
                     ),
                     required=False,
                     options=["auto", "concise", "detailed"],
+                    default="auto",
                 ),
                 ParameterRule(
                     name="verbosity",
