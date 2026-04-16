@@ -1,5 +1,7 @@
 # https://platform.claude.com/docs/en/about-claude/models/overview
 # https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-7
+# https://platform.claude.com/docs/en/about-claude/models/migration-guide
+# https://platform.claude.com/docs/en/resources/overview
 model: claude-opus-4-7
 label:
   en_US: claude-opus-4-7
@@ -55,8 +57,8 @@ parameter_rules:
       en_US: Controls the intelligence vs. token cost trade-off via output_config.effort. Use `xhigh` for coding and agentic tasks; `high` is the minimum recommendation for intelligence-sensitive tasks; `low`/`medium` for latency- or cost-sensitive tasks.
   - name: task_budget
     label:
-      zh_Hans: 任务预算 (beta)
-      en_US: Task Budget (beta)
+      zh_Hans: 任务预算
+      en_US: Task Budget
     type: int
     default: 0
     min: 0
@@ -76,7 +78,7 @@ parameter_rules:
   - name: max_tokens
     use_template: max_tokens
     required: true
-    default: 64000
+    default: 128000
     min: 1
     max: 128000
   - name: response_format
@@ -141,16 +143,6 @@ parameter_rules:
     help:
       zh_Hans: 启用工具结果的提示缓存。
       en_US: Enable prompt caching for tool results.
-  - name: context_1m
-    label:
-      zh_Hans: 1M上下文窗口
-      en_US: 1M Context Window
-    type: boolean
-    default: true
-    required: false
-    help:
-      zh_Hans: 启用1M令牌上下文窗口。Claude Opus 4.7 在 1M 上下文下按标准费率计费，不再收取长上下文溢价。
-      en_US: Enable 1M token context window. Claude Opus 4.7 serves 1M context at standard API pricing with no long-context premium.
 pricing:
   input: '5.00'
   output: '25.00'

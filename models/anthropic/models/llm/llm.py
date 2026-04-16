@@ -366,7 +366,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 for key in ("temperature", "top_p", "top_k"):
                     model_parameters.pop(key, None)
 
-        if context_1m:
+        # 1M context is GA / native on Opus 4.7+ (no opt-in header). Older models
+        # (e.g. Sonnet 4) still need the `context-1m-2025-08-07` beta header to opt in.
+        if context_1m and not is_opus_4_7_plus:
             if "anthropic-beta" in extra_headers:
                 extra_headers["anthropic-beta"] += ",context-1m-2025-08-07"
             else:
