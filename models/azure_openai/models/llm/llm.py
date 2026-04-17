@@ -509,8 +509,20 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     "format": {"type": response_format}
                 }
 
+        # Handle verbosity
+        if "verbosity" in model_parameters:
+            if "text" not in responses_params:
+                responses_params["text"] = {}
+            responses_params["text"]["verbosity"] = model_parameters["verbosity"]
+
+        # Handle reasoning parameters
+        reasoning = {}
         if "reasoning_effort" in model_parameters:
-            responses_params["reasoning"] = {"effort": model_parameters["reasoning_effort"]}
+            reasoning["effort"] = model_parameters["reasoning_effort"]
+        if "reasoning_summary" in model_parameters:
+            reasoning["summary"] = model_parameters["reasoning_summary"]
+        if reasoning:
+            responses_params["reasoning"] = reasoning
 
         logger.info(
             f"llm request with responses api: model={model}, stream={stream}, "
@@ -664,7 +676,15 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             # Standard Responses API format
             for item in response.output:
                 item_type = getattr(item, 'type', '')
-                if item_type == "message":
+                if item_type == "reasoning":
+                    # Reasoning summary: wrap with <think> tags
+                    summary_list = getattr(item, 'summary', [])
+                    summary_text = "\n".join(
+                        s.text for s in summary_list if hasattr(s, 'text') and s.text
+                    )
+                    if summary_text:
+                        content += "<think>\n" + summary_text + "\n</think>"
+                elif item_type == "message":
                     # message.content can be a string or a list of segments
                     item_content = getattr(item, 'content', None)
                     if isinstance(item_content, str):
@@ -800,6 +820,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         tool_calls = []
         index = 0
         is_first = True
+        is_reasoning = False
 
         # Track tool call state
         pending_tool_calls = {}  # call_id -> tool_call_dict
@@ -812,10 +833,39 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             # Handle the Responses API streaming event format
             chunk_type = getattr(chunk, 'type', '')
 
-            if chunk_type == 'response.output_text.delta':
+            if chunk_type == 'response.reasoning_summary_text.delta':
+                # Reasoning summary delta - wrap with <think> tags
+                delta_text = getattr(chunk, 'delta', '')
+                if delta_text:
+                    if not is_reasoning:
+                        delta_text = "<think>\n" + delta_text
+                        is_reasoning = True
+                    full_text += delta_text
+
+                    assistant_prompt_message = AssistantPromptMessage(
+                        content=delta_text,
+                        tool_calls=[]
+                    )
+
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        system_fingerprint=getattr(chunk, 'item_id', ''),
+                        delta=LLMResultChunkDelta(
+                            index=index,
+                            message=assistant_prompt_message
+                        ),
+                    )
+                    index += 1
+
+            elif chunk_type == 'response.output_text.delta':
                 # ResponseTextDeltaEvent format - text delta
                 delta_text = getattr(chunk, 'delta', '')
                 if delta_text:
+                    if is_reasoning:
+                        # Close the <think> block before regular text
+                        delta_text = "\n</think>" + delta_text
+                        is_reasoning = False
                     full_text += delta_text
 
                     assistant_prompt_message = AssistantPromptMessage(
