@@ -27,11 +27,20 @@ model_credential_schema:
         en_US: API endpoint URL
         zh_Hans: API endpoint URL
       placeholder:
-        en_US: Base URL, e.g. http://192.168.1.100:8000/v1
-        zh_Hans: Base URL, e.g. http://192.168.1.100:8000/v1
+        en_US: 'Hosted: https://integrate.api.nvidia.com/v1 | Self-hosted: http://192.168.1.100:8000/v1'
+        zh_Hans: '云服务: https://integrate.api.nvidia.com/v1 | 自托管: http://192.168.1.100:8000/v1'
       required: true
       type: text-input
       variable: endpoint_url
+    - label:
+        en_US: API Key
+        zh_Hans: API Key
+      placeholder:
+        en_US: 'nvapi-xxx (required for NVIDIA hosted API, leave empty for self-hosted)'
+        zh_Hans: 'nvapi-xxx (NVIDIA 云服务必填，自托管可留空)'
+      required: false
+      type: secret-input
+      variable: api_key
     - default: chat
       label:
         en_US: Completion mode
