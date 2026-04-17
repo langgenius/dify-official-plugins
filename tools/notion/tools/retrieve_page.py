@@ -7,40 +7,51 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 
 from tools.notion_client import NotionClient
 
+DEFAULT_MAX_DEPTH = 10
+
+
 class RetrievePageTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         # Extract parameters
         page_id = tool_parameters.get("page_id", "")
         include_content = tool_parameters.get("include_content", True)
-        
+        max_depth = tool_parameters.get("max_depth", DEFAULT_MAX_DEPTH)
+        try:
+            max_depth = int(max_depth)
+        except (TypeError, ValueError):
+            max_depth = DEFAULT_MAX_DEPTH
+        if max_depth < 0:
+            max_depth = 0
+
         # Validate parameters
         if not page_id:
             yield self.create_text_message("Page ID is required.")
             return
-            
+
         try:
             # Get integration token from credentials
             integration_token = self.runtime.credentials.get("integration_token")
             if not integration_token:
                 yield self.create_text_message("Notion Integration Token is required.")
                 return
-                
+
             # Initialize the Notion client
             client = NotionClient(integration_token)
-            
+
             # Retrieve the page
             try:
                 page_data = client.retrieve_page(page_id)
-                
+
                 # Format the page data
                 formatted_page = self._format_page_data(client, page_data)
-                
+
                 # Retrieve page content if requested
                 if include_content:
                     try:
-                        blocks_data = client.retrieve_block_children(page_id)
-                        blocks = blocks_data.get("results", [])
-                        formatted_page["content"] = self._format_blocks(blocks)
+                        all_blocks = self._fetch_all_children(client, page_id)
+                        formatted_page["content"] = self._format_blocks(
+                            client, all_blocks, depth=0, max_depth=max_depth
+                        )
                     except requests.HTTPError as e:
                         # If we can't get the content, just return the page data
                         formatted_page["content_error"] = str(e)
@@ -121,21 +132,41 @@ class RetrievePageTool(Tool):
         result["properties"] = formatted_properties
         return result
     
-    def _format_blocks(self, blocks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """Format block content for the response."""
+    def _fetch_all_children(self, client: NotionClient, block_id: str) -> List[Dict[str, Any]]:
+        """Fetch every child block of the given block, paginating until exhausted."""
+        blocks: List[Dict[str, Any]] = []
+        start_cursor = None
+        while True:
+            response = client.retrieve_block_children(block_id, start_cursor=start_cursor)
+            blocks.extend(response.get("results", []))
+            if not response.get("has_more"):
+                break
+            start_cursor = response.get("next_cursor")
+            if not start_cursor:
+                break
+        return blocks
+
+    def _format_blocks(
+        self,
+        client: NotionClient,
+        blocks: List[Dict[str, Any]],
+        depth: int = 0,
+        max_depth: int = DEFAULT_MAX_DEPTH,
+    ) -> List[Dict[str, Any]]:
+        """Format block content for the response, recursing into nested children."""
         formatted_blocks = []
-        
+
         for block in blocks:
             block_id = block.get("id", "")
             block_type = block.get("type", "")
             has_children = block.get("has_children", False)
-            
+
             formatted_block = {
                 "id": block_id,
                 "type": block_type,
                 "has_children": has_children
             }
-            
+
             # Extract content based on block type
             if block_type == "paragraph":
                 rich_text = block.get("paragraph", {}).get("rich_text", [])
@@ -159,6 +190,18 @@ class RetrievePageTool(Tool):
                 checked = block.get("to_do", {}).get("checked", False)
                 formatted_block["text"] = text
                 formatted_block["checked"] = checked
+            elif block_type == "toggle":
+                rich_text = block.get("toggle", {}).get("rich_text", [])
+                text = "".join([rt.get("plain_text", "") for rt in rich_text])
+                formatted_block["text"] = text
+            elif block_type == "quote":
+                rich_text = block.get("quote", {}).get("rich_text", [])
+                text = "".join([rt.get("plain_text", "") for rt in rich_text])
+                formatted_block["text"] = text
+            elif block_type == "callout":
+                rich_text = block.get("callout", {}).get("rich_text", [])
+                text = "".join([rt.get("plain_text", "") for rt in rich_text])
+                formatted_block["text"] = text
             elif block_type == "code":
                 code_block = block.get("code", {})
                 rich_text = code_block.get("rich_text", [])
@@ -170,7 +213,7 @@ class RetrievePageTool(Tool):
                 image_block = block.get("image", {})
                 caption = image_block.get("caption", [])
                 caption_text = "".join([rt.get("plain_text", "") for rt in caption])
-                
+
                 # Get image URL based on type
                 image_type = image_block.get("type", "")
                 if image_type == "external":
@@ -179,13 +222,27 @@ class RetrievePageTool(Tool):
                     image_url = image_block.get("file", {}).get("url", "")
                 else:
                     image_url = ""
-                
+
                 formatted_block["caption"] = caption_text
                 formatted_block["url"] = image_url
             else:
                 # For unsupported block types, just include the type
                 formatted_block["text"] = f"<{block_type} block>"
-            
+
+            # Recurse into children when available
+            if has_children:
+                if depth >= max_depth:
+                    formatted_block["children_truncated"] = True
+                else:
+                    try:
+                        child_blocks = self._fetch_all_children(client, block_id)
+                        formatted_block["children"] = self._format_blocks(
+                            client, child_blocks, depth=depth + 1, max_depth=max_depth
+                        )
+                    except requests.HTTPError as e:
+                        # Record per-block failure but keep the rest of the page intact
+                        formatted_block["children_error"] = str(e)
+
             formatted_blocks.append(formatted_block)
-            
-        return formatted_blocks 
+
+        return formatted_blocks

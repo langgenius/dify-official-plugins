@@ -51,6 +51,24 @@ parameters:
       zh_Hant: 是否在回應中包含頁面內容
     llm_description: Whether to include the page blocks/content in the response. If set to false, only page properties will be returned.
     form: llm
+  - name: max_depth
+    type: number
+    required: false
+    default: 10
+    label:
+      en_US: Max Nested Block Depth
+      zh_Hans: 最大嵌套块深度
+      pt_BR: Profundidade Máxima de Blocos Aninhados
+      ja_JP: ネストブロックの最大深度
+      zh_Hant: 最大巢狀區塊深度
+    human_description:
+      en_US: "Maximum depth to recurse into nested child blocks (e.g. toggle, callout, list items). 0 disables recursion."
+      zh_Hans: "递归获取嵌套子块（如 toggle、callout、列表项）的最大深度。0 表示禁用递归。"
+      pt_BR: "Profundidade máxima para recursão em blocos filhos aninhados (ex.: toggle, callout, itens de lista). 0 desativa a recursão."
+      ja_JP: "ネストされた子ブロック（トグル、コールアウト、リストアイテムなど）を再帰取得する最大深度。0 で再帰を無効化します。"
+      zh_Hant: "遞迴取得巢狀子區塊（如 toggle、callout、清單項目）的最大深度。0 表示停用遞迴。"
+    llm_description: Maximum recursion depth when fetching nested child blocks. Defaults to 10. Set to 0 to disable recursion and return only top-level blocks.
+    form: llm
 extra:
   python:
     source: tools/retrieve_page.py 
