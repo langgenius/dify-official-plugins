@@ -23,6 +23,7 @@ from dify_plugin.entities.model.message import (
     ImagePromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
+    PromptMessageContentUnionTypes,
     PromptMessageFunction,
     PromptMessageTool,
     SystemPromptMessage,
@@ -539,10 +540,20 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
         for message in prompt_messages:
             if isinstance(message, SystemPromptMessage):
-                input_messages.append({
-                    "role": "developer",
-                    "content": message.content
-                })
+                if isinstance(message.content, str):
+                    input_messages.append({
+                        "role": "developer",
+                        "content": message.content
+                    })
+                else:
+                    content_parts = AzureOpenAILargeLanguageModel._convert_multimodal_content_to_responses_parts(
+                        message.content
+                    )
+                    if content_parts:
+                        input_messages.append({
+                            "role": "developer",
+                            "content": content_parts
+                        })
             elif isinstance(message, UserPromptMessage):
                 if isinstance(message.content, str):
                     input_messages.append({
@@ -551,40 +562,9 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     })
                 else:
                     # Handle multimodal content
-                    content_parts = []
-                    for content_item in message.content or []:
-                        if content_item.type == PromptMessageContentType.TEXT:
-                            text_content = cast(TextPromptMessageContent, content_item)
-                            content_parts.append({
-                                "type": "input_text",
-                                "text": text_content.data
-                            })
-                        elif content_item.type == PromptMessageContentType.IMAGE:
-                            image_content = cast(ImagePromptMessageContent, content_item)
-                            image_part = {
-                                "type": "input_image",
-                            }
-                            if image_content.url:
-                                image_part["image_url"] = image_content.url
-                            else:
-                                image_part["image_url"] = image_content.data
-                            if image_content.detail:
-                                image_part["detail"] = image_content.detail.value
-                            content_parts.append(image_part)
-                        elif content_item.type == PromptMessageContentType.DOCUMENT:
-                            doc_content = cast(DocumentPromptMessageContent, content_item)
-                            file_part: dict[str, Any] = {"type": "input_file"}
-                            if doc_content.url:
-                                file_part["file_url"] = doc_content.url
-                            elif doc_content.base64_data:
-                                file_part["filename"] = doc_content.filename or "document"
-                                file_part["file_data"] = (
-                                    f"data:{doc_content.mime_type}"
-                                    f";base64,{doc_content.base64_data}"
-                                )
-                            if len(file_part) > 1:
-                                content_parts.append(file_part)
-
+                    content_parts = AzureOpenAILargeLanguageModel._convert_multimodal_content_to_responses_parts(
+                        message.content
+                    )
                     if content_parts:
                         input_messages.append({
                             "role": "user",
@@ -628,6 +608,44 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 })
 
         return input_messages
+
+    @staticmethod
+    def _convert_multimodal_content_to_responses_parts(
+        content_items: Optional[list[PromptMessageContentUnionTypes]],
+    ) -> list[dict[str, Any]]:
+        content_parts: list[dict[str, Any]] = []
+        for content_item in content_items or []:
+            if content_item.type == PromptMessageContentType.TEXT:
+                text_content = cast(TextPromptMessageContent, content_item)
+                content_parts.append({
+                    "type": "input_text",
+                    "text": text_content.data
+                })
+            elif content_item.type == PromptMessageContentType.IMAGE:
+                image_content = cast(ImagePromptMessageContent, content_item)
+                image_part = {
+                    "type": "input_image",
+                }
+                if image_content.url:
+                    image_part["image_url"] = image_content.url
+                else:
+                    image_part["image_url"] = image_content.data
+                if image_content.detail:
+                    image_part["detail"] = image_content.detail.value
+                content_parts.append(image_part)
+            elif content_item.type == PromptMessageContentType.DOCUMENT:
+                doc_content = cast(DocumentPromptMessageContent, content_item)
+                file_part: dict[str, Any] = {"type": "input_file"}
+                if doc_content.url:
+                    file_part["file_url"] = doc_content.url
+                elif doc_content.base64_data:
+                    file_part["filename"] = doc_content.filename or "document"
+                    file_part["file_data"] = (
+                        f"data:{doc_content.mime_type};base64,{doc_content.base64_data}"
+                    )
+                if len(file_part) > 1:
+                    content_parts.append(file_part)
+        return content_parts
 
     def _handle_responses_response(
         self,
