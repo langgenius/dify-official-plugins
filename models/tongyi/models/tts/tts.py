@@ -71,22 +71,27 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
             callback = Callback(queue=audio_queue)
 
             def invoke_remote(content, v, api_key, cb, at, wl, base_address):
-                if len(content) < word_limit:
-                    sentences = [content]
-                else:
-                    sentences = list(self._split_text_into_sentences(org_text=content, max_length=wl))
-                for sentence in sentences:
-                    SpeechSynthesizer.call(
-                        model=v,
-                        sample_rate=16000,
-                        api_key=api_key,
-                        text=sentence.strip(),
-                        callback=cb,
-                        format=at,
-                        word_timestamp_enabled=True,
-                        phoneme_timestamp_enabled=True,
-                        base_address=base_address,
-                    )
+                try:
+                    if len(content) < word_limit:
+                        sentences = [content]
+                    else:
+                        sentences = list(self._split_text_into_sentences(org_text=content, max_length=wl))
+                    for sentence in sentences:
+                        SpeechSynthesizer.call(
+                            model=v,
+                            sample_rate=16000,
+                            api_key=api_key,
+                            text=sentence.strip(),
+                            callback=cb,
+                            format=at,
+                            word_timestamp_enabled=True,
+                            phoneme_timestamp_enabled=True,
+                            base_address=base_address,
+                        )
+                finally:
+                    # End-of-stream sentinel is emitted here (not in on_complete), so that
+                    # multi-sentence synthesis is not terminated after the first sentence.
+                    audio_queue.put(None)
 
             threading.Thread(
                 target=invoke_remote,
@@ -141,16 +146,17 @@ class Callback(ResultCallback):
         pass
 
     def on_complete(self):
-        self._queue.put(None)
-        self._queue.task_done()
+        # Each SpeechSynthesizer.call() fires on_complete per sentence; the end-of-stream
+        # sentinel is emitted by the producer thread after the last sentence, so that
+        # multi-sentence text is not cut off after the first sentence.
+        pass
 
     def on_error(self, response: SpeechSynthesisResponse):
         self._queue.put(None)
-        self._queue.task_done()
 
     def on_close(self):
-        self._queue.put(None)
-        self._queue.task_done()
+        # See on_complete: do not terminate the stream on a single sentence completing.
+        pass
 
     def on_event(self, result: SpeechSynthesisResult):
         ad = result.get_audio_frame()
