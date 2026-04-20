@@ -1,5 +1,6 @@
 from unittest.mock import Mock, patch
 
+from dify_plugin.errors.model import InvokeError
 from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
 
 from models.llm.llm import OpenAILargeLanguageModel
@@ -142,3 +143,25 @@ def test_handle_generate_response_counts_all_prompt_messages_when_usage_missing(
     mock_string_counter.assert_called_once_with("")
     assert result.usage.prompt_tokens == 11
     assert result.usage.completion_tokens == 3
+
+
+def test_handle_generate_response_raises_when_choices_missing():
+    model = OpenAILargeLanguageModel(model_schemas=[])
+    response = Mock()
+    response.json.return_value = {
+        "id": "chatcmpl-empty-choices",
+        "model": "gpt-5-mini",
+        "choices": [],
+    }
+
+    try:
+        model._handle_generate_response(
+            model="gpt-5-mini",
+            credentials={"mode": "chat", "function_calling_type": "tool_call"},
+            response=response,
+            prompt_messages=[UserPromptMessage(content="test")],
+        )
+    except InvokeError as exc:
+        assert str(exc) == "LLM response returned no choices"
+    else:
+        raise AssertionError("Expected InvokeError for empty choices")

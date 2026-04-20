@@ -21,7 +21,7 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     AssistantPromptMessage,
 )
-from dify_plugin.errors.model import CredentialsValidateFailedError
+from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLanguageModel
 
 from openai import OpenAI
@@ -531,7 +531,11 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         """
         response_json: dict = response.json()
         completion_type = LLMMode.value_of(credentials["mode"])
-        output = response_json["choices"][0]
+        choices = response_json.get("choices") or []
+        if not choices:
+            raise InvokeError("LLM response returned no choices")
+
+        output = choices[0]
         message_id = response_json.get("id")
 
         response_content = ""
