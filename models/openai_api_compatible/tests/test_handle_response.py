@@ -1,6 +1,6 @@
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
-from dify_plugin.entities.model.message import UserPromptMessage
+from dify_plugin.entities.model.message import SystemPromptMessage, UserPromptMessage
 
 from models.llm.llm import OpenAILargeLanguageModel
 
@@ -93,3 +93,52 @@ def test_handle_generate_response_normalizes_null_content():
     assert result.message.content == ""
     assert result.message.tool_calls
     assert result.message.tool_calls[0].function.name == "lookup"
+
+
+def test_handle_generate_response_counts_all_prompt_messages_when_usage_missing():
+    model = OpenAILargeLanguageModel(model_schemas=[])
+    response = Mock()
+    response.json.return_value = {
+        "id": "chatcmpl-missing-usage",
+        "model": "gpt-5-mini",
+        "choices": [
+            {
+                "index": 0,
+                "finish_reason": "tool_calls",
+                "message": {
+                    "role": "assistant",
+                    "tool_calls": [
+                        {
+                            "id": "call_789",
+                            "type": "function",
+                            "function": {
+                                "name": "search_docs",
+                                "arguments": "{\"query\":\"history\"}",
+                            },
+                        }
+                    ],
+                },
+            }
+        ],
+    }
+    prompt_messages = [
+        SystemPromptMessage(content="system prompt"),
+        UserPromptMessage(content="latest user message"),
+    ]
+    credentials = {"mode": "chat", "function_calling_type": "tool_call"}
+
+    with (
+        patch.object(model, "_num_tokens_from_messages", return_value=11) as mock_prompt_counter,
+        patch.object(model, "_num_tokens_from_string", return_value=3) as mock_string_counter,
+    ):
+        result = model._handle_generate_response(
+            model="gpt-5-mini",
+            credentials=credentials,
+            response=response,
+            prompt_messages=prompt_messages,
+        )
+
+    mock_prompt_counter.assert_called_once_with(prompt_messages, credentials=credentials)
+    mock_string_counter.assert_called_once_with("")
+    assert result.usage.prompt_tokens == 11
+    assert result.usage.completion_tokens == 3

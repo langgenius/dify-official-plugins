@@ -570,8 +570,7 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             prompt_tokens = usage["prompt_tokens"]
             completion_tokens = usage["completion_tokens"]
         else:
-            assert prompt_messages[0].content is not None
-            prompt_tokens = self._num_tokens_from_string(prompt_messages[0].content)
+            prompt_tokens = self._num_tokens_from_messages(prompt_messages, credentials=credentials)
             completion_tokens = self._num_tokens_from_string(assistant_message.content or "")
 
         usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
