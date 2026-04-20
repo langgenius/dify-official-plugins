@@ -1,0 +1,39 @@
+background: "#F1EFED"
+configurate_methods:
+  - predefined-model
+extra:
+  python:
+    model_sources:
+      - models/llm/llm.py
+    provider_source: provider/hpc_ai.py
+help:
+  title:
+    en_US: Get your API key from HPC-AI
+    zh_Hans: 从 HPC-AI 获取 API Key
+  url:
+    en_US: https://www.hpc-ai.com/doc/docs/quickstart/
+icon_large:
+  en_US: hpc_ai.svg
+icon_small:
+  en_US: hpc_ai_square.png
+label:
+  en_US: HPC-AI
+  zh_Hans: HPC-AI
+models:
+  llm:
+    position: models/llm/_position.yaml
+    predefined:
+      - models/llm/*.yaml
+provider: hpc_ai
+provider_credential_schema:
+  credential_form_schemas:
+    - label:
+        en_US: API Key
+      placeholder:
+        en_US: Enter your API Key
+        zh_Hans: 在此输入您的 API Key
+      required: true
+      type: secret-input
+      variable: api_key
+supported_model_types:
+  - llm
