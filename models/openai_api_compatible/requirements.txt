@@ -70,7 +70,7 @@ pydantic-core==2.41.1
     # via pydantic
 pydantic-settings==2.11.0
     # via dify-plugin
-python-dotenv==1.1.1
+python-dotenv==1.2.2
     # via pydantic-settings
 pyyaml==6.0.3
     # via dify-plugin
