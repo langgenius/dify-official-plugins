@@ -329,12 +329,13 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 )
             else:
                 image_url = ""
-                text = ""
+                text_parts = []
                 for item in prompt_list:
-                    if "Image:" in item:
+                    if item.startswith("Image:"):
                         image_url = item[len("Image:"):]
-                    else:
-                        text = item
+                    elif item:
+                        text_parts.append(item)
+                text = " ".join(text_parts)
                 response = create_chat_embeddings(
                     client,
                     messages=[
@@ -352,7 +353,7 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 )
 
             batched_embeddings.append(response.data[0].embedding)
-            usage = {}
+            usage = response.model_dump().get("usage") or {}
             tokens = usage.get("prompt_tokens") or usage.get("total_tokens") or 0
             used_tokens += tokens
             total_price += usage.get("total_price", 0.0)
@@ -588,17 +589,16 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
             #return "jpeg"
             return ""
 
-    def _contains_ip(self,text):
+    def _contains_ip(self, text):
         """
-        判断字符串中是否包含有效的IP地址（0-255范围）
+        Check if text contains a valid IP address (each octet 0-255).
 
         Args:
-            text: 待检测的字符串
+            text: the string to check
 
         Returns:
-            bool: 包含有效IP地址返回True，否则返回False
+            bool: True if a valid IP address is found, False otherwise
         """
-        # 更严格的IP地址正则表达式，确保每个部分在0-255之间
         ip_pattern = r'\b(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'
 
         return bool(re.search(ip_pattern, text))
