@@ -14,10 +14,10 @@ class HpcAIProvider(ModelProvider):
             model_instance.validate_credentials(
                 model="minimax/minimax-m2.5", credentials=credentials
             )
-        except CredentialsValidateFailedError as ex:
-            raise ex
-        except Exception as ex:
+        except CredentialsValidateFailedError:
+            raise
+        except Exception:
             logger.exception(
                 "%s credentials validate failed", self.get_provider_schema().provider
             )
-            raise ex
+            raise

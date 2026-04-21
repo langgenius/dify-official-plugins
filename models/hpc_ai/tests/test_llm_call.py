@@ -14,6 +14,11 @@ from dify_plugin.entities.model import ModelType
 from dify_plugin.entities.model.llm import LLMResultChunk
 from dify_plugin.integration.run import PluginRunner
 
+pytestmark = pytest.mark.skipif(
+    not os.getenv("HPC_AI_API_KEY"),
+    reason="HPC_AI_API_KEY environment variable is required",
+)
+
 
 def get_all_models() -> list[str]:
     models_dir = Path(__file__).parent.parent / "models" / "llm"
@@ -36,9 +41,7 @@ def get_all_models() -> list[str]:
 
 @pytest.mark.parametrize("model_name", get_all_models())
 def test_llm_invoke(model_name: str) -> None:
-    api_key = os.getenv("HPC_AI_API_KEY")
-    if not api_key:
-        pytest.skip("HPC_AI_API_KEY environment variable is required")
+    api_key = os.environ["HPC_AI_API_KEY"]
 
     plugin_path = os.getenv("PLUGIN_FILE_PATH")
     if not plugin_path:
@@ -72,9 +75,15 @@ def test_llm_invoke(model_name: str) -> None:
                 ):
                     results.append(result)
                 assert results, f"No results received for model {model_name}"
+                full_content = "".join(
+                    result.delta.message.content
+                    for result in results
+                    if result.delta.message and result.delta.message.content
+                )
+                assert full_content, f"Empty content for model {model_name}"
                 break
-            except Exception as exc:
+            except Exception:
                 failure_count += 1
                 time.sleep(1)
                 if failure_count >= 3:
-                    raise exc
+                    raise

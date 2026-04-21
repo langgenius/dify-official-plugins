@@ -10,9 +10,11 @@ HPC_AI_ENDPOINT_URL = "https://api.hpc-ai.com/inference/v1"
 
 class HpcAILargeLanguageModel(OAICompatLargeLanguageModel):
     def _update_endpoint_url(self, credentials: dict) -> dict:
-        credentials["endpoint_url"] = HPC_AI_ENDPOINT_URL
-        credentials["mode"] = LLMMode.CHAT.value
-        return credentials
+        return {
+            **credentials,
+            "endpoint_url": HPC_AI_ENDPOINT_URL,
+            "mode": LLMMode.CHAT.value,
+        }
 
     def _invoke(
         self,
