@@ -143,7 +143,7 @@ pydantic-settings==2.12.0
     # via dify-plugin
 pyparsing==3.3.2
     # via httplib2
-python-dotenv==1.2.1
+python-dotenv==1.2.2
     # via pydantic-settings
 pyyaml==6.0.3
     # via dify-plugin
