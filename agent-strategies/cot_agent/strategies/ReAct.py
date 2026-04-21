@@ -27,6 +27,7 @@ from dify_plugin.interfaces.agent import (
 from output_parser.cot_output_parser import ReactChunk, ReactState, CotAgentOutputParser
 from prompt.template import REACT_PROMPT_TEMPLATES
 from pydantic import BaseModel, Field
+from tool_response import append_tool_result, render_tool_invoke_response
 
 class LogMetadata:
     """Metadata keys for logging"""
@@ -567,15 +568,16 @@ class ReActAgentStrategy(AgentStrategy):
                 tool_name=tool_instance.identity.name,
                 parameters=tool_invoke_parameters,
             )
-            result = ""
+            result_parts: list[str] = []
             additional_messages = []  # Collect messages that need to be yielded
             for response in tool_invoke_responses:
                 if response.type == ToolInvokeMessage.MessageType.TEXT:
-                    result += cast(ToolInvokeMessage.TextMessage, response.message).text
+                    append_tool_result(
+                        result_parts, render_tool_invoke_response(response)
+                    )
                 elif response.type == ToolInvokeMessage.MessageType.LINK:
-                    result += (
-                        f"result link: {cast(ToolInvokeMessage.TextMessage, response.message).text}."
-                        + " please tell user to check it."
+                    append_tool_result(
+                        result_parts, render_tool_invoke_response(response)
                     )
                 elif response.type in {
                     ToolInvokeMessage.MessageType.IMAGE_LINK,
@@ -584,27 +586,23 @@ class ReActAgentStrategy(AgentStrategy):
                     # Pass through the original IMAGE_LINK response for upper layer handling
                     additional_messages.append(response)
                     # Include the actual file path information for the LLM
-                    image_link_text = cast(
-                        ToolInvokeMessage.TextMessage, response.message
-                    ).text
-                    result += (
-                        f"Image has been successfully generated and saved to: {image_link_text}. "
-                        + "The image file is now available for download. "
-                        + "Please inform the user that the image has been created successfully."
+                    append_tool_result(
+                        result_parts, render_tool_invoke_response(response)
                     )
                 elif response.type == ToolInvokeMessage.MessageType.JSON:
-                    text = json.dumps(
-                        cast(
-                            ToolInvokeMessage.JsonMessage, response.message
-                        ).json_object,
-                        ensure_ascii=False,
+                    append_tool_result(
+                        result_parts, render_tool_invoke_response(response)
                     )
-                    result += f"tool response: {text}."
                 elif response.type == ToolInvokeMessage.MessageType.BLOB:
-                    result += "Generated file with ... "
+                    append_tool_result(
+                        result_parts, render_tool_invoke_response(response)
+                    )
                     additional_messages.append(response)
                 else:
-                    result += f"tool response: {response.message!r}."
+                    append_tool_result(
+                        result_parts, render_tool_invoke_response(response)
+                    )
+            result = "".join(result_parts)
         except Exception as e:
             result = f"tool invoke error: {e!s}"
             additional_messages = []
