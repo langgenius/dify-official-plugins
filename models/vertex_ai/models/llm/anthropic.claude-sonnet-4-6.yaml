@@ -1,4 +1,4 @@
-model: claude-sonnet-4-6@20260217
+model: claude-sonnet-4-6
 label:
   en_US: Claude Sonnet 4.6
 model_type: llm
