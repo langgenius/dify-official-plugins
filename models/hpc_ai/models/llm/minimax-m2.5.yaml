@@ -2,6 +2,9 @@ model: minimax/minimax-m2.5
 label:
   en_US: MiniMax M2.5
 model_type: llm
+features:
+  - tool-call
+  - stream-tool-call
 model_properties:
   mode: chat
   context_size: 196000
