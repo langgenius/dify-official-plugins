@@ -68,7 +68,8 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
         ws_base_address = get_ws_base_address(credentials)
         try:
             audio_queue: Queue = Queue()
-            callback = Callback(queue=audio_queue)
+            failure_event = threading.Event()
+            callback = Callback(queue=audio_queue, failure_event=failure_event)
 
             def invoke_remote(content, v, api_key, cb, at, wl, base_address):
                 try:
@@ -77,6 +78,9 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
                     else:
                         sentences = list(self._split_text_into_sentences(org_text=content, max_length=wl))
                     for sentence in sentences:
+                        if failure_event.is_set():
+                            # A previous sentence failed; skip the rest to save API quota.
+                            break
                         SpeechSynthesizer.call(
                             model=v,
                             sample_rate=16000,
@@ -84,6 +88,7 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
                             text=sentence.strip(),
                             callback=cb,
                             format=at,
+                            headers=BURY_POINT_HEADER,
                             word_timestamp_enabled=True,
                             phoneme_timestamp_enabled=True,
                             base_address=base_address,
@@ -139,8 +144,9 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
 
 
 class Callback(ResultCallback):
-    def __init__(self, queue: Queue):
+    def __init__(self, queue: Queue, failure_event: threading.Event):
         self._queue = queue
+        self._failure_event = failure_event
 
     def on_open(self):
         pass
@@ -152,7 +158,9 @@ class Callback(ResultCallback):
         pass
 
     def on_error(self, response: SpeechSynthesisResponse):
-        self._queue.put(None)
+        # Signal the producer to stop; the end-of-stream sentinel is emitted by the
+        # producer's finally block so the queue never contains duplicate sentinels.
+        self._failure_event.set()
 
     def on_close(self):
         # See on_complete: do not terminate the stream on a single sentence completing.
