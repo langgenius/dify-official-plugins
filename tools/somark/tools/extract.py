@@ -169,20 +169,23 @@ class ExtractTool(Tool):
                 result_block.get("outputs") if isinstance(result_block, dict) else None
             )
 
-            if result.get("code") == 0:
-                md_value = outputs.get("markdown")
-                if isinstance(md_value, str) and md_value.strip():
-                    md_content = md_value
+            if isinstance(result, dict) and result.get("code") == 0:
+                if isinstance(outputs, dict):
+                    md_value = outputs.get("markdown")
+                    if isinstance(md_value, str) and md_value.strip():
+                        md_content = md_value
 
-                json_value = outputs.get("json")
-                if json_value not in (None, "", [], {}):
-                    json_content = json.dumps(json_value, ensure_ascii=False)
+                    json_value = outputs.get("json")
+                    if json_value not in (None, "", [], {}):
+                        json_content = json.dumps(json_value, ensure_ascii=False)
 
             else:
-                error_content = (
+                error_content = "Unknown error"
+                if isinstance(result, dict):
+                    error_content = (
                         (data_block.get("error") if isinstance(data_block, dict) else None)
                         or result.get("message", "Unknown error")
-                )
+                    )
 
                 logger.error(
                     "SoMark API returned error message: %s", error_content
