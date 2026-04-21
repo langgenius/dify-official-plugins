@@ -1,10 +1,9 @@
 
 import re
 from collections.abc import Generator
-from typing import Optional, Union, cast
+from typing import Optional, Union
 
 from dify_plugin import OAICompatLargeLanguageModel
-
 from dify_plugin.entities.model import (
     AIModelEntity,
     FetchFrom,
@@ -23,8 +22,6 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     ToolPromptMessage,
 )
-
-
 
 
 class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
@@ -157,7 +154,7 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
         model_name = credentials.get("_current_model", "").lower()
 
         # Check if this is a thinking-enabled model
-        is_thinking_model = any(x in model_name for x in ["k2.5", "k2-thinking"])
+        is_thinking_model = any(x in model_name for x in ["k2.5", "k2.6", "k2-thinking"])
 
         # Use base implementation for standard conversion
         message_dict = super()._convert_prompt_message_to_dict(message, credentials)
