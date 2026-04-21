@@ -1,0 +1,31 @@
+credentials_for_provider:
+  ip2geo_api_key:
+    help:
+      en_US: Get your API key from ip2geo.dev
+      zh_Hans: 从 ip2geo.dev 获取您的 API 密钥
+    label:
+      en_US: ip2geo API Key
+      zh_Hans: ip2geo API 密钥
+    placeholder:
+      en_US: Please input your ip2geo API key
+      zh_Hans: 请输入您的 ip2geo API 密钥
+    required: true
+    type: secret-input
+    url: https://ip2geo.dev
+extra:
+  python:
+    source: provider/ip2geo.py
+identity:
+  author: bfzli
+  description:
+    en_US: ip2geo IP geolocation API
+    zh_Hans: ip2geo IP 地理定位 API
+  icon: icon.svg
+  label:
+    en_US: ip2geo
+    zh_Hans: ip2geo
+  name: ip2geo
+  tags:
+    - utilities
+tools:
+  - tools/ip_lookup.yaml

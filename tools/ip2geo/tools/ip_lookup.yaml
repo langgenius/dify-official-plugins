@@ -1,0 +1,26 @@
+description:
+  human:
+    en_US: Look up geolocation data for an IP address using ip2geo. Returns city, country, coordinates, timezone, ASN, and currency information.
+    zh_Hans: 使用 ip2geo 查询 IP 地址的地理位置数据。返回城市、国家、坐标、时区、ASN 和货币信息。
+  llm: Look up geolocation data for an IP address. Returns city, country, coordinates, timezone, ASN, and currency. Input should be an IPv4 or IPv6 address.
+extra:
+  python:
+    source: tools/ip_lookup.py
+identity:
+  author: bfzli
+  label:
+    en_US: IP Lookup
+    zh_Hans: IP 查询
+  name: ip_lookup
+parameters:
+- form: llm
+  human_description:
+    en_US: The IPv4 or IPv6 address to look up geolocation data for.
+    zh_Hans: 要查询地理位置数据的 IPv4 或 IPv6 地址。
+  label:
+    en_US: IP Address
+    zh_Hans: IP 地址
+  llm_description: The IPv4 or IPv6 address to look up. For example 8.8.8.8 or 2001:4860:4860::8888.
+  name: ip_address
+  required: true
+  type: string
