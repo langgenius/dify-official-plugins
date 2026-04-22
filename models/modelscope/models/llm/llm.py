@@ -59,11 +59,6 @@ class ModelScopeLargeLanguageModel(LargeLanguageModel):
         invoke LLM
         see `core.model_runtime.model_providers.__base.large_language_model.LargeLanguageModel._invoke`
         """
-        if "temperature" in model_parameters:
-            if model_parameters["temperature"] < 0.01:
-                model_parameters["temperature"] = 0.01
-            elif model_parameters["temperature"] > 1.0:
-                model_parameters["temperature"] = 0.99
         credentials['mode'] = 'chat'
 
         return self._generate(

@@ -1,0 +1,183 @@
+{
+    "9": {
+        "inputs": {
+            "filename_prefix": "LongCat-Image",
+            "images": [
+                "13:8",
+                0
+            ]
+        },
+        "class_type": "SaveImage",
+        "_meta": {
+            "title": "画像を保存"
+        }
+    },
+    "14": {
+        "inputs": {
+            "aspect_ratio": "1:1 (Square)",
+            "megapixels": 1
+        },
+        "class_type": "ResolutionSelector",
+        "_meta": {
+            "title": "解像度セレクター"
+        }
+    },
+    "13:1": {
+        "inputs": {
+            "unet_name": "longcat_image_bf16.safetensors",
+            "weight_dtype": "default"
+        },
+        "class_type": "UNETLoader",
+        "_meta": {
+            "title": "拡散モデルを読み込む"
+        }
+    },
+    "13:2": {
+        "inputs": {
+            "clip_name": "qwen_2.5_vl_7b_fp8_scaled.safetensors",
+            "type": "longcat_image",
+            "device": "default"
+        },
+        "class_type": "CLIPLoader",
+        "_meta": {
+            "title": "CLIPを読み込む"
+        }
+    },
+    "13:3": {
+        "inputs": {
+            "vae_name": "ae.safetensors"
+        },
+        "class_type": "VAELoader",
+        "_meta": {
+            "title": "VAEを読み込む"
+        }
+    },
+    "13:11": {
+        "inputs": {
+            "guidance": 4,
+            "conditioning": [
+                "13:4",
+                0
+            ]
+        },
+        "class_type": "FluxGuidance",
+        "_meta": {
+            "title": "フラックスガイダンス"
+        }
+    },
+    "13:12": {
+        "inputs": {
+            "guidance": 4,
+            "conditioning": [
+                "13:5",
+                0
+            ]
+        },
+        "class_type": "FluxGuidance",
+        "_meta": {
+            "title": "フラックスガイダンス"
+        }
+    },
+    "13:10": {
+        "inputs": {
+            "strength": 1,
+            "model": [
+                "13:1",
+                0
+            ]
+        },
+        "class_type": "CFGNorm",
+        "_meta": {
+            "title": "CFG正規化"
+        }
+    },
+    "13:6": {
+        "inputs": {
+            "width": [
+                "14",
+                0
+            ],
+            "height": [
+                "14",
+                1
+            ],
+            "batch_size": 1
+        },
+        "class_type": "EmptySD3LatentImage",
+        "_meta": {
+            "title": "空のSD3潜在画像"
+        }
+    },
+    "13:8": {
+        "inputs": {
+            "samples": [
+                "13:7",
+                0
+            ],
+            "vae": [
+                "13:3",
+                0
+            ]
+        },
+        "class_type": "VAEDecode",
+        "_meta": {
+            "title": "VAEデコード"
+        }
+    },
+    "13:4": {
+        "inputs": {
+            "text": "High-fashion portrait of a man with a shaved head and stubble, head tilted back and gazing upward. His skin and thick-knitted dark green turtleneck sweater are bathed in a monochromatic teal-green light, creating a uniform, matte finish. He wears round, thin-framed sunglasses with reflective amber-orange lenses that catch the light. The background is a solid, vibrant burnt orange, creating a bold, high-contrast color palette. The lighting is hard and directional, casting sharp shadows on his face. Hyper-detailed, photorealistic, sharp focus on facial features and fabric texture, editorial photography, 8K.",
+            "clip": [
+                "13:2",
+                0
+            ]
+        },
+        "class_type": "CLIPTextEncode",
+        "_meta": {
+            "title": "CLIPテキストエンコード（プロンプト）"
+        }
+    },
+    "13:7": {
+        "inputs": {
+            "seed": 284089112874294,
+            "steps": 20,
+            "cfg": 4,
+            "sampler_name": "euler",
+            "scheduler": "simple",
+            "denoise": 1,
+            "model": [
+                "13:10",
+                0
+            ],
+            "positive": [
+                "13:11",
+                0
+            ],
+            "negative": [
+                "13:12",
+                0
+            ],
+            "latent_image": [
+                "13:6",
+                0
+            ]
+        },
+        "class_type": "KSampler",
+        "_meta": {
+            "title": "Kサンプラー"
+        }
+    },
+    "13:5": {
+        "inputs": {
+            "text": "blurry, low resolution, oversaturated, harsh lighting, messy composition, distorted face, extra fingers, bad anatomy, cheap jewelry, plastic texture, cartoon, illustration, anime, watermark, text, logo",
+            "clip": [
+                "13:2",
+                0
+            ]
+        },
+        "class_type": "CLIPTextEncode",
+        "_meta": {
+            "title": "CLIPテキストエンコード（プロンプト）"
+        }
+    }
+}

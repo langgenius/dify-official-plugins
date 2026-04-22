@@ -3,8 +3,8 @@ import io
 import json
 import logging
 import time
-from collections.abc import Generator, Sequence
-from typing import Optional, Union, cast
+from collections.abc import Generator, Mapping, Sequence
+from typing import Any, Optional, Union, cast
 
 import google.auth.transport.requests
 import requests
@@ -58,6 +58,10 @@ GLOBAL_ONLY_MODELS_DEFAULT = [
     "gemini-3.1-pro-preview",
     "gemini-3.1-flash-image-preview",
 ]
+IMAGE_GENERATION_MODELS = {
+    "gemini-3.1-flash-image-preview",
+}
+
 # For more information about the models, please refer to https://ai.google.dev/gemini-api/docs/thinking
 DEFAULT_NO_THINKING_MODELS = ["gemini-2.5-flash-lite"]
 
@@ -512,6 +516,60 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         # Fallback to default if unsupported type
         return GLOBAL_ONLY_MODELS_DEFAULT
 
+    @staticmethod
+    def _set_image_config(
+        *,
+        config: types.GenerateContentConfig,
+        model_parameters: Mapping[str, Any],
+        model: str,
+    ):
+        if model not in IMAGE_GENERATION_MODELS:
+            return
+
+        aspect_ratio = model_parameters.get("aspect_ratio")
+        if (
+            not aspect_ratio
+            or not isinstance(aspect_ratio, str)
+            or aspect_ratio
+            not in [
+                "1:1",
+                "2:3",
+                "3:2",
+                "3:4",
+                "4:3",
+                "4:5",
+                "5:4",
+                "9:16",
+                "16:9",
+                "21:9",
+                "4:1",
+                "8:1",
+            ]
+        ):
+            aspect_ratio = None
+
+        resolution = model_parameters.get("resolution")
+        if (
+            not resolution
+            or not isinstance(resolution, str)
+            or resolution not in ["1K", "2K", "4K"]
+        ):
+            resolution = None
+
+        config.image_config = types.ImageConfig(
+            image_size=resolution, aspect_ratio=aspect_ratio
+        )
+
+    @staticmethod
+    def _set_response_modalities(
+        *, config: types.GenerateContentConfig, model_name: str
+    ) -> None:
+        if model_name in IMAGE_GENERATION_MODELS:
+            config.response_modalities = [
+                types.Modality.TEXT.value,
+                types.Modality.IMAGE.value,
+            ]
+
     def _generate(
         self,
         model: str,
@@ -560,6 +618,8 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 config_kwargs["response_mime_type"] = "application/json"
             elif field == "response_mime_type":
                 config_kwargs["response_mime_type"] = config_kwargs.pop("response_mime_type")
+            elif field in ["aspect_ratio", "resolution"]:
+                config_kwargs.pop(field)
             elif field == "media_resolution":
                 media_res = config_kwargs.pop("media_resolution")
                 if media_res == "Default":
@@ -574,6 +634,9 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             tools_config.append(self._convert_tools_to_genai_tool(tools))
 
         # Build config
+        # Image generation models do not support thinking config
+        if model in IMAGE_GENERATION_MODELS:
+            thinking_config = {}
         if thinking_config:
             # Handle thinking_level conversion for Gemini 3
             thinking_level_str = thinking_config.get("thinking_level")
@@ -675,6 +738,8 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                 contents.append(content)
 
         config = types.GenerateContentConfig(**config_kwargs)
+        self._set_image_config(config=config, model_parameters=model_parameters, model=model)
+        self._set_response_modalities(config=config, model_name=model)
 
         # Generate content
         if stream:
@@ -731,15 +796,46 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                             ),
                         )
                         assistant_prompt_message.tool_calls.append(tool_call)
+                    # Check for inline_data (image)
+                    elif hasattr(part, 'inline_data') and part.inline_data:
+                        inline_data = part.inline_data
+                        mime_type = inline_data.mime_type
+                        data = inline_data.data
+                        if mime_type and data and mime_type.startswith("image/"):
+                            mime_subtype = mime_type.split("/", maxsplit=1)[-1]
+                            # Switch to list content for image responses
+                            if isinstance(assistant_prompt_message.content, str):
+                                text_so_far = assistant_prompt_message.content
+                                content_list = []
+                                if text_so_far:
+                                    content_list.append(TextPromptMessageContent(data=text_so_far))
+                                assistant_prompt_message.content = content_list
+                            assistant_prompt_message.content.append(
+                                ImagePromptMessageContent(
+                                    format=mime_subtype,
+                                    base64_data=base64.b64encode(data).decode(),
+                                    mime_type=mime_type,
+                                    detail=ImagePromptMessageContent.DETAIL.HIGH,
+                                )
+                            )
                     # Check for text
                     elif hasattr(part, 'text') and part.text:
-                        if part.thought is True and not is_thinking:
-                            assistant_prompt_message.content += "<think>\n\n"
-                            is_thinking = True
-                        elif part.thought is None and is_thinking:
-                            assistant_prompt_message.content += "\n\n</think>"
-                            is_thinking = False
-                        assistant_prompt_message.content += part.text
+                        if isinstance(assistant_prompt_message.content, list):
+                            if part.thought is True and not is_thinking:
+                                assistant_prompt_message.content.append(TextPromptMessageContent(data="<think>\n\n"))
+                                is_thinking = True
+                            elif part.thought is None and is_thinking:
+                                assistant_prompt_message.content.append(TextPromptMessageContent(data="\n\n</think>"))
+                                is_thinking = False
+                            assistant_prompt_message.content.append(TextPromptMessageContent(data=part.text))
+                        else:
+                            if part.thought is True and not is_thinking:
+                                assistant_prompt_message.content += "<think>\n\n"
+                                is_thinking = True
+                            elif part.thought is None and is_thinking:
+                                assistant_prompt_message.content += "\n\n</think>"
+                                is_thinking = False
+                            assistant_prompt_message.content += part.text
 
         prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
         completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
@@ -800,6 +896,24 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                             ),
                         )
                     )
+                # Check for inline_data (image)
+                elif hasattr(part, 'inline_data') and part.inline_data:
+                    inline_data = part.inline_data
+                    mime_type = inline_data.mime_type
+                    data = inline_data.data
+                    if mime_type and data and mime_type.startswith("image/"):
+                        mime_subtype = mime_type.split("/", maxsplit=1)[-1]
+                        assistant_prompt_message = AssistantPromptMessage(
+                            content=[
+                                ImagePromptMessageContent(
+                                    format=mime_subtype,
+                                    base64_data=base64.b64encode(data).decode(),
+                                    mime_type=mime_type,
+                                    detail=ImagePromptMessageContent.DETAIL.HIGH,
+                                )
+                            ],
+                            tool_calls=[],
+                        )
                 # Check for text
                 elif hasattr(part, 'text') and part.text:
                     if part.thought is True and not is_thinking:
@@ -825,6 +939,20 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                     prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
                     completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
                     usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+
+                    # For image responses (list content), skip grounding/reference processing
+                    if isinstance(assistant_prompt_message.content, list):
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=index,
+                                message=assistant_prompt_message,
+                                finish_reason=str(candidate.finish_reason) if candidate.finish_reason else None,
+                                usage=usage,
+                            ),
+                        )
+                        continue
 
                     # Extract grounding metadata if present
                     reference_lines = []
