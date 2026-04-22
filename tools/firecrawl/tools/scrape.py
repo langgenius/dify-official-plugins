@@ -11,7 +11,7 @@ class ScrapeTool(Tool):
         https://docs.firecrawl.dev/api-reference/endpoint/scrape
         """
         app = FirecrawlApp(
-            api_key=self.runtime.credentials["firecrawl_api_key"], base_url=self.runtime.credentials["base_url"]
+            api_key=self.runtime.credentials.get("firecrawl_api_key"), base_url=self.runtime.credentials.get("base_url")
         )
         payload = {}
         extract = {}
