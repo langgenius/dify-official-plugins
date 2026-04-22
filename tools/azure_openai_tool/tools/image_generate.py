@@ -28,7 +28,6 @@ class ImageGenerateTool(Tool):
             return
         # --- Parameter Extraction and Validation ---
         generation_args: Dict[str, Any] = {
-            "model": self.runtime.credentials["azure_openai_api_model_name"],
             "prompt": prompt,
         }
 
