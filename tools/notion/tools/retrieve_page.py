@@ -9,6 +9,12 @@ from tools.notion_client import NotionClient
 
 DEFAULT_MAX_DEPTH = 10
 
+# Block types whose "children" are separate pages/databases, not nested content
+# of the current page. Recursing into them would silently pull in arbitrary
+# linked pages, so we skip them. Users can call retrieve_page on those IDs
+# explicitly if needed.
+NON_CONTENT_CONTAINER_TYPES = frozenset({"child_page", "child_database"})
+
 
 class RetrievePageTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
@@ -229,8 +235,9 @@ class RetrievePageTool(Tool):
                 # For unsupported block types, just include the type
                 formatted_block["text"] = f"<{block_type} block>"
 
-            # Recurse into children when available
-            if has_children:
+            # Recurse into children when available, but skip linked sub-pages
+            # and sub-databases (those are separately retrievable).
+            if has_children and block_type not in NON_CONTENT_CONTAINER_TYPES:
                 if depth >= max_depth:
                     formatted_block["children_truncated"] = True
                 else:
