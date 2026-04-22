@@ -163,173 +163,118 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
     ) -> TextEmbeddingResult:
         """
         Embed texts in batches, handling API limits.
+        Uses standard OpenAI {"input": [...]} format for pure text (compatible with
+        Xinference, Ollama, vLLM, etc.), and vLLM chat embeddings {"messages": [...]}
+        format only when multimodal content (images) is detected.
+        Mixed batches are split so text inputs preserve batching efficiency.
         """
         endpoint_url = credentials.get("endpoint_url", "").rstrip("/")
         api_key = credentials.get("api_key", "")
         endpoint_model_name = credentials.get("endpoint_model_name", "") or model
         max_chunks = self._get_max_chunks(model, credentials)
 
-        #headers = {
-        #    "Content-Type": "application/json",
-        #    "Authorization": f"Bearer {api_key}" if api_key else "",
-        #}
-
-        batched_embeddings = []
         used_tokens = 0
         total_price = 0.0
-
-        # Initialize with default values, will be updated from API response if available
         unit_price = 0.0
         price_unit = 0.0
         currency = "USD"
 
-        client = OpenAI(
-            # defaults to os.environ.get("OPENAI_API_KEY")
-            api_key=api_key,
-            base_url=endpoint_url,
-        )
         try:
-            # Process in batches
-            for i in range(0, len(inputs), max_chunks):
-                batch = inputs[i : i + max_chunks]
+            # Split inputs into text-only and multimodal, keeping original indices
+            text_indices = []
+            text_inputs = []
+            multimodal_indices = []
+            multimodal_inputs = []
+            for idx, inp in enumerate(inputs):
+                if "Image:" in inp:
+                    multimodal_indices.append(idx)
+                    multimodal_inputs.append(inp)
+                else:
+                    text_indices.append(idx)
+                    text_inputs.append(inp)
 
-                default_instruction = "Represent the user's input."
-                for prompt in batch:
-                    try:
-                        prompt_list=prompt.split(" ")
-                        type=1 #0:text, 1:Image,2Image+Text
-                        if len(prompt_list)>1:
-                            if 'Image:' in prompt:
-                                type = 2
-                            else:
-                                type =0
-                        else:
-                            if 'Image:' in prompt:
-                                type = 1
-                            else:
-                                type =0
+            # Pre-allocate result array
+            all_embeddings: list[list[float]] = [[] for _ in range(len(inputs))]
 
-                        if type==0:
-                            text=prompt
-                            response = create_chat_embeddings(
-                                client,
-                                messages=[
-                                    {
-                                        "role": "system",
-                                        "content": [
-                                            {"type": "text", "text": default_instruction},
-                                        ],
-                                    },
-                                    {
-                                        "role": "user",
-                                        "content": [
-                                            {"type": "text", "text": text},
-                                        ],
-                                    },
-                                    {
-                                        "role": "assistant",
-                                        "content": [
-                                            {"type": "text", "text": ""},
-                                        ],
-                                    },
-                                ],
-                                model=model,
-                                encoding_format="float",
-                                continue_final_message=True,
-                                add_special_tokens=True,
-                            )
-                        elif type==1:
-                            image_url=prompt[len("Image:"):]
-                            response = create_chat_embeddings(
-                                client,
-                                messages=[
-                                    {
-                                        "role": "system",
-                                        "content": [
-                                            {"type": "text", "text": default_instruction},
-                                        ],
-                                    },
-                                    {
-                                        "role": "user",
-                                        "content": [
-                                            {"type": "image_url", "image_url": {"url": image_url}},
-                                            {"type": "text", "text": ""},
-                                        ],
-                                    },
-                                    {
-                                        "role": "assistant",
-                                        "content": [
-                                            {"type": "text", "text": ""},
-                                        ],
-                                    },
-                                ],
-                                model=model,
-                                encoding_format="float",
-                                continue_final_message=True,
-                                add_special_tokens=True,
-                            )
-                        else:
-                            for item in prompt_list:
-                                if 'Image:' in item:
-                                    image_url=item[len("Image:"):]
-                                else:
-                                    text=item
-                            response = create_chat_embeddings(
-                                client,
-                                messages=[
-                                    {
-                                        "role": "system",
-                                        "content": [
-                                            {"type": "text", "text": default_instruction},
-                                        ],
-                                    },
-                                    {
-                                        "role": "user",
-                                        "content": [
-                                            {"type": "image_url", "image_url": {"url": image_url}},
-                                            {
-                                                "type": "text",
-                                                "text": f"{text}",
-                                            },
-                                        ],
-                                    },
-                                    {
-                                        "role": "assistant",
-                                        "content": [
-                                            {"type": "text", "text": ""},
-                                        ],
-                                    },
-                                ],
-                                model=model,
-                                encoding_format="float",
-                                continue_final_message=True,
-                                add_special_tokens=True,
-                            )
-                        batched_embeddings.append(response.data[0].embedding)
-                        # Extract usage information from API response
-                        #usage = response.get("usage") or {}
-                        usage = {}
-                        tokens = usage.get("prompt_tokens") or usage.get("total_tokens") or 0
-                        used_tokens += tokens
+            # Standard path for text-only inputs: batched {"input": [...]} format
+            if text_inputs:
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {api_key}" if api_key else "",
+                }
+                text_embeddings = []
 
-                        # Extract pricing information if provided by API
-                        total_price += usage.get("total_price", 0.0)
+                for i in range(0, len(text_inputs), max_chunks):
+                    batch = text_inputs[i : i + max_chunks]
 
-                        # Use API provided values if available, otherwise keep defaults
-                        if "unit_price" in usage:
-                            unit_price = usage.get("unit_price", 0.0)
-                        if "price_unit" in usage:
-                            price_unit = usage.get("price_unit", 0.0)
-                        if "currency" in usage:
-                            currency = usage.get("currency", "USD")
-                    except Exception as ex:
-                        #batched_embeddings.append(0)
-                        raise InvokeError(str(ex))
+                    payload: dict[str, Any] = {
+                        "model": endpoint_model_name,
+                        "input": batch,
+                    }
 
+                    encoding_format = credentials.get("encoding_format")
+                    if encoding_format:
+                        payload["encoding_format"] = encoding_format
 
+                    logger.info(
+                        f"Embedding API Request to {endpoint_url}/embeddings "
+                        f"(batch {i // max_chunks + 1}/{(len(text_inputs) + max_chunks - 1) // max_chunks})"
+                    )
+
+                    response = requests.post(
+                        f"{endpoint_url}/embeddings",
+                        headers=headers,
+                        json=payload,
+                        timeout=60,
+                    )
+
+                    if response.status_code != 200:
+                        logger.error(
+                            f"Embedding API Error {response.status_code}: {response.text[:1000]}"
+                        )
+
+                    response.raise_for_status()
+
+                    result = response.json()
+
+                    for data in result["data"]:
+                        text_embeddings.append(data["embedding"])
+
+                    usage = result.get("usage") or {}
+                    tokens = usage.get("prompt_tokens") or usage.get("total_tokens") or 0
+                    used_tokens += tokens
+                    total_price += usage.get("total_price", 0.0)
+                    if "unit_price" in usage:
+                        unit_price = usage.get("unit_price", 0.0)
+                    if "price_unit" in usage:
+                        price_unit = usage.get("price_unit", 0.0)
+                    if "currency" in usage:
+                        currency = usage.get("currency", "USD")
+
+                for i, idx in enumerate(text_indices):
+                    all_embeddings[idx] = text_embeddings[i]
+
+            # Multimodal path: sequential vLLM chat embeddings API
+            if multimodal_inputs:
+                mm_embeddings, mm_tokens, mm_price, mm_unit_price, mm_price_unit, mm_currency = (
+                    self._embed_multimodal_via_chat(
+                        model, credentials, multimodal_inputs, endpoint_url, api_key, max_chunks
+                    )
+                )
+                used_tokens += mm_tokens
+                total_price += mm_price
+                if mm_unit_price:
+                    unit_price = mm_unit_price
+                if mm_price_unit:
+                    price_unit = mm_price_unit
+                if mm_currency != "USD":
+                    currency = mm_currency
+
+                for i, idx in enumerate(multimodal_indices):
+                    all_embeddings[idx] = mm_embeddings[i]
 
             return TextEmbeddingResult(
-                embeddings=batched_embeddings,
+                embeddings=all_embeddings,
                 model=model,
                 usage=EmbeddingUsage(
                     tokens=used_tokens,
@@ -338,7 +283,7 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                     price_unit=price_unit,
                     total_price=total_price,
                     currency=currency,
-                    latency=0.0,  # Latency tracking would require timing each request
+                    latency=0.0,
                 ),
             )
 
@@ -346,6 +291,107 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
             raise InvokeServerUnavailableError(str(ex))
         except Exception as ex:
             raise InvokeError(str(ex))
+
+    def _embed_multimodal_via_chat(
+        self,
+        model: str,
+        credentials: dict,
+        inputs: list[str],
+        endpoint_url: str,
+        api_key: str,
+        max_chunks: int,
+    ) -> tuple:
+        """
+        Embed inputs containing multimodal content using vLLM chat embeddings API.
+        Returns (embeddings, used_tokens, total_price, unit_price, price_unit, currency).
+        """
+        client = OpenAI(api_key=api_key, base_url=endpoint_url)
+
+        batched_embeddings = []
+        used_tokens = 0
+        total_price = 0.0
+        unit_price = 0.0
+        price_unit = 0.0
+        currency = "USD"
+
+        default_instruction = "Represent the user's input."
+
+        for prompt in inputs:
+            prompt_list = prompt.split(" ")
+            input_type = 0  # 0: text, 1: image only, 2: image + text
+            if len(prompt_list) > 1:
+                input_type = 2 if "Image:" in prompt else 0
+            else:
+                input_type = 1 if "Image:" in prompt else 0
+
+            if input_type == 0:
+                response = create_chat_embeddings(
+                    client,
+                    messages=[
+                        {"role": "system", "content": [{"type": "text", "text": default_instruction}]},
+                        {"role": "user", "content": [{"type": "text", "text": prompt}]},
+                        {"role": "assistant", "content": [{"type": "text", "text": ""}]},
+                    ],
+                    model=model,
+                    encoding_format="float",
+                    continue_final_message=True,
+                    add_special_tokens=True,
+                )
+            elif input_type == 1:
+                image_url = prompt[len("Image:"):]
+                response = create_chat_embeddings(
+                    client,
+                    messages=[
+                        {"role": "system", "content": [{"type": "text", "text": default_instruction}]},
+                        {"role": "user", "content": [
+                            {"type": "image_url", "image_url": {"url": image_url}},
+                            {"type": "text", "text": ""},
+                        ]},
+                        {"role": "assistant", "content": [{"type": "text", "text": ""}]},
+                    ],
+                    model=model,
+                    encoding_format="float",
+                    continue_final_message=True,
+                    add_special_tokens=True,
+                )
+            else:
+                image_url = ""
+                text_parts = []
+                for item in prompt_list:
+                    if item.startswith("Image:"):
+                        image_url = item[len("Image:"):]
+                    elif item:
+                        text_parts.append(item)
+                text = " ".join(text_parts)
+                response = create_chat_embeddings(
+                    client,
+                    messages=[
+                        {"role": "system", "content": [{"type": "text", "text": default_instruction}]},
+                        {"role": "user", "content": [
+                            {"type": "image_url", "image_url": {"url": image_url}},
+                            {"type": "text", "text": text},
+                        ]},
+                        {"role": "assistant", "content": [{"type": "text", "text": ""}]},
+                    ],
+                    model=model,
+                    encoding_format="float",
+                    continue_final_message=True,
+                    add_special_tokens=True,
+                )
+
+            batched_embeddings.append(response.data[0].embedding)
+            usage = response.model_dump().get("usage") or {}
+            tokens = usage.get("prompt_tokens") or usage.get("total_tokens") or 0
+            used_tokens += tokens
+            total_price += usage.get("total_price", 0.0)
+            if "unit_price" in usage:
+                unit_price = usage.get("unit_price", 0.0)
+            if "price_unit" in usage:
+                price_unit = usage.get("price_unit", 0.0)
+            if "currency" in usage:
+                currency = usage.get("currency", "USD")
+
+        return batched_embeddings, used_tokens, total_price, unit_price, price_unit, currency
 
     def _process_input(self, text: str, vision_enabled: bool) -> Union[str, list]:
         """
@@ -570,17 +616,16 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
             #return "jpeg"
             return ""
 
-    def _contains_ip(self,text):
+    def _contains_ip(self, text):
         """
-        判断字符串中是否包含有效的IP地址（0-255范围）
+        Check if text contains a valid IP address (each octet 0-255).
 
         Args:
-            text: 待检测的字符串
+            text: the string to check
 
         Returns:
-            bool: 包含有效IP地址返回True，否则返回False
+            bool: True if a valid IP address is found, False otherwise
         """
-        # 更严格的IP地址正则表达式，确保每个部分在0-255之间
         ip_pattern = r'\b(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'
 
         return bool(re.search(ip_pattern, text))
