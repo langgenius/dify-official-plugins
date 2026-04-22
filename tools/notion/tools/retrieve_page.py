@@ -1,3 +1,4 @@
+import time
 from collections.abc import Generator
 from typing import Any, Dict, List
 import requests
@@ -7,7 +8,8 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 
 from tools.notion_client import NotionClient
 
-DEFAULT_MAX_DEPTH = 10
+DEFAULT_MAX_DEPTH = 5
+DEFAULT_MAX_API_CALLS = 500
 
 # Block types whose "children" are separate pages/databases, not nested content
 # of the current page. Recursing into them would silently pull in arbitrary
@@ -16,18 +18,39 @@ DEFAULT_MAX_DEPTH = 10
 NON_CONTENT_CONTAINER_TYPES = frozenset({"child_page", "child_database"})
 
 
+class _FetchBudget:
+    """Tracks API calls and blocks fetched for a single retrieve_page invocation."""
+
+    def __init__(self, max_api_calls: int):
+        self.max_api_calls = max_api_calls
+        self.api_calls_made = 0
+        self.total_blocks_fetched = 0
+        self.truncated = False
+
+    def can_spend(self) -> bool:
+        return self.api_calls_made < self.max_api_calls
+
+    def spend(self) -> None:
+        self.api_calls_made += 1
+
+    def mark_truncated(self) -> None:
+        self.truncated = True
+
+
 class RetrievePageTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         # Extract parameters
         page_id = tool_parameters.get("page_id", "")
         include_content = tool_parameters.get("include_content", True)
-        max_depth = tool_parameters.get("max_depth", DEFAULT_MAX_DEPTH)
-        try:
-            max_depth = int(max_depth)
-        except (TypeError, ValueError):
-            max_depth = DEFAULT_MAX_DEPTH
-        if max_depth < 0:
-            max_depth = 0
+        max_depth = _coerce_positive_int(
+            tool_parameters.get("max_depth"), DEFAULT_MAX_DEPTH
+        )
+        max_api_calls = _coerce_positive_int(
+            tool_parameters.get("max_api_calls"), DEFAULT_MAX_API_CALLS
+        )
+        # max_api_calls must be at least 1 so the initial page fetch can run.
+        if max_api_calls < 1:
+            max_api_calls = 1
 
         # Validate parameters
         if not page_id:
@@ -46,41 +69,53 @@ class RetrievePageTool(Tool):
 
             # Retrieve the page
             try:
+                started_at = time.monotonic()
                 page_data = client.retrieve_page(page_id)
 
                 # Format the page data
                 formatted_page = self._format_page_data(client, page_data)
 
+                budget = _FetchBudget(max_api_calls=max_api_calls)
                 # Retrieve page content if requested
                 if include_content:
                     try:
-                        all_blocks = self._fetch_all_children(client, page_id)
+                        all_blocks = self._fetch_all_children(client, page_id, budget)
                         formatted_page["content"] = self._format_blocks(
-                            client, all_blocks, depth=0, max_depth=max_depth
+                            client, all_blocks, budget, depth=0, max_depth=max_depth
                         )
                     except requests.HTTPError as e:
                         # If we can't get the content, just return the page data
                         formatted_page["content_error"] = str(e)
-                
+
                 # Format URL
                 formatted_page["url"] = client.format_page_url(page_id)
-                
+
+                # Telemetry: observable cost of this retrieval.
+                formatted_page["api_calls_made"] = budget.api_calls_made
+                formatted_page["total_blocks_fetched"] = budget.total_blocks_fetched
+                formatted_page["elapsed_seconds"] = round(time.monotonic() - started_at, 3)
+                if budget.truncated:
+                    formatted_page["fetch_truncated"] = True
+                    formatted_page["fetch_truncated_reason"] = (
+                        f"max_api_calls={max_api_calls} exceeded; increase the limit or raise max_depth with care."
+                    )
+
                 # Return results
                 title = formatted_page.get("title", "Untitled")
                 yield self.create_text_message(f"Retrieved page: {title}")
                 yield self.create_json_message(formatted_page)
-                
+
             except requests.HTTPError as e:
                 if e.response.status_code == 404:
                     yield self.create_text_message(f"Page not found or you don't have access to it: {page_id}")
                 else:
                     yield self.create_text_message(f"Error retrieving page: {e}")
                 return
-                
+
         except Exception as e:
             yield self.create_text_message(f"Error retrieving Notion page: {str(e)}")
             return
-    
+
     def _format_page_data(self, client: NotionClient, page_data: Dict[str, Any]) -> Dict[str, Any]:
         """Format the page data for the response."""
         result = {
@@ -89,15 +124,15 @@ class RetrievePageTool(Tool):
             "last_edited_time": page_data.get("last_edited_time", ""),
             "archived": page_data.get("archived", False),
         }
-        
+
         # Extract properties
         properties = page_data.get("properties", {})
         formatted_properties = {}
-        
+
         title = "Untitled"
         for prop_name, prop_data in properties.items():
             prop_type = prop_data.get("type")
-            
+
             # Extract value based on property type
             if prop_type == "title":
                 title_content = prop_data.get("title", [])
@@ -131,20 +166,31 @@ class RetrievePageTool(Tool):
             else:
                 # For other property types, just note the type
                 value = f"<{prop_type}>"
-            
+
             formatted_properties[prop_name] = value
-        
+
         result["title"] = title
         result["properties"] = formatted_properties
         return result
-    
-    def _fetch_all_children(self, client: NotionClient, block_id: str) -> List[Dict[str, Any]]:
-        """Fetch every child block of the given block, paginating until exhausted."""
+
+    def _fetch_all_children(
+        self,
+        client: NotionClient,
+        block_id: str,
+        budget: "_FetchBudget",
+    ) -> List[Dict[str, Any]]:
+        """Fetch every child block of the given block, paginating until exhausted or the budget is reached."""
         blocks: List[Dict[str, Any]] = []
         start_cursor = None
         while True:
+            if not budget.can_spend():
+                budget.mark_truncated()
+                break
+            budget.spend()
             response = client.retrieve_block_children(block_id, start_cursor=start_cursor)
-            blocks.extend(response.get("results", []))
+            page_results = response.get("results", [])
+            blocks.extend(page_results)
+            budget.total_blocks_fetched += len(page_results)
             if not response.get("has_more"):
                 break
             start_cursor = response.get("next_cursor")
@@ -156,6 +202,7 @@ class RetrievePageTool(Tool):
         self,
         client: NotionClient,
         blocks: List[Dict[str, Any]],
+        budget: "_FetchBudget",
         depth: int = 0,
         max_depth: int = DEFAULT_MAX_DEPTH,
     ) -> List[Dict[str, Any]]:
@@ -240,11 +287,14 @@ class RetrievePageTool(Tool):
             if has_children and block_type not in NON_CONTENT_CONTAINER_TYPES:
                 if depth >= max_depth:
                     formatted_block["children_truncated"] = True
+                elif not budget.can_spend():
+                    formatted_block["children_truncated"] = True
+                    budget.mark_truncated()
                 else:
                     try:
-                        child_blocks = self._fetch_all_children(client, block_id)
+                        child_blocks = self._fetch_all_children(client, block_id, budget)
                         formatted_block["children"] = self._format_blocks(
-                            client, child_blocks, depth=depth + 1, max_depth=max_depth
+                            client, child_blocks, budget, depth=depth + 1, max_depth=max_depth
                         )
                     except requests.HTTPError as e:
                         # Record per-block failure but keep the rest of the page intact
@@ -253,3 +303,12 @@ class RetrievePageTool(Tool):
             formatted_blocks.append(formatted_block)
 
         return formatted_blocks
+
+
+def _coerce_positive_int(value: Any, default: int) -> int:
+    """Best-effort int coercion; negatives clamp to 0 so callers can disable recursion."""
+    try:
+        coerced = int(value) if value is not None else default
+    except (TypeError, ValueError):
+        return default
+    return max(coerced, 0)
