@@ -48,17 +48,17 @@ credentials_for_provider:
     type: text-input
     required: true
     label:
-      en_US: API Endpoint URL
-      zh_Hans: API 域名
-      pt_BR: API Endpoint URL
+      en_US: API Base URL
+      zh_Hans: API 基础 URL
+      pt_BR: URL Base da API
     help:
-      en_US: Please input your Azure OpenAI Endpoint URL, e.g. https://xxx.openai.azure.com/
-      zh_Hans: 请输入你的 Azure OpenAI API域名，例如：https://xxx.openai.azure.com/
-      pt_BR: Introduza a URL do Azure OpenAI Endpoint, e.g. https://xxx.openai.azure.com/
+      en_US: Please input your Azure OpenAI Base URL, e.g. https://********.openai.azure.com/
+      zh_Hans: 请输入你的 Azure OpenAI API基础 URL，例如：https://********.openai.azure.com/
+      pt_BR: Introduza a URL Base do Azure OpenAI, e.g. https://********.openai.azure.com/
     placeholder:
-      en_US: Please input your Azure OpenAI Endpoint URL, e.g. https://xxx.openai.azure.com/
-      zh_Hans: 请输入你的 Azure OpenAI API域名，例如：https://xxx.openai.azure.com/
-      pt_BR: Introduza a URL do Azure OpenAI Endpoint, e.g. https://xxx.openai.azure.com/
+      en_US: Please input your Azure OpenAI Base URL, e.g. https://********.openai.azure.com/
+      zh_Hans: 请输入你的 Azure OpenAI API基础 URL，例如：https://********.openai.azure.com/
+      pt_BR: Introduza a URL Base do Azure OpenAI, e.g. https://********.openai.azure.com/
   azure_openai_api_version:
     type: text-input
     required: true
