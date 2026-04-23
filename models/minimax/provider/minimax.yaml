@@ -44,8 +44,8 @@ provider_credential_schema:
   - label:
       en_US: Group ID
     placeholder:
-      en_US: Enter your group ID
-      zh_Hans: 在此输入您的 Group ID
+      en_US: Required only for legacy ABAB chat, embedding, and TTS models. Leave empty for MiniMax-M2.x.
+      zh_Hans: 仅在使用 ABAB chat、Embedding、TTS 模型时需要；MiniMax-M2.x 留空即可。
     required: false
     type: text-input
     variable: minimax_group_id
