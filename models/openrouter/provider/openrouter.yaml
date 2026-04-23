@@ -30,6 +30,15 @@ model_credential_schema:
     required: true
     type: secret-input
     variable: api_key
+  - label:
+      en_US: Custom API endpoint URL
+      zh_Hans: 自定义 API endpoint 地址
+    placeholder:
+      en_US: Base URL, e.g. https://openrouter.ai/api/v1
+      zh_Hans: Base URL，例如 https://openrouter.ai/api/v1
+    required: false
+    type: text-input
+    variable: endpoint_url
   - default: chat
     label:
       en_US: Completion mode
@@ -134,6 +143,15 @@ provider_credential_schema:
     required: true
     type: secret-input
     variable: api_key
+  - label:
+      en_US: Custom API endpoint URL
+      zh_Hans: 自定义 API endpoint 地址
+    placeholder:
+      en_US: Base URL, e.g. https://openrouter.ai/api/v1
+      zh_Hans: Base URL，例如 https://openrouter.ai/api/v1
+    required: false
+    type: text-input
+    variable: endpoint_url
 supported_model_types:
 - llm
 - text-embedding

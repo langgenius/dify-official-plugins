@@ -7,7 +7,12 @@ from typing import Optional, Union, Any
 import requests
 from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model import AIModelEntity, ModelFeature
-from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta, LLMMode
+from dify_plugin.entities.model.llm import (
+    LLMResult,
+    LLMResultChunk,
+    LLMResultChunkDelta,
+    LLMMode,
+)
 from dify_plugin.entities.model.message import (
     PromptMessage,
     PromptMessageTool,
@@ -22,6 +27,8 @@ from dify_plugin.errors.model import InvokeError
 from dify_plugin.interfaces.model.openai_compatible.llm import _increase_tool_call
 from pydantic import TypeAdapter, ValidationError
 
+from models._endpoint_utils import normalize_endpoint_url
+
 IMAGE_GENERATION_MODELS = {
     "google/gemini-2.5-flash-image-preview",
     "google/gemini-2.5-flash-image-preview:free",
@@ -30,25 +37,33 @@ IMAGE_GENERATION_MODELS = {
 
 class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
     def _update_credential(self, model: str, credentials: dict):
-        credentials["endpoint_url"] = "https://openrouter.ai/api/v1"
+        credentials["endpoint_url"] = normalize_endpoint_url(credentials)
         credentials["mode"] = self.get_model_mode(model).value
         schema = self.get_model_schema(model, credentials)
-        if schema and {ModelFeature.TOOL_CALL, ModelFeature.MULTI_TOOL_CALL}.intersection(
-            schema.features or []
-        ):
+        if schema and {
+            ModelFeature.TOOL_CALL,
+            ModelFeature.MULTI_TOOL_CALL,
+        }.intersection(schema.features or []):
             credentials["function_calling_type"] = "tool_call"
 
         # Add OpenRouter specific headers for rankings on openrouter.ai
-        credentials["extra_headers"] = {"HTTP-Referer": "https://dify.ai/", "X-Title": "Dify"}
+        credentials["extra_headers"] = {
+            "HTTP-Referer": "https://dify.ai/",
+            "X-Title": "Dify",
+        }
 
-    def _convert_files_to_text(self, messages: list[PromptMessage]) -> list[PromptMessage]:
+    def _convert_files_to_text(
+        self, messages: list[PromptMessage]
+    ) -> list[PromptMessage]:
         """
         Convert any file content in messages to text descriptions to avoid validation issues
         """
         converted_messages = []
 
         for message in messages:
-            if isinstance(message, UserPromptMessage) and isinstance(message.content, list):
+            if isinstance(message, UserPromptMessage) and isinstance(
+                message.content, list
+            ):
                 # Process multimodal content
                 text_parts = []
                 for content in message.content:
@@ -66,7 +81,9 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
                     ):
                         # Handle document files like PDF
                         if hasattr(content, "url") and content.url:
-                            text_parts.append(f"[Document file uploaded]: {content.url}")
+                            text_parts.append(
+                                f"[Document file uploaded]: {content.url}"
+                            )
                         else:
                             text_parts.append("[Document file uploaded]")
                     else:
@@ -117,7 +134,9 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         reasoning_budget = model_parameters.pop("reasoning_budget", None)
         enable_thinking = model_parameters.pop("enable_thinking", None)
         reasoning_effort = model_parameters.pop("reasoning_effort", None)
-        exclude_reasoning_tokens = model_parameters.pop("exclude_reasoning_tokens", None)
+        exclude_reasoning_tokens = model_parameters.pop(
+            "exclude_reasoning_tokens", None
+        )
 
         if isinstance(enable_thinking, bool):
             reasoning_params["enabled"] = enable_thinking
@@ -157,8 +176,14 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
             json_schema_str = model_parameters.get("json_schema")
             if json_schema_str:
                 json_schema = json.loads(json_schema_str)
-                schema = json_schema.get("schema") if "schema" in json_schema else json_schema
-                model_parameters["json_schema"] = json.dumps({"name": "output", "schema": schema})
+                schema = (
+                    json_schema.get("schema")
+                    if "schema" in json_schema
+                    else json_schema
+                )
+                model_parameters["json_schema"] = json.dumps(
+                    {"name": "output", "schema": schema}
+                )
 
     def _invoke(
         self,
@@ -185,7 +210,14 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
             self._set_verbosity_params(model_parameters)
             self._set_json_schema_params(model_parameters)
         return self._generate(
-            model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
+            model,
+            credentials,
+            prompt_messages,
+            model_parameters,
+            tools,
+            stop,
+            stream,
+            user,
         )
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
@@ -205,7 +237,14 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
     ) -> Union[LLMResult, Generator]:
         self._update_credential(model, credentials)
         return super()._generate(
-            model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
+            model,
+            credentials,
+            prompt_messages,
+            model_parameters,
+            tools,
+            stop,
+            stream,
+            user,
         )
 
     def _wrap_thinking_by_reasoning_content(
@@ -246,7 +285,14 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Generator:
         resp = super()._generate(
-            model, credentials, prompt_messages, model_parameters, tools, stop, False, user
+            model,
+            credentials,
+            prompt_messages,
+            model_parameters,
+            tools,
+            stop,
+            False,
+            user,
         )
         yield LLMResultChunk(
             model=model,
@@ -264,7 +310,9 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
             ),
         )
 
-    def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
+    def get_customizable_model_schema(
+        self, model: str, credentials: dict
+    ) -> AIModelEntity:
         return super().get_customizable_model_schema(model, credentials)
 
     def get_num_tokens(
@@ -277,7 +325,9 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         self._update_credential(model, credentials)
         return super().get_num_tokens(model, credentials, prompt_messages, tools)
 
-    def _parse_image_part(self, choice: dict, stream: bool) -> list[PromptMessageContent]:
+    def _parse_image_part(
+        self, choice: dict, stream: bool
+    ) -> list[PromptMessageContent]:
         contents: list[PromptMessageContent] = []
 
         if stream:
@@ -335,18 +385,26 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
             response_content = output["text"]
 
         if model not in IMAGE_GENERATION_MODELS:
-            assistant_message = AssistantPromptMessage(content=response_content, tool_calls=[])
+            assistant_message = AssistantPromptMessage(
+                content=response_content, tool_calls=[]
+            )
         else:
-            contents: list[PromptMessageContent] = [TextPromptMessageContent(data=response_content)]
+            contents: list[PromptMessageContent] = [
+                TextPromptMessageContent(data=response_content)
+            ]
             contents.extend(self._parse_image_part(output, stream=False))
 
             assistant_message = AssistantPromptMessage(content=contents, tool_calls=[])
 
         if tool_calls:
             if function_calling_type == "tool_call":
-                assistant_message.tool_calls = self._extract_response_tool_calls(tool_calls)
+                assistant_message.tool_calls = self._extract_response_tool_calls(
+                    tool_calls
+                )
             elif function_calling_type == "function_call":
-                assistant_message.tool_calls = [self._extract_response_function_call(tool_calls)]
+                assistant_message.tool_calls = [
+                    self._extract_response_function_call(tool_calls)
+                ]
 
         usage = response_json.get("usage")
         if usage:
@@ -356,16 +414,25 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
         else:
             # calculate num tokens
             assert prompt_messages[0].content is not None
-            prompt_tokens = self._num_tokens_from_string(model, prompt_messages[0].content)
+            prompt_tokens = self._num_tokens_from_string(
+                model, prompt_messages[0].content
+            )
             assert assistant_message.content is not None
-            completion_tokens = self._num_tokens_from_string(model, assistant_message.content)
+            completion_tokens = self._num_tokens_from_string(
+                model, assistant_message.content
+            )
 
         # transform usage
-        usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+        usage = self._calc_response_usage(
+            model, credentials, prompt_tokens, completion_tokens
+        )
 
         # transform response
         result = LLMResult(
-            id=message_id, model=response_json["model"], message=assistant_message, usage=usage
+            id=message_id,
+            model=response_json["model"],
+            message=assistant_message,
+            usage=usage,
         )
 
         return result
@@ -406,7 +473,9 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
                     continue
 
                 try:
-                    chunk_json: dict = TypeAdapter(dict[str, Any]).validate_json(decoded_chunk)
+                    chunk_json: dict = TypeAdapter(dict[str, Any]).validate_json(
+                        decoded_chunk
+                    )
                 # stream ended
                 except ValidationError:
                     yield self._create_final_llm_result_chunk(
@@ -436,12 +505,16 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
 
                 if "delta" in choice:
                     delta = choice["delta"]
-                    delta_content, is_reasoning_started = self._wrap_thinking_by_reasoning_content(
-                        delta, is_reasoning_started
+                    delta_content, is_reasoning_started = (
+                        self._wrap_thinking_by_reasoning_content(
+                            delta, is_reasoning_started
+                        )
                     )
                     if model in IMAGE_GENERATION_MODELS:
                         if delta_content:
-                            delta_content = [TextPromptMessageContent(data=delta_content)]
+                            delta_content = [
+                                TextPromptMessageContent(data=delta_content)
+                            ]
                         else:
                             delta_content = []
                         delta_content.extend(
@@ -452,12 +525,14 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
 
                     if (
                         "tool_calls" in delta
-                        and credentials.get("function_calling_type", "no_call") == "tool_call"
+                        and credentials.get("function_calling_type", "no_call")
+                        == "tool_call"
                     ):
                         assistant_message_tool_calls = delta.get("tool_calls", None)
                     elif (
                         "function_call" in delta
-                        and credentials.get("function_calling_type", "no_call") == "function_call"
+                        and credentials.get("function_calling_type", "no_call")
+                        == "function_call"
                     ):
                         assistant_message_tool_calls = [
                             {
@@ -469,14 +544,18 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
 
                     # extract tool calls from response
                     if assistant_message_tool_calls:
-                        tool_calls = self._extract_response_tool_calls(assistant_message_tool_calls)
+                        tool_calls = self._extract_response_tool_calls(
+                            assistant_message_tool_calls
+                        )
                         _increase_tool_call(tool_calls, tools_calls)
 
                     if not delta_content:
                         continue
 
                     # transform assistant message to prompt message
-                    assistant_prompt_message = AssistantPromptMessage(content=delta_content)
+                    assistant_prompt_message = AssistantPromptMessage(
+                        content=delta_content
+                    )
 
                     if isinstance(delta_content, str):
                         full_assistant_content += delta_content
@@ -490,14 +569,18 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
                         continue
 
                     # transform assistant message to prompt message
-                    assistant_prompt_message = AssistantPromptMessage(content=choice_text)
+                    assistant_prompt_message = AssistantPromptMessage(
+                        content=choice_text
+                    )
                     full_assistant_content += choice_text
                 else:
                     continue
 
                 yield LLMResultChunk(
                     model=model,
-                    delta=LLMResultChunkDelta(index=chunk_index, message=assistant_prompt_message),
+                    delta=LLMResultChunkDelta(
+                        index=chunk_index, message=assistant_prompt_message
+                    ),
                 )
 
             chunk_index += 1
