@@ -13,7 +13,7 @@ help:
     en_US: Get your API Key from Minimax
     zh_Hans: 从 Minimax 获取您的 API Key
   url:
-    en_US: https://platform.minimaxi.com/user-center/basic-information/interface-key
+    en_US: https://platform.minimax.io/user-center/payment/token-plan
 icon_large:
   en_US: icon_l_en.png
 icon_small:
