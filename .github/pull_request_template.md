@@ -59,7 +59,7 @@ For example:
 -->
 
 ## Dify Plugin SDK Version
-- [ ] I have Ensured `dify_plugin>=0.3.0,<0.6.0` is in requirements.txt ([SDK docs](https://github.com/langgenius/dify-plugin-sdks/blob/main/python/README.md))
+- [ ] I have Ensured `dify_plugin>=0.3.0,<0.6.0` is declared in `pyproject.toml` and locked in `uv.lock`, or kept in `requirements.txt` only for legacy plugins without `uv.lock` ([SDK docs](https://github.com/langgenius/dify-plugin-sdks/blob/main/python/README.md))
 
 ## Environment Verification (If Any Code Changes)
 <!-- 
@@ -69,12 +69,12 @@ For example:
 ### Local Deployment Environment
 - [ ] Dify Version is: <!-- Specify Your Version (e.g., 1.2.0) -->, I have Tested My Changes on Local Deployment Dify with a Clean Environment That Matches the Production Configuration. 
 <!--
-- Python Virtual Env Matching Manifest.yaml & requirements.txt
+- Python virtual environment matching `Manifest.yaml`, `pyproject.toml`, and `uv.lock` (or `requirements.txt` for legacy plugins without `uv.lock`)
 - No Breaking Changes in Dify That May Affect the Testing Result
 -->
 
 ### SaaS Environment
 - [ ] I have Tested My Changes on cloud.dify.ai with a Clean Environment That Matches the Production Configuration
 <!--
-- Python Virtual Env Matching Manifest.yaml & requirements.txt
+- Python virtual environment matching `Manifest.yaml`, `pyproject.toml`, and `uv.lock` (or `requirements.txt` for legacy plugins without `uv.lock`)
 -->
