@@ -16,45 +16,22 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
+          ref: ${{ github.event.pull_request.base.sha }}
+
+      - name: Fetch changed file list
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate \
+            "/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files?per_page=100" \
+            --jq '.[] | [.status, .filename] | @tsv' > "$RUNNER_TEMP/changed-files.tsv"
 
       - id: filter
         name: Detect changed plugins
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ "${{ github.event_name }}" == "pull_request" ] || [ "${{ github.event_name }}" == "pull_request_target" ]; then
-            CHANGED_FILES=$(gh pr view -R ${{ github.repository }} ${{ github.event.pull_request.number }} --json files --jq '.files[].path')
-          else
-            if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
-              BASE_SHA="HEAD~1"
-            else
-              BASE_SHA="${{ github.event.before }}"
-            fi
-            CHANGED_FILES=$(git diff --name-only $BASE_SHA HEAD)
-          fi
-
-          # Find all manifest.yaml files
-          MANIFESTS=$(find . -name "manifest.yaml" -not -path "*/.*")
-
-          VALID_PLUGINS=()
-          for m in $MANIFESTS; do
-            PLUGIN_PATH=$(dirname "$m" | sed 's|^\./||')
-            # If any changed file starts with this plugin path
-            if echo "$CHANGED_FILES" | grep -q "^$PLUGIN_PATH/"; then
-              VALID_PLUGINS+=("$PLUGIN_PATH")
-            fi
-          done
-
-          if [ ${#VALID_PLUGINS[@]} -eq 0 ]; then
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "plugins=[]" >> $GITHUB_OUTPUT
-          else
-            JSON=$(printf '%s\n' "${VALID_PLUGINS[@]}" | jq -R . | jq -s -c .)
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "plugins=$JSON" >> $GITHUB_OUTPUT
-            echo "Detected plugins: $JSON"
-          fi
+          CHANGED_FILES_FILE: ${{ runner.temp }}/changed-files.tsv
+          EXPECTED_CHANGED_FILES: ${{ github.event.pull_request.changed_files }}
+        run: .github/scripts/detect-changed-plugins.sh
 
   test:
     needs: detect-changes
