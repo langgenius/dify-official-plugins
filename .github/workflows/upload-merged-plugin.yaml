@@ -100,6 +100,36 @@ jobs:
           chmod +x .scripts/dify-plugin-linux-amd64
           mv .scripts/dify-plugin-linux-amd64 .scripts/dify
 
+      - name: Validate Dependencies
+        run: |
+          cd "${{ matrix.plugin_path }}"
+
+          if [ -f "uv.lock" ]; then
+            VENV_DIR="$RUNNER_TEMP/plugin-dependency-check-venv"
+
+            cleanup() {
+              rm -rf "$VENV_DIR"
+            }
+            trap cleanup EXIT
+
+            rm -rf "$VENV_DIR"
+            UV_PROJECT_ENVIRONMENT="$VENV_DIR" uv sync --all-groups --frozen --python 3.12
+          elif [ -f "requirements.txt" ]; then
+            VENV_DIR=".ci-requirements-check-venv"
+
+            cleanup() {
+              rm -rf "$VENV_DIR"
+            }
+            trap cleanup EXIT
+
+            rm -rf "$VENV_DIR"
+            uv venv "$VENV_DIR" --python 3.12
+            uv pip install --python "$VENV_DIR/bin/python" -r requirements.txt
+          else
+            echo "!!! uv.lock or requirements.txt is required for dependency validation"
+            exit 1
+          fi
+
       - name: Upload Plugin
         run: |
           uv run --with requests --with dify_plugin python .scripts/uploader/upload-package.py -d "${{ matrix.plugin_path }}" -t "${{ secrets.MARKETPLACE_TOKEN }}" --plugin-daemon-path .scripts/dify -u "${{ secrets.MARKETPLACE_BASE_URL }}" -f
