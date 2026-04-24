@@ -44,6 +44,8 @@
 - qwen/qwen-2.5-72b-instruct
 - qwen/qwen3-max
 - qwen/qwen3.6-plus
+- deepseek/deepseek-v4-pro
+- deepseek/deepseek-v4-flash
 - deepseek/deepseek-chat
 - deepseek/deepseek-chat-v3.1
 - deepseek/deepseek-chat-v3-0324
