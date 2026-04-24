@@ -26,6 +26,15 @@ parameters:
     type: select
     options:
       - label:
+          en_US: Z Image
+        value: z_image
+      - label:
+          en_US: Z Image Turbo
+        value: z_image_turbo
+      - label:
+          en_US: Longcat
+        value: longcat
+      - label:
           en_US: Qwen Image
         value: qwen_image
       - label:

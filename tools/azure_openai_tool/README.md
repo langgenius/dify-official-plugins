@@ -10,7 +10,10 @@ Azure OpenAI offers powerful AI models for generating and editing images based o
 
 Please apply for an API Key on the [Azure OpenAI Platform](https://portal.azure.com/#home). This key will be used for all Azure OpenAI image tools.
 
-**Important Note:** When configuring the plugin, you need to specify your Azure OpenAI image model deployment name (e.g., gpt-image-1/1.5) in the **Deployment Name** field. This deployment name will be used for both image generation and editing operations.
+In addition to the API Key, you will also need the following information to configure the plugin:
+
+- **Deployment Name**: The name of your Azure OpenAI model deployment (e.g., `gpt-image-1`).
+- **API Base URL**: The base URL of your Azure OpenAI resource (e.g., `https://********.openai.azure.com/`).
 
 ### 2. Get Azure OpenAI Image tools from Plugin Marketplace
 
@@ -19,7 +22,17 @@ Please install the tools you need.
 
 ### 3. Fill in the configuration in Dify
 
-On the Dify navigation page, click `Tools > [Installed Azure OpenAI Image Tool Name] > Authorize` and fill in the API Key. Repeat this for each Azure OpenAI image tool you install.
+On the Dify navigation page, click `Tools > [Installed Azure OpenAI Image Tool Name] > Authorize` and fill in the required fields.  
+If you have multiple Azure OpenAI deployments, repeat this for each deployment.
+
+The following fields are available for configuration:
+
+| Field | Description | Example |
+| --- | --- | --- |
+| **API Key** | Your Azure OpenAI API key. | `********************************` |
+| **Deployment Name** | The name of your Azure OpenAI model deployment. | `gpt-image-1` |
+| **API Base URL** | The base URL of your Azure OpenAI resource. Use the endpoint up to the domain (do **not** include the model path or query parameters). | `https://********.openai.azure.com/` |
+| **API Version** | The Azure OpenAI API version to use. To use the **Image Edit** feature, you must specify `2025-04-01-preview` or later. | `2025-04-01-preview` |
 
 ### 4. Use the tools
 

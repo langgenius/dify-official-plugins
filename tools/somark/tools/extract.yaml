@@ -3,32 +3,231 @@ identity:
   author: SoulCode
   label:
     en_US: Extract Document
-    zh_Hans: SoMark文档解析
+    zh_Hans: SoMark 文档解析
 
 description:
   human:
-    en_US: Convert various document types—including PDFs, images, and more—into structured Markdown or JSON using the Somark API.
-    zh_Hans: 使用 Somark API 将各种文档（如 PDF、图片等）转换为结构化的 Markdown 或 JSON 格式。
-  llm: A precise and reliable tool that utilizes the Somark API to convert various document formats (PDF, PNG, JPG, etc.) into clean, structured Markdown or JSON format, preserving the original layout and content hierarchy.
+    en_US: Convert various document types—including PDFs, images, and more—into structured Markdown or JSON using the SoMark API.
+    zh_Hans: 使用 SoMark API 将各种文档（如 PDF、图片等）转换为结构化的 Markdown 或 JSON 格式。
+  llm: A precise and reliable tool that utilizes the SoMark API to convert various document formats (PDF, PNG, JPG, etc.) into clean, structured Markdown or JSON format, preserving the original layout and content hierarchy.
 
 parameters:
   - name: file
     type: file
     required: true
     label:
-      en_US: File
-      zh_Hans: 文件
+      en_US: 'File'
+      zh_Hans: '文件'
     human_description:
-      en_US: "Supported files: PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM, DOC, DOCX, PPT, PPTX. Max 200MB/300 pages."
-      zh_Hans: "支持的文件: PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM, DOC, DOCX, PPT, PPTX. 大小不超过 200MB/300页。"
+      en_US: 'Supported files: PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM, DOC, DOCX, PPT, PPTX. Max 200 MB / 300 pages.'
+      zh_Hans: '支持的文件: PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM, DOC, DOCX, PPT, PPTX. 大小不超过 200 MB / 300 页。'
     form: llm
+
+  - name: output_formats
+    type: checkbox
+    required: false
+    form: form
+    label:
+      en_US: 'Output Formats'
+      zh_Hans: '输出格式'
+    human_description:
+      en_US: 'Selectable multiple options; if none are selected, the default values will be used: Markdown and JSON.'
+      zh_Hans: '可多选；若不选择任何项，则使用默认值：Markdown 和 JSON。'
+    options:
+      - value: markdown
+        label:
+          en_US: Markdown
+          zh_Hans: Markdown
+      - value: json
+        label:
+          en_US: JSON
+          zh_Hans: JSON
+
+  - name: element_formats_image
+    type: select
+    required: false
+    form: form
+    label:
+      en_US: 'Image Format'
+      zh_Hans: '图片返回格式'
+    human_description:
+      en_US: 'Single selection; the default value is URL. Choosing None means no image will be returned.'
+      zh_Hans: '单选；默认值为 URL，选择 None 表示不返回图片。'
+    default: url
+    options:
+      - value: url
+        label:
+          en_US: URL
+          zh_Hans: URL
+      - value: base64
+        label:
+          en_US: Base64
+          zh_Hans: Base64
+      - value: none
+        label:
+          en_US: None
+          zh_Hans: None
+
+  - name: element_formats_formula
+    type: select
+    required: false
+    form: form
+    label:
+      en_US: 'Formula Format'
+      zh_Hans: '公式返回格式'
+    human_description:
+      en_US: 'Single selection; used to specify the output format for formulas, with LaTeX as the default.'
+      zh_Hans: '单选；用于指定公式的输出格式，默认值为 LaTeX。'
+    default: latex
+    options:
+      - value: latex
+        label:
+          en_US: LaTeX
+          zh_Hans: LaTeX
+      - value: mathml
+        label:
+          en_US: MathML
+          zh_Hans: MathML
+      - value: ascii
+        label:
+          en_US: ASCII
+          zh_Hans: ASCII
+
+  - name: element_formats_table
+    type: select
+    required: false
+    form: form
+    label:
+      en_US: 'Table Format'
+      zh_Hans: '表格返回格式'
+    human_description:
+      en_US: 'Single selection; the default value is HTML. In Markdown mode, merged cells will be automatically split into individual cells and populated with the same content.'
+      zh_Hans: '单选；默认值为 HTML。在 Markdown 模式下，合并单元格将自动拆分为独立单元格，并以相同内容填充。'
+    default: html
+    options:
+      - value: html
+        label:
+          en_US: HTML
+          zh_Hans: HTML
+      - value: markdown
+        label:
+          en_US: Markdown
+          zh_Hans: Markdown
+      - value: image
+        label:
+          en_US: Image
+          zh_Hans: Image
+
+  - name: element_formats_cs
+    type: select
+    required: false
+    form: form
+    label:
+      en_US: 'Chemical Structure Formula Format'
+      zh_Hans: '化学结构式返回格式'
+    human_description:
+      en_US: 'Single selection; used to specify the output format for chemical structure formulas, with Image as the default. SMILES format will be supported soon.'
+      zh_Hans: '单选；用于指定化学结构式的输出格式，默认值为 Image，即将支持 SMILES 格式。'
+    default: image
+    options:
+      - value: image
+        label:
+          en_US: Image
+          zh_Hans: Image
+
+  - name: feature_config_enable_text_cross_page
+    type: boolean
+    required: false
+    form: form
+    label:
+      en_US: 'Enable Text Cross Page'
+      zh_Hans: '文字跨页拼接'
+    human_description:
+      en_US: 'Text spanning across pages is merged into a continuous paragraph.'
+      zh_Hans: '跨页文字段合并为连续段落。'
+    default: false
+
+  - name: feature_config_enable_table_cross_page
+    type: boolean
+    required: false
+    form: form
+    label:
+      en_US: 'Enable Table Cross Page'
+      zh_Hans: '表格跨页拼接'
+    human_description:
+      en_US: 'Table spanning across pages is merged into a continuous table.'
+      zh_Hans: '跨页表格合并为完整表格。'
+    default: false
+
+  - name: feature_config_enable_title_level_recognition
+    type: boolean
+    required: false
+    form: form
+    label:
+      en_US: 'Enable Title Level Recognition'
+      zh_Hans: '标题层级识别'
+    human_description:
+      en_US: 'Recognize the hierarchical structure of document headings (H1/H2/H3…).'
+      zh_Hans: '识别文档标题层级结构（H1/H2/H3…）。'
+    default: false
+
+  - name: feature_config_enable_inline_image
+    type: boolean
+    required: false
+    form: form
+    label:
+      en_US: 'Enable Inline Image'
+      zh_Hans: '保留文中图'
+    human_description:
+      en_US: 'Return images contained in text paragraphs.'
+      zh_Hans: '返回文字段落中的图片。'
+    default: true
+
+  - name: feature_config_enable_table_image
+    type: boolean
+    required: false
+    form: form
+    label:
+      en_US: 'Enable Table Image'
+      zh_Hans: '保留表中图'
+    human_description:
+      en_US: 'Return images contained in table cells.'
+      zh_Hans: '返回表格单元格内的图片。'
+    default: true
+
+  - name: feature_config_enable_image_understanding
+    type: boolean
+    required: false
+    form: form
+    label:
+      en_US: 'Enable Image Understanding'
+      zh_Hans: '图片理解'
+    human_description:
+      en_US: 'Perform semantic understanding and structured description of images in the document.'
+      zh_Hans: '对文档内图片进行语义理解和结构化描述。'
+    default: true
+
+  - name: feature_config_keep_header_footer
+    type: boolean
+    required: false
+    form: form
+    label:
+      en_US: 'Keep Header Footer'
+      zh_Hans: '保留页眉页脚'
+    human_description:
+      en_US: 'Headers and footers are filtered out by default. Enable retention if you want to keep them.'
+      zh_Hans: '默认过滤了页眉页脚，如果使用页眉页脚可开启保留。'
+    default: false
 
 output_schema:
   type: object
   properties:
+    json_str:
+      type: string
+      description: 'The parsed content in JSON format'
     markdown:
       type: string
-      description: "The parsed content in Markdown format"
+      description: 'The parsed content in Markdown format'
 
 extra:
   python:

@@ -1,0 +1,53 @@
+model: Pro/zai-org/GLM-5.1
+label:
+  zh_Hans: Pro/zai-org/GLM-5.1
+  en_US: Pro/zai-org/GLM-5.1
+model_type: llm
+features:
+  - tool-call
+  - agent-thought
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 204800
+parameter_rules:
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - text
+      - json_object
+  - name: enable_thinking
+    required: false
+    type: boolean
+    default: true
+    label:
+      zh_Hans: 思考模式
+      en_US: Thinking mode
+    help:
+      zh_Hans: 是否开启思考模式。
+      en_US: Whether to enable thinking mode.
+  - name: thinking_budget
+    required: false
+    type: int
+    default: 4096
+    min: 1
+    max: 204800
+    label:
+      zh_Hans: 思考长度限制
+      en_US: Thinking budget
+    help:
+      zh_Hans: 思考过程的最大长度，只在思考模式为true时生效。
+      en_US: The maximum length of the thinking process, only effective when thinking mode is true.
+pricing:
+  input: "6"
+  output: "24"
+  unit: "0.000001"
+  currency: RMB
