@@ -1,7 +1,7 @@
-model: deepseek-chat
+model: deepseek-v4-flash
 label:
-  zh_Hans: deepseek-chat
-  en_US: deepseek-chat
+  zh_Hans: deepseek-v4-flash
+  en_US: deepseek-v4-flash
 model_type: llm
 features:
   - agent-thought
@@ -39,31 +39,16 @@ parameter_rules:
     help:
       zh_Hans: 控制生成结果的随机性。数值越小，随机性越弱；数值越大，随机性越强。一般而言，top_p 和 temperature 两个参数选择一个进行调整即可。
       en_US: Control the randomness of generated results. The smaller the value, the weaker the randomness; the larger the value, the stronger the randomness. Generally speaking, you can adjust one of the two parameters top_p and temperature.
-  - name: logprobs
+  - name: thinking
     label:
-      en_US: Logprobs
-    help:
-      zh_Hans: 是否返回所输出 token 的对数概率。如果为 true，则在 message 的 content 中返回每个输出 token 的对数概率。
-      en_US: Whether to return the log probability of the output token. If true, returns the log probability of each output token in the content of message .
+      zh_Hans: 思考模式
+      en_US: Thinking Mode
     type: boolean
-  - name: top_logprobs
-    label:
-      en_US: Top Logprobs
-    type: int
-    default: 0
-    min: 0
-    max: 20
+    default: false
+    required: false
     help:
-      zh_Hans: 一个介于 0 到 20 之间的整数 N，指定每个输出位置返回输出概率 top N 的 token，且返回这些 token 的对数概率。指定此参数时，logprobs 必须为 true。
-      en_US: An integer N between 0 and 20, specifying that each output position returns the top N tokens with output probability, and returns the logarithmic probability of these tokens. When specifying this parameter, logprobs must be true.
-  - name: frequency_penalty
-    use_template: frequency_penalty
-    default: 0
-    min: -2.0
-    max: 2.0
-    help:
-      zh_Hans: 介于 -2.0 和 2.0 之间的数字。如果该值为正，那么新 token 会根据其在已有文本中的出现频率受到相应的惩罚，降低模型重复相同内容的可能性。
-      en_US: A number between -2.0 and 2.0. If the value is positive, new tokens are penalized based on their frequency of occurrence in existing text, reducing the likelihood that the model will repeat the same content.
+      zh_Hans: 控制是否启用 DeepSeek v4 的思考模式。
+      en_US: Controls whether DeepSeek v4 thinking mode is enabled.
   - name: response_format
     label:
       zh_Hans: 回复格式

@@ -18,6 +18,8 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
     # Pattern to match <think>...</think> blocks (case-insensitive, non-greedy)
     _THINK_PATTERN = re.compile(r"<think>(.*?)</think>", re.DOTALL | re.IGNORECASE)
 
+    _V4_MODELS = {"deepseek-v4-flash", "deepseek-v4-pro"}
+
     def _invoke(
         self,
         model: str,
@@ -30,6 +32,7 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator]:
         self._add_custom_parameters(credentials)
+        self._normalize_model_parameters(model, model_parameters)
         # Merge consecutive messages with the same role to strictly follow API specs
         prompt_messages = self._clean_messages(prompt_messages)
         response = super()._invoke(
@@ -74,7 +77,7 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
 
     def _log_helper_convert_message(self, prompt_message: PromptMessage) -> dict:
         # Helper method for logging
-        message_dict = {"role": "", "content": ""}
+        message_dict: dict[str, object] = {"role": "", "content": ""}
         if isinstance(prompt_message, UserPromptMessage):
             message_dict["role"] = "user"
             message_dict["content"] = prompt_message.content
@@ -134,6 +137,17 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
     def validate_credentials(self, model: str, credentials: dict) -> None:
         self._add_custom_parameters(credentials)
         super().validate_credentials(model, credentials)
+
+    @classmethod
+    def _normalize_model_parameters(cls, model: str, model_parameters: dict) -> None:
+        if model not in cls._V4_MODELS:
+            return
+
+        thinking = model_parameters.get("thinking")
+        if isinstance(thinking, bool):
+            model_parameters["thinking"] = {
+                "type": "enabled" if thinking else "disabled"
+            }
 
     @staticmethod
     def _add_custom_parameters(credentials) -> None:
