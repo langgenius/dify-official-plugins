@@ -172,37 +172,68 @@ jobs:
           echo "### Extracting package ###"
           unzip -q "$PKG_NAME" -d "$EXTRACT_DIR"
 
-      - name: Validate Dependencies with uv
-        run: |
-          cd "${{ matrix.plugin_path }}"
-          uv sync --all-groups --python 3.12
-
-      - name: Validate requirements install with uv pip
+      - name: Validate Dependencies
         run: |
           cd "${{ matrix.plugin_path }}"
 
-          if [ ! -f "requirements.txt" ]; then
-            echo "!!! requirements.txt is required for this validation"
+          if [ -f "uv.lock" ]; then
+            VENV_DIR="$RUNNER_TEMP/plugin-dependency-check-venv"
+
+            cleanup() {
+              rm -rf "$VENV_DIR"
+            }
+            trap cleanup EXIT
+
+            rm -rf "$VENV_DIR"
+            UV_PROJECT_ENVIRONMENT="$VENV_DIR" uv sync --all-groups --frozen --python 3.12
+          elif [ -f "requirements.txt" ]; then
+            VENV_DIR=".ci-requirements-check-venv"
+
+            cleanup() {
+              rm -rf "$VENV_DIR"
+            }
+            trap cleanup EXIT
+
+            rm -rf "$VENV_DIR"
+            uv venv "$VENV_DIR" --python 3.12
+            uv pip install --python "$VENV_DIR/bin/python" -r requirements.txt
+          else
+            echo "!!! uv.lock or requirements.txt is required for dependency validation"
             exit 1
           fi
-
-          VENV_DIR=".ci-uv-pip-check-venv"
-
-          cleanup() {
-            rm -rf "$VENV_DIR"
-          }
-          trap cleanup EXIT
-
-          rm -rf "$VENV_DIR"
-          uv venv "$VENV_DIR" --python 3.12
-          uv pip install --python "$VENV_DIR/bin/python" -r requirements.txt
 
       - name: Check Plugin Install
         run: |
           export INSTALL_METHOD=serverless
           export SERVERLESS_PORT=8080
           export SERVERLESS_HOST=0.0.0.0
-          uv run --project "${{ matrix.plugin_path }}" --with requests python .scripts/validator/test-plugin-install.py -d "${{ matrix.plugin_path }}"
+          if [ -f "${{ matrix.plugin_path }}/uv.lock" ]; then
+            VENV_DIR="$RUNNER_TEMP/plugin-install-check-venv"
+
+            cleanup() {
+              rm -rf "$VENV_DIR"
+            }
+            trap cleanup EXIT
+
+            rm -rf "$VENV_DIR"
+            UV_PROJECT_ENVIRONMENT="$VENV_DIR" uv run --project "${{ matrix.plugin_path }}" --frozen --with requests python .scripts/validator/test-plugin-install.py -d "${{ matrix.plugin_path }}"
+          elif [ -f "${{ matrix.plugin_path }}/requirements.txt" ]; then
+            VENV_DIR=".ci-plugin-install-venv"
+
+            cleanup() {
+              rm -rf "$VENV_DIR"
+            }
+            trap cleanup EXIT
+
+            rm -rf "$VENV_DIR"
+            uv venv "$VENV_DIR" --python 3.12
+            uv pip install --python "$VENV_DIR/bin/python" -r "${{ matrix.plugin_path }}/requirements.txt"
+            uv pip install --python "$VENV_DIR/bin/python" requests
+            "$VENV_DIR/bin/python" .scripts/validator/test-plugin-install.py -d "${{ matrix.plugin_path }}"
+          else
+            echo "!!! uv.lock or requirements.txt is required for plugin install validation"
+            exit 1
+          fi
 
       - name: Check for tests directory
         id: check_tests
@@ -218,14 +249,27 @@ jobs:
         if: steps.check_tests.outputs.has_tests == 'true'
         working-directory: ${{ env.EXTRACT_DIR }}
         run: |
-          uv sync --all-groups --python 3.12
+          if [ -f "uv.lock" ]; then
+            UV_PROJECT_ENVIRONMENT=".ci-test-uv-venv" uv sync --all-groups --frozen --python 3.12
+          elif [ -f "requirements.txt" ]; then
+            uv venv ".ci-test-venv" --python 3.12
+            uv pip install --python ".ci-test-venv/bin/python" -r requirements.txt
+            uv pip install --python ".ci-test-venv/bin/python" pytest
+          else
+            echo "!!! uv.lock or requirements.txt is required for test dependency installation"
+            exit 1
+          fi
 
       - name: Run tests
         if: steps.check_tests.outputs.has_tests == 'true'
         working-directory: ${{ env.EXTRACT_DIR }}
         run: |
           export PLUGIN_FILE_PATH="$(realpath ../${{ env.PKG_NAME }})" 
-          uv run --with pytest pytest
+          if [ -f "uv.lock" ]; then
+            UV_PROJECT_ENVIRONMENT=".ci-test-uv-venv" uv run --frozen --with pytest pytest
+          else
+            .ci-test-venv/bin/python -m pytest
+          fi
 
   check-complete:
     name: Check Complete
