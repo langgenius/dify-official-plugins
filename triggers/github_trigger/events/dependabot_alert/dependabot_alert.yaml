@@ -107,9 +107,9 @@ parameters:
   type: string
   required: false
   description:
-    en_US: Filter by manifest file path such as package.json or requirements.txt. Comma separated allowed.
-    zh_Hans: 按清单文件路径过滤 如 package.json 或 requirements.txt。支持逗号分隔。
-    ja_JP: package.json や requirements.txt などのマニフェストパスでフィルタ。カンマ区切り可。
+    en_US: Filter by manifest file path such as package.json or pyproject.toml. Comma separated allowed.
+    zh_Hans: 按清单文件路径过滤，如 package.json 或 pyproject.toml。支持逗号分隔。
+    ja_JP: package.json や pyproject.toml などのマニフェストパスでフィルタ。カンマ区切り可。
 
 output_schema:
   type: object
