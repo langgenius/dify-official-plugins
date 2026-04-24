@@ -1,6 +1,6 @@
-model: openrouter/elephant-alpha
+model: inclusionai/ling-2.6-flash:free
 label:
-  en_US: Elephant Alpha
+  en_US: Ling 2.6 Flash (free)
 model_type: llm
 features:
   - multi-tool-call
