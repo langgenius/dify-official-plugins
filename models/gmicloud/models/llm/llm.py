@@ -122,6 +122,10 @@ class GmicloudLargeLanguageModel(OAICompatLargeLanguageModel):
         credentials["mode"] = LLMMode.CHAT.value
         credentials["function_calling_type"] = "tool_call"
         credentials["stream_function_calling"] = "support"
+        credentials["extra_headers"] = {
+            "HTTP-Referer": "https://dify.ai/",
+            "X-Title": "Dify",
+        }
         
         # Map gmicloud_api_key to api_key for OAICompatLargeLanguageModel
         # The OAI compat layer expects "api_key"

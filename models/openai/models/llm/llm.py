@@ -63,7 +63,7 @@ if you are not sure about the structure.
 """
 
 # thinking models compatibility for max_completion_tokens (all starting with "o" or "gpt-5")
-# THINKING_SERIES_COMPATIBILITY = ("o", "gpt-5")
+THINKING_SERIES_PREFIXES = ("o", "gpt-5")
 
 class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
     """
@@ -379,13 +379,18 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 )
             elif model_mode == LLMMode.CHAT:
                 # chat model — fall back to Responses API if the endpoint rejects 'messages'
+                is_thinking_model = any(model.startswith(prefix) for prefix in THINKING_SERIES_PREFIXES)
+                validation_params = (
+                    {"max_completion_tokens": 20, "temperature": 1}
+                    if is_thinking_model
+                    else {"max_tokens": 20, "temperature": 0}
+                )
                 try:
                     client.chat.completions.create(
                         messages=[{"role": "user", "content": "ping"}],
                         model=model,
-                        temperature=0,
-                        max_tokens=20,
                         stream=False,
+                        **validation_params,
                     )
                 except Exception as chat_ex:
                     err_str = str(chat_ex)
@@ -508,12 +513,16 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         # text completion model
         assert isinstance(prompt_messages[0].content, str)
+        completion_params = model_parameters.copy()
+        if any(model.startswith(prefix) for prefix in THINKING_SERIES_PREFIXES):
+            if "max_tokens" in completion_params:
+                completion_params["max_completion_tokens"] = completion_params.pop("max_tokens")
 
         response = client.completions.create(
             prompt=prompt_messages[0].content,
             model=model,
             stream=stream,
-            **model_parameters,
+            **completion_params,
             **extra_model_kwargs,
         )
 
@@ -776,13 +785,17 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         else:
             # chat model
             messages: Any = [self._convert_prompt_message_to_dict(m) for m in prompt_messages]
-            
+            # thinking models require max_completion_tokens instead of max_tokens
+            chat_params = model_parameters.copy()
+            if any(model.startswith(prefix) for prefix in THINKING_SERIES_PREFIXES):
+                if "max_tokens" in chat_params:
+                    chat_params["max_completion_tokens"] = chat_params.pop("max_tokens")
             try:
                 response = client.chat.completions.create(
                     messages=messages,
                     model=model,
                     stream=stream,
-                    **model_parameters,
+                    **chat_params,
                     **extra_model_kwargs,
                 )
                 
