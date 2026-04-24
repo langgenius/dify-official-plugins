@@ -76,5 +76,5 @@ For example:
 ### SaaS Environment
 - [ ] I have Tested My Changes on cloud.dify.ai with a Clean Environment That Matches the Production Configuration
 <!--
-- Python virtual environment matching Manifest.yaml, `pyproject.toml`, and `uv.lock` (or `requirements.txt` for legacy plugins without `uv.lock`)
+- Python virtual environment matching `Manifest.yaml`, `pyproject.toml`, and `uv.lock` (or `requirements.txt` for legacy plugins without `uv.lock`)
 -->
