@@ -5,10 +5,11 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 
-# uv pip compile pyproject.toml -o ./requirements.txt
+# Refresh the lockfile after dependency changes with: uv lock
 dependencies = [
-    "dify_plugin>=0.5.0",
+    "dify_plugin>=0.5.0,<0.6.0",
     "boto3",
+    "botocore",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix
