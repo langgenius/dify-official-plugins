@@ -876,7 +876,7 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "dify-plugin", specifier = ">=0.5.0" },
-    { name = "requests" },
+    { name = "requests", specifier = ">=2.32.5" },
 ]
 
 [package.metadata.requires-dev]

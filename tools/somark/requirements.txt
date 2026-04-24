@@ -1,2 +1,0 @@
-dify_plugin>=0.3.0
-requests
