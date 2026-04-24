@@ -1,0 +1,28 @@
+meta:
+  arch:
+    - amd64
+    - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: "3.12"
+  version: 0.0.1
+name: futurmix
+author: futurmix
+label:
+  en_US: FuturMix
+description:
+  en_US: FuturMix is a unified AI gateway providing OpenAI-compatible access to 22+ models from OpenAI, Anthropic, and Google through a single API endpoint and key.
+  zh_Hans: FuturMix 是统一的 AI 网关，通过单一 API 端点和密钥提供 OpenAI 兼容的 22+ 模型访问，包括 OpenAI、Anthropic 和 Google 的模型。
+icon: futurmix_square.svg
+plugins:
+  models:
+    - provider/futurmix.yaml
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: false
+type: plugin
+version: 0.0.1
+created_at: 2026-04-24T00:00:00.000000000-04:00
