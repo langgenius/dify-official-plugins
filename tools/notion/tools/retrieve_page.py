@@ -245,15 +245,15 @@ class RetrievePageTool(Tool):
                 formatted_block["checked"] = checked
             elif block_type == "toggle":
                 rich_text = block.get("toggle", {}).get("rich_text", [])
-                text = "".join([rt.get("plain_text", "") for rt in rich_text])
+                text = client.extract_plain_text(rich_text)
                 formatted_block["text"] = text
             elif block_type == "quote":
                 rich_text = block.get("quote", {}).get("rich_text", [])
-                text = "".join([rt.get("plain_text", "") for rt in rich_text])
+                text = client.extract_plain_text(rich_text)
                 formatted_block["text"] = text
             elif block_type == "callout":
                 rich_text = block.get("callout", {}).get("rich_text", [])
-                text = "".join([rt.get("plain_text", "") for rt in rich_text])
+                text = client.extract_plain_text(rich_text)
                 formatted_block["text"] = text
             elif block_type == "code":
                 code_block = block.get("code", {})
