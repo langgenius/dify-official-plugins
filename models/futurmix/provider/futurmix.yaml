@@ -50,7 +50,7 @@ model_credential_schema:
           variable: __model_type
       type: select
       variable: mode
-    - default: "4096"
+    - default: "128000"
       label:
         en_US: Model context size
         zh_Hans: 模型上下文长度
