@@ -17,6 +17,19 @@ parameter_rules:
     min: 1
     max: 384000
     default: 4096
+  - name: reasoning_effort
+    label:
+      zh_Hans: 思考强度
+      en_US: Reasoning Effort
+    type: string
+    default: high
+    required: false
+    options:
+      - high
+      - max
+    help:
+      zh_Hans: 控制思考模式下的推理强度。官方文档当前支持 high 和 max。
+      en_US: Controls reasoning effort in thinking mode. The official docs currently support high and max.
   - name: response_format
     label:
       zh_Hans: 回复格式

@@ -44,11 +44,24 @@ parameter_rules:
       zh_Hans: 思考模式
       en_US: Thinking Mode
     type: boolean
-    default: false
+    default: true
     required: false
     help:
       zh_Hans: 控制是否启用 DeepSeek v4 的思考模式。
       en_US: Controls whether DeepSeek v4 thinking mode is enabled.
+  - name: reasoning_effort
+    label:
+      zh_Hans: 思考强度
+      en_US: Reasoning Effort
+    type: string
+    default: high
+    required: false
+    options:
+      - high
+      - max
+    help:
+      zh_Hans: 控制思考模式下的推理强度。官方文档当前支持 high 和 max。
+      en_US: Controls reasoning effort in thinking mode. The official docs currently support high and max.
   - name: response_format
     label:
       zh_Hans: 回复格式

@@ -19,6 +19,12 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
     _THINK_PATTERN = re.compile(r"<think>(.*?)</think>", re.DOTALL | re.IGNORECASE)
 
     _V4_MODELS = {"deepseek-v4-flash", "deepseek-v4-pro"}
+    _THINKING_UNSUPPORTED_PARAMETERS = {
+        "temperature",
+        "top_p",
+        "presence_penalty",
+        "frequency_penalty",
+    }
 
     def _invoke(
         self,
@@ -148,6 +154,11 @@ class DeepseekLargeLanguageModel(OAICompatLargeLanguageModel):
             model_parameters["thinking"] = {
                 "type": "enabled" if thinking else "disabled"
             }
+
+        normalized_thinking = model_parameters.get("thinking")
+        if isinstance(normalized_thinking, dict) and normalized_thinking.get("type") == "enabled":
+            for parameter_name in cls._THINKING_UNSUPPORTED_PARAMETERS:
+                model_parameters.pop(parameter_name, None)
 
     @staticmethod
     def _add_custom_parameters(credentials) -> None:
