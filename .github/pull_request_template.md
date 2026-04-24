@@ -69,7 +69,7 @@ For example:
 ### Local Deployment Environment
 - [ ] Dify Version is: <!-- Specify Your Version (e.g., 1.2.0) -->, I have Tested My Changes on Local Deployment Dify with a Clean Environment That Matches the Production Configuration. 
 <!--
-- Python virtual environment matching Manifest.yaml, `pyproject.toml`, and `uv.lock` (or `requirements.txt` for legacy plugins without `uv.lock`)
+- Python virtual environment matching `Manifest.yaml`, `pyproject.toml`, and `uv.lock` (or `requirements.txt` for legacy plugins without `uv.lock`)
 - No Breaking Changes in Dify That May Affect the Testing Result
 -->
 
