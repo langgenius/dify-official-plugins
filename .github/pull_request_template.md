@@ -59,7 +59,7 @@ For example:
 -->
 
 ## Dify Plugin SDK Version
-- [ ] I have ensured `dify_plugin>=0.3.0,<0.6.0` is declared in `pyproject.toml` and locked in `uv.lock`, or kept in `requirements.txt` only for legacy plugins without `uv.lock` ([SDK docs](https://github.com/langgenius/dify-plugin-sdks/blob/main/python/README.md))
+- [ ] I have Ensured `dify_plugin>=0.3.0,<0.6.0` is declared in `pyproject.toml` and locked in `uv.lock`, or kept in `requirements.txt` only for legacy plugins without `uv.lock` ([SDK docs](https://github.com/langgenius/dify-plugin-sdks/blob/main/python/README.md))
 
 ## Environment Verification (If Any Code Changes)
 <!-- 
