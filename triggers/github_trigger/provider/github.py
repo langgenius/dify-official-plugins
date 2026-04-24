@@ -3,9 +3,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import json
-import secrets
 import time
-import urllib.parse
 import uuid
 from collections.abc import Mapping
 from typing import Any, cast
@@ -14,14 +12,12 @@ import requests
 from werkzeug import Request, Response
 
 from dify_plugin.entities import I18nObject, ParameterOption
-from dify_plugin.entities.oauth import TriggerOAuthCredentials
 from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.trigger import EventDispatch, Subscription, UnsubscribeResult
 from dify_plugin.errors.trigger import (
     SubscriptionError,
     TriggerDispatchError,
     TriggerProviderCredentialValidationError,
-    TriggerProviderOAuthError,
     TriggerValidationError,
 )
 from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstructor
@@ -172,8 +168,6 @@ class GithubTrigger(Trigger):
 class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
     """Manage GitHub trigger subscriptions."""
 
-    _AUTH_URL = "https://github.com/login/oauth/authorize"
-    _TOKEN_URL = "https://github.com/login/oauth/access_token"
     _API_USER_URL = "https://api.github.com/user"
     _WEBHOOK_TTL = 30 * 24 * 60 * 60
 
@@ -194,41 +188,6 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
             raise
         except Exception as exc:  # pragma: no cover - defensive logging path
             raise TriggerProviderCredentialValidationError(str(exc)) from exc
-
-    def _oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
-        state = secrets.token_urlsafe(16)
-        params = {
-            "client_id": system_credentials["client_id"],
-            "redirect_uri": redirect_uri,
-            "scope": system_credentials.get("scope", "read:user admin:repo_hook"),
-            "state": state,
-        }
-        return f"{self._AUTH_URL}?{urllib.parse.urlencode(params)}"
-
-    def _oauth_get_credentials(
-        self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
-    ) -> TriggerOAuthCredentials:
-        code = request.args.get("code")
-        if not code:
-            raise TriggerProviderOAuthError("No code provided")
-
-        if not system_credentials.get("client_id") or not system_credentials.get("client_secret"):
-            raise TriggerProviderOAuthError("Client ID or Client Secret is required")
-
-        data = {
-            "client_id": system_credentials["client_id"],
-            "client_secret": system_credentials["client_secret"],
-            "code": code,
-            "redirect_uri": redirect_uri,
-        }
-        headers = {"Accept": "application/json"}
-        response = requests.post(self._TOKEN_URL, data=data, headers=headers, timeout=10)
-        response_json = response.json()
-        access_tokens = response_json.get("access_token")
-        if not access_tokens:
-            raise TriggerProviderOAuthError(f"Error in GitHub OAuth: {response_json}")
-
-        return TriggerOAuthCredentials(credentials={"access_tokens": access_tokens}, expires_at=-1)
 
     def _create_subscription(
         self,
