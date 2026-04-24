@@ -637,6 +637,7 @@ dependencies = [
     { name = "chump" },
     { name = "dify-easy" },
     { name = "dify-plugin" },
+    { name = "pydantic" },
 ]
 
 [package.metadata]
@@ -644,6 +645,7 @@ requires-dist = [
     { name = "chump", specifier = ">=1.6.0" },
     { name = "dify-easy", specifier = ">=0.1.0" },
     { name = "dify-plugin", specifier = ">=0.5.0" },
+    { name = "pydantic", specifier = ">=2.12.3" },
 ]
 
 [package.metadata.requires-dev]
