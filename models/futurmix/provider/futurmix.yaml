@@ -60,7 +60,7 @@ model_credential_schema:
       required: true
       type: text-input
       variable: context_size
-    - default: "4096"
+    - default: "16384"
       label:
         en_US: Upper bound for max tokens
         zh_Hans: 最大 token 上限
