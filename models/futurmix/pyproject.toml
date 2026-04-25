@@ -7,6 +7,5 @@ dependencies = [
     "dify-plugin>=0.5.0",
 ]
 
-[build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+[dependency-groups]
+dev = []
