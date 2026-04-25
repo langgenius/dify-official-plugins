@@ -1,7 +1,8 @@
-from typing import Any, Mapping
-import requests
 import urllib.parse
-from flask import Request
+from typing import Any, Mapping
+
+import requests
+from werkzeug import Request
 
 from dify_plugin.interfaces.datasource import DatasourceProvider, DatasourceOAuthCredentials
 

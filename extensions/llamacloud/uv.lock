@@ -350,12 +350,14 @@ source = { virtual = "." }
 dependencies = [
     { name = "dify-plugin" },
     { name = "llama-cloud" },
+    { name = "werkzeug" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "dify-plugin", specifier = ">=0.5.0" },
     { name = "llama-cloud", specifier = "~=0.1.43" },
+    { name = "werkzeug", specifier = ">=3.1.0" },
 ]
 
 [package.metadata.requires-dev]

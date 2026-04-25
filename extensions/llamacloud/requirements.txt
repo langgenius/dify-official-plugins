@@ -1,2 +1,0 @@
-dify_plugin>=0.5.0
-llama_cloud~=0.1.43
