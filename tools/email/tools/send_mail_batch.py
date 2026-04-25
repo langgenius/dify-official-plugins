@@ -22,7 +22,7 @@ class SendMailBatchTool(Tool):
         # Use sender_address if provided, otherwise fall back to email_account
         raw_sender_address = self.runtime.credentials.get("sender_address", "")
         sender_address = raw_sender_address or sender
-        email_rgx = re.compile("^[a-zA-Z0-9._-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$")
+        email_rgx = re.compile(r"^[a-zA-Z0-9._-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$")
         password = self.runtime.credentials.get("email_password", "")
         smtp_server = self.runtime.credentials.get("smtp_server", "")
         if not smtp_server:
@@ -168,4 +168,3 @@ class SendMailBatchTool(Tool):
             yield self.create_text_message(f"{attachment_info}. Details: {response_text}")
         else:
             yield self.create_text_message(response_text)
-
