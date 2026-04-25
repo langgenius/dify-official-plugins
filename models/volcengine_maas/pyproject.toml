@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 
-# uv pip compile pyproject.toml -o ./requirements.txt
+# Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
     "dify_plugin>=0.7.0,<0.8.0",
     "volcengine-python-sdk>=5.0.1,<6.0.0",

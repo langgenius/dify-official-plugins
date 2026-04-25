@@ -293,7 +293,8 @@ All queries return structured JSON data:
 ```
 snowflake_sql/
 ├── manifest.yaml          # Plugin metadata
-├── requirements.txt       # Python dependencies
+├── pyproject.toml         # Project metadata and direct dependencies
+├── uv.lock                # Locked dependency set
 ├── main.py               # Entry point
 ├── README.md             # Documentation
 ├── provider/
@@ -308,7 +309,7 @@ snowflake_sql/
 
 ```bash
 # Install dependencies
-pip install -r requirements.txt
+uv sync
 
 # Run the plugin locally
 python main.py
@@ -334,4 +335,3 @@ Apache License 2.0
 This plugin uses the following open-source libraries:
 - [snowflake-connector-python](https://github.com/snowflakedb/snowflake-connector-python) - Apache-2.0 License
 - [dify-plugin](https://github.com/langgenius/dify-plugin-sdks) - Apache-2.0 License
-

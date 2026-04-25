@@ -2,7 +2,12 @@
 name = "gemini-image"
 version = "0.1.0"
 description = "Gemini Image Generation and Editing"
+readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "dify_plugin>=0.5.0",
+    "requests>=2.32.5",
 ]
+
+[dependency-groups]
+dev = []
