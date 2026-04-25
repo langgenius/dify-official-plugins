@@ -21,7 +21,7 @@ GitHub Trigger（Webhooks）
 
 - オプション：
   - Plugin Centerで `.difypkg` をインポート（Plugins → Import）。
-  - 開発中は、ランタイムが `requirements.txt` から依存関係をインストールすることを確認してください。
+  - 開発中は、`uv sync --project .` でプラグイン環境を同期するか、`uv run --project .` でコマンドを実行してください。
 
 2. 認証戦略を選択（管理者）
 

@@ -1,6 +1,0 @@
-.venv/
-
-.pdm-python
-pdm.lock
-.pre-commit-config.yaml
-pyproject.toml

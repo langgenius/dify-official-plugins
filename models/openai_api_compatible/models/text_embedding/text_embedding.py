@@ -8,6 +8,13 @@ from urllib.parse import urlparse
 import requests
 import tiktoken
 
+from typing import Literal
+from typing import List, Union, Dict, Any
+from openai import OpenAI
+from openai._types import NOT_GIVEN, NotGiven
+from openai.types.chat import ChatCompletionMessageParam
+from openai.types.create_embedding_response import CreateEmbeddingResponse
+
 from dify_plugin.entities.model import (
     AIModelEntity,
     EmbeddingInputType,
@@ -22,10 +29,40 @@ from dify_plugin.errors.model import InvokeError, InvokeServerUnavailableError
 from dify_plugin.interfaces.model.openai_compatible.text_embedding import (
     OAICompatEmbeddingModel,
 )
+from dify_plugin.entities.model.text_embedding import (
+    MultiModalContent,
+    MultiModalContentType,
+)
 
 
 logger = logging.getLogger(__name__)
 
+def create_chat_embeddings(
+    client: OpenAI,
+    *,
+    #messages: list[ChatCompletionMessageParam],
+    messages: List[ChatCompletionMessageParam],
+    model: str,
+    #encoding_format: Literal["base64", "float"] | NotGiven = NOT_GIVEN,
+    encoding_format: Union[Literal["base64", "float"], NotGiven] = NOT_GIVEN,
+    continue_final_message: bool = False,
+    add_special_tokens: bool = False,
+) -> CreateEmbeddingResponse:
+    """
+    Convenience function for accessing vLLM's Chat Embeddings API,
+    which is an extension of OpenAI's existing Embeddings API.
+    """
+    return client.post(
+        "/embeddings",
+        cast_to=CreateEmbeddingResponse,
+        body={
+            "messages": messages,
+            "model": model,
+            "encoding_format": encoding_format,
+            "continue_final_message": continue_final_message,
+            "add_special_tokens": add_special_tokens,
+        },
+    )
 
 class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
     def get_customizable_model_schema(
@@ -98,19 +135,18 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                     if content.get("type") == "text":
                         text_parts.append(content.get("text", ""))
                     elif content.get("type") == "image_url":
-                        text_parts.append(
-                            f"[Image: {content.get('image_url', {}).get('url', '')}]"
-                        )
+                        #text_parts.append(f"[Image: {content.get('image_url', {}).get('url', '')}]")
+                        text_parts.append(f"Image:{content.get('image_url', {}).get('url', '')}")
                 text = " ".join(text_parts) if text_parts else ""
             else:
                 text = input_data if isinstance(input_data, str) else str(input_data)
 
             # Check token count and truncate if necessary
-            num_tokens = self._get_num_tokens_by_gpt2(text)
-            if num_tokens >= context_size:
+            #num_tokens = self._get_num_tokens_by_gpt2(text)
+            #if num_tokens >= context_size:
                 # Truncate to fit within context size
-                cutoff = int(len(text) * (context_size / num_tokens))
-                text = text[0:cutoff]
+            #    cutoff = int(len(text) * (context_size / num_tokens))
+            #    text = text[0:cutoff]
 
             inputs.append(text)
 
@@ -127,84 +163,118 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
     ) -> TextEmbeddingResult:
         """
         Embed texts in batches, handling API limits.
+        Uses standard OpenAI {"input": [...]} format for pure text (compatible with
+        Xinference, Ollama, vLLM, etc.), and vLLM chat embeddings {"messages": [...]}
+        format only when multimodal content (images) is detected.
+        Mixed batches are split so text inputs preserve batching efficiency.
         """
         endpoint_url = credentials.get("endpoint_url", "").rstrip("/")
         api_key = credentials.get("api_key", "")
         endpoint_model_name = credentials.get("endpoint_model_name", "") or model
         max_chunks = self._get_max_chunks(model, credentials)
 
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {api_key}" if api_key else "",
-        }
-
-        batched_embeddings = []
         used_tokens = 0
         total_price = 0.0
-
-        # Initialize with default values, will be updated from API response if available
         unit_price = 0.0
         price_unit = 0.0
         currency = "USD"
 
         try:
-            # Process in batches
-            for i in range(0, len(inputs), max_chunks):
-                batch = inputs[i : i + max_chunks]
+            # Split inputs into text-only and multimodal, keeping original indices
+            text_indices = []
+            text_inputs = []
+            multimodal_indices = []
+            multimodal_inputs = []
+            for idx, inp in enumerate(inputs):
+                if "Image:" in inp:
+                    multimodal_indices.append(idx)
+                    multimodal_inputs.append(inp)
+                else:
+                    text_indices.append(idx)
+                    text_inputs.append(inp)
 
-                payload = {
-                    "model": endpoint_model_name,
-                    "input": batch,
+            # Pre-allocate result array
+            all_embeddings: list[list[float]] = [[] for _ in range(len(inputs))]
+
+            # Standard path for text-only inputs: batched {"input": [...]} format
+            if text_inputs:
+                headers = {
+                    "Content-Type": "application/json",
+                    "Authorization": f"Bearer {api_key}" if api_key else "",
                 }
+                text_embeddings = []
 
-                # Add encoding_format only if specified in credentials
-                encoding_format = credentials.get("encoding_format")
-                if encoding_format:
-                    payload["encoding_format"] = encoding_format
+                for i in range(0, len(text_inputs), max_chunks):
+                    batch = text_inputs[i : i + max_chunks]
 
-                logger.info(
-                    f"Embedding API Request to {endpoint_url}/embeddings (batch {i // max_chunks + 1}/{(len(inputs) + max_chunks - 1) // max_chunks})"
-                )
+                    payload: dict[str, Any] = {
+                        "model": endpoint_model_name,
+                        "input": batch,
+                    }
 
-                response = requests.post(
-                    f"{endpoint_url}/embeddings",
-                    headers=headers,
-                    json=payload,
-                    timeout=60,
-                )
+                    encoding_format = credentials.get("encoding_format")
+                    if encoding_format:
+                        payload["encoding_format"] = encoding_format
 
-                # Debug: log response on error
-                if response.status_code != 200:
-                    logger.error(
-                        f"Embedding API Error {response.status_code}: {response.text[:1000]}"
+                    logger.info(
+                        f"Embedding API Request to {endpoint_url}/embeddings "
+                        f"(batch {i // max_chunks + 1}/{(len(text_inputs) + max_chunks - 1) // max_chunks})"
                     )
 
-                response.raise_for_status()
+                    response = requests.post(
+                        f"{endpoint_url}/embeddings",
+                        headers=headers,
+                        json=payload,
+                        timeout=60,
+                    )
 
-                result = response.json()
+                    if response.status_code != 200:
+                        logger.error(
+                            f"Embedding API Error {response.status_code}: {response.text[:1000]}"
+                        )
 
-                # Extract embeddings
-                for data in result["data"]:
-                    batched_embeddings.append(data["embedding"])
+                    response.raise_for_status()
 
-                # Extract usage information from API response
-                usage = result.get("usage") or {}
-                tokens = usage.get("prompt_tokens") or usage.get("total_tokens") or 0
-                used_tokens += tokens
+                    result = response.json()
 
-                # Extract pricing information if provided by API
-                total_price += usage.get("total_price", 0.0)
+                    for data in result["data"]:
+                        text_embeddings.append(data["embedding"])
 
-                # Use API provided values if available, otherwise keep defaults
-                if "unit_price" in usage:
-                    unit_price = usage.get("unit_price", 0.0)
-                if "price_unit" in usage:
-                    price_unit = usage.get("price_unit", 0.0)
-                if "currency" in usage:
-                    currency = usage.get("currency", "USD")
+                    usage = result.get("usage") or {}
+                    tokens = usage.get("prompt_tokens") or usage.get("total_tokens") or 0
+                    used_tokens += tokens
+                    total_price += usage.get("total_price", 0.0)
+                    if "unit_price" in usage:
+                        unit_price = usage.get("unit_price", 0.0)
+                    if "price_unit" in usage:
+                        price_unit = usage.get("price_unit", 0.0)
+                    if "currency" in usage:
+                        currency = usage.get("currency", "USD")
+
+                for i, idx in enumerate(text_indices):
+                    all_embeddings[idx] = text_embeddings[i]
+
+            # Multimodal path: sequential vLLM chat embeddings API
+            if multimodal_inputs:
+                mm_embeddings, mm_tokens, mm_price, mm_unit_price, mm_price_unit, mm_currency = (
+                    self._embed_multimodal_via_chat(
+                        model, credentials, multimodal_inputs, endpoint_url, api_key, max_chunks
+                    )
+                )
+                used_tokens += mm_tokens
+                total_price += mm_price
+                if mm_unit_price:
+                    unit_price = mm_unit_price
+                if mm_price_unit:
+                    price_unit = mm_price_unit
+                if mm_currency != "USD":
+                    currency = mm_currency
+
+                for i, idx in enumerate(multimodal_indices):
+                    all_embeddings[idx] = mm_embeddings[i]
 
             return TextEmbeddingResult(
-                embeddings=batched_embeddings,
+                embeddings=all_embeddings,
                 model=model,
                 usage=EmbeddingUsage(
                     tokens=used_tokens,
@@ -213,7 +283,7 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                     price_unit=price_unit,
                     total_price=total_price,
                     currency=currency,
-                    latency=0.0,  # Latency tracking would require timing each request
+                    latency=0.0,
                 ),
             )
 
@@ -221,6 +291,107 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
             raise InvokeServerUnavailableError(str(ex))
         except Exception as ex:
             raise InvokeError(str(ex))
+
+    def _embed_multimodal_via_chat(
+        self,
+        model: str,
+        credentials: dict,
+        inputs: list[str],
+        endpoint_url: str,
+        api_key: str,
+        max_chunks: int,
+    ) -> tuple:
+        """
+        Embed inputs containing multimodal content using vLLM chat embeddings API.
+        Returns (embeddings, used_tokens, total_price, unit_price, price_unit, currency).
+        """
+        client = OpenAI(api_key=api_key, base_url=endpoint_url)
+
+        batched_embeddings = []
+        used_tokens = 0
+        total_price = 0.0
+        unit_price = 0.0
+        price_unit = 0.0
+        currency = "USD"
+
+        default_instruction = "Represent the user's input."
+
+        for prompt in inputs:
+            prompt_list = prompt.split(" ")
+            input_type = 0  # 0: text, 1: image only, 2: image + text
+            if len(prompt_list) > 1:
+                input_type = 2 if "Image:" in prompt else 0
+            else:
+                input_type = 1 if "Image:" in prompt else 0
+
+            if input_type == 0:
+                response = create_chat_embeddings(
+                    client,
+                    messages=[
+                        {"role": "system", "content": [{"type": "text", "text": default_instruction}]},
+                        {"role": "user", "content": [{"type": "text", "text": prompt}]},
+                        {"role": "assistant", "content": [{"type": "text", "text": ""}]},
+                    ],
+                    model=model,
+                    encoding_format="float",
+                    continue_final_message=True,
+                    add_special_tokens=True,
+                )
+            elif input_type == 1:
+                image_url = prompt[len("Image:"):]
+                response = create_chat_embeddings(
+                    client,
+                    messages=[
+                        {"role": "system", "content": [{"type": "text", "text": default_instruction}]},
+                        {"role": "user", "content": [
+                            {"type": "image_url", "image_url": {"url": image_url}},
+                            {"type": "text", "text": ""},
+                        ]},
+                        {"role": "assistant", "content": [{"type": "text", "text": ""}]},
+                    ],
+                    model=model,
+                    encoding_format="float",
+                    continue_final_message=True,
+                    add_special_tokens=True,
+                )
+            else:
+                image_url = ""
+                text_parts = []
+                for item in prompt_list:
+                    if item.startswith("Image:"):
+                        image_url = item[len("Image:"):]
+                    elif item:
+                        text_parts.append(item)
+                text = " ".join(text_parts)
+                response = create_chat_embeddings(
+                    client,
+                    messages=[
+                        {"role": "system", "content": [{"type": "text", "text": default_instruction}]},
+                        {"role": "user", "content": [
+                            {"type": "image_url", "image_url": {"url": image_url}},
+                            {"type": "text", "text": text},
+                        ]},
+                        {"role": "assistant", "content": [{"type": "text", "text": ""}]},
+                    ],
+                    model=model,
+                    encoding_format="float",
+                    continue_final_message=True,
+                    add_special_tokens=True,
+                )
+
+            batched_embeddings.append(response.data[0].embedding)
+            usage = response.model_dump().get("usage") or {}
+            tokens = usage.get("prompt_tokens") or usage.get("total_tokens") or 0
+            used_tokens += tokens
+            total_price += usage.get("total_price", 0.0)
+            if "unit_price" in usage:
+                unit_price = usage.get("unit_price", 0.0)
+            if "price_unit" in usage:
+                price_unit = usage.get("price_unit", 0.0)
+            if "currency" in usage:
+                currency = usage.get("currency", "USD")
+
+        return batched_embeddings, used_tokens, total_price, unit_price, price_unit, currency
 
     def _process_input(self, text: str, vision_enabled: bool) -> Union[str, list]:
         """
@@ -439,9 +610,25 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 return "bmp"
             else:
                 # Default to jpeg if unknown
-                return "jpeg"
+                #return "jpeg"
+                return ""
         except Exception:
-            return "jpeg"
+            #return "jpeg"
+            return ""
+
+    def _contains_ip(self, text):
+        """
+        Check if text contains a valid IP address (each octet 0-255).
+
+        Args:
+            text: the string to check
+
+        Returns:
+            bool: True if a valid IP address is found, False otherwise
+        """
+        ip_pattern = r'\b(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'
+
+        return bool(re.search(ip_pattern, text))
 
     def _extract_markdown_images(self, text: str) -> Union[str, list]:
         """
@@ -450,6 +637,8 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
         :param text: text potentially containing markdown images
         :return: processed content
         """
+        if not self._contains_ip(text):
+            return text
         # Pattern to match markdown images
         pattern = r"!\[([^\]]*)\]\(([^\)]+)\)"
 
@@ -551,10 +740,27 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                     if content.get("type") == "text":
                         text_parts.append(content.get("text", ""))
                     elif content.get("type") == "image_url":
-                        text_parts.append(
-                            f"[Image: {content.get('image_url', {}).get('url', '')}]"
-                        )
+                        #text_parts.append(f"[Image: {content.get('image_url', {}).get('url', '')}]")
+                        text_parts.append(f"Image:{content.get('image_url', {}).get('url', '')}")
                 texts.append(" ".join(text_parts) if text_parts else "")
+            elif input_data.content_type == MultiModalContentType.TEXT:
+                input = {
+                    "text": input_data.content
+                }
+                input_str = json.dumps(input, ensure_ascii=False)
+                texts.append(input_str)
+            elif input_data.content_type == MultiModalContentType.IMAGE:
+                image_format = self._detect_image_format_from_base64(input_data.content)
+                if len(image_format)>0:
+                    input = {
+                        "image": "data:image/" + image_format + ";base64," + input_data.content
+                    }
+                else:
+                    input = {
+                        "image": "data:image" + ";base64," + input_data.content
+                    }
+                input_str = json.dumps(input, ensure_ascii=False)
+                texts.append(input_str)
             else:
                 texts.append(
                     input_data if isinstance(input_data, str) else str(input_data)

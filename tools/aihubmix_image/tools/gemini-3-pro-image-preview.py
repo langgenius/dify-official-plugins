@@ -21,7 +21,9 @@ try:
     from google import genai
     from google.genai import types
 except ImportError:
-    raise ImportError("Required packages not found. Please install: pip install google-genai Pillow")
+    raise ImportError(
+        "Required packages are declared in pyproject.toml. Run `uv sync` in the plugin directory."
+    )
 
 
 class Gemini3ProImagePreviewTool(Tool):

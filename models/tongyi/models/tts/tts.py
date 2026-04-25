@@ -99,6 +99,7 @@ class TongyiText2SpeechModel(_CommonTongyi, TTSModel):
                     word_limit,
                     ws_base_address,
                 ),
+                daemon=True,
             ).start()
             while True:
                 audio = audio_queue.get()

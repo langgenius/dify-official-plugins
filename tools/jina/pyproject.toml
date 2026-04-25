@@ -5,9 +5,11 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 
-# uv pip compile pyproject.toml -o ./requirements.txt
+# Refresh the lockfile with: uv lock
 dependencies = [
     "dify_plugin>=0.5.0",
+    "requests>=2.32.5",
+    "yarl>=1.9.11",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix

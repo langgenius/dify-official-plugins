@@ -5,11 +5,10 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 
-# uv pip compile pyproject.toml -o ./requirements.txt
+# Refresh the lockfile after dependency changes with: uv lock
 dependencies = [
     "dify_plugin~=0.0.1b72",
     "dropbox~=12.0.2",
-    "requests~=2.32.7",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix

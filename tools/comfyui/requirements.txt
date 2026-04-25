@@ -1,4 +1,0 @@
-dify_plugin>=0.3.0
-websocket-client==1.7.0
-pillow==12.1.1
-requests_cache==1.2.1

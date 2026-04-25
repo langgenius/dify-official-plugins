@@ -224,16 +224,22 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "qwen-flash", "qwen-flash-2025-07-28",
             # Qwen3 Max series (default: thinking disabled)
             "qwen3-max-2026-01-23", "qwen3-max-preview",
-            # Qwen3.5 series (default: thinking ENABLED - must explicitly disable)
+            # Qwen3.5/3.6 series (default: thinking ENABLED - must explicitly disable)
+            "qwen3.6-plus", "qwen3.6-plus-2026-04-02",
+            "qwen3.6-flash", "qwen3.6-flash-2026-04-16",
             "qwen3.5-plus", "qwen3.5-plus-2026-02-15",
             "qwen3.5-flash", "qwen3.5-flash-2026-02-23",
             # GLM series (default: thinking ENABLED - must explicitly disable)
-            "glm-5", "glm-4.7", "glm-4.6", "glm-4.5", "glm-4.5-air",
+            "glm-5.1", "glm-5", "glm-4.7", "glm-4.6", "glm-4.5", "glm-4.5-air",
             # DeepSeek series (default: thinking disabled)
             "deepseek-v3.2", "deepseek-v3.2-exp", "deepseek-v3.1",
         }
         if model in thinking_capable_models and "enable_thinking" not in model_parameters:
             model_parameters["enable_thinking"] = False
+
+        extra_headers_str = ''
+        if model_parameters.get('extra_headers',''):
+            extra_headers_str = model_parameters.pop('extra_headers')
 
         params = {
             "model": model,
@@ -252,6 +258,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "qwen-turbo-2025-04-28",
             "qwen-flash", "qwen-flash-2025-07-28",
             "qwen3-max-2026-01-23", "qwen3-max-preview",
+            "qwen3.6-plus", "qwen3.6-plus-2026-04-02",
             "qwen3.5-plus", "qwen3.5-plus-2026-02-15",
             "qwen3.5-flash", "qwen3.5-flash-2026-02-23",
         ) and model_parameters.get("enable_thinking", False)
@@ -293,7 +300,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             response = MultiModalConversation.call(
                 **params,
                 stream=stream,
-                headers=self._get_market_bury_point_header(params["messages"]),
+                headers=self._get_market_bury_point_header(params["messages"], extra_headers_str),
                 incremental_output=incremental_output,
                 base_address=base_address,
             )
@@ -303,7 +310,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             )
             response = Generation.call(
                 **params,
-                headers=self._get_market_bury_point_header(params["messages"]),
+                headers=self._get_market_bury_point_header(params["messages"], extra_headers_str),
                 result_format="message",
                 stream=stream,
                 incremental_output=incremental_output,
@@ -968,7 +975,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             ],
         )
 
-    def _get_market_bury_point_header(self, messages: list[dict]) -> dict:
+    def _get_market_bury_point_header(self, messages: list[dict], extra_headers_str: str) -> dict:
         """
         Extract market bury point header information from messages
 
@@ -982,6 +989,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             dict: Bury point header information dictionary containing moduleCode, accountId and other fields;
                   If no valid information can be extracted, returns the default BURY_POINT_HEADER
         """
+        res_bury_point_header = {}
         system_entries = [entry for entry in messages if entry["role"] == "system"]
         if system_entries:
             system_entry = system_entries[0].get("content", "")
@@ -1000,8 +1008,16 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                             bury_point_header["accountId"] = buyer_uid.strip()
 
                         system_entries[0]["content"] = "".join(system_entry_split[1:])
-                        return {"x-dashscope-euid": json.dumps(bury_point_header)}
+                        res_bury_point_header = {"x-dashscope-euid": json.dumps(bury_point_header)}
                 except Exception:
-                    return BURY_POINT_HEADER
+                    res_bury_point_header = {}
 
-        return BURY_POINT_HEADER
+        if extra_headers_str and res_bury_point_header == {}:
+            try:
+                # Replace non-breaking spaces and other special whitespace characters with regular spaces
+                cleaned_str = extra_headers_str.replace('\xa0', ' ').replace('\u3000', ' ')
+                res_bury_point_header = json.loads(cleaned_str)
+            except Exception:
+                res_bury_point_header = {}
+
+        return res_bury_point_header

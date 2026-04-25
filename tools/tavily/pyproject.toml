@@ -5,9 +5,9 @@ description = "A powerful AI-native search engine and web content extraction too
 readme = "README.md"
 requires-python = ">=3.12"
 
-# uv pip compile pyproject.toml -o ./requirements.txt
 dependencies = [
     "dify_plugin>=0.5.0",
+    "requests>=2.32.5",
     "tavily-python==0.7.19",
 ]
 
