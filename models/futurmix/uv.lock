@@ -186,13 +186,16 @@ wheels = [
 [[package]]
 name = "dify-plugin-futurmix"
 version = "0.0.1"
-source = { editable = "." }
+source = { virtual = "." }
 dependencies = [
     { name = "dify-plugin" },
 ]
 
 [package.metadata]
 requires-dist = [{ name = "dify-plugin", specifier = ">=0.5.0" }]
+
+[package.metadata.requires-dev]
+dev = []
 
 [[package]]
 name = "dpkt"
