@@ -74,8 +74,6 @@ def _normalize_service_tier_params(model_parameters: dict) -> None:
     st = model_parameters.get("service_tier")
     if st in (None, "", "default"):
         model_parameters.pop("service_tier", None)
-    elif st == "flex":
-        model_parameters["service_tier"] = "flex"
 
 
 class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
