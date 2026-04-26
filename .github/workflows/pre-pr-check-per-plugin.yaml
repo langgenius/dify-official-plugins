@@ -8,7 +8,7 @@ on:
 
 jobs:
   detect-changes:
-    runs-on: depot-ubuntu-24.04
+    runs-on: ${{ github.repository == 'langgenius/dify-official-plugins' && 'depot-ubuntu-24.04' || 'ubuntu-24.04' }}
     outputs:
       plugins: ${{ steps.filter.outputs.plugins }}
       has_changes: ${{ steps.filter.outputs.has_changes }}
@@ -36,7 +36,7 @@ jobs:
   test:
     needs: detect-changes
     if: needs.detect-changes.outputs.has_changes == 'true'
-    runs-on: depot-ubuntu-24.04-4
+    runs-on: ${{ github.repository == 'langgenius/dify-official-plugins' && 'depot-ubuntu-24.04-4' || 'ubuntu-24.04' }}
     strategy:
       matrix:
         plugin_path: ${{ fromJson(needs.detect-changes.outputs.plugins) }}
@@ -85,6 +85,7 @@ jobs:
           echo "DIFY_CLI_PATH=$GITHUB_WORKSPACE/.scripts/dify" >> $GITHUB_ENV
 
       - name: Export All Secrets to Environment
+        if: github.repository == 'langgenius/dify-official-plugins'
         uses: oNaiPs/secrets-to-env-action@v1
         with:
           secrets: ${{ toJSON(secrets) }}
@@ -98,6 +99,7 @@ jobs:
           fi
 
       - name: Check If Version Exists
+        if: github.repository == 'langgenius/dify-official-plugins'
         run: |
           VERSION=$(yq '.version' "${{ matrix.plugin_path }}/manifest.yaml")
           AUTHOR=$(yq '.author' "${{ matrix.plugin_path }}/manifest.yaml")
@@ -130,6 +132,7 @@ jobs:
           fi
 
       - name: Check Packaging
+        if: github.repository == 'langgenius/dify-official-plugins'
         run: |
           uv run --with requests --with dify_plugin python .scripts/uploader/upload-package.py -d "${{ matrix.plugin_path }}" -t "${{ secrets.MARKETPLACE_TOKEN }}" --plugin-daemon-path .scripts/dify -u "${{ secrets.MARKETPLACE_BASE_URL }}" -f --test
 
@@ -254,7 +257,7 @@ jobs:
       - detect-changes
       - test
     if: always()
-    runs-on: depot-ubuntu-24.04
+    runs-on: ${{ github.repository == 'langgenius/dify-official-plugins' && 'depot-ubuntu-24.04' || 'ubuntu-24.04' }}
     steps:
       - name: Verify check results
         run: |

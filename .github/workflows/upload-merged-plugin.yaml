@@ -14,6 +14,7 @@ on:
 
 jobs:
   detect-changes:
+    if: github.repository == 'langgenius/dify-official-plugins'
     runs-on: depot-ubuntu-24.04
     outputs:
       plugins: ${{ steps.filter.outputs.plugins }}
@@ -32,7 +33,7 @@ jobs:
 
   upload-merged-plugin:
     needs: detect-changes
-    if: needs.detect-changes.outputs.has_changes == 'true'
+    if: github.repository == 'langgenius/dify-official-plugins' && needs.detect-changes.outputs.has_changes == 'true'
     runs-on: depot-ubuntu-24.04-4
     strategy:
       matrix:
