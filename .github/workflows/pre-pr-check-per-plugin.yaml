@@ -8,7 +8,7 @@ on:
 
 jobs:
   detect-changes:
-    runs-on: ${{ github.repository == 'langgenius/dify-official-plugins' && 'depot-ubuntu-24.04' || 'ubuntu-24.04' }}
+    runs-on: depot-ubuntu-24.04
     outputs:
       plugins: ${{ steps.filter.outputs.plugins }}
       has_changes: ${{ steps.filter.outputs.has_changes }}
@@ -36,7 +36,7 @@ jobs:
   test:
     needs: detect-changes
     if: needs.detect-changes.outputs.has_changes == 'true'
-    runs-on: ${{ github.repository == 'langgenius/dify-official-plugins' && 'depot-ubuntu-24.04-4' || 'ubuntu-24.04' }}
+    runs-on: depot-ubuntu-24.04-4
     strategy:
       matrix:
         plugin_path: ${{ fromJson(needs.detect-changes.outputs.plugins) }}
@@ -257,7 +257,7 @@ jobs:
       - detect-changes
       - test
     if: always()
-    runs-on: ${{ github.repository == 'langgenius/dify-official-plugins' && 'depot-ubuntu-24.04' || 'ubuntu-24.04' }}
+    runs-on: depot-ubuntu-24.04
     steps:
       - name: Verify check results
         run: |
