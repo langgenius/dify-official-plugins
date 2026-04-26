@@ -1002,3 +1002,35 @@ class TestHandleGenerateResponse:
         # Should also have tool calls
         assert len(result.message.tool_calls) == 1
         assert result.message.tool_calls[0].function.name == "search"
+
+
+class TestFlexInference:
+    def setup_method(self):
+        self.llm = GoogleLargeLanguageModel([])
+
+    def test_set_service_tier_when_enabled_and_supported(self):
+        cfg = types.GenerateContentConfig()
+        self.llm._set_service_tier(
+            config=cfg,
+            model="gemini-2.5-flash",
+            model_parameters={"flex_inference": True},
+        )
+        assert cfg.service_tier == types.ServiceTier.FLEX
+
+    def test_set_service_tier_disabled_by_default(self):
+        cfg = types.GenerateContentConfig()
+        self.llm._set_service_tier(
+            config=cfg,
+            model="gemini-2.5-flash",
+            model_parameters={},
+        )
+        assert cfg.service_tier is None
+
+    def test_set_service_tier_ignored_for_unsupported_model(self):
+        cfg = types.GenerateContentConfig()
+        self.llm._set_service_tier(
+            config=cfg,
+            model="gemini-2.0-flash",
+            model_parameters={"flex_inference": True},
+        )
+        assert cfg.service_tier is None
