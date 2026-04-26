@@ -14,7 +14,7 @@ on:
 
 jobs:
   detect-changes:
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-24.04
     outputs:
       plugins: ${{ steps.filter.outputs.plugins }}
       has_changes: ${{ steps.filter.outputs.has_changes }}
@@ -33,7 +33,7 @@ jobs:
   upload-merged-plugin:
     needs: detect-changes
     if: needs.detect-changes.outputs.has_changes == 'true'
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-24.04-4
     strategy:
       matrix:
         plugin_path: ${{ fromJson(needs.detect-changes.outputs.plugins) }}
