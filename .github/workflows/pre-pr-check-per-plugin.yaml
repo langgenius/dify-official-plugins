@@ -85,7 +85,6 @@ jobs:
           echo "DIFY_CLI_PATH=$GITHUB_WORKSPACE/.scripts/dify" >> $GITHUB_ENV
 
       - name: Export All Secrets to Environment
-        if: github.repository == 'langgenius/dify-official-plugins'
         uses: oNaiPs/secrets-to-env-action@v1
         with:
           secrets: ${{ toJSON(secrets) }}
@@ -99,7 +98,6 @@ jobs:
           fi
 
       - name: Check If Version Exists
-        if: github.repository == 'langgenius/dify-official-plugins'
         run: |
           VERSION=$(yq '.version' "${{ matrix.plugin_path }}/manifest.yaml")
           AUTHOR=$(yq '.author' "${{ matrix.plugin_path }}/manifest.yaml")
@@ -132,7 +130,6 @@ jobs:
           fi
 
       - name: Check Packaging
-        if: github.repository == 'langgenius/dify-official-plugins'
         run: |
           uv run --with requests --with dify_plugin python .scripts/uploader/upload-package.py -d "${{ matrix.plugin_path }}" -t "${{ secrets.MARKETPLACE_TOKEN }}" --plugin-daemon-path .scripts/dify -u "${{ secrets.MARKETPLACE_BASE_URL }}" -f --test
 
