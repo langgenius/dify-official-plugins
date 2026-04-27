@@ -32,4 +32,4 @@ resource:
 tags:
 - search
 type: plugin
-version: 0.1.6
+version: 0.1.7

@@ -101,6 +101,10 @@ jobs:
             exit 1
           fi
 
+      - name: Generate Legacy Requirements for Packaging
+        run: |
+          bash .github/scripts/export-legacy-requirements.sh "${{ matrix.plugin_path }}"
+
       - name: Upload Plugin
         run: |
           uv run --with requests --with dify_plugin python .scripts/uploader/upload-package.py -d "${{ matrix.plugin_path }}" -t "${{ secrets.MARKETPLACE_TOKEN }}" --plugin-daemon-path .scripts/dify -u "${{ secrets.MARKETPLACE_BASE_URL }}" -f
