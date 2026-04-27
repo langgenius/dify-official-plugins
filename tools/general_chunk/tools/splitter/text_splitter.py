@@ -152,7 +152,7 @@ class TextSplitter(ABC):
 
         except ImportError:
             raise ValueError(
-                "Could not import transformers python package. Please install it with `pip install transformers`."
+                "Could not import transformers. It is declared in pyproject.toml; run `uv sync` in the plugin directory."
             )
         return cls(length_function=lambda x: [_huggingface_tokenizer_length(text) for text in x], **kwargs)
 
@@ -369,7 +369,7 @@ class TokenTextSplitter(TextSplitter):
             raise ImportError(
                 "Could not import tiktoken python package. "
                 "This is needed in order to for TokenTextSplitter. "
-                "Please install it with `pip install tiktoken`."
+                "It is declared in pyproject.toml; run `uv sync` in the plugin directory."
             )
 
         if model_name is not None:

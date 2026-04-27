@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 
-# uv pip compile pyproject.toml -o ./requirements.txt
+# Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
     "dify_plugin>=0.5.0",
     "openai~=2.3.0",

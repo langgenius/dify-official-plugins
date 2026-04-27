@@ -62,7 +62,6 @@ Each tool's YAML file documents the required and optional parameters.
 - All tool logic is implemented in the `tools/` directory.
 - To add or modify tools, edit the corresponding `.py` and `.yaml` files.
 - Follow the parameter and description conventions for consistency.
-- See [GUIDE.md](./GUIDE.md) for more details on plugin development.
 
 Several Function are under developing:
 

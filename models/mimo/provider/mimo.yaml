@@ -2,8 +2,8 @@ background: '#faf7f5'
 configurate_methods:
 - predefined-model
 description:
-  en_US: Models provided by Xiaomi MiMo, such as mimo-v2-flash.
-  zh_Hans: Xiaomi MiMo 提供的模型，例如 mimo-v2-flash。
+  en_US: Models provided by Xiaomi MiMo, such as mimo-v2.5-pro, mimo-v2.5, mimo-v2-flash.
+  zh_Hans: Xiaomi MiMo 提供的模型，例如 mimo-v2.5-pro、mimo-v2.5、mimo-v2-flash。
 extra:
   python:
     model_sources:

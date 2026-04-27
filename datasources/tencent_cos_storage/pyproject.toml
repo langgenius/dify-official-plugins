@@ -5,7 +5,6 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 
-# uv pip compile pyproject.toml -o ./requirements.txt
 dependencies = [
     "dify_plugin>=0.5.0",
     "cos-python-sdk-v5==1.9.30",
