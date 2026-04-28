@@ -116,11 +116,16 @@ class GPTImage2GenerateTool(Tool):
         for image in images:
             if not image.b64_json:
                 continue
-            mime_type, blob_image = decode_image(image.b64_json)
-            final_mime_type = f"image/{output_format}" if output_format in {"png", "jpeg"} else mime_type
 
-            metadata = {"mime_type": final_mime_type, **usage_metadata}
-            yield self.create_blob_message(blob=blob_image, meta=metadata)
+            try:
+                mime_type, blob_image = decode_image(image.b64_json)
+                final_mime_type = f"image/{output_format}" if output_format in {"png", "jpeg"} else mime_type
+
+                metadata = {"mime_type": final_mime_type, **usage_metadata}
+                yield self.create_blob_message(blob=blob_image, meta=metadata)
+            except Exception:
+                yield self.create_text_message("Error processing a generated image in the Azure response.")
+                continue
 
         yield self.create_variable_message("requested_n", n)
         yield self.create_variable_message("actual_image_count", image_count)
