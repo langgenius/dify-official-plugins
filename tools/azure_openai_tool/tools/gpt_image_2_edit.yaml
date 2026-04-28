@@ -1,0 +1,129 @@
+description:
+  human:
+    en_US: GPT Image 2 Edit edits one or more images with an Azure OpenAI GPT-image-2 deployment.
+    pt_BR: GPT Image 2 Edit edita uma ou mais imagens com uma implantação Azure OpenAI GPT-image-2.
+    zh_Hans: GPT Image 2 Edit 使用 Azure OpenAI GPT-image-2 部署编辑一张或多张图像。
+  llm: A tool to edit one or more images with an Azure OpenAI gpt-image-2 deployment.
+extra:
+  python:
+    source: tools/gpt_image_2_edit.py
+identity:
+  author: langgenius
+  description:
+    en_US: Edit one or more images with a dedicated Azure OpenAI GPT-image-2 tool.
+    pt_BR: Edite uma ou mais imagens com uma ferramenta dedicada do Azure OpenAI GPT-image-2.
+    zh_Hans: 使用独立的 Azure OpenAI GPT-image-2 工具编辑一张或多张图像。
+  label:
+    en_US: GPT Image 2 Edit
+    pt_BR: GPT Image 2 Edit
+    zh_Hans: GPT 图像 2 编辑
+  name: gpt_image_2_edit
+output_schema:
+  type: object
+  properties:
+    requested_n:
+      type: integer
+      description: Number of edited images requested by the workflow.
+    actual_image_count:
+      type: integer
+      description: Number of edited images actually returned by the tool after any fallback retries.
+    fallback_used:
+      type: boolean
+      description: Whether the tool had to make additional Azure calls to fulfill the requested edited image count.
+parameters:
+  - form: llm
+    human_description:
+      en_US: A text description of how the input image or images should be edited.
+      pt_BR: Uma descrição em texto de como a imagem ou as imagens de entrada devem ser editadas.
+      zh_Hans: 描述应如何编辑输入图像的一段文本说明。
+    label:
+      en_US: Prompt
+      pt_BR: Prompt
+      zh_Hans: 提示词
+    llm_description: A detailed text description of how the input image or images should be edited by Azure OpenAI GPT-image-2.
+    name: prompt
+    required: true
+    type: string
+  - form: llm
+    human_description:
+      en_US: One or more images to edit (PNG, JPEG, or WebP, subject to Azure deployment limits).
+      pt_BR: Uma ou mais imagens para editar (PNG, JPEG ou WebP, sujeitas aos limites da implantação Azure).
+      zh_Hans: 要编辑的一张或多张图像（PNG、JPEG 或 WebP，需符合 Azure 部署限制）。
+    label:
+      en_US: Image(s)
+      pt_BR: Imagem(ns)
+      zh_Hans: 图像
+    name: image
+    required: true
+    type: files
+    mime_types: [ "image/png", "image/jpeg", "image/webp" ]
+  - form: llm
+    human_description:
+      en_US: Optional PNG mask used for inpainting. Transparent areas indicate where to edit.
+      pt_BR: Máscara PNG opcional usada para inpainting. As áreas transparentes indicam onde editar.
+      zh_Hans: 用于局部修复的可选 PNG 蒙版，透明区域表示要编辑的位置。
+    label:
+      en_US: Mask
+      pt_BR: Máscara
+      zh_Hans: 蒙版
+    name: mask
+    required: false
+    type: file
+    mime_types: [ "image/png" ]
+  - default: 1024x1024
+    form: form
+    human_description:
+      en_US: Output size as a WxH string. Common values include 1024x1024, 1024x1536, and 1536x1024.
+      pt_BR: Tamanho de saída como texto WxH. Valores comuns incluem 1024x1024, 1024x1536 e 1536x1024.
+      zh_Hans: 使用 WxH 字符串填写输出尺寸，常见值包括 1024x1024、1024x1536 和 1536x1024。
+    label:
+      en_US: Image Size
+      pt_BR: Tamanho da imagem
+      zh_Hans: 图像大小
+    name: size
+    required: false
+    type: string
+  - default: 1
+    form: form
+    human_description:
+      en_US: Number of edited images to generate (between 1 and 10).
+      pt_BR: Número de imagens editadas a gerar (entre 1 e 10).
+      zh_Hans: 要生成的编辑结果数量（1 到 10）。
+    label:
+      en_US: Number of Images
+      pt_BR: Número de imagens
+      zh_Hans: 图像数量
+    max: 10
+    min: 1
+    name: n
+    required: false
+    type: number
+  - default: high
+    form: form
+    human_description:
+      en_US: Select the image quality supported by your Azure GPT-image-2 deployment.
+      pt_BR: Selecione a qualidade da imagem compatível com sua implantação Azure GPT-image-2.
+      zh_Hans: 选择你的 Azure GPT-image-2 部署支持的图像质量。
+    label:
+      en_US: Image Quality
+      pt_BR: Qualidade da imagem
+      zh_Hans: 图像质量
+    name: quality
+    options:
+      - label:
+          en_US: Low
+          pt_BR: Baixa
+          zh_Hans: 低
+        value: low
+      - label:
+          en_US: Medium
+          pt_BR: Média
+          zh_Hans: 中
+        value: medium
+      - label:
+          en_US: High
+          pt_BR: Alta
+          zh_Hans: 高
+        value: high
+    required: false
+    type: select
