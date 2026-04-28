@@ -1,6 +1,6 @@
 model: mm-minimax-m2.7-highspeed
 label:
-  en_US: Mm Minimax M2.7 Highspeed
+  en_US: MM MiniMax M2.7 Highspeed
 model_type: llm
 features:
   - agent-thought
