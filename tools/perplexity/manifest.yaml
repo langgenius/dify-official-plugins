@@ -31,4 +31,4 @@ resource:
 tags:
 - search
 type: plugin
-version: 1.0.3
+version: 1.0.4

@@ -14,7 +14,7 @@ on:
 
 jobs:
   detect-changes:
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-24.04
     outputs:
       plugins: ${{ steps.filter.outputs.plugins }}
       has_changes: ${{ steps.filter.outputs.has_changes }}
@@ -33,7 +33,7 @@ jobs:
   upload-merged-plugin:
     needs: detect-changes
     if: needs.detect-changes.outputs.has_changes == 'true'
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-24.04-4
     strategy:
       matrix:
         plugin_path: ${{ fromJson(needs.detect-changes.outputs.plugins) }}
@@ -100,6 +100,10 @@ jobs:
             echo "!!! uv.lock or requirements.txt is required for dependency validation"
             exit 1
           fi
+
+      - name: Generate Legacy Requirements for Packaging
+        run: |
+          bash .github/scripts/export-legacy-requirements.sh "${{ matrix.plugin_path }}"
 
       - name: Upload Plugin
         run: |
