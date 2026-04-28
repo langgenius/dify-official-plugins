@@ -12,6 +12,10 @@ on:
       - "tools/**"
       - "triggers/**"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
 jobs:
   detect-changes:
     runs-on: depot-ubuntu-24.04
@@ -46,7 +50,23 @@ jobs:
           persist-credentials: false
           fetch-depth: 0
 
+      - name: Resolve external tool versions
+        id: external
+        env:
+          GH_TOKEN: ${{ secrets.ORG_SCOPE_GITHUB_TOKEN }}
+        run: |
+          echo "toolkit_sha=$(gh api repos/langgenius/dify-marketplace-toolkit/commits/HEAD --jq .sha)" >> $GITHUB_OUTPUT
+          echo "cli_tag=$(gh release view -R langgenius/dify-plugin-daemon --json tagName --jq .tagName)" >> $GITHUB_OUTPUT
+
+      - name: Cache .scripts (toolkit + CLI)
+        id: scripts-cache
+        uses: actions/cache@v4
+        with:
+          path: .scripts
+          key: scripts-${{ steps.external.outputs.toolkit_sha }}-${{ steps.external.outputs.cli_tag }}
+
       - name: Clone Marketplace Toolkit
+        if: steps.scripts-cache.outputs.cache-hit != 'true'
         env:
           GH_TOKEN: ${{ secrets.ORG_SCOPE_GITHUB_TOKEN }}
         run: |
@@ -62,12 +82,17 @@ jobs:
         with:
           version: "latest"
           activate-environment: false
+          enable-cache: true
+          cache-dependency-glob: |
+            ${{ matrix.plugin_path }}/uv.lock
+            ${{ matrix.plugin_path }}/requirements.txt
 
       - name: Download Dify CLI
+        if: steps.scripts-cache.outputs.cache-hit != 'true'
         env:
           GH_TOKEN: ${{ secrets.ORG_SCOPE_GITHUB_TOKEN }}
         run: |
-          gh release download -R langgenius/dify-plugin-daemon --pattern "dify-plugin-linux-amd64" --dir .scripts
+          gh release download "${{ steps.external.outputs.cli_tag }}" -R langgenius/dify-plugin-daemon --pattern "dify-plugin-linux-amd64" --dir .scripts
           chmod +x .scripts/dify-plugin-linux-amd64
           mv .scripts/dify-plugin-linux-amd64 .scripts/dify
 
