@@ -2,9 +2,13 @@ name: Pre PR Check Per Plugin
 
 on:
   pull_request_target:
-    types: [opened, synchronize, ready_for_review, review_requested, edited]
+    types: [opened, synchronize, ready_for_review, review_requested]
     branches:
       - main
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   detect-changes:
@@ -15,7 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
           ref: ${{ github.event.pull_request.base.sha }}
 
       - name: Fetch changed file list
@@ -48,10 +52,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
           ref: ${{ github.event.pull_request.head.sha }}
 
+      - name: Resolve external tool versions
+        id: external
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "toolkit_sha=$(gh api repos/langgenius/dify-marketplace-toolkit/commits/HEAD --jq .sha)" >> $GITHUB_OUTPUT
+          echo "cli_tag=$(gh release view -R langgenius/dify-plugin-daemon --json tagName --jq .tagName)" >> $GITHUB_OUTPUT
+
+      - name: Cache .scripts (toolkit + CLI)
+        id: scripts-cache
+        uses: actions/cache@v4
+        with:
+          path: .scripts
+          key: scripts-${{ steps.external.outputs.toolkit_sha }}-${{ steps.external.outputs.cli_tag }}
+
       - name: Clone Marketplace Toolkit
+        if: steps.scripts-cache.outputs.cache-hit != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -67,15 +87,20 @@ jobs:
         with:
           version: "latest"
           activate-environment: false
+          enable-cache: true
+          cache-dependency-glob: |
+            ${{ matrix.plugin_path }}/uv.lock
+            ${{ matrix.plugin_path }}/requirements.txt
 
       - name: yq - portable yaml processor
         uses: mikefarah/yq@v4.44.5
 
       - name: Download Dify CLI
+        if: steps.scripts-cache.outputs.cache-hit != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download -R langgenius/dify-plugin-daemon --pattern "dify-plugin-linux-amd64" --dir .scripts
+          gh release download "${{ steps.external.outputs.cli_tag }}" -R langgenius/dify-plugin-daemon --pattern "dify-plugin-linux-amd64" --dir .scripts
           chmod +x .scripts/dify-plugin-linux-amd64
           mv .scripts/dify-plugin-linux-amd64 .scripts/dify
 
@@ -153,25 +178,12 @@ jobs:
         run: |
           cd "${{ matrix.plugin_path }}"
 
+          VENV_DIR="$RUNNER_TEMP/plugin-shared-venv"
+          rm -rf "$VENV_DIR"
+
           if [ -f "uv.lock" ]; then
-            VENV_DIR="$RUNNER_TEMP/plugin-dependency-check-venv"
-
-            cleanup() {
-              rm -rf "$VENV_DIR"
-            }
-            trap cleanup EXIT
-
-            rm -rf "$VENV_DIR"
             UV_PROJECT_ENVIRONMENT="$VENV_DIR" uv sync --all-groups --frozen --python 3.12
           elif [ -f "requirements.txt" ]; then
-            VENV_DIR=".ci-requirements-check-venv"
-
-            cleanup() {
-              rm -rf "$VENV_DIR"
-            }
-            trap cleanup EXIT
-
-            rm -rf "$VENV_DIR"
             uv venv "$VENV_DIR" --python 3.12
             uv pip install --python "$VENV_DIR/bin/python" -r requirements.txt
           else
@@ -179,34 +191,24 @@ jobs:
             exit 1
           fi
 
+          echo "PLUGIN_VENV=$VENV_DIR" >> "$GITHUB_ENV"
+
       - name: Check Plugin Install
         run: |
           export INSTALL_METHOD=serverless
           export SERVERLESS_PORT=8080
           export SERVERLESS_HOST=0.0.0.0
+
+          cleanup() {
+            rm -rf "$PLUGIN_VENV"
+          }
+          trap cleanup EXIT
+
           if [ -f "${{ matrix.plugin_path }}/uv.lock" ]; then
-            VENV_DIR="$RUNNER_TEMP/plugin-install-check-venv"
-
-            cleanup() {
-              rm -rf "$VENV_DIR"
-            }
-            trap cleanup EXIT
-
-            rm -rf "$VENV_DIR"
-            UV_PROJECT_ENVIRONMENT="$VENV_DIR" uv run --project "${{ matrix.plugin_path }}" --frozen --with requests python .scripts/validator/test-plugin-install.py -d "${{ matrix.plugin_path }}"
+            UV_PROJECT_ENVIRONMENT="$PLUGIN_VENV" uv run --project "${{ matrix.plugin_path }}" --frozen --with requests python .scripts/validator/test-plugin-install.py -d "${{ matrix.plugin_path }}"
           elif [ -f "${{ matrix.plugin_path }}/requirements.txt" ]; then
-            VENV_DIR=".ci-plugin-install-venv"
-
-            cleanup() {
-              rm -rf "$VENV_DIR"
-            }
-            trap cleanup EXIT
-
-            rm -rf "$VENV_DIR"
-            uv venv "$VENV_DIR" --python 3.12
-            uv pip install --python "$VENV_DIR/bin/python" -r "${{ matrix.plugin_path }}/requirements.txt"
-            uv pip install --python "$VENV_DIR/bin/python" requests
-            "$VENV_DIR/bin/python" .scripts/validator/test-plugin-install.py -d "${{ matrix.plugin_path }}"
+            uv pip install --python "$PLUGIN_VENV/bin/python" requests
+            "$PLUGIN_VENV/bin/python" .scripts/validator/test-plugin-install.py -d "${{ matrix.plugin_path }}"
           else
             echo "!!! uv.lock or requirements.txt is required for plugin install validation"
             exit 1
