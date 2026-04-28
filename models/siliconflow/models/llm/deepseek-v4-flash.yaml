@@ -1,6 +1,7 @@
 model: deepseek-ai/DeepSeek-V4-Flash
 label:
   en_US: deepseek-ai/DeepSeek-V4-Flash
+  zh_Hans: deepseek-ai/DeepSeek-V4-Flash
 model_type: llm
 features:
   - agent-thought
