@@ -361,7 +361,23 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
         else:
             self._set_previous_thinking_blocks([])
 
-        assistant_text = "".join(text_chunks)
+        # 构建包含思考内容的完整文本
+        assistant_text = ""
+        if thinking_blocks:
+            # 将所有思考内容用<think>标签包裹
+            thinking_contents = []
+            for block in thinking_blocks:
+                if block.get("type") == "thinking":
+                    thinking_contents.append(block.get("thinking", ""))
+                elif block.get("type") == "redacted_thinking":
+                    thinking_contents.append("[Redacted thinking]")
+
+            if thinking_contents:
+                assistant_text = "<think>\n" + "\n".join(thinking_contents) + "\n</think>\n"
+
+        # 添加正常文本内容
+        assistant_text += "".join(text_chunks)
+
         assistant_message = AssistantPromptMessage(content=assistant_text, tool_calls=tool_calls)
 
         prompt_tokens = int(getattr(response.usage, "input_tokens", 0) or 0)
@@ -410,6 +426,7 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
         streamed_tool_calls: dict[str, AssistantPromptMessage.ToolCall] = {}
         current_thinking_blocks: list[dict[str, Any]] = []
         emitted_final = False
+        is_reasoning_started = 0  # 0 not started, 1 started, 2 ended
 
         for event in response:
             event_type = getattr(event, "type", "")
@@ -436,6 +453,17 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                         ),
                     )
                 elif getattr(block, "type", "") == "thinking":
+                    # 开始思考块时,输出<think>标签
+                    if is_reasoning_started == 0:
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=0,
+                                message=AssistantPromptMessage(content="<think>\n"),
+                            ),
+                        )
+                        is_reasoning_started = 1
                     current_thinking_blocks.append(
                         {
                             "type": "thinking",
@@ -455,6 +483,17 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                 if delta_type == "text_delta":
                     text = getattr(delta, "text", "")
                     if text:
+                        # 如果之前在思考状态,先结束思考标签
+                        if is_reasoning_started == 1:
+                            yield LLMResultChunk(
+                                model=model,
+                                prompt_messages=prompt_messages,
+                                delta=LLMResultChunkDelta(
+                                    index=event_index,
+                                    message=AssistantPromptMessage(content="\n</think>\n"),
+                                ),
+                            )
+                            is_reasoning_started = 2
                         streamed_text.append(text)
                         yield LLMResultChunk(
                             model=model,
@@ -477,6 +516,15 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                             )
                         prev = str(current_thinking_blocks[-1].get("thinking", ""))
                         current_thinking_blocks[-1]["thinking"] = prev + thinking
+                        # 实时输出思考内容
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=event_index,
+                                message=AssistantPromptMessage(content=thinking),
+                            ),
+                        )
                 elif delta_type == "signature_delta":
                     signature = getattr(delta, "signature", "")
                     if signature and current_thinking_blocks and current_thinking_blocks[-1].get("type") == "thinking":

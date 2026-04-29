@@ -30,6 +30,25 @@ parameter_rules:
     use_template: presence_penalty
   - name: frequency_penalty
     use_template: frequency_penalty
+  - name: thinking
+    label:
+      en_US: Thinking Mode
+      zh_Hans: 思考模式
+    type: boolean
+    default: false
+    help:
+      en_US: Enable thinking mode for reasoning
+      zh_Hans: 启用思考模式进行推理
+  - name: thinking_budget
+    label:
+      en_US: Thinking Budget
+      zh_Hans: 思考预算
+    type: int
+    default: 1024
+    min: 1024
+    help:
+      en_US: Maximum tokens for thinking
+      zh_Hans: 思考过程的最大 token 数
 pricing:
   input: "2.1"
   output: "8.4"
