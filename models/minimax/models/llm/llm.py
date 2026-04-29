@@ -373,7 +373,7 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                     thinking_contents.append("[Redacted thinking]")
 
             if thinking_contents:
-                assistant_text = "<think>\n" + "\n".join(thinking_contents) + "\n</think>\n"
+                assistant_text = "<think>" + "".join(thinking_contents) + "</think>\n"
 
         # 添加正常文本内容
         assistant_text += "".join(text_chunks)
@@ -517,6 +517,16 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
                         prev = str(current_thinking_blocks[-1].get("thinking", ""))
                         current_thinking_blocks[-1]["thinking"] = prev + thinking
                         # 实时输出思考内容
+                        if is_reasoning_started == 0:
+                            yield LLMResultChunk(
+                                model=model,
+                                prompt_messages=prompt_messages,
+                                delta=LLMResultChunkDelta(
+                                    index=event_index,
+                                    message=AssistantPromptMessage(content="<think>\n"),
+                                ),
+                            )
+                            is_reasoning_started = 1
                         yield LLMResultChunk(
                             model=model,
                             prompt_messages=prompt_messages,
