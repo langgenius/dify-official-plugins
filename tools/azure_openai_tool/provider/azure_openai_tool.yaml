@@ -80,5 +80,3 @@ extra:
 tools:
 - tools/image_edit.yaml
 - tools/image_generate.yaml
-- tools/gpt_image_2_generate.yaml
-- tools/gpt_image_2_edit.yaml
