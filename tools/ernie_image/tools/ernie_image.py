@@ -62,7 +62,10 @@ class ErnieImageTool(Tool):
         except requests.RequestException as exc:
             raise InvokeError(f"Network error: {exc}") from exc
 
-        body = resp.json() if resp.content else {}
+        try:
+            body = resp.json() if resp.content else {}
+        except ValueError:
+            body = {}
         if resp.status_code != 200 or "data" not in body:
             msg = body.get("errorMsg") or body.get("detail") or resp.text
             raise InvokeError(f"ERNIE Image request failed (HTTP {resp.status_code}): {msg}")
@@ -98,8 +101,11 @@ class ErnieImageTool(Tool):
 
     @staticmethod
     def _image_blob(item: dict[str, Any]) -> bytes | None:
-        if item.get("b64_json"):
-            return base64.b64decode(item["b64_json"])
-        if item.get("url"):
-            return _fetch_image(item["url"])
+        try:
+            if item.get("b64_json"):
+                return base64.b64decode(item["b64_json"])
+            if item.get("url"):
+                return _fetch_image(item["url"])
+        except Exception:
+            return None
         return None

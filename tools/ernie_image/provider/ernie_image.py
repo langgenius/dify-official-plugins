@@ -31,9 +31,12 @@ class ErnieImageProvider(ToolProvider):
         except requests.RequestException as exc:
             raise ToolProviderCredentialValidationError(f"Network error: {exc}") from exc
 
+        # 200 = unexpected acceptance, 400 = "model not supported" (token is valid).
+        # Anything else (401/403/429/5xx/...) means the token cannot be used.
         if response.status_code == 401:
             raise ToolProviderCredentialValidationError("Invalid AI Studio access token")
-        if response.status_code >= 500:
+        if response.status_code not in (200, 400):
+            kind = "unavailable" if response.status_code >= 500 else "rejected the probe"
             raise ToolProviderCredentialValidationError(
-                f"AI Studio is unavailable (HTTP {response.status_code})"
+                f"AI Studio {kind} (HTTP {response.status_code})"
             )
