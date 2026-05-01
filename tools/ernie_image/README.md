@@ -3,6 +3,14 @@
 A Dify tool that generates images with Baidu's ERNIE Image models, served by the
 [AI Studio](https://aistudio.baidu.com) OpenAI-compatible endpoint.
 
+> Localized docs: [简体中文](readme/README_zh_Hans.md) · [日本語](readme/README_ja_JP.md)
+
+## Samples
+
+Generated with the prompt below, `ernie-image-turbo` at 1280×720:
+
+![ERNIE Image Turbo sample, 1280x720](_assets/samples/sample_turbo_1280x720.jpg)
+
 ## Models
 
 | Model | Notes |
