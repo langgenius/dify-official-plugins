@@ -1,8 +1,8 @@
-# https://developers.openai.com/api/docs/models/gpt-5.4-mini
-model: gpt-5.4-mini
+# https://platform.openai.com/docs/models/gpt-5.5-pro
+model: gpt-5.5-pro
 label:
-  zh_Hans: gpt-5.4-mini
-  en_US: gpt-5.4-mini
+  zh_Hans: gpt-5.5-pro
+  en_US: gpt-5.5-pro
 model_type: llm
 features:
   - multi-tool-call
@@ -11,7 +11,7 @@ features:
   - vision
 model_properties:
   mode: chat
-  context_size: 400000
+  context_size: 1050000
 parameter_rules:
   - name: max_tokens
     use_template: max_tokens
@@ -38,8 +38,8 @@ parameter_rules:
       en_US: Reasoning Effort
     type: string
     help:
-      zh_Hans: 约束推理模型的推理努力程度。支持的值包括 none、low、medium、high 和 xhigh。降低推理努力可以获得更快的响应和更少的推理 token 使用。GPT-5.4 mini 中默认值为 none。
-      en_US: Constrains effort on reasoning for reasoning models. Currently supported values are none, low, medium, high, and xhigh. Reducing reasoning effort can result in faster responses and fewer tokens used on reasoning in a response. The default for GPT-5.4 mini is none.
+      zh_Hans: 约束推理模型的推理努力程度。支持的值包括 none、low、medium、high 和 xhigh。
+      en_US: Constrains effort on reasoning for reasoning models. Supported values include none, low, medium, high, and xhigh.
     required: false
     default: none
     options:
@@ -86,7 +86,7 @@ parameter_rules:
       - default
       - flex
 pricing:
-  input: '0.75'
-  output: '4.50'
+  input: '15.00'
+  output: '90.00'
   unit: '0.000001'
   currency: USD
