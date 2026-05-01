@@ -9,7 +9,7 @@ identity:
     en_US: Image generation with Baidu ERNIE Image models on AI Studio.
     zh_Hans: 基于百度飞桨星河社区 ERNIE Image 模型的文生图工具。
     ja_JP: Baidu AI Studio の ERNIE Image モデルによる画像生成ツール。
-  icon: icon.svg
+  icon: logo.svg
   tags:
     - image
     - productivity

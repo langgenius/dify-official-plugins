@@ -10,7 +10,7 @@ description:
   en_US: Image generation powered by Baidu ERNIE Image models on AI Studio.
   zh_Hans: 基于百度飞桨星河社区 ERNIE Image 模型的文生图工具。
   ja_JP: Baidu AI Studio の ERNIE Image モデルによる画像生成ツール。
-icon: icon.svg
+icon: logo.svg
 resource:
   memory: 268435456
   permission:
