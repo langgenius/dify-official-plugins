@@ -1,0 +1,14 @@
+[project]
+name = "ernie_image"
+version = "0.0.1"
+description = "ERNIE Image generation tool for Dify"
+readme = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+    "dify_plugin>=0.5.0",
+    "requests>=2.31.0",
+]
+
+[dependency-groups]
+dev = []

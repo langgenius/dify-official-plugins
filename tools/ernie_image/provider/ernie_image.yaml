@@ -1,0 +1,39 @@
+identity:
+  author: langgenius
+  name: ernie_image
+  label:
+    en_US: ERNIE Image
+    zh_Hans: ERNIE Image
+    ja_JP: ERNIE Image
+  description:
+    en_US: Image generation with Baidu ERNIE Image models on AI Studio.
+    zh_Hans: 基于百度飞桨星河社区 ERNIE Image 模型的文生图工具。
+    ja_JP: Baidu AI Studio の ERNIE Image モデルによる画像生成ツール。
+  icon: icon.svg
+  tags:
+    - image
+    - productivity
+
+credentials_for_provider:
+  access_token:
+    type: secret-input
+    required: true
+    label:
+      en_US: AI Studio Access Token
+      zh_Hans: 星河社区访问令牌
+      ja_JP: AI Studio アクセストークン
+    placeholder:
+      en_US: Paste your AI Studio access token
+      zh_Hans: 粘贴您的星河社区访问令牌
+      ja_JP: AI Studio のアクセストークンを貼り付けてください
+    help:
+      en_US: Create one at https://aistudio.baidu.com under Personal Center > Access Token.
+      zh_Hans: 在 https://aistudio.baidu.com 个人中心 → 访问令牌 中创建。
+      ja_JP: https://aistudio.baidu.com の「パーソナルセンター → アクセストークン」で発行できます。
+
+tools:
+  - tools/ernie_image.yaml
+
+extra:
+  python:
+    source: provider/ernie_image.py
