@@ -37,13 +37,13 @@ credentials_for_provider:
       zh_Hans: 部署名称
       pt_BR: Nome da Implantação
     help:
-      en_US: Please input the name of your Azure OpenAI image model deployment (e.g., gpt-image-1/1.5)
-      zh_Hans: 请输入你的 Azure OpenAI 图像模型部署名称（例如：gpt-image-1/1.5）
-      pt_BR: Insira o nome da implantação do modelo de imagem do Azure OpenAI (ex： gpt-image-1/1.5)
+      en_US: Please input the deployment name of your Azure OpenAI GPT-image series model (for example a gpt-image-2 deployment name).
+      zh_Hans: 请输入你的 Azure OpenAI GPT-image 系列模型部署名称（例如某个 gpt-image-2 部署名）。
+      pt_BR: Insira o nome da implantação do seu modelo da série GPT-image no Azure OpenAI (por exemplo, uma implantação do gpt-image-2).
     placeholder:
-      en_US: Please input the name of your Azure OpenAI image model deployment (e.g., gpt-image-1/1.5)
-      zh_Hans: 请输入你的 Azure OpenAI 图像模型部署名称（例如：gpt-image-1/1.5）
-      pt_BR: Insira o nome da implantação do modelo de imagem do Azure OpenAI (ex： gpt-image-1/1.5)
+      en_US: "Enter your Azure OpenAI deployment name (for example: gpt-image-2)"
+      zh_Hans: "请输入你的 Azure OpenAI 部署名称（例如：gpt-image-2）"
+      pt_BR: "Insira o nome da implantação do Azure OpenAI (por exemplo: gpt-image-2)"
   azure_openai_base_url:
     type: text-input
     required: true
@@ -67,13 +67,13 @@ credentials_for_provider:
       zh_Hans: API 版本
       pt_BR: API Version
     help:
-      en_US: Please input your Azure OpenAI API Version,e.g. 2023-12-01-preview
-      zh_Hans: 请输入你的 Azure OpenAI API 版本，例如：2023-12-01-preview
-      pt_BR: Introduza a versão da API OpenAI do Azure,e.g. 2023-12-01-preview
+      en_US: Please input your Azure OpenAI API version. Use 2025-04-01-preview or later for current GPT-image edit support.
+      zh_Hans: 请输入你的 Azure OpenAI API 版本。若要使用当前的 GPT-image 编辑能力，请使用 2025-04-01-preview 或更高版本。
+      pt_BR: Insira a versão da API do Azure OpenAI. Use 2025-04-01-preview ou superior para o suporte atual de edição com GPT-image.
     placeholder:
-      en_US: Please input your Azure OpenAI API Version,e.g. 2023-12-01-preview
-      zh_Hans: 请输入你的 Azure OpenAI API 版本，例如：2023-12-01-preview
-      pt_BR: Introduza a versão da API OpenAI do Azure,e.g. 2023-12-01-preview
+      en_US: 2025-04-01-preview
+      zh_Hans: 2025-04-01-preview
+      pt_BR: 2025-04-01-preview
 extra:
   python:
     source: provider/azure_openai_tool.py
