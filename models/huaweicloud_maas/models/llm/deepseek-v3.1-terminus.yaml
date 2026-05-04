@@ -1,9 +1,12 @@
-model: qwen3-30b-a3b
+model: deepseek-v3.1-terminus
 label:
-  en_US: Qwen3-30B-A3B
+  en_US: DeepSeek-V3.1
 model_type: llm
 features:
   - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
 model_properties:
   mode: chat
   context_size: 128000
@@ -40,7 +43,7 @@ parameter_rules:
       zh_Hans: 是否开启思考模式。
       en_US: Whether to enable thinking mode.
 pricing:
-  input: '0.75'
-  output: '3'
-  unit: '0.000001'
+  input: "4"
+  output: "12"
+  unit: "0.000001"
   currency: RMB
