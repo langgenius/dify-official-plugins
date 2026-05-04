@@ -1,4 +1,4 @@
-model: deepseek-v3.1
+model: deepseek-v3.1-terminus
 label:
   en_US: DeepSeek-V3.1
 model_type: llm

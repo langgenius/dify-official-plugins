@@ -15,21 +15,28 @@ class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
     endpoint_mapping = {
         "deepseek-v3.2": _BASE_URL_V2,
         "deepseek-v3.2-exp": _BASE_URL_V2,
-        "deepseek-v3.1": _BASE_URL_V2,
+        "deepseek-v3.1-terminus": _BASE_URL_V2,
         "DeepSeek-V3": _BASE_URL_V2,
         "deepseek-r1-250528": _BASE_URL_V2,
         "DeepSeek-R1": _BASE_URL_V2,
         "Kimi-K2": _BASE_URL_V2,
         "longcat-flash-chat": _BASE_URL_V2,
+        "glm-5": _BASE_URL_V2,
+        "glm-5.1": _BASE_URL_V2,
+        "kimi-k2.6": _BASE_URL_V2,
+        "deepseek-v4-flash": _BASE_URL_V2,
     }
 
     thinking_mapping = {
         "deepseek-v3.2": _THINKING_PATH_XDS,
         "deepseek-v3.2-exp": _THINKING_PATH_XDS,
-        "deepseek-v3.1": _THINKING_PATH_XDS,
+        "deepseek-v3.1-terminus": _THINKING_PATH_XDS,
         "qwen3-235b-a22b": _THINKING_PATH_VLLM,
         "qwen3-32b": _THINKING_PATH_VLLM,
         "qwen3-30b-a3b": _THINKING_PATH_VLLM,
+        "glm-5": _THINKING_PATH_VLLM,
+        "glm-5.1": _THINKING_PATH_VLLM,
+        "deepseek-v4-flash": _THINKING_PATH_XDS,
     }
 
     def _invoke(
