@@ -214,7 +214,8 @@ class TongyiTextEmbeddingModel(_CommonTongyi, TextEmbeddingModel):
                         vision_models[model] = True
             except Exception:
                 pass
-            vision_models[model] = False
+            if model not in vision_models:
+                vision_models[model] = False
         return vision_models[model]
 
     def _calc_response_usage(self, model: str, credentials: dict, tokens: int) -> EmbeddingUsage:
