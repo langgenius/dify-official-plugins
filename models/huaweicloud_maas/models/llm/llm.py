@@ -25,6 +25,11 @@ class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
         "glm-5.1": _BASE_URL_V2,
         "kimi-k2.6": _BASE_URL_V2,
         "deepseek-v4-flash": _BASE_URL_V2,
+        "qwen3-235b-a22b": _BASE_URL_V2,
+        "qwen3-30b-a3b": _BASE_URL_V2,
+        "qwen3-32b": _BASE_URL_V2,
+        "qwen3-coder-480b-a35b-instruct": _BASE_URL_V2,
+        "qwen2.5-vl-72b": _BASE_URL_V2,
     }
 
     thinking_mapping = {
