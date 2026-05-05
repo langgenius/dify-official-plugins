@@ -10,7 +10,6 @@ features:
   - video
   - agent-thought
   - multi-tool-call
-  - agent-thought
   - stream-tool-call
 parameter_rules:
   - name: web_search
