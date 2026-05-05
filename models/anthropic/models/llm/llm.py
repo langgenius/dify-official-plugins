@@ -545,10 +545,11 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 model, credentials, response, prompt_messages
             )
         
-        try:
-            logging.debug(f"Anthropic API Response: {response.model_dump_json(indent=2)}")
-        except Exception as e:
-            logging.debug(f"Anthropic API Response: <dump failed: {e}>")
+        if logging.getLogger().isEnabledFor(logging.DEBUG):
+            try:
+                logging.debug(f"Anthropic API Response: {response.model_dump_json(indent=2)}")
+            except Exception as e:
+                logging.debug(f"Anthropic API Response: <dump failed: {e}>")
         return self._handle_chat_generate_response(
             model, credentials, response, prompt_messages
         )
@@ -891,10 +892,11 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         cache_read_input_tokens = 0
         
         for chunk in response:
-            try:
-                logging.debug(f"Anthropic API Stream Response Chunk: {chunk.model_dump_json()}")
-            except Exception as e:
-                logging.debug(f"Anthropic API Stream Response Chunk: <dump failed: {type(chunk).__name__}, err: {e}>")
+            if logging.getLogger().isEnabledFor(logging.DEBUG):
+                try:
+                    logging.debug(f"Anthropic API Stream Response Chunk: {chunk.model_dump_json()}")
+                except Exception as e:
+                    logging.debug(f"Anthropic API Stream Response Chunk: <dump failed: {type(chunk).__name__}, err: {e}>")
             if isinstance(chunk, MessageStartEvent):
                 if chunk.message:
                     return_model = chunk.message.model
