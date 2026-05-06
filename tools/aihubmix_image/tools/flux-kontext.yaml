@@ -8,11 +8,11 @@ identity:
     ja_JP: "Flux Kontext"
 description:
   human:
-    en_US: "Flux Kontext Image Generation Model, including: FLUX.1-Kontext-pro and FLUX-1.1-pro"
-    zh_Hans: "Flux Kontext 图像生成模型，包括：FLUX.1-Kontext-pro 和 FLUX-1.1-pro"
-    pt_BR: "Flux Kontext Modelo de Geração de Imagens, incluindo: FLUX.1-Kontext-pro e FLUX-1.1-pro"
-    ja_JP: "Flux Kontext 画像生成モデル（FLUX.1-Kontext-pro、FLUX-1.1-proを含む）"
-  llm: "Generate image using Flux Kontext models (FLUX.1-Kontext-pro, FLUX-1.1-pro) with sync processing and high quality output"
+    en_US: "Black Forest Labs Flux. FLUX.1-Kontext-pro is context-aware for consistent edits and references; FLUX-1.1-pro is a fast one-shot text-to-image model."
+    zh_Hans: "Black Forest Labs Flux 系列。FLUX.1-Kontext-pro 注重上下文一致性，适合带参考的编辑场景；FLUX-1.1-pro 一步出图，速度快。"
+    pt_BR: "Flux da Black Forest Labs. FLUX.1-Kontext-pro mantém consistência de contexto para edições com referência; FLUX-1.1-pro é texto-para-imagem rápido em um passo."
+    ja_JP: "Black Forest Labs の Flux。FLUX.1-Kontext-pro はコンテキストを保持した参照付き編集向け、FLUX-1.1-pro は高速なワンショットのテキストから画像生成。"
+  llm: "Generate or edit images with Flux: FLUX.1-Kontext-pro for context-consistent results with reference images, FLUX-1.1-pro for fast direct text-to-image."
 parameters:
   - name: prompt
     type: string

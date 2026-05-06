@@ -2,17 +2,17 @@ identity:
   name: "gemini-3-pro-image-preview"
   author: "langgenius"
   label:
-    en_US: "Gemini 3 Pro Image Preview"
-    zh_Hans: "Gemini 3 Pro Image Preview"
-    pt_BR: "Gemini 3 Pro Image Preview"
-    ja_JP: "Gemini 3 Pro Image Preview"
+    en_US: "Gemini Nano Banana"
+    zh_Hans: "Gemini Nano Banana"
+    pt_BR: "Gemini Nano Banana"
+    ja_JP: "Gemini Nano Banana"
 description:
   human:
-    en_US: "Gemini 3 Pro Image Preview - Supports Text-to-Image, Image-to-Image, and Multi-image Reference"
-    zh_Hans: "Gemini 3 Pro Image Preview - 支持文生图、图生图和多图参考"
-    pt_BR: "Gemini 3 Pro Image Preview - Suporta Texto-para-Imagem, Imagem-para-Imagem e Referência Multi-imagem"
-    ja_JP: "Gemini 3 Pro Image Preview - テキストから画像、画像から画像、複数画像参照をサポート"
-  llm: "Generate or transform images using Gemini 3 Pro Image Preview. Supports text-to-image, image-to-image transformation with reference images, and multi-image input for consistent output. Works with URLs, base64, and Dify file variables."
+    en_US: "Gemini Nano Banana family. Pro (gemini-3-pro-image-preview) is highest quality with multi-image reference; 2 / Flash (gemini-3.1-flash-image-preview) is faster. Supports text-to-image, image-to-image, and multi-image references."
+    zh_Hans: "Gemini Nano Banana 系列。Pro（gemini-3-pro-image-preview）质量最高，支持多图参考；2 / Flash（gemini-3.1-flash-image-preview）速度更快。覆盖文生图、图生图与多图参考三种模式。"
+    pt_BR: "Família Gemini Nano Banana. Pro (gemini-3-pro-image-preview) entrega a maior qualidade com referência multi-imagem; 2 / Flash (gemini-3.1-flash-image-preview) é mais rápido. Suporta texto-para-imagem, imagem-para-imagem e referência multi-imagem."
+    ja_JP: "Gemini Nano Banana シリーズ。Pro（gemini-3-pro-image-preview）は最高品質で複数画像の参照に対応、2 / Flash（gemini-3.1-flash-image-preview）はより高速。テキストから画像、画像から画像、複数画像参照に対応。"
+  llm: "Generate or transform images with Gemini Nano Banana series. Use Pro for highest quality and multi-reference scenes, Flash (Nano Banana 2) for faster output. Image inputs accept URL, base64, or Dify file variables."
 parameters:
   - name: prompt
     type: string
@@ -27,8 +27,38 @@ parameters:
       zh_Hans: "您想要生成的图像的文字描述"
       pt_BR: "Descrição textual da imagem que você deseja gerar"
       ja_JP: "生成したい画像のテキスト説明"
-    llm_description: "Text prompt for Gemini 3 Pro Image Preview generation, describing the desired image content or transformation instructions"
+    llm_description: "Text prompt for Gemini Nano Banana generation, describing the desired image content or transformation instructions"
     form: llm
+
+  - name: model
+    type: select
+    required: false
+    label:
+      en_US: "Model"
+      zh_Hans: "模型"
+      pt_BR: "Modelo"
+      ja_JP: "モデル"
+    human_description:
+      en_US: "Gemini Nano Banana variant"
+      zh_Hans: "Gemini Nano Banana 模型变体"
+      pt_BR: "Variante Gemini Nano Banana"
+      ja_JP: "Gemini Nano Banana モデルバリアント"
+    llm_description: "Gemini Nano Banana model selection. Pro is higher quality; 2 (Flash) is faster."
+    form: form
+    default: "gemini-3-pro-image-preview"
+    options:
+      - value: "gemini-3-pro-image-preview"
+        label:
+          en_US: "Nano Banana Pro (gemini-3-pro-image-preview)"
+          zh_Hans: "Nano Banana Pro (gemini-3-pro-image-preview)"
+          pt_BR: "Nano Banana Pro (gemini-3-pro-image-preview)"
+          ja_JP: "Nano Banana Pro (gemini-3-pro-image-preview)"
+      - value: "gemini-3.1-flash-image-preview"
+        label:
+          en_US: "Nano Banana 2 (gemini-3.1-flash-image-preview)"
+          zh_Hans: "Nano Banana 2 (gemini-3.1-flash-image-preview)"
+          pt_BR: "Nano Banana 2 (gemini-3.1-flash-image-preview)"
+          ja_JP: "Nano Banana 2 (gemini-3.1-flash-image-preview)"
 
   - name: generation_mode
     type: select
