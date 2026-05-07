@@ -1,6 +1,7 @@
-model: deepseek-v3.1
+model: glm-5
 label:
-  en_US: DeepSeek-V3.1
+  zh_Hans: GLM-5
+  en_US: GLM-5
 model_type: llm
 features:
   - agent-thought
@@ -9,7 +10,7 @@ features:
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 128000
+  context_size: 198000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -43,7 +44,7 @@ parameter_rules:
       zh_Hans: 是否开启思考模式。
       en_US: Whether to enable thinking mode.
 pricing:
-  input: "4"
-  output: "12"
-  unit: "0.000001"
+  input: '4'
+  output: '18'
+  unit: '0.000001'
   currency: RMB
