@@ -1,6 +1,7 @@
+import json
 import os
 import sys
-from io import BytesIO
+from io import BytesIO, StringIO
 from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -20,6 +21,30 @@ def _named_bytes(data: bytes, name: str) -> BytesIO:
 
 def _wav_file() -> BytesIO:
     return _named_bytes(b"RIFF\x24\x00\x00\x00WAVE" + b"\x00" * 16, "audio.wav")
+
+
+def _run_worker_main(monkeypatch, payload: dict) -> tuple[int, str, str]:
+    from models.speech2text import _stt_worker
+
+    stdout = StringIO()
+    stderr = StringIO()
+    monkeypatch.setattr(sys, "stdin", StringIO(json.dumps(payload)))
+    monkeypatch.setattr(sys, "stdout", stdout)
+    monkeypatch.setattr(sys, "stderr", stderr)
+
+    return _stt_worker.main(), stdout.getvalue(), stderr.getvalue()
+
+
+def _worker_payload() -> dict:
+    return {
+        "file_path": "/tmp/audio.wav",
+        "model": "paraformer-realtime-v1",
+        "audio_format": "wav",
+        "sample_rate": 16000,
+        "api_key": "test-key",
+        "base_address": None,
+        "headers": {},
+    }
 
 
 def test_get_audio_type_prefers_magic_bytes_without_decoding() -> None:
@@ -176,3 +201,58 @@ def test_run_recognition_in_subprocess_returns_error_for_missing_file() -> None:
     assert status == "err"
     assert isinstance(data, str)
     assert data
+
+
+def test_worker_keeps_library_stdout_out_of_json(monkeypatch) -> None:
+    import dashscope.audio.asr as asr
+
+    class FakeResult:
+        status_code = 200
+
+        def get_sentence(self):
+            return [{"text": "hello"}]
+
+    class FakeRecognition:
+        def __init__(self, **kwargs):
+            pass
+
+        def call(self, **kwargs):
+            print("dashscope library log")
+            return FakeResult()
+
+    monkeypatch.setattr(asr, "Recognition", FakeRecognition)
+
+    exit_code, stdout, stderr = _run_worker_main(monkeypatch, _worker_payload())
+
+    assert exit_code == 0
+    assert json.loads(stdout) == {"status": "ok", "data": [{"text": "hello"}]}
+    assert "dashscope library log" not in stdout
+    assert "dashscope library log" in stderr
+
+
+def test_worker_returns_dashscope_status_error(monkeypatch) -> None:
+    import dashscope.audio.asr as asr
+
+    class FakeResult:
+        status_code = 400
+        message = "invalid audio"
+
+        def get_sentence(self):
+            raise AssertionError("API errors should be returned before reading sentences")
+
+    class FakeRecognition:
+        def __init__(self, **kwargs):
+            pass
+
+        def call(self, **kwargs):
+            return FakeResult()
+
+    monkeypatch.setattr(asr, "Recognition", FakeRecognition)
+
+    exit_code, stdout, stderr = _run_worker_main(monkeypatch, _worker_payload())
+    data = json.loads(stdout)
+
+    assert exit_code == 0
+    assert data["status"] == "err"
+    assert "DashScope error: invalid audio (400)" == data["data"]
+    assert stderr == ""

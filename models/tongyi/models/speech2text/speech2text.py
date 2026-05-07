@@ -170,7 +170,7 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
                     headers,
                 )
                 if status == "err":
-                    raise ValueError(data)
+                    raise ValueError(data or "Unknown error in STT worker subprocess")
                 sentence_list = data
             else:
                 recognition = Recognition(
