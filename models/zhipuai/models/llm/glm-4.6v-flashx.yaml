@@ -1,14 +1,17 @@
-model: glm-5.1
+model: glm-4.6v-flashx
 label:
-  en_US: glm-5.1
+  en_US: glm-4.6v-flashx
 model_type: llm
-features:
-  - multi-tool-call
-  - agent-thought
-  - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 204800
+  context_size: 131072
+features:
+  - vision
+  - video
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
 parameter_rules:
   - name: web_search
     type: boolean
@@ -42,7 +45,7 @@ parameter_rules:
       - text
       - json_object
 pricing:
-  input: "0.006"
-  output: "0.024"
+  input: "0.00015"
+  output: "0.0015"
   unit: "0.001"
   currency: RMB

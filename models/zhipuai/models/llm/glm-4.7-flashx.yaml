@@ -1,6 +1,6 @@
-model: glm-5.1
+model: glm-4.7-flashx
 label:
-  en_US: glm-5.1
+  en_US: glm-4.7-flashx
 model_type: llm
 features:
   - multi-tool-call
@@ -42,7 +42,7 @@ parameter_rules:
       - text
       - json_object
 pricing:
-  input: "0.006"
-  output: "0.024"
+  input: "0.0005"
+  output: "0.003"
   unit: "0.001"
   currency: RMB

@@ -1,14 +1,16 @@
-model: glm-5.1
+model: glm-5v-turbo
 label:
-  en_US: glm-5.1
+  en_US: glm-5v-turbo
 model_type: llm
-features:
-  - multi-tool-call
-  - agent-thought
-  - stream-tool-call
 model_properties:
   mode: chat
   context_size: 204800
+features:
+  - vision
+  - video
+  - agent-thought
+  - multi-tool-call
+  - stream-tool-call
 parameter_rules:
   - name: web_search
     type: boolean
@@ -42,7 +44,7 @@ parameter_rules:
       - text
       - json_object
 pricing:
-  input: "0.006"
-  output: "0.024"
+  input: "0.005"
+  output: "0.022"
   unit: "0.001"
   currency: RMB
