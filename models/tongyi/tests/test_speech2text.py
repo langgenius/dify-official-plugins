@@ -115,6 +115,30 @@ def test_invoke_uses_subprocess_when_env_set() -> None:
     assert headers is not st2.BURY_POINT_HEADER
 
 
+def test_invoke_does_not_use_subprocess_when_env_is_zero() -> None:
+    audio = MagicMock(frame_rate=16000)
+    result = MagicMock()
+    result.get_sentence.return_value = [{"text": "hello"}]
+    recognition = MagicMock()
+    recognition.call.return_value = result
+
+    with patch.dict(os.environ, {"TONGYI_STT_SUBPROCESS": "0"}):
+        with patch("models.speech2text.speech2text.AudioSegment.from_file", return_value=audio):
+            with patch("models.speech2text.speech2text.Recognition", return_value=recognition):
+                with patch(
+                    "models.speech2text.speech2text._run_recognition_in_subprocess",
+                    side_effect=AssertionError("subprocess path should stay disabled"),
+                ) as run_mock:
+                    result_text = _model()._invoke(
+                        model="paraformer-realtime-v1",
+                        credentials={"dashscope_api_key": "test-key"},
+                        file=_wav_file(),
+                    )
+
+    assert result_text == "hello"
+    run_mock.assert_not_called()
+
+
 def test_invoke_raises_when_subprocess_returns_error() -> None:
     audio = MagicMock(frame_rate=16000)
     with patch.dict(os.environ, {"TONGYI_STT_SUBPROCESS": "1"}):

@@ -44,8 +44,14 @@ _AUDIO_FORMATS_FALLBACK = [
 ]
 _WORKER_SCRIPT_PATH = str(Path(__file__).resolve().parent / "_stt_worker.py")
 _SUBPROCESS_ENV = "TONGYI_STT_SUBPROCESS"
+_SUBPROCESS_TRUE_VALUES = {"1", "true", "yes", "on"}
 _RECOGNITION_TIMEOUT_ENV = "TONGYI_STT_RECOGNITION_TIMEOUT"
 _DEFAULT_RECOGNITION_TIMEOUT = 120
+
+
+def _is_subprocess_enabled() -> bool:
+    value = os.getenv(_SUBPROCESS_ENV)
+    return value is not None and value.strip().lower() in _SUBPROCESS_TRUE_VALUES
 
 
 def _get_recognition_timeout() -> int:
@@ -152,7 +158,7 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
             file_path = self.write_bytes_to_temp_file(file, audio_format)
             api_key = credentials["dashscope_api_key"]
 
-            if os.getenv(_SUBPROCESS_ENV):
+            if _is_subprocess_enabled():
                 headers = dict(BURY_POINT_HEADER) if BURY_POINT_HEADER else {}
                 status, data = _run_recognition_in_subprocess(
                     file_path,
