@@ -18,6 +18,10 @@ def _named_bytes(data: bytes, name: str) -> BytesIO:
     return file_obj
 
 
+def _wav_file() -> BytesIO:
+    return _named_bytes(b"RIFF\x24\x00\x00\x00WAVE" + b"\x00" * 16, "audio.wav")
+
+
 def test_get_audio_type_prefers_magic_bytes_without_decoding() -> None:
     file_obj = _named_bytes(b"RIFF\x24\x00\x00\x00WAVE" + b"\x00" * 16, "temp.mp3")
     file_obj.seek(5)
@@ -83,3 +87,68 @@ def test_invoke_normalizes_non_dict_sentences() -> None:
                 )
                 == "hello\nworld"
             )
+
+
+def test_invoke_uses_subprocess_when_env_set() -> None:
+    from models.speech2text import speech2text as st2
+
+    audio = MagicMock(frame_rate=16000)
+    with patch.dict(os.environ, {"TONGYI_STT_SUBPROCESS": "1"}):
+        with patch("models.speech2text.speech2text.AudioSegment.from_file", return_value=audio):
+            with patch(
+                "models.speech2text.speech2text._run_recognition_in_subprocess",
+                return_value=("ok", [{"text": "hello"}, {"text": "world"}]),
+            ) as run_mock:
+                result = _model()._invoke(
+                    model="paraformer-realtime-v1",
+                    credentials={"dashscope_api_key": "test-key"},
+                    file=_wav_file(),
+                )
+
+    assert result == "hello\nworld"
+    run_mock.assert_called_once()
+    _, _, audio_format, sample_rate, api_key, _, headers = run_mock.call_args.args
+    assert audio_format == "wav"
+    assert sample_rate == 16000
+    assert api_key == "test-key"
+    assert headers == dict(st2.BURY_POINT_HEADER)
+    assert headers is not st2.BURY_POINT_HEADER
+
+
+def test_invoke_raises_when_subprocess_returns_error() -> None:
+    audio = MagicMock(frame_rate=16000)
+    with patch.dict(os.environ, {"TONGYI_STT_SUBPROCESS": "1"}):
+        with patch("models.speech2text.speech2text.AudioSegment.from_file", return_value=audio):
+            with patch(
+                "models.speech2text.speech2text._run_recognition_in_subprocess",
+                return_value=("err", "recognition timeout"),
+            ):
+                try:
+                    _model()._invoke(
+                        model="paraformer-realtime-v1",
+                        credentials={"dashscope_api_key": "test-key"},
+                        file=_wav_file(),
+                    )
+                except ValueError as exc:
+                    assert "recognition timeout" in str(exc)
+                else:
+                    raise AssertionError("expected subprocess error to raise ValueError")
+
+
+def test_run_recognition_in_subprocess_returns_error_for_missing_file() -> None:
+    from models.speech2text import speech2text as st2
+
+    status, data = st2._run_recognition_in_subprocess(
+        file_path="/missing/audio.wav",
+        model="paraformer-realtime-v1",
+        audio_format="wav",
+        sample_rate=16000,
+        api_key="test-key",
+        base_address=None,
+        headers={},
+        timeout=30,
+    )
+
+    assert status == "err"
+    assert isinstance(data, str)
+    assert data
