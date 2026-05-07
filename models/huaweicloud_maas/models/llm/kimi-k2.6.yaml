@@ -1,9 +1,12 @@
-model: qwen3-30b-a3b
+model: kimi-k2.6
 label:
-  en_US: Qwen3-30B-A3B
+  en_US: Kimi-K2.6
 model_type: llm
 features:
   - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
 model_properties:
   mode: chat
   context_size: 128000
@@ -29,18 +32,8 @@ parameter_rules:
     min: -2
     max: 2
     default: 0
-  - name: enable_thinking
-    required: false
-    type: boolean
-    default: false
-    label:
-      zh_Hans: 思考模式
-      en_US: Thinking mode
-    help:
-      zh_Hans: 是否开启思考模式。
-      en_US: Whether to enable thinking mode.
 pricing:
-  input: '0.75'
-  output: '3'
+  input: '6.5'
+  output: '27'
   unit: '0.000001'
   currency: RMB

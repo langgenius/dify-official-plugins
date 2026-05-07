@@ -1,12 +1,15 @@
-model: qwen3-30b-a3b
+model: deepseek-v4-flash
 label:
-  en_US: Qwen3-30B-A3B
+  en_US: DeepSeek-V4-Flash
 model_type: llm
 features:
   - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 128000
+  context_size: 64000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -40,7 +43,7 @@ parameter_rules:
       zh_Hans: 是否开启思考模式。
       en_US: Whether to enable thinking mode.
 pricing:
-  input: '0.75'
-  output: '3'
+  input: '1'
+  output: '2'
   unit: '0.000001'
   currency: RMB
