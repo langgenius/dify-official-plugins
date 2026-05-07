@@ -63,3 +63,23 @@ def test_invoke_reuses_detected_audio_format_for_decoding() -> None:
 
     decode_mock.assert_called_once()
     assert decode_mock.call_args.kwargs["format"] == "wav"
+
+
+def test_invoke_normalizes_non_dict_sentences() -> None:
+    file_obj = _named_bytes(b"RIFF\x24\x00\x00\x00WAVE" + b"\x00" * 16, "upload.wav")
+    audio = MagicMock(frame_rate=16000)
+    result = MagicMock()
+    result.get_sentence.return_value = ["hello", {"text": "world"}]
+    recognition = MagicMock()
+    recognition.call.return_value = result
+
+    with patch("models.speech2text.speech2text.AudioSegment.from_file", return_value=audio):
+        with patch("models.speech2text.speech2text.Recognition", return_value=recognition):
+            assert (
+                _model()._invoke(
+                    model="paraformer-realtime-v1",
+                    credentials={"dashscope_api_key": "test-key"},
+                    file=file_obj,
+                )
+                == "hello\nworld"
+            )

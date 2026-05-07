@@ -81,13 +81,13 @@ class TongyiSpeech2TextModel(OAICompatSpeech2TextModel):
                 base_address=ws_base_address,
             )
             sentence_list = result.get_sentence()
-            if sentence_list is None:
+            if not sentence_list:
                 return ""
-            else:
-                sentence_ans = []
-                for sentence in sentence_list:
-                    sentence_ans.append(sentence["text"])
-                return "\n".join(sentence_ans)
+            sentence_ans = [
+                sentence.get("text", "") if isinstance(sentence, dict) else str(sentence)
+                for sentence in sentence_list
+            ]
+            return "\n".join(sentence_ans)
         except Exception as ex:
             raise ValueError(f"[TongyiSpeech2TextModel] {ex}") from ex
         finally:
