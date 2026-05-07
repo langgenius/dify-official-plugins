@@ -42,7 +42,7 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         # Prefer the new key when present, otherwise fall back to legacy
         reasoning_piece = delta.get("reasoning") or delta.get("reasoning_content")
         content_piece = delta.get("content") or ""
-
+        output = ""
         if reasoning_piece:
             if not is_reasoning:
                 # Open a think block on first reasoning token
@@ -51,12 +51,11 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             else:
                 # Continue streaming inside the think block
                 output = str(reasoning_piece)
-        elif is_reasoning:
-            # No reasoning token in this delta, close the think block
+
+        if is_reasoning and len(content_piece) > 0:
             is_reasoning = False
             output = f"\n</think>{content_piece}"
-        else:
-            # No reasoning token and not in a reasoning block
+        elif len(content_piece) > 0:
             output = content_piece
 
         return output, is_reasoning
