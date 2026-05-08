@@ -6,7 +6,7 @@ features:
   - tool-call
 model_properties:
   mode: chat
-  context_size: 128000
+  context_size: 202752
 parameter_rules:
   - name: max_tokens
     use_template: max_tokens

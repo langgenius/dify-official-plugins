@@ -1,0 +1,7 @@
+model: deepgram/nova-3
+label:
+  en_US: deepgram/nova-3
+model_type: speech2text
+model_properties:
+  file_upload_limit: 100
+  supported_file_extensions: mp3,wav

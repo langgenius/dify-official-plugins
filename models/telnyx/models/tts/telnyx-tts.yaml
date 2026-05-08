@@ -8,9 +8,39 @@ model_properties:
     - mode: Telnyx.NaturalHD.astra
       name: Astra (NaturalHD)
       language: ['en-US']
+    - mode: Telnyx.NaturalHD.albion
+      name: Albion (NaturalHD)
+      language: ['en-US']
+    - mode: Telnyx.NaturalHD.luna
+      name: Luna (NaturalHD)
+      language: ['en-US']
+    - mode: Telnyx.NaturalHD.amarante
+      name: Amarante (NaturalHD)
+      language: ['en-US']
     - mode: Telnyx.KokoroTTS.af_alloy
       name: Alloy (KokoroTTS)
       language: ['en-US']
+    - mode: Telnyx.KokoroTTS.af_heart
+      name: Heart (KokoroTTS)
+      language: ['en-US']
+    - mode: Telnyx.KokoroTTS.am_adam
+      name: Adam (KokoroTTS)
+      language: ['en-US']
+    - mode: Telnyx.KokoroTTS.bf_emma
+      name: Emma (KokoroTTS)
+      language: ['en-US']
+    - mode: Telnyx.KokoroTTS.ef_dora
+      name: Dora (KokoroTTS English)
+      language: ['en-US']
+    - mode: Telnyx.KokoroTTS.ff_siwis
+      name: Siwis (KokoroTTS French)
+      language: ['fr-FR']
+    - mode: Telnyx.KokoroTTS.if_sara
+      name: Sara (KokoroTTS Italian)
+      language: ['it-IT']
+    - mode: Telnyx.KokoroTTS.pf_dora
+      name: Dora (KokoroTTS Portuguese)
+      language: ['pt-PT', 'pt-BR']
   word_limit: 5000
   audio_type: mp3
 pricing:

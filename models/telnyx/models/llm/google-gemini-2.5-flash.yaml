@@ -1,12 +1,12 @@
-model: MiniMaxAI/MiniMax-M2.7
+model: google/gemini-2.5-flash
 label:
-  en_US: MiniMaxAI/MiniMax-M2.7
+  en_US: google/gemini-2.5-flash
 model_type: llm
 features:
   - tool-call
 model_properties:
   mode: chat
-  context_size: 200000
+  context_size: 400000
 parameter_rules:
   - name: max_tokens
     use_template: max_tokens

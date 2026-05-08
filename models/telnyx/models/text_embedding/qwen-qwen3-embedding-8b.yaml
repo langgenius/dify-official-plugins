@@ -1,0 +1,11 @@
+model: Qwen/Qwen3-Embedding-8B
+label:
+  en_US: Qwen/Qwen3-Embedding-8B
+model_type: text-embedding
+model_properties:
+  context_size: 8192
+  max_chunks: 32
+pricing:
+  input: '0'
+  unit: '0.001'
+  currency: USD

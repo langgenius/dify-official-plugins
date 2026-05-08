@@ -1,12 +1,12 @@
-model: MiniMaxAI/MiniMax-M2.7
+model: meta-llama/Meta-Llama-3.1-70B-Instruct
 label:
-  en_US: MiniMaxAI/MiniMax-M2.7
+  en_US: meta-llama/Meta-Llama-3.1-70B-Instruct
 model_type: llm
 features:
   - tool-call
 model_properties:
   mode: chat
-  context_size: 200000
+  context_size: 99000
 parameter_rules:
   - name: max_tokens
     use_template: max_tokens
