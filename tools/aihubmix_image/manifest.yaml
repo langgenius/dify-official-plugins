@@ -1,4 +1,4 @@
-version: 0.0.8
+version: 0.1.0
 type: plugin
 author: langgenius
 name: aihubmix-image
@@ -8,10 +8,10 @@ label:
   zh_Hans: AIHubMix Image
   pt_BR: AIHubMix Image
 description:
-  en_US: The image generation API provided by AIHubMix supports multiple models, including GPT-Image, Google Imagen 4 series, Flux Kontext, and others.
-  ja_JP: AIHubMix が提供する画像生成 API は、GPT-Image、Google Imagen 4シリーズ、Flux Kontextなど複数のモデルに対応しています。
-  zh_Hans: AIHubMix 提供的图像生成 API， 支持多种模型，包括 GPT-Image、Google Imagen 4 系列、Flux Kontext等。
-  pt_BR: iA API de geração de imagens fornecida pelo AIHubMix oferece suporte a vários modelos, incluindo GPT-Image, Google Imagen 4 séries, Flux Kontext e outros.
+  en_US: "AIHubMix unified image generation: a single API key for OpenAI GPT-Image, Google Imagen 4, Gemini Nano Banana, Flux, Alibaba Qwen-Image and Wan, ByteDance Doubao Seedream, Zhipu GLM, Ideogram V3, and Baidu ERNIE iRAG."
+  zh_Hans: "AIHubMix 统一图像生成接口：一把 API Key 调用 OpenAI GPT-Image、Google Imagen 4、Gemini Nano Banana、Flux、阿里 Qwen-Image 与 Wan、字节豆包 Seedream、智谱 GLM、Ideogram V3、百度 ERNIE iRAG。"
+  ja_JP: "AIHubMix 統合画像生成：1 つの API キーで OpenAI GPT-Image、Google Imagen 4、Gemini Nano Banana、Flux、Alibaba Qwen-Image と Wan、ByteDance Doubao Seedream、Zhipu GLM、Ideogram V3、Baidu ERNIE iRAG を呼び出せます。"
+  pt_BR: "Geração unificada de imagens AIHubMix: uma única API Key para OpenAI GPT-Image, Google Imagen 4, Gemini Nano Banana, Flux, Qwen-Image e Wan da Alibaba, Doubao Seedream, GLM da Zhipu, Ideogram V3 e ERNIE iRAG da Baidu."
 icon: icon.svg
 icon_dark: icon-dark.svg
 resource:

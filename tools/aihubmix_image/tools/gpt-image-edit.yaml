@@ -8,11 +8,11 @@ identity:
     ja_JP: "GPT Image Edit"
 description:
   human:
-    en_US: "GPT Image Editing Model, supporting gpt-image-1 and gpt-image-1-mini"
-    zh_Hans: "GPT Image 图像编辑模型，支持gpt-image-1 和 gpt-image-1-mini"
-    pt_BR: "Modelo de Edição GPT Image, suportando gpt-image-1 e gpt-image-1-mini"
-    ja_JP: "GPT Image 画像編集モデル、gpt-image-1 と gpt-image-1-mini をサポート"
-  llm: "Edit image using GPT Image Edit model (gpt-image-1 and gpt-image-1-mini) with image masking and editing capabilities"
+    en_US: "Edit an existing image with gpt-image-1.5. Accepts URL, base64, or a Dify file variable from upstream nodes."
+    zh_Hans: "用 gpt-image-1.5 修改已有图像。支持 URL、base64，以及上游节点传入的 Dify 文件变量。"
+    pt_BR: "Edite uma imagem existente com gpt-image-1.5. Aceita URL, base64 ou variável de arquivo Dify de nós anteriores."
+    ja_JP: "gpt-image-1.5 で既存の画像を編集。URL、base64、上流ノードからの Dify ファイル変数を受け付けます。"
+  llm: "Edit an input image using gpt-image-1.5 based on a natural-language instruction. The input image can be an HTTP(S) URL, a base64 data URL, or a Dify file variable connected from another node."
 parameters:
   - name: prompt
     type: string
@@ -62,20 +62,14 @@ parameters:
       ja_JP: "使用するGPT Image Editモデル"
     llm_description: "GPT Image Edit model selection for image editing"
     form: form
-    default: "gpt-image-1"
+    default: "gpt-image-1.5"
     options:
-      - value: "gpt-image-1"
+      - value: "gpt-image-1.5"
         label:
-          en_US: "gpt-image-1"
-          zh_Hans: "gpt-image-1"
-          pt_BR: "gpt-image-1"
-          ja_JP: "gpt-image-1"
-      - value: "gpt-image-1-mini"
-        label:
-          en_US: "gpt-image-1-mini"
-          zh_Hans: "gpt-image-1-mini"
-          pt_BR: "gpt-image-1-mini"
-          ja_JP: "gpt-image-1-mini"
+          en_US: "gpt-image-1.5"
+          zh_Hans: "gpt-image-1.5"
+          pt_BR: "gpt-image-1.5"
+          ja_JP: "gpt-image-1.5"
   
   - name: size
     type: select
