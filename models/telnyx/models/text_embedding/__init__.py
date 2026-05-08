@@ -1,0 +1,1 @@
+# Telnyx text embedding models

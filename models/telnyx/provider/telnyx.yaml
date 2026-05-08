@@ -1,0 +1,93 @@
+provider: telnyx
+label:
+  en_US: Telnyx
+description:
+  en_US: Models provided by Telnyx AI.
+icon_small:
+  en_US: icon_s_en.svg
+icon_large:
+  en_US: icon_l_en.svg
+background: "#00E0C7"
+help:
+  title:
+    en_US: Get your Telnyx API Key
+  url:
+    en_US: https://portal.telnyx.com/#/app/api-keys
+supported_model_types:
+  - llm
+  - text-embedding
+  - speech2text
+  - tts
+configurate_methods:
+  - predefined-model
+model_credential_schema:
+  model:
+    label:
+      en_US: Model Name
+    placeholder:
+      en_US: Enter the Telnyx model name
+  credential_form_schemas:
+    - variable: telnyx_api_key
+      label:
+        en_US: Telnyx API Key
+      type: secret-input
+      required: true
+      placeholder:
+        en_US: Enter your Telnyx API Key
+    - variable: telnyx_api_base
+      label:
+        en_US: API Base
+      type: text-input
+      required: false
+      default: https://api.telnyx.com
+      placeholder:
+        en_US: https://api.telnyx.com
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: telnyx_api_key
+      label:
+        en_US: Telnyx API Key
+      type: secret-input
+      required: true
+      placeholder:
+        en_US: Enter your Telnyx API Key
+    - variable: telnyx_api_base
+      label:
+        en_US: API Base
+      type: text-input
+      required: false
+      default: https://api.telnyx.com
+      placeholder:
+        en_US: https://api.telnyx.com
+    - variable: validate_model
+      label:
+        en_US: Validation Model
+      type: text-input
+      required: false
+      placeholder:
+        en_US: thenlper/gte-large
+models:
+  llm:
+    predefined:
+      - "models/llm/*.yaml"
+    position: "models/llm/_position.yaml"
+  text_embedding:
+    predefined:
+      - "models/text_embedding/*.yaml"
+    position: "models/text_embedding/_position.yaml"
+  tts:
+    predefined:
+      - "models/tts/*.yaml"
+    position: "models/tts/_position.yaml"
+  speech2text:
+    predefined:
+      - "models/speech2text/*.yaml"
+    position: "models/speech2text/_position.yaml"
+extra:
+  python:
+    provider_source: provider/telnyx.py
+    model_sources:
+      - "models/llm/llm.py"
+      - "models/text_embedding/text_embedding.py"
+      - "models/tts/tts.py"
+      - "models/speech2text/speech2text.py"

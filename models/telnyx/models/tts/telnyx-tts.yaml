@@ -1,0 +1,20 @@
+model: telnyx-tts
+label:
+  en_US: Telnyx Text-to-Speech
+model_type: tts
+model_properties:
+  default_voice: Telnyx.NaturalHD.astra
+  voices:
+    - mode: Telnyx.NaturalHD.astra
+      name: Astra (NaturalHD)
+      language: ['en-US']
+    - mode: Telnyx.KokoroTTS.af_alloy
+      name: Alloy (KokoroTTS)
+      language: ['en-US']
+  word_limit: 5000
+  audio_type: mp3
+pricing:
+  input: '0'
+  output: '0'
+  unit: '0.001'
+  currency: USD

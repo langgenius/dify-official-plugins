@@ -1,0 +1,28 @@
+version: 0.0.1
+type: plugin
+author: "langgenius"
+name: "telnyx"
+description:
+  en_US: Models provided by Telnyx AI, including chat, embeddings, speech-to-text, and text-to-speech.
+label:
+  en_US: "Telnyx"
+created_at: "2026-05-08T00:00:00Z"
+icon: icon_s_en.svg
+resource:
+  memory: 1048576
+  permission:
+    model:
+      enabled: true
+      llm: true
+plugins:
+  models:
+    - "provider/telnyx.yaml"
+meta:
+  version: 0.0.1
+  arch:
+    - "amd64"
+    - "arm64"
+  runner:
+    language: "python"
+    version: "3.12"
+    entrypoint: "main"
