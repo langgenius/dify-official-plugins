@@ -14,7 +14,7 @@ description:
     pt_BR: Recuperar uma página do Notion pelo seu ID
     ja_JP: ID で Notion ページを取得します
     zh_Hant: 通過 ID 獲取 Notion 頁面
-  llm: Retrieve a Notion page by its ID. Returns page content, properties, and metadata. The page must be shared with your integration.
+  llm: Retrieve a Notion page by its ID. Returns page content (recursively including nested child blocks like toggles, callouts, and list sub-items), properties, and metadata. The page must be shared with your integration. Large or deeply nested pages may take several seconds and multiple API calls; use max_depth / max_api_calls to cap cost. The response includes api_calls_made, total_blocks_fetched, and elapsed_seconds for observability, and sets fetch_truncated=true when the budget was hit.
 parameters:
   - name: page_id
     type: string
@@ -50,6 +50,42 @@ parameters:
       ja_JP: レスポンスにページコンテンツを含めるかどうか
       zh_Hant: 是否在回應中包含頁面內容
     llm_description: Whether to include the page blocks/content in the response. If set to false, only page properties will be returned.
+    form: llm
+  - name: max_depth
+    type: number
+    required: false
+    default: 5
+    label:
+      en_US: Max Nested Block Depth
+      zh_Hans: 最大嵌套块深度
+      pt_BR: Profundidade Máxima de Blocos Aninhados
+      ja_JP: ネストブロックの最大深度
+      zh_Hant: 最大巢狀區塊深度
+    human_description:
+      en_US: "Maximum depth to recurse into nested child blocks (e.g. toggle, callout, list items). 0 disables recursion. Default 5 covers typical documents; raise cautiously on deeply nested pages."
+      zh_Hans: "递归获取嵌套子块（如 toggle、callout、列表项）的最大深度。0 表示禁用递归。默认 5，可覆盖常见文档；深度嵌套时谨慎提高。"
+      pt_BR: "Profundidade máxima para recursão em blocos filhos aninhados (ex.: toggle, callout, itens de lista). 0 desativa a recursão. Padrão 5; aumente com cautela em páginas muito aninhadas."
+      ja_JP: "ネストされた子ブロック（トグル、コールアウト、リストアイテムなど）を再帰取得する最大深度。0 で再帰を無効化します。既定値 5 は一般的な文書をカバーします。深いネストが必要な場合のみ慎重に引き上げてください。"
+      zh_Hant: "遞迴取得巢狀子區塊（如 toggle、callout、清單項目）的最大深度。0 表示停用遞迴。預設 5，可涵蓋一般文件；深度巢狀時請謹慎提高。"
+    llm_description: Maximum recursion depth when fetching nested child blocks. Default 5 (covers most documents). Set to 0 to disable recursion and return only top-level blocks. Deeper values multiply API cost.
+    form: llm
+  - name: max_api_calls
+    type: number
+    required: false
+    default: 500
+    label:
+      en_US: Max API Calls
+      zh_Hans: 最大 API 调用次数
+      pt_BR: Máximo de Chamadas de API
+      ja_JP: 最大 API 呼び出し回数
+      zh_Hant: 最大 API 呼叫次數
+    human_description:
+      en_US: "Safety cap on total Notion API calls per retrieval. At Notion's ~3 req/sec rate limit, 500 calls ≈ up to 3 minutes; lower for tighter SLAs. When hit, partial content is returned with fetch_truncated=true."
+      zh_Hans: "单次请求允许的 Notion API 调用次数上限。Notion 限速约 3 req/sec，500 次约需 3 分钟；可调低以满足更严格的超时。达到上限时返回部分内容并标记 fetch_truncated=true。"
+      pt_BR: "Limite de segurança para chamadas totais à API do Notion por recuperação. Com o limite de ~3 req/s do Notion, 500 chamadas ≈ até 3 minutos; reduza para SLAs mais apertados. Ao atingir, o conteúdo parcial é retornado com fetch_truncated=true."
+      ja_JP: "1 回の取得で発行する Notion API 呼び出し数の上限。Notion のレート制限は約 3 req/sec のため、500 回で最大約 3 分かかります。厳しいタイムアウト要件があれば下げてください。上限到達時は部分結果を fetch_truncated=true 付きで返します。"
+      zh_Hant: "單次擷取允許的 Notion API 呼叫次數上限。Notion 速率限制約 3 req/sec，500 次約 3 分鐘；可依 SLA 調低。達到上限時回傳部分內容並標記 fetch_truncated=true。"
+    llm_description: Safety cap on total Notion API calls for this retrieval. Default 500 (~3 min at Notion's rate limit). If exceeded, the response returns partial content with fetch_truncated=true. Lower this when running in latency-sensitive contexts.
     form: llm
 extra:
   python:

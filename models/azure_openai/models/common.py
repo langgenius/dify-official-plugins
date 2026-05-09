@@ -86,7 +86,7 @@ class _CommonAzureOpenAI:
             except ImportError as e:
                 raise ImportError(
                     "azure-identity package is required for Entra ID authentication. "
-                    "Please install it with: pip install azure-identity"
+                    "azure-identity is declared in pyproject.toml; run `uv sync` in the plugin directory."
                 ) from e
         else:
             # Use API Key authentication (default)

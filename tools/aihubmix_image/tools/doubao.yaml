@@ -8,11 +8,11 @@ identity:
     ja_JP: "Doubao Seedream"
 description:
   human:
-    en_US: "Doubao Seedream Image Generation Model - Supports Text-to-Image, Image-to-Image, and Sequential Generation"
-    zh_Hans: "Doubao Seedream 图像生成模型 - 支持文生图、图生图和组图输出"
-    pt_BR: "Modelo de geração de imagens Doubao Seedream - Suporta Texto-para-Imagem, Imagem-para-Imagem e Geração Sequencial"
-    ja_JP: "Doubao Seedream 画像生成モデル - テキストから画像、画像から画像、連続生成をサポート"
-  llm: "Generate or transform images using Doubao Seedream model with advanced Chinese language understanding. Supports text-to-image, image-to-image transformation, and consistent sequential image generation for storyboards."
+    en_US: "ByteDance Doubao Seedream. 5.0-lite augments generation with live web retrieval for time-sensitive content; 4-5 supports multi-image fusion, image-to-image, and sequential storyboards."
+    zh_Hans: "字节豆包 Seedream。5.0-lite 内置联网检索，适合需要时效信息的生图；4-5 支持多图融合、图生图与组图输出，适合分镜与系列图。"
+    pt_BR: "Doubao Seedream da ByteDance. 5.0-lite combina geração com recuperação web ao vivo para conteúdo em tempo real; 4-5 suporta fusão de múltiplas imagens, imagem-para-imagem e storyboards sequenciais."
+    ja_JP: "ByteDance Doubao Seedream。5.0-lite はリアルタイムの Web 検索で時事情報を取り込み生成、4-5 は複数画像の融合・画像から画像・連続ストーリーボード生成に対応。"
+  llm: "Generate images with ByteDance Doubao Seedream. 5.0-lite is the newest with web search; 4-5 supports text-to-image, image-to-image with reference, and sequential generation up to 15 frames. Strong on Chinese prompts."
 parameters:
   - name: model
     type: select
@@ -29,14 +29,14 @@ parameters:
       ja_JP: "使用するDoubao Seedreamモデル"
     llm_description: "Doubao Seedream model selection for image generation"
     form: form
-    default: "doubao-seedream-4-0-250828"
+    default: "doubao-seedream-5.0-lite"
     options:
-      - value: "doubao-seedream-4-0-250828"
+      - value: "doubao-seedream-5.0-lite"
         label:
-          en_US: "doubao-seedream-4-0-250828"
-          zh_Hans: "doubao-seedream-4-0-250828"
-          pt_BR: "doubao-seedream-4-0-250828"
-          ja_JP: "doubao-seedream-4-0-250828"
+          en_US: "doubao-seedream-5.0-lite"
+          zh_Hans: "doubao-seedream-5.0-lite"
+          pt_BR: "doubao-seedream-5.0-lite"
+          ja_JP: "doubao-seedream-5.0-lite"
       - value: "doubao-seedream-4-5"
         label:
           en_US: "doubao-seedream-4-5"

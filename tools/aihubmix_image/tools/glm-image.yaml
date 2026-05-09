@@ -1,0 +1,125 @@
+identity:
+  name: "glm-image"
+  author: "langgenius"
+  label:
+    en_US: "GLM Image"
+    zh_Hans: "GLM Image"
+    pt_BR: "GLM Image"
+    ja_JP: "GLM Image"
+description:
+  human:
+    en_US: "Zhipu GLM image generation. HD mode delivers richer detail (~20s); Standard mode is faster (~5-10s). Supports custom resolutions on a 32-pixel grid."
+    zh_Hans: "智谱 GLM 文生图。HD 模式细节更丰富（约 20 秒），Standard 模式生成更快（约 5-10 秒）。支持以 32 像素为步长的自定义分辨率。"
+    pt_BR: "Geração de imagens Zhipu GLM. Modo HD entrega mais detalhe (~20s); modo Standard é mais rápido (~5-10s). Suporta resoluções personalizadas em grade de 32 pixels."
+    ja_JP: "Zhipu GLM のテキストから画像生成。HD モードは細部が豊か（約 20 秒）、Standard モードは高速（約 5-10 秒）。32 ピクセル単位のカスタム解像度に対応。"
+  llm: "Generate images with Zhipu GLM-Image. Choose HD for detail or Standard for speed; pick from common preset sizes or custom dimensions in steps of 32 pixels."
+parameters:
+  - name: prompt
+    type: string
+    required: true
+    label:
+      en_US: "Prompt"
+      zh_Hans: "提示词"
+      pt_BR: "Prompt"
+      ja_JP: "プロンプト"
+    human_description:
+      en_US: "Text description of the image to generate"
+      zh_Hans: "您想要生成的图像的文字描述"
+      pt_BR: "Descrição textual da imagem"
+      ja_JP: "生成したい画像のテキスト説明"
+    llm_description: "Text prompt for GLM Image generation"
+    form: llm
+
+  - name: size
+    type: select
+    required: false
+    label:
+      en_US: "Size"
+      zh_Hans: "图像尺寸"
+      pt_BR: "Tamanho"
+      ja_JP: "画像サイズ"
+    human_description:
+      en_US: "Image size. Custom: width/height 1024-2048, divisible by 32, total ≤ 2^22 px"
+      zh_Hans: "图像尺寸。自定义要求：宽高 1024-2048，必须能被 32 整除，总像素 ≤ 2^22"
+      pt_BR: "Tamanho da imagem"
+      ja_JP: "画像サイズ"
+    llm_description: "Output size for GLM image generation"
+    form: form
+    default: "1280x1280"
+    options:
+      - value: "1280x1280"
+        label:
+          en_US: "1280x1280 (1:1)"
+          zh_Hans: "1280x1280 (1:1)"
+          pt_BR: "1280x1280 (1:1)"
+          ja_JP: "1280x1280 (1:1)"
+      - value: "1568x1056"
+        label:
+          en_US: "1568x1056"
+          zh_Hans: "1568x1056"
+          pt_BR: "1568x1056"
+          ja_JP: "1568x1056"
+      - value: "1056x1568"
+        label:
+          en_US: "1056x1568"
+          zh_Hans: "1056x1568"
+          pt_BR: "1056x1568"
+          ja_JP: "1056x1568"
+      - value: "1472x1088"
+        label:
+          en_US: "1472x1088"
+          zh_Hans: "1472x1088"
+          pt_BR: "1472x1088"
+          ja_JP: "1472x1088"
+      - value: "1088x1472"
+        label:
+          en_US: "1088x1472"
+          zh_Hans: "1088x1472"
+          pt_BR: "1088x1472"
+          ja_JP: "1088x1472"
+      - value: "1728x960"
+        label:
+          en_US: "1728x960 (16:9)"
+          zh_Hans: "1728x960 (16:9)"
+          pt_BR: "1728x960 (16:9)"
+          ja_JP: "1728x960 (16:9)"
+      - value: "960x1728"
+        label:
+          en_US: "960x1728 (9:16)"
+          zh_Hans: "960x1728 (9:16)"
+          pt_BR: "960x1728 (9:16)"
+          ja_JP: "960x1728 (9:16)"
+
+  - name: quality
+    type: select
+    required: false
+    label:
+      en_US: "Quality"
+      zh_Hans: "质量"
+      pt_BR: "Qualidade"
+      ja_JP: "品質"
+    human_description:
+      en_US: "Render quality. hd is detailed (~20s), standard is faster (~5-10s)"
+      zh_Hans: "渲染质量。hd 细节更丰富（约 20 秒），standard 生成更快（约 5-10 秒）"
+      pt_BR: "Qualidade de renderização"
+      ja_JP: "レンダリング品質"
+    llm_description: "Render quality for GLM image generation"
+    form: form
+    default: "hd"
+    options:
+      - value: "hd"
+        label:
+          en_US: "HD (detailed)"
+          zh_Hans: "HD（高清）"
+          pt_BR: "HD (detalhado)"
+          ja_JP: "HD（高品質）"
+      - value: "standard"
+        label:
+          en_US: "Standard (fast)"
+          zh_Hans: "Standard（标准）"
+          pt_BR: "Standard (rápido)"
+          ja_JP: "Standard（標準）"
+
+extra:
+  python:
+    source: tools/glm-image.py

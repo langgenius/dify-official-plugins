@@ -2,64 +2,45 @@ name: Pre PR Check Per Plugin
 
 on:
   pull_request_target:
-    types: [opened, synchronize, ready_for_review, review_requested, edited]
+    types: [opened, synchronize, ready_for_review, review_requested]
     branches:
       - main
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   detect-changes:
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-24.04
     outputs:
       plugins: ${{ steps.filter.outputs.plugins }}
       has_changes: ${{ steps.filter.outputs.has_changes }}
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 1
+          ref: ${{ github.event.pull_request.base.sha }}
+
+      - name: Fetch changed file list
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh api --paginate \
+            "/repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/files?per_page=100" \
+            --jq '.[] | [.status, .filename] | @tsv' > "$RUNNER_TEMP/changed-files.tsv"
 
       - id: filter
         name: Detect changed plugins
         env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          if [ "${{ github.event_name }}" == "pull_request" ] || [ "${{ github.event_name }}" == "pull_request_target" ]; then
-            CHANGED_FILES=$(gh pr view -R ${{ github.repository }} ${{ github.event.pull_request.number }} --json files --jq '.files[].path')
-          else
-            if [ "${{ github.event.before }}" == "0000000000000000000000000000000000000000" ]; then
-              BASE_SHA="HEAD~1"
-            else
-              BASE_SHA="${{ github.event.before }}"
-            fi
-            CHANGED_FILES=$(git diff --name-only $BASE_SHA HEAD)
-          fi
-
-          # Find all manifest.yaml files
-          MANIFESTS=$(find . -name "manifest.yaml" -not -path "*/.*")
-
-          VALID_PLUGINS=()
-          for m in $MANIFESTS; do
-            PLUGIN_PATH=$(dirname "$m" | sed 's|^\./||')
-            # If any changed file starts with this plugin path
-            if echo "$CHANGED_FILES" | grep -q "^$PLUGIN_PATH/"; then
-              VALID_PLUGINS+=("$PLUGIN_PATH")
-            fi
-          done
-
-          if [ ${#VALID_PLUGINS[@]} -eq 0 ]; then
-            echo "has_changes=false" >> $GITHUB_OUTPUT
-            echo "plugins=[]" >> $GITHUB_OUTPUT
-          else
-            JSON=$(printf '%s\n' "${VALID_PLUGINS[@]}" | jq -R . | jq -s -c .)
-            echo "has_changes=true" >> $GITHUB_OUTPUT
-            echo "plugins=$JSON" >> $GITHUB_OUTPUT
-            echo "Detected plugins: $JSON"
-          fi
+          CHANGED_FILES_FILE: ${{ runner.temp }}/changed-files.tsv
+          EXPECTED_CHANGED_FILES: ${{ github.event.pull_request.changed_files }}
+        run: .github/scripts/detect-changed-plugins.sh
 
   test:
     needs: detect-changes
     if: needs.detect-changes.outputs.has_changes == 'true'
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-24.04-4
     strategy:
       matrix:
         plugin_path: ${{ fromJson(needs.detect-changes.outputs.plugins) }}
@@ -71,10 +52,26 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 0
+          fetch-depth: 1
           ref: ${{ github.event.pull_request.head.sha }}
 
+      - name: Resolve external tool versions
+        id: external
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          echo "toolkit_sha=$(gh api repos/langgenius/dify-marketplace-toolkit/commits/HEAD --jq .sha)" >> $GITHUB_OUTPUT
+          echo "cli_tag=$(gh release view -R langgenius/dify-plugin-daemon --json tagName --jq .tagName)" >> $GITHUB_OUTPUT
+
+      - name: Cache .scripts (toolkit + CLI)
+        id: scripts-cache
+        uses: actions/cache@v4
+        with:
+          path: .scripts
+          key: scripts-${{ steps.external.outputs.toolkit_sha }}-${{ steps.external.outputs.cli_tag }}
+
       - name: Clone Marketplace Toolkit
+        if: steps.scripts-cache.outputs.cache-hit != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -90,15 +87,20 @@ jobs:
         with:
           version: "latest"
           activate-environment: false
+          enable-cache: true
+          cache-dependency-glob: |
+            ${{ matrix.plugin_path }}/uv.lock
+            ${{ matrix.plugin_path }}/requirements.txt
 
       - name: yq - portable yaml processor
         uses: mikefarah/yq@v4.44.5
 
       - name: Download Dify CLI
+        if: steps.scripts-cache.outputs.cache-hit != 'true'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release download -R langgenius/dify-plugin-daemon --pattern "dify-plugin-linux-amd64" --dir .scripts
+          gh release download "${{ steps.external.outputs.cli_tag }}" -R langgenius/dify-plugin-daemon --pattern "dify-plugin-linux-amd64" --dir .scripts
           chmod +x .scripts/dify-plugin-linux-amd64
           mv .scripts/dify-plugin-linux-amd64 .scripts/dify
 
@@ -172,37 +174,45 @@ jobs:
           echo "### Extracting package ###"
           unzip -q "$PKG_NAME" -d "$EXTRACT_DIR"
 
-      - name: Validate Dependencies with uv
-        run: |
-          cd "${{ matrix.plugin_path }}"
-          uv sync --all-groups --python 3.12
-
-      - name: Validate requirements install with uv pip
+      - name: Validate Dependencies
         run: |
           cd "${{ matrix.plugin_path }}"
 
-          if [ ! -f "requirements.txt" ]; then
-            echo "!!! requirements.txt is required for this validation"
+          VENV_DIR="$RUNNER_TEMP/plugin-shared-venv"
+          rm -rf "$VENV_DIR"
+
+          if [ -f "uv.lock" ]; then
+            UV_PROJECT_ENVIRONMENT="$VENV_DIR" uv sync --all-groups --frozen --python 3.12
+          elif [ -f "requirements.txt" ]; then
+            uv venv "$VENV_DIR" --python 3.12
+            uv pip install --python "$VENV_DIR/bin/python" -r requirements.txt
+          else
+            echo "!!! uv.lock or requirements.txt is required for dependency validation"
             exit 1
           fi
 
-          VENV_DIR=".ci-uv-pip-check-venv"
-
-          cleanup() {
-            rm -rf "$VENV_DIR"
-          }
-          trap cleanup EXIT
-
-          rm -rf "$VENV_DIR"
-          uv venv "$VENV_DIR" --python 3.12
-          uv pip install --python "$VENV_DIR/bin/python" -r requirements.txt
+          echo "PLUGIN_VENV=$VENV_DIR" >> "$GITHUB_ENV"
 
       - name: Check Plugin Install
         run: |
           export INSTALL_METHOD=serverless
           export SERVERLESS_PORT=8080
           export SERVERLESS_HOST=0.0.0.0
-          uv run --project "${{ matrix.plugin_path }}" --with requests python .scripts/validator/test-plugin-install.py -d "${{ matrix.plugin_path }}"
+
+          cleanup() {
+            rm -rf "$PLUGIN_VENV"
+          }
+          trap cleanup EXIT
+
+          if [ -f "${{ matrix.plugin_path }}/uv.lock" ]; then
+            UV_PROJECT_ENVIRONMENT="$PLUGIN_VENV" uv run --project "${{ matrix.plugin_path }}" --frozen --with requests python .scripts/validator/test-plugin-install.py -d "${{ matrix.plugin_path }}"
+          elif [ -f "${{ matrix.plugin_path }}/requirements.txt" ]; then
+            uv pip install --python "$PLUGIN_VENV/bin/python" requests
+            "$PLUGIN_VENV/bin/python" .scripts/validator/test-plugin-install.py -d "${{ matrix.plugin_path }}"
+          else
+            echo "!!! uv.lock or requirements.txt is required for plugin install validation"
+            exit 1
+          fi
 
       - name: Check for tests directory
         id: check_tests
@@ -218,14 +228,27 @@ jobs:
         if: steps.check_tests.outputs.has_tests == 'true'
         working-directory: ${{ env.EXTRACT_DIR }}
         run: |
-          uv sync --all-groups --python 3.12
+          if [ -f "uv.lock" ]; then
+            UV_PROJECT_ENVIRONMENT=".ci-test-uv-venv" uv sync --all-groups --frozen --python 3.12
+          elif [ -f "requirements.txt" ]; then
+            uv venv ".ci-test-venv" --python 3.12
+            uv pip install --python ".ci-test-venv/bin/python" -r requirements.txt
+            uv pip install --python ".ci-test-venv/bin/python" pytest
+          else
+            echo "!!! uv.lock or requirements.txt is required for test dependency installation"
+            exit 1
+          fi
 
       - name: Run tests
         if: steps.check_tests.outputs.has_tests == 'true'
         working-directory: ${{ env.EXTRACT_DIR }}
         run: |
           export PLUGIN_FILE_PATH="$(realpath ../${{ env.PKG_NAME }})" 
-          uv run --with pytest pytest
+          if [ -f "uv.lock" ]; then
+            UV_PROJECT_ENVIRONMENT=".ci-test-uv-venv" uv run --frozen --with pytest pytest
+          else
+            .ci-test-venv/bin/python -m pytest
+          fi
 
   check-complete:
     name: Check Complete
@@ -233,7 +256,7 @@ jobs:
       - detect-changes
       - test
     if: always()
-    runs-on: ubuntu-latest
+    runs-on: depot-ubuntu-24.04
     steps:
       - name: Verify check results
         run: |

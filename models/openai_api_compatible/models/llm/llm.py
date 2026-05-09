@@ -21,7 +21,7 @@ from dify_plugin.entities.model.message import (
     SystemPromptMessage,
     AssistantPromptMessage,
 )
-from dify_plugin.errors.model import CredentialsValidateFailedError
+from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLanguageModel
 
 from openai import OpenAI
@@ -514,3 +514,74 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             else:
                 # Yield chunks without content as-is
                 yield chunk
+
+    def _handle_generate_response(
+        self,
+        model: str,
+        credentials: dict,
+        response: requests.Response,
+        prompt_messages: list[PromptMessage],
+    ) -> LLMResult:
+        """
+        Handle non-streaming chat responses that omit `message.content` when returning tool calls.
+
+        Some OpenAI-compatible gateways, including LiteLLM-backed Azure deployments, may
+        legitimately return tool calls without a `content` field. The SDK base class indexes
+        `message["content"]` directly, which raises `KeyError('content')` in that case.
+        """
+        response_json: dict = response.json()
+        completion_type = LLMMode.value_of(credentials["mode"])
+        choices = response_json.get("choices") or []
+        if not choices:
+            raise InvokeError("LLM response returned no choices")
+
+        output = choices[0]
+        message_id = response_json.get("id")
+
+        response_content = ""
+        tool_calls = None
+        function_calling_type = credentials.get("function_calling_type", "no_call")
+
+        if completion_type is LLMMode.CHAT:
+            message = output.get("message") or {}
+            raw_content = message.get("content")
+            if isinstance(raw_content, str):
+                response_content = raw_content
+            elif raw_content is None:
+                response_content = ""
+            else:
+                response_content = str(raw_content)
+
+            if function_calling_type == "tool_call":
+                tool_calls = message.get("tool_calls")
+            elif function_calling_type == "function_call":
+                tool_calls = message.get("function_call")
+        elif completion_type is LLMMode.COMPLETION:
+            raw_text = output.get("text", "")
+            response_content = raw_text if isinstance(raw_text, str) else str(raw_text or "")
+
+        assistant_message = AssistantPromptMessage(content=response_content, tool_calls=[])
+
+        if tool_calls:
+            if function_calling_type == "tool_call":
+                assistant_message.tool_calls = self._extract_response_tool_calls(tool_calls)
+            elif function_calling_type == "function_call":
+                function_call = self._extract_response_function_call(tool_calls)
+                assistant_message.tool_calls = [function_call] if function_call else []
+
+        usage = response_json.get("usage")
+        if usage:
+            prompt_tokens = usage["prompt_tokens"]
+            completion_tokens = usage["completion_tokens"]
+        else:
+            prompt_tokens = self._num_tokens_from_messages(prompt_messages, credentials=credentials)
+            completion_tokens = self._num_tokens_from_string(assistant_message.content or "")
+
+        usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+
+        return LLMResult(
+            id=message_id,
+            model=response_json.get("model", model),
+            message=assistant_message,
+            usage=usage,
+        )

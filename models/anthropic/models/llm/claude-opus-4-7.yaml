@@ -1,4 +1,7 @@
 # https://platform.claude.com/docs/en/about-claude/models/overview
+# https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-7
+# https://platform.claude.com/docs/en/about-claude/models/migration-guide
+# https://platform.claude.com/docs/en/resources/overview
 model: claude-opus-4-7
 label:
   en_US: claude-opus-4-7
@@ -15,44 +18,67 @@ model_properties:
 parameter_rules:
   - name: thinking
     label:
-      zh_Hans: 推理模式
-      en_US: Thinking Mode
+      zh_Hans: 自适应推理
+      en_US: Adaptive Thinking
     type: boolean
     default: false
     required: false
     help:
-      zh_Hans: 控制模型的推理能力。启用时，temperature、top_p和top_k将被禁用。
-      en_US: Controls the model's thinking capability. When enabled, temperature, top_p and top_k will be disabled.
-  - name: thinking_budget
+      zh_Hans: 启用自适应推理（adaptive thinking）。Claude Opus 4.7 仅支持 adaptive 模式，不再支持设置 thinking_budget。推理深度由 Effort 参数控制。
+      en_US: Enable adaptive thinking. Claude Opus 4.7 only supports adaptive mode; thinking_budget is no longer supported. Thinking depth is controlled by the Effort parameter.
+  - name: thinking_display
     label:
-      zh_Hans: 推理预算
-      en_US: Thinking Budget
+      zh_Hans: 推理内容展示
+      en_US: Thinking Display
+    type: string
+    default: summarized
+    required: false
+    options:
+      - omitted
+      - summarized
+    help:
+      zh_Hans: 响应中推理内容的展示方式。omitted 为官方默认值（响应中不返回 thinking 文本）；summarized 返回摘要化的推理过程，便于在前端展示思考进度。
+      en_US: How thinking content is exposed in the response. `omitted` is the official default (thinking text not returned); `summarized` returns summarized reasoning so clients can display progress.
+  - name: effort
+    label:
+      zh_Hans: 推理投入等级
+      en_US: Effort
+    type: string
+    default: high
+    required: false
+    options:
+      - low
+      - medium
+      - high
+      - xhigh
+      - max
+    help:
+      zh_Hans: 通过 output_config.effort 控制智能/token 消耗的权衡。xhigh 推荐用于编码与智能体场景，high 是智能敏感场景的最低建议值；low 与 medium 适合延迟或成本敏感场景。
+      en_US: Controls the intelligence vs. token cost trade-off via output_config.effort. Use `xhigh` for coding and agentic tasks; `high` is the minimum recommendation for intelligence-sensitive tasks; `low`/`medium` for latency- or cost-sensitive tasks.
+  - name: task_budget
+    label:
+      zh_Hans: 任务预算
+      en_US: Task Budget
     type: int
-    default: 1024
-    min: 1024
-    # Prevent accidental touches
-    max: 127999
+    default: 0
+    min: 0
+    max: 1000000
     required: false
     help:
-      zh_Hans: 推理的预算限制（最小1024），必须小于max_tokens。仅在推理模式启用时可用。
-      en_US: Budget limit for thinking (minimum 1024), must be less than max_tokens. Only available when thinking mode is enabled.
-  - name: temperature
-    use_template: temperature
-  - name: top_p
-    use_template: top_p
-  - name: top_k
-    label:
-      zh_Hans: 取样数量
-      en_US: Top k
-    type: int
-    help:
-      zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
-      en_US: Only sample from the top K options for each subsequent token.
-    required: false
+      zh_Hans: |
+        跨完整智能体循环（推理+工具调用+工具结果+最终输出）下发给模型的建议性 token 预算。这是"建议"（模型可见并据此自我调度），不是硬上限；真正的硬上限由 max_tokens 控制。
+        · 0（默认）：不发送该字段 → 模型看不到预算倒计时，按 max_tokens 自由发挥，适合质量优先的开放式任务。这不是"无上限"，而是"不启用预算建议"。
+        · <20000：插件会静默忽略（API 要求最小 20000，避免 400）。
+        · ≥20000：启用并自动追加 beta 头 `task-budgets-2026-03-13`；预算过紧可能导致模型潦草收尾。
+      en_US: |
+        Advisory token budget visible to the model across the full agentic loop (thinking + tool calls + tool results + final output). This is advisory — the hard per-request cap is `max_tokens`.
+        · 0 (default): field is not sent → model runs without a countdown, bounded only by `max_tokens`. Recommended for open-ended agentic tasks where quality matters more than speed. "0" means "no budget hint", NOT "unlimited".
+        · <20000: silently ignored by the plugin (API requires a minimum of 20000 and would otherwise return 400).
+        · ≥20000: enabled and the `task-budgets-2026-03-13` beta header is attached automatically. Overly tight budgets can cause the model to wrap up prematurely.
   - name: max_tokens
     use_template: max_tokens
     required: true
-    default: 64000
+    default: 128000
     min: 1
     max: 128000
   - name: response_format
@@ -117,16 +143,6 @@ parameter_rules:
     help:
       zh_Hans: 启用工具结果的提示缓存。
       en_US: Enable prompt caching for tool results.
-  - name: context_1m
-    label:
-      zh_Hans: 1M上下文窗口
-      en_US: 1M Context Window
-    type: boolean
-    default: true
-    required: false
-    help:
-      zh_Hans: 启用1M令牌上下文窗口。需要使用层级4或自定义速率限制的组织。注意, 超过200K令牌的请求将按高级费率收费（输入2倍，输出1.5倍定价）, Dify显示的价格计算可能不准确。
-      en_US: Enable 1M token context window. Requires organizations in usage tier 4 or with custom rate limits. Note, Requests exceeding 200K tokens are charged at premium rates (2x input, 1.5x output pricing), Dify's displayed pricing calculations may be inaccurate.
 pricing:
   input: '5.00'
   output: '25.00'

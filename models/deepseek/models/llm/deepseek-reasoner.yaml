@@ -10,13 +10,26 @@ features:
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 128000
+  context_size: 1000000
 parameter_rules:
   - name: max_tokens
     use_template: max_tokens
     min: 1
-    max: 8192
+    max: 384000
     default: 4096
+  - name: reasoning_effort
+    label:
+      zh_Hans: 思考强度
+      en_US: Reasoning Effort
+    type: string
+    default: high
+    required: false
+    options:
+      - high
+      - max
+    help:
+      zh_Hans: 控制思考模式下的推理强度。官方文档当前支持 high 和 max。
+      en_US: Controls reasoning effort in thinking mode. The official docs currently support high and max.
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -30,7 +43,7 @@ parameter_rules:
       - text
       - json_object
 pricing:
-  input: "2"
-  output: "3"
+  input: "1"
+  output: "2"
   unit: "0.000001"
   currency: RMB

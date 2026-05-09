@@ -32,6 +32,7 @@ dependencies = [
     { name = "boto3" },
     { name = "botocore" },
     { name = "dify-plugin" },
+    { name = "werkzeug" },
 ]
 
 [package.metadata]
@@ -39,6 +40,7 @@ requires-dist = [
     { name = "boto3", specifier = "~=1.40.50" },
     { name = "botocore", specifier = "~=1.40.50" },
     { name = "dify-plugin", specifier = ">=0.5.0" },
+    { name = "werkzeug", specifier = ">=3.1.0" },
 ]
 
 [package.metadata.requires-dev]

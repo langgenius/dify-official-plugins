@@ -15,9 +15,11 @@ class QwenImageTool(Tool):
     Uses qianfan/qwen-image model optimized for Chinese prompts
     """
     
-    # API endpoints
     BASE_URL = "https://aihubmix.com/v1"
-    PREDICTIONS_ENDPOINT = f"{BASE_URL}/models/qianfan/qwen-image/predictions"
+
+    def get_endpoint(self, model: str) -> str:
+        vendor = "qianfan" if model == "qwen-image" else "bailian"
+        return f"{self.BASE_URL}/models/{vendor}/{model}/predictions"
     
     def create_image_info(self, base64_data: str, resolution: str) -> dict:
         mime_type = "image/png"
@@ -36,6 +38,7 @@ class QwenImageTool(Tool):
             if not prompt:
                 raise InvokeError("Prompt is required")
             
+            model = tool_parameters.get("model", "qwen-image")
             resolution = tool_parameters.get("resolution", "1024x1024")
             num_images = int(tool_parameters.get("num_images", 1))
             refer_image = tool_parameters.get("refer_image", "")
@@ -69,14 +72,13 @@ class QwenImageTool(Tool):
                 }
             }
             
-            yield self.create_text_message(f"Generating {num_images} image(s) with Qwen Image...")
-            
-            # Make API request
+            yield self.create_text_message(f"Generating {num_images} image(s) with {model}...")
+
             response = requests.post(
-                self.PREDICTIONS_ENDPOINT,
+                self.get_endpoint(model),
                 headers=headers,
                 json=payload,
-                timeout=60
+                timeout=120,
             )
             
             if response.status_code != 200:
@@ -119,7 +121,7 @@ class QwenImageTool(Tool):
             # Return results as JSON
             yield self.create_json_message({
                 "success": True,
-                "model": "qianfan/qwen-image",
+                "model": model,
                 "prompt": prompt,
                 "resolution": resolution,
                 "num_images": len(images),

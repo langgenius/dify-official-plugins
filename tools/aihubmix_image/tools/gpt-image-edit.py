@@ -108,7 +108,7 @@ class GptImageEditTool(Tool):
             if not image_file:
                 raise InvokeError("Input image is required")
             
-            model = tool_parameters.get("model", "gpt-image-1")
+            model = tool_parameters.get("model", "gpt-image-1.5")
             size = tool_parameters.get("size", "1024x1024")
             n = int(tool_parameters.get("n", 1))
             

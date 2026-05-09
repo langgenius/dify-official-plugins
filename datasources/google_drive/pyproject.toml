@@ -5,13 +5,17 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 
-# uv pip compile pyproject.toml -o ./requirements.txt
+# Refresh the plugin lockfile with: uv lock
 dependencies = [
     "dify_plugin>=0.5.0",
-    "google-cloud-storage",
+    "certifi",
+    "flask",
     "google-api-python-client",
     "google-auth-httplib2",
     "google-auth-oauthlib",
+    "google-cloud-storage",
+    "requests",
+    "urllib3",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix
