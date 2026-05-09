@@ -21,7 +21,7 @@ parameter_rules:
     use_template: max_tokens
     default: 4096
     min: 1
-    max: 81920
+    max: 65536
   - name: top_k
     label:
       zh_Hans: 取样数量
