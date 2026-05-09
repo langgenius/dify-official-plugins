@@ -1,0 +1,41 @@
+model: kimi-k2.6
+label:
+  en_US: Kimi K2.6
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+  - multi-tool-call
+  - vision
+  - video
+model_properties:
+  mode: chat
+  context_size: 262144
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 1
+    max: 32768
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: '0.95'
+  output: '3.9995'
+  unit: '0.000001'
+  currency: USD

@@ -1,2 +1,0 @@
-dify_plugin==0.7.1
-plivo==4.59.5

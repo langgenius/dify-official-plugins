@@ -23,7 +23,10 @@ class QwenImageEditTool(Tool):
     
     # API endpoints
     BASE_URL = "https://aihubmix.com/v1"
-    PREDICTIONS_ENDPOINT = f"{BASE_URL}/models/qianfan/qwen-image-edit/predictions"
+
+    def get_endpoint(self, model: str) -> str:
+        vendor = "qianfan" if model == "qwen-image-edit" else "bailian"
+        return f"{self.BASE_URL}/models/{vendor}/{model}/predictions"
     
     def create_image_info(self, base64_data: str, guidance: float) -> dict:
         mime_type = "image/png"
@@ -113,10 +116,11 @@ class QwenImageEditTool(Tool):
             if not prompt:
                 raise InvokeError("Edit prompt is required")
             
-            # Process image input from various sources
+            model = tool_parameters.get("model", "qwen-image-edit")
+
             image_input = tool_parameters.get("image", "")
             image_url = self._process_image_input(image_input)
-            
+
             guidance = float(tool_parameters.get("guidance", 7.5))
             watermark = tool_parameters.get("watermark", False)
             
@@ -145,14 +149,13 @@ class QwenImageEditTool(Tool):
                 }
             }
             
-            yield self.create_text_message(f"Editing image with Qwen Image Edit...")
-            
-            # Make API request
+            yield self.create_text_message(f"Editing image with {model}...")
+
             response = requests.post(
-                self.PREDICTIONS_ENDPOINT,
+                self.get_endpoint(model),
                 headers=headers,
                 json=payload,
-                timeout=300
+                timeout=300,
             )
             
             if response.status_code != 200:
@@ -195,7 +198,7 @@ class QwenImageEditTool(Tool):
             # Return results as JSON
             yield self.create_json_message({
                 "success": True,
-                "model": "qianfan/qwen-image-edit",
+                "model": model,
                 "prompt": prompt,
                 "input_image": image_url,
                 "num_images": len(images),

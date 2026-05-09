@@ -4,7 +4,6 @@ from typing import Any, Mapping
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin.interfaces.datasource import DatasourceProvider
 from google.cloud import storage
-from google.oauth2 import service_account
 
 
 class GoogleCloudStorageDatasourceProvider(DatasourceProvider):

@@ -359,7 +359,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         if stop:
             extra_model_kwargs["stop"] = stop
         if user:
-            extra_model_kwargs["user"] = user
+            extra_model_kwargs["safety_identifier"] = user
         if stream:
             extra_model_kwargs["stream_options"] = {"include_usage": True}
         prompt_messages = self._clear_illegal_prompt_messages(
@@ -477,7 +477,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
         # Handle the user identifier
         if user:
-            responses_params["user"] = user
+            responses_params["safety_identifier"] = user
 
         # stop sequences are not supported by gpt-5 reasoning models
         if stop and not is_reasoning_model:

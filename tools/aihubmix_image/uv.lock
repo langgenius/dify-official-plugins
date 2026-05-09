@@ -12,7 +12,6 @@ dependencies = [
     { name = "openai" },
     { name = "pillow" },
     { name = "requests" },
-    { name = "tenacity" },
 ]
 
 [package.metadata]
@@ -22,7 +21,6 @@ requires-dist = [
     { name = "openai", specifier = ">=1.0.0" },
     { name = "pillow", specifier = ">=9.0.0" },
     { name = "requests", specifier = ">=2.28.0" },
-    { name = "tenacity", specifier = ">=8.2.0" },
 ]
 
 [package.metadata.requires-dev]

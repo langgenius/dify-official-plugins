@@ -184,6 +184,15 @@ class OpenRouterLargeLanguageModel(OAICompatLargeLanguageModel):
             self._set_reasoning_params(model_parameters)
             self._set_verbosity_params(model_parameters)
             self._set_json_schema_params(model_parameters)
+
+        # Allow data collection by default so that all available providers can serve requests.
+        # Without this, models whose only providers require data collection would return a 404
+        # ("No endpoints available matching your guardrail restrictions and data policy").
+        if "provider" not in model_parameters:
+            model_parameters["provider"] = {"data_collection": "allow"}
+        elif isinstance(model_parameters["provider"], dict) and "data_collection" not in model_parameters["provider"]:
+            model_parameters["provider"]["data_collection"] = "allow"
+
         return self._generate(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
         )

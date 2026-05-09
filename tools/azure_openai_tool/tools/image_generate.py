@@ -1,5 +1,6 @@
 import base64
 import random
+import re
 from collections.abc import Generator
 from typing import Any, Dict
 
@@ -31,12 +32,21 @@ class ImageGenerateTool(Tool):
             "prompt": prompt,
         }
 
-        # Size (optional, defaults to auto)
+        # Size (optional, defaults to 1024x1024)
         size = tool_parameters.get("size", "1024x1024")
-        if size not in {"1024x1024", "1536x1024", "1024x1536"}:
-            yield self.create_text_message("Invalid size. Choose 1024x1024, 1536x1024 or 1024x1536.")
-            return
-        generation_args["size"] = size
+        if size == "custom":
+            custom_size = tool_parameters.get("custom_size")
+            if not isinstance(custom_size, str) or not ImageGenerateTool._is_size_string(custom_size):
+                yield self.create_text_message(
+                    "Invalid custom_size. When size is custom, provide a WxH string such as 1024x1024 or 1536x1024."
+                )
+                return
+            generation_args["size"] = custom_size
+        else:
+            if size not in {"1024x1024", "1536x1024", "1024x1536"}:
+                yield self.create_text_message("Invalid size. Choose 1024x1024, 1536x1024, 1024x1536, or custom.")
+                return
+            generation_args["size"] = size
 
         # Quality (optional, defaults to auto)
         quality = tool_parameters.get("quality", "high")
@@ -149,6 +159,10 @@ class ImageGenerateTool(Tool):
             # Fallback or raise specific error?
             # Fallback to default png for now
             return "image/png", base64.b64decode(encoded_str)  # Attempt to decode anyway if prefix malformed
+
+    @staticmethod
+    def _is_size_string(size: str) -> bool:
+        return bool(re.fullmatch(r"\d+x\d+", size))
 
     @staticmethod
     def _generate_random_id(length=8):

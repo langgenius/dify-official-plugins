@@ -11,7 +11,7 @@ class LlamacloudEndpoint(Endpoint):
         Invokes the endpoint with the given request.
         """
         if settings.get("api_key"):
-            if r.headers.get("Authorization") != f"Bearer {settings.get("api_key")}":
+            if r.headers.get("Authorization") != f"Bearer {settings.get('api_key')}":
                 return Response(
                     status=403,
                     content_type="application/json"

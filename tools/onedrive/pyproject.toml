@@ -5,10 +5,15 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 
-# uv pip compile pyproject.toml -o ./requirements.txt
+# Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
+    "azure-core>=1.36.0",
     "dify_plugin>=0.5.0",
+    "microsoft-kiota-abstractions>=1.9.7",
+    "msal>=1.34.0",
     "msgraph-sdk>=1.39.0",
+    "requests>=2.32.5",
+    "werkzeug>=3.1.0",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix
