@@ -41,7 +41,11 @@
 - mistralai/mixtral-8x22b-instruct
 - qwen/qwen-2.5-72b-instruct
 - qwen/qwen3-max
+- qwen/qwen3.6-max-preview
 - qwen/qwen3.6-plus
+- qwen/qwen3.6-flash
+- qwen/qwen3.6-35b-a3b
+- qwen/qwen3.6-27b
 - deepseek/deepseek-v4-pro
 - deepseek/deepseek-v4-flash
 - deepseek/deepseek-chat

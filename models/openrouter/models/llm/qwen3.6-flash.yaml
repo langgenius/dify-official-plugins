@@ -1,6 +1,6 @@
-model: qwen/qwen3.6-plus
+model: qwen/qwen3.6-flash
 label:
-  en_US: qwen3.6-plus
+  en_US: qwen3.6-flash
 model_type: llm
 features:
   - agent-thought
@@ -58,7 +58,7 @@ parameter_rules:
       en_US: Whether to hide the thought process.
     required: false
 pricing:
-  input: "0.325"
-  output: "1.95"
+  input: "0.25"
+  output: "1.5"
   unit: "0.000001"
   currency: USD

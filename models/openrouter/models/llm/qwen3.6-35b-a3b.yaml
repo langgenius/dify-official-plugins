@@ -1,6 +1,6 @@
-model: qwen/qwen3.6-plus
+model: qwen/qwen3.6-35b-a3b
 label:
-  en_US: qwen3.6-plus
+  en_US: qwen3.6-35b-a3b
 model_type: llm
 features:
   - agent-thought
@@ -11,17 +11,33 @@ features:
   - video
 model_properties:
   mode: chat
-  context_size: 1000000
+  context_size: 262144
 parameter_rules:
   - name: temperature
     use_template: temperature
+    default: 1
   - name: top_p
     use_template: top_p
+    default: 0.95
   - name: max_tokens
     use_template: max_tokens
     default: 4096
     min: 1
-    max: 65536
+    max: 262144
+  - name: top_k
+    label:
+      zh_Hans: 取样数量
+      en_US: Top k
+    type: int
+    default: 20
+    help:
+      zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
+      en_US: Only sample from the top K options for each subsequent token.
+    required: false
+  - name: frequency_penalty
+    use_template: frequency_penalty
+    min: -2.0
+    max: 2.0
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -58,7 +74,7 @@ parameter_rules:
       en_US: Whether to hide the thought process.
     required: false
 pricing:
-  input: "0.325"
-  output: "1.95"
+  input: "0.15"
+  output: "1"
   unit: "0.000001"
   currency: USD
