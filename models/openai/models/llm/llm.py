@@ -792,6 +792,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             if _re and _re != "none":
                 model_parameters.pop("temperature", None)
                 model_parameters.pop("top_p", None)
+                model_parameters.pop("logprobs", None)
 
             # thinking models require max_completion_tokens instead of max_tokens
             chat_params = model_parameters.copy()

@@ -2591,27 +2591,11 @@ LLM_BASE_MODELS = [
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
                 ),
                 ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                ),
+                ParameterRule(
                     name="response_format",
-                    label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
-                    type="string",
-                    help=I18nObject(
-                        zh_Hans="指定模型必须输出的格式",
-                        en_US="specifying the format that the model must output",
-                    ),
-                    required=False,
-                    options=["text", "json_object", "json_schema"],
-                ),
-                ParameterRule(
-                    name="json_schema",
-                    label=I18nObject(en_US="JSON Schema"),
-                    type="text",
-                    help=I18nObject(
-                        zh_Hans="设置返回的json schema，llm将按照它返回",
-                        en_US="Set a response json schema will ensure LLM to adhere it.",
-                    ),
-                    required=False,
-                ),
-                ParameterRule(
                     name="reasoning_effort",
                     label=I18nObject(zh_Hans="推理工作", en_US="reasoning_effort"),
                     type="string",
