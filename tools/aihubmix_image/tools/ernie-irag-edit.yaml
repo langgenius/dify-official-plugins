@@ -8,11 +8,11 @@ identity:
     ja_JP: "ERNIE iRAG 編集"
 description:
   human:
-    en_US: "ERNIE iRAG Image Editing Model - Supports URL, Base64, and Dify file variables as input"
-    zh_Hans: "ERNIE iRAG 图像编辑模型 - 支持 URL、Base64 和 Dify 文件变量作为输入"
-    pt_BR: "Modelo de Edição ERNIE iRAG - Suporta URL, Base64 e variáveis de arquivo Dify como entrada"
-    ja_JP: "ERNIE iRAG 画像編集モデル - URL、Base64、Difyファイル変数を入力としてサポート"
-  llm: "Edit image using ERNIE iRAG Edit model with advanced Chinese language understanding and image-to-image capabilities. Supports multiple input formats: HTTP/HTTPS URLs, Data URLs (base64), and Dify file transfer variables from workflow connections."
+    en_US: "Baidu ERNIE iRAG image editing. Supports erase, repaint, and variation operations on a reference image."
+    zh_Hans: "百度 ERNIE iRAG 图像编辑，支持基于参考图的擦除（erase）、重绘（repaint）、变体生成（variation）等操作。"
+    pt_BR: "Edição de imagens ERNIE iRAG da Baidu. Suporta operações de apagar (erase), repintar (repaint) e variação (variation) sobre uma imagem de referência."
+    ja_JP: "Baidu ERNIE iRAG 画像編集。参照画像に対する erase（消去）、repaint（再描画）、variation（バリエーション生成）に対応。"
+  llm: "Edit images with Baidu ERNIE iRAG (erase / repaint / variation). Accepts URL, base64 data URL, or Dify file variable as the input image."
 parameters:
   - name: prompt
     type: string

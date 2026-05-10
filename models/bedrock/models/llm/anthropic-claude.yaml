@@ -165,6 +165,15 @@ parameter_rules:
     help:
       zh_Hans: anthropic beta 参数是一串测试版标题的列表，用于表示选择加入一组特定的测试版功能。使用英文逗号连接。
       en_US: The anthropic beta parameter is a list of strings of beta headers used to indicate opt-in to a particular set of beta features. Use commas to join.
+  - name: json_schema
+    label:
+      zh_Hans: JSON Schema
+      en_US: JSON Schema
+    type: string
+    required: false
+    help:
+      zh_Hans: JSON Schema for structured output
+      en_US: JSON Schema for structured output
   - name: response_format
     use_template: response_format
 pricing:

@@ -32,7 +32,7 @@ parameter_rules:
     max: 2
     default: 0
 pricing:
-  input: "0.086"
-  output: "0.344"
-  unit: "0.000001"
+  input: '2'
+  output: '8'
+  unit: '0.000001'
   currency: RMB

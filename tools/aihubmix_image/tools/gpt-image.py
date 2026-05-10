@@ -26,11 +26,7 @@ class GptImageTool(Tool):
         }
     
     def get_endpoint(self, model: str) -> str:
-        """Get the appropriate endpoint based on model selection"""
-        if model == "gpt-image-1-mini":
-            return f"{self.BASE_URL}/models/opanai/gpt-image-1-mini/predictions"
-        else:  # default to gpt-image-1
-            return f"{self.BASE_URL}/models/opanai/gpt-image-1/predictions"
+        return f"{self.BASE_URL}/models/openai/{model}/predictions"
     
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         """
@@ -42,7 +38,7 @@ class GptImageTool(Tool):
             if not prompt:
                 raise InvokeError("Prompt is required")
             
-            model = tool_parameters.get("model", "gpt-image-1")
+            model = tool_parameters.get("model", "gpt-image-2")
             resolution = tool_parameters.get("resolution", "1024x1024")
             num_images = int(tool_parameters.get("num_images", 1))
             quality = tool_parameters.get("quality", "high")
@@ -138,7 +134,7 @@ class GptImageTool(Tool):
             # Return results as JSON
             yield self.create_json_message({
                 "success": True,
-                "model": f"opanai/{model}",
+                "model": f"openai/{model}",
                 "prompt": prompt,
                 "resolution": resolution,
                 "num_images": len(images),

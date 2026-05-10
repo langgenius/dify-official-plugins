@@ -43,10 +43,16 @@ version = "0.1.0"
 source = { virtual = "." }
 dependencies = [
     { name = "dify-plugin" },
+    { name = "pydantic" },
+    { name = "requests" },
 ]
 
 [package.metadata]
-requires-dist = [{ name = "dify-plugin", specifier = ">=0.5.0" }]
+requires-dist = [
+    { name = "dify-plugin", specifier = ">=0.5.0" },
+    { name = "pydantic", specifier = ">=2.8.2,<3.0.0" },
+    { name = "requests", specifier = ">=2.32.5,<3.0.0" },
+]
 
 [package.metadata.requires-dev]
 dev = []

@@ -456,12 +456,15 @@ class NotionClient:
             icon = None
             parent = page_result["parent"]
             parent_type = parent["type"]
-            if parent_type == "block_id":
-                parent_id = self.notion_block_parent_page_id(access_token, parent[parent_type])
-            elif parent_type == "workspace":
-                parent_id = "root"
-            else:
-                parent_id = parent[parent_type]
+            try:
+                if parent_type == "block_id":
+                    parent_id = self.notion_block_parent_page_id(access_token, parent[parent_type])
+                elif parent_type == "workspace":
+                    parent_id = "root"
+                else:
+                    parent_id = parent[parent_type]
+            except ValueError:
+                continue
             page = OnlineDocumentPage(
                 page_id=page_id,
                 page_name=page_name,
@@ -479,12 +482,15 @@ class NotionClient:
             icon = None
             parent = database_result["parent"]
             parent_type = parent["type"]
-            if parent_type == "block_id":
-                parent_id = self.notion_block_parent_page_id(access_token, parent[parent_type])
-            elif parent_type == "workspace":
-                parent_id = "root"
-            else:
-                parent_id = parent[parent_type]
+            try:
+                if parent_type == "block_id":
+                    parent_id = self.notion_block_parent_page_id(access_token, parent[parent_type])
+                elif parent_type == "workspace":
+                    parent_id = "root"
+                else:
+                    parent_id = parent[parent_type]
+            except ValueError:
+                continue
             page = OnlineDocumentPage(
                 page_id=page_id,
                 page_name=page_name,

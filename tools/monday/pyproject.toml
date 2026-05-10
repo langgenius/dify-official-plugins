@@ -5,13 +5,13 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 
-# uv pip compile pyproject.toml -o ./requirements.txt
+# Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
     "monday-api-python-sdk @ git+https://github.com/jingfelix/monday-api-python-sdk.git@v1.3.1.post1",
     "dify-easy>=0.1.0",
     "dify_plugin>=0.5.0",
+    "pydantic>=2.8.2",
 ]
 
-# uv run black . -C -l 100 && uv run ruff check --fix
 [dependency-groups]
 dev = []

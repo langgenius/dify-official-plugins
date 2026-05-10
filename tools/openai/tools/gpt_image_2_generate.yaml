@@ -1,0 +1,142 @@
+description:
+  human:
+    en_US: GPT Image 2 Generate is a text to image generation tool
+    zh_Hans: GPT Image 2 Generate 是一个文本到图像的生成工具
+  llm: GPT Image 2 Generate is a tool used to generate images from text using OpenAI's gpt-image-2 model
+extra:
+  python:
+    source: tools/gpt_image_2_generate.py
+identity:
+  author: OpenAI
+  description:
+    en_US: Generate images with OpenAI's gpt-image-2 model as a standalone tool.
+    zh_Hans: 使用 OpenAI 的 gpt-image-2 模型独立生成图像。
+  label:
+    en_US: GPT Image 2 Generate
+    zh_Hans: GPT 图像 2 生成
+  name: gpt_image_2_generate
+parameters:
+- form: llm
+  human_description:
+    en_US: Detailed description of the image you want to generate.
+    zh_Hans: 您想要生成的图像的详细描述。
+  label:
+    en_US: Prompt
+    zh_Hans: 提示词
+  llm_description: Detailed image prompt for gpt-image-2. Describe the desired image clearly.
+  name: prompt
+  required: true
+  type: string
+- default: auto
+  form: form
+  human_description:
+    en_US: Image size. Use auto or provide a supported size string such as 1024x1024, 1536x1024, or 1024x1536.
+    zh_Hans: 图像尺寸。可使用 auto，或填写支持的尺寸字符串，例如 1024x1024、1536x1024、1024x1536。
+  label:
+    en_US: Image Size
+    zh_Hans: 图像大小
+  name: size
+  required: false
+  type: string
+- default: 1
+  form: form
+  human_description:
+    en_US: Number of images to generate (between 1 and 10).
+    zh_Hans: 要生成的图像数量（1 到 10）。
+  label:
+    en_US: Number of Images
+    zh_Hans: 图像数量
+  max: 10
+  min: 1
+  name: n
+  required: false
+  type: number
+- default: auto
+  form: form
+  human_description:
+    en_US: Image quality.
+    zh_Hans: 图像质量。
+  label:
+    en_US: Image Quality
+    zh_Hans: 图像质量
+  name: quality
+  options:
+  - label:
+      en_US: Auto
+      zh_Hans: 自动
+    value: auto
+  - label:
+      en_US: Low
+      zh_Hans: 低
+    value: low
+  - label:
+      en_US: Medium
+      zh_Hans: 中
+    value: medium
+  - label:
+      en_US: High
+      zh_Hans: 高
+    value: high
+  required: false
+  type: select
+- default: auto
+  form: form
+  human_description:
+    en_US: Output image format.
+    zh_Hans: 输出图像格式。
+  label:
+    en_US: Output Format
+    zh_Hans: 输出格式
+  name: output_format
+  options:
+  - label:
+      en_US: Auto
+      zh_Hans: 自动
+    value: auto
+  - label:
+      en_US: PNG
+      zh_Hans: PNG
+    value: png
+  - label:
+      en_US: JPEG
+      zh_Hans: JPEG
+    value: jpeg
+  - label:
+      en_US: WebP
+      zh_Hans: WebP
+    value: webp
+  required: false
+  type: select
+- default: 100
+  form: form
+  human_description:
+    en_US: Compression level for JPEG or WebP output (0-100).
+    zh_Hans: JPEG 或 WebP 输出的压缩级别（0-100）。
+  label:
+    en_US: Output Compression
+    zh_Hans: 输出压缩
+  name: output_compression
+  max: 100
+  min: 0
+  required: false
+  type: number
+- default: auto
+  form: form
+  human_description:
+    en_US: Moderation level.
+    zh_Hans: 内容审核级别。
+  label:
+    en_US: Moderation
+    zh_Hans: 内容审核
+  name: moderation
+  options:
+  - label:
+      en_US: Auto
+      zh_Hans: 自动
+    value: auto
+  - label:
+      en_US: Low
+      zh_Hans: 低
+    value: low
+  required: false
+  type: select

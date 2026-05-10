@@ -159,6 +159,7 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
             if not voice or voice not in voices:
                 voice = self._get_model_default_voice(model, credentials)
 
+            audio_type = self._get_model_audio_type(model, credentials)
             word_limit = self._get_model_word_limit(model, credentials) or 500
             if len(content_text) > word_limit:
                 sentences = self._split_text_into_sentences(
@@ -171,7 +172,7 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
                     executor.submit(
                         client.audio.speech.with_streaming_response.create,
                         model=model,
-                        response_format="mp3",
+                        response_format=audio_type,
                         input=sentences[i],
                         voice=voice,  # type: ignore
                     )
@@ -184,7 +185,7 @@ class OpenAIText2SpeechModel(_CommonOpenAI, TTSModel):
                 response = client.audio.speech.with_streaming_response.create(
                     model=model,
                     voice=voice,  # type: ignore
-                    response_format="mp3",
+                    response_format=audio_type,
                     input=content_text.strip(),
                 )
 

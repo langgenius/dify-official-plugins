@@ -68,19 +68,22 @@ The plugin handles various error scenarios:
 ## Requirements
 
 - Python 3.12+
-- Dify Plugin SDK >= 0.3.0
+- Dify Plugin SDK >= 0.5.0
 - Seltz Python SDK
 
 ## Example SDK Usage
 
 ```python
-from seltz import Seltz
+from seltz import Includes, Seltz
 
 # Initialize client
 client = Seltz(api_key="your-api-key")
 
 # Perform search
-response = client.search(text="your query", max_documents=10)
+response = client.search(
+    "your query",
+    includes=Includes(max_documents=10),
+)
 
 # Access results
 for doc in response.documents:

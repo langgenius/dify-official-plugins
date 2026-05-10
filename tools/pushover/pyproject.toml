@@ -5,11 +5,12 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 
-# uv pip compile pyproject.toml -o ./requirements.txt
+# Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
     "chump>=1.6.0",
     "dify-easy>=0.1.0",
     "dify_plugin>=0.5.0",
+    "pydantic>=2.12.3",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix

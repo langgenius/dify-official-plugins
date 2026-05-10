@@ -49,7 +49,7 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
         # Store current model for use in _convert_prompt_message_to_dict
         credentials["_current_model"] = model
 
-        # Handle thinking parameter for Kimi K2.5
+        # 处理 Kimi K2.5 / K2.6 等思考模型的 thinking 参数
         if "thinking" in model_parameters:
             thinking = model_parameters.pop("thinking")
             if thinking:
@@ -151,13 +151,13 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
     def _convert_prompt_message_to_dict(self, message: PromptMessage, credentials: Optional[dict] = None) -> dict:
         """
         Convert PromptMessage to dict for OpenAI API format.
-        For Kimi K2.5 thinking mode, extract <think> content to reasoning_content field.
+        For Kimi K2.5 / K2.6 thinking mode, extract <think> content to reasoning_content field.
         """
         credentials = credentials or {}
         model_name = credentials.get("_current_model", "").lower()
 
-        # Check if this is a thinking-enabled model
-        is_thinking_model = any(x in model_name for x in ["k2.5", "k2-thinking"])
+        # 判断是否为支持深度思考模式的模型（K2.5、K2.6 以及 K2-thinking 系列）
+        is_thinking_model = any(x in model_name for x in ["k2.5", "k2.6", "k2-thinking"])
 
         # Use base implementation for standard conversion
         message_dict = super()._convert_prompt_message_to_dict(message, credentials)

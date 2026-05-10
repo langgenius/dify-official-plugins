@@ -8,7 +8,7 @@ from .firecrawl_appx import FirecrawlApp
 class CrawlJobTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         app = FirecrawlApp(
-            api_key=self.runtime.credentials["firecrawl_api_key"], base_url=self.runtime.credentials["base_url"]
+            api_key=self.runtime.credentials.get("firecrawl_api_key"), base_url=self.runtime.credentials.get("base_url")
         )
         operation = tool_parameters.get("operation", "get")
         if operation == "get":

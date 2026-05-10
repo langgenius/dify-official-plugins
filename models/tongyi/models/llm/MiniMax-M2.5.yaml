@@ -48,6 +48,15 @@ parameter_rules:
     help:
       zh_Hans: 控制生成文本中词汇的多样性。正值会减少重复使用已出现的词汇，使输出更加多样化。
       en_US: Controls the diversity of vocabulary in the generated text. Positive values reduce the reuse of words that have already appeared, making the output more diverse.
+  - name: extra_headers
+    required: false
+    type: string
+    label:
+      zh_Hans: 额外请求头，Json字符串格式
+      en_US: Extra Headers
+    help:
+      zh_Hans: 以 JSON 字符串格式输入额外的 HTTP 请求头，这些请求头将包含在 API 请求中。
+      en_US: Enter extra HTTP headers in JSON string format, which will be included in the API request.
 pricing:
   input: '2.1'
   output: '8.4'

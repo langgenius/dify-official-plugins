@@ -136,6 +136,19 @@ model_credential_schema:
       placeholder:
         zh_Hans: 在此输入您的模型上下文长度
         en_US: Enter your Model context size
+    - variable: max_chunks
+      label:
+        zh_Hans: 模型每批的最大分块数
+        en_US: Model max chunks per batch
+      required: true
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+      type: text-input
+      default: "1"
+      placeholder:
+        zh_Hans: 在此输入您的模型每批次的最大分块数量
+        en_US: Enter your Model maximum chunks per batch size
     - variable: context_size
       label:
         zh_Hans: 模型上下文长度
