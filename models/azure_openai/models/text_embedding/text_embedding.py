@@ -41,6 +41,11 @@ class AzureOpenAITextEmbeddingModel(_CommonAzureOpenAI, TextEmbeddingModel):
         if user:
             extra_model_kwargs["user"] = user
         extra_model_kwargs["encoding_format"] = "base64"
+
+        dimensions = credentials.get("embedding_dimensions")
+        if dimensions and base_model_name != "text-embedding-ada-002":
+            extra_model_kwargs["dimensions"] = int(dimensions)
+
         context_size = self._get_context_size(model, credentials)
         max_chunks = self._get_max_chunks(model, credentials)
         embeddings: list[list[float]] = [[] for _ in range(len(texts))]
@@ -130,6 +135,22 @@ class AzureOpenAITextEmbeddingModel(_CommonAzureOpenAI, TextEmbeddingModel):
             raise CredentialsValidateFailedError(
                 f"Base Model Name {credentials['base_model_name']} is invalid"
             )
+
+        _MAX_DIMS = {"text-embedding-3-large": 3072, "text-embedding-3-small": 1536}
+        base_model = credentials.get("base_model_name", "")
+        dimensions = credentials.get("embedding_dimensions")
+        if dimensions:
+            try:
+                dim_int = int(dimensions)
+            except (ValueError, TypeError):
+                raise CredentialsValidateFailedError("embedding_dimensions must be an integer")
+            if base_model == "text-embedding-ada-002":
+                raise CredentialsValidateFailedError("text-embedding-ada-002 does not support dimensions")
+            if base_model in _MAX_DIMS and not (1 <= dim_int <= _MAX_DIMS[base_model]):
+                raise CredentialsValidateFailedError(
+                    f"embedding_dimensions for {base_model} must be between 1 and {_MAX_DIMS[base_model]}"
+                )
+
         try:
             client = self._create_client(credentials)
             self._embedding_invoke(
