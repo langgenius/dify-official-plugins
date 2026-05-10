@@ -3601,6 +3601,8 @@ LLM_BASE_MODELS = [
                 ParameterRule(
                     name="top_p",
                     **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                ),
+                ParameterRule(
                     name="response_format",
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
                     type="string",
