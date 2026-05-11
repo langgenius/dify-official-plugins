@@ -106,7 +106,7 @@ class TelnyxLargeLanguageModel(_CommonTelnyx, LargeLanguageModel):
             payload["user"] = user
         if tools:
             payload["tool_choice"] = "auto"
-            payload["tools"] = [PromptMessageFunction(function=tool).model_dump() for tool in tools]
+            payload["tools"] = [self._convert_tool_to_dict(tool) for tool in tools]
         return payload
 
     def _handle_response(
@@ -179,16 +179,21 @@ class TelnyxLargeLanguageModel(_CommonTelnyx, LargeLanguageModel):
             finish_reason = choice.get("finish_reason") or finish_reason
             delta = choice.get("delta") or {}
             content = delta.get("content") or ""
-            if not content:
+            tool_calls = delta.get("tool_calls")
+            if not content and not tool_calls:
                 continue
             index += 1
-            full_content += content
+            if content:
+                full_content += content
             yield LLMResultChunk(
                 model=model,
                 prompt_messages=prompt_messages,
                 delta=LLMResultChunkDelta(
                     index=index,
-                    message=AssistantPromptMessage(content=content),
+                    message=AssistantPromptMessage(
+                        content=content,
+                        tool_calls=self._extract_response_tool_calls(tool_calls) if tool_calls else [],
+                    ),
                 ),
             )
 
@@ -242,6 +247,14 @@ class TelnyxLargeLanguageModel(_CommonTelnyx, LargeLanguageModel):
         if getattr(message, "name", None) and message_dict.get("role") != "tool":
             message_dict["name"] = message.name
         return message_dict
+
+    @staticmethod
+    def _convert_tool_to_dict(tool: PromptMessageTool) -> dict[str, Any]:
+        """Return an OpenAI-compatible tool definition across SDK shapes."""
+        dumped = tool.model_dump()
+        if "type" in dumped and "function" in dumped:
+            return dumped
+        return PromptMessageFunction(function=tool).model_dump()
 
     @staticmethod
     def _extract_response_tool_calls(tool_calls: list[dict[str, Any]]) -> list[AssistantPromptMessage.ToolCall]:

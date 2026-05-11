@@ -7,7 +7,7 @@ from unittest.mock import patch
 import yaml
 from dify_plugin.entities.model import AIModelEntity
 from dify_plugin.entities.model.llm import LLMUsage
-from dify_plugin.entities.model.message import UserPromptMessage
+from dify_plugin.entities.model.message import PromptMessageTool, UserPromptMessage
 
 from models.common_telnyx import _CommonTelnyx
 from models.llm.llm import TelnyxLargeLanguageModel
@@ -238,6 +238,13 @@ def test_llm_non_streaming_payload_and_parsing(mock_post):
             credentials=credentials(),
             prompt_messages=[UserPromptMessage(content="ping")],
             model_parameters={"temperature": 0.1, "max_tokens": 8},
+            tools=[
+                PromptMessageTool(
+                    name="lookup",
+                    description="Look up a value",
+                    parameters={"type": "object", "properties": {"query": {"type": "string"}}},
+                )
+            ],
             stream=False,
         )
 
@@ -248,3 +255,60 @@ def test_llm_non_streaming_payload_and_parsing(mock_post):
     assert call.kwargs["json"]["messages"] == [{"role": "user", "content": "ping"}]
     assert call.kwargs["json"]["stream"] is False
     assert call.kwargs["json"]["temperature"] == 0.1
+    assert call.kwargs["json"]["tool_choice"] == "auto"
+    assert call.kwargs["json"]["tools"] == [
+        {
+            "type": "function",
+            "function": {
+                "name": "lookup",
+                "description": "Look up a value",
+                "parameters": {"type": "object", "properties": {"query": {"type": "string"}}},
+            },
+        }
+    ]
+
+
+@patch("models.common_telnyx.requests.post")
+def test_llm_streaming_yields_tool_call_chunks_without_content(mock_post):
+    mock_post.return_value = FakeResponse(
+        lines=[
+            'data: {"choices":[{"delta":{"tool_calls":[{"id":"call_1","type":"function","function":{"name":"lookup","arguments":"{\\\"query\\\":\\\"ping\\\"}"}}]}}]}',
+            'data: {"choices":[{"delta":{"content":"done"},"finish_reason":"stop"}],"usage":{"prompt_tokens":3,"completion_tokens":2}}',
+            "data: [DONE]",
+        ]
+    )
+    model = TelnyxLargeLanguageModel(model_schemas=[])
+    fake_usage = LLMUsage(
+        prompt_tokens=3,
+        prompt_unit_price=0,
+        prompt_price_unit=0,
+        prompt_price=0,
+        completion_tokens=2,
+        completion_unit_price=0,
+        completion_price_unit=0,
+        completion_price=0,
+        total_tokens=5,
+        total_price=0,
+        currency="USD",
+        latency=0,
+    )
+
+    with patch.object(model, "_calc_response_usage", return_value=fake_usage):
+        chunks = list(
+            model._invoke(
+                model="Qwen/Qwen3-235B-A22B",
+                credentials=credentials(),
+                prompt_messages=[UserPromptMessage(content="ping")],
+                model_parameters={},
+                stream=True,
+            )
+        )
+
+    assert chunks[0].delta.message.content == ""
+    assert len(chunks[0].delta.message.tool_calls) == 1
+    assert chunks[0].delta.message.tool_calls[0].id == "call_1"
+    assert chunks[0].delta.message.tool_calls[0].function.name == "lookup"
+    assert chunks[0].delta.message.tool_calls[0].function.arguments == '{"query":"ping"}'
+    assert chunks[1].delta.message.content == "done"
+    assert chunks[-1].delta.finish_reason == "stop"
+    assert chunks[-1].delta.usage.total_tokens == 5
