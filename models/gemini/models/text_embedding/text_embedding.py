@@ -55,6 +55,10 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
     # Google's documentation indicates images are processed at ~258 tokens on average.
     IMAGE_TOKEN_ESTIMATE = 258
 
+    @staticmethod
+    def _as_user_content(part: Union[str, types.Part]) -> types.UserContent:
+        return types.UserContent(parts=[part])
+
     def _invoke(
         self,
         model: str,
@@ -247,12 +251,20 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         # call embedding model
         task_type = to_task_type(input_type.value)
         config = EmbedContentConfig(task_type=task_type.name) if task_type else None
+        logical_texts = texts if isinstance(texts, list) else [texts]
+        contents = [self._as_user_content(text) for text in logical_texts]
         response = client.models.embed_content(
-            model=model, contents=texts, config=config
+            model=model, contents=contents, config=config
         )
 
         if response.embeddings is None:
             raise InvokeError(f"Unable to get embeddings from '{model}' model")
+
+        if len(response.embeddings) != len(logical_texts):
+            raise InvokeError(
+                f"Expected {len(logical_texts)} embeddings from '{model}' model, "
+                f"got {len(response.embeddings)}"
+            )
 
         result: list[tuple[list[float], Optional[int]]] = []
         for embedding in response.embeddings:
@@ -379,7 +391,7 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         original_texts = []   # parallel list: original text string (or None for images)
         for document in documents:
             if document.content_type == MultiModalContentType.TEXT:
-                contents.append(document.content)
+                contents.append(self._as_user_content(document.content))
                 content_is_image.append(False)
                 original_texts.append(document.content)
             elif document.content_type == MultiModalContentType.IMAGE:
@@ -391,7 +403,7 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
                     base64_str = base64_str.split(",", 1)[1]
                 image_data = base64.b64decode(base64_str)
                 part = types.Part.from_bytes(data=image_data, mime_type=mime_type)
-                contents.append(part)
+                contents.append(self._as_user_content(part))
                 content_is_image.append(True)
                 original_texts.append(None)
             else:
@@ -400,8 +412,6 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
                     f"Gemini Embedding 2 currently supports TEXT and IMAGE."
                 )
 
-        # Get model properties
-        context_size = self._get_context_size(model, credentials)
         max_chunks = self._get_max_chunks(model, credentials)
 
         # Batch processing if needed
@@ -441,6 +451,12 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
             if response.embeddings is None:
                 raise InvokeError(
                     f"Unable to get embeddings from '{model}' model"
+                )
+
+            if len(response.embeddings) != len(batch_contents):
+                raise InvokeError(
+                    f"Expected {len(batch_contents)} embeddings from '{model}' model, "
+                    f"got {len(response.embeddings)}"
                 )
 
             # Process embeddings
