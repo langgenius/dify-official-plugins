@@ -1,6 +1,6 @@
-model: Qwen/Qwen3.6-27B
+model: Qwen/Qwen3.6-35B-A3B
 label:
-  en_US: Qwen/Qwen3.6-27B
+  en_US: Qwen/Qwen3.6-35B-A3B
 model_type: llm
 features:
   - agent-thought
@@ -34,7 +34,7 @@ parameter_rules:
       zh_Hans: 是否开启思考模式。
       en_US: Whether to enable thinking mode.
 pricing:
-  input: "0.6"
-  output: "4.8"
+  input: "0.4"
+  output: "3.2"
   unit: "0.000001"
   currency: RMB
