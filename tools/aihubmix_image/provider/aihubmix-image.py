@@ -8,36 +8,28 @@ from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 class AIHubMixImageProvider(ToolProvider):
     
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
-        """
-        Validate AIHubMix API Key by making a simple API call
-        """
         api_key = credentials.get("api_key")
         if not api_key:
             raise ToolProviderCredentialValidationError("API Key is required")
-        
+
         try:
-            # Test API key with a simple request to AIHubMix API
-            headers = {
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json"
-            }
-            
-            # Use a simple model list endpoint to validate API key
             response = requests.get(
-                "https://api.aihubmix.com/v1/models",
-                headers=headers,
-                timeout=10
+                "https://aihubmix.com/v1/models",
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                timeout=10,
             )
-            
-            if response.status_code == 401:
-                raise ToolProviderCredentialValidationError("Invalid API Key")
-            elif response.status_code != 200:
-                raise ToolProviderCredentialValidationError(f"API validation failed: {response.status_code}")
-                
         except requests.exceptions.RequestException as e:
-            raise ToolProviderCredentialValidationError(f"Network error during validation: {str(e)}")
-        except Exception as e:
-            raise ToolProviderCredentialValidationError(f"Validation error: {str(e)}")
+            raise ToolProviderCredentialValidationError(f"Network error during validation: {e}")
+
+        if response.status_code == 401:
+            raise ToolProviderCredentialValidationError("Invalid API Key")
+        if response.status_code != 200:
+            raise ToolProviderCredentialValidationError(
+                f"API validation failed: {response.status_code}"
+            )
 
     #########################################################################################
     # OAuth support can be implemented by uncommenting the following functions.
