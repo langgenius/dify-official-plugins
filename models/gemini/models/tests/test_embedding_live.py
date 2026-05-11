@@ -97,6 +97,10 @@ def _make_tiny_png() -> bytes:
     return signature + ihdr + idat + iend
 
 
+def _user_content(part: str | types.Part) -> types.UserContent:
+    return types.UserContent(parts=[part])
+
+
 # ================================================================
 # Test 1: Text embedding — basic functionality
 # ================================================================
@@ -130,7 +134,7 @@ class TestLiveTextEmbedding:
 
         response = client.models.embed_content(
             model=MODEL_NAME,
-            contents=texts,
+            contents=[_user_content(text) for text in texts],
         )
 
         assert response.embeddings is not None
@@ -154,7 +158,7 @@ class TestLiveTextEmbedding:
         assert response.embeddings is not None
         assert len(response.embeddings) == 1
         assert len(response.embeddings[0].values) == 3072
-        print(f"\n✅ Text embedding with task_type OK")
+        print("\n✅ Text embedding with task_type OK")
 
 
 # ================================================================
@@ -244,7 +248,7 @@ class TestLiveImageEmbedding:
         assert response.embeddings is not None
         embedding = response.embeddings[0].values
         assert len(embedding) == 768
-        print(f"\n✅ Image embedding with MRL dim=768 OK")
+        print("\n✅ Image embedding with MRL dim=768 OK")
 
 
 # ================================================================
@@ -261,9 +265,9 @@ class TestLiveMixedContent:
         image_part = types.Part.from_bytes(data=jpeg_bytes, mime_type="image/jpeg")
 
         contents = [
-            "A text description",
-            image_part,
-            "Another text",
+            _user_content("A text description"),
+            _user_content(image_part),
+            _user_content("Another text"),
         ]
 
         response = client.models.embed_content(
@@ -285,9 +289,9 @@ class TestLiveMixedContent:
         png_bytes = _make_tiny_png()
 
         contents = [
-            types.Part.from_bytes(data=jpeg_bytes, mime_type="image/jpeg"),
-            types.Part.from_bytes(data=png_bytes, mime_type="image/png"),
-            types.Part.from_bytes(data=jpeg_bytes, mime_type="image/jpeg"),
+            _user_content(types.Part.from_bytes(data=jpeg_bytes, mime_type="image/jpeg")),
+            _user_content(types.Part.from_bytes(data=png_bytes, mime_type="image/png")),
+            _user_content(types.Part.from_bytes(data=jpeg_bytes, mime_type="image/jpeg")),
         ]
 
         response = client.models.embed_content(
@@ -362,7 +366,7 @@ class TestLiveValidateCredentials:
             contents=["ping"],
         )
         assert response.embeddings is not None
-        print(f"\n✅ Credential validation passed")
+        print("\n✅ Credential validation passed")
 
     def test_invalid_key_fails(self):
         """An invalid API key should raise an error"""
@@ -373,4 +377,4 @@ class TestLiveValidateCredentials:
                 model=MODEL_NAME,
                 contents=["ping"],
             )
-        print(f"\n✅ Invalid key correctly rejected")
+        print("\n✅ Invalid key correctly rejected")

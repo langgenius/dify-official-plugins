@@ -72,6 +72,19 @@ parameter_rules:
       en_US: GPT-5 series models require KYC validation for streaming output, if you want to use the models without this limitation, please turn off streaming responses.
     required: true
     default: true
+  - name: service_tier
+    label:
+      zh_Hans: 服务层级
+      en_US: Service tier
+    type: string
+    help:
+      zh_Hans: 默认使用标准处理。选择 Flex 时请求会携带 service_tier=flex（[OpenAI Flex 处理](https://developers.openai.com/api/docs/guides/flex-processing)）：与 Batch 同档 token 价格，响应更慢，可能遇到 429（不计费），请提高客户端超时。
+      en_US: Default is standard processing. Flex sends service_tier=flex ([Flex processing](https://developers.openai.com/api/docs/guides/flex-processing)) for Batch-tier token pricing, with slower responses and possible unbilled 429; increase client timeouts.
+    required: false
+    default: default
+    options:
+      - default
+      - flex
 pricing:
   input: '0.20'
   output: '1.25'
