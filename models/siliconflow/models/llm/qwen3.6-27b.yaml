@@ -1,6 +1,6 @@
-model: Qwen/Qwen3.6-35B-A3B
+model: Qwen/Qwen3.6-27B
 label:
-  en_US: Qwen/Qwen3.6-35B-A3B
+  en_US: Qwen/Qwen3.6-27B
 model_type: llm
 features:
   - agent-thought
