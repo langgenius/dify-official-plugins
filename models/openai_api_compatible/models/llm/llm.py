@@ -40,23 +40,29 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         compatible with Dify's downstream filters.
         """
         # Prefer the new key when present, otherwise fall back to legacy
-        reasoning_piece = delta.get("reasoning") or delta.get("reasoning_content")
+        reasoning_piece = delta.get("reasoning") or delta.get("reasoning_content") or ""
         content_piece = delta.get("content") or ""
         output = ""
-        if reasoning_piece:
+        if len(reasoning_piece) > 0:
             if not is_reasoning:
                 # Open a think block on first reasoning token
-                output = f"<think>\n{reasoning_piece}"
+                output += f"<think>\n{reasoning_piece}"
                 is_reasoning = True
             else:
                 # Continue streaming inside the think block
-                output = str(reasoning_piece)
+                output += str(reasoning_piece)
 
-        if is_reasoning and len(content_piece) > 0:
-            is_reasoning = False
-            output = f"\n</think>{content_piece}"
+        if is_reasoning:
+            # delta without reasoning/content should just close the block
+            if len(reasoning_piece) == 0 and len(content_piece) == 0:
+                is_reasoning = False
+                output += f"\n</think>"
+            # sometimes reasoning_piece is not empty and content_piece is not empty. but if content_piece is not empty, then we should not close the think block
+            if len(content_piece) > 0:
+                is_reasoning = False
+                output += f"\n</think>{content_piece}"
         elif len(content_piece) > 0:
-            output = content_piece
+            output += content_piece
 
         return output, is_reasoning
 
