@@ -1,4 +1,4 @@
-from typing import Mapping, Optional, Union
+from typing import Any, List, Literal, Mapping, Optional, Union
 import ipaddress
 import json
 import re
@@ -8,42 +8,38 @@ from urllib.parse import urlparse
 import requests
 import tiktoken
 
-from typing import Literal
-from typing import List, Union, Dict, Any
 from openai import OpenAI
 from openai._types import NOT_GIVEN, NotGiven
 from openai.types.chat import ChatCompletionMessageParam
 from openai.types.create_embedding_response import CreateEmbeddingResponse
 
-from dify_plugin.entities.model import (
-    AIModelEntity,
-    EmbeddingInputType,
-    I18nObject,
-    ModelFeature,
+from dify_plugin.entities.model import AIModelEntity, EmbeddingInputType, I18nObject, ModelFeature
+from dify_plugin.entities.model.text_embedding import TextEmbeddingResult, EmbeddingUsage
+from dify_plugin.errors.model import (
+    CredentialsValidateFailedError,
+    InvokeError,
+    InvokeServerUnavailableError,
 )
-from dify_plugin.entities.model.text_embedding import (
-    TextEmbeddingResult,
-    EmbeddingUsage,
-)
-from dify_plugin.errors.model import InvokeError, InvokeServerUnavailableError
-from dify_plugin.interfaces.model.openai_compatible.text_embedding import (
-    OAICompatEmbeddingModel,
-)
-from dify_plugin.entities.model.text_embedding import (
-    MultiModalContent,
-    MultiModalContentType,
-)
-
+from dify_plugin.interfaces.model.openai_compatible.text_embedding import OAICompatEmbeddingModel
+from dify_plugin.entities.model.text_embedding import MultiModalContentType
 
 logger = logging.getLogger(__name__)
+
+
+def _get_encoding_format(credentials: Mapping | dict) -> Literal["float"] | None:
+    encoding_format = credentials.get("encoding_format")
+    if encoding_format == "float":
+        return encoding_format
+    return None
+
 
 def create_chat_embeddings(
     client: OpenAI,
     *,
-    #messages: list[ChatCompletionMessageParam],
+    # messages: list[ChatCompletionMessageParam],
     messages: List[ChatCompletionMessageParam],
     model: str,
-    #encoding_format: Literal["base64", "float"] | NotGiven = NOT_GIVEN,
+    # encoding_format: Literal["base64", "float"] | NotGiven = NOT_GIVEN,
     encoding_format: Union[Literal["base64", "float"], NotGiven] = NOT_GIVEN,
     continue_final_message: bool = False,
     add_special_tokens: bool = False,
@@ -63,6 +59,7 @@ def create_chat_embeddings(
             "add_special_tokens": add_special_tokens,
         },
     )
+
 
 class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
     def get_customizable_model_schema(
@@ -85,6 +82,14 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 entity.features.append(ModelFeature.VISION)
 
         return entity
+
+    def validate_credentials(self, model: str, credentials: dict) -> None:
+        try:
+            self._invoke(model=model, credentials=credentials, texts=["ping"])
+        except CredentialsValidateFailedError:
+            raise
+        except Exception as ex:
+            raise CredentialsValidateFailedError(str(ex)) from ex
 
     def _invoke(
         self,
@@ -121,10 +126,6 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
         if prefix:
             processed_inputs = self._add_prefix_to_inputs(processed_inputs, prefix)
 
-        # Get context size and max chunks from credentials or model properties
-        context_size = self._get_context_size(model, credentials)
-        max_chunks = self._get_max_chunks(model, credentials)
-
         # Truncate long texts (similar to Tongyi's approach)
         inputs = []
         for input_data in processed_inputs:
@@ -135,16 +136,16 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                     if content.get("type") == "text":
                         text_parts.append(content.get("text", ""))
                     elif content.get("type") == "image_url":
-                        #text_parts.append(f"[Image: {content.get('image_url', {}).get('url', '')}]")
+                        # text_parts.append(f"[Image: {content.get('image_url', {}).get('url', '')}]")
                         text_parts.append(f"Image:{content.get('image_url', {}).get('url', '')}")
                 text = " ".join(text_parts) if text_parts else ""
             else:
                 text = input_data if isinstance(input_data, str) else str(input_data)
 
             # Check token count and truncate if necessary
-            #num_tokens = self._get_num_tokens_by_gpt2(text)
-            #if num_tokens >= context_size:
-                # Truncate to fit within context size
+            # num_tokens = self._get_num_tokens_by_gpt2(text)
+            # if num_tokens >= context_size:
+            # Truncate to fit within context size
             #    cutoff = int(len(text) * (context_size / num_tokens))
             #    text = text[0:cutoff]
 
@@ -207,12 +208,9 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 for i in range(0, len(text_inputs), max_chunks):
                     batch = text_inputs[i : i + max_chunks]
 
-                    payload: dict[str, Any] = {
-                        "model": endpoint_model_name,
-                        "input": batch,
-                    }
+                    payload: dict[str, Any] = {"model": endpoint_model_name, "input": batch}
 
-                    encoding_format = credentials.get("encoding_format")
+                    encoding_format = _get_encoding_format(credentials)
                     if encoding_format:
                         payload["encoding_format"] = encoding_format
 
@@ -222,10 +220,7 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                     )
 
                     response = requests.post(
-                        f"{endpoint_url}/embeddings",
-                        headers=headers,
-                        json=payload,
-                        timeout=60,
+                        f"{endpoint_url}/embeddings", headers=headers, json=payload, timeout=60
                     )
 
                     if response.status_code != 200:
@@ -328,7 +323,10 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 response = create_chat_embeddings(
                     client,
                     messages=[
-                        {"role": "system", "content": [{"type": "text", "text": default_instruction}]},
+                        {
+                            "role": "system",
+                            "content": [{"type": "text", "text": default_instruction}],
+                        },
                         {"role": "user", "content": [{"type": "text", "text": prompt}]},
                         {"role": "assistant", "content": [{"type": "text", "text": ""}]},
                     ],
@@ -338,15 +336,21 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                     add_special_tokens=True,
                 )
             elif input_type == 1:
-                image_url = prompt[len("Image:"):]
+                image_url = prompt[len("Image:") :]
                 response = create_chat_embeddings(
                     client,
                     messages=[
-                        {"role": "system", "content": [{"type": "text", "text": default_instruction}]},
-                        {"role": "user", "content": [
-                            {"type": "image_url", "image_url": {"url": image_url}},
-                            {"type": "text", "text": ""},
-                        ]},
+                        {
+                            "role": "system",
+                            "content": [{"type": "text", "text": default_instruction}],
+                        },
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "image_url", "image_url": {"url": image_url}},
+                                {"type": "text", "text": ""},
+                            ],
+                        },
                         {"role": "assistant", "content": [{"type": "text", "text": ""}]},
                     ],
                     model=model,
@@ -359,18 +363,24 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 text_parts = []
                 for item in prompt_list:
                     if item.startswith("Image:"):
-                        image_url = item[len("Image:"):]
+                        image_url = item[len("Image:") :]
                     elif item:
                         text_parts.append(item)
                 text = " ".join(text_parts)
                 response = create_chat_embeddings(
                     client,
                     messages=[
-                        {"role": "system", "content": [{"type": "text", "text": default_instruction}]},
-                        {"role": "user", "content": [
-                            {"type": "image_url", "image_url": {"url": image_url}},
-                            {"type": "text", "text": text},
-                        ]},
+                        {
+                            "role": "system",
+                            "content": [{"type": "text", "text": default_instruction}],
+                        },
+                        {
+                            "role": "user",
+                            "content": [
+                                {"type": "image_url", "image_url": {"url": image_url}},
+                                {"type": "text", "text": text},
+                            ],
+                        },
                         {"role": "assistant", "content": [{"type": "text", "text": ""}]},
                     ],
                     model=model,
@@ -391,7 +401,7 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
             if "currency" in usage:
                 currency = usage.get("currency", "USD")
 
-        return batched_embeddings, used_tokens, total_price, unit_price, price_unit, currency
+        return (batched_embeddings, used_tokens, total_price, unit_price, price_unit, currency)
 
     def _process_input(self, text: str, vision_enabled: bool) -> Union[str, list]:
         """
@@ -482,40 +492,7 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
             try:
                 ip = ipaddress.ip_address(hostname)
                 # Check if it's private, loopback, link-local, or reserved
-                if (
-                    ip.is_private
-                    or ip.is_loopback
-                    or ip.is_link_local
-                    or ip.is_reserved
-                ):
-                    logger.warning(f"Blocked private IP URL: {url[:50]}...")
-                    return ""
-            except ValueError:
-                # Not an IP address, it's a hostname - allow it
-                pass
-
-            return url
-        except Exception as e:
-            logger.warning(f"URL validation failed: {e}")
-            return ""
-
-            # Block localhost
-            if hostname in ("localhost", "127.0.0.1", "::1"):
-                logger.warning(f"Blocked localhost URL: {url[:50]}...")
-                return ""
-
-            # Block private IP ranges
-            import ipaddress
-
-            try:
-                ip = ipaddress.ip_address(hostname)
-                # Check if it's private, loopback, link-local, or reserved
-                if (
-                    ip.is_private
-                    or ip.is_loopback
-                    or ip.is_link_local
-                    or ip.is_reserved
-                ):
+                if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved:
                     logger.warning(f"Blocked private IP URL: {url[:50]}...")
                     return ""
             except ValueError:
@@ -610,10 +587,10 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 return "bmp"
             else:
                 # Default to jpeg if unknown
-                #return "jpeg"
+                # return "jpeg"
                 return ""
         except Exception:
-            #return "jpeg"
+            # return "jpeg"
             return ""
 
     def _contains_ip(self, text):
@@ -626,7 +603,7 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
         Returns:
             bool: True if a valid IP address is found, False otherwise
         """
-        ip_pattern = r'\b(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b'
+        ip_pattern = r"\b(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b"
 
         return bool(re.search(ip_pattern, text))
 
@@ -714,9 +691,7 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
             return len(encoding.encode(text))
         except Exception:
             # Fallback to character count or a default if tiktoken fails
-            return (
-                len(text) // 4
-            )  # Rough estimate if tiktoken is not available or fails
+            return len(text) // 4  # Rough estimate if tiktoken is not available or fails
 
     def _invoke_multimodal(
         self,
@@ -740,30 +715,24 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                     if content.get("type") == "text":
                         text_parts.append(content.get("text", ""))
                     elif content.get("type") == "image_url":
-                        #text_parts.append(f"[Image: {content.get('image_url', {}).get('url', '')}]")
+                        # text_parts.append(f"[Image: {content.get('image_url', {}).get('url', '')}]")
                         text_parts.append(f"Image:{content.get('image_url', {}).get('url', '')}")
                 texts.append(" ".join(text_parts) if text_parts else "")
             elif input_data.content_type == MultiModalContentType.TEXT:
-                input = {
-                    "text": input_data.content
-                }
+                input = {"text": input_data.content}
                 input_str = json.dumps(input, ensure_ascii=False)
                 texts.append(input_str)
             elif input_data.content_type == MultiModalContentType.IMAGE:
                 image_format = self._detect_image_format_from_base64(input_data.content)
-                if len(image_format)>0:
+                if len(image_format) > 0:
                     input = {
                         "image": "data:image/" + image_format + ";base64," + input_data.content
                     }
                 else:
-                    input = {
-                        "image": "data:image" + ";base64," + input_data.content
-                    }
+                    input = {"image": "data:image" + ";base64," + input_data.content}
                 input_str = json.dumps(input, ensure_ascii=False)
                 texts.append(input_str)
             else:
-                texts.append(
-                    input_data if isinstance(input_data, str) else str(input_data)
-                )
+                texts.append(input_data if isinstance(input_data, str) else str(input_data))
 
         return self._invoke(model, credentials, texts, user, input_type)
