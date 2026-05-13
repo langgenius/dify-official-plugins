@@ -446,6 +446,32 @@ model_credential_schema:
       placeholder:
         zh_Hans: "请输入您的查询前缀, 例如 query:"
         en_US: "Enter your Query prefix, e.g. query:"
+    - variable: encoding_format
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+      label:
+        en_US: Encoding Format
+        zh_Hans: 编码格式
+      type: select
+      required: true
+      default: float
+      options:
+        - value: "none"
+          label:
+            en_US: None
+            zh_Hans: 不指定
+        - value: float
+          label:
+            en_US: float
+            zh_Hans: float
+        - value: base64
+          label:
+            en_US: base64
+            zh_Hans: base64
+      help:
+        en_US: The encoding format the embedding endpoint should return vectors in. Select "None" to omit the field from the request and use the endpoint's default.
+        zh_Hans: 嵌入接口返回向量的编码格式。选择"不指定"则不发送该字段，使用接口默认值。
 extra:
   python:
     provider_source: provider/openai_api_compatible.py
