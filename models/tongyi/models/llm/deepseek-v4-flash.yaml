@@ -1,7 +1,7 @@
-model: deepseek-v3.2-exp
+model: deepseek-v4-flash
 label:
-  zh_Hans: DeepSeek-V3.2-exp
-  en_US: DeepSeek-V3.2-exp
+  zh_Hans: DeepSeek-V4-Flash
+  en_US: DeepSeek-V4-Flash
 model_type: llm
 features:
   - agent-thought
@@ -10,7 +10,7 @@ features:
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 131072
+  context_size: 1048576
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -20,7 +20,7 @@ parameter_rules:
     type: int
     default: 4096
     min: 1
-    max: 65536
+    max: 393216
     help:
       zh_Hans: 指定生成结果长度的上限。如果生成结果截断，可以调大该参数。
       en_US: Specifies the upper limit on the length of generated results. If the generated results are truncated, you can increase this parameter.
@@ -88,9 +88,7 @@ parameter_rules:
       zh_Hans: 以 JSON 字符串格式输入额外的 HTTP 请求头，这些请求头将包含在 API 请求中。
       en_US: Enter extra HTTP headers in JSON string format, which will be included in the API request.
 pricing:
-  input: "0.002"
-  output: "0.003"
+  input: "0.001"
+  output: "0.002"
   unit: "0.001"
   currency: RMB
-
-
