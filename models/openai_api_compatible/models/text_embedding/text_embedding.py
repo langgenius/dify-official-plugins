@@ -25,7 +25,11 @@ from dify_plugin.entities.model.text_embedding import (
     TextEmbeddingResult,
     EmbeddingUsage,
 )
-from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError, InvokeServerUnavailableError
+from dify_plugin.errors.model import (
+    CredentialsValidateFailedError,
+    InvokeError,
+    InvokeServerUnavailableError,
+)
 from dify_plugin.interfaces.model.openai_compatible.text_embedding import (
     OAICompatEmbeddingModel,
 )
@@ -215,7 +219,6 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
 
                 for i in range(0, len(text_inputs), max_chunks):
                     batch = text_inputs[i : i + max_chunks]
-                    logger.info(f"credentials: {credentials}")
                     payload: dict[str, Any] = {
                         "model": endpoint_model_name,
                         "input": batch,
@@ -229,7 +232,6 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                         f"Embedding API Request to {endpoint_url}/embeddings "
                         f"(batch {i // max_chunks + 1}/{(len(text_inputs) + max_chunks - 1) // max_chunks})"
                     )
-                    logger.debug(f"payload: {payload}")
                     response = requests.post(
                         f"{endpoint_url}/embeddings",
                         headers=headers,
