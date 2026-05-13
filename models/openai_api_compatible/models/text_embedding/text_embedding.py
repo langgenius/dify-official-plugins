@@ -26,7 +26,7 @@ from dify_plugin.entities.model.text_embedding import MultiModalContentType
 logger = logging.getLogger(__name__)
 
 
-def _get_encoding_format(credentials: Mapping | dict) -> Literal["float"] | None:
+def _get_encoding_format(credentials: Mapping[str, Any]) -> Literal["float"] | None:
     encoding_format = credentials.get("encoding_format")
     if encoding_format == "float":
         return encoding_format
@@ -205,12 +205,13 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 }
                 text_embeddings = []
 
+                encoding_format = _get_encoding_format(credentials)
+
                 for i in range(0, len(text_inputs), max_chunks):
                     batch = text_inputs[i : i + max_chunks]
 
                     payload: dict[str, Any] = {"model": endpoint_model_name, "input": batch}
 
-                    encoding_format = _get_encoding_format(credentials)
                     if encoding_format:
                         payload["encoding_format"] = encoding_format
 
