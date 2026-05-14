@@ -15,11 +15,17 @@ from dify_plugin.entities.model import (
 )
 from dify_plugin.entities.model.llm import LLMMode, LLMResult
 from dify_plugin.entities.model.message import (
+    AudioPromptMessageContent,
+    DocumentPromptMessageContent,
+    ImagePromptMessageContent,
     PromptMessage,
+    PromptMessageContentType,
     PromptMessageRole,
     PromptMessageTool,
     SystemPromptMessage,
     AssistantPromptMessage,
+    UserPromptMessage,
+    VideoPromptMessageContent,
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLanguageModel
@@ -315,7 +321,18 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     required=False,
                 )
             )
-        
+
+        # Register VIDEO/AUDIO/DOCUMENT features when the corresponding credential is enabled.
+        # Without these on entity.features, Dify host filters out non-image attachments
+        # before they reach _convert_prompt_message_to_dict, causing silent drop.
+        for credential_key, feature in (
+            ("video_support", ModelFeature.VIDEO),
+            ("audio_support", ModelFeature.AUDIO),
+            ("document_support", ModelFeature.DOCUMENT),
+        ):
+            if credentials.get(credential_key, "no_support") == "support" and feature not in entity.features:
+                entity.features.append(feature)
+
         return entity
 
     @classmethod
@@ -345,6 +362,66 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             # Only update if changed
             if new_content != p.content:
                 p.content = new_content
+
+    def _convert_prompt_message_to_dict(
+        self, message: PromptMessage, credentials: Optional[dict] = None
+    ) -> dict:
+        # The base SDK implementation only handles TEXT and IMAGE content for user
+        # messages, silently dropping VIDEO / AUDIO / DOCUMENT. Extend it so the same
+        # OpenAI-compatible request shape carries the additional modalities. The
+        # encoding follows what LiteLLM and OpenAI-compatible aggregators accept:
+        #   - VIDEO/AUDIO: image_url with a data URI (mime_type carried in the URI),
+        #     which providers like Vertex Gemini convert into inline_data.
+        #   - DOCUMENT: the OpenAI Files-compatible "file" part with file_data set
+        #     to the data URI.
+        if isinstance(message, UserPromptMessage) and isinstance(message.content, list):
+            sub_messages: list[dict] = []
+            for c in message.content:
+                if c.type == PromptMessageContentType.TEXT:
+                    sub_messages.append({"type": "text", "text": c.data})
+                elif c.type == PromptMessageContentType.IMAGE:
+                    image_c: ImagePromptMessageContent = c
+                    sub_messages.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": image_c.data,
+                                "detail": image_c.detail.value,
+                            },
+                        }
+                    )
+                elif c.type == PromptMessageContentType.VIDEO:
+                    video_c: VideoPromptMessageContent = c
+                    sub_messages.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": video_c.data},
+                        }
+                    )
+                elif c.type == PromptMessageContentType.AUDIO:
+                    audio_c: AudioPromptMessageContent = c
+                    sub_messages.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": audio_c.data},
+                        }
+                    )
+                elif c.type == PromptMessageContentType.DOCUMENT:
+                    doc_c: DocumentPromptMessageContent = c
+                    sub_messages.append(
+                        {
+                            "type": "file",
+                            "file": {
+                                "file_data": doc_c.data,
+                                "filename": doc_c.filename or "document",
+                            },
+                        }
+                    )
+            message_dict: dict = {"role": "user", "content": sub_messages}
+            if message.name:
+                message_dict["name"] = message.name
+            return message_dict
+        return super()._convert_prompt_message_to_dict(message, credentials)
 
     def _invoke(
         self,
