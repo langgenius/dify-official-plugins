@@ -213,6 +213,28 @@ model_credential_schema:
           label:
             en_US: Not Support
             zh_Hans: 不支持
+    - variable: docs_field_name
+      show_on:
+        - variable: __model_type
+          value: rerank
+      label:
+        zh_Hans: 文档字段名
+        en_US: Documents field name
+      type: select
+      required: false
+      default: documents
+      help:
+        en_US: Some APIs use 'docs' instead of 'documents' for the rerank request field.
+        zh_Hans: 部分 API 使用 docs 作为 rerank 请求的文档字段名，而非 documents。
+      options:
+        - value: documents
+          label:
+            en_US: documents (default)
+            zh_Hans: documents（默认）
+        - value: docs
+          label:
+            en_US: docs
+            zh_Hans: docs
     - variable: max_tokens_to_sample
       label:
         zh_Hans: 最大 token 上限
