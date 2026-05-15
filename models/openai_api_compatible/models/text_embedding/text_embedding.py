@@ -25,7 +25,11 @@ from dify_plugin.entities.model.text_embedding import (
     TextEmbeddingResult,
     EmbeddingUsage,
 )
-from dify_plugin.errors.model import InvokeError, InvokeServerUnavailableError
+from dify_plugin.errors.model import (
+    CredentialsValidateFailedError,
+    InvokeError,
+    InvokeServerUnavailableError,
+)
 from dify_plugin.interfaces.model.openai_compatible.text_embedding import (
     OAICompatEmbeddingModel,
 )
@@ -36,6 +40,12 @@ from dify_plugin.entities.model.text_embedding import (
 
 
 logger = logging.getLogger(__name__)
+
+def _get_encoding_format(credentials: Mapping[str, Any]) -> Literal["float"] | None:
+    encoding_format = credentials.get("encoding_format")
+    if encoding_format == "float":
+        return encoding_format
+    return None
 
 def create_chat_embeddings(
     client: OpenAI,
@@ -85,6 +95,14 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 entity.features.append(ModelFeature.VISION)
 
         return entity
+
+    def validate_credentials(self, model: str, credentials: dict) -> None:
+        try:
+            self._invoke(model=model, credentials=credentials, texts=["ping"])
+        except CredentialsValidateFailedError:
+            raise
+        except Exception as ex:
+            raise CredentialsValidateFailedError(str(ex)) from ex
 
     def _invoke(
         self,
@@ -204,6 +222,8 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                 }
                 text_embeddings = []
 
+                encoding_format = _get_encoding_format(credentials)
+
                 for i in range(0, len(text_inputs), max_chunks):
                     batch = text_inputs[i : i + max_chunks]
 
@@ -212,7 +232,6 @@ class OpenAITextEmbeddingModel(OAICompatEmbeddingModel):
                         "input": batch,
                     }
 
-                    encoding_format = credentials.get("encoding_format")
                     if encoding_format:
                         payload["encoding_format"] = encoding_format
 
