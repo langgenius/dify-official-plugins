@@ -1,0 +1,30 @@
+meta:
+  arch:
+    - amd64
+    - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: "3.12"
+  version: 0.0.1
+name: orcarouter
+author: langgenius
+icon: orcarouter_square.svg
+description:
+  en_US: OrcaRouter is an OpenAI-compatible LLM gateway that routes requests across 40+ upstream providers (OpenAI, Anthropic, Google, DeepSeek, Qwen, Grok, and more) to the cheapest or fastest path, with adaptive routing, fallback chains, and pay-below-list-price billing.
+  zh_Hans: OrcaRouter 是兼容 OpenAI 协议的 LLM 网关，跨 40+ 上游 provider（OpenAI、Anthropic、Google、DeepSeek、Qwen、Grok 等）按最便宜或最快路径分发请求，内置自适应路由、降级链与低于官方价计费。
+  ja_JP: OrcaRouter は OpenAI 互換の LLM ゲートウェイで、40 以上の上流プロバイダー（OpenAI、Anthropic、Google、DeepSeek、Qwen、Grok など）への最安または最速のパスへリクエストをルーティングします。アダプティブルーティング、フォールバックチェーン、表示価格以下の課金を内蔵。
+  pt_BR: OrcaRouter é um gateway LLM compatível com OpenAI que roteia solicitações entre mais de 40 provedores upstream (OpenAI, Anthropic, Google, DeepSeek, Qwen, Grok e outros) pelo caminho mais barato ou mais rápido, com roteamento adaptativo, cadeias de fallback e preços abaixo da tabela.
+label:
+  en_US: OrcaRouter
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: false
+type: plugin
+plugins:
+  models:
+    - provider/orcarouter.yaml
+version: 0.0.1
+created_at: 2026-05-14T19:20:00.000000000-04:00

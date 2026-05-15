@@ -1,0 +1,12 @@
+# https://www.orcarouter.ai/models/google/gemini-embedding-001
+model: google/gemini-embedding-001
+label:
+  en_US: gemini-embedding-001
+model_type: text-embedding
+model_properties:
+  context_size: 2048
+  max_chunks: 32
+pricing:
+  input: "0.15"
+  unit: "0.000001"
+  currency: USD

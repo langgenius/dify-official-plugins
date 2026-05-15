@@ -1,0 +1,48 @@
+# https://www.orcarouter.ai/models/google/gemma-4-31b-it
+model: google/gemma-4-31b-it
+label:
+  en_US: gemma-4-31b-it
+model_type: llm
+features:
+  - agent-thought
+model_properties:
+  mode: chat
+  context_size: 128000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 1024
+    min: 1
+    max: 65536
+  - name: exclude_reasoning_tokens
+    type: boolean
+    required: false
+    default: false
+    label:
+      zh_Hans: 隐藏思考过程
+      en_US: Hide the thought process
+  - name: orcarouter_fallback_models
+    type: string
+    required: false
+    label:
+      en_US: Fallback models (JSON array)
+      zh_Hans: 降级模型（JSON 数组）
+    help:
+      en_US: 'Upstream models to try if the primary fails. Example: ["openai/gpt-4o-mini","openai/gpt-4o"]'
+      zh_Hans: 主上游失败时按顺序尝试这些模型。例：["openai/gpt-4o-mini","openai/gpt-4o"]
+  - name: orcarouter_route
+    type: string
+    required: false
+    options:
+      - fallback
+    label:
+      en_US: Routing mode
+      zh_Hans: 路由模式
+    help:
+      en_US: Activate fallback list. Set to 'fallback' to use orcarouter_fallback_models in order.
+      zh_Hans: 启用降级列表。设为 'fallback' 后按 orcarouter_fallback_models 顺序尝试。
+pricing:
+  input: "0.13"
+  output: "0.38"
+  unit: "0.000001"
+  currency: USD

@@ -1,0 +1,61 @@
+# https://www.orcarouter.ai/models/minimax/minimax-m2.5
+model: minimax/minimax-m2.5
+label:
+  en_US: minimax-m2.5
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 204800
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: presence_penalty
+    use_template: presence_penalty
+  - name: frequency_penalty
+    use_template: frequency_penalty
+  - name: max_tokens
+    use_template: max_tokens
+    default: 1024
+    min: 1
+    max: 2048
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
+  - name: orcarouter_fallback_models
+    type: string
+    required: false
+    label:
+      en_US: Fallback models (JSON array)
+      zh_Hans: 降级模型（JSON 数组）
+    help:
+      en_US: 'Upstream models to try if the primary fails. Example: ["openai/gpt-4o-mini","openai/gpt-4o"]'
+      zh_Hans: 主上游失败时按顺序尝试这些模型。例：["openai/gpt-4o-mini","openai/gpt-4o"]
+  - name: orcarouter_route
+    type: string
+    required: false
+    options:
+      - fallback
+    label:
+      en_US: Routing mode
+      zh_Hans: 路由模式
+    help:
+      en_US: Activate fallback list. Set to 'fallback' to use orcarouter_fallback_models in order.
+      zh_Hans: 启用降级列表。设为 'fallback' 后按 orcarouter_fallback_models 顺序尝试。
+pricing:
+  input: "0.3"
+  output: "1.2"
+  unit: "0.000001"
+  currency: USD

@@ -1,0 +1,97 @@
+# https://www.orcarouter.ai/models/anthropic/claude-opus-4.5
+model: anthropic/claude-opus-4.5
+label:
+  en_US: claude-opus-4.5
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+  - vision
+  - document
+model_properties:
+  mode: chat
+  context_size: 200000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: top_k
+    label:
+      zh_Hans: 取样数量
+      en_US: Top k
+    type: int
+    required: false
+    help:
+      zh_Hans: 仅从每个后续标记的前 K 个选项中采样。
+      en_US: Only sample from the top K options for each subsequent token.
+  - name: max_tokens
+    use_template: max_tokens
+    default: 1024
+    min: 1
+    max: 64000
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
+  - name: enable_thinking
+    type: boolean
+    required: false
+    default: false
+    label:
+      zh_Hans: 推理模式
+      en_US: Thinking Mode
+    help:
+      zh_Hans: 启用 Anthropic native thinking 模式；启用时输出会包含思考过程。
+      en_US: Enable Anthropic native thinking. When enabled, the output includes reasoning content.
+  - name: reasoning_budget
+    type: int
+    required: false
+    default: 2000
+    min: 1024
+    max: 64000
+    label:
+      en_US: Thinking Budget
+      zh_Hans: 推理预算
+    help:
+      en_US: Token budget for thinking (min 1024, must be less than max_tokens). Only valid when thinking is enabled.
+      zh_Hans: 推理 token 预算（最小 1024，必须小于 max_tokens）。仅 thinking 模式生效。
+  - name: exclude_reasoning_tokens
+    type: boolean
+    required: false
+    default: false
+    label:
+      zh_Hans: 隐藏思考过程
+      en_US: Hide the thought process
+  - name: orcarouter_fallback_models
+    type: string
+    required: false
+    label:
+      en_US: Fallback models (JSON array)
+      zh_Hans: 降级模型（JSON 数组）
+    help:
+      en_US: 'Upstream models to try if the primary fails. Example: ["openai/gpt-4o-mini","openai/gpt-4o"]'
+      zh_Hans: 主上游失败时按顺序尝试这些模型。例：["openai/gpt-4o-mini","openai/gpt-4o"]
+  - name: orcarouter_route
+    type: string
+    required: false
+    options:
+      - fallback
+    label:
+      en_US: Routing mode
+      zh_Hans: 路由模式
+    help:
+      en_US: Activate fallback list. Set to 'fallback' to use orcarouter_fallback_models in order.
+      zh_Hans: 启用降级列表。设为 'fallback' 后按 orcarouter_fallback_models 顺序尝试。
+pricing:
+  input: "5.0"
+  output: "25.0"
+  unit: "0.000001"
+  currency: USD

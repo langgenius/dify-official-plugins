@@ -1,0 +1,49 @@
+# https://www.orcarouter.ai/models/openai/tts-1-hd
+model: openai/tts-1-hd
+label:
+  en_US: tts-1-hd
+model_type: tts
+model_properties:
+  default_voice: 'alloy'
+  voices:
+    - mode: 'alloy'
+      name: 'Alloy'
+      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'ja-JP', 'ko-KR']
+    - mode: 'ash'
+      name: 'Ash'
+      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'ja-JP', 'ko-KR']
+    - mode: 'ballad'
+      name: 'Ballad'
+      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'ja-JP', 'ko-KR']
+    - mode: 'coral'
+      name: 'Coral'
+      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'ja-JP', 'ko-KR']
+    - mode: 'echo'
+      name: 'Echo'
+      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'ja-JP', 'ko-KR']
+    - mode: 'fable'
+      name: 'Fable'
+      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'ja-JP', 'ko-KR']
+    - mode: 'onyx'
+      name: 'Onyx'
+      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'ja-JP', 'ko-KR']
+    - mode: 'nova'
+      name: 'Nova'
+      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'ja-JP', 'ko-KR']
+    - mode: 'sage'
+      name: 'Sage'
+      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'ja-JP', 'ko-KR']
+    - mode: 'shimmer'
+      name: 'Shimmer'
+      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'ja-JP', 'ko-KR']
+    - mode: 'verse'
+      name: 'Verse'
+      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'ja-JP', 'ko-KR']
+  word_limit: 3500
+  audio_type: 'mp3'
+  max_workers: 5
+pricing:
+  input: '30.0'
+  output: '0'
+  unit: '0.000001'
+  currency: USD
