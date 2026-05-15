@@ -59,9 +59,9 @@ from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 
 logger = logging.getLogger(__name__)
 
-# 这些参数会被透传给 Azure AI Inference SDK，仅在 model_parameters 中实际存在时
-# 才会被发送，避免 Azure 上的某些模型（如 Claude opus-4-7、mythos-preview 等）
-# 因同时收到 temperature 和 top_p 而报 400 错误。
+# Forward these parameters to the Azure AI Inference SDK only when they
+# are explicitly present in model_parameters. This avoids 400 errors from
+# Azure-hosted models that reject temperature and top_p together.
 _PASSTHROUGH_PARAMETERS = (
     "temperature",
     "top_p",
@@ -81,16 +81,17 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
     Model class for Azure AI Studio large language model.
     """
 
-    # 缓存 client，但同时记录其指纹，避免不同 endpoint/api_key 复用旧 client
+    # Cache the client together with its signature so credential changes
+    # do not accidentally reuse a client from another endpoint or API key.
     client: Any = None
     _client_signature: Optional[tuple] = None
 
     def _get_client(self, credentials: dict) -> ChatCompletionsClient:
         """
-        构建 / 复用 Azure AI Inference 客户端。
+        Build or reuse the Azure AI Inference client.
 
-        当 endpoint、api_key 或 api_version 任一发生变化时，
-        重新创建 client，防止跨账号污染。
+        Recreate the client whenever endpoint, api_key, or api_version changes
+        to prevent requests from leaking across credential sets.
         """
         endpoint = str(credentials.get("endpoint", ""))
         api_key = str(credentials.get("api_key", ""))
@@ -230,8 +231,9 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
             self._convert_prompt_message_to_dict(msg) for msg in prompt_messages
         ]
 
-        # 仅透传用户实际指定的参数，避免 Azure 上的部分模型
-        # （Claude / o-series / 推理模型等）因同时收到 temperature & top_p 报错。
+        # Forward only parameters explicitly configured by the user. Some
+        # Azure-hosted Claude, o-series, and reasoning models reject requests
+        # that include both temperature and top_p.
         payload: dict[str, Any] = {
             "messages": messages,
             "stream": stream,
@@ -241,8 +243,7 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
             if key in model_parameters and model_parameters[key] is not None:
                 payload[key] = model_parameters[key]
 
-        # 处理 response_format：兼容字符串（"text" / "json_object" / "json_schema"）
-        # 与已经构造好的 dict 两种形式。
+        # Handle response_format as either a string option or a prebuilt dict.
         response_format = model_parameters.get("response_format")
         if response_format:
             if isinstance(response_format, dict):
@@ -267,7 +268,7 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
             elif response_format != "text":
                 payload["response_format"] = {"type": response_format}
 
-        # 用户在前端配置的 stop words 与系统传入的 stop 取并集，最多 4 项。
+        # Merge user-configured and system-provided stop words, up to four.
         user_stop = model_parameters.get("stop")
         stop_words: list[str] = []
         if isinstance(user_stop, list):
@@ -402,7 +403,8 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
                 credential=AzureKeyCredential(api_key),
                 api_version=api_version,
             )
-            # 不传任何采样参数，避免对 Claude / o-series 等限制型模型触发 400
+            # Do not send sampling parameters during validation, since some
+            # Claude and o-series models reject restricted combinations.
             client.complete(
                 messages=[
                     {"role": "user", "content": "I say 'ping', you say 'pong'.ping"},
@@ -448,9 +450,9 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
         """
         Used to define customizable model schema
         """
-        # 注意：temperature 与 top_p 在 Azure 上的部分模型（Claude opus-4-7、
-        # mythos-preview、o-series 等）存在互斥或限定取值。这里全部设为
-        # required=False 且不强制默认值，仅在用户主动开启时才会下发。
+        # temperature and top_p are mutually exclusive or value-restricted on
+        # some Azure-hosted Claude, mythos-preview, and o-series models. Keep
+        # them optional so they are sent only when the user configures them.
         rules = [
             ParameterRule(
                 name="temperature",
@@ -571,7 +573,7 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
             ),
         ]
 
-        # 当用户开启推理模型支持时，额外暴露 reasoning_effort 参数
+        # Expose reasoning_effort only when reasoning model support is enabled.
         if credentials.get("reasoning_support") == "true":
             rules.append(
                 ParameterRule(

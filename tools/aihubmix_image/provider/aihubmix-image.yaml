@@ -87,6 +87,9 @@ tools:
   - tools/doubao.yaml
   - tools/ernie-irag.yaml
   - tools/ernie-irag-edit.yaml
+  - tools/wan.yaml
+  - tools/glm-image.yaml
+  - tools/ideogram.yaml
 extra:
   python:
     source: provider/aihubmix-image.py

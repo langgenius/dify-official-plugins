@@ -52,6 +52,21 @@ IMAGE_GENERATION_MODELS = {
     "gemini-3-pro-image-preview",
 }
 
+# https://ai.google.dev/gemini-api/docs/flex-inference?hl=zh-cn
+FLEX_INFERENCE_SUPPORTED_MODEL_NAMES = frozenset(
+    {
+        "gemini-3.1-flash-lite-preview",
+        "gemini-3.1-pro-preview",
+        "gemini-3.1-pro-preview-customtools",
+        "gemini-3-flash-preview",
+        "gemini-3-pro-image-preview",
+        "gemini-2.5-pro",
+        "gemini-2.5-flash",
+        "gemini-2.5-flash-image",
+        "gemini-2.5-flash-lite",
+    }
+)
+
 # https://ai.google.dev/gemini-api/docs/thought-signatures#faqs
 DEFAULT_THOUGHT_SIGNATURE: bytes = b"skip_thought_signature_validator"
 
@@ -345,6 +360,19 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                 config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_MEDIUM
             elif media_resolution in ["High"]:
                 config.media_resolution = types.MediaResolution.MEDIA_RESOLUTION_HIGH
+
+    @staticmethod
+    def _set_service_tier(
+        *,
+        config: types.GenerateContentConfig,
+        model: str,
+        model_parameters: Mapping[str, Any],
+    ) -> None:
+        if not model_parameters.get("flex_inference"):
+            return
+        if model not in FLEX_INFERENCE_SUPPORTED_MODEL_NAMES:
+            return
+        config.service_tier = types.ServiceTier.FLEX
 
     @staticmethod
     def _set_image_config(
@@ -1086,6 +1114,9 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         self._set_chat_parameters(
             config=config, model_parameters=model_parameters, stop=stop
+        )
+        self._set_service_tier(
+            config=config, model=model, model_parameters=model_parameters
         )
 
         # Build contents from prompt messages

@@ -8,11 +8,11 @@ identity:
     ja_JP: "Qwen 画像編集"
 description:
   human:
-    en_US: "Qwen Image Editing Model - Supports URL, Base64, and Dify file variables as input"
-    zh_Hans: "Qwen Image 图像编辑模型 - 支持 URL、Base64 和 Dify 文件变量作为输入"
-    pt_BR: "Modelo de Edição Qwen Image - Suporta URL, Base64 e variáveis de arquivo Dify como entrada"
-    ja_JP: "Qwen Image 画像編集モデル - URL、Base64、Difyファイル変数を入力としてサポート"
-  llm: "Edit image using Qwen Image Edit model (qianfan/qwen-image-edit) with image-to-image generation capabilities. Supports multiple input formats: HTTP/HTTPS URLs, Data URLs (base64), and Dify file transfer variables from workflow connections."
+    en_US: "Alibaba Qwen-Image-Edit. edit-plus supports multi-image fusion and custom resolutions; edit-max excels at industrial design and geometry; the base edit handles single-image edits."
+    zh_Hans: "阿里 Qwen-Image-Edit 图像编辑。edit-plus 支持多图融合与自定义分辨率，edit-max 擅长工业设计与几何，基础版处理单图编辑。"
+    pt_BR: "Qwen-Image-Edit da Alibaba. edit-plus suporta fusão de múltiplas imagens e resoluções personalizadas; edit-max se destaca em design industrial e geometria; a versão base lida com edições de imagem única."
+    ja_JP: "Alibaba Qwen-Image-Edit。edit-plus は複数画像の融合とカスタム解像度に対応、edit-max は工業デザインと幾何が得意、ベース版は単一画像の編集向け。"
+  llm: "Edit images with Qwen-Image-Edit family (edit / edit-plus / edit-max). Strong on text-aware edits and Chinese instructions. Accepts URL, base64 data URL, or Dify file variable."
 parameters:
   - name: prompt
     type: string
@@ -29,6 +29,43 @@ parameters:
       ja_JP: "画像に加えたい編集のテキスト説明"
     llm_description: "Text prompt for Qwen Image Edit, describing the desired edits to the input image"
     form: llm
+
+  - name: model
+    type: select
+    required: false
+    label:
+      en_US: "Model"
+      zh_Hans: "模型"
+      pt_BR: "Modelo"
+      ja_JP: "モデル"
+    human_description:
+      en_US: "Qwen Image Edit model variant"
+      zh_Hans: "Qwen Image Edit 模型变体"
+      pt_BR: "Variante do modelo Qwen Image Edit"
+      ja_JP: "Qwen Image Edit モデルバリアント"
+    llm_description: "Qwen Image Edit model selection. edit-plus supports multi-image and custom resolution; edit-max excels at industrial design."
+    form: form
+    default: "qwen-image-edit"
+    options:
+      - value: "qwen-image-edit"
+        label:
+          en_US: "qwen-image-edit (base)"
+          zh_Hans: "qwen-image-edit（基础版）"
+          pt_BR: "qwen-image-edit (base)"
+          ja_JP: "qwen-image-edit（ベース）"
+      - value: "qwen-image-edit-plus"
+        label:
+          en_US: "qwen-image-edit-plus"
+          zh_Hans: "qwen-image-edit-plus"
+          pt_BR: "qwen-image-edit-plus"
+          ja_JP: "qwen-image-edit-plus"
+      - value: "qwen-image-edit-max"
+        label:
+          en_US: "qwen-image-edit-max"
+          zh_Hans: "qwen-image-edit-max"
+          pt_BR: "qwen-image-edit-max"
+          ja_JP: "qwen-image-edit-max"
+
   - name: image
     type: string
     required: true
