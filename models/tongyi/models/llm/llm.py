@@ -232,7 +232,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             # GLM series (default: thinking ENABLED - must explicitly disable)
             "glm-5.1", "glm-5", "glm-4.7", "glm-4.6", "glm-4.5", "glm-4.5-air",
             # DeepSeek series (default: thinking disabled)
-            "deepseek-v3.2", "deepseek-v3.2-exp", "deepseek-v3.1",
+            "deepseek-v4-pro", "deepseek-v4-flash", "deepseek-v3.2", "deepseek-v3.2-exp", "deepseek-v3.1",
         }
         if model in thinking_capable_models and "enable_thinking" not in model_parameters:
             model_parameters["enable_thinking"] = False

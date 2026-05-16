@@ -138,6 +138,16 @@ parameter_rules:
     help:
       en_US: The maximum number of tokens to generate in the response.
       zh_Hans: 模型单次输出的最大 tokens 数。
+  - name: flex_inference
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: Flex inference
+      zh_Hans: Flex 推理
+    help:
+      en_US: Use the Gemini Flex service tier (lower cost, best-effort latency). See https://ai.google.dev/gemini-api/docs/flex-inference
+      zh_Hans: 使用 Gemini Flex 服务层级（约半价、尽力而为型延迟）。详见 https://ai.google.dev/gemini-api/docs/flex-inference?hl=zh-cn
   - name: json_schema
     use_template: json_schema
 # https://ai.google.dev/gemini-api/docs/pricing#gemini-3.1-pro-preview-customtools

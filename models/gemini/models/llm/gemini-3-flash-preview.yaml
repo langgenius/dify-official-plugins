@@ -154,6 +154,16 @@ parameter_rules:
       zh_Hans: |
         启用后，文件将直接内嵌在请求中（内联模式）以提高性能。
         禁用后，文件将使用 Files API 上传。默认为禁用（使用 Files API）。
+  - name: flex_inference
+    type: boolean
+    required: true
+    default: false
+    label:
+      en_US: Flex inference
+      zh_Hans: Flex 推理
+    help:
+      en_US: Use the Gemini Flex service tier (lower cost, best-effort latency). See https://ai.google.dev/gemini-api/docs/flex-inference
+      zh_Hans: 使用 Gemini Flex 服务层级（约半价、尽力而为型延迟）。详见 https://ai.google.dev/gemini-api/docs/flex-inference?hl=zh-cn
   - name: json_schema
     use_template: json_schema
 # https://ai.google.dev/gemini-api/docs/pricing#gemini-3-flash-preview
