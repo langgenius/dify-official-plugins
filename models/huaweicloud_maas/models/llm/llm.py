@@ -60,16 +60,22 @@ class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
 
         enable_thinking = model_parameters.pop("enable_thinking", None)
         if enable_thinking is not None:
-            path = HuaweiCloudMaasLargeLanguageModel.thinking_mapping.get(
-                model, HuaweiCloudMaasLargeLanguageModel._THINKING_PATH_XDS
-            ).split(".")
-            if bool(enable_thinking) and path[2] == "enabled":
-                value = "enabled"
-            elif not bool(enable_thinking) and path[2] == "enabled":
-                value = "disabled"
+            # Kimi models use Moonshot format: thinking -> {"type": "enabled"/"disabled"}
+            if model in ("kimi-k2.6",):
+                model_parameters["thinking"] = (
+                    {"type": "enabled"} if enable_thinking else {"type": "disabled"}
+                )
             else:
-                value = bool(enable_thinking)
-            model_parameters[path[0]] = {path[1]: value}
+                path = HuaweiCloudMaasLargeLanguageModel.thinking_mapping.get(
+                    model, HuaweiCloudMaasLargeLanguageModel._THINKING_PATH_XDS
+                ).split(".")
+                if bool(enable_thinking) and path[2] == "enabled":
+                    value = "enabled"
+                elif not bool(enable_thinking) and path[2] == "enabled":
+                    value = "disabled"
+                else:
+                    value = bool(enable_thinking)
+                model_parameters[path[0]] = {path[1]: value}
 
         return super()._invoke(
             model, credentials, prompt_messages, model_parameters, tools, stop, stream
