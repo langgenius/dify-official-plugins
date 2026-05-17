@@ -2587,6 +2587,14 @@ LLM_BASE_MODELS = [
             },
             parameter_rules=[
                 ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                ),
+                ParameterRule(
                     name="response_format",
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
                     type="string",
@@ -3033,6 +3041,33 @@ LLM_BASE_MODELS = [
                 ModelPropertyKey.CONTEXT_SIZE: 400000,
             },
             parameter_rules=[
+                ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                ),
+                ParameterRule(
+                    name="presence_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.PRESENCE_PENALTY],
+                ),
+                ParameterRule(
+                    name="frequency_penalty",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.FREQUENCY_PENALTY],
+                ),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
+                ParameterRule(
+                    name="seed",
+                    label=I18nObject(zh_Hans="种子", en_US="Seed"),
+                    type="int",
+                    help=AZURE_DEFAULT_PARAM_SEED_HELP,
+                    required=False,
+                    precision=0,
+                    min=0,
+                    max=2147483647,
+                ),
                 ParameterRule(
                     name="response_format",
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
@@ -3559,6 +3594,14 @@ LLM_BASE_MODELS = [
                 ModelPropertyKey.CONTEXT_SIZE: 1050000,
             },
             parameter_rules=[
+                ParameterRule(
+                    name="temperature",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TEMPERATURE],
+                ),
+                ParameterRule(
+                    name="top_p",
+                    **PARAMETER_RULE_TEMPLATE[DefaultParameterName.TOP_P],
+                ),
                 ParameterRule(
                     name="response_format",
                     label=I18nObject(zh_Hans="回复格式", en_US="response_format"),
