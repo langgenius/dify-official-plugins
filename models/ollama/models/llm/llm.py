@@ -178,6 +178,9 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
         :return: full response or stream response chunk generator result
         """
         headers = {"Content-Type": "application/json"}
+        api_key = credentials.get("api_key")
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
         endpoint_url = credentials["base_url"]
         if not endpoint_url.endswith("/"):
             endpoint_url += "/"
