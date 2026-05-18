@@ -1099,7 +1099,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             credentials_kwargs["base_url"] = api_url.rstrip("/")
             # Spoof the User-Agent if using a third-party proxy (non-official API)
             if "api.anthropic.com" not in api_url:
-                kwargs["default_headers"] = {"User-Agent": "python-httpx"}
+                credentials_kwargs["default_headers"] = {"User-Agent": "python-httpx"}
 
         return credentials_kwargs
 
