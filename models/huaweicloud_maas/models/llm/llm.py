@@ -41,6 +41,7 @@ class HuaweiCloudMaasLargeLanguageModel(OAICompatLargeLanguageModel):
         "qwen3-30b-a3b": _THINKING_PATH_VLLM,
         "glm-5": _THINKING_PATH_VLLM,
         "glm-5.1": _THINKING_PATH_VLLM,
+        "kimi-k2.6": _THINKING_PATH_XDS,
         "deepseek-v4-flash": _THINKING_PATH_XDS,
     }
 
