@@ -72,6 +72,15 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
 
         return output, is_reasoning
 
+    @staticmethod
+    def _wrap_non_stream_reasoning_content(message: dict, content: str) -> str:
+        reasoning_piece = message.get("reasoning") or message.get("reasoning_content")
+        if not reasoning_piece:
+            return content
+        if content.startswith("<think>"):
+            return content
+        return f"<think>\n{reasoning_piece}\n</think>{content or ''}"
+
     # Timeout for validation requests: (connect_timeout, read_timeout) in seconds
     _VALIDATE_TIMEOUT = (10, 300)
 
@@ -605,11 +614,14 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         prompt_messages: list[PromptMessage],
     ) -> LLMResult:
         """
-        Handle non-streaming chat responses that omit `message.content` when returning tool calls.
+        Handle non-streaming chat responses that need OpenAI-compatible normalization.
 
         Some OpenAI-compatible gateways, including LiteLLM-backed Azure deployments, may
         legitimately return tool calls without a `content` field. The SDK base class indexes
         `message["content"]` directly, which raises `KeyError('content')` in that case.
+        vLLM/SGLang-compatible reasoning models can also return thinking traces in
+        `message.reasoning` or `message.reasoning_content`, while the final answer remains in
+        `message.content`.
         """
         response_json: dict = response.json()
         completion_type = LLMMode.value_of(credentials["mode"])
@@ -633,6 +645,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                 response_content = ""
             else:
                 response_content = str(raw_content)
+
+            response_content = self._wrap_non_stream_reasoning_content(message, response_content)
 
             if function_calling_type == "tool_call":
                 tool_calls = message.get("tool_calls")
