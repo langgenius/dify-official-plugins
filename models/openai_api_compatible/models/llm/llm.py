@@ -35,7 +35,7 @@ from openai import OpenAI
 
 class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
     # Pre-compiled regex for better performance
-    _THINK_PATTERN = re.compile(r"^<think>.*?</think>\s*", re.DOTALL)
+    _THINK_PATTERN = re.compile(r"<think>.*?</think>\s*", re.DOTALL)
     # Models that require max_completion_tokens (OpenAI Responses API family)
     _NEEDS_MAX_COMPLETION_TOKENS_PATTERN = re.compile(r"^(o1|o3|gpt-5)", re.IGNORECASE)
 
@@ -354,11 +354,11 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             if not isinstance(p.content, str):
                 continue
             # Quick check to avoid regex if not needed
-            if not p.content.startswith("<think>"):
+            if "<think>" not in p.content:
                 continue
 
-            # Only perform regex substitution when necessary
-            new_content = cls._THINK_PATTERN.sub("", p.content, count=1)
+            # Remove all reasoning blocks before sending assistant history back to the model
+            new_content = cls._THINK_PATTERN.sub("", p.content)
             # Only update if changed
             if new_content != p.content:
                 p.content = new_content
@@ -548,51 +548,63 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         """Filter thinking content from non-streaming result"""
         if result.message and result.message.content:
             content = result.message.content
-            if isinstance(content, str) and content.startswith("<think>"):
-                filtered_content = self._THINK_PATTERN.sub("", content, count=1)
+            if isinstance(content, str) and "<think>" in content:
+                filtered_content = self._THINK_PATTERN.sub("", content)
                 if filtered_content != content:
                     result.message.content = filtered_content
         return result
+
+    @staticmethod
+    def _partial_tag_suffix_length(content: str, tag: str) -> int:
+        """Return the longest suffix length in content that is a prefix of tag."""
+        max_length = min(len(content), len(tag) - 1)
+        for length in range(max_length, 0, -1):
+            if tag.startswith(content[-length:]):
+                return length
+        return 0
 
     def _filter_thinking_stream(self, stream: Generator) -> Generator:
         """Filter thinking content from streaming result"""
         buffer = ""
         in_thinking = False
-        thinking_started = False
-        
+        start_tag = "<think>"
+        end_tag = "</think>"
+
         for chunk in stream:
             if chunk.delta and chunk.delta.message and chunk.delta.message.content:
-                content = chunk.delta.message.content
-                buffer += content
-                
-                # Detect start of thinking block
-                if not thinking_started and buffer.startswith("<think>"):
+                buffer += chunk.delta.message.content
+                output = ""
+
+                while buffer:
+                    if in_thinking:
+                        end_idx = buffer.find(end_tag)
+                        if end_idx == -1:
+                            keep_length = OpenAILargeLanguageModel._partial_tag_suffix_length(buffer, end_tag)
+                            buffer = buffer[-keep_length:] if keep_length else ""
+                            break
+
+                        buffer = buffer[end_idx + len(end_tag):]
+                        in_thinking = False
+                        continue
+
+                    start_idx = buffer.find(start_tag)
+                    if start_idx == -1:
+                        keep_length = OpenAILargeLanguageModel._partial_tag_suffix_length(buffer, start_tag)
+                        if keep_length:
+                            output += buffer[:-keep_length]
+                            buffer = buffer[-keep_length:]
+                        else:
+                            output += buffer
+                            buffer = ""
+                        break
+
+                    output += buffer[:start_idx]
+                    buffer = buffer[start_idx + len(start_tag):]
                     in_thinking = True
-                    thinking_started = True
-                    # Don't continue here - check for end tag in same iteration
-                
-                # Detect end of thinking block
-                if in_thinking and "</think>" in buffer:
-                    # Find the end of thinking block
-                    end_idx = buffer.find("</think>") + len("</think>")
-                    # Skip whitespace after </think>
-                    while end_idx < len(buffer) and buffer[end_idx].isspace():
-                        end_idx += 1
-                    # Remove thinking block and continue with remaining content
-                    buffer = buffer[end_idx:]
-                    in_thinking = False
-                    thinking_started = False
-                    # Yield remaining content if any
-                    if buffer:
-                        chunk.delta.message.content = buffer
-                        buffer = ""
-                        yield chunk
-                    continue
-                
-                # If not in thinking block, yield content
-                if not in_thinking:
+
+                if output:
+                    chunk.delta.message.content = output
                     yield chunk
-                    buffer = ""
             else:
                 # Yield chunks without content as-is
                 yield chunk
