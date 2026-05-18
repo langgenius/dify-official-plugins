@@ -1,0 +1,17 @@
+[project]
+name = "telnyx"
+version = "0.1.0"
+description = "Telnyx model provider plugin for Dify"
+readme = "README.md"
+requires-python = ">=3.12"
+
+# Managed with uv; refresh the lockfile with `uv lock`.
+dependencies = [
+    "dify_plugin>=0.3.0,<0.6.0",
+    "requests>=2.32.5,<3",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.4.1",
+]
