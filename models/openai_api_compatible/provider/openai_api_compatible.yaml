@@ -162,6 +162,28 @@ model_credential_schema:
       placeholder:
         zh_Hans: 在此输入您的模型上下文长度
         en_US: Enter your Model context size
+    - variable: encoding_format
+      label:
+        zh_Hans: Embedding encoding format
+        en_US: Embedding encoding format
+      required: false
+      show_on:
+        - variable: __model_type
+          value: text-embedding
+      type: select
+      default: not_set
+      options:
+        - value: not_set
+          label:
+            zh_Hans: Not set
+            en_US: Not set
+        - value: float
+          label:
+            zh_Hans: float
+            en_US: float
+      help:
+        zh_Hans: Set this to float for strict OpenAI-compatible gateways such as LiteLLM that require an explicit embedding encoding_format.
+        en_US: Set this to float for strict OpenAI-compatible gateways such as LiteLLM that require an explicit embedding encoding_format.
     - variable: vision_support
       show_on:
         - variable: __model_type

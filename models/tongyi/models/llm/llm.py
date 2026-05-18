@@ -231,7 +231,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "qwen3.5-flash", "qwen3.5-flash-2026-02-23",
             # GLM series (default: thinking ENABLED - must explicitly disable)
             "glm-5.1", "glm-5", "glm-4.7", "glm-4.6", "glm-4.5", "glm-4.5-air",
-            # DeepSeek series (default: thinking disabled)
+            # DeepSeek V3 series (default: thinking disabled)
             "deepseek-v3.2", "deepseek-v3.2-exp", "deepseek-v3.1",
         }
         if model in thinking_capable_models and "enable_thinking" not in model_parameters:
@@ -272,14 +272,23 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             model == "kimi-k2.5" and model_parameters.get("enable_thinking", False)
         ) or model == "kimi-k2-thinking"
 
-        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder, max, and 3.5 variants), QwQ, QVQ, Kimi, and GLM thinking models only supports streaming output.
+        thinking_deepseek_v4 = (
+            model in ("deepseek-v4-pro", "deepseek-v4-flash")
+            and model_parameters.get("enable_thinking", True)
+        )
+
+        # Thinking-mode models that need streamed responses so reasoning_content is preserved.
         # Note: qwen3-coder-xx, qwen3-max-xx, and qwen3.5-xx models support non-streaming output.
         # Note: qwen3-coder-xx, qwen3-max-xx, and qwen3.5-xx models support non-streaming output.
         qwen3_requires_stream = model.startswith("qwen3-") and not model.startswith(
             ("qwen3-coder", "qwen3-max", "qwen3.5-")
         )
         common_force_condition = (
-            thinking_business_qwen3 or qwen3_requires_stream or thinking_kimi or thinking_glm
+            thinking_business_qwen3
+            or qwen3_requires_stream
+            or thinking_kimi
+            or thinking_glm
+            or thinking_deepseek_v4
         )
         if common_force_condition or model.startswith(("qwq-", "qvq-")):
             stream = True
