@@ -102,10 +102,11 @@ class OpenAIRerankModel(OAICompatRerankModel):
 
         # Simple string format for text-only mode
         # Use `top_n if top_n is not None else len(docs)` to correctly handle top_n=0
+        docs_field = credentials.get("docs_field_name", "documents")
         payload = {
             "model": endpoint_model_name,
             "query": query,
-            "documents": docs,
+            docs_field: docs,
             "top_n": top_n if top_n is not None else len(docs),
         }
 
