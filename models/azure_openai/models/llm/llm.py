@@ -620,7 +620,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                 continue
 
             parsed = urlparse(token if "://" in token else f"https://{token}")
-            host = parsed.netloc or parsed.path
+            host = parsed.netloc
             host = host.strip().lower().rstrip(".")
             if ":" in host:
                 host = host.split(":", 1)[0]

@@ -3889,7 +3889,9 @@ def _apply_web_search_rules_to_responses_models() -> None:
         if not uses_responses_api(base_model.base_model_name):
             continue
 
-        parameter_rules = base_model.entity.parameter_rules or []
+        if base_model.entity.parameter_rules is None:
+            base_model.entity.parameter_rules = []
+        parameter_rules = base_model.entity.parameter_rules
         existing_rule_names = {rule.name for rule in parameter_rules}
         for rule in _web_search_parameter_rules():
             if rule.name not in existing_rule_names:
