@@ -58,6 +58,9 @@ class OllamaEmbeddingModel(TextEmbeddingModel):
         :return: embeddings result
         """
         headers = {"Content-Type": "application/json"}
+        api_key = credentials.get("api_key")
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
         endpoint_url = credentials.get("base_url", "")
         if endpoint_url and not endpoint_url.endswith("/"):
             endpoint_url += "/"
