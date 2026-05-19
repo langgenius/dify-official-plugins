@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "dify_plugin>=0.5.0",
+    "dify_plugin @ git+https://github.com/ryuta-kobayashi-ug/dify-plugin-sdks.git@feat/pass-session-to-model-plugins",
     "anthropic==0.42.0",
     "google-genai==1.51.0",
     "google-api-core==2.23.0",
