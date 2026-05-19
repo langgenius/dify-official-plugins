@@ -4,8 +4,10 @@ import io
 import json
 import logging
 import math
+import re
 from collections.abc import Generator, Sequence
 from typing import Any, Optional, Union, cast
+from urllib.parse import urlparse
 
 import tiktoken
 from PIL import Image
@@ -44,7 +46,7 @@ from openai.types.chat.chat_completion_chunk import ChoiceDelta, ChoiceDeltaTool
 from openai.types.responses import ResponseStreamEvent, Response
 
 from ..common import _CommonAzureOpenAI
-from ..constants import LLM_BASE_MODELS
+from ..constants import LLM_BASE_MODELS, uses_responses_api
 
 logger = logging.getLogger(__name__)
 
@@ -452,9 +454,13 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         elif "max_completion_tokens" in model_parameters:
             responses_params["max_output_tokens"] = model_parameters["max_completion_tokens"]
 
-        # Handle tools in the Responses API format
+        web_search_tool, include_web_search_sources = self._extract_web_search_configuration(
+            model_parameters
+        )
+        response_tools = []
+
+        # Handle function tools in the Responses API format.
         if tools:
-            responses_params["tools"] = []
             for tool in tools:
                 # Ensure parameters are valid JSON objects
                 parameters = tool.parameters
@@ -472,8 +478,23 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
                     "description": tool.description or "",
                     "parameters": parameters
                 }
-                responses_params["tools"].append(tool_dict)
+                response_tools.append(tool_dict)
+
+        if web_search_tool:
+            response_tools.append(web_search_tool)
+
+        if response_tools:
+            responses_params["tools"] = response_tools
             responses_params["tool_choice"] = "auto"
+
+        if include_web_search_sources and web_search_tool:
+            include_fields = responses_params.get("include")
+            if not isinstance(include_fields, list):
+                include_fields = []
+            include_item = "web_search_call.action.sources"
+            if include_item not in include_fields:
+                include_fields.append(include_item)
+            responses_params["include"] = include_fields
 
         # Handle the user identifier
         if user:
@@ -543,6 +564,80 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             return self._handle_responses_response(
                 model, credentials, response, prompt_messages, tools
             )
+
+    @staticmethod
+    def _extract_web_search_configuration(
+        model_parameters: dict,
+    ) -> tuple[Optional[dict[str, Any]], bool]:
+        enable_web_search = model_parameters.pop("enable_web_search", False)
+        include_sources = model_parameters.pop("web_search_include_sources", False)
+        country = model_parameters.pop("web_search_user_country", None)
+        allowed_domains = model_parameters.pop("web_search_allowed_domains", None)
+
+        if not enable_web_search:
+            return None, False
+
+        web_search_tool: dict[str, Any] = {"type": "web_search"}
+
+        if country is not None:
+            normalized_country = str(country).strip().upper()
+            if normalized_country:
+                if not re.fullmatch(r"[A-Z]{2}", normalized_country):
+                    raise ValueError(
+                        "web_search_user_country must be a 2-letter ISO country code."
+                    )
+                web_search_tool["user_location"] = {
+                    "type": "approximate",
+                    "country": normalized_country,
+                }
+
+        normalized_domains = AzureOpenAILargeLanguageModel._normalize_allowed_domains(
+            allowed_domains
+        )
+        if normalized_domains:
+            web_search_tool["filters"] = {"allowed_domains": normalized_domains}
+
+        return web_search_tool, include_sources
+
+    @staticmethod
+    def _normalize_allowed_domains(raw_domains: Any) -> list[str]:
+        if raw_domains is None:
+            return []
+
+        if isinstance(raw_domains, str):
+            candidates = re.split(r"[\s,\n\r]+", raw_domains)
+        elif isinstance(raw_domains, Sequence):
+            candidates = [str(item) for item in raw_domains]
+        else:
+            candidates = [str(raw_domains)]
+
+        normalized_domains: list[str] = []
+        seen_domains: set[str] = set()
+
+        for candidate in candidates:
+            token = candidate.strip()
+            if not token:
+                continue
+
+            parsed = urlparse(token if "://" in token else f"https://{token}")
+            host = parsed.netloc or parsed.path
+            host = host.strip().lower().rstrip(".")
+            if ":" in host:
+                host = host.split(":", 1)[0]
+
+            if not host:
+                continue
+            if not re.fullmatch(r"[a-z0-9.-]+", host):
+                raise ValueError(f"Invalid domain in web_search_allowed_domains: {token}")
+
+            if host not in seen_domains:
+                seen_domains.add(host)
+                normalized_domains.append(host)
+
+        if len(normalized_domains) > 100:
+            raise ValueError("web_search_allowed_domains can contain at most 100 domains.")
+
+        return normalized_domains
 
     def _convert_prompt_messages_to_responses_input(
         self, prompt_messages: list[PromptMessage]
@@ -1572,20 +1667,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
     @staticmethod
     def _uses_responses_api(base_model_name: str) -> bool:
-        """
-        Determine if the model should use the Responses API.
-
-        1. Models with "codex" in the base name
-        2. gpt-5.x models (excluding chat and codex variants which use different APIs)
-        """
-        return (
-            "codex" in base_model_name
-            or (
-                base_model_name.startswith("gpt-5")
-                and "chat" not in base_model_name
-                and "codex" not in base_model_name
-            )
-        )
+        return uses_responses_api(base_model_name)
 
     @staticmethod
     def _adapt_schema_for_structured_outputs(schema: dict) -> dict:
