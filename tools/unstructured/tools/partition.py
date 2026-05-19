@@ -116,10 +116,8 @@ class PartitionTool(Tool):
                         "include_orig_elements",
                         "multipage_sections",
                         "new_after_n_chars",
-                        "overlap",
                         "overlap_all",
                         "similarity_threshold",
-                        "split_pdf_page",
                     ]
                     and v is not None
                 },
