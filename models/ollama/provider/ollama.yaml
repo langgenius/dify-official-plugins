@@ -31,6 +31,15 @@ model_credential_schema:
     required: true
     type: text-input
     variable: base_url
+  - label:
+      en_US: API Key (optional)
+      zh_Hans: API 密钥（可选）
+    placeholder:
+      en_US: Bearer token sent as Authorization header. Leave blank for unauthenticated Ollama deployments.
+      zh_Hans: 作为 Authorization 标头发送的 Bearer 令牌。如果 Ollama 没有身份验证，请留空。
+    required: false
+    type: secret-input
+    variable: api_key
   - default: chat
     label:
       en_US: Completion mode
