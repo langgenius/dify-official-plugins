@@ -48,7 +48,11 @@ class NotionClient:
         }
         # Memoize parent_id lookups so the threaded resolution in
         # get_authorized_pages doesn't re-fetch the same ancestor block twice.
+        # `_parent_inflight` tracks lookups currently being resolved so that
+        # concurrent workers asking for the same block coalesce onto a single
+        # HTTP request instead of all racing past the cache miss.
         self._parent_cache: dict[str, str] = {}
+        self._parent_inflight: dict[str, threading.Event] = {}
         self._parent_cache_lock = threading.Lock()
 
     def _make_request(
@@ -523,7 +527,10 @@ class NotionClient:
                 parent_id = parent[parent_type]
             else:
                 parent_id = "root"
-        except ValueError:
+        except (ValueError, requests.exceptions.RequestException):
+            # One unresolvable item (HTTP error, malformed parent, etc.) must not
+            # abort the whole enumeration — preserve the original "skip and
+            # continue" behavior established by PR #2891.
             return None
 
         return OnlineDocumentPage(
@@ -547,35 +554,85 @@ class NotionClient:
         return max(1, min(value, _MAX_PARENT_RESOLVE_WORKERS))
 
     def notion_page_search(self, access_token: str):
-        return [item for item in self._search_all() if item.get("object") == "page"]
+        return self._search_filtered("page")
 
     def notion_database_search(self, access_token: str):
-        return [item for item in self._search_all() if item.get("object") == "database"]
+        return self._search_filtered("database")
+
+    def _search_filtered(self, object_type: str) -> list[dict[str, Any]]:
+        """Fetch only pages or only databases using the API-side object filter.
+
+        Used by the public ``notion_page_search`` / ``notion_database_search``
+        wrappers when callers ask for just one type. ``get_authorized_pages``
+        deliberately uses ``_search_all`` instead to collapse both kinds into a
+        single pass.
+        """
+        results: list[dict[str, Any]] = []
+        next_cursor: str | None = None
+        has_more = True
+        while has_more:
+            payload: dict[str, Any] = {
+                "filter": {"value": object_type, "property": "object"},
+            }
+            if next_cursor:
+                payload["start_cursor"] = next_cursor
+            data = self._make_request("post", "/search", json_data=payload) or {}
+            results.extend(data.get("results", []))
+            has_more = data.get("has_more", False)
+            next_cursor = data.get("next_cursor")
+        return results
 
     def notion_block_parent_page_id(self, access_token: str, block_id: str):
         return self._resolve_block_parent_page_id(block_id)
 
     def _resolve_block_parent_page_id(self, block_id: str) -> str:
         clean_id = block_id.replace("-", "")
-        cached = self._parent_cache.get(clean_id)
-        if cached is not None:
-            return cached
 
-        data = self._make_request("get", f"/blocks/{clean_id}", allow_status=(404,))
-        if data is None:
-            result = "root"
-        else:
-            parent = data.get("parent", {})
-            parent_type = parent.get("type")
-            if parent_type == "block_id":
-                result = self._resolve_block_parent_page_id(parent[parent_type])
-            elif parent_type == "workspace":
+        # Coordinate cache and in-flight lookups under the same lock so two
+        # workers can never both miss the cache for the same block and race to
+        # fetch it — under Notion's ~3 req/s limit those redundant requests
+        # would just amplify 429 backoff.
+        while True:
+            with self._parent_cache_lock:
+                cached = self._parent_cache.get(clean_id)
+                if cached is not None:
+                    return cached
+                event = self._parent_inflight.get(clean_id)
+                if event is None:
+                    # This thread is now responsible for fetching this id;
+                    # other threads asking for the same id will wait on `event`.
+                    event = threading.Event()
+                    self._parent_inflight[clean_id] = event
+                    break
+            # Another worker is already fetching; wait for it to finish, then
+            # re-check the cache on the next iteration.
+            event.wait()
+
+        try:
+            data = self._make_request("get", f"/blocks/{clean_id}", allow_status=(404,))
+            if data is None:
                 result = "root"
-            elif parent_type and parent_type in parent:
-                result = parent[parent_type]
             else:
-                result = "root"
+                parent = data.get("parent", {})
+                parent_type = parent.get("type")
+                if parent_type == "block_id":
+                    result = self._resolve_block_parent_page_id(parent[parent_type])
+                elif parent_type == "workspace":
+                    result = "root"
+                elif parent_type and parent_type in parent:
+                    result = parent[parent_type]
+                else:
+                    result = "root"
+        except Exception:
+            # Release waiters so they don't block forever; they will re-enter
+            # the lock above, see no cache entry, and retry on their own.
+            with self._parent_cache_lock:
+                self._parent_inflight.pop(clean_id, None)
+            event.set()
+            raise
 
         with self._parent_cache_lock:
             self._parent_cache[clean_id] = result
+            self._parent_inflight.pop(clean_id, None)
+        event.set()
         return result
