@@ -53,10 +53,26 @@ def _extract_error_detail(
 ) -> str:
     """从 SoMark 响应里提取最具描述性的错误文本。"""
     if not isinstance(payload, dict):
-        return fallback
-    data_block = payload.get("data") if isinstance(payload.get("data"), dict) else None
+        return f"{fallback} (raw response: {payload!r})"
 
-    return payload.get("message") or fallback
+    # 优先级：message > msg > error > data.message > data.error > 整个 payload
+    for key in ("message", "msg", "error", "detail"):
+        value = payload.get(key)
+        if isinstance(value, str) and value.strip():
+            return f"code={payload.get('code')}, {key}={value}"
+
+    data_block = payload.get("data") if isinstance(payload.get("data"), dict) else None
+    if data_block:
+        for key in ("message", "msg", "error", "detail"):
+            value = data_block.get(key)
+            if isinstance(value, str) and value.strip():
+                return f"code={payload.get('code')}, data.{key}={value}"
+
+    # 兜底：把完整 payload 序列化出来，方便定位
+    try:
+        return f"code={payload.get('code')}, payload={json.dumps(payload, ensure_ascii=False)}"
+    except Exception:
+        return f"code={payload.get('code')}, payload={payload!r}"
 
 
 def _build_connection_error(base_url: str, endpoint: str) -> str:
