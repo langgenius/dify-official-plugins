@@ -38,6 +38,7 @@ class SoMarkProvider(ToolProvider):
             resp = requests.post(
                 f"{SOMARK_API_BASE_URL}/usage",
                 data={"api_key": api_key},
+                timeout=10,
             )
         except requests.RequestException as e:
             raise ValueError(f"Failed to connect to SoMark API, please check your network: {e}") from e
