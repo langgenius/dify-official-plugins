@@ -13,13 +13,14 @@ dependencies = [
     "numpy>=2.4.1",
 ]
 
-# uv run ruff check --fix && uv run ruff format
+# uv run black . && uv run ruff check --fix && uv run ruff format
 [dependency-groups]
 dev = [
     "pytest>=9.0.2",
     "ruff>=0.14.14",
     "python-dotenv>=1.2.1",
     "Pillow>=12.1.0",
+    "black>=26.5.1",
 ]
 
 [tool.pytest.ini_options]
@@ -52,3 +53,9 @@ filterwarnings = [
 
 # Coverage options (if using pytest-cov)
 # addopts = ["--cov=models/llm", "--cov-report=term-missing", "--cov-report=html"]
+
+[tool.black]
+# Equivalent to: uv run black -C -l 100
+line-length = 100
+skip-string-normalization = true
+include = '(^|/)llm\.py$'
