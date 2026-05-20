@@ -91,6 +91,7 @@ class PartitionTool(Tool):
                 chunking_strategy=tool_parameters.get("chunking_strategy", None),
                 max_characters=tool_parameters.get("max_characters", 500),
                 overlap=tool_parameters.get("overlap", 0),
+                split_pdf_page=False,
                 **{
                     k: v
                     for k, v in json.loads(
@@ -115,7 +116,6 @@ class PartitionTool(Tool):
                         "include_orig_elements",
                         "multipage_sections",
                         "new_after_n_chars",
-                        "overlap",
                         "overlap_all",
                         "similarity_threshold",
                     ]

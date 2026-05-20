@@ -27,6 +27,23 @@ AZURE_DEFAULT_PARAM_SEED_HELP = I18nObject(
 )
 
 
+def uses_responses_api(base_model_name: str) -> bool:
+    """
+    Determine if the model should use the Responses API.
+
+    1. Models with "codex" in the base name
+    2. gpt-5.x models (excluding chat and codex variants which use different APIs)
+    """
+    return (
+        "codex" in base_model_name
+        or (
+            base_model_name.startswith("gpt-5")
+            and "chat" not in base_model_name
+            and "codex" not in base_model_name
+        )
+    )
+
+
 def _get_max_tokens(default: int, min_val: int, max_val: int) -> ParameterRule:
     rule = ParameterRule(
         name="max_tokens",
@@ -58,6 +75,56 @@ class AzureBaseModel(BaseModel):
     # per base model without modifying the invocation logic.
     # NOTE: Currently, this field is only used in the Speech-to-Text (STT) model implementation.
     extra_invoke_params: dict[str, Any] = {}
+
+
+def _web_search_parameter_rules() -> list[ParameterRule]:
+    return [
+        ParameterRule(
+            name="enable_web_search",
+            label=I18nObject(zh_Hans="启用 Web 搜索", en_US="Enable Web Search"),
+            type="boolean",
+            help=I18nObject(
+                zh_Hans="启用 Azure OpenAI Responses API 原生 web_search 工具。",
+                en_US="Enable the native web_search tool in Azure OpenAI Responses API.",
+            ),
+            required=False,
+            default=False,
+        ),
+        ParameterRule(
+            name="web_search_user_country",
+            label=I18nObject(zh_Hans="搜索国家/地区", en_US="Web Search Country"),
+            type="string",
+            help=I18nObject(
+                zh_Hans="可选，两位 ISO 国家/地区代码（例如 US、JP）。",
+                en_US="Optional two-letter ISO country code (for example, US or JP).",
+            ),
+            required=False,
+        ),
+        ParameterRule(
+            name="web_search_allowed_domains",
+            label=I18nObject(zh_Hans="允许域名", en_US="Allowed Domains"),
+            type="text",
+            help=I18nObject(
+                zh_Hans="可选，允许搜索的域名列表。支持逗号或换行分隔。",
+                en_US="Optional allowlist of domains for web search. Use commas or new lines as separators.",
+            ),
+            required=False,
+        ),
+        ParameterRule(
+            name="web_search_include_sources",
+            label=I18nObject(zh_Hans="包含来源元数据", en_US="Include Source Metadata"),
+            type="boolean",
+            help=I18nObject(
+                zh_Hans="启用后会请求返回 web_search_call.action.sources，以便在响应中包含搜索来源信息（如 URL 和标题）。",
+                en_US=(
+                    'When enabled, the request includes include=["web_search_call.action.sources"], '
+                    "which asks Azure to return web search source metadata (for example URL/title)."
+                ),
+            ),
+            required=False,
+            default=False,
+        ),
+    ]
 
 
 LLM_BASE_MODELS = [
@@ -3815,6 +3882,25 @@ LLM_BASE_MODELS = [
         ),
     ),
 ]
+
+
+def _apply_web_search_rules_to_responses_models() -> None:
+    for base_model in LLM_BASE_MODELS:
+        if not uses_responses_api(base_model.base_model_name):
+            continue
+
+        if base_model.entity.parameter_rules is None:
+            base_model.entity.parameter_rules = []
+        parameter_rules = base_model.entity.parameter_rules
+        existing_rule_names = {rule.name for rule in parameter_rules}
+        for rule in _web_search_parameter_rules():
+            if rule.name not in existing_rule_names:
+                parameter_rules.append(rule)
+
+
+_apply_web_search_rules_to_responses_models()
+
+
 EMBEDDING_BASE_MODELS = [
     AzureBaseModel(
         base_model_name="text-embedding-ada-002",
