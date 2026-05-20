@@ -1,36 +1,35 @@
 credentials_for_provider:
+
   base_url:
     label:
       en_US: Base URL
-      zh_Hans: 服务地址
+      zh_Hans: Base URL
     placeholder:
-      en_US: https://somark.tech/api/v1
-      zh_Hans: https://somark.tech/api/v1
-    default: https://somark.tech/api/v1
+      en_US: For SoMark API, fill in https://somark.tech/api/v1; for self-hosted deployment, fill in your local Base URL
+      zh_Hans: 使用 SoMark API 时填写 https://somark.tech/api/v1；私有化部署时填写本地部署的 Base URL
     required: true
     type: text-input
+
   api_key:
     label:
       en_US: API Key
-      zh_Hans: API 密钥
+      zh_Hans: API Key
     placeholder:
-      en_US: Enter your Somark API Key
-      zh_Hans: 请输入您的 Somark API 密钥
-    required: true
+      en_US: Required for SoMark API; leave blank for self-hosted deployment
+      zh_Hans: 使用 SoMark API 时填写；私有化部署无需填写
+    required: false
     type: secret-input
-    help:
-      en_US: "No API Key? [Get 1000 free pages here](https://somark.tech/workbench/purchase)"
-      zh_Hans: "没有 ApiKey？[点击此处免费领 1000 页](https://somark.tech/workbench/purchase)"
+    url: https://docs.somark.tech/documentation/api
 
 identity:
   author: SoulCode
   name: somark
   label:
-    en_US: Somark
-    zh_Hans: Somark
+    en_US: SoMark
+    zh_Hans: SoMark
   description:
-    en_US: Somark Document Extraction Service
-    zh_Hans: Somark 文档解析服务
+    en_US: SoMark Document Parsing Service
+    zh_Hans: SoMark 文档解析服务
   icon: icon.png
 
 extra:
