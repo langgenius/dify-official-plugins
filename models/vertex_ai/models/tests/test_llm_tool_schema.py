@@ -48,6 +48,8 @@ def test_tool_parameters_are_typed_genai_schema_objects():
                     "type": "array",
                     "items": {"type": "string"},
                 },
+                "note": {"type": "string", "nullable": True},
+                "optional_count": {"type": ["integer", "null"]},
             },
             "required": ["query"],
         },
@@ -71,3 +73,36 @@ def test_tool_parameters_are_typed_genai_schema_objects():
     )
     assert parameters.properties["tags"].type == types.Type.ARRAY
     assert parameters.properties["tags"].items.type == types.Type.STRING
+    assert parameters.properties["note"].nullable is True
+    assert parameters.properties["optional_count"].type == types.Type.INTEGER
+    assert parameters.properties["optional_count"].nullable is True
+
+
+def test_tool_parameters_infer_missing_schema_types():
+    llm = VertexAiLargeLanguageModel([])
+    tool = PromptMessageTool(
+        name="search",
+        description="Search documents",
+        parameters={
+            "properties": {
+                "filters": {
+                    "properties": {
+                        "labels": {
+                            "items": {"type": "string"},
+                        },
+                    },
+                },
+            },
+        },
+    )
+
+    genai_tool = llm._convert_tools_to_genai_tool([tool])
+
+    parameters = genai_tool.function_declarations[0].parameters
+    assert parameters.type == types.Type.OBJECT
+    assert parameters.properties["filters"].type == types.Type.OBJECT
+    assert parameters.properties["filters"].properties["labels"].type == types.Type.ARRAY
+    assert (
+        parameters.properties["filters"].properties["labels"].items.type
+        == types.Type.STRING
+    )

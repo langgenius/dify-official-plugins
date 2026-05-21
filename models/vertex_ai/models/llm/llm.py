@@ -460,8 +460,17 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
 
     @classmethod
     def _convert_tool_parameter_schema(cls, schema: Mapping[str, Any]) -> types.Schema:
+        raw_type = schema.get("type")
+        if not raw_type:
+            if "properties" in schema:
+                raw_type = "object"
+            elif "items" in schema:
+                raw_type = "array"
+            else:
+                raw_type = "string"
+
         schema_type, nullable = cls._convert_json_schema_type_to_genai_type(
-            schema.get("type", "string")
+            raw_type
         )
         schema_kwargs: dict[str, Any] = {"type": schema_type}
 
@@ -473,7 +482,7 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         if enum_values and isinstance(enum_values, list):
             schema_kwargs["enum"] = [str(value) for value in enum_values]
 
-        if nullable:
+        if nullable or schema.get("nullable") is True:
             schema_kwargs["nullable"] = True
 
         if schema_type == types.Type.OBJECT:
