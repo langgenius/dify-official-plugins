@@ -201,6 +201,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 "max_tokens_to_sample"
             )
 
+        if "max_tokens" not in model_parameters:
+            model_parameters["max_tokens"] = 128000
+
         thinking = model_parameters.pop("thinking", False)
         thinking_budget = model_parameters.pop("thinking_budget", 1024)
         context_1m = model_parameters.pop("context_1m", False)
