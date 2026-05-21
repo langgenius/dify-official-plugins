@@ -442,9 +442,10 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             "input": input_messages,
         }
 
-        # Map model parameters to the Responses API.
-        # temperature and top_p are not supported by gpt-5 reasoning models.
-        if not is_reasoning_model:
+        # temperature/top_p: not supported when reasoning is active
+        reasoning_effort = model_parameters.get("reasoning_effort")
+        reasoning_active = is_reasoning_model and reasoning_effort != "none"
+        if not reasoning_active:
             if "temperature" in model_parameters:
                 responses_params["temperature"] = model_parameters["temperature"]
             if "top_p" in model_parameters:
@@ -544,7 +545,6 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             reasoning["summary"] = model_parameters["reasoning_summary"]
         if reasoning:
             responses_params["reasoning"] = reasoning
-
         logger.info(
             f"llm request with responses api: model={model}, stream={stream}, "
             f"parameters={responses_params}"

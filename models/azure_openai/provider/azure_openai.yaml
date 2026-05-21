@@ -521,6 +521,21 @@ model_credential_schema:
       required: true
       type: select
       variable: base_model_name
+    - variable: embedding_dimensions
+      label:
+        en_US: Embedding Dimensions
+        zh_Hans: 向量维度
+      type: text-input
+      required: false
+      placeholder:
+        en_US: "e.g. 1536 (optional, text-embedding-3-* only)"
+        zh_Hans: "如 1536（可选，仅 text-embedding-3-* 支持）"
+      help:
+        en_US: "Reduce output dimensions via MRL. text-embedding-3-small: 1-1536, text-embedding-3-large: 1-3072. Leave empty for model default."
+        zh_Hans: "通过 MRL 缩减输出维度。text-embedding-3-small: 1-1536，text-embedding-3-large: 1-3072。留空使用模型默认值。"
+      show_on:
+        - variable: __model_type
+          value: text-embedding
   model:
     label:
       en_US: Deployment Name

@@ -49,6 +49,10 @@ class OpenAITextEmbeddingModel(_CommonOpenAI, TextEmbeddingModel):
 
         extra_model_kwargs["encoding_format"] = "base64"
 
+        dimensions = credentials.get("embedding_dimensions")
+        if dimensions and model != "text-embedding-ada-002":
+            extra_model_kwargs["dimensions"] = int(dimensions)
+
         # get model properties
         context_size = self._get_context_size(model, credentials)
         max_chunks = self._get_max_chunks(model, credentials)
@@ -155,6 +159,21 @@ class OpenAITextEmbeddingModel(_CommonOpenAI, TextEmbeddingModel):
             # transform credentials to kwargs for model instance
             credentials_kwargs = self._to_credential_kwargs(credentials)
             client = OpenAI(**credentials_kwargs)
+
+            # validate dimensions if provided
+            _MAX_DIMS = {"text-embedding-3-large": 3072, "text-embedding-3-small": 1536}
+            dimensions = credentials.get("embedding_dimensions")
+            if dimensions:
+                try:
+                    dim_int = int(dimensions)
+                except (ValueError, TypeError):
+                    raise CredentialsValidateFailedError("embedding_dimensions must be an integer")
+                if model == "text-embedding-ada-002":
+                    raise CredentialsValidateFailedError("text-embedding-ada-002 does not support dimensions")
+                if model in _MAX_DIMS and not (1 <= dim_int <= _MAX_DIMS[model]):
+                    raise CredentialsValidateFailedError(
+                        f"embedding_dimensions for {model} must be between 1 and {_MAX_DIMS[model]}"
+                    )
 
             # call embedding model
             self._embedding_invoke(
