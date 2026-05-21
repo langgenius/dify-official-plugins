@@ -6,16 +6,16 @@ They test the internal logic using mocks.
 """
 
 import base64
-import time
 from decimal import Decimal
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
+from google.genai import types
+from dify_plugin.entities.model import EmbeddingInputType
 from dify_plugin.entities.model.text_embedding import (
     EmbeddingUsage,
     MultiModalContent,
     MultiModalContentType,
-    MultiModalEmbeddingResult,
 )
 
 try:
@@ -64,10 +64,103 @@ def _make_usage() -> EmbeddingUsage:
     )
 
 
+def _mock_embedding(values=None, token_count=None):
+    embedding = Mock()
+    embedding.values = values or [0.1, 0.2, 0.3]
+    if token_count is None:
+        embedding.statistics = None
+    else:
+        embedding.statistics = Mock()
+        embedding.statistics.token_count = token_count
+    return embedding
+
+
 @pytest.fixture
 def embedding_model():
     """Create an embedding model instance for testing."""
     return GeminiTextEmbeddingModel([])
+
+
+# ================================================================
+# Test: embed_content request shape
+# ================================================================
+
+
+class TestEmbedContentRequestShape:
+    """Tests for preserving one embedding per logical input."""
+
+    def setup_method(self):
+        self.model = GeminiTextEmbeddingModel([])
+        self.credentials = {"google_api_key": "fake-key"}
+
+    def test_text_batch_uses_one_content_per_text(self):
+        """Text batches should send each text as a separate Content."""
+        mock_client = Mock()
+        mock_response = Mock()
+        mock_response.embeddings = [
+            _mock_embedding(values=[0.1, 0.2]),
+            _mock_embedding(values=[0.3, 0.4]),
+        ]
+        mock_client.models.embed_content.return_value = mock_response
+
+        result = self.model._embedding_invoke(
+            model="gemini-embedding-2-preview",
+            client=mock_client,
+            texts=["Hello", "World"],
+            input_type=EmbeddingInputType.DOCUMENT,
+        )
+
+        assert len(result) == 2
+        contents = mock_client.models.embed_content.call_args.kwargs["contents"]
+        assert len(contents) == 2
+        assert all(isinstance(content, types.UserContent) for content in contents)
+        assert [len(content.parts) for content in contents] == [1, 1]
+        assert [content.parts[0].text for content in contents] == ["Hello", "World"]
+
+    @patch("models.text_embedding.text_embedding.genai")
+    def test_multimodal_batch_uses_one_content_per_document(self, mock_genai):
+        """Multimodal batches should send each document as a separate Content."""
+        mock_client = Mock()
+        mock_genai.Client.return_value = mock_client
+
+        mock_response = Mock()
+        mock_response.embeddings = [
+            _mock_embedding(values=[0.1], token_count=1),
+            _mock_embedding(values=[0.2], token_count=1),
+            _mock_embedding(values=[0.3], token_count=1),
+        ]
+        mock_client.models.embed_content.return_value = mock_response
+
+        usage = _make_usage()
+        with patch.object(self.model, "_get_max_chunks", return_value=100), \
+             patch.object(self.model, "_get_output_dimension", return_value=None), \
+             patch.object(self.model, "_calc_response_usage", return_value=usage):
+            self.model._invoke_multimodal(
+                model="gemini-embedding-2-preview",
+                credentials=self.credentials,
+                documents=[
+                    MultiModalContent(
+                        content_type=MultiModalContentType.TEXT,
+                        content="Hello",
+                    ),
+                    MultiModalContent(
+                        content_type=MultiModalContentType.IMAGE,
+                        content=JPEG_BASE64,
+                    ),
+                    MultiModalContent(
+                        content_type=MultiModalContentType.TEXT,
+                        content="World",
+                    ),
+                ],
+            )
+
+        contents = mock_client.models.embed_content.call_args.kwargs["contents"]
+        assert len(contents) == 3
+        assert all(isinstance(content, types.UserContent) for content in contents)
+        assert [len(content.parts) for content in contents] == [1, 1, 1]
+        assert contents[0].parts[0].text == "Hello"
+        assert contents[1].parts[0].inline_data.mime_type == "image/jpeg"
+        assert contents[2].parts[0].text == "World"
 
 
 # ================================================================

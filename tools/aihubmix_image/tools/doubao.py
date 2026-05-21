@@ -12,20 +12,17 @@ from dify_plugin.errors.model import InvokeError
 class DoubaoTool(Tool):
     """
     Doubao Seedream Image Generation Tool
-    Uses doubao-seedream-4-0-250828 and doubao-seedream-4-5 models for high-quality Chinese image generation.
-    
+    Uses doubao-seedream-5.0-lite and doubao-seedream-4-5 models for high-quality Chinese image generation.
+
     Supports three generation modes:
     - Text-to-Image: Generate images from text prompts
     - Image-to-Image: Transform existing images based on prompts
     - Sequential Generation: Create consistent series of images (storyboards, variations)
     """
-    
-    # API endpoints
+
     BASE_URL = "https://aihubmix.com/v1"
-    
-    # Model endpoints
-    MODEL_SEEDREAM_4_0 = "doubao-seedream-4-0-250828"
-    MODEL_SEEDREAM_4_5 = "doubao-seedream-4-5"
+
+    DEFAULT_MODEL = "doubao-seedream-5.0-lite"
     
     def get_endpoint(self, model: str) -> str:
         """Get the appropriate endpoint based on model selection"""
@@ -131,7 +128,7 @@ class DoubaoTool(Tool):
             max_sequential_images = int(tool_parameters.get("max_sequential_images", 4))
             
             # Model selection
-            model = tool_parameters.get("model", self.MODEL_SEEDREAM_4_0)
+            model = tool_parameters.get("model", self.DEFAULT_MODEL)
             
             # Common parameters
             size = tool_parameters.get("size", "2K")

@@ -2,8 +2,8 @@ background: '#faf7f5'
 configurate_methods:
 - predefined-model
 description:
-  en_US: Models provided by Xiaomi MiMo, such as mimo-v2-flash.
-  zh_Hans: Xiaomi MiMo 提供的模型，例如 mimo-v2-flash。
+  en_US: Models provided by Xiaomi MiMo, such as mimo-v2.5-pro, mimo-v2.5, mimo-v2-flash. Supports Token Plan subscription.
+  zh_Hans: Xiaomi MiMo 提供的模型，例如 mimo-v2.5-pro、mimo-v2.5、mimo-v2-flash。支持 Token Plan 订阅计划。
 extra:
   python:
     model_sources:
@@ -33,20 +33,37 @@ provider_credential_schema:
   - label:
       en_US: API Key
     placeholder:
-      en_US: Enter your API Key
-      zh_Hans: 在此输入您的 API Key
+      en_US: Enter your API Key (sk-xxx for pay-per-use, tp-xxx for Token Plan)
+      zh_Hans: 输入 API Key（按量付费 sk-xxx，Token Plan 订阅 tp-xxx）
     required: true
     type: secret-input
     variable: api_key
   - label:
-      en_US: Custom API endpoint URL
-      zh_Hans: 自定义 API endpoint 地址
+      en_US: API Endpoint
+      zh_Hans: API 接入地址
     placeholder:
-      en_US: Base URL, e.g. https://api.xiaomimimo.com/v1
-      zh_Hans: Base URL, e.g. https://api.xiaomimimo.com/v1
+      en_US: Select or enter Base URL
+      zh_Hans: 选择或输入 Base URL
     required: false
-    type: text-input
-    default: "https://api.xiaomimimo.com/v1"
+    type: select
+    default: https://api.xiaomimimo.com/v1
+    options:
+    - value: https://api.xiaomimimo.com/v1
+      label:
+        en_US: Default (Pay-per-use)
+        zh_Hans: 默认（按量付费）
+    - value: https://token-plan-cn.xiaomimimo.com/v1
+      label:
+        en_US: Token Plan - China
+        zh_Hans: Token Plan - 中国集群
+    - value: https://token-plan-sgp.xiaomimimo.com/v1
+      label:
+        en_US: Token Plan - Singapore
+        zh_Hans: Token Plan - 新加坡集群
+    - value: https://token-plan-ams.xiaomimimo.com/v1
+      label:
+        en_US: Token Plan - Europe
+        zh_Hans: Token Plan - 欧洲集群
     variable: endpoint_url
 supported_model_types:
 - llm

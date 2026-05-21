@@ -29,8 +29,8 @@ ArXiv is a free distribution service and open-access archive for scholarly artic
    git clone <your-repo-url>
    cd arxiv-plugin
    
-   # Install dependencies
-   pip install -r requirements.txt
+   # Sync dependencies
+   uv sync
    ```
 
 ### Basic Usage
@@ -102,8 +102,9 @@ arxiv = ArxivAPIWrapper(
 ```
 arxiv-plugin/
 ├── main.py                 # Plugin entry point
-├── manifest.yml           # Plugin configuration
-├── requirements.txt       # Python dependencies
+├── manifest.yaml          # Plugin configuration
+├── pyproject.toml         # Project metadata and Python dependencies
+├── uv.lock                # Locked dependency versions
 ├── tools/
 │   ├── arxiv_search.py    # Main tool implementation
 │   └── arxiv_search.yaml  # Tool configuration

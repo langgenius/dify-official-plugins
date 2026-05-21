@@ -15,13 +15,19 @@ from dify_plugin.entities.model import (
 )
 from dify_plugin.entities.model.llm import LLMMode, LLMResult
 from dify_plugin.entities.model.message import (
+    AudioPromptMessageContent,
+    DocumentPromptMessageContent,
+    ImagePromptMessageContent,
     PromptMessage,
+    PromptMessageContentType,
     PromptMessageRole,
     PromptMessageTool,
     SystemPromptMessage,
     AssistantPromptMessage,
+    UserPromptMessage,
+    VideoPromptMessageContent,
 )
-from dify_plugin.errors.model import CredentialsValidateFailedError
+from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLanguageModel
 
 from openai import OpenAI
@@ -40,24 +46,29 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         compatible with Dify's downstream filters.
         """
         # Prefer the new key when present, otherwise fall back to legacy
-        reasoning_piece = delta.get("reasoning") or delta.get("reasoning_content")
+        reasoning_piece = delta.get("reasoning") or delta.get("reasoning_content") or ""
         content_piece = delta.get("content") or ""
-
-        if reasoning_piece:
+        output = ""
+        if len(reasoning_piece) > 0:
             if not is_reasoning:
                 # Open a think block on first reasoning token
-                output = f"<think>\n{reasoning_piece}"
+                output += f"<think>\n{reasoning_piece}"
                 is_reasoning = True
             else:
                 # Continue streaming inside the think block
-                output = str(reasoning_piece)
-        elif is_reasoning:
-            # No reasoning token in this delta, close the think block
-            is_reasoning = False
-            output = f"\n</think>{content_piece}"
-        else:
-            # No reasoning token and not in a reasoning block
-            output = content_piece
+                output += str(reasoning_piece)
+
+        if is_reasoning:
+            # delta without reasoning/content should just close the block
+            if len(reasoning_piece) == 0 and len(content_piece) == 0:
+                is_reasoning = False
+                output += f"\n</think>"
+            # sometimes reasoning_piece is not empty and content_piece is not empty. but if content_piece is not empty, then we should not close the think block
+            if len(content_piece) > 0:
+                is_reasoning = False
+                output += f"\n</think>{content_piece}"
+        elif len(content_piece) > 0:
+            output += content_piece
 
         return output, is_reasoning
 
@@ -310,7 +321,18 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
                     required=False,
                 )
             )
-        
+
+        # Register VIDEO/AUDIO/DOCUMENT features when the corresponding credential is enabled.
+        # Without these on entity.features, Dify host filters out non-image attachments
+        # before they reach _convert_prompt_message_to_dict, causing silent drop.
+        for credential_key, feature in (
+            ("video_support", ModelFeature.VIDEO),
+            ("audio_support", ModelFeature.AUDIO),
+            ("document_support", ModelFeature.DOCUMENT),
+        ):
+            if credentials.get(credential_key, "no_support") == "support" and feature not in entity.features:
+                entity.features.append(feature)
+
         return entity
 
     @classmethod
@@ -340,6 +362,66 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             # Only update if changed
             if new_content != p.content:
                 p.content = new_content
+
+    def _convert_prompt_message_to_dict(
+        self, message: PromptMessage, credentials: Optional[dict] = None
+    ) -> dict:
+        # The base SDK implementation only handles TEXT and IMAGE content for user
+        # messages, silently dropping VIDEO / AUDIO / DOCUMENT. Extend it so the same
+        # OpenAI-compatible request shape carries the additional modalities. The
+        # encoding follows what LiteLLM and OpenAI-compatible aggregators accept:
+        #   - VIDEO/AUDIO: image_url with a data URI (mime_type carried in the URI),
+        #     which providers like Vertex Gemini convert into inline_data.
+        #   - DOCUMENT: the OpenAI Files-compatible "file" part with file_data set
+        #     to the data URI.
+        if isinstance(message, UserPromptMessage) and isinstance(message.content, list):
+            sub_messages: list[dict] = []
+            for c in message.content:
+                if c.type == PromptMessageContentType.TEXT:
+                    sub_messages.append({"type": "text", "text": c.data})
+                elif c.type == PromptMessageContentType.IMAGE:
+                    image_c: ImagePromptMessageContent = c
+                    sub_messages.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": image_c.data,
+                                "detail": image_c.detail.value,
+                            },
+                        }
+                    )
+                elif c.type == PromptMessageContentType.VIDEO:
+                    video_c: VideoPromptMessageContent = c
+                    sub_messages.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": video_c.data},
+                        }
+                    )
+                elif c.type == PromptMessageContentType.AUDIO:
+                    audio_c: AudioPromptMessageContent = c
+                    sub_messages.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": audio_c.data},
+                        }
+                    )
+                elif c.type == PromptMessageContentType.DOCUMENT:
+                    doc_c: DocumentPromptMessageContent = c
+                    sub_messages.append(
+                        {
+                            "type": "file",
+                            "file": {
+                                "file_data": doc_c.data,
+                                "filename": doc_c.filename or "document",
+                            },
+                        }
+                    )
+            message_dict: dict = {"role": "user", "content": sub_messages}
+            if message.name:
+                message_dict["name"] = message.name
+            return message_dict
+        return super()._convert_prompt_message_to_dict(message, credentials)
 
     def _invoke(
         self,
@@ -514,3 +596,74 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             else:
                 # Yield chunks without content as-is
                 yield chunk
+
+    def _handle_generate_response(
+        self,
+        model: str,
+        credentials: dict,
+        response: requests.Response,
+        prompt_messages: list[PromptMessage],
+    ) -> LLMResult:
+        """
+        Handle non-streaming chat responses that omit `message.content` when returning tool calls.
+
+        Some OpenAI-compatible gateways, including LiteLLM-backed Azure deployments, may
+        legitimately return tool calls without a `content` field. The SDK base class indexes
+        `message["content"]` directly, which raises `KeyError('content')` in that case.
+        """
+        response_json: dict = response.json()
+        completion_type = LLMMode.value_of(credentials["mode"])
+        choices = response_json.get("choices") or []
+        if not choices:
+            raise InvokeError("LLM response returned no choices")
+
+        output = choices[0]
+        message_id = response_json.get("id")
+
+        response_content = ""
+        tool_calls = None
+        function_calling_type = credentials.get("function_calling_type", "no_call")
+
+        if completion_type is LLMMode.CHAT:
+            message = output.get("message") or {}
+            raw_content = message.get("content")
+            if isinstance(raw_content, str):
+                response_content = raw_content
+            elif raw_content is None:
+                response_content = ""
+            else:
+                response_content = str(raw_content)
+
+            if function_calling_type == "tool_call":
+                tool_calls = message.get("tool_calls")
+            elif function_calling_type == "function_call":
+                tool_calls = message.get("function_call")
+        elif completion_type is LLMMode.COMPLETION:
+            raw_text = output.get("text", "")
+            response_content = raw_text if isinstance(raw_text, str) else str(raw_text or "")
+
+        assistant_message = AssistantPromptMessage(content=response_content, tool_calls=[])
+
+        if tool_calls:
+            if function_calling_type == "tool_call":
+                assistant_message.tool_calls = self._extract_response_tool_calls(tool_calls)
+            elif function_calling_type == "function_call":
+                function_call = self._extract_response_function_call(tool_calls)
+                assistant_message.tool_calls = [function_call] if function_call else []
+
+        usage = response_json.get("usage")
+        if usage:
+            prompt_tokens = usage["prompt_tokens"]
+            completion_tokens = usage["completion_tokens"]
+        else:
+            prompt_tokens = self._num_tokens_from_messages(prompt_messages, credentials=credentials)
+            completion_tokens = self._num_tokens_from_string(assistant_message.content or "")
+
+        usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+
+        return LLMResult(
+            id=message_id,
+            model=response_json.get("model", model),
+            message=assistant_message,
+            usage=usage,
+        )

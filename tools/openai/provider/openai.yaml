@@ -54,6 +54,8 @@ identity:
 tools:
 - tools/gpt_image_generate.yaml
 - tools/gpt_image_edit.yaml
+- tools/gpt_image_2_generate.yaml
+- tools/gpt_image_2_edit.yaml
 - tools/dalle2.yaml
 - tools/dalle3.yaml
 - tools/deep_research.yaml

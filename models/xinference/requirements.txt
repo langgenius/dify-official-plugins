@@ -1,3 +1,0 @@
-dify_plugin>=0.5.0
-openai~=2.3.0
-xinference_client~=1.0.1

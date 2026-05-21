@@ -5,9 +5,9 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 
-# uv pip compile pyproject.toml -o ./requirements.txt
+# Refresh the lockfile with: uv lock
 dependencies = [
-    "requests>=2.32.7",
+    "requests>=2.32.3,<2.32.7",
     "dify_plugin>=0.2.0,<0.3.0",
 ]
 

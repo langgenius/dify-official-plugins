@@ -16,7 +16,9 @@ try:
     from google.genai import types
     from PIL import Image
 except ImportError:
-    raise InvokeError("Required packages not found. Please install: pip install google-genai Pillow")
+    raise InvokeError(
+        "Required packages are declared in pyproject.toml. Run `uv sync` in the plugin directory."
+    )
 
 
 class ImagenTool(Tool):

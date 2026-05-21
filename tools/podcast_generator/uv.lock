@@ -604,6 +604,7 @@ dependencies = [
     { name = "dify-plugin" },
     { name = "openai" },
     { name = "pydub" },
+    { name = "yarl" },
 ]
 
 [package.metadata]
@@ -611,6 +612,7 @@ requires-dist = [
     { name = "dify-plugin", specifier = ">=0.5.0" },
     { name = "openai", specifier = "==1.99.1" },
     { name = "pydub", specifier = "==0.25.1" },
+    { name = "yarl", specifier = ">=1.22.0" },
 ]
 
 [package.metadata.requires-dev]

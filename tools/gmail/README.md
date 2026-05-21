@@ -36,8 +36,6 @@ The plugin supports Gmail's powerful search syntax:
 
 ## Setup Instructions
 
-**For detailed setup instructions, see [GUIDE.md](GUIDE.md)**
-
 ### Quick Setup Overview
 
 1. **Install the plugin** from Dify Marketplace
@@ -185,4 +183,4 @@ This plugin is built using the Dify plugin framework and follows best practices:
 
 ## License
 
-This plugin is provided as-is for use with Dify. Please refer to Dify's licensing terms for usage rights. 
+This plugin is provided as-is for use with Dify. Please refer to Dify's licensing terms for usage rights.

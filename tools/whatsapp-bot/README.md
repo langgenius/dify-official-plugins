@@ -11,11 +11,11 @@ WhatsApp Cloud API extension that receives messages via webhook and optionally f
 
 1. Install dependencies:
    ```bash
-   pip install -r requirements.txt
+   uv sync --project . --no-dev
    ```
 2. Run locally for remote debug in Dify:
    ```bash
-   python -m main
+   uv run --project . python -m main
    ```
 
 ### Configure in Dify

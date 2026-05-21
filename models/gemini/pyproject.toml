@@ -5,21 +5,22 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.12"
 
-# uv export --format requirements.txt --no-dev --no-hashes --frozen --no-emit-project -o requirements.txt
+# Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
     "dify-plugin>=0.7.4,<0.8.0",
-    "google-genai>=1.60.0",
+    "google-genai>=1.73.0",
     "google-generativeai>=0.8.5",
     "numpy>=2.4.1",
 ]
 
-# uv run ruff check --fix && uv run ruff format
+# uv run black . && uv run ruff check --fix && uv run ruff format
 [dependency-groups]
 dev = [
     "pytest>=9.0.2",
     "ruff>=0.14.14",
     "python-dotenv>=1.2.1",
     "Pillow>=12.1.0",
+    "black>=26.5.1",
 ]
 
 [tool.pytest.ini_options]
@@ -52,3 +53,9 @@ filterwarnings = [
 
 # Coverage options (if using pytest-cov)
 # addopts = ["--cov=models/llm", "--cov-report=term-missing", "--cov-report=html"]
+
+[tool.black]
+# Equivalent to: uv run black -C -l 100
+line-length = 100
+skip-string-normalization = true
+include = '(^|/)llm\.py$'

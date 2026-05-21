@@ -1,12 +1,6 @@
-from typing import Any
-from dify_plugin.errors.tool import ToolProviderCredentialValidationError
-from tools.eval_expression import EvaluateExpressionTool
 from dify_plugin import ToolProvider
 
 
 class MathsProvider(ToolProvider):
-    def _validate_credentials(self, credentials: dict[str, Any]) -> None:
-        try:
-            EvaluateExpressionTool().invoke(tool_parameters={"expression": "1+(2+3)*4"})
-        except Exception as e:
-            raise ToolProviderCredentialValidationError(str(e))
+    def _validate_credentials(self, credentials: dict) -> None:
+        pass

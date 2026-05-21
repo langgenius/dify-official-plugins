@@ -6,7 +6,7 @@ readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
     "dify_plugin>=0.5.0",
-    "requests",
+    "requests>=2.32.5",
 ]
 
 [dependency-groups]

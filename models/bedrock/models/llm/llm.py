@@ -125,7 +125,14 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         """
         Code block mode wrapper for invoking large language model
         """
-        if model_parameters.get("response_format"):
+        # When Dify's structured output is enabled, the Dify backend detects the "json_schema"
+        # parameter in the model YAML and passes the user-defined schema via model_parameters.
+        # We intercept it here and forward it to Bedrock's native outputConfig (Converse API),
+        # which uses constrained decoding to guarantee schema-compliant JSON output.
+        if model_parameters.get("json_schema"):
+            model_parameters.pop("response_format", None)
+            model_parameters["_structured_output_schema"] = model_parameters.pop("json_schema")
+        elif model_parameters.get("response_format"):
             stop = stop or []
             if "```\n" not in stop:
                 stop.append("```\n")
@@ -175,8 +182,14 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             try:
                 model_info = self._get_model_info(model, credentials, model_parameters)
                 if model_info:
+                    # Native Bedrock Structured Outputs: json_schema takes priority.
+                    # Same logic as _code_block_mode_wrapper — intercept the schema before
+                    # the legacy response_format handling runs.
+                    if model_parameters.get("json_schema"):
+                        model_parameters.pop("response_format", None)
+                        model_parameters["_structured_output_schema"] = model_parameters.pop("json_schema")
                     # Handle response_format for inference profiles only if underlying model is Anthropic
-                    if model_parameters.get("response_format"):
+                    elif model_parameters.get("response_format"):
                         # Check if the underlying model is Anthropic based
                         profile_info = get_inference_profile_info(inference_profile_id, credentials)
                         underlying_models = profile_info.get("models", [])
@@ -377,6 +390,31 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             "inferenceConfig": inference_config,
             "additionalModelRequestFields": additional_model_fields,
         }
+
+        # Bedrock native Structured Outputs via Converse API outputConfig.
+        # When a user-defined JSON schema is provided (from Dify's structured output UI),
+        # we inject it into the Converse API's outputConfig.textFormat parameter.
+        # Bedrock uses constrained decoding to guarantee the response conforms to the schema.
+        # Requires boto3 >= 1.42.42.
+        # See: https://docs.aws.amazon.com/bedrock/latest/userguide/structured-output.html
+        structured_schema = model_parameters.pop("_structured_output_schema", None)
+        if structured_schema:
+            if isinstance(structured_schema, str):
+                schema_dict = json.loads(structured_schema)
+            else:
+                schema_dict = structured_schema
+            # Dify wraps the user schema as {"schema": {...}, "name": "llm_response"}
+            parameters["outputConfig"] = {
+                "textFormat": {
+                    "type": "json_schema",
+                    "structure": {
+                        "jsonSchema": {
+                            "schema": json.dumps(schema_dict.get("schema", schema_dict)),
+                            "name": schema_dict.get("name", "response"),
+                        }
+                    }
+                }
+            }
 
         if model_info["support_system_prompts"] and system and len(system) > 0:
             parameters["system"] = system

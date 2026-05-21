@@ -245,6 +245,8 @@ dependencies = [
     { name = "dify-plugin" },
     { name = "google-auth" },
     { name = "google-cloud-pubsub" },
+    { name = "requests" },
+    { name = "werkzeug" },
 ]
 
 [package.metadata]
@@ -252,6 +254,8 @@ requires-dist = [
     { name = "dify-plugin", specifier = ">=0.5.0" },
     { name = "google-auth", specifier = ">=2.0.0" },
     { name = "google-cloud-pubsub", specifier = ">=2.20.0" },
+    { name = "requests", specifier = ">=2.31.0" },
+    { name = "werkzeug", specifier = ">=3.1.0" },
 ]
 
 [package.metadata.requires-dev]

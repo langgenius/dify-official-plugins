@@ -1,0 +1,13 @@
+[project]
+name = "mimo"
+version = "0.1.0"
+description = "Xiaomi MiMo model provider for Dify"
+readme = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+    "dify_plugin>=0.5.0",
+]
+
+[dependency-groups]
+dev = []

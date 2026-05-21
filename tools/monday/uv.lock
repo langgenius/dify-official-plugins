@@ -445,6 +445,7 @@ dependencies = [
     { name = "dify-easy" },
     { name = "dify-plugin" },
     { name = "monday-api-python-sdk" },
+    { name = "pydantic" },
 ]
 
 [package.metadata]
@@ -452,6 +453,7 @@ requires-dist = [
     { name = "dify-easy", specifier = ">=0.1.0" },
     { name = "dify-plugin", specifier = ">=0.5.0" },
     { name = "monday-api-python-sdk", git = "https://github.com/jingfelix/monday-api-python-sdk.git?rev=v1.3.1.post1" },
+    { name = "pydantic", specifier = ">=2.8.2" },
 ]
 
 [package.metadata.requires-dev]

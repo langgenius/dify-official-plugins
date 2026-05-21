@@ -21,7 +21,7 @@ Gmail Trigger（Push + History）
 
 - オプション：
   - `.difypkg` としてパッケージ化されている場合、DifyのPlugin Centerでインポート（Plugins → Import）。
-  - 開発中のローカル実行の場合、ランタイムが `requirements.txt` の依存関係をインストールすることを確認してください。
+  - 開発中にローカル実行する場合は、先に `pyproject.toml` / `uv.lock` から環境を用意してください（例: `uv sync --project .`）。これにより、ランタイムはロック済み依存関係を使用します。
 
 2. GCPリソースの設定（管理者、一度だけのセットアップ）
 

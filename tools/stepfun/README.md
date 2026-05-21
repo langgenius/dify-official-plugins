@@ -7,20 +7,20 @@
 To start using **Image-1X**, follow these steps:
 
 1. **Install Image-1X Tool**
-Access the Plugin Marketplace and install the Vectorizer.AI tool.
+Access the Plugin Marketplace and install the **Image-1X** tool.
 
 2. **Apply for a Image-1X API Key**
-Go to the Image-1X API Keys page, create a new API Key, and ensure your account has sufficient balance.
+Go to the Stepfun API key page, create a new API key, and ensure your account has sufficient balance.
 
 3. **Authorize Image-1X**
-Navigate to **Tools > Image-1X > To Authorize** in your application and provide API Key ID and Secret to activate the plugin.
+Navigate to **Tools > Image-1X > To Authorize** in your application and provide the API key to activate the plugin. The base URL is optional and defaults to `https://api.stepfun.com`.
 
 ![](./_assets/stepfun-01.png)
 
 Stepfun base URL:
 
 ```text
-https://platform.stepfun.com/console-tools
+https://api.stepfun.com
 ```
 
 ## Tool Feature

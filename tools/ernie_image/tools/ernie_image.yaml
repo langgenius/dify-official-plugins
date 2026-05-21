@@ -1,0 +1,122 @@
+identity:
+  name: ernie_image
+  author: langgenius
+  label:
+    en_US: ERNIE Image
+    zh_Hans: ERNIE Image
+    ja_JP: ERNIE Image
+description:
+  human:
+    en_US: Generate images with Baidu ERNIE Image / ERNIE Image Turbo.
+    zh_Hans: 使用百度 ERNIE Image / ERNIE Image Turbo 文生图。
+    ja_JP: Baidu ERNIE Image / ERNIE Image Turbo で画像を生成します。
+  llm: Generates images from a text prompt using Baidu ERNIE Image models served by AI Studio.
+extra:
+  python:
+    source: tools/ernie_image.py
+parameters:
+  - name: prompt
+    type: string
+    required: true
+    form: llm
+    label:
+      en_US: Prompt
+      zh_Hans: 提示词
+      ja_JP: プロンプト
+    human_description:
+      en_US: Description of the image you want to generate.
+      zh_Hans: 您想要生成的图像的文字描述。
+      ja_JP: 生成したい画像の説明文。
+    llm_description: Text prompt describing the desired image.
+  - name: model
+    type: select
+    required: true
+    form: form
+    default: ernie-image-turbo
+    label:
+      en_US: Model
+      zh_Hans: 模型
+      ja_JP: モデル
+    human_description:
+      en_US: ernie-image-turbo is faster; ernie-image yields higher quality.
+      zh_Hans: ernie-image-turbo 速度更快；ernie-image 画质更佳。
+      ja_JP: ernie-image-turbo は高速、ernie-image は高品質。
+    options:
+      - value: ernie-image-turbo
+        label:
+          en_US: ERNIE Image Turbo
+          zh_Hans: ERNIE Image Turbo
+          ja_JP: ERNIE Image Turbo
+      - value: ernie-image
+        label:
+          en_US: ERNIE Image
+          zh_Hans: ERNIE Image
+          ja_JP: ERNIE Image
+  - name: size
+    type: select
+    required: false
+    form: form
+    default: 1024x1024
+    label:
+      en_US: Size
+      zh_Hans: 尺寸
+      ja_JP: サイズ
+    human_description:
+      en_US: Output resolution in WxH.
+      zh_Hans: 输出分辨率，宽x高。
+      ja_JP: 出力解像度（幅x高さ）。
+    options:
+      - value: 1024x1024
+        label: { en_US: 1024x1024 (Square), zh_Hans: 1024x1024（方形）, ja_JP: 1024x1024（正方形） }
+      - value: 1024x768
+        label: { en_US: 1024x768 (Landscape 4:3), zh_Hans: 1024x768（横屏 4:3）, ja_JP: 1024x768（横 4:3） }
+      - value: 768x1024
+        label: { en_US: 768x1024 (Portrait 3:4), zh_Hans: 768x1024（竖屏 3:4）, ja_JP: 768x1024（縦 3:4） }
+      - value: 1280x720
+        label: { en_US: 1280x720 (Landscape 16:9), zh_Hans: 1280x720（横屏 16:9）, ja_JP: 1280x720（横 16:9） }
+      - value: 720x1280
+        label: { en_US: 720x1280 (Portrait 9:16), zh_Hans: 720x1280（竖屏 9:16）, ja_JP: 720x1280（縦 9:16） }
+      - value: 1792x1024
+        label: { en_US: 1792x1024 (Wide 7:4), zh_Hans: 1792x1024（宽屏 7:4）, ja_JP: 1792x1024（ワイド 7:4） }
+      - value: 1024x1792
+        label: { en_US: 1024x1792 (Tall 4:7), zh_Hans: 1024x1792（高屏 4:7）, ja_JP: 1024x1792（縦長 4:7） }
+  - name: n
+    type: number
+    required: false
+    form: form
+    default: 1
+    min: 1
+    max: 4
+    label:
+      en_US: Number of images
+      zh_Hans: 生成数量
+      ja_JP: 生成枚数
+    human_description:
+      en_US: How many images to generate (1-4).
+      zh_Hans: 生成的图像数量 (1-4)。
+      ja_JP: 生成する画像の枚数 (1-4)。
+  - name: seed
+    type: number
+    required: false
+    form: form
+    label:
+      en_US: Seed
+      zh_Hans: 随机种子
+      ja_JP: シード
+    human_description:
+      en_US: Optional integer seed for reproducible output.
+      zh_Hans: 可选随机种子，用于复现结果。
+      ja_JP: 再現可能な出力を得るための任意の整数シード。
+  - name: watermark
+    type: boolean
+    required: false
+    form: form
+    default: false
+    label:
+      en_US: Watermark
+      zh_Hans: 添加水印
+      ja_JP: 透かし
+    human_description:
+      en_US: Add the model watermark to the output.
+      zh_Hans: 在输出中添加模型水印。
+      ja_JP: 出力にモデルの透かしを追加します。

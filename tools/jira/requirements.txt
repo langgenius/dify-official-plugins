@@ -1,2 +1,0 @@
-dify-plugin>=0.6.0
-atlassian-python-api>=4.0.3

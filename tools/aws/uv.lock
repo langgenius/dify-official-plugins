@@ -38,6 +38,8 @@ dependencies = [
     { name = "opensearch-py" },
     { name = "pillow" },
     { name = "playwright" },
+    { name = "pydantic" },
+    { name = "requests" },
     { name = "sacrebleu" },
 ]
 
@@ -52,6 +54,8 @@ requires-dist = [
     { name = "opensearch-py", specifier = "~=2.8.0" },
     { name = "pillow", specifier = "~=11.3.0" },
     { name = "playwright", specifier = ">=1.49.0" },
+    { name = "pydantic", specifier = ">=2.8.2" },
+    { name = "requests", specifier = ">=2.32.5" },
     { name = "sacrebleu", specifier = "~=2.5.1" },
 ]
 
