@@ -72,8 +72,8 @@ parameter_rules:
       en_US: Thinking level
       zh_Hans: 思考层级
     help:
-      en_US: Indicates the thinking level. Default is High.
-      zh_Hans: 思考层级。默认为 High。
+      en_US: Indicates the thinking level. Default is Medium.
+      zh_Hans: 思考层级。默认为 Medium。
   - name: grounding
     type: boolean
     required: true
