@@ -68,8 +68,6 @@ provider_credential_schema:
   - default: disabled
     label:
       en_US: Enable Cloud Billing metadata labels (optional)
-    placeholder:
-      en_US: When enabled, attaches dify_app_id and dify_source labels to Vertex AI requests, enabling per-app cost breakdown in Cloud Billing. Default disabled.
     required: false
     type: select
     options:
@@ -79,6 +77,8 @@ provider_credential_schema:
     - value: disabled
       label:
         en_US: Disabled
+    help:
+      en_US: When enabled, attaches dify_app_id and dify_source labels to Vertex AI requests, enabling per-app cost breakdown in Cloud Billing. Default disabled.
     variable: enable_request_metadata
 supported_model_types:
 - llm
