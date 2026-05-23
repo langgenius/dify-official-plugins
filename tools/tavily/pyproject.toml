@@ -6,9 +6,9 @@ readme = "README.md"
 requires-python = ">=3.12"
 
 dependencies = [
-    "dify_plugin>=0.5.0",
-    "requests>=2.32.5",
-    "tavily-python==0.7.19",
+    "dify_plugin>=0.9.0",
+    "requests>=2.34.2",
+    "tavily-python>=0.7.24",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix
