@@ -360,6 +360,9 @@ requires-dist = [
     { name = "websockets", specifier = ">=16.0" },
 ]
 
+[package.metadata.requires-dev]
+dev = []
+
 [[package]]
 name = "gevent"
 version = "26.5.0"
