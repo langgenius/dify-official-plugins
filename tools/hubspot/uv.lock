@@ -378,6 +378,9 @@ requires-dist = [
     { name = "hubspot-api-client", specifier = ">=12.0.0" },
 ]
 
+[package.metadata.requires-dev]
+dev = []
+
 [[package]]
 name = "hubspot-api-client"
 version = "12.0.0"
