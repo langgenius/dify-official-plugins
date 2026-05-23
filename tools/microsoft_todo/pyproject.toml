@@ -18,6 +18,8 @@ requires-python = ">=3.12"
 readme = "README.md"
 license = {text = "MIT"}
 
+[dependency-groups]
+dev = []
 
 [tool.pdm]
 distribution = false
