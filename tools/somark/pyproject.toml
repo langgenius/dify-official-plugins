@@ -5,8 +5,8 @@ description = "Somark document extraction plugin"
 readme = "README.md"
 requires-python = ">=3.12"
 dependencies = [
-    "dify_plugin>=0.5.0",
-    "requests>=2.32.5",
+    "dify_plugin>=0.9.0",
+    "requests>=2.34.2",
 ]
 
 [dependency-groups]
