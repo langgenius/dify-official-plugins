@@ -241,6 +241,9 @@ requires-dist = [
     { name = "werkzeug", specifier = ">=3.1.8" },
 ]
 
+[package.metadata.requires-dev]
+dev = []
+
 [[package]]
 name = "dpkt"
 version = "1.9.8"
