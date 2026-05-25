@@ -35,7 +35,7 @@ from openai import OpenAI
 
 class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
     # Pre-compiled regex for better performance
-    _THINK_PATTERN = re.compile(r"^<think>.*?</think>\s*", re.DOTALL)
+    _THINK_PATTERN = re.compile(r"<think>.*?</think>\s*", re.DOTALL)
     # Models that require max_completion_tokens (OpenAI Responses API family)
     _NEEDS_MAX_COMPLETION_TOKENS_PATTERN = re.compile(r"^(o1|o3|gpt-5)", re.IGNORECASE)
 
@@ -354,11 +354,11 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             if not isinstance(p.content, str):
                 continue
             # Quick check to avoid regex if not needed
-            if not p.content.startswith("<think>"):
+            if "<think>" not in p.content:
                 continue
 
             # Only perform regex substitution when necessary
-            new_content = cls._THINK_PATTERN.sub("", p.content, count=1)
+            new_content = cls._THINK_PATTERN.sub("", p.content)
             # Only update if changed
             if new_content != p.content:
                 p.content = new_content
@@ -548,8 +548,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         """Filter thinking content from non-streaming result"""
         if result.message and result.message.content:
             content = result.message.content
-            if isinstance(content, str) and content.startswith("<think>"):
-                filtered_content = self._THINK_PATTERN.sub("", content, count=1)
+            if isinstance(content, str) and "<think>" in content:
+                filtered_content = self._THINK_PATTERN.sub("", content)
                 if filtered_content != content:
                     result.message.content = filtered_content
         return result
