@@ -129,7 +129,7 @@ def validate_lemonade_credentials(credentials: dict, model: str = None) -> None:
 
 class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
     # Pre-compiled regex for better performance
-    _THINK_PATTERN = re.compile(r"^<think>.*?</think>\s*", re.DOTALL)
+    _THINK_PATTERN = re.compile(r"<think>.*?</think>\s*", re.DOTALL)
 
     def get_customizable_model_schema(
         self, model: str, credentials: Mapping | dict
@@ -202,11 +202,11 @@ class LemonadeLargeLanguageModel(OAICompatLargeLanguageModel):
             if not isinstance(p.content, str):
                 continue
             # Quick check to avoid regex if not needed
-            if not p.content.startswith("<think>"):
+            if "<think>" not in p.content:
                 continue
 
             # Only perform regex substitution when necessary
-            new_content = cls._THINK_PATTERN.sub("", p.content, count=1)
+            new_content = cls._THINK_PATTERN.sub("", p.content)
             # Only update if changed
             if new_content != p.content:
                 p.content = new_content
