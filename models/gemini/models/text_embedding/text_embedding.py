@@ -1,9 +1,3 @@
-"""
-FutureWarning:
-All support for the `google.generativeai` package has ended. It will no longer be receiving
-updates or bug fixes. Please switch to the `google.genai` package as soon as possible.
-"""
-
 import base64
 import binascii
 import logging
@@ -16,7 +10,6 @@ from collections.abc import Mapping
 from google import genai
 from google.genai import types
 from google.genai.types import EmbedContentConfig
-from google.generativeai.embedding import to_task_type
 
 from dify_plugin import TextEmbeddingModel
 from dify_plugin.entities.model import EmbeddingInputType, PriceType
@@ -35,6 +28,11 @@ logger = logging.getLogger(__name__)
 
 # Embedding and number of tokens used
 EmbeddingTokenPair = tuple[list[float], Optional[int]]
+
+TASK_TYPE_BY_INPUT_TYPE = {
+    EmbeddingInputType.DOCUMENT: "RETRIEVAL_DOCUMENT",
+    EmbeddingInputType.QUERY: "RETRIEVAL_QUERY",
+}
 
 
 class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
@@ -249,8 +247,8 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         """
 
         # call embedding model
-        task_type = to_task_type(input_type.value)
-        config = EmbedContentConfig(task_type=task_type.name) if task_type else None
+        task_type = TASK_TYPE_BY_INPUT_TYPE.get(input_type)
+        config = EmbedContentConfig(task_type=task_type) if task_type else None
         logical_texts = texts if isinstance(texts, list) else [texts]
         contents = [self._as_user_content(text) for text in logical_texts]
         response = client.models.embed_content(
@@ -432,12 +430,12 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
                 )
 
             # Prepare config with optional output_dimension (MRL support)
-            task_type = to_task_type(input_type.value)
+            task_type = TASK_TYPE_BY_INPUT_TYPE.get(input_type)
             output_dimension = self._get_output_dimension(model, credentials)
 
             config_kwargs = {}
             if task_type:
-                config_kwargs["task_type"] = task_type.name
+                config_kwargs["task_type"] = task_type
             if output_dimension:
                 config_kwargs["output_dimensionality"] = output_dimension
 
