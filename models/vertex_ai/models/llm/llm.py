@@ -437,6 +437,81 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         text = "".join((self._convert_one_message_to_text(message) for message in messages))
         return text.rstrip()
 
+    @staticmethod
+    def _convert_json_schema_type_to_genai_type(raw_type: Any) -> tuple[types.Type, bool]:
+        nullable = False
+        if isinstance(raw_type, list):
+            type_candidates = [item for item in raw_type if item != "null"]
+            nullable = len(type_candidates) != len(raw_type)
+            raw_type = type_candidates[0] if type_candidates else "string"
+
+        type_name = str(raw_type or "string").upper()
+        if type_name == "SELECT":
+            type_name = "STRING"
+
+        type_map = {
+            "ARRAY": types.Type.ARRAY,
+            "BOOLEAN": types.Type.BOOLEAN,
+            "INTEGER": types.Type.INTEGER,
+            "NUMBER": types.Type.NUMBER,
+            "OBJECT": types.Type.OBJECT,
+            "STRING": types.Type.STRING,
+        }
+        return type_map.get(type_name, types.Type.STRING), nullable
+
+    @classmethod
+    def _convert_tool_parameter_schema(cls, schema: Mapping[str, Any]) -> types.Schema:
+        raw_type = schema.get("type")
+        if not raw_type:
+            if "properties" in schema:
+                raw_type = "object"
+            elif "items" in schema:
+                raw_type = "array"
+            else:
+                raw_type = "string"
+
+        schema_type, nullable = cls._convert_json_schema_type_to_genai_type(
+            raw_type
+        )
+        schema_kwargs: dict[str, Any] = {"type": schema_type}
+
+        description = schema.get("description")
+        if isinstance(description, str) and description:
+            schema_kwargs["description"] = description
+
+        enum_values = schema.get("enum")
+        if enum_values and isinstance(enum_values, list):
+            schema_kwargs["enum"] = [str(value) for value in enum_values]
+
+        if nullable or schema.get("nullable") is True:
+            schema_kwargs["nullable"] = True
+
+        if schema_type == types.Type.OBJECT:
+            raw_properties = schema.get("properties", {})
+            if isinstance(raw_properties, Mapping):
+                properties = {
+                    key: cls._convert_tool_parameter_schema(value)
+                    for key, value in raw_properties.items()
+                    if isinstance(key, str) and isinstance(value, Mapping)
+                }
+                if properties:
+                    schema_kwargs["properties"] = properties
+
+            required_params = schema.get("required")
+            if (
+                required_params
+                and isinstance(required_params, list)
+                and all(isinstance(item, str) for item in required_params)
+            ):
+                schema_kwargs["required"] = required_params
+
+        if schema_type == types.Type.ARRAY:
+            raw_items = schema.get("items")
+            if isinstance(raw_items, Mapping):
+                schema_kwargs["items"] = cls._convert_tool_parameter_schema(raw_items)
+
+        return types.Schema(**schema_kwargs)
+
     def _convert_tools_to_genai_tool(self, tools: list[PromptMessageTool]) -> types.Tool:
         """
         Convert tool messages to genai tools
@@ -446,52 +521,28 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         """
         tool_declarations = []
         for tool_config in tools:
-            properties_for_schema = {}
-
-            # tool_config.parameters is guaranteed to be a dict by the Pydantic model
             parameters_input_dict = tool_config.parameters
             raw_properties = parameters_input_dict.get("properties", {})
+            properties = (
+                {
+                    key: value
+                    for key, value in raw_properties.items()
+                    if isinstance(key, str) and isinstance(value, Mapping)
+                }
+                if isinstance(raw_properties, Mapping)
+                else {}
+            )
+            parameters = (
+                self._convert_tool_parameter_schema(parameters_input_dict)
+                if properties
+                else None
+            )
 
-            if isinstance(raw_properties, dict):
-                for key, value_schema in raw_properties.items():
-                    if not isinstance(value_schema, dict):
-                        # Property schema must be a dictionary
-                        continue
-
-                    raw_type_str = str(value_schema.get("type", "string")).upper()
-                    # Map "SELECT" to "STRING" for GenAI SDK compatibility
-                    final_type_for_prop = "STRING" if raw_type_str == "SELECT" else raw_type_str
-
-                    prop_details = {
-                        "type": final_type_for_prop,
-                        "description": value_schema.get("description", ""),
-                    }
-
-                    enum_values = value_schema.get("enum")
-                    # Add enum only if it's a non-empty list (OpenAPI recommendation)
-                    if enum_values and isinstance(enum_values, list):
-                        prop_details["enum"] = enum_values
-
-                    properties_for_schema[key] = prop_details
-
-            # Schema for the 'parameters' object of the function declaration
-            parameters_schema_for_declaration = {
-                "type": "OBJECT",
-                "properties": properties_for_schema,
-            }
-
-            required_params = parameters_input_dict.get("required")
-            # Add required only if it's a non-empty list of strings (OpenAPI recommendation)
-            if required_params and isinstance(required_params, list) and all(
-                isinstance(item, str) for item in required_params):
-                parameters_schema_for_declaration["required"] = required_params
-
-            # Create function declaration dict for GenAI SDK
-            function_declaration = {
-                "name": tool_config.name,
-                "description": tool_config.description or "",
-                "parameters": parameters_schema_for_declaration
-            }
+            function_declaration = types.FunctionDeclaration(
+                name=tool_config.name,
+                description=tool_config.description or "",
+                parameters=parameters,
+            )
             tool_declarations.append(function_declaration)
 
         return types.Tool(function_declarations=tool_declarations) if tool_declarations else None
