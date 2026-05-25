@@ -49,6 +49,9 @@ class SoMarkProvider(ToolProvider):
             raise ValueError(
                 f"SoMark API returned a non-JSON response (HTTP {resp.status_code})"
             )
+        
+        if not isinstance(payload, dict):
+            raise ValueError(f"SoMark API returned an unexpected response format: {payload!r}")
 
         if payload.get("code") == 1107:
             raise ValueError("Invalid API Key, please check and try again")
