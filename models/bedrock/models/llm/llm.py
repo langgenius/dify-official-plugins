@@ -456,6 +456,26 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     }
                 )
                 parameters["toolConfig"] = self._convert_converse_tool_config(tools=[placeholder_tool])
+
+        # Optional: attach Dify app_id as Bedrock requestMetadata for CloudWatch logs.
+        # Default disabled; opt-in via the enable_request_metadata credential.
+        if credentials.get("enable_request_metadata") == "enabled":
+            app_id: Optional[str] = None
+            try:
+                from dify_plugin import get_current_session
+
+                session = get_current_session()
+                if session is not None:
+                    app_id = getattr(session, "app_id", None)
+            except ImportError:
+                # Older dify_plugin without get_current_session.
+                pass
+
+            from ._metadata import build_dify_request_metadata
+
+            request_metadata = build_dify_request_metadata(app_id)
+            if request_metadata is not None:
+                parameters["requestMetadata"] = request_metadata
         try:
             # for issue #10976
             conversations_list = parameters["messages"]
