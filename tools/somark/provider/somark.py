@@ -53,7 +53,9 @@ class SoMarkProvider(ToolProvider):
         if payload.get("code") == 1107:
             raise ValueError("Invalid API Key, please check and try again")
 
-        if payload.get("code") == 0 and payload.get("data").get("remaining_paid_pages")==0 and payload.get("data").get("remaining_free_pages_this_month")==0:
+        data = payload.get("data")
+
+        if payload.get("code") == 0 and isinstance(data, dict) and data.get("remaining_paid_pages")==0 and data.get("remaining_free_pages_this_month")==0:
             raise ValueError("No remaining page quota, please check and try again")
 
         if not resp.ok:
