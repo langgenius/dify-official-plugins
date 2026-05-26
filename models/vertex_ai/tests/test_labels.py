@@ -25,6 +25,13 @@ def test_normalize_empty_string():
     assert normalize_label_value("") == ""
 
 
+def test_normalize_coerces_non_string_input():
+    # Non-string inputs should be stringified before validation, so a
+    # numeric 0 (falsy) does not get dropped by the empty-check.
+    assert normalize_label_value(0) == "0"
+    assert normalize_label_value(123) == "123"
+
+
 def test_build_dify_labels_returns_none_for_none():
     assert build_dify_labels(None) is None
 

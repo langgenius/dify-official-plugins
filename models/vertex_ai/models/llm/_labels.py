@@ -25,12 +25,16 @@ _MAX_LABEL_LENGTH = 63
 
 
 def normalize_label_value(s: str) -> str:
-    """Normalize an arbitrary string into a Vertex AI label-compatible value.
+    """Normalize an arbitrary value into a Vertex AI label-compatible value.
 
     Lowercases the input, replaces any character outside ``[a-z0-9_-]`` with
     ``_``, and truncates to 63 characters. An empty input returns an empty
-    string (no exception raised).
+    string (no exception raised). Non-string inputs are coerced via ``str()``
+    first so that, e.g., a numeric ``0`` becomes ``"0"`` rather than being
+    silently dropped by the empty-check.
     """
+    if not isinstance(s, str):
+        s = str(s)
     if not s:
         return ""
     lowered = s.lower()
