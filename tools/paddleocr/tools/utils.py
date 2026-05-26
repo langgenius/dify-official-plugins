@@ -1,8 +1,11 @@
+import base64
 import logging
+import os
 import re
-from typing import List, Optional, Tuple
+from typing import Any, List, Optional, Tuple
 
 import requests
+from dify_plugin.file.file import File
 from dify_plugin.invocations.file import UploadFileResponse
 
 REQUEST_TIMEOUT = (10, 600)
@@ -16,8 +19,10 @@ FAILED_IMG_TAG_TEMPLATE = r'<img[^>]*src="[^"]*{escaped_path}[^"]*"[^>]*>'
 
 logger = logging.getLogger(__name__)
 
+IMAGE_EXTENSIONS = {".bmp", ".jpeg", ".jpg", ".png", ".tif", ".tiff", ".webp"}
 
-def convert_file_type(file_type: str) -> int | None:
+
+def convert_file_type(file_type: str | None) -> int | None:
     """Convert file type string to API parameter value.
 
     Args:
@@ -32,6 +37,56 @@ def convert_file_type(file_type: str) -> int | None:
         return 1
     else:  # "auto" or None
         return None
+
+
+def normalize_file_input(file_value: Any, file_type: str | None) -> tuple[str, int | None]:
+    """Normalize PaddleOCR file input for API payloads.
+
+    Uploaded Dify files are converted to base64 content because the PaddleOCR
+    API accepts either a URL or base64-encoded file content in the `file` field.
+    Legacy string values are kept unchanged for URL/base64 compatibility.
+    """
+    if file_value is None or (isinstance(file_value, str) and file_value == ""):
+        raise RuntimeError("File is not provided.")
+
+    explicit_file_type = convert_file_type(file_type)
+
+    if isinstance(file_value, File):
+        encoded_file = base64.b64encode(file_value.blob).decode("utf-8")
+        if explicit_file_type is not None:
+            return encoded_file, explicit_file_type
+        return encoded_file, infer_file_type(file_value)
+
+    if isinstance(file_value, str):
+        return file_value, explicit_file_type
+
+    raise RuntimeError("File must be a Dify file, URL, or base64-encoded string.")
+
+
+def infer_file_type(file_value: File) -> int | None:
+    mime_type = (file_value.mime_type or "").lower()
+    if mime_type == "application/pdf":
+        return 0
+    if mime_type.startswith("image/"):
+        return 1
+
+    extension = normalize_extension(file_value.extension)
+    if extension is None:
+        extension = normalize_extension(os.path.splitext(file_value.filename or "")[1])
+
+    if extension == ".pdf":
+        return 0
+    if extension in IMAGE_EXTENSIONS:
+        return 1
+
+    return None
+
+
+def normalize_extension(extension: str | None) -> str | None:
+    if not extension:
+        return None
+    extension = extension.lower()
+    return extension if extension.startswith(".") else f".{extension}"
 
 
 def extract_image_urls_from_markdown(markdown: str) -> List[str]:
@@ -58,9 +113,7 @@ def download_image_from_url(image_url: str) -> bytes:
         raise RuntimeError(f"Failed to download image from {image_url}: timeout") from e
     except requests.exceptions.RequestException as e:
         logger.error(f"Network error downloading image from {image_url}: {e}")
-        raise RuntimeError(
-            f"Failed to download image from {image_url}: network error"
-        ) from e
+        raise RuntimeError(f"Failed to download image from {image_url}: network error") from e
     except Exception as e:
         logger.error(f"Unexpected error downloading image from {image_url}: {e}")
         raise RuntimeError(f"Failed to download image from {image_url}: {e}") from e
@@ -98,9 +151,7 @@ def replace_markdown_image_paths(
             )
             if markdown != original_markdown:
                 replaced_count += 1
-                logger.debug(
-                    f"Replaced image path {image_path} with {upload_response.preview_url}"
-                )
+                logger.debug(f"Replaced image path {image_path} with {upload_response.preview_url}")
 
     # Handle images that couldn't get URLs - replace with placeholder
     placeholder_count = 0
@@ -120,11 +171,10 @@ def replace_markdown_image_paths(
     return markdown
 
 
-def process_images_from_result(result: dict, tool_instance) -> Tuple[
-    List[UploadFileResponse],
-    dict[str, UploadFileResponse],
-    List[str],
-    List[Tuple[bytes, dict]],
+def process_images_from_result(
+    result: dict, tool_instance
+) -> Tuple[
+    List[UploadFileResponse], dict[str, UploadFileResponse], List[str], List[Tuple[bytes, dict]]
 ]:
     """Extract and process images from API result
 
@@ -138,7 +188,7 @@ def process_images_from_result(result: dict, tool_instance) -> Tuple[
     blob_messages = []  # blob messages to yield: [(data, meta), ...]
     image_counter = 0
 
-    logger.debug(f"Processing images from API result")
+    logger.debug("Processing images from API result")
 
     for item in result.get("result", {}).get("layoutParsingResults", []):
         markdown_data = item.get("markdown", {})
@@ -196,28 +246,20 @@ def process_images_from_result(result: dict, tool_instance) -> Tuple[
                                 f"No preview URL for uploaded image {image_path}, creating blob message as fallback"
                             )
                             blob_messages.append(
-                                (
-                                    image_bytes,
-                                    {"filename": file_name, "mime_type": "image/jpeg"},
-                                )
+                                (image_bytes, {"filename": file_name, "mime_type": "image/jpeg"})
                             )
                             failed_images.append(image_path)
                         else:
                             image_processed_successfully = True
 
                     except Exception as upload_error:
-                        logger.error(
-                            f"Failed to upload image {image_path} to dify: {upload_error}"
-                        )
+                        logger.error(f"Failed to upload image {image_path} to dify: {upload_error}")
                         # Create blob message as fallback when upload fails
                         logger.info(
                             f"Creating blob message as fallback for failed upload of {image_path}"
                         )
                         blob_messages.append(
-                            (
-                                image_bytes,
-                                {"filename": file_name, "mime_type": "image/jpeg"},
-                            )
+                            (image_bytes, {"filename": file_name, "mime_type": "image/jpeg"})
                         )
                         failed_images.append(image_path)
 
@@ -233,9 +275,7 @@ def process_images_from_result(result: dict, tool_instance) -> Tuple[
         f"Image processing completed - successful: {len(images)}, markdown-failed: {len(failed_images)}, blob-messages: {len(blob_messages)}"
     )
     if failed_images:
-        logger.warning(
-            f"Images that failed processing (no URL available): {failed_images}"
-        )
+        logger.warning(f"Images that failed processing (no URL available): {failed_images}")
 
     return images, image_path_map, failed_images, blob_messages
 
@@ -263,10 +303,7 @@ def make_paddleocr_api_request(api_url: str, params: dict, access_token: str) ->
         logger.debug(f"Making PaddleOCR API request to {api_url}")
         resp = requests.post(
             api_url,
-            headers={
-                "Client-Platform": "dify",
-                "Authorization": f"token {access_token}",
-            },
+            headers={"Client-Platform": "dify", "Authorization": f"token {access_token}"},
             json=params,
             timeout=REQUEST_TIMEOUT,
         )
@@ -292,9 +329,7 @@ def make_paddleocr_api_request(api_url: str, params: dict, access_token: str) ->
                 err_code = None
                 err_msg = resp.text or "Bad Request"
 
-            logger.error(
-                f"PaddleOCR API returned {status}: code={err_code}, msg={err_msg}"
-            )
+            logger.error(f"PaddleOCR API returned {status}: code={err_code}, msg={err_msg}")
             raise RuntimeError(
                 f"PaddleOCR API returned {status}: code={err_code}, msg={err_msg}"
             ) from e
@@ -316,19 +351,15 @@ def make_paddleocr_api_request(api_url: str, params: dict, access_token: str) ->
 
     try:
         result = resp.json()
-        logger.debug(f"Successfully parsed PaddleOCR API response")
+        logger.debug("Successfully parsed PaddleOCR API response")
     except ValueError as e:
         logger.error(f"Failed to decode JSON response from PaddleOCR API: {resp.text}")
-        raise RuntimeError(
-            f"Failed to decode JSON response from PaddleOCR API: {resp.text}"
-        ) from e
+        raise RuntimeError(f"Failed to decode JSON response from PaddleOCR API: {resp.text}") from e
 
     err_code = result.get("errorCode")
     err_msg = result.get("errorMsg")
     if err_code != 0:
         logger.error(f"PaddleOCR API returned error: code={err_code}, msg={err_msg}")
-        raise RuntimeError(
-            f"PaddleOCR API returned error: code={err_code}, msg={err_msg}"
-        )
+        raise RuntimeError(f"PaddleOCR API returned error: code={err_code}, msg={err_msg}")
 
     return result
