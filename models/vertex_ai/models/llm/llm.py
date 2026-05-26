@@ -686,25 +686,9 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
 
         # Optional: attach Dify app_id as Vertex AI labels for Cloud Billing.
         # Default disabled; opt-in via the enable_request_metadata credential.
-        if credentials.get("enable_request_metadata") == "enabled":
-            app_id: Optional[str] = None
-            try:
-                from dify_plugin import get_current_session
+        from ._labels import apply_dify_labels_if_enabled
 
-                session = get_current_session()
-                if session is not None:
-                    app_id = getattr(session, "app_id", None)
-            except Exception:
-                # Metadata is best-effort telemetry: any failure to obtain
-                # the session (missing SDK, uninitialized context, etc.)
-                # must not break generation.
-                pass
-
-            from ._labels import build_dify_labels
-
-            labels = build_dify_labels(app_id)
-            if labels is not None:
-                config_kwargs["labels"] = labels
+        apply_dify_labels_if_enabled(config_kwargs, credentials)
 
         service_account_info = (
             json.loads(base64.b64decode(service_account_key))
