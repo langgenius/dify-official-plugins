@@ -86,7 +86,7 @@ parameter_rules:
       - default
       - flex
 pricing:
-  input: '15.00'
-  output: '90.00'
+  input: '30.00'
+  output: '180.00'
   unit: '0.000001'
   currency: USD

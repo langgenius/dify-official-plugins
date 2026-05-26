@@ -61,7 +61,9 @@ class AgentcoreBrowserSessionManagerTool(Tool):
     def _close_browser_session(self, aws_region, session_id) -> dict:
         """Close the current browser session"""
         browser_client = BrowserClient(aws_region)
-        browser_client.client.stop_browser_session(browserIdentifier="aws.browser.v1",sessionId=session_id)
+        browser_client.identifier = "aws.browser.v1"
+        browser_client.session_id = session_id
+        browser_client.stop()
         
         # Delete from Parameter Store
         param_manager = ParameterStoreManager(aws_region)
@@ -96,4 +98,3 @@ class AgentcoreBrowserSessionManagerTool(Tool):
         
         yield self.create_json_message(result)
             
-

@@ -118,12 +118,14 @@ class HuggingfaceHubTextEmbeddingModel(_CommonHuggingfaceHub, TextEmbeddingModel
 
     @staticmethod
     def _mean_pooling(embeddings: list) -> list[list[float]]:
-        if not isinstance(embeddings[0][0], list):
-            return embeddings
-        sentence_embeddings = [
-            np.mean(embedding[0], axis=0).tolist() for embedding in embeddings
-        ]
-        return sentence_embeddings
+        embeddings_array = np.asarray(embeddings)
+        if embeddings_array.ndim == 2:
+            return embeddings_array.tolist()
+        if embeddings_array.ndim == 3:
+            return np.mean(embeddings_array, axis=1).tolist()
+        if embeddings_array.ndim == 4 and embeddings_array.shape[1] == 1:
+            return np.mean(embeddings_array[:, 0, :, :], axis=1).tolist()
+        return embeddings_array.reshape(1, -1).tolist()
 
     @staticmethod
     def _check_hosted_model_task_type(
