@@ -78,6 +78,25 @@ model_credential_schema:
       help:
         zh_Hans: 选择该模型使用的 API 协议。Chat Completions 适用于大多数模型，Responses API 适用于 o3-pro、gpt-5.4 等模型。
         en_US: Select the API protocol for this model. Use Chat Completions for most models, Responses API for models like o3-pro and gpt-5.4.
+    - variable: enable_request_metadata
+      label:
+        zh_Hans: 启用请求元数据（可选）
+        en_US: Enable request metadata (optional)
+      type: select
+      required: false
+      default: disabled
+      options:
+        - value: enabled
+          label:
+            zh_Hans: 已启用
+            en_US: Enabled
+        - value: disabled
+          label:
+            zh_Hans: 已禁用
+            en_US: Disabled
+      help:
+        zh_Hans: 启用后，将在 OpenAI Chat Completions 和 Responses API 调用中将 dify_app_id 和 dify_source 作为 metadata 附加，从而支持按应用过滤 Usage Dashboard。元数据是否在 Dashboard 中可见取决于 OpenAI 账户的 Stored Completions 设置，本插件不会设置 store=true。默认禁用。
+        en_US: When enabled, attaches dify_app_id and dify_source as metadata on OpenAI Chat Completions and Responses API calls, enabling per-app filtering in the Usage Dashboard. Whether the metadata is visible in the dashboard depends on the OpenAI account's Stored Completions setting; this plugin does not set store=true. Default disabled.
 provider_credential_schema:
   credential_form_schemas:
     - variable: openai_api_key
@@ -134,6 +153,25 @@ provider_credential_schema:
       help:
         zh_Hans: 选择该 Provider 使用的 API 协议。Chat Completions 适用于大多数模型，Responses API 适用于 o3-pro、gpt-5 等模型。
         en_US: Select the API protocol for this provider. Use Chat Completions for most models, Responses API for models like o3-pro and gpt-5.
+    - variable: enable_request_metadata
+      label:
+        zh_Hans: 启用请求元数据（可选）
+        en_US: Enable request metadata (optional)
+      type: select
+      required: false
+      default: disabled
+      options:
+        - value: enabled
+          label:
+            zh_Hans: 已启用
+            en_US: Enabled
+        - value: disabled
+          label:
+            zh_Hans: 已禁用
+            en_US: Disabled
+      help:
+        zh_Hans: 启用后，将在 OpenAI Chat Completions 和 Responses API 调用中将 dify_app_id 和 dify_source 作为 metadata 附加，从而支持按应用过滤 Usage Dashboard。元数据是否在 Dashboard 中可见取决于 OpenAI 账户的 Stored Completions 设置，本插件不会设置 store=true。默认禁用。
+        en_US: When enabled, attaches dify_app_id and dify_source as metadata on OpenAI Chat Completions and Responses API calls, enabling per-app filtering in the Usage Dashboard. Whether the metadata is visible in the dashboard depends on the OpenAI account's Stored Completions setting; this plugin does not set store=true. Default disabled.
 models:
   llm:
     predefined:
