@@ -771,6 +771,14 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         if stream:
             extra_model_kwargs["stream_options"] = {"include_usage": True}
 
+        # Optional: attach Dify app_id as OpenAI request metadata. Default
+        # disabled; opt-in via the enable_request_metadata credential. Whether
+        # this surfaces in the Usage Dashboard depends on the account's
+        # Stored Completions setting — the plugin does not set store=true.
+        from ._metadata import apply_dify_metadata_if_enabled
+
+        apply_dify_metadata_if_enabled(extra_model_kwargs, credentials)
+
         # clear illegal prompt messages
         prompt_messages = self._clear_illegal_prompt_messages(model, prompt_messages)
 
@@ -832,6 +840,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         self,
         model_parameters: dict,
         user: Optional[str] = None,
+        credentials: Optional[dict] = None,
     ) -> dict:
         """
         Convert model_parameters to Responses API compatible params.
@@ -882,6 +891,14 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         if user:
             params["user"] = user
+
+        # Optional: attach Dify app_id as OpenAI request metadata. Default
+        # disabled; opt-in via the enable_request_metadata credential. See
+        # _metadata.py for the rationale on not setting store=true.
+        if credentials is not None:
+            from ._metadata import apply_dify_metadata_if_enabled
+
+            apply_dify_metadata_if_enabled(params, credentials)
 
         return params
 
@@ -971,7 +988,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         Invoke model using the Responses API (non-streaming).
         Used for models like o3-pro that only support responses.create.
         """
-        response_params = self._build_responses_api_params(model_parameters, user)
+        response_params = self._build_responses_api_params(model_parameters, user, credentials)
 
         input_items = self._convert_prompt_messages_to_responses_input(prompt_messages, tools)
         api_tools = self._build_responses_api_tools(tools)
@@ -1039,7 +1056,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         """
         Invoke model using the Responses API with streaming.
         """
-        response_params = self._build_responses_api_params(model_parameters, user)
+        response_params = self._build_responses_api_params(model_parameters, user, credentials)
 
         input_items = self._convert_prompt_messages_to_responses_input(prompt_messages, tools)
         api_tools = self._build_responses_api_tools(tools)
