@@ -8,8 +8,9 @@ requires-python = ">=3.12"
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
     "dify_plugin @ git+https://github.com/ryuta-kobayashi-ug/dify-plugin-sdks.git@feat/pass-session-to-model-plugins",
-    "boto3>=1.42.42",
-    "tiktoken>=0.12.0",
+    "boto3>=1.43.13",
+    "botocore>=1.43.13",
+    "tiktoken>=0.13.0",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix

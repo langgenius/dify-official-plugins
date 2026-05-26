@@ -10,6 +10,7 @@ Covers regression cases found in:
 import sys
 import unittest
 from pathlib import Path
+from unittest.mock import MagicMock
 
 ROOT_DIR = Path(__file__).resolve().parents[1]
 if str(ROOT_DIR) not in sys.path:
@@ -18,11 +19,13 @@ if str(ROOT_DIR) not in sys.path:
 from dify_plugin.entities.model.message import (
     DocumentPromptMessageContent,
     ImagePromptMessageContent,
+    PromptMessageTool,
     SystemPromptMessage,
     TextPromptMessageContent,
     UserPromptMessage,
 )
 from models.llm.llm import AzureOpenAILargeLanguageModel
+from models.constants import LLM_BASE_MODELS, uses_responses_api
 
 
 def make_llm() -> AzureOpenAILargeLanguageModel:
@@ -58,6 +61,23 @@ class TestUsesResponsesApi(unittest.TestCase):
 
     def test_o1_does_not_use_responses_api(self):
         self.assertFalse(AzureOpenAILargeLanguageModel._uses_responses_api("o1"))
+
+
+class TestWebSearchParameterRules(unittest.TestCase):
+    def test_web_search_rules_added_to_responses_models_only(self):
+        for model in LLM_BASE_MODELS:
+            rule_names = {rule.name for rule in model.entity.parameter_rules or []}
+            has_web_search_rules = "enable_web_search" in rule_names
+            if uses_responses_api(model.base_model_name):
+                self.assertTrue(
+                    has_web_search_rules,
+                    f"Expected web search rules for {model.base_model_name}",
+                )
+            else:
+                self.assertFalse(
+                    has_web_search_rules,
+                    f"Did not expect web search rules for {model.base_model_name}",
+                )
 
 
 class TestConvertPromptMessagesToResponsesInput(unittest.TestCase):
@@ -249,6 +269,128 @@ class TestConvertPromptMessagesToResponsesInput(unittest.TestCase):
         self.assertIn("knowledge", result[0]["content"])
         self.assertEqual(result[1]["role"], "user")
         self.assertEqual(result[1]["content"], "What is X?")
+
+
+class TestWebSearchConfiguration(unittest.TestCase):
+    def test_extract_web_search_configuration(self):
+        params = {
+            "enable_web_search": True,
+            "web_search_user_country": "jp",
+            "web_search_allowed_domains": "https://example.com/path\nfoo.bar,EXAMPLE.com",
+            "web_search_include_sources": True,
+        }
+
+        tool, include_sources = (
+            AzureOpenAILargeLanguageModel._extract_web_search_configuration(params)
+        )
+
+        self.assertTrue(include_sources)
+        self.assertEqual(tool["type"], "web_search")
+        self.assertEqual(tool["user_location"]["country"], "JP")
+        self.assertEqual(
+            tool["filters"]["allowed_domains"],
+            ["example.com", "foo.bar"],
+        )
+        self.assertEqual(params, {})
+
+    def test_invalid_country_raises(self):
+        with self.assertRaises(ValueError):
+            AzureOpenAILargeLanguageModel._extract_web_search_configuration(
+                {
+                    "enable_web_search": True,
+                    "web_search_user_country": "JPN",
+                }
+            )
+
+
+class TestResponsesPayloadWithWebSearch(unittest.TestCase):
+    def setUp(self):
+        self.llm = make_llm()
+        self.llm._get_base_model_name = MagicMock(return_value="gpt-5")
+        self.mock_client = MagicMock()
+        self.mock_response = MagicMock()
+        self.mock_client.responses.create.return_value = self.mock_response
+        self.llm._create_client = MagicMock(return_value=self.mock_client)
+        self.llm._handle_responses_response = MagicMock(return_value="ok")
+        self.llm._handle_responses_stream_response = MagicMock(return_value=iter(()))
+
+    def _invoke(self, model_parameters: dict, tools=None):
+        prompt_messages = [UserPromptMessage(content="hello")]
+        return self.llm._chat_generate_with_responses(
+            model="deployment-name",
+            credentials={"base_model_name": "gpt-5"},
+            prompt_messages=prompt_messages,
+            model_parameters=model_parameters,
+            tools=tools,
+            stream=False,
+        )
+
+    def test_function_tools_only_keeps_existing_behavior(self):
+        tool = PromptMessageTool(
+            name="tool_a",
+            description="tool a",
+            parameters={"type": "object", "properties": {}},
+        )
+        self._invoke({}, tools=[tool])
+
+        kwargs = self.mock_client.responses.create.call_args.kwargs
+        self.assertEqual(kwargs["tools"][0]["type"], "function")
+        self.assertEqual(kwargs["tools"][0]["name"], "tool_a")
+        self.assertEqual(kwargs["tool_choice"], "auto")
+
+    def test_web_search_only(self):
+        self._invoke(
+            {
+                "enable_web_search": True,
+            }
+        )
+
+        kwargs = self.mock_client.responses.create.call_args.kwargs
+        self.assertEqual(kwargs["tools"], [{"type": "web_search"}])
+        self.assertEqual(kwargs["tool_choice"], "auto")
+
+    def test_web_search_and_function_tools_are_merged(self):
+        tool = PromptMessageTool(
+            name="tool_a",
+            description="tool a",
+            parameters={"type": "object", "properties": {}},
+        )
+        self._invoke(
+            {
+                "enable_web_search": True,
+            },
+            tools=[tool],
+        )
+
+        kwargs = self.mock_client.responses.create.call_args.kwargs
+        self.assertEqual(len(kwargs["tools"]), 2)
+        self.assertEqual(kwargs["tools"][0]["type"], "function")
+        self.assertEqual(kwargs["tools"][1]["type"], "web_search")
+
+    def test_web_search_country_domains_and_include(self):
+        self._invoke(
+            {
+                "enable_web_search": True,
+                "web_search_user_country": "us",
+                "web_search_allowed_domains": "a.com, https://b.com/path",
+                "web_search_include_sources": True,
+            }
+        )
+
+        kwargs = self.mock_client.responses.create.call_args.kwargs
+        web_search_tool = kwargs["tools"][0]
+        self.assertEqual(web_search_tool["user_location"]["country"], "US")
+        self.assertEqual(web_search_tool["filters"]["allowed_domains"], ["a.com", "b.com"])
+        self.assertEqual(kwargs["include"], ["web_search_call.action.sources"])
+
+    def test_invalid_country_raises(self):
+        with self.assertRaises(ValueError):
+            self._invoke(
+                {
+                    "enable_web_search": True,
+                    "web_search_user_country": "usa",
+                }
+            )
 
 
 if __name__ == "__main__":
