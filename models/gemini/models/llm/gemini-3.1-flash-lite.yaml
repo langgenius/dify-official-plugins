@@ -1,7 +1,7 @@
-# https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite-preview
-model: gemini-3.1-flash-lite-preview
+# https://ai.google.dev/gemini-api/docs/models/gemini-3.1-flash-lite
+model: gemini-3.1-flash-lite
 label:
-  en_US: Gemini 3.1 Flash-Lite Preview
+  en_US: Gemini 3.1 Flash-Lite
 model_type: llm
 features:
   - tool-call
@@ -150,7 +150,7 @@ parameter_rules:
       zh_Hans: 使用 Gemini Flex 服务层级（约半价、尽力而为型延迟）。详见 https://ai.google.dev/gemini-api/docs/flex-inference?hl=zh-cn
   - name: json_schema
     use_template: json_schema
-# https://ai.google.dev/gemini-api/docs/pricing#gemini-3.1-flash-lite-preview
+# https://ai.google.dev/gemini-api/docs/pricing#gemini-3.1-flash-lite
 pricing:
   # prompts <= 200k tokens
   input: '0.25'
