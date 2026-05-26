@@ -23,12 +23,12 @@ observability opt-in, which is out of scope for this feature.
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Any, Optional
 
 _MAX_VALUE_LENGTH = 512
 
 
-def normalize_metadata_value(s: str) -> str:
+def normalize_metadata_value(s: Any) -> str:
     """Normalize an arbitrary value into an OpenAI metadata value.
 
     Coerces non-string input via ``str()`` so that, e.g., a numeric ``0``
@@ -44,14 +44,16 @@ def normalize_metadata_value(s: str) -> str:
     return s[:_MAX_VALUE_LENGTH]
 
 
-def build_dify_metadata(app_id: Optional[str]) -> Optional[dict[str, str]]:
+def build_dify_metadata(app_id: Any) -> Optional[dict[str, str]]:
     """Build the Dify metadata dict for an OpenAI request, or return ``None``.
 
     Returns ``None`` if ``app_id`` is ``None`` or an empty string, so the
-    caller can skip attaching metadata entirely. Otherwise, returns a dict
-    with ``dify_app_id`` (normalized) and a static ``dify_source`` marker.
+    caller can skip attaching metadata entirely. Other falsy values (e.g.
+    numeric ``0``) are coerced by ``normalize_metadata_value`` and pass
+    through. Otherwise, returns a dict with ``dify_app_id`` (normalized)
+    and a static ``dify_source`` marker.
     """
-    if not app_id:
+    if app_id is None or app_id == "":
         return None
     return {
         "dify_app_id": normalize_metadata_value(app_id),
@@ -85,5 +87,11 @@ def apply_dify_metadata_if_enabled(target: dict, credentials: dict) -> None:
         pass
 
     metadata = build_dify_metadata(app_id)
-    if metadata is not None:
+    if metadata is None:
+        return
+    existing = target.get("metadata")
+    if isinstance(existing, dict):
+        # Preserve any caller-supplied metadata; only fill in Dify keys.
+        existing.update(metadata)
+    else:
         target["metadata"] = metadata

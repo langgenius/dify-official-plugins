@@ -47,6 +47,13 @@ def test_build_dify_metadata_returns_none_for_empty():
     assert build_dify_metadata("") is None
 
 
+def test_build_dify_metadata_keeps_non_string_falsy():
+    # build_dify_metadata only rejects None and "" — other falsy values
+    # such as numeric 0 are coerced by normalize_metadata_value.
+    metadata = build_dify_metadata(0)
+    assert metadata == {"dify_app_id": "0", "dify_source": "dify"}
+
+
 def test_build_dify_metadata_includes_source_marker():
     metadata = build_dify_metadata("550e8400-e29b-41d4-a716-446655440000")
     assert metadata is not None
@@ -83,3 +90,32 @@ def test_apply_silent_on_session_lookup_failure():
     target: dict = {}
     apply_dify_metadata_if_enabled(target, {"enable_request_metadata": "enabled"})
     assert "metadata" not in target
+
+
+class _FakeSession:
+    app_id = "550e8400-e29b-41d4-a716-446655440000"
+
+
+def test_apply_merges_with_existing_metadata(monkeypatch):
+    # When the target already carries a metadata dict (e.g. caller-supplied
+    # values), Dify keys must merge into it rather than replace it wholesale.
+    import dify_plugin
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
+    target: dict = {"metadata": {"user_supplied": "value"}}
+    apply_dify_metadata_if_enabled(target, {"enable_request_metadata": "enabled"})
+    assert target["metadata"]["user_supplied"] == "value"
+    assert target["metadata"]["dify_app_id"] == "550e8400-e29b-41d4-a716-446655440000"
+    assert target["metadata"]["dify_source"] == "dify"
+
+
+def test_apply_replaces_non_dict_metadata(monkeypatch):
+    # If existing metadata is somehow not a dict, Dify keys take over rather
+    # than blow up — telemetry is best-effort.
+    import dify_plugin
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
+    target: dict = {"metadata": "unexpected-string"}
+    apply_dify_metadata_if_enabled(target, {"enable_request_metadata": "enabled"})
+    assert isinstance(target["metadata"], dict)
+    assert target["metadata"]["dify_app_id"] == "550e8400-e29b-41d4-a716-446655440000"
