@@ -26,13 +26,17 @@ _MAX_VALUE_LENGTH = 256
 
 
 def normalize_metadata_value(s: str) -> str:
-    """Normalize an arbitrary string into a Bedrock requestMetadata value.
+    """Normalize an arbitrary value into a Bedrock requestMetadata value.
 
     Replaces any character outside the allowed set
     ``[a-zA-Z0-9\\s:_@$#=/+,-.]`` with ``_`` and truncates to 256
     characters. Case is preserved (Bedrock allows mixed case). An empty
-    input returns an empty string.
+    input returns an empty string. Non-string inputs are coerced via
+    ``str()`` first so that, e.g., a numeric ``0`` becomes ``"0"`` rather
+    than being silently dropped by the empty-check.
     """
+    if not isinstance(s, str):
+        s = str(s)
     if not s:
         return ""
     sanitized = _INVALID_CHAR_RE.sub("_", s)

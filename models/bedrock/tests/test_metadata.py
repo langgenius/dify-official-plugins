@@ -38,6 +38,13 @@ def test_normalize_replaces_non_ascii():
     assert normalize_metadata_value("日本語") == "___"
 
 
+def test_normalize_coerces_non_string_input():
+    # Non-string inputs should be stringified before validation, so a
+    # numeric 0 (falsy) does not get dropped by the empty-check.
+    assert normalize_metadata_value(0) == "0"
+    assert normalize_metadata_value(123) == "123"
+
+
 def test_build_dify_request_metadata_returns_none_for_none():
     assert build_dify_request_metadata(None) is None
 

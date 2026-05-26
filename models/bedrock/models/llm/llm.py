@@ -467,8 +467,10 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 session = get_current_session()
                 if session is not None:
                     app_id = getattr(session, "app_id", None)
-            except ImportError:
-                # Older dify_plugin without get_current_session.
+            except Exception:
+                # Metadata is best-effort telemetry: any failure to obtain
+                # the session (missing SDK, uninitialized context, etc.)
+                # must not break generation.
                 pass
 
             from ._metadata import build_dify_request_metadata
