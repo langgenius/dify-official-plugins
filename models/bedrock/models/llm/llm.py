@@ -459,25 +459,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         # Optional: attach Dify app_id as Bedrock requestMetadata for CloudWatch logs.
         # Default disabled; opt-in via the enable_request_metadata credential.
-        if credentials.get("enable_request_metadata") == "enabled":
-            app_id: Optional[str] = None
-            try:
-                from dify_plugin import get_current_session
+        from ._metadata import apply_dify_request_metadata_if_enabled
 
-                session = get_current_session()
-                if session is not None:
-                    app_id = getattr(session, "app_id", None)
-            except Exception:
-                # Metadata is best-effort telemetry: any failure to obtain
-                # the session (missing SDK, uninitialized context, etc.)
-                # must not break generation.
-                pass
-
-            from ._metadata import build_dify_request_metadata
-
-            request_metadata = build_dify_request_metadata(app_id)
-            if request_metadata is not None:
-                parameters["requestMetadata"] = request_metadata
+        apply_dify_request_metadata_if_enabled(parameters, credentials)
         try:
             # for issue #10976
             conversations_list = parameters["messages"]

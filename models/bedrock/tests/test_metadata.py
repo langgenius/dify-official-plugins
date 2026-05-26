@@ -1,4 +1,8 @@
-from models.llm._metadata import build_dify_request_metadata, normalize_metadata_value
+from models.llm._metadata import (
+    apply_dify_request_metadata_if_enabled,
+    build_dify_request_metadata,
+    normalize_metadata_value,
+)
 
 
 def test_normalize_uuid_passthrough():
@@ -73,3 +77,59 @@ def test_build_dify_request_metadata_uuid_passthrough():
     uuid = "550e8400-e29b-41d4-a716-446655440000"
     metadata = build_dify_request_metadata(uuid)
     assert metadata == {"dify_app_id": uuid, "dify_source": "dify"}
+
+
+def test_build_dify_request_metadata_keeps_non_string_falsy():
+    # build_dify_request_metadata only rejects None and "" — other falsy
+    # values such as numeric 0 are coerced by normalize_metadata_value.
+    metadata = build_dify_request_metadata(0)
+    assert metadata == {"dify_app_id": "0", "dify_source": "dify"}
+
+
+def test_apply_no_op_when_credential_missing():
+    parameters: dict = {}
+    apply_dify_request_metadata_if_enabled(parameters, {})
+    assert parameters == {}
+
+
+def test_apply_no_op_when_credential_disabled():
+    parameters: dict = {}
+    apply_dify_request_metadata_if_enabled(parameters, {"enable_request_metadata": "disabled"})
+    assert parameters == {}
+
+
+def test_apply_silent_on_session_lookup_failure():
+    # Without a Dify session context, get_current_session raises; the
+    # helper must swallow that and leave parameters unchanged.
+    parameters: dict = {}
+    apply_dify_request_metadata_if_enabled(parameters, {"enable_request_metadata": "enabled"})
+    assert "requestMetadata" not in parameters
+
+
+class _FakeSession:
+    app_id = "550e8400-e29b-41d4-a716-446655440000"
+
+
+def test_apply_merges_with_existing_request_metadata(monkeypatch):
+    # When parameters already carries requestMetadata (e.g. caller-supplied
+    # values), Dify keys must merge into it rather than replace it wholesale.
+    import dify_plugin
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
+    parameters: dict = {"requestMetadata": {"caller_tag": "manual"}}
+    apply_dify_request_metadata_if_enabled(parameters, {"enable_request_metadata": "enabled"})
+    assert parameters["requestMetadata"]["caller_tag"] == "manual"
+    assert parameters["requestMetadata"]["dify_app_id"] == "550e8400-e29b-41d4-a716-446655440000"
+    assert parameters["requestMetadata"]["dify_source"] == "dify"
+
+
+def test_apply_replaces_non_dict_request_metadata(monkeypatch):
+    # If existing requestMetadata is somehow not a dict, Dify keys take
+    # over rather than blow up — telemetry is best-effort.
+    import dify_plugin
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
+    parameters: dict = {"requestMetadata": "unexpected-string"}
+    apply_dify_request_metadata_if_enabled(parameters, {"enable_request_metadata": "enabled"})
+    assert isinstance(parameters["requestMetadata"], dict)
+    assert parameters["requestMetadata"]["dify_app_id"] == "550e8400-e29b-41d4-a716-446655440000"
