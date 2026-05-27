@@ -930,7 +930,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         """
         return AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model, zh_Hans=model),
+            label=I18nObject(en_us=model, zh_hans=model),
             model_type=ModelType.LLM,
             features=(
                 [
@@ -952,7 +952,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 ParameterRule(
                     name="temperature",
                     use_template="temperature",
-                    label=I18nObject(en_US="Temperature", zh_Hans="温度"),
+                    label=I18nObject(en_us="Temperature", zh_hans="温度"),
                     type=ParameterType.FLOAT,
                 ),
                 ParameterRule(
@@ -961,25 +961,25 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                     default=512,
                     min=1,
                     max=int(credentials.get("max_tokens", 1024)),
-                    label=I18nObject(en_US="Max Tokens", zh_Hans="最大标记"),
+                    label=I18nObject(en_us="Max Tokens", zh_hans="最大标记"),
                     type=ParameterType.INT,
                 ),
                 ParameterRule(
                     name="top_p",
                     use_template="top_p",
-                    label=I18nObject(en_US="Top P", zh_Hans="Top P"),
+                    label=I18nObject(en_us="Top P", zh_hans="Top P"),
                     type=ParameterType.FLOAT,
                 ),
                 ParameterRule(
                     name="top_k",
                     use_template="top_k",
-                    label=I18nObject(en_US="Top K", zh_Hans="Top K"),
+                    label=I18nObject(en_us="Top K", zh_hans="Top K"),
                     type=ParameterType.FLOAT,
                 ),
                 ParameterRule(
                     name="frequency_penalty",
                     use_template="frequency_penalty",
-                    label=I18nObject(en_US="Frequency Penalty", zh_Hans="重复惩罚"),
+                    label=I18nObject(en_us="Frequency Penalty", zh_hans="重复惩罚"),
                     type=ParameterType.FLOAT,
                 ),
             ],

@@ -705,7 +705,7 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
                     calendar_id = it.get("id")
                     summary = it.get("summary") or calendar_id
                     if calendar_id:
-                        options.append(ParameterOption(value=str(calendar_id), label=I18nObject(en_US=str(summary))))
+                        options.append(ParameterOption(value=str(calendar_id), label=I18nObject(en_us=str(summary))))
 
             page_token = data.get("nextPageToken")
             if page_token:
@@ -714,5 +714,5 @@ class GoogleCalendarSubscriptionConstructor(TriggerSubscriptionConstructor):
                 break
 
         if not any(opt.value == "primary" for opt in options):
-            options.insert(0, ParameterOption(value="primary", label=I18nObject(en_US="Primary Calendar")))
+            options.insert(0, ParameterOption(value="primary", label=I18nObject(en_us="Primary Calendar")))
         return options

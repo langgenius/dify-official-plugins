@@ -190,7 +190,7 @@ class BedrockRerankModel(RerankModel):
                 # Create custom model entity based on inference profile
                 return AIModelEntity(
                     model=model,
-                    label=I18nObject(en_US=model),
+                    label=I18nObject(en_us=model),
                     model_type=ModelType.RERANK,
                     features=[],
                     fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
@@ -209,7 +209,7 @@ class BedrockRerankModel(RerankModel):
                 # Use the user-provided model name exactly as entered
                 return AIModelEntity(
                     model=model,
-                    label=I18nObject(en_US=model),
+                    label=I18nObject(en_us=model),
                     model_type=ModelType.RERANK,
                     features=[],
                     fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
