@@ -39,8 +39,10 @@ def normalize_metadata_value(s: Any) -> str:
         s = str(s)
     if not s:
         return ""
-    sanitized = _INVALID_CHAR_RE.sub("_", s)
-    return sanitized[:_MAX_VALUE_LENGTH]
+    # Truncate first to bound the cost of the regex sub() on pathological input.
+    # sub() preserves length 1:1, so a single trailing truncation is unnecessary.
+    s = s[:_MAX_VALUE_LENGTH]
+    return _INVALID_CHAR_RE.sub("_", s)
 
 
 def build_dify_request_metadata(app_id: Any) -> Optional[dict[str, str]]:
