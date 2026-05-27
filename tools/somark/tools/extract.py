@@ -1,4 +1,3 @@
-import ast
 import json
 import logging
 import random
@@ -313,10 +312,14 @@ class ExtractTool(Tool):
             yield self.create_text_message("Error: No file provided.")
             return
 
-        # 获取output_formats参数
-        output_formats = tool_parameters.get("output_formats") or ["json", "markdown"]
-        if isinstance(output_formats, str):
-            output_formats = ast.literal_eval(output_formats)
+        # 获取output_formats参数（单选：markdown / json / both）
+        output_format_choice = (tool_parameters.get("output_formats") or "both").strip().lower()
+        if output_format_choice == "markdown":
+            output_formats = ["markdown"]
+        elif output_format_choice == "json":
+            output_formats = ["json"]
+        else:
+            output_formats = ["markdown", "json"]
 
         # 获取element_formats参数
         element_formats = {
