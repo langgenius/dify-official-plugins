@@ -437,10 +437,10 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
             entity.parameter_rules.append(
                 ParameterRule(
                     name=DefaultParameterName.RESPONSE_FORMAT.value,
-                    label=I18nObject(en_US="Response Format", zh_Hans="回复格式"),
+                    label=I18nObject(en_us="Response Format", zh_hans="回复格式"),
                     help=I18nObject(
-                        en_US="Specifying the format that the model must output.",
-                        zh_Hans="指定模型必须输出的格式。",
+                        en_us="Specifying the format that the model must output.",
+                        zh_hans="指定模型必须输出的格式。",
                     ),
                     type=ParameterType.STRING,
                     options=["text", "json_object", "json_schema"],
@@ -450,10 +450,10 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
             entity.parameter_rules.append(
                 ParameterRule(
                     name="reasoning_format",
-                    label=I18nObject(en_US="Reasoning Format", zh_Hans="推理格式"),
+                    label=I18nObject(en_us="Reasoning Format", zh_hans="推理格式"),
                     help=I18nObject(
-                        en_US="Specifying the format that the model must output reasoning.",
-                        zh_Hans="指定模型必须输出的推理格式。",
+                        en_us="Specifying the format that the model must output reasoning.",
+                        zh_hans="指定模型必须输出的推理格式。",
                     ),
                     type=ParameterType.STRING,
                     options=["none", "auto", "deepseek", "deepseek-legacy"],
@@ -469,8 +469,8 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
 
         if "display_name" in credentials and credentials["display_name"] != "":
             entity.label = I18nObject(
-                en_US=credentials["display_name"],
-                zh_Hans=credentials["display_name"],
+                en_us=credentials["display_name"],
+                zh_hans=credentials["display_name"],
             )
 
         # Only add the enable_thinking parameter if the model supports both modes
@@ -479,14 +479,14 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
             entity.parameter_rules.append(
                 ParameterRule(
                     name="enable_thinking",
-                    label=I18nObject(en_US="Thinking mode", zh_Hans="思考模式"),
+                    label=I18nObject(en_us="Thinking mode", zh_hans="思考模式"),
                     help=I18nObject(
-                        en_US=(
+                        en_us=(
                             "Whether to enable thinking mode, applicable to various "
                             "thinking mode models deployed on reasoning frameworks "
                             "such as vLLM and SGLang, for example Qwen3."
                         ),
-                        zh_Hans="是否开启思考模式，适用于vLLM和SGLang等推理框架部署的多种思考模式模型，例如Qwen3。",
+                        zh_hans="是否开启思考模式，适用于vLLM和SGLang等推理框架部署的多种思考模式模型，例如Qwen3。",
                     ),
                     type=ParameterType.BOOLEAN,
                     required=False,
@@ -497,10 +497,10 @@ class GPUStackLanguageModel(OAICompatLargeLanguageModel):
             entity.parameter_rules.append(
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(en_US="Reasoning effort", zh_Hans="推理工作"),
+                    label=I18nObject(en_us="Reasoning effort", zh_hans="推理工作"),
                     help=I18nObject(
-                        en_US="Constrains effort on reasoning for reasoning models.",
-                        zh_Hans="限制推理模型的推理工作。",
+                        en_us="Constrains effort on reasoning for reasoning models.",
+                        zh_hans="限制推理模型的推理工作。",
                     ),
                     type=ParameterType.STRING,
                     options=["low", "medium", "high"],
