@@ -37,6 +37,9 @@ def normalize_label_value(s: Any) -> str:
         s = str(s)
     if not s:
         return ""
+    # Truncate first to bound the cost of lower()/sub() on pathological input.
+    # lower() can still expand certain Unicode chars, so re-truncate at the end.
+    s = s[:_MAX_LABEL_LENGTH]
     lowered = s.lower()
     sanitized = _INVALID_CHAR_RE.sub("_", lowered)
     return sanitized[:_MAX_LABEL_LENGTH]
