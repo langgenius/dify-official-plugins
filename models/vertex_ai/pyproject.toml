@@ -7,7 +7,7 @@ requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "dify_plugin>=0.9.0",
+    "dify_plugin @ git+https://github.com/ryuta-kobayashi-ug/dify-plugin-sdks.git@feat/pass-session-to-model-plugins",
     "anthropic[vertex]>=0.104.0",
     "google-genai>=2.6.0",
     "google-api-core>=2.30.3",
@@ -21,4 +21,10 @@ dependencies = [
 
 # uv run black . -C -l 100 && uv run ruff check --fix
 [dependency-groups]
-dev = []
+dev = [
+    "pytest>=8.0.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

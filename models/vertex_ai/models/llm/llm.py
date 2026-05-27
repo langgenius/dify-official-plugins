@@ -736,6 +736,12 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
         if system_instruction := self._get_system_instruction(prompt_messages=prompt_messages):
             config_kwargs["system_instruction"] = system_instruction
 
+        # Optional: attach Dify app_id as Vertex AI labels for Cloud Billing.
+        # Default disabled; opt-in via the enable_request_metadata credential.
+        from ._labels import apply_dify_labels_if_enabled
+
+        apply_dify_labels_if_enabled(config_kwargs, credentials)
+
         service_account_info = (
             json.loads(base64.b64decode(service_account_key))
             if (

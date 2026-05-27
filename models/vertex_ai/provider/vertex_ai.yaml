@@ -65,6 +65,25 @@ provider_credential_schema:
     required: false
     type: text-input
     variable: vertex_global_models
+  - default: disabled
+    label:
+      en_US: Enable Cloud Billing metadata labels (optional)
+      zh_Hans: 启用 Cloud Billing 元数据标签（可选）
+    required: false
+    type: select
+    options:
+    - value: enabled
+      label:
+        en_US: Enabled
+        zh_Hans: 已启用
+    - value: disabled
+      label:
+        en_US: Disabled
+        zh_Hans: 已禁用
+    help:
+      en_US: When enabled, attaches dify_app_id and dify_source labels to Vertex AI requests, enabling per-app cost breakdown in Cloud Billing. Default disabled.
+      zh_Hans: 启用后，将 dify_app_id 和 dify_source 作为标签附加到 Vertex AI 请求中，从而支持在 Cloud Billing 中按应用进行成本细分。默认禁用。
+    variable: enable_request_metadata
 supported_model_types:
 - llm
 - text-embedding
