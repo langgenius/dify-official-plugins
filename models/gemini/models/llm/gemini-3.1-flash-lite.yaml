@@ -79,16 +79,18 @@ parameter_rules:
   - name: thinking_level
     type: string
     required: true
-    default: "High"
+    default: "Minimal"
     options:
+      - Minimal
       - Low
+      - Medium
       - High
     label:
       en_US: Thinking level
       zh_Hans: 思考层级
     help:
-      en_US: Indicates the thinking level. Default is High.
-      zh_Hans: 思考层级。默认为 High。
+      en_US: Indicates the thinking level. Default is Minimal.
+      zh_Hans: 思考层级。默认为 Minimal。
   - name: grounding
     type: boolean
     required: true
@@ -138,16 +140,34 @@ parameter_rules:
     help:
       en_US: The maximum number of tokens to generate in the response.
       zh_Hans: 模型单次输出的最大 tokens 数。
-  - name: flex_inference
-    type: boolean
+  - name: service_tier
+    type: string
     required: true
-    default: false
+    default: "standard"
+    options:
+      - flex
+      - standard
+      - priority
     label:
-      en_US: Flex inference
-      zh_Hans: Flex 推理
+      en_US: Service Tier
+      zh_Hans: 推理层级
     help:
-      en_US: Use the Gemini Flex service tier (lower cost, best-effort latency). See https://ai.google.dev/gemini-api/docs/flex-inference
-      zh_Hans: 使用 Gemini Flex 服务层级（约半价、尽力而为型延迟）。详见 https://ai.google.dev/gemini-api/docs/flex-inference?hl=zh-cn
+      en_US: |
+        The inference tier for the request. You can switch between Gemini Standard, Flex, and Priority tiers. Default is Standard.
+        - Flex: Lower cost with the possibility of capacity unavailability.
+        - Standard: Default pricing and availability.
+        - Priority: Higher cost with guaranteed capacity and lower latency.
+        See:
+        - https://ai.google.dev/gemini-api/docs/flex-inference
+        - https://ai.google.dev/gemini-api/docs/priority-inference
+      zh_Hans: |
+        推理层级，可切换 Gemini Standard/Flex/Priority 推理层级，默认为 Standard。
+        - Flex：价格更低，但可能出现容量不可用的情况。
+        - Standard：默认价格和可用性。
+        - Priority：价格更高，但保证容量并提供更低延迟。
+        详见：
+        - https://ai.google.dev/gemini-api/docs/flex-inference
+        - https://ai.google.dev/gemini-api/docs/priority-inference
   - name: json_schema
     use_template: json_schema
 # https://ai.google.dev/gemini-api/docs/pricing#gemini-3.1-flash-lite
