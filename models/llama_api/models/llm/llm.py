@@ -159,7 +159,7 @@ class LlamaApiLargeLanguageModel(LargeLanguageModel):
         """
         entity = AIModelEntity(
             model=model,
-            label=I18nObject(zh_Hans=model, en_US=model),
+            label=I18nObject(zh_hans=model, en_us=model),
             model_type=ModelType.LLM,
             features=[],
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
