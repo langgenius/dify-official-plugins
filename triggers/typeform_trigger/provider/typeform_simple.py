@@ -343,7 +343,7 @@ class TypeformSubscriptionConstructor(TriggerSubscriptionConstructor):
             options.append(
                 ParameterOption(
                     value=form_id,
-                    label=I18nObject(en_US=f"{label_text} ({form_id})"),
+                    label=I18nObject(en_us=f"{label_text} ({form_id})"),
                     icon=form.get("_links", {}).get("display") if isinstance(form.get("_links"), Mapping) else None,
                 )
             )

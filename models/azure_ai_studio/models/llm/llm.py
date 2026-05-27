@@ -459,14 +459,14 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
                 type=ParameterType.FLOAT,
                 use_template="temperature",
                 required=False,
-                label=I18nObject(zh_Hans="温度", en_US="Temperature"),
+                label=I18nObject(zh_hans="温度", en_us="Temperature"),
                 help=I18nObject(
-                    zh_Hans=(
+                    zh_hans=(
                         "采样温度。部分模型（如 Claude opus-4-7、mythos-preview、"
                         "o-series 推理模型）不允许同时设置 temperature 和 top_p，"
                         "请只配置其中之一。"
                     ),
-                    en_US=(
+                    en_us=(
                         "Sampling temperature. Some models on Azure "
                         "(e.g. Claude opus-4-7, mythos-preview, o-series reasoning "
                         "models) do not allow temperature and top_p to be set at "
@@ -479,13 +479,13 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
                 type=ParameterType.FLOAT,
                 use_template="top_p",
                 required=False,
-                label=I18nObject(zh_Hans="Top P", en_US="Top P"),
+                label=I18nObject(zh_hans="Top P", en_us="Top P"),
                 help=I18nObject(
-                    zh_Hans=(
+                    zh_hans=(
                         "核采样阈值。Claude opus-4-7 / mythos-preview 必须 ≥ 0.99，"
                         "且不要同时配置 temperature。"
                     ),
-                    en_US=(
+                    en_us=(
                         "Nucleus sampling threshold. For Claude opus-4-7 / "
                         "mythos-preview the value must be >= 0.99 and you should "
                         "not also set temperature."
@@ -497,14 +497,14 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
                 type=ParameterType.FLOAT,
                 use_template="presence_penalty",
                 required=False,
-                label=I18nObject(zh_Hans="存在惩罚", en_US="Presence Penalty"),
+                label=I18nObject(zh_hans="存在惩罚", en_us="Presence Penalty"),
             ),
             ParameterRule(
                 name="frequency_penalty",
                 type=ParameterType.FLOAT,
                 use_template="frequency_penalty",
                 required=False,
-                label=I18nObject(zh_Hans="频率惩罚", en_US="Frequency Penalty"),
+                label=I18nObject(zh_hans="频率惩罚", en_us="Frequency Penalty"),
             ),
             ParameterRule(
                 name="max_tokens",
@@ -513,13 +513,13 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
                 min=1,
                 default=512,
                 required=False,
-                label=I18nObject(zh_Hans="最大生成长度", en_US="Max Tokens"),
+                label=I18nObject(zh_hans="最大生成长度", en_us="Max Tokens"),
                 help=I18nObject(
-                    zh_Hans=(
+                    zh_hans=(
                         "生成内容的最大 token 数。OpenAI o-series / GPT-5 等推理"
                         "模型请改用 max_completion_tokens。"
                     ),
-                    en_US=(
+                    en_us=(
                         "Maximum number of tokens to generate. For OpenAI o-series "
                         "/ GPT-5 reasoning models please use max_completion_tokens "
                         "instead."
@@ -532,14 +532,14 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
                 required=False,
                 min=1,
                 label=I18nObject(
-                    zh_Hans="最大补全长度", en_US="Max Completion Tokens"
+                    zh_hans="最大补全长度", en_us="Max Completion Tokens"
                 ),
                 help=I18nObject(
-                    zh_Hans=(
+                    zh_hans=(
                         "用于 OpenAI o-series / GPT-5 等推理模型的输出长度限制。"
                         "若已设置 max_tokens 则忽略此项。"
                     ),
-                    en_US=(
+                    en_us=(
                         "Output length limit for OpenAI o-series / GPT-5 "
                         "reasoning models. Ignored when max_tokens is also set."
                     ),
@@ -549,10 +549,10 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
                 name="seed",
                 type=ParameterType.INT,
                 required=False,
-                label=I18nObject(zh_Hans="随机种子", en_US="Seed"),
+                label=I18nObject(zh_hans="随机种子", en_us="Seed"),
                 help=I18nObject(
-                    zh_Hans="可复现采样的随机种子。",
-                    en_US="Random seed used for reproducible sampling.",
+                    zh_hans="可复现采样的随机种子。",
+                    en_us="Random seed used for reproducible sampling.",
                 ),
             ),
             ParameterRule(
@@ -560,12 +560,12 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
                 type=ParameterType.STRING,
                 required=False,
                 options=["text", "json_object"],
-                label=I18nObject(zh_Hans="响应格式", en_US="Response Format"),
+                label=I18nObject(zh_hans="响应格式", en_us="Response Format"),
                 help=I18nObject(
-                    zh_Hans=(
+                    zh_hans=(
                         "强制模型按指定格式响应，json_object 要求模型输出合法 JSON。"
                     ),
-                    en_US=(
+                    en_us=(
                         "Force the model response to follow a specific format. "
                         "json_object requires the model to emit valid JSON."
                     ),
@@ -581,10 +581,10 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
                     type=ParameterType.STRING,
                     required=False,
                     options=["low", "medium", "high"],
-                    label=I18nObject(zh_Hans="推理强度", en_US="Reasoning Effort"),
+                    label=I18nObject(zh_hans="推理强度", en_us="Reasoning Effort"),
                     help=I18nObject(
-                        zh_Hans="OpenAI o-series / GPT-5 推理模型的推理强度。",
-                        en_US=(
+                        zh_hans="OpenAI o-series / GPT-5 推理模型的推理强度。",
+                        en_us=(
                             "Reasoning effort level for OpenAI o-series / GPT-5 "
                             "reasoning models."
                         ),
@@ -603,7 +603,7 @@ class AzureAIStudioLargeLanguageModel(LargeLanguageModel):
 
         entity = AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model),
+            label=I18nObject(en_us=model),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.LLM,
             features=features,

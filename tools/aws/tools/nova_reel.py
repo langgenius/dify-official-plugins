@@ -285,93 +285,93 @@ class NovaReelTool(Tool):
         parameters = [
             ToolParameter(
                 name="prompt",
-                label=I18nObject(en_US="Prompt", zh_Hans="提示词"),
+                label=I18nObject(en_us="Prompt", zh_hans="提示词"),
                 type=ToolParameter.ToolParameterType.STRING,
                 required=True,
                 form=ToolParameter.ToolParameterForm.LLM,
                 human_description=I18nObject(
-                    en_US="Text description of the video you want to generate", zh_Hans="您想要生成的视频的文本描述"
+                    en_us="Text description of the video you want to generate", zh_hans="您想要生成的视频的文本描述"
                 ),
                 llm_description="Describe the video you want to generate",
             ),
             ToolParameter(
                 name="video_output_s3uri",
-                label=I18nObject(en_US="Output S3 URI", zh_Hans="输出S3 URI"),
+                label=I18nObject(en_us="Output S3 URI", zh_hans="输出S3 URI"),
                 type=ToolParameter.ToolParameterType.STRING,
                 required=True,
                 form=ToolParameter.ToolParameterForm.FORM,
                 human_description=I18nObject(
-                    en_US="S3 URI where the generated video will be stored", zh_Hans="生成的视频将存储的S3 URI"
+                    en_us="S3 URI where the generated video will be stored", zh_hans="生成的视频将存储的S3 URI"
                 ),
             ),
             ToolParameter(
                 name="dimension",
-                label=I18nObject(en_US="Dimension", zh_Hans="尺寸"),
+                label=I18nObject(en_us="Dimension", zh_hans="尺寸"),
                 type=ToolParameter.ToolParameterType.STRING,
                 required=False,
                 default=NOVA_REEL_DEFAULT_DIMENSION,
                 form=ToolParameter.ToolParameterForm.FORM,
-                human_description=I18nObject(en_US="Video dimensions (width x height)", zh_Hans="视频尺寸（宽 x 高）"),
+                human_description=I18nObject(en_us="Video dimensions (width x height)", zh_hans="视频尺寸（宽 x 高）"),
             ),
             ToolParameter(
                 name="duration",
-                label=I18nObject(en_US="Duration", zh_Hans="时长"),
+                label=I18nObject(en_us="Duration", zh_hans="时长"),
                 type=ToolParameter.ToolParameterType.NUMBER,
                 required=False,
                 default=NOVA_REEL_DEFAULT_DURATION,
                 form=ToolParameter.ToolParameterForm.FORM,
-                human_description=I18nObject(en_US="Video duration in seconds", zh_Hans="视频时长（秒）"),
+                human_description=I18nObject(en_us="Video duration in seconds", zh_hans="视频时长（秒）"),
             ),
             ToolParameter(
                 name="seed",
-                label=I18nObject(en_US="Seed", zh_Hans="种子值"),
+                label=I18nObject(en_us="Seed", zh_hans="种子值"),
                 type=ToolParameter.ToolParameterType.NUMBER,
                 required=False,
                 default=0,
                 form=ToolParameter.ToolParameterForm.FORM,
-                human_description=I18nObject(en_US="Random seed for video generation", zh_Hans="视频生成的随机种子"),
+                human_description=I18nObject(en_us="Random seed for video generation", zh_hans="视频生成的随机种子"),
             ),
             ToolParameter(
                 name="fps",
-                label=I18nObject(en_US="FPS", zh_Hans="帧率"),
+                label=I18nObject(en_us="FPS", zh_hans="帧率"),
                 type=ToolParameter.ToolParameterType.NUMBER,
                 required=False,
                 default=NOVA_REEL_DEFAULT_FPS,
                 form=ToolParameter.ToolParameterForm.FORM,
                 human_description=I18nObject(
-                    en_US="Frames per second for the generated video", zh_Hans="生成视频的每秒帧数"
+                    en_us="Frames per second for the generated video", zh_hans="生成视频的每秒帧数"
                 ),
             ),
             ToolParameter(
                 name="async",
-                label=I18nObject(en_US="Async Mode", zh_Hans="异步模式"),
+                label=I18nObject(en_us="Async Mode", zh_hans="异步模式"),
                 type=ToolParameter.ToolParameterType.BOOLEAN,
                 required=False,
                 default=True,
                 form=ToolParameter.ToolParameterForm.LLM,
                 human_description=I18nObject(
-                    en_US="Whether to run in async mode (return immediately) or sync mode (wait for completion)",
-                    zh_Hans="是否以异步模式运行（立即返回）或同步模式（等待完成）",
+                    en_us="Whether to run in async mode (return immediately) or sync mode (wait for completion)",
+                    zh_hans="是否以异步模式运行（立即返回）或同步模式（等待完成）",
                 ),
             ),
             ToolParameter(
                 name="aws_region",
-                label=I18nObject(en_US="AWS Region", zh_Hans="AWS 区域"),
+                label=I18nObject(en_us="AWS Region", zh_hans="AWS 区域"),
                 type=ToolParameter.ToolParameterType.STRING,
                 required=False,
                 default=NOVA_REEL_DEFAULT_REGION,
                 form=ToolParameter.ToolParameterForm.FORM,
-                human_description=I18nObject(en_US="AWS region for Bedrock service", zh_Hans="Bedrock 服务的 AWS 区域"),
+                human_description=I18nObject(en_us="AWS region for Bedrock service", zh_hans="Bedrock 服务的 AWS 区域"),
             ),
             ToolParameter(
                 name="image_input_s3uri",
-                label=I18nObject(en_US="Input Image S3 URI", zh_Hans="输入图像S3 URI"),
+                label=I18nObject(en_us="Input Image S3 URI", zh_hans="输入图像S3 URI"),
                 type=ToolParameter.ToolParameterType.STRING,
                 required=False,
                 form=ToolParameter.ToolParameterForm.LLM,
                 human_description=I18nObject(
-                    en_US="S3 URI of the input image (1280x720 JPEG/PNG) to use as first frame",
-                    zh_Hans="用作第一帧的输入图像（1280x720 JPEG/PNG）的S3 URI",
+                    en_us="S3 URI of the input image (1280x720 JPEG/PNG) to use as first frame",
+                    zh_hans="用作第一帧的输入图像（1280x720 JPEG/PNG）的S3 URI",
                 ),
             ),
         ]
