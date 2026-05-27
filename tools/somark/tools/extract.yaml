@@ -186,7 +186,7 @@ parameters:
     human_description:
       en_US: 'Return images contained in text paragraphs.'
       zh_Hans: '返回文字段落中的图片。'
-    default: true
+    default: false
 
   - name: feature_config_enable_table_image
     type: boolean
