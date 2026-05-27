@@ -1074,7 +1074,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 # Create custom model entity based on inference profile
                 return AIModelEntity(
                     model=model,
-                    label=I18nObject(en_US=model),
+                    label=I18nObject(en_us=model),
                     model_type=ModelType.LLM,
                     features=matched_features,
                     fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
@@ -1105,7 +1105,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
                 return AIModelEntity(
                     model=model,
-                    label=I18nObject(en_US=model),
+                    label=I18nObject(en_us=model),
                     model_type=ModelType.LLM,
                     features=fallback_features,
                     fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,

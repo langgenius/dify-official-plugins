@@ -422,7 +422,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
                     options.append(
                         ParameterOption(
                             value=full_name,
-                            label=I18nObject(en_US=full_name),
+                            label=I18nObject(en_us=full_name),
                             icon=avatar_url,
                         )
                     )

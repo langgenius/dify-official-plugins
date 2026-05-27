@@ -61,7 +61,7 @@ class VolcengineOpenAISpeech2TextModel(OAICompatSpeech2TextModel):
         """
         entity = AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model, zh_Hans=model),
+            label=I18nObject(en_us=model, zh_hans=model),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.SPEECH2TEXT,
             model_properties={

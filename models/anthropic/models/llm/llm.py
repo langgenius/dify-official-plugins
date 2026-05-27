@@ -190,12 +190,12 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 default=4096,
                 min=1,
                 max=int(credentials.get("max_tokens", 128000)),
-                label=I18nObject(en_US="Max Tokens", zh_Hans="最大标记"),
+                label=I18nObject(en_us="Max Tokens", zh_hans="最大标记"),
                 type=ParameterType.INT,
             ),
             ParameterRule(
                 name="thinking",
-                label=I18nObject(en_US="Thinking Mode", zh_Hans="推理模式"),
+                label=I18nObject(en_us="Thinking Mode", zh_hans="推理模式"),
                 type=ParameterType.BOOLEAN,
                 default=False,
             ),
@@ -207,21 +207,21 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             parameter_rules.extend([
                 ParameterRule(
                     name="thinking_display",
-                    label=I18nObject(en_US="Thinking Display", zh_Hans="推理内容展示"),
+                    label=I18nObject(en_us="Thinking Display", zh_hans="推理内容展示"),
                     type=ParameterType.STRING,
                     default="summarized",
                     options=["omitted", "summarized"],
                 ),
                 ParameterRule(
                     name="effort",
-                    label=I18nObject(en_US="Effort", zh_Hans="推理投入等级"),
+                    label=I18nObject(en_us="Effort", zh_hans="推理投入等级"),
                     type=ParameterType.STRING,
                     default="high",
                     options=["low", "medium", "high", "xhigh", "max"],
                 ),
                 ParameterRule(
                     name="task_budget",
-                    label=I18nObject(en_US="Task Budget (beta)", zh_Hans="任务预算 (beta)"),
+                    label=I18nObject(en_us="Task Budget (beta)", zh_hans="任务预算 (beta)"),
                     type=ParameterType.INT,
                     default=0,
                     min=0,
@@ -233,23 +233,23 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 ParameterRule(
                     name="temperature",
                     use_template="temperature",
-                    label=I18nObject(en_US="Temperature", zh_Hans="温度"),
+                    label=I18nObject(en_us="Temperature", zh_hans="温度"),
                     type=ParameterType.FLOAT,
                 ),
                 ParameterRule(
                     name="top_p",
                     use_template="top_p",
-                    label=I18nObject(en_US="Top P", zh_Hans="Top P"),
+                    label=I18nObject(en_us="Top P", zh_hans="Top P"),
                     type=ParameterType.FLOAT,
                 ),
                 ParameterRule(
                     name="top_k",
-                    label=I18nObject(en_US="Top K", zh_Hans="取样数量"),
+                    label=I18nObject(en_us="Top K", zh_hans="取样数量"),
                     type=ParameterType.INT,
                 ),
                 ParameterRule(
                     name="thinking_budget",
-                    label=I18nObject(en_US="Thinking Budget", zh_Hans="推理预算"),
+                    label=I18nObject(en_us="Thinking Budget", zh_hans="推理预算"),
                     type=ParameterType.INT,
                     default=1024,
                     min=1024,
@@ -259,7 +259,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
 
         return AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model, zh_Hans=model),
+            label=I18nObject(en_us=model, zh_hans=model),
             model_type=ModelType.LLM,
             features=[
                 ModelFeature.AGENT_THOUGHT,
