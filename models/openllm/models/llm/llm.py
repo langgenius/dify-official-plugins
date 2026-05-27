@@ -191,13 +191,13 @@ class OpenLLMLargeLanguageModel(LargeLanguageModel):
                 name="temperature",
                 type=ParameterType.FLOAT,
                 use_template="temperature",
-                label=I18nObject(zh_Hans="温度", en_US="Temperature"),
+                label=I18nObject(zh_hans="温度", en_us="Temperature"),
             ),
             ParameterRule(
                 name="top_p",
                 type=ParameterType.FLOAT,
                 use_template="top_p",
-                label=I18nObject(zh_Hans="Top P", en_US="Top P"),
+                label=I18nObject(zh_hans="Top P", en_us="Top P"),
             ),
             ParameterRule(
                 name="top_k",
@@ -205,7 +205,7 @@ class OpenLLMLargeLanguageModel(LargeLanguageModel):
                 use_template="top_k",
                 min=1,
                 default=1,
-                label=I18nObject(zh_Hans="Top K", en_US="Top K"),
+                label=I18nObject(zh_hans="Top K", en_us="Top K"),
             ),
             ParameterRule(
                 name="max_tokens",
@@ -213,12 +213,12 @@ class OpenLLMLargeLanguageModel(LargeLanguageModel):
                 use_template="max_tokens",
                 min=1,
                 default=512,
-                label=I18nObject(zh_Hans="最大生成长度", en_US="Max Tokens"),
+                label=I18nObject(zh_hans="最大生成长度", en_us="Max Tokens"),
             ),
         ]
         entity = AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model),
+            label=I18nObject(en_us=model),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.LLM,
             model_properties={ModelPropertyKey.MODE: LLMMode.COMPLETION.value},
