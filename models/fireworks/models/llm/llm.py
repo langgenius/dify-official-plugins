@@ -443,7 +443,7 @@ class FireworksLargeLanguageModel(CommonFireworks, LargeLanguageModel):
             model=model,
             label=I18nObject(
                 en_us=credentials.get("model_label_en_US", model),
-                zh_hans=credentials.get("model_label_zh_Hanns", model),
+                zh_hans=credentials.get("model_label_zh_Hans", model),
             ),
             model_type=ModelType.LLM,
             features=[ModelFeature.TOOL_CALL, ModelFeature.MULTI_TOOL_CALL, ModelFeature.STREAM_TOOL_CALL]
