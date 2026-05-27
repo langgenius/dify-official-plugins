@@ -198,7 +198,7 @@ After the node executes, its output variables become available for all downstrea
 | `Enable Text Cross Page` (文字跨页拼接) | True / False | No / 否 | Merge text that spans across pages into a continuous paragraph. Default: `False`. <br> 将跨页文本合并为连续段落。默认值：`False`。 |
 | `Enable Table Cross Page` (表格跨页拼接) | True / False | No / 否 | Merge tables that span across pages into a continuous table. Default: `False`. <br> 将跨页表格合并为连续表格。默认值：`False`。 |
 | `Enable Title Level Recognition` (标题层级识别) | True / False | No / 否 | Recognize heading hierarchy such as H1/H2/H3. Default: `False`. <br> 识别标题层级结构，例如 H1/H2/H3。默认值：`False`。 |
-| `Enable Inline Image` (返回文中图) | True / False | No / 否 | Return images embedded in text paragraphs. Default: `True`. <br> 返回文字段落中的图片。默认值：`True`。 |
+| `Enable Inline Image` (返回文中图) | True / False | No / 否 | Return images embedded in text paragraphs. Default: `False`. <br> 返回文字段落中的图片。默认值：`False`。 |
 | `Enable Table Image` (返回表中图) | True / False | No / 否 | Return images embedded in table cells. Default: `True`. <br> 返回表格单元格中的图片。默认值：`True`。 |
 | `Enable Image Understanding` (图片理解) | True / False | No / 否 | Perform semantic understanding and structured description for images in the document. Default: `True`. <br> 对文档中的图片进行语义理解和结构化描述。默认值：`True`。 |
 | `Keep Header Footer` (保留页眉页脚) | True / False | No / 否 | Keep page headers and footers instead of filtering them out. Default: `False`. <br> 保留页眉页脚而不是默认过滤掉。默认值：`False`。 |
