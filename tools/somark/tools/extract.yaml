@@ -24,15 +24,16 @@ parameters:
     form: llm
 
   - name: output_formats
-    type: checkbox
+    type: select
     required: false
     form: form
+    default: both
     label:
       en_US: 'Output Formats'
       zh_Hans: '输出格式'
     human_description:
-      en_US: 'Selectable multiple options; if none are selected, the default values will be used: Markdown and JSON.'
-      zh_Hans: '可多选；若不选择任何项，则使用默认值：Markdown 和 JSON。'
+      en_US: 'Single selection; choose Markdown, JSON, or Both "Markdown" and "JSON". Default is Both "Markdown" and "JSON".'
+      zh_Hans: '单选；可选 Markdown、JSON 或 Both "Markdown" and "JSON"，默认 Both "Markdown" and "JSON"。'
     options:
       - value: markdown
         label:
@@ -42,6 +43,10 @@ parameters:
         label:
           en_US: JSON
           zh_Hans: JSON
+      - value: both
+        label:
+          en_US: Both "Markdown" and "JSON"
+          zh_Hans: Both "Markdown" and "JSON"
 
   - name: element_formats_image
     type: select
@@ -181,7 +186,7 @@ parameters:
     human_description:
       en_US: 'Return images contained in text paragraphs.'
       zh_Hans: '返回文字段落中的图片。'
-    default: true
+    default: false
 
   - name: feature_config_enable_table_image
     type: boolean

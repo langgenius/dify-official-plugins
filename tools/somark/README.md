@@ -190,7 +190,7 @@ After the node executes, its output variables become available for all downstrea
 | Parameter / 参数 | Type / 类型   | Required / 必填 | Description / 描述 |
 | :--------------- | :------------ | :-------------- | :----------------- |
 | `File` (文件) | File / 文件         | Yes / 是        | Supported files: PDF, PNG, JPG, JPEG, BMP, TIFF, JP2, DIB, PPM, PGM, PBM, GIF, HEIC, HEIF, WEBP, XPM, TGA, DDS, XBM, DOC, DOCX, PPT, PPTX, XLS, XLSX. Max 200 MB / 300 pages. <br> 支持的文件：PDF、PNG、JPG、JPEG、BMP、TIFF、JP2、DIB、PPM、PGM、PBM、GIF、HEIC、HEIF、WEBP、XPM、TGA、DDS、XBM、DOC、DOCX、PPT、PPTX、XLS、XLSX。最大 200 MB / 300 页。 |
-| `Output Formats` (输出格式) | Multi-select / 多选      | No / 否         | Select one or more output formats. Supported options: `Markdown`, `JSON`. If left empty, the default outputs are `Markdown` and `JSON`. <br> 选择一个或多个输出格式。支持：`Markdown`、`JSON`。如果不选择，则默认输出 `Markdown` 和 `JSON`。 |
+| `Output Formats` (输出格式) | Single-select / 单选      | No / 否         | Select the output format. Supported options: `Markdown`, `JSON`, `Both "Markdown" and "JSON"`. Default: `Both "Markdown" and "JSON"`. <br> 选择输出格式。支持：`Markdown`、`JSON`、`Both "Markdown" and "JSON"`。默认值：`Both "Markdown" and "JSON"`。 |
 | `Image Format` (图片格式) | Single-select / 单选      | No / 否         | Image output format. Supported options: `URL`, `Base64`, `None`. Default: `URL`. <br> 图片输出格式。支持：`URL`、`Base64`、`None`。默认值：`URL`。 |
 | `Formula Format` (公式格式) | Single-select / 单选      | No / 否         | Formula output format. Supported options: `LaTeX`, `MathML`, `ASCII`. Default: `LaTeX`. <br> 公式输出格式。支持：`LaTeX`、`MathML`、`ASCII`。默认值：`LaTeX`。 |
 | `Table Format` (表格格式) | Single-select / 单选      | No / 否         | Table output format. Supported options: `HTML`, `Markdown`, `Image`. Default: `HTML`. In Markdown mode, merged cells are expanded into individual cells with duplicated content. <br> 表格输出格式。支持：`HTML`、`Markdown`、`Image`。默认值：`HTML`。在 Markdown 模式下，合并单元格会被拆分为独立单元格，并填充相同内容。 |
@@ -198,7 +198,7 @@ After the node executes, its output variables become available for all downstrea
 | `Enable Text Cross Page` (文字跨页拼接) | True / False | No / 否 | Merge text that spans across pages into a continuous paragraph. Default: `False`. <br> 将跨页文本合并为连续段落。默认值：`False`。 |
 | `Enable Table Cross Page` (表格跨页拼接) | True / False | No / 否 | Merge tables that span across pages into a continuous table. Default: `False`. <br> 将跨页表格合并为连续表格。默认值：`False`。 |
 | `Enable Title Level Recognition` (标题层级识别) | True / False | No / 否 | Recognize heading hierarchy such as H1/H2/H3. Default: `False`. <br> 识别标题层级结构，例如 H1/H2/H3。默认值：`False`。 |
-| `Enable Inline Image` (返回文中图) | True / False | No / 否 | Return images embedded in text paragraphs. Default: `True`. <br> 返回文字段落中的图片。默认值：`True`。 |
+| `Enable Inline Image` (返回文中图) | True / False | No / 否 | Return images embedded in text paragraphs. Default: `False`. <br> 返回文字段落中的图片。默认值：`False`。 |
 | `Enable Table Image` (返回表中图) | True / False | No / 否 | Return images embedded in table cells. Default: `True`. <br> 返回表格单元格中的图片。默认值：`True`。 |
 | `Enable Image Understanding` (图片理解) | True / False | No / 否 | Perform semantic understanding and structured description for images in the document. Default: `True`. <br> 对文档中的图片进行语义理解和结构化描述。默认值：`True`。 |
 | `Keep Header Footer` (保留页眉页脚) | True / False | No / 否 | Keep page headers and footers instead of filtering them out. Default: `False`. <br> 保留页眉页脚而不是默认过滤掉。默认值：`False`。 |
