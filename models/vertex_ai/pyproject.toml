@@ -8,15 +8,15 @@ requires-python = ">=3.12"
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
     "dify_plugin @ git+https://github.com/ryuta-kobayashi-ug/dify-plugin-sdks.git@feat/pass-session-to-model-plugins",
-    "anthropic==0.42.0",
-    "google-genai==1.51.0",
-    "google-api-core==2.23.0",
-    "Pillow==11.3.0",
-    "tiktoken==0.8.0",
-    "google-cloud-aiplatform[all]==1.128.0",
-    "sentencepiece==0.2.0",
-    "google-auth==2.29.0",
-    "anthropic[vertex]==0.42.0",
+    "anthropic[vertex]>=0.104.0",
+    "google-genai>=2.6.0",
+    "google-api-core>=2.30.3",
+    "google-auth>=2.53.0",
+    "google-cloud-aiplatform>=1.153.1",
+    "pillow>=12.2.0",
+    "requests>=2.34.2",
+    "sentencepiece>=0.2.1",
+    "tiktoken>=0.13.0",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix

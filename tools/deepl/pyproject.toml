@@ -6,10 +6,10 @@ readme = "README.md"
 requires-python = ">=3.12"
 
 dependencies = [
-    "deepl>=1.22.0",
+    "deepl>=1.30.0",
     "dify-easy>=0.1.0",
-    "dify_plugin>=0.5.0",
-    "pydantic>=2.11.0",
+    "dify_plugin>=0.9.0",
+    "pydantic>=2.13.4",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix
