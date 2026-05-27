@@ -282,9 +282,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         )
 
         # Thinking-mode models that need streamed responses so reasoning_content is preserved.
-        # Note: qwen3-coder-xx, qwen3-max-xx, qwen3-vl-plus/flash, qwen3-omni-xx, and qwen3.5-xx models support non-streaming output.
+        # Note: qwen3-coder-xx, qwen3-max-xx, qwen3-vl-plus/flash, and qwen3.5-xx models support non-streaming output.
         qwen3_requires_stream = model.startswith("qwen3-") and not model.startswith(
-            ("qwen3-coder", "qwen3-max", "qwen3-vl-plus", "qwen3-vl-flash", "qwen3-omni-", "qwen3.5-")
+            ("qwen3-coder", "qwen3-max", "qwen3-vl-plus", "qwen3-vl-flash", "qwen3.5-")
         )
         common_force_condition = (
             thinking_business_qwen3
@@ -295,15 +295,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         )
         if common_force_condition or model.startswith(("qwq-", "qvq-")):
             stream = True
-        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder, max, VL Plus/Flash, and Omni variants), QwQ, QVQ, Kimi, and GLM thinking models only supports incremental_output set to True.
+        # Qwen3 business edition (Thinking Mode), Qwen3 open-source edition (excluding coder, max, and VL Plus/Flash variants), QwQ, QVQ, Kimi, and GLM thinking models only supports incremental_output set to True.
         if common_force_condition or model.startswith(("qwq-", "qvq-")):
             incremental_output = True
 
         base_address = get_http_base_address(credentials)
-
-        # The parameter `enable_omni_output_audio_url` must be set to true when using the Omni model in non-streaming mode.
-        if model.startswith("qwen3-omni-") and not stream:
-            params["enable_omni_output_audio_url"] = True
 
         if ModelFeature.VISION in (model_schema.features or []):
             params["messages"] = self._convert_prompt_messages_to_tongyi_messages(

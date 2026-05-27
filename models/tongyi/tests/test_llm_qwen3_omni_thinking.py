@@ -50,13 +50,13 @@ def test_qwen3_omni_defaults_to_non_thinking_in_yaml() -> None:
     assert enable_thinking_rule["default"] is False
 
 
-def test_qwen3_omni_does_not_force_streaming_when_thinking_is_omitted() -> None:
+def test_qwen3_omni_forces_streaming_when_thinking_is_omitted() -> None:
     kwargs, result = _invoke({})
-    assert kwargs["stream"] is False
-    assert kwargs["incremental_output"] is False
+    assert kwargs["stream"] is True
+    assert kwargs["incremental_output"] is True
     assert kwargs["enable_thinking"] is False
-    assert kwargs["enable_omni_output_audio_url"] is True
-    assert result == "non-stream-result"
+    assert "enable_omni_output_audio_url" not in kwargs
+    assert list(result) == ["stream-result"]
 
 
 def test_qwen3_omni_forces_streaming_when_thinking_is_enabled() -> None:
