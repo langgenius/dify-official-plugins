@@ -13,7 +13,7 @@ parameter_rules:
     use_template: max_tokens
     required: true
     type: int
-    default: 128000
+    default: 4096
     min: 1
     max: 128000
     help:
