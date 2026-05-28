@@ -46,7 +46,7 @@ parameters:
       - value: both
         label:
           en_US: Both "Markdown" and "JSON"
-          zh_Hans: Both "Markdown" and "JSON"
+          zh_Hans: “Markdown”和“JSON”
 
   - name: element_formats_image
     type: select
