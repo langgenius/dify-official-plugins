@@ -1,10 +1,10 @@
 # https://platform.claude.com/docs/en/about-claude/models/overview
-# https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-7
+# https://platform.claude.com/docs/en/about-claude/models/whats-new-claude-4-8
 # https://platform.claude.com/docs/en/about-claude/models/migration-guide
 # https://platform.claude.com/docs/en/resources/overview
-model: claude-opus-4-7
+model: claude-opus-4-8
 label:
-  en_US: claude-opus-4-7
+  en_US: claude-opus-4-8
 model_type: llm
 features:
   - agent-thought
@@ -24,8 +24,8 @@ parameter_rules:
     default: false
     required: false
     help:
-      zh_Hans: 启用自适应推理（adaptive thinking）。Claude Opus 4.7 仅支持 adaptive 模式，不再支持设置 thinking_budget。推理深度由 Effort 参数控制。
-      en_US: Enable adaptive thinking. Claude Opus 4.7 only supports adaptive mode; thinking_budget is no longer supported. Thinking depth is controlled by the Effort parameter.
+      zh_Hans: 启用自适应推理（adaptive thinking）。Claude Opus 4.8 仅支持 adaptive 模式，不再支持设置 thinking_budget。推理深度由 Effort 参数控制。
+      en_US: Enable adaptive thinking. Claude Opus 4.8 only supports adaptive mode; thinking_budget is no longer supported. Thinking depth is controlled by the Effort parameter.
   - name: thinking_display
     label:
       zh_Hans: 推理内容展示
