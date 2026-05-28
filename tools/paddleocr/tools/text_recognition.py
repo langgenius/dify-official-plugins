@@ -4,7 +4,7 @@ from typing import Any
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-from tools.utils import convert_file_type, make_paddleocr_api_request
+from tools.utils import make_paddleocr_api_request, normalize_file_input
 
 
 class TextRecognitionTool(Tool):
@@ -22,11 +22,13 @@ class TextRecognitionTool(Tool):
             )
         api_url = self.runtime.credentials["text_recognition_api_url"]
 
-        if "file" not in tool_parameters:
-            raise RuntimeError("File is not provided.")
+        file_payload, file_type = normalize_file_input(
+            tool_parameters.get("file"), tool_parameters.get("fileType")
+        )
 
-        params: dict[str, Any] = {}
-        params["file"] = tool_parameters["file"]
+        params: dict[str, Any] = {"file": file_payload}
+        if file_type is not None:
+            params["fileType"] = file_type
         for optional_param_name in [
             "fileType",
             "useDocOrientationClassify",
@@ -41,12 +43,8 @@ class TextRecognitionTool(Tool):
             "returnWordBox",
             "visualize",
         ]:
-            if optional_param_name in tool_parameters:
+            if optional_param_name in tool_parameters and optional_param_name != "fileType":
                 params[optional_param_name] = tool_parameters[optional_param_name]
-
-        # Convert fileType parameter
-        if "fileType" in params:
-            params["fileType"] = convert_file_type(params["fileType"])
 
         result = make_paddleocr_api_request(api_url, params, access_token)
 
