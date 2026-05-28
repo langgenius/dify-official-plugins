@@ -157,7 +157,10 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     #   - assistant prefill rejected with 400
     #   - thinking content omitted by default — opt in via thinking.display=summarized
     #   - effort / task_budget delivered via output_config
-    OPUS_4_7_PLUS_MODELS: tuple[str, ...] = ("claude-opus-4-7",)
+    OPUS_4_7_PLUS_MODELS: tuple[str, ...] = (
+        "claude-opus-4-7",
+        "claude-opus-4-8",
+    )
 
     def __init__(self, model_schemas=None):
         super().__init__(model_schemas or [])
