@@ -1,6 +1,6 @@
 [project]
 name = "somark"
-version = "0.1.1"
+version = "0.1.2"
 description = "SoMark Document Parser Plugin"
 readme = "README.md"
 requires-python = ">=3.12"
