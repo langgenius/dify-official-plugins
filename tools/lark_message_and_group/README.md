@@ -1,6 +1,6 @@
 # Lark Message And Group
 
-Lark message and group, requires the following permissions: im:message、im:message.group_msg.
+Lark message and group, requires the following permissions: im:message, im:message.group_msg.
 
 ## Features
 - Send Bot Message.

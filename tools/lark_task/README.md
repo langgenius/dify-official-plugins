@@ -1,6 +1,6 @@
 # Lark Task
 
-Lark Task, requires the following permissions: task:task:write、contact:user.id:readonly.
+Lark Task, requires the following permissions: task:task:write, contact:user.id:readonly.
 
 ## Features
 - Delete Lark Task.

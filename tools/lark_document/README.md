@@ -1,6 +1,6 @@
 # Lark Cloud Document
 
-Lark cloud document, requires the following permissions: docx:document、drive:drive、docs:document.content:read.
+Lark cloud document, requires the following permissions: docx:document, drive:drive, docs:document.content:read.
 
 ## Features
 - Create Lark document.

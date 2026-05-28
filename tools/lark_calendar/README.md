@@ -1,6 +1,6 @@
 # Lark Calendar
 
-Lark calendar, requires the following permissions: calendar:calendar:read、calendar:calendar、contact:user.id:readonly.
+Lark calendar, requires the following permissions: calendar:calendar:read, calendar:calendar, contact:user.id:readonly.
 
 ## Features
 - Add Event Attendees.
