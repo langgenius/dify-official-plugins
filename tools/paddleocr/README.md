@@ -28,6 +28,8 @@ Both Chatflow and Workflow applications support adding a PaddleOCR tool node.
 
 Add a PaddleOCR tool in the Agent application, and then enter commands to call the tool.
 
+The `file` input supports Dify uploaded image/PDF files directly. The plugin converts uploaded files to the base64 payload expected by PaddleOCR. For compatibility with existing workflows, URL and base64 string values are still accepted by the runtime.
+
 ## Credits
 
 This plugin is powered by [PaddleOCR](https://github.com/PaddlePaddle/PaddleOCR).

@@ -1,6 +1,4 @@
-# SoMark Dify Plugin
-
-## Overview / 简介
+# SoMark
 
 SoMark is a DocAI that can convert diverse documents—such as PDFs, images, and more—into structured Markdown or JSON. It is designed to work seamlessly across all scenarios.
 
@@ -223,8 +221,14 @@ downstream processing in a Code node after JSON parsing.
 
 Dify 内置变量，本插件不填充这两个变量。
 
-## Credits / 致谢
+## Setup
+1. Install this plugin from the Dify Marketplace.
+2. Prepare the required credentials: Base URL, API Key.
+3. Add the credentials in the plugin settings.
+4. Save the configuration.
 
-This plugin interacts with the [SoMark](https://somark.ai).
+## Usage
+Add the SoMark tools to an agent or workflow, fill in the required inputs, and run the node to call the upstream service.
 
-本插件基于 [SoMark](https://somark.ai) 构建。
+## Privacy
+This plugin sends the inputs required by the selected operation to the upstream service. Review the upstream service's privacy policy before use.
