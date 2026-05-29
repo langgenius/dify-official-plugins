@@ -1602,6 +1602,8 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         # Create model name mapping for individual model files
         model_name_mapping = {
             # Claude models
+            'Claude 4.8 Opus': 'claude-4-8-opus',
+            'Claude 4.7 Opus': 'claude-4-7-opus',
             'Claude 4.0 Sonnet': 'claude-4-sonnet',
             'Claude 4.0 Opus': 'claude-4-opus',
             'Claude 3.7 Sonnet': 'claude-3-7-sonnet',
