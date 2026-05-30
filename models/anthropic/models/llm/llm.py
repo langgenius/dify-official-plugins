@@ -1024,7 +1024,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 
                 if chunk.index != current_block_index:
                     if current_block_type == "thinking" and current_block_index is not None:
-                        assistant_prompt_message = AssistantPromptMessage(content="\n</think>")
+                        assistant_prompt_message = AssistantPromptMessage(content="\n</think>\n\n")
                         yield LLMResultChunk(
                             model=return_model,
                             prompt_messages=prompt_messages,
@@ -1112,7 +1112,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 )
             elif isinstance(chunk, MessageStopEvent):
                 if current_block_type == "thinking" and current_block_index is not None:
-                    assistant_prompt_message = AssistantPromptMessage(content="\n</think>")
+                    assistant_prompt_message = AssistantPromptMessage(content="\n</think>\n\n")
                     yield LLMResultChunk(
                         model=return_model,
                         prompt_messages=prompt_messages,
