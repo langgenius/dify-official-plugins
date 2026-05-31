@@ -164,6 +164,25 @@ model_credential_schema:
       type: select
       variable: openai_api_version
     - label:
+        en_US: Enable request metadata (optional)
+        zh_Hans: 启用请求元数据（可选）
+      options:
+        - label:
+            en_US: Enabled
+            zh_Hans: 已启用
+          value: enabled
+        - label:
+            en_US: Disabled
+            zh_Hans: 已禁用
+          value: disabled
+      required: false
+      type: select
+      variable: enable_request_metadata
+      default: disabled
+      help:
+        en_US: When enabled, attaches dify_app_id and dify_source as metadata on Azure OpenAI Chat Completions and Responses API calls, enabling per-app filtering of Stored Completions. Visibility in the dashboard depends on the Stored Completions setting on your Azure OpenAI resource; the plugin does not set store=true. Default disabled.
+        zh_Hans: 启用后，将在 Azure OpenAI Chat Completions 和 Responses API 调用中将 dify_app_id 和 dify_source 作为 metadata 附加，从而支持按应用过滤 Stored Completions（已存储的补全）。元数据是否在仪表板中可见取决于您的 Azure OpenAI 资源上的 Stored Completions 设置，本插件不会设置 store=true。默认禁用。
+    - label:
         en_US: Base Model
         zh_Hans: 基础模型
       options:
