@@ -133,3 +133,24 @@ def test_apply_replaces_non_dict_request_metadata(monkeypatch):
     apply_dify_request_metadata_if_enabled(parameters, {"enable_request_metadata": "enabled"})
     assert isinstance(parameters["requestMetadata"], dict)
     assert parameters["requestMetadata"]["dify_app_id"] == "550e8400-e29b-41d4-a716-446655440000"
+
+
+def test_apply_does_not_mutate_existing_request_metadata(monkeypatch):
+    # The merge must not mutate the caller's dict in place: a shared reference
+    # must never be modified as a side effect of telemetry opt-in.
+    import dify_plugin
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
+    original = {"existing_key": "existing_value"}
+    parameters: dict = {"requestMetadata": original}
+    apply_dify_request_metadata_if_enabled(parameters, {"enable_request_metadata": "enabled"})
+    # The original dict is left untouched.
+    assert original == {"existing_key": "existing_value"}
+    # parameters carries a new, merged dict.
+    assert parameters["requestMetadata"] is not original
+    assert parameters["requestMetadata"]["existing_key"] == "existing_value"
+    assert parameters["requestMetadata"]["dify_app_id"] == "550e8400-e29b-41d4-a716-446655440000"
+
+
+def test_normalize_none_returns_empty():
+    assert normalize_metadata_value(None) == ""

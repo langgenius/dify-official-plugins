@@ -35,6 +35,8 @@ def normalize_metadata_value(s: Any) -> str:
     ``str()`` first so that, e.g., a numeric ``0`` becomes ``"0"`` rather
     than being silently dropped by the empty-check.
     """
+    if s is None:
+        return ""
     if not isinstance(s, str):
         s = str(s)
     if not s:
@@ -96,6 +98,8 @@ def apply_dify_request_metadata_if_enabled(parameters: dict, credentials: dict) 
     existing = parameters.get("requestMetadata")
     if isinstance(existing, dict):
         # Preserve any caller-supplied metadata; only fill in Dify keys.
-        existing.update(request_metadata)
+        # Build a new dict rather than mutating in place, so a caller-shared
+        # reference is never modified as a side effect of telemetry opt-in.
+        parameters["requestMetadata"] = {**existing, **request_metadata}
     else:
         parameters["requestMetadata"] = request_metadata
