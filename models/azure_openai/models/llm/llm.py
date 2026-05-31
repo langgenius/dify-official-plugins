@@ -47,6 +47,7 @@ from openai.types.responses import ResponseStreamEvent, Response
 
 from ..common import _CommonAzureOpenAI
 from ..constants import LLM_BASE_MODELS, uses_responses_api
+from ._metadata import apply_dify_metadata_if_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -383,6 +384,14 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         messages: Any = [
             self._convert_prompt_message_to_dict(m) for m in prompt_messages
         ]
+
+        # Optional: attach Dify app_id as Azure OpenAI request metadata. Default
+        # disabled; opt-in via the enable_request_metadata credential. Whether
+        # this surfaces in Stored Completions depends on the Azure OpenAI
+        # resource's Stored Completions setting — the plugin does not set
+        # store=true.
+        apply_dify_metadata_if_enabled(extra_model_kwargs, credentials)
+
         response = client.chat.completions.create(
             messages=messages,
             model=model,
@@ -544,6 +553,11 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             reasoning["summary"] = model_parameters["reasoning_summary"]
         if reasoning:
             responses_params["reasoning"] = reasoning
+
+        # Optional: attach Dify app_id as Azure OpenAI request metadata. Default
+        # disabled; opt-in via the enable_request_metadata credential. See
+        # _metadata.py for the rationale on not setting store=true.
+        apply_dify_metadata_if_enabled(responses_params, credentials)
 
         logger.info(
             f"llm request with responses api: model={model}, stream={stream}, "
