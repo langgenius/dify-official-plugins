@@ -33,6 +33,8 @@ def normalize_label_value(s: Any) -> str:
     first so that, e.g., a numeric ``0`` becomes ``"0"`` rather than being
     silently dropped by the empty-check.
     """
+    if s is None:
+        return ""
     if not isinstance(s, str):
         s = str(s)
     if not s:
@@ -95,6 +97,8 @@ def apply_dify_labels_if_enabled(config_kwargs: dict, credentials: dict) -> None
     existing = config_kwargs.get("labels")
     if isinstance(existing, dict):
         # Preserve any caller-supplied labels; only fill in Dify keys.
-        existing.update(labels)
+        # Build a new dict rather than mutating in place, so a caller-shared
+        # reference is never modified as a side effect of telemetry opt-in.
+        config_kwargs["labels"] = {**existing, **labels}
     else:
         config_kwargs["labels"] = labels

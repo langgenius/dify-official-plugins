@@ -112,3 +112,24 @@ def test_apply_replaces_non_dict_labels(monkeypatch):
     apply_dify_labels_if_enabled(config_kwargs, {"enable_request_metadata": "enabled"})
     assert isinstance(config_kwargs["labels"], dict)
     assert config_kwargs["labels"]["dify_app_id"] == "550e8400-e29b-41d4-a716-446655440000"
+
+
+def test_apply_does_not_mutate_existing_labels(monkeypatch):
+    # The merge must not mutate the caller's dict in place: a shared reference
+    # must never be modified as a side effect of telemetry opt-in.
+    import dify_plugin
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
+    original = {"existing_key": "existing_value"}
+    config_kwargs: dict = {"labels": original}
+    apply_dify_labels_if_enabled(config_kwargs, {"enable_request_metadata": "enabled"})
+    # The original dict is left untouched.
+    assert original == {"existing_key": "existing_value"}
+    # config_kwargs carries a new, merged dict.
+    assert config_kwargs["labels"] is not original
+    assert config_kwargs["labels"]["existing_key"] == "existing_value"
+    assert config_kwargs["labels"]["dify_app_id"] == "550e8400-e29b-41d4-a716-446655440000"
+
+
+def test_normalize_none_returns_empty():
+    assert normalize_label_value(None) == ""
