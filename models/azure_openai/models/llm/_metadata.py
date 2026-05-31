@@ -37,6 +37,8 @@ def normalize_metadata_value(s: Any) -> str:
     character-pattern restriction, so no character substitution is
     performed.
     """
+    if s is None:
+        return ""
     if not isinstance(s, str):
         s = str(s)
     if not s:
@@ -92,6 +94,8 @@ def apply_dify_metadata_if_enabled(target: dict, credentials: dict) -> None:
     existing = target.get("metadata")
     if isinstance(existing, dict):
         # Preserve any caller-supplied metadata; only fill in Dify keys.
-        existing.update(metadata)
+        # Build a new dict rather than mutating in place, so a caller-shared
+        # reference is never modified as a side effect of telemetry opt-in.
+        target["metadata"] = {**existing, **metadata}
     else:
         target["metadata"] = metadata
