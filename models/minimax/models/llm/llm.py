@@ -8,12 +8,15 @@ from anthropic.types import Message
 from dify_plugin.entities.model.llm import LLMResult, LLMResultChunk, LLMResultChunkDelta
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
+    ImagePromptMessageContent,
     PromptMessage,
+    PromptMessageContentType,
     PromptMessageTool,
     SystemPromptMessage,
     TextPromptMessageContent,
     ToolPromptMessage,
     UserPromptMessage,
+    VideoPromptMessageContent,
 )
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
@@ -29,6 +32,7 @@ from dify_plugin.interfaces.model.large_language_model import LargeLanguageModel
 
 class MinimaxLargeLanguageModel(LargeLanguageModel):
     _MODEL_ALIASES = {
+        "minimax-m3": "MiniMax-M3",
         "minimax-m2.7": "MiniMax-M2.7",
         "minimax-m2.7-highspeed": "MiniMax-M2.7-highspeed",
         "minimax-m2.7lightning": "MiniMax-M2.7-highspeed",
@@ -108,13 +112,13 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
             request_kwargs["stop_sequences"] = list(stop)
         if user:
             request_kwargs["metadata"] = {"user_id": user}
-        if thinking is True:
-            request_kwargs["thinking"] = {
-                "type": "enabled",
-                "budget_tokens": max(1024, thinking_budget),
-            }
-        elif isinstance(thinking, dict):
-            request_kwargs["thinking"] = thinking
+        thinking_payload = self._normalize_thinking_payload(
+            thinking=thinking,
+            thinking_budget=thinking_budget,
+            request_model=request_model,
+        )
+        if thinking_payload:
+            request_kwargs["thinking"] = thinking_payload
 
         for key in ("temperature", "top_p", "top_k"):
             if key in model_parameters and model_parameters[key] is not None:
@@ -198,8 +202,10 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
         self, prompt_message: PromptMessage
     ) -> Optional[dict[str, Any]]:
         if isinstance(prompt_message, UserPromptMessage):
-            text = self._extract_text_content(prompt_message.content)
-            return {"role": "user", "content": [{"type": "text", "text": text}]}
+            return {
+                "role": "user",
+                "content": self._convert_user_content_blocks(prompt_message.content),
+            }
 
         if isinstance(prompt_message, AssistantPromptMessage):
             content_blocks: list[dict[str, Any]] = []
@@ -244,6 +250,72 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
             }
 
         return None
+
+    def _convert_user_content_blocks(self, content: Any) -> list[dict[str, Any]]:
+        if not isinstance(content, list):
+            return [{"type": "text", "text": self._extract_text_content(content)}]
+
+        content_blocks: list[dict[str, Any]] = []
+        for item in content:
+            block = self._convert_user_content_block(item)
+            if block is not None:
+                content_blocks.append(block)
+
+        if not content_blocks:
+            return [{"type": "text", "text": ""}]
+        return content_blocks
+
+    def _convert_user_content_block(self, content: Any) -> Optional[dict[str, Any]]:
+        if isinstance(content, TextPromptMessageContent):
+            return {"type": "text", "text": content.data}
+        if isinstance(content, ImagePromptMessageContent):
+            return self._create_media_content_block("image", content.data)
+        if isinstance(content, VideoPromptMessageContent):
+            return self._create_media_content_block("video", content.data)
+
+        if isinstance(content, dict):
+            content_type = content.get("type")
+            if content_type == "text":
+                return {
+                    "type": "text",
+                    "text": str(content.get("data") or content.get("text") or ""),
+                }
+            if content_type in {"image", "image_url"}:
+                image_url = content.get("data") or content.get("url")
+                if not image_url and isinstance(content.get("image_url"), dict):
+                    image_url = content["image_url"].get("url")
+                return self._create_media_content_block("image", str(image_url or ""))
+            if content_type in {"video", "video_url"}:
+                video_url = content.get("data") or content.get("url")
+                if not video_url and isinstance(content.get("video_url"), dict):
+                    video_url = content["video_url"].get("url")
+                return self._create_media_content_block("video", str(video_url or ""))
+            return None
+
+        content_type = getattr(content, "type", None)
+        if content_type == PromptMessageContentType.TEXT:
+            return {"type": "text", "text": str(getattr(content, "data", ""))}
+        if content_type == PromptMessageContentType.IMAGE:
+            return self._create_media_content_block("image", str(getattr(content, "data", "")))
+        if content_type == PromptMessageContentType.VIDEO:
+            return self._create_media_content_block("video", str(getattr(content, "data", "")))
+        return None
+
+    def _create_media_content_block(self, block_type: str, data: str) -> Optional[dict[str, Any]]:
+        data = data.strip()
+        if not data:
+            return None
+        return {"type": block_type, "source": self._create_media_source(data)}
+
+    def _create_media_source(self, data: str) -> dict[str, Any]:
+        if data.startswith("data:") and ";base64," in data:
+            header, encoded = data.split(";base64,", 1)
+            return {
+                "type": "base64",
+                "media_type": header.removeprefix("data:"),
+                "data": encoded,
+            }
+        return {"type": "url", "url": data}
 
     def _merge_consecutive_messages(
         self, message_dicts: list[dict[str, Any]]
@@ -656,6 +728,37 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
 
     def _set_previous_thinking_blocks(self, thinking_blocks: list[dict[str, Any]]) -> None:
         setattr(self, "_previous_thinking_blocks", thinking_blocks)
+
+    def _normalize_thinking_payload(
+        self,
+        *,
+        thinking: Any,
+        thinking_budget: int,
+        request_model: str,
+    ) -> Optional[dict[str, Any]]:
+        if isinstance(thinking, dict):
+            return thinking
+
+        if isinstance(thinking, str):
+            thinking_type = thinking.strip().lower()
+            if thinking_type in {"adaptive", "disabled"}:
+                return {"type": thinking_type}
+            if thinking_type in {"enabled", "true"}:
+                if request_model == "MiniMax-M3":
+                    return {"type": "adaptive"}
+                return {"type": "enabled", "budget_tokens": max(1024, thinking_budget)}
+            if thinking_type in {"false", "none", "off"}:
+                if request_model == "MiniMax-M3":
+                    return {"type": "disabled"}
+                return None
+
+        if thinking is True:
+            if request_model == "MiniMax-M3":
+                return {"type": "adaptive"}
+            return {"type": "enabled", "budget_tokens": max(1024, thinking_budget)}
+        if thinking is False and request_model == "MiniMax-M3":
+            return {"type": "disabled"}
+        return None
 
     def _to_credential_kwargs(self, credentials: Mapping[str, Any]) -> dict[str, Any]:
         api_key = str(credentials.get("minimax_api_key") or "").strip()
