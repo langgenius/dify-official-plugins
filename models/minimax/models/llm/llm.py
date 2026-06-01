@@ -10,7 +10,6 @@ from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     ImagePromptMessageContent,
     PromptMessage,
-    PromptMessageContentType,
     PromptMessageTool,
     SystemPromptMessage,
     TextPromptMessageContent,
@@ -275,30 +274,42 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
 
         if isinstance(content, dict):
             content_type = content.get("type")
-            if content_type == "text":
+            if self._is_content_type(content_type, "text"):
                 return {
                     "type": "text",
                     "text": str(content.get("data") or content.get("text") or ""),
                 }
-            if content_type in {"image", "image_url"}:
-                image_url = content.get("data") or content.get("url")
-                if not image_url and isinstance(content.get("image_url"), dict):
-                    image_url = content["image_url"].get("url")
+            if self._is_content_type(content_type, "image", "image_url"):
+                image_url = self._extract_media_url(content, "image_url")
                 return self._create_media_content_block("image", str(image_url or ""))
-            if content_type in {"video", "video_url"}:
-                video_url = content.get("data") or content.get("url")
-                if not video_url and isinstance(content.get("video_url"), dict):
-                    video_url = content["video_url"].get("url")
+            if self._is_content_type(content_type, "video", "video_url"):
+                video_url = self._extract_media_url(content, "video_url")
                 return self._create_media_content_block("video", str(video_url or ""))
             return None
 
         content_type = getattr(content, "type", None)
-        if content_type == PromptMessageContentType.TEXT:
+        if self._is_content_type(content_type, "text"):
             return {"type": "text", "text": str(getattr(content, "data", ""))}
-        if content_type == PromptMessageContentType.IMAGE:
+        if self._is_content_type(content_type, "image"):
             return self._create_media_content_block("image", str(getattr(content, "data", "")))
-        if content_type == PromptMessageContentType.VIDEO:
+        if self._is_content_type(content_type, "video"):
             return self._create_media_content_block("video", str(getattr(content, "data", "")))
+        return None
+
+    def _is_content_type(self, content_type: Any, *expected: str) -> bool:
+        content_type_value = getattr(content_type, "value", content_type)
+        return content_type_value in expected
+
+    def _extract_media_url(self, content: dict[str, Any], media_key: str) -> Any:
+        media_url = content.get("data") or content.get("url")
+        if media_url:
+            return media_url
+
+        media_value = content.get(media_key)
+        if isinstance(media_value, dict):
+            return media_value.get("url")
+        if isinstance(media_value, str):
+            return media_value
         return None
 
     def _create_media_content_block(self, block_type: str, data: str) -> Optional[dict[str, Any]]:

@@ -1,5 +1,6 @@
-from pathlib import Path
 import sys
+from pathlib import Path
+from types import SimpleNamespace
 
 import yaml
 from dify_plugin.entities.model.message import (
@@ -114,3 +115,57 @@ def test_m3_multimodal_user_message_uses_anthropic_sources() -> None:
             },
         ],
     }
+
+
+def test_dict_media_payload_accepts_url_string_values() -> None:
+    converted = _llm()._convert_user_content_blocks(
+        [
+            {"type": "image", "image_url": "https://example.com/image.png"},
+            {"type": "video_url", "video_url": "https://example.com/video.mp4"},
+        ]
+    )
+
+    assert converted == [
+        {
+            "type": "image",
+            "source": {
+                "type": "url",
+                "url": "https://example.com/image.png",
+            },
+        },
+        {
+            "type": "video",
+            "source": {
+                "type": "url",
+                "url": "https://example.com/video.mp4",
+            },
+        },
+    ]
+
+
+def test_object_content_type_accepts_string_values() -> None:
+    converted = _llm()._convert_user_content_blocks(
+        [
+            SimpleNamespace(type="text", data="What is shown?"),
+            SimpleNamespace(type="image", data="https://example.com/image.png"),
+            SimpleNamespace(type="video", data="https://example.com/video.mp4"),
+        ]
+    )
+
+    assert converted == [
+        {"type": "text", "text": "What is shown?"},
+        {
+            "type": "image",
+            "source": {
+                "type": "url",
+                "url": "https://example.com/image.png",
+            },
+        },
+        {
+            "type": "video",
+            "source": {
+                "type": "url",
+                "url": "https://example.com/video.mp4",
+            },
+        },
+    ]
