@@ -900,23 +900,19 @@ class MinimaxLargeLanguageModel(LargeLanguageModel):
 
         if isinstance(thinking, str):
             thinking_type = thinking.strip().lower()
-            if thinking_type in {"adaptive", "disabled"}:
-                return {"type": thinking_type}
+            if thinking_type == "adaptive":
+                return {"type": "adaptive"}
             if thinking_type in {"enabled", "true"}:
                 if request_model == "MiniMax-M3":
                     return {"type": "adaptive"}
                 return {"type": "enabled", "budget_tokens": max(1024, thinking_budget)}
-            if thinking_type in {"false", "none", "off"}:
-                if request_model == "MiniMax-M3":
-                    return {"type": "disabled"}
+            if thinking_type in {"disabled", "false", "none", "off"}:
                 return None
 
         if thinking is True:
             if request_model == "MiniMax-M3":
                 return {"type": "adaptive"}
             return {"type": "enabled", "budget_tokens": max(1024, thinking_budget)}
-        if thinking is False and request_model == "MiniMax-M3":
-            return {"type": "disabled"}
         return None
 
     def _to_credential_kwargs(self, credentials: Mapping[str, Any]) -> dict[str, Any]:

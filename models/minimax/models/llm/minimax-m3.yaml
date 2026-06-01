@@ -36,11 +36,10 @@ parameter_rules:
     default: adaptive
     required: false
     help:
-      en_US: Controls deep thinking for MiniMax-M3.
-      zh_Hans: 控制 MiniMax-M3 的深度思考。
+      en_US: Enables adaptive thinking for MiniMax-M3.
+      zh_Hans: 启用 MiniMax-M3 自适应思考。
     options:
       - adaptive
-      - disabled
 # Official pricing is tiered; this flat estimate uses the standard <=512k input-token tier.
 pricing:
   input: "4.2"

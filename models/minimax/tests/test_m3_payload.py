@@ -53,10 +53,10 @@ def test_m3_yaml_parameters_match_official_limits() -> None:
     assert rules["top_p"]["max"] == 1
     assert rules["top_p"]["default"] == 0.95
     assert rules["max_tokens"]["max"] == 524288
-    assert rules["thinking"]["options"] == ["adaptive", "disabled"]
+    assert rules["thinking"]["options"] == ["adaptive"]
 
 
-def test_m3_thinking_uses_adaptive_or_disabled() -> None:
+def test_m3_thinking_uses_adaptive_or_omits_unsupported_modes() -> None:
     llm = _llm()
 
     assert llm._normalize_thinking_payload(
@@ -68,7 +68,7 @@ def test_m3_thinking_uses_adaptive_or_disabled() -> None:
         thinking=False,
         thinking_budget=1024,
         request_model="MiniMax-M3",
-    ) == {"type": "disabled"}
+    ) is None
     assert llm._normalize_thinking_payload(
         thinking=True,
         thinking_budget=1024,
@@ -83,7 +83,12 @@ def test_m3_thinking_uses_adaptive_or_disabled() -> None:
         thinking="false",
         thinking_budget=1024,
         request_model="MiniMax-M3",
-    ) == {"type": "disabled"}
+    ) is None
+    assert llm._normalize_thinking_payload(
+        thinking="disabled",
+        thinking_budget=1024,
+        request_model="MiniMax-M3",
+    ) is None
 
 
 def test_m2_thinking_keeps_budget_payload() -> None:
