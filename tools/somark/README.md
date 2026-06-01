@@ -47,11 +47,6 @@ SoMark delivers strong general-purpose recognition capability. A single API call
 
 ## Next Steps and To-Do List
 
-### Expanded File Format Support
-- Spreadsheets: CSV, XLSM, XLTX, XLTM, QPW
-- Text Documents: WPD, TXT
-- Presentations: HTML
-
 ### New Advanced Features
 - Auto Table Rotation
 - Statistical Charts to Tables
