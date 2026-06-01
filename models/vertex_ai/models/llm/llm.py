@@ -811,6 +811,42 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
             )
             return self._handle_generate_response(model, credentials, response, prompt_messages)
 
+    @staticmethod
+    def _calculate_tokens_from_usage_metadata(
+        usage_metadata: types.GenerateContentResponseUsageMetadata | None,
+    ) -> tuple[int, int]:
+        """
+        Extract prompt and completion token counts from Google's response
+        ``usage_metadata`` so we report what Google actually billed instead of
+        a local GPT-2 estimate.
+
+        Uses ``prompt_token_count`` directly: on a cache hit this includes
+        cached tokens while a per-modality sum over ``prompt_tokens_details``
+        would silently miss them. ``prompt_token_count`` is also already
+        forward-compatible with new modalities Google may add.
+
+        ``completion_tokens`` is ``candidates_token_count + thoughts_token_count``
+        because Vertex bills these as two separate SKUs (e.g.
+        ``Gemini 2.5 Flash Lite Text Output`` vs
+        ``Gemini 2.5 Flash Lite Thinking Text Output``); dropping
+        ``thoughts_token_count`` would under-report by ~50% on thinking-enabled
+        requests. ``tool_use_prompt_token_count`` is intentionally not summed
+        here, matching the sibling ``langgenius/gemini`` helper.
+
+        Returns ``(0, 0)`` if the metadata is missing; callers should branch on
+        ``usage_metadata is None`` (not on a zero return) before deciding
+        whether to fall back to ``get_num_tokens``.
+        """
+        if not usage_metadata:
+            return 0, 0
+
+        prompt_tokens = getattr(usage_metadata, "prompt_token_count", 0) or 0
+        candidates_token_count = getattr(usage_metadata, "candidates_token_count", 0) or 0
+        thoughts_token_count = getattr(usage_metadata, "thoughts_token_count", 0) or 0
+        completion_tokens = candidates_token_count + thoughts_token_count
+
+        return prompt_tokens, completion_tokens
+
     def _handle_generate_response(
         self, model: str, credentials: dict, response: types.GenerateContentResponse,
         prompt_messages: list[PromptMessage]
@@ -890,8 +926,26 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                                 is_thinking = False
                             assistant_prompt_message.content += part.text
 
-        prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
-        completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
+        # Prefer Google's reported usage so we don't recompute prompt_tokens
+        # locally on a base64-inlined PDF/audio/video and over-report by orders
+        # of magnitude. Branch on usage_metadata presence (not on token=0) so a
+        # legitimate zero-token reply doesn't silently fall back to the broken
+        # local path.
+        response_usage_metadata = getattr(response, "usage_metadata", None)
+        if response_usage_metadata is not None:
+            prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
+                response_usage_metadata
+            )
+        else:
+            # Defensive only — the GenAI SDK always populates usage_metadata on
+            # successful responses, so in practice this branch only fires on
+            # SDK regressions or hand-rolled test fixtures. The local
+            # get_num_tokens path here is itself a known source of inflated
+            # counts on multimodal inputs (see commit message); we preserve it
+            # only because deleting it would be a behaviour regression for
+            # unknown-shape responses.
+            prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
+            completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
         usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
         result = LLMResult(model=model, prompt_messages=prompt_messages, message=assistant_prompt_message, usage=usage)
         return result
@@ -989,8 +1043,20 @@ class VertexAiLargeLanguageModel(LargeLanguageModel):
                         delta=LLMResultChunkDelta(index=index, message=assistant_prompt_message),
                     )
                 else:
-                    prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
-                    completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
+                    # Prefer Google's reported usage (see non-stream handler above
+                    # for rationale). The GenAI SDK only populates
+                    # usage_metadata on the terminal chunk, so we only consult
+                    # it inside this finish-reason branch — no risk of reading
+                    # partial usage from intermediate chunks.
+                    chunk_usage_metadata = getattr(chunk, "usage_metadata", None)
+                    if chunk_usage_metadata is not None:
+                        prompt_tokens, completion_tokens = self._calculate_tokens_from_usage_metadata(
+                            chunk_usage_metadata
+                        )
+                    else:
+                        # Defensive only; same caveat as the non-stream handler.
+                        prompt_tokens = self.get_num_tokens(model, credentials, prompt_messages)
+                        completion_tokens = self.get_num_tokens(model, credentials, [assistant_prompt_message])
                     usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
 
                     # For image responses (list content), skip grounding/reference processing
