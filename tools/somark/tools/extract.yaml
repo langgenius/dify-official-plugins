@@ -4,6 +4,7 @@ identity:
   label:
     en_US: SoMark Document Parser
     zh_Hans: SoMark 文档解析
+  icon: icon.png
 
 description:
   human:
