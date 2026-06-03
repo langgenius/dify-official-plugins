@@ -1768,6 +1768,25 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
     # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-55.html
     # -------------------------------------------------------------------------
 
+    @staticmethod
+    def _map_openai_exception(ex: Exception) -> None:
+        """Map openai SDK exceptions to the corresponding Dify invoke error types."""
+        try:
+            import openai
+            if isinstance(ex, openai.APIConnectionError):
+                raise InvokeConnectionError(str(ex))
+            elif isinstance(ex, openai.AuthenticationError):
+                raise InvokeAuthorizationError(str(ex))
+            elif isinstance(ex, openai.RateLimitError):
+                raise InvokeRateLimitError(str(ex))
+            elif isinstance(ex, openai.BadRequestError):
+                raise InvokeBadRequestError(str(ex))
+            elif isinstance(ex, openai.InternalServerError):
+                raise InvokeServerUnavailableError(str(ex))
+        except ImportError:
+            pass
+        raise InvokeError(str(ex))
+
     def _get_mantle_auth_token(self, credentials: dict) -> str:
         """
         Return a Bearer token for the bedrock-mantle endpoint.
@@ -1802,6 +1821,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             creds = BotocoreCredentials(
                 access_key=aws_access_key_id,
                 secret_key=aws_secret_access_key,
+                token=credentials.get("aws_session_token"),
             )
             return provide_token(region=region, aws_credentials_provider=creds)
 
@@ -1862,9 +1882,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             "stream": stream,
         }
 
-        # Map Dify parameters to Responses API parameters.
-        # Pop model_name and cross-region which are Dify/Bedrock routing params.
-        model_parameters.pop("model_name", None)
+        # Copy to avoid mutating the caller's dict (retry mechanisms may reuse it).
+        model_parameters = model_parameters.copy()
+        model_name = model_parameters.pop("model_name", None)
         model_parameters.pop("cross-region", None)
         model_parameters.pop("system_cache_checkpoint", None)
         model_parameters.pop("latest_two_messages_cache_checkpoint", None)
@@ -1877,10 +1897,13 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         if "top_p" in model_parameters:
             params["top_p"] = model_parameters["top_p"]
 
-        # Store model_name for pricing calculation (use model_id as fallback).
+        # Store model_name for pricing calculation, deriving it from model_id if not set.
         credentials_for_pricing = credentials.copy()
-        if "model_parameters" not in credentials_for_pricing:
-            credentials_for_pricing["model_parameters"] = {}
+        resolved_model_name = model_name or ("GPT-5.5" if "gpt-5.5" in model_id else "GPT-5.4")
+        credentials_for_pricing["model_parameters"] = {
+            **credentials_for_pricing.get("model_parameters", {}),
+            "model_name": resolved_model_name,
+        }
 
         try:
             response = client.responses.create(**params)
@@ -1893,7 +1916,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                     model_id, credentials_for_pricing, response, prompt_messages
                 )
         except Exception as ex:
-            raise InvokeError(str(ex))
+            self._map_openai_exception(ex)
 
     def _handle_responses_api_response(
         self,
@@ -1965,4 +1988,4 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                         ),
                     )
         except Exception as ex:
-            raise InvokeError(str(ex))
+            self._map_openai_exception(ex)
