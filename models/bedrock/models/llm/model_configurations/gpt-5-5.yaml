@@ -1,45 +1,14 @@
-model: openai
+model: gpt-5-5
 label:
-  en_US: OpenAI
+  en_US: GPT-5.5
 icon: icon_s_en.svg
 model_type: llm
 features:
-  - agent-thought
-  - tool-call
-  - stream-tool-call
+  - vision
 model_properties:
   mode: chat
   context_size: 272000
 parameter_rules:
-  - name: model_name
-    label:
-      zh_Hans: Bedrock 模型
-      en_US: Bedrock Model
-    type: string
-    help:
-      zh_Hans: 指定模型名称
-      en_US: specify model name
-    required: true
-    default: GPT OSS 20B
-    options:
-      - GPT-5.5
-      - GPT-5.4
-      - GPT OSS 120B
-      - GPT OSS 20B
-  - name: cross-region
-    label:
-      zh_Hans: 跨区域推理
-      en_US: Cross-Region Inference
-    type: string
-    required: true
-    default: disabled
-    options:
-      - disabled
-      - geographic
-      - global
-    help:
-      zh_Hans: 跨区域推理会自动选择 AWS 区域内的最佳位置来处理您的推理请求。地理跨区域限于您所在地理区域，全球跨区域可跨所有区域。
-      en_US: Cross-Region inference automatically selects the optimal AWS Region to process your inference request. Geographic limits to your geography, Global spans all regions.
   - name: max_tokens
     use_template: max_tokens
     required: true
@@ -79,10 +48,8 @@ parameter_rules:
     help:
       zh_Hans: 在核采样中的概率阈值。
       en_US: The probability threshold in nucleus sampling.
-  - name: response_format
-    use_template: response_format
 pricing:
-  input: '0.003'
-  output: '0.015'
+  input: '0.0055'
+  output: '0.033'
   unit: '0.001'
   currency: USD
