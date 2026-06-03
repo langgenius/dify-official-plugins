@@ -1622,6 +1622,9 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         """
         # Create model name mapping for individual model files
         model_name_mapping = {
+            # OpenAI GPT-5.x models (bedrock-mantle endpoint)
+            'GPT-5.5': 'gpt-5-5',
+            'GPT-5.4': 'gpt-5-4',
             # Claude models
             'Claude 4.8 Opus': 'claude-4-8-opus',
             'Claude 4.7 Opus': 'claude-4-7-opus',
