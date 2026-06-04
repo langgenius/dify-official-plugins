@@ -1023,8 +1023,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                                     break
                 
                 if chunk.index != current_block_index:
-                    if current_block_type == "thinking" and current_block_index is not None:
-                        assistant_prompt_message = AssistantPromptMessage(content="\n</think>")
+                    if current_block_type in ("thinking", "redacted_thinking") and current_block_index is not None:
+                        assistant_prompt_message = AssistantPromptMessage(content="\n</think>\n\n")
                         yield LLMResultChunk(
                             model=return_model,
                             prompt_messages=prompt_messages,
@@ -1111,8 +1111,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     self._get_cache_creation_input_tokens_by_ttl(chunk.usage)
                 )
             elif isinstance(chunk, MessageStopEvent):
-                if current_block_type == "thinking" and current_block_index is not None:
-                    assistant_prompt_message = AssistantPromptMessage(content="\n</think>")
+                if current_block_type in ("thinking", "redacted_thinking") and current_block_index is not None:
+                    assistant_prompt_message = AssistantPromptMessage(content="\n</think>\n\n")
                     yield LLMResultChunk(
                         model=return_model,
                         prompt_messages=prompt_messages,
