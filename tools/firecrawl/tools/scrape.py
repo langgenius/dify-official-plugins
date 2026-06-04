@@ -33,8 +33,11 @@ class ScrapeTool(Tool):
             prompt = f"{system_prompt}\n\n{prompt}" if prompt else system_prompt
         json_format["prompt"] = prompt
         json_format = {k: v for (k, v) in json_format.items() if v not in (None, "")}
-        if len(json_format) > 1:  # has more than just {"type": "json"}
-            formats = [f for f in formats if f != "extract"]
+        # v2 dropped the "extract" format string entirely — always remove it.
+        formats = [f for f in formats if f != "extract"]
+        # Only request json (structured) extraction when a schema/prompt was provided
+        # (avoid sending a bare {"type": "json"}, which v2 rejects).
+        if len(json_format) > 1:  # more than just {"type": "json"}
             formats.append(json_format)
         payload["formats"] = formats or None
         payload = {k: v for (k, v) in payload.items() if v not in (None, "")}
