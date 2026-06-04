@@ -1,3 +1,4 @@
+import urllib.parse
 import json
 import logging
 import time
@@ -114,9 +115,9 @@ class FirecrawlApp:
 
     def get_monitor_checks(self, monitor_id: str, **kwargs):
         endpoint = f"{self.base_url}/v2/monitor/{monitor_id}/checks"
-        params = "&".join(f"{k}={v}" for k, v in kwargs.items() if v not in (None, ""))
-        if params:
-            endpoint = f"{endpoint}?{params}"
+        query = {k: v for k, v in kwargs.items() if v not in (None, "")}
+        if query:
+            endpoint = f"{endpoint}?{urllib.parse.urlencode(query)}"
         response = self._request("GET", endpoint)
         if response is None:
             raise HTTPError(f"Failed to list checks for monitor {monitor_id} after multiple retries")
@@ -135,7 +136,7 @@ class FirecrawlApp:
 def get_array_params(tool_parameters: dict[str, Any], key):
     param = tool_parameters.get(key)
     if param:
-        return param.split(",")
+        return [p.strip() for p in param.split(",")]
 
 
 def get_json_params(tool_parameters: dict[str, Any], key):
