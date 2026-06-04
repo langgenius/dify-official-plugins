@@ -94,6 +94,34 @@ class FirecrawlApp:
             raise HTTPError(f"Failed to cancel job {job_id} after multiple retries")
         return response
 
+    def create_monitor(self, **kwargs):
+        # v2 monitors API. Docs: https://docs.firecrawl.dev/features/monitors
+        endpoint = f"{self.base_url}/v2/monitor"
+        logger.debug(f"Sent request to {endpoint=} body={kwargs}")
+        response = self._request("POST", endpoint, kwargs)
+        if response is None:
+            raise HTTPError("Failed to create monitor after multiple retries")
+        elif response.get("success") is False:
+            raise HTTPError(f'Failed to create monitor: {response.get("error")}')
+        return response
+
+    def get_monitor(self, monitor_id: str):
+        endpoint = f"{self.base_url}/v2/monitor/{monitor_id}"
+        response = self._request("GET", endpoint)
+        if response is None:
+            raise HTTPError(f"Failed to get monitor {monitor_id} after multiple retries")
+        return response
+
+    def get_monitor_checks(self, monitor_id: str, **kwargs):
+        endpoint = f"{self.base_url}/v2/monitor/{monitor_id}/checks"
+        params = "&".join(f"{k}={v}" for k, v in kwargs.items() if v not in (None, ""))
+        if params:
+            endpoint = f"{endpoint}?{params}"
+        response = self._request("GET", endpoint)
+        if response is None:
+            raise HTTPError(f"Failed to list checks for monitor {monitor_id} after multiple retries")
+        return response
+
     def _monitor_job_status(self, job_id: str, poll_interval: int):
         while True:
             status = self.check_crawl_status(job_id)
