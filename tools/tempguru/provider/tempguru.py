@@ -1,24 +1,31 @@
+import requests
+
 from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin import ToolProvider
-from tools.get_cities import GetCitiesTool
 
 
 class TempGuruProvider(ToolProvider):
     """
     TempGuru is a public read-only data API — no credentials are required.
 
-    Validation strategy: invoke the lightest tool (get_cities, no parameters)
-    once. If the HTTP roundtrip succeeds and returns the expected shape, the
-    backend is reachable. Any exception is surfaced as a credential validation
-    error so the user sees a useful message in the Dify UI.
+    Validation strategy: probe the lightest REST endpoint (/cities, no
+    parameters) once with a short timeout. If the HTTP roundtrip succeeds,
+    the backend is reachable. Using a direct HTTP request avoids coupling
+    this provider to the Tool subclass's internals and keeps the validator
+    resilient to future Dify SDK changes.
     """
 
     def _validate_credentials(self, credentials: dict) -> None:
         try:
-            for _ in GetCitiesTool.from_credentials(credentials).invoke_from_executor(
-                tool_parameters={}
-            ):
-                pass
+            response = requests.get(
+                "https://mcp.tempguru.co/api/v1/cities",
+                headers={
+                    "User-Agent": "tempguru-dify-plugin/0.0.1",
+                    "Accept": "application/json",
+                },
+                timeout=10,
+            )
+            response.raise_for_status()
         except Exception as e:
             raise ToolProviderCredentialValidationError(
                 f"Unable to reach TempGuru MCP REST API at mcp.tempguru.co: {str(e)}"

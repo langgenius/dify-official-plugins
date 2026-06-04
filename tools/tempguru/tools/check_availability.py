@@ -15,20 +15,30 @@ class CheckAvailabilityTool(Tool):
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
-        params: dict[str, Any] = {
-            "city": tool_parameters["city"],
-            "date": tool_parameters["date"],
-        }
+        city = tool_parameters.get("city")
+        date = tool_parameters.get("date")
+        if not city or not date:
+            yield self.create_text_message(
+                "Both 'city' and 'date' parameters are required."
+            )
+            return
+
+        params: dict[str, Any] = {"city": city, "date": date}
         if tool_parameters.get("role"):
             params["role"] = tool_parameters["role"]
         if tool_parameters.get("count"):
             params["count"] = tool_parameters["count"]
 
-        response = requests.get(
-            f"{API_BASE}/availability",
-            params=params,
-            headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
-            timeout=30,
-        )
-        response.raise_for_status()
-        yield self.create_json_message(response.json())
+        try:
+            response = requests.get(
+                f"{API_BASE}/availability",
+                params=params,
+                headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
+                timeout=30,
+            )
+            response.raise_for_status()
+            yield self.create_json_message(response.json())
+        except requests.RequestException as e:
+            yield self.create_text_message(f"API request failed: {str(e)}")
+        except ValueError:
+            yield self.create_text_message("Failed to parse response from TempGuru API.")

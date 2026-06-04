@@ -15,12 +15,22 @@ class GetComplianceByStateTool(Tool):
     def _invoke(
         self, tool_parameters: dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
-        params = {"state": tool_parameters["state"]}
-        response = requests.get(
-            f"{API_BASE}/compliance",
-            params=params,
-            headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
-            timeout=30,
-        )
-        response.raise_for_status()
-        yield self.create_json_message(response.json())
+        state = tool_parameters.get("state")
+        if not state:
+            yield self.create_text_message("The 'state' parameter is required.")
+            return
+
+        params = {"state": state}
+        try:
+            response = requests.get(
+                f"{API_BASE}/compliance",
+                params=params,
+                headers={"User-Agent": USER_AGENT, "Accept": "application/json"},
+                timeout=30,
+            )
+            response.raise_for_status()
+            yield self.create_json_message(response.json())
+        except requests.RequestException as e:
+            yield self.create_text_message(f"API request failed: {str(e)}")
+        except ValueError:
+            yield self.create_text_message("Failed to parse response from TempGuru API.")
