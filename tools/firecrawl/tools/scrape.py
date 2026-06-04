@@ -25,8 +25,13 @@ class ScrapeTool(Tool):
         # the formats array (the v1 top-level "extract" field was removed).
         json_format = {"type": "json"}
         json_format["schema"] = get_json_params(tool_parameters, "schema")
-        json_format["systemPrompt"] = tool_parameters.get("systemPrompt")
-        json_format["prompt"] = tool_parameters.get("prompt")
+        # v2 removed the json format's "systemPrompt" field (only "prompt"/"schema" remain),
+        # so fold any provided system prompt into the single "prompt" field.
+        system_prompt = tool_parameters.get("systemPrompt")
+        prompt = tool_parameters.get("prompt")
+        if system_prompt:
+            prompt = f"{system_prompt}\n\n{prompt}" if prompt else system_prompt
+        json_format["prompt"] = prompt
         json_format = {k: v for (k, v) in json_format.items() if v not in (None, "")}
         if len(json_format) > 1:  # has more than just {"type": "json"}
             formats = [f for f in formats if f != "extract"]
