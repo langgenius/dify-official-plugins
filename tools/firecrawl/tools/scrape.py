@@ -14,19 +14,24 @@ class ScrapeTool(Tool):
             api_key=self.runtime.credentials.get("firecrawl_api_key"), base_url=self.runtime.credentials.get("base_url")
         )
         payload = {}
-        extract = {}
-        payload["formats"] = get_array_params(tool_parameters, "formats")
+        formats = get_array_params(tool_parameters, "formats") or []
         payload["onlyMainContent"] = tool_parameters.get("onlyMainContent", True)
         payload["includeTags"] = get_array_params(tool_parameters, "includeTags")
         payload["excludeTags"] = get_array_params(tool_parameters, "excludeTags")
         payload["headers"] = get_json_params(tool_parameters, "headers")
         payload["waitFor"] = tool_parameters.get("waitFor", 0)
         payload["timeout"] = tool_parameters.get("timeout", 30000)
-        extract["schema"] = get_json_params(tool_parameters, "schema")
-        extract["systemPrompt"] = tool_parameters.get("systemPrompt")
-        extract["prompt"] = tool_parameters.get("prompt")
-        extract = {k: v for (k, v) in extract.items() if v not in (None, "")}
-        payload["extract"] = extract or None
+        # v2: structured/LLM extraction is expressed as a "json" format object inside
+        # the formats array (the v1 top-level "extract" field was removed).
+        json_format = {"type": "json"}
+        json_format["schema"] = get_json_params(tool_parameters, "schema")
+        json_format["systemPrompt"] = tool_parameters.get("systemPrompt")
+        json_format["prompt"] = tool_parameters.get("prompt")
+        json_format = {k: v for (k, v) in json_format.items() if v not in (None, "")}
+        if len(json_format) > 1:  # has more than just {"type": "json"}
+            formats = [f for f in formats if f != "extract"]
+            formats.append(json_format)
+        payload["formats"] = formats or None
         payload = {k: v for (k, v) in payload.items() if v not in (None, "")}
         crawl_result = app.scrape_url(url=tool_parameters["url"], **payload)
         markdown_result = crawl_result.get("data", {}).get("markdown", "")
