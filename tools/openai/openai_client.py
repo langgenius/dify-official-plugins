@@ -1,12 +1,12 @@
-from yarl import URL
-
-
 def normalize_openai_base_url(base_url: str | None) -> str | None:
     if not base_url:
         return None
 
-    normalized = str(URL(str(base_url).rstrip("/")))
-    if normalized.endswith("/v1"):
-        return normalized
+    cleaned = str(base_url).strip().rstrip("/")
+    if not cleaned:
+        return None
 
-    return str(URL(normalized) / "v1")
+    if cleaned.endswith("/v1"):
+        return cleaned
+
+    return f"{cleaned}/v1"

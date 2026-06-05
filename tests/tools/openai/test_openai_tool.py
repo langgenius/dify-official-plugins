@@ -87,7 +87,9 @@ def create_tool_instance(tool_cls):
     [
         (None, None),
         ("", None),
+        ("   ", None),
         ("http://host:8317", "http://host:8317/v1"),
+        ("  http://host:8317  ", "http://host:8317/v1"),
         ("http://host:8317/", "http://host:8317/v1"),
         ("http://host:8317/v1", "http://host:8317/v1"),
         ("http://host:8317/v1/", "http://host:8317/v1"),
