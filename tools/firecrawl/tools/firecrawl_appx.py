@@ -46,7 +46,7 @@ class FirecrawlApp:
         return None
 
     def scrape_url(self, url: str, **kwargs):
-        endpoint = f"{self.base_url}/v1/scrape"
+        endpoint = f"{self.base_url}/v2/scrape"
         data = {"url": url, **kwargs}
         logger.debug(f"Sent request to {endpoint=} body={data}")
         response = self._request("POST", endpoint, data)
@@ -55,7 +55,7 @@ class FirecrawlApp:
         return response
 
     def map(self, url: str, **kwargs):
-        endpoint = f"{self.base_url}/v1/map"
+        endpoint = f"{self.base_url}/v2/map"
         data = {"url": url, **kwargs}
         logger.debug(f"Sent request to {endpoint=} body={data}")
         response = self._request("POST", endpoint, data)
@@ -66,7 +66,7 @@ class FirecrawlApp:
     def crawl_url(
         self, url: str, wait: bool = True, poll_interval: int = 5, idempotency_key: str | None = None, **kwargs
     ):
-        endpoint = f"{self.base_url}/v1/crawl"
+        endpoint = f"{self.base_url}/v2/crawl"
         headers = self._prepare_headers(idempotency_key)
         data = {"url": url, **kwargs}
         logger.debug(f"Sent request to {endpoint=} body={data}")
@@ -81,14 +81,14 @@ class FirecrawlApp:
         return response
 
     def check_crawl_status(self, job_id: str):
-        endpoint = f"{self.base_url}/v1/crawl/{job_id}"
+        endpoint = f"{self.base_url}/v2/crawl/{job_id}"
         response = self._request("GET", endpoint)
         if response is None:
             raise HTTPError(f"Failed to check status for job {job_id} after multiple retries")
         return response
 
     def cancel_crawl_job(self, job_id: str):
-        endpoint = f"{self.base_url}/v1/crawl/{job_id}"
+        endpoint = f"{self.base_url}/v2/crawl/{job_id}"
         response = self._request("DELETE", endpoint)
         if response is None:
             raise HTTPError(f"Failed to cancel job {job_id} after multiple retries")
