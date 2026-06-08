@@ -42,3 +42,5 @@ tools:
   - tools/crawl.yaml
   - tools/map.yaml
   - tools/scrape.yaml
+  - tools/create_monitor.yaml
+  - tools/monitor_checks.yaml

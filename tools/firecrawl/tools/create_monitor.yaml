@@ -1,0 +1,137 @@
+description:
+  human:
+    en_US: Create a Firecrawl monitor that recurringly scrapes one or more URLs
+      and diffs each result against the last snapshot to detect changes.
+    zh_Hans: 创建一个 Firecrawl 监控器，定期抓取一个或多个网址，并将每次结果与上一次快照进行对比以检测变化。
+  llm: Create a Firecrawl monitor. A monitor recurringly scrapes the given URLs on
+    a schedule and reports meaningful changes. Returns the created monitor object
+    including its id, which can be used with the Monitor Checks tool.
+extra:
+  python:
+    source: tools/create_monitor.py
+identity:
+  author: langgenius
+  label:
+    en_US: Create Monitor
+    zh_Hans: 创建监控器
+  name: create_monitor
+parameters:
+- form: llm
+  human_description:
+    en_US: A human-readable name for the monitor.
+    zh_Hans: 监控器的可读名称。
+  label:
+    en_US: Name
+    zh_Hans: 名称
+  llm_description: A human-readable name for the monitor. This is a required parameter.
+  name: name
+  required: true
+  type: string
+- form: llm
+  human_description:
+    en_US: The URLs to monitor. Use comma separated values for multiple URLs.
+    zh_Hans: 要监控的网址。多个网址使用半角逗号分隔。
+  label:
+    en_US: URLs
+    zh_Hans: 网址
+  llm_description: The URLs of the pages to monitor. Use comma separated values for
+    multiple URLs. This is a required parameter.
+  name: urls
+  placeholder:
+    en_US: Use commas to separate multiple URLs
+    zh_Hans: 多个网址使用半角逗号分隔
+  required: true
+  type: string
+- form: form
+  human_description:
+    en_US: 'Natural-language schedule, e.g. "every 30 minutes" or "daily at 9am".'
+    zh_Hans: 自然语言形式的计划，例如 “every 30 minutes” 或 “daily at 9am”。
+  label:
+    en_US: Schedule (text)
+    zh_Hans: 计划（文本）
+  name: scheduleText
+  placeholder:
+    en_US: every 30 minutes
+  type: string
+- form: form
+  human_description:
+    en_US: A cron expression for the schedule. Used only if Schedule (text) is empty.
+    zh_Hans: 计划的 cron 表达式。仅在“计划（文本）”为空时使用。
+  label:
+    en_US: Schedule (cron)
+    zh_Hans: 计划（cron）
+  name: cron
+  placeholder:
+    en_US: '*/30 * * * *'
+  type: string
+- form: form
+  human_description:
+    en_US: 'IANA timezone for the schedule, e.g. America/New_York.'
+    zh_Hans: 计划使用的 IANA 时区，例如 America/New_York。
+  label:
+    en_US: Timezone
+    zh_Hans: 时区
+  name: timezone
+  type: string
+- form: form
+  human_description:
+    en_US: Plain-language description of what changes matter. When set, the meaningful-change
+      judge is enabled.
+    zh_Hans: 用自然语言描述哪些变化是重要的。设置后将启用有意义变化的判定。
+  label:
+    en_US: Goal
+    zh_Hans: 目标
+  name: goal
+  type: string
+- form: form
+  human_description:
+    en_US: Whether to enable the meaningful-change judge. Defaults to true when a goal
+      is set.
+    zh_Hans: 是否启用有意义变化的判定。设置目标后默认为开启。
+  label:
+    en_US: Judge Enabled
+    zh_Hans: 启用判定
+  name: judgeEnabled
+  type: boolean
+  default: true
+- form: form
+  human_description:
+    en_US: Number of days to retain check snapshots (1-365).
+    zh_Hans: 保留检查快照的天数（1-365）。
+  label:
+    en_US: Retention Days
+    zh_Hans: 保留天数
+  min: 1
+  name: retentionDays
+  type: number
+- form: form
+  human_description:
+    en_US: Email address to receive change summaries.
+    zh_Hans: 接收变化摘要的电子邮件地址。
+  label:
+    en_US: Notification Email
+    zh_Hans: 通知邮箱
+  name: email
+  type: string
+- form: form
+  human_description:
+    en_US: Webhook URL to receive monitor events.
+    zh_Hans: 接收监控事件的 Webhook 网址。
+  label:
+    en_US: Webhook URL
+    zh_Hans: Webhook 网址
+  name: webhookUrl
+  type: string
+- form: form
+  human_description:
+    en_US: 'Scrape options applied to each target, as a JSON object. Example: {"formats":
+      ["markdown"], "onlyMainContent": true}'
+    zh_Hans: '应用于每个目标的抓取选项，JSON 对象。示例：{"formats": ["markdown"], "onlyMainContent": true}'
+  label:
+    en_US: Scrape Options
+    zh_Hans: 抓取选项
+  name: scrapeOptions
+  placeholder:
+    en_US: Please enter an object that can be serialized in JSON
+    zh_Hans: 请输入可以json序列化的对象
+  type: string
