@@ -31,7 +31,7 @@ model_credential_schema:
       zh_Hans: 在此输入您的模型中文名称
     required: true
     type: text-input
-    variable: model_label_zh_Hanns
+    variable: model_label_zh_Hans
   - label:
       en_US: The en_US of Model
       zh_Hans: 模型英文名称

@@ -64,9 +64,20 @@ ANTHROPIC_BLOCK_MODE_PROMPT = 'You should always follow the instructions and out
 
 
 class PromptCachingHandler:
-    def __init__(self, prompt_messages: Sequence[PromptMessage], enable_system_cache: bool = False):
+    CACHE_CONTROL_TYPE = "ephemeral"
+
+    def __init__(
+        self,
+        prompt_messages: Sequence[PromptMessage],
+        enable_system_cache: bool = False,
+        cache_control: Optional[dict[str, str]] = None,
+    ):
         self.prompt_messages = prompt_messages
         self.enable_system_cache = enable_system_cache
+        self.cache_control = cache_control or {"type": self.CACHE_CONTROL_TYPE}
+
+    def get_cache_control(self) -> dict[str, str]:
+        return dict(self.cache_control)
 
     def get_system_prompt(self) -> Union[str, list[dict]]:
         system_components = []
@@ -95,9 +106,9 @@ class PromptCachingHandler:
                     cached_content = part[len('<cache>'):-len('</cache>')]
                     if cached_content:
                         system_components.append({
-                "type": "text",
+                            "type": "text",
                             "text": cached_content,
-                "cache_control": {"type": "ephemeral"}
+                            "cache_control": self.get_cache_control(),
                         })
                 elif part:
                     system_components.append({
@@ -117,10 +128,12 @@ class PromptCachingHandler:
         return system
 
     # --- Pricing Helpers -------------------------------------------------
-    # Cache write incurs a 25% premium (1.25×) on the written tokens
+    # 5m cache write incurs a 25% premium (1.25×) on the written tokens
+    # 1h cache write incurs a 100% premium (2×) on the written tokens
     # Cache read receives a 90% discount (0.1×) on the read tokens
 
-    CACHE_WRITE_MULTIPLIER: float = 1.25
+    CACHE_WRITE_5M_MULTIPLIER: float = 1.25
+    CACHE_WRITE_1H_MULTIPLIER: float = 2.0
     CACHE_READ_MULTIPLIER: float = 0.1
 
     @classmethod
@@ -129,6 +142,9 @@ class PromptCachingHandler:
         base_prompt_tokens: int,
         cache_creation_input_tokens: int = 0,
         cache_read_input_tokens: int = 0,
+        cache_creation_5m_input_tokens: int = 0,
+        cache_creation_1h_input_tokens: int = 0,
+        cache_creation_fallback_multiplier: float = CACHE_WRITE_5M_MULTIPLIER,
     ) -> int:
         """Return billing-adjusted prompt tokens.
 
@@ -141,8 +157,11 @@ class PromptCachingHandler:
         """
         adjusted = base_prompt_tokens
 
-        if cache_creation_input_tokens > 0:
-            adjusted += int(cache_creation_input_tokens * cls.CACHE_WRITE_MULTIPLIER)
+        if cache_creation_5m_input_tokens > 0 or cache_creation_1h_input_tokens > 0:
+            adjusted += int(cache_creation_5m_input_tokens * cls.CACHE_WRITE_5M_MULTIPLIER)
+            adjusted += int(cache_creation_1h_input_tokens * cls.CACHE_WRITE_1H_MULTIPLIER)
+        elif cache_creation_input_tokens > 0:
+            adjusted += int(cache_creation_input_tokens * cache_creation_fallback_multiplier)
 
         if cache_read_input_tokens > 0:
             adjusted += int(cache_read_input_tokens * cls.CACHE_READ_MULTIPLIER)
@@ -151,13 +170,18 @@ class PromptCachingHandler:
 
 
 class AnthropicLargeLanguageModel(LargeLanguageModel):
+    PROMPT_CACHING_TTL_PARAMETER = "prompt_caching_ttl"
+    VALID_PROMPT_CACHING_TTLS = {"5m", "1h"}
     # Models that enforce Opus 4.7+ breaking changes:
     #   - sampling params (temperature/top_p/top_k) rejected with 400
     #   - extended thinking (thinking.budget_tokens) rejected with 400 — adaptive only
     #   - assistant prefill rejected with 400
     #   - thinking content omitted by default — opt in via thinking.display=summarized
     #   - effort / task_budget delivered via output_config
-    OPUS_4_7_PLUS_MODELS: tuple[str, ...] = ("claude-opus-4-7",)
+    OPUS_4_7_PLUS_MODELS: tuple[str, ...] = (
+        "claude-opus-4-7",
+        "claude-opus-4-8",
+    )
 
     def __init__(self, model_schemas=None):
         super().__init__(model_schemas or [])
@@ -170,10 +194,56 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         self._document_cache_enabled = False
         self._tool_results_cache_enabled = False
         self._message_flow_cache_threshold: int = 0
+        self._prompt_cache_ttl: Optional[str] = None
 
     def _is_opus_4_7_plus(self, model: str) -> bool:
         model_id = (model or "").lower()
         return any(model_id.startswith(prefix) for prefix in self.OPUS_4_7_PLUS_MODELS)
+
+    def _predefined_model_has_parameter(self, model: str, parameter_name: str) -> bool:
+        for model_schema in self.model_schemas:
+            if model_schema.model != model:
+                continue
+            return any(rule.name == parameter_name for rule in model_schema.parameter_rules)
+        return False
+
+    def _resolve_prompt_cache_ttl(
+        self,
+        model: str,
+        model_parameters: dict[str, Any],
+    ) -> Optional[str]:
+        ttl = model_parameters.pop(self.PROMPT_CACHING_TTL_PARAMETER, None)
+        if not self._predefined_model_has_parameter(model, self.PROMPT_CACHING_TTL_PARAMETER):
+            return None
+        if isinstance(ttl, str) and ttl in self.VALID_PROMPT_CACHING_TTLS:
+            return ttl
+        return None
+
+    def _cache_control(self) -> dict[str, str]:
+        cache_control = {"type": PromptCachingHandler.CACHE_CONTROL_TYPE}
+        if self._prompt_cache_ttl:
+            cache_control["ttl"] = self._prompt_cache_ttl
+        return cache_control
+
+    def _cache_write_fallback_multiplier(self) -> float:
+        if self._prompt_cache_ttl == "1h":
+            return PromptCachingHandler.CACHE_WRITE_1H_MULTIPLIER
+        return PromptCachingHandler.CACHE_WRITE_5M_MULTIPLIER
+
+    @staticmethod
+    def _get_cache_creation_input_tokens_by_ttl(usage: Any) -> tuple[int, int]:
+        cache_creation = getattr(usage, "cache_creation", None)
+        if not cache_creation:
+            return 0, 0
+        if isinstance(cache_creation, Mapping):
+            return (
+                int(cache_creation.get("ephemeral_5m_input_tokens") or 0),
+                int(cache_creation.get("ephemeral_1h_input_tokens") or 0),
+            )
+        return (
+            int(getattr(cache_creation, "ephemeral_5m_input_tokens", 0) or 0),
+            int(getattr(cache_creation, "ephemeral_1h_input_tokens", 0) or 0),
+        )
 
     def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:
         """
@@ -390,6 +460,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 user_id=user
             )
         # Extract caching flags early so _convert_prompt_messages can use them
+        self._prompt_cache_ttl = self._resolve_prompt_cache_ttl(model, model_parameters)
         self._tool_cache_enabled = model_parameters.pop("prompt_caching_tool_definitions", False)
         self._system_cache_enabled = model_parameters.pop("prompt_caching_system_message", False)
         self._image_cache_enabled = model_parameters.pop("prompt_caching_images", False)
@@ -634,7 +705,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             "name": tool.name,
             "description": tool.description,
             "input_schema": input_schema,
-            **({"cache_control": {"type": "ephemeral"}} if getattr(self, "_tool_cache_enabled", False) else {}),
+            **({"cache_control": self._cache_control()} if getattr(self, "_tool_cache_enabled", False) else {}),
         }
 
     def _transform_chat_json_prompts(
@@ -823,16 +894,24 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         # Adjust prompt tokens for cache operations
         cache_creation_input_tokens = 0
         cache_read_input_tokens = 0
+        cache_creation_5m_input_tokens = 0
+        cache_creation_1h_input_tokens = 0
         if response.usage:
             if hasattr(response.usage, "cache_creation_input_tokens") and response.usage.cache_creation_input_tokens:
                 cache_creation_input_tokens = response.usage.cache_creation_input_tokens
             if hasattr(response.usage, "cache_read_input_tokens") and response.usage.cache_read_input_tokens:
                 cache_read_input_tokens = response.usage.cache_read_input_tokens
+            cache_creation_5m_input_tokens, cache_creation_1h_input_tokens = (
+                self._get_cache_creation_input_tokens_by_ttl(response.usage)
+            )
 
         adjusted_prompt_tokens = PromptCachingHandler.calc_adjusted_prompt_tokens(
             prompt_tokens,
             cache_creation_input_tokens,
             cache_read_input_tokens,
+            cache_creation_5m_input_tokens,
+            cache_creation_1h_input_tokens,
+            self._cache_write_fallback_multiplier(),
         )
 
         usage = super()._calc_response_usage(
@@ -886,6 +965,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         # Cache token tracking
         cache_creation_input_tokens = 0
         cache_read_input_tokens = 0
+        cache_creation_5m_input_tokens = 0
+        cache_creation_1h_input_tokens = 0
         
         for chunk in response:
             logging.info(f"Anthropic API Stream Response Chunk: {chunk.model_dump_json()}")
@@ -897,6 +978,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         cache_creation_input_tokens = chunk.message.usage.cache_creation_input_tokens
                     if hasattr(chunk.message.usage, "cache_read_input_tokens") and chunk.message.usage.cache_read_input_tokens:
                         cache_read_input_tokens = chunk.message.usage.cache_read_input_tokens
+                    cache_creation_5m_input_tokens, cache_creation_1h_input_tokens = (
+                        self._get_cache_creation_input_tokens_by_ttl(chunk.message.usage)
+                    )
             elif hasattr(chunk, "type") and chunk.type == "content_block_start":
                 if hasattr(chunk, "content_block"):
                     content_block = chunk.content_block
@@ -939,8 +1023,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                                     break
                 
                 if chunk.index != current_block_index:
-                    if current_block_type == "thinking" and current_block_index is not None:
-                        assistant_prompt_message = AssistantPromptMessage(content="\n</think>")
+                    if current_block_type in ("thinking", "redacted_thinking") and current_block_index is not None:
+                        assistant_prompt_message = AssistantPromptMessage(content="\n</think>\n\n")
                         yield LLMResultChunk(
                             model=return_model,
                             prompt_messages=prompt_messages,
@@ -1023,9 +1107,12 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     cache_creation_input_tokens = chunk.usage.cache_creation_input_tokens
                 if hasattr(chunk.usage, "cache_read_input_tokens") and chunk.usage.cache_read_input_tokens:
                     cache_read_input_tokens = chunk.usage.cache_read_input_tokens
+                cache_creation_5m_input_tokens, cache_creation_1h_input_tokens = (
+                    self._get_cache_creation_input_tokens_by_ttl(chunk.usage)
+                )
             elif isinstance(chunk, MessageStopEvent):
-                if current_block_type == "thinking" and current_block_index is not None:
-                    assistant_prompt_message = AssistantPromptMessage(content="\n</think>")
+                if current_block_type in ("thinking", "redacted_thinking") and current_block_index is not None:
+                    assistant_prompt_message = AssistantPromptMessage(content="\n</think>\n\n")
                     yield LLMResultChunk(
                         model=return_model,
                         prompt_messages=prompt_messages,
@@ -1055,6 +1142,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     input_tokens,
                     cache_creation_input_tokens,
                     cache_read_input_tokens,
+                    cache_creation_5m_input_tokens,
+                    cache_creation_1h_input_tokens,
+                    self._cache_write_fallback_multiplier(),
                 )
                 
                 usage = super()._calc_response_usage(
@@ -1113,7 +1203,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         """
         caching_handler = PromptCachingHandler(
             prompt_messages, 
-            enable_system_cache=self._system_cache_enabled
+            enable_system_cache=self._system_cache_enabled,
+            cache_control=self._cache_control(),
         )
         system = caching_handler.get_system_prompt()
         
@@ -1176,7 +1267,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 "content": [{
                     "type": "text",
                     "text": text,
-                    "cache_control": {"type": "ephemeral"}
+                    "cache_control": self._cache_control()
                 }]
             }
         return {"role": "user", "content": text}
@@ -1218,7 +1309,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             "text": content.data
         }
         if self._should_cache_text(content.data):
-            result["cache_control"] = {"type": "ephemeral"}
+            result["cache_control"] = self._cache_control()
         return result
     
     def _create_image_content(self, content: ImagePromptMessageContent) -> dict:
@@ -1243,7 +1334,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         }
         
         if self._image_cache_enabled:
-            result["cache_control"] = {"type": "ephemeral"}
+            result["cache_control"] = self._cache_control()
         
         return result
     
@@ -1298,7 +1389,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         }
         
         if self._document_cache_enabled:
-            result["cache_control"] = {"type": "ephemeral"}
+            result["cache_control"] = self._cache_control()
         
         return result
     
@@ -1341,7 +1432,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         }
         
         if self._tool_results_cache_enabled:
-            result["cache_control"] = {"type": "ephemeral"}
+            result["cache_control"] = self._cache_control()
         
         return result
     
@@ -1351,7 +1442,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             return {
                 "type": "text",
                 "text": text,
-                "cache_control": {"type": "ephemeral"}
+                "cache_control": self._cache_control()
             }
         return {"type": "text", "text": text}
     
@@ -1364,7 +1455,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         }
         
         if self._tool_results_cache_enabled:
-            tool_result_content["cache_control"] = {"type": "ephemeral"}
+            tool_result_content["cache_control"] = self._cache_control()
         
         return {
             "role": "user",

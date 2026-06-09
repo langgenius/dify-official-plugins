@@ -5,10 +5,11 @@ from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
 from tools.utils import (
-    convert_file_type,
-    get_markdown_from_result,
-    make_paddleocr_api_request,
-    process_images_from_result,
+    build_paddleocr_vl_options,
+    call_paddleocr_api,
+    cleanup_temp_file,
+    get_sdk_client,
+    normalize_file_input,
 )
 
 
@@ -21,80 +22,102 @@ class DocumentParsingVlTool(Tool):
             )
         access_token = self.runtime.credentials["aistudio_access_token"]
 
-        if "document_parsing_vl_api_url" not in self.runtime.credentials:
-            raise RuntimeError(
-                "The large model document parsing API URL is not configured or invalid. Please provide it in the plugin settings."
-            )
-        api_url = self.runtime.credentials["document_parsing_vl_api_url"]
+        # Get base_url (optional, uses SDK default if not provided)
+        base_url = self.runtime.credentials.get("base_url")
 
-        if "file" not in tool_parameters:
-            raise RuntimeError("File is not provided.")
-
-        params: dict[str, Any] = {}
-        params["file"] = tool_parameters["file"]
-        for optional_param_name in [
-            "fileType",
-            "useDocOrientationClassify",
-            "useDocUnwarping",
-            "useLayoutDetection",
-            "useChartRecognition",
-            "useSealRecognition",
-            "useOcrForImageBlock",
-            "layoutThreshold",
-            "layoutNms",
-            "layoutUnclipRatio",
-            "layoutMergeBboxesMode",
-            "layoutShapeMode",
-            "promptLabel",
-            "formatBlockContent",
-            "repetitionPenalty",
-            "temperature",
-            "topP",
-            "minPixels",
-            "maxPixels",
-            "maxNewTokens",
-            "mergeLayoutBlocks",
-            "markdownIgnoreLabels",
-            "vlmExtraArgs",
-            "prettifyMarkdown",
-            "showFormulaNumber",
-            "restructurePages",
-            "mergeTables",
-            "relevelTitles",
-            "visualize",
-        ]:
-            if optional_param_name in tool_parameters:
-                params[optional_param_name] = tool_parameters[optional_param_name]
-
-        # Convert fileType parameter
-        if "fileType" in params:
-            params["fileType"] = convert_file_type(params["fileType"])
-
-        # Convert promptLabel parameter
-        if "promptLabel" in params and params["promptLabel"] == "undefined":
-            params.pop("promptLabel")
-
-        # Convert markdownIgnoreLabels from comma-separated string to list
-        if "markdownIgnoreLabels" in params and isinstance(
-            params["markdownIgnoreLabels"], str
-        ):
-            params["markdownIgnoreLabels"] = [
-                label.strip()
-                for label in params["markdownIgnoreLabels"].split(",")
-                if label.strip()
-            ]
-
-        result = make_paddleocr_api_request(api_url, params, access_token)
-
-        images, image_path_map, failed_images, blob_messages = (
-            process_images_from_result(result, self)
+        # Normalize file input - returns (input_value, is_temp_file, file_type_code)
+        file_input, is_temp_file, file_type_code = normalize_file_input(
+            tool_parameters.get("file"), tool_parameters.get("fileType")
         )
 
-        markdown = get_markdown_from_result(result, image_path_map, failed_images)
+        try:
+            # Build options from parameters
+            options = build_paddleocr_vl_options(tool_parameters)
 
-        for blob_data, blob_meta in blob_messages:
-            yield self.create_blob_message(blob_data, meta=blob_meta)
+            # Get API client config
+            client_config = get_sdk_client(access_token, base_url)
 
-        yield self.create_variable_message("images", images)
-        yield self.create_text_message(markdown)
-        yield self.create_json_message(result)
+            # Call API with PaddleOCR-VL-1.6 model
+            if file_input.startswith(("http://", "https://")):
+                result = call_paddleocr_api(
+                    model="PaddleOCR-VL-1.6",
+                    file_url=file_input,
+                    file_path=None,
+                    options=options,
+                    client_config=client_config,
+                    is_document_parsing=True,
+                )
+            else:
+                result = call_paddleocr_api(
+                    model="PaddleOCR-VL-1.6",
+                    file_url=None,
+                    file_path=file_input,
+                    options=options,
+                    client_config=client_config,
+                    is_document_parsing=True,
+                )
+
+            # Process images from result
+            images = []
+            image_path_map = {}
+            failed_images = []
+
+            for page in result["pages"]:
+                if page["markdown_images"]:
+                    image_dict = page["markdown_images"]
+                    if image_dict:
+                        for image_path, image_url in image_dict.items():
+                            if image_path in image_path_map:
+                                continue
+                            try:
+                                import requests
+                                image_bytes = requests.get(image_url, timeout=(10, 600)).content
+                                file_name = f"paddleocr_vl_image_{len(images)}.jpg"
+                                upload_response = self.session.file.upload(
+                                    file_name, image_bytes, "image/jpeg"
+                                )
+                                images.append(upload_response)
+                                image_path_map[image_path] = upload_response
+                                if not upload_response.preview_url:
+                                    failed_images.append(image_path)
+                            except Exception as e:
+                                self.runtime.logger.warning(f"Failed to process image {image_path}: {e}")
+                                failed_images.append(image_path)
+
+            # Build markdown with image replacement
+            markdown_text_list = []
+            for page in result["pages"]:
+                markdown_text = page["markdown_text"]
+                if markdown_text is not None:
+                    # Replace image paths with uploaded URLs
+                    for image_path, upload_response in image_path_map.items():
+                        if upload_response.preview_url:
+                            markdown_text = markdown_text.replace(
+                                f'src="{image_path}"',
+                                f'src="{upload_response.preview_url}"'
+                            )
+                        else:
+                            markdown_text = markdown_text.replace(
+                                f'src="{image_path}"',
+                                'src="[Image unavailable]"'
+                            )
+                    markdown_text_list.append(markdown_text)
+
+            yield self.create_text_message("\n\n".join(markdown_text_list))
+
+            # Return raw result as JSON
+            yield self.create_json_message({
+                "job_id": result["job_id"],
+                "pages": [
+                    {
+                        "markdown_text": page["markdown_text"],
+                        "markdown_images": page["markdown_images"],
+                        "output_images": page["output_images"],
+                    }
+                    for page in result["pages"]
+                ]
+            })
+
+        finally:
+            # Clean up temporary file if created
+            cleanup_temp_file(file_input, is_temp_file)

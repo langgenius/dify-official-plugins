@@ -6,6 +6,7 @@ from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from tools.document_parsing import DocumentParsingTool
 from tools.document_parsing_vl import DocumentParsingVlTool
 from tools.text_recognition import TextRecognitionTool
+from tools.utils import call_paddleocr_api, get_sdk_client
 
 
 class PaddleocrProvider(ToolProvider):
@@ -15,36 +16,26 @@ class PaddleocrProvider(ToolProvider):
                 "AI Studio access token must be provided"
             )
 
-        api_url_keys = (
-            "text_recognition_api_url",
-            "document_parsing_api_url",
-            "document_parsing_vl_api_url",
-        )
-        tool_classes = (
-            TextRecognitionTool,
-            DocumentParsingTool,
-            DocumentParsingVlTool,
-        )
+        # Get base_url (optional, uses SDK default if not provided)
+        base_url = credentials.get("base_url")
+
+        # Test with OCR (works for all models)
         test_file = "https://paddle-model-ecology.bj.bcebos.com/paddlex/imgs/demo_image/general_ocr_002.png"
 
-        if not any(key in credentials for key in api_url_keys):
-            raise ToolProviderCredentialValidationError(
-                "You should provide at least one API URL"
+        try:
+            client_config = get_sdk_client(
+                access_token=credentials["aistudio_access_token"],
+                base_url=base_url,
             )
-
-        for api_url_key, tool_cls in zip(api_url_keys, tool_classes):
-            if api_url_key in credentials:
-                try:
-                    self._test_tool_validation(tool_cls, credentials, test_file)
-                except Exception as e:
-                    raise ToolProviderCredentialValidationError(
-                        f"Invalid credentials for {tool_cls.__name__}"
-                    ) from e
-
-    def _test_tool_validation(
-        self, tool_cls, credentials: dict[str, Any], test_file: str
-    ) -> None:
-        tool = tool_cls.from_credentials(credentials)
-
-        for _ in tool.invoke(tool_parameters={"file": test_file}):
-            break
+            call_paddleocr_api(
+                model="PP-OCRv5",
+                file_url=test_file,
+                file_path=None,
+                options={},
+                client_config=client_config,
+                is_document_parsing=False,
+            )
+        except Exception as e:
+            raise ToolProviderCredentialValidationError(
+                f"Validation failed: {e}"
+            ) from e
