@@ -18,6 +18,8 @@ name: ollama
 plugins:
   models:
     - provider/ollama.yaml
+  tools:
+    - provider/ollama_tools.yaml
 resource:
   memory: 268435456
   permission:
@@ -32,4 +34,4 @@ resource:
     tool:
       enabled: true
 type: plugin
-version: 0.2.2
+version: 1.0.0
