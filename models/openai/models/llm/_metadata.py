@@ -13,12 +13,15 @@ Unlike Bedrock or Vertex, OpenAI does not document a character pattern
 restriction on metadata values, so ``normalize_metadata_value`` only
 enforces string coercion and the 512-character length cap.
 
-This plugin deliberately does NOT set ``store=true``. Whether stored
-completions are retained — and therefore whether this metadata appears
-in the dashboard — is governed by the account-level Stored Completions
-setting, which the terminus owner controls. Setting ``store`` from the
-plugin would change persistence behavior as a side effect of an
-observability opt-in, which is out of scope for this feature.
+The OpenAI API only accepts ``metadata`` when ``store`` is true — it
+rejects the request with ``BadRequestError: The 'metadata' parameter is
+only allowed when 'store' is enabled.`` otherwise. Enabling this feature
+therefore inherently requires ``store=true``, so
+``apply_dify_metadata_if_enabled`` sets it alongside the metadata. This
+means requests and responses are persisted to Stored Completions on the
+OpenAI account; the credential's help text documents that storage
+behavior. An explicit ``store`` value already present on the request is
+respected rather than overwritten.
 """
 
 from __future__ import annotations
@@ -67,8 +70,11 @@ def apply_dify_metadata_if_enabled(target: dict, credentials: dict) -> None:
     """Inject Dify metadata into ``target`` when opt-in credential is set.
 
     Reads ``credentials['enable_request_metadata']``; when ``"enabled"``,
-    resolves the current Dify session's ``app_id`` (best-effort) and sets
-    ``target['metadata']`` to the built dict, if one is produced.
+    resolves the current Dify session's ``app_id`` (best-effort), sets
+    ``target['metadata']`` to the built dict (if one is produced), and sets
+    ``target['store'] = True`` — the API only accepts ``metadata`` when
+    ``store`` is enabled. An explicit ``store`` value already on ``target``
+    is left untouched.
 
     Session lookup failures are swallowed silently: metadata attachment is
     telemetry, and must never break generation if the SDK is missing or
@@ -99,3 +105,7 @@ def apply_dify_metadata_if_enabled(target: dict, credentials: dict) -> None:
         target["metadata"] = {**existing, **metadata}
     else:
         target["metadata"] = metadata
+    # The API only accepts metadata when store=true. Don't overwrite an
+    # explicit store value already set by the caller.
+    if "store" not in target:
+        target["store"] = True

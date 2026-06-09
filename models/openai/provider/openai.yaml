@@ -95,8 +95,8 @@ model_credential_schema:
             zh_Hans: 已禁用
             en_US: Disabled
       help:
-        zh_Hans: 启用后，将在 OpenAI Chat Completions 和 Responses API 调用中将 dify_app_id 和 dify_source 作为 metadata 附加，从而支持按应用过滤 Usage Dashboard。元数据是否在 Dashboard 中可见取决于 OpenAI 账户的 Stored Completions 设置，本插件不会设置 store=true。默认禁用。
-        en_US: When enabled, attaches dify_app_id and dify_source as metadata on OpenAI Chat Completions and Responses API calls, enabling per-app filtering in the Usage Dashboard. Whether the metadata is visible in the dashboard depends on the OpenAI account's Stored Completions setting; this plugin does not set store=true. Default disabled.
+        zh_Hans: 启用后，在 chat.completions.create 和 responses.create 调用中附加 dify_app_id 和 dify_source 作为 metadata，同时设置 store=true 以便 metadata 被记录到 Stored Completions（OpenAI API 要求：仅当 store 为 true 时才接受 metadata）。这意味着请求和响应会保存在您的 OpenAI 账户。可见性由您的 OpenAI Stored Completions 设置控制。默认禁用。
+        en_US: "When enabled, attaches dify_app_id and dify_source as metadata on both chat.completions.create and responses.create, AND sets store=true so the metadata is recorded in Stored Completions (required by OpenAI API: metadata is only accepted when store is true). This means requests and responses are persisted on your OpenAI account; visibility is governed by your OpenAI Stored Completions setting. Default disabled. See: https://platform.openai.com/docs/api-reference/chat/create#chat-create-store"
 provider_credential_schema:
   credential_form_schemas:
     - variable: openai_api_key
@@ -170,8 +170,8 @@ provider_credential_schema:
             zh_Hans: 已禁用
             en_US: Disabled
       help:
-        zh_Hans: 启用后，将在 OpenAI Chat Completions 和 Responses API 调用中将 dify_app_id 和 dify_source 作为 metadata 附加，从而支持按应用过滤 Usage Dashboard。元数据是否在 Dashboard 中可见取决于 OpenAI 账户的 Stored Completions 设置，本插件不会设置 store=true。默认禁用。
-        en_US: When enabled, attaches dify_app_id and dify_source as metadata on OpenAI Chat Completions and Responses API calls, enabling per-app filtering in the Usage Dashboard. Whether the metadata is visible in the dashboard depends on the OpenAI account's Stored Completions setting; this plugin does not set store=true. Default disabled.
+        zh_Hans: 启用后，在 chat.completions.create 和 responses.create 调用中附加 dify_app_id 和 dify_source 作为 metadata，同时设置 store=true 以便 metadata 被记录到 Stored Completions（OpenAI API 要求：仅当 store 为 true 时才接受 metadata）。这意味着请求和响应会保存在您的 OpenAI 账户。可见性由您的 OpenAI Stored Completions 设置控制。默认禁用。
+        en_US: "When enabled, attaches dify_app_id and dify_source as metadata on both chat.completions.create and responses.create, AND sets store=true so the metadata is recorded in Stored Completions (required by OpenAI API: metadata is only accepted when store is true). This means requests and responses are persisted on your OpenAI account; visibility is governed by your OpenAI Stored Completions setting. Default disabled. See: https://platform.openai.com/docs/api-reference/chat/create#chat-create-store"
 models:
   llm:
     predefined:

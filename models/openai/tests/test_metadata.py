@@ -138,5 +138,39 @@ def test_apply_does_not_mutate_existing_metadata(monkeypatch):
     assert target["metadata"]["dify_app_id"] == "550e8400-e29b-41d4-a716-446655440000"
 
 
+def test_apply_sets_store_true(monkeypatch):
+    # The API only accepts metadata when store=true, so applying the metadata
+    # must also enable store.
+    import dify_plugin
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
+    target: dict = {}
+    apply_dify_metadata_if_enabled(target, {"enable_request_metadata": "enabled"})
+    assert target["store"] is True
+
+
+def test_apply_preserves_explicit_store(monkeypatch):
+    # An explicit store value set by the caller must be respected, not
+    # overwritten — even when it is False.
+    import dify_plugin
+
+    monkeypatch.setattr(dify_plugin, "get_current_session", lambda: _FakeSession())
+    target: dict = {"store": False}
+    apply_dify_metadata_if_enabled(target, {"enable_request_metadata": "enabled"})
+    assert target["store"] is False
+    assert target["metadata"]["dify_app_id"] == "550e8400-e29b-41d4-a716-446655440000"
+
+
+def test_apply_disabled_does_not_touch_store():
+    # When the feature is disabled or unset, store must not be touched.
+    target: dict = {}
+    apply_dify_metadata_if_enabled(target, {"enable_request_metadata": "disabled"})
+    assert "store" not in target
+
+    target_unset: dict = {}
+    apply_dify_metadata_if_enabled(target_unset, {})
+    assert "store" not in target_unset
+
+
 def test_normalize_none_returns_empty():
     assert normalize_metadata_value(None) == ""

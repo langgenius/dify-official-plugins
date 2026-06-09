@@ -772,9 +772,10 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             extra_model_kwargs["stream_options"] = {"include_usage": True}
 
         # Optional: attach Dify app_id as OpenAI request metadata. Default
-        # disabled; opt-in via the enable_request_metadata credential. Whether
-        # this surfaces in the Usage Dashboard depends on the account's
-        # Stored Completions setting — the plugin does not set store=true.
+        # disabled; opt-in via the enable_request_metadata credential. When
+        # enabled, store=true is set alongside the metadata (the API only
+        # accepts metadata when store is enabled), persisting the request to
+        # Stored Completions on the OpenAI account.
         from ._metadata import apply_dify_metadata_if_enabled
 
         apply_dify_metadata_if_enabled(extra_model_kwargs, credentials)
@@ -893,8 +894,9 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             params["user"] = user
 
         # Optional: attach Dify app_id as OpenAI request metadata. Default
-        # disabled; opt-in via the enable_request_metadata credential. See
-        # _metadata.py for the rationale on not setting store=true.
+        # disabled; opt-in via the enable_request_metadata credential. When
+        # enabled, store=true is set alongside the metadata — see _metadata.py
+        # for why the API requires it.
         if credentials is not None:
             from ._metadata import apply_dify_metadata_if_enabled
 
