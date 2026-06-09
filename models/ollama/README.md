@@ -1,6 +1,6 @@
 ## Overview
 
-Ollama runs open models locally on macOS, Windows, and Linux, and also exposes the same API for Ollama cloud models. This Dify plugin integrates Ollama chat/completion models, vision-capable models, text embeddings, tool calling, streamed responses, thinking output, and Ollama cloud web search/fetch tools.
+Ollama runs open models locally on macOS, Windows, and Linux, and also exposes the same API for Ollama cloud models. This Dify plugin integrates Ollama chat/completion models, vision-capable models, text embeddings, tool calling, streamed responses, and thinking output.
 
 Use the Ollama host root as the Base URL. For a local server, use `http://localhost:11434` or another reachable host root. For Ollama cloud models, use `https://ollama.com` and provide an Ollama API key. Do not include `/api` in the Base URL because the plugin appends `/api/chat`, `/api/generate`, and `/api/embed`.
 
@@ -13,7 +13,7 @@ Use the Ollama host root as the Base URL. For a local server, use `http://localh
 | Vision | Yes | Enable `Vision support` for multimodal models such as `gemma3` or other Ollama vision models. Images are sent as base64 through Ollama's `images` array. |
 | Embeddings | Yes | Use model type `Text Embedding`. The plugin calls `/api/embed` and sends batched input with `truncate: true`. |
 | Tool calling | Yes | Enable `Function call support` for tool-capable chat models. The plugin supports single, parallel, multi-turn, and streamed tool calls through Dify agents. |
-| Web search | Yes | Configure the `Ollama Web` tool provider with an Ollama API key, then add `web_search` and `web_fetch` to an agent. These use Ollama cloud endpoints, not the local Ollama server. |
+| Web search | External API | Ollama provides cloud `web_search` and `web_fetch` APIs, but Dify model-provider plugins cannot package tool providers. Use a separate Dify tool plugin or external workflow when an agent needs web search. |
 | Rerank | Compatible endpoint | Ollama does not provide a native rerank endpoint. Use an OpenAI-compatible rerank service and configure its full rerank URL. |
 
 ## Configure Ollama Models
@@ -88,16 +88,11 @@ Recommended Ollama embedding models include:
 
 The plugin sends arrays of text to `/api/embed`, which returns L2-normalized vectors.
 
-## Configure Ollama Web Search
+## Ollama Web Search
 
-Ollama web search and web fetch are cloud APIs. They require an Ollama account and API key.
+Ollama web search and web fetch are cloud APIs. They require an Ollama account and API key, and they are separate from the local model server endpoints.
 
-1. Create an API key at [ollama.com/settings/keys](https://ollama.com/settings/keys).
-2. In Dify, configure the `Ollama Web` tool provider with that key.
-3. Add the `web_search` and `web_fetch` tools to an agent.
-4. Use an Ollama tool-capable model with `Function call support` enabled so the model can call those tools.
-
-`web_search` accepts `query` and `max_results` from 1 to 10. `web_fetch` accepts a single `url`.
+This plugin is a model provider, so it does not include Ollama web search as bundled Dify tools. To use web search with an Ollama model in a Dify agent, configure a separate search tool or dedicated Ollama web tool plugin, then enable `Function call support` on the Ollama chat model so it can call the external tool.
 
 ## Configure Rerank
 

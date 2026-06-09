@@ -18,8 +18,6 @@ name: ollama
 plugins:
   models:
     - provider/ollama.yaml
-  tools:
-    - provider/ollama_tools.yaml
 resource:
   memory: 268435456
   permission:
