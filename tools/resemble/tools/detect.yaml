@@ -1,0 +1,158 @@
+identity:
+  author: resemble-ai
+  name: detect
+  label:
+    en_US: Deepfake Detection
+description:
+  human:
+    en_US: Analyze audio, image, or video for AI-generated / manipulated content.
+      Toggle on intelligence, audio source tracing, visualization, reverse image
+      search, and more — you decide exactly what runs.
+  llm: Detect whether a media file (audio, image, or video) at a public HTTPS URL
+    is a deepfake / AI-generated. Returns a label (real|fake) and confidence score.
+    Optional flags add media intelligence, audio source tracing, and visualizations.
+parameters:
+- name: url
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Media URL
+  human_description:
+    en_US: Public HTTPS URL to the audio, image, or video to analyze.
+  llm_description: Public HTTPS URL of the media file to check for deepfakes.
+- name: run_intelligence
+  type: boolean
+  required: false
+  default: false
+  form: form
+  label:
+    en_US: Run Intelligence
+  human_description:
+    en_US: Also run multimodal intelligence analysis (transcription, emotion, speaker
+      info, misinformation) alongside detection.
+  llm_description: If true, include intelligence analysis with the detection.
+- name: audio_source_tracing
+  type: boolean
+  required: false
+  default: false
+  form: form
+  label:
+    en_US: Audio Source Tracing
+  human_description:
+    en_US: If the audio is fake, identify which AI platform likely generated it.
+  llm_description: If true, trace which AI platform generated fake audio.
+- name: visualize
+  type: boolean
+  required: false
+  default: false
+  form: form
+  label:
+    en_US: Visualize
+  human_description:
+    en_US: Generate heatmap / visualization artifacts for the result.
+  llm_description: If true, generate visualization heatmaps.
+- name: use_reverse_search
+  type: boolean
+  required: false
+  default: false
+  form: form
+  label:
+    en_US: Reverse Image Search
+  human_description:
+    en_US: Image only — search the web for known matching sources.
+  llm_description: If true (images), run reverse image search for known sources.
+- name: use_ood_detector
+  type: boolean
+  required: false
+  default: false
+  form: form
+  label:
+    en_US: Out-of-Distribution Detector
+  human_description:
+    en_US: Enable out-of-distribution detection for unusual inputs.
+  llm_description: If true, enable the out-of-distribution detector.
+- name: zero_retention_mode
+  type: boolean
+  required: false
+  default: false
+  form: form
+  label:
+    en_US: Zero-Retention Mode
+  human_description:
+    en_US: Auto-delete the media after detection completes (recommended for sensitive
+      media).
+  llm_description: If true, the media is deleted after analysis.
+- name: model_types
+  type: select
+  required: false
+  default: auto
+  form: form
+  label:
+    en_US: Model Type
+  human_description:
+    en_US: Force a specific detection model. Auto picks based on the media.
+  llm_description: Detection model to use.
+  options:
+  - value: auto
+    label:
+      en_US: Auto
+  - value: image
+    label:
+      en_US: Image
+  - value: talking_head
+    label:
+      en_US: Talking Head (face-swap)
+- name: frame_length
+  type: number
+  required: false
+  default: 2
+  min: 1
+  max: 4
+  form: form
+  label:
+    en_US: Frame Length (seconds)
+  human_description:
+    en_US: Audio/video analysis window size in seconds (1–4).
+  llm_description: Analysis window size in seconds, 1 to 4.
+- name: start_region
+  type: number
+  required: false
+  form: form
+  label:
+    en_US: Start Region (seconds)
+  human_description:
+    en_US: Start of the segment to analyze, in seconds.
+  llm_description: Start of the segment to analyze (seconds).
+- name: end_region
+  type: number
+  required: false
+  form: form
+  label:
+    en_US: End Region (seconds)
+  human_description:
+    en_US: End of the segment to analyze, in seconds.
+  llm_description: End of the segment to analyze (seconds).
+- name: callback_url
+  type: string
+  required: false
+  form: form
+  label:
+    en_US: Callback URL (async)
+  human_description:
+    en_US: If set, the detection runs async and the result is POSTed here instead
+      of waiting/polling.
+  llm_description: Optional webhook URL for async completion.
+- name: max_wait_seconds
+  type: number
+  required: false
+  default: 120
+  form: form
+  label:
+    en_US: Max Wait (seconds)
+  human_description:
+    en_US: How long to poll for a result before returning the in-progress job.
+  llm_description: Maximum seconds to wait for the detection to finish.
+extra:
+  python:
+    source: tools/detect.py

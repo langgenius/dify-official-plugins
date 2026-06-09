@@ -1,0 +1,43 @@
+identity:
+  author: resemble-ai
+  name: detect_ask
+  label:
+    en_US: Ask About a Detection
+description:
+  human:
+    en_US: Ask a natural-language question about a completed detection (e.g. "How
+      confident is the model that this is fake?").
+  llm: Ask a natural-language question about an already-completed detection, given
+    its UUID. Returns a natural-language answer grounded in the detection result.
+parameters:
+- name: detect_uuid
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Detection UUID
+  human_description:
+    en_US: The UUID of a completed detection (from the Deepfake Detection tool).
+  llm_description: UUID of a completed detection to ask about.
+- name: query
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Question
+  human_description:
+    en_US: The question to ask about the detection result.
+  llm_description: Natural-language question about the detection.
+- name: max_wait_seconds
+  type: number
+  required: false
+  default: 120
+  form: form
+  label:
+    en_US: Max Wait (seconds)
+  human_description:
+    en_US: How long to poll for the answer before returning.
+  llm_description: Maximum seconds to wait for the answer.
+extra:
+  python:
+    source: tools/detect_ask.py

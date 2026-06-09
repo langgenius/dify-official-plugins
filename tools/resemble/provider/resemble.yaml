@@ -1,0 +1,41 @@
+identity:
+  author: resemble-ai
+  name: resemble
+  label:
+    en_US: Resemble Detect + Intelligence
+  description:
+    en_US: Detect deepfakes and analyze media (audio, image, video) with Resemble AI
+      — deepfake detection, intelligence, audio source tracing, and watermarking.
+  icon: icon.svg
+  tags:
+  - utilities
+credentials_for_provider:
+  resemble_api_key:
+    type: secret-input
+    required: true
+    label:
+      en_US: Resemble API Key
+    placeholder:
+      en_US: Your Resemble API key
+    help:
+      en_US: Find your API key in the Resemble dashboard under Account → API.
+    url: https://app.resemble.ai
+  base_url:
+    type: text-input
+    required: false
+    label:
+      en_US: API Base URL (optional)
+    placeholder:
+      en_US: https://app.resemble.ai/api/v2
+    help:
+      en_US: Override only for self-hosted / enterprise endpoints. Leave blank for
+        the default.
+tools:
+- tools/detect.yaml
+- tools/intelligence.yaml
+- tools/detect_ask.yaml
+- tools/watermark_apply.yaml
+- tools/watermark_detect.yaml
+extra:
+  python:
+    source: provider/resemble.py

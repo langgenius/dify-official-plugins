@@ -1,0 +1,95 @@
+identity:
+  author: resemble-ai
+  name: intelligence
+  label:
+    en_US: Media Intelligence
+description:
+  human:
+    en_US: Analyze media for rich structured insights — transcription, translation,
+      speaker info, emotion, context, and misinformation — independent of detection.
+  llm: Analyze a media file (audio, image, or video) for structured intelligence
+    such as transcription, translation, language, emotion, speaker info, scene
+    description, and misinformation analysis.
+parameters:
+- name: url
+  type: string
+  required: false
+  form: llm
+  label:
+    en_US: Media URL
+  human_description:
+    en_US: Public HTTPS URL to the media. Provide this or a media token.
+  llm_description: Public HTTPS URL of the media to analyze.
+- name: media_token
+  type: string
+  required: false
+  form: form
+  label:
+    en_US: Media Token
+  human_description:
+    en_US: Token from a secure upload, as an alternative to a URL.
+  llm_description: Secure-upload media token (alternative to url).
+- name: structured_json
+  type: boolean
+  required: false
+  default: true
+  form: form
+  label:
+    en_US: Structured JSON
+  human_description:
+    en_US: Return structured fields rather than free text.
+  llm_description: If true, return structured JSON fields.
+- name: media_type
+  type: select
+  required: false
+  default: auto
+  form: form
+  label:
+    en_US: Media Type
+  human_description:
+    en_US: Force the media type, or let it auto-detect.
+  llm_description: Media type hint.
+  options:
+  - value: auto
+    label:
+      en_US: Auto
+  - value: audio
+    label:
+      en_US: Audio
+  - value: video
+    label:
+      en_US: Video
+  - value: image
+    label:
+      en_US: Image
+- name: detect_id
+  type: string
+  required: false
+  form: form
+  label:
+    en_US: Associated Detect UUID
+  human_description:
+    en_US: Associate this analysis with an existing detection.
+  llm_description: UUID of an existing detection to associate.
+- name: callback_url
+  type: string
+  required: false
+  form: form
+  label:
+    en_US: Callback URL (async)
+  human_description:
+    en_US: If set, run async and POST the result to this webhook.
+  llm_description: Optional webhook URL for async completion.
+- name: max_wait_seconds
+  type: number
+  required: false
+  default: 120
+  form: form
+  label:
+    en_US: Max Wait (seconds)
+  human_description:
+    en_US: How long to poll before returning the in-progress job.
+  llm_description: Maximum seconds to wait for the analysis to finish.
+extra:
+  python:
+    source: tools/intelligence.py

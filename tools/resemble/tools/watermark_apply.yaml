@@ -1,0 +1,55 @@
+identity:
+  author: resemble-ai
+  name: watermark_apply
+  label:
+    en_US: Apply Watermark
+description:
+  human:
+    en_US: Embed an invisible watermark into media for provenance tracking, then
+      download the watermarked file.
+  llm: Apply an invisible watermark to a media file at a public HTTPS URL. Returns
+    a URL to the watermarked media.
+parameters:
+- name: url
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Media URL
+  human_description:
+    en_US: Public HTTPS URL to the media to watermark.
+  llm_description: Public HTTPS URL of the media to watermark.
+- name: strength
+  type: number
+  required: false
+  default: 0.2
+  min: 0
+  max: 1
+  form: form
+  label:
+    en_US: Strength
+  human_description:
+    en_US: Watermark strength 0.0–1.0 (image/video only).
+  llm_description: Watermark strength between 0 and 1.
+- name: custom_message
+  type: string
+  required: false
+  form: form
+  label:
+    en_US: Custom Message
+  human_description:
+    en_US: Message to embed in the watermark (image/video only). Defaults to "resembleai".
+  llm_description: Custom message to embed in the watermark.
+- name: max_wait_seconds
+  type: number
+  required: false
+  default: 120
+  form: form
+  label:
+    en_US: Max Wait (seconds)
+  human_description:
+    en_US: How long to poll for the watermarked result before returning.
+  llm_description: Maximum seconds to wait for watermarking to finish.
+extra:
+  python:
+    source: tools/watermark_apply.py

@@ -1,0 +1,24 @@
+identity:
+  author: resemble-ai
+  name: watermark_detect
+  label:
+    en_US: Detect Watermark
+description:
+  human:
+    en_US: Check whether a media file contains a Resemble watermark, with confidence
+      for audio.
+  llm: Check whether a media file at a public HTTPS URL contains a Resemble watermark.
+    Returns has_watermark (and confidence for audio).
+parameters:
+- name: url
+  type: string
+  required: true
+  form: llm
+  label:
+    en_US: Media URL
+  human_description:
+    en_US: Public HTTPS URL to the media to check for a watermark.
+  llm_description: Public HTTPS URL of the media to check for a watermark.
+extra:
+  python:
+    source: tools/watermark_detect.py

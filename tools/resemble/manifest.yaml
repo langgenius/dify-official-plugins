@@ -1,0 +1,31 @@
+author: resemble-ai
+name: resemble
+version: 0.1.0
+type: plugin
+icon: icon.svg
+label:
+  en_US: Resemble Detect + Intelligence
+description:
+  en_US: Deepfake detection, media intelligence, audio source tracing, and watermarking
+    from Resemble AI. Every capability and option is a toggle you control.
+created_at: '2026-06-09T00:00:00Z'
+privacy: PRIVACY.md
+tags:
+- utilities
+plugins:
+  tools:
+  - provider/resemble.yaml
+resource:
+  memory: 268435456
+  permission:
+    tool:
+      enabled: true
+meta:
+  version: 0.0.1
+  arch:
+  - amd64
+  - arm64
+  runner:
+    language: python
+    version: '3.12'
+    entrypoint: main
