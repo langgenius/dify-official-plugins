@@ -653,7 +653,7 @@ class LinearSubscriptionConstructor(TriggerSubscriptionConstructor):
                 options.append(
                     ParameterOption(
                         value=team["id"],
-                        label=I18nObject(en_US=label_text),
+                        label=I18nObject(en_us=label_text),
                         icon=team.get("icon"),
                     )
                 )

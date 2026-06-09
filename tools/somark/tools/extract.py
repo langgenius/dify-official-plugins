@@ -1,4 +1,3 @@
-import ast
 import json
 import logging
 import random
@@ -12,7 +11,7 @@ from dify_plugin.entities.tool import ToolInvokeMessage
 
 logger = logging.getLogger(__name__)
 
-# 默认元素格式
+# Default element formats
 DEFAULT_ELEMENT_FORMATS = {
     "image": "url",
     "formula": "latex",
@@ -20,7 +19,7 @@ DEFAULT_ELEMENT_FORMATS = {
     "cs": "image",
 }
 
-# 支持的元素格式
+# Supported element formats
 SUPPORTED_ELEMENT_FORMATS = {
     "image": ["url", "base64", "none"],
     "formula": ["latex", "mathml", "ascii"],
@@ -28,34 +27,34 @@ SUPPORTED_ELEMENT_FORMATS = {
     "cs": ["image"],
 }
 
-# ---------- 重试 / 轮询 配置 ----------
+# ---------- Retry / Polling configuration ----------
 
-# SoMark 并发限流错误码；提交阶段命中该码时按退避策略重试
+# SoMark concurrency rate-limit code; retry with backoff when hit during submit
 QPS_LIMIT_CODE = 1124
 
-# 提交阶段：对 "并发槽位已满" 的拒绝做有限重试
-SUBMIT_BUDGET_SECONDS = 10 * 60  # 提交重试的总时间预算（10 分钟）
-SUBMIT_BACKOFF_BASE_SECONDS = 1.0  # 起始退避时长
-SUBMIT_BACKOFF_MAX_SECONDS = 10.0  # 单次退避上限
-SUBMIT_BACKOFF_JITTER_SECONDS = 0.5  # 退避抖动，避免多并发调用同步撞车
-SUBMIT_REQUEST_TIMEOUT = 60  # 单次提交请求超时
+# Submit phase: limited retries when "concurrency slots are full" is rejected
+SUBMIT_BUDGET_SECONDS = 10 * 60  # total time budget for submit retries (10 minutes)
+SUBMIT_BACKOFF_BASE_SECONDS = 1.0  # initial backoff duration
+SUBMIT_BACKOFF_MAX_SECONDS = 10.0  # max backoff per attempt
+SUBMIT_BACKOFF_JITTER_SECONDS = 0.5  # backoff jitter to avoid concurrent calls colliding
+SUBMIT_REQUEST_TIMEOUT = 60  # timeout for a single submit request
 
-# 轮询阶段：持续查询任务状态直至成功 / 失败 / 预算耗尽
-POLL_BUDGET_SECONDS = 10 * 60  # 单任务的最长等待时长
-POLL_INTERVAL_BASE_SECONDS = 2.0  # 轮询起始间隔
-POLL_INTERVAL_MAX_SECONDS = 10.0  # 长任务的轮询间隔上限
-POLL_INTERVAL_GROWTH = 1.5  # 每次轮询后的间隔放大倍数
-POLL_REQUEST_TIMEOUT = 30  # 单次查询请求超时
+# Poll phase: keep querying task status until SUCCESS / FAILED / budget exhausted
+POLL_BUDGET_SECONDS = 10 * 60  # max wait time for a single task
+POLL_INTERVAL_BASE_SECONDS = 2.0  # initial polling interval
+POLL_INTERVAL_MAX_SECONDS = 10.0  # max polling interval for long tasks
+POLL_INTERVAL_GROWTH = 1.5  # interval growth factor after each poll
+POLL_REQUEST_TIMEOUT = 30  # timeout for a single status query request
 
 
 def _extract_error_detail(
     payload: Optional[Dict[str, Any]], fallback: str = "unknown error"
 ) -> str:
-    """从 SoMark 响应里提取最具描述性的错误文本。"""
+    """Extract the most descriptive error text from a SoMark response."""
     if not isinstance(payload, dict):
         return f"{fallback} (raw response: {payload!r})"
 
-    # 优先级：message > msg > error > data.message > data.error > 整个 payload
+    # Priority: message > msg > error > data.message > data.error > full payload
     for key in ("message", "msg", "error", "detail"):
         value = payload.get(key)
         if isinstance(value, str) and value.strip():
@@ -68,7 +67,7 @@ def _extract_error_detail(
             if isinstance(value, str) and value.strip():
                 return f"code={payload.get('code')}, data.{key}={value}"
 
-    # 兜底：把完整 payload 序列化出来，方便定位
+    # Fallback: serialize the full payload to help with diagnosis
     try:
         return f"code={payload.get('code')}, payload={json.dumps(payload, ensure_ascii=False)}"
     except Exception:
@@ -117,10 +116,10 @@ class ExtractTool(Tool):
             status=InvokeMessage.LogMessage.LogStatus.SUCCESS,
         )
 
-    # ---------- SoMark 异步接口 ----------
+    # ---------- SoMark async API ----------
     #
-    # 用 `yield from` 调用：子生成器一路 yield 进度日志，
-    # 最终用 `return value` 把结果返还给 `_invoke` 主流程。
+    # Called via `yield from`: the sub-generator yields progress logs along the way,
+    # and finally uses `return value` to hand the result back to the `_invoke` main flow.
 
     def _submit_task(
         self,
@@ -129,8 +128,8 @@ class ExtractTool(Tool):
         data: Dict[str, Any],
     ) -> Generator[ToolInvokeMessage, None, str]:
         """
-        提交解析任务。命中 QPS 限流（code=1124）时按指数退避重试，
-        其它业务错误立即抛出。返回 task_id。
+        Submit a parsing task. Retry with exponential backoff when QPS rate-limited
+        (code=1124); raise immediately on other business errors. Returns task_id.
         """
         deadline = time.monotonic() + SUBMIT_BUDGET_SECONDS
         attempt = 0
@@ -174,7 +173,7 @@ class ExtractTool(Tool):
                 )
                 return task_id
 
-            # 并发槽位 / QPS 拒绝：在预算内退避后重试
+            # Concurrency slot / QPS rejection: back off within budget then retry
             if code == QPS_LIMIT_CODE:
                 backoff = min(
                     SUBMIT_BACKOFF_BASE_SECONDS * (2**attempt),
@@ -200,7 +199,7 @@ class ExtractTool(Tool):
                 attempt += 1
                 continue
 
-            # 其它业务错误：立即抛出，不重试
+            # Other business errors: raise immediately, no retry
             raise RuntimeError(f"SoMark API error: {_extract_error_detail(payload)}")
 
     def _poll_task(
@@ -210,9 +209,9 @@ class ExtractTool(Tool):
         task_id: str,
     ) -> Generator[ToolInvokeMessage, None, Dict[str, Any]]:
         """
-        轮询任务状态直至 SUCCESS / FAILED / 预算耗尽。
-        轮询间隔按 POLL_INTERVAL_GROWTH 倍增，上限 POLL_INTERVAL_MAX_SECONDS。
-        返回 outputs。
+        Poll task status until SUCCESS / FAILED / budget exhausted.
+        Polling interval grows by POLL_INTERVAL_GROWTH, capped at POLL_INTERVAL_MAX_SECONDS.
+        Returns outputs.
         """
         deadline = time.monotonic() + POLL_BUDGET_SECONDS
         interval = POLL_INTERVAL_BASE_SECONDS
@@ -278,7 +277,7 @@ class ExtractTool(Tool):
                     f"SoMark task failed: {_extract_error_detail(payload, 'task failed')}"
                 )
 
-            # QUEUING / PROCESSING → 拉长轮询间隔后继续等
+            # QUEUING / PROCESSING → grow the polling interval and keep waiting
             yield self._create_info_log(
                 stage="poll_task",
                 message=f"Task status: {status or 'unknown'} ({elapsed}s elapsed, next check in {interval:.1f}s)",
@@ -296,29 +295,33 @@ class ExtractTool(Tool):
             f"SoMark task {task_id} timed out after {POLL_BUDGET_SECONDS}s while waiting for completion"
         )
 
-    # ---------- 工具主流程 ----------
+    # ---------- Tool main flow ----------
 
     def _invoke(
         self, tool_parameters: Dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
         """
         Invoke the SoMark extraction tool via the async pipeline:
-          1. POST /parse/async         —— 提交文件，拿到 task_id（命中 QPS 限流时按退避策略重试）
-          2. POST /parse/async_check   —— 轮询任务状态，直到 SUCCESS / FAILED / 预算耗尽
+          1. POST /parse/async         -- submit the file and get task_id (retry with backoff on QPS limit)
+          2. POST /parse/async_check   -- poll task status until SUCCESS / FAILED / budget exhausted
         """
 
-        # 获取文件参数
+        # Get the file parameter
         file = tool_parameters.get("file")
         if not file:
             yield self.create_text_message("Error: No file provided.")
             return
 
-        # 获取output_formats参数
-        output_formats = tool_parameters.get("output_formats") or ["json", "markdown"]
-        if isinstance(output_formats, str):
-            output_formats = ast.literal_eval(output_formats)
+        # Get the output_formats parameter (single choice: markdown / json / both)
+        output_format_choice = (tool_parameters.get("output_formats") or "both").strip().lower()
+        if output_format_choice == "markdown":
+            output_formats = ["markdown"]
+        elif output_format_choice == "json":
+            output_formats = ["json"]
+        else:
+            output_formats = ["markdown", "json"]
 
-        # 获取element_formats参数
+        # Get the element_formats parameter
         element_formats = {
             "image": tool_parameters.get("element_formats_image")
             or DEFAULT_ELEMENT_FORMATS["image"],
@@ -347,7 +350,7 @@ class ExtractTool(Tool):
                 )
                 raise ValueError(error_msg)
 
-        # 获取feature_config参数
+        # Get the feature_config parameter
         feature_config = {
             "enable_text_cross_page": tool_parameters.get(
                 "feature_config_enable_text_cross_page"
@@ -372,11 +375,11 @@ class ExtractTool(Tool):
             ),
         }
 
-        # 获取凭证参数
+        # Get credential parameters
         base_url = (self.runtime.credentials.get("base_url") or "").strip().rstrip("/")
         api_key = (self.runtime.credentials.get("api_key") or "").strip()
 
-        # 构造请求体
+        # Build the request body
         files = {"file": (file.filename, file.blob, file.mime_type)}
         data = {
             "api_key": api_key,
@@ -385,7 +388,7 @@ class ExtractTool(Tool):
             "feature_config": json.dumps(feature_config, ensure_ascii=False),
         }
 
-        # 提交任务（QPS 限流时指数退避）
+        # Submit the task (exponential backoff on QPS limit)
         try:
             task_id = yield from self._submit_task(base_url, files, data)
         except RuntimeError as e:
@@ -396,7 +399,7 @@ class ExtractTool(Tool):
 
         logger.info("SoMark task submitted: task_id=%s", task_id)
 
-        # 轮询任务状态
+        # Poll the task status
         try:
             outputs = yield from self._poll_task(base_url, api_key, task_id)
         except RuntimeError as e:
@@ -409,7 +412,7 @@ class ExtractTool(Tool):
             )
             raise
 
-        # 解析 outputs
+        # Parse outputs
         md_content = ""
         json_content = ""
 

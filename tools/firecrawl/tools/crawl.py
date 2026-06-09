@@ -20,7 +20,8 @@ class CrawlTool(Tool):
         payload["excludePaths"] = get_array_params(tool_parameters, "excludePaths")
         payload["includePaths"] = get_array_params(tool_parameters, "includePaths")
         payload["maxDepth"] = tool_parameters.get("maxDepth")
-        payload["ignoreSitemap"] = tool_parameters.get("ignoreSitemap", False)
+        if tool_parameters.get("ignoreSitemap", False):
+            payload["sitemap"] = "skip"
         payload["limit"] = tool_parameters.get("limit", 5)
         payload["allowBackwardLinks"] = tool_parameters.get("allowBackwardLinks", False)
         payload["allowExternalLinks"] = tool_parameters.get("allowExternalLinks", False)

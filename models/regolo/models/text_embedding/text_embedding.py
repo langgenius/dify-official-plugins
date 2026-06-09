@@ -62,7 +62,7 @@ class RegoloEmbeddingModel(TextEmbeddingModel):
     def get_customizable_model_schema(self, model: str, credentials: dict) -> AIModelEntity:
         return AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model),
+            label=I18nObject(en_us=model),
             model_type=ModelType.TEXT_EMBEDDING,
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={

@@ -103,6 +103,17 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         {"prefix": "ai21.jamba-1-5", "support_system_prompts": True, "support_tool_use": False},
     ]
 
+    # Models that require the bedrock-mantle endpoint with the OpenAI Responses API.
+    # These do NOT go through the standard Converse API path.
+    _BEDROCK_MANTLE_MODEL_IDS: frozenset = frozenset({
+        "openai.gpt-5.5",
+        "openai.gpt-5.4",
+    })
+
+    @staticmethod
+    def _is_bedrock_mantle_model(model_id: str) -> bool:
+        return model_id in BedrockLargeLanguageModel._BEDROCK_MANTLE_MODEL_IDS
+
     @staticmethod
     def _find_model_info(model_id):
         for model in BedrockLargeLanguageModel.CONVERSE_API_ENABLED_MODEL_INFO:
@@ -231,6 +242,16 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 logger.error(f"Failed to invoke inference profile: {str(e)}")
                 raise InvokeError(f"Failed to invoke inference profile {inference_profile_id}: {str(e)}")
         else:
+            # Check for bedrock-mantle models (GPT-5.5, GPT-5.4) before attempting Converse API.
+            # These models use a different endpoint and the OpenAI Responses API.
+            _model_name = model_parameters.get('model_name')
+            if _model_name:
+                _candidate_id = model_ids.get_model_id(model, _model_name)
+                if _candidate_id and self._is_bedrock_mantle_model(_candidate_id):
+                    return self._generate_with_responses_api(
+                        _candidate_id, credentials, prompt_messages, model_parameters, stop, stream, user
+                    )
+
             # Traditional model - try converse API first, then fall back if needed
             model_info = self._get_model_info(model, credentials, model_parameters)
             if model_info:
@@ -1080,7 +1101,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                 # Create custom model entity based on inference profile
                 return AIModelEntity(
                     model=model,
-                    label=I18nObject(en_US=model),
+                    label=I18nObject(en_us=model),
                     model_type=ModelType.LLM,
                     features=matched_features,
                     fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
@@ -1111,7 +1132,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
                 return AIModelEntity(
                     model=model,
-                    label=I18nObject(en_US=model),
+                    label=I18nObject(en_us=model),
                     model_type=ModelType.LLM,
                     features=fallback_features,
                     fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
@@ -1607,7 +1628,12 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         """
         # Create model name mapping for individual model files
         model_name_mapping = {
+            # OpenAI GPT-5.x models (bedrock-mantle endpoint)
+            'GPT-5.5': 'gpt-5-5',
+            'GPT-5.4': 'gpt-5-4',
             # Claude models
+            'Claude 4.8 Opus': 'claude-4-8-opus',
+            'Claude 4.7 Opus': 'claude-4-7-opus',
             'Claude 4.0 Sonnet': 'claude-4-sonnet',
             'Claude 4.0 Opus': 'claude-4-opus',
             'Claude 3.7 Sonnet': 'claude-3-7-sonnet',
@@ -1745,3 +1771,230 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
         # Fallback to parent class implementation
         return super()._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+
+    # -------------------------------------------------------------------------
+    # bedrock-mantle / OpenAI Responses API path (GPT-5.5, GPT-5.4)
+    # https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-openai-gpt-55.html
+    # -------------------------------------------------------------------------
+
+    @staticmethod
+    def _map_openai_exception(ex: Exception) -> None:
+        """Map openai SDK exceptions to the corresponding Dify invoke error types."""
+        try:
+            import openai
+            if isinstance(ex, openai.APIConnectionError):
+                raise InvokeConnectionError(str(ex))
+            elif isinstance(ex, openai.AuthenticationError):
+                raise InvokeAuthorizationError(str(ex))
+            elif isinstance(ex, openai.RateLimitError):
+                raise InvokeRateLimitError(str(ex))
+            elif isinstance(ex, openai.BadRequestError):
+                raise InvokeBadRequestError(str(ex))
+            elif isinstance(ex, openai.InternalServerError):
+                raise InvokeServerUnavailableError(str(ex))
+        except ImportError:
+            pass
+        raise InvokeError(str(ex))
+
+    def _get_mantle_auth_token(self, credentials: dict) -> str:
+        """
+        Return a Bearer token for the bedrock-mantle endpoint.
+
+        - API_Key auth: use the long-term Bedrock API key directly.
+        - Access_Secret_Key / IAM_Role: generate a short-lived token via
+          aws-bedrock-token-generator (official AWS library).
+        """
+        auth_method = credentials.get("auth_method", "IAM_Role")
+        region = credentials.get("aws_region", "us-east-2")
+
+        if auth_method == "API_Key":
+            api_key = credentials.get("bedrock_api_key")
+            if not api_key:
+                raise InvokeBadRequestError("bedrock_api_key is required for API_Key auth")
+            return api_key
+
+        # IAM_Role or Access_Secret_Key: generate a short-lived bearer token.
+        try:
+            from aws_bedrock_token_generator import provide_token
+        except ImportError:
+            raise InvokeBadRequestError(
+                "aws-bedrock-token-generator is required for IAM-based authentication "
+                "with GPT-5.5/5.4. Install it with: pip install aws-bedrock-token-generator"
+            )
+
+        aws_access_key_id = credentials.get("aws_access_key_id")
+        aws_secret_access_key = credentials.get("aws_secret_access_key")
+
+        if auth_method == "Access_Secret_Key" and aws_access_key_id and aws_secret_access_key:
+            from botocore.credentials import Credentials as BotocoreCredentials
+            creds = BotocoreCredentials(
+                access_key=aws_access_key_id,
+                secret_key=aws_secret_access_key,
+                token=credentials.get("aws_session_token"),
+            )
+            return provide_token(region=region, aws_credentials_provider=creds)
+
+        # IAM_Role: rely on the environment (instance profile, env vars, etc.)
+        return provide_token(region=region)
+
+    def _build_responses_api_input(self, prompt_messages: list[PromptMessage]) -> list[dict]:
+        """Convert Dify prompt messages to OpenAI Responses API input format."""
+        result = []
+        for message in prompt_messages:
+            if isinstance(message, SystemPromptMessage):
+                result.append({"role": "system", "content": message.content or ""})
+            elif isinstance(message, UserPromptMessage):
+                if isinstance(message.content, str):
+                    content = message.content
+                else:
+                    content = " ".join(
+                        c.data for c in message.content
+                        if c.type == PromptMessageContentType.TEXT
+                    )
+                result.append({"role": "user", "content": content})
+            elif isinstance(message, AssistantPromptMessage):
+                result.append({"role": "assistant", "content": message.content or ""})
+        return result
+
+    def _generate_with_responses_api(
+        self,
+        model_id: str,
+        credentials: dict,
+        prompt_messages: list[PromptMessage],
+        model_parameters: dict,
+        stop: Optional[list[str]] = None,
+        stream: bool = True,
+        user: Optional[str] = None,
+    ) -> Union[LLMResult, Generator]:
+        """
+        Invoke GPT-5.5 / GPT-5.4 via bedrock-mantle endpoint using the OpenAI Responses API.
+        Authentication supports API Key, Access/Secret Key, and IAM Role.
+        """
+        try:
+            from openai import OpenAI
+        except ImportError:
+            raise InvokeBadRequestError(
+                "openai package is required for GPT-5.5/5.4. "
+                "Install it with: pip install openai"
+            )
+
+        region = credentials.get("aws_region", "us-east-2")
+        token = self._get_mantle_auth_token(credentials)
+        base_url = f"https://bedrock-mantle.{region}.api.aws/openai/v1"
+
+        client = OpenAI(api_key=token, base_url=base_url)
+        input_messages = self._build_responses_api_input(prompt_messages)
+
+        params: dict = {
+            "model": model_id,
+            "input": input_messages,
+            "stream": stream,
+        }
+
+        # Copy to avoid mutating the caller's dict (retry mechanisms may reuse it).
+        model_parameters = model_parameters.copy()
+        model_name = model_parameters.pop("model_name", None)
+        model_parameters.pop("cross-region", None)
+        model_parameters.pop("system_cache_checkpoint", None)
+        model_parameters.pop("latest_two_messages_cache_checkpoint", None)
+        model_parameters.pop("response_format", None)
+
+        if "max_tokens" in model_parameters:
+            params["max_output_tokens"] = model_parameters["max_tokens"]
+        if "temperature" in model_parameters:
+            params["temperature"] = model_parameters["temperature"]
+        if "top_p" in model_parameters:
+            params["top_p"] = model_parameters["top_p"]
+
+        # Store model_name for pricing calculation, deriving it from model_id if not set.
+        credentials_for_pricing = credentials.copy()
+        resolved_model_name = model_name or ("GPT-5.5" if "gpt-5.5" in model_id else "GPT-5.4")
+        credentials_for_pricing["model_parameters"] = {
+            **credentials_for_pricing.get("model_parameters", {}),
+            "model_name": resolved_model_name,
+        }
+
+        try:
+            response = client.responses.create(**params)
+            if stream:
+                return self._handle_responses_api_stream(
+                    model_id, credentials_for_pricing, response, prompt_messages
+                )
+            else:
+                return self._handle_responses_api_response(
+                    model_id, credentials_for_pricing, response, prompt_messages
+                )
+        except Exception as ex:
+            self._map_openai_exception(ex)
+
+    def _handle_responses_api_response(
+        self,
+        model: str,
+        credentials: dict,
+        response,
+        prompt_messages: list[PromptMessage],
+    ) -> LLMResult:
+        """Convert a non-streaming OpenAI Responses API response to LLMResult."""
+        text = response.output_text or ""
+        usage = getattr(response, "usage", None)
+        prompt_tokens = getattr(usage, "input_tokens", 0) if usage else 0
+        completion_tokens = getattr(usage, "output_tokens", 0) if usage else 0
+        dify_usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
+
+        return LLMResult(
+            model=model,
+            prompt_messages=prompt_messages,
+            message=AssistantPromptMessage(content=text),
+            usage=dify_usage,
+        )
+
+    def _handle_responses_api_stream(
+        self,
+        model: str,
+        credentials: dict,
+        stream_response,
+        prompt_messages: list[PromptMessage],
+    ) -> Generator:
+        """Convert a streaming OpenAI Responses API response to LLMResultChunk generator."""
+        index = 0
+        input_tokens = 0
+        output_tokens = 0
+
+        try:
+            for event in stream_response:
+                event_type = type(event).__name__
+
+                if event_type == "ResponseTextDeltaEvent":
+                    delta_text = getattr(event, "delta", "")
+                    if delta_text:
+                        yield LLMResultChunk(
+                            model=model,
+                            prompt_messages=prompt_messages,
+                            delta=LLMResultChunkDelta(
+                                index=index,
+                                message=AssistantPromptMessage(content=delta_text),
+                            ),
+                        )
+                        index += 1
+
+                elif event_type == "ResponseCompletedEvent":
+                    resp = getattr(event, "response", None)
+                    usage = getattr(resp, "usage", None) if resp else None
+                    if usage:
+                        input_tokens = getattr(usage, "input_tokens", 0)
+                        output_tokens = getattr(usage, "output_tokens", 0)
+                    dify_usage = self._calc_response_usage(
+                        model, credentials, input_tokens, output_tokens
+                    )
+                    yield LLMResultChunk(
+                        model=model,
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(
+                            index=index,
+                            message=AssistantPromptMessage(content=""),
+                            finish_reason="stop",
+                            usage=dify_usage,
+                        ),
+                    )
+        except Exception as ex:
+            self._map_openai_exception(ex)

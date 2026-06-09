@@ -11,6 +11,8 @@ dependencies = [
     "boto3>=1.43.13",
     "botocore>=1.43.13",
     "tiktoken>=0.13.0",
+    "openai>=1.0.0",
+    "aws-bedrock-token-generator>=1.1.0",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix

@@ -71,7 +71,7 @@ class AzureOpenAISpeech2TextModel(_CommonAzureOpenAI, Speech2TextModel):
             if ai_model_entity.base_model_name == base_model_name:
                 ai_model_entity_copy = copy.deepcopy(ai_model_entity)
                 ai_model_entity_copy.entity.model = model
-                ai_model_entity_copy.entity.label.en_US = model
-                ai_model_entity_copy.entity.label.zh_Hans = model
+                ai_model_entity_copy.entity.label.en_us = model
+                ai_model_entity_copy.entity.label.zh_hans = model
                 return ai_model_entity_copy
         return None

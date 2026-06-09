@@ -34,39 +34,15 @@ credentials_for_provider:
             en_US: Get your AI Studio access token
             zh_Hans: 获取星河社区访问令牌
         url: https://aistudio.baidu.com/index/accessToken
-    text_recognition_api_url:
+    base_url:
         type: text-input
+        required: false
         label:
-            en_US: Text Recognition API URL
-            zh_Hans: 文字识别 API URL
+            en_US: Base URL (Optional)
+            zh_Hans: Base URL（可选）
         placeholder:
-            en_US: Text Recognition API URL
-            zh_Hans: 文字识别 API URL
+            en_US: https://paddleocr.aistudio-app.com
+            zh_Hans: https://paddleocr.aistudio-app.com
         help:
-            en_US: Click the "API" button in the upper-left corner, select "Text recognition(PP-OCRv5)", and copy the `API_URL`.
-            zh_Hans: 点击左上角的“API”，选择“文字识别（PP-OCRv5）”并复制 `API_URL`
-        url: https://aistudio.baidu.com/paddleocr/task
-    document_parsing_api_url:
-        type: text-input
-        label:
-            en_US: Document Parsing API URL
-            zh_Hans: 文档解析 API URL
-        placeholder:
-            en_US: Document Parsing API URL
-            zh_Hans: 文档解析 API URL
-        help:
-            en_US: Click the "API" button in the upper-left corner, select "Document parsing(PP-StructureV3)", and copy the `API_URL`.
-            zh_Hans: 点击左上角的“API”，选择“文档解析（PP-StructureV3）”并复制 `API_URL`
-        url: https://aistudio.baidu.com/paddleocr/task
-    document_parsing_vl_api_url:
-        type: text-input
-        label:
-            en_US: Large Model Document Parsing API URL
-            zh_Hans: 大模型文档解析 API URL
-        placeholder:
-            en_US: Large Model Document Parsing API URL
-            zh_Hans: 大模型文档解析 API URL
-        help:
-            en_US: Click the "API" button in the upper-left corner, select "Large Model document parsing(PaddleOCR-VL)", and copy the `API_URL`.
-            zh_Hans: 点击左上角的“API”，选择“大模型文档解析（PaddleOCR-VL）”并复制 `API_URL`
-        url: https://aistudio.baidu.com/paddleocr/task
+            en_US: Leave empty to use the default PaddleOCR service. Only needed for self-hosted deployments.
+            zh_Hans: 留空则使用默认的 PaddleOCR 服务。仅自建服务时需要填写。

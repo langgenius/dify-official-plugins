@@ -753,5 +753,5 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
             lid = lab.get("id")
             name = lab.get("name") or lid
             if lid:
-                options.append(ParameterOption(value=lid, label=I18nObject(en_US=name)))
+                options.append(ParameterOption(value=lid, label=I18nObject(en_us=name)))
         return options

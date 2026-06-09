@@ -1,3 +1,4 @@
+import urllib.parse
 import json
 import logging
 import time
@@ -46,7 +47,7 @@ class FirecrawlApp:
         return None
 
     def scrape_url(self, url: str, **kwargs):
-        endpoint = f"{self.base_url}/v1/scrape"
+        endpoint = f"{self.base_url}/v2/scrape"
         data = {"url": url, **kwargs}
         logger.debug(f"Sent request to {endpoint=} body={data}")
         response = self._request("POST", endpoint, data)
@@ -55,7 +56,7 @@ class FirecrawlApp:
         return response
 
     def map(self, url: str, **kwargs):
-        endpoint = f"{self.base_url}/v1/map"
+        endpoint = f"{self.base_url}/v2/map"
         data = {"url": url, **kwargs}
         logger.debug(f"Sent request to {endpoint=} body={data}")
         response = self._request("POST", endpoint, data)
@@ -66,7 +67,7 @@ class FirecrawlApp:
     def crawl_url(
         self, url: str, wait: bool = True, poll_interval: int = 5, idempotency_key: str | None = None, **kwargs
     ):
-        endpoint = f"{self.base_url}/v1/crawl"
+        endpoint = f"{self.base_url}/v2/crawl"
         headers = self._prepare_headers(idempotency_key)
         data = {"url": url, **kwargs}
         logger.debug(f"Sent request to {endpoint=} body={data}")
@@ -81,17 +82,45 @@ class FirecrawlApp:
         return response
 
     def check_crawl_status(self, job_id: str):
-        endpoint = f"{self.base_url}/v1/crawl/{job_id}"
+        endpoint = f"{self.base_url}/v2/crawl/{job_id}"
         response = self._request("GET", endpoint)
         if response is None:
             raise HTTPError(f"Failed to check status for job {job_id} after multiple retries")
         return response
 
     def cancel_crawl_job(self, job_id: str):
-        endpoint = f"{self.base_url}/v1/crawl/{job_id}"
+        endpoint = f"{self.base_url}/v2/crawl/{job_id}"
         response = self._request("DELETE", endpoint)
         if response is None:
             raise HTTPError(f"Failed to cancel job {job_id} after multiple retries")
+        return response
+
+    def create_monitor(self, **kwargs):
+        # v2 monitors API. Docs: https://docs.firecrawl.dev/features/monitors
+        endpoint = f"{self.base_url}/v2/monitor"
+        logger.debug(f"Sent request to {endpoint=} body={kwargs}")
+        response = self._request("POST", endpoint, kwargs)
+        if response is None:
+            raise HTTPError("Failed to create monitor after multiple retries")
+        elif response.get("success") is False:
+            raise HTTPError(f'Failed to create monitor: {response.get("error")}')
+        return response
+
+    def get_monitor(self, monitor_id: str):
+        endpoint = f"{self.base_url}/v2/monitor/{monitor_id}"
+        response = self._request("GET", endpoint)
+        if response is None:
+            raise HTTPError(f"Failed to get monitor {monitor_id} after multiple retries")
+        return response
+
+    def get_monitor_checks(self, monitor_id: str, **kwargs):
+        endpoint = f"{self.base_url}/v2/monitor/{monitor_id}/checks"
+        query = {k: v for k, v in kwargs.items() if v not in (None, "")}
+        if query:
+            endpoint = f"{endpoint}?{urllib.parse.urlencode(query)}"
+        response = self._request("GET", endpoint)
+        if response is None:
+            raise HTTPError(f"Failed to list checks for monitor {monitor_id} after multiple retries")
         return response
 
     def _monitor_job_status(self, job_id: str, poll_interval: int):
@@ -107,7 +136,7 @@ class FirecrawlApp:
 def get_array_params(tool_parameters: dict[str, Any], key):
     param = tool_parameters.get(key)
     if param:
-        return param.split(",")
+        return [p.strip() for p in param.split(",")]
 
 
 def get_json_params(tool_parameters: dict[str, Any], key):
