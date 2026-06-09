@@ -5,12 +5,26 @@ from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
 from tools.utils import (
-    build_pp_structure_v3_options,
     call_paddleocr_api,
+    camel_to_snake,
     cleanup_temp_file,
-    get_sdk_client,
+    get_api_client_config,
     normalize_file_input,
 )
+
+_SKIP_KEYS = {"file", "fileType"}
+
+
+def build_pp_structure_v3_options(params: dict[str, Any]) -> dict[str, Any]:
+    """Build PPStructureV3 options dict from parameters using dynamic conversion."""
+    options_dict = {}
+    for api_name, value in params.items():
+        if value is None or api_name in _SKIP_KEYS:
+            continue
+        if api_name == "markdownIgnoreLabels" and isinstance(value, str):
+            value = [label.strip() for label in value.split(",") if label.strip()]
+        options_dict[camel_to_snake(api_name)] = value
+    return options_dict
 
 
 class DocumentParsingTool(Tool):
@@ -22,7 +36,7 @@ class DocumentParsingTool(Tool):
             )
         access_token = self.runtime.credentials["aistudio_access_token"]
 
-        # Get base_url (optional, uses SDK default if not provided)
+        # Get base_url (optional, uses default if not provided)
         base_url = self.runtime.credentials.get("base_url")
 
         # Normalize file input - returns (input_value, is_temp_file, file_type_code)
@@ -35,7 +49,7 @@ class DocumentParsingTool(Tool):
             options = build_pp_structure_v3_options(tool_parameters)
 
             # Get API client config
-            client_config = get_sdk_client(access_token, base_url)
+            client_config = get_api_client_config(access_token, base_url=base_url)
 
             # Call API with PP-StructureV3 model
             if file_input.startswith(("http://", "https://")):
