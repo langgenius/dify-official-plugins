@@ -8,7 +8,7 @@ from tools.utils import (
     build_pp_structure_v3_options,
     call_paddleocr_api,
     cleanup_temp_file,
-    get_sdk_client,
+    get_api_client_config,
     normalize_file_input,
 )
 
@@ -35,7 +35,7 @@ class DocumentParsingTool(Tool):
             options = build_pp_structure_v3_options(tool_parameters)
 
             # Get API client config
-            client_config = get_sdk_client(access_token, base_url)
+            client_config = get_api_client_config(access_token, base_url)
 
             # Call API with PP-StructureV3 model
             if file_input.startswith(("http://", "https://")):

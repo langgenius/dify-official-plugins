@@ -8,7 +8,7 @@ from tools.utils import (
     build_paddleocr_vl_options,
     call_paddleocr_api,
     cleanup_temp_file,
-    get_sdk_client,
+    get_api_client_config,
     normalize_file_input,
 )
 
@@ -35,7 +35,7 @@ class DocumentParsingVlTool(Tool):
             options = build_paddleocr_vl_options(tool_parameters)
 
             # Get API client config
-            client_config = get_sdk_client(access_token, base_url)
+            client_config = get_api_client_config(access_token, base_url)
 
             # Call API with PaddleOCR-VL-1.6 model
             if file_input.startswith(("http://", "https://")):

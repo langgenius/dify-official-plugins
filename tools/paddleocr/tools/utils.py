@@ -423,12 +423,12 @@ DEFAULT_MULTIPLIER = 1.5
 DEFAULT_MAX_INTERVAL = 15.0
 
 
-def get_sdk_client(access_token: str, base_url: str | None = None) -> dict[str, Any]:
-    """Get PaddleOCR API client configuration.
+def get_api_client_config(access_token: str, base_url: str | None = None) -> dict[str, Any]:
+    """Get PaddleOCR HTTP API client configuration.
 
     Args:
         access_token: AI Studio access token
-        base_url: Base URL (optional, uses SDK default if not provided)
+        base_url: Base URL (optional, uses default if not provided)
 
     Returns:
         Configuration dict with token, base_url, headers
@@ -763,7 +763,7 @@ def call_paddleocr_api(
         file_url: URL of the file (if using URL input)
         file_path: Path to the file (if using file input)
         options: Optional payload parameters
-        client_config: Client config from get_sdk_client()
+        client_config: Client config from get_api_client_config()
         is_document_parsing: True for doc parsing, False for OCR
 
     Returns:
