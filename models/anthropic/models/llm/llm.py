@@ -181,6 +181,11 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     OPUS_4_7_PLUS_MODELS: tuple[str, ...] = (
         "claude-opus-4-7",
         "claude-opus-4-8",
+        # Fable 5 shares the Opus 4.7+ surface, plus one extra restriction:
+        # an explicit thinking={"type": "disabled"} returns 400 — the thinking
+        # field must be omitted entirely when thinking is off (already the
+        # behavior below, since "thinking" is only sent when enabled).
+        "claude-fable-5",
     )
 
     def __init__(self, model_schemas=None):
