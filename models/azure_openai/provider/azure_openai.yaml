@@ -180,8 +180,8 @@ model_credential_schema:
       variable: enable_request_metadata
       default: disabled
       help:
-        en_US: When enabled, attaches dify_app_id and dify_source as metadata on Azure OpenAI Chat Completions and Responses API calls, enabling per-app filtering of Stored Completions. Visibility in the dashboard depends on the Stored Completions setting on your Azure OpenAI resource; the plugin does not set store=true. Default disabled.
-        zh_Hans: 启用后，将在 Azure OpenAI Chat Completions 和 Responses API 调用中将 dify_app_id 和 dify_source 作为 metadata 附加，从而支持按应用过滤 Stored Completions（已存储的补全）。元数据是否在仪表板中可见取决于您的 Azure OpenAI 资源上的 Stored Completions 设置，本插件不会设置 store=true。默认禁用。
+        en_US: "When enabled, attaches dify_app_id and dify_source as metadata on both the Chat Completions and Responses routes, AND sets store=true so the metadata is recorded in Stored Completions (required by Azure OpenAI API: metadata is only accepted when store is true). Requests and responses are persisted on your Azure OpenAI resource — same data-storage context as Azure OpenAI's standard logging; data does not leave Azure and is not used to train foundation models. See: https://learn.microsoft.com/en-us/azure/foundry/responsible-ai/openai/data-privacy Default disabled."
+        zh_Hans: 启用后，在 Chat Completions 和 Responses 两条路由的调用中附加 dify_app_id 和 dify_source 作为 metadata，同时设置 store=true 以便 metadata 被记录到 Stored Completions（Azure OpenAI API 要求：仅当 store 为 true 时才接受 metadata）。请求和响应会保存在您的 Azure OpenAI 资源中 —— 与 Azure OpenAI 标准日志记录相同的数据存储上下文；数据不会离开 Azure，也不会用于训练基础模型。默认禁用。
     - label:
         en_US: Base Model
         zh_Hans: 基础模型

@@ -386,10 +386,10 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         ]
 
         # Optional: attach Dify app_id as Azure OpenAI request metadata. Default
-        # disabled; opt-in via the enable_request_metadata credential. Whether
-        # this surfaces in Stored Completions depends on the Azure OpenAI
-        # resource's Stored Completions setting — the plugin does not set
-        # store=true.
+        # disabled; opt-in via the enable_request_metadata credential. When
+        # enabled, store=true is set alongside the metadata (the API only
+        # accepts metadata when store is enabled), persisting the request to
+        # Stored Completions on the Azure OpenAI resource.
         apply_dify_metadata_if_enabled(extra_model_kwargs, credentials)
 
         response = client.chat.completions.create(
@@ -555,8 +555,9 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             responses_params["reasoning"] = reasoning
 
         # Optional: attach Dify app_id as Azure OpenAI request metadata. Default
-        # disabled; opt-in via the enable_request_metadata credential. See
-        # _metadata.py for the rationale on not setting store=true.
+        # disabled; opt-in via the enable_request_metadata credential. When
+        # enabled, store=true is set alongside the metadata — see _metadata.py
+        # for why the API requires it.
         apply_dify_metadata_if_enabled(responses_params, credentials)
 
         logger.info(
