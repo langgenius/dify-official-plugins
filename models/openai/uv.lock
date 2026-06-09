@@ -172,9 +172,14 @@ dependencies = [
     { name = "tiktoken" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "pytest" },
+]
+
 [package.metadata]
 requires-dist = [
-    { name = "dify-plugin", specifier = ">=0.9.0" },
+    { name = "dify-plugin", git = "https://github.com/ryuta-kobayashi-ug/dify-plugin-sdks.git?rev=feat%2Fpass-session-to-model-plugins" },
     { name = "httpx", specifier = ">=0.28.1" },
     { name = "numpy", specifier = ">=2.4.6" },
     { name = "openai", specifier = ">=2.38.0" },
@@ -183,12 +188,12 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-dev = []
+dev = [{ name = "pytest", specifier = ">=8.0.0" }]
 
 [[package]]
 name = "dify-plugin"
 version = "0.9.0"
-source = { registry = "https://pypi.org/simple" }
+source = { git = "https://github.com/ryuta-kobayashi-ug/dify-plugin-sdks.git?rev=feat%2Fpass-session-to-model-plugins#ba8243c68235761f711e46ebf9a3500cff3f4b93" }
 dependencies = [
     { name = "dpkt" },
     { name = "flask" },
@@ -203,10 +208,6 @@ dependencies = [
     { name = "tiktoken" },
     { name = "werkzeug" },
     { name = "yarl" },
-]
-sdist = { url = "https://files.pythonhosted.org/packages/e2/52/86c042b72d42eb40460563bacf2ed46ff6a2e02dbec299892fef0ed2f70f/dify_plugin-0.9.0.tar.gz", hash = "sha256:c32dc99d4122d960bd447ee65a17e1e93bf942bbad8f7b4d53a2841416ecd3e0", size = 318993, upload-time = "2026-05-20T08:10:40.445Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/9b/dc/df1d6d1a8c604880702dd792226f175523f890bfca89f828f58b58661edc/dify_plugin-0.9.0-py3-none-any.whl", hash = "sha256:3299a8c77549a43f68705796eed4c9ca494664810fb8d10eb7ecce2e545f3d2d", size = 377064, upload-time = "2026-05-20T08:10:38.848Z" },
 ]
 
 [[package]]
@@ -405,6 +406,15 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/1a/88/bcf9709822fe69d02c2a6a77956c98ce6ea8ca8767a9aadcedc7eb6a2390/idna-3.16.tar.gz", hash = "sha256:d7a6da03db833450fca25d2358ac9ff06cd624577a4aea3a596d5c0f77b8e03d", size = 203770, upload-time = "2026-05-22T00:16:18.781Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/94/16/70255075a9859a0e3adb789b68ceb0e210dec03934245fd98d248226572f/idna-3.16-py3-none-any.whl", hash = "sha256:cc246e3a3f89580c3a951b5ad298ca4638078b2cdd4f115654332b5c26daded5", size = 74165, upload-time = "2026-05-22T00:16:16.698Z" },
+]
+
+[[package]]
+name = "iniconfig"
+version = "2.3.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/72/34/14ca021ce8e5dfedc35312d08ba8bf51fdd999c576889fc2c24cb97f4f10/iniconfig-2.3.0.tar.gz", hash = "sha256:c76315c77db068650d49c5b56314774a7804df16fee4402c1f19d6d15d8c4730", size = 20503, upload-time = "2025-10-18T21:55:43.219Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/cb/b1/3846dd7f199d53cb17f49cba7e651e9ce294d8497c8c150530ed11865bb8/iniconfig-2.3.0-py3-none-any.whl", hash = "sha256:f631c04d2c48c52b84d0d0549c99ff3859c98df65b3101406327ecc7d53fbf12", size = 7484, upload-time = "2025-10-18T21:55:41.639Z" },
 ]
 
 [[package]]
@@ -752,6 +762,15 @@ wheels = [
 ]
 
 [[package]]
+name = "pluggy"
+version = "1.6.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/f9/e2/3e91f31a7d2b083fe6ef3fa267035b518369d9511ffab804f839851d2779/pluggy-1.6.0.tar.gz", hash = "sha256:7dcc130b76258d33b90f61b658791dede3486c3e6bfb003ee5c9bfb396dd22f3", size = 69412, upload-time = "2025-05-15T12:30:07.975Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/54/20/4d324d65cc6d9205fabedc306948156824eb9f0ee1633355a8f7ec5c66bf/pluggy-1.6.0-py3-none-any.whl", hash = "sha256:e920276dd6813095e9377c0bc5566d94c932c33b27a3e3945d8389c374dd4746", size = 20538, upload-time = "2025-05-15T12:30:06.134Z" },
+]
+
+[[package]]
 name = "propcache"
 version = "0.5.2"
 source = { registry = "https://pypi.org/simple" }
@@ -965,6 +984,31 @@ source = { registry = "https://pypi.org/simple" }
 sdist = { url = "https://files.pythonhosted.org/packages/fe/9a/e6bca0eed82db26562c73b5076539a4a08d3cffd19c3cc5913a3e61145fd/pydub-0.25.1.tar.gz", hash = "sha256:980a33ce9949cab2a569606b65674d748ecbca4f0796887fd6f46173a7b0d30f", size = 38326, upload-time = "2021-03-10T02:09:54.659Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/a6/53/d78dc063216e62fc55f6b2eebb447f6a4b0a59f55c8406376f76bf959b08/pydub-0.25.1-py2.py3-none-any.whl", hash = "sha256:65617e33033874b59d87db603aa1ed450633288aefead953b30bded59cb599a6", size = 32327, upload-time = "2021-03-10T02:09:53.503Z" },
+]
+
+[[package]]
+name = "pygments"
+version = "2.20.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/c3/b2/bc9c9196916376152d655522fdcebac55e66de6603a76a02bca1b6414f6c/pygments-2.20.0.tar.gz", hash = "sha256:6757cd03768053ff99f3039c1a36d6c0aa0b263438fcab17520b30a303a82b5f", size = 4955991, upload-time = "2026-03-29T13:29:33.898Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/f4/7e/a72dd26f3b0f4f2bf1dd8923c85f7ceb43172af56d63c7383eb62b332364/pygments-2.20.0-py3-none-any.whl", hash = "sha256:81a9e26dd42fd28a23a2d169d86d7ac03b46e2f8b59ed4698fb4785f946d0176", size = 1231151, upload-time = "2026-03-29T13:29:30.038Z" },
+]
+
+[[package]]
+name = "pytest"
+version = "9.0.3"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "colorama", marker = "sys_platform == 'win32'" },
+    { name = "iniconfig" },
+    { name = "packaging" },
+    { name = "pluggy" },
+    { name = "pygments" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/7d/0d/549bd94f1a0a402dc8cf64563a117c0f3765662e2e668477624baeec44d5/pytest-9.0.3.tar.gz", hash = "sha256:b86ada508af81d19edeb213c681b1d48246c1a91d304c6c81a427674c17eb91c", size = 1572165, upload-time = "2026-04-07T17:16:18.027Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/d4/24/a372aaf5c9b7208e7112038812994107bc65a84cd00e0354a88c2c77a617/pytest-9.0.3-py3-none-any.whl", hash = "sha256:2c5efc453d45394fdd706ade797c0a81091eccd1d6e4bccfcd476e2b8e0ab5d9", size = 375249, upload-time = "2026-04-07T17:16:16.13Z" },
 ]
 
 [[package]]
