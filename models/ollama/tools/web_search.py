@@ -34,9 +34,9 @@ class OllamaWebSearchTool(Tool):
 
         lines = ["Search results:"]
         for item in results:
-            title = item.get("title", "")
-            url = item.get("url", "")
-            content = item.get("content", "")
+            title = item.get("title") or ""
+            url = item.get("url") or ""
+            content = item.get("content") or ""
             lines.extend(
                 [
                     f"Title: {title}",

@@ -26,8 +26,8 @@ class OllamaWebFetchTool(Tool):
 
     @staticmethod
     def _format_fetch_result(result: dict[str, Any]) -> str:
-        title = result.get("title", "")
-        content = result.get("content", "")
+        title = result.get("title") or ""
+        content = result.get("content") or ""
         links = result.get("links") or []
         lines = [f"Title: {title}", "", content]
         if links:

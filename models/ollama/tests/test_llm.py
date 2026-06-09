@@ -1,5 +1,10 @@
+import sys
+from pathlib import Path
 from unittest import TestCase
 from unittest.mock import Mock, patch
+
+PLUGIN_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(PLUGIN_ROOT))
 
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
@@ -7,7 +12,7 @@ from dify_plugin.entities.model.message import (
     UserPromptMessage,
 )
 
-from models.ollama.models.llm.llm import OllamaLargeLanguageModel
+from models.llm.llm import OllamaLargeLanguageModel
 
 
 class TestOllamaLargeLanguageModel(TestCase):
@@ -26,7 +31,7 @@ class TestOllamaLargeLanguageModel(TestCase):
         response.text = ""
 
         with (
-            patch("models.ollama.models.llm.llm.requests.post", return_value=response) as post,
+            patch("models.llm.llm.requests.post", return_value=response) as post,
             patch.object(self.model, "_handle_generate_response", return_value="ok"),
         ):
             result = self.model._generate(
