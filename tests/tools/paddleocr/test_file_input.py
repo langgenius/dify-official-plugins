@@ -1,6 +1,7 @@
 import base64
 import os
 import sys
+from unittest.mock import MagicMock
 
 import pytest
 import yaml
@@ -45,10 +46,14 @@ def test_file_upload_is_base64_encoded():
         file_type=FileType.IMAGE,
     )
 
-    payload, normalized_file_type = normalize_file_input(file, "auto")
+    input_value, is_temp_file, file_type_code = normalize_file_input(file, "auto")
 
-    assert payload == base64.b64encode(b"image-bytes").decode("utf-8")
-    assert normalized_file_type == 1
+    # New implementation saves to temp file for SDK
+    assert os.path.exists(input_value)
+    assert is_temp_file is True
+    assert file_type_code == 1
+    # Clean up
+    os.unlink(input_value)
 
 
 def test_pdf_file_upload_infers_file_type():
@@ -56,10 +61,14 @@ def test_pdf_file_upload_infers_file_type():
         b"%PDF-1.7", filename="invoice.pdf", mime_type="application/pdf", extension=".pdf"
     )
 
-    payload, normalized_file_type = normalize_file_input(file, "auto")
+    input_value, is_temp_file, file_type_code = normalize_file_input(file, "auto")
 
-    assert payload == base64.b64encode(b"%PDF-1.7").decode("utf-8")
-    assert normalized_file_type == 0
+    # New implementation saves to temp file for SDK
+    assert os.path.exists(input_value)
+    assert is_temp_file is True
+    assert file_type_code == 0
+    # Clean up
+    os.unlink(input_value)
 
 
 def test_image_file_upload_infers_file_type_from_filename_when_mime_type_missing():
@@ -71,10 +80,14 @@ def test_image_file_upload_infers_file_type_from_filename_when_mime_type_missing
         file_type=FileType.IMAGE,
     )
 
-    payload, normalized_file_type = normalize_file_input(file, None)
+    input_value, is_temp_file, file_type_code = normalize_file_input(file, None)
 
-    assert payload == base64.b64encode(b"image-bytes").decode("utf-8")
-    assert normalized_file_type == 1
+    # New implementation saves to temp file for SDK
+    assert os.path.exists(input_value)
+    assert is_temp_file is True
+    assert file_type_code == 1
+    # Clean up
+    os.unlink(input_value)
 
 
 def test_explicit_file_type_overrides_inference():
@@ -86,17 +99,22 @@ def test_explicit_file_type_overrides_inference():
         file_type=FileType.IMAGE,
     )
 
-    payload, normalized_file_type = normalize_file_input(file, "pdf")
+    input_value, is_temp_file, file_type_code = normalize_file_input(file, "pdf")
 
-    assert payload == base64.b64encode(b"image-bytes").decode("utf-8")
-    assert normalized_file_type == 0
+    # New implementation saves to temp file for SDK
+    assert os.path.exists(input_value)
+    assert is_temp_file is True
+    assert file_type_code == 0
+    # Clean up
+    os.unlink(input_value)
 
 
 def test_legacy_file_string_is_passed_through():
-    payload, normalized_file_type = normalize_file_input("https://example.com/scan.pdf", "auto")
+    input_value, is_temp_file, file_type_code = normalize_file_input("https://example.com/scan.pdf", "auto")
 
-    assert payload == "https://example.com/scan.pdf"
-    assert normalized_file_type is None
+    assert input_value == "https://example.com/scan.pdf"
+    assert is_temp_file is False
+    assert file_type_code is None
 
 
 def test_missing_file_input_raises_clear_error():
@@ -106,21 +124,45 @@ def test_missing_file_input_raises_clear_error():
 
 def invoke_tool_with_mocked_api(monkeypatch, tool_cls, credentials, parameters):
     captured = {}
-    module_name = tool_cls.__module__.split(".")[-1]
 
-    def fake_api_request(api_url, params, access_token):
-        captured["api_url"] = api_url
-        captured["params"] = params
-        captured["access_token"] = access_token
-        return {
-            "errorCode": 0,
-            "result": {
-                "ocrResults": [{"prunedResult": {"rec_texts": ["hello", "world"]}}],
-                "layoutParsingResults": [{"markdown": {"text": "# Parsed", "images": {}}}],
-            },
-        }
+    def fake_api_call(**kwargs):
+        captured["kwargs"] = kwargs
+        # Return mock result dict (HTTP API returns dict, not SDK objects)
+        if tool_cls == TextRecognitionTool:
+            return {
+                "job_id": "test-job",
+                "pages": [
+                    {"pruned_result": {"rec_texts": ["hello", "world"]}, "ocr_image_url": None}
+                ]
+            }
+        else:
+            return {
+                "job_id": "test-job",
+                "pages": [
+                    {"markdown_text": "# Parsed", "markdown_images": {}, "output_images": {}}
+                ]
+            }
 
-    monkeypatch.setattr(f"tools.{module_name}.make_paddleocr_api_request", fake_api_request)
+    # Mock the HTTP API call
+    import tools.utils as utils_module
+    monkeypatch.setattr(utils_module, "call_paddleocr_api", fake_api_call)
+    monkeypatch.setattr(utils_module, "base64_to_temp_file", lambda *args: "temp_file.png")
+    monkeypatch.setattr(utils_module, "cleanup_temp_file", lambda *args: None)
+
+    # Mock in the specific tool module (they import these directly from utils)
+    if tool_cls == TextRecognitionTool:
+        import tools.text_recognition as tr_module
+        monkeypatch.setattr(tr_module, "call_paddleocr_api", fake_api_call)
+        monkeypatch.setattr(tr_module, "cleanup_temp_file", lambda *args: None)
+    elif tool_cls == DocumentParsingTool:
+        import tools.document_parsing as dp_module
+        monkeypatch.setattr(dp_module, "call_paddleocr_api", fake_api_call)
+        monkeypatch.setattr(dp_module, "cleanup_temp_file", lambda *args: None)
+    else:
+        import tools.document_parsing_vl as dpv_module
+        monkeypatch.setattr(dpv_module, "call_paddleocr_api", fake_api_call)
+        monkeypatch.setattr(dpv_module, "cleanup_temp_file", lambda *args: None)
+
     tool = tool_cls.from_credentials(credentials)
     list(tool._invoke(parameters))
     return captured
@@ -140,16 +182,15 @@ def test_text_recognition_sends_normalized_file_to_api(monkeypatch):
         TextRecognitionTool,
         {
             "aistudio_access_token": "token",
-            "text_recognition_api_url": "https://example.com/text-recognition",
         },
-        {"file": file, "fileType": "auto", "visualize": False},
+        {"file": file, "fileType": "auto"},
     )
 
-    assert captured["api_url"] == "https://example.com/text-recognition"
-    assert captured["access_token"] == "token"
-    assert captured["params"]["file"] == base64.b64encode(b"image-bytes").decode("utf-8")
-    assert captured["params"]["fileType"] == 1
-    assert captured["params"]["visualize"] is False
+    # HTTP API receives file_path (temp file), not base64 directly
+    assert "file_path" in captured["kwargs"]
+    assert captured["kwargs"]["file_path"] == "temp_file.png"
+    assert captured["kwargs"]["model"] == "PP-OCRv5"
+    assert captured["kwargs"]["is_document_parsing"] == False
 
 
 def test_document_parsing_sends_normalized_file_to_api(monkeypatch):
@@ -162,15 +203,14 @@ def test_document_parsing_sends_normalized_file_to_api(monkeypatch):
         DocumentParsingTool,
         {
             "aistudio_access_token": "token",
-            "document_parsing_api_url": "https://example.com/document-parsing",
         },
         {"file": file, "fileType": "auto", "markdownIgnoreLabels": "header, footer"},
     )
 
-    assert captured["api_url"] == "https://example.com/document-parsing"
-    assert captured["params"]["file"] == base64.b64encode(b"%PDF-1.7").decode("utf-8")
-    assert captured["params"]["fileType"] == 0
-    assert captured["params"]["markdownIgnoreLabels"] == ["header", "footer"]
+    assert "file_path" in captured["kwargs"]
+    assert captured["kwargs"]["file_path"] == "temp_file.png"
+    assert captured["kwargs"]["model"] == "PP-StructureV3"
+    assert captured["kwargs"]["is_document_parsing"] == True
 
 
 def test_document_parsing_vl_sends_normalized_file_to_api(monkeypatch):
@@ -187,15 +227,14 @@ def test_document_parsing_vl_sends_normalized_file_to_api(monkeypatch):
         DocumentParsingVlTool,
         {
             "aistudio_access_token": "token",
-            "document_parsing_vl_api_url": "https://example.com/document-parsing-vl",
         },
         {"file": file, "fileType": "auto", "promptLabel": "undefined"},
     )
 
-    assert captured["api_url"] == "https://example.com/document-parsing-vl"
-    assert captured["params"]["file"] == base64.b64encode(b"image-bytes").decode("utf-8")
-    assert captured["params"]["fileType"] == 1
-    assert "promptLabel" not in captured["params"]
+    assert "file_path" in captured["kwargs"]
+    assert captured["kwargs"]["file_path"] == "temp_file.png"
+    assert captured["kwargs"]["model"] == "PaddleOCR-VL-1.6"
+    assert captured["kwargs"]["is_document_parsing"] == True
 
 
 def load_tool_yaml(tool_name: str) -> dict:
