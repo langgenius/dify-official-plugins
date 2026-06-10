@@ -10,7 +10,7 @@ nodes can reference it by S3 URI or via an optional presigned URL.
 from __future__ import annotations
 
 import uuid
-from collections.abc import Generator, Iterable
+from collections.abc import Generator
 from typing import Any, Optional
 
 import boto3
@@ -69,30 +69,20 @@ def _build_boto3_client_kwargs(credentials: dict[str, Optional[str]]) -> dict[st
     return kwargs
 
 
-def _credential_signature(credentials: dict[str, Optional[str]]) -> tuple:
-    """Identity tuple used to detect credential rotation between invocations."""
-    return (
-        credentials.get("aws_access_key_id"),
-        credentials.get("aws_secret_access_key"),
-        credentials.get("aws_session_token"),
-        credentials.get("aws_region"),
-    )
+def _parse_presign_expiry(value: Any, default: int = 3600) -> int:
+    """Safely coerce the ``presign_expiry`` parameter to int.
 
-
-def _reset_clients_on_credential_change(
-    owner: Any,
-    credentials: dict[str, Optional[str]],
-    client_attrs: Iterable[str],
-    signature_attr: str = "_client_credentials_signature",
-) -> None:
-    """Drop cached boto3 clients whenever the resolved credentials change."""
-    signature = _credential_signature(credentials)
-    current_signature = getattr(owner, signature_attr, None)
-    if current_signature != signature:
-        for attr in client_attrs:
-            if hasattr(owner, attr):
-                setattr(owner, attr, None)
-        setattr(owner, signature_attr, signature)
+    Tolerates ``None``, empty string, and stringified numbers that the Dify UI
+    can pass for an empty optional ``number`` field. Falls back to ``default``
+    on any parsing failure rather than crashing the workflow with TypeError /
+    ValueError.
+    """
+    if value is None or value == "":
+        return default
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
 
 
 # ---------------------------------------------------------------------------
@@ -108,19 +98,21 @@ def _sanitize_prefix(prefix: Optional[str]) -> str:
 
 
 class S3FileUploader(Tool):
-    s3_client: Any = None
+    """Upload a Dify file variable to S3.
+
+    The boto3 client is created as a local variable inside ``_invoke`` (instead
+    of cached on ``self``) to keep this tool safe across concurrent workflow
+    executions: tool instances may be reused by the plugin runtime, and a
+    cached client tied to one tenant's credentials must never leak into
+    another invocation.
+    """
 
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """Read the input file and upload it to S3, returning the resulting URI as JSON."""
         try:
             credentials = _resolve_aws_credentials(self, tool_parameters)
-            if tool_parameters.get("aws_region"):
-                credentials["aws_region"] = tool_parameters["aws_region"]
-
-            _reset_clients_on_credential_change(self, credentials, ["s3_client"])
-            if not self.s3_client:
-                client_kwargs = _build_boto3_client_kwargs(credentials)
-                self.s3_client = boto3.client("s3", **client_kwargs)
+            client_kwargs = _build_boto3_client_kwargs(credentials)
+            s3_client = boto3.client("s3", **client_kwargs)
         except Exception as exc:  # pragma: no cover - boto3 init errors
             yield self.create_text_message(f"Failed to initialize AWS client: {exc}")
             return
@@ -156,7 +148,7 @@ class S3FileUploader(Tool):
         content_type = getattr(input_file, "mime_type", None) or "application/octet-stream"
 
         try:
-            self.s3_client.put_object(
+            s3_client.put_object(
                 Bucket=bucket_name,
                 Key=object_key,
                 Body=file_bytes,
@@ -176,9 +168,9 @@ class S3FileUploader(Tool):
 
         text_message = None
         if tool_parameters.get("generate_presign_url"):
-            expiry_seconds = int(tool_parameters.get("presign_expiry", 3600))
+            expiry_seconds = _parse_presign_expiry(tool_parameters.get("presign_expiry"))
             try:
-                presigned_url = self.s3_client.generate_presigned_url(
+                presigned_url = s3_client.generate_presigned_url(
                     "get_object",
                     Params={"Bucket": bucket_name, "Key": object_key},
                     ExpiresIn=expiry_seconds,
