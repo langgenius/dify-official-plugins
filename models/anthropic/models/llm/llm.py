@@ -1450,9 +1450,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             return [self._create_assistant_text_content(message.content)]
 
         return [
-            self._create_assistant_text_content(cast(TextPromptMessageContent, content).data)
+            self._create_assistant_text_content(content.data)
             for content in message.content
-            if content.type == PromptMessageContentType.TEXT
+            if isinstance(content, TextPromptMessageContent)
         ]
     
     def _create_tool_use_content(self, tool_call: AssistantPromptMessage.ToolCall) -> dict:
