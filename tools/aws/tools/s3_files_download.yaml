@@ -1,0 +1,78 @@
+identity:
+  name: s3_files_download
+  author: AWS
+  label:
+    en_US: AWS S3 Batch File Download
+    zh_Hans: AWS S3 批量文件下载
+    pt_BR: AWS S3 Batch File Download
+description:
+  human:
+    en_US: Download multiple S3 objects as Dify file variables in a single invocation.
+    zh_Hans: 在一次调用中批量下载多个 S3 对象，作为 Dify 文件变量供下游节点使用。
+    pt_BR: Faz download em lote de múltiplos objetos do S3 como variáveis de arquivo do Dify em uma única invocação.
+  llm: Batch fetch multiple S3 objects by URI and emit them as Dify files plus structured metadata for downstream nodes.
+parameters:
+  - name: aws_access_key_id
+    type: string
+    required: false
+    label:
+      en_US: AWS Access Key ID
+      zh_Hans: AWS Access Key ID
+      pt_BR: AWS Access Key ID
+    human_description:
+      en_US: Override the provider Access Key ID for this tool if needed.
+      zh_Hans: 当需要覆盖默认的 Access Key ID 时使用。
+      pt_BR: Sobrescreve o Access Key ID padrão da provider quando necessário.
+    form: form
+  - name: aws_secret_access_key
+    type: string
+    required: false
+    label:
+      en_US: AWS Secret Access Key
+      zh_Hans: AWS Secret Access Key
+      pt_BR: AWS Secret Access Key
+    human_description:
+      en_US: Override the provider Secret Access Key for this tool if needed.
+      zh_Hans: 当需要覆盖默认的 Secret Access Key 时使用。
+      pt_BR: Sobrescreve o Secret Access Key padrão da provider quando necessário.
+    form: form
+  - name: aws_session_token
+    type: string
+    required: false
+    label:
+      en_US: AWS Session Token
+      zh_Hans: AWS Session Token
+      pt_BR: AWS Session Token
+    human_description:
+      en_US: AWS session token for temporary credentials (STS). Only supported in tool parameters, not at provider level.
+      zh_Hans: 临时凭证（STS）的 session token。仅支持在工具参数中传入，provider 级别不支持。
+      pt_BR: Token de sessão da AWS para credenciais temporárias (STS). Só é suportado nos parâmetros da ferramenta, não no nível da provider.
+    form: form
+  - name: aws_region
+    type: string
+    required: false
+    label:
+      en_US: AWS Region
+      zh_Hans: AWS 区域
+      pt_BR: AWS Region
+    human_description:
+      en_US: Override the default AWS Region for this tool.
+      zh_Hans: 为该工具指定 AWS 区域，覆盖 provider 默认值。
+      pt_BR: Sobrescreve a região AWS padrão para esta ferramenta.
+    form: form
+  - name: s3_uris
+    type: array
+    required: true
+    label:
+      en_US: S3 URIs
+      zh_Hans: S3 URI 列表
+      pt_BR: URIs do S3
+    human_description:
+      en_US: A list of S3 URIs in the form s3://bucket/key. One Dify file is emitted per successfully downloaded URI, in input order.
+      zh_Hans: S3 URI 列表，每个元素形如 s3://bucket/key。每个成功下载的 URI 会按输入顺序生成一个 Dify 文件。
+      pt_BR: Lista de URIs do S3 no formato s3://bucket/key. Um arquivo Dify é emitido por URI baixado com sucesso, na ordem de entrada.
+    llm_description: A list of fully-qualified S3 URIs (s3://bucket/key) to download together in one invocation.
+    form: llm
+extra:
+  python:
+    source: tools/s3_files_download.py
