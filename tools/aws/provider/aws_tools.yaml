@@ -17,6 +17,8 @@ tools:
   - tools/bedrock_retrieve_and_generate.yaml
   - tools/opensearch_knn_search.yaml
   - tools/s3_operator.yaml
+  - tools/s3_file_uploader.yaml
+  - tools/s3_file_download.yaml
   - tools/apply_guardrail.yaml
   - tools/nova_canvas.yaml
   - tools/transcribe_asr.yaml
