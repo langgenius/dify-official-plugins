@@ -423,12 +423,12 @@ DEFAULT_MULTIPLIER = 1.5
 DEFAULT_MAX_INTERVAL = 15.0
 
 
-def get_sdk_client(access_token: str, base_url: str | None = None) -> dict[str, Any]:
-    """Get PaddleOCR API client configuration.
+def get_api_client_config(access_token: str, *, base_url: str | None = None) -> dict[str, Any]:
+    """Get PaddleOCR HTTP API client configuration.
 
     Args:
         access_token: AI Studio access token
-        base_url: Base URL (optional, uses SDK default if not provided)
+        base_url: Base URL (optional, uses default if not provided)
 
     Returns:
         Configuration dict with token, base_url, headers
@@ -449,70 +449,6 @@ def get_sdk_client(access_token: str, base_url: str | None = None) -> dict[str, 
     }
 
 
-def build_ocr_options(params: dict[str, Any]) -> dict[str, Any]:
-    """Build OCR options dict from parameters using dynamic conversion.
-
-    Args:
-        params: Tool parameters
-
-    Returns:
-        Options dict with snake_case keys
-    """
-    options_dict = {}
-    for api_name, value in params.items():
-        if value is None:
-            continue
-        # Convert camelCase to snake_case
-        option_name = camel_to_snake(api_name)
-        options_dict[option_name] = value
-    return options_dict
-
-
-def build_pp_structure_v3_options(params: dict[str, Any]) -> dict[str, Any]:
-    """Build PPStructureV3 options dict from parameters using dynamic conversion.
-
-    Args:
-        params: Tool parameters
-
-    Returns:
-        Options dict with snake_case keys
-    """
-    options_dict = {}
-    for api_name, value in params.items():
-        if value is None:
-            continue
-        # Convert camelCase to snake_case
-        option_name = camel_to_snake(api_name)
-        # Handle markdownIgnoreLabels conversion
-        if api_name == "markdownIgnoreLabels" and isinstance(value, str):
-            value = [label.strip() for label in value.split(",") if label.strip()]
-        options_dict[option_name] = value
-    return options_dict
-
-
-def build_paddleocr_vl_options(params: dict[str, Any]) -> dict[str, Any]:
-    """Build PaddleOCRVLOptions dict from parameters using dynamic conversion.
-
-    Args:
-        params: Tool parameters
-
-    Returns:
-        Options dict with snake_case keys
-    """
-    options_dict = {}
-    for api_name, value in params.items():
-        if value is None:
-            continue
-        # Handle promptLabel conversion - skip if "undefined"
-        if api_name == "promptLabel" and value == "undefined":
-            continue
-        # Convert camelCase to snake_case
-        option_name = camel_to_snake(api_name)
-        # Handle markdownIgnoreLabels conversion
-        if api_name == "markdownIgnoreLabels" and isinstance(value, str):
-            value = [label.strip() for label in value.split(",") if label.strip()]
-        options_dict[option_name] = value
-    return options_dict
 
 
 def _submit_job(
@@ -641,8 +577,13 @@ def _poll_job(
             raise RuntimeError(f"Failed to parse poll response: {e}") from e
 
         if state == "done":
-            # Get result URL
-            result_json_url = data.get("data", {}).get("resultJsonUrl") or data.get("resultJsonUrl")
+            # Get result URL — handle both response formats
+            result_data = data.get("data", {})
+            result_json_url = (
+                result_data.get("resultJsonUrl")
+                or (result_data.get("resultUrl") or {}).get("jsonUrl")
+                or data.get("resultJsonUrl")
+            )
             if not result_json_url:
                 raise RuntimeError(f"Result URL not found in response: {data}")
 
@@ -763,7 +704,7 @@ def call_paddleocr_api(
         file_url: URL of the file (if using URL input)
         file_path: Path to the file (if using file input)
         options: Optional payload parameters
-        client_config: Client config from get_sdk_client()
+        client_config: Client config from get_api_client_config()
         is_document_parsing: True for doc parsing, False for OCR
 
     Returns:

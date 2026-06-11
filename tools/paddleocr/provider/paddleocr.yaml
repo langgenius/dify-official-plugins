@@ -44,5 +44,5 @@ credentials_for_provider:
             en_US: https://paddleocr.aistudio-app.com
             zh_Hans: https://paddleocr.aistudio-app.com
         help:
-            en_US: Leave empty to use the default PaddleOCR service. Only needed for self-hosted deployments.
-            zh_Hans: 留空则使用默认的 PaddleOCR 服务。仅自建服务时需要填写。
+            en_US: Leave empty to use the default PaddleOCR service. Only needed for special gateway scenarios.
+            zh_Hans: 留空则使用默认的 PaddleOCR 服务。仅特殊网关场景时需要填写。
