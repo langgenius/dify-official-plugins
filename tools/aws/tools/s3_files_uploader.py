@@ -233,11 +233,17 @@ class S3FilesUploader(Tool):
                     )
                     entry["presigned_url"] = presigned_url
                     entry["presign_expiry"] = expiry_seconds
-                except ClientError as exc:
-                    error_message = exc.response.get("Error", {}).get("Message", str(exc))
-                    # Upload itself succeeded; surface presign failure as a
-                    # secondary warning on the entry rather than failing the
-                    # whole upload.
+                except Exception as exc:
+                    # generate_presigned_url is a client-side operation that
+                    # can raise ClientError, ParamValidationError, other
+                    # BotoCoreError subclasses, or unrelated runtime errors.
+                    # The upload itself already succeeded, so we surface the
+                    # presign failure as a per-entry warning (`presign_error`)
+                    # rather than failing the whole batch.
+                    if isinstance(exc, ClientError):
+                        error_message = exc.response.get("Error", {}).get("Message", str(exc))
+                    else:
+                        error_message = str(exc)
                     entry["presign_error"] = error_message
 
             results.append(entry)

@@ -142,10 +142,12 @@ class S3FilesDownload(Tool):
             return
 
         results: list[dict[str, Any]] = []
-        # Collect blob payloads to yield AFTER the json/text messages so that
-        # downstream nodes inspecting `files` see the full list at once. We
-        # still preserve input order.
-        blobs_to_yield: list[tuple[bytes, dict[str, Any]]] = []
+        # We yield blob payloads immediately inside the download loop so the
+        # plugin runner does not have to buffer N file payloads in memory at
+        # the same time (peak RSS scales with one file size, not the whole
+        # batch). The Dify plugin container has a 256 MB memory limit, which
+        # the buffer-then-flush approach could otherwise trip on a batch of
+        # large files.
 
         for index, s3_uri in enumerate(s3_uris):
             entry: dict[str, Any] = {"index": index, "s3_uri": s3_uri}
@@ -198,7 +200,11 @@ class S3FilesDownload(Tool):
                 "mime_type": content_type,
                 "s3_uri": s3_uri,
             }
-            blobs_to_yield.append((file_bytes, blob_meta))
+            # Yield the blob immediately so the previous file's bytes are
+            # eligible for GC before we read the next one. We still append
+            # the entry to `results` so the json/text aggregate messages
+            # emitted at the end carry the full ordered summary.
+            yield self.create_blob_message(file_bytes, meta=blob_meta)
             results.append(entry)
 
         ok_count = sum(1 for r in results if r.get("status") == "ok")
@@ -234,8 +240,6 @@ class S3FilesDownload(Tool):
         else:
             yield self.create_text_message("\n\n".join(text_lines))
 
-        # Emit successful blob payloads in input order. Failed entries simply
-        # produce no blob (downstream nodes can correlate via the json results
-        # list to see which indices succeeded).
-        for file_bytes, blob_meta in blobs_to_yield:
-            yield self.create_blob_message(file_bytes, meta=blob_meta)
+        # Blobs were already yielded inline during the download loop above
+        # to keep peak memory bounded by a single file's size; nothing else
+        # to flush here.
