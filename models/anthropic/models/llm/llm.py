@@ -1429,17 +1429,31 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             content.extend(self.previous_thinking_blocks)
             content.extend(self.previous_redacted_thinking_blocks)
         
-        # Process tool calls or content
+        # Dify stores assistant text and tool calls separately; Anthropic expects the next
+        # user tool_result message to immediately follow the assistant tool_use turn.
+        # Keep assistant prose before tool_use so no text lands between tool_use and tool_result.
+        # https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls
+        content.extend(self._create_assistant_text_contents(message))
         if message.tool_calls:
             content.extend(
                 self._create_tool_use_content(tool_call)
                 for tool_call in message.tool_calls
             )
-        if message.content:
-            if isinstance(message.content, str):
-                content.append(self._create_assistant_text_content(message.content))
         
         return {"role": "assistant", "content": content}
+
+    def _create_assistant_text_contents(self, message: AssistantPromptMessage) -> list[dict]:
+        if not message.content:
+            return []
+
+        if isinstance(message.content, str):
+            return [self._create_assistant_text_content(message.content)]
+
+        return [
+            self._create_assistant_text_content(content.data)
+            for content in message.content
+            if isinstance(content, TextPromptMessageContent)
+        ]
     
     def _create_tool_use_content(self, tool_call: AssistantPromptMessage.ToolCall) -> dict:
         """Create tool use content dict."""
