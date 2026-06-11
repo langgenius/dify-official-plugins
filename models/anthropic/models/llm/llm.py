@@ -1435,7 +1435,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 self._create_tool_use_content(tool_call)
                 for tool_call in message.tool_calls
             )
-        elif message.content:
+        if message.content:
             if isinstance(message.content, str):
                 content.append(self._create_assistant_text_content(message.content))
         
