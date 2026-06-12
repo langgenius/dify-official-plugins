@@ -1,6 +1,6 @@
 # Atomic Chat model provider for Dify
 
-[Atomic Chat](https://atomic.chat) is a local-first desktop app for running open-weight LLMs with an OpenAI-compatible API at `http://127.0.0.1:1337/v1`.
+[Atomic Chat](https://atomic.chat) is a local AI provider`.
 
 ## Quick start
 
