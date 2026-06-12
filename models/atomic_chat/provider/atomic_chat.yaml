@@ -1,0 +1,234 @@
+provider: atomic_chat
+label:
+  en_US: Atomic Chat
+  zh_Hans: Atomic Chat
+description:
+  en_US: Run local LLMs privately with Atomic Chat's OpenAI-compatible API at http://127.0.0.1:1337/v1.
+  zh_Hans: 通过 Atomic Chat 的 OpenAI 兼容 API（默认 http://127.0.0.1:1337/v1）在本地私密运行大语言模型。
+icon_small:
+  en_US: icon.svg
+supported_model_types:
+  - llm
+configurate_methods:
+  - customizable-model
+model_credential_schema:
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: Enter the model id from Atomic Chat, e.g. gemma-local
+      zh_Hans: 输入 Atomic Chat 中的模型 ID，例如 gemma-local
+  credential_form_schemas:
+    - variable: display_name
+      label:
+        en_US: Model display name
+        zh_Hans: 模型显示名称
+      type: text-input
+      required: false
+      placeholder:
+        zh_Hans: 模型在界面的显示名称
+        en_US: The display name of the model in the interface.
+    - variable: endpoint_url
+      label:
+        en_US: API endpoint URL
+        zh_Hans: API endpoint URL
+      type: text-input
+      required: true
+      default: "http://127.0.0.1:1337/v1"
+      placeholder:
+        en_US: Base URL, e.g. http://127.0.0.1:1337/v1
+        zh_Hans: 基础 URL，例如 http://127.0.0.1:1337/v1
+    - variable: api_key
+      label:
+        en_US: API Key
+        zh_Hans: API Key
+      type: secret-input
+      required: false
+      placeholder:
+        en_US: Optional for local installs
+        zh_Hans: 本地安装通常可留空
+    - variable: endpoint_model_name
+      label:
+        en_US: Model name for API endpoint
+        zh_Hans: API endpoint 中的模型名称
+      type: text-input
+      required: false
+      placeholder:
+        en_US: Override model id sent to the API if different from the model name above
+        zh_Hans: 若与上方模型名称不同，可在此填写实际请求的模型 ID
+    - variable: mode
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Completion mode
+        zh_Hans: 对话类型
+      type: select
+      required: false
+      default: chat
+      options:
+        - value: completion
+          label:
+            en_US: Completion
+            zh_Hans: 补全
+        - value: chat
+          label:
+            en_US: Chat
+            zh_Hans: 对话
+    - variable: context_size
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Model context size
+        zh_Hans: 模型上下文长度
+      type: text-input
+      required: true
+      default: "8192"
+      placeholder:
+        en_US: Enter your model context size
+        zh_Hans: 输入模型上下文长度
+    - variable: max_tokens_to_sample
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Upper bound for max tokens
+        zh_Hans: 最大 token 上限
+      type: text-input
+      default: "4096"
+      required: false
+    - variable: function_calling_type
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Function Call Type
+        zh_Hans: 函数调用类型
+      type: select
+      required: false
+      default: tool_call
+      options:
+        - value: function_call
+          label:
+            en_US: Function Call
+            zh_Hans: 函数调用
+        - value: tool_call
+          label:
+            en_US: Tool Call
+            zh_Hans: 工具调用
+        - value: no_call
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+    - variable: stream_function_calling
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Stream function calling
+        zh_Hans: 流式函数调用
+      type: select
+      required: false
+      default: supported
+      options:
+        - value: supported
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: not_supported
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+    - variable: vision_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Vision Support
+        zh_Hans: 视觉支持
+      type: select
+      required: false
+      default: no_support
+      options:
+        - value: support
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: no_support
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+    - variable: agent_thought_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Thinking Mode Support
+        zh_Hans: 思考模式支持
+      type: select
+      required: false
+      default: supported
+      options:
+        - value: only_thinking_supported
+          label:
+            en_US: Only Thinking Mode
+            zh_Hans: 仅支持思考模式
+        - value: not_supported
+          label:
+            en_US: Only Non-Thinking Mode
+            zh_Hans: 仅支持非思考模式
+        - value: supported
+          label:
+            en_US: Both Modes
+            zh_Hans: 两种模式都支持
+    - variable: compatibility_mode
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Compatibility mode
+        zh_Hans: 兼容模式
+      type: select
+      required: false
+      default: extended
+      options:
+        - value: strict
+          label:
+            en_US: OpenAI compatible
+            zh_Hans: 严格（OpenAI 兼容）
+        - value: extended
+          label:
+            en_US: Enable extra settings
+            zh_Hans: 扩展（启用额外设置）
+    - variable: structured_output_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Structured Output
+        zh_Hans: 结构化输出
+      type: select
+      required: false
+      default: not_supported
+      options:
+        - value: supported
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: not_supported
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+extra:
+  python:
+    provider_source: provider/atomic_chat.py
+    model_sources:
+      - "models/llm/llm.py"
+help:
+  title:
+    en_US: How to integrate Atomic Chat
+    zh_Hans: 如何集成 Atomic Chat
+  url:
+    en_US: https://atomic.chat
