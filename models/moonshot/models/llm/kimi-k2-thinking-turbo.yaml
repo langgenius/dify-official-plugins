@@ -33,6 +33,9 @@ parameter_rules:
     options:
       - text
       - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
 pricing:
   input: '8'
   output: '58'
