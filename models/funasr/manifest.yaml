@@ -1,0 +1,37 @@
+author: funasr
+created_at: '2026-06-12T00:00:00.00000000-00:00'
+description:
+  en_US: Fast open-source speech recognition from Alibaba DAMO Academy. 170x faster than Whisper.
+  zh_Hans: 阿里巴巴达摩院开源语音识别，比 Whisper 快 170 倍。
+icon: icon_s_en.svg
+label:
+  en_US: FunASR
+  zh_Hans: FunASR
+meta:
+  arch:
+    - amd64
+    - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: '3.12'
+  version: 0.0.1
+name: funasr
+plugins:
+  models:
+    - provider/funasr.yaml
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: false
+      moderation: false
+      rerank: false
+      speech2text: true
+      text_embedding: false
+      tts: false
+    tool:
+      enabled: true
+type: plugin
+version: 0.1.0
