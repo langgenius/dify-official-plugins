@@ -1,0 +1,57 @@
+model: qwen3-7-max
+label:
+  en_US: qwen3-7-max
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 1000000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    type: int
+    default: 1024
+    min: 1
+    max: 65536
+    help:
+      zh_Hans: 指定生成结果长度的上限。如果生成结果截断，可以调大该参数。
+      en_US: Specifies the upper limit on the length of generated results. If the generated results are truncated, you can increase this parameter.
+  - name: frequency_penalty
+    use_template: frequency_penalty
+  - name: presence_penalty
+    use_template: presence_penalty
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - text
+      - json_object
+  - name: enable_thinking
+    label:
+      zh_Hans: 启用思考
+      en_US: Enable Thinking
+    type: boolean
+    default: false
+    required: false
+    help:
+      zh_Hans: 启用模型的逐步推理。
+      en_US: Enable step-by-step reasoning for the model.
+pricing:
+  input: '2.50'
+  output: '7.50'
+  unit: '0.000001'
+  currency: USD

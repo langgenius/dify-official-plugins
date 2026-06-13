@@ -1,0 +1,65 @@
+model: glm-5-1
+label:
+  en_US: glm-5-1
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+model_properties:
+  mode: chat
+  context_size: 202000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    type: int
+    default: 1024
+    min: 1
+    max: 131072
+    help:
+      zh_Hans: 指定生成结果长度的上限。如果生成结果截断，可以调大该参数。
+      en_US: Specifies the upper limit on the length of generated results. If the generated results are truncated, you can increase this parameter.
+  - name: enable_thinking
+    label:
+      zh_Hans: 启用思考
+      en_US: Enable Thinking
+    type: boolean
+    default: true
+    required: false
+    help:
+      zh_Hans: 启用模型的逐步推理。
+      en_US: Enable step-by-step reasoning for the model.
+  - name: thinking_budget
+    label:
+      zh_Hans: 思考预算
+      en_US: Thinking Budget
+    type: int
+    default: 0
+    min: 0
+    max: 131072
+    required: false
+    help:
+      zh_Hans: 推理使用的最大 token 数。0 表示自动。仅在启用思考时生效。
+      en_US: Maximum number of tokens to use for reasoning. 0 means automatic. Only applies when thinking is enabled.
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - text
+      - json_object
+pricing:
+  input: '0.825'
+  output: '3.301'
+  unit: '0.000001'
+  currency: USD

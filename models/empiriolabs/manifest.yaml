@@ -1,0 +1,39 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: empiriolabs
+label:
+  en_US: EmpirioLabs
+  zh_Hans: EmpirioLabs
+  ja_JP: EmpirioLabs
+  pt_BR: EmpirioLabs
+description:
+  en_US: "Frontier AI models through one OpenAI-compatible API. EmpirioLabs AI."
+  zh_Hans: "通过一个兼容 OpenAI 的 API 访问前沿 AI 模型。EmpirioLabs AI。"
+  ja_JP: "1つのOpenAI互換APIで最先端のAIモデルを利用。EmpirioLabs AI。"
+  pt_BR: "Modelos de IA de ponta por meio de uma API compatível com OpenAI. EmpirioLabs AI."
+icon: empiriolabs.svg
+icon_dark: empiriolabs.svg
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true
+      text_embedding: true
+plugins:
+  models:
+    - provider/empiriolabs.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: 1.0.0
+created_at: "2026-06-12T00:00:00.000000+00:00"
+privacy: PRIVACY.md
+verified: false

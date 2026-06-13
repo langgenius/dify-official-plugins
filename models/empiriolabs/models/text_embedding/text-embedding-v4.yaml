@@ -1,0 +1,9 @@
+model: text-embedding-v4
+model_type: text-embedding
+model_properties:
+  context_size: 8192
+  max_chunks: 10
+pricing:
+  input: '0.07'
+  unit: '0.000001'
+  currency: USD
