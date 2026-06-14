@@ -235,6 +235,9 @@ requires-dist = [
     { name = "openai", specifier = ">=2.38.0" },
 ]
 
+[package.metadata.requires-dev]
+dev = []
+
 [[package]]
 name = "gevent"
 version = "26.5.0"

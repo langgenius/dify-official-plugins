@@ -10,3 +10,6 @@ dependencies = [
     "httpx>=0.28.1",
     "openai>=2.38.0",
 ]
+
+[dependency-groups]
+dev = []
