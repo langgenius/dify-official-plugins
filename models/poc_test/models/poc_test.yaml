@@ -1,0 +1,19 @@
+provider: langgenius
+label:
+  en_US: PoC Test
+icon_small:
+  en_US: icon.svg
+icon_large:
+  en_US: icon.svg
+supported_model_types:
+  - llm
+configurate_methods:
+  - customizable
+model_credential_schema:
+  model: model
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+      type: secret-input
+      required: true
