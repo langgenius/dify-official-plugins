@@ -1,15 +1,12 @@
-model: qwen3-7-max
+model: mimo-v2-flash
 label:
-  en_US: Qwen3.7 Max
+  en_US: MiMo V2 Flash
 model_type: llm
 features:
   - agent-thought
-  - tool-call
-  - multi-tool-call
-  - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 1000000
+  context_size: 256000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -53,7 +50,7 @@ parameter_rules:
       - high
       - max
 pricing:
-  input: '2.5'
-  output: '7.5'
+  input: '0.5'
+  output: '1.5'
   unit: '0.000001'
   currency: USD

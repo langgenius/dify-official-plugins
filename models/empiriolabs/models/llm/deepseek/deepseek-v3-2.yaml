@@ -1,15 +1,12 @@
-model: qwen3-7-max
+model: deepseek-v3-2
 label:
-  en_US: Qwen3.7 Max
+  en_US: DeepSeek V3.2
 model_type: llm
 features:
   - agent-thought
-  - tool-call
-  - multi-tool-call
-  - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 1000000
+  context_size: 128000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -20,7 +17,7 @@ parameter_rules:
     type: int
     default: 1024
     min: 1
-    max: 65536
+    max: 32768
   - name: frequency_penalty
     use_template: frequency_penalty
   - name: presence_penalty
@@ -53,7 +50,7 @@ parameter_rules:
       - high
       - max
 pricing:
-  input: '2.5'
-  output: '7.5'
+  input: '0.57'
+  output: '1.71'
   unit: '0.000001'
   currency: USD

@@ -1,12 +1,9 @@
 model: deepseek-v4-pro
 label:
-  en_US: deepseek-v4-pro
+  en_US: DeepSeek V4 Pro
 model_type: llm
 features:
   - agent-thought
-  - tool-call
-  - multi-tool-call
-  - stream-tool-call
 model_properties:
   mode: chat
   context_size: 1000000
@@ -20,28 +17,40 @@ parameter_rules:
     type: int
     default: 1024
     min: 1
-    max: 65536
-    help:
-      zh_Hans: 指定生成结果长度的上限。如果生成结果截断，可以调大该参数。
-      en_US: Specifies the upper limit on the length of generated results. If the generated results are truncated, you can increase this parameter.
+    max: 393216
   - name: frequency_penalty
     use_template: frequency_penalty
   - name: presence_penalty
     use_template: presence_penalty
   - name: response_format
     label:
-      zh_Hans: 回复格式
       en_US: Response Format
     type: string
-    help:
-      zh_Hans: 指定模型必须输出的格式
-      en_US: specifying the format that the model must output
     required: false
     options:
       - text
       - json_object
+  - name: enable_thinking
+    label:
+      en_US: Enable Thinking
+    type: boolean
+    default: false
+    required: false
+    help:
+      en_US: Enable step-by-step reasoning for the model.
+  - name: reasoning_effort
+    label:
+      en_US: Reasoning Effort
+    type: string
+    required: false
+    options:
+      - none
+      - low
+      - medium
+      - high
+      - max
 pricing:
   input: '1.65'
-  output: '3.30'
+  output: '3.3'
   unit: '0.000001'
   currency: USD

@@ -112,11 +112,7 @@ models:
   llm:
     position: models/llm/_position.yaml
     predefined:
-      - models/llm/alibaba/*.yaml
-      - models/llm/deepseek/*.yaml
-      - models/llm/zhipu/*.yaml
-      - models/llm/moonshot/*.yaml
-      - models/llm/minimax/*.yaml
+      - models/llm/*/*.yaml
   text_embedding:
     predefined:
       - "models/text_embedding/*.yaml"

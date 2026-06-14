@@ -1,9 +1,11 @@
-model: qwen3-7-max
+model: qwen3-6-flash
 label:
-  en_US: Qwen3.7 Max
+  en_US: Qwen3.6 Flash
 model_type: llm
 features:
   - agent-thought
+  - vision
+  - video
   - tool-call
   - multi-tool-call
   - stream-tool-call
@@ -53,7 +55,7 @@ parameter_rules:
       - high
       - max
 pricing:
-  input: '2.5'
-  output: '7.5'
+  input: '0.25'
+  output: '1.5'
   unit: '0.000001'
   currency: USD
