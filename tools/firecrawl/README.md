@@ -19,7 +19,11 @@ Navigate to **Plugins > Firecrawl > To Authorize** in Dify, and input your API K
 
 ## Tool Features
 
-The Firecrawl tool provides six actions for web crawling, scraping, and monitoring:
+The Firecrawl tool provides seven actions for web crawling, searching, scraping, and monitoring:
+
+### Search
+
+Search the web and optionally scrape the returned results. This is useful when you need fresh web result metadata or full content from search results.
 
 ### Crawl Job
 
