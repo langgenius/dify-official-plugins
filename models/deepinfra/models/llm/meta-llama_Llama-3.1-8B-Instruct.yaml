@@ -1,0 +1,1 @@
+model: meta-llama/Llama-3.1-8B-Instructlabel:  en_US: Llama-3.1-8Bmodel_type: llmfeatures: [tool-call]model_properties:  mode: chat  context_size: 128000parameter_rules:  - name: temperature    use_template: temperature  - name: max_tokens    use_template: max_tokenspricing:  input: "0.05"  output: "0.08"  unit: "0.000001"  currency: USD
