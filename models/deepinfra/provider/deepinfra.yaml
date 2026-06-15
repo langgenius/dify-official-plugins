@@ -1,1 +1,22 @@
-provider: deepinfralabel:  en_US: DeepInfradescription:  en_US: DeepInfra models.icon_small:  en_US: icon_s_en.svgicon_large:  en_US: icon_l_en.svgbackground: "#0F172A"supported_model_types:  - llm  - text-embeddingconfigurate_methods:  - customizable-modelprovider_credential_schema:  credential_form_schemas:    - variable: api_key      label:        en_US: API Key      type: secret-input      required: true
+provider: deepinfra
+label:
+  en_US: DeepInfra
+description:
+  en_US: DeepInfra models.
+icon_small:
+  en_US: icon_s_en.svg
+icon_large:
+  en_US: icon_l_en.svg
+background: "#0F172A"
+supported_model_types:
+  - llm
+  - text-embedding
+configurate_methods:
+  - customizable-model
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: api_key
+      label:
+        en_US: API Key
+      type: secret-input
+      required: true
