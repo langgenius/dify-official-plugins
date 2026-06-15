@@ -1,10 +1,8 @@
 name: Pre PR Check Per Plugin
 
 on:
-  pull_request_target:
-    types: [opened, synchronize, ready_for_review, review_requested]
-    branches:
-      - main
+  pull_request_review:
+    types: [submitted]
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -12,6 +10,7 @@ concurrency:
 
 jobs:
   detect-changes:
+    if: github.event.review.state == 'approved' && github.event.pull_request.base.ref == 'main' && !github.event.pull_request.draft
     runs-on: depot-ubuntu-24.04
     outputs:
       plugins: ${{ steps.filter.outputs.plugins }}
