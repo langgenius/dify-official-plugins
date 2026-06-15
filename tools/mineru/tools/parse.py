@@ -21,16 +21,20 @@ logger = logging.getLogger(__name__)
 
 SUPPORTED_EXTENSIONS = {
     ".pdf",
-    ".doc",
     ".docx",
-    ".ppt",
     ".pptx",
+    ".xlsx",
     ".png",
     ".jpg",
     ".jpeg",
+    ".jp2",
+    ".webp",
+    ".gif",
+    ".bmp",
+    ".tiff",
 }
 MAX_RETRIES = 50
-SUPPORTED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg"}
+SUPPORTED_IMAGE_EXTENSIONS = {".png", ".jpg", ".jpeg", ".jp2", ".webp", ".gif", ".bmp", ".tiff"}
 
 
 @dataclass
