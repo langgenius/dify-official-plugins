@@ -1,0 +1,27 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: deepinfra
+label:
+  en_US: DeepInfra
+description:
+  en_US: Models.
+icon: icon.svg
+resource:
+  memory: 268435456
+  permission:
+    model:
+      enabled: true
+      llm: true
+plugins:
+  models:
+    - provider/deepinfra.yaml
+meta:
+  version: 0.0.1
+  arch: [amd64, arm64]
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+created_at: 2026-06-15T00:00:00.000Z
+verified: false
