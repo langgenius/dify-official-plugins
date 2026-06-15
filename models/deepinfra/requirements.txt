@@ -1,0 +1,1 @@
+dify_plugin>=0.9.0httpx>=0.28.1openai>=2.38.0
