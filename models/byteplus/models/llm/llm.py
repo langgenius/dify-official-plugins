@@ -49,13 +49,13 @@ class PlatformSpec:
     supports_web_search: bool
 
 
-VOLCENGINE_PLATFORM = PlatformSpec(
-    name="volcengine",
-    seedance_prefix="doubao-seedance-",
-    seedream_prefix="doubao-seedream-",
-    supports_web_search=True,
+BYTEPLUS_PLATFORM = PlatformSpec(
+    name="byteplus",
+    seedance_prefix="seedance-",
+    seedream_prefix="seedream-",
+    supports_web_search=False,
 )
-PLATFORM_SPECS = (VOLCENGINE_PLATFORM,)
+PLATFORM_SPECS = (BYTEPLUS_PLATFORM,)
 
 SEEDANCE_RUNNING_STATUSES = {"queued", "running"}
 SEEDANCE_FAILED_STATUSES = {"failed", "expired", "cancelled"}
@@ -708,7 +708,7 @@ def build_chat_completion_request(
     )
 
 
-class VolcengineArkLargeLanguageModel(LargeLanguageModel):
+class BytePlusArkLargeLanguageModel(LargeLanguageModel):
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
         return {}

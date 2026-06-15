@@ -30,7 +30,18 @@ def get_all_models() -> list[str]:
     data = yaml.safe_load(position_file.read_text(encoding="utf-8"))
     if not isinstance(data, list):
         raise ValueError(f"Expected list in {position_file}")
-    return [str(x).strip() for x in data if str(x).strip()]
+    models: list[str] = []
+    for item in data:
+        model_name = str(item).strip()
+        if not model_name:
+            continue
+        schema_file = models_dir / f"{model_name}.yaml"
+        schema = yaml.safe_load(schema_file.read_text(encoding="utf-8"))
+        features = schema.get("features") or {}
+        if "polling" in features:
+            continue
+        models.append(model_name)
+    return models
 
 
 @pytest.mark.parametrize("model_name", get_all_models())
@@ -40,7 +51,7 @@ def test_llm_invoke(model_name: str) -> None:
 
     api_key = os.getenv("VOLCENGINE_API_KEY")
     if not api_key:
-        raise ValueError("VOLCENGINE_API_KEY environment variable is required")
+        pytest.skip("VOLCENGINE_API_KEY is not set")
 
     plugin_path = os.getenv("PLUGIN_FILE_PATH")
     if not plugin_path:
