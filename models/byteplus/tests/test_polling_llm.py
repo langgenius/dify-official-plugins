@@ -285,8 +285,6 @@ def test_seedance_start_polling_creates_task_without_web_search(
         ],
         model_parameters={"duration": 5, "resolution": "720p", "web_search": True},
         stream=False,
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.RUNNING
@@ -328,8 +326,6 @@ def test_seedance_start_polling_fails_on_invalid_task_response_model(
         prompt_messages=[UserPromptMessage(content="make a calm ocean video")],
         model_parameters={},
         stream=False,
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.FAILED
@@ -366,8 +362,6 @@ def test_seedance_check_polling_returns_video_result(
         model="seedance-2-0-260128",
         credentials=credentials(),
         plugin_state={"task_id": "task-1"},
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.SUCCEEDED
@@ -386,8 +380,6 @@ def test_seedance_check_polling_rejects_legacy_state_alias() -> None:
         model="seedance-2-0-260128",
         credentials=credentials(),
         plugin_state={"job_id": "task-1"},
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.FAILED
@@ -413,8 +405,6 @@ def test_seedance_check_polling_keeps_running_on_retryable_errors(
         model="seedance-2-0-260128",
         credentials=credentials(),
         plugin_state={"task_id": "task-1"},
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.RUNNING
@@ -443,8 +433,6 @@ def test_seedance_15_rejects_video_input() -> None:
             ],
             model_parameters={},
             stream=False,
-            workflow_run_id="wr-1",
-            node_id="llm-1",
         )
 
 
@@ -482,8 +470,6 @@ def test_seedance_2_accepts_reference_audio(
         ],
         model_parameters={},
         stream=False,
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.RUNNING
@@ -526,8 +512,6 @@ def test_seedream_start_polling_returns_b64_image(
             "web_search": True,
         },
         stream=False,
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.SUCCEEDED
@@ -588,8 +572,6 @@ def test_seedream_start_polling_failed_responses(
         prompt_messages=[UserPromptMessage(content="draw a cabin")],
         model_parameters={},
         stream=False,
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.FAILED
@@ -630,8 +612,6 @@ def test_seedance_check_polling_failed_terminal_states(
         model="seedance-2-0-260128",
         credentials=credentials(),
         plugin_state={"task_id": "task-1"},
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.FAILED

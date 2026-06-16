@@ -1124,11 +1124,9 @@ class BytePlusArkLargeLanguageModel(LargeLanguageModel):
         stream: bool = False,
         user: str | None = None,
         *,
-        workflow_run_id: str,
-        node_id: str,
         json_schema: dict[str, Any] | None = None,
     ) -> LLMPollingResult:
-        del tools, stop, stream, workflow_run_id, node_id, json_schema
+        del tools, stop, stream, json_schema
         ark_credentials = parse_model(
             ArkCredentials,
             credentials,
@@ -1247,11 +1245,8 @@ class BytePlusArkLargeLanguageModel(LargeLanguageModel):
         credentials: dict,
         plugin_state: dict[str, Any],
         user: str | None = None,
-        *,
-        workflow_run_id: str,
-        node_id: str,
     ) -> LLMPollingResult:
-        del user, workflow_run_id, node_id
+        del user
         ark_credentials = parse_model(
             ArkCredentials,
             credentials,
