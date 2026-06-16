@@ -62,6 +62,7 @@ SEEDANCE_FAILED_STATUSES = {"failed", "expired", "cancelled"}
 DEFAULT_POLLING_INTERVAL_SECONDS = 10
 DEFAULT_POLLING_EXPIRES_AFTER_SECONDS = 1800
 DEFAULT_POLLING_MAX_ATTEMPTS = 60
+LEGACY_POLLING_FORWARD_KWARGS = frozenset({"workflow_run_id", "node_id"})
 DEFAULT_SEEDANCE_INPUT_MODE = "first_frame"
 SEEDANCE_INPUT_MODES = {"first_frame", "first_last_frame", "reference_image"}
 SEEDANCE_IMAGE_ROLES = {"first_frame", "last_frame", "reference_image"}
@@ -646,6 +647,21 @@ def format_provider_error(error: object) -> str:
     return str(error or "provider request failed")
 
 
+def consume_legacy_polling_kwargs(method_name: str, kwargs: dict[str, Any]) -> None:
+    unexpected_keys = sorted(
+        key for key in kwargs if key not in LEGACY_POLLING_FORWARD_KWARGS
+    )
+    if unexpected_keys:
+        unexpected_repr = ", ".join(repr(key) for key in unexpected_keys)
+        noun = "argument" if len(unexpected_keys) == 1 else "arguments"
+        raise TypeError(
+            f"{method_name}() got unexpected keyword {noun}: {unexpected_repr}"
+        )
+
+    for key in LEGACY_POLLING_FORWARD_KWARGS:
+        kwargs.pop(key, None)
+
+
 def is_retryable_http_status(status_code: int) -> bool:
     return status_code == 429 or 500 <= status_code < 600
 
@@ -1125,8 +1141,10 @@ class BytePlusArkLargeLanguageModel(LargeLanguageModel):
         user: str | None = None,
         *,
         json_schema: dict[str, Any] | None = None,
+        **kwargs: Any,
     ) -> LLMPollingResult:
-        del tools, stop, stream, json_schema
+        consume_legacy_polling_kwargs("_start_polling", kwargs)
+        del tools, stop, stream, json_schema, kwargs
         ark_credentials = parse_model(
             ArkCredentials,
             credentials,
@@ -1245,8 +1263,10 @@ class BytePlusArkLargeLanguageModel(LargeLanguageModel):
         credentials: dict,
         plugin_state: dict[str, Any],
         user: str | None = None,
+        **kwargs: Any,
     ) -> LLMPollingResult:
-        del user
+        consume_legacy_polling_kwargs("_check_polling", kwargs)
+        del user, kwargs
         ark_credentials = parse_model(
             ArkCredentials,
             credentials,
