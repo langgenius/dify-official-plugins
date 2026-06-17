@@ -77,9 +77,11 @@ class YouTubeTranscriptTool(Tool):
                 try:
                     transcript = transcript_list.find_transcript(languages)
                 except Exception:
-                    transcript = transcript_list.find_transcript(["en"]).translate(
-                        languages[0]
-                    )
+                    try:
+                        transcript = transcript_list.find_transcript(["en"])
+                    except Exception:
+                        transcript = next(iter(transcript_list))
+                    transcript = transcript.translate(languages[0])
                 return transcript.fetch(preserve_formatting=preserve_formatting)
 
         try:
@@ -119,6 +121,9 @@ class YouTubeTranscriptTool(Tool):
         video_input = video_input.strip()
         if "youtube.com" not in video_input and "youtu.be" not in video_input:
             return video_input
+
+        if not video_input.startswith(("http://", "https://")):
+            video_input = "https://" + video_input
 
         parsed_url = urlparse(video_input)
         if "youtu.be" in parsed_url.netloc:
