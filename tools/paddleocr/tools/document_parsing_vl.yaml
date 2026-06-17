@@ -31,9 +31,9 @@ parameters:
       en_US: Model
       zh_Hans: 模型
     human_description:
-      en_US: The VLM model to use for document parsing.
-      zh_Hans: 用于大模型文档解析的 VLM 模型。
-    llm_description: The VLM model to use for document parsing.
+      en_US: The model to use for document parsing.
+      zh_Hans: 用于大模型文档解析的模型。
+    llm_description: The model to use for document parsing.
     form: form
   - name: file
     type: file
