@@ -12,7 +12,7 @@ from tools.utils import (
     normalize_file_input,
 )
 
-_SKIP_KEYS = {"file", "fileType"}
+_SKIP_KEYS = {"file", "fileType", "model"}
 
 
 def build_ocr_options(params: dict[str, Any]) -> dict[str, Any]:
@@ -49,10 +49,13 @@ class TextRecognitionTool(Tool):
             # Get API client config
             client_config = get_api_client_config(access_token, base_url=base_url)
 
+            # Get model selection
+            model = tool_parameters.get("model", "PP-OCRv5")
+
             # Call API
             if file_input.startswith(("http://", "https://")):
                 result = call_paddleocr_api(
-                    model="PP-OCRv5",
+                    model=model,
                     file_url=file_input,
                     file_path=None,
                     options=options,
@@ -61,7 +64,7 @@ class TextRecognitionTool(Tool):
                 )
             else:
                 result = call_paddleocr_api(
-                    model="PP-OCRv5",
+                    model=model,
                     file_url=None,
                     file_path=file_input,
                     options=options,

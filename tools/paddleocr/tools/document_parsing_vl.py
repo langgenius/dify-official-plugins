@@ -12,7 +12,7 @@ from tools.utils import (
     normalize_file_input,
 )
 
-_SKIP_KEYS = {"file", "fileType"}
+_SKIP_KEYS = {"file", "fileType", "model"}
 
 
 def build_paddleocr_vl_options(params: dict[str, Any]) -> dict[str, Any]:
@@ -53,10 +53,13 @@ class DocumentParsingVlTool(Tool):
             # Get API client config
             client_config = get_api_client_config(access_token, base_url=base_url)
 
-            # Call API with PaddleOCR-VL-1.6 model
+            # Get model selection
+            model = tool_parameters.get("model", "PaddleOCR-VL-1.6")
+
+            # Call API
             if file_input.startswith(("http://", "https://")):
                 result = call_paddleocr_api(
-                    model="PaddleOCR-VL-1.6",
+                    model=model,
                     file_url=file_input,
                     file_path=None,
                     options=options,
@@ -65,7 +68,7 @@ class DocumentParsingVlTool(Tool):
                 )
             else:
                 result = call_paddleocr_api(
-                    model="PaddleOCR-VL-1.6",
+                    model=model,
                     file_url=None,
                     file_path=file_input,
                     options=options,

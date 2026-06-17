@@ -10,6 +10,23 @@ description:
     zh_Hans: PaddleOCR 大模型文档解析工具，能够提取文档中的表格、公式、印章等信息，同时保留原始版面结构
   llm: PaddleOCR large model document parsing tool, capable of extracting tables, formulas, seals, and other information from documents while preserving the original layout
 parameters:
+  - name: model
+    type: select
+    required: false
+    default: PaddleOCR-VL-1.6
+    options:
+      - label:
+          en_US: PaddleOCR-VL-1.6
+          zh_Hans: PaddleOCR-VL-1.6
+        value: PaddleOCR-VL-1.6
+    label:
+      en_US: Model
+      zh_Hans: 模型
+    human_description:
+      en_US: The VLM model to use for document parsing.
+      zh_Hans: 用于大模型文档解析的 VLM 模型。
+    llm_description: The VLM model to use for document parsing.
+    form: form
   - name: file
     type: file
     required: true
