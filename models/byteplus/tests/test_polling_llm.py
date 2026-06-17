@@ -310,7 +310,7 @@ def test_seedance_start_polling_creates_task_without_web_search(
     }
 
 
-def test_seedance_public_start_polling_accepts_legacy_forwarded_keywords(
+def test_seedance_public_start_polling_works_without_legacy_forwarded_keywords(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     model = make_model()
@@ -334,8 +334,6 @@ def test_seedance_public_start_polling_accepts_legacy_forwarded_keywords(
         prompt_messages=[UserPromptMessage(content="make a calm ocean video")],
         model_parameters={},
         stream=False,
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.RUNNING
@@ -405,40 +403,16 @@ def test_seedance_check_polling_returns_video_result(
     assert video.mime_type == "video/mp4"
 
 
-def test_seedance_public_check_polling_accepts_legacy_forwarded_keywords(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
+def test_seedance_check_polling_rejects_legacy_forwarded_keywords() -> None:
     model = make_model()
-    monkeypatch.setattr(model, "supports_polling", lambda *_: True)
-    monkeypatch.setattr(
-        model,
-        "usage_from_provider_payload",
-        lambda **_: LLMUsage.empty_usage(),
-    )
-
-    def fake_request_model(**kwargs: Any) -> Any:
-        return provider_response(
-            kwargs,
-            {
-                "id": "task-1",
-                "status": "succeeded",
-                "content": {"video_url": "https://example.com/result.mp4"},
-                "usage": {"completion_tokens": 12, "total_tokens": 12},
-            },
+    with pytest.raises(TypeError, match="unexpected keyword argument"):
+        model._check_polling(
+            model="seedance-2-0-260128",
+            credentials=credentials(),
+            plugin_state={"task_id": "task-1"},
+            workflow_run_id="wr-1",
+            node_id="llm-1",
         )
-
-    monkeypatch.setattr(model, "request_model", fake_request_model)
-
-    result = model.check_polling(
-        model="seedance-2-0-260128",
-        credentials=credentials(),
-        plugin_state={"task_id": "task-1"},
-        workflow_run_id="wr-1",
-        node_id="llm-1",
-    )
-
-    assert result.status == LLMPollingStatus.SUCCEEDED
-    assert result.result is not None
 
 
 def test_seedance_check_polling_rejects_legacy_state_alias() -> None:

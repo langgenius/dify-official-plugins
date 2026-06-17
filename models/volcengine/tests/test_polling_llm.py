@@ -268,8 +268,6 @@ def test_seedance_start_polling_creates_task(monkeypatch: pytest.MonkeyPatch) ->
         ],
         model_parameters={"duration": 5, "resolution": "720p", "max_tokens": 100},
         stream=False,
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.RUNNING
@@ -311,8 +309,6 @@ def test_seedance_start_polling_fails_on_invalid_task_response_model(
         prompt_messages=[UserPromptMessage(content="make a calm ocean video")],
         model_parameters={},
         stream=False,
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.FAILED
@@ -354,8 +350,6 @@ def test_seedance_check_polling_returns_video_result(
         model="doubao-seedance-2-0-260128",
         credentials=credentials(),
         plugin_state={"task_id": "task-1"},
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.SUCCEEDED
@@ -374,8 +368,6 @@ def test_seedance_check_polling_rejects_legacy_state_alias() -> None:
         model="doubao-seedance-2-0-260128",
         credentials=credentials(),
         plugin_state={"job_id": "task-1"},
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.FAILED
@@ -397,8 +389,6 @@ def test_seedance_check_polling_keeps_running_on_retryable_provider_error(
         model="doubao-seedance-2-0-260128",
         credentials=credentials(),
         plugin_state={"task_id": "task-1"},
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.RUNNING
@@ -420,8 +410,6 @@ def test_seedance_check_polling_keeps_running_on_network_error(
         model="doubao-seedance-2-0-260128",
         credentials=credentials(),
         plugin_state={"task_id": "task-1"},
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.RUNNING
@@ -457,8 +445,6 @@ def test_seedance_start_polling_requires_explicit_mode_for_two_images() -> None:
             ],
             model_parameters={},
             stream=False,
-            workflow_run_id="wr-1",
-            node_id="llm-1",
         )
 
 
@@ -496,8 +482,6 @@ def test_seedance_start_polling_uses_explicit_first_last_frame_mode(
         ],
         model_parameters={"input_mode": "first_last_frame"},
         stream=False,
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.RUNNING
@@ -541,8 +525,6 @@ def test_seedance_start_polling_uses_reference_image_mode(
         ],
         model_parameters={"input_mode": "reference_image"},
         stream=False,
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.RUNNING
@@ -585,8 +567,6 @@ def test_seedance_start_polling_uses_reference_images_with_video(
         ],
         model_parameters={},
         stream=False,
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.RUNNING
@@ -629,8 +609,6 @@ def test_seedance_start_polling_uses_reference_image_with_audio(
         ],
         model_parameters={},
         stream=False,
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.RUNNING
@@ -657,8 +635,6 @@ def test_volcengine_seedance_web_search_maps_to_tools(
         prompt_messages=[UserPromptMessage(content="make a timely city video")],
         model_parameters={"web_search": True},
         stream=False,
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert requests[0].payload_dict()["tools"] == [{"type": "web_search"}]
@@ -691,8 +667,6 @@ def test_seedance_start_polling_rejects_frame_role_with_video() -> None:
             ],
             model_parameters={},
             stream=False,
-            workflow_run_id="wr-1",
-            node_id="llm-1",
         )
 
 
@@ -717,8 +691,6 @@ def test_seedance_15_rejects_video_input() -> None:
             ],
             model_parameters={},
             stream=False,
-            workflow_run_id="wr-1",
-            node_id="llm-1",
         )
 
 
@@ -768,8 +740,6 @@ def test_seedream_start_polling_returns_terminal_image_result(
         ],
         model_parameters={"size": "2048x2048", "response_format": "url"},
         stream=False,
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.SUCCEEDED
@@ -820,8 +790,6 @@ def test_volcengine_seedream_web_search_and_max_images_map_to_payload(
             "web_search": True,
         },
         stream=False,
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.SUCCEEDED
@@ -855,8 +823,6 @@ def test_seedream_start_polling_fails_on_response_error(
         prompt_messages=[UserPromptMessage(content="draw a cabin")],
         model_parameters={},
         stream=False,
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.FAILED
@@ -891,8 +857,6 @@ def test_seedream_start_polling_fails_when_all_images_fail(
         prompt_messages=[UserPromptMessage(content="draw a cabin")],
         model_parameters={},
         stream=False,
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.FAILED
@@ -933,8 +897,6 @@ def test_seedance_check_polling_failed_terminal_states(
         model="doubao-seedance-2-0-260128",
         credentials=credentials(),
         plugin_state={"task_id": "task-1"},
-        workflow_run_id="wr-1",
-        node_id="llm-1",
     )
 
     assert result.status == LLMPollingStatus.FAILED
