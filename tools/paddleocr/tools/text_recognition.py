@@ -50,7 +50,7 @@ class TextRecognitionTool(Tool):
             client_config = get_api_client_config(access_token, base_url=base_url)
 
             # Get model selection
-            model = tool_parameters.get("model", "PP-OCRv5")
+            model = tool_parameters.get("model") or "PP-OCRv5"
 
             # Call API
             if file_input.startswith(("http://", "https://")):
