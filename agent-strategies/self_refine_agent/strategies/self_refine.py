@@ -481,7 +481,7 @@ class SelfRefineStrategy(AgentStrategy):
                 else:
                     raise ValueError("No JSON found in response")
 
-            except (json.JSONDecodeError, ValueError) as e:
+            except Exception as e:
                 logger.warning(f"Failed to parse evaluation JSON: {e}, using fallback")
                 return EvaluationResult(
                     is_satisfactory=False,
