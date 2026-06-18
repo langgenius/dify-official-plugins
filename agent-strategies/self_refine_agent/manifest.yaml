@@ -1,0 +1,35 @@
+version: 0.0.1
+type: plugin
+author: "your-github-username"
+name: "self_refine_agent"
+label:
+  en_US: "Self-Refine Agent Strategy"
+  zh_Hans: "自我优化 Agent 策略"
+created_at: "2025-06-18T00:00:00.000000000Z"
+icon: icon.svg
+description:
+  en_US: "Agent strategy with automatic self-critique and iterative refinement. Based on Self-Refine (NeurIPS 2023)."
+  zh_Hans: "支持自动自我批判和迭代优化的 Agent 策略。基于 Self-Refine (NeurIPS 2023)。"
+tags:
+  - "agent"
+resource:
+  memory: 1048576
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+plugins:
+  agent_strategies:
+    - "provider/self_refine.yaml"
+meta:
+  version: 0.0.2
+  minimum_dify_version: "1.7.0"
+  arch:
+    - "amd64"
+    - "arm64"
+  runner:
+    language: "python"
+    version: "3.12"
+    entrypoint: "main"

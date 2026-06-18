@@ -1,0 +1,13 @@
+[project]
+name = "self_refine_agent"
+version = "0.1.0"
+description = "Self-Refine Agent Strategy for Dify - Automatic critique and iterative refinement"
+readme = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+    "dify_plugin>=0.9.0",
+]
+
+[dependency-groups]
+dev = []
