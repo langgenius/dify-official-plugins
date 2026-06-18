@@ -12,8 +12,8 @@ For community contributions, submit to https://github.com/langgenius/dify-plugin
 ## Change Type
 
 - [ ] Documentation / non-plugin change
-- [x] Non-LLM plugin (tools, extensions, datasource, etc.)
-- [ ] LLM plugin
+- [ ] Non-LLM plugin (tools, extensions, datasource, etc.)
+- [x] LLM plugin
 
 ## Screenshots / Videos
 
@@ -41,11 +41,11 @@ Reference: https://github.com/langgenius/dify-official-plugins/blob/main/.assets
 <summary>Areas affected by this change (check all that apply)</summary>
 
 - [ ] Message flow (system messages, user ↔ assistant turn-taking)
-- [ ] Tool interaction flow (multi-round usage, Agent App and Agent Node)
+- [x] Tool interaction flow (multi-round usage, Agent App and Agent Node)
 - [ ] Multimodal input (images, PDFs, audio, video, etc.)
 - [ ] Multimodal output (images, audio, video, etc.)
 - [ ] Structured output (JSON, XML, etc.)
-- [ ] Token consumption metrics
+- [x] Token consumption metrics
 - [ ] Other LLM functionality (reasoning, grounding, prompt caching, etc.)
 - [ ] New models / model parameter fixes
 
@@ -69,5 +69,5 @@ Version format: MAJOR.MINOR.PATCH — each segment may be 2 digits (e.g. 10.11.2
 Python venv aligned with `manifest.yaml`, `pyproject.toml`, and `uv.lock` (or `requirements.txt` for legacy plugins).
 -->
 
-- [x] Local deployment — Dify version: <!-- e.g. 1.2.0 -->
+- [x] Local deployment — Dify version: 1.7.0
 - [ ] SaaS (cloud.dify.ai)
