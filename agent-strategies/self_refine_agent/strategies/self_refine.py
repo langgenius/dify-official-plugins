@@ -177,7 +177,7 @@ class SelfRefineStrategy(AgentStrategy):
             )
 
             try:
-                evaluation = yield from self._evaluate_output(
+                evaluation = self._evaluate_output(
                     params=params,
                     output=final_output
                 )
