@@ -132,6 +132,7 @@ class SelfRefineStrategy(AgentStrategy):
             try:
                 execution_result = yield from self._execute_agent(
                     params=params,
+                    previous_output=final_output if refinement_count > 0 else None,
                     previous_critique=previous_critique,
                     attempt_number=attempt_number
                 )
