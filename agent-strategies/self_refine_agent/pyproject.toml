@@ -1,6 +1,6 @@
 [project]
 name = "self_refine_agent"
-version = "0.1.0"
+version = "0.0.1"
 description = "Self-Refine Agent Strategy for Dify - Automatic critique and iterative refinement"
 readme = "README.md"
 requires-python = ">=3.12"

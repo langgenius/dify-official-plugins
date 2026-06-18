@@ -1,6 +1,6 @@
 version: 0.0.1
 type: plugin
-author: "your-github-username"
+author: "KERVIN-FARMER"
 name: "self_refine_agent"
 label:
   en_US: "Self-Refine Agent Strategy"
@@ -24,7 +24,7 @@ plugins:
   agent_strategies:
     - "provider/self_refine.yaml"
 meta:
-  version: 0.0.2
+  version: 0.0.1
   minimum_dify_version: "1.7.0"
   arch:
     - "amd64"

@@ -112,8 +112,4 @@ MIT License
 
 ## 作者
 
-your-github-username
-
----
-
-**注意**：当前为 Phase 2 骨架版本，仅用于结构验证。完整功能将在 Phase 3 中实现。
+KERVIN-FARMER

@@ -12,7 +12,7 @@ For community contributions, submit to https://github.com/langgenius/dify-plugin
 ## Change Type
 
 - [ ] Documentation / non-plugin change
-- [ ] Non-LLM plugin (tools, extensions, datasource, etc.)
+- [x] Non-LLM plugin (tools, extensions, datasource, etc.)
 - [ ] LLM plugin
 
 ## Screenshots / Videos
@@ -53,8 +53,8 @@ Reference: https://github.com/langgenius/dify-official-plugins/blob/main/.assets
 
 ## Version
 
-- [ ] Bumped top-level `version` in `manifest.yaml` (not the one under `meta`)
-- [ ] `dify_plugin>=0.3.0,<0.6.0` is declared in `pyproject.toml` and locked in `uv.lock` (or kept in `requirements.txt` for legacy plugins without `uv.lock`) — [SDK docs](https://github.com/langgenius/dify-plugin-sdks/blob/main/python/README.md)
+- [x] Bumped top-level `version` in `manifest.yaml` (not the one under `meta`)
+- [x] `dify_plugin>=0.3.0,<0.6.0` is declared in `pyproject.toml` and locked in `uv.lock` (or kept in `requirements.txt` for legacy plugins without `uv.lock`) — [SDK docs](https://github.com/langgenius/dify-plugin-sdks/blob/main/python/README.md)
 
 <!--
 Version format: MAJOR.MINOR.PATCH — each segment may be 2 digits (e.g. 10.11.22)
@@ -69,5 +69,5 @@ Version format: MAJOR.MINOR.PATCH — each segment may be 2 digits (e.g. 10.11.2
 Python venv aligned with `manifest.yaml`, `pyproject.toml`, and `uv.lock` (or `requirements.txt` for legacy plugins).
 -->
 
-- [ ] Local deployment — Dify version: <!-- e.g. 1.2.0 -->
+- [x] Local deployment — Dify version: <!-- e.g. 1.2.0 -->
 - [ ] SaaS (cloud.dify.ai)
