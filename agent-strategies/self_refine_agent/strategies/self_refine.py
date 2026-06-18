@@ -7,11 +7,6 @@ class SelfRefineStrategy(AgentStrategy):
     def _invoke(
         self,
         parameters: dict,
-        user_id: str,
-        conversation_id: str,
-        app_id: str,
-        message_id: str,
-        credentials: dict,
     ) -> Generator[AgentInvokeMessage]:
         """
         Self-Refine Agent Strategy
