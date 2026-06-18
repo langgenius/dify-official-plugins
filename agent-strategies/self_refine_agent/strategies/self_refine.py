@@ -426,7 +426,7 @@ class SelfRefineStrategy(AgentStrategy):
         self,
         params: SelfRefineParams,
         output: str
-    ) -> Generator[EvaluationResult]:
+    ) -> EvaluationResult:
         """Evaluate output quality using LLM as judge"""
 
         eval_prompt = (
