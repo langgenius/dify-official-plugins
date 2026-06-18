@@ -1,0 +1,65 @@
+model: seedream-5-0-260128
+label:
+  en_US: Seedream 5.0
+  zh_Hans: Seedream 5.0
+model_type: llm
+features:
+  - polling
+  - vision
+model_properties:
+  mode: chat
+  context_size: 4000
+parameter_rules:
+  - name: size
+    label:
+      zh_Hans: 图片尺寸
+      en_US: Image Size
+    type: string
+    required: false
+    default: 2048x2048
+  - name: sequential_image_generation
+    label:
+      zh_Hans: 组图模式
+      en_US: Sequential Image Generation
+    type: string
+    required: false
+    default: disabled
+    options:
+      - disabled
+      - auto
+  - name: max_images
+    label:
+      zh_Hans: 最大图片数
+      en_US: Max Images
+    type: int
+    required: false
+    default: 15
+    min: 1
+    max: 15
+  - name: output_format
+    label:
+      zh_Hans: 输出格式
+      en_US: Output Format
+    type: string
+    required: false
+    default: jpeg
+    options:
+      - jpeg
+      - png
+  - name: response_format
+    label:
+      zh_Hans: 返回格式
+      en_US: Response Format
+    type: string
+    required: false
+    default: url
+    options:
+      - url
+      - b64_json
+  - name: watermark
+    label:
+      zh_Hans: 水印
+      en_US: Watermark
+    type: boolean
+    required: false
+    default: true
