@@ -65,9 +65,9 @@ class ExecutionMetadata(BaseModel):
 
 
 class ContextItem(BaseModel):
-    content: str
-    title: str
-    metadata: dict[str, Any]
+    content: str = ""
+    title: str = ""
+    metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class SelfRefineParams(BaseModel):
