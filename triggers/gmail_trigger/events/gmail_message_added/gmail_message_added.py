@@ -75,9 +75,17 @@ class GmailMessageAddedEvent(Event):
             mid_str = str(mid)
             murl = f"{self._GMAIL_BASE}/users/me/messages/{mid_str}"
             mparams: dict[str, str] = {"format": "full"}
-            mresp: requests.Response = requests.get(murl, headers=headers, params=mparams, timeout=10)
-            if mresp.status_code != 200:
+            try:
+                mresp: requests.Response = requests.get(murl, headers=headers, params=mparams, timeout=10)
+            except requests.RequestException as exc:
+                raise ValueError(f"Network error while fetching Gmail message {mid_str}: {exc}") from exc
+            if mresp.status_code == 404:
                 continue
+            if mresp.status_code != 200:
+                raise ValueError(
+                    f"Gmail messages.get failed for {mid_str} ({mresp.status_code}): "
+                    f"{self._format_gmail_error(mresp)}"
+                )
             m = mresp.json() or {}
             headers_list = (m.get("payload") or {}).get("headers") or []
             headers_map = {h.get("name"): h.get("value") for h in headers_list if h.get("name")}
@@ -325,8 +333,13 @@ class GmailMessageAddedEvent(Event):
             response = requests.get(url, headers=headers, timeout=10)
         except requests.RequestException:
             return None, None
-        if response.status_code != 200:
+        if response.status_code == 404:
             return None, None
+        if response.status_code != 200:
+            raise ValueError(
+                f"Gmail attachments.get failed for message {message_id} ({response.status_code}): "
+                f"{self._format_gmail_error(response)}"
+            )
 
         data = response.json() or {}
         encoded = data.get("data")
@@ -367,6 +380,25 @@ class GmailMessageAddedEvent(Event):
             return file_invocation.upload(filename=filename, content=content, mimetype=mimetype)
         except Exception:
             return None
+
+    def _format_gmail_error(self, response: requests.Response) -> str:
+        try:
+            payload = response.json()
+        except Exception:
+            return response.text
+        if isinstance(payload, Mapping):
+            error = payload.get("error")
+            if isinstance(error, Mapping):
+                message = error.get("message")
+                status = error.get("status")
+                if message and status:
+                    return f"{status}: {message}"
+                if message:
+                    return str(message)
+            message = payload.get("message")
+            if message:
+                return str(message)
+        return json.dumps(payload)
 
     @staticmethod
     def _decode_base64url(data: str) -> bytes:

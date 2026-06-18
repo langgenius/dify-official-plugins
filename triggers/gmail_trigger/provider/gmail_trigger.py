@@ -37,6 +37,7 @@ class GmailTrigger(Trigger):
     """
 
     _GMAIL_BASE = "https://gmail.googleapis.com/gmail/v1"
+    _DEFAULT_ACCESS_TOKEN_TTL_SECONDS = 3600
 
     def _dispatch_event(self, subscription: Subscription, request: Request) -> EventDispatch:
         props = subscription.properties or {}
@@ -156,10 +157,18 @@ class GmailTrigger(Trigger):
         params: dict[str, Any] = {"startHistoryId": start_history_id}
 
         while True:
-            resp: requests.Response = requests.get(url, headers=headers, params=params, timeout=10)
-            if resp.status_code != 200:
-                # history id may be invalid/out of range; swallow this batch and move checkpoint forward by caller
+            try:
+                resp: requests.Response = requests.get(url, headers=headers, params=params, timeout=10)
+            except requests.RequestException as exc:
+                raise TriggerDispatchError(f"Network error while fetching Gmail history: {exc}") from exc
+            if resp.status_code == 404:
+                # Gmail returns 404 when startHistoryId is invalid or out of range.
+                # The caller will advance the checkpoint to the current push notification.
                 return [], [], [], [], []
+            if resp.status_code != 200:
+                raise TriggerDispatchError(
+                    f"Gmail history.list failed ({resp.status_code}): {self._format_gmail_error(resp)}"
+                )
             data: dict[str, Any] = resp.json() or {}
             for h in data.get("history", []) or []:
                 for item in h.get("messagesAdded", []) or []:
@@ -198,6 +207,25 @@ class GmailTrigger(Trigger):
 
         messages.extend(added + deleted)
         return messages, added, deleted, labels_added, labels_removed
+
+    def _format_gmail_error(self, response: requests.Response) -> str:
+        try:
+            payload = response.json()
+        except Exception:
+            return response.text
+        if isinstance(payload, Mapping):
+            error = payload.get("error")
+            if isinstance(error, Mapping):
+                message = error.get("message")
+                status = error.get("status")
+                if message and status:
+                    return f"{status}: {message}"
+                if message:
+                    return str(message)
+            message = payload.get("message")
+            if message:
+                return str(message)
+        return json.dumps(payload)
 
     def _verify_oidc_token(self, token: str, audience: str, expected_email: str | None = None) -> None:
         """Verify OIDC token from Pub/Sub push using google-auth if available."""
@@ -276,15 +304,17 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         if not access_token:
             raise TriggerProviderOAuthError(f"Error in Google OAuth: {payload}")
 
-        expires_in: int = int(payload.get("expires_in") or 0)
+        expires_in: int = int(payload.get("expires_in") or self._DEFAULT_ACCESS_TOKEN_TTL_SECONDS)
         refresh_token: str | None = payload.get("refresh_token")
-        expires_at: int = int(time.time()) + expires_in if expires_in else -1
+        expires_at: int = int(time.time()) + expires_in
 
         # 2. Parse and store GCP configuration from system_credentials
         import json as _json
 
         credentials: dict[str, str] = {"access_token": access_token}
         if refresh_token:
+            # Kept outside credentials_schema so Dify core does not encrypt it with
+            # a schema that is not used when refreshing trigger credentials.
             credentials["refresh_token"] = refresh_token
 
         # Extract GCP info and store in credentials for later use (required)
@@ -351,8 +381,8 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         if not access_token:
             raise TriggerProviderOAuthError(f"OAuth refresh failed: {payload}")
 
-        expires_in: int = int(payload.get("expires_in") or 0)
-        expires_at: int = int(time.time()) + expires_in if expires_in else -1
+        expires_in: int = int(payload.get("expires_in") or self._DEFAULT_ACCESS_TOKEN_TTL_SECONDS)
+        expires_at: int = int(time.time()) + expires_in
         refreshed: dict[str, str] = {"access_token": access_token}
         if refresh_token:
             refreshed["refresh_token"] = refresh_token

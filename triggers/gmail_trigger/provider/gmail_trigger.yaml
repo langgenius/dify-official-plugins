@@ -138,10 +138,6 @@ subscription_constructor:
       type: "secret-input"
       label:
         en_US: "Gmail Email"
-    - name: "refresh_token"
-      type: "secret-input"
-      label:
-        en_US: "Refresh Token"
   extra:
     python:
       source: provider/gmail_trigger.py
@@ -153,7 +149,7 @@ events:
 - events/gmail_label_removed/gmail_label_removed.yaml
 
 identity:
-  author: langgenius
+  author: langgeniustest
   description:
     en_US: Gmail push trigger provider with message and label change events.
     zh_Hans: 支持邮件与标签变更事件的 Gmail 推送触发器。
