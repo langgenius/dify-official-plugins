@@ -255,6 +255,13 @@ class SelfRefineStrategy(AgentStrategy):
             SystemPromptMessage(content=system_prompt)
         ]
 
+        # Add context if available
+        if params.context:
+            context_text = "\n\n[Context]\n"
+            for ctx in params.context:
+                context_text += f"- {ctx.title}: {ctx.content}\n"
+            prompt_messages.append(UserPromptMessage(content=context_text))
+
         # Add history if available
         if params.model.history_prompt_messages:
             prompt_messages.extend(params.model.history_prompt_messages)
