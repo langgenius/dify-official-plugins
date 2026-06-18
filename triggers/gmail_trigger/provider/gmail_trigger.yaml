@@ -149,7 +149,7 @@ events:
 - events/gmail_label_removed/gmail_label_removed.yaml
 
 identity:
-  author: langgeniustest
+  author: langgenius
   description:
     en_US: Gmail push trigger provider with message and label change events.
     zh_Hans: 支持邮件与标签变更事件的 Gmail 推送触发器。
