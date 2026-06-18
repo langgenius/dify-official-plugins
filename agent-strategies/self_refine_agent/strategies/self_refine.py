@@ -1,4 +1,5 @@
-from dify_plugin.interfaces.agent import AgentStrategy, AgentInvokeMessage
+from dify_plugin.interfaces.agent import AgentStrategy
+from dify_plugin.entities.agent import AgentInvokeMessage
 from collections.abc import Generator
 
 
