@@ -506,7 +506,7 @@ class SelfRefineStrategy(AgentStrategy):
         for tool in tools:
             prompt_tools.append(
                 ToolInvokeMeta(
-                    provider_type=ToolProviderType.BUILT_IN,
+                    provider_type=tool.identity.provider_type or ToolProviderType.BUILT_IN,
                     provider=tool.identity.provider,
                     tool_name=tool.identity.name,
                     tool_parameters=tool.runtime_parameters or {}
