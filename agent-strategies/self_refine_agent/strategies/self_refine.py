@@ -368,7 +368,7 @@ class SelfRefineStrategy(AgentStrategy):
         self,
         tool_calls: list[tuple[str, str, dict[str, Any]]],
         tools: list[ToolEntity]
-    ) -> Generator[list[str]]:
+    ) -> Generator[AgentInvokeMessage, None, list[str]]:
         """Execute tool calls and return results"""
 
         tool_instances = {tool.identity.name: tool for tool in tools}
