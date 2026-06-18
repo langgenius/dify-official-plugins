@@ -228,7 +228,7 @@ class SelfRefineStrategy(AgentStrategy):
         params: SelfRefineParams,
         previous_critique: Optional[str],
         attempt_number: int
-    ) -> Generator[dict[str, Any]]:
+    ) -> Generator[AgentInvokeMessage, None, dict[str, Any]]:
         """Execute agent task with optional refinement context"""
 
         # Build system prompt
