@@ -38,12 +38,15 @@ Self-Refine Agent Strategy 是一个基于 [Self-Refine (NeurIPS 2023)](https://
 
 ## 当前状态
 
-**Phase 2: 文件骨架**
+**Phase 3: 完整实现 ✅**
 - ✅ 完整的目录结构
 - ✅ manifest.yaml 配置
 - ✅ provider 和 strategy 框架
-- ✅ 基础测试消息
-- ⏳ Phase 3: 完整实现（待开发）
+- ✅ 完整的自我优化循环逻辑
+- ✅ LLM 调用和工具执行
+- ✅ 评估和批判机制
+- ✅ 流式输出和日志
+- ✅ 错误处理和 fallback
 
 ## 安装和调试
 
@@ -62,21 +65,40 @@ DIFY_PLUGIN_DAEMON_URL=http://localhost:5003
 python main.py
 ```
 
-## 开发计划
+## 核心实现
 
-### Phase 3: 完整实现
-- [ ] 实现 `_execute_agent_loop()` 方法
-- [ ] 实现 `_evaluate_and_critique()` 评估器
-- [ ] 添加 Prompt 模板（system/evaluation/refinement）
-- [ ] 工具调用和错误处理
-- [ ] 流式输出和日志消息
-- [ ] 支持历史消息上下文
+### 已实现功能 ✅
 
-### Phase 4: 优化和测试
-- [ ] 单元测试
-- [ ] 集成测试
-- [ ] 性能优化
-- [ ] 文档完善
+**执行引擎** (`_execute_agent`):
+- ✅ 动态系统提示生成（初始 vs 优化）
+- ✅ 历史消息支持
+- ✅ 流式和非流式 LLM 调用
+- ✅ 工具调用处理
+- ✅ 元数据收集（tokens、价格、延迟）
+
+**评估系统** (`_evaluate_output`):
+- ✅ LLM-as-judge 评估模式
+- ✅ JSON 响应解析
+- ✅ Fallback 机制
+- ✅ 质量评分（0-100）
+
+**优化循环** (`_invoke`):
+- ✅ 迭代优化控制（max_refinements）
+- ✅ 批判注入到下一轮执行
+- ✅ 早停机制（质量达标时）
+- ✅ 完整的日志和状态输出
+
+**错误处理**:
+- ✅ 参数验证（Pydantic）
+- ✅ LLM 调用异常捕获
+- ✅ 工具执行失败处理
+- ✅ JSON 解析 fallback
+
+### 待优化项
+- [ ] 单元测试覆盖
+- [ ] 性能基准测试
+- [ ] 更多 prompt 模板变体
+- [ ] 支持自定义评估标准
 
 ## 参考论文
 
