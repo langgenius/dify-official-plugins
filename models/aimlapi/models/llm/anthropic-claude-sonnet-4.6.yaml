@@ -1,0 +1,29 @@
+model: anthropic/claude-sonnet-4.6
+label:
+  en_US: Claude Sonnet 4.6
+model_type: llm
+features:
+  - agent-thought
+  - vision
+  - tool-call
+  - multi-tool-call
+  - stream-tool-call
+  - document
+model_properties:
+  mode: chat
+  context_size: 1000000
+parameter_rules:
+  - name: temperature
+    use_template: temperature
+  - name: max_tokens
+    use_template: max_tokens
+    default: 4096
+    min: 1
+    max: 64000
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: "3.00"
+  output: "15.00"
+  unit: "0.000001"
+  currency: USD

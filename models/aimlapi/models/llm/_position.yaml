@@ -1,0 +1,6 @@
+position:
+  - openai/gpt-4o-mini
+  - openai/gpt-4o
+  - openai/gpt-5-chat-latest
+  - anthropic/claude-sonnet-4.6
+  - google/gemini-2.5-flash

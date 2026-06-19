@@ -1,0 +1,30 @@
+version: 0.0.1
+type: plugin
+author: langgenius
+name: aimlapi
+label:
+  en_US: AI/ML API
+description:
+  en_US: Access OpenAI-compatible chat models from multiple providers through AI/ML API.
+icon: icon.svg
+resource:
+  memory: 1048576
+  permission:
+    model:
+      enabled: true
+      llm: true
+plugins:
+  models:
+    - provider/aimlapi.yaml
+meta:
+  version: 0.0.1
+  arch:
+    - amd64
+    - arm64
+  runner:
+    language: python
+    version: "3.12"
+    entrypoint: main
+  minimum_dify_version: null
+created_at: 2026-06-19T00:00:00.000000+00:00
+verified: false
