@@ -4,7 +4,13 @@ from typing import Optional, Union
 from dify_plugin import OAICompatLargeLanguageModel
 from dify_plugin.entities.model import AIModelEntity
 from dify_plugin.entities.model.llm import LLMResult
-from dify_plugin.entities.model.message import PromptMessage, PromptMessageTool
+from dify_plugin.entities.model.message import (
+    ImagePromptMessageContent,
+    PromptMessage,
+    PromptMessageContentType,
+    PromptMessageTool,
+    UserPromptMessage,
+)
 
 
 class AimlapiLargeLanguageModel(OAICompatLargeLanguageModel):
@@ -17,6 +23,32 @@ class AimlapiLargeLanguageModel(OAICompatLargeLanguageModel):
             "HTTP-Referer": "https://dify.ai/",
             "X-Title": "Dify",
         }
+
+    def _convert_prompt_message_to_dict(
+        self, message: PromptMessage, credentials: dict | None = None
+    ) -> dict:
+        if isinstance(message, UserPromptMessage) and isinstance(message.content, list):
+            sub_messages: list[dict] = []
+            for content in message.content:
+                if content.type == PromptMessageContentType.TEXT:
+                    sub_messages.append({"type": "text", "text": content.data})
+                elif content.type == PromptMessageContentType.IMAGE:
+                    image_content: ImagePromptMessageContent = content
+                    sub_messages.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": image_content.data,
+                                "detail": image_content.detail.value,
+                            },
+                        }
+                    )
+            message_dict: dict = {"role": "user", "content": sub_messages}
+            if message.name:
+                message_dict["name"] = message.name
+            return message_dict
+
+        return super()._convert_prompt_message_to_dict(message, credentials)
 
     def _invoke(
         self,
