@@ -9,6 +9,9 @@ logger = logging.getLogger(__name__)
 
 class AimlapiProvider(ModelProvider):
     def validate_provider_credentials(self, credentials: dict) -> None:
+        if not credentials or not credentials.get("api_key"):
+            raise CredentialsValidateFailedError("API key is required")
+
         try:
             model_instance = self.get_model_instance(ModelType.LLM)
             model_instance.validate_credentials(
