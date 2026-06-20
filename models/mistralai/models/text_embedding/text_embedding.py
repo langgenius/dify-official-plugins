@@ -182,5 +182,5 @@ class MistralAITextEmbeddingModel(TextEmbeddingModel):
             price_unit=unit,
             total_price=total_price,
             currency=input_price_info["currency"],
-            latency=time.time() - time.time(),  # Will be set by the framework
+            latency=time.perf_counter() - self.started_at,
         )
