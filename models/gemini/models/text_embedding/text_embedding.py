@@ -116,7 +116,11 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
             if len(embeddings) == 1:
                 embedding = embeddings[0]
             else:
-                average = np.average(embeddings, axis=0, weights=num_tokens)
+                # `num_tokens` may contain ``None`` when the Gemini API omits token
+                # usage for a chunk. ``np.average`` cannot use ``None`` weights, so
+                # fall back to an unweighted average in that case.
+                weights = num_tokens if all(t is not None for t in num_tokens) else None
+                average = np.average(embeddings, axis=0, weights=weights)
                 embedding = (average / np.linalg.norm(average)).tolist()
                 if np.isnan(embedding).any():
                     raise ValueError("Normalized embedding is nan please try again")
@@ -154,13 +158,24 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         splitted_text = []
         for text in texts:
             num_tokens = self._count_tokens(client, model, text)
-            if num_tokens >= context_size:
-                cutoff = context_size
-                # split text by the closest punctuation mark or then by comma or space
+            if num_tokens >= context_size and len(text) > 1:
+                # `context_size` is a token budget, not a character index. Estimate a
+                # character cutoff from the token-to-character ratio so the head is
+                # likely to fit, then clamp it to ``[1, len(text) - 1]`` so both the
+                # head and the tail are strictly shorter than ``text``. This guarantees
+                # progress and terminates the recursion even for token-dense content
+                # (e.g. CJK, code, base64) where ``len(text)`` may be <= ``context_size``.
+                cutoff = max(1, len(text) * context_size // num_tokens)
+                cutoff = min(cutoff, len(text) - 1)
+                # prefer to split on the closest punctuation mark, then comma, then
+                # whitespace, searching forward from the estimated cutoff. Never let the
+                # boundary reach the end of the text, which would empty the tail.
                 for pattern in [r"[.!?]", r",", r"\s"]:
-                    match = re.search(pattern, text[context_size:])
+                    match = re.search(pattern, text[cutoff:])
                     if match:
-                        cutoff = context_size + match.start() + 1
+                        boundary = cutoff + match.start() + 1
+                        if boundary < len(text):
+                            cutoff = boundary
                         break
                 splitted_text.extend(
                     self._split_texts_to_fit_model_specs(

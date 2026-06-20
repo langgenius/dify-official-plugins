@@ -9,6 +9,7 @@ import base64
 from decimal import Decimal
 from unittest.mock import Mock, patch
 
+import numpy as np
 import pytest
 from google.genai import types
 from dify_plugin.entities.model import EmbeddingInputType
@@ -1082,6 +1083,159 @@ class TestMultimodalDataURIHandling:
                 documents=[doc],
             )
             assert len(result.embeddings) == 1
+
+
+# ================================================================
+# Test: _split_texts_to_fit_model_specs — termination (issue #3323 Bug A)
+# ================================================================
+
+
+class TestSplitTextsTermination:
+    """Tests that the recursive splitter always terminates.
+
+    Regression for https://github.com/langgenius/dify-official-plugins/issues/3323
+    Bug A: ``context_size`` (a token count) was used as a character index, so when
+    a text counted as ``>= context_size`` tokens while being <= ``context_size``
+    characters (token-dense content like CJK / code / base64), the head slice was
+    the unchanged text and the recursion never terminated.
+    """
+
+    def setup_method(self):
+        self.model = GeminiTextEmbeddingModel([])
+
+    def _patch_count_tokens(self, chars_per_token: float):
+        """Patch _count_tokens with a deterministic char-based token estimate."""
+
+        def fake_count_tokens(_client, _model, text):
+            # at least 1 token for any non-empty text
+            return max(1, int(len(text) / chars_per_token) + (1 if text else 0))
+
+        return patch.object(self.model, "_count_tokens", side_effect=fake_count_tokens)
+
+    def test_token_dense_text_terminates(self):
+        """Token-dense text (more tokens than chars) must not recurse forever."""
+        context_size = 64
+        # The dangerous case: len(text) (50) < context_size (64), but the text counts
+        # as ~200 tokens (>> context_size). The original code sliced at the token
+        # count as a char index, leaving the head unchanged -> infinite recursion.
+        text = "字" * 50  # 50 chars
+        with self._patch_count_tokens(chars_per_token=0.25):  # ~4 tokens/char => ~200 tokens
+            result = self.model._split_texts_to_fit_model_specs(
+                Mock(), "gemini-embedding-2-preview", [text], context_size
+            )
+        # Reassembled chunks must equal the original text, and every chunk must fit.
+        assert "".join(chunk for chunk, _ in result) == text
+        assert len(result) >= 1
+        for chunk, _ in result:
+            assert chunk != ""
+
+    def test_long_text_terminates_and_chunks_fit(self):
+        """A long text splits into multiple chunks that each fit the context size."""
+        context_size = 32
+        text = ("The quick brown fox jumps over the lazy dog. " * 40).strip()
+        with self._patch_count_tokens(chars_per_token=4.0):  # ~1 token / 4 chars
+            result = self.model._split_texts_to_fit_model_specs(
+                Mock(), "gemini-embedding-2-preview", [text], context_size
+            )
+        assert "".join(chunk for chunk, _ in result) == text
+        assert len(result) > 1
+        for _, num_tokens in result:
+            assert num_tokens < context_size
+
+    def test_short_text_not_split(self):
+        """Text already within the context size is returned unchanged."""
+        context_size = 1000
+        text = "hello world"
+        with self._patch_count_tokens(chars_per_token=4.0):
+            result = self.model._split_texts_to_fit_model_specs(
+                Mock(), "gemini-embedding-2-preview", [text], context_size
+            )
+        assert len(result) == 1
+        assert result[0][0] == text
+
+
+# ================================================================
+# Test: _invoke — averaging with missing token counts (issue #3323 Bug B)
+# ================================================================
+
+
+class TestInvokeAveragingWithNoneTokens:
+    """Tests that averaging split-chunk embeddings tolerates missing token usage.
+
+    Regression for https://github.com/langgenius/dify-official-plugins/issues/3323
+    Bug B: when the Gemini API omits token usage, ``num_tokens`` is a tuple of
+    ``None`` and ``np.average(..., weights=num_tokens)`` raised
+    ``unsupported operand type(s) for +: 'NoneType' and 'NoneType'``.
+    """
+
+    def setup_method(self):
+        self.model = GeminiTextEmbeddingModel([])
+        self.credentials = {"google_api_key": "fake-key"}
+
+    @patch("models.text_embedding.text_embedding.genai")
+    def test_none_token_counts_use_unweighted_average(self, mock_genai):
+        """A single input split into multiple chunks with no token usage averages cleanly."""
+        mock_genai.Client.return_value = Mock()
+
+        usage = _make_usage()
+        # One input text that the splitter breaks into two chunks; the API returns
+        # embeddings but no per-chunk token statistics (token_count -> None).
+        with patch.object(self.model, "_get_context_size", return_value=8), \
+             patch.object(self.model, "_get_max_chunks", return_value=100), \
+             patch.object(
+                 self.model,
+                 "_split_texts_to_fit_model_specs",
+                 return_value=[("chunk one", 5), ("chunk two", 5)],
+             ), \
+             patch.object(
+                 self.model,
+                 "_embedding_invoke",
+                 return_value=[([1.0, 0.0, 0.0], None), ([0.0, 1.0, 0.0], None)],
+             ), \
+             patch.object(self.model, "_calc_response_usage", return_value=usage):
+            result = self.model._invoke(
+                model="gemini-embedding-2-preview",
+                credentials=self.credentials,
+                texts=["a long token-dense input"],
+            )
+
+        # One merged embedding for the one input; finite, normalized, no crash.
+        assert len(result.embeddings) == 1
+        merged = result.embeddings[0]
+        assert len(merged) == 3
+        assert all(np.isfinite(v) for v in merged)
+        # Unweighted average of the two unit vectors, normalized -> equal components.
+        assert merged[0] == pytest.approx(merged[1])
+        assert merged[2] == pytest.approx(0.0)
+
+    @patch("models.text_embedding.text_embedding.genai")
+    def test_present_token_counts_use_weighted_average(self, mock_genai):
+        """When token counts are present they are honored as weights."""
+        mock_genai.Client.return_value = Mock()
+
+        usage = _make_usage()
+        with patch.object(self.model, "_get_context_size", return_value=8), \
+             patch.object(self.model, "_get_max_chunks", return_value=100), \
+             patch.object(
+                 self.model,
+                 "_split_texts_to_fit_model_specs",
+                 return_value=[("chunk one", 1), ("chunk two", 3)],
+             ), \
+             patch.object(
+                 self.model,
+                 "_embedding_invoke",
+                 return_value=[([1.0, 0.0], 1), ([0.0, 1.0], 3)],
+             ), \
+             patch.object(self.model, "_calc_response_usage", return_value=usage):
+            result = self.model._invoke(
+                model="gemini-embedding-2-preview",
+                credentials=self.credentials,
+                texts=["a long token-dense input"],
+            )
+
+        merged = result.embeddings[0]
+        # Weighted average (weights 1 and 3) => second component dominates.
+        assert merged[1] > merged[0]
 
 
 # ================================================================
