@@ -165,7 +165,7 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
                 # head and the tail are strictly shorter than ``text``. This guarantees
                 # progress and terminates the recursion even for token-dense content
                 # (e.g. CJK, code, base64) where ``len(text)`` may be <= ``context_size``.
-                cutoff = max(1, len(text) * context_size // num_tokens)
+                cutoff = max(1, len(text) * context_size // max(1, num_tokens))
                 cutoff = min(cutoff, len(text) - 1)
                 # prefer to split on the closest punctuation mark, then comma, then
                 # whitespace, searching forward from the estimated cutoff. Never let the
