@@ -1153,6 +1153,23 @@ class TestSplitTextsTermination:
         assert len(result) == 1
         assert result[0][0] == text
 
+    def test_zero_token_count_does_not_crash(self):
+        """A zero token count must not raise ``ZeroDivisionError``.
+
+        Review feedback on PR #3329: the character cutoff divides by the token
+        count. If token counting ever returns 0 while the split branch is
+        entered (e.g. a degenerate ``context_size``), the denominator would be
+        zero. It is guarded with ``max(1, num_tokens)`` so this can never raise.
+        """
+        context_size = 0
+        text = "字字字字字"  # 5 chars, > 1 -> enters the split branch
+        with patch.object(self.model, "_count_tokens", return_value=0):
+            result = self.model._split_texts_to_fit_model_specs(
+                Mock(), "gemini-embedding-2-preview", [text], context_size
+            )
+        # No crash, the recursion terminated, and the text is preserved.
+        assert "".join(chunk for chunk, _ in result) == text
+
 
 # ================================================================
 # Test: _invoke — averaging with missing token counts (issue #3323 Bug B)
