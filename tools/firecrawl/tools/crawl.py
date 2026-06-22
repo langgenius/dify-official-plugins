@@ -9,7 +9,7 @@ class CrawlTool(Tool):
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage, None, None]:
         """
         the api doc:
-        https://docs.firecrawl.dev/api-reference/endpoint/crawl
+        https://docs.firecrawl.dev/api-reference/endpoint/crawl-post
         """
         app = FirecrawlApp(
             api_key=self.runtime.credentials.get("firecrawl_api_key"), base_url=self.runtime.credentials.get("base_url")
@@ -19,11 +19,11 @@ class CrawlTool(Tool):
         wait_for_results = tool_parameters.get("wait_for_results", True)
         payload["excludePaths"] = get_array_params(tool_parameters, "excludePaths")
         payload["includePaths"] = get_array_params(tool_parameters, "includePaths")
-        payload["maxDepth"] = tool_parameters.get("maxDepth")
+        payload["maxDiscoveryDepth"] = tool_parameters.get("maxDepth")
         if tool_parameters.get("ignoreSitemap", False):
             payload["sitemap"] = "skip"
         payload["limit"] = tool_parameters.get("limit", 5)
-        payload["allowBackwardLinks"] = tool_parameters.get("allowBackwardLinks", False)
+        payload["crawlEntireDomain"] = tool_parameters.get("allowBackwardLinks", False)
         payload["allowExternalLinks"] = tool_parameters.get("allowExternalLinks", False)
         payload["webhook"] = tool_parameters.get("webhook")
         scrapeOptions["formats"] = get_array_params(tool_parameters, "formats")
