@@ -1,0 +1,15 @@
+[project]
+name = "funasr"
+version = "0.1.0"
+description = "FunASR speech recognition plugin for Dify"
+readme = "README.md"
+requires-python = ">=3.12"
+
+dependencies = [
+    "dify_plugin>=0.9.0",
+    "httpx>=0.28.1",
+    "openai>=2.38.0",
+]
+
+[dependency-groups]
+dev = []
