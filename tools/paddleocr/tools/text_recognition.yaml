@@ -10,6 +10,27 @@ description:
     zh_Hans: PaddleOCR 文字识别工具，提供多场景、多文字类型的文字识别能力
   llm: PaddleOCR text recognition tool that provides text recognition capabilities for multiple scenarios and various text types
 parameters:
+  - name: model
+    type: select
+    required: false
+    default: PP-OCRv5
+    options:
+      - label:
+          en_US: PP-OCRv5
+          zh_Hans: PP-OCRv5
+        value: PP-OCRv5
+      - label:
+          en_US: PP-OCRv6
+          zh_Hans: PP-OCRv6
+        value: PP-OCRv6
+    label:
+      en_US: Model
+      zh_Hans: 模型
+    human_description:
+      en_US: The OCR model to use for text recognition.
+      zh_Hans: 用于文字识别的 OCR 模型。
+    llm_description: The OCR model to use for text recognition.
+    form: form
   - name: file
     type: file
     required: true
