@@ -4,6 +4,7 @@ import json
 import re
 import copy
 import threading
+from collections import OrderedDict
 from collections.abc import Generator, Sequence
 from typing import Any, Mapping, Optional, Union, cast
 import logging
@@ -66,7 +67,11 @@ ANTHROPIC_BLOCK_MODE_PROMPT = 'You should always follow the instructions and out
 # The official Anthropic SDK client is reusable and thread-safe. Caching one
 # client per (api_key, base_url) avoids constructing a fresh httpx connection
 # pool — and the full TCP+TLS handshake it entails — on every invocation.
-_anthropic_client_cache: dict[tuple[Optional[str], Optional[str]], Anthropic] = {}
+# The cache is bounded with LRU eviction so that a long-lived process serving
+# many distinct credentials cannot leak connection pools (sockets / file
+# descriptors) indefinitely.
+_ANTHROPIC_CLIENT_CACHE_MAX_SIZE = 128
+_anthropic_client_cache: "OrderedDict[tuple[Optional[str], Optional[str]], Anthropic]" = OrderedDict()
 _anthropic_client_lock = threading.Lock()
 
 
@@ -74,19 +79,25 @@ def _get_cached_anthropic_client(**kwargs: Any) -> Anthropic:
     """Return a process-wide cached Anthropic client keyed by (api_key, base_url).
 
     The cache is keyed only on the credentials that determine which endpoint a
-    request reaches, so distinct tenants never share a client. Creation is
-    guarded by a lock with double-checked locking to keep it race-free.
+    request reaches, so distinct tenants never share a client. Lookup, creation
+    and eviction all run under a single lock to keep the LRU bookkeeping
+    race-free, and the cache is bounded via LRU eviction to avoid unbounded
+    connection-pool growth.
     """
     key = (kwargs.get("api_key"), kwargs.get("base_url"))
-    cached = _anthropic_client_cache.get(key)
-    if cached is not None:
-        return cached
     with _anthropic_client_lock:
         cached = _anthropic_client_cache.get(key)
         if cached is not None:
+            _anthropic_client_cache.move_to_end(key)
             return cached
         client = Anthropic(**kwargs)
         _anthropic_client_cache[key] = client
+        while len(_anthropic_client_cache) > _ANTHROPIC_CLIENT_CACHE_MAX_SIZE:
+            _, evicted = _anthropic_client_cache.popitem(last=False)
+            try:
+                evicted.close()
+            except Exception:
+                logging.debug("Failed to close evicted Anthropic client", exc_info=True)
         return client
 
 
