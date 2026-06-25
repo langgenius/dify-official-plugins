@@ -20,13 +20,16 @@ class DoubaoTool(Tool):
     - Sequential Generation: Create consistent series of images (storyboards, variations)
     """
 
-    BASE_URL = "https://aihubmix.com/v1"
+    DEFAULT_BASE_URL = "https://api.inferera.com"
 
     DEFAULT_MODEL = "doubao-seedream-5.0-lite"
-    
+
+    def get_base_url(self) -> str:
+        return (self.runtime.credentials.get("base_url") or self.DEFAULT_BASE_URL).rstrip("/")
+
     def get_endpoint(self, model: str) -> str:
         """Get the appropriate endpoint based on model selection"""
-        return f"{self.BASE_URL}/models/doubao/{model}/predictions"
+        return f"{self.get_base_url()}/v1/models/doubao/{model}/predictions"
     
     # Generation modes
     MODE_TEXT_TO_IMAGE = "text_to_image"
