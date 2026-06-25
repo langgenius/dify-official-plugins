@@ -10,7 +10,7 @@ class AihubmixTextEmbeddingModel(OAICompatEmbeddingModel):
     """
 
     def _update_credential(self, credentials: dict):
-        api_url = (credentials.get("api_url") or "https://aihubmix.com").rstrip("/")
+        api_url = ((credentials.get("api_url_custom") if credentials.get("api_url") == "__custom__" else credentials.get("api_url")) or "https://aihubmix.com").rstrip("/")
         credentials["endpoint_url"] = f"{api_url}/v1"
 
 

@@ -990,7 +990,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # == InitConfig == #
 
         config = types.GenerateContentConfig()
-        api_url = (credentials.get("api_url") or "https://aihubmix.com").rstrip("/")
+        api_url = ((credentials.get("api_url_custom") if credentials.get("api_url") == "__custom__" else credentials.get("api_url")) or "https://aihubmix.com").rstrip("/")
         genai_client = genai.Client(api_key=credentials["api_key"], http_options={
             "base_url": f"{api_url}/gemini",
             "headers": {

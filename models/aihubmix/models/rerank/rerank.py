@@ -26,7 +26,7 @@ class AihubmixRerankModel(RerankModel):
     ) -> RerankResult:
         if len(docs) == 0:
             return RerankResult(model=model, docs=[])
-        api_url = (credentials.get("api_url") or "https://aihubmix.com").rstrip("/")
+        api_url = ((credentials.get("api_url_custom") if credentials.get("api_url") == "__custom__" else credentials.get("api_url")) or "https://aihubmix.com").rstrip("/")
         base_url = f"{api_url}/v1"
         try:
             response = httpx.post(

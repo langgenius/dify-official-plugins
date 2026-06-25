@@ -23,7 +23,7 @@ class AihubmixOpenAIResponses:
 
     def _to_credential_kwargs(self, credentials: Mapping[str, Any]) -> Mapping[str, Any]:
         # Align with aihubmix provider style (see anthropic.py)
-        api_url = (credentials.get("api_url") or "https://aihubmix.com").rstrip("/")
+        api_url = ((credentials.get("api_url_custom") if credentials.get("api_url") == "__custom__" else credentials.get("api_url")) or "https://aihubmix.com").rstrip("/")
         return {
             "api_key": credentials["api_key"],
             "base_url": f"{api_url}/v1",
