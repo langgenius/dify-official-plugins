@@ -965,9 +965,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             "timeout": Timeout(315.0, read=300.0, write=10.0, connect=5.0),
             "max_retries": 1,
         }
-        api_url = credentials.get("api_url")
-
-        
+        _sel = credentials.get("api_url")
+        api_url = credentials.get("api_url_custom") if _sel == "__custom__" else _sel
         if api_url:
             credentials_kwargs["base_url"] = api_url.rstrip("/")
         return credentials_kwargs
