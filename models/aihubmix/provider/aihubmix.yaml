@@ -43,8 +43,8 @@ provider_credential_schema:
       required: false
       default: https://aihubmix.com
       placeholder:
-        zh_Hans: "Base URL，例如 https://aihubmix.com"
-        en_US: "Base URL, e.g. https://aihubmix.com"
+        zh_Hans: "Base URL，例如 https://aihubmix.com 或 https://api.inferera.com"
+        en_US: "Base URL, e.g. https://aihubmix.com or https://api.inferera.com"
       help:
         zh_Hans: "API 基础地址（留空使用默认 https://aihubmix.com）。无需包含 /v1 等路径后缀，插件会按模型类型自动追加（/v1、/gemini 等）。"
         en_US: "API base URL (leave empty to use the default https://aihubmix.com). Do not include a path suffix such as /v1; the plugin appends it automatically per model type (/v1, /gemini, etc.)."
@@ -73,8 +73,8 @@ model_credential_schema:
       required: false
       default: https://aihubmix.com
       placeholder:
-        zh_Hans: "Base URL，例如 https://aihubmix.com"
-        en_US: "Base URL, e.g. https://aihubmix.com"
+        zh_Hans: "Base URL，例如 https://aihubmix.com 或 https://api.inferera.com"
+        en_US: "Base URL, e.g. https://aihubmix.com or https://api.inferera.com"
       help:
         zh_Hans: "API 基础地址（留空使用默认 https://aihubmix.com）。无需包含 /v1 等路径后缀，插件会按模型类型自动追加（/v1、/gemini 等）。"
         en_US: "API base URL (leave empty to use the default https://aihubmix.com). Do not include a path suffix such as /v1; the plugin appends it automatically per model type (/v1, /gemini, etc.)."
