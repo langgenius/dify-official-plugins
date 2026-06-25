@@ -23,9 +23,10 @@ class AihubmixOpenAIResponses:
 
     def _to_credential_kwargs(self, credentials: Mapping[str, Any]) -> Mapping[str, Any]:
         # Align with aihubmix provider style (see anthropic.py)
+        api_url = (credentials.get("api_url") or "https://aihubmix.com").rstrip("/")
         return {
             "api_key": credentials["api_key"],
-            "base_url": "https://aihubmix.com/v1",
+            "base_url": f"{api_url}/v1",
             "timeout": Timeout(315.0, read=300.0, write=10.0, connect=5.0),
             "max_retries": 1,
         }

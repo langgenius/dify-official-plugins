@@ -26,8 +26,8 @@ class AihubmixRerankModel(RerankModel):
     ) -> RerankResult:
         if len(docs) == 0:
             return RerankResult(model=model, docs=[])
-        base_url = credentials.get("base_url", "https://aihubmix.com/v1")
-        base_url = base_url.removesuffix("/")
+        api_url = (credentials.get("api_url") or "https://aihubmix.com").removesuffix("/")
+        base_url = f"{api_url}/v1"
         try:
             response = httpx.post(
                 base_url + "/rerank",

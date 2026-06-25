@@ -35,6 +35,19 @@ provider_credential_schema:
       placeholder:
         zh_Hans: 在此输入您的 API Key
         en_US: Enter your API Key
+    - variable: api_url
+      label:
+        en_US: API Endpoint
+        zh_Hans: 自定义 API endpoint 地址
+      type: text-input
+      required: false
+      default: https://aihubmix.com
+      placeholder:
+        zh_Hans: "Base URL，例如 https://aihubmix.com"
+        en_US: "Base URL, e.g. https://aihubmix.com"
+      help:
+        zh_Hans: "API 基础地址（留空使用默认 https://aihubmix.com）。无需包含 /v1 等路径后缀，插件会按模型类型自动追加（/v1、/gemini 等）。"
+        en_US: "API base URL (leave empty to use the default https://aihubmix.com). Do not include a path suffix such as /v1; the plugin appends it automatically per model type (/v1, /gemini, etc.)."
 model_credential_schema:
   model:
     label:
@@ -52,6 +65,19 @@ model_credential_schema:
       placeholder:
         zh_Hans: 在此输入您的 API Key
         en_US: Enter your API Key
+    - variable: api_url
+      label:
+        en_US: API Endpoint
+        zh_Hans: 自定义 API endpoint 地址
+      type: text-input
+      required: false
+      default: https://aihubmix.com
+      placeholder:
+        zh_Hans: "Base URL，例如 https://aihubmix.com"
+        en_US: "Base URL, e.g. https://aihubmix.com"
+      help:
+        zh_Hans: "API 基础地址（留空使用默认 https://aihubmix.com）。无需包含 /v1 等路径后缀，插件会按模型类型自动追加（/v1、/gemini 等）。"
+        en_US: "API base URL (leave empty to use the default https://aihubmix.com). Do not include a path suffix such as /v1; the plugin appends it automatically per model type (/v1, /gemini, etc.)."
     - variable: mode
       show_on:
         - variable: __model_type

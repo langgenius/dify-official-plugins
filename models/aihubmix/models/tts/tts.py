@@ -29,7 +29,8 @@ class AihubmixText2SpeechModel(OAICompatText2SpeechModel):
         :return: text translated to audio file
         """
     
-        credentials["endpoint_url"] = "https://aihubmix.com/v1"
+        api_url = (credentials.get("api_url") or "https://aihubmix.com").rstrip("/")
+        credentials["endpoint_url"] = f"{api_url}/v1"
         return super()._invoke(model, tenant_id, credentials, content_text, voice, user)
     
 
