@@ -23,25 +23,18 @@ credentials_for_provider:
     help:
       en_US: The base URL of your Confluence instance.
       zh_Hans: 您的 Confluence 实例的基础 URL。
-  token_type:
-    type: select
+  username:
+    type: text-input
     required: true
-    default: Bearer
     label:
-      en_US: Token Type
-      zh_Hans: 令牌类型
-    options:
-      - value: Basic
-        label:
-          en_US: Basic (Confluence Cloud)
-          zh_Hans: Basic (Confluence Cloud)
-      - value: Bearer
-        label:
-          en_US: Bearer (Confluence Server/Data Center)
-          zh_Hans: Bearer (Confluence Server/Data Center)
+      en_US: Username
+      zh_Hans: 用户名
+    placeholder:
+      en_US: "example@example.com"
+      zh_Hans: "example@example.com"
     help:
-      en_US: Select the authentication type. Use Basic for Confluence Cloud, Bearer for on-premise installations.
-      zh_Hans: 选择认证类型。Confluence Cloud 使用 Basic，本地部署使用 Bearer。
+      en_US: login confluence email.
+      zh_Hans: 登录 Confluence 的邮箱。
   token:
     type: secret-input
     required: true
