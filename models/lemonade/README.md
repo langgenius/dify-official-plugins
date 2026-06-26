@@ -21,7 +21,7 @@ lemonade-server serve
 ```
 > Note: If you installer from source use `lemonade-server-dev` instead
 
-Once started, Lemonade will be accessible at `http://localhost:8000`.
+Once started, Lemonade will be accessible at `http://localhost:13305`.
 
 
 ### 2. Install Lemonade Plugin in Dify
@@ -46,8 +46,8 @@ Then, fill in the following configuration:
 - **Model Type**: Choose from `llm`, `text-embedding`, or `rerank` based on your use case
 - **Model Name**: Your selected model. You can see available models [here](https://lemonade-server.ai/docs/server/server_models/).
 - **API Endpoint URL**: Base URL where the Lemonade Server
-  - For most cases this should be `http://127.0.0.1:8000`
-  - If Dify is deployed using Docker, consider using the local network IP address, e.g., `http://192.168.1.100:8000` or `http://host.docker.internal:8000`
+  - For most cases this should be `http://127.0.0.1:13305`
+  - If Dify is deployed using Docker, consider using the local network IP address, e.g., `http://192.168.1.100:13305` or `http://host.docker.internal:13305`
 - **Authorization Name**: Leave this field blank. Lemonade uses built-in authentication and does not require an API key.
 - **Model Context Size**: The maximum context size of the model (default: 4096).
 - **Agent Thought Support**: Select "Support" if your model supports reasoning chains
@@ -73,7 +73,7 @@ You can now use Lemonade with your favorite Dify workflow!
 ### Additional Models
 
 You can manage which models are installed on Lemonade using the Model Management GUI.
-- Open your web browser and navigate to `http://localhost:8000`
+- Open your web browser and navigate to `http://localhost:13305`
 - Click on the "Model Management" tab
 - Browse available models and install them with one click
 

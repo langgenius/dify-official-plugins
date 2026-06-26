@@ -28,8 +28,8 @@ model_credential_schema:
       type: text-input
       required: true
       placeholder:
-        zh_Hans: Lemonade Server 的地址，如 http://127.0.0.1:8000
-        en_US: Base URL of Lemonade Server, e.g. http://127.0.0.1:8000
+        zh_Hans: Lemonade Server 的地址，如 http://127.0.0.1:13305
+        en_US: Base URL of Lemonade Server, e.g. http://127.0.0.1:13305
     - variable: context_size
       label:
         zh_Hans: 模型上下文长度
