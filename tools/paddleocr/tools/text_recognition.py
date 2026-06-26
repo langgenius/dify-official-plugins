@@ -4,7 +4,25 @@ from typing import Any
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-from tools.utils import make_paddleocr_api_request, normalize_file_input
+from tools.utils import (
+    call_paddleocr_api,
+    camel_to_snake,
+    cleanup_temp_file,
+    get_api_client_config,
+    normalize_file_input,
+)
+
+_SKIP_KEYS = {"file", "fileType", "model"}
+
+
+def build_ocr_options(params: dict[str, Any]) -> dict[str, Any]:
+    """Build OCR options dict from parameters using dynamic conversion."""
+    options_dict = {}
+    for api_name, value in params.items():
+        if value is None or api_name in _SKIP_KEYS:
+            continue
+        options_dict[camel_to_snake(api_name)] = value
+    return options_dict
 
 
 class TextRecognitionTool(Tool):
@@ -16,42 +34,67 @@ class TextRecognitionTool(Tool):
             )
         access_token = self.runtime.credentials["aistudio_access_token"]
 
-        if "text_recognition_api_url" not in self.runtime.credentials:
-            raise RuntimeError(
-                "The text recognition API URL is not configured or invalid. Please provide it in the plugin settings."
-            )
-        api_url = self.runtime.credentials["text_recognition_api_url"]
+        # Get base_url (optional, uses default if not provided)
+        base_url = self.runtime.credentials.get("base_url")
 
-        file_payload, file_type = normalize_file_input(
+        # Normalize file input - returns (input_value, is_temp_file, file_type_code)
+        file_input, is_temp_file, file_type_code = normalize_file_input(
             tool_parameters.get("file"), tool_parameters.get("fileType")
         )
 
-        params: dict[str, Any] = {"file": file_payload}
-        if file_type is not None:
-            params["fileType"] = file_type
-        for optional_param_name in [
-            "fileType",
-            "useDocOrientationClassify",
-            "useDocUnwarping",
-            "useTextlineOrientation",
-            "textDetLimitSideLen",
-            "textDetLimitType",
-            "textDetThresh",
-            "textDetBoxThresh",
-            "textDetUnclipRatio",
-            "textRecScoreThresh",
-            "returnWordBox",
-            "visualize",
-        ]:
-            if optional_param_name in tool_parameters and optional_param_name != "fileType":
-                params[optional_param_name] = tool_parameters[optional_param_name]
+        try:
+            # Build OCR options from parameters
+            options = build_ocr_options(tool_parameters)
 
-        result = make_paddleocr_api_request(api_url, params, access_token)
+            # Get API client config
+            client_config = get_api_client_config(access_token, base_url=base_url)
 
-        all_text = []
-        for item in result.get("result", {}).get("ocrResults", []):
-            text_list = item.get("prunedResult", {}).get("rec_texts")
-            if text_list is not None:
-                all_text.append("\n".join(text_list))
-        yield self.create_text_message("\n\n".join(all_text))
-        yield self.create_json_message(result)
+            # Get model selection
+            model = tool_parameters.get("model") or "PP-OCRv5"
+
+            # Call API
+            if file_input.startswith(("http://", "https://")):
+                result = call_paddleocr_api(
+                    model=model,
+                    file_url=file_input,
+                    file_path=None,
+                    options=options,
+                    client_config=client_config,
+                    is_document_parsing=False,
+                )
+            else:
+                result = call_paddleocr_api(
+                    model=model,
+                    file_url=None,
+                    file_path=file_input,
+                    options=options,
+                    client_config=client_config,
+                    is_document_parsing=False,
+                )
+
+            # Extract text for output
+            all_text = []
+            for page in result["pages"]:
+                pruned = page["pruned_result"]
+                if pruned and "rec_texts" in pruned:
+                    text_list = pruned["rec_texts"]
+                    if text_list is not None:
+                        all_text.append("\n".join(text_list))
+
+            yield self.create_text_message("\n\n".join(all_text))
+
+            # Return raw result as JSON
+            yield self.create_json_message({
+                "job_id": result["job_id"],
+                "pages": [
+                    {
+                        "pruned_result": page["pruned_result"],
+                        "ocr_image_url": page["ocr_image_url"],
+                    }
+                    for page in result["pages"]
+                ]
+            })
+
+        finally:
+            # Clean up temporary file if created
+            cleanup_temp_file(file_input, is_temp_file)

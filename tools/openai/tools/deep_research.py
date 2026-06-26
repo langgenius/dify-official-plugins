@@ -2,11 +2,12 @@ import logging
 from dataclasses import dataclass
 from typing import Any, Optional, List, Dict
 from collections.abc import Generator
-from openai import OpenAI
-from yarl import URL
+
 from dify_plugin.entities.tool import ToolInvokeMessage
 from dify_plugin import Tool
+from openai import OpenAI
 
+from openai_client import normalize_openai_base_url
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s"
 )
@@ -63,7 +64,7 @@ class DeepResearchTool(Tool):
 
         return OpenAI(
             api_key=self.runtime.credentials["openai_api_key"],
-            base_url=str(URL(openai_base_url) / "v1") if openai_base_url else None,
+            base_url=normalize_openai_base_url(openai_base_url),
             organization=openai_organization,
             timeout=timeout if timeout is not None else 3600,
         )

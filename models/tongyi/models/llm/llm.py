@@ -831,30 +831,40 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             content = content[0].get("text") if isinstance(content[0], dict) else ""
         else:
             content = str(content)
-        reasoning_content = delta.get("reasoning_content")
+        reasoning_content = delta.get("reasoning_content") or ""
         try:
-            if reasoning_content:
-                try:
-                    if isinstance(reasoning_content, list):
-                        reasoning_content = "\n".join(map(str, reasoning_content))
-                    elif not isinstance(reasoning_content, str):
-                        reasoning_content = str(reasoning_content)
+            if isinstance(reasoning_content, list):
+                reasoning_content = "\n".join(map(str, reasoning_content))
+            elif not isinstance(reasoning_content, str):
+                reasoning_content = str(reasoning_content)
 
-                    if not is_reasoning:
-                        content = "<think>\n" + reasoning_content
-                        is_reasoning = True
-                    else:
-                        content = reasoning_content
-                except Exception as ex:
-                    raise ValueError(
-                        f"[wrap_thinking_by_reasoning_content-1] {ex}"
-                    ) from ex
-            elif is_reasoning and content:
-                content = "\n</think>" + content
-                is_reasoning = False
+            output = ""
+            if reasoning_content:
+                if not is_reasoning:
+                    # Open a think block on first reasoning token
+                    output += f"<think>\n{reasoning_content}"
+                    is_reasoning = True
+                else:
+                    # Continue streaming inside the think block
+                    output += reasoning_content
+
+            if is_reasoning:
+                if not reasoning_content and not content:
+                    # No reasoning or content token, close the think block
+                    is_reasoning = False
+                    output += "\n</think>"
+                # Handle edge case: both reasoning_content and content are non-empty
+                # in the same chunk (DashScope/Bailian API occasionally does this at
+                # the transition boundary between reasoning and content phases)
+                if content:
+                    is_reasoning = False
+                    output += f"\n</think>{content}"
+            elif content:
+                # No reasoning token and not in a reasoning block
+                output += content
         except Exception as ex:
-            raise ValueError(f"[wrap_thinking_by_reasoning_content-2] {ex}") from ex
-        return content, is_reasoning
+            raise ValueError(f"[wrap_thinking_by_reasoning_content] {ex}") from ex
+        return output, is_reasoning
 
     def _handle_error_response(
         self, status_code: int, message: str, model: str = None, request_id: str = None

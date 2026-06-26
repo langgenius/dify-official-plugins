@@ -179,14 +179,14 @@ parameters:
           ja_JP: vlm-transformers
       - value: vlm-sglang-engine
         label:
-          zh_Hans: vlm-sglang-engine (v2.2)
-          en_US: vlm-sglang-engine (v2.2)
-          ja_JP: vlm-sglang-engine (v2.2)
+          zh_Hans: vlm-sglang-engine (v2.0~v2.6)
+          en_US: vlm-sglang-engine (v2.0~v2.6)
+          ja_JP: vlm-sglang-engine (v2.0~v2.6)
       - value: vlm-sglang-client
         label:
-          zh_Hans: vlm-sglang-client (v2.2)
-          en_US: vlm-sglang-client (v2.2)
-          ja_JP: vlm-sglang-client (v2.2)
+          zh_Hans: vlm-sglang-client (v2.0~v2.6)
+          en_US: vlm-sglang-client (v2.0~v2.6)
+          ja_JP: vlm-sglang-client (v2.0~v2.6)
       - value: vlm-http-client
         label:
           zh_Hans: vlm-http-client (v2.5)
@@ -197,15 +197,30 @@ parameters:
           zh_Hans: vlm-vllm-async-engine (v2.5)
           en_US: vlm-vllm-async-engine (v2.5)
           ja_JP: vlm-vllm-async-engine (v2.5)
+      - value: vlm-auto-engine
+        label:
+          zh_Hans: vlm-auto-engine (v2.7)
+          en_US: vlm-auto-engine (v2.7)
+          ja_JP: vlm-auto-engine (v2.7)
+      - value: hybrid-auto-engine
+        label:
+          zh_Hans: hybrid-auto-engine (v2.7, 推荐)
+          en_US: hybrid-auto-engine (v2.7, recommended)
+          ja_JP: hybrid-auto-engine (v2.7, 推奨)
+      - value: hybrid-http-client
+        label:
+          zh_Hans: hybrid-http-client (v2.7)
+          en_US: hybrid-http-client (v2.7)
+          ja_JP: hybrid-http-client (v2.7)
     label:
       zh_Hans: 解析后端
       en_US: Backend type
       ja_JP: バックエンドタイプ
     human_description:
-      zh_Hans: '（用于本地部署 v2 或 v2.5 版本）示例：pipeline、vlm-transformers、vlm-sglang-engine、vlm-sglang-client，默认值为pipeline'
-      en_US: '(For local deployment v2 or v2.5) Example: pipeline, vlm-transformers, vlm-sglang-engine, vlm-sglang-client, default is pipeline'
-      ja_JP: '（ローカルデプロイメント v2/v2.5 用）例：pipeline、vlm-transformers、vlm-sglang-engine、vlm-sglang-client、デフォルトはpipeline'
-    llm_description: '(For local deployment v2/v2.5) Example: pipeline, vlm-transformers, vlm-sglang-engine, vlm-sglang-client, default is pipeline'
+      zh_Hans: '（用于本地部署）示例：pipeline（默认）、vlm-auto-engine、hybrid-auto-engine'
+      en_US: '(For local deployment) Example: pipeline (default), vlm-auto-engine, hybrid-auto-engine'
+      ja_JP: '（ローカルデプロイメント用）例：pipeline（デフォルト）、vlm-auto-engine、hybrid-auto-engine'
+    llm_description: '(For local deployment) Example: pipeline (default), vlm-auto-engine, hybrid-auto-engine'
     form: form
 
   - name: server_url
@@ -217,10 +232,10 @@ parameters:
       en_US: server url
       ja_JP: serverアドレス
     human_description:
-      zh_Hans: '（用于本地部署v2版本 解析后端为 vlm-sglang-client 或 vlm-http-client 时）示例：http://127.0.0.1:30000，默认值为空'
-      en_US: '(For local deployment v2 when backend is vlm-sglang-client or vlm-http-client) Example: http://127.0.0.1:30000, default is empty'
-      ja_JP: '（ローカルデプロイメントv2用 解析後端が vlm-sglang-client 或 vlm-http-client の場合）例：http://127.0.0.1:30000、デフォルトは空'
-    llm_description: '(For local deployment v2 when backend is vlm-sglang-client or vlm-http-client) Example: http://127.0.0.1:30000, default is empty' 
+      zh_Hans: '（用于本地部署 解析后端为 vlm-sglang-client、vlm-http-client 或 hybrid-http-client 时需要配置）示例：http://127.0.0.1:30000，默认值为空'
+      en_US: '(For local deployment, required when backend is vlm-sglang-client, vlm-http-client or hybrid-http-client) Example: http://127.0.0.1:30000, default is empty'
+      ja_JP: '（ローカルデプロイメント用 解析後端が vlm-sglang-client、vlm-http-client 又は hybrid-http-client の場合）例：http://127.0.0.1:30000、デフォルトは空'
+    llm_description: '(For local deployment, required when backend is vlm-sglang-client, vlm-http-client or hybrid-http-client) Example: http://127.0.0.1:30000, default is empty' 
     form: form
 
 output_schema:

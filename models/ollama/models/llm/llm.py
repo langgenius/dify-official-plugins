@@ -53,6 +53,11 @@ logger = logging.getLogger(__name__)
 _MAX_TOOL_CALLS = 1000
 _MICRO_CHUNK_SIZE = 16
 _TRUTHY_VALUES = {"true", "supported", "yes", "1"}
+_FALSY_VALUES = {"false", "unsupported", "no", "0", "off", "disabled"}
+_THINK_LEVELS = {"low", "medium", "high"}
+_THINK_BLOCK_PATTERN = re.compile(
+    r"^\s*<think>\n?(.*?)\n?</think>\s*", re.DOTALL | re.IGNORECASE
+)
 
 
 class OllamaLargeLanguageModel(LargeLanguageModel):
@@ -184,24 +189,24 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
         endpoint_url = credentials["base_url"]
         if not endpoint_url.endswith("/"):
             endpoint_url += "/"
+        model_parameters = dict(model_parameters or {})
         data = {"model": model, "stream": stream}
         if "format" in model_parameters:
-            data["format"] = model_parameters["format"]
-            del model_parameters["format"]
+            data["format"] = model_parameters.pop("format")
         if "keep_alive" in model_parameters:
-            data["keep_alive"] = model_parameters["keep_alive"]
-            del model_parameters["keep_alive"]
+            data["keep_alive"] = model_parameters.pop("keep_alive")
         if "json_schema" in model_parameters:
             try:
                 data["format"] = json.loads(model_parameters["json_schema"])
             except json.JSONDecodeError:
                 data["format"] = "json"
-            del model_parameters["json_schema"]
+            model_parameters.pop("json_schema")
+        think_value = model_parameters.pop("think", None)
+        think_level = model_parameters.pop("think_level", None)
+        normalized_think = self._normalize_think_parameter(think_level or think_value)
+        if normalized_think is not None:
+            data["think"] = normalized_think
         data["options"] = model_parameters or {}
-        # Add think support
-        if "think" in model_parameters and model_parameters["think"] is not None:
-            data["think"] = bool(model_parameters["think"])
-            del model_parameters["think"]
         if stop:
             data["options"]["stop"] = stop
         completion_type = LLMMode.value_of(credentials["mode"])
@@ -229,17 +234,12 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                             message_content = cast(
                                 TextPromptMessageContent, message_content
                             )
-                            text = message_content.data
+                            text += message_content.data
                         elif message_content.type == PromptMessageContentType.IMAGE:
                             message_content = cast(
                                 ImagePromptMessageContent, message_content
                             )
-                            image_data = re.sub(
-                                "^data:image\\/[a-zA-Z]+;base64,",
-                                "",
-                                message_content.data,
-                            )
-                            images.append(image_data)
+                            images.append(self._strip_base64_data_url(message_content.data))
                     data["prompt"] = text
                     data["images"] = images
         response = requests.post(
@@ -281,14 +281,18 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
         tool_calls = []
         if completion_type is LLMMode.CHAT:
             message = response_json.get("message", {})
-            response_content = message.get("content", "")
+            response_content = self._merge_thinking_content(
+                message.get("content", ""), message.get("thinking")
+            )
             response_tool_calls = message.get("tool_calls", [])
             tool_calls = [
                 self._extract_response_tool_call(tool_call)
                 for tool_call in response_tool_calls
             ]
         else:
-            response_content = response_json["response"]
+            response_content = self._merge_thinking_content(
+                response_json.get("response", ""), response_json.get("thinking")
+            )
         assistant_message = AssistantPromptMessage(
             content=response_content, tool_calls=tool_calls
         )
@@ -337,7 +341,7 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
             function_data = tool_call_stream.get("function", {})
             func_name = function_data.get("name")
             args_chunk = _normalize_arguments(function_data.get("arguments"))
-            idx = tool_call_stream.get("index")
+            idx = tool_call_stream.get("index", function_data.get("index"))
             # default to append order if index missing
             if not isinstance(idx, int):
                 # place at next available position according to current max index
@@ -348,13 +352,15 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
 
             # Prevent excessive index values from consuming memory
             if idx >= _MAX_TOOL_CALLS:
-                logger.warning(f"Tool call index {idx} exceeds maximum allowed size {_MAX_TOOL_CALLS}.")
+                logger.warning(
+                    f"Tool call index {idx} exceeds maximum allowed size {_MAX_TOOL_CALLS}."
+                )
                 continue
 
             # create new entry if it doesn't exist
             existing = tool_calls_by_index.get(idx)
             if existing is None:
-                tc_id_value = tool_call_stream.get("id") or str(idx)
+                tc_id_value = tool_call_stream.get("id") or func_name or str(idx)
                 tool_calls_by_index[idx] = AssistantPromptMessage.ToolCall(
                     id=tc_id_value,
                     type="function",
@@ -397,7 +403,9 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
         micro_chunk_size = _MICRO_CHUNK_SIZE  # mimic pure text small increments
         is_reasoning_started = 0  # 0 not started, 1 started, 2 ended
 
-        def _wrap_thinking_by_reasoning_content(message_obj: dict, is_reasoning: int) -> tuple[str, int]:
+        def _wrap_thinking_by_reasoning_content(
+            message_obj: dict, is_reasoning: int
+        ) -> tuple[str, int]:
             """
             If the reasoning response is from message_obj.get("thinking"), we wrap
             it with HTML think tag.
@@ -427,7 +435,8 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
         def _yield_micro_chunks(s: str, size: int, min_size: int = 4) -> list[str]:
             """
             Split by natural boundaries (spaces/newlines) to mimic pure text streaming.
-            Group tokens to approx `size` without emitting chunks smaller than `min_size` (except for newlines).
+            Group tokens to approx `size` without emitting chunks smaller than
+            `min_size` except for newlines.
             """
             parts: list[str] = []
             buffer = ""
@@ -494,11 +503,12 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                         message_obj, is_reasoning_started
                      )
 
-                # If this chunk contains tool_calls, yield a dedicated tool_calls delta (like Tongyi)
+                # If this chunk contains tool_calls, yield a dedicated tool_calls delta.
                 if "tool_calls" in message_obj and message_obj.get("tool_calls"):
                     if is_reasoning_started == 1:
                         # Yield the end of the thinking tag
                         assistant_prompt_message = AssistantPromptMessage(content="\n</think>")
+                        full_text += "\n</think>"
                         yield LLMResultChunk(
                             model=chunk_json.get("model", model or "default_model"),
                             prompt_messages=prompt_messages,
@@ -511,7 +521,10 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                         is_reasoning_started = 2  # Mark reasoning as ended
 
                     self._handle_tool_call_stream(chunk_json, tool_calls_by_index)
-                    logger.info("[Ollama] stream tool_calls detected: %s", message_obj.get("tool_calls"))
+                    logger.info(
+                        "[Ollama] stream tool_calls detected: %s",
+                        message_obj.get("tool_calls"),
+                    )
                     tool_phase = True
                     assistant_prompt_message = AssistantPromptMessage(content="")
                     if tool_calls_by_index:
@@ -575,6 +588,18 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                         chunk_index += 1
             
             if chunk_json.get("done"):
+                if completion_type is LLMMode.CHAT and is_reasoning_started == 1:
+                    full_text += "\n</think>"
+                    yield LLMResultChunk(
+                        model=chunk_json.get("model", model or "default_model"),
+                        prompt_messages=prompt_messages,
+                        delta=LLMResultChunkDelta(
+                            index=chunk_index,
+                            message=AssistantPromptMessage(content="\n</think>"),
+                        ),
+                    )
+                    chunk_index += 1
+                    is_reasoning_started = 2
                 # compute usage and emit final chunk with finish_reason
                 if "prompt_eval_count" in chunk_json:
                     prompt_tokens = chunk_json["prompt_eval_count"]
@@ -606,7 +631,7 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                     delta=LLMResultChunkDelta(
                         index=chunk_index,
                         message=AssistantPromptMessage(content=""),
-                        finish_reason="stop",
+                        finish_reason=chunk_json.get("done_reason") or "stop",
                         usage=usage,
                     ),
                 )
@@ -649,31 +674,112 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                         message_content = cast(
                             TextPromptMessageContent, message_content
                         )
-                        text = message_content.data
+                        text += message_content.data
                     elif message_content.type == PromptMessageContentType.IMAGE:
                         message_content = cast(
                             ImagePromptMessageContent, message_content
                         )
-                        image_data = re.sub(
-                            "^data:image\\/[a-zA-Z]+;base64,", "", message_content.data
-                        )
-                        images.append(image_data)
+                        images.append(self._strip_base64_data_url(message_content.data))
                 message_dict = {"role": "user", "content": text, "images": images}
         elif isinstance(message, AssistantPromptMessage):
             message = cast(AssistantPromptMessage, message)
-            message_dict = {"role": "assistant", "content": message.content}
+            thinking, content = self._split_thinking_from_content(message.content or "")
+            message_dict = {"role": "assistant", "content": content}
+            if thinking:
+                message_dict["thinking"] = thinking
+            if message.tool_calls:
+                message_dict["tool_calls"] = [
+                    self._convert_tool_call_to_dict(tool_call)
+                    for tool_call in message.tool_calls
+                ]
         elif isinstance(message, SystemPromptMessage):
             message = cast(SystemPromptMessage, message)
             message_dict = {"role": "system", "content": message.content}
         elif isinstance(message, ToolPromptMessage):
             message = cast(ToolPromptMessage, message)
             message_dict = {"role": "tool", "content": message.content}
-            # 关联到具体的函数调用以符合 OpenAI/Ollama 规范
+            # Ollama's native API expects tool_name; keep tool_call_id for compatibility.
             if hasattr(message, "tool_call_id") and message.tool_call_id:
+                message_dict["tool_name"] = message.tool_call_id
                 message_dict["tool_call_id"] = message.tool_call_id
         else:
             raise ValueError(f"Got unknown type {message}")
         return message_dict
+
+    @staticmethod
+    def _normalize_think_parameter(value: Any) -> bool | str | None:
+        """
+        Normalize Ollama's top-level think parameter.
+
+        Ollama accepts booleans for most thinking models and low/medium/high strings
+        for GPT-OSS models.
+        """
+        if value is None or value == "":
+            return None
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            normalized_value = value.strip().lower()
+            if normalized_value in _THINK_LEVELS:
+                return normalized_value
+            if normalized_value in _TRUTHY_VALUES:
+                return True
+            if normalized_value in _FALSY_VALUES:
+                return False
+        return bool(value)
+
+    @staticmethod
+    def _merge_thinking_content(content: str, thinking: Any) -> str:
+        """
+        Preserve Ollama's thinking field in Dify's plain message content.
+        """
+        content = content or ""
+        if not thinking:
+            return content
+        thinking_text = str(thinking)
+        if not content:
+            return f"<think>\n{thinking_text}\n</think>"
+        return f"<think>\n{thinking_text}\n</think>{content}"
+
+    @staticmethod
+    def _split_thinking_from_content(content: str) -> tuple[str, str]:
+        """
+        Convert Dify's persisted <think> wrapper back to Ollama's thinking field.
+        """
+        if not content:
+            return "", ""
+        match = _THINK_BLOCK_PATTERN.match(content)
+        if not match:
+            return "", content
+        thinking = match.group(1).strip("\n")
+        return thinking, content[match.end():]
+
+    @staticmethod
+    def _normalize_tool_arguments(arguments: Any) -> Any:
+        if isinstance(arguments, str):
+            try:
+                return json.loads(arguments)
+            except json.JSONDecodeError:
+                return arguments
+        return arguments if arguments is not None else {}
+
+    @staticmethod
+    def _strip_base64_data_url(image_data: str) -> str:
+        return re.sub(r"^data:image\/[^;]+;base64,", "", image_data)
+
+    def _convert_tool_call_to_dict(
+        self, tool_call: AssistantPromptMessage.ToolCall
+    ) -> dict:
+        tool_call_dict = {
+            "type": "function",
+            "function": {
+                "name": tool_call.function.name,
+                "arguments": self._normalize_tool_arguments(tool_call.function.arguments),
+            },
+        }
+        if tool_call.id:
+            tool_call_dict["id"] = tool_call.id
+        return tool_call_dict
 
     def _num_tokens_from_messages(self, messages: list[PromptMessage]) -> int:
         """
@@ -698,14 +804,17 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
         tool_call = None
         if response_tool_call and "function" in response_tool_call:
             arguments = response_tool_call.get("function", {}).get("arguments")
-            if isinstance(arguments, dict):
+            if isinstance(arguments, (dict, list)):
                 arguments = json.dumps(arguments)
+            elif arguments is None:
+                arguments = "{}"
             function = AssistantPromptMessage.ToolCall.ToolCallFunction(
                 name=response_tool_call.get("function", {}).get("name"),
                 arguments=arguments,
             )
             tool_call = AssistantPromptMessage.ToolCall(
-                id=response_tool_call.get("function", {}).get("name"),
+                id=response_tool_call.get("id")
+                or response_tool_call.get("function", {}).get("name"),
                 type="function",
                 function=function,
             )
@@ -936,9 +1045,25 @@ class OllamaLargeLanguageModel(LargeLanguageModel):
                     label=I18nObject(en_us="Think", zh_hans="思考模式"),
                     type=ParameterType.BOOLEAN,
                     help=I18nObject(
-                        en_us="Enable thinking mode where the model thinks before responding.",
+                        en_us=(
+                            "Enable or disable Ollama thinking mode. For GPT-OSS "
+                            "reasoning levels, use Think Level."
+                        ),
                         zh_hans="启用思考模式，模型在响应前会先进行思考。",
                     ),
+                ),
+                ParameterRule(
+                    name="think_level",
+                    label=I18nObject(en_us="Think Level", zh_hans="思考等级"),
+                    type=ParameterType.STRING,
+                    help=I18nObject(
+                        en_us=(
+                            "Optional Ollama thinking level for GPT-OSS models. "
+                            "Overrides Think when set."
+                        ),
+                        zh_hans="GPT-OSS 模型可选的 Ollama 思考等级。设置后会覆盖 Think。",
+                    ),
+                    options=["low", "medium", "high"],
                 ),
             ],
             pricing=PriceConfig(

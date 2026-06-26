@@ -1,0 +1,139 @@
+identity:
+  name: s3_file_uploader
+  author: AWS
+  label:
+    en_US: AWS S3 File Uploader
+    zh_Hans: AWS S3 文件上传器
+    pt_BR: AWS S3 File Uploader
+description:
+  human:
+    en_US: Upload a file received from a prior workflow node to Amazon S3.
+    zh_Hans: 将前序工作流节点生成的文件上传到 Amazon S3。
+    pt_BR: Faz upload do arquivo recebido de um nó anterior do workflow para o Amazon S3.
+  llm: Upload workflow files to S3 and optionally return a presigned URL.
+parameters:
+  - name: aws_access_key_id
+    type: string
+    required: false
+    label:
+      en_US: AWS Access Key ID
+      zh_Hans: AWS Access Key ID
+      pt_BR: AWS Access Key ID
+    human_description:
+      en_US: Override the provider Access Key ID for this tool if needed.
+      zh_Hans: 当需要覆盖默认的 Access Key ID 时使用。
+      pt_BR: Sobrescreve o Access Key ID padrão da provider quando necessário.
+    form: form
+  - name: aws_secret_access_key
+    type: string
+    required: false
+    label:
+      en_US: AWS Secret Access Key
+      zh_Hans: AWS Secret Access Key
+      pt_BR: AWS Secret Access Key
+    human_description:
+      en_US: Override the provider Secret Access Key for this tool if needed.
+      zh_Hans: 当需要覆盖默认的 Secret Access Key 时使用。
+      pt_BR: Sobrescreve o Secret Access Key padrão da provider quando necessário.
+    form: form
+  - name: aws_session_token
+    type: string
+    required: false
+    label:
+      en_US: AWS Session Token
+      zh_Hans: AWS Session Token
+      pt_BR: AWS Session Token
+    human_description:
+      en_US: AWS session token for temporary credentials (STS). Only supported in tool parameters, not at provider level.
+      zh_Hans: 临时凭证（STS）的 session token。仅支持在工具参数中传入，provider 级别不支持。
+      pt_BR: Token de sessão da AWS para credenciais temporárias (STS). Só é suportado nos parâmetros da ferramenta, não no nível da provider.
+    form: form
+  - name: aws_region
+    type: string
+    required: false
+    label:
+      en_US: AWS Region
+      zh_Hans: AWS 区域
+      pt_BR: AWS Region
+    human_description:
+      en_US: Override the default AWS Region for this tool.
+      zh_Hans: 为该工具指定 AWS 区域，覆盖 provider 默认值。
+      pt_BR: Sobrescreve a região AWS padrão para esta ferramenta.
+    form: form
+  - name: bucket_name
+    type: string
+    required: true
+    label:
+      en_US: S3 bucket name
+      zh_Hans: S3 存储桶名称
+      pt_BR: Nome do bucket S3
+    human_description:
+      en_US: The bucket where the workflow file should be uploaded. Do not include s3://.
+      zh_Hans: 文件上传的目标 bucket。不要包含 s3:// 前缀。
+      pt_BR: Bucket de destino para o upload. Não inclua o prefixo s3://.
+    form: form
+  - name: key_prefix
+    type: string
+    required: false
+    label:
+      en_US: Key prefix
+      zh_Hans: Key 前缀
+      pt_BR: Prefixo da chave
+    human_description:
+      en_US: Optional folder-style prefix such as workflow-outputs/.
+      zh_Hans: 可选的文件夹式前缀，例如 workflow-outputs/。
+      pt_BR: "Prefixo opcional no estilo de pasta, ex.: workflow-outputs/."
+    form: form
+  - name: object_key
+    type: string
+    required: false
+    label:
+      en_US: Object key
+      zh_Hans: Object key
+      pt_BR: Object key
+    human_description:
+      en_US: Override the final object key. Defaults to the incoming file name.
+      zh_Hans: 指定最终的 object key。不填则使用输入文件名。
+      pt_BR: Sobrescreve a chave final do objeto. Padrão é o nome do arquivo de entrada.
+    form: form
+  - name: input_file
+    type: file
+    required: true
+    label:
+      en_US: File to upload
+      zh_Hans: 待上传的文件
+      pt_BR: Arquivo para upload
+    human_description:
+      en_US: The file produced by an upstream workflow node that should be uploaded to S3.
+      zh_Hans: 上游节点产生的、需要上传到 S3 的文件。
+      pt_BR: Arquivo produzido por um nó anterior que deve ser enviado ao S3.
+    form: form
+  - name: generate_presign_url
+    type: boolean
+    required: false
+    label:
+      en_US: Generate presigned URL
+      zh_Hans: 生成预签名 URL
+      pt_BR: Gerar URL pré-assinada
+    human_description:
+      en_US: Whether to return a presigned URL for the uploaded object.
+      zh_Hans: 是否为上传后的对象生成预签名 URL。
+      pt_BR: Define se uma URL pré-assinada deve ser retornada para o objeto enviado.
+    default: false
+    form: form
+  - name: presign_expiry
+    type: number
+    required: false
+    label:
+      en_US: Presigned URL expiration time
+      zh_Hans: 预签名 URL 有效期
+      pt_BR: Tempo de expiração da URL pré-assinada
+    human_description:
+      en_US: Expiration time in seconds for the optional presigned URL.
+      zh_Hans: 预签名 URL 的有效期（秒）。
+      pt_BR: Tempo de expiração em segundos para a URL pré-assinada opcional.
+    default: 3600
+    form: form
+extra:
+  python:
+    source: tools/s3_file_uploader.py

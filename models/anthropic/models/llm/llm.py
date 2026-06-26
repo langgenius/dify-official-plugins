@@ -172,15 +172,21 @@ class PromptCachingHandler:
 class AnthropicLargeLanguageModel(LargeLanguageModel):
     PROMPT_CACHING_TTL_PARAMETER = "prompt_caching_ttl"
     VALID_PROMPT_CACHING_TTLS = {"5m", "1h"}
-    # Models that enforce Opus 4.7+ breaking changes:
+    # Models that enforce the Opus 4.7+ Messages API shape:
     #   - sampling params (temperature/top_p/top_k) rejected with 400
     #   - extended thinking (thinking.budget_tokens) rejected with 400 — adaptive only
     #   - assistant prefill rejected with 400
     #   - thinking content omitted by default — opt in via thinking.display=summarized
     #   - effort / task_budget delivered via output_config
-    OPUS_4_7_PLUS_MODELS: tuple[str, ...] = (
+    ADAPTIVE_THINKING_MODELS: tuple[str, ...] = (
         "claude-opus-4-7",
         "claude-opus-4-8",
+        "claude-fable-5",
+        "claude-mythos-5",
+    )
+    ALWAYS_ON_ADAPTIVE_THINKING_MODELS: tuple[str, ...] = (
+        "claude-fable-5",
+        "claude-mythos-5",
     )
 
     def __init__(self, model_schemas=None):
@@ -196,9 +202,16 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         self._message_flow_cache_threshold: int = 0
         self._prompt_cache_ttl: Optional[str] = None
 
-    def _is_opus_4_7_plus(self, model: str) -> bool:
+    def _uses_adaptive_thinking(self, model: str) -> bool:
         model_id = (model or "").lower()
-        return any(model_id.startswith(prefix) for prefix in self.OPUS_4_7_PLUS_MODELS)
+        return any(model_id.startswith(prefix) for prefix in self.ADAPTIVE_THINKING_MODELS)
+
+    def _has_always_on_adaptive_thinking(self, model: str) -> bool:
+        model_id = (model or "").lower()
+        return any(
+            model_id.startswith(prefix)
+            for prefix in self.ALWAYS_ON_ADAPTIVE_THINKING_MODELS
+        )
 
     def _predefined_model_has_parameter(self, model: str, parameter_name: str) -> bool:
         for model_schema in self.model_schemas:
@@ -251,7 +264,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         This allows users to use any Anthropic-compatible model name
         (e.g. from third-party proxies) without being limited to predefined models.
         """
-        is_opus_4_7_plus = self._is_opus_4_7_plus(model)
+        uses_adaptive_thinking = self._uses_adaptive_thinking(model)
+        always_on_adaptive_thinking = self._has_always_on_adaptive_thinking(model)
 
         parameter_rules: list[ParameterRule] = [
             ParameterRule(
@@ -263,16 +277,20 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 label=I18nObject(en_us="Max Tokens", zh_hans="最大标记"),
                 type=ParameterType.INT,
             ),
-            ParameterRule(
-                name="thinking",
-                label=I18nObject(en_us="Thinking Mode", zh_hans="推理模式"),
-                type=ParameterType.BOOLEAN,
-                default=False,
-            ),
         ]
 
-        if is_opus_4_7_plus:
-            # Opus 4.7+ uses adaptive thinking + output_config(effort/task_budget).
+        if not always_on_adaptive_thinking:
+            parameter_rules.append(
+                ParameterRule(
+                    name="thinking",
+                    label=I18nObject(en_us="Thinking Mode", zh_hans="推理模式"),
+                    type=ParameterType.BOOLEAN,
+                    default=False,
+                )
+            )
+
+        if uses_adaptive_thinking:
+            # These models use adaptive thinking + output_config(effort/task_budget).
             # temperature/top_p/top_k/thinking_budget are rejected with 400.
             parameter_rules.extend([
                 ParameterRule(
@@ -397,15 +415,16 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         task_budget = int(model_parameters.pop("task_budget", 0) or 0)
         context_1m = model_parameters.pop("context_1m", False)
 
-        is_opus_4_7_plus = self._is_opus_4_7_plus(model)
+        uses_adaptive_thinking = self._uses_adaptive_thinking(model)
+        always_on_adaptive_thinking = self._has_always_on_adaptive_thinking(model)
 
-        if is_opus_4_7_plus:
-            # Opus 4.7 rejects non-default sampling params with 400; drop unconditionally.
+        if uses_adaptive_thinking:
+            # These models reject non-default sampling params with 400; drop unconditionally.
             for key in ("temperature", "top_p", "top_k"):
                 model_parameters.pop(key, None)
 
-            if thinking:
-                # Extended thinking removed on Opus 4.7 — adaptive is the only supported mode.
+            if thinking or always_on_adaptive_thinking:
+                # Manual budgeted thinking is removed; Fable/Mythos always run adaptive thinking.
                 extra_model_kwargs["thinking"] = {
                     "type": "adaptive",
                     "display": thinking_display or "omitted",
@@ -436,9 +455,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 for key in ("temperature", "top_p", "top_k"):
                     model_parameters.pop(key, None)
 
-        # 1M context is GA / native on Opus 4.7+ (no opt-in header). Older models
+        # 1M context is GA / native on adaptive-thinking models here (no opt-in header). Older models
         # (e.g. Sonnet 4) still need the `context-1m-2025-08-07` beta header to opt in.
-        if context_1m and not is_opus_4_7_plus:
+        if context_1m and not uses_adaptive_thinking:
             if "anthropic-beta" in extra_headers:
                 extra_headers["anthropic-beta"] += ",context-1m-2025-08-07"
             else:
@@ -728,8 +747,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             stop.append("```\n")
         if "\n```" not in stop:
             stop.append("\n```")
-        # Opus 4.7+ rejects assistant prefill with 400 — rely on system prompt only.
-        supports_prefill = not self._is_opus_4_7_plus(model)
+        # Adaptive-thinking models here reject assistant prefill with 400 — rely on system prompt only.
+        supports_prefill = not self._uses_adaptive_thinking(model)
 
         if len(prompt_messages) > 0 and isinstance(
             prompt_messages[0], SystemPromptMessage
@@ -798,7 +817,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 break
         
         if has_thinking_blocks:
-            if self._is_opus_4_7_plus(model):
+            if self._uses_adaptive_thinking(model):
                 count_tokens_args["thinking"] = {"type": "adaptive"}
             else:
                 count_tokens_args["thinking"] = {
@@ -1410,17 +1429,31 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             content.extend(self.previous_thinking_blocks)
             content.extend(self.previous_redacted_thinking_blocks)
         
-        # Process tool calls or content
+        # Dify stores assistant text and tool calls separately; Anthropic expects the next
+        # user tool_result message to immediately follow the assistant tool_use turn.
+        # Keep assistant prose before tool_use so no text lands between tool_use and tool_result.
+        # https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls
+        content.extend(self._create_assistant_text_contents(message))
         if message.tool_calls:
             content.extend(
                 self._create_tool_use_content(tool_call)
                 for tool_call in message.tool_calls
             )
-        elif message.content:
-            if isinstance(message.content, str):
-                content.append(self._create_assistant_text_content(message.content))
         
         return {"role": "assistant", "content": content}
+
+    def _create_assistant_text_contents(self, message: AssistantPromptMessage) -> list[dict]:
+        if not message.content:
+            return []
+
+        if isinstance(message.content, str):
+            return [self._create_assistant_text_content(message.content)]
+
+        return [
+            self._create_assistant_text_content(content.data)
+            for content in message.content
+            if isinstance(content, TextPromptMessageContent)
+        ]
     
     def _create_tool_use_content(self, tool_call: AssistantPromptMessage.ToolCall) -> dict:
         """Create tool use content dict."""
