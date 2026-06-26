@@ -3,6 +3,7 @@ from __future__ import annotations
 import base64
 import binascii
 import json
+import logging
 import quopri
 import re
 from collections.abc import Mapping
@@ -13,10 +14,15 @@ from urllib.parse import unquote, urlparse
 import requests
 from werkzeug import Request
 
+from dify_plugin.config.logger_format import plugin_logger_handler
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.errors.trigger import EventIgnoreError
 from dify_plugin.interfaces.trigger import Event
 from dify_plugin.invocations.file import UploadFileResponse
+
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
+logger.addHandler(plugin_logger_handler)
 
 
 class GmailMessageAddedEvent(Event):
@@ -75,8 +81,16 @@ class GmailMessageAddedEvent(Event):
             mid_str = str(mid)
             murl = f"{self._GMAIL_BASE}/users/me/messages/{mid_str}"
             mparams: dict[str, str] = {"format": "full"}
-            mresp: requests.Response = requests.get(murl, headers=headers, params=mparams, timeout=10)
+            try:
+                mresp: requests.Response = requests.get(murl, headers=headers, params=mparams, timeout=10)
+            except requests.RequestException:
+                logger.exception("Network error while fetching Gmail message %s", mid_str)
+                continue
+            if mresp.status_code == 404:
+                continue
             if mresp.status_code != 200:
+                error = self._format_gmail_error(mresp)
+                logger.error("Gmail messages.get failed for %s (%s): %s", mid_str, mresp.status_code, error)
                 continue
             m = mresp.json() or {}
             headers_list = (m.get("payload") or {}).get("headers") or []
@@ -323,9 +337,25 @@ class GmailMessageAddedEvent(Event):
         url = f"{self._GMAIL_BASE}/users/me/messages/{message_id}/attachments/{attachment_id}"
         try:
             response = requests.get(url, headers=headers, timeout=10)
-        except requests.RequestException:
+        except requests.RequestException as exc:
+            logger.warning(
+                "Network error while fetching Gmail attachment %s for message %s: %s",
+                attachment_id,
+                message_id,
+                exc,
+            )
+            return None, None
+        if response.status_code == 404:
             return None, None
         if response.status_code != 200:
+            error = self._format_gmail_error(response)
+            logger.error(
+                "Gmail attachments.get failed for message %s attachment %s (%s): %s",
+                message_id,
+                attachment_id,
+                response.status_code,
+                error,
+            )
             return None, None
 
         data = response.json() or {}
@@ -367,6 +397,25 @@ class GmailMessageAddedEvent(Event):
             return file_invocation.upload(filename=filename, content=content, mimetype=mimetype)
         except Exception:
             return None
+
+    def _format_gmail_error(self, response: requests.Response) -> str:
+        try:
+            payload = response.json()
+        except Exception:
+            return response.text
+        if isinstance(payload, Mapping):
+            error = payload.get("error")
+            if isinstance(error, Mapping):
+                message = error.get("message")
+                status = error.get("status")
+                if message and status:
+                    return f"{status}: {message}"
+                if message:
+                    return str(message)
+            message = payload.get("message")
+            if message:
+                return str(message)
+        return json.dumps(payload)
 
     @staticmethod
     def _decode_base64url(data: str) -> bytes:
