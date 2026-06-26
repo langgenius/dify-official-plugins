@@ -4,7 +4,6 @@ import json
 import re
 import copy
 import threading
-from collections import OrderedDict
 from collections.abc import Generator, Sequence
 from typing import Any, Mapping, Optional, Union, cast
 import logging
@@ -71,7 +70,7 @@ ANTHROPIC_BLOCK_MODE_PROMPT = 'You should always follow the instructions and out
 # many distinct credentials cannot leak connection pools (sockets / file
 # descriptors) indefinitely.
 _ANTHROPIC_CLIENT_CACHE_MAX_SIZE = 128
-_anthropic_client_cache: "OrderedDict[tuple[Optional[str], Optional[str]], Anthropic]" = OrderedDict()
+_anthropic_client_cache: dict[tuple[Optional[str], Optional[str]], Anthropic] = {}
 _anthropic_client_lock = threading.Lock()
 
 
@@ -88,12 +87,17 @@ def _get_cached_anthropic_client(**kwargs: Any) -> Anthropic:
     with _anthropic_client_lock:
         cached = _anthropic_client_cache.get(key)
         if cached is not None:
-            _anthropic_client_cache.move_to_end(key)
+            # Move the accessed key to the end (most recently used position)
+            # in the standard dict insertion order.
+            value = _anthropic_client_cache.pop(key)
+            _anthropic_client_cache[key] = value
             return cached
         client = Anthropic(**kwargs)
         _anthropic_client_cache[key] = client
         while len(_anthropic_client_cache) > _ANTHROPIC_CLIENT_CACHE_MAX_SIZE:
-            _, evicted = _anthropic_client_cache.popitem(last=False)
+            # Evict the first item (least recently used) from the standard dict.
+            first_key = next(iter(_anthropic_client_cache))
+            evicted = _anthropic_client_cache.pop(first_key)
             try:
                 evicted.close()
             except Exception:
