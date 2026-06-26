@@ -6,7 +6,7 @@
 
 Lemonade enables local execution of LLMs, providing enhanced data privacy and security by keeping your data on your own machine while leveraging hardware acceleration for improved performance.
 
-Dify integrates with Lemonade Server to provide LLM, text embedding, and reranking capabilities for models deployed locally.
+Dify integrates with Lemonade Server to provide LLM (including vision and structured output), text embedding, reranking, speech-to-text (Whisper), and text-to-speech (Kokoro) capabilities for models deployed locally.
 
 ## Configure
 
@@ -43,15 +43,27 @@ Then, fill in the following configuration:
 ![](./_assets/lemonade-03.png)
 
 **Basic Configuration:**
-- **Model Type**: Choose from `llm`, `text-embedding`, or `rerank` based on your use case
+- **Model Type**: Choose from `llm`, `text-embedding`, `rerank`, `speech2text`, or `tts` based on your use case
 - **Model Name**: Your selected model. You can see available models [here](https://lemonade-server.ai/docs/server/server_models/).
 - **API Endpoint URL**: Base URL where the Lemonade Server
   - For most cases this should be `http://127.0.0.1:13305`
   - If Dify is deployed using Docker, consider using the local network IP address, e.g., `http://192.168.1.100:13305` or `http://host.docker.internal:13305`
 - **Authorization Name**: Leave this field blank. Lemonade uses built-in authentication and does not require an API key.
+
+**LLM options:**
 - **Model Context Size**: The maximum context size of the model (default: 4096).
-- **Agent Thought Support**: Select "Support" if your model supports reasoning chains
+- **Agent Thought Support**: Select "Support" if your model supports reasoning chains.
 - **Vision Support**: Select "Support" if your model supports image understanding.
+- **Structured Output Support**: Select "Support" if your model can return JSON object / JSON schema responses.
+
+**Speech-to-Text options** (Whisper recipes):
+- **Language**: The primary language of the audio (e.g. `en`, `zh`).
+- **Initial Prompt**: Optional prompt to bias the transcription.
+
+**Text-to-Speech options** (Kokoro recipes):
+- **Available Voices**: Comma-separated list of voice names; the first is used as the default.
+- **Audio Format**: Output format (`mp3` or `wav`).
+- **Words per chunk**: Maximum words sent per request for long inputs.
 
 **Sample Configuration:**
 ```
