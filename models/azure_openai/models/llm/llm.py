@@ -841,44 +841,12 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
         # Calculate token usage
         prompt_tokens = 0
         completion_tokens = 0
-        prompt_tokens_details: Optional[dict] = None
-        completion_tokens_details: Optional[dict] = None
 
         if hasattr(response, 'usage') and response.usage:
             usage_obj = response.usage
             # Support Responses API usage fields
             prompt_tokens = getattr(usage_obj, 'input_tokens', None) or getattr(usage_obj, 'prompt_tokens', 0)
             completion_tokens = getattr(usage_obj, 'output_tokens', None) or getattr(usage_obj, 'completion_tokens', 0)
-            # Support implementations that expose detailed fields (convert SDK types to dict)
-            # Prefer the unified prompt_tokens_details/completion_tokens_details fields
-            if hasattr(usage_obj, 'prompt_tokens_details') and usage_obj.prompt_tokens_details:
-                _ptd = usage_obj.prompt_tokens_details
-                if hasattr(_ptd, 'to_dict'):
-                    prompt_tokens_details = _ptd.to_dict()
-                elif isinstance(_ptd, dict):
-                    prompt_tokens_details = _ptd
-                else:
-                    prompt_tokens_details = {
-                        'cached_tokens': getattr(_ptd, 'cached_tokens', None)
-                    }
-            elif hasattr(usage_obj, 'input_tokens_details') and usage_obj.input_tokens_details:
-                it = usage_obj.input_tokens_details
-                if hasattr(it, 'to_dict'):
-                    prompt_tokens_details = it.to_dict()
-                else:
-                    prompt_tokens_details = {
-                        'cached_tokens': getattr(it, 'cached_tokens', None)
-                    }
-            if hasattr(usage_obj, 'completion_tokens_details') and usage_obj.completion_tokens_details:
-                completion_tokens_details = usage_obj.completion_tokens_details
-            elif hasattr(usage_obj, 'output_tokens_details') and usage_obj.output_tokens_details:
-                ot = usage_obj.output_tokens_details
-                if hasattr(ot, 'to_dict'):
-                    completion_tokens_details = ot.to_dict()
-                else:
-                    completion_tokens_details = {
-                        'reasoning_tokens': getattr(ot, 'reasoning_tokens', None)
-                    }
         else:
             # Estimate usage when it is not provided
             prompt_tokens = self._num_tokens_from_messages(
@@ -890,8 +858,6 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
 
         usage = self._calc_response_usage(
             model, credentials, prompt_tokens, completion_tokens,
-            prompt_tokens_details=prompt_tokens_details,
-            completion_tokens_details=completion_tokens_details
         )
 
         return LLMResult(
