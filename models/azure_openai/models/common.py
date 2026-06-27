@@ -132,15 +132,9 @@ class _CommonAzureOpenAI:
 
         cache_key = cls._credential_cache_key(credentials)
         with _client_cache_lock:
-            cached = _client_cache.get(cache_key)
-            if cached is not None:
-                return cached
-
-        client = cls._build_client(credentials)
-
-        with _client_cache_lock:
-            _client_cache[cache_key] = client
-        return client
+            if cache_key not in _client_cache:
+                _client_cache[cache_key] = cls._build_client(credentials)
+            return _client_cache[cache_key]
 
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:
