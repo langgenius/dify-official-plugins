@@ -1,4 +1,5 @@
 from urllib.parse import urlparse
+import threading
 
 import openai
 from dify_plugin.errors.model import (
@@ -12,6 +13,9 @@ from dify_plugin.errors.model import (
 from httpx import Timeout
 
 from .constants import AZURE_OPENAI_API_VERSION
+
+_client_cache: dict[tuple, openai.AzureOpenAI | openai.OpenAI] = {}
+_client_cache_lock = threading.Lock()
 
 
 class _CommonAzureOpenAI:
@@ -99,12 +103,44 @@ class _CommonAzureOpenAI:
 
         return credentials_kwargs
 
+    @staticmethod
+    def _credential_cache_key(credentials: dict) -> tuple:
+        auth_method = credentials.get("auth_method", "api_key")
+        api_base = credentials.get("openai_api_base", "").strip()
+        api_version = credentials.get("openai_api_version") or AZURE_OPENAI_API_VERSION
+        return (
+            api_base,
+            auth_method,
+            credentials.get("openai_api_key"),
+            credentials.get("azure_tenant_id"),
+            credentials.get("azure_client_id"),
+            credentials.get("azure_client_secret"),
+            api_version,
+        )
+
     @classmethod
-    def _create_client(cls, credentials: dict):
+    def _build_client(cls, credentials: dict):
         client_kwargs = cls._to_credential_kwargs(credentials)
         if cls._is_v1_api_base(credentials["openai_api_base"]):
             return openai.OpenAI(**client_kwargs)
         return openai.AzureOpenAI(**client_kwargs)
+
+    @classmethod
+    def _create_client(cls, credentials: dict, *, use_cache: bool = True):
+        if not use_cache:
+            return cls._build_client(credentials)
+
+        cache_key = cls._credential_cache_key(credentials)
+        with _client_cache_lock:
+            cached = _client_cache.get(cache_key)
+            if cached is not None:
+                return cached
+
+        client = cls._build_client(credentials)
+
+        with _client_cache_lock:
+            _client_cache[cache_key] = client
+        return client
 
     @property
     def _invoke_error_mapping(self) -> dict[type[InvokeError], list[type[Exception]]]:

@@ -152,7 +152,7 @@ class AzureOpenAILargeLanguageModel(_CommonAzureOpenAI, LargeLanguageModel):
             )
 
         try:
-            client = self._create_client(credentials)
+            client = self._create_client(credentials, use_cache=False)
             if self._uses_responses_api(base_model_name):
                 client.responses.create(
                     input="ping",
