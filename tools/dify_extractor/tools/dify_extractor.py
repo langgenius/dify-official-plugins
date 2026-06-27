@@ -26,53 +26,11 @@ from tools.yaml_extractor import YAMLExtractor
 
 logger = logging.getLogger(__name__)
 
-_EXTRACTORS: dict[str, type[BaseExtractor]] = {
-    ".csv": CSVExtractor,
-    ".docx": WordExtractor,
-    ".htm": HtmlExtractor,
-    ".html": HtmlExtractor,
-    ".json": JSONExtractor,
-    ".md": MarkdownExtractor,
-    ".markdown": MarkdownExtractor,
-    ".mdx": MarkdownExtractor,
-    ".pdf": PdfExtractor,
-    ".pptx": PPTXExtractor,
-    ".xls": ExcelExtractor,
-    ".xlsx": ExcelExtractor,
-    ".yaml": YAMLExtractor,
-    ".yml": YAMLExtractor,
+_BAD_ZIP_FORMAT_EXAMPLES = {
+    ".docx": " (e.g., old binary .doc instead of .docx)",
+    ".xlsx": " (e.g., old binary .xls instead of .xlsx)",
+    ".pptx": " (e.g., old binary .ppt instead of .pptx)",
 }
-_PLAIN_TEXT_EXTENSIONS = {
-    ".cfg",
-    ".conf",
-    ".ini",
-    ".log",
-    ".rst",
-    ".text",
-    ".txt",
-    ".xml",
-}
-_TEXT_MIME_TYPES = {
-    "application/toml",
-    "application/xml",
-    "application/x-ndjson",
-    "application/x-yaml",
-}
-_MIME_EXTENSIONS = {
-    "application/json": ".json",
-    "application/pdf": ".pdf",
-    "application/vnd.ms-excel": ".xls",
-    "application/vnd.openxmlformats-officedocument.presentationml.presentation": ".pptx",
-    "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": ".xlsx",
-    "application/vnd.openxmlformats-officedocument.wordprocessingml.document": ".docx",
-    "application/x-yaml": ".yaml",
-    "application/yaml": ".yaml",
-    "text/csv": ".csv",
-    "text/html": ".html",
-    "text/markdown": ".md",
-    "text/yaml": ".yaml",
-}
-_OOXML_EXTENSIONS = {".docx", ".pptx", ".xlsx"}
 
 
 class DifyExtractorTool(Tool):
@@ -86,6 +44,7 @@ class DifyExtractorTool(Tool):
         try:
             file_bytes = file.blob
         except Exception as e:
+            logger.exception("Failed to read file '%s'", file_name)
             yield self.create_text_message(f"Failed to read file '{file_name}': {e}")
             return
 
@@ -114,12 +73,14 @@ class DifyExtractorTool(Tool):
         try:
             extractor_result = extractor.extract()
         except BadZipFile:
+            example = _BAD_ZIP_FORMAT_EXAMPLES.get(file_extension, "")
             yield self.create_text_message(
                 f"File '{file_name}' is not a valid {file_extension} file. "
-                f"It may be corrupted or in an incompatible format (e.g., old binary .doc instead of .docx)."
+                f"It may be corrupted or in an incompatible format{example}."
             )
             return
         except Exception as e:
+            logger.exception("Failed to extract '%s'", file_name)
             yield self.create_text_message(f"Failed to extract '{file_name}': {e}")
             return
 
