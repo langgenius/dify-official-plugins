@@ -23,6 +23,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
+<<<<<<< HEAD
     "ruff>=0.14.0",
     "xlwt>=1.3.0",
 ]
@@ -33,3 +34,6 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E4", "E7", "E9", "F"]
+=======
+]
+>>>>>>> d07d88e9 (fix(dify_extractor): catch BadZipFile for corrupt office files)
