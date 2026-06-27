@@ -31,7 +31,7 @@ def test_invoke_returns_error_for_corrupt_docx():
     assert len(messages) == 1
     assert messages[0]["type"] == "text"
     assert "not a valid .docx file" in messages[0]["value"]
-    assert "corrupted or in an incompatible format" in messages[0]["value"]
+    assert "old binary .doc instead of .docx" in messages[0]["value"]
 
 
 def test_invoke_returns_error_for_corrupt_pptx():
@@ -43,6 +43,7 @@ def test_invoke_returns_error_for_corrupt_pptx():
     assert len(messages) == 1
     assert messages[0]["type"] == "text"
     assert "not a valid .pptx file" in messages[0]["value"]
+    assert "old binary .ppt instead of .pptx" in messages[0]["value"]
 
 
 def test_invoke_returns_error_for_corrupt_xlsx():
@@ -54,3 +55,4 @@ def test_invoke_returns_error_for_corrupt_xlsx():
     assert len(messages) == 1
     assert messages[0]["type"] == "text"
     assert "not a valid .xlsx file" in messages[0]["value"]
+    assert "old binary .xls instead of .xlsx" in messages[0]["value"]
