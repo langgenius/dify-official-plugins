@@ -10,6 +10,8 @@ supported_model_types:
   - llm
   - rerank
   - text-embedding
+  - speech2text
+  - tts
 configurate_methods:
   - customizable-model
 model_credential_schema:
@@ -28,8 +30,8 @@ model_credential_schema:
       type: text-input
       required: true
       placeholder:
-        zh_Hans: Lemonade Server 的地址，如 http://127.0.0.1:8000
-        en_US: Base URL of Lemonade Server, e.g. http://127.0.0.1:8000
+        zh_Hans: Lemonade Server 的地址，如 http://127.0.0.1:13305
+        en_US: Base URL of Lemonade Server, e.g. http://127.0.0.1:13305
     - variable: context_size
       label:
         zh_Hans: 模型上下文长度
@@ -80,6 +82,113 @@ model_credential_schema:
           label:
             en_US: Not Support
             zh_Hans: 不支持
+    - variable: structured_output_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        zh_Hans: 结构化输出支持
+        en_US: Structured Output Support
+      type: radio
+      required: false
+      default: not_supported
+      options:
+        - value: supported
+          label:
+            en_US: Support
+            zh_Hans: 支持
+        - value: not_supported
+          label:
+            en_US: Not Support
+            zh_Hans: 不支持
+    - variable: language
+      show_on:
+        - variable: __model_type
+          value: speech2text
+      label:
+        en_US: Language
+        zh_Hans: 语言
+      type: select
+      required: false
+      default: en
+      placeholder:
+        zh_Hans: 模型支持的语言，例如 en,zh
+        en_US: The language supported by the model, e.g. en,zh
+      options:
+        - value: en
+          label:
+            en_US: en-US
+            zh_Hans: 英文
+        - value: zh
+          label:
+            en_US: zh-Hans
+            zh_Hans: 中文
+        - value: ja
+          label:
+            en_US: ja-JP
+            zh_Hans: 日语
+        - value: ko
+          label:
+            en_US: ko-KR
+            zh_Hans: 韩语
+    - variable: initial_prompt
+      show_on:
+        - variable: __model_type
+          value: speech2text
+      label:
+        en_US: Initial Prompt
+        zh_Hans: 初始提示
+      type: text-input
+      required: false
+      placeholder:
+        zh_Hans: 模型在转录开始时的初始提示
+        en_US: The initial prompt for the model at the start of the transcription.
+    - variable: voices
+      show_on:
+        - variable: __model_type
+          value: tts
+      label:
+        en_US: Available Voices (comma-separated)
+        zh_Hans: 可用声音（用英文逗号分隔）
+      type: text-input
+      required: false
+      default: "af_sky"
+      placeholder:
+        en_US: "af_sky,af_bella,am_adam,bf_emma"
+        zh_Hans: "af_sky,af_bella,am_adam,bf_emma"
+      help:
+        en_US: "List Kokoro voice names separated by commas. The first voice is used as the default."
+        zh_Hans: "用英文逗号分隔的 Kokoro 声音列表。第一个声音将作为默认值。"
+    - variable: audio_type
+      show_on:
+        - variable: __model_type
+          value: tts
+      label:
+        en_US: Audio Format
+        zh_Hans: 音频格式
+      type: select
+      required: false
+      default: mp3
+      options:
+        - value: mp3
+          label:
+            en_US: mp3
+        - value: wav
+          label:
+            en_US: wav
+    - variable: word_limit
+      show_on:
+        - variable: __model_type
+          value: tts
+      label:
+        en_US: Words per chunk
+        zh_Hans: 每段最大字数
+      type: text-input
+      required: false
+      default: "4096"
+      placeholder:
+        en_US: Maximum number of words sent to the model per request
+        zh_Hans: 每次请求发送给模型的最大字数
 extra:
   python:
     provider_source: provider/lemonade.py
@@ -87,6 +196,8 @@ extra:
       - "models/llm/llm.py"
       - "models/text_embedding/text_embedding.py"
       - "models/rerank/rerank.py"
+      - "models/speech2text/speech2text.py"
+      - "models/tts/tts.py"
 help:
   title:
     en_US: How to integrate with Lemonade
