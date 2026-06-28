@@ -1,5 +1,6 @@
 import logging
 import os
+import logging
 from collections.abc import Generator
 from typing import Any
 from zipfile import BadZipFile
@@ -36,9 +37,10 @@ class DifyExtractorTool(Tool):
         file_extension = os.path.splitext(file_name)[-1].lower()
 
         try:
+        try:
             file_bytes = file.blob
         except Exception as e:
-            logger.exception("Failed to read file '%s'", file_name)
+            logging.exception(f"Failed to read file '{file_name}'")
             yield self.create_text_message(f"Failed to read file '{file_name}': {e}")
             return
 
@@ -67,14 +69,21 @@ class DifyExtractorTool(Tool):
         try:
             extractor_result = extractor.extract()
         except BadZipFile:
-            example = _BAD_ZIP_FORMAT_EXAMPLES.get(file_extension, "")
+        except BadZipFile:
+            example_map = {
+                ".docx": " (e.g., old binary .doc instead of .docx)",
+                ".xlsx": " (e.g., old binary .xls instead of .xlsx)",
+                ".pptx": " (e.g., old binary .ppt instead of .pptx)",
+            }
+            example = example_map.get(file_extension, "")
             yield self.create_text_message(
                 f"File '{file_name}' is not a valid {file_extension} file. "
                 f"It may be corrupted or in an incompatible format{example}."
             )
             return
         except Exception as e:
-            logger.exception("Failed to extract '%s'", file_name)
+        except Exception as e:
+            logging.exception(f"Failed to extract '{file_name}'")
             yield self.create_text_message(f"Failed to extract '{file_name}': {e}")
             return
 
