@@ -12,7 +12,7 @@ from tools.utils import (
     normalize_file_input,
 )
 
-_SKIP_KEYS = {"file", "fileType"}
+_SKIP_KEYS = {"file", "fileType", "model"}
 
 
 def build_pp_structure_v3_options(params: dict[str, Any]) -> dict[str, Any]:
@@ -51,10 +51,13 @@ class DocumentParsingTool(Tool):
             # Get API client config
             client_config = get_api_client_config(access_token, base_url=base_url)
 
-            # Call API with PP-StructureV3 model
+            # Get model selection
+            model = tool_parameters.get("model") or "PP-StructureV3"
+
+            # Call API
             if file_input.startswith(("http://", "https://")):
                 result = call_paddleocr_api(
-                    model="PP-StructureV3",
+                    model=model,
                     file_url=file_input,
                     file_path=None,
                     options=options,
@@ -63,7 +66,7 @@ class DocumentParsingTool(Tool):
                 )
             else:
                 result = call_paddleocr_api(
-                    model="PP-StructureV3",
+                    model=model,
                     file_url=None,
                     file_path=file_input,
                     options=options,

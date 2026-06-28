@@ -22,9 +22,14 @@ class ErnieIragEditTool(Tool):
     """
     
     # API endpoints
-    BASE_URL = "https://aihubmix.com/v1"
-    PREDICTIONS_ENDPOINT = f"{BASE_URL}/models/qianfan/ernie-irag-edit/predictions"
-    
+    DEFAULT_BASE_URL = "https://api.inferera.com"
+
+    def get_base_url(self) -> str:
+        return (self.runtime.credentials.get("base_url") or self.DEFAULT_BASE_URL).rstrip("/")
+
+    def get_endpoint(self) -> str:
+        return f"{self.get_base_url()}/v1/models/qianfan/ernie-irag-edit/predictions"
+
     def create_image_info(self, base64_data: str, guidance: float) -> dict:
         mime_type = "image/png"
         return {
@@ -150,7 +155,7 @@ class ErnieIragEditTool(Tool):
             
             # Make API request
             response = requests.post(
-                self.PREDICTIONS_ENDPOINT,
+                self.get_endpoint(),
                 headers=headers,
                 json=payload,
                 timeout=60

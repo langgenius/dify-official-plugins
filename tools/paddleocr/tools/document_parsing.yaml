@@ -10,6 +10,23 @@ description:
     zh_Hans: PaddleOCR 文档解析工具，能够提取文档中的表格、公式、印章等信息，同时保留原始版面结构
   llm: PaddleOCR document parsing tool, capable of extracting tables, formulas, seals, and other information from documents while preserving the original layout
 parameters:
+  - name: model
+    type: select
+    required: false
+    default: PP-StructureV3
+    options:
+      - label:
+          en_US: PP-StructureV3
+          zh_Hans: PP-StructureV3
+        value: PP-StructureV3
+    label:
+      en_US: Model
+      zh_Hans: 模型
+    human_description:
+      en_US: The model to use for document parsing.
+      zh_Hans: 用于文档解析的模型。
+    llm_description: The model to use for document parsing.
+    form: form
   - name: file
     type: file
     required: true
