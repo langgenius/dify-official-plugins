@@ -228,6 +228,7 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
             "qwen3-omni-flash-2025-12-01",
             # Qwen3.5/3.6/3.7 series (default: thinking ENABLED - must explicitly disable)
             "qwen3.7-max",
+            "qwen3.7-plus", "qwen3.7-plus-2026-05-26",
             "qwen3.6-plus", "qwen3.6-plus-2026-04-02",
             "qwen3.6-flash", "qwen3.6-flash-2026-04-16",
             "qwen3.5-plus", "qwen3.5-plus-2026-02-15",
