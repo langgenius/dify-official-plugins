@@ -634,6 +634,20 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         """
         return bool(llm_result.message.tool_calls)
 
+    @staticmethod
+    def _parse_tool_call_arguments(arguments: str) -> dict[str, Any]:
+        if arguments == "":
+            return {}
+        try:
+            return json.loads(arguments)
+        except json.JSONDecodeError as e:
+            raise ValueError(
+                f"Failed to parse tool-call arguments as JSON (error at position {e.pos}). "
+                f"This often happens when the model's output is truncated or malformed mid-generation. "
+                f"If using Claude with Thinking enabled, try increasing your 'max_tokens' or "
+                f"reducing your 'thinking_budget' in model settings."
+            ) from e
+
     def extract_tool_calls(
         self, llm_result_chunk: LLMResultChunk
     ) -> list[tuple[str, str, dict[str, Any]]]:
@@ -645,9 +659,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         """
         tool_calls = []
         for prompt_message in llm_result_chunk.delta.message.tool_calls:
-            args = {}
-            if prompt_message.function.arguments != "":
-                args = json.loads(prompt_message.function.arguments)
+            args = self._parse_tool_call_arguments(prompt_message.function.arguments)
 
             tool_calls.append(
                 (
@@ -670,9 +682,7 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         """
         tool_calls = []
         for prompt_message in llm_result.message.tool_calls:
-            args = {}
-            if prompt_message.function.arguments != "":
-                args = json.loads(prompt_message.function.arguments)
+            args = self._parse_tool_call_arguments(prompt_message.function.arguments)
 
             tool_calls.append(
                 (
