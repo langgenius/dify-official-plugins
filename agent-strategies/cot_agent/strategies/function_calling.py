@@ -635,8 +635,8 @@ class FunctionCallingAgentStrategy(AgentStrategy):
         return bool(llm_result.message.tool_calls)
 
     @staticmethod
-    def _parse_tool_call_arguments(arguments: str) -> dict[str, Any]:
-        if arguments == "":
+    def _parse_tool_call_arguments(arguments: str | None) -> dict[str, Any]:
+        if not arguments:
             return {}
         try:
             return json.loads(arguments)

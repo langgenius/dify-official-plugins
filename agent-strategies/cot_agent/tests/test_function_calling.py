@@ -49,6 +49,12 @@ class TestFunctionCallingToolCallParsing(unittest.TestCase):
             {},
         )
 
+    def test_parse_tool_call_arguments_none(self):
+        self.assertEqual(
+            FunctionCallingAgentStrategy._parse_tool_call_arguments(None),
+            {},
+        )
+
     def test_parse_tool_call_arguments_malformed_json_raises_value_error(self):
         with self.assertRaises(ValueError) as ctx:
             FunctionCallingAgentStrategy._parse_tool_call_arguments('{"city": "Par')
