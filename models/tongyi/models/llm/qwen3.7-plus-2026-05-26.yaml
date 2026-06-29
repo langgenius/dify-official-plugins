@@ -2,6 +2,7 @@
 # please refer to (https://help.aliyun.com/zh/model-studio/getting-started/models#b356ab6cbdlyh)
 model: qwen3.7-plus-2026-05-26
 label:
+  zh_Hans: qwen3.7-plus-2026-05-26(Qwen3.7)
   en_US: qwen3.7-plus-2026-05-26(Qwen3.7)
 model_type: llm
 features:
