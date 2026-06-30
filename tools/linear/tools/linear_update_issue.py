@@ -13,6 +13,65 @@ from client.Exceptions import (
 class LinearUpdateIssueTool(Tool):
     """Tool for updating issues in Linear."""
 
+    def _resolve_state_id(self, linear_client, issue_id, status_value):
+        """Resolve a status name (or workflow state ID) to a workflow state ID.
+
+        Linear only accepts the workflow state ID. Users normally provide a
+        readable name like "Todo" / "In Progress", so map it to the matching
+        state within the issue's team. A raw state ID is accepted unchanged for
+        backward compatibility.
+
+        Returns:
+            (state_id, None) on success, or (None, error_message) on failure.
+        """
+        team_query = """
+        query IssueTeam($id: String!) {
+          issue(id: $id) {
+            team { id }
+          }
+        }
+        """
+        team_result = linear_client.query_graphql(
+            team_query, variables={"id": issue_id}
+        )
+        issue = (team_result or {}).get("data", {}).get("issue")
+        team_id = (issue or {}).get("team", {}).get("id") if issue else None
+        if not team_id:
+            return None, "Could not resolve the issue's team to map the status."
+
+        states_query = """
+        query TeamStates($filter: WorkflowStateFilter, $limit: Int!) {
+          workflowStates(filter: $filter, first: $limit) {
+            nodes { id name }
+          }
+        }
+        """
+        states_result = linear_client.query_graphql(
+            states_query,
+            variables={"filter": {"team": {"id": {"eq": team_id}}}, "limit": 250},
+        )
+        states = (
+            (states_result or {})
+            .get("data", {})
+            .get("workflowStates", {})
+            .get("nodes", [])
+        )
+        target = status_value.strip().lower()
+
+        for state in states:
+            if state.get("name", "").strip().lower() == target:
+                return state["id"], None
+
+        # Backward compatibility: accept a raw workflow state ID.
+        for state in states:
+            if state.get("id") == status_value:
+                return state["id"], None
+
+        available = ", ".join(state.get("name", "") for state in states)
+        return None, (
+            f"Status '{status_value}' not found. Available statuses: {available}"
+        )
+
     def _invoke(
         self, tool_parameters: Dict[str, Any]
     ) -> Generator[ToolInvokeMessage, None, None]:
@@ -81,7 +140,13 @@ class LinearUpdateIssueTool(Tool):
                 update_input["description"] = str(description)
                 updated_field_names.append("description")
             if state_id:
-                update_input["stateId"] = str(state_id)
+                resolved_state_id, state_error = self._resolve_state_id(
+                    linear_client, issue_id, str(state_id)
+                )
+                if state_error:
+                    yield self.create_text_message(f"Error: {state_error}")
+                    return
+                update_input["stateId"] = resolved_state_id
                 updated_field_names.append("status (stateId)")
 
             # Handle assignee update (including unassigning)
