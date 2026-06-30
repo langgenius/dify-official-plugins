@@ -9,12 +9,11 @@ import time
 import urllib.parse
 import uuid
 from collections.abc import Mapping
-from typing import Any, cast
+from typing import Any
 
 import requests
 from werkzeug import Request, Response
 
-from dify_plugin.entities import I18nObject, ParameterOption
 from dify_plugin.entities.oauth import TriggerOAuthCredentials
 from dify_plugin.entities.provider_config import CredentialType
 from dify_plugin.entities.trigger import EventDispatch, Subscription, UnsubscribeResult
@@ -29,35 +28,77 @@ from dify_plugin.errors.trigger import (
 from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstructor
 
 
+def _safe_json(response: requests.Response) -> dict[str, Any]:
+    try:
+        payload = response.json()
+        return payload if isinstance(payload, dict) else {}
+    except Exception:
+        return {}
+
+
+def _extract_error(response: requests.Response) -> str:
+    payload = _safe_json(response)
+    error = payload.get("error")
+    if isinstance(error, Mapping):
+        message = error.get("message") or error.get("code")
+        if message:
+            return str(message)
+    message = payload.get("error_description") or payload.get("message") or payload.get("error")
+    return str(message or response.text or f"HTTP {response.status_code}")[:500]
+
+
+def _get_access_token(credentials: Mapping[str, Any] | None) -> str | None:
+    if not credentials:
+        return None
+    token = credentials.get("access_tokens") or credentials.get("access_token")
+    return str(token) if token else None
+
+
 class OutlookTrigger(Trigger):
     """Handle Outlook webhook event dispatch."""
 
     def _dispatch_event(
         self, subscription: Subscription, request: Request
     ) -> EventDispatch:
-        client_state = subscription.properties.get("client_state")
+        properties = subscription.properties or {}
+        client_state = properties.get("client_state")
 
         body = request.get_data()
 
         if len(body) == 0:  # validation request
-
             validationToken = request.args.get("validationToken")
             if validationToken:
                 returnText = urllib.parse.unquote(validationToken)
                 return EventDispatch(events=[], response=Response(response=returnText, status=200, mimetype="application/text"))
-            pass
+            return EventDispatch(events=[], response=Response(response="", status=202, mimetype="application/text"))
         else:
-            payload = json.loads(body)
+            try:
+                payload = json.loads(body)
+            except json.JSONDecodeError as exc:
+                raise TriggerDispatchError(f"Invalid Outlook notification JSON: {exc}") from exc
 
-            value = payload.get("value")[0]
+            values = payload.get("value")
+            if not isinstance(values, list) or not values:
+                raise TriggerDispatchError("Outlook notification missing value array")
+            value = values[0]
+            if not isinstance(value, Mapping):
+                raise TriggerDispatchError("Outlook notification value must be an object")
 
-            id = value.get("resourceData").get("id")
+            resource_data = value.get("resourceData")
+            if not isinstance(resource_data, Mapping):
+                raise TriggerDispatchError("Outlook notification missing resourceData")
+
+            message_id = resource_data.get("id")
+            if not message_id:
+                raise TriggerDispatchError("Outlook notification missing resourceData.id")
 
             # check if the email is already processed
-            if self._is_email_processed(id):
+            if self._is_email_processed(str(message_id)):
                 return EventDispatch(events=[], response=Response(response="Email already processed", status=200, mimetype="application/text"))
 
             resource = value.get("resource")
+            if not resource:
+                raise TriggerDispatchError("Outlook notification missing resource")
 
             if value.get("clientState") != client_state:
                 raise TriggerDispatchError("Invalid client state")
@@ -65,20 +106,26 @@ class OutlookTrigger(Trigger):
             events = ["email_received"]
 
             fetch_url = f"https://graph.microsoft.com/v1.0/{resource}"
+            access_token = _get_access_token(self.runtime.credentials if self.runtime else None) or _get_access_token(properties)
+            if not access_token:
+                raise TriggerDispatchError("Missing Outlook OAuth access token")
             headers = {
-                "Authorization": f"Bearer {subscription.properties.get('access_tokens')}",
+                "Authorization": f"Bearer {access_token}",
                 "Accept": "application/json",
             }
-            response = requests.get(fetch_url, headers=headers, timeout=10)
+            try:
+                response = requests.get(fetch_url, headers=headers, timeout=10)
+            except requests.RequestException as exc:
+                raise TriggerDispatchError(f"Network error while fetching Outlook resource: {exc}") from exc
             if response.status_code == 200:
-                data = response.json()
+                data = _safe_json(response)
                 
                 response = Response(response='Accepted', status=202, mimetype="application/text")
 
                 events = ["email_received"]
                 return EventDispatch(events=events, response=response, payload=data)
             else:
-                raise TriggerDispatchError(f"Failed to fetch resource: {response.json().get('message', 'Unknown error')}")
+                raise TriggerDispatchError(f"Failed to fetch resource: {_extract_error(response)}")
 
     def _is_email_processed(self, id: str) -> bool:
         processed = self.runtime.session.storage.exist(f"email_processed_{id}")
@@ -90,52 +137,55 @@ class OutlookTrigger(Trigger):
             return False
 
 
-class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
-    """Manage GitHub trigger subscriptions."""
+class OutlookSubscriptionConstructor(TriggerSubscriptionConstructor):
+    """Manage Outlook trigger subscriptions."""
 
-    _AUTH_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize"
-    _TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
-    # _API_USER_URL = "https://api.github.com/user"
+    _AUTHORITY_URL = "https://login.microsoftonline.com"
+    _DEFAULT_SCOPE = "offline_access https://graph.microsoft.com/Mail.Read"
+    _API_ME_URL = "https://graph.microsoft.com/v1.0/me"
     _WEBHOOK_TTL = 3 * 24 * 60 * 60
 
     def _validate_api_key(self, credentials: Mapping[str, Any]) -> None:
-        # access_token = credentials.get("access_tokens")
-        # if not access_token:
-        #     raise TriggerProviderCredentialValidationError("GitHub API Access Token is required.")
+        access_token = _get_access_token(credentials)
+        if not access_token:
+            raise TriggerProviderCredentialValidationError("Outlook access token is required.")
 
-        # headers = {
-        #     "Authorization": f"Bearer {access_token}",
-        #     "Accept": "application/vnd.github+json",
-        # }
-        # try:
-        #     response = requests.get(self._API_USER_URL, headers=headers, timeout=10)
-        #     if response.status_code != 200:
-        #         raise TriggerProviderCredentialValidationError(response.json().get("message"))
-        # except TriggerProviderCredentialValidationError:
-        #     raise
-        # except Exception as exc:  # pragma: no cover - defensive logging path
-        #     raise TriggerProviderCredentialValidationError(str(exc)) from exc
-        pass
+        headers = {"Authorization": f"Bearer {access_token}", "Accept": "application/json"}
+        try:
+            response = requests.get(self._API_ME_URL, headers=headers, timeout=10)
+        except requests.RequestException as exc:
+            raise TriggerProviderCredentialValidationError(f"Failed to validate Outlook credentials: {exc}") from exc
+        if response.status_code != 200:
+            raise TriggerProviderCredentialValidationError(f"Outlook credential validation failed: {_extract_error(response)}")
 
     def _oauth_get_authorization_url(
         self, redirect_uri: str, system_credentials: Mapping[str, Any]
     ) -> str:
+        client_id = system_credentials.get("client_id")
+        if not client_id:
+            raise TriggerProviderOAuthError("Outlook OAuth client_id is missing.")
+
         state = secrets.token_urlsafe(16)
+        self._store_oauth_state(redirect_uri, state)
         params = {
-            "client_id": system_credentials["client_id"],
+            "client_id": client_id,
             "redirect_uri": redirect_uri,
-            "scope": system_credentials.get(
-                "scope",
-                "offline_access https://graph.microsoft.com/Channel.ReadBasic.All https://graph.microsoft.com/Mail.Read",
-            ),
+            "scope": system_credentials.get("scope", self._DEFAULT_SCOPE),
             "response_type": "code",
             "state": state,
         }
-        return f"{self._AUTH_URL}?{urllib.parse.urlencode(params)}"
+        return f"{self._auth_url(system_credentials)}?{urllib.parse.urlencode(params)}"
 
     def _oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
     ) -> TriggerOAuthCredentials:
+        error = request.args.get("error")
+        if error:
+            description = request.args.get("error_description") or ""
+            raise TriggerProviderOAuthError(f"Outlook OAuth authorization failed: {error}: {description}".strip(": "))
+
+        self._validate_oauth_state(redirect_uri, request.args.get("state"))
+
         code = request.args.get("code")
         if not code:
             raise TriggerProviderOAuthError("No code provided")
@@ -151,19 +201,19 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
             "code": code,
             "redirect_uri": redirect_uri,
             "grant_type": "authorization_code",
-            "scope": system_credentials.get(
-                "scope",
-                "offline_access https://graph.microsoft.com/Channel.ReadBasic.All https://graph.microsoft.com/Mail.Read",
-            ),
+            "scope": system_credentials.get("scope", self._DEFAULT_SCOPE),
         }
         headers = {"Accept": "application/json"}
-        response = requests.post(
-            self._TOKEN_URL, data=data, headers=headers, timeout=10
-        )
-        response_json = response.json()
+        try:
+            response = requests.post(self._token_url(system_credentials), data=data, headers=headers, timeout=10)
+        except requests.RequestException as exc:
+            raise TriggerProviderOAuthError(f"Network error during Outlook OAuth token exchange: {exc}") from exc
+        response_json = _safe_json(response)
+        if response.status_code >= 400:
+            raise TriggerProviderOAuthError(f"Outlook OAuth token exchange failed: {_extract_error(response)}")
         access_tokens = response_json.get("access_token")
         if not access_tokens:
-            raise TriggerProviderOAuthError(f"Error in Outlook OAuth: {response_json}")
+            raise TriggerProviderOAuthError("Outlook OAuth response missing access_token")
         refresh_token = response_json.get("refresh_token")
         if not refresh_token:
             raise TriggerProviderOAuthError("No refresh token in response")
@@ -173,34 +223,41 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
                 "access_tokens": access_tokens,
                 "refresh_token": refresh_token,
             },
-            expires_at=response_json.get("expires_in", 3599) + int(time.time()),
+            expires_at=max(int(response_json.get("expires_in", 3599)) - 60, 0) + int(time.time()),
         )
 
     def _oauth_refresh_credentials(self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]) -> TriggerOAuthCredentials:
-        url = "https://login.microsoftonline.com/common/oauth2/v2.0/token"
         headers = {
             "Accept": "application/json",
             "Content-Type": "application/x-www-form-urlencoded",
         }
+        refresh_token = credentials.get("refresh_token")
+        if not refresh_token:
+            raise TriggerProviderOAuthError("Outlook refresh token is missing; please re-authorize.")
         data = {
             "grant_type": "refresh_token",
-            "refresh_token": credentials.get("refresh_token"),
+            "refresh_token": refresh_token,
             "client_id": system_credentials.get("client_id"),
             "client_secret": system_credentials.get("client_secret"),
         }
-        response = requests.post(url, headers=headers, data=data, timeout=10)
+        try:
+            response = requests.post(self._token_url(system_credentials), headers=headers, data=data, timeout=10)
+        except requests.RequestException as exc:
+            raise TriggerProviderOAuthError(f"Network error during Outlook OAuth refresh: {exc}") from exc
+        payload = _safe_json(response)
         if response.status_code == 200:
-            access_tokens = response.json().get("access_token")
-            refresh_token = response.json().get("refresh_token")
+            access_tokens = payload.get("access_token")
+            if not access_tokens:
+                raise TriggerProviderOAuthError("Outlook OAuth refresh response missing access_token")
             return TriggerOAuthCredentials(
                 credentials={
                     "access_tokens": access_tokens,
-                    "refresh_token": refresh_token,
+                    "refresh_token": payload.get("refresh_token") or refresh_token,
                 },
-                expires_at=response.json().get("expires_in", 3599) + int(time.time()),
+                expires_at=max(int(payload.get("expires_in", 3599)) - 60, 0) + int(time.time()),
             )
         else:
-            raise TriggerProviderOAuthError(f"Failed to refresh access token: {response.json().get('message', 'Unknown error')}") from response.json()
+            raise TriggerProviderOAuthError(f"Failed to refresh Outlook access token: {_extract_error(response)}")
 
     def _create_subscription(
         self,
@@ -211,8 +268,11 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> Subscription:
 
         url = "https://graph.microsoft.com/v1.0/subscriptions"
+        access_token = _get_access_token(credentials)
+        if not access_token:
+            raise SubscriptionError("Missing Outlook OAuth access token", error_code="MISSING_ACCESS_TOKEN")
         headers = {
-            "Authorization": f"Bearer {credentials.get('access_tokens')}",
+            "Authorization": f"Bearer {access_token}",
             "Accept": "application/json",
         }
 
@@ -238,7 +298,7 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
             ) from exc
             
         if response.status_code == 201:
-            subscription = response.json()
+            subscription = _safe_json(response)
             return Subscription(
                 expires_at=int(time.time()) + self._WEBHOOK_TTL,
                 endpoint=endpoint,
@@ -246,15 +306,14 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
                 properties={
                     "subscription_id": subscription.get("id"),
                     "client_state": client_state,
-                    "access_tokens": credentials.get('access_tokens'),
-                    "refresh_token": credentials.get('refresh_token'),
                 },
             )
         else:
+            response_data = _safe_json(response)
             raise SubscriptionError(
-                message=f"Failed to create subscription: {response.json().get('message', 'Unknown error')}",
+                message=f"Failed to create subscription: {_extract_error(response)}",
                 error_code="SUBSCRIPTION_CREATION_FAILED",
-                external_response=response.json(),
+                external_response=response_data,
             )
 
     def _delete_subscription(
@@ -265,25 +324,29 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
     ) -> UnsubscribeResult:
         subscription_id = subscription.properties.get("subscription_id")
         if not subscription_id:
-            raise UnsubscribeError(
-                message="Missing subscription ID",
-                error_code="MISSING_PROPERTIES",
-                external_response=None,
-            )
+            return UnsubscribeResult(success=True, message="Missing Outlook subscription ID; subscription already removed.")
         
         url = f"https://graph.microsoft.com/v1.0/subscriptions/{subscription_id}"
+        access_token = _get_access_token(credentials)
+        if not access_token:
+            return UnsubscribeResult(success=False, message="Missing Outlook OAuth access token")
         headers = {
-            "Authorization": f"Bearer {credentials.get('access_tokens')}",
+            "Authorization": f"Bearer {access_token}",
             "Accept": "application/json",
         }
-        response = requests.delete(url, headers=headers, timeout=10)
+        try:
+            response = requests.delete(url, headers=headers, timeout=10)
+        except requests.RequestException as exc:
+            return UnsubscribeResult(success=False, message=f"Network error while deleting Outlook subscription: {exc}")
         if response.status_code == 204:
             return UnsubscribeResult(success=True, message=f"Successfully deleted subscription {subscription_id}")
+        if response.status_code == 404:
+            return UnsubscribeResult(success=True, message=f"Outlook subscription {subscription_id} was already removed")
         else:
             raise UnsubscribeError(
-                message=f"Failed to delete subscription: {response.json().get('message', 'Unknown error')}",
+                message=f"Failed to delete subscription: {_extract_error(response)}",
                 error_code="SUBSCRIPTION_DELETION_FAILED",
-                external_response=response.json(),
+                external_response=_safe_json(response),
             )
 
     def _refresh_subscription(
@@ -303,109 +366,75 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
                 external_response=None,
             )
 
+        access_token = _get_access_token(credentials)
+        if not access_token:
+            raise SubscriptionError("Missing Outlook OAuth access token", error_code="MISSING_ACCESS_TOKEN")
         headers = {
-            "Authorization": f"Bearer {credentials.get('access_tokens')}",
+            "Authorization": f"Bearer {access_token}",
             "Accept": "application/json",
         }
         data = {
             "expirationDateTime": new_expiration_date_str,
         }
         url = f"https://graph.microsoft.com/v1.0/subscriptions/{subscription_id}"
-        response = requests.patch(url, headers=headers, json=data, timeout=10)
+        try:
+            response = requests.patch(url, headers=headers, json=data, timeout=10)
+        except requests.RequestException as exc:
+            raise SubscriptionError(
+                f"Network error while refreshing Outlook subscription: {exc}",
+                error_code="NETWORK_ERROR",
+            ) from exc
         if response.status_code == 200:
+            properties = dict(subscription.properties or {})
+            properties.update(
+                {
+                    "subscription_id": subscription_id,
+                    "client_state": properties.get("client_state"),
+                }
+            )
+            properties.pop("access_tokens", None)
+            properties.pop("refresh_token", None)
             return Subscription(
                 expires_at=int(new_expiration_date.timestamp()),
                 endpoint=subscription.endpoint,
-                properties={
-                    "subscription_id": subscription_id,
-                    "client_state": subscription.properties.get("client_state"),
-                    "access_tokens": credentials.get('access_tokens'),
-                    "refresh_token": credentials.get('refresh_token'),
-                },
+                properties=properties,
             )
         else:
             raise SubscriptionError(
-                message=f"Failed to refresh subscription: {response.json().get('message', 'Unknown error')}",
+                message=f"Failed to refresh subscription: {_extract_error(response)}",
                 error_code="SUBSCRIPTION_REFRESH_FAILED",
-                external_response=response.json(),
+                external_response=_safe_json(response),
             )
 
-    def _fetch_parameter_options(
-        self,
-        parameter: str,
-        credentials: Mapping[str, Any],
-        credential_type: CredentialType,
-    ) -> list[ParameterOption]:
-        if parameter != "repository":
-            return []
+    def _tenant_id(self, system_credentials: Mapping[str, Any]) -> str:
+        tenant_id = str(system_credentials.get("tenant_id") or "common").strip()
+        return urllib.parse.quote(tenant_id or "common", safe="")
 
-        token = credentials.get("access_tokens")
-        if not token:
-            raise ValueError("access_tokens is required to fetch repositories")
-        return self._fetch_repositories(token)
+    def _auth_url(self, system_credentials: Mapping[str, Any]) -> str:
+        return f"{self._AUTHORITY_URL}/{self._tenant_id(system_credentials)}/oauth2/v2.0/authorize"
 
-    # ------------------------------------------------------------------
-    # Helpers
-    # ------------------------------------------------------------------
+    def _token_url(self, system_credentials: Mapping[str, Any]) -> str:
+        return f"{self._AUTHORITY_URL}/{self._tenant_id(system_credentials)}/oauth2/v2.0/token"
 
-    def _fetch_repositories(self, access_token: str) -> list[ParameterOption]:
-        headers: Mapping[str, str] = {
-            "Authorization": f"Bearer {access_token}",
-            "Accept": "application/vnd.github+json",
-            "X-GitHub-Api-Version": "2022-11-28",
-        }
+    def _oauth_state_key(self, redirect_uri: str, state: str) -> str:
+        digest = hashlib.sha256(f"outlook:{redirect_uri}:{state}".encode("utf-8")).hexdigest()
+        return f"outlook:oauth_state:{digest}"
 
-        options: list[ParameterOption] = []
-        per_page = 100
-        page = 1
+    def _store_oauth_state(self, redirect_uri: str, state: str) -> None:
+        try:
+            self.runtime.session.storage.set(self._oauth_state_key(redirect_uri, state), b"1")
+        except Exception as exc:
+            raise TriggerProviderOAuthError("Unable to persist Outlook OAuth state; storage permission is required.") from exc
 
-        while True:
-            params = {
-                "per_page": per_page,
-                "page": page,
-                "affiliation": "owner,collaborator,organization_member",
-                "sort": "full_name",
-                "direction": "asc",
-            }
-
-            response = requests.get(
-                "https://api.github.com/user/repos",
-                headers=headers,
-                params=params,
-                timeout=10,
-            )
-
-            if response.status_code != 200:
-                try:
-                    err = response.json()
-                    message = err.get("message", str(err))
-                except Exception:  # pragma: no cover - fallback path
-                    message = response.text
-                raise ValueError(f"Failed to fetch repositories from GitHub: {message}")
-
-            raw_repos: Any = response.json() or []
-            if not isinstance(raw_repos, list):
-                raise ValueError(
-                    "Unexpected response format from GitHub API when fetching repositories"
-                )
-
-            repos = cast(list[dict[str, Any]], raw_repos)
-            for repo in repos:
-                full_name = repo.get("full_name")
-                owner: dict[str, Any] = repo.get("owner") or {}
-                avatar_url: str | None = owner.get("avatar_url")
-                if full_name:
-                    options.append(
-                        ParameterOption(
-                            value=full_name,
-                            label=I18nObject(en_us=full_name),
-                            icon=avatar_url,
-                        )
-                    )
-
-            if len(repos) < per_page:
-                break
-
-            page += 1
-
-        return options
+    def _validate_oauth_state(self, redirect_uri: str, state: str | None) -> None:
+        if not state:
+            raise TriggerProviderOAuthError("Outlook OAuth callback missing state.")
+        key = self._oauth_state_key(redirect_uri, state)
+        try:
+            if not self.runtime.session.storage.exist(key):
+                raise TriggerProviderOAuthError("Outlook OAuth state is invalid or expired.")
+            self.runtime.session.storage.delete(key)
+        except TriggerProviderOAuthError:
+            raise
+        except Exception as exc:
+            raise TriggerProviderOAuthError("Unable to validate Outlook OAuth state.") from exc
