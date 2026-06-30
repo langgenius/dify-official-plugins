@@ -3,6 +3,7 @@ import io
 import json
 import re
 import copy
+import threading
 from collections.abc import Generator, Sequence
 from typing import Any, Mapping, Optional, Union, cast
 import logging
@@ -61,6 +62,47 @@ from httpx import Timeout
 from PIL import Image
 
 ANTHROPIC_BLOCK_MODE_PROMPT = 'You should always follow the instructions and output a valid {{block}} object.\nThe structure of the {{block}} object you can found in the instructions, use {"answer": "$your_answer"} as the default structure\nif you are not sure about the structure.\n\n<instructions>\n{{instructions}}\n</instructions>\n'
+
+# The official Anthropic SDK client is reusable and thread-safe. Caching one
+# client per (api_key, base_url) avoids constructing a fresh httpx connection
+# pool — and the full TCP+TLS handshake it entails — on every invocation.
+# The cache is bounded with LRU eviction so that a long-lived process serving
+# many distinct credentials cannot leak connection pools (sockets / file
+# descriptors) indefinitely.
+_ANTHROPIC_CLIENT_CACHE_MAX_SIZE = 128
+_anthropic_client_cache: dict[tuple[Optional[str], Optional[str]], Anthropic] = {}
+_anthropic_client_lock = threading.Lock()
+
+
+def _get_cached_anthropic_client(**kwargs: Any) -> Anthropic:
+    """Return a process-wide cached Anthropic client keyed by (api_key, base_url).
+
+    The cache is keyed only on the credentials that determine which endpoint a
+    request reaches, so distinct tenants never share a client. Lookup, creation
+    and eviction all run under a single lock to keep the LRU bookkeeping
+    race-free, and the cache is bounded via LRU eviction to avoid unbounded
+    connection-pool growth.
+    """
+    key = (kwargs.get("api_key"), kwargs.get("base_url"))
+    with _anthropic_client_lock:
+        cached = _anthropic_client_cache.get(key)
+        if cached is not None:
+            # Move the accessed key to the end (most recently used position)
+            # in the standard dict insertion order.
+            value = _anthropic_client_cache.pop(key)
+            _anthropic_client_cache[key] = value
+            return cached
+        client = Anthropic(**kwargs)
+        _anthropic_client_cache[key] = client
+        while len(_anthropic_client_cache) > _ANTHROPIC_CLIENT_CACHE_MAX_SIZE:
+            # Evict the first item (least recently used) from the standard dict.
+            first_key = next(iter(_anthropic_client_cache))
+            evicted = _anthropic_client_cache.pop(first_key)
+            try:
+                evicted.close()
+            except Exception:
+                logging.debug("Failed to close evicted Anthropic client", exc_info=True)
+        return client
 
 
 class PromptCachingHandler:
@@ -396,12 +438,16 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         stop: Optional[Sequence[str]] = None,
         stream: bool = True,
         user: Optional[str] = None,
+        use_cached_client: bool = True,
     ) -> Union[LLMResult, Generator]:
         extra_model_kwargs: dict[str, Any] = {}
         extra_headers = {}
 
         credentials_kwargs = self._to_credential_kwargs(credentials)
-        client = Anthropic(**credentials_kwargs)
+        if use_cached_client:
+            client = _get_cached_anthropic_client(**credentials_kwargs)
+        else:
+            client = Anthropic(**credentials_kwargs)
 
         if "max_tokens_to_sample" in model_parameters:
             model_parameters["max_tokens"] = model_parameters.pop(
@@ -538,7 +584,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             # Sort by priority (lower number = higher priority), then by length descending
             blocks.sort(key=lambda x: (x[0], x[1]))
 
-            logging.info(f"Blocks: {blocks}")
+            logging.debug(f"Blocks: {blocks}")
 
             # Keep first 4
             for idx, (_, _, block_dict) in enumerate(blocks):
@@ -598,7 +644,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             ]
             
             # Log the transformed tools to verify cache_control is added
-            logging.info(f"Anthropic API Tools: {json.dumps(extra_model_kwargs['tools'], indent=2)}")
+            logging.debug(f"Anthropic API Tools: {json.dumps(extra_model_kwargs['tools'], indent=2)}")
             
             request_payload["tools"] = extra_model_kwargs["tools"]
 
@@ -606,7 +652,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             _prune_cache_blocks(request_payload)
 
             loggable_request = _sanitize_for_logging(request_payload)
-            logging.info(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
+            logging.debug(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
             response = client.messages.create( # type: ignore[call-overload]
                 model=model,
                 messages=prompt_message_dicts,
@@ -620,7 +666,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             _prune_cache_blocks(request_payload)
 
             loggable_request = _sanitize_for_logging(request_payload)
-            logging.info(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
+            logging.debug(f"Anthropic API Request: {json.dumps(loggable_request, indent=2)}")
             response = client.messages.create( # type: ignore[call-overload]
                 model=model,
                 messages=prompt_message_dicts,
@@ -635,7 +681,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 model, credentials, response, prompt_messages
             )
         
-        logging.info(f"Anthropic API Response: {response.model_dump_json(indent=2)}")
+        logging.debug(f"Anthropic API Response: {response.model_dump_json(indent=2)}")
         return self._handle_chat_generate_response(
             model, credentials, response, prompt_messages
         )
@@ -794,8 +840,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         :return:
         """
         credentials_kwargs = self._to_credential_kwargs(credentials)
-        client = Anthropic(**credentials_kwargs)
-        
+        client = _get_cached_anthropic_client(**credentials_kwargs)
+
         (system, prompt_message_dicts) = self._convert_prompt_messages(prompt_messages)
         
         if not prompt_message_dicts:
@@ -851,6 +897,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 prompt_messages=[UserPromptMessage(content="ping")],
                 model_parameters={"temperature": 0, "max_tokens": 20},
                 stream=False,
+                # Validation must verify the supplied credentials directly, so it
+                # uses a fresh client rather than a possibly-stale cached one.
+                use_cached_client=False,
             )
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
@@ -988,7 +1037,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         cache_creation_1h_input_tokens = 0
         
         for chunk in response:
-            logging.info(f"Anthropic API Stream Response Chunk: {chunk.model_dump_json()}")
+            logging.debug(f"Anthropic API Stream Response Chunk: {chunk.model_dump_json()}")
             if isinstance(chunk, MessageStartEvent):
                 if chunk.message:
                     return_model = chunk.message.model
