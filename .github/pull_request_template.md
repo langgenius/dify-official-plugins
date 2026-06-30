@@ -53,8 +53,8 @@ Reference: https://github.com/langgenius/dify-official-plugins/blob/main/.assets
 
 ## Version
 
-- [x] Bumped top-level `version` in `manifest.yaml` (not the one under `meta`)
-- [x] `dify_plugin>=0.3.0,<0.6.0` is declared in `pyproject.toml` and locked in `uv.lock` (or kept in `requirements.txt` for legacy plugins without `uv.lock`) — [SDK docs](https://github.com/langgenius/dify-plugin-sdks/blob/main/python/README.md)
+- [ ] Bumped top-level `version` in `manifest.yaml` (not the one under `meta`)
+- [ ] `dify_plugin>=0.3.0,<0.6.0` is declared in `pyproject.toml` and locked in `uv.lock` (or kept in `requirements.txt` for legacy plugins without `uv.lock`) — [SDK docs](https://github.com/langgenius/dify-plugin-sdks/blob/main/python/README.md)
 
 <!--
 Version format: MAJOR.MINOR.PATCH — each segment may be 2 digits (e.g. 10.11.22)
