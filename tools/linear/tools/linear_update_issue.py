@@ -1,4 +1,4 @@
-from typing import Dict, Any, Generator, Optional, Tuple
+from typing import Dict, Any, Generator
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
@@ -7,6 +7,7 @@ from client.Exceptions import (
     LinearApiException,
     LinearAuthenticationException,
     LinearResourceNotFoundException,
+    LinearValidationException,
 )  # Import standard exceptions
 
 
@@ -15,7 +16,7 @@ class LinearUpdateIssueTool(Tool):
 
     def _resolve_state_id(
         self, linear_client: Linear, issue_id: str, status_value: str
-    ) -> Tuple[Optional[str], Optional[str]]:
+    ) -> str:
         """Resolve a status name (or workflow state ID) to a workflow state ID.
 
         Linear only accepts the workflow state ID. Users normally provide a
@@ -24,7 +25,11 @@ class LinearUpdateIssueTool(Tool):
         backward compatibility.
 
         Returns:
-            (state_id, None) on success, or (None, error_message) on failure.
+            The resolved workflow state ID.
+
+        Raises:
+            LinearResourceNotFoundException: If the issue does not exist.
+            LinearValidationException: If the team or status cannot be resolved.
         """
         team_query = """
         query IssueTeam($id: String!) {
@@ -41,12 +46,16 @@ class LinearUpdateIssueTool(Tool):
         team_data = team_result.get("data") if team_result else None
         issue = team_data.get("issue") if isinstance(team_data, dict) else None
         if not issue:
-            return None, f"Issue with ID '{issue_id}' not found."
+            raise LinearResourceNotFoundException(
+                f"Issue with ID '{issue_id}' not found."
+            )
 
         team = issue.get("team")
         team_id = team.get("id") if isinstance(team, dict) else None
         if not team_id:
-            return None, "Could not resolve the issue's team to map the status."
+            raise LinearValidationException(
+                "Could not resolve the issue's team to map the status."
+            )
 
         states_query = """
         query TeamStates($filter: WorkflowStateFilter, $limit: Int!) {
@@ -72,15 +81,15 @@ class LinearUpdateIssueTool(Tool):
 
         for state in states:
             if state.get("name", "").strip().lower() == target:
-                return state["id"], None
+                return state["id"]
 
         # Backward compatibility: accept a raw workflow state ID.
         for state in states:
             if state.get("id") == status_value:
-                return state["id"], None
+                return state["id"]
 
         available = ", ".join(state.get("name", "") for state in states)
-        return None, (
+        raise LinearValidationException(
             f"Status '{status_value}' not found. Available statuses: {available}"
         )
 
@@ -152,13 +161,9 @@ class LinearUpdateIssueTool(Tool):
                 update_input["description"] = str(description)
                 updated_field_names.append("description")
             if state_id:
-                resolved_state_id, state_error = self._resolve_state_id(
+                update_input["stateId"] = self._resolve_state_id(
                     linear_client, issue_id, str(state_id)
                 )
-                if state_error:
-                    yield self.create_text_message(f"Error: {state_error}")
-                    return
-                update_input["stateId"] = resolved_state_id
                 updated_field_names.append("status (stateId)")
 
             # Handle assignee update (including unassigning)
@@ -302,6 +307,8 @@ class LinearUpdateIssueTool(Tool):
             yield self.create_text_message(
                 f"Error: Issue with ID '{issue_id}' not found. Details: {str(e)}"
             )
+        except LinearValidationException as e:
+            yield self.create_text_message(f"Error: {str(e)}")
         except LinearApiException as e:
             yield self.create_text_message(f"Linear API error: {str(e)}")
         except ValueError as e:  # Catch potential int conversion errors
