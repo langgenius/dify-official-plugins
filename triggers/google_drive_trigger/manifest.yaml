@@ -27,7 +27,7 @@ resource:
   memory: 1048576
   permission:
     storage:
-      size: 1048576
       enabled: true
+      size: 1048576
 type: plugin
-version: 1.3.5
+version: 1.4.0
