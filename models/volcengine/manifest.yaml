@@ -16,6 +16,7 @@ meta:
     language: python
     version: "3.12"
   version: 0.0.1
+  minimum_dify_version: "1.15.0"
 name: volcengine
 plugins:
   models:
@@ -32,4 +33,4 @@ resource:
       text_embedding: false
       tts: false
 type: plugin
-version: 0.0.8
+version: 0.0.9
