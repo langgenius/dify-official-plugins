@@ -19,12 +19,17 @@ logger.addHandler(plugin_logger_handler)
 
 def _decrypt_wecom_file(encrypted_bytes: bytes, encoding_aes_key: str) -> bytes:
     """Decrypt WeCom downloaded file with the callback EncodingAESKey (AES-256-CBC, PKCS7 padding, IV = first 16 bytes of key)."""
+    if not encrypted_bytes or len(encrypted_bytes) % 16 != 0:
+        raise ValueError("Invalid encrypted file size")
     key = base64.b64decode(encoding_aes_key + "=")
     iv = key[:16]
     cipher = AES.new(key, AES.MODE_CBC, iv)
     decrypted = cipher.decrypt(encrypted_bytes)
-    # PKCS7 unpad
+    if not decrypted:
+        raise ValueError("Decrypted content is empty")
     pad_len = decrypted[-1]
+    if pad_len < 1 or pad_len > 16 or len(decrypted) < pad_len:
+        raise ValueError("Invalid PKCS7 padding")
     return decrypted[:-pad_len]
 
 
