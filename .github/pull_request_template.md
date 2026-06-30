@@ -41,11 +41,11 @@ Reference: https://github.com/langgenius/dify-official-plugins/blob/main/.assets
 <summary>Areas affected by this change (check all that apply)</summary>
 
 - [ ] Message flow (system messages, user ↔ assistant turn-taking)
-- [x] Tool interaction flow (multi-round usage, Agent App and Agent Node)
+- [ ] Tool interaction flow (multi-round usage, Agent App and Agent Node)
 - [ ] Multimodal input (images, PDFs, audio, video, etc.)
 - [ ] Multimodal output (images, audio, video, etc.)
 - [ ] Structured output (JSON, XML, etc.)
-- [x] Token consumption metrics
+- [ ] Token consumption metrics
 - [ ] Other LLM functionality (reasoning, grounding, prompt caching, etc.)
 - [ ] New models / model parameter fixes
 
