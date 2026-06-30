@@ -223,7 +223,7 @@ class OutlookSubscriptionConstructor(TriggerSubscriptionConstructor):
                 "access_tokens": access_tokens,
                 "refresh_token": refresh_token,
             },
-            expires_at=max(int(response_json.get("expires_in", 3599)) - 60, 0) + int(time.time()),
+            expires_at=max(int(response_json.get("expires_in") or 3599) - 60, 0) + int(time.time()),
         )
 
     def _oauth_refresh_credentials(self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]) -> TriggerOAuthCredentials:
@@ -254,7 +254,7 @@ class OutlookSubscriptionConstructor(TriggerSubscriptionConstructor):
                     "access_tokens": access_tokens,
                     "refresh_token": payload.get("refresh_token") or refresh_token,
                 },
-                expires_at=max(int(payload.get("expires_in", 3599)) - 60, 0) + int(time.time()),
+                expires_at=max(int(payload.get("expires_in") or 3599) - 60, 0) + int(time.time()),
             )
         else:
             raise TriggerProviderOAuthError(f"Failed to refresh Outlook access token: {_extract_error(response)}")

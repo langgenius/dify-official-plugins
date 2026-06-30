@@ -246,6 +246,9 @@ class GithubSubscriptionConstructor(TriggerSubscriptionConstructor):
 
         access_tokens = response_json.get("access_token")
         if not access_tokens:
+            error_msg = response_json.get("error_description") or response_json.get("error")
+            if error_msg:
+                raise TriggerProviderOAuthError(f"GitHub OAuth failed: {error_msg}")
             raise TriggerProviderOAuthError("GitHub OAuth response missing access_token")
 
         return TriggerOAuthCredentials(credentials={"access_tokens": access_tokens}, expires_at=-1)
