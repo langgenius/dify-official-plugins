@@ -6,7 +6,7 @@ import boto3  # type: ignore
 from botocore.client import Config  # type: ignore
 
 
-class GoogleCloudStorageDatasourceProvider(DatasourceProvider):
+class AwsS3StorageDatasourceProvider(DatasourceProvider):
     def _validate_credentials(self, credentials: Mapping[str, Any]) -> None:
         try:
             if not credentials or not credentials.get("secret_access_key"):
