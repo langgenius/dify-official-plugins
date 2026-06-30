@@ -47,17 +47,17 @@ def _parse_quote(quote: Mapping, encoding_aes_key: str) -> tuple[list[str], list
     if quote_msgtype == "text":
         quoted = str(quote.get("text", {}).get("content", "")).strip()
         if quoted:
-            text_parts.append(f"【引用】{quoted}")
+            text_parts.append(f"[quote]{quoted}")
     elif quote_msgtype == "image":
         url = quote.get("image", {}).get("url", "")
         if url:
             try:
                 img_bytes = _download_and_decrypt_image(url, encoding_aes_key)
                 images.append(img_bytes)
-                text_parts.append("【引用】[图片]")
+                text_parts.append("[quote][image]")
             except Exception as exc:
                 logger.debug(f"Failed to download/decrypt quoted image: {exc}")
-                text_parts.append("【引用】[图片下载失败]")
+                text_parts.append("[quote][image download failed]")
     elif quote_msgtype == "mixed":
         quote_texts: list[str] = []
         for idx, item in enumerate(quote.get("mixed", {}).get("msg_item", [])):
@@ -73,14 +73,14 @@ def _parse_quote(quote: Mapping, encoding_aes_key: str) -> tuple[list[str], list
                 try:
                     img_bytes = _download_and_decrypt_image(url, encoding_aes_key)
                     images.append(img_bytes)
-                    quote_texts.append("[图片]")
+                    quote_texts.append("[imgae]")
                 except Exception as exc:
                     logger.debug(f"Failed to download/decrypt quoted mixed image[{idx}]: {exc}")
-                    quote_texts.append("[图片下载失败]")
+                    quote_texts.append("[image download failed]")
         if quote_texts:
-            text_parts.append(f"【引用】{' '.join(quote_texts)}")
+            text_parts.append(f"[quote]{' '.join(quote_texts)}")
     elif quote_msgtype in ("voice", "file", "video"):
-        text_parts.append(f"【引用】[{quote_msgtype}]")
+        text_parts.append(f"[quote][{quote_msgtype}]")
 
     return text_parts, images
 
@@ -110,7 +110,7 @@ def _parse_message(payload: Mapping, encoding_aes_key: str) -> tuple[str, list[b
                 images.append(img_bytes)
             except Exception as exc:
                 logger.debug(f"Failed to download/decrypt image: {exc}")
-                text_parts.append("[图片下载失败]")
+                text_parts.append("[image download failed]")
 
     # ── Mixed text + image ─────────────────────────────────
     elif msgtype == "mixed":
@@ -301,7 +301,7 @@ class WeComMessageEndpoint(Endpoint):
             dify_inputs["files"] = dify_files
 
         # For pure image messages without text, use a default query so Dify can process it
-        effective_query = query if query else "请描述这张图片"
+        effective_query = query if query else "Please describe this image"
 
         try:
             app = settings.get("app")
