@@ -1,0 +1,80 @@
+identity:
+  name: webhook_event
+  author: langgenius
+  label:
+    en_US: Webhook Event
+    zh_Hans: Webhook 事件
+    ja_JP: Webhook イベント
+
+description:
+  en_US: Triggered when Discord sends a signed Webhook Event payload.
+  zh_Hans: 当 Discord 发送已签名的 Webhook Event 载荷时触发。
+  ja_JP: Discord が署名済み Webhook Event ペイロードを送信したときにトリガーします。
+
+parameters: []
+
+output_schema:
+  type: object
+  properties:
+    version:
+      type:
+        - integer
+        - "null"
+      description: Discord webhook event version.
+    application_id:
+      type:
+        - string
+        - "null"
+      description: Discord application ID.
+    webhook_type:
+      type:
+        - integer
+        - "null"
+      description: Discord webhook payload type, where 1 is an event.
+    event_type:
+      type:
+        - string
+        - "null"
+      description: Discord event type, such as APPLICATION_AUTHORIZED.
+    timestamp:
+      type:
+        - string
+        - "null"
+      description: ISO8601 timestamp when Discord created the event.
+    data:
+      type:
+        - object
+        - "null"
+      description: Event-specific Discord data object.
+    user_id:
+      type:
+        - string
+        - "null"
+      description: User ID when present in the event payload.
+    guild_id:
+      type:
+        - string
+        - "null"
+      description: Guild ID when present in the event payload.
+    entitlement_id:
+      type:
+        - string
+        - "null"
+      description: Entitlement ID when present in the event payload.
+    lobby_id:
+      type:
+        - string
+        - "null"
+      description: Lobby ID when present in the event payload.
+    message_id:
+      type:
+        - string
+        - "null"
+      description: Message ID when present in the event payload.
+    raw_payload:
+      type: object
+      description: Full Discord webhook payload.
+
+extra:
+  python:
+    source: events/webhook_event.py
