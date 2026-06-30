@@ -34,8 +34,12 @@ class Gemini3ProImagePreviewTool(Tool):
     Supports text-to-image, image-to-image transformation, and multi-image reference.
     """
     
-    BASE_URL = "https://aihubmix.com/gemini"
-    
+    DEFAULT_BASE_URL = "https://api.inferera.com"
+
+    def get_gemini_base_url(self) -> str:
+        root = (self.runtime.credentials.get("base_url") or self.DEFAULT_BASE_URL).rstrip("/")
+        return f"{root}/gemini"
+
     # Generation modes
     MODE_TEXT_TO_IMAGE = "text_to_image"
     MODE_IMAGE_TO_IMAGE = "image_to_image"
@@ -164,7 +168,7 @@ class Gemini3ProImagePreviewTool(Tool):
             # Initialize Google GenAI client
             client = genai.Client(
                 api_key=api_key,
-                http_options={"base_url": self.BASE_URL}
+                http_options={"base_url": self.get_gemini_base_url()}
             )
             
             # Prepare contents list

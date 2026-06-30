@@ -12,9 +12,11 @@ class AIHubMixImageProvider(ToolProvider):
         if not api_key:
             raise ToolProviderCredentialValidationError("API Key is required")
 
+        base_url = (credentials.get("base_url") or "https://api.inferera.com").rstrip("/")
+
         try:
             response = requests.get(
-                "https://aihubmix.com/v1/models",
+                f"{base_url}/v1/models",
                 headers={
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
