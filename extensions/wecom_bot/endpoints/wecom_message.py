@@ -73,7 +73,7 @@ def _parse_quote(quote: Mapping, encoding_aes_key: str) -> tuple[list[str], list
                 try:
                     img_bytes = _download_and_decrypt_image(url, encoding_aes_key)
                     images.append(img_bytes)
-                    quote_texts.append("[imgae]")
+                    quote_texts.append("[image]")
                 except Exception as exc:
                     logger.debug(f"Failed to download/decrypt quoted mixed image[{idx}]: {exc}")
                     quote_texts.append("[image download failed]")
