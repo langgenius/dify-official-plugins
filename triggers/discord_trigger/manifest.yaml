@@ -1,0 +1,33 @@
+author: langgenius
+created_at: "2026-06-30T00:00:00.000000000Z"
+description:
+  en_US: Discord Webhook Events trigger for receiving signed app events over HTTP.
+  ja_JP: 署名済み Discord Webhook Events を HTTP で受信するトリガーです。
+  zh_Hans: 用于通过 HTTP 接收已签名 Discord Webhook Events 的触发器。
+icon: icon.svg
+label:
+  en_US: Discord
+  ja_JP: Discord
+  zh_Hans: Discord
+meta:
+  arch:
+    - amd64
+    - arm64
+  runner:
+    entrypoint: main
+    language: python
+    version: "3.12"
+  version: 0.0.1
+  minimum_dify_version: 1.10.0
+name: discord_trigger
+plugins:
+  triggers:
+    - provider/discord.yaml
+resource:
+  memory: 1048576
+  permission: {}
+tags:
+  - social
+  - utilities
+type: plugin
+version: 0.0.1
