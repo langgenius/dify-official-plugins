@@ -1,4 +1,4 @@
-from typing import Dict, Any, Generator
+from typing import Dict, Any, Generator, Optional, Tuple
 
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
@@ -13,7 +13,9 @@ from client.Exceptions import (
 class LinearUpdateIssueTool(Tool):
     """Tool for updating issues in Linear."""
 
-    def _resolve_state_id(self, linear_client, issue_id, status_value):
+    def _resolve_state_id(
+        self, linear_client: Linear, issue_id: str, status_value: str
+    ) -> Tuple[Optional[str], Optional[str]]:
         """Resolve a status name (or workflow state ID) to a workflow state ID.
 
         Linear only accepts the workflow state ID. Users normally provide a
