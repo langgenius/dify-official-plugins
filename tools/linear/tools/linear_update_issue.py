@@ -31,11 +31,18 @@ class LinearUpdateIssueTool(Tool):
           }
         }
         """
+        status_value = status_value.strip()
+
         team_result = linear_client.query_graphql(
             team_query, variables={"id": issue_id}
         )
-        issue = (team_result or {}).get("data", {}).get("issue")
-        team_id = (issue or {}).get("team", {}).get("id") if issue else None
+        team_data = team_result.get("data") if team_result else None
+        issue = team_data.get("issue") if isinstance(team_data, dict) else None
+        if not issue:
+            return None, f"Issue with ID '{issue_id}' not found."
+
+        team = issue.get("team")
+        team_id = team.get("id") if isinstance(team, dict) else None
         if not team_id:
             return None, "Could not resolve the issue's team to map the status."
 
@@ -50,13 +57,16 @@ class LinearUpdateIssueTool(Tool):
             states_query,
             variables={"filter": {"team": {"id": {"eq": team_id}}}, "limit": 250},
         )
-        states = (
-            (states_result or {})
-            .get("data", {})
-            .get("workflowStates", {})
-            .get("nodes", [])
+        states_data = states_result.get("data") if states_result else None
+        workflow_states = (
+            states_data.get("workflowStates") if isinstance(states_data, dict) else None
         )
-        target = status_value.strip().lower()
+        states = (
+            workflow_states.get("nodes", [])
+            if isinstance(workflow_states, dict)
+            else []
+        )
+        target = status_value.lower()
 
         for state in states:
             if state.get("name", "").strip().lower() == target:
