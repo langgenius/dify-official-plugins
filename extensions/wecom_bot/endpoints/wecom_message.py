@@ -23,12 +23,8 @@ def _decrypt_wecom_file(encrypted_bytes: bytes, encoding_aes_key: str) -> bytes:
     iv = key[:16]
     cipher = AES.new(key, AES.MODE_CBC, iv)
     decrypted = cipher.decrypt(encrypted_bytes)
-    if not decrypted:
-        raise ValueError("Decrypted data is empty")
     # PKCS7 unpad
     pad_len = decrypted[-1]
-    if pad_len < 1 or pad_len > 16 or decrypted[-pad_len:] != bytes([pad_len]) * pad_len:
-        raise ValueError("Invalid PKCS7 padding")
     return decrypted[:-pad_len]
 
 
@@ -77,7 +73,7 @@ def _parse_quote(quote: Mapping, encoding_aes_key: str) -> tuple[list[str], list
                 try:
                     img_bytes = _download_and_decrypt_image(url, encoding_aes_key)
                     images.append(img_bytes)
-                    quote_texts.append("[image]")
+                    quote_texts.append("[imgae]")
                 except Exception as exc:
                     logger.debug(f"Failed to download/decrypt quoted mixed image[{idx}]: {exc}")
                     quote_texts.append("[image download failed]")
