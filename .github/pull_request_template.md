@@ -13,7 +13,7 @@ For community contributions, submit to https://github.com/langgenius/dify-plugin
 
 - [ ] Documentation / non-plugin change
 - [ ] Non-LLM plugin (tools, extensions, datasource, etc.)
-- [x] LLM plugin
+- [ ] LLM plugin
 
 ## Screenshots / Videos
 
