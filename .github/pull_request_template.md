@@ -69,5 +69,5 @@ Version format: MAJOR.MINOR.PATCH — each segment may be 2 digits (e.g. 10.11.2
 Python venv aligned with `manifest.yaml`, `pyproject.toml`, and `uv.lock` (or `requirements.txt` for legacy plugins).
 -->
 
-- [x] Local deployment — Dify version: 1.7.0
+- [ ] Local deployment — Dify version: 1.7.0
 - [ ] SaaS (cloud.dify.ai)
