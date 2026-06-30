@@ -49,11 +49,11 @@ def _parse_quote(quote: Mapping, encoding_aes_key: str) -> tuple[list[str], list
 
     quote_msgtype = quote.get("msgtype", "")
     if quote_msgtype == "text":
-        quoted = str(quote.get("text", {}).get("content", "")).strip()
+        quoted = str((quote.get("text") or {}).get("content") or "").strip()
         if quoted:
             text_parts.append(f"[quote]{quoted}")
     elif quote_msgtype == "image":
-        url = quote.get("image", {}).get("url", "")
+        url = (quote.get("image") or {}).get("url") or ""
         if url:
             try:
                 img_bytes = _download_and_decrypt_image(url, encoding_aes_key)
@@ -64,14 +64,14 @@ def _parse_quote(quote: Mapping, encoding_aes_key: str) -> tuple[list[str], list
                 text_parts.append("[quote][image download failed]")
     elif quote_msgtype == "mixed":
         quote_texts: list[str] = []
-        for idx, item in enumerate(quote.get("mixed", {}).get("msg_item", [])):
+        for idx, item in enumerate((quote.get("mixed") or {}).get("msg_item") or []):
             item_type = item.get("msgtype", "")
             if item_type == "text":
-                part = str(item.get("text", {}).get("content", "")).strip()
+                part = str((item.get("text") or {}).get("content") or "").strip()
                 if part:
                     quote_texts.append(part)
             elif item_type == "image":
-                url = item.get("image", {}).get("url", "")
+                url = (item.get("image") or {}).get("url") or ""
                 if not url:
                     continue
                 try:
@@ -101,13 +101,13 @@ def _parse_message(payload: Mapping, encoding_aes_key: str) -> tuple[str, list[b
 
     # ── Plain text ─────────────────────────────────────────
     if msgtype == "text":
-        text = str(payload.get("text", {}).get("content", "")).strip()
+        text = str((payload.get("text") or {}).get("content") or "").strip()
         if text:
             text_parts.append(text)
 
     # ── Plain image ────────────────────────────────────────
     elif msgtype == "image":
-        url = payload.get("image", {}).get("url", "")
+        url = (payload.get("image") or {}).get("url") or ""
         if url:
             try:
                 img_bytes = _download_and_decrypt_image(url, encoding_aes_key)
@@ -118,14 +118,14 @@ def _parse_message(payload: Mapping, encoding_aes_key: str) -> tuple[str, list[b
 
     # ── Mixed text + image ─────────────────────────────────
     elif msgtype == "mixed":
-        for idx, item in enumerate(payload.get("mixed", {}).get("msg_item", [])):
+        for idx, item in enumerate((payload.get("mixed") or {}).get("msg_item") or []):
             item_type = item.get("msgtype", "")
             if item_type == "text":
-                part = str(item.get("text", {}).get("content", "")).strip()
+                part = str((item.get("text") or {}).get("content") or "").strip()
                 if part:
                     text_parts.append(part)
             elif item_type == "image":
-                url = item.get("image", {}).get("url", "")
+                url = (item.get("image") or {}).get("url") or ""
                 if not url:
                     continue
                 try:
@@ -137,7 +137,7 @@ def _parse_message(payload: Mapping, encoding_aes_key: str) -> tuple[str, list[b
     # ── Quote-only message (main body has no content) ──────
     elif msgtype == "quote":
         # When msgtype=quote, the main text may also exist in text.content
-        main_text = str(payload.get("text", {}).get("content", "")).strip()
+        main_text = str((payload.get("text") or {}).get("content") or "").strip()
         if main_text:
             text_parts.append(main_text)
 
@@ -213,7 +213,7 @@ class WeComMessageEndpoint(Endpoint):
         # ── Log: WeCom callback raw message ───────────────
         logger.debug(
             f"[WeCom] received msgtype={msgtype} msgid={payload.get('msgid')} "
-            f"chattype={payload.get('chattype')} from={payload.get('from', {}).get('userid')} "
+            f"chattype={payload.get('chattype')} from={(payload.get('from') or {}).get('userid')} "
             f"payload={json.dumps(payload, ensure_ascii=False)}"
         )
 
@@ -224,12 +224,59 @@ class WeComMessageEndpoint(Endpoint):
 
         # ── Parse message content ──────────────────────────
         query, image_bytes_list = _parse_message(payload, encoding_key)
-
+        
         # For text/image/mixed types: at least one of query or images must be non-empty
         if msgtype != "stream" and not query and not image_bytes_list:
             return Response(status=200, response="success")
-
+        
         message_id = payload.get("msgid")
+        
+        # ── Stream message handling (polling) ──────────────────
+        if msgtype == "stream":
+            stream_id = (payload.get("stream") or {}).get("id")
+            if not stream_id:
+                return Response(status=400, response="missing stream id")
+        
+            stream_key = f"wecom_msg_{stream_id}"
+            if self.session.storage.exist(stream_key):
+                result = self.session.storage.get(stream_key).decode("utf-8")
+                if result == "processing":
+                    logger.debug(f"Stream still processing: {stream_id}")
+                    content = ""
+                    finish = False
+                else:
+                    logger.debug(f"Stream answer ready: {stream_id}")
+                    content = result
+                    finish = True
+                    self.session.storage.delete(stream_key)
+        
+                res = self._build_wecom_res(
+                    message_id=stream_id,
+                    content=content,
+                    finish=finish,
+                    timestamp=timestamp,
+                    nonce=nonce,
+                    cryptor=cryptor,
+                )
+                return Response(status=200, response=res, mimetype="application/json")
+            else:
+                logger.debug(f"Processing new stream: {stream_id}")
+                self.session.storage.set(stream_key, b"processing")
+                res = self._build_wecom_res(
+                    message_id=stream_id,
+                    content="",
+                    finish=False,
+                    timestamp=timestamp,
+                    nonce=nonce,
+                    cryptor=cryptor,
+                )
+                return Response(status=200, response=res, mimetype="application/json")
+        
+        # ── Non-stream message: duplicate detection ────────────
+        if not message_id:
+            logger.debug("Missing msgid in payload")
+            return Response(status=400, response="missing msgid")
+        
         if self.session.storage.exist(f"wecom_msg_{message_id}"):
             logger.debug(f"Duplicate message detected: {message_id}")
             res = self._build_wecom_res(
@@ -245,36 +292,6 @@ class WeComMessageEndpoint(Endpoint):
             logger.debug(f"Processing new message: {message_id}")
             self.session.storage.set(f"wecom_msg_{message_id}", b"processing")
 
-        if msgtype == "stream":
-            stream_id = payload.get("stream", {}).get("id")
-            if self.session.storage.exist(f"wecom_msg_{stream_id}"):
-                logger.debug(f"Duplicate stream detected: {stream_id}")
-
-                result = self.session.storage.get(f"wecom_msg_{stream_id}").decode()
-                if result == "processing":
-                    res = self._build_wecom_res(
-                        message_id=stream_id,
-                        content="",
-                        finish=False,
-                        timestamp=timestamp,
-                        nonce=nonce,
-                        cryptor=cryptor,
-                    )
-                else:
-                    res = self._build_wecom_res(
-                        message_id=stream_id,
-                        content=result,
-                        finish=True,
-                        timestamp=timestamp,
-                        nonce=nonce,
-                        cryptor=cryptor,
-                    )
-                    self.session.storage.delete(f"wecom_msg_{stream_id}")
-                return Response(status=200, response=res, mimetype="application/json")
-            else:
-                logger.debug(f"Processing new stream: {stream_id}")
-                self.session.storage.set(f"wecom_msg_{stream_id}", b"processing")
-
         # ── Upload images to Dify and build the files parameter ──
         # SDK session.file.upload() stores files in the tool_files table (not upload_files)
         # Therefore we must use transfer_method="tool_file" + "tool_file_id" fields
@@ -287,14 +304,18 @@ class WeComMessageEndpoint(Endpoint):
                     content=img_bytes,
                     mimetype="image/jpeg",
                 )
+                upload_id = getattr(upload_resp, "id", None)
+                if not upload_id:
+                    logger.debug(f"[Dify] image upload[{idx}] returned invalid response")
+                    continue
                 dify_files.append(
                     {
                         "transfer_method": "tool_file",
-                        "tool_file_id": upload_resp.id,
+                        "tool_file_id": upload_id,
                         "type": "image",
                     }
                 )
-                logger.debug(f"[Dify] uploaded image[{idx}] -> tool_file_id={upload_resp.id}")
+                logger.debug(f"[Dify] uploaded image[{idx}] -> tool_file_id={upload_id}")
             except Exception as exc:
                 logger.debug(f"[Dify] image upload failed[{idx}]: {exc}")
 
@@ -337,15 +358,14 @@ class WeComMessageEndpoint(Endpoint):
             )
         except Exception as exc:
             logger.debug(f"[Dify] invoke failed: {exc}")
-            answer = f"Errors：{exc}"
+            answer = f"Errors: {exc}"
 
         if len(answer) > 5000:
             answer = answer[:5000] + "..."
 
-        stream_id = message_id
-        self.session.storage.set(f"wecom_msg_{stream_id}", answer.encode())
+        self.session.storage.set(f"wecom_msg_{message_id}", answer.encode("utf-8"))
         res = self._build_wecom_res(
-            message_id=stream_id,
+            message_id=message_id,
             content=answer,
             finish=True,
             timestamp=timestamp,
