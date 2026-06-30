@@ -125,7 +125,7 @@ class DiscordTrigger(Trigger):
             "raw_payload": dict(payload),
         }
 
-        for key, value in _extract_convenience_ids(data).items():
+        for key, value in _extract_convenience_ids(data, event.get("type")).items():
             if value is not None:
                 normalized[key] = value
 
@@ -212,17 +212,29 @@ def _normalize_event_types(value: Any) -> list[str]:
     return candidates
 
 
-def _extract_convenience_ids(data: Mapping[str, Any]) -> dict[str, Any]:
+def _extract_convenience_ids(data: Mapping[str, Any], event_type: str | None = None) -> dict[str, Any]:
     user = data.get("user") if isinstance(data.get("user"), Mapping) else {}
     guild = data.get("guild") if isinstance(data.get("guild"), Mapping) else {}
-    entitlement = data.get("entitlement") if isinstance(data.get("entitlement"), Mapping) else data
-    lobby = data.get("lobby") if isinstance(data.get("lobby"), Mapping) else data
-    message = data.get("message") if isinstance(data.get("message"), Mapping) else data
 
-    return {
+    convenience_ids = {
         "user_id": user.get("id") or data.get("user_id"),
         "guild_id": guild.get("id") or data.get("guild_id"),
-        "entitlement_id": entitlement.get("id"),
-        "lobby_id": lobby.get("lobby_id") or lobby.get("id"),
-        "message_id": message.get("id") or data.get("message_id"),
     }
+
+    if event_type and event_type.startswith("ENTITLEMENT_"):
+        convenience_ids["entitlement_id"] = data.get("id")
+    elif isinstance(data.get("entitlement"), Mapping):
+        convenience_ids["entitlement_id"] = data["entitlement"].get("id")
+
+    if event_type and event_type.startswith("LOBBY_"):
+        convenience_ids["lobby_id"] = data.get("lobby_id") or data.get("id")
+    elif isinstance(data.get("lobby"), Mapping):
+        convenience_ids["lobby_id"] = data["lobby"].get("lobby_id") or data["lobby"].get("id")
+
+    if event_type and (event_type.startswith("LOBBY_") or event_type.startswith("GAME_DIRECT_MESSAGE_")):
+        message = data.get("message") if isinstance(data.get("message"), Mapping) else {}
+        convenience_ids["message_id"] = message.get("id") or data.get("message_id")
+    elif isinstance(data.get("message"), Mapping):
+        convenience_ids["message_id"] = data["message"].get("id") or data.get("message_id")
+
+    return convenience_ids

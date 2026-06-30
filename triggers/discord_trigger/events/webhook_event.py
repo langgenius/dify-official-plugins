@@ -7,6 +7,7 @@ from werkzeug import Request
 
 from dify_plugin.entities.trigger import Variables
 from dify_plugin.interfaces.trigger import Event
+from provider.discord import _extract_convenience_ids
 
 
 class DiscordWebhookEvent(Event):
@@ -32,18 +33,6 @@ class DiscordWebhookEvent(Event):
             "raw_payload": raw_payload,
         }
 
-        user = data.get("user") if isinstance(data.get("user"), Mapping) else {}
-        guild = data.get("guild") if isinstance(data.get("guild"), Mapping) else {}
-        entitlement = data.get("entitlement") if isinstance(data.get("entitlement"), Mapping) else data
-        lobby = data.get("lobby") if isinstance(data.get("lobby"), Mapping) else data
-        message = data.get("message") if isinstance(data.get("message"), Mapping) else data
-
-        convenience_ids = {
-            "user_id": user.get("id") or data.get("user_id"),
-            "guild_id": guild.get("id") or data.get("guild_id"),
-            "entitlement_id": entitlement.get("id"),
-            "lobby_id": lobby.get("lobby_id") or lobby.get("id"),
-            "message_id": message.get("id") or data.get("message_id"),
-        }
+        convenience_ids = _extract_convenience_ids(data, event.get("type"))
         variables.update({key: value for key, value in convenience_ids.items() if value is not None})
         return variables

@@ -156,6 +156,32 @@ def test_valid_event_dispatches_webhook_event_with_normalized_payload():
     assert dispatch.payload["raw_payload"] == payload
 
 
+def test_entitlement_event_does_not_pollute_lobby_or_message_ids():
+    signing_key, public_key = _keypair()
+    payload = {
+        "version": 1,
+        "application_id": "app_1",
+        "type": 1,
+        "event": {
+            "type": "ENTITLEMENT_CREATE",
+            "timestamp": "2026-06-30T00:00:00+00:00",
+            "data": {
+                "id": "entitlement_1",
+                "sku_id": "sku_1",
+                "user_id": "user_1",
+            },
+        },
+    }
+    request = _request(payload, signing_key)
+
+    dispatch = _trigger()._dispatch_event(_subscription(public_key), request)
+
+    assert dispatch.payload["entitlement_id"] == "entitlement_1"
+    assert dispatch.payload["user_id"] == "user_1"
+    assert "lobby_id" not in dispatch.payload
+    assert "message_id" not in dispatch.payload
+
+
 def test_event_type_filter_ignores_unselected_events():
     signing_key, public_key = _keypair()
     request = _request(
@@ -220,3 +246,26 @@ def test_webhook_event_outputs_normalized_variables_from_payload():
     variables = _event()._on_event(_request({}, None), {}, payload)
 
     assert variables.variables == payload
+
+
+def test_webhook_event_fallback_does_not_pollute_entitlement_ids():
+    raw_payload = {
+        "version": 1,
+        "application_id": "app_1",
+        "type": 1,
+        "event": {
+            "type": "ENTITLEMENT_UPDATE",
+            "timestamp": "2026-06-30T00:00:00+00:00",
+            "data": {
+                "id": "entitlement_1",
+                "guild_id": "guild_1",
+            },
+        },
+    }
+
+    variables = _event()._on_event(_request(raw_payload), {}, {})
+
+    assert variables.variables["entitlement_id"] == "entitlement_1"
+    assert variables.variables["guild_id"] == "guild_1"
+    assert "lobby_id" not in variables.variables
+    assert "message_id" not in variables.variables
