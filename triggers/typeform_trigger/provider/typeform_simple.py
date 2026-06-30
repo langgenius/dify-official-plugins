@@ -623,6 +623,8 @@ class TypeformSubscriptionConstructor(TriggerSubscriptionConstructor):
         return f"dify-{form_id[:8]}-{unique}"
 
     def _oauth_state_key(self, redirect_uri: str, state: str) -> str:
+        import hashlib
+
         digest = hashlib.sha256(f"typeform:{redirect_uri}:{state}".encode("utf-8")).hexdigest()
         return f"typeform:oauth_state:{digest}"
 

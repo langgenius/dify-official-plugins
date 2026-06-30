@@ -417,6 +417,8 @@ class OutlookSubscriptionConstructor(TriggerSubscriptionConstructor):
         return f"{self._AUTHORITY_URL}/{self._tenant_id(system_credentials)}/oauth2/v2.0/token"
 
     def _oauth_state_key(self, redirect_uri: str, state: str) -> str:
+        import hashlib
+
         digest = hashlib.sha256(f"outlook:{redirect_uri}:{state}".encode("utf-8")).hexdigest()
         return f"outlook:oauth_state:{digest}"
 
