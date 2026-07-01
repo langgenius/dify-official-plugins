@@ -321,7 +321,9 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
 
         return usage
 
-    def _detect_image_mime_type(self, base64_str: str, validate_format: bool = False) -> str:
+    def _detect_image_mime_type(
+        self, base64_str: str, validate_format: bool = False
+    ) -> str:
         """
         Detect image MIME type from base64 string
 
@@ -337,7 +339,7 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
             data = base64.b64decode(base64_str, validate=True)
 
             # Check file signatures
-            if data.startswith(b"\xFF\xD8\xFF"):
+            if data.startswith(b"\xff\xd8\xff"):
                 return "image/jpeg"
             elif data.startswith(b"\x89PNG\r\n\x1a\n"):
                 return "image/png"
@@ -358,7 +360,10 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         except ValueError:
             raise
         except binascii.Error:
-            logger.warning("Failed to decode base64 image data, defaulting to image/jpeg", exc_info=True)
+            logger.warning(
+                "Failed to decode base64 image data, defaulting to image/jpeg",
+                exc_info=True,
+            )
             return "image/jpeg"
 
     def _get_output_dimension(self, model: str, credentials: dict) -> Optional[int]:
@@ -374,7 +379,9 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
             if model_schema and model_schema.model_properties:
                 return model_schema.model_properties.get("output_dimension")
         except Exception:
-            logger.warning("Failed to get output_dimension from model schema", exc_info=True)
+            logger.warning(
+                "Failed to get output_dimension from model schema", exc_info=True
+            )
         return None
 
     def _invoke_multimodal(
@@ -399,9 +406,9 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
         client = genai.Client(api_key=credentials["google_api_key"])
 
         # Convert MultiModalContent to Google Genai format, tracking content types
-        contents = []        # converted content for API call
+        contents = []  # converted content for API call
         content_is_image = []  # parallel list: True if image, False if text
-        original_texts = []   # parallel list: original text string (or None for images)
+        original_texts = []  # parallel list: original text string (or None for images)
         for document in documents:
             if document.content_type == MultiModalContentType.TEXT:
                 contents.append(self._as_user_content(document.content))
@@ -409,7 +416,9 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
                 original_texts.append(document.content)
             elif document.content_type == MultiModalContentType.IMAGE:
                 # Validate image format (Gemini Embedding 2 only supports JPEG and PNG)
-                mime_type = self._detect_image_mime_type(document.content, validate_format=True)
+                mime_type = self._detect_image_mime_type(
+                    document.content, validate_format=True
+                )
                 # Decode base64 and create Part object
                 base64_str = document.content
                 if "," in base64_str:
@@ -462,9 +471,7 @@ class GeminiTextEmbeddingModel(_CommonGemini, TextEmbeddingModel):
             )
 
             if response.embeddings is None:
-                raise InvokeError(
-                    f"Unable to get embeddings from '{model}' model"
-                )
+                raise InvokeError(f"Unable to get embeddings from '{model}' model")
 
             if len(response.embeddings) != len(batch_contents):
                 raise InvokeError(

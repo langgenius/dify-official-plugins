@@ -43,6 +43,9 @@ provider_credential_schema:
         zh_Hans: 模型
       options:
         - label:
+            en_US: grok-4.3
+          value: grok-4.3
+        - label:
             en_US: grok-4-fast
           value: grok-4-fast
         - label:

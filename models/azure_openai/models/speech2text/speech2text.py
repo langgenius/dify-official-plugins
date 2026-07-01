@@ -36,12 +36,12 @@ class AzureOpenAISpeech2TextModel(_CommonAzureOpenAI, Speech2TextModel):
         try:
             audio_file_path = self._get_demo_file_path()
             with open(audio_file_path, "rb") as audio_file:
-                self._speech2text_invoke(model, credentials, audio_file)
+                self._speech2text_invoke(model, credentials, audio_file, use_cache=False)
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
 
     def _speech2text_invoke(
-        self, model: str, credentials: dict, file: IO[bytes]
+        self, model: str, credentials: dict, file: IO[bytes], *, use_cache: bool = True
     ) -> str:
         """
         Invoke speech2text model
@@ -51,7 +51,7 @@ class AzureOpenAISpeech2TextModel(_CommonAzureOpenAI, Speech2TextModel):
         :param file: audio file
         :return: text for given audio file
         """
-        client = self._create_client(credentials)
+        client = self._create_client(credentials, use_cache=use_cache)
         base_model_name = self._get_base_model_name(credentials)
         ai_model_entity = self._get_ai_model_entity(base_model_name, model)
         extra_params = ai_model_entity.extra_invoke_params if ai_model_entity else {}

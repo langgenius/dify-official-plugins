@@ -34,7 +34,8 @@ RESPONSE_SERIES_COMPATIBILITY = ("gpt-5-codex", "gpt-5-pro", "o3-pro")
 
 class AihubmixLargeLanguageModel(OAICompatLargeLanguageModel):
     def _update_credential(self, model: str, credentials: dict):
-        credentials["endpoint_url"] = "https://aihubmix.com/v1"
+        api_url = ((credentials.get("api_url_custom") if credentials.get("api_url") == "__custom__" else credentials.get("api_url")) or "https://aihubmix.com").rstrip("/")
+        credentials["endpoint_url"] = f"{api_url}/v1"
         credentials["mode"] = self.get_model_mode(model).value
         credentials["function_calling_type"] = "tool_call"
         credentials["extra_headers"] = {
