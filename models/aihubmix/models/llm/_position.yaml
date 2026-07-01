@@ -2,6 +2,7 @@
 - gemini-3.5-flash
 - grok-4.3
 - gpt-5.5
+- claude-opus-4-8
 - claude-opus-4-7
 - deepseek-v4-flash
 - deepseek-v4-flash-think
@@ -27,6 +28,8 @@
 - claude-sonnet-4-6-think
 - gpt-5.3-chat-latest
 - coding-glm-5.1
+- doubao-seed-2-1-pro
+- doubao-seed-2-1-turbo
 - doubao-seed-2-0-pro
 - gpt-5.4-high
 - gpt-5.4-low
