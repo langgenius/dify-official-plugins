@@ -116,7 +116,7 @@ class PodcastAudioGeneratorTool(Tool):
         if channel_mode == "stereo":
             for i, (audio, silence) in enumerate(audio_segments):
                 if audio:
-                    pan_value = -0.2 if i % 2 == 0 else 0.2
+                    pan_value = (-0.2 if i % 2 == 0 else 0.2) if host2_voice else 0.0
                     stereo_audio = audio.set_channels(2).pan(pan_value)
                     combined_audio += stereo_audio
                     if i < len(audio_segments) - 1 and silence:
