@@ -15,11 +15,17 @@ from dify_plugin.entities.model import (
 )
 from dify_plugin.entities.model.llm import LLMMode, LLMResult
 from dify_plugin.entities.model.message import (
+    AudioPromptMessageContent,
+    DocumentPromptMessageContent,
+    ImagePromptMessageContent,
     PromptMessage,
+    PromptMessageContentType,
     PromptMessageRole,
     PromptMessageTool,
     SystemPromptMessage,
     AssistantPromptMessage,
+    UserPromptMessage,
+    VideoPromptMessageContent,
 )
 from dify_plugin.errors.model import CredentialsValidateFailedError, InvokeError
 from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLanguageModel
@@ -29,7 +35,7 @@ from openai import OpenAI
 
 class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
     # Pre-compiled regex for better performance
-    _THINK_PATTERN = re.compile(r"^<think>.*?</think>\s*", re.DOTALL)
+    _THINK_PATTERN = re.compile(r"<think>.*?</think>\s*", re.DOTALL)
     # Models that require max_completion_tokens (OpenAI Responses API family)
     _NEEDS_MAX_COMPLETION_TOKENS_PATTERN = re.compile(r"^(o1|o3|gpt-5)", re.IGNORECASE)
 
@@ -243,10 +249,10 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             entity.parameter_rules.append(
                 ParameterRule(
                     name=DefaultParameterName.RESPONSE_FORMAT.value,
-                    label=I18nObject(en_US="Response Format", zh_Hans="回复格式"),
+                    label=I18nObject(en_us="Response Format", zh_hans="回复格式"),
                     help=I18nObject(
-                        en_US="Specifying the format that the model must output.",
-                        zh_Hans="指定模型必须输出的回复格式。",
+                        en_us="Specifying the format that the model must output.",
+                        zh_hans="指定模型必须输出的回复格式。",
                     ),
                     type=ParameterType.STRING,
                     options=["text", "json_object", "json_schema"],
@@ -256,10 +262,10 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             entity.parameter_rules.append(
                 ParameterRule(
                     name="reasoning_format",
-                    label=I18nObject(en_US="Reasoning Format", zh_Hans="推理格式"),
+                    label=I18nObject(en_us="Reasoning Format", zh_hans="推理格式"),
                     help=I18nObject(
-                        en_US="Specifying the format that the model must output reasoning.",
-                        zh_Hans="指定模型必须输出的推理格式。",
+                        en_us="Specifying the format that the model must output reasoning.",
+                        zh_hans="指定模型必须输出的推理格式。",
                     ),
                     type=ParameterType.STRING,
                     options=["none", "auto", "deepseek", "deepseek-legacy"],
@@ -275,7 +281,7 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
 
         if "display_name" in credentials and credentials["display_name"] != "":
             entity.label = I18nObject(
-                en_US=credentials["display_name"], zh_Hans=credentials["display_name"]
+                en_us=credentials["display_name"], zh_hans=credentials["display_name"]
             )
 
         # Configure thinking mode parameter based on model support
@@ -291,10 +297,10 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             entity.parameter_rules.append(
                 ParameterRule(
                     name="enable_thinking",
-                    label=I18nObject(en_US="Thinking mode", zh_Hans="思考模式"),
+                    label=I18nObject(en_us="Thinking mode", zh_hans="思考模式"),
                     help=I18nObject(
-                        en_US="Whether to enable thinking mode, applicable to various thinking mode models deployed on reasoning frameworks such as vLLM and SGLang, for example Qwen3.",
-                        zh_Hans="是否开启思考模式，适用于vLLM和SGLang等推理框架部署的多种思考模式模型，例如Qwen3。",
+                        en_us="Whether to enable thinking mode, applicable to various thinking mode models deployed on reasoning frameworks such as vLLM and SGLang, for example Qwen3.",
+                        zh_hans="是否开启思考模式，适用于vLLM和SGLang等推理框架部署的多种思考模式模型，例如Qwen3。",
                     ),
                     type=ParameterType.BOOLEAN,
                     required=False,
@@ -305,17 +311,28 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             entity.parameter_rules.append(
                 ParameterRule(
                     name="reasoning_effort",
-                    label=I18nObject(en_US="Reasoning effort", zh_Hans="推理工作"),
+                    label=I18nObject(en_us="Reasoning effort", zh_hans="推理工作"),
                     help=I18nObject(
-                        en_US="Constrains effort on reasoning for reasoning models.",
-                        zh_Hans="限制推理模型的推理工作。",
+                        en_us="Constrains effort on reasoning for reasoning models.",
+                        zh_hans="限制推理模型的推理工作。",
                     ),
                     type=ParameterType.STRING,
                     options=["low", "medium", "high"],
                     required=False,
                 )
             )
-        
+
+        # Register VIDEO/AUDIO/DOCUMENT features when the corresponding credential is enabled.
+        # Without these on entity.features, Dify host filters out non-image attachments
+        # before they reach _convert_prompt_message_to_dict, causing silent drop.
+        for credential_key, feature in (
+            ("video_support", ModelFeature.VIDEO),
+            ("audio_support", ModelFeature.AUDIO),
+            ("document_support", ModelFeature.DOCUMENT),
+        ):
+            if credentials.get(credential_key, "no_support") == "support" and feature not in entity.features:
+                entity.features.append(feature)
+
         return entity
 
     @classmethod
@@ -337,14 +354,74 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             if not isinstance(p.content, str):
                 continue
             # Quick check to avoid regex if not needed
-            if not p.content.startswith("<think>"):
+            if "<think>" not in p.content:
                 continue
 
             # Only perform regex substitution when necessary
-            new_content = cls._THINK_PATTERN.sub("", p.content, count=1)
+            new_content = cls._THINK_PATTERN.sub("", p.content)
             # Only update if changed
             if new_content != p.content:
                 p.content = new_content
+
+    def _convert_prompt_message_to_dict(
+        self, message: PromptMessage, credentials: Optional[dict] = None
+    ) -> dict:
+        # The base SDK implementation only handles TEXT and IMAGE content for user
+        # messages, silently dropping VIDEO / AUDIO / DOCUMENT. Extend it so the same
+        # OpenAI-compatible request shape carries the additional modalities. The
+        # encoding follows what LiteLLM and OpenAI-compatible aggregators accept:
+        #   - VIDEO/AUDIO: image_url with a data URI (mime_type carried in the URI),
+        #     which providers like Vertex Gemini convert into inline_data.
+        #   - DOCUMENT: the OpenAI Files-compatible "file" part with file_data set
+        #     to the data URI.
+        if isinstance(message, UserPromptMessage) and isinstance(message.content, list):
+            sub_messages: list[dict] = []
+            for c in message.content:
+                if c.type == PromptMessageContentType.TEXT:
+                    sub_messages.append({"type": "text", "text": c.data})
+                elif c.type == PromptMessageContentType.IMAGE:
+                    image_c: ImagePromptMessageContent = c
+                    sub_messages.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": image_c.data,
+                                "detail": image_c.detail.value,
+                            },
+                        }
+                    )
+                elif c.type == PromptMessageContentType.VIDEO:
+                    video_c: VideoPromptMessageContent = c
+                    sub_messages.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": video_c.data},
+                        }
+                    )
+                elif c.type == PromptMessageContentType.AUDIO:
+                    audio_c: AudioPromptMessageContent = c
+                    sub_messages.append(
+                        {
+                            "type": "image_url",
+                            "image_url": {"url": audio_c.data},
+                        }
+                    )
+                elif c.type == PromptMessageContentType.DOCUMENT:
+                    doc_c: DocumentPromptMessageContent = c
+                    sub_messages.append(
+                        {
+                            "type": "file",
+                            "file": {
+                                "file_data": doc_c.data,
+                                "filename": doc_c.filename or "document",
+                            },
+                        }
+                    )
+            message_dict: dict = {"role": "user", "content": sub_messages}
+            if message.name:
+                message_dict["name"] = message.name
+            return message_dict
+        return super()._convert_prompt_message_to_dict(message, credentials)
 
     def _invoke(
         self,
@@ -471,8 +548,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         """Filter thinking content from non-streaming result"""
         if result.message and result.message.content:
             content = result.message.content
-            if isinstance(content, str) and content.startswith("<think>"):
-                filtered_content = self._THINK_PATTERN.sub("", content, count=1)
+            if isinstance(content, str) and "<think>" in content:
+                filtered_content = self._THINK_PATTERN.sub("", content)
                 if filtered_content != content:
                     result.message.content = filtered_content
         return result

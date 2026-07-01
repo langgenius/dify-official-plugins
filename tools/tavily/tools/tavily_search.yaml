@@ -5,7 +5,7 @@ description:
       real-time, accurate, and factual results at speed.
     zh_Hans: 专为人工智能代理 (LLM) 构建的搜索引擎工具，可快速提供实时、准确和真实的结果。
   llm:
-    A tool for search engine built specifically for AI agents (LLMs), delivering
+    A search engine tool built specifically for AI agents (LLMs), delivering
     real-time, accurate, and factual results at speed.
 extra:
   python:
@@ -66,7 +66,7 @@ parameters:
     label:
       en_US: Topic
       zh_Hans: 主题
-    llm_description: The category of the search. Options include 'general', 'news', or 'finance'.
+    llm_description: The category of the search. Valid options are 'general', 'news', and 'finance'.
     options:
       - label:
           en_US: General
@@ -90,7 +90,7 @@ parameters:
     label:
       en_US: Time Range
       zh_Hans: 时间范围
-    llm_description: The time range back from the current date to filter results. Options include 'not_specified', 'day', 'week', 'month', or 'year'.
+    llm_description: The time range back from the current date to filter results. Valid options are 'not_specified', 'day', 'week', 'month', and 'year'. When time_range is set, do not set start_date or end_date.
     options:
       - label:
           en_US: Not Specified
@@ -123,7 +123,7 @@ parameters:
     label:
       en_US: Start Date
       zh_Hans: 开始日期
-    llm_description: The start date for filtering results. Required to be written in the format YYYY-MM-DD. Results will be filtered to include content from this date onwards.
+    llm_description: The start date for filtering results. Required to be written in the format YYYY-MM-DD. Results will be filtered to include content from this date onwards. When time_range is set, do not set start_date or end_date.
     required: false
     type: string
   - name: end_date
@@ -134,7 +134,7 @@ parameters:
     label:
       en_US: End Date
       zh_Hans: 结束日期
-    llm_description: The end date for filtering results. Required to be written in the format YYYY-MM-DD. Results will be filtered to include content up to this date.
+    llm_description: The end date for filtering results. Required to be written in the format YYYY-MM-DD. Results will be filtered to include content up to this date. When time_range is set, do not set start_date or end_date.
     required: false
     type: string
   - name: auto_parameters
@@ -194,7 +194,7 @@ parameters:
     label:
       en_US: Include Answer
       zh_Hans: 包含答案
-    llm_description: When set to true or 'basic', includes a short answer to the original query in the response, 'advanced' for a more detailed comprehensive answer.
+    llm_description: When set to true or 'basic', includes a short answer to the original query in the response. Use 'advanced' for a more detailed, comprehensive answer.
     options:
       - label:
           en_US: "False"
@@ -273,12 +273,12 @@ parameters:
     default: 3
     form: form
     human_description:
-      en_US: Maximum number of content chunks returned per source (advanced search only).
-      zh_Hans: 每个来源返回的内容片段的最大数量（仅限高级搜索）。
+      en_US: Maximum number of content chunks returned per source (advanced and fast search only).
+      zh_Hans: 每个来源返回的内容片段的最大数量（仅限高级和快速搜索）。
     label:
       en_US: Chunks Per Source
       zh_Hans: 每来源片段数
-    llm_description: Maximum number of relevant content chunks (1-3) returned per source. Valid only when search_depth is advanced.
+    llm_description: Maximum number of relevant content chunks (1-3) returned per source. Valid when search_depth is 'advanced' or 'fast'.
     max: 3
     min: 1
     required: false
@@ -286,12 +286,12 @@ parameters:
   - name: country
     form: llm
     human_description:
-      en_US: Boost search results from a specific country (topic must be general).
+      en_US: Boost search results for a specific country (topic must be general).
       zh_Hans: 从特定国家/地区提升搜索结果（主题必须是general）。
     label:
       en_US: Country
       zh_Hans: 国家
-    llm_description: Select a country to boost its content in results (only when topic is general).
+    llm_description: Select a country to boost results only when topic is general. Use one of the exact option values.
     required: false
     type: select
     options:
@@ -959,7 +959,6 @@ parameters:
           en_US: Zimbabwe
           zh_Hans: 津巴布韦
         value: zimbabwe
-    default: united states
   - name: include_domains
     form: llm
     human_description:

@@ -7,11 +7,11 @@ requires-python = ">=3.12"
 
 # Managed with uv; refresh the lockfile with `uv lock`.
 dependencies = [
-    "dify_plugin>=0.5.0",
-    "requests>=2.32.5",
-    "snowflake-connector-python==4.0.0",
-    "sqlparse>=0.5.3",
-    "werkzeug>=3.1.0",
+    "dify_plugin>=0.9.0",
+    "requests>=2.34.2",
+    "snowflake-connector-python>=4.5.0",
+    "sqlparse>=0.5.5",
+    "werkzeug>=3.1.8",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix

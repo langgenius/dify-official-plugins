@@ -1,4 +1,6 @@
 import base64
+import hashlib
+import hmac
 import json
 import secrets
 import time
@@ -18,6 +20,7 @@ from dify_plugin.errors.trigger import (
     TriggerDispatchError,
     TriggerProviderCredentialValidationError,
     TriggerProviderOAuthError,
+    TriggerValidationError,
     UnsubscribeError,
 )
 from dify_plugin.interfaces.trigger import Trigger, TriggerSubscriptionConstructor
@@ -27,6 +30,10 @@ class ZendeskTrigger(Trigger):
     """Handle Zendesk webhook event dispatch."""
 
     def _dispatch_event(self, subscription: Subscription, request: Request) -> EventDispatch:
+        webhook_secret = (subscription.properties or {}).get("webhook_secret")
+        if webhook_secret:
+            self._verify_signature(secret=str(webhook_secret), request=request)
+
         payload: Mapping[str, Any] = self._validate_payload(request)
         response = Response(response='{"status": "ok"}', status=200, mimetype="application/json")
         events: list[str] = self._dispatch_trigger_events(payload=payload)
@@ -84,6 +91,20 @@ class ZendeskTrigger(Trigger):
         except Exception as exc:
             raise TriggerDispatchError(f"Failed to parse payload: {exc}") from exc
 
+    @staticmethod
+    def _verify_signature(secret: str, request: Request) -> None:
+        signature = request.headers.get("X-Zendesk-Webhook-Signature")
+        timestamp = request.headers.get("X-Zendesk-Webhook-Signature-Timestamp")
+        if not signature or not timestamp:
+            raise TriggerValidationError("Missing Zendesk webhook signature headers")
+
+        body = request.get_data(cache=True, as_text=False)
+        signed_payload = timestamp.encode("utf-8") + body
+        digest = hmac.new(secret.encode("utf-8"), signed_payload, hashlib.sha256).digest()
+        expected = base64.b64encode(digest).decode("ascii")
+        if not hmac.compare_digest(signature, expected):
+            raise TriggerValidationError("Invalid Zendesk webhook signature")
+
 
 class ZendeskSubscriptionConstructor(TriggerSubscriptionConstructor):
     """Manage Zendesk trigger subscriptions."""
@@ -134,6 +155,7 @@ class ZendeskSubscriptionConstructor(TriggerSubscriptionConstructor):
             raise TriggerProviderOAuthError("Zendesk OAuth client_id is missing.")
 
         state = secrets.token_urlsafe(16)
+        self._store_oauth_state(redirect_uri, state)
         params: dict[str, str] = {
             "response_type": "code",
             "client_id": client_id,
@@ -153,6 +175,8 @@ class ZendeskSubscriptionConstructor(TriggerSubscriptionConstructor):
             description = request.args.get("error_description") or ""
             message = f"{error}: {description}".strip(": ")
             raise TriggerProviderOAuthError(f"Zendesk OAuth authorization failed: {message}")
+
+        self._validate_oauth_state(redirect_uri, request.args.get("state"))
 
         code = request.args.get("code")
         if not code:
@@ -395,7 +419,7 @@ class ZendeskSubscriptionConstructor(TriggerSubscriptionConstructor):
         except (TypeError, ValueError):
             expires_in = None
 
-        expires_at = int(time.time()) + expires_in if expires_in else -1
+        expires_at = int(time.time()) + max(expires_in - 60, 0) if expires_in else -1
 
         credentials: dict[str, Any] = {
             "access_token": access_token,
@@ -408,3 +432,26 @@ class ZendeskSubscriptionConstructor(TriggerSubscriptionConstructor):
         filtered_credentials = {key: value for key, value in credentials.items() if value}
 
         return TriggerOAuthCredentials(credentials=filtered_credentials, expires_at=expires_at)
+
+    def _oauth_state_key(self, redirect_uri: str, state: str) -> str:
+        digest = hashlib.sha256(f"zendesk:{redirect_uri}:{state}".encode("utf-8")).hexdigest()
+        return f"zendesk:oauth_state:{digest}"
+
+    def _store_oauth_state(self, redirect_uri: str, state: str) -> None:
+        try:
+            self.runtime.session.storage.set(self._oauth_state_key(redirect_uri, state), b"1")
+        except Exception as exc:
+            raise TriggerProviderOAuthError("Unable to persist Zendesk OAuth state; storage permission is required.") from exc
+
+    def _validate_oauth_state(self, redirect_uri: str, state: str | None) -> None:
+        if not state:
+            raise TriggerProviderOAuthError("Zendesk OAuth callback missing state.")
+        key = self._oauth_state_key(redirect_uri, state)
+        try:
+            if not self.runtime.session.storage.exist(key):
+                raise TriggerProviderOAuthError("Zendesk OAuth state is invalid or expired.")
+            self.runtime.session.storage.delete(key)
+        except TriggerProviderOAuthError:
+            raise
+        except Exception as exc:
+            raise TriggerProviderOAuthError("Unable to validate Zendesk OAuth state.") from exc

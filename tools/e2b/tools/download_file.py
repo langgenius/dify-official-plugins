@@ -4,7 +4,10 @@ from typing import Any
 from dify_plugin import Tool
 from dify_plugin.entities.tool import ToolInvokeMessage
 
-from e2b_code_interpreter import Sandbox
+try:
+    from e2b_sandbox import get_sandbox
+except ModuleNotFoundError:
+    from tools.e2b.e2b_sandbox import get_sandbox
 
 
 class DownloadFileTool(Tool):
@@ -18,16 +21,12 @@ class DownloadFileTool(Tool):
         if not file_path:
             raise ValueError("File path is required")
 
-        args = {
-            "api_key": self.runtime.credentials["api_key"],
-            "sandbox_id": sandbox_id,
-            "timeout": tool_parameters.get("timeout", 120),
-        }
-        
-        if domain := self.runtime.credentials.get("domain"):
-            args["domain"] = domain
-
-        sandbox = Sandbox(**args)
+        sandbox = get_sandbox(
+            api_key=self.runtime.credentials["api_key"],
+            domain=self.runtime.credentials.get("domain"),
+            timeout=tool_parameters.get("timeout", 120),
+            sandbox_id=sandbox_id,
+        )
 
         file = sandbox.files.read(file_path)
 
