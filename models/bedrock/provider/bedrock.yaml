@@ -196,6 +196,26 @@ provider_credential_schema:
         text:
           en_US: Proxy address for Bedrock API connections (cannot be used with Endpoint URL)
           zh_Hans: Bedrock API 连接的代理地址（不能与端点 URL 同时使用）
+    - variable: enable_request_metadata
+      required: false
+      default: disabled
+      label:
+        en_US: Enable CloudWatch request metadata (optional)
+        zh_Hans: 启用 CloudWatch 请求元数据（可选）
+      type: select
+      options:
+        - value: enabled
+          label:
+            en_US: Enabled
+            zh_Hans: 已启用
+        - value: disabled
+          label:
+            en_US: Disabled
+            zh_Hans: 已禁用
+      help:
+        text:
+          en_US: When enabled, attaches dify_app_id and dify_source as requestMetadata on Bedrock Converse API calls, enabling per-app filtering of CloudWatch invocation logs. Converse API only. Default disabled.
+          zh_Hans: 启用后，将在 Bedrock Converse API 调用中将 dify_app_id 和 dify_source 作为 requestMetadata 附加，从而支持按应用过滤 CloudWatch 调用日志。仅限 Converse API。默认禁用。
 models:
   llm:
     predefined:
