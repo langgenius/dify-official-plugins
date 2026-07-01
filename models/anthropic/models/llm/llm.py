@@ -181,6 +181,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     ADAPTIVE_THINKING_MODELS: tuple[str, ...] = (
         "claude-opus-4-7",
         "claude-opus-4-8",
+        "claude-sonnet-5",
         "claude-fable-5",
         "claude-mythos-5",
     )
@@ -424,7 +425,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 model_parameters.pop(key, None)
 
             if thinking or always_on_adaptive_thinking:
-                # Manual budgeted thinking is removed; Fable/Mythos always run adaptive thinking.
+                # Fable/Mythos always run adaptive thinking; other adaptive models opt in.
+                # When omitted, the API applies its own default (off for Opus, adaptive-on for Sonnet 5).
                 extra_model_kwargs["thinking"] = {
                     "type": "adaptive",
                     "display": thinking_display or "omitted",

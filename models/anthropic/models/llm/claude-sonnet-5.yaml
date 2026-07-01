@@ -1,0 +1,154 @@
+# https://platform.claude.com/docs/en/about-claude/models/overview
+# https://platform.claude.com/docs/en/about-claude/models/whats-new-sonnet-5
+# https://platform.claude.com/docs/en/about-claude/models/migration-guide
+# https://platform.claude.com/docs/en/resources/overview
+# Note: Claude Sonnet 5 uses a new tokenizer (~30% more tokens for the same text
+# vs Sonnet 4.6). Revisit max_tokens budgets sized close to expected output length.
+# Pricing: standard $3/$15 per Mtok. Introductory $2/$10 per Mtok is in effect
+# through 2026-08-31; this card uses the standard (post-intro) rate for durability.
+model: claude-sonnet-5
+label:
+  en_US: claude-sonnet-5
+model_type: llm
+features:
+  - agent-thought
+  - vision
+  - tool-call
+  - stream-tool-call
+  - document
+model_properties:
+  mode: chat
+  context_size: 1000000
+parameter_rules:
+  - name: thinking
+    label:
+      zh_Hans: 自适应推理
+      en_US: Adaptive Thinking
+    type: boolean
+    default: true
+    required: true
+    help:
+      zh_Hans: |
+        Claude Sonnet 5 默认即启用自适应推理（adaptive thinking on by default），手动 extended thinking（thinking.budget_tokens）已被移除并返回 400，temperature/top_p/top_k 设为非默认值也会返回 400。开启此项以 adaptive 模式运行并按 Thinking Display 返回推理内容（便于前端展示思考进度）；关闭则不发送 thinking 字段，由 API 默认运行 adaptive thinking（推理内容按官方默认 omitted 不返回）。推理深度由 Effort 参数控制。
+      en_US: |
+        Claude Sonnet 5 runs adaptive thinking by default; manual extended thinking (thinking.budget_tokens) is removed and returns a 400, and non-default temperature/top_p/top_k also return a 400. Enable to run adaptive thinking and surface reasoning via Thinking Display; disable omits the thinking field and lets the API default apply (adaptive on, reasoning omitted per the official default). Depth is controlled by the Effort parameter.
+  - name: thinking_display
+    label:
+      zh_Hans: 推理内容展示
+      en_US: Thinking Display
+    type: string
+    default: omitted
+    required: true
+    options:
+      - omitted
+      - summarized
+    help:
+      zh_Hans: 响应中推理内容的展示方式。omitted 为官方默认值（响应中不返回 thinking 文本）；summarized 返回摘要化的推理过程，便于在前端展示思考进度。
+      en_US: How thinking content is exposed in the response. `omitted` is the official default (thinking text not returned); `summarized` returns summarized reasoning so clients can display progress.
+  - name: effort
+    label:
+      zh_Hans: 推理投入等级
+      en_US: Effort
+    type: string
+    default: xhigh
+    required: true
+    options:
+      - low
+      - medium
+      - high
+      - xhigh
+      - max
+    help:
+      zh_Hans: 通过 output_config.effort 控制智能/token 消耗的权衡。xhigh 推荐用于编码与智能体场景，high 是智能敏感场景的最低建议值；low 与 medium 适合延迟或成本敏感场景。
+      en_US: Controls the intelligence vs. token cost trade-off via output_config.effort. Use `xhigh` for coding and agentic tasks; `high` is the minimum recommendation for intelligence-sensitive tasks; `low`/`medium` for latency- or cost-sensitive tasks.
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    default: 128000
+    min: 1
+    max: 128000
+  - name: prompt_caching_message_flow
+    label:
+      zh_Hans: 大消息自动缓存阈值
+      en_US: Cache Message Flow Threshold
+    type: int
+    default: 0
+    required: false
+    help:
+      zh_Hans: 当用户或助手消息的单词数超过此阈值时，自动为该消息添加缓存控制。0 表示禁用。
+      en_US: If a user or assistant message exceeds this word count, add cache_control automatically. 0 disables the feature.
+  - name: prompt_caching_ttl
+    label:
+      zh_Hans: 缓存有效期
+      en_US: Cache TTL
+    type: string
+    default: 5m
+    required: true
+    options:
+      - 5m
+      - 1h
+    help:
+      zh_Hans: 控制 prompt caching 的 cache_control.ttl。5m 为默认有效期；1h 可延长缓存有效期，但缓存写入成本更高。
+      en_US: Controls prompt caching cache_control.ttl. 5m is the default duration; 1h extends cache lifetime but has a higher cache write cost.
+  - name: prompt_caching_system_message
+    label:
+      zh_Hans: 缓存系统消息
+      en_US: Cache System Message
+    type: boolean
+    default: true
+    required: false
+    help:
+      zh_Hans: 启用系统消息的提示缓存。<cache></cache>中的内容将自动缓存。
+      en_US: Enable prompt caching for system messages. Content within <cache></cache> will be cached.
+  - name: prompt_caching_images
+    label:
+      zh_Hans: 缓存图片
+      en_US: Cache Images
+    type: boolean
+    default: true
+    required: false
+    help:
+      zh_Hans: 启用图片的提示缓存。
+      en_US: Enable prompt caching for images.
+  - name: prompt_caching_documents
+    label:
+      zh_Hans: 缓存文档
+      en_US: Cache Documents
+    type: boolean
+    default: true
+    required: false
+    help:
+      zh_Hans: 启用文档的提示缓存。
+      en_US: Enable prompt caching for documents.
+  - name: prompt_caching_tool_definitions
+    label:
+      zh_Hans: 缓存工具定义
+      en_US: Cache Tool Definitions
+    type: boolean
+    default: true
+    required: false
+    help:
+      zh_Hans: 启用工具定义的提示缓存。
+      en_US: Enable prompt caching for tool definitions.
+  - name: prompt_caching_tool_results
+    label:
+      zh_Hans: 缓存工具结果
+      en_US: Cache Tool Results
+    type: boolean
+    default: true
+    required: false
+    help:
+      zh_Hans: 启用工具结果的提示缓存。
+      en_US: Enable prompt caching for tool results.
+  - name: response_format
+    use_template: response_format
+  - name: json_schema
+    use_template: json_schema
+
+# https://claude.com/pricing#api
+# *Introductory pricing of $2/$10 per million input/output tokens through August 31, 2026; $3/$15 standard pricing thereafter.
+pricing:
+  input: '3.00'
+  output: '15.00'
+  unit: '0.000001'
+  currency: USD
