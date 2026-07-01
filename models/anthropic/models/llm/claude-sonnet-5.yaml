@@ -48,7 +48,7 @@ parameter_rules:
       zh_Hans: 推理投入等级
       en_US: Effort
     type: string
-    default: xhigh
+    default: high
     required: true
     options:
       - low
@@ -57,8 +57,8 @@ parameter_rules:
       - xhigh
       - max
     help:
-      zh_Hans: 通过 output_config.effort 控制智能/token 消耗的权衡。xhigh 推荐用于编码与智能体场景，high 是智能敏感场景的最低建议值；low 与 medium 适合延迟或成本敏感场景。
-      en_US: Controls the intelligence vs. token cost trade-off via output_config.effort. Use `xhigh` for coding and agentic tasks; `high` is the minimum recommendation for intelligence-sensitive tasks; `low`/`medium` for latency- or cost-sensitive tasks.
+      zh_Hans: 通过 output_config.effort 控制智能/token 消耗的权衡。high 是官方默认值，适合复杂推理、编码与智能体场景；xhigh 适合最困难的长程编码与智能体任务；low 与 medium 适合延迟或成本敏感场景。
+      en_US: Controls the intelligence vs. token cost trade-off via output_config.effort. `high` is the official default for complex reasoning, coding, and agentic tasks; use `xhigh` for the hardest long-running coding and agentic tasks; use `low`/`medium` for latency- or cost-sensitive workloads.
   - name: max_tokens
     use_template: max_tokens
     required: true
