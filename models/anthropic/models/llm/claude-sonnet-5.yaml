@@ -28,8 +28,14 @@ parameter_rules:
     default: true
     required: true
     help:
-      zh_Hans: 开启自适应推理，并按"推理内容展示"返回推理过程；关闭则不进行推理。Claude Sonnet 5 默认启用自适应推理，推理深度由 Effort 参数控制。
-      en_US: Enable adaptive thinking and surface reasoning per Thinking Display; disable turns thinking off. Claude Sonnet 5 runs adaptive thinking by default; depth is controlled by the Effort parameter.
+      zh_Hans: |
+        Claude Sonnet 5 默认启用自适应推理，推理深度由 Effort 参数控制。
+        开启此项时，插件会发送 `thinking.type=adaptive`，并按"推理内容展示"返回或省略推理内容。
+        关闭此项时，插件会显式发送 `thinking.type=disabled`，完全关闭推理以获得最低延迟与成本。
+      en_US: |
+        Claude Sonnet 5 runs adaptive thinking by default; depth is controlled by the Effort parameter.
+        When enabled, the plugin sends `thinking.type=adaptive` and uses Thinking Display to return or omit thinking content.
+        When disabled, the plugin explicitly sends `thinking.type=disabled` to completely turn off reasoning for the lowest latency and cost.
   - name: thinking_display
     label:
       zh_Hans: 推理内容展示
