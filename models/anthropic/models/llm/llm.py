@@ -189,6 +189,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         "claude-fable-5",
         "claude-mythos-5",
     )
+    # Models whose API default is adaptive-on and where thinking can be turned off
+    # with thinking: {type: "disabled"}. The thinking toggle is required on these,
+    # so false is translated to an explicit disabled (rather than omitting the field,
+    # which the API would interpret as its adaptive-on default).
+    ADAPTIVE_THINKING_DEFAULT_ON_MODELS: tuple[str, ...] = (
+        "claude-sonnet-5",
+    )
 
     def __init__(self, model_schemas=None):
         super().__init__(model_schemas or [])
@@ -212,6 +219,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         return any(
             model_id.startswith(prefix)
             for prefix in self.ALWAYS_ON_ADAPTIVE_THINKING_MODELS
+        )
+
+    def _has_adaptive_thinking_default_on(self, model: str) -> bool:
+        model_id = (model or "").lower()
+        return any(
+            model_id.startswith(prefix)
+            for prefix in self.ADAPTIVE_THINKING_DEFAULT_ON_MODELS
         )
 
     def _predefined_model_has_parameter(self, model: str, parameter_name: str) -> bool:
@@ -418,19 +432,30 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
 
         uses_adaptive_thinking = self._uses_adaptive_thinking(model)
         always_on_adaptive_thinking = self._has_always_on_adaptive_thinking(model)
+        adaptive_thinking_default_on = self._has_adaptive_thinking_default_on(model)
 
         if uses_adaptive_thinking:
             # These models reject non-default sampling params with 400; drop unconditionally.
             for key in ("temperature", "top_p", "top_k"):
                 model_parameters.pop(key, None)
 
-            if thinking or always_on_adaptive_thinking:
-                # Fable/Mythos always run adaptive thinking; other adaptive models opt in.
-                # When omitted, the API applies its own default (off for Opus, adaptive-on for Sonnet 5).
+            if always_on_adaptive_thinking:
+                # Fable/Mythos: adaptive thinking is always on and cannot be disabled.
                 extra_model_kwargs["thinking"] = {
                     "type": "adaptive",
                     "display": thinking_display or "omitted",
                 }
+            elif thinking:
+                # User enabled thinking: run adaptive and surface reasoning.
+                extra_model_kwargs["thinking"] = {
+                    "type": "adaptive",
+                    "display": thinking_display or "omitted",
+                }
+            elif adaptive_thinking_default_on:
+                # Sonnet 5: API default is adaptive-on, so false must be sent as an
+                # explicit disabled to actually turn thinking off.
+                extra_model_kwargs["thinking"] = {"type": "disabled"}
+            # else: Opus 4.7/4.8 — thinking is off unless opted in; omit the field.
 
             output_config: dict[str, Any] = {}
             if effort:

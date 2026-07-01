@@ -28,10 +28,8 @@ parameter_rules:
     default: true
     required: true
     help:
-      zh_Hans: |
-        Claude Sonnet 5 默认即启用自适应推理（adaptive thinking on by default），手动 extended thinking（thinking.budget_tokens）已被移除并返回 400，temperature/top_p/top_k 设为非默认值也会返回 400。开启此项以 adaptive 模式运行并按 Thinking Display 返回推理内容（便于前端展示思考进度）；关闭则不发送 thinking 字段，由 API 默认运行 adaptive thinking（推理内容按官方默认 omitted 不返回）。推理深度由 Effort 参数控制。
-      en_US: |
-        Claude Sonnet 5 runs adaptive thinking by default; manual extended thinking (thinking.budget_tokens) is removed and returns a 400, and non-default temperature/top_p/top_k also return a 400. Enable to run adaptive thinking and surface reasoning via Thinking Display; disable omits the thinking field and lets the API default apply (adaptive on, reasoning omitted per the official default). Depth is controlled by the Effort parameter.
+      zh_Hans: 开启自适应推理，并按"推理内容展示"返回推理过程；关闭则不进行推理。Claude Sonnet 5 默认启用自适应推理，推理深度由 Effort 参数控制。
+      en_US: Enable adaptive thinking and surface reasoning per Thinking Display; disable turns thinking off. Claude Sonnet 5 runs adaptive thinking by default; depth is controlled by the Effort parameter.
   - name: thinking_display
     label:
       zh_Hans: 推理内容展示
