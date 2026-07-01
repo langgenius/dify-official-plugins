@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="120" height="120" viewBox="0 0 120 120">
+  <!-- Background circle -->
+  <circle cx="60" cy="60" r="58" fill="#6366f1" stroke="#4f46e5" stroke-width="2"/>
+
+  <!-- Refresh/refine icon (circular arrows) -->
+  <path d="M 60 25 A 25 25 0 1 1 40 45" fill="none" stroke="white" stroke-width="5" stroke-linecap="round"/>
+  <path d="M 35 45 L 40 45 L 40 40" fill="white"/>
+
+  <path d="M 60 95 A 25 25 0 1 1 80 75" fill="none" stroke="white" stroke-width="5" stroke-linecap="round"/>
+  <path d="M 85 75 L 80 75 L 80 80" fill="white"/>
+
+  <!-- Quality star in center -->
+  <path d="M 60 50 L 63 57 L 71 58 L 65 64 L 67 72 L 60 68 L 53 72 L 55 64 L 49 58 L 57 57 Z" fill="#fbbf24"/>
+</svg>
