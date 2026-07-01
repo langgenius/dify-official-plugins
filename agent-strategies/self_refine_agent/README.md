@@ -1,115 +1,104 @@
 # Self-Refine Agent Strategy
 
-**自我优化 Agent 策略插件 for Dify**
+A Dify agent strategy plugin that improves output quality through iterative self-critique and refinement.
 
-## 概述
+## What It Does
 
-Self-Refine Agent Strategy 是一个基于 [Self-Refine (NeurIPS 2023)](https://arxiv.org/abs/2303.17651) 论文实现的 Dify Agent 策略插件。它通过自动批判和迭代优化机制，提升 Agent 输出质量。
+Self-Refine Agent Strategy implements the [Self-Refine](https://arxiv.org/abs/2303.17651) (NeurIPS 2023) algorithm, enabling agents to automatically evaluate and improve their own outputs through multiple refinement cycles.
 
-## 核心特性
+The strategy works by having the LLM act as its own critic:
+1. **Execute** - Agent generates an initial response
+2. **Evaluate** - LLM judges the output quality (0-100 score)
+3. **Critique** - LLM identifies specific issues and improvement opportunities
+4. **Refine** - Critique is injected into context for the next iteration
+5. **Repeat** - Process continues until quality threshold is met or max refinements reached
 
-- **自动评估**：LLM 作为评判器，自动评估输出质量
-- **智能批判**：识别输出中的具体问题和改进点
-- **迭代优化**：将批判意见注入下一轮执行，持续改进
-- **透明流程**：所有中间步骤（执行、评估、批判）均可见
-- **可配置参数**：支持自定义最大迭代次数和优化次数
+This approach is particularly effective for tasks requiring high-quality outputs such as writing, analysis, code generation, and complex reasoning.
 
-## 工作流程
+## Key Features
 
-```
-1. Execute (执行) → 运行 Agent 任务
-2. Evaluate (评估) → 检查输出是否满意
-3. Critique (批判) → 生成具体改进建议
-4. Refine (优化) → 将批判注入上下文重新执行
-5. Repeat (重复) → 直到达到质量阈值或最大次数
-```
+- **Automatic Quality Control** - LLM evaluates its own outputs without human intervention
+- **Iterative Improvement** - Each refinement cycle builds on previous critiques
+- **Transparent Process** - All intermediate steps (execution, evaluation, critique) are visible
+- **Configurable** - Control maximum iterations and refinement cycles
 
-## 参数配置
+## Usage
 
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `model` | model-selector | - | 使用的 LLM 模型 |
-| `tools` | array[tools] | - | 可用工具列表 |
-| `instruction` | string | - | 系统指令 |
-| `query` | string | - | 用户查询 |
-| `context` | array[object] | - | 上下文信息（可选）|
-| `maximum_iterations` | number | 5 | Agent 单次执行的最大迭代次数 |
-| `max_refinements` | number | 2 | 最大优化次数（0-5）|
+### Parameters
 
-## 当前状态
+| Parameter | Type | Default | Description |
+|-----------|------|---------|-------------|
+| `model` | model-selector | - | LLM model to use |
+| `tools` | array[tools] | - | Available tools for the agent |
+| `instruction` | string | - | System instructions for the agent |
+| `query` | string | - | User query to process |
+| `context` | array[object] | - | Optional context information |
+| `maximum_iterations` | number | 5 | Max iterations per agent execution |
+| `max_refinements` | number | 2 | Max refinement cycles (0-5) |
 
-**Phase 3: 完整实现 ✅**
-- ✅ 完整的目录结构
-- ✅ manifest.yaml 配置
-- ✅ provider 和 strategy 框架
-- ✅ 完整的自我优化循环逻辑
-- ✅ LLM 调用和工具执行
-- ✅ 评估和批判机制
-- ✅ 流式输出和日志
-- ✅ 错误处理和 fallback
+### Configuration Example
 
-## 安装和调试
+When configuring the agent in Dify:
 
-### 本地远程调试
+1. Select **Self-Refine Agent** as your strategy
+2. Choose your preferred LLM model
+3. Set `max_refinements` to control quality vs. speed tradeoff:
+   - `0` - No refinement (standard agent behavior)
+   - `1-2` - Balanced (recommended for most cases)
+   - `3-5` - High quality (best for critical outputs)
 
-1. 配置 `.env` 文件：
+### Local Development
+
+To test the plugin locally:
+
+1. Create a `.env` file:
 ```bash
 INSTALL_METHOD=remote
 DIFY_PLUGIN_DAEMON_URL=http://localhost:5003
 ```
 
-2. 确保 Dify 在本地运行（Docker Compose）
+2. Ensure Dify is running locally (via Docker Compose)
 
-3. 启动插件：
+3. Start the plugin:
 ```bash
 python main.py
 ```
 
-## 核心实现
+## How It Works
 
-### 已实现功能 ✅
+The refinement loop follows this pattern:
 
-**执行引擎** (`_execute_agent`):
-- ✅ 动态系统提示生成（初始 vs 优化）
-- ✅ 历史消息支持
-- ✅ 流式和非流式 LLM 调用
-- ✅ 工具调用处理
-- ✅ 元数据收集（tokens、价格、延迟）
+```
+Initial Query → Agent Execution → Output
+                        ↓
+                   Evaluation (score)
+                        ↓
+                   [Score ≥ 80?] → Yes → Return Final Output
+                        ↓ No
+                   Generate Critique
+                        ↓
+           Inject Critique into Context
+                        ↓
+              Re-execute Agent → Output
+                        ↓
+           [Max refinements reached?] → Yes → Return Best Output
+                        ↓ No
+                   Repeat Cycle
+```
 
-**评估系统** (`_evaluate_output`):
-- ✅ LLM-as-judge 评估模式
-- ✅ JSON 响应解析
-- ✅ Fallback 机制
-- ✅ 质量评分（0-100）
+The agent automatically stops refining when:
+- Output quality score reaches 80 or above
+- Maximum refinement cycles are reached
+- No significant improvements are detected
 
-**优化循环** (`_invoke`):
-- ✅ 迭代优化控制（max_refinements）
-- ✅ 批判注入到下一轮执行
-- ✅ 早停机制（质量达标时）
-- ✅ 完整的日志和状态输出
+## Reference
 
-**错误处理**:
-- ✅ 参数验证（Pydantic）
-- ✅ LLM 调用异常捕获
-- ✅ 工具执行失败处理
-- ✅ JSON 解析 fallback
-
-### 待优化项
-- [ ] 单元测试覆盖
-- [ ] 性能基准测试
-- [ ] 更多 prompt 模板变体
-- [ ] 支持自定义评估标准
-
-## 参考论文
+Based on the paper:
 
 Madaan, A., Tandon, N., Gupta, P., Hallinan, S., Gao, L., Wiegreffe, S., ... & Clark, P. (2023).
 **Self-Refine: Iterative Refinement with Self-Feedback.**
 NeurIPS 2023. [arXiv:2303.17651](https://arxiv.org/abs/2303.17651)
 
-## 许可证
+## License
 
 MIT License
-
-## 作者
-
-KERVIN-FARMER
