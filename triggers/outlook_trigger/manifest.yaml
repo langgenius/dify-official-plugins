@@ -26,14 +26,9 @@ plugins:
 resource:
   memory: 1048576
   permission:
-    model:
-      enabled: true
-      llm: true
-    tool:
-      enabled: true
     storage:
       enabled: true
       size: 1048576
 tags: []
 type: plugin
-version: 0.1.6
+version: 0.2.0

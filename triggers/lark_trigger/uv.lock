@@ -170,7 +170,7 @@ wheels = [
 
 [[package]]
 name = "dify-plugin"
-version = "0.9.0"
+version = "0.9.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "dpkt" },
@@ -187,9 +187,9 @@ dependencies = [
     { name = "werkzeug" },
     { name = "yarl" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e2/52/86c042b72d42eb40460563bacf2ed46ff6a2e02dbec299892fef0ed2f70f/dify_plugin-0.9.0.tar.gz", hash = "sha256:c32dc99d4122d960bd447ee65a17e1e93bf942bbad8f7b4d53a2841416ecd3e0", size = 318993, upload-time = "2026-05-20T08:10:40.445Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ba/9b/5d78d22aa32942f9d5375f2b0d913b3e529f8456cb91aaf04fa50638b8d5/dify_plugin-0.9.1.tar.gz", hash = "sha256:81f96f9a78ca76b22361eb40c54935bb6cf9b3d0d2be44828d63e0a25e3cb0e8", size = 318876, upload-time = "2026-06-17T03:15:11.773Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/9b/dc/df1d6d1a8c604880702dd792226f175523f890bfca89f828f58b58661edc/dify_plugin-0.9.0-py3-none-any.whl", hash = "sha256:3299a8c77549a43f68705796eed4c9ca494664810fb8d10eb7ecce2e545f3d2d", size = 377064, upload-time = "2026-05-20T08:10:38.848Z" },
+    { url = "https://files.pythonhosted.org/packages/66/f0/9538bfce0df4e816f28a91c38e762fcf45fc10f4a0751e3bb0f83bcf4f11/dify_plugin-0.9.1-py3-none-any.whl", hash = "sha256:1c45ed4f06ccd9375382c728ebd6b7394da854273f59666c25c0d7b914a0dbf0", size = 376977, upload-time = "2026-06-17T03:15:10.345Z" },
 ]
 
 [[package]]
@@ -404,7 +404,7 @@ wheels = [
 
 [[package]]
 name = "lark-oapi"
-version = "1.6.5"
+version = "1.6.9"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "httpx" },
@@ -413,9 +413,8 @@ dependencies = [
     { name = "requests-toolbelt" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a1/6a/cfaa24851e05000a3bede7a3d30b834116d684d56738d08980da621e9c1a/lark_oapi-1.6.5.tar.gz", hash = "sha256:abf1fd348bd527502c70f2fe771c6fd37c2b8bbed188c9313596063864d43f59", size = 2079307, upload-time = "2026-05-14T06:00:44.608Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/40/28/a425593c6de71b80ad642ed8e624468a2848ea0e4ad7cb32a8380941fd7f/lark_oapi-1.6.5-py3-none-any.whl", hash = "sha256:a56fa548aebdae9c36ef0114fbbc6e5d004eb2e15398e11cf88a5737f0cf8641", size = 7143193, upload-time = "2026-05-14T06:00:39.816Z" },
+    { url = "https://files.pythonhosted.org/packages/ee/b5/00982093154f92ffc2bfe8448367323a07513bd1db1e92672f9573c92ddf/lark_oapi-1.6.9-py3-none-any.whl", hash = "sha256:ebc93c09eba66e3d2d8823d9df4988370b2e0245870b3249b61cdf6d6cd1642c", size = 7801043, upload-time = "2026-06-24T06:15:19.989Z" },
 ]
 
 [[package]]
@@ -432,8 +431,8 @@ dependencies = [
 [package.metadata]
 requires-dist = [
     { name = "cachetools", specifier = ">=7.1.4" },
-    { name = "dify-plugin", specifier = ">=0.9.0" },
-    { name = "lark-oapi", specifier = ">=1.6.5" },
+    { name = "dify-plugin", specifier = ">=0.9.1" },
+    { name = "lark-oapi", specifier = ">=1.6.9" },
     { name = "werkzeug", specifier = ">=3.1.8" },
 ]
 
