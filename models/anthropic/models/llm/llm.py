@@ -181,12 +181,26 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
     ADAPTIVE_THINKING_MODELS: tuple[str, ...] = (
         "claude-opus-4-7",
         "claude-opus-4-8",
+        "claude-sonnet-5",
         "claude-fable-5",
         "claude-mythos-5",
     )
     ALWAYS_ON_ADAPTIVE_THINKING_MODELS: tuple[str, ...] = (
         "claude-fable-5",
         "claude-mythos-5",
+    )
+    TASK_BUDGET_SUPPORTED_MODELS: tuple[str, ...] = (
+        "claude-opus-4-7",
+        "claude-opus-4-8",
+        "claude-fable-5",
+        "claude-mythos-5",
+    )
+    # Models whose API default is adaptive-on and where thinking can be turned off
+    # with thinking: {type: "disabled"}. The thinking toggle is required on these,
+    # so false is translated to an explicit disabled (rather than omitting the field,
+    # which the API would interpret as its adaptive-on default).
+    ADAPTIVE_THINKING_DEFAULT_ON_MODELS: tuple[str, ...] = (
+        "claude-sonnet-5",
     )
 
     def __init__(self, model_schemas=None):
@@ -212,6 +226,17 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             model_id.startswith(prefix)
             for prefix in self.ALWAYS_ON_ADAPTIVE_THINKING_MODELS
         )
+
+    def _has_adaptive_thinking_default_on(self, model: str) -> bool:
+        model_id = (model or "").lower()
+        return any(
+            model_id.startswith(prefix)
+            for prefix in self.ADAPTIVE_THINKING_DEFAULT_ON_MODELS
+        )
+
+    def _supports_task_budget(self, model: str) -> bool:
+        model_id = (model or "").lower()
+        return any(model_id.startswith(prefix) for prefix in self.TASK_BUDGET_SUPPORTED_MODELS)
 
     def _predefined_model_has_parameter(self, model: str, parameter_name: str) -> bool:
         for model_schema in self.model_schemas:
@@ -408,32 +433,47 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 "max_tokens_to_sample"
             )
 
+        thinking_was_set = "thinking" in model_parameters
         thinking = model_parameters.pop("thinking", False)
         thinking_budget = model_parameters.pop("thinking_budget", 1024)
-        thinking_display = model_parameters.pop("thinking_display", "summarized")
+        uses_adaptive_thinking = self._uses_adaptive_thinking(model)
+        always_on_adaptive_thinking = self._has_always_on_adaptive_thinking(model)
+        adaptive_thinking_default_on = self._has_adaptive_thinking_default_on(model)
+        thinking_display = model_parameters.pop(
+            "thinking_display",
+            "omitted" if uses_adaptive_thinking else "summarized",
+        )
         effort = model_parameters.pop("effort", None)
         task_budget = int(model_parameters.pop("task_budget", 0) or 0)
         context_1m = model_parameters.pop("context_1m", False)
-
-        uses_adaptive_thinking = self._uses_adaptive_thinking(model)
-        always_on_adaptive_thinking = self._has_always_on_adaptive_thinking(model)
 
         if uses_adaptive_thinking:
             # These models reject non-default sampling params with 400; drop unconditionally.
             for key in ("temperature", "top_p", "top_k"):
                 model_parameters.pop(key, None)
 
-            if thinking or always_on_adaptive_thinking:
-                # Manual budgeted thinking is removed; Fable/Mythos always run adaptive thinking.
+            if always_on_adaptive_thinking:
+                # Fable/Mythos: adaptive thinking is always on and cannot be disabled.
                 extra_model_kwargs["thinking"] = {
                     "type": "adaptive",
                     "display": thinking_display or "omitted",
                 }
+            elif thinking:
+                # User enabled thinking: run adaptive and surface reasoning.
+                extra_model_kwargs["thinking"] = {
+                    "type": "adaptive",
+                    "display": thinking_display or "omitted",
+                }
+            elif adaptive_thinking_default_on and thinking_was_set:
+                # Sonnet 5: omitted thinking uses the API's adaptive-on default.
+                # Only an explicit false should turn thinking off.
+                extra_model_kwargs["thinking"] = {"type": "disabled"}
+            # else: Opus 4.7/4.8 — thinking is off unless opted in; omit the field.
 
             output_config: dict[str, Any] = {}
             if effort:
                 output_config["effort"] = effort
-            if task_budget >= 20000:
+            if task_budget >= 20000 and self._supports_task_budget(model):
                 output_config["task_budget"] = {
                     "type": "tokens",
                     "total": task_budget,
