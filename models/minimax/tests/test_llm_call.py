@@ -43,11 +43,14 @@ def get_all_models() -> list[str]:
 def test_llm_invoke(model_name: str) -> None:
     api_key = os.getenv("MINIMAX_API_KEY")
     if not api_key:
-        raise ValueError("MINIMAX_API_KEY environment variable is required")
+        pytest.skip("MINIMAX_API_KEY is not set")
 
     plugin_path = os.getenv("PLUGIN_FILE_PATH")
     if not plugin_path:
-        # Default to current directory if not set
+        if os.getenv("CI"):
+            raise ValueError(
+                "PLUGIN_FILE_PATH environment variable is required in CI when provider API key is set"
+            )
         plugin_path = str(Path(__file__).parent.parent)
 
     payload = ModelInvokeLLMRequest(
