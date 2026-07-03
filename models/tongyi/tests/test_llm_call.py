@@ -55,6 +55,10 @@ def test_llm_invoke(model_name: str) -> None:
 
     plugin_path = os.getenv("PLUGIN_FILE_PATH")
     if not plugin_path:
+        if os.getenv("CI"):
+            raise ValueError(
+                "PLUGIN_FILE_PATH environment variable is required in CI when provider API key is set"
+            )
         plugin_path = str(Path(__file__).parent.parent)
 
     payload = ModelInvokeLLMRequest(
