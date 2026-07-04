@@ -336,6 +336,13 @@ class RetrievePageTool(Tool):
                         "url": image_url,
                         "caption": caption_text,
                     })
+            elif block_type == "table_row":
+                cells = block.get("table_row", {}).get("cells", [])
+                cell_texts = [client.extract_plain_text(cell) for cell in cells]
+                formatted_block["cells"] = cell_texts
+                formatted_block["text"] = " | ".join(cell_texts)
+            elif block_type == "table":
+                formatted_block["text"] = ""
             else:
                 # For unsupported block types, just include the type
                 formatted_block["text"] = f"<{block_type} block>"
@@ -359,9 +366,31 @@ class RetrievePageTool(Tool):
                         # Record per-block failure but keep the rest of the page intact
                         formatted_block["children_error"] = str(e)
 
+            if block_type == "table":
+                children = formatted_block.get("children", [])
+                row_cells = [
+                    child["cells"]
+                    for child in children
+                    if child.get("type") == "table_row" and "cells" in child
+                ]
+                if row_cells:
+                    headers = row_cells[0]
+                    rows = row_cells[1:] if len(row_cells) > 1 else []
+                    formatted_block["text"] = _generate_markdown_table(headers, rows)
+
             formatted_blocks.append(formatted_block)
 
         return formatted_blocks
+
+
+def _generate_markdown_table(headers: List[str], rows: List[List[str]]) -> str:
+    """Build a markdown table from header and body rows."""
+    if not headers:
+        return ""
+    lines = ["| " + " | ".join(headers) + " |", "| " + " | ".join(["---"] * len(headers)) + " |"]
+    for row in rows:
+        lines.append("| " + " | ".join(str(cell) if cell is not None else "" for cell in row) + " |")
+    return "\n".join(lines)
 
 
 def _coerce_positive_int(value: Any, default: int) -> int:
