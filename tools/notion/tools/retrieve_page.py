@@ -383,13 +383,24 @@ class RetrievePageTool(Tool):
         return formatted_blocks
 
 
+def _escape_markdown_cell(cell: Any) -> str:
+    if cell is None:
+        return ""
+    return str(cell).replace("|", "\\|").replace("\n", "<br>")
+
+
 def _generate_markdown_table(headers: List[str], rows: List[List[str]]) -> str:
     """Build a markdown table from header and body rows."""
     if not headers:
         return ""
-    lines = ["| " + " | ".join(headers) + " |", "| " + " | ".join(["---"] * len(headers)) + " |"]
+    escaped_headers = [_escape_markdown_cell(h) for h in headers]
+    lines = [
+        "| " + " | ".join(escaped_headers) + " |",
+        "| " + " | ".join(["---"] * len(headers)) + " |",
+    ]
     for row in rows:
-        lines.append("| " + " | ".join(str(cell) if cell is not None else "" for cell in row) + " |")
+        escaped_row = [_escape_markdown_cell(cell) for cell in row]
+        lines.append("| " + " | ".join(escaped_row) + " |")
     return "\n".join(lines)
 
 
