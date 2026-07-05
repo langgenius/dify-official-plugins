@@ -1,0 +1,115 @@
+provider: aimlapi
+label:
+  en_US: AI/ML API
+  zh_Hans: AI/ML API
+description:
+  en_US: AI/ML API is an OpenAI-compatible inference gateway at https://api.aimlapi.com/v1 with bearer-token authentication.
+  zh_Hans: AI/ML API 是位于 https://api.aimlapi.com/v1 的 OpenAI 兼容推理网关，使用 Bearer Token 鉴权。
+icon_small:
+  en_US: icon.svg
+supported_model_types:
+  - llm
+configurate_methods:
+  - customizable-model
+provider_credential_schema:
+  credential_form_schemas:
+    - variable: aimlapi_api_key
+      label:
+        en_US: API Key
+        zh_Hans: API Key
+      type: secret-input
+      required: true
+      placeholder:
+        en_US: Enter your AI/ML API key (https://aimlapi.com/app/keys)
+        zh_Hans: 在此输入您的 AI/ML API Key（https://aimlapi.com/app/keys）
+    - variable: endpoint_url
+      label:
+        en_US: API endpoint URL
+        zh_Hans: API 端点 URL
+      type: text-input
+      required: false
+      default: "https://api.aimlapi.com/v1"
+      placeholder:
+        en_US: Base URL, e.g. https://api.aimlapi.com/v1
+        zh_Hans: Base URL，例如 https://api.aimlapi.com/v1
+  help:
+    en_US: Get an API key at https://aimlapi.com/app/keys. The default endpoint URL is pre-filled.
+    zh_Hans: 在 https://aimlapi.com/app/keys 获取 API Key。默认端点 URL 已预填。
+model_credential_schema:
+  model:
+    label:
+      en_US: Model Name
+      zh_Hans: 模型名称
+    placeholder:
+      en_US: Enter the AI/ML API model id (e.g. openai/gpt-4o-mini)
+      zh_Hans: 输入 AI/ML API 的模型 ID（如 openai/gpt-4o-mini）
+  credential_form_schemas:
+    - variable: mode
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Completion mode
+        zh_Hans: 对话类型
+      type: select
+      required: false
+      default: chat
+      options:
+        - value: completion
+          label:
+            en_US: Completion
+            zh_Hans: 补全
+        - value: chat
+          label:
+            en_US: Chat
+            zh_Hans: 对话
+    - variable: context_size
+      label:
+        en_US: Model context size
+        zh_Hans: 模型上下文长度
+      required: true
+      show_on:
+        - variable: __model_type
+          value: llm
+      type: text-input
+      default: "4096"
+      placeholder:
+        en_US: Enter your model context size
+        zh_Hans: 在此输入您的模型上下文长度
+    - variable: max_tokens_to_sample
+      label:
+        en_US: Upper bound for max tokens
+        zh_Hans: 最大 token 上限
+      show_on:
+        - variable: __model_type
+          value: llm
+      default: "4096"
+      type: text-input
+    - variable: agent_thought_support
+      show_on:
+        - variable: __model_type
+          value: llm
+      label:
+        en_US: Thinking Mode Support
+        zh_Hans: 思考模式支持
+      type: select
+      required: false
+      default: not_supported
+      options:
+        - value: only_thinking_supported
+          label:
+            en_US: Only Thinking Mode
+            zh_Hans: 仅支持思考模式
+        - value: not_supported
+          label:
+            en_US: Only Non-Thinking Mode
+            zh_Hans: 仅支持非思考模式
+        - value: supported
+          label:
+            en_US: Both Modes
+            zh_Hans: 两种模式都支持
+extra:
+  python:
+    provider_source: provider/aimlapi.py
+    model_sources:
+      - "models/llm/llm.py"

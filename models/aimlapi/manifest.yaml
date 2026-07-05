@@ -1,0 +1,32 @@
+version: 0.0.1
+type: plugin
+author: "langgenius"
+name: "aimlapi"
+description:
+  en_US: AI/ML API model provider plugin. Exposes the OpenAI-compatible chat completions endpoint at https://api.aimlapi.com/v1 as a Dify model provider.
+  zh_Hans: AI/ML API 模型供应商插件。通过 https://api.aimlapi.com/v1 兼容 OpenAI 的 chat completions 接口接入 Dify。
+label:
+  en_US: AI/ML API
+  zh_Hans: AI/ML API
+created_at: "2026-07-05T00:00:00.000000000Z"
+icon: icon.svg
+resource:
+  memory: 1048576
+  permission:
+    tool:
+      enabled: true
+    model:
+      enabled: true
+      llm: true
+plugins:
+  models:
+    - "provider/aimlapi.yaml"
+meta:
+  version: 0.0.1
+  arch:
+    - "amd64"
+    - "arm64"
+  runner:
+    language: "python"
+    version: "3.12"
+    entrypoint: "main"
