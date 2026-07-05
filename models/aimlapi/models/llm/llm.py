@@ -2,12 +2,6 @@ import logging
 from collections.abc import Generator
 from typing import Mapping
 
-from dify_plugin.entities.model import (
-    AIModelEntity,
-    I18nObject,
-    ParameterRule,
-    ParameterType,
-)
 from dify_plugin.entities.model.llm import LLMMode
 from dify_plugin.entities.model.message import PromptMessage
 from dify_plugin.interfaces.model.openai_compatible.llm import OAICompatLargeLanguageModel
@@ -33,6 +27,12 @@ class AIMLAPILargeLanguageModel(OAICompatLargeLanguageModel):
             raise ValueError("AI/ML API key is required (aimlapi_api_key).")
         return api_key
 
+    def _inject_credentials(self, credentials: Mapping) -> dict:
+        merged = dict(credentials)
+        merged["endpoint_url"] = self._resolve_endpoint_url(merged)
+        merged["api_key"] = self._resolve_api_key(merged)
+        return merged
+
     def _invoke(
         self,
         model: str,
@@ -44,12 +44,9 @@ class AIMLAPILargeLanguageModel(OAICompatLargeLanguageModel):
         stream: bool = True,
         user: str | None = None,
     ) -> Generator:
-        credentials = dict(credentials)
-        credentials["endpoint_url"] = self._resolve_endpoint_url(credentials)
-        credentials["api_key"] = self._resolve_api_key(credentials)
         yield from super()._invoke(
             model=model,
-            credentials=credentials,
+            credentials=self._inject_credentials(credentials),
             prompt_messages=prompt_messages,
             model_parameters=model_parameters,
             tools=tools,
@@ -60,35 +57,7 @@ class AIMLAPILargeLanguageModel(OAICompatLargeLanguageModel):
 
     def validate_credentials(self, model: str, credentials: Mapping) -> None:
         """Probe the AI/ML API endpoint with a minimal chat completion."""
-        probe_model = model or VALIDATION_PROBE_MODEL
-        merged = dict(credentials)
-        merged["endpoint_url"] = self._resolve_endpoint_url(merged)
-        merged["api_key"] = self._resolve_api_key(merged)
-        super().validate_credentials(probe_model, merged)
-
-    def get_customizable_model_schema(self, model: str, credentials: Mapping) -> AIModelEntity:
-        entity = super().get_customizable_model_schema(model, credentials)
-        entity.parameter_rules += [
-            ParameterRule(
-                name="temperature",
-                label=I18nObject(en_US="Temperature", zh_Hans="温度"),
-                type=ParameterType.FLOAT,
-                default=0.7,
-                min=0.0,
-                max=2.0,
-                precision=1,
-            ),
-            ParameterRule(
-                name="top_p",
-                label=I18nObject(en_US="Top P", zh_Hans="Top P"),
-                type=ParameterType.FLOAT,
-                default=1.0,
-                min=0.0,
-                max=1.0,
-                precision=1,
-            ),
-        ]
-        return entity
+        super().validate_credentials(model or VALIDATION_PROBE_MODEL, self._inject_credentials(credentials))
 
     def get_model_mode(self, model: str, credentials: Mapping) -> LLMMode:
         mode = credentials.get("mode")
