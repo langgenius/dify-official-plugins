@@ -69,7 +69,7 @@ SoMark delivers strong general-purpose recognition capability. A single API call
 
         - **Required** when using **SoMark API**. The plugin will validate your key against the SoMark service when you save.
         - **Not required** for self-hosted deployment (leave it blank if your self-hosted instance does not require authentication).
-        - *No API Key?* [Get 1000 free pages here](https://somark.ai/workbench/purchase)
+        - *No API Key?* Get 1000 free pages: [Mainland China](https://somark.cn/workbench/purchase) | [Taiwan, China; Hong Kong, China; Macau, China; and other overseas regions](https://somark.ai/studio/purchase)
 
 4.  Save your configuration.
 
