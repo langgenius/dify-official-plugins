@@ -504,6 +504,49 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
                 usage=self._calc_response_usage(model=model, credentials=credentials, tokens=token_usage),
             )
             return result
+
+        if model_prefix == "cohere":
+            # In profile mode model_id is the inference profile ARN (line ~425
+            # sets it and, unlike _invoke, never reassigns to the underlying
+            # foundation-model id), so the version guard must use the
+            # underlying id; invocation still goes through model_id (the ARN).
+            cohere_model_id = underlying_model_id if inference_profile_id else model_id
+            if not cohere_model_id.startswith("cohere.embed-v4"):
+                raise ValueError(
+                    f"Model {cohere_model_id} does not support multimodal embedding; use cohere.embed-v4:0"
+                )
+            v4_input_type = (
+                "search_document" if input_type == EmbeddingInputType.DOCUMENT else "search_query"
+            )
+            for document in documents:
+                if document.content_type == MultiModalContentType.TEXT:
+                    content_part = {"type": "text", "text": document.content}
+                    token_usage += len(document.content)
+                elif document.content_type == MultiModalContentType.IMAGE:
+                    image = document.content
+                    image_format = self._get_image_format(image)
+                    if image_format not in ["jpeg", "png", "gif", "webp"]:
+                        raise ValueError(f"Unsupported image format: {image_format}")
+                    if image.startswith("data:"):
+                        image_url = image
+                    else:
+                        image_url = f"data:image/{image_format};base64,{image}"
+                    content_part = {"type": "image_url", "image_url": {"url": image_url}}
+                else:
+                    raise ValueError(f"Unsupported content type: {document.content_type}")
+
+                request_body = {
+                    "input_type": v4_input_type,
+                    "inputs": [{"content": [content_part]}],
+                }
+                response_body = self._invoke_bedrock_embedding(model_id, bedrock_runtime, request_body)
+                embeddings.extend(self._parse_embed_v4_embeddings(response_body))
+            result = MultiModalEmbeddingResult(
+                model=model,
+                embeddings=embeddings,
+                usage=self._calc_response_usage(model=model, credentials=credentials, tokens=token_usage),
+            )
+            return result
         # others
         raise ValueError(f"Got unknown model prefix {model_prefix} when handling block response")
 
