@@ -6,13 +6,14 @@ from typing import Any
 from urllib.error import URLError
 
 import pytest
+import yaml
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from dify_plugin.config.config import DifyPluginEnv
 from dify_plugin.core.plugin_registration import PluginRegistration
-from dify_plugin.entities.model import ModelType
-from dify_plugin.entities.model.llm import LLMPollingStatus, LLMUsage
+from dify_plugin.entities.model import ModelFeature, ModelPropertyKey, ModelType
+from dify_plugin.entities.model.llm import LLMMode, LLMPollingStatus, LLMUsage
 from dify_plugin.entities.model.message import (
     AudioPromptMessageContent,
     ImagePromptMessageContent,
@@ -42,6 +43,10 @@ def credentials() -> dict[str, str]:
         "ark_api_key": "test-key",
         "api_endpoint_host": "https://ark.ap-southeast.bytepluses.com/api/v3",
     }
+
+
+def video_credentials() -> dict[str, str]:
+    return {**credentials(), "endpoint_type": "video_generation"}
 
 
 @dataclass(frozen=True)
@@ -185,6 +190,53 @@ def test_request_model_uses_configured_endpoint(
     assert requests[0][1] == 60
 
 
+def test_provider_yaml_exposes_custom_video_model() -> None:
+    provider_file = Path(__file__).resolve().parents[1] / "provider/byteplus.yaml"
+    provider = yaml.safe_load(provider_file.read_text(encoding="utf-8"))
+
+    assert "customizable-model" in provider["configurate_methods"]
+    assert (
+        provider["model_credential_schema"]["model"]["label"]["en_US"]
+        == "Video Model ID / Endpoint ID"
+    )
+    variables = {
+        field["variable"]
+        for field in provider["model_credential_schema"]["credential_form_schemas"]
+    }
+    assert {"ark_api_key", "api_endpoint_host", "endpoint_type"} <= variables
+
+
+def test_custom_video_schema_exposes_polling_features() -> None:
+    schema = make_model().get_customizable_model_schema(
+        "ep-test", video_credentials()
+    )
+
+    assert schema is not None
+    assert schema.model == "ep-test"
+    assert schema.model_properties[ModelPropertyKey.MODE] == LLMMode.CHAT.value
+    assert {
+        ModelFeature.POLLING,
+        ModelFeature.VISION,
+        ModelFeature.VIDEO,
+        ModelFeature.AUDIO,
+    } <= set(schema.features or [])
+    rule_names = {rule.name for rule in schema.parameter_rules}
+    assert {
+        "input_mode",
+        "resolution",
+        "ratio",
+        "duration",
+        "seed",
+        "generate_audio",
+        "watermark",
+        "return_last_frame",
+        "callback_url",
+        "service_tier",
+        "execution_expires_after",
+    } <= rule_names
+    assert "web_search" not in rule_names
+
+
 def test_seedance_validate_credentials_uses_non_generation_probe(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -198,6 +250,28 @@ def test_seedance_validate_credentials_uses_non_generation_probe(
     monkeypatch.setattr(model, "request_model", fake_request_model)
 
     model.validate_credentials("seedance-2-0-260128", credentials())
+
+    assert requests == [
+        CapturedRequest(
+            method="GET",
+            path="contents/generations/tasks?page_num=1&page_size=1",
+        )
+    ]
+
+
+def test_custom_video_validate_credentials_uses_non_generation_probe(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    model = make_model()
+    requests: list[CapturedRequest] = []
+
+    def fake_request_model(**kwargs: Any) -> Any:
+        requests.append(CapturedRequest.from_kwargs(kwargs))
+        return provider_response(kwargs, {"data": []})
+
+    monkeypatch.setattr(model, "request_model", fake_request_model)
+
+    model.validate_credentials("ep-test", video_credentials())
 
     assert requests == [
         CapturedRequest(
@@ -310,6 +384,70 @@ def test_seedance_start_polling_creates_task_without_web_search(
     }
 
 
+def test_custom_video_start_polling_creates_task_without_web_search(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    model = make_model()
+    requests: list[CapturedRequest] = []
+
+    def fake_request_model(**kwargs: Any) -> Any:
+        requests.append(CapturedRequest.from_kwargs(kwargs))
+        return provider_response(kwargs, {"id": "task-1", "status": "queued"})
+
+    monkeypatch.setattr(model, "request_model", fake_request_model)
+
+    result = model._start_polling(
+        model="ep-test",
+        credentials=video_credentials(),
+        prompt_messages=[
+            UserPromptMessage(
+                content=[
+                    TextPromptMessageContent(data="make a calm ocean video"),
+                    VideoPromptMessageContent(
+                        format="mp4",
+                        mime_type="video/mp4",
+                        url="https://example.com/reference.mp4",
+                    ),
+                    AudioPromptMessageContent(
+                        format="mp3",
+                        mime_type="audio/mpeg",
+                        url="https://example.com/reference.mp3",
+                    ),
+                ],
+            )
+        ],
+        model_parameters={"duration": 5, "resolution": "720p", "web_search": True},
+        stream=False,
+    )
+
+    assert result.status == LLMPollingStatus.RUNNING
+    assert result.plugin_state == {
+        "task_id": "task-1",
+        "model": "ep-test",
+        "platform": "byteplus",
+    }
+    assert requests[0].method == "POST"
+    assert requests[0].path == "contents/generations/tasks"
+    assert requests[0].payload_dict() == {
+        "model": "ep-test",
+        "content": [
+            {"type": "text", "text": "make a calm ocean video"},
+            {
+                "type": "video_url",
+                "video_url": {"url": "https://example.com/reference.mp4"},
+                "role": "reference_video",
+            },
+            {
+                "type": "audio_url",
+                "audio_url": {"url": "https://example.com/reference.mp3"},
+                "role": "reference_audio",
+            },
+        ],
+        "duration": 5,
+        "resolution": "720p",
+    }
+
+
 def test_seedance_public_start_polling_works_without_legacy_forwarded_keywords(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
@@ -401,6 +539,45 @@ def test_seedance_check_polling_returns_video_result(
     assert isinstance(video, VideoPromptMessageContent)
     assert video.url == "https://example.com/result.mp4"
     assert video.mime_type == "video/mp4"
+
+
+def test_custom_video_check_polling_returns_video_result(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    model = make_model()
+    monkeypatch.setattr(
+        model,
+        "usage_from_provider_payload",
+        lambda **_: LLMUsage.empty_usage(),
+    )
+
+    def fake_request_model(**kwargs: Any) -> Any:
+        assert kwargs["method"] == "GET"
+        assert kwargs["path"] == "contents/generations/tasks/task-1"
+        return provider_response(
+            kwargs,
+            {
+                "id": "task-1",
+                "status": "succeeded",
+                "content": {"video_url": "https://example.com/result.mp4"},
+                "usage": {"completion_tokens": 12, "total_tokens": 12},
+            },
+        )
+
+    monkeypatch.setattr(model, "request_model", fake_request_model)
+
+    result = model._check_polling(
+        model="ep-test",
+        credentials=video_credentials(),
+        plugin_state={"task_id": "task-1"},
+    )
+
+    assert result.status == LLMPollingStatus.SUCCEEDED
+    assert result.result is not None
+    assert isinstance(result.result.message.content, list)
+    video = result.result.message.content[0]
+    assert isinstance(video, VideoPromptMessageContent)
+    assert video.url == "https://example.com/result.mp4"
 
 
 def test_seedance_public_check_polling_works_without_legacy_forwarded_keywords(
