@@ -45,8 +45,8 @@ model_credential_schema:
     variable: ark_api_key
   - default: https://ark.cn-beijing.volces.com/api/v3
     label:
-      en_US: API Endpoint
-      zh_Hans: API Endpoint
+      en_US: API Base URL
+      zh_Hans: API Base URL
     placeholder:
       en_US: https://ark.cn-beijing.volces.com/api/v3
       zh_Hans: https://ark.cn-beijing.volces.com/api/v3
@@ -84,8 +84,8 @@ provider_credential_schema:
     variable: ark_api_key
   - default: https://ark.cn-beijing.volces.com/api/v3
     label:
-      en_US: API Endpoint
-      zh_Hans: API Endpoint
+      en_US: API Base URL
+      zh_Hans: API Base URL
     placeholder:
       en_US: https://ark.cn-beijing.volces.com/api/v3
       zh_Hans: https://ark.cn-beijing.volces.com/api/v3
