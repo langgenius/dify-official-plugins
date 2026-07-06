@@ -512,3 +512,24 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
             return "bmp"
         else:
             return "unknown"
+
+    @staticmethod
+    def _parse_embed_v4_embeddings(response_body: dict) -> list:
+        """
+        Parse a Cohere Embed v4 response. Live responses use the
+        embeddings_by_type dict shape even for single-type requests;
+        the docs also describe a plain-list embeddings_floats shape.
+        """
+        embeddings = response_body.get("embeddings")
+        if isinstance(embeddings, dict):
+            float_embeddings = embeddings.get("float")
+            if float_embeddings is None:
+                raise InvokeBadRequestError(
+                    f"Embed v4 response missing float embeddings, got types: {list(embeddings.keys())}"
+                )
+            return float_embeddings
+        if isinstance(embeddings, list):
+            return embeddings
+        raise InvokeBadRequestError(
+            f"Unexpected Embed v4 response_type: {response_body.get('response_type')}"
+        )
