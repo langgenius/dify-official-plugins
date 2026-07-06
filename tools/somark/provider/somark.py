@@ -4,7 +4,13 @@ import requests
 from dify_plugin import ToolProvider
 
 
-SOMARK_API_BASE_URL = "https://somark.tech/api/v1"
+# Official SoMark API base URLs by region:
+#   - somark.cn  : Mainland China
+#   - somark.ai  : Taiwan (China), Hong Kong (China), Macau (China), and other overseas regions
+SOMARK_OFFICIAL_BASE_URLS = (
+    "https://somark.cn/api/v1",
+    "https://somark.ai/api/v1",
+)
 
 
 class SoMarkProvider(ToolProvider):
@@ -24,19 +30,19 @@ class SoMarkProvider(ToolProvider):
         if  not base_url.startswith(("http://", "https://")):
             raise ValueError("Base URL must start with http:// or https://")
 
-        if base_url == SOMARK_API_BASE_URL and not api_key:
+        if base_url in SOMARK_OFFICIAL_BASE_URLS and not api_key:
             raise ValueError("API Key is required when using the SoMark API")
 
-        if base_url == SOMARK_API_BASE_URL:
-            self._validate_api_key_via_official(api_key)
+        if base_url in SOMARK_OFFICIAL_BASE_URLS:
+            self._validate_api_key_via_official(base_url, api_key)
 
     
 
     @staticmethod
-    def _validate_api_key_via_official(api_key: str) -> None:
+    def _validate_api_key_via_official(base_url: str, api_key: str) -> None:
         try:
             resp = requests.post(
-                f"{SOMARK_API_BASE_URL}/usage",
+                f"{base_url}/usage",
                 data={"api_key": api_key},
                 timeout=10,
             )
