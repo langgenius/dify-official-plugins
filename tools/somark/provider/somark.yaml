@@ -5,8 +5,8 @@ credentials_for_provider:
       en_US: Base URL
       zh_Hans: Base URL
     placeholder:
-      en_US: For SoMark API, fill in https://somark.tech/api/v1; for self-hosted deployment, fill in your local Base URL
-      zh_Hans: 使用 SoMark API 时填写 https://somark.tech/api/v1；私有化部署时填写本地部署的 Base URL
+      en_US: For SoMark API, use https://somark.cn/api/v1 (Mainland China) or https://somark.ai/api/v1 (Taiwan, China; Hong Kong, China; Macau, China; and other overseas regions); for self-hosted deployment, fill in your local Base URL
+      zh_Hans: 使用 SoMark API 时，中国大陆填写 https://somark.cn/api/v1，中国台湾、中国香港、中国澳门及其他海外地区填写 https://somark.ai/api/v1；私有化部署时填写本地部署的 Base URL
     required: true
     type: text-input
 
@@ -19,7 +19,7 @@ credentials_for_provider:
       zh_Hans: 使用 SoMark API 时填写；私有化部署无需填写
     required: false
     type: secret-input
-    url: https://docs.somark.tech/documentation/api
+    url: https://docs.somark.ai/documentation/api
 
 identity:
   author: SoulCode
