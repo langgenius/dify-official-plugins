@@ -133,15 +133,29 @@ class BedrockTextEmbeddingModel(TextEmbeddingModel):
             return result
 
         if model_prefix == "cohere":
-            input_type = "search_document" if len(texts) > 1 else "search_query"
-            for text in texts:
-                body = {
-                    "texts": [text],
-                    "input_type": input_type,
-                }
-                response_body = self._invoke_bedrock_embedding(model_package_arn, bedrock_runtime, body)
-                embeddings.extend(response_body.get("embeddings"))
-                token_usage += len(text)
+            if model_id.startswith("cohere.embed-v4"):
+                # Embed v4: honor the framework-provided input type
+                v4_input_type = (
+                    "search_document" if input_type == EmbeddingInputType.DOCUMENT else "search_query"
+                )
+                for text in texts:
+                    body = {
+                        "texts": [text],
+                        "input_type": v4_input_type,
+                    }
+                    response_body = self._invoke_bedrock_embedding(model_package_arn, bedrock_runtime, body)
+                    embeddings.extend(self._parse_embed_v4_embeddings(response_body))
+                    token_usage += len(text)
+            else:
+                cohere_input_type = "search_document" if len(texts) > 1 else "search_query"
+                for text in texts:
+                    body = {
+                        "texts": [text],
+                        "input_type": cohere_input_type,
+                    }
+                    response_body = self._invoke_bedrock_embedding(model_package_arn, bedrock_runtime, body)
+                    embeddings.extend(response_body.get("embeddings"))
+                    token_usage += len(text)
             result = TextEmbeddingResult(
                 model=model,
                 embeddings=embeddings,
