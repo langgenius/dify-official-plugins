@@ -39,8 +39,8 @@ provider_credential_schema:
     type: secret-input
     variable: api_key
   - label:
-      en_US: Custom API endpoint URL
-      zh_Hans: 自定义 API endpoint 地址
+      en_US: API Base URL
+      zh_Hans: API Base URL
     placeholder:
       en_US: Base URL, e.g. https://api.deepseek.com/v1 or https://api.deepseek.com
       zh_Hans: Base URL, e.g. https://api.deepseek.com/v1 or https://api.deepseek.com

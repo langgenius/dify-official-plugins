@@ -25,8 +25,8 @@ model_credential_schema:
   credential_form_schemas:
     - variable: endpoint_url
       label:
-        zh_Hans: API endpoint URL
-        en_US: API endpoint URL
+        zh_Hans: API Base URL
+        en_US: API Base URL
       type: text-input
       required: true
       placeholder:

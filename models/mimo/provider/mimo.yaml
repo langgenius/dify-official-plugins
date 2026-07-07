@@ -39,8 +39,8 @@ provider_credential_schema:
     type: secret-input
     variable: api_key
   - label:
-      en_US: API Endpoint
-      zh_Hans: API 接入地址
+      en_US: API Base URL
+      zh_Hans: API Base URL
     placeholder:
       en_US: Select or enter Base URL
       zh_Hans: 选择或输入 Base URL
