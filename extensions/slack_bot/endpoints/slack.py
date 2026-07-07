@@ -56,7 +56,6 @@ class SlackEndpoint(Endpoint):
                                     "text": formatted_answer
                                 }
                             }]
-                            
                             result = client.chat_postMessage(
                                 channel=channel,
                                 text=formatted_answer,  # Fallback text
