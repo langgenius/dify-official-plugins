@@ -89,7 +89,7 @@ provider_credential_schema:
     type: secret-input
     variable: api_key
   - label:
-      en_US: API Base
+      en_US: API Base URL
     placeholder:
       en_US: Base URL, e.g. https://api.moonshot.cn/v1
       zh_Hans: Base URL, 如：https://api.moonshot.cn/v1
