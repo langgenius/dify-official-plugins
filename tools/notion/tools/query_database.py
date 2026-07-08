@@ -187,7 +187,13 @@ def _build_filter(filter_property: str, filter_condition: str, filter_value: str
         sub_type = _guess_scalar_type(filter_value)
         _validate_condition(SCALAR_TYPE_TO_CONDITION_GROUP[sub_type], filter_condition, filter_property, f"rollup array ({sub_type})")
         value = _condition_value(filter_condition, filter_value)
-        return {"property": filter_property, "rollup": {"any": {sub_type: {filter_condition: value}}}}
+        if sub_type == "number":
+            value = value if filter_condition in NO_VALUE_CONDITIONS else _to_number(value)
+        elif sub_type == "checkbox":
+            value = value if filter_condition in NO_VALUE_CONDITIONS else _to_bool(value)
+        # Notion's array-rollup filter uses the standard property filter key (rich_text), not "string"
+        rollup_key = "rich_text" if sub_type == "string" else sub_type
+        return {"property": filter_property, "rollup": {"any": {rollup_key: {filter_condition: value}}}}
 
     if property_type:
         # Unknown/unsupported property type: fall back to a rich_text-shaped filter
