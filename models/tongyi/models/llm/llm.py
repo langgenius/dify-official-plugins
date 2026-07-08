@@ -188,11 +188,10 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         if model in {"qwen-turbo-chat", "qwen-plus-chat"}:
             model = model.replace("-chat", "")
         extra_model_kwargs = {}
+        tool_choice = model_parameters.pop("tool_choice", None)
         if tools:
             extra_model_kwargs["tools"] = self._convert_tools(tools)
-            extra_model_kwargs["tool_choice"] = model_parameters.pop(
-                "tool_choice", "auto"
-            )
+            extra_model_kwargs["tool_choice"] = tool_choice or "auto"
         if stop:
             extra_model_kwargs["stop"] = stop
 
