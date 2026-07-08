@@ -201,6 +201,35 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 "max_tokens_to_sample"
             )
 
+        if "max_tokens" not in model_parameters:
+            # Model-aware default: use each model's native max output limit
+            # See: https://platform.claude.com/docs/en/about-claude/models/overview
+            _MAX_TOKENS_128K = {
+                "claude-opus-4-7", "claude-opus-4-7-think",
+                "claude-opus-4-6", "claude-opus-4-6-think",
+            }
+            _MAX_TOKENS_64K = {
+                "claude-sonnet-4-6", "claude-sonnet-4-6-think",
+                "claude-sonnet-4-5",
+                "claude-sonnet-4-20250514",
+                "claude-haiku-4-5",
+                "claude-opus-4-5", "claude-opus-4-5-think",
+                "claude-opus-4-1-20250805",
+                "claude-opus-4-20250514",
+            }
+            _MAX_TOKENS_8K = {
+                "claude-3-5-sonnet-20241022",
+                "claude-3-5-haiku-20241022",
+            }
+            if model in _MAX_TOKENS_128K:
+                model_parameters["max_tokens"] = 128000
+            elif model in _MAX_TOKENS_64K:
+                model_parameters["max_tokens"] = 64000
+            elif model in _MAX_TOKENS_8K:
+                model_parameters["max_tokens"] = 8192
+            else:
+                model_parameters["max_tokens"] = 4096
+
         thinking = model_parameters.pop("thinking", False)
         thinking_budget = model_parameters.pop("thinking_budget", 1024)
         context_1m = model_parameters.pop("context_1m", False)
@@ -936,9 +965,8 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             "timeout": Timeout(315.0, read=300.0, write=10.0, connect=5.0),
             "max_retries": 1,
         }
-        api_url = credentials.get("api_url")
-
-        
+        _sel = credentials.get("api_url")
+        api_url = credentials.get("api_url_custom") if _sel == "__custom__" else _sel
         if api_url:
             credentials_kwargs["base_url"] = api_url.rstrip("/")
         return credentials_kwargs

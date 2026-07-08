@@ -12,6 +12,7 @@
 - Pro/deepseek-ai/DeepSeek-V3.1
 - Pro/deepseek-ai/DeepSeek-V3.1-Terminus
 - Pro/deepseek-ai/DeepSeek-V3.2
+- deepseek-ai/DeepSeek-V4-Pro
 - deepseek-ai/DeepSeek-V4-Flash
 - deepseek-ai/DeepSeek-V3.2
 - deepseek-ai/DeepSeek-OCR
@@ -61,4 +62,7 @@
 - Pro/zai-org/GLM-4.7
 - Pro/zai-org/GLM-5
 - Pro/zai-org/GLM-5.1
+- zai-org/GLM-5.2
 - stepfun-ai/Step-3.5-Flash
+- meituan-longcat/LongCat-2.0
+- nex-agi/Nex-N2-Pro

@@ -35,7 +35,7 @@ from openai import OpenAI
 
 class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
     # Pre-compiled regex for better performance
-    _THINK_PATTERN = re.compile(r"^<think>.*?</think>\s*", re.DOTALL)
+    _THINK_PATTERN = re.compile(r"<think>.*?</think>\s*", re.DOTALL)
     # Models that require max_completion_tokens (OpenAI Responses API family)
     _NEEDS_MAX_COMPLETION_TOKENS_PATTERN = re.compile(r"^(o1|o3|gpt-5)", re.IGNORECASE)
 
@@ -249,26 +249,13 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             entity.parameter_rules.append(
                 ParameterRule(
                     name=DefaultParameterName.RESPONSE_FORMAT.value,
-                    label=I18nObject(en_US="Response Format", zh_Hans="回复格式"),
+                    label=I18nObject(en_us="Response Format", zh_hans="回复格式"),
                     help=I18nObject(
-                        en_US="Specifying the format that the model must output.",
-                        zh_Hans="指定模型必须输出的回复格式。",
+                        en_us="Specifying the format that the model must output.",
+                        zh_hans="指定模型必须输出的回复格式。",
                     ),
                     type=ParameterType.STRING,
                     options=["text", "json_object", "json_schema"],
-                    required=False,
-                )
-            )
-            entity.parameter_rules.append(
-                ParameterRule(
-                    name="reasoning_format",
-                    label=I18nObject(en_US="Reasoning Format", zh_Hans="推理格式"),
-                    help=I18nObject(
-                        en_US="Specifying the format that the model must output reasoning.",
-                        zh_Hans="指定模型必须输出的推理格式。",
-                    ),
-                    type=ParameterType.STRING,
-                    options=["none", "auto", "deepseek", "deepseek-legacy"],
                     required=False,
                 )
             )
@@ -281,26 +268,26 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
 
         if "display_name" in credentials and credentials["display_name"] != "":
             entity.label = I18nObject(
-                en_US=credentials["display_name"], zh_Hans=credentials["display_name"]
+                en_us=credentials["display_name"], zh_hans=credentials["display_name"]
             )
 
         # Configure thinking mode parameter based on model support
         agent_thought_support = credentials.get("agent_thought_support", "not_supported")
-        
+
         # Add AGENT_THOUGHT feature if thinking mode is supported (either mode)
         if agent_thought_support in ["supported", "only_thinking_supported"] and ModelFeature.AGENT_THOUGHT not in entity.features:
             entity.features.append(ModelFeature.AGENT_THOUGHT)
-        
+
         # Only add the enable_thinking parameter if the model supports both modes
         # If only_thinking_supported, the parameter is not needed (forced behavior)
         if agent_thought_support == "supported":
             entity.parameter_rules.append(
                 ParameterRule(
                     name="enable_thinking",
-                    label=I18nObject(en_US="Thinking mode", zh_Hans="思考模式"),
+                    label=I18nObject(en_us="Thinking mode", zh_hans="思考模式"),
                     help=I18nObject(
-                        en_US="Whether to enable thinking mode, applicable to various thinking mode models deployed on reasoning frameworks such as vLLM and SGLang, for example Qwen3.",
-                        zh_Hans="是否开启思考模式，适用于vLLM和SGLang等推理框架部署的多种思考模式模型，例如Qwen3。",
+                        en_us="Whether to enable thinking mode, applicable to various thinking mode models deployed on reasoning frameworks such as vLLM and SGLang, for example Qwen3.",
+                        zh_hans="是否开启思考模式，适用于vLLM和SGLang等推理框架部署的多种思考模式模型，例如Qwen3。",
                     ),
                     type=ParameterType.BOOLEAN,
                     required=False,
@@ -310,11 +297,24 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         if agent_thought_support in ["supported", "only_thinking_supported"]:
             entity.parameter_rules.append(
                 ParameterRule(
-                    name="reasoning_effort",
-                    label=I18nObject(en_US="Reasoning effort", zh_Hans="推理工作"),
+                    name="reasoning_format",
+                    label=I18nObject(en_us="Reasoning Format", zh_hans="推理格式"),
                     help=I18nObject(
-                        en_US="Constrains effort on reasoning for reasoning models.",
-                        zh_Hans="限制推理模型的推理工作。",
+                        en_us="Specifies the format in which the model must output reasoning.",
+                        zh_hans="指定模型必须输出的推理格式。",
+                    ),
+                    type=ParameterType.STRING,
+                    options=["none", "auto", "deepseek", "deepseek-legacy"],
+                    required=False,
+                )
+            )
+            entity.parameter_rules.append(
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(en_us="Reasoning effort", zh_hans="推理工作"),
+                    help=I18nObject(
+                        en_us="Constrains effort on reasoning for reasoning models.",
+                        zh_hans="限制推理模型的推理工作。",
                     ),
                     type=ParameterType.STRING,
                     options=["low", "medium", "high"],
@@ -354,11 +354,11 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             if not isinstance(p.content, str):
                 continue
             # Quick check to avoid regex if not needed
-            if not p.content.startswith("<think>"):
+            if "<think>" not in p.content:
                 continue
 
             # Only perform regex substitution when necessary
-            new_content = cls._THINK_PATTERN.sub("", p.content, count=1)
+            new_content = cls._THINK_PATTERN.sub("", p.content)
             # Only update if changed
             if new_content != p.content:
                 p.content = new_content
@@ -497,6 +497,10 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
             # This allows compatibility API format: {"enable_thinking": False/True}
             model_parameters["enable_thinking"] = enable_thinking_value
 
+        reasoning_format_value = model_parameters.pop("reasoning_format", None)
+        if reasoning_format_value is not None and strict_compatibility_value is False:
+            model_parameters["reasoning_format"] = reasoning_format_value
+
         reasoning_effort_value = model_parameters.pop("reasoning_effort", None)
         if enable_thinking_value is True and reasoning_effort_value is not None:
             # Propagate reasoning_effort to both:
@@ -548,8 +552,8 @@ class OpenAILargeLanguageModel(OAICompatLargeLanguageModel):
         """Filter thinking content from non-streaming result"""
         if result.message and result.message.content:
             content = result.message.content
-            if isinstance(content, str) and content.startswith("<think>"):
-                filtered_content = self._THINK_PATTERN.sub("", content, count=1)
+            if isinstance(content, str) and "<think>" in content:
+                filtered_content = self._THINK_PATTERN.sub("", content)
                 if filtered_content != content:
                     result.message.content = filtered_content
         return result

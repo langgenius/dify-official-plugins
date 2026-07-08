@@ -25,13 +25,8 @@ plugins:
     - provider/lark.yaml
 resource:
   memory: 1048576
-  permission:
-    model:
-      enabled: true
-      llm: true
-    tool:
-      enabled: true
+  permission: {}
 tags:
   - utilities
 type: plugin
-version: 0.0.6
+version: 0.1.0

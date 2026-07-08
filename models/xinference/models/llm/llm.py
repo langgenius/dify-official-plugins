@@ -353,13 +353,13 @@ class XinferenceAILargeLanguageModel(LargeLanguageModel):
                 name="temperature",
                 type=ParameterType.FLOAT,
                 use_template="temperature",
-                label=I18nObject(zh_Hans="温度", en_US="Temperature"),
+                label=I18nObject(zh_hans="温度", en_us="Temperature"),
             ),
             ParameterRule(
                 name="top_p",
                 type=ParameterType.FLOAT,
                 use_template="top_p",
-                label=I18nObject(zh_Hans="Top P", en_US="Top P"),
+                label=I18nObject(zh_hans="Top P", en_us="Top P"),
             ),
             ParameterRule(
                 name="max_tokens",
@@ -368,17 +368,17 @@ class XinferenceAILargeLanguageModel(LargeLanguageModel):
                 min=1,
                 max=credentials.get("context_length", 2048),
                 default=512,
-                label=I18nObject(zh_Hans="最大生成长度", en_US="Max Tokens"),
+                label=I18nObject(zh_hans="最大生成长度", en_us="Max Tokens"),
             ),
             ParameterRule(
                 name=DefaultParameterName.PRESENCE_PENALTY.value,
                 use_template=DefaultParameterName.PRESENCE_PENALTY.value,
                 type=ParameterType.FLOAT,
-                label=I18nObject(en_US="Presence Penalty", zh_Hans="存在惩罚"),
+                label=I18nObject(en_us="Presence Penalty", zh_hans="存在惩罚"),
                 required=False,
                 help=I18nObject(
-                    en_US="Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.",
-                    zh_Hans="介于 -2.0 和 2.0 之间的数字。正值会根据新词是否已出现在文本中对其进行惩罚，从而增加模型谈论新话题的可能性。",
+                    en_us="Number between -2.0 and 2.0. Positive values penalize new tokens based on whether they appear in the text so far, increasing the model's likelihood to talk about new topics.",
+                    zh_hans="介于 -2.0 和 2.0 之间的数字。正值会根据新词是否已出现在文本中对其进行惩罚，从而增加模型谈论新话题的可能性。",
                 ),
                 default=0.0,
                 min=-2.0,
@@ -389,11 +389,11 @@ class XinferenceAILargeLanguageModel(LargeLanguageModel):
                 name=DefaultParameterName.FREQUENCY_PENALTY.value,
                 use_template=DefaultParameterName.FREQUENCY_PENALTY.value,
                 type=ParameterType.FLOAT,
-                label=I18nObject(en_US="Frequency Penalty", zh_Hans="频率惩罚"),
+                label=I18nObject(en_us="Frequency Penalty", zh_hans="频率惩罚"),
                 required=False,
                 help=I18nObject(
-                    en_US="Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.",
-                    zh_Hans="介于 -2.0 和 2.0 之间的数字。正值会根据新词在文本中的现有频率对其进行惩罚，从而降低模型逐字重复相同内容的可能性。",
+                    en_us="Number between -2.0 and 2.0. Positive values penalize new tokens based on their existing frequency in the text so far, decreasing the model's likelihood to repeat the same line verbatim.",
+                    zh_hans="介于 -2.0 和 2.0 之间的数字。正值会根据新词在文本中的现有频率对其进行惩罚，从而降低模型逐字重复相同内容的可能性。",
                 ),
                 default=0.0,
                 min=-2.0,
@@ -435,7 +435,7 @@ class XinferenceAILargeLanguageModel(LargeLanguageModel):
         context_length = credentials.get("context_length", 2048)
         entity = AIModelEntity(
             model=model,
-            label=I18nObject(en_US=model),
+            label=I18nObject(en_us=model),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_type=ModelType.LLM,
             features=features,
@@ -448,7 +448,7 @@ class XinferenceAILargeLanguageModel(LargeLanguageModel):
                 ParameterRule(
                     name="think",
                     type=ParameterType.BOOLEAN,
-                    label=I18nObject(zh_Hans="思考模式", en_US="Think"),
+                    label=I18nObject(zh_hans="思考模式", en_us="Think"),
                 ),
             ],
         )

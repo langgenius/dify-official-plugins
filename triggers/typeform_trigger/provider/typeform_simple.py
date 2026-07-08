@@ -248,6 +248,7 @@ class TypeformSubscriptionConstructor(TriggerSubscriptionConstructor):
             raise TriggerProviderOAuthError("client_id is required for Typeform OAuth.")
 
         state = secrets.token_urlsafe(16)
+        self._store_oauth_state(redirect_uri, state)
         params = {
             "client_id": client_id,
             "redirect_uri": redirect_uri,
@@ -263,6 +264,13 @@ class TypeformSubscriptionConstructor(TriggerSubscriptionConstructor):
         system_credentials: Mapping[str, Any],
         request: Request,
     ) -> TriggerOAuthCredentials:
+        error = self._normalize_optional_string(request.args.get("error"))
+        if error:
+            description = self._normalize_optional_string(request.args.get("error_description")) or ""
+            raise TriggerProviderOAuthError(f"Typeform OAuth authorization failed: {error}: {description}".strip(": "))
+
+        self._validate_oauth_state(redirect_uri, request.args.get("state"))
+
         code = self._normalize_optional_string(request.args.get("code"))
         if not code:
             raise TriggerProviderOAuthError("Missing authorization code in callback.")
@@ -343,7 +351,7 @@ class TypeformSubscriptionConstructor(TriggerSubscriptionConstructor):
             options.append(
                 ParameterOption(
                     value=form_id,
-                    label=I18nObject(en_US=f"{label_text} ({form_id})"),
+                    label=I18nObject(en_us=f"{label_text} ({form_id})"),
                     icon=form.get("_links", {}).get("display") if isinstance(form.get("_links"), Mapping) else None,
                 )
             )
@@ -613,3 +621,28 @@ class TypeformSubscriptionConstructor(TriggerSubscriptionConstructor):
     def _generate_webhook_tag(form_id: str) -> str:
         unique = uuid.uuid4().hex[:10]
         return f"dify-{form_id[:8]}-{unique}"
+
+    def _oauth_state_key(self, redirect_uri: str, state: str) -> str:
+        import hashlib
+
+        digest = hashlib.sha256(f"typeform:{redirect_uri}:{state}".encode("utf-8")).hexdigest()
+        return f"typeform:oauth_state:{digest}"
+
+    def _store_oauth_state(self, redirect_uri: str, state: str) -> None:
+        try:
+            self.runtime.session.storage.set(self._oauth_state_key(redirect_uri, state), b"1")
+        except Exception as exc:
+            raise TriggerProviderOAuthError("Unable to persist Typeform OAuth state; storage permission is required.") from exc
+
+    def _validate_oauth_state(self, redirect_uri: str, state: str | None) -> None:
+        if not state:
+            raise TriggerProviderOAuthError("Typeform OAuth callback missing state.")
+        key = self._oauth_state_key(redirect_uri, state)
+        try:
+            if not self.runtime.session.storage.exist(key):
+                raise TriggerProviderOAuthError("Typeform OAuth state is invalid or expired.")
+            self.runtime.session.storage.delete(key)
+        except TriggerProviderOAuthError:
+            raise
+        except Exception as exc:
+            raise TriggerProviderOAuthError("Unable to validate Typeform OAuth state.") from exc

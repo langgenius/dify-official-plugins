@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import base64
+import hashlib
 import json
 import secrets
 import time
@@ -238,9 +239,14 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
         )
 
     def _oauth_get_authorization_url(self, redirect_uri: str, system_credentials: Mapping[str, Any]) -> str:
+        client_id = system_credentials.get("client_id")
+        if not client_id:
+            raise TriggerProviderOAuthError("Client ID is required to start Gmail OAuth flow")
+
         state = secrets.token_urlsafe(16)
+        self._store_oauth_state(redirect_uri, state)
         params = {
-            "client_id": system_credentials["client_id"],
+            "client_id": client_id,
             "redirect_uri": redirect_uri,
             "response_type": "code",
             "scope": self._DEFAULT_SCOPE,
@@ -254,6 +260,13 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
     def _oauth_get_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], request: Request
     ) -> TriggerOAuthCredentials:
+        error = request.args.get("error")
+        if error:
+            description = request.args.get("error_description") or ""
+            raise TriggerProviderOAuthError(f"Gmail OAuth authorization failed: {error}: {description}".strip(": "))
+
+        self._validate_oauth_state(redirect_uri, request.args.get("state"))
+
         code = request.args.get("code")
         if not code:
             raise TriggerProviderOAuthError("No code provided")
@@ -270,15 +283,23 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
             "grant_type": "authorization_code",
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        resp: requests.Response = requests.post(self._TOKEN_URL, data=data, headers=headers, timeout=10)
-        payload: dict[str, Any] = resp.json()
+        try:
+            resp: requests.Response = requests.post(self._TOKEN_URL, data=data, headers=headers, timeout=10)
+        except requests.RequestException as exc:
+            raise TriggerProviderOAuthError(f"Network error during Gmail OAuth token exchange: {exc}") from exc
+        try:
+            payload: dict[str, Any] = resp.json()
+        except ValueError as exc:
+            raise TriggerProviderOAuthError("Gmail OAuth token response was not valid JSON") from exc
+        if resp.status_code >= 400:
+            raise TriggerProviderOAuthError(f"Gmail OAuth token exchange failed: {self._extract_google_error(resp, payload)}")
         access_token: str | None = payload.get("access_token")
         if not access_token:
             raise TriggerProviderOAuthError(f"Error in Google OAuth: {payload}")
 
         expires_in: int = int(payload.get("expires_in") or 0)
         refresh_token: str | None = payload.get("refresh_token")
-        expires_at: int = int(time.time()) + expires_in if expires_in else -1
+        expires_at: int = int(time.time()) + max(expires_in - 60, 0) if expires_in else -1
 
         # 2. Parse and store GCP configuration from system_credentials
         import json as _json
@@ -345,14 +366,22 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
             "grant_type": "refresh_token",
         }
         headers = {"Content-Type": "application/x-www-form-urlencoded"}
-        resp: requests.Response = requests.post(self._TOKEN_URL, data=data, headers=headers, timeout=10)
-        payload: dict[str, Any] = resp.json()
+        try:
+            resp: requests.Response = requests.post(self._TOKEN_URL, data=data, headers=headers, timeout=10)
+        except requests.RequestException as exc:
+            raise TriggerProviderOAuthError(f"Network error during Gmail OAuth refresh: {exc}") from exc
+        try:
+            payload: dict[str, Any] = resp.json()
+        except ValueError as exc:
+            raise TriggerProviderOAuthError("Gmail OAuth refresh response was not valid JSON") from exc
+        if resp.status_code >= 400:
+            raise TriggerProviderOAuthError(f"OAuth refresh failed: {self._extract_google_error(resp, payload)}")
         access_token: str | None = payload.get("access_token")
         if not access_token:
             raise TriggerProviderOAuthError(f"OAuth refresh failed: {payload}")
 
         expires_in: int = int(payload.get("expires_in") or 0)
-        expires_at: int = int(time.time()) + expires_in if expires_in else -1
+        expires_at: int = int(time.time()) + max(expires_in - 60, 0) if expires_in else -1
         refreshed: dict[str, str] = {"access_token": access_token}
         if refresh_token:
             refreshed["refresh_token"] = refresh_token
@@ -753,5 +782,38 @@ class GmailSubscriptionConstructor(TriggerSubscriptionConstructor):
             lid = lab.get("id")
             name = lab.get("name") or lid
             if lid:
-                options.append(ParameterOption(value=lid, label=I18nObject(en_US=name)))
+                options.append(ParameterOption(value=lid, label=I18nObject(en_us=name)))
         return options
+
+    def _oauth_state_key(self, redirect_uri: str, state: str) -> str:
+        digest = hashlib.sha256(f"gmail:{redirect_uri}:{state}".encode("utf-8")).hexdigest()
+        return f"gmail:oauth_state:{digest}"
+
+    def _store_oauth_state(self, redirect_uri: str, state: str) -> None:
+        try:
+            self.runtime.session.storage.set(self._oauth_state_key(redirect_uri, state), b"1")
+        except Exception as exc:
+            raise TriggerProviderOAuthError("Unable to persist Gmail OAuth state; storage permission is required.") from exc
+
+    def _validate_oauth_state(self, redirect_uri: str, state: str | None) -> None:
+        if not state:
+            raise TriggerProviderOAuthError("Gmail OAuth callback missing state.")
+        key = self._oauth_state_key(redirect_uri, state)
+        try:
+            if not self.runtime.session.storage.exist(key):
+                raise TriggerProviderOAuthError("Gmail OAuth state is invalid or expired.")
+            self.runtime.session.storage.delete(key)
+        except TriggerProviderOAuthError:
+            raise
+        except Exception as exc:
+            raise TriggerProviderOAuthError("Unable to validate Gmail OAuth state.") from exc
+
+    @staticmethod
+    def _extract_google_error(response: requests.Response, payload: Mapping[str, Any]) -> str:
+        error = payload.get("error")
+        if isinstance(error, Mapping):
+            message = error.get("message") or error.get("status")
+            if message:
+                return str(message)
+        message = payload.get("error_description") or payload.get("error")
+        return str(message or response.text or f"HTTP {response.status_code}")[:500]

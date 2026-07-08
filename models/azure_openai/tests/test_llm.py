@@ -24,6 +24,7 @@ from dify_plugin.entities.model.message import (
     TextPromptMessageContent,
     UserPromptMessage,
 )
+from dify_plugin.entities.model.llm import LLMUsage
 from models.llm.llm import AzureOpenAILargeLanguageModel
 from models.constants import LLM_BASE_MODELS, uses_responses_api
 
@@ -391,6 +392,46 @@ class TestResponsesPayloadWithWebSearch(unittest.TestCase):
                     "web_search_user_country": "usa",
                 }
             )
+
+
+class TestResponsesUsageCalculation(unittest.TestCase):
+    """Regression for issue #3322: SDK 0.9.0 _calc_response_usage rejects detail kwargs."""
+
+    def test_handle_responses_response_uses_four_arg_calc_usage(self):
+        llm = make_llm()
+        mock_usage = MagicMock()
+        mock_usage.input_tokens = 10
+        mock_usage.output_tokens = 5
+        mock_usage.prompt_tokens_details = MagicMock(cached_tokens=2)
+
+        message_item = MagicMock(type="message", content="hello")
+        response = MagicMock(output=[message_item], usage=mock_usage, id="resp-1")
+
+        llm._calc_response_usage = MagicMock(
+            return_value=LLMUsage(
+                prompt_tokens=10,
+                prompt_unit_price=0,
+                prompt_price_unit=0,
+                prompt_price=0,
+                completion_tokens=5,
+                completion_unit_price=0,
+                completion_price_unit=0,
+                completion_price=0,
+                total_tokens=15,
+                total_price=0,
+                currency="USD",
+                latency=0,
+            )
+        )
+
+        llm._handle_responses_response(
+            model="gpt-5",
+            credentials={},
+            response=response,
+            prompt_messages=[UserPromptMessage(content="hi")],
+        )
+
+        llm._calc_response_usage.assert_called_once_with("gpt-5", {}, 10, 5)
 
 
 if __name__ == "__main__":

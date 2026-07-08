@@ -9,8 +9,13 @@ from dify_plugin.errors.model import InvokeError
 
 
 class GlmImageTool(Tool):
-    BASE_URL = "https://aihubmix.com/v1"
-    ENDPOINT = f"{BASE_URL}/models/openai/glm-image/predictions"
+    DEFAULT_BASE_URL = "https://api.inferera.com"
+
+    def get_base_url(self) -> str:
+        return (self.runtime.credentials.get("base_url") or self.DEFAULT_BASE_URL).rstrip("/")
+
+    def get_endpoint(self) -> str:
+        return f"{self.get_base_url()}/v1/models/openai/glm-image/predictions"
 
     def _invoke(self, tool_parameters: dict[str, Any]) -> Generator[ToolInvokeMessage]:
         try:
@@ -39,7 +44,7 @@ class GlmImageTool(Tool):
 
             yield self.create_text_message(f"Generating image with GLM ({quality}, {size})...")
 
-            response = requests.post(self.ENDPOINT, headers=headers, json=payload, timeout=120)
+            response = requests.post(self.get_endpoint(), headers=headers, json=payload, timeout=120)
 
             if response.status_code != 200:
                 error_msg = f"GLM Image API request failed with status {response.status_code}"
