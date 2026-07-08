@@ -7,6 +7,10 @@ Based on AWS documentation:
 """
 
 BEDROCK_MODEL_IDS = {
+    'anthropic claude 5': {
+        'Sonnet 5': 'anthropic.claude-sonnet-5',
+        'Fable 5': 'anthropic.claude-fable-5',
+    },
     'anthropic claude': {
         'Claude 4.8 Opus': 'anthropic.claude-opus-4-8',
         'Claude 4.7 Opus': 'anthropic.claude-opus-4-7',
@@ -129,3 +133,91 @@ def get_region_area(region_name, prefer_global=False):
     }
 
     return area_mapping.get(prefix, None)
+
+
+# Claude 5 generation models are invocable ONLY through inference profiles
+# (inferenceTypesSupported == [INFERENCE_PROFILE]; live-verified — bare-ID
+# converse returns ValidationException) and, unlike earlier Claude models,
+# only 'us' and 'global' profiles exist — there are no eu./apac. geo
+# profiles. See the model cards:
+# https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-sonnet-5.html
+# https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5.html
+CLAUDE5_PROFILE_PREFIXES = {
+    'anthropic.claude-sonnet-5': ('us', 'global'),
+    'anthropic.claude-fable-5': ('us', 'global'),
+}
+
+CLAUDE5_REFUSAL_FALLBACK_BASE_ID = 'anthropic.claude-opus-4-8'
+
+# All cross-region inference profile geo prefixes in use on Bedrock
+# (jp./au. exist for Opus 4.7/4.8-era models).
+_PROFILE_PREFIXES = ('global.', 'us.', 'eu.', 'apac.', 'jp.', 'au.')
+
+
+def strip_profile_prefix(model_id):
+    """Remove a leading cross-region profile prefix if present."""
+    for prefix in _PROFILE_PREFIXES:
+        if model_id.startswith(prefix):
+            return model_id[len(prefix):]
+    return model_id
+
+
+def is_claude5_model(model_id):
+    """True if model_id is a bare Claude 5 generation base model ID."""
+    return model_id in CLAUDE5_PROFILE_PREFIXES
+
+
+def is_claude5_profile_id(model_id):
+    """True if model_id is a Claude 5 base ID, optionally profile-prefixed."""
+    return strip_profile_prefix(model_id) in CLAUDE5_PROFILE_PREFIXES
+
+
+def resolve_claude5_profile_id(model_id, cross_region, region_name):
+    """
+    Resolve the inference profile ID for a Claude 5 model.
+
+    :param model_id: bare base model ID (e.g. 'anthropic.claude-sonnet-5')
+    :param cross_region: 'global' or 'geographic'
+    :param region_name: AWS region of the caller (e.g. 'us-east-1')
+    :return: profile-prefixed model ID
+    :raises ValueError: when the combination cannot be served, with a
+        user-actionable message
+    """
+    # GovCloud is a separate AWS partition — commercial global./us. profile
+    # IDs are not valid there.
+    if region_name.startswith('us-gov-'):
+        raise ValueError(
+            f"{model_id} is not available in AWS GovCloud ({region_name}). "
+            f"Claude 5 inference profiles exist only in commercial regions."
+        )
+    allowed = CLAUDE5_PROFILE_PREFIXES[model_id]
+    if cross_region == 'global':
+        # Claude 5 global profiles are available from virtually all commercial
+        # regions — deliberately bypass the legacy get_region_area whitelist.
+        return f"global.{model_id}"
+    if cross_region == 'geographic':
+        area = get_region_area(region_name)
+        # The US geo profile serves Canadian source regions (per model card)
+        if area is None and region_name.startswith('ca-'):
+            area = 'us'
+        if area in allowed:
+            return f"{area}.{model_id}"
+        raise ValueError(
+            f"{model_id} has no '{area or region_name}' geographic inference profile. "
+            f"From {region_name} this model supports only Global cross-region inference — "
+            f"set Cross-Region Inference to 'global'."
+        )
+    raise ValueError(
+        f"{model_id} can only be invoked through an inference profile. "
+        f"Set Cross-Region Inference to 'global' (recommended) or 'geographic'."
+    )
+
+
+def get_claude5_fallback_model_id(profile_model_id):
+    """
+    Map a (possibly profile-prefixed) Claude 5 model ID to the Claude 4.8 Opus
+    fallback ID with the same profile prefix.
+    """
+    base = strip_profile_prefix(profile_model_id)
+    prefix = profile_model_id[: len(profile_model_id) - len(base)]
+    return f"{prefix}{CLAUDE5_REFUSAL_FALLBACK_BASE_ID}"
