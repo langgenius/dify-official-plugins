@@ -208,7 +208,7 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         # The reasoning content and final answer of the Gemini model are priced using the same standard.
         completion_tokens = thoughts_token_count + candidates_token_count
         # The `prompt_tokens` includes the historical conversation QA plus the current input.
-        prompt_tokens = prompt_tokens_standard
+        prompt_tokens = prompt_tokens_standard or usage_metadata.prompt_token_count or 0
 
         return prompt_tokens, completion_tokens
 
