@@ -267,12 +267,11 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             extra_model_kwargs["metadata"] = completion_create_params.Metadata(
                 user_id=user
             )
-        # Extract caching flags early so _convert_prompt_messages can use them
-        self._tool_cache_enabled = model_parameters.pop("prompt_caching_tool_definitions", False)
-        self._system_cache_enabled = model_parameters.pop("prompt_caching_system_message", False)
-        self._image_cache_enabled = model_parameters.pop("prompt_caching_images", False)
-        self._document_cache_enabled = model_parameters.pop("prompt_caching_documents", False)
-        self._tool_results_cache_enabled = model_parameters.pop("prompt_caching_tool_results", False)
+        self._tool_cache_enabled = model_parameters.pop("prompt_caching_tool_definitions", True)
+        self._system_cache_enabled = model_parameters.pop("prompt_caching_system_message", True)
+        self._image_cache_enabled = model_parameters.pop("prompt_caching_images", True)
+        self._document_cache_enabled = model_parameters.pop("prompt_caching_documents", True)
+        self._tool_results_cache_enabled = model_parameters.pop("prompt_caching_tool_results", True)
         self._message_flow_cache_threshold = int(model_parameters.pop("prompt_caching_message_flow", 0) or 0)
 
         (system, prompt_message_dicts) = self._convert_prompt_messages(prompt_messages)
