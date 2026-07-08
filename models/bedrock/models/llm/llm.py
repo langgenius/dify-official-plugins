@@ -770,7 +770,11 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
 
             assistant_prompt_message = AssistantPromptMessage(content=reasoning_prefix + text, tool_calls=tool_calls)
         else:
-            assistant_prompt_message = AssistantPromptMessage(content=reasoning_prefix + response_content[0]["text"])
+            # A reasoning-only Converse response (e.g. max_tokens exhausted during
+            # the thinking phase) leaves the filtered list empty; guard the index
+            # so we surface the folded <think> prefix instead of an IndexError.
+            text = response_content[0]["text"] if response_content else ""
+            assistant_prompt_message = AssistantPromptMessage(content=reasoning_prefix + text)
 
         # calculate num tokens
         if response["usage"]:

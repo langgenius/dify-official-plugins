@@ -120,3 +120,60 @@ class TestNonStreamReasoningContent:
         )
         assert prefix.startswith("<think>")
         assert all("reasoningContent" not in b for b in content)
+
+    def test_reasoning_only_content_yields_empty_filtered_list(self):
+        # max_tokens exhausted during the thinking phase: the response has a
+        # reasoning block but NO text block. Folding must yield an empty
+        # filtered list plus a <think> prefix — the exact precondition under
+        # which the plain-text else-branch of _handle_converse_response used to
+        # crash with IndexError on response_content[0].
+        content_list = [
+            {"reasoningContent": {"reasoningText": {"text": "still thinking...", "signature": "sig"}}},
+        ]
+        filtered, prefix = BedrockLLM._fold_reasoning_content(content_list)
+        assert filtered == []
+        assert prefix.startswith("<think>")
+        # Mirror the guarded else-branch expression from _handle_converse_response:
+        # with an empty filtered list it must fall back to "" rather than index [0].
+        assert (filtered[0]["text"] if filtered else "") == ""
+
+
+class TestClaude5FallbackCallInputs:
+    def _inputs(self):
+        parameters = {
+            "modelId": "global.anthropic.claude-fable-5",
+            "additionalModelResponseFieldPaths": ["/stop_details"],
+            "messages": [{"role": "user", "content": [{"text": "hi"}]}],
+        }
+        credentials = {
+            "aws_region": "us-east-1",
+            "model_parameters": {"model_name": "Fable 5"},
+        }
+        return parameters, credentials
+
+    def test_fallback_inputs_shape(self):
+        parameters, credentials = self._inputs()
+        fb_params, fb_credentials, fallback_model_id = (
+            BedrockLLM._claude5_fallback_call_inputs(parameters, credentials)
+        )
+
+        # global. profile prefix preserved on the Opus 4.8 fallback id
+        assert fallback_model_id == "global.anthropic.claude-opus-4-8"
+        assert fb_params["modelId"] == "global.anthropic.claude-opus-4-8"
+
+        # stop_details field paths are Claude-5-specific; dropped for fallback
+        assert "additionalModelResponseFieldPaths" not in fb_params
+
+        # credentials re-priced as Opus 4.8
+        assert fb_credentials["model_parameters"]["model_name"] == "Claude 4.8 Opus"
+
+        # unrelated keys pass through unchanged
+        assert fb_params["messages"] == parameters["messages"]
+
+    def test_original_inputs_not_mutated(self):
+        parameters, credentials = self._inputs()
+        BedrockLLM._claude5_fallback_call_inputs(parameters, credentials)
+
+        assert parameters["modelId"] == "global.anthropic.claude-fable-5"
+        assert parameters["additionalModelResponseFieldPaths"] == ["/stop_details"]
+        assert credentials["model_parameters"]["model_name"] == "Fable 5"
