@@ -190,6 +190,9 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
         extra_model_kwargs = {}
         if tools:
             extra_model_kwargs["tools"] = self._convert_tools(tools)
+            extra_model_kwargs["tool_choice"] = model_parameters.pop(
+                "tool_choice", "auto"
+            )
         if stop:
             extra_model_kwargs["stop"] = stop
 
@@ -807,8 +810,11 @@ class TongyiLargeLanguageModel(LargeLanguageModel):
                 "function": {
                     "name": tool.name,
                     "description": tool.description,
-                    "parameters": properties_definitions,
-                    "required": required_properties,
+                    "parameters": {
+                        "type": "object",
+                        "properties": properties_definitions,
+                        "required": required_properties,
+                    },
                 },
             }
             tool_definitions.append(tool_definition)
