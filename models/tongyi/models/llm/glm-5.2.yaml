@@ -10,7 +10,7 @@ features:
   - stream-tool-call
 model_properties:
   mode: chat
-  context_size: 202752
+  context_size: 1000000
 parameter_rules:
   - name: temperature
     use_template: temperature
@@ -26,7 +26,7 @@ parameter_rules:
     type: int
     default: 16384
     min: 1
-    max: 16384
+    max: 131072
     help:
       zh_Hans: 用于指定模型在生成内容时 token 的最大数量，它定义了生成的上限，但不保证每次都会生成到这个数量。
       en_US: It is used to specify the maximum number of tokens when the model generates content. It defines the upper limit of generation, but does not guarantee that this number will be generated every time.
@@ -102,14 +102,7 @@ parameter_rules:
       zh_Hans: 以 JSON 字符串格式输入额外的 HTTP 请求头，这些请求头将包含在 API 请求中。
       en_US: Enter extra HTTP headers in JSON string format, which will be included in the API request.
 pricing:
-  input: '0.004'
-  output: '0.018'
+  input: '0.008'
+  output: '0.028'
   unit: '0.001'
   currency: RMB
-  tiered_pricing:
-    - input: '0.004'
-      output: '0.018'
-      max_tokens: 32768
-    - input: '0.006'
-      output: '0.022'
-      max_tokens: 202752
