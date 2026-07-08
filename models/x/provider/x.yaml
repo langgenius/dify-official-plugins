@@ -37,11 +37,14 @@ provider_credential_schema:
       required: true
       type: secret-input
       variable: api_key
-    - default: grok-4-fast
+    - default: grok-4.5
       label:
         en_US: Model
         zh_Hans: 模型
       options:
+        - label:
+            en_US: grok-4.5
+          value: grok-4.5
         - label:
             en_US: grok-4.3
           value: grok-4.3
