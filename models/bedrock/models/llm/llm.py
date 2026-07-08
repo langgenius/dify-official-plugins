@@ -328,7 +328,14 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             region_prefix = None
             cross_region = model_parameters.pop('cross-region', 'disabled')
 
-            if cross_region in ('geographic', 'global'):
+            if model_ids.is_claude5_model(model_id):
+                # Claude 5 models are profile-only (us./global.) — dedicated
+                # resolution that bypasses the legacy whitelist. See model_ids.
+                try:
+                    model_id = model_ids.resolve_claude5_profile_id(model_id, cross_region, region_name)
+                except ValueError as e:
+                    raise InvokeError(str(e))
+            elif cross_region in ('geographic', 'global'):
                 # Cross-region inference enabled
                 prefer_global = (cross_region == 'global')
                 region_prefix = model_ids.get_region_area(region_name, prefer_global=prefer_global)
@@ -795,8 +802,15 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         if "anthropic_beta" in model_parameters:
             additional_model_fields["anthropic_beta"] = list(map(lambda v:v.strip(), model_parameters["anthropic_beta"].strip().split(",")))
 
+        # Claude 5 generation models (Sonnet 5 / Fable 5): adaptive thinking is
+        # always on; depth is controlled by `effort` (replaces budget_tokens).
+        # Only the 'anthropic claude 5' family yaml exposes this parameter.
+        if "effort" in model_parameters:
+            additional_model_fields["thinking"] = {"type": "adaptive"}
+            additional_model_fields["output_config"] = {"effort": model_parameters["effort"]}
+
         # process reasoning related parameters, construct nested reasoning_config structure
-        if "reasoning_type" in model_parameters:
+        if "reasoning_type" in model_parameters and "effort" not in model_parameters:
             reasoning_type = model_parameters["reasoning_type"]
             if reasoning_type:
                 reasoning_config = {
