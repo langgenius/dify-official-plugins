@@ -8,17 +8,18 @@ from yarl import URL
 from dify_plugin import OAICompatLargeLanguageModel
 
 REASONING_MODELS = {
-    "grok-4.5",
-    "grok-4.3",
-    "grok-4-0709",
     "grok-3-mini",
     "grok-3-mini-fast",
 }
+REASONING_MODEL_PREFIXES = ("grok-4", "grok-code", "grok-build")
 REASONING_UNSUPPORTED_PARAMETERS = (
     "presence_penalty",
     "frequency_penalty",
     "presencePenalty",
     "frequencyPenalty",
+    "stop",
+    "stop_sequences",
+    "stopSequences",
 )
 
 
@@ -66,9 +67,13 @@ class XAILargeLanguageModel(OAICompatLargeLanguageModel):
 
     @staticmethod
     def _is_reasoning_model(model: str) -> bool:
-        if model.endswith("-non-reasoning"):
+        if "-non-reasoning" in model:
             return False
-        return model in REASONING_MODELS or model.endswith("-reasoning")
+        return (
+            model in REASONING_MODELS
+            or model.startswith(REASONING_MODEL_PREFIXES)
+            or model.endswith("-reasoning")
+        )
 
     @staticmethod
     def _remove_reasoning_unsupported_parameters(model_parameters: dict) -> None:
