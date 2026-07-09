@@ -36,9 +36,14 @@ model_properties:
     - mode: 'verse'
       name: 'Verse'
       language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'th-TH', 'id-ID']
-  word_limit: 3500
+    - mode: 'marin'
+      name: 'Marin'
+      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'th-TH', 'id-ID']
+    - mode: 'cedar'
+      name: 'Cedar'
+      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'th-TH', 'id-ID']
+  word_limit: 4096
   audio_type: 'mp3'
-  max_workers: 5
 pricing:
   input: '0.012'
   output: '0'

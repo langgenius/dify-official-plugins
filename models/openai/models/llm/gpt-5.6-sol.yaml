@@ -50,6 +50,44 @@ parameter_rules:
       - high
       - xhigh
       - max
+  - name: reasoning_mode
+    label:
+      zh_Hans: 推理模式
+      en_US: Reasoning Mode
+    type: string
+    help:
+      zh_Hans: 标准模式平衡质量与延迟；Pro 模式会投入更多模型计算，仅适用于 Responses API。
+      en_US: Standard mode balances quality and latency; Pro mode applies more model work and is available only with the Responses API.
+    required: false
+    default: standard
+    options:
+      - standard
+      - pro
+  - name: reasoning_context
+    label:
+      zh_Hans: 推理上下文
+      en_US: Reasoning Context
+    type: string
+    help:
+      zh_Hans: 控制当前请求可使用哪些已有推理项；all_turns 需要通过 previous_response_id、Conversation 或完整历史提供先前响应。
+      en_US: Controls which available reasoning items the request can use; all_turns requires prior responses through previous_response_id, a Conversation, or complete replayed history.
+    required: false
+    default: auto
+    options:
+      - auto
+      - current_turn
+      - all_turns
+  - name: reasoning_summary
+    label:
+      zh_Hans: 推理摘要
+      en_US: Reasoning Summary
+    type: string
+    help:
+      zh_Hans: 显式请求模型返回最详细的可用推理摘要；仅适用于 Responses API。
+      en_US: Explicitly requests the most detailed available reasoning summary; available only with the Responses API.
+    required: false
+    options:
+      - auto
   - name: verbosity
     label:
       zh_Hans: 详细程度
@@ -80,13 +118,15 @@ parameter_rules:
       en_US: Service tier
     type: string
     help:
-      zh_Hans: Auto 跟随项目的处理层级设置。Flex 会携带 service_tier=flex（[OpenAI Flex 处理](https://developers.openai.com/api/docs/guides/flex-processing)）：与 Batch 同档 token 价格，响应更慢，可能遇到 429（不计费），请提高客户端超时。
-      en_US: Auto follows the project's processing tier settings. Flex sends service_tier=flex ([Flex processing](https://developers.openai.com/api/docs/guides/flex-processing)) for Batch-tier token pricing, with slower responses and possible unbilled 429; increase client timeouts.
+      zh_Hans: Auto 跟随项目设置；Default、Flex 和 Priority 分别使用标准、低成本和低延迟处理。
+      en_US: Auto follows the project setting; Default, Flex, and Priority select standard, lower-cost, and lower-latency processing respectively.
     required: false
     default: auto
     options:
       - auto
+      - default
       - flex
+      - priority
 # Base Standard pricing for direct API requests with up to 272K input tokens.
 # Cached, cache-write, regional, and long-context rates are not representable by PriceConfig.
 pricing:

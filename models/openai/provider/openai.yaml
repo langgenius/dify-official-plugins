@@ -2,8 +2,8 @@ provider: openai
 label:
   en_US: OpenAI
 description:
-  en_US: Models provided by OpenAI, such as GPT-3.5-Turbo and GPT-4.
-  zh_Hans: OpenAI 提供的模型，例如 GPT-3.5-Turbo 和 GPT-4。
+  en_US: Current language, embedding, moderation, and audio models from OpenAI.
+  zh_Hans: OpenAI 当前的语言、嵌入、内容审核与音频模型。
 icon_small:
   en_US: icon_s_en.svg
 icon_large:
