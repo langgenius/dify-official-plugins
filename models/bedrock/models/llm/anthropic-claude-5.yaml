@@ -1,0 +1,132 @@
+model: anthropic claude 5
+label:
+  en_US: Anthropic Claude 5
+icon: icon_s_en.svg
+model_type: llm
+features:
+  - agent-thought
+  - vision
+  - tool-call
+  - stream-tool-call
+  - document
+model_properties:
+  mode: chat
+  context_size: 1000000
+# Claude 5 generation models (Sonnet 5 / Fable 5).
+# - Invocable ONLY via inference profiles (us. / global.); no on-demand bare-ID calls.
+# - Adaptive thinking is always on and cannot be disabled; depth is controlled
+#   by the effort parameter (replaces reasoning budget).
+# - Sampling parameters (temperature / top_p / top_k) are NOT configurable:
+#   non-default values are rejected by the API, so they are not exposed here.
+# docs:
+# https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-sonnet-5.html
+# https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5.html
+parameter_rules:
+  - name: model_name
+    label:
+      zh_Hans: Bedrock 模型
+      en_US: Bedrock Model
+    type: string
+    help:
+      zh_Hans: 指定模型名称
+      en_US: specify model name
+    required: true
+    default: Sonnet 5
+    options:
+      - Sonnet 5
+      - Fable 5
+  - name: cross-region
+    label:
+      zh_Hans: 跨区域推理
+      en_US: Cross-Region Inference
+    type: string
+    required: true
+    default: global
+    options:
+      - global
+      - geographic
+    help:
+      zh_Hans: Claude 5 模型仅支持通过推理配置文件调用。Global 可从几乎所有区域调用（推荐）；Geographic 仅限美国/加拿大区域（us. 配置文件），其他区域请选择 Global。
+      en_US: Claude 5 models can only be invoked through inference profiles. Global works from virtually all regions (recommended); Geographic is limited to US/Canada regions (us. profile) — use Global elsewhere.
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    label:
+      zh_Hans: 最大token数
+      en_US: Max Tokens
+    type: int
+    default: 8192
+    min: 1
+    max: 128000
+    help:
+      zh_Hans: 停止前生成的最大令牌数。注意 max_tokens 覆盖思考与回复的总输出。
+      en_US: The maximum number of tokens to generate before stopping. Note that max_tokens covers total output including thinking.
+  - name: effort
+    label:
+      zh_Hans: 思考深度 (Effort)
+      en_US: Effort
+    type: string
+    required: false
+    default: high
+    options:
+      - low
+      - medium
+      - high
+      - xhigh
+      - max
+    help:
+      zh_Hans: 控制自适应思考的深度与整体 token 消耗（替代思考预算）。编码/智能体任务推荐 high 或 xhigh。
+      en_US: Controls adaptive thinking depth and overall token spend (replaces thinking budget). Use high or xhigh for coding/agentic tasks.
+  - name: refusal_fallback
+    label:
+      zh_Hans: 拒答回落到 Claude 4.8 Opus
+      en_US: Refusal Fallback to Claude 4.8 Opus
+    type: boolean
+    required: false
+    default: true
+    help:
+      zh_Hans: 当请求被安全分类器拒绝（stop_reason 为 refusal，Fable 5 概率较高）时，自动使用 Claude 4.8 Opus 重试同一请求。流式输出已产生内容后发生的拒绝无法回落，将报错。
+      en_US: When a request is refused by safety classifiers (stop_reason "refusal"; materially more likely on Fable 5), automatically retry the same request with Claude 4.8 Opus. Mid-stream refusals after content was already produced cannot fall back and raise an error instead.
+  - name: system_cache_checkpoint
+    label:
+      zh_Hans: 缓存系统提示词
+      en_US: Cache System Prompt
+    type: boolean
+    required: false
+    help:
+      zh_Hans: 在系统消息中启用缓存检查点，可以提高性能并降低成本。
+      en_US: Enable cache checkpoint in the system message to improve performance and reduce costs.
+  - name: latest_two_messages_cache_checkpoint
+    label:
+      zh_Hans: 缓存用户消息
+      en_US: Cache User Messages
+    type: boolean
+    required: false
+    help:
+      zh_Hans: 在最新的两条用户消息中启用缓存检查点，可以提高性能并降低成本。
+      en_US: Enable cache checkpoint in the latest two user messages to improve performance and reduce costs.
+  - name: anthropic_beta
+    label:
+      zh_Hans: anthropic_beta
+      en_US: anthropic_beta
+    required: false
+    type: string
+    help:
+      zh_Hans: anthropic beta 参数是一串测试版标题的列表，用于表示选择加入一组特定的测试版功能。使用英文逗号连接。
+      en_US: The anthropic beta parameter is a list of strings of beta headers used to indicate opt-in to a particular set of beta features. Use commas to join.
+  - name: json_schema
+    label:
+      zh_Hans: JSON Schema
+      en_US: JSON Schema
+    type: string
+    required: false
+    help:
+      zh_Hans: JSON Schema for structured output
+      en_US: JSON Schema for structured output
+  - name: response_format
+    use_template: response_format
+pricing:
+  input: "0.003"
+  output: "0.015"
+  unit: "0.001"
+  currency: USD
