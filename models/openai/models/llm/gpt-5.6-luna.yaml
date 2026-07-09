@@ -1,0 +1,96 @@
+# https://developers.openai.com/api/docs/models/gpt-5.6-luna
+model: gpt-5.6-luna
+label:
+  zh_Hans: gpt-5.6-luna
+  en_US: gpt-5.6-luna
+model_type: llm
+features:
+  - multi-tool-call
+  - agent-thought
+  - stream-tool-call
+  - vision
+  - structured-output
+model_properties:
+  mode: chat
+  context_size: 1050000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 1
+    max: 128000
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    help:
+      zh_Hans: 指定模型必须输出的格式
+      en_US: specifying the format that the model must output
+    required: false
+    options:
+      - text
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理努力程度
+      en_US: Reasoning Effort
+    type: string
+    help:
+      zh_Hans: GPT-5.6 支持 none、low、medium、high、xhigh 和 max，默认值为 medium。通过 Chat Completions 调用函数工具时必须使用 none；其他推理强度请使用 Responses API。
+      en_US: GPT-5.6 supports none, low, medium, high, xhigh, and max, defaulting to medium. Function tools through Chat Completions require none; use the Responses API for other reasoning efforts.
+    required: false
+    default: medium
+    options:
+      - none
+      - low
+      - medium
+      - high
+      - xhigh
+      - max
+  - name: verbosity
+    label:
+      zh_Hans: 详细程度
+      en_US: Verbosity
+    type: string
+    help:
+      zh_Hans: 约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。支持的值包括 low、medium 和 high
+      en_US: Constrains the verbosity of the model's response. Lower values will result in more concise responses, while higher values will result in more verbose responses. Currently supported values are low, medium, and high
+    required: false
+    default: medium
+    options:
+      - low
+      - medium
+      - high
+  - name: enable_stream
+    label:
+      zh_Hans: 流式响应
+      en_US: Streaming
+    type: boolean
+    help:
+      zh_Hans: 是否启用流式响应。GPT-5.6 支持流式输出。
+      en_US: Whether to enable streaming responses. GPT-5.6 supports streaming.
+    required: true
+    default: true
+  - name: service_tier
+    label:
+      zh_Hans: 服务层级
+      en_US: Service tier
+    type: string
+    help:
+      zh_Hans: Auto 跟随项目的处理层级设置。Flex 会携带 service_tier=flex（[OpenAI Flex 处理](https://developers.openai.com/api/docs/guides/flex-processing)）：与 Batch 同档 token 价格，响应更慢，可能遇到 429（不计费），请提高客户端超时。
+      en_US: Auto follows the project's processing tier settings. Flex sends service_tier=flex ([Flex processing](https://developers.openai.com/api/docs/guides/flex-processing)) for Batch-tier token pricing, with slower responses and possible unbilled 429; increase client timeouts.
+    required: false
+    default: auto
+    options:
+      - auto
+      - flex
+# Base Standard pricing for direct API requests with up to 272K input tokens.
+# Cached, cache-write, regional, and long-context rates are not representable by PriceConfig.
+pricing:
+  input: '1.00'
+  output: '6.00'
+  unit: '0.000001'
+  currency: USD
