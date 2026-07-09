@@ -1,6 +1,8 @@
+import mimetypes
 import time
 from collections.abc import Generator
 from typing import Any, Dict, List
+from urllib.parse import urlparse
 import requests
 
 from dify_plugin import Tool
@@ -10,6 +12,9 @@ from tools.notion_client import NotionClient
 
 DEFAULT_MAX_DEPTH = 5
 DEFAULT_MAX_API_CALLS = 500
+DEFAULT_MAX_IMAGES = 20
+DEFAULT_IMAGE_DOWNLOAD_TIMEOUT = 30
+DEFAULT_IMAGE_MIME_TYPE = "image/png"
 
 # Block types whose "children" are separate pages/databases, not nested content
 # of the current page. Recursing into them would silently pull in arbitrary
@@ -51,6 +56,9 @@ class RetrievePageTool(Tool):
         # max_api_calls must be at least 1 so the initial page fetch can run.
         if max_api_calls < 1:
             max_api_calls = 1
+        max_images = _coerce_positive_int(
+            tool_parameters.get("max_images"), DEFAULT_MAX_IMAGES
+        )
 
         # Validate parameters
         if not page_id:
@@ -76,12 +84,14 @@ class RetrievePageTool(Tool):
                 formatted_page = self._format_page_data(client, page_data)
 
                 budget = _FetchBudget(max_api_calls=max_api_calls)
+                collected_images: List[Dict[str, Any]] = []
                 # Retrieve page content if requested
                 if include_content:
                     try:
                         all_blocks = self._fetch_all_children(client, page_id, budget)
                         formatted_page["content"] = self._format_blocks(
-                            client, all_blocks, budget, depth=0, max_depth=max_depth
+                            client, all_blocks, budget, collected_images,
+                            depth=0, max_depth=max_depth, max_images=max_images,
                         )
                     except requests.HTTPError as e:
                         # If we can't get the content, just return the page data
@@ -99,11 +109,38 @@ class RetrievePageTool(Tool):
                     formatted_page["fetch_truncated_reason"] = (
                         f"max_api_calls={max_api_calls} exceeded; increase the limit or raise max_depth with care."
                     )
+                if len(collected_images) > max_images:
+                    formatted_page["images_skipped"] = len(collected_images) - max_images
+                    collected_images = collected_images[:max_images]
 
                 # Return results
                 title = formatted_page.get("title", "Untitled")
                 yield self.create_text_message(f"Retrieved page: {title}")
                 yield self.create_json_message(formatted_page)
+
+                # Download image blocks so they surface in the tool's `files`
+                # output. Notion image URLs are short-lived (~1 hour) S3
+                # signed URLs, so we must fetch them now rather than later.
+                images_downloaded = 0
+                images_failed = 0
+                for image in collected_images:
+                    try:
+                        response = requests.get(image["url"], timeout=DEFAULT_IMAGE_DOWNLOAD_TIMEOUT)
+                        response.raise_for_status()
+                        mime_type = _guess_image_mime_type(response, image["url"])
+                        filename = _guess_image_filename(image["url"], image["block_id"], mime_type)
+                        yield self.create_blob_message(
+                            blob=response.content,
+                            meta={"mime_type": mime_type, "filename": filename},
+                        )
+                        images_downloaded += 1
+                    except Exception:
+                        images_failed += 1
+                if images_downloaded or images_failed:
+                    yield self.create_text_message(
+                        f"Downloaded {images_downloaded} image(s)"
+                        + (f", {images_failed} failed" if images_failed else "")
+                    )
 
             except requests.HTTPError as e:
                 if e.response.status_code == 404:
@@ -203,8 +240,10 @@ class RetrievePageTool(Tool):
         client: NotionClient,
         blocks: List[Dict[str, Any]],
         budget: "_FetchBudget",
+        collected_images: List[Dict[str, Any]],
         depth: int = 0,
         max_depth: int = DEFAULT_MAX_DEPTH,
+        max_images: int = DEFAULT_MAX_IMAGES,
     ) -> List[Dict[str, Any]]:
         """Format block content for the response, recursing into nested children."""
         formatted_blocks = []
@@ -278,6 +317,13 @@ class RetrievePageTool(Tool):
 
                 formatted_block["caption"] = caption_text
                 formatted_block["url"] = image_url
+
+                if image_url:
+                    collected_images.append({
+                        "block_id": block_id,
+                        "url": image_url,
+                        "caption": caption_text,
+                    })
             else:
                 # For unsupported block types, just include the type
                 formatted_block["text"] = f"<{block_type} block>"
@@ -294,7 +340,8 @@ class RetrievePageTool(Tool):
                     try:
                         child_blocks = self._fetch_all_children(client, block_id, budget)
                         formatted_block["children"] = self._format_blocks(
-                            client, child_blocks, budget, depth=depth + 1, max_depth=max_depth
+                            client, child_blocks, budget, collected_images,
+                            depth=depth + 1, max_depth=max_depth, max_images=max_images,
                         )
                     except requests.HTTPError as e:
                         # Record per-block failure but keep the rest of the page intact
@@ -312,3 +359,25 @@ def _coerce_positive_int(value: Any, default: int) -> int:
     except (TypeError, ValueError):
         return default
     return max(coerced, 0)
+
+
+def _guess_image_mime_type(response: requests.Response, url: str) -> str:
+    """Determine mime type from the response's Content-Type header, falling back
+    to guessing from the URL's file extension, then a hardcoded default."""
+    content_type = response.headers.get("Content-Type", "")
+    mime_type = content_type.split(";")[0].strip()
+    if mime_type:
+        return mime_type
+    guessed_type, _ = mimetypes.guess_type(urlparse(url).path)
+    return guessed_type or DEFAULT_IMAGE_MIME_TYPE
+
+
+def _guess_image_filename(url: str, block_id: str, mime_type: str) -> str:
+    """Derive a filename from the URL path, falling back to the block ID with
+    an extension guessed from the mime type."""
+    path = urlparse(url).path
+    filename = path.rstrip("/").split("/")[-1] if path else ""
+    if filename:
+        return filename
+    extension = mimetypes.guess_extension(mime_type) or ".png"
+    return f"{block_id}{extension}"
