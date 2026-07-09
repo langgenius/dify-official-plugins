@@ -223,11 +223,12 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         reasoning_texts = [
             block["reasoningContent"]["reasoningText"]["text"]
             for block in content
-            if "reasoningContent" in block
-            and "reasoningText" in block.get("reasoningContent", {})
-            and "text" in block["reasoningContent"]["reasoningText"]
+            if isinstance(block, dict)
+            and isinstance(block.get("reasoningContent"), dict)
+            and isinstance(block["reasoningContent"].get("reasoningText"), dict)
+            and isinstance(block["reasoningContent"]["reasoningText"].get("text"), str)
         ]
-        filtered = [b for b in content if "reasoningContent" not in b]
+        filtered = [b for b in content if not isinstance(b, dict) or "reasoningContent" not in b]
         reasoning_prefix = f"<think>\n{''.join(reasoning_texts)}\n</think>\n" if reasoning_texts else ""
         return filtered, reasoning_prefix
 
@@ -644,6 +645,12 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
                                 raise self._map_client_to_invoke_error(
                                     error_code, f"{error_code}: {ex.response['Error']['Message']}"
                                 )
+                            except Exception as ex:
+                                # Runs at stream-iteration time, outside the SDK's
+                                # _transform_invoke_error wrapper — normalize non-API
+                                # failures (network, endpoint) to InvokeError, matching
+                                # what the wrapper produces for the primary call.
+                                raise InvokeError(str(ex))
                             return self._handle_converse_stream_response(
                                 fb_id, fb_credentials, fb_response, prompt_messages
                             )
@@ -714,7 +721,7 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
             full_error_msg = f"{error_code}: {error_message}"
             # Fable 5 requires account-level data-retention opt-in; surface
             # actionable guidance instead of the raw ValidationException.
-            if is_claude5 and any(
+            if is_claude5 and error_message and any(
                 kw in error_message.lower()
                 for kw in ("retention", "provider_data_share", "data sharing", "data share")
             ):
@@ -1010,6 +1017,12 @@ class BedrockLargeLanguageModel(LargeLanguageModel):
         if "effort" in model_parameters:
             additional_model_fields["thinking"] = {"type": "adaptive"}
             additional_model_fields["output_config"] = {"effort": model_parameters["effort"]}
+            # Claude 5 rejects non-default sampling params. The family yaml does
+            # not expose them, but drop any that reach here through callers that
+            # bypass the SDK's parameter-rule filtering (e.g. direct _invoke).
+            inference_config.pop("temperature", None)
+            inference_config.pop("topP", None)
+            additional_model_fields.pop("top_k", None)
 
         # process reasoning related parameters, construct nested reasoning_config structure
         if "reasoning_type" in model_parameters and "effort" not in model_parameters:

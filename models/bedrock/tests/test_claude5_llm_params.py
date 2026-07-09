@@ -49,6 +49,18 @@ class TestEffortConversion:
         assert additional["thinking"] == {"type": "adaptive"}
         assert "reasoning_config" not in additional
 
+    def test_effort_drops_sampling_params(self):
+        # Claude 5 rejects non-default sampling params; if a caller bypasses
+        # the yaml surface and sends them alongside effort, they must be dropped.
+        inference_config, additional = self._convert(
+            {"max_tokens": 4096, "effort": "high", "temperature": 0.7,
+             "top_p": 0.9, "top_k": 40}
+        )
+        assert "temperature" not in inference_config
+        assert "topP" not in inference_config
+        assert "top_k" not in additional
+        assert additional["thinking"] == {"type": "adaptive"}
+
 
 class TestClaude5RegionResolutionInGetModelInfo:
     def _get_model_info(self, model_name, cross_region, region):

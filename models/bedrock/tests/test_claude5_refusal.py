@@ -137,6 +137,21 @@ class TestNonStreamReasoningContent:
         # with an empty filtered list it must fall back to "" rather than index [0].
         assert (filtered[0]["text"] if filtered else "") == ""
 
+    def test_malformed_reasoning_blocks_do_not_crash(self):
+        # reasoningContent present but None / non-dict shapes must not raise
+        # TypeError; malformed reasoning blocks are dropped from the fold and
+        # (being unusable) filtered out of the content list too.
+        content_list = [
+            {"reasoningContent": None},
+            {"reasoningContent": "bogus"},
+            {"reasoningContent": {"reasoningText": None}},
+            {"reasoningContent": {"reasoningText": {"text": 123}}},
+            {"text": "answer"},
+        ]
+        filtered, prefix = BedrockLLM._fold_reasoning_content(content_list)
+        assert prefix == ""  # no valid reasoning text extracted
+        assert filtered == [{"text": "answer"}]
+
 
 class TestClaude5FallbackCallInputs:
     def _inputs(self):
