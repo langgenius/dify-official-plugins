@@ -39,8 +39,8 @@ parameter_rules:
       en_US: Reasoning Effort
     type: string
     help:
-      zh_Hans: GPT-5.6 支持 none、low、medium、high、xhigh 和 max，默认值为 medium。通过 Chat Completions 调用函数工具时必须使用 none；其他推理强度请使用 Responses API。
-      en_US: GPT-5.6 supports none, low, medium, high, xhigh, and max, defaulting to medium. Function tools through Chat Completions require none; use the Responses API for other reasoning efforts.
+      zh_Hans: GPT-5.6 支持 none、low、medium、high、xhigh 和 max，默认值为 medium。此插件默认使用 Responses API，以支持推理与函数工具组合使用。
+      en_US: GPT-5.6 supports none, low, medium, high, xhigh, and max, defaulting to medium. This plugin defaults to the Responses API so reasoning works with function tools.
     required: false
     default: medium
     options:

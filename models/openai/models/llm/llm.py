@@ -65,6 +65,7 @@ if you are not sure about the structure.
 # thinking models compatibility for max_completion_tokens (all starting with "o" or "gpt-5")
 THINKING_SERIES_PREFIXES = ("o", "gpt-5")
 
+
 def _normalize_service_tier_params(model_parameters: dict) -> None:
     """
     OpenAI Chat Completions / Responses API: service_tier='flex' enables Flex processing.
@@ -74,6 +75,10 @@ def _normalize_service_tier_params(model_parameters: dict) -> None:
     st = model_parameters.get("service_tier")
     if st in (None, "", "default"):
         model_parameters.pop("service_tier", None)
+
+
+def _uses_responses_api(credentials: dict) -> bool:
+    return credentials.get("api_protocol", "responses") == "responses"
 
 
 class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
@@ -381,7 +386,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             # get model mode
             model_mode = self.get_model_mode(base_model, credentials)
 
-            if credentials.get("api_protocol") == "responses":
+            if _uses_responses_api(credentials):
                 # models that only support the Responses API
                 client.responses.create(
                     model=model,
@@ -777,7 +782,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         # o1, o3, o4 compatibility
         block_as_stream = False
 
-        if credentials.get("api_protocol") == "responses":
+        if _uses_responses_api(credentials):
             if stream:
                 return self._chat_generate_responses_api_stream(
                     model=model,
@@ -805,17 +810,13 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             if any(model.startswith(prefix) for prefix in THINKING_SERIES_PREFIXES):
                 if "max_tokens" in chat_params:
                     chat_params["max_completion_tokens"] = chat_params.pop("max_tokens")
-            try:
-                response = client.chat.completions.create(
-                    messages=messages,
-                    model=model,
-                    stream=stream,
-                    **chat_params,
-                    **extra_model_kwargs,
-                )
-                
-            except Exception as e:
-                raise
+            response = client.chat.completions.create(
+                messages=messages,
+                model=model,
+                stream=stream,
+                **chat_params,
+                **extra_model_kwargs,
+            )
 
             if stream:
                 logger.info(f"OpenAI API Response - Stream response initiated for model: {model}")
@@ -847,7 +848,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         # reasoning_effort -> reasoning.effort
         reasoning_effort = params.pop("reasoning_effort", None)
-        if reasoning_effort and reasoning_effort != "none":
+        if reasoning_effort:
             params["reasoning"] = {"effort": reasoning_effort}
 
         # response_format -> text.format (Responses API uses different format)
@@ -878,7 +879,11 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 params["text"] = {"format": {"type": response_format}}
 
         params.pop("json_schema", None)
-        # verbosity stays as top-level param (already supported by Responses API)
+
+        # verbosity -> text.verbosity
+        verbosity = params.pop("verbosity", None)
+        if verbosity is not None:
+            params.setdefault("text", {})["verbosity"] = verbosity
 
         if user:
             params["user"] = user
