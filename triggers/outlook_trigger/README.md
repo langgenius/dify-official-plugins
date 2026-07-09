@@ -44,3 +44,11 @@ Now you can go back to the Dify plugin configuration page and click `Save and au
 This plugin will redirect you to the Microsoft login page, login with your Microsoft account and grant the permissions to the application.
 
 Then you can use this plugin in a workflow to trigger it when you receive an email.
+
+## Monitoring a Shared Mailbox
+
+By default, this trigger monitors the inbox of the authorized account. To monitor a shared mailbox instead:
+
+1. Make sure the authorized account has been granted access to the shared mailbox (e.g., Full Access / Read permission in Exchange admin center).
+2. The OAuth authorization requests the `Mail.Read.Shared` delegated permission automatically. If your Azure application restricts permissions, add `Mail.Read.Shared` (Delegated) under `API permissions` and re-authorize.
+3. When creating a subscription in Dify, fill in the `Shared Mailbox Address` field with the SMTP address of the shared mailbox (e.g., `support@example.com`). Leave it empty to monitor your own inbox.

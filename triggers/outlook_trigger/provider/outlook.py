@@ -142,7 +142,7 @@ class OutlookSubscriptionConstructor(TriggerSubscriptionConstructor):
 
     _AUTHORITY_URL = "https://login.microsoftonline.com"
     _DEFAULT_TENANT_ID = "organizations"
-    _DEFAULT_SCOPE = "offline_access https://graph.microsoft.com/Mail.Read"
+    _DEFAULT_SCOPE = "offline_access https://graph.microsoft.com/Mail.Read https://graph.microsoft.com/Mail.Read.Shared"
     _API_ME_URL = "https://graph.microsoft.com/v1.0/me"
     _WEBHOOK_TTL = 3 * 24 * 60 * 60
 
@@ -294,10 +294,18 @@ class OutlookSubscriptionConstructor(TriggerSubscriptionConstructor):
         # 72 hours from now
         expiration_date = datetime.now() + timedelta(seconds=self._WEBHOOK_TTL)
         expiration_date_str = expiration_date.isoformat() + "Z"
+
+        # Monitor a shared mailbox if provided, otherwise the signed-in user's own inbox
+        mailbox_address = str(parameters.get("mailbox_address") or "").strip()
+        if mailbox_address:
+            resource = f"users/{urllib.parse.quote(mailbox_address, safe='@')}/mailFolders('Inbox')/messages"
+        else:
+            resource = "me/mailfolders('Inbox')/messages"
+
         data = {
             "changeType": "created,updated",
             "notificationUrl": endpoint,
-            "resource": "me/mailfolders('Inbox')/messages",
+            "resource": resource,
             "expirationDateTime": expiration_date_str,
             "clientState": client_state,
         }

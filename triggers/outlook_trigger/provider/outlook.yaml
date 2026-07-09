@@ -1,7 +1,23 @@
 subscription_schema: []
 
 subscription_constructor:
-  parameters: []
+  parameters:
+  - name: "mailbox_address"
+    type: "string"
+    required: false
+    label:
+      en_US: "Shared Mailbox Address"
+      zh_Hans: "共享邮箱地址"
+      ja_JP: "共有メールボックスのアドレス"
+    description:
+      en_US: "SMTP address of a shared mailbox to monitor (e.g., support@example.com). The authorized account must have access to this shared mailbox, and the Azure app requires the Mail.Read.Shared permission. Leave empty to monitor the authorized account's own inbox."
+      zh_Hans: "要监听的共享邮箱的 SMTP 地址（如 support@example.com）。授权账号必须拥有该共享邮箱的访问权限，且 Azure 应用需具备 Mail.Read.Shared 权限。留空则监听授权账号自己的收件箱。"
+      ja_JP: "監視する共有メールボックスの SMTP アドレス（例: support@example.com）。認可されたアカウントがこの共有メールボックスへのアクセス権を持ち、Azure アプリに Mail.Read.Shared 権限が必要です。空の場合は認可アカウント自身の受信トレイを監視します。"
+    placeholder:
+      en_US: "support@example.com (leave empty for your own inbox)"
+      zh_Hans: "support@example.com（留空则监听自己的收件箱）"
+      ja_JP: "support@example.com（空の場合は自分の受信トレイ）"
+    url: https://learn.microsoft.com/en-us/graph/outlook-share-messages-folders
   credentials_schema:
     access_tokens:
       help:
