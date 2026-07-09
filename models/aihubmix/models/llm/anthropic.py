@@ -267,17 +267,11 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             extra_model_kwargs["metadata"] = completion_create_params.Metadata(
                 user_id=user
             )
-        def _model_has_param(param_name: str) -> bool:
-            for schema in self.model_schemas:
-                if schema.model == model:
-                    return any(rule.name == param_name for rule in schema.parameter_rules)
-            return False
-
-        self._tool_cache_enabled = model_parameters.pop("prompt_caching_tool_definitions", _model_has_param("prompt_caching_tool_definitions"))
-        self._system_cache_enabled = model_parameters.pop("prompt_caching_system_message", _model_has_param("prompt_caching_system_message"))
-        self._image_cache_enabled = model_parameters.pop("prompt_caching_images", _model_has_param("prompt_caching_images"))
-        self._document_cache_enabled = model_parameters.pop("prompt_caching_documents", _model_has_param("prompt_caching_documents"))
-        self._tool_results_cache_enabled = model_parameters.pop("prompt_caching_tool_results", _model_has_param("prompt_caching_tool_results"))
+        self._tool_cache_enabled = model_parameters.pop("prompt_caching_tool_definitions", True)
+        self._system_cache_enabled = model_parameters.pop("prompt_caching_system_message", True)
+        self._image_cache_enabled = model_parameters.pop("prompt_caching_images", True)
+        self._document_cache_enabled = model_parameters.pop("prompt_caching_documents", True)
+        self._tool_results_cache_enabled = model_parameters.pop("prompt_caching_tool_results", True)
         self._message_flow_cache_threshold = int(model_parameters.pop("prompt_caching_message_flow", 0) or 0)
 
         (system, prompt_message_dicts) = self._convert_prompt_messages(prompt_messages)
