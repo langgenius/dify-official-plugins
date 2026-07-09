@@ -37,11 +37,13 @@
 填写 `Client ID`、`Client Secret` 和 `Tenant ID` 字段。
 `Tenant ID` 应与账户类型选择一致：租户 ID 或域名、`organizations` 或 `common`。
 
-您将在此对话框中获得 `redirect_url`，复制它并返回 Azure Entra ID 页面，前往 `Authentication` 页面，选择 `Web` 作为平台类型，在 `Redirect URIs` 字段中粘贴 `redirect_url`。点击 `Save`。
+复制此对话框中显示的 `redirect_url`，然后返回 Azure Entra ID 页面。
+前往 `Authentication` 页面，选择 `Web` 作为平台类型，并在 `Redirect URIs` 字段中粘贴该 `redirect_url`。
+点击 `Save`。
 
 现在您可以返回 Dify 插件配置页面并点击 `Save and authorize` 以启动 OAuth 流程。
 
-此插件将重定向您到 Microsoft 登录页面。
+此插件将您重定向到 Microsoft 登录页面。
 请使用您的 Microsoft 账户登录并授予所请求的委托权限。
 
 然后您可以在工作流中使用此插件,在收到电子邮件时触发它。

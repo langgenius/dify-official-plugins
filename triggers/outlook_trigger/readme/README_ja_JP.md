@@ -37,7 +37,10 @@
 `Client ID`、`Client Secret`、`Tenant ID`フィールドに入力します。
 `Tenant ID`は、選択したアカウントタイプに合わせて、テナントIDまたはドメイン、`organizations`、`common`のいずれかにします。
 
-このダイアログで`redirect_url`が表示されるので、それをコピーしてAzure Entra IDページに戻り、`Authentication`ページに移動し、プラットフォームタイプとして`Web`を選択し、`Redirect URIs`フィールドに`redirect_url`を貼り付けます。`Save`をクリックします。
+このダイアログに表示される`redirect_url`をコピーします。
+Azure Entra IDページに戻り、`Authentication`ページに移動します。
+プラットフォームの種類として`Web`を選択し、`Redirect URIs`フィールドにコピーした`redirect_url`を貼り付けます。
+最後に`Save`をクリックします。
 
 これで、Difyプラグイン設定ページに戻り、`Save and authorize`をクリックしてOAuthフローを開始できます。
 

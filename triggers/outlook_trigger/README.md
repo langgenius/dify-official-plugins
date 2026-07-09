@@ -37,7 +37,8 @@ Grant admin consent if your organization requires it.
 Fill in the `Client ID`, `Client Secret`, and `Tenant ID` fields.
 The `Tenant ID` value should match your account type choice: your tenant ID or domain, `organizations`, or `common`.
 
-You'll get a `redirect_url` in this dialog, copy it and go back to the Azure Entra ID page, head to `Authentication` page, select `Web` as the platform type, and paste the `redirect_url` in the `Redirect URIs` field.
+Copy the `redirect_url` from this dialog, then return to the Azure Entra ID page.
+Go to the `Authentication` page, select `Web` as the platform type, and paste the `redirect_url` into the `Redirect URIs` field.
 Click `Save`.
 
 Now you can go back to the Dify plugin configuration page and click `Save and authorize` to initiate the OAuth flow.
