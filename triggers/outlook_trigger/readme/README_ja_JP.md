@@ -12,35 +12,36 @@
 
 1. [Azure Portal](https://portal.azure.com/#home)にアクセスし、`App Registrations`に移動して新しいアプリケーションを作成します。
 
-![Azure Entra ID](./_assets/images/register_application_01.png)
-
 名前を入力し、テナントのセキュリティポリシーに合うサポート対象アカウントタイプを選択します。
 自社のみのアクセスにする場合は、シングルテナントを選択し、Dify に Directory tenant ID を入力します。
 組織アカウントのマルチテナントアクセスにする場合は、任意の組織ディレクトリのアカウントを選択し、Dify に `organizations` を入力します。
 個人の Microsoft アカウントが必要な場合だけ、個人アカウントを含むオプションを選択し、Dify に `common` を入力します。
 `Register`をクリックします。
 
-![Azure Entra ID](./_assets/images/register_application_02.png)
-
 2. `Overview`ページから`Application (client) ID`をコピーします。
 シングルテナントを選択した場合は、`Directory (tenant) ID`もコピーします。
 `Certificates & secrets`ページで新しいクライアントシークレットを生成し、値をコピーします。
 
-![Azure Entra ID](./_assets/images/get_credentials.png)
+3. API 権限を設定します。
+`API permissions`ページに移動します。
+次の Microsoft Graph 委任権限を追加します。
 
-3. Difyでこのプラグインをインストールして、設定ページを開きます。
+- `Mail.Read`（委任）
+- `offline_access`（委任）
 
-![Dify](./_assets/images/config_oauth_01.png)
+アプリケーション権限は不要です。
+組織で管理者の同意が必要な場合は、admin consent を付与します。
+
+4. Difyでこのプラグインをインストールして、設定ページを開きます。
 
 `Client ID`、`Client Secret`、`Tenant ID`フィールドに入力します。
 `Tenant ID`は、選択したアカウントタイプに合わせて、テナントIDまたはドメイン、`organizations`、`common`のいずれかにします。
 
 このダイアログで`redirect_url`が表示されるので、それをコピーしてAzure Entra IDページに戻り、`Authentication`ページに移動し、プラットフォームタイプとして`Web`を選択し、`Redirect URIs`フィールドに`redirect_url`を貼り付けます。`Save`をクリックします。
 
-![Dify](./_assets/images/config_oauth_02.png)
-
 これで、Difyプラグイン設定ページに戻り、`Save and authorize`をクリックしてOAuthフローを開始できます。
 
-このプラグインはMicrosoftログインページにリダイレクトされるので、Microsoftアカウントでログインし、アプリケーションに権限を付与します。
+このプラグインはMicrosoftログインページにリダイレクトします。
+Microsoftアカウントでログインし、要求された委任権限を付与します。
 
 これで、このプラグインをワークフローで使用して、メールを受信したときにトリガーできます。

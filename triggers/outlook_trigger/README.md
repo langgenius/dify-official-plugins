@@ -12,35 +12,37 @@ The field remains secret-style in Dify for compatibility with existing saved con
 
 1. Enter [Azure Portal](https://portal.azure.com/#home), head to `App Registrations` and create a new application.
 
-![Azure Entra ID](./_assets/images/register_application_01.png)
-
 Fill with a name and choose the supported account type that matches your tenant policy.
 For company-only access, choose single tenant and use the Directory tenant ID in Dify.
 For organization-account multi-tenant access, choose accounts in any organizational directory and enter `organizations` in Dify.
 Use the personal Microsoft accounts option only when personal accounts are required, then enter `common` in Dify.
 Click `Register`.
 
-![Azure Entra ID](./_assets/images/register_application_02.png)
-
 2. Copy the `Application (client) ID` from the `Overview` page.
 Copy the `Directory (tenant) ID` too if you chose single tenant.
 Generate a new client secret in the `Certificates & secrets` page and copy the value.
 
-![Azure Entra ID](./_assets/images/get_credentials.png)
+3. Configure API permissions.
+Go to the `API permissions` section.
+Add these Microsoft Graph delegated permissions:
 
-3. Install this plugin in Dify and open configuration page.
+- `Mail.Read` (delegated)
+- `offline_access` (delegated)
 
-![Dify](./_assets/images/config_oauth_01.png)
+No application permissions are required.
+Grant admin consent if your organization requires it.
+
+4. Install this plugin in Dify and open configuration page.
 
 Fill in the `Client ID`, `Client Secret`, and `Tenant ID` fields.
 The `Tenant ID` value should match your account type choice: your tenant ID or domain, `organizations`, or `common`.
 
-You'll get a `redirect_url` in this dialog, copy it and go back to the Azure Entra ID page, head to `Authentication` page, select `Web` as the platform type, add paste the `redirect_url` in the `Redirect URIs` field. Click `Save`.
-
-![Dify](./_assets/images/config_oauth_02.png)
+You'll get a `redirect_url` in this dialog, copy it and go back to the Azure Entra ID page, head to `Authentication` page, select `Web` as the platform type, and paste the `redirect_url` in the `Redirect URIs` field.
+Click `Save`.
 
 Now you can go back to the Dify plugin configuration page and click `Save and authorize` to initiate the OAuth flow.
 
-This plugin will redirect you to the Microsoft login page, login with your Microsoft account and grant the permissions to the application.
+This plugin will redirect you to the Microsoft login page.
+Log in with your Microsoft account and grant the requested delegated permissions.
 
 Then you can use this plugin in a workflow to trigger it when you receive an email.
