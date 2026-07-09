@@ -15,6 +15,9 @@ DEFAULT_MAX_API_CALLS = 500
 DEFAULT_MAX_IMAGES = 20
 DEFAULT_IMAGE_DOWNLOAD_TIMEOUT = 30
 DEFAULT_IMAGE_MIME_TYPE = "image/png"
+DEFAULT_MAX_IMAGE_SIZE = 15 * 1024 * 1024  # 15MB per image
+DEFAULT_MAX_CUMULATIVE_IMAGE_SIZE = 100 * 1024 * 1024  # 100MB per retrieval
+IMAGE_DOWNLOAD_CHUNK_SIZE = 8192
 
 # Block types whose "children" are separate pages/databases, not nested content
 # of the current page. Recursing into them would silently pull in arbitrary
@@ -123,17 +126,26 @@ class RetrievePageTool(Tool):
                 # signed URLs, so we must fetch them now rather than later.
                 images_downloaded = 0
                 images_failed = 0
+                total_downloaded_bytes = 0
                 for image in collected_images:
+                    if total_downloaded_bytes >= DEFAULT_MAX_CUMULATIVE_IMAGE_SIZE:
+                        images_failed += 1
+                        continue
                     try:
-                        response = requests.get(image["url"], timeout=DEFAULT_IMAGE_DOWNLOAD_TIMEOUT)
-                        response.raise_for_status()
-                        mime_type = _guess_image_mime_type(response, image["url"])
-                        filename = _guess_image_filename(image["url"], image["block_id"], mime_type)
+                        blob, mime_type, filename = _download_image(
+                            image["url"],
+                            image["block_id"],
+                            max_bytes=min(
+                                DEFAULT_MAX_IMAGE_SIZE,
+                                DEFAULT_MAX_CUMULATIVE_IMAGE_SIZE - total_downloaded_bytes,
+                            ),
+                        )
                         yield self.create_blob_message(
-                            blob=response.content,
+                            blob=blob,
                             meta={"mime_type": mime_type, "filename": filename},
                         )
                         images_downloaded += 1
+                        total_downloaded_bytes += len(blob)
                     except Exception:
                         images_failed += 1
                 if images_downloaded or images_failed:
@@ -361,12 +373,34 @@ def _coerce_positive_int(value: Any, default: int) -> int:
     return max(coerced, 0)
 
 
+def _download_image(url: str, block_id: str, max_bytes: int) -> tuple[bytes, str, str]:
+    """Stream-download an image, aborting once it exceeds max_bytes so a single
+    huge or malicious response can't exhaust the plugin's memory budget."""
+    with requests.get(url, timeout=DEFAULT_IMAGE_DOWNLOAD_TIMEOUT, stream=True) as response:
+        response.raise_for_status()
+
+        content_length = response.headers.get("Content-Length")
+        if content_length and int(content_length) > max_bytes:
+            raise ValueError(f"Image at {url} exceeds the {max_bytes}-byte download limit")
+
+        content = bytearray()
+        for chunk in response.iter_content(chunk_size=IMAGE_DOWNLOAD_CHUNK_SIZE):
+            content.extend(chunk)
+            if len(content) > max_bytes:
+                raise ValueError(f"Image at {url} exceeds the {max_bytes}-byte download limit")
+
+        mime_type = _guess_image_mime_type(response, url)
+        filename = _guess_image_filename(url, block_id, mime_type)
+        return bytes(content), mime_type, filename
+
+
 def _guess_image_mime_type(response: requests.Response, url: str) -> str:
     """Determine mime type from the response's Content-Type header, falling back
-    to guessing from the URL's file extension, then a hardcoded default."""
+    to guessing from the URL's file extension when the header is missing, generic,
+    or not an image type, then a hardcoded default."""
     content_type = response.headers.get("Content-Type", "")
-    mime_type = content_type.split(";")[0].strip()
-    if mime_type:
+    mime_type = content_type.split(";")[0].strip().lower()
+    if mime_type and mime_type != "application/octet-stream" and mime_type.startswith("image/"):
         return mime_type
     guessed_type, _ = mimetypes.guess_type(urlparse(url).path)
     return guessed_type or DEFAULT_IMAGE_MIME_TYPE

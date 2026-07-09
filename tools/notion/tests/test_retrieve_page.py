@@ -17,6 +17,16 @@ class _Response:
         if self.status_code >= 400:
             raise Exception(f"HTTP {self.status_code}")
 
+    def iter_content(self, chunk_size=8192):
+        for i in range(0, len(self.content), chunk_size):
+            yield self.content[i : i + chunk_size]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc_info):
+        return False
+
 
 class _MessageToolMixin:
     def create_text_message(self, value):
@@ -99,6 +109,16 @@ def test_guess_image_mime_type_falls_back_to_url_extension():
     assert _guess_image_mime_type(response, "https://example.com/photo.gif?X-Amz=abc") == "image/gif"
 
 
+def test_guess_image_mime_type_falls_back_when_content_type_is_generic():
+    response = _Response(headers={"Content-Type": "application/octet-stream"})
+    assert _guess_image_mime_type(response, "https://example.com/photo.jpg") == "image/jpeg"
+
+
+def test_guess_image_mime_type_falls_back_when_content_type_is_not_an_image():
+    response = _Response(headers={"Content-Type": "text/html"})
+    assert _guess_image_mime_type(response, "https://example.com/photo.jpg") == "image/jpeg"
+
+
 def test_guess_image_mime_type_falls_back_to_default():
     response = _Response(headers={})
     assert _guess_image_mime_type(response, "https://example.com/no-extension") == "image/png"
@@ -116,8 +136,9 @@ def test_image_block_is_downloaded_and_returned_as_blob_message(monkeypatch):
     blocks = [_image_block("block-1", "https://s3.example.com/path/photo.png?X-Amz=abc", caption="A photo")]
     retrieve_page = _patch_notion(monkeypatch, blocks)
 
-    def fake_get(url, timeout=None):
+    def fake_get(url, timeout=None, stream=None):
         assert url == "https://s3.example.com/path/photo.png?X-Amz=abc"
+        assert stream is True
         return _Response(content=b"pngbytes", headers={"Content-Type": "image/png"})
 
     monkeypatch.setattr(retrieve_page.requests, "get", fake_get)
@@ -162,7 +183,7 @@ def test_max_images_limits_downloads_and_reports_skipped(monkeypatch):
     monkeypatch.setattr(
         retrieve_page.requests,
         "get",
-        lambda url, timeout=None: _Response(content=b"x", headers={"Content-Type": "image/png"}),
+        lambda url, timeout=None, stream=None: _Response(content=b"x", headers={"Content-Type": "image/png"}),
     )
 
     messages = list(_tool()._invoke({"page_id": "page-123", "max_images": 1}))
@@ -179,7 +200,7 @@ def test_failed_image_download_does_not_crash_others(monkeypatch):
     ]
     retrieve_page = _patch_notion(monkeypatch, blocks)
 
-    def fake_get(url, timeout=None):
+    def fake_get(url, timeout=None, stream=None):
         if "broken" in url:
             raise Exception("connection reset")
         return _Response(content=b"okbytes", headers={"Content-Type": "image/png"})
@@ -208,3 +229,62 @@ def test_page_without_images_yields_no_blob_messages(monkeypatch):
     messages = list(_tool()._invoke({"page_id": "page-123"}))
 
     assert not [m for m in messages if m["type"] == "blob"]
+
+
+def test_image_over_max_size_via_content_length_header_is_skipped(monkeypatch):
+    blocks = [_image_block("block-1", "https://s3.example.com/huge.png")]
+    retrieve_page = _patch_notion(monkeypatch, blocks)
+    monkeypatch.setattr(retrieve_page, "DEFAULT_MAX_IMAGE_SIZE", 10)
+
+    def fake_get(url, timeout=None, stream=None):
+        return _Response(
+            content=b"x" * 20,
+            headers={"Content-Type": "image/png", "Content-Length": "20"},
+        )
+
+    monkeypatch.setattr(retrieve_page.requests, "get", fake_get)
+
+    messages = list(_tool()._invoke({"page_id": "page-123"}))
+
+    assert not [m for m in messages if m["type"] == "blob"]
+    summary = next(m for m in messages if m["type"] == "text" and m["value"].startswith("Downloaded"))
+    assert summary["value"] == "Downloaded 0 image(s), 1 failed"
+
+
+def test_image_over_max_size_without_content_length_is_aborted_mid_stream(monkeypatch):
+    blocks = [_image_block("block-1", "https://s3.example.com/huge.png")]
+    retrieve_page = _patch_notion(monkeypatch, blocks)
+    monkeypatch.setattr(retrieve_page, "DEFAULT_MAX_IMAGE_SIZE", 10)
+
+    def fake_get(url, timeout=None, stream=None):
+        return _Response(content=b"x" * 20, headers={"Content-Type": "image/png"})
+
+    monkeypatch.setattr(retrieve_page.requests, "get", fake_get)
+
+    messages = list(_tool()._invoke({"page_id": "page-123"}))
+
+    assert not [m for m in messages if m["type"] == "blob"]
+
+
+def test_cumulative_size_limit_stops_further_downloads(monkeypatch):
+    blocks = [
+        _image_block("block-1", "https://s3.example.com/a.png"),
+        _image_block("block-2", "https://s3.example.com/b.png"),
+        _image_block("block-3", "https://s3.example.com/c.png"),
+    ]
+    retrieve_page = _patch_notion(monkeypatch, blocks)
+    monkeypatch.setattr(retrieve_page, "DEFAULT_MAX_IMAGE_SIZE", 10)
+    monkeypatch.setattr(retrieve_page, "DEFAULT_MAX_CUMULATIVE_IMAGE_SIZE", 15)
+
+    monkeypatch.setattr(
+        retrieve_page.requests,
+        "get",
+        lambda url, timeout=None, stream=None: _Response(content=b"x" * 10, headers={"Content-Type": "image/png"}),
+    )
+
+    messages = list(_tool()._invoke({"page_id": "page-123"}))
+
+    blob_messages = [m for m in messages if m["type"] == "blob"]
+    assert len(blob_messages) == 1
+    summary = next(m for m in messages if m["type"] == "text" and m["value"].startswith("Downloaded"))
+    assert summary["value"] == "Downloaded 1 image(s), 2 failed"
