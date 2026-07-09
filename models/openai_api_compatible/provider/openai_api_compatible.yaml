@@ -85,8 +85,8 @@ model_credential_schema:
         en_US: The initial prompt for the model at the start of the conversation.
     - variable: endpoint_url
       label:
-        zh_Hans: API endpoint URL
-        en_US: API endpoint URL
+        zh_Hans: API Base URL
+        en_US: API Base URL
       type: text-input
       required: true
       placeholder:
