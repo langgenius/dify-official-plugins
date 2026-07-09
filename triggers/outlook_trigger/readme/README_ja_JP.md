@@ -12,15 +12,21 @@
 
 1. [Azure Portal](https://portal.azure.com/#home)にアクセスし、`App Registrations`に移動して新しいアプリケーションを作成します。
 
+![Azure Entra ID](./_assets/images/register_application_01.png)
+
 名前を入力し、テナントのセキュリティポリシーに合うサポート対象アカウントタイプを選択します。
 自社のみのアクセスにする場合は、シングルテナントを選択し、Dify に Directory tenant ID を入力します。
 組織アカウントのマルチテナントアクセスにする場合は、任意の組織ディレクトリのアカウントを選択し、Dify に `organizations` を入力します。
 個人の Microsoft アカウントが必要な場合だけ、個人アカウントを含むオプションを選択し、Dify に `common` を入力します。
 `Register`をクリックします。
 
+![Azure Entra ID](./_assets/images/register_application_02.png)
+
 2. `Overview`ページから`Application (client) ID`をコピーします。
 シングルテナントを選択した場合は、`Directory (tenant) ID`もコピーします。
 `Certificates & secrets`ページで新しいクライアントシークレットを生成し、値をコピーします。
+
+![Azure Entra ID](./_assets/images/get_credentials.png)
 
 3. API 権限を設定します。
 `API permissions`ページに移動します。
@@ -34,6 +40,8 @@
 
 4. Difyでこのプラグインをインストールして、設定ページを開きます。
 
+![Dify](./_assets/images/config_oauth_01.png)
+
 `Client ID`、`Client Secret`、`Tenant ID`フィールドに入力します。
 `Tenant ID`は、選択したアカウントタイプに合わせて、テナントIDまたはドメイン、`organizations`、`common`のいずれかにします。
 
@@ -41,6 +49,8 @@
 Azure Entra IDページに戻り、`Authentication`ページに移動します。
 プラットフォームの種類として`Web`を選択し、`Redirect URIs`フィールドにコピーした`redirect_url`を貼り付けます。
 最後に`Save`をクリックします。
+
+![Dify](./_assets/images/config_oauth_02.png)
 
 これで、Difyプラグイン設定ページに戻り、`Save and authorize`をクリックしてOAuthフローを開始できます。
 
