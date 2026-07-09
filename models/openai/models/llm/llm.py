@@ -1303,6 +1303,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         completion_tokens = 0
         final_tool_calls = []
         aggregated_tool_calls: dict[int, ChoiceDeltaToolCall] = {}
+        is_reasoning = False
         final_chunk = LLMResultChunk(
             model=model,
             prompt_messages=prompt_messages,
@@ -1334,6 +1335,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 and (delta.delta.content is None or delta.delta.content == "")
                 and delta.delta.tool_calls is None
                 and delta.delta.function_call is None
+                and not self._extract_reasoning_content(delta.delta)
             ):
                 continue
 
@@ -1410,13 +1412,15 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 )
                 continue
 
+            content, is_reasoning = self._wrap_thinking_by_reasoning_content(delta.delta, is_reasoning)
+
             # transform assistant message to prompt message
             assistant_prompt_message = AssistantPromptMessage(
-                content=delta.delta.content if delta.delta.content else "",
+                content=content,
                 tool_calls=[],
             )
 
-            full_assistant_content += delta.delta.content if delta.delta.content else ""
+            full_assistant_content += content
 
             if has_finish_reason:
                 final_chunk = LLMResultChunk(
@@ -1460,6 +1464,33 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         final_chunk.delta.usage = usage
 
         yield final_chunk
+
+    @staticmethod
+    def _extract_reasoning_content(delta: Any) -> str:
+        for key in ("reasoning_content", "reasoning", "reasoning_summary"):
+            value = getattr(delta, key, None)
+            if not value and hasattr(delta, "model_extra") and isinstance(delta.model_extra, dict):
+                value = delta.model_extra.get(key)
+            if not value:
+                continue
+            if isinstance(value, str):
+                return value
+            if isinstance(value, list):
+                return "\n".join(str(item) for item in value if item)
+            return str(value)
+        return ""
+
+    @classmethod
+    def _wrap_thinking_by_reasoning_content(cls, delta: Any, is_reasoning: bool) -> tuple[str, bool]:
+        content = delta.content or ""
+        reasoning_content = cls._extract_reasoning_content(delta)
+        if reasoning_content:
+            if not is_reasoning:
+                return "<think>\n" + reasoning_content, True
+            return reasoning_content, True
+        if is_reasoning and content:
+            return "\n</think>" + content, False
+        return content, is_reasoning
 
     def _extract_response_tool_calls(
         self,
