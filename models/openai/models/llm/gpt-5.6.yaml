@@ -1,4 +1,4 @@
-# https://developers.openai.com/api/docs/models/gpt-5.6-sol
+# https://openai.com/index/gpt-5-6/
 model: gpt-5.6
 label:
   zh_Hans: gpt-5.6
