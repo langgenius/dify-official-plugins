@@ -11,6 +11,18 @@ description:
   ja_JP: Outlook メール受信イベント
 
 parameters:
+- name: mailbox_address
+  label:
+    en_US: Mailbox Address (shared mailbox)
+    zh_Hans: 邮箱地址（共享邮箱）
+    ja_JP: メールボックスアドレス（共有メールボックス）
+  type: text-input
+  required: false
+  default: ""
+  description:
+    en_US: "Monitor a shared or departmental mailbox instead of the signed-in user's mailbox. Enter the mailbox UPN (e.g., support@company.com) or ID. Leave empty to monitor the signed-in user's personal Inbox."
+    zh_Hans: "监视共享或部门邮箱，而不是已登录用户的邮箱。输入邮箱 UPN（例如 support@company.com）或 ID。留空则监视已登录用户的个人收件箱。"
+    ja_JP: "サインイン済みユーザーのメールボックスではなく、共有/部門のメールボックスを監視します。メールボックスの UPN（例: support@company.com）または ID を入力します。空の場合はサインイン済みユーザーの個人受信トレイを監視します。"
 - name: sender_email_address
   label:
     en_US: Sender Email Address
