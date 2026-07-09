@@ -1,8 +1,10 @@
-from decimal import Decimal
+import hashlib
 import json
 import logging
 from collections.abc import Generator
-from typing import Optional, Union, cast, Any
+from decimal import Decimal
+from typing import Any, Optional, Union, cast
+
 import tiktoken
 
 from openai import OpenAI
@@ -25,6 +27,10 @@ from dify_plugin import LargeLanguageModel
 from dify_plugin.entities import I18nObject
 from dify_plugin.errors.model import (
     CredentialsValidateFailedError,
+    InvokeBadRequestError,
+    InvokeConnectionError,
+    InvokeRateLimitError,
+    InvokeServerUnavailableError,
 )
 from dify_plugin.entities.model import (
     AIModelEntity,
@@ -41,6 +47,8 @@ from dify_plugin.entities.model.llm import (
 from dify_plugin.entities.model.message import (
     AssistantPromptMessage,
     AudioPromptMessageContent,
+    DeveloperPromptMessage,
+    DocumentPromptMessageContent,
     ImagePromptMessageContent,
     PromptMessage,
     PromptMessageContentType,
@@ -64,21 +72,24 @@ if you are not sure about the structure.
 
 # thinking models compatibility for max_completion_tokens (all starting with "o" or "gpt-5")
 THINKING_SERIES_PREFIXES = ("o", "gpt-5")
+RESPONSES_OUTPUT_KEY = "responses_output"
 
 
 def _normalize_service_tier_params(model_parameters: dict) -> None:
     """
-    OpenAI Chat Completions / Responses API: service_tier='flex' enables Flex processing.
-    UI value 'default' or empty omits the parameter. See
+    Remove only empty service tier values.
+
+    OpenAI distinguishes an omitted value (auto) from ``default`` (Standard).
+    See
     https://developers.openai.com/api/docs/guides/flex-processing
     """
     st = model_parameters.get("service_tier")
-    if st in (None, "", "default"):
+    if st in (None, ""):
         model_parameters.pop("service_tier", None)
 
 
 def _uses_responses_api(credentials: dict) -> bool:
-    return credentials.get("api_protocol", "responses") == "responses"
+    return credentials.get("api_protocol") != "chat"
 
 
 class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
@@ -110,13 +121,13 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
+        model_parameters = model_parameters.copy()
+
         # handle fine tune remote models
         base_model = model
         if model.startswith("ft:"):
             base_model = model.split(":")[1]
 
-        # GPT-5 series SOTA models require KYC validation for streaming output
-        # If you want to use the models without this limitation, please turn off streaming responses.
         if model_parameters.pop("enable_stream", None) is False:  # noqa
             stream = False
 
@@ -386,47 +397,35 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             # get model mode
             model_mode = self.get_model_mode(base_model, credentials)
 
-            if _uses_responses_api(credentials):
-                # models that only support the Responses API
-                client.responses.create(
-                    model=model,
-                    input="ping",
-                    max_output_tokens=20,
-                )
-            elif model_mode == LLMMode.CHAT:
-                # chat model — fall back to Responses API if the endpoint rejects 'messages'
-                is_thinking_model = any(model.startswith(prefix) for prefix in THINKING_SERIES_PREFIXES)
-                validation_params = (
-                    {"max_completion_tokens": 20, "temperature": 1}
-                    if is_thinking_model
-                    else {"max_tokens": 20, "temperature": 0}
-                )
-                try:
-                    client.chat.completions.create(
-                        messages=[{"role": "user", "content": "ping"}],
-                        model=model,
-                        stream=False,
-                        **validation_params,
-                    )
-                except Exception as chat_ex:
-                    err_str = str(chat_ex)
-                    if "messages" in err_str and ("unsupported_parameter" in err_str or "input" in err_str):
-                        # endpoint only supports Responses API
-                        client.responses.create(
-                            model=model,
-                            input="ping",
-                            max_output_tokens=20,
-                        )
-                    else:
-                        raise
-            else:
-                # text completion model
+            if model_mode != LLMMode.CHAT:
                 client.completions.create(
                     prompt="ping",
                     model=model,
                     temperature=0,
                     max_tokens=20,
                     stream=False,
+                )
+            elif _uses_responses_api(credentials):
+                client.responses.create(
+                    model=model,
+                    input="ping",
+                    max_output_tokens=20,
+                    store=False,
+                )
+            else:
+                is_thinking_model = any(
+                    model.startswith(prefix) for prefix in THINKING_SERIES_PREFIXES
+                )
+                validation_params = (
+                    {"max_completion_tokens": 20, "temperature": 1}
+                    if is_thinking_model
+                    else {"max_tokens": 20, "temperature": 0}
+                )
+                client.chat.completions.create(
+                    messages=[{"role": "user", "content": "ping"}],
+                    model=model,
+                    stream=False,
+                    **validation_params,
                 )
         except Exception as ex:
             raise CredentialsValidateFailedError(str(ex))
@@ -510,6 +509,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
+        model_parameters = model_parameters.copy()
+
         # transform credentials to kwargs for model instance
         credentials_kwargs = self._to_credential_kwargs(credentials)
 
@@ -717,6 +718,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         :param user: unique user id
         :return: full response or stream response chunk generator result
         """
+        model_parameters = model_parameters.copy()
+
         # transform credentials to kwargs for model instance
         credentials_kwargs = self._to_credential_kwargs(credentials)
 
@@ -779,9 +782,6 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         # clear illegal prompt messages
         prompt_messages = self._clear_illegal_prompt_messages(model, prompt_messages)
 
-        # o1, o3, o4 compatibility
-        block_as_stream = False
-
         if _uses_responses_api(credentials):
             if stream:
                 return self._chat_generate_responses_api_stream(
@@ -792,6 +792,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                     tools=tools,
                     client=client,
                     user=user,
+                    stop=stop,
                 )
             block_result = self._chat_generate_responses_api(
                 model=model,
@@ -801,6 +802,7 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 tools=tools,
                 client=client,
                 user=user,
+                stop=stop,
             )
         else:
             # chat model
@@ -824,9 +826,6 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
             block_result = self._handle_chat_generate_response(model, credentials, response, prompt_messages, tools)
 
-        if block_as_stream:
-            return self._handle_chat_block_as_stream_response(block_result, prompt_messages, stop)
-        
         return block_result
 
     def _build_responses_api_params(
@@ -840,6 +839,19 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         """
         params = model_parameters.copy()
 
+        for name in ("presence_penalty", "frequency_penalty"):
+            value = params.pop(name, None)
+            if value not in (None, 0, 0.0):
+                raise InvokeBadRequestError(
+                    f"{name} is not supported by the Responses API; "
+                    "select Chat Completions to use it."
+                )
+
+        if params.pop("seed", None) is not None:
+            raise InvokeBadRequestError(
+                "seed is not supported by the Responses API; " "select Chat Completions to use it."
+            )
+
         # max_tokens / max_completion_tokens -> max_output_tokens
         if "max_tokens" in params:
             params["max_output_tokens"] = params.pop("max_tokens")
@@ -848,31 +860,32 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
         # reasoning_effort -> reasoning.effort
         reasoning_effort = params.pop("reasoning_effort", None)
-        if reasoning_effort:
+        if reasoning_effort not in (None, ""):
             params["reasoning"] = {"effort": reasoning_effort}
 
         # response_format -> text.format (Responses API uses different format)
-        # response_format is incompatible with Responses API, convert to text.format
-        # See: https://community.openai.com/t/response-format-not-available-for-the-responses-api/1147369
+        # https://developers.openai.com/api/docs/guides/structured-outputs
         response_format = params.pop("response_format", None)
         if response_format:
             if isinstance(response_format, dict):
                 if response_format.get("type") == "json_schema":
-                    json_schema = response_format.get("json_schema", {})
-                    if isinstance(json_schema, dict) and "schema" in json_schema:
+                    json_schema = response_format.get("json_schema", response_format)
+                    if not isinstance(json_schema, dict):
+                        raise InvokeBadRequestError("JSON Schema must be an object")
+                    if "schema" in json_schema:
                         schema_obj = json_schema
                     else:
                         schema_obj = {"schema": json_schema}
 
-                    params["text"] = {
-                        "format": {
-                            "type": "json_schema",
-                            "name": schema_obj.get("name", "response"),
-                            "schema": schema_obj.get("schema", json_schema),
-                        }
+                    text_format = {
+                        "type": "json_schema",
+                        "name": schema_obj.get("name", "response"),
+                        "schema": schema_obj["schema"],
                     }
-                    if "strict" in schema_obj:
-                        params["text"]["format"]["strict"] = schema_obj["strict"]
+                    for field in ("description", "strict"):
+                        if field in schema_obj:
+                            text_format[field] = schema_obj[field]
+                    params["text"] = {"format": text_format}
                 else:
                     params["text"] = {"format": {"type": response_format.get("type", "text")}}
             elif isinstance(response_format, str):
@@ -885,65 +898,156 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         if verbosity is not None:
             params.setdefault("text", {})["verbosity"] = verbosity
 
-        if user:
-            params["user"] = user
+        tool_choice = params.get("tool_choice")
+        if isinstance(tool_choice, dict) and tool_choice.get("type") == "function":
+            function = tool_choice.get("function")
+            if isinstance(function, dict) and function.get("name"):
+                params["tool_choice"] = {
+                    "type": "function",
+                    "name": function["name"],
+                }
+
+        legacy_user = params.pop("user", None)
+        end_user = user or legacy_user
+        if end_user:
+            end_user_hash = hashlib.sha256(end_user.encode()).hexdigest()
+            params.setdefault("safety_identifier", end_user_hash)
+            params.setdefault("prompt_cache_key", end_user_hash)
+
+        if params.get("store") is None:
+            params["store"] = False
+        if params["store"] is False:
+            include = list(params.get("include") or [])
+            if "reasoning.encrypted_content" not in include:
+                include.append("reasoning.encrypted_content")
+            params["include"] = include
 
         return params
+
+    @staticmethod
+    def _convert_responses_content(content_items: list[Any]) -> list[dict]:
+        content: list[dict] = []
+        for item in content_items:
+            if item.type == PromptMessageContentType.TEXT:
+                content.append(
+                    {
+                        "type": "input_text",
+                        "text": cast(TextPromptMessageContent, item).data,
+                    }
+                )
+            elif item.type == PromptMessageContentType.IMAGE:
+                image = cast(ImagePromptMessageContent, item)
+                if not image.url and not image.base64_data:
+                    raise InvokeBadRequestError("Image input must include a URL or base64 data")
+                image_part = {
+                    "type": "input_image",
+                    "image_url": image.data,
+                }
+                if "detail" in image.model_fields_set:
+                    image_part["detail"] = image.detail.value
+                content.append(image_part)
+            elif item.type == PromptMessageContentType.DOCUMENT:
+                document = cast(DocumentPromptMessageContent, item)
+                file_part: dict[str, Any] = {"type": "input_file"}
+                if document.url:
+                    file_part["file_url"] = document.url
+                elif document.base64_data:
+                    suffix = document.format.lstrip(".")
+                    file_part["filename"] = document.filename or (
+                        f"document.{suffix}" if suffix else "document"
+                    )
+                    file_part["file_data"] = document.data
+                else:
+                    raise InvokeBadRequestError("Document input must include a URL or base64 data")
+                content.append(file_part)
+            elif item.type in (PromptMessageContentType.AUDIO, PromptMessageContentType.VIDEO):
+                raise InvokeBadRequestError(
+                    f"{item.type.value} input is not supported by the Responses API; "
+                    "select Chat Completions for this request."
+                )
+            else:
+                raise InvokeBadRequestError(f"Unsupported Responses API content type: {item.type}")
+        return content
 
     def _convert_prompt_messages_to_responses_input(
         self,
         prompt_messages: list[PromptMessage],
-        tools: Optional[list[PromptMessageTool]] = None,
     ) -> list[dict]:
-        """
-        Convert PromptMessage list to Responses API input format.
-        Handles system/user/assistant/tool messages and tool call results.
-        """
+        """Convert prompt messages to typed Responses API input items."""
         input_items: list[dict] = []
-        for m in prompt_messages:
-            if isinstance(m, SystemPromptMessage):
-                # system messages become instructions-style user messages with developer role
-                input_items.append({
-                    "type": "message",
-                    "role": "system",
-                    "content": m.content if isinstance(m.content, str) else
-                               "\n".join(item.data for item in m.content if item.type == PromptMessageContentType.TEXT),
-                })
-            elif isinstance(m, UserPromptMessage):
-                if isinstance(m.content, str):
-                    content: Any = m.content
+        for message in prompt_messages:
+            if isinstance(
+                message,
+                (SystemPromptMessage, DeveloperPromptMessage, UserPromptMessage),
+            ):
+                if isinstance(message, SystemPromptMessage):
+                    role = "system"
+                elif isinstance(message, DeveloperPromptMessage):
+                    role = "developer"
                 else:
-                    content = []
-                    for item in m.content:
-                        if item.type == PromptMessageContentType.TEXT:
-                            content.append({"type": "input_text", "text": cast(TextPromptMessageContent, item).data})
-                        elif item.type == PromptMessageContentType.IMAGE:
-                            img = cast(ImagePromptMessageContent, item)
-                            content.append({
-                                "type": "input_image",
-                                "image_url": img.data,
-                                "detail": img.detail.value,
-                            })
-                input_items.append({"type": "message", "role": "user", "content": content})
-            elif isinstance(m, AssistantPromptMessage):
-                if m.tool_calls:
-                    # assistant message with tool calls
-                    for tc in m.tool_calls:
-                        input_items.append({
+                    role = "user"
+
+                if isinstance(message.content, str):
+                    content: Any = message.content
+                else:
+                    content = self._convert_responses_content(message.content or [])
+                if content not in (None, "", []):
+                    input_items.append(
+                        {
+                            "type": "message",
+                            "role": role,
+                            "content": content,
+                        }
+                    )
+            elif isinstance(message, AssistantPromptMessage):
+                opaque_body = message.opaque_body
+                if isinstance(opaque_body, dict):
+                    output_items = opaque_body.get(RESPONSES_OUTPUT_KEY)
+                    if isinstance(output_items, list) and all(
+                        isinstance(item, dict) for item in output_items
+                    ):
+                        input_items.extend(item.copy() for item in output_items)
+                        continue
+
+                if isinstance(message.content, str):
+                    assistant_content: Any = message.content
+                else:
+                    assistant_content = self._convert_responses_content(message.content or [])
+                if assistant_content not in (None, "", []):
+                    input_items.append(
+                        {
+                            "type": "message",
+                            "role": "assistant",
+                            "content": assistant_content,
+                        }
+                    )
+                for tool_call in message.tool_calls:
+                    input_items.append(
+                        {
                             "type": "function_call",
-                            "call_id": tc.id,
-                            "name": tc.function.name,
-                            "arguments": tc.function.arguments,
-                        })
+                            "call_id": tool_call.id,
+                            "name": tool_call.function.name,
+                            "arguments": tool_call.function.arguments,
+                        }
+                    )
+            elif isinstance(message, ToolPromptMessage):
+                if isinstance(message.content, str):
+                    output: Any = message.content
+                elif isinstance(message.content, list):
+                    output = self._convert_responses_content(message.content) or ""
                 else:
-                    text = m.content if isinstance(m.content, str) else ""
-                    input_items.append({"type": "message", "role": "assistant", "content": text})
-            elif isinstance(m, ToolPromptMessage):
-                input_items.append({
-                    "type": "function_call_output",
-                    "call_id": m.tool_call_id,
-                    "output": m.content if isinstance(m.content, str) else "",
-                })
+                    output = ""
+                input_items.append(
+                    {
+                        "type": "function_call_output",
+                        "call_id": message.tool_call_id,
+                        "output": output,
+                    }
+                )
+            else:
+                raise InvokeBadRequestError(
+                    f"Unsupported Responses API prompt message: {type(message).__name__}"
+                )
         return input_items
 
     def _build_responses_api_tools(
@@ -958,9 +1062,107 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                 "name": tool.name,
                 "description": tool.description,
                 "parameters": tool.parameters,
+                "strict": False,
             }
             for tool in tools
         ]
+
+    @staticmethod
+    def _response_field(value: Any, field: str, default: Any = None) -> Any:
+        if isinstance(value, dict):
+            return value.get(field, default)
+        return getattr(value, field, default)
+
+    @classmethod
+    def _to_json_value(cls, value: Any) -> Any:
+        if value is None or isinstance(value, (bool, int, float, str)):
+            return value
+        if isinstance(value, dict):
+            return {key: cls._to_json_value(item) for key, item in value.items()}
+        if isinstance(value, (list, tuple)):
+            return [cls._to_json_value(item) for item in value]
+        if hasattr(value, "model_dump"):
+            return value.model_dump(mode="json", exclude_none=True)
+        if hasattr(value, "__dict__"):
+            return {
+                key: cls._to_json_value(item)
+                for key, item in vars(value).items()
+                if not key.startswith("_")
+            }
+        raise TypeError(f"Cannot serialize Responses API output item: {type(value).__name__}")
+
+    @classmethod
+    def _responses_opaque_body(cls, response: Any) -> dict[str, Any]:
+        output_items = cls._to_json_value(cls._response_field(response, "output", []))
+        return {RESPONSES_OUTPUT_KEY: output_items}
+
+    @classmethod
+    def _extract_responses_text(cls, response: Any) -> str:
+        parts: list[str] = []
+        for item in cls._response_field(response, "output", []) or []:
+            if cls._response_field(item, "type") != "message":
+                continue
+            for content in cls._response_field(item, "content", []) or []:
+                content_type = cls._response_field(content, "type")
+                if content_type == "output_text":
+                    parts.append(cls._response_field(content, "text", "") or "")
+                elif content_type == "refusal":
+                    parts.append(cls._response_field(content, "refusal", "") or "")
+        if parts:
+            return "".join(parts)
+        return cls._response_field(response, "output_text", "") or ""
+
+    @classmethod
+    def _extract_responses_tool_calls(cls, response: Any) -> list[AssistantPromptMessage.ToolCall]:
+        tool_calls: list[AssistantPromptMessage.ToolCall] = []
+        for item in cls._response_field(response, "output", []) or []:
+            if cls._response_field(item, "type") != "function_call":
+                continue
+            if cls._response_field(item, "status") not in (None, "completed"):
+                continue
+            tool_calls.append(
+                AssistantPromptMessage.ToolCall(
+                    id=cls._response_field(item, "call_id", ""),
+                    type="function",
+                    function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                        name=cls._response_field(item, "name", ""),
+                        arguments=cls._response_field(item, "arguments", ""),
+                    ),
+                )
+            )
+        return tool_calls
+
+    @classmethod
+    def _raise_for_responses_status(cls, response: Any, *, allow_incomplete: bool = False) -> None:
+        status = cls._response_field(response, "status")
+        error = cls._response_field(response, "error")
+        if error is not None or status == "failed":
+            cls._raise_responses_error(error)
+        if status == "incomplete" and not allow_incomplete:
+            details = cls._response_field(response, "incomplete_details")
+            reason = cls._response_field(details, "reason", "unknown")
+            raise InvokeBadRequestError(f"OpenAI response incomplete: {reason}")
+        if status in ("cancelled", "queued", "in_progress"):
+            raise InvokeServerUnavailableError(f"Unexpected OpenAI response status: {status}")
+        if isinstance(status, str) and status not in ("completed", "incomplete"):
+            raise InvokeServerUnavailableError(f"Unknown OpenAI response status: {status}")
+
+    @classmethod
+    def _raise_responses_error(cls, error: Any) -> None:
+        code = cls._response_field(error, "code", "response_failed")
+        message = cls._response_field(error, "message", "OpenAI response failed")
+        description = f"OpenAI {code}: {message}"
+        if code == "rate_limit_exceeded":
+            raise InvokeRateLimitError(description)
+        if code in ("server_error", "vector_store_timeout", "response_failed"):
+            raise InvokeServerUnavailableError(description)
+        raise InvokeBadRequestError(description)
+
+    @staticmethod
+    def _truncate_at_stop(text: str, stop: Optional[list[str]]) -> str:
+        positions = [text.find(token) for token in stop or [] if token]
+        positions = [position for position in positions if position >= 0]
+        return text[: min(positions)] if positions else text
 
     def _chat_generate_responses_api(
         self,
@@ -971,14 +1173,12 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         tools: Optional[list[PromptMessageTool]],
         client: OpenAI,
         user: Optional[str] = None,
+        stop: Optional[list[str]] = None,
     ) -> LLMResult:
-        """
-        Invoke model using the Responses API (non-streaming).
-        Used for models like o3-pro that only support responses.create.
-        """
+        """Invoke a model using the non-streaming Responses API."""
         response_params = self._build_responses_api_params(model_parameters, user)
 
-        input_items = self._convert_prompt_messages_to_responses_input(prompt_messages, tools)
+        input_items = self._convert_prompt_messages_to_responses_input(prompt_messages)
         api_tools = self._build_responses_api_tools(tools)
         if api_tools:
             response_params["tools"] = api_tools
@@ -991,40 +1191,46 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             **response_params,
         )
 
-        # Extract text content
-        text_content = resp_obj.output_text or ""
-
-        # Extract tool calls from output items
-        tool_calls: list[AssistantPromptMessage.ToolCall] = []
-        for item in resp_obj.output:
-            if item.type == "function_call":
-                tool_calls.append(
-                    AssistantPromptMessage.ToolCall(
-                        id=item.call_id,
-                        type="function",
-                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                            name=item.name,
-                            arguments=item.arguments,
-                        ),
-                    )
-                )
+        self._raise_for_responses_status(resp_obj, allow_incomplete=True)
+        response_status = self._response_field(resp_obj, "status")
+        raw_text_content = self._extract_responses_text(resp_obj)
+        text_content = self._truncate_at_stop(raw_text_content, stop)
+        tool_calls = (
+            self._extract_responses_tool_calls(resp_obj)
+            if response_status == "completed" and text_content == raw_text_content
+            else []
+        )
+        opaque_body = (
+            self._responses_opaque_body(resp_obj)
+            if response_status in ("completed", "incomplete") and text_content == raw_text_content
+            else None
+        )
 
         assistant_prompt_message = AssistantPromptMessage(
             content=text_content,
             tool_calls=tool_calls,
+            opaque_body=opaque_body,
         )
 
-        usage = None
-        if resp_obj.usage:
-            usage = self._calc_response_usage(
-                model=model,
-                credentials=credentials,
-                prompt_tokens=resp_obj.usage.input_tokens,
-                completion_tokens=resp_obj.usage.output_tokens,
+        response_usage = self._response_field(resp_obj, "usage")
+        if response_usage is not None:
+            prompt_tokens = self._response_field(response_usage, "input_tokens", 0)
+            completion_tokens = self._response_field(response_usage, "output_tokens", 0)
+        else:
+            prompt_tokens = self._num_tokens_from_messages(model, prompt_messages, tools)
+            completion_input = raw_text_content + "".join(
+                tool_call.function.arguments for tool_call in tool_calls
             )
+            completion_tokens = self._num_tokens_from_string(model, completion_input)
+        usage = self._calc_response_usage(
+            model=model,
+            credentials=credentials,
+            prompt_tokens=prompt_tokens,
+            completion_tokens=completion_tokens,
+        )
 
         return LLMResult(
-            model=resp_obj.model,
+            model=self._response_field(resp_obj, "model", model),
             prompt_messages=prompt_messages,
             message=assistant_prompt_message,
             usage=usage,
@@ -1040,13 +1246,12 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         tools: Optional[list[PromptMessageTool]],
         client: OpenAI,
         user: Optional[str] = None,
+        stop: Optional[list[str]] = None,
     ) -> Generator:
-        """
-        Invoke model using the Responses API with streaming.
-        """
+        """Invoke a model using the streaming Responses API."""
         response_params = self._build_responses_api_params(model_parameters, user)
 
-        input_items = self._convert_prompt_messages_to_responses_input(prompt_messages, tools)
+        input_items = self._convert_prompt_messages_to_responses_input(prompt_messages)
         api_tools = self._build_responses_api_tools(tools)
         if api_tools:
             response_params["tools"] = api_tools
@@ -1060,163 +1265,145 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
             **response_params,
         )
 
-        full_text = ""
-        prompt_tokens = 0
-        completion_tokens = 0
-        # track function calls being built: output_index -> {call_id, name, arguments}
-        pending_tool_calls: dict[int, dict] = {}
-        final_model = model
-
-        final_chunk = LLMResultChunk(
-            model=model,
-            prompt_messages=prompt_messages,
-            delta=LLMResultChunkDelta(
-                index=0,
-                message=AssistantPromptMessage(content=""),
-            ),
-        )
+        stop_sequences = [token for token in stop or [] if token]
+        max_stop_length = max((len(token) for token in stop_sequences), default=0)
+        pending_text = ""
+        generated_text = ""
+        stopped = False
+        terminal_response = None
+        terminal_finish_reason = "stop"
 
         for event in stream:
-            event_type = event.type
-            logger.info(f"Responses API stream event: {event_type}")
+            event_type = self._response_field(event, "type")
+            logger.debug("Responses API stream event: %s", event_type)
 
-            if event_type == "response.output_text.delta":
-                # delta field name varies: official SDK uses .delta
-                delta_text = getattr(event, "delta", None) or getattr(event, "text", "") or ""
+            if event_type in ("response.output_text.delta", "response.refusal.delta"):
+                delta_text = self._response_field(event, "delta", "") or ""
                 if delta_text:
-                    full_text += delta_text
-                    yield LLMResultChunk(
-                        model=final_model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(
-                            index=0,
-                            message=AssistantPromptMessage(content=delta_text),
-                        ),
-                    )
+                    generated_text += delta_text
+                    visible_text = ""
+                    if not stopped and not stop_sequences:
+                        visible_text = delta_text
+                    elif not stopped:
+                        pending_text += delta_text
+                        stopped_text = self._truncate_at_stop(
+                            pending_text,
+                            stop_sequences,
+                        )
+                        if len(stopped_text) < len(pending_text):
+                            visible_text = stopped_text
+                            pending_text = ""
+                            stopped = True
+                        else:
+                            emit_length = max(0, len(pending_text) - max_stop_length + 1)
+                            visible_text = pending_text[:emit_length]
+                            pending_text = pending_text[emit_length:]
 
-            elif event_type == "response.output_item.added":
-                item = event.item
-                if item.type == "function_call":
-                    pending_tool_calls[event.output_index] = {
-                        "call_id": item.call_id,
-                        "name": item.name,
-                        "arguments": "",
-                    }
-
-            elif event_type == "response.function_call_arguments.delta":
-                idx = event.output_index
-                if idx in pending_tool_calls:
-                    pending_tool_calls[idx]["arguments"] += event.delta
-
-            elif event_type == "response.function_call_arguments.done":
-                idx = event.output_index
-                if idx in pending_tool_calls:
-                    pending_tool_calls[idx]["arguments"] = event.arguments
-                    pending_tool_calls[idx]["name"] = event.name
-
-            elif event_type == "response.completed":
-                resp = event.response
-                final_model = resp.model
-                if resp.usage:
-                    prompt_tokens = resp.usage.input_tokens
-                    completion_tokens = resp.usage.output_tokens
-                # if stream produced no text, extract from completed response
-                if not full_text and not pending_tool_calls:
-                    full_text = resp.output_text or ""
-                    if full_text:
+                    if visible_text:
                         yield LLMResultChunk(
-                            model=final_model,
+                            model=model,
                             prompt_messages=prompt_messages,
                             delta=LLMResultChunkDelta(
                                 index=0,
-                                message=AssistantPromptMessage(content=full_text),
+                                message=AssistantPromptMessage(content=visible_text),
                             ),
                         )
 
-                # emit tool calls if any
-                if pending_tool_calls:
-                    tool_calls = [
-                        AssistantPromptMessage.ToolCall(
-                            id=tc["call_id"],
-                            type="function",
-                            function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                                name=tc["name"],
-                                arguments=tc["arguments"],
-                            ),
-                        )
-                        for tc in pending_tool_calls.values()
-                    ]
-                    yield LLMResultChunk(
-                        model=final_model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(
-                            index=0,
-                            message=AssistantPromptMessage(content="", tool_calls=tool_calls),
-                            finish_reason="tool_calls",
-                        ),
-                    )
-                    final_chunk = LLMResultChunk(
-                        model=final_model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(
-                            index=0,
-                            message=AssistantPromptMessage(content=""),
-                            finish_reason="tool_calls",
-                        ),
-                    )
-                else:
-                    final_chunk = LLMResultChunk(
-                        model=final_model,
-                        prompt_messages=prompt_messages,
-                        delta=LLMResultChunkDelta(
-                            index=0,
-                            message=AssistantPromptMessage(content=""),
-                            finish_reason="stop",
-                        ),
-                    )
+            elif event_type == "response.completed":
+                terminal_response = self._response_field(event, "response")
+                self._raise_for_responses_status(terminal_response)
+
+            elif event_type == "response.incomplete":
+                terminal_response = self._response_field(event, "response")
+                self._raise_for_responses_status(
+                    terminal_response,
+                    allow_incomplete=True,
+                )
+                details = self._response_field(
+                    terminal_response,
+                    "incomplete_details",
+                )
+                reason = self._response_field(details, "reason")
+                terminal_finish_reason = {
+                    "max_output_tokens": "length",
+                    "content_filter": "content_filter",
+                }.get(reason, "incomplete")
+
+            elif event_type == "response.failed":
+                failed_response = self._response_field(event, "response")
+                self._raise_for_responses_status(failed_response)
+                raise InvokeServerUnavailableError("OpenAI response failed")
+
+            elif event_type == "error":
+                self._raise_responses_error(event)
 
             else:
-                logger.info(f"Unhandled Responses API stream event: {event_type}, data: {event}")
+                logger.debug("Ignoring Responses API stream event: %s", event_type)
 
-        if not prompt_tokens:
+        if terminal_response is None:
+            raise InvokeConnectionError("OpenAI Responses stream ended without a terminal event")
+
+        final_model = self._response_field(terminal_response, "model", model)
+        if generated_text:
+            if pending_text and not stopped:
+                yield LLMResultChunk(
+                    model=final_model,
+                    prompt_messages=prompt_messages,
+                    delta=LLMResultChunkDelta(
+                        index=0,
+                        message=AssistantPromptMessage(content=pending_text),
+                    ),
+                )
+        else:
+            generated_text = self._extract_responses_text(terminal_response)
+            visible_text = self._truncate_at_stop(generated_text, stop_sequences)
+            stopped = visible_text != generated_text
+            if visible_text:
+                yield LLMResultChunk(
+                    model=final_model,
+                    prompt_messages=prompt_messages,
+                    delta=LLMResultChunkDelta(
+                        index=0,
+                        message=AssistantPromptMessage(content=visible_text),
+                    ),
+                )
+
+        response_usage = self._response_field(terminal_response, "usage")
+        tool_calls: list[AssistantPromptMessage.ToolCall] = []
+        opaque_body = None
+        terminal_status = self._response_field(terminal_response, "status")
+        if terminal_status in ("completed", "incomplete") and not stopped:
+            opaque_body = self._responses_opaque_body(terminal_response)
+        if terminal_status == "completed" and not stopped:
+            tool_calls = self._extract_responses_tool_calls(terminal_response)
+            if tool_calls:
+                terminal_finish_reason = "tool_calls"
+        if stopped:
+            terminal_finish_reason = "stop"
+
+        if response_usage is not None:
+            prompt_tokens = self._response_field(response_usage, "input_tokens", 0)
+            completion_tokens = self._response_field(response_usage, "output_tokens", 0)
+        else:
             prompt_tokens = self._num_tokens_from_messages(model, prompt_messages, tools)
-        if not completion_tokens:
-            completion_tokens = self._num_tokens_from_string(model, full_text)
+            completion_input = generated_text + "".join(
+                tool_call.function.arguments for tool_call in tool_calls
+            )
+            completion_tokens = self._num_tokens_from_string(model, completion_input)
 
         usage = self._calc_response_usage(model, credentials, prompt_tokens, completion_tokens)
-        final_chunk.delta.usage = usage
-        yield final_chunk
-
-    def _handle_chat_block_as_stream_response(
-        self,
-        block_result: LLMResult,
-        prompt_messages: list[PromptMessage],
-        stop: Optional[list[str]] = None,
-    ) -> Generator[LLMResultChunk, None, None]:
-        """
-        Handle llm chat response
-        :param model: model name
-        :param credentials: credentials
-        :param response: response
-        :param prompt_messages: prompt messages
-        :param tools: tools for tool calling
-        :return: llm response chunk generator
-        """
-        text = block_result.message.content
-        text = cast(str, text)
-
-        if stop:
-            text = self.enforce_stop_tokens(text, stop)
-
         yield LLMResultChunk(
-            model=block_result.model,
+            model=final_model,
             prompt_messages=prompt_messages,
-            system_fingerprint=block_result.system_fingerprint,
             delta=LLMResultChunkDelta(
                 index=0,
-                message=block_result.message,
-                finish_reason="stop",
-                usage=block_result.usage,
+                message=AssistantPromptMessage(
+                    content="",
+                    tool_calls=tool_calls,
+                    opaque_body=opaque_body,
+                ),
+                finish_reason=terminal_finish_reason,
+                usage=usage,
             ),
         )
 
@@ -1374,13 +1561,14 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
 
             if tool_calls:
                 final_tool_calls.extend(tool_calls)
-            
+
+
             # STATEFUL AGGREGATION OF TOOL CALLS
             if assistant_message_tool_calls:
                 for tool_call_chunk in assistant_message_tool_calls:
                     # new tool
                     if tool_call_chunk.id and tool_call_chunk.index not in aggregated_tool_calls:
-                         aggregated_tool_calls[tool_call_chunk.index] = tool_call_chunk
+                        aggregated_tool_calls[tool_call_chunk.index] = tool_call_chunk
                     # existing tool
                     elif tool_call_chunk.index in aggregated_tool_calls:
                         existing_call = aggregated_tool_calls[tool_call_chunk.index]
@@ -1552,25 +1740,6 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
                                 ]
                             )
 
-        # The system prompt will be converted to developer message so we don't need to do this
-        
-        # o1, o3, o4 compatibility
-        # if model.startswith(O_SERIES_COMPATIBILITY):
-        #     system_message_count = len(
-        #         [m for m in prompt_messages if isinstance(m, SystemPromptMessage)]
-        #     )
-        #     if system_message_count > 0:
-        #         new_prompt_messages = []
-        #         for prompt_message in prompt_messages:
-        #             if isinstance(prompt_message, SystemPromptMessage):
-        #                 prompt_message = UserPromptMessage(
-        #                     content=prompt_message.content,
-        #                     name=prompt_message.name,
-        #                 )
-
-        #             new_prompt_messages.append(prompt_message)
-        #         prompt_messages = new_prompt_messages
-
         return prompt_messages
 
     def _convert_prompt_message_to_dict(self, message: PromptMessage) -> dict:
@@ -1639,6 +1808,8 @@ class OpenAILargeLanguageModel(_CommonOpenAI, LargeLanguageModel):
         elif isinstance(message, SystemPromptMessage):
             message = cast(SystemPromptMessage, message)
             message_dict = {"role": "system", "content": message.content}
+        elif isinstance(message, DeveloperPromptMessage):
+            message_dict = {"role": "developer", "content": message.content}
         elif isinstance(message, ToolPromptMessage):
             message = cast(ToolPromptMessage, message)
             message_dict = {
