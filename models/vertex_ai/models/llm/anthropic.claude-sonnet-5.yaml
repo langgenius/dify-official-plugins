@@ -1,0 +1,66 @@
+# https://docs.cloud.google.com/gemini-enterprise-agent-platform/models/partner-models/claude/sonnet-5
+# https://platform.claude.com/docs/en/about-claude/models/whats-new-sonnet-5
+# Vertex AI API model id: claude-sonnet-5
+# Inputs: text, image, PDF. Outputs: text.
+# Context: 1,000,000 input tokens. Max output: 128,000 tokens.
+model: claude-sonnet-5
+label:
+  en_US: Claude Sonnet 5
+model_type: llm
+features:
+  - agent-thought
+  - vision
+  - tool-call
+  - stream-tool-call
+  - document
+model_properties:
+  mode: chat
+  context_size: 1000000
+parameter_rules:
+  - name: max_tokens
+    use_template: max_tokens
+    required: true
+    type: int
+    default: 128000
+    min: 1
+    max: 128000
+    help:
+      zh_Hans: 停止前生成的最大令牌数。Claude Sonnet 5 在 Vertex AI 上的最大输出为 128000。
+      en_US: The maximum number of tokens to generate before stopping. Claude Sonnet 5 on Vertex AI supports up to 128000 output tokens.
+  - name: temperature
+    use_template: temperature
+    required: false
+    type: float
+    default: 1
+    min: 0.0
+    max: 1.0
+    help:
+      zh_Hans: 生成内容的随机性。
+      en_US: The amount of randomness injected into the response.
+  - name: top_p
+    use_template: top_p
+    required: false
+    type: float
+    default: 0.999
+    min: 0.000
+    max: 1.000
+    help:
+      zh_Hans: 在核采样中，Anthropic Claude 按概率递减顺序计算每个后续标记的所有选项的累积分布，并在达到 top_p 指定的特定概率时将其切断。您应该更改温度或top_p，但不能同时更改两者。
+      en_US: In nucleus sampling, Anthropic Claude computes the cumulative distribution over all the options for each subsequent token in decreasing probability order and cuts it off once it reaches a particular probability specified by top_p. You should alter either temperature or top_p, but not both.
+  - name: top_k
+    use_template: top_k
+    required: false
+    type: int
+    default: 0
+    min: 0
+    max: 500
+    help:
+      zh_Hans: 对于每个后续标记，仅从前 K 个选项中进行采样。使用 top_k 删除长尾低概率响应。
+      en_US: Only sample from the top K options for each subsequent token. Use top_k to remove long tail low probability responses.
+# https://platform.claude.com/docs/en/about-claude/pricing
+# Standard $3/$15 per Mtok (post-introductory rate for durability).
+pricing:
+  input: '3.00'
+  output: '15.00'
+  unit: '0.000001'
+  currency: USD
