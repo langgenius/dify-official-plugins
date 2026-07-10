@@ -47,6 +47,11 @@ class TestUsesResponsesApi(unittest.TestCase):
     def test_gpt51_uses_responses_api(self):
         self.assertTrue(AzureOpenAILargeLanguageModel._uses_responses_api("gpt-5.1"))
 
+    def test_gpt56_series_uses_responses_api(self):
+        self.assertTrue(AzureOpenAILargeLanguageModel._uses_responses_api("gpt-5.6-sol"))
+        self.assertTrue(AzureOpenAILargeLanguageModel._uses_responses_api("gpt-5.6-terra"))
+        self.assertTrue(AzureOpenAILargeLanguageModel._uses_responses_api("gpt-5.6-luna"))
+
     def test_gpt5_chat_does_not_use_responses_api(self):
         """gpt-5-chat is a regular chat model, not reasoning → Chat Completions API."""
         self.assertFalse(AzureOpenAILargeLanguageModel._uses_responses_api("gpt-5-chat"))
