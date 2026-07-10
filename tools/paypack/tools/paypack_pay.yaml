@@ -1,0 +1,83 @@
+identity:
+  name: paypack_pay
+  author: rhcjw
+  label:
+    en_US: PayPack Pay
+    zh_Hans: PayPack 支付
+  description:
+    en_US: |
+      Make a payment using PayPack. Supports:
+      - USDC/ETH on-chain (Base, Ethereum, Polygon, Arbitrum)
+      - CNY via Alipay (Chinese yuan fiat payment)
+      
+      For Alipay: set currency="CNY" and provide buyer_id.
+      For crypto: set currency="USDC" or "ETH" and provide recipient wallet address.
+    zh_Hans: |
+      使用 PayPack 发起支付。支持：
+      - USDC/ETH 链上支付（Base、以太坊、Polygon、Arbitrum）
+      - 人民币支付宝支付
+      
+      支付宝模式：currency="CNY"，提供 recipient/buyer_id
+      链上模式：currency="USDC" 或 "ETH"，提供收币地址
+parameters:
+  - name: recipient
+    type: string
+    required: true
+    label:
+      en_US: Recipient
+      zh_Hans: 收款方
+    human_description:
+      en_US: Wallet address (for crypto) or Alipay user ID (for CNY)
+      zh_Hans: 钱包地址（链上支付）或支付宝 user_id（人民币支付）
+    llm_description: The recipient's wallet address or Alipay user ID
+    form: llm
+
+  - name: amount
+    type: number
+    required: true
+    label:
+      en_US: Amount
+      zh_Hans: 金额
+    human_description:
+      en_US: Payment amount (in the specified currency)
+      zh_Hans: 支付金额（以指定的币种为单位）
+    llm_description: The amount to pay
+    form: llm
+
+  - name: currency
+    type: string
+    required: false
+    default: USDC
+    label:
+      en_US: Currency
+      zh_Hans: 币种
+    human_description:
+      en_US: "USDC, ETH, or CNY (for Alipay)"
+      zh_Hans: "USDC、ETH 或 CNY（支付宝人民币）"
+    llm_description: The currency to use. Use CNY for Alipay payments.
+    form: llm
+    options:
+      - value: USDC
+        label:
+          en_US: USDC
+          zh_Hans: USDC
+      - value: ETH
+        label:
+          en_US: ETH
+          zh_Hans: ETH
+      - value: CNY
+        label:
+          en_US: CNY (Alipay)
+          zh_Hans: CNY（支付宝人民币）
+
+  - name: subject
+    type: string
+    required: false
+    label:
+      en_US: Payment Subject
+      zh_Hans: 商品标题
+    human_description:
+      en_US: Description of what the payment is for (used for Alipay orders)
+      zh_Hans: 支付用途说明（用于支付宝订单标题）
+    llm_description: A short description of what this payment is for
+    form: llm

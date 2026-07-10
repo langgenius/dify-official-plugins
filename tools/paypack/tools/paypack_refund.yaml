@@ -1,0 +1,33 @@
+identity:
+  name: paypack_refund
+  author: rhcjw
+  label:
+    en_US: PayPack Refund
+    zh_Hans: PayPack 退款
+  description:
+    en_US: Refund a payment by trade/order number.
+    zh_Hans: 通过交易号/订单号发起退款。
+parameters:
+  - name: trade_no
+    type: string
+    required: true
+    label:
+      en_US: Trade/Order Number
+      zh_Hans: 交易号/订单号
+    human_description:
+      en_US: The trade number to refund (Alipay only currently)
+      zh_Hans: 要退款的交易号（目前仅支持支付宝）
+    llm_description: The trade/order number to refund
+    form: llm
+
+  - name: refund_amount
+    type: number
+    required: false
+    label:
+      en_US: Refund Amount
+      zh_Hans: 退款金额
+    human_description:
+      en_US: Amount to refund. Leave empty for full refund.
+      zh_Hans: 退款金额。留空表示全额退款。
+    llm_description: The amount to refund
+    form: llm

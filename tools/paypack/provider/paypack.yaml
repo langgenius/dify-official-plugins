@@ -1,0 +1,16 @@
+identity:
+  author: rhcjw
+  name: paypack
+  label:
+    en_US: PayPack
+    zh_Hans: PayPack
+  description:
+    en_US: AI Agent universal payment middleware. Pay with USDC, ETH, or CNY via Alipay/WeChatPay.
+    zh_Hans: AI Agent 通用支付中间件。支持 USDC/ETH 链上支付和支付宝/微信人民币支付。
+  icon: icon.svg
+  tags:
+    - payment
+    - crypto
+    - alipay
+    - wechat-pay
+    - finance
