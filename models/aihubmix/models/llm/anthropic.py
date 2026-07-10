@@ -1351,12 +1351,14 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             return []
 
         if isinstance(message.content, str):
+            if not message.content.strip():
+                return []
             return [self._create_assistant_text_content(message.content)]
 
         return [
             self._create_assistant_text_content(content.data)
             for content in message.content
-            if isinstance(content, TextPromptMessageContent)
+            if isinstance(content, TextPromptMessageContent) and content.data and content.data.strip()
         ]
 
     def _create_tool_use_content(self, tool_call: AssistantPromptMessage.ToolCall) -> dict:
