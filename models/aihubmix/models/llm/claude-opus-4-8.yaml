@@ -1,13 +1,13 @@
-model: claude-opus-4-7-think
+model: claude-opus-4-8
 label:
-  en_US: Claude Opus 4.7 Thinking
+  en_US: Claude Opus 4.8
 model_type: llm
 features:
   - agent-thought
+  - vision
   - tool-call
   - stream-tool-call
   - multi-tool-call
-  - vision
   - document
 model_properties:
   mode: chat
@@ -18,11 +18,11 @@ parameter_rules:
       zh_Hans: 自适应推理
       en_US: Adaptive Thinking
     type: boolean
-    default: true
+    default: false
     required: false
     help:
-      zh_Hans: 启用自适应推理（adaptive thinking）。Claude Opus 4.7 仅支持 adaptive 模式，不再支持设置 thinking_budget。推理深度由 Effort 参数控制。此 -think 变体默认开启。
-      en_US: Enable adaptive thinking. Claude Opus 4.7 only supports adaptive mode; thinking_budget is no longer supported. Thinking depth is controlled by the Effort parameter. This -think variant defaults to enabled.
+      zh_Hans: 启用自适应推理（adaptive thinking）。Claude Opus 4.8 仅支持 adaptive 模式，不再支持设置 thinking_budget。推理深度由 Effort 参数控制。
+      en_US: Enable adaptive thinking. Claude Opus 4.8 only supports adaptive mode; thinking_budget is no longer supported. Thinking depth is controlled by the Effort parameter.
   - name: thinking_display
     label:
       zh_Hans: 推理内容展示
@@ -74,9 +74,10 @@ parameter_rules:
         · ≥20000: enabled and the `task-budgets-2026-03-13` beta header is attached automatically. Overly tight budgets can cause the model to wrap up prematurely.
   - name: max_tokens
     use_template: max_tokens
-    default: 8192
+    required: true
+    default: 128000
     min: 1
-    max: 32000
+    max: 128000
   - name: response_format
     label:
       zh_Hans: 回复格式
