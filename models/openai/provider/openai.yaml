@@ -78,6 +78,25 @@ model_credential_schema:
       help:
         zh_Hans: 选择该模型使用的 API 协议。Chat Completions 适用于大多数模型，Responses API 适用于 o3-pro、gpt-5.4 等模型。
         en_US: Select the API protocol for this model. Use Chat Completions for most models, Responses API for models like o3-pro and gpt-5.4.
+    - variable: enable_request_metadata
+      label:
+        zh_Hans: 启用请求元数据（可选）
+        en_US: Enable request metadata (optional)
+      type: select
+      required: false
+      default: disabled
+      options:
+        - value: enabled
+          label:
+            zh_Hans: 已启用
+            en_US: Enabled
+        - value: disabled
+          label:
+            zh_Hans: 已禁用
+            en_US: Disabled
+      help:
+        zh_Hans: 启用后，在 chat.completions.create 和 responses.create 调用中附加 dify_app_id 和 dify_source 作为 metadata，同时设置 store=true 以便 metadata 被记录到 Stored Completions（OpenAI API 要求：仅当 store 为 true 时才接受 metadata）。这意味着请求和响应会保存在您的 OpenAI 账户。可见性由您的 OpenAI Stored Completions 设置控制。默认禁用。
+        en_US: "When enabled, attaches dify_app_id and dify_source as metadata on both chat.completions.create and responses.create, AND sets store=true so the metadata is recorded in Stored Completions (required by OpenAI API: metadata is only accepted when store is true). This means requests and responses are persisted on your OpenAI account; visibility is governed by your OpenAI Stored Completions setting. Default disabled. See: https://platform.openai.com/docs/api-reference/chat/create#chat-create-store"
 provider_credential_schema:
   credential_form_schemas:
     - variable: openai_api_key
@@ -134,6 +153,25 @@ provider_credential_schema:
       help:
         zh_Hans: 选择该 Provider 使用的 API 协议。Chat Completions 适用于大多数模型，Responses API 适用于 o3-pro、gpt-5 等模型。
         en_US: Select the API protocol for this provider. Use Chat Completions for most models, Responses API for models like o3-pro and gpt-5.
+    - variable: enable_request_metadata
+      label:
+        zh_Hans: 启用请求元数据（可选）
+        en_US: Enable request metadata (optional)
+      type: select
+      required: false
+      default: disabled
+      options:
+        - value: enabled
+          label:
+            zh_Hans: 已启用
+            en_US: Enabled
+        - value: disabled
+          label:
+            zh_Hans: 已禁用
+            en_US: Disabled
+      help:
+        zh_Hans: 启用后，在 chat.completions.create 和 responses.create 调用中附加 dify_app_id 和 dify_source 作为 metadata，同时设置 store=true 以便 metadata 被记录到 Stored Completions（OpenAI API 要求：仅当 store 为 true 时才接受 metadata）。这意味着请求和响应会保存在您的 OpenAI 账户。可见性由您的 OpenAI Stored Completions 设置控制。默认禁用。
+        en_US: "When enabled, attaches dify_app_id and dify_source as metadata on both chat.completions.create and responses.create, AND sets store=true so the metadata is recorded in Stored Completions (required by OpenAI API: metadata is only accepted when store is true). This means requests and responses are persisted on your OpenAI account; visibility is governed by your OpenAI Stored Completions setting. Default disabled. See: https://platform.openai.com/docs/api-reference/chat/create#chat-create-store"
 models:
   llm:
     predefined:
