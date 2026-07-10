@@ -658,9 +658,16 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         if len(prompt_messages) > 0 and isinstance(
             prompt_messages[0], SystemPromptMessage
         ):
+            raw = prompt_messages[0].content
+            if isinstance(raw, list):
+                instructions = "\n".join(
+                    c.data for c in raw if isinstance(c, TextPromptMessageContent)
+                )
+            else:
+                instructions = str(raw or "")
             prompt_messages[0] = SystemPromptMessage(
                 content=ANTHROPIC_BLOCK_MODE_PROMPT.replace(
-                    "{{instructions}}", str(prompt_messages[0].content)
+                    "{{instructions}}", instructions
                 ).replace("{{block}}", response_format)
             )
             if supports_prefill:
