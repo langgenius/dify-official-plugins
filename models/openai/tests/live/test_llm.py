@@ -124,10 +124,8 @@ def test_every_presented_llm_accepts_a_minimal_request(
 
 
 @pytest.mark.parametrize("stream", [False, True], ids=["nonstream", "stream"])
-def test_chat_completions_protocol(
-    live_llm, live_credentials, require_live_model, stream
-):
-    model = require_live_model("gpt-4o-mini")
+def test_chat_completions_protocol(live_llm, live_credentials, stream):
+    model = "gpt-4o-mini"
     credentials = type(live_credentials)(
         live_credentials,
         api_protocol="chat",
@@ -147,10 +145,8 @@ def test_chat_completions_protocol(
 
 @pytest.mark.parametrize("stream", [False, True], ids=["nonstream", "stream"])
 @pytest.mark.parametrize("protocol", ["responses", "chat"])
-def test_structured_output_matches_schema(
-    live_llm, live_credentials, require_live_model, protocol, stream
-):
-    model = require_live_model("gpt-4o-mini")
+def test_structured_output_matches_schema(live_llm, live_credentials, protocol, stream):
+    model = "gpt-4o-mini"
     credentials = type(live_credentials)(
         live_credentials,
         api_protocol=protocol,
@@ -178,10 +174,8 @@ def test_structured_output_matches_schema(
     _terminal(chunks)
 
 
-def test_reasoning_summary_is_separate_and_preserved(
-    live_llm, live_credentials, require_live_model
-):
-    model = require_live_model("gpt-5.6")
+def test_reasoning_summary_is_separate_and_preserved(live_llm, live_credentials):
+    model = "gpt-5.6"
     chunks = _invoke(
         live_llm,
         live_credentials,
@@ -209,10 +203,8 @@ def test_reasoning_summary_is_separate_and_preserved(
     assert content.split("</think>", 1)[1].strip()
 
 
-def test_tool_stream_and_replay_reasoning(
-    live_llm, live_credentials, require_live_model
-):
-    model = require_live_model("gpt-5-nano")
+def test_tool_stream_and_replay_reasoning(live_llm, live_credentials):
+    model = "gpt-5-nano"
     tools = [
         PromptMessageTool(
             name="lookup_city",
@@ -278,8 +270,8 @@ def test_tool_stream_and_replay_reasoning(
     assert terminal.message.tool_calls == []
 
 
-def test_image_input(live_llm, live_credentials, require_live_model):
-    model = require_live_model("gpt-4o-mini")
+def test_image_input(live_llm, live_credentials):
+    model = "gpt-4o-mini"
     message = UserPromptMessage(
         content=[
             TextPromptMessageContent(
@@ -303,8 +295,8 @@ def test_image_input(live_llm, live_credentials, require_live_model):
     _terminal(chunks)
 
 
-def test_document_input(live_llm, live_credentials, require_live_model):
-    model = require_live_model("gpt-4o-mini")
+def test_document_input(live_llm, live_credentials):
+    model = "gpt-4o-mini"
     document = base64.b64encode(b"The live document marker is ORCHID.").decode()
     message = UserPromptMessage(
         content=[
@@ -324,8 +316,8 @@ def test_document_input(live_llm, live_credentials, require_live_model):
     _terminal(chunks)
 
 
-def test_audio_input(live_llm, live_credentials, require_live_model):
-    model = require_live_model("gpt-audio-1.5")
+def test_audio_input(live_llm, live_credentials):
+    model = "gpt-audio-1.5"
     message = _audio_message(
         "Does this audio contain spoken human speech? Reply only SPEECH or SILENCE."
     )
@@ -343,8 +335,8 @@ def test_audio_input(live_llm, live_credentials, require_live_model):
     _terminal(chunks)
 
 
-def test_streaming_stop_sequence(live_llm, live_credentials, require_live_model):
-    model = require_live_model("gpt-4o-mini")
+def test_streaming_stop_sequence(live_llm, live_credentials):
+    model = "gpt-4o-mini"
     chunks = _invoke(
         live_llm,
         live_credentials,
@@ -367,10 +359,8 @@ def test_streaming_stop_sequence(live_llm, live_credentials, require_live_model)
     assert terminal.message.opaque_body is None
 
 
-def test_incomplete_response_reports_length(
-    live_llm, live_credentials, require_live_model
-):
-    model = require_live_model("gpt-5-nano")
+def test_incomplete_response_reports_length(live_llm, live_credentials):
+    model = "gpt-5-nano"
     chunks = _invoke(
         live_llm,
         live_credentials,

@@ -66,11 +66,9 @@ uv run ruff format --check .
 
 ### Live OpenAI API tests
 
-The tests in `tests/live` send billable requests to the real OpenAI API and are never enabled merely because a key exists.
+The tests in `tests/live` send billable requests to the real OpenAI API whenever a nonempty `OPENAI_API_KEY` is available.
 
-Normal `uv run pytest` runs collect these tests but skip every one of them unless `--live-openai` is passed explicitly.
-
-When `--live-openai` is passed, the live tests also skip dynamically if `OPENAI_API_KEY` is missing, empty, or whitespace-only in both `.env` and the process environment.
+They skip dynamically only when the key is missing, empty, or whitespace-only in both `.env` and the process environment.
 
 Create a local `.env` in this plugin directory for test credentials.
 
@@ -84,10 +82,10 @@ The test harness reads only those OpenAI variables from `.env`, and explicit pro
 
 The repository ignores `.env`; never commit it or include its values in test output.
 
-Run the complete matrix manually.
+Run the complete matrix.
 
 ```bash
-uv run pytest tests/live --live-openai
+uv run pytest tests/live
 ```
 
 The complete matrix sends one logical request for every configured model plus focused boundary requests, and the tool replay scenario sends a second request.
@@ -96,19 +94,13 @@ The OpenAI SDK may retry transient failures, so actual HTTP attempts can exceed 
 
 It should be run serially because parallel execution increases both spend and rate-limit pressure.
 
-Run one model while developing.
+Use standard pytest node IDs or `-k` expressions to focus the matrix while developing.
+
+The following smoke command sends one short request.
 
 ```bash
-uv run pytest tests/live --live-openai --live-model gpt-4o-mini
-```
-
-Repeat `--live-model` to select several models, and add pytest `-k` expressions to select a single scenario.
-
-The cheapest LLM smoke command sends one short request.
-
-```bash
-uv run pytest tests/live/test_llm.py --live-openai \
-  --live-model gpt-4o-mini -k presented
+uv run pytest \
+  'tests/live/test_llm.py::test_every_presented_llm_accepts_a_minimal_request[gpt-4o-mini]'
 ```
 
 The presentation matrix gives every LLM in `models/llm/_position.yaml` one minimal request, using streaming whenever the model contract supports it.

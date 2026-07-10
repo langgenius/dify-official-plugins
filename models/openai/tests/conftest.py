@@ -50,51 +50,15 @@ def _has_live_api_key() -> bool:
     return bool(os.getenv("OPENAI_API_KEY", "").strip())
 
 
-def pytest_addoption(parser: pytest.Parser) -> None:
-    group = parser.getgroup("OpenAI live tests")
-    group.addoption(
-        "--live-openai",
-        action="store_true",
-        help="run billable tests against the real OpenAI API",
+def pytest_configure() -> None:
+    _load_live_environment()
+
+
+def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
+    enabled = _has_live_api_key()
+    skipped = pytest.mark.skip(
+        reason="OPENAI_API_KEY is missing or empty in .env and the environment"
     )
-    group.addoption(
-        "--live-model",
-        action="append",
-        default=[],
-        dest="live_models",
-        metavar="MODEL",
-        help="limit live tests to a model; may be repeated",
-    )
-
-
-def pytest_configure(config: pytest.Config) -> None:
-    run_live = config.getoption("--live-openai")
-    selected = set(config.getoption("live_models"))
-    if selected and not run_live:
-        raise pytest.UsageError("--live-model requires --live-openai")
-    if run_live:
-        _load_live_environment()
-
-    known_models = {
-        path.stem
-        for path in (ROOT / "models").rglob("*.yaml")
-        if not path.name.startswith("_")
-    }
-    if unknown := selected - known_models:
-        raise pytest.UsageError(f"unknown live model(s): {', '.join(sorted(unknown))}")
-
-
-def pytest_collection_modifyitems(
-    config: pytest.Config, items: list[pytest.Item]
-) -> None:
-    requested = config.getoption("--live-openai")
-    enabled = requested and _has_live_api_key()
-    reason = (
-        "OPENAI_API_KEY is missing or empty in .env and the environment"
-        if requested
-        else "pass --live-openai to run billable API tests"
-    )
-    skipped = pytest.mark.skip(reason=reason)
     for item in items:
         in_live_directory = Path(str(item.path)).resolve().is_relative_to(LIVE_TESTS)
         marked_live = item.get_closest_marker("live") is not None

@@ -43,13 +43,6 @@ def _schemas(model_type: str) -> list[AIModelEntity]:
     ]
 
 
-def _selected(request: pytest.FixtureRequest, model: str) -> str:
-    selected = set(request.config.getoption("live_models"))
-    if selected and model not in selected:
-        pytest.skip("model not selected by --live-model")
-    return model
-
-
 @pytest.fixture(scope="session")
 def live_credentials() -> _Credentials:
     credentials = _Credentials(openai_api_key=os.environ["OPENAI_API_KEY"])
@@ -87,29 +80,24 @@ def live_tts() -> OpenAIText2SpeechModel:
 
 @pytest.fixture(params=_model_names("llm"), ids=str)
 def llm_model(request: pytest.FixtureRequest) -> str:
-    return _selected(request, request.param)
+    return request.param
 
 
 @pytest.fixture(params=_model_names("text_embedding"), ids=str)
 def embedding_model(request: pytest.FixtureRequest) -> str:
-    return _selected(request, request.param)
+    return request.param
 
 
 @pytest.fixture(params=_model_names("moderation"), ids=str)
 def moderation_model(request: pytest.FixtureRequest) -> str:
-    return _selected(request, request.param)
+    return request.param
 
 
 @pytest.fixture(params=_model_names("speech2text"), ids=str)
 def speech2text_model(request: pytest.FixtureRequest) -> str:
-    return _selected(request, request.param)
+    return request.param
 
 
 @pytest.fixture(params=_model_names("tts"), ids=str)
 def tts_model(request: pytest.FixtureRequest) -> str:
-    return _selected(request, request.param)
-
-
-@pytest.fixture
-def require_live_model(request: pytest.FixtureRequest):
-    return lambda model: _selected(request, model)
+    return request.param

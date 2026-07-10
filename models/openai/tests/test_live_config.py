@@ -43,27 +43,22 @@ def test_nonempty_dotenv_key_replaces_an_empty_process_value(tmp_path, mocker) -
 
 
 @pytest.mark.parametrize(
-    ("requested", "api_key", "should_skip"),
+    ("api_key", "should_skip"),
     [
-        (False, "key", True),
-        (True, None, True),
-        (True, "", True),
-        (True, "  ", True),
-        (True, "key", False),
+        (None, True),
+        ("", True),
+        ("  ", True),
+        ("key", False),
     ],
 )
-def test_live_collection_requires_opt_in_and_a_nonempty_key(
-    requested, api_key, should_skip, mocker
-) -> None:
+def test_live_collection_requires_a_nonempty_key(api_key, should_skip, mocker) -> None:
     environment = {} if api_key is None else {"OPENAI_API_KEY": api_key}
     mocker.patch.dict(os.environ, environment, clear=True)
-    config = mocker.Mock()
-    config.getoption.return_value = requested
     item = mocker.Mock()
     item.path = conftest.LIVE_TESTS / "test_example.py"
     item.get_closest_marker.return_value = mocker.sentinel.live_marker
 
-    conftest.pytest_collection_modifyitems(config, [item])
+    conftest.pytest_collection_modifyitems([item])
 
     assert item.add_marker.called is should_skip
 
