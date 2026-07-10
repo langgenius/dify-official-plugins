@@ -238,7 +238,6 @@ def test_chat_generation_delegates_to_selected_endpoint(
         ("gpt-5.6", {"enable_stream": False}, {}, False),
         ("gpt-5.5-pro", {}, {}, False),
         ("gpt-5.5-pro-2026-04-23", {}, {}, False),
-        ("gpt-audio-mini", {}, {}, False),
         ("gpt-audio-mini-2025-12-15", {}, {}, False),
         ("o3-pro", {}, {}, False),
     ],

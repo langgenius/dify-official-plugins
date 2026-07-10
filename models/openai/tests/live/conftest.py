@@ -60,27 +60,27 @@ def live_credentials() -> _Credentials:
     return credentials
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def live_llm() -> OpenAILargeLanguageModel:
     return OpenAILargeLanguageModel(_schemas("llm"))
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def live_embedding() -> OpenAITextEmbeddingModel:
     return OpenAITextEmbeddingModel(_schemas("text_embedding"))
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def live_moderation() -> OpenAIModerationModel:
     return OpenAIModerationModel(_schemas("moderation"))
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def live_speech2text() -> OpenAISpeech2TextModel:
     return OpenAISpeech2TextModel(_schemas("speech2text"))
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture
 def live_tts() -> OpenAIText2SpeechModel:
     return OpenAIText2SpeechModel(_schemas("tts"))
 

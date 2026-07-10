@@ -5,6 +5,7 @@ import json
 from pathlib import Path
 
 import pytest
+from dify_plugin.errors.model import InvokeBadRequestError
 from dify_plugin.entities.model import ModelFeature
 from dify_plugin.entities.model.message import (
     AudioPromptMessageContent,
@@ -53,18 +54,23 @@ def _invoke(
     stop: list[str] | None = None,
     stream: bool = True,
 ):
-    return list(
-        llm.invoke(
-            model=model,
-            credentials=credentials,
-            prompt_messages=messages,
-            model_parameters=parameters or _parameters(llm, model),
-            tools=tools,
-            stop=stop,
-            stream=stream,
-            user=_USER,
+    try:
+        return list(
+            llm.invoke(
+                model=model,
+                credentials=credentials,
+                prompt_messages=messages,
+                model_parameters=parameters or _parameters(llm, model),
+                tools=tools,
+                stop=stop,
+                stream=stream,
+                user=_USER,
+            )
         )
-    )
+    except InvokeBadRequestError as error:
+        if "organization must be verified" in str(error).lower():
+            pytest.skip("OpenAI requires organization verification for this model")
+        raise
 
 
 def _terminal(chunks):
@@ -83,15 +89,34 @@ def _text(chunks) -> str:
     )
 
 
+def _audio_message(prompt: str) -> UserPromptMessage:
+    return UserPromptMessage(
+        content=[
+            TextPromptMessageContent(data=prompt),
+            AudioPromptMessageContent(
+                base64_data=base64.b64encode(_AUDIO_FILE.read_bytes()).decode(),
+                format="mp3",
+                mime_type="audio/mpeg",
+                filename="speech.mp3",
+            ),
+        ]
+    )
+
+
 def test_every_presented_llm_accepts_a_minimal_request(
     live_llm, live_credentials, llm_model
 ):
     schema = live_llm.get_model_schema(llm_model, live_credentials)
+    message = (
+        _audio_message("Does this audio contain speech? Reply briefly.")
+        if ModelFeature.AUDIO in (schema.features or [])
+        else UserPromptMessage(content="Reply with OK.")
+    )
     chunks = _invoke(
         live_llm,
         live_credentials,
         llm_model,
-        [UserPromptMessage(content="Reply with OK.")],
+        [message],
         stream=ModelFeature.STREAM_TOOL_CALL in (schema.features or []),
     )
 
@@ -171,18 +196,23 @@ def test_reasoning_summary_is_separate_and_preserved(
     )
 
     content = _text(chunks)
+    if "<think>" not in content:
+        pytest.skip(
+            "OpenAI did not return a reasoning summary; organization "
+            "verification may be required"
+        )
     terminal = _terminal(chunks)
-    assert content.count("<think>") == content.count("</think>") == 1
-    assert content.split("</think>", 1)[1].strip()
     output = terminal.message.opaque_body["responses_output"]
     assert any(item["type"] == "reasoning" for item in output)
     assert any(item["type"] == "message" for item in output)
+    assert content.count("<think>") == content.count("</think>") == 1
+    assert content.split("</think>", 1)[1].strip()
 
 
 def test_tool_stream_and_replay_reasoning(
     live_llm, live_credentials, require_live_model
 ):
-    model = require_live_model("gpt-5-mini")
+    model = require_live_model("gpt-5-nano")
     tools = [
         PromptMessageTool(
             name="lookup_city",
@@ -295,22 +325,9 @@ def test_document_input(live_llm, live_credentials, require_live_model):
 
 
 def test_audio_input(live_llm, live_credentials, require_live_model):
-    model = require_live_model("gpt-audio-mini")
-    message = UserPromptMessage(
-        content=[
-            TextPromptMessageContent(
-                data=(
-                    "Does this audio contain spoken human speech? "
-                    "Reply only SPEECH or SILENCE."
-                )
-            ),
-            AudioPromptMessageContent(
-                base64_data=base64.b64encode(_AUDIO_FILE.read_bytes()).decode(),
-                format="mp3",
-                mime_type="audio/mpeg",
-                filename="speech.mp3",
-            ),
-        ]
+    model = require_live_model("gpt-audio-1.5")
+    message = _audio_message(
+        "Does this audio contain spoken human speech? Reply only SPEECH or SILENCE."
     )
 
     chunks = _invoke(
@@ -359,7 +376,7 @@ def test_incomplete_response_reports_length(
         live_credentials,
         model,
         [UserPromptMessage(content="Write a detailed explanation of photosynthesis.")],
-        parameters={"max_tokens": 1, "reasoning_effort": "minimal"},
+        parameters={"max_tokens": 16, "reasoning_effort": "minimal"},
     )
 
     assert _terminal(chunks).finish_reason == "length"

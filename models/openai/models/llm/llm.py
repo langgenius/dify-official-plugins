@@ -25,7 +25,6 @@ RESPONSES_ONLY_PREFIXES = (
 NON_STREAMING_MODELS = {
     "gpt-5.5-pro",
     "gpt-5.5-pro-2026-04-23",
-    "gpt-audio-mini",
     "gpt-audio-mini-2025-12-15",
     "o3-pro",
 }

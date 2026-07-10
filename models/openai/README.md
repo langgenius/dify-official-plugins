@@ -15,6 +15,7 @@ This plugin connects Dify to OpenAI language, embedding, moderation, speech-to-t
 - Reasoning summaries, refusals, parallel function calls, terminal states, usage, and stream cancellation now have explicit handling.
 - The model catalog was checked against OpenAI's model and deprecation documentation.
 - Deprecated and unavailable model entries were removed, while missing current entries were added.
+- The deprecated `gpt-4o`, `gpt-audio-mini`, and `gpt-4o-mini-tts` aliases were removed while their still-current dated snapshots remain available.
 - The tests were reorganized into parameterized pytest suites with request, response, streaming, and non-LLM boundary coverage.
 
 ## Capabilities
@@ -116,7 +117,9 @@ Representative models separately cover Responses and Chat Completions, streaming
 
 Exact event interleavings, fragmented tool arguments, empty reasoning blocks, failures, cancellation, and malformed responses remain in deterministic unit tests because a live service cannot reliably reproduce those event orders.
 
-The full run requires the API key to have access to every presented model, and reasoning summaries may also require organization verification.
+Cases blocked only by OpenAI organization verification are reported as skips; all other API errors fail the run.
+
+Reasoning summary coverage may also be skipped when OpenAI accepts the request but withholds the summary from an unverified organization.
 
 ## Official references
 

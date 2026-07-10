@@ -28,7 +28,7 @@ def _delta(*, content=None, refusal=None, tool_calls=None, function_call=None):
     )
 
 
-def _chat_chunk(*, delta=None, finish_reason=None, usage=None, model="gpt-4o"):
+def _chat_chunk(*, delta=None, finish_reason=None, usage=None, model="gpt-4o-mini"):
     choices = (
         []
         if delta is None
@@ -229,7 +229,7 @@ def test_nonstream_chat_returns_refusal_and_tool_call(mocker):
     result = chat.generate_chat(
         llm,
         client,
-        "gpt-4o",
+        "gpt-4o-mini",
         {},
         [UserPromptMessage(content="hello")],
         {},
@@ -244,13 +244,13 @@ def test_nonstream_chat_returns_refusal_and_tool_call(mocker):
     assert result.message.tool_calls[0].function.name == "lookup"
     assert result.message.tool_calls[0].function.arguments == '{"query":"x"}'
     assert result.system_fingerprint == "fp_result"
-    llm._calc_response_usage.assert_called_once_with("gpt-4o", {}, 5, 3)
+    llm._calc_response_usage.assert_called_once_with("gpt-4o-mini", {}, 5, 3)
 
 
 def test_nonstream_chat_discards_truncated_tool_call(mocker):
     client = mocker.Mock()
     client.chat.completions.create.return_value = SimpleNamespace(
-        model="gpt-4o",
+        model="gpt-4o-mini",
         system_fingerprint=None,
         usage=SimpleNamespace(prompt_tokens=5, completion_tokens=3),
         choices=[
@@ -274,7 +274,7 @@ def test_nonstream_chat_discards_truncated_tool_call(mocker):
     result = chat.generate_chat(
         _llm(mocker),
         client,
-        "gpt-4o",
+        "gpt-4o-mini",
         {},
         [UserPromptMessage(content="hello")],
         {},
@@ -304,7 +304,7 @@ def test_chat_stream_keeps_content_and_refusal_separate(mocker):
         chat.generate_chat(
             llm,
             client,
-            "gpt-4o",
+            "gpt-4o-mini",
             {},
             [UserPromptMessage(content="hello")],
             {},
@@ -322,7 +322,7 @@ def test_chat_stream_keeps_content_and_refusal_separate(mocker):
     ]
     assert chunks[-1].delta.finish_reason == "stop"
     assert sum(chunk.delta.usage is not None for chunk in chunks) == 1
-    llm._calc_response_usage.assert_called_once_with("gpt-4o", {}, 7, 4)
+    llm._calc_response_usage.assert_called_once_with("gpt-4o-mini", {}, 7, 4)
     stream.close.assert_called_once_with()
 
 
@@ -356,7 +356,7 @@ def test_chat_stream_aggregates_interleaved_tool_calls_by_index(mocker):
         chat.generate_chat(
             llm,
             client,
-            "gpt-4o",
+            "gpt-4o-mini",
             {},
             [UserPromptMessage(content="hello")],
             {},
@@ -378,7 +378,7 @@ def test_chat_stream_aggregates_interleaved_tool_calls_by_index(mocker):
         ("call_a", "alpha", '{"a":1}'),
         ("call_b", "beta", '{"b":2}'),
     ]
-    llm._calc_response_usage.assert_called_once_with("gpt-4o", {}, 9, 6)
+    llm._calc_response_usage.assert_called_once_with("gpt-4o-mini", {}, 9, 6)
     stream.close.assert_called_once_with()
 
 
@@ -405,7 +405,7 @@ def test_chat_stream_discards_tool_fragment_when_output_is_truncated(mocker):
         chat.generate_chat(
             _llm(mocker),
             client,
-            "gpt-4o",
+            "gpt-4o-mini",
             {},
             [UserPromptMessage(content="hello")],
             {},
@@ -429,7 +429,7 @@ def test_chat_stream_without_finish_reason_raises_and_closes(mocker):
     result = chat.generate_chat(
         _llm(mocker),
         client,
-        "gpt-4o",
+        "gpt-4o-mini",
         {},
         [UserPromptMessage(content="hello")],
         {},
@@ -457,7 +457,7 @@ def test_closing_chat_generator_closes_sdk_stream(mocker):
     result = chat.generate_chat(
         _llm(mocker),
         client,
-        "gpt-4o",
+        "gpt-4o-mini",
         {},
         [UserPromptMessage(content="hello")],
         {},

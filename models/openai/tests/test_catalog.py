@@ -18,7 +18,6 @@ ADDED_MODELS = {
     "gpt-5.5-2026-04-23",
     "gpt-5.5-pro-2026-04-23",
     "gpt-audio-1.5",
-    "gpt-audio-mini",
     "gpt-audio-mini-2025-12-15",
     "gpt-4o-mini-transcribe-2025-12-15",
     "gpt-4o-mini-tts-2025-12-15",
@@ -41,17 +40,21 @@ REMOVED_MODELS = {
     "gpt-4-turbo-preview",
     "gpt-4.1-nano",
     "gpt-4.1-nano-2025-04-14",
+    "gpt-4o",
     "gpt-4o-2024-05-13",
     "gpt-4o-audio-preview",
     "gpt-4o-audio-preview-2025-06-03",
+    "gpt-4o-mini-tts",
     "gpt-4o-mini-tts-2025-03-20",
     "gpt-5-2025-08-07",
     "gpt-5-chat-latest",
     "gpt-5-mini-2025-08-07",
     "gpt-5-nano-2025-08-07",
+    "gpt-5-pro-2025-10-06",
     "gpt-5.1-chat-latest",
     "gpt-5.2-chat-latest",
     "gpt-5.3-chat-latest",
+    "gpt-audio-mini",
     "gpt-audio-mini-2025-10-06",
     "o1",
     "o1-mini",
@@ -132,12 +135,11 @@ def test_audio_model_limits_match_the_api_contract() -> None:
         "verse",
     }
     legacy_voices = full_voices - {"ballad", "cedar", "marin", "verse"}
-    for model in ("gpt-4o-mini-tts", "gpt-4o-mini-tts-2025-12-15"):
-        data = _load(MODELS / "tts" / f"{model}.yaml")
-        assert {
-            voice["mode"] for voice in data["model_properties"]["voices"]
-        } == full_voices
-        assert data["model_properties"]["word_limit"] == 4096
+    data = _load(MODELS / "tts" / "gpt-4o-mini-tts-2025-12-15.yaml")
+    assert {
+        voice["mode"] for voice in data["model_properties"]["voices"]
+    } == full_voices
+    assert data["model_properties"]["word_limit"] == 4096
     for model in ("tts-1", "tts-1-hd"):
         data = _load(MODELS / "tts" / f"{model}.yaml")
         assert {
