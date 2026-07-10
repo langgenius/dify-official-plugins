@@ -63,6 +63,61 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
+### Live OpenAI API tests
+
+The tests in `tests/live` send billable requests to the real OpenAI API and are never enabled merely because a key exists.
+
+Normal `uv run pytest` runs collect these tests but skip every one of them unless `--live-openai` is passed explicitly.
+
+Create a local `.env` in this plugin directory for test credentials.
+
+```dotenv
+OPENAI_API_KEY=your-api-key
+# OPENAI_ORGANIZATION=org-id
+# OPENAI_BASE_URL=https://api.openai.com/v1
+```
+
+The test harness reads only those OpenAI variables from `.env`, and explicit process environment variables take precedence.
+
+The repository ignores `.env`; never commit it or include its values in test output.
+
+Run the complete matrix manually.
+
+```bash
+uv run pytest tests/live --live-openai
+```
+
+The complete matrix sends one logical request for every configured model plus focused boundary requests, and the tool replay scenario sends a second request.
+
+The OpenAI SDK may retry transient failures, so actual HTTP attempts can exceed the logical request count.
+
+It should be run serially because parallel execution increases both spend and rate-limit pressure.
+
+Run one model while developing.
+
+```bash
+uv run pytest tests/live --live-openai --live-model gpt-4o-mini
+```
+
+Repeat `--live-model` to select several models, and add pytest `-k` expressions to select a single scenario.
+
+The cheapest LLM smoke command sends one short request.
+
+```bash
+uv run pytest tests/live/test_llm.py --live-openai \
+  --live-model gpt-4o-mini -k presented
+```
+
+The presentation matrix gives every LLM in `models/llm/_position.yaml` one minimal request, using streaming whenever the model contract supports it.
+
+Embedding, moderation, speech-to-text, and text-to-speech tests are derived from every YAML configuration in their respective model directories.
+
+Representative models separately cover Responses and Chat Completions, streaming and non-streaming, structured output, reasoning summaries, streamed function calls, encrypted reasoning replay, stop and incomplete states, and image, document, and audio inputs.
+
+Exact event interleavings, fragmented tool arguments, empty reasoning blocks, failures, cancellation, and malformed responses remain in deterministic unit tests because a live service cannot reliably reproduce those event orders.
+
+The full run requires the API key to have access to every presented model, and reasoning summaries may also require organization verification.
+
 ## Official references
 
 - [Model catalog](https://developers.openai.com/api/docs/models)

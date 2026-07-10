@@ -19,7 +19,7 @@ def test_reasoning_parameters_are_merged_without_mutating_the_caller() -> None:
         "reasoning_context": "all_turns",
     }
 
-    result = responses.parameters(source, None, None)
+    result = responses.parameters("gpt-5.6", source, None, None)
 
     assert result["reasoning"] == {
         "effort": "none",
@@ -44,6 +44,7 @@ def test_structured_output_and_service_tier_are_mapped() -> None:
     }
 
     result = responses.parameters(
+        "gpt-5.6",
         {
             "max_completion_tokens": 512,
             "response_format": {"type": "json_schema", "json_schema": schema},
@@ -83,11 +84,12 @@ def test_structured_output_and_service_tier_are_mapped() -> None:
 )
 def test_unsupported_or_malformed_parameters_are_rejected(parameters, match) -> None:
     with pytest.raises(InvokeBadRequestError, match=match):
-        responses.parameters(parameters, None, None)
+        responses.parameters("gpt-5.6", parameters, None, None)
 
 
 def test_neutral_chat_penalties_are_removed() -> None:
     result = responses.parameters(
+        "gpt-5.6",
         {"presence_penalty": 0.0, "frequency_penalty": 0, "seed": None},
         None,
         None,
@@ -114,7 +116,7 @@ def test_stateless_requests_include_encrypted_reasoning(
     source, expected_include
 ) -> None:
     source = {**source, "user": "parameter-user"}
-    result = responses.parameters(source, None, "user-123")
+    result = responses.parameters("gpt-5.6", source, None, "user-123")
     digest = hashlib.sha256(b"user-123").hexdigest()
 
     assert result["store"] is source.get("store", False)
@@ -132,6 +134,7 @@ def test_tool_shape_and_named_choice_match_responses() -> None:
     )
 
     result = responses.parameters(
+        "gpt-5.6",
         {
             "tool_choice": {
                 "type": "function",
@@ -152,6 +155,26 @@ def test_tool_shape_and_named_choice_match_responses() -> None:
             "strict": False,
         }
     ]
+
+
+@pytest.mark.parametrize(
+    ("model", "expected"),
+    [
+        ("gpt-5.6", True),
+        ("o3", True),
+        ("chat-latest", False),
+        ("gpt-4.1", False),
+        ("gpt-4o-mini", False),
+        ("gpt-5.3-chat-latest", False),
+        ("ft:gpt-4.1-2025-04-14:org:model", False),
+        ("omni-moderation-latest", False),
+    ],
+)
+def test_only_reasoning_models_request_encrypted_reasoning(model, expected) -> None:
+    result = responses.parameters(model, {}, None, None)
+
+    assert result["store"] is False
+    assert (result.get("include") == ["reasoning.encrypted_content"]) is expected
 
 
 @pytest.mark.parametrize(

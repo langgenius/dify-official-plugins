@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import os
 import sys
 from collections.abc import Callable, Iterable, Iterator
 from pathlib import Path
@@ -11,6 +12,7 @@ from dify_plugin.entities.model.llm import LLMUsage
 from dify_plugin.entities.model.message import UserPromptMessage
 
 ROOT = Path(__file__).resolve().parents[1]
+LIVE_TESTS = ROOT / "tests" / "live"
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
@@ -18,6 +20,80 @@ from models.llm import stream as response_stream  # noqa: E402
 from models.llm.llm import OpenAILargeLanguageModel  # noqa: E402
 
 _DEFAULT_USAGE = object()
+
+
+def _load_live_environment() -> None:
+    path = ROOT / ".env"
+    if not path.is_file():
+        return
+    for line in path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        name, separator, value = line.partition("=")
+        if not separator or name.strip() not in {
+            "OPENAI_API_KEY",
+            "OPENAI_ORGANIZATION",
+            "OPENAI_BASE_URL",
+            "OPENAI_API_BASE",
+        }:
+            continue
+        value = value.strip()
+        if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
+            value = value[1:-1]
+        os.environ.setdefault(name.strip(), value)
+
+
+def pytest_addoption(parser: pytest.Parser) -> None:
+    group = parser.getgroup("OpenAI live tests")
+    group.addoption(
+        "--live-openai",
+        action="store_true",
+        help="run billable tests against the real OpenAI API",
+    )
+    group.addoption(
+        "--live-model",
+        action="append",
+        default=[],
+        dest="live_models",
+        metavar="MODEL",
+        help="limit live tests to a model; may be repeated",
+    )
+
+
+def pytest_configure(config: pytest.Config) -> None:
+    run_live = config.getoption("--live-openai")
+    selected = set(config.getoption("live_models"))
+    if selected and not run_live:
+        raise pytest.UsageError("--live-model requires --live-openai")
+    if run_live:
+        _load_live_environment()
+    if run_live and not os.getenv("OPENAI_API_KEY"):
+        raise pytest.UsageError(
+            "--live-openai requires OPENAI_API_KEY in .env or the environment"
+        )
+
+    known_models = {
+        path.stem
+        for path in (ROOT / "models").rglob("*.yaml")
+        if not path.name.startswith("_")
+    }
+    if unknown := selected - known_models:
+        raise pytest.UsageError(f"unknown live model(s): {', '.join(sorted(unknown))}")
+
+
+def pytest_collection_modifyitems(
+    config: pytest.Config, items: list[pytest.Item]
+) -> None:
+    run_live = config.getoption("--live-openai")
+    skipped = pytest.mark.skip(reason="pass --live-openai to run billable API tests")
+    for item in items:
+        in_live_directory = Path(str(item.path)).resolve().is_relative_to(LIVE_TESTS)
+        marked_live = item.get_closest_marker("live") is not None
+        if in_live_directory and not marked_live:
+            item.add_marker(pytest.mark.live)
+        if not run_live and (in_live_directory or marked_live):
+            item.add_marker(skipped)
 
 
 class FakeStream(Iterator[Any]):

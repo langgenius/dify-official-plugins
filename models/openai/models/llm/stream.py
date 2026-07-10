@@ -34,7 +34,7 @@ def generate(
         model=model,
         input=cast(Any, responses.input_items(prompt_messages)),
         stream=True,
-        **responses.parameters(model_parameters, tools, user),
+        **responses.parameters(model, model_parameters, tools, user),
     )
     buffer = StopBuffer(stop)
     formatted = ""

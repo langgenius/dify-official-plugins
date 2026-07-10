@@ -50,7 +50,7 @@ def generate(
     response = client.responses.create(
         model=model,
         input=cast(Any, input_items(prompt_messages)),
-        **parameters(model_parameters, tools, user),
+        **parameters(model, model_parameters, tools, user),
     )
     raise_for_status(response, allow_incomplete=True)
     raw_content = content(response)
@@ -82,6 +82,7 @@ def generate(
 
 
 def parameters(
+    model: str,
     model_parameters: dict,
     tools: list[PromptMessageTool] | None,
     user: str | None,
@@ -159,7 +160,7 @@ def parameters(
         params.setdefault("prompt_cache_key", digest)
 
     params.setdefault("store", False)
-    if params["store"] is False:
+    if params["store"] is False and _supports_encrypted_reasoning(model):
         include = list(params.get("include") or [])
         if "reasoning.encrypted_content" not in include:
             include.append("reasoning.encrypted_content")
@@ -177,6 +178,13 @@ def parameters(
         ]
         params.setdefault("tool_choice", "auto")
     return params
+
+
+def _supports_encrypted_reasoning(model: str) -> bool:
+    base_model = model.split(":", 2)[1] if model.startswith("ft:") else model
+    return (
+        base_model.startswith("gpt-5") and not base_model.endswith("-chat-latest")
+    ) or (len(base_model) > 1 and base_model[0] == "o" and base_model[1].isdigit())
 
 
 def input_items(prompt_messages: list[PromptMessage]) -> list[dict[str, Any]]:
