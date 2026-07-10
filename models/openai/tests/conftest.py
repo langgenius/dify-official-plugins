@@ -41,7 +41,13 @@ def _load_live_environment() -> None:
         value = value.strip()
         if len(value) >= 2 and value[0] == value[-1] and value[0] in "\"'":
             value = value[1:-1]
-        os.environ.setdefault(name.strip(), value)
+        name = name.strip()
+        if not os.getenv(name, "").strip():
+            os.environ[name] = value
+
+
+def _has_live_api_key() -> bool:
+    return bool(os.getenv("OPENAI_API_KEY", "").strip())
 
 
 def pytest_addoption(parser: pytest.Parser) -> None:
@@ -68,10 +74,6 @@ def pytest_configure(config: pytest.Config) -> None:
         raise pytest.UsageError("--live-model requires --live-openai")
     if run_live:
         _load_live_environment()
-    if run_live and not os.getenv("OPENAI_API_KEY"):
-        raise pytest.UsageError(
-            "--live-openai requires OPENAI_API_KEY in .env or the environment"
-        )
 
     known_models = {
         path.stem
@@ -85,14 +87,20 @@ def pytest_configure(config: pytest.Config) -> None:
 def pytest_collection_modifyitems(
     config: pytest.Config, items: list[pytest.Item]
 ) -> None:
-    run_live = config.getoption("--live-openai")
-    skipped = pytest.mark.skip(reason="pass --live-openai to run billable API tests")
+    requested = config.getoption("--live-openai")
+    enabled = requested and _has_live_api_key()
+    reason = (
+        "OPENAI_API_KEY is missing or empty in .env and the environment"
+        if requested
+        else "pass --live-openai to run billable API tests"
+    )
+    skipped = pytest.mark.skip(reason=reason)
     for item in items:
         in_live_directory = Path(str(item.path)).resolve().is_relative_to(LIVE_TESTS)
         marked_live = item.get_closest_marker("live") is not None
         if in_live_directory and not marked_live:
             item.add_marker(pytest.mark.live)
-        if not run_live and (in_live_directory or marked_live):
+        if not enabled and (in_live_directory or marked_live):
             item.add_marker(skipped)
 
 

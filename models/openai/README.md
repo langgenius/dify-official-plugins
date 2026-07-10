@@ -70,6 +70,8 @@ The tests in `tests/live` send billable requests to the real OpenAI API and are 
 
 Normal `uv run pytest` runs collect these tests but skip every one of them unless `--live-openai` is passed explicitly.
 
+When `--live-openai` is passed, the live tests also skip dynamically if `OPENAI_API_KEY` is missing, empty, or whitespace-only in both `.env` and the process environment.
+
 Create a local `.env` in this plugin directory for test credentials.
 
 ```dotenv
