@@ -14,7 +14,7 @@ description:
     pt_BR: Recuperar uma página do Notion pelo seu ID
     ja_JP: ID で Notion ページを取得します
     zh_Hant: 通過 ID 獲取 Notion 頁面
-  llm: Retrieve a Notion page by its ID. Returns page content (recursively including nested child blocks like toggles, callouts, and list sub-items), properties, and metadata. The page must be shared with your integration. Large or deeply nested pages may take several seconds and multiple API calls; use max_depth / max_api_calls to cap cost. The response includes api_calls_made, total_blocks_fetched, and elapsed_seconds for observability, and sets fetch_truncated=true when the budget was hit.
+  llm: Retrieve a Notion page by its ID. Returns page content (recursively including nested child blocks like toggles, callouts, and list sub-items), properties, and metadata. The page must be shared with your integration. Large or deeply nested pages may take several seconds and multiple API calls; use max_depth / max_api_calls to cap cost. The response includes api_calls_made, total_blocks_fetched, and elapsed_seconds for observability, and sets fetch_truncated=true when the budget was hit. Image blocks found in the content are also downloaded and returned as files (array[file]), up to max_images, so they can be passed directly to vision-capable models.
 parameters:
   - name: page_id
     type: string
@@ -86,6 +86,24 @@ parameters:
       ja_JP: "1 回の取得で発行する Notion API 呼び出し数の上限。Notion のレート制限は約 3 req/sec のため、500 回で最大約 3 分かかります。厳しいタイムアウト要件があれば下げてください。上限到達時は部分結果を fetch_truncated=true 付きで返します。"
       zh_Hant: "單次擷取允許的 Notion API 呼叫次數上限。Notion 速率限制約 3 req/sec，500 次約 3 分鐘；可依 SLA 調低。達到上限時回傳部分內容並標記 fetch_truncated=true。"
     llm_description: Safety cap on total Notion API calls for this retrieval. Default 500 (~3 min at Notion's rate limit). If exceeded, the response returns partial content with fetch_truncated=true. Lower this when running in latency-sensitive contexts.
+    form: llm
+  - name: max_images
+    type: number
+    required: false
+    default: 20
+    label:
+      en_US: Max Images
+      zh_Hans: 最大图片数
+      pt_BR: Máximo de Imagens
+      ja_JP: 最大画像数
+      zh_Hant: 最大圖片數
+    human_description:
+      en_US: "Safety cap on the number of image blocks downloaded and returned as files per retrieval. Images beyond this limit are still listed in the content JSON but are not downloaded."
+      zh_Hans: "单次请求下载并作为文件返回的图片块数量上限。超出上限的图片仍会列在内容 JSON 中，但不会被下载。"
+      pt_BR: "Limite de segurança para o número de blocos de imagem baixados e retornados como arquivos por recuperação. Imagens além deste limite ainda são listadas no JSON de conteúdo, mas não são baixadas."
+      ja_JP: "1 回の取得で画像ブロックをダウンロードしファイルとして返す数の上限。上限を超えた画像はコンテンツ JSON には引き続き掲載されますが、ダウンロードは行われません。"
+      zh_Hant: "單次擷取下載並作為檔案回傳的圖片區塊數量上限。超出上限的圖片仍會列在內容 JSON 中，但不會被下載。"
+    llm_description: Safety cap on the number of image blocks downloaded and returned as files for this retrieval. Default 20. Images beyond this limit remain listed in the content JSON (url/caption) but are not downloaded as files.
     form: llm
 extra:
   python:
