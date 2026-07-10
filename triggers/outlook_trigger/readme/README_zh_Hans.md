@@ -28,20 +28,33 @@
 
 ![Azure Entra ID](./_assets/images/get_credentials.png)
 
-3. 在 Dify 中安装此插件并打开配置页面。
+3. 配置 API 权限。
+进入 `API permissions` 页面。
+添加以下 Microsoft Graph 委托权限：
+
+- `Mail.Read`（委托）
+- `offline_access`（委托）
+
+不需要添加应用程序权限。
+如果您的组织要求管理员同意，请授予 admin consent。
+
+4. 在 Dify 中安装此插件并打开配置页面。
 
 ![Dify](./_assets/images/config_oauth_01.png)
 
 填写 `Client ID`、`Client Secret` 和 `Tenant ID` 字段。
 `Tenant ID` 应与账户类型选择一致：租户 ID 或域名、`organizations` 或 `common`。
 
-您将在此对话框中获得 `redirect_url`，复制它并返回 Azure Entra ID 页面，前往 `Authentication` 页面，选择 `Web` 作为平台类型，在 `Redirect URIs` 字段中粘贴 `redirect_url`。点击 `Save`。
+复制此对话框中显示的 `redirect_url`，然后返回 Azure Entra ID 页面。
+前往 `Authentication` 页面，选择 `Web` 作为平台类型，并在 `Redirect URIs` 字段中粘贴该 `redirect_url`。
+点击 `Save`。
 
 ![Dify](./_assets/images/config_oauth_02.png)
 
 现在您可以返回 Dify 插件配置页面并点击 `Save and authorize` 以启动 OAuth 流程。
 
-此插件将重定向您到 Microsoft 登录页面，使用您的 Microsoft 账户登录并授予应用程序权限。
+此插件将您重定向到 Microsoft 登录页面。
+请使用您的 Microsoft 账户登录并授予所请求的委托权限。
 
 然后您可以在工作流中使用此插件,在收到电子邮件时触发它。
 

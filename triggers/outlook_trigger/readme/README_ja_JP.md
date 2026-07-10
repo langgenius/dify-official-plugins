@@ -28,20 +28,34 @@
 
 ![Azure Entra ID](./_assets/images/get_credentials.png)
 
-3. Difyでこのプラグインをインストールして、設定ページを開きます。
+3. API 権限を設定します。
+`API permissions`ページに移動します。
+次の Microsoft Graph 委任権限を追加します。
+
+- `Mail.Read`（委任）
+- `offline_access`（委任）
+
+アプリケーション権限は不要です。
+組織で管理者の同意が必要な場合は、admin consent を付与します。
+
+4. Difyでこのプラグインをインストールして、設定ページを開きます。
 
 ![Dify](./_assets/images/config_oauth_01.png)
 
 `Client ID`、`Client Secret`、`Tenant ID`フィールドに入力します。
 `Tenant ID`は、選択したアカウントタイプに合わせて、テナントIDまたはドメイン、`organizations`、`common`のいずれかにします。
 
-このダイアログで`redirect_url`が表示されるので、それをコピーしてAzure Entra IDページに戻り、`Authentication`ページに移動し、プラットフォームタイプとして`Web`を選択し、`Redirect URIs`フィールドに`redirect_url`を貼り付けます。`Save`をクリックします。
+このダイアログに表示される`redirect_url`をコピーします。
+Azure Entra IDページに戻り、`Authentication`ページに移動します。
+プラットフォームの種類として`Web`を選択し、`Redirect URIs`フィールドにコピーした`redirect_url`を貼り付けます。
+最後に`Save`をクリックします。
 
 ![Dify](./_assets/images/config_oauth_02.png)
 
 これで、Difyプラグイン設定ページに戻り、`Save and authorize`をクリックしてOAuthフローを開始できます。
 
-このプラグインはMicrosoftログインページにリダイレクトされるので、Microsoftアカウントでログインし、アプリケーションに権限を付与します。
+このプラグインはMicrosoftログインページにリダイレクトします。
+Microsoftアカウントでログインし、要求された委任権限を付与します。
 
 これで、このプラグインをワークフローで使用して、メールを受信したときにトリガーできます。
 

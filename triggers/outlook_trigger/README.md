@@ -28,20 +28,33 @@ Generate a new client secret in the `Certificates & secrets` page and copy the v
 
 ![Azure Entra ID](./_assets/images/get_credentials.png)
 
-3. Install this plugin in Dify and open configuration page.
+3. Configure API permissions.
+Go to the `API permissions` section.
+Add these Microsoft Graph delegated permissions:
+
+- `Mail.Read` (delegated)
+- `offline_access` (delegated)
+
+No application permissions are required.
+Grant admin consent if your organization requires it.
+
+4. Install this plugin in Dify and open configuration page.
 
 ![Dify](./_assets/images/config_oauth_01.png)
 
 Fill in the `Client ID`, `Client Secret`, and `Tenant ID` fields.
 The `Tenant ID` value should match your account type choice: your tenant ID or domain, `organizations`, or `common`.
 
-You'll get a `redirect_url` in this dialog, copy it and go back to the Azure Entra ID page, head to `Authentication` page, select `Web` as the platform type, add paste the `redirect_url` in the `Redirect URIs` field. Click `Save`.
+Copy the `redirect_url` from this dialog, then return to the Azure Entra ID page.
+Go to the `Authentication` page, select `Web` as the platform type, and paste the `redirect_url` into the `Redirect URIs` field.
+Click `Save`.
 
 ![Dify](./_assets/images/config_oauth_02.png)
 
 Now you can go back to the Dify plugin configuration page and click `Save and authorize` to initiate the OAuth flow.
 
-This plugin will redirect you to the Microsoft login page, login with your Microsoft account and grant the permissions to the application.
+This plugin will redirect you to the Microsoft login page.
+Log in with your Microsoft account and grant the requested delegated permissions.
 
 Then you can use this plugin in a workflow to trigger it when you receive an email.
 
