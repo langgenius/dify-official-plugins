@@ -1,0 +1,19 @@
+model: claude-5-fable
+label:
+  en_US: Claude Fable 5
+icon: icon_s_en.svg
+model_type: llm
+features:
+  - agent-thought
+  - vision
+  - tool-call
+  - stream-tool-call
+  - document
+model_properties:
+  mode: chat
+  context_size: 1000000
+pricing:
+  input: '0.01'
+  output: '0.05'
+  unit: '0.001'
+  currency: USD
