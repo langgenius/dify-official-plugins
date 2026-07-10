@@ -13,16 +13,16 @@ class PaypackQueryTool(Tool):
         self,
         tool_parameters: Dict[str, Any],
     ) -> Generator[ToolInvokeMessage, None, None]:
-        trade_no = tool_parameters.get("trade_no", "")
-        currency = tool_parameters.get("currency", "CNY").upper()
-
-        if not trade_no:
-            yield self.create_text_message("Missing trade number / order ID")
-            return
-
-        credentials = self.runtime.credentials or {}
-
         try:
+            trade_no = tool_parameters.get("trade_no", "")
+            currency = (tool_parameters.get("currency") or "CNY").upper()
+
+            if not trade_no:
+                yield self.create_text_message("Missing trade number / order ID")
+                return
+
+            credentials = self.runtime.credentials or {}
+
             if currency == "CNY":
                 yield from self._query_alipay(trade_no, credentials)
             else:
@@ -38,7 +38,7 @@ class PaypackQueryTool(Tool):
         app_id = creds.get("app_id")
         private_key = creds.get("private_key")
         alipay_public_key = creds.get("alipay_public_key")
-        sandbox = creds.get("sandbox", "true").lower() == "true"
+        sandbox = str(creds.get("sandbox", "true")).lower() == "true"
 
         if private_key and "BEGIN" in private_key:
             signer = AlipaySigner(

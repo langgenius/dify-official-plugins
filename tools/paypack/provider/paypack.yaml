@@ -14,3 +14,91 @@ identity:
     - alipay
     - wechat-pay
     - finance
+
+credentials:
+  payment_mode:
+    type: select
+    required: true
+    label:
+      en_US: Payment Mode
+      zh_Hans: 支付模式
+    default: crypto
+    options:
+      - value: crypto
+        label:
+          en_US: Crypto (USDC/ETH)
+          zh_Hans: 加密货币 (USDC/ETH)
+      - value: alipay
+        label:
+          en_US: Alipay (CNY)
+          zh_Hans: 支付宝 (CNY)
+  private_key:
+    type: secret-input
+    required: false
+    label:
+      en_US: Private Key / Merchant Private Key
+      zh_Hans: 私钥 / 商户私钥
+    placeholder:
+      en_US: ETH private key or Alipay merchant private key (PEM)
+      zh_Hans: ETH 私钥或支付宝商户私钥 (PEM)
+  network:
+    type: text-input
+    required: false
+    label:
+      en_US: Crypto Network
+      zh_Hans: 区块链网络
+    default: base-sepolia
+    placeholder:
+      en_US: e.g., base-sepolia, base-mainnet
+      zh_Hans: 例如 base-sepolia, base-mainnet
+  spend_limit_daily:
+    type: text-input
+    required: false
+    label:
+      en_US: Daily Spend Limit
+      zh_Hans: 每日消费上限
+    default: "10.0"
+  broadcast:
+    type: select
+    required: false
+    label:
+      en_US: Broadcast Transaction
+      zh_Hans: 是否真实上链
+    default: "true"
+    options:
+      - value: "true"
+        label:
+          en_US: True
+          zh_Hans: 是
+      - value: "false"
+        label:
+          en_US: False
+          zh_Hans: 否
+  app_id:
+    type: text-input
+    required: false
+    label:
+      en_US: Alipay App ID
+      zh_Hans: 支付宝 App ID
+  alipay_public_key:
+    type: secret-input
+    required: false
+    label:
+      en_US: Alipay Public Key
+      zh_Hans: 支付宝公钥
+  sandbox:
+    type: select
+    required: false
+    label:
+      en_US: Alipay Sandbox Mode
+      zh_Hans: 支付宝沙箱模式
+    default: "true"
+    options:
+      - value: "true"
+        label:
+          en_US: True
+          zh_Hans: 是
+      - value: "false"
+        label:
+          en_US: False
+          zh_Hans: 否

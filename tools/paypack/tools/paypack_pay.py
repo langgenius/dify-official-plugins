@@ -13,19 +13,19 @@ class PaypackPayTool(Tool):
         self,
         tool_parameters: Dict[str, Any],
     ) -> Generator[ToolInvokeMessage, None, None]:
-        recipient = tool_parameters.get("recipient", "")
-        amount = float(tool_parameters.get("amount", 0))
-        currency = tool_parameters.get("currency", "USDC").upper()
-        subject = tool_parameters.get("subject", "AI Agent Payment")
-
-        if amount <= 0:
-            yield self.create_text_message("Amount must be greater than 0")
-            return
-
-        credentials = self.runtime.credentials or {}
-        payment_mode = credentials.get("payment_mode", "crypto")
-
         try:
+            recipient = tool_parameters.get("recipient", "")
+            amount = float(tool_parameters.get("amount") or 0)
+            currency = (tool_parameters.get("currency") or "USDC").upper()
+            subject = tool_parameters.get("subject", "AI Agent Payment")
+
+            if amount <= 0:
+                yield self.create_text_message("Amount must be greater than 0")
+                return
+
+            credentials = self.runtime.credentials or {}
+            payment_mode = credentials.get("payment_mode", "crypto")
+
             if currency == "CNY" or payment_mode == "alipay":
                 yield from self._pay_alipay(recipient, amount, subject, credentials)
             else:
@@ -44,8 +44,9 @@ class PaypackPayTool(Tool):
             return
 
         network = creds.get("network", "base-sepolia")
-        limit = float(creds.get("spend_limit_daily", 10.0))
-        broadcast = creds.get("broadcast", "false").lower() == "true"
+        limit_val = creds.get("spend_limit_daily")
+        limit = float(limit_val) if limit_val not in (None, "") else 10.0
+        broadcast = str(creds.get("broadcast", "false")).lower() == "true"
 
         pay = AgentPay(
             wallet_config={"private_key": private_key},
@@ -75,7 +76,7 @@ class PaypackPayTool(Tool):
         app_id = creds.get("app_id")
         private_key = creds.get("private_key")
         alipay_public_key = creds.get("alipay_public_key")
-        sandbox = creds.get("sandbox", "true").lower() == "true"
+        sandbox = str(creds.get("sandbox", "true")).lower() == "true"
 
         if private_key and ("BEGIN" in private_key or "PRIVATE KEY" in private_key):
             signer = AlipaySigner(

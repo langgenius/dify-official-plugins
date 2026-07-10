@@ -27,7 +27,7 @@ class PaypackRefundTool(Tool):
             app_id = credentials.get("app_id")
             private_key = credentials.get("private_key")
             alipay_public_key = credentials.get("alipay_public_key")
-            sandbox = credentials.get("sandbox", "true").lower() == "true"
+            sandbox = str(credentials.get("sandbox", "true")).lower() == "true"
 
             if private_key and "BEGIN" in private_key:
                 signer = AlipaySigner(
