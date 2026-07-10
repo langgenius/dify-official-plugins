@@ -16,7 +16,7 @@ parameters:
     en_US: Mailbox Address (shared mailbox)
     zh_Hans: 邮箱地址（共享邮箱）
     ja_JP: メールボックスアドレス（共有メールボックス）
-  type: text-input
+  type: string
   required: false
   default: ""
   description:
