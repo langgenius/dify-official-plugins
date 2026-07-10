@@ -1,28 +1,17 @@
-model: claude-opus-4-7-think
+model: claude-fable-5
 label:
-  en_US: Claude Opus 4.7 Thinking
+  en_US: Claude Fable 5
 model_type: llm
 features:
   - agent-thought
+  - vision
   - tool-call
   - stream-tool-call
-  - multi-tool-call
-  - vision
   - document
 model_properties:
   mode: chat
   context_size: 1000000
 parameter_rules:
-  - name: thinking
-    label:
-      zh_Hans: 自适应推理
-      en_US: Adaptive Thinking
-    type: boolean
-    default: true
-    required: false
-    help:
-      zh_Hans: 启用自适应推理（adaptive thinking）。Claude Opus 4.7 仅支持 adaptive 模式，不再支持设置 thinking_budget。推理深度由 Effort 参数控制。此 -think 变体默认开启。
-      en_US: Enable adaptive thinking. Claude Opus 4.7 only supports adaptive mode; thinking_budget is no longer supported. Thinking depth is controlled by the Effort parameter. This -think variant defaults to enabled.
   - name: thinking_display
     label:
       zh_Hans: 推理内容展示
@@ -34,8 +23,9 @@ parameter_rules:
       - omitted
       - summarized
     help:
-      zh_Hans: 响应中推理内容的展示方式。omitted 为官方默认值（响应中不返回 thinking 文本）；summarized 返回摘要化的推理过程，便于在前端展示思考进度。
-      en_US: How thinking content is exposed in the response. `omitted` is the official default (thinking text not returned); `summarized` returns summarized reasoning so clients can display progress.
+      zh_Hans: Claude Fable 5 的 adaptive thinking 始终开启。此参数仅控制响应中推理内容的展示方式：omitted 为官方默认值（响应中不返回 thinking 文本）；summarized 返回摘要化的推理过程，便于在前端展示思考进度。
+      en_US: |
+        Claude Fable 5 always runs with adaptive thinking. This only controls how thinking content is exposed in the response: `omitted` is the official default (thinking text not returned); `summarized` returns summarized reasoning so clients can display progress.
   - name: effort
     label:
       zh_Hans: 推理投入等级
@@ -74,21 +64,12 @@ parameter_rules:
         · ≥20000: enabled and the `task-budgets-2026-03-13` beta header is attached automatically. Overly tight budgets can cause the model to wrap up prematurely.
   - name: max_tokens
     use_template: max_tokens
-    default: 8192
+    required: true
+    default: 128000
     min: 1
-    max: 32000
+    max: 128000
   - name: response_format
-    label:
-      zh_Hans: 回复格式
-      en_US: Response Format
-    type: string
-    required: false
-    options:
-      - text
-      - json_object
-      - json_schema
-  - name: json_schema
-    use_template: json_schema
+    use_template: response_format
   - name: prompt_caching_message_flow
     label:
       zh_Hans: 大消息自动缓存阈值
@@ -114,56 +95,56 @@ parameter_rules:
       en_US: Controls prompt caching cache_control.ttl. 5m is the default duration; 1h extends cache lifetime but has a higher cache write cost.
   - name: prompt_caching_system_message
     label:
-      zh_Hans: 系统提示缓存
+      zh_Hans: 缓存系统消息
       en_US: Cache System Message
     type: boolean
     default: true
     required: false
     help:
-      zh_Hans: 开启后自动为系统提示添加缓存控制。
-      en_US: Automatically add cache_control to the system message.
+      zh_Hans: 启用系统消息的提示缓存。<cache></cache>中的内容将自动缓存。
+      en_US: Enable prompt caching for system messages. Content within <cache></cache> will be cached.
   - name: prompt_caching_images
     label:
-      zh_Hans: 图片缓存
+      zh_Hans: 缓存图片
       en_US: Cache Images
     type: boolean
     default: true
     required: false
     help:
-      zh_Hans: 开启后自动为图片添加缓存控制。
-      en_US: Automatically add cache_control to image content blocks.
+      zh_Hans: 启用图片的提示缓存。
+      en_US: Enable prompt caching for images.
   - name: prompt_caching_documents
     label:
-      zh_Hans: 文档缓存
+      zh_Hans: 缓存文档
       en_US: Cache Documents
     type: boolean
     default: true
     required: false
     help:
-      zh_Hans: 开启后自动为文档添加缓存控制。
-      en_US: Automatically add cache_control to document content blocks.
+      zh_Hans: 启用文档的提示缓存。
+      en_US: Enable prompt caching for documents.
   - name: prompt_caching_tool_definitions
     label:
-      zh_Hans: 工具定义缓存
+      zh_Hans: 缓存工具定义
       en_US: Cache Tool Definitions
     type: boolean
     default: true
     required: false
     help:
-      zh_Hans: 开启后自动为工具定义添加缓存控制。
-      en_US: Automatically add cache_control to tool definitions.
+      zh_Hans: 启用工具定义的提示缓存。
+      en_US: Enable prompt caching for tool definitions.
   - name: prompt_caching_tool_results
     label:
-      zh_Hans: 工具结果缓存
+      zh_Hans: 缓存工具结果
       en_US: Cache Tool Results
     type: boolean
     default: true
     required: false
     help:
-      zh_Hans: 开启后自动为工具调用结果添加缓存控制。
-      en_US: Automatically add cache_control to tool result content blocks.
+      zh_Hans: 启用工具结果的提示缓存。
+      en_US: Enable prompt caching for tool results.
 pricing:
-  input: '5'
-  output: '25'
+  input: '11'
+  output: '55'
   unit: '0.000001'
   currency: USD
