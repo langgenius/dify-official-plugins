@@ -1,0 +1,58 @@
+model: grok-4.5
+label:
+  en_US: Grok 4.5
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+  - multi-tool-call
+  - vision
+model_properties:
+  mode: chat
+  context_size: 1000000
+parameter_rules:
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理努力程度
+      en_US: Reasoning Effort
+    type: string
+    help:
+      zh_Hans: 控制模型的推理强度。none 为关闭思考，low/medium/high 为推荐值。
+      en_US: Controls the model's reasoning intensity. none disables thinking, low/medium/high are recommended.
+    required: false
+    default: high
+    options:
+      - none
+      - low
+      - medium
+      - high
+  - name: temperature
+    use_template: temperature
+    default: 1.0
+    min: 0.0
+    max: 2.0
+  - name: top_p
+    use_template: top_p
+  - name: max_tokens
+    use_template: max_tokens
+    default: 8192
+    min: 1
+    max: 131072
+  - name: response_format
+    label:
+      zh_Hans: 回复格式
+      en_US: Response Format
+    type: string
+    required: false
+    options:
+      - text
+      - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
+pricing:
+  input: '2'
+  output: '6'
+  unit: '0.000001'
+  currency: USD

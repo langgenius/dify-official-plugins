@@ -9,9 +9,6 @@ model_properties:
     - mode: 'ash'
       name: 'Ash'
       language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'th-TH', 'id-ID']
-    - mode: 'ballad'
-      name: 'Ballad'
-      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'th-TH', 'id-ID']
     - mode: 'coral'
       name: 'Coral'
       language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'th-TH', 'id-ID']
@@ -33,12 +30,8 @@ model_properties:
     - mode: 'shimmer'
       name: 'Shimmer'
       language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'th-TH', 'id-ID']
-    - mode: 'verse'
-      name: 'Verse'
-      language: ['zh-Hans', 'en-US', 'de-DE', 'fr-FR', 'es-ES', 'it-IT', 'th-TH', 'id-ID']
-  word_limit: 3500
+  word_limit: 4096
   audio_type: 'mp3'
-  max_workers: 5
 pricing:
   input: '0.03'
   output: '0'

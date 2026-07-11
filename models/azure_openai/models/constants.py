@@ -3881,6 +3881,288 @@ LLM_BASE_MODELS = [
             ),
         ),
     ),
+    # GPT-5.6 Series
+    # https://learn.microsoft.com/en-us/azure/foundry/foundry-models/concepts/models-sold-directly-by-azure#gpt-56
+    # https://developers.openai.com/api/docs/models/gpt-5.6-sol
+    AzureBaseModel(
+        base_model_name="gpt-5.6-sol",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_us="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 1050000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_us="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="限制推理模型的推理工作。支持 none、low、medium、high、xhigh、max。",
+                        en_us="Constrains effort on reasoning for reasoning models. "
+                        "Supported values: none, low, medium, high, xhigh, max.",
+                    ),
+                    required=False,
+                    options=["none", "low", "medium", "high", "xhigh", "max"],
+                    default="none",
+                ),
+                ParameterRule(
+                    name="reasoning_summary",
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
+                    ),
+                    required=False,
+                    options=["auto", "concise", "detailed"],
+                    default="auto",
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                        "支持的值包括low、medium和high",
+                        en_us="Constrains the verbosity of the model's response. "
+                        "Lower values will result in more concise responses, "
+                        "while higher values will result in more verbose responses. "
+                        "Currently supported values are low, medium, and high",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
+                ),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
+            ],
+            pricing=PriceConfig(
+                input=5,
+                output=30,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-5.6-terra",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_us="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 1050000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_us="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="限制推理模型的推理工作。支持 none、low、medium、high、xhigh、max。",
+                        en_us="Constrains effort on reasoning for reasoning models. "
+                        "Supported values: none, low, medium, high, xhigh, max.",
+                    ),
+                    required=False,
+                    options=["none", "low", "medium", "high", "xhigh", "max"],
+                    default="none",
+                ),
+                ParameterRule(
+                    name="reasoning_summary",
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
+                    ),
+                    required=False,
+                    options=["auto", "concise", "detailed"],
+                    default="auto",
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                        "支持的值包括low、medium和high",
+                        en_us="Constrains the verbosity of the model's response. "
+                        "Lower values will result in more concise responses, "
+                        "while higher values will result in more verbose responses. "
+                        "Currently supported values are low, medium, and high",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
+                ),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
+            ],
+            pricing=PriceConfig(
+                input=2.5,
+                output=15,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
+    AzureBaseModel(
+        base_model_name="gpt-5.6-luna",
+        entity=AIModelEntity(
+            model="fake-deployment-name",
+            label=I18nObject(
+                en_us="fake-deployment-name-label",
+            ),
+            model_type=ModelType.LLM,
+            features=[
+                ModelFeature.AGENT_THOUGHT,
+                ModelFeature.MULTI_TOOL_CALL,
+                ModelFeature.STREAM_TOOL_CALL,
+                ModelFeature.VISION,
+                ModelFeature.STRUCTURED_OUTPUT,
+            ],
+            fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
+            model_properties={
+                ModelPropertyKey.MODE: LLMMode.CHAT.value,
+                ModelPropertyKey.CONTEXT_SIZE: 1050000,
+            },
+            parameter_rules=[
+                ParameterRule(
+                    name="response_format",
+                    label=I18nObject(zh_hans="回复格式", en_us="response_format"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="指定模型必须输出的格式",
+                        en_us="specifying the format that the model must output",
+                    ),
+                    required=False,
+                    options=["text", "json_object", "json_schema"],
+                ),
+                ParameterRule(
+                    name="json_schema",
+                    label=I18nObject(en_us="JSON Schema"),
+                    type="text",
+                    help=I18nObject(
+                        zh_hans="设置返回的json schema，llm将按照它返回",
+                        en_us="Set a response json schema will ensure LLM to adhere it.",
+                    ),
+                    required=False,
+                ),
+                ParameterRule(
+                    name="reasoning_effort",
+                    label=I18nObject(zh_hans="推理工作", en_us="reasoning_effort"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="限制推理模型的推理工作。支持 none、low、medium、high、xhigh、max。",
+                        en_us="Constrains effort on reasoning for reasoning models. "
+                        "Supported values: none, low, medium, high, xhigh, max.",
+                    ),
+                    required=False,
+                    options=["none", "low", "medium", "high", "xhigh", "max"],
+                    default="none",
+                ),
+                ParameterRule(
+                    name="reasoning_summary",
+                    label=I18nObject(zh_hans="推理摘要", en_us="reasoning_summary"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="模型执行推理的摘要。",
+                        en_us="A summary of the reasoning performed by the model. ",
+                    ),
+                    required=False,
+                    options=["auto", "concise", "detailed"],
+                    default="auto",
+                ),
+                ParameterRule(
+                    name="verbosity",
+                    label=I18nObject(zh_hans="详细程度", en_us="verbosity"),
+                    type="string",
+                    help=I18nObject(
+                        zh_hans="约束模型响应的详细程度。较低的值将产生更简洁的响应，而较高的值将产生更详细的响应。"
+                        "支持的值包括low、medium和high",
+                        en_us="Constrains the verbosity of the model's response. "
+                        "Lower values will result in more concise responses, "
+                        "while higher values will result in more verbose responses. "
+                        "Currently supported values are low, medium, and high",
+                    ),
+                    required=False,
+                    options=["low", "medium", "high"],
+                    default="medium",
+                ),
+                _get_o1_max_tokens(default=4096, min_val=1, max_val=128000),
+            ],
+            pricing=PriceConfig(
+                input=1,
+                output=6,
+                unit=0.000001,
+                currency="USD",
+            ),
+        ),
+    ),
 ]
 
 
