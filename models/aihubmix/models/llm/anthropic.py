@@ -53,9 +53,17 @@ ANTHROPIC_BLOCK_MODE_PROMPT = 'You should always follow the instructions and out
 
 
 class PromptCachingHandler:
-    def __init__(self, prompt_messages: Sequence[PromptMessage], enable_system_cache: bool = False):
+    CACHE_CONTROL_TYPE = "ephemeral"
+
+    def __init__(
+        self,
+        prompt_messages: Sequence[PromptMessage],
+        enable_system_cache: bool = False,
+        cache_control: Optional[dict[str, str]] = None,
+    ):
         self.prompt_messages = prompt_messages
         self.enable_system_cache = enable_system_cache
+        self._cache_control = cache_control or {"type": self.CACHE_CONTROL_TYPE}
 
     def get_system_prompt(self) -> Union[str, list[dict]]:
         system_components = []
@@ -84,9 +92,9 @@ class PromptCachingHandler:
                     cached_content = part[len('<cache>'):-len('</cache>')]
                     if cached_content:
                         system_components.append({
-                "type": "text",
+                            "type": "text",
                             "text": cached_content,
-                "cache_control": {"type": "ephemeral"}
+                            "cache_control": self._cache_control,
                         })
                 elif part:
                     system_components.append({
@@ -106,10 +114,8 @@ class PromptCachingHandler:
         return system
 
     # --- Pricing Helpers -------------------------------------------------
-    # Cache write incurs a 25% premium (1.25×) on the written tokens
-    # Cache read receives a 90% discount (0.1×) on the read tokens
-
-    CACHE_WRITE_MULTIPLIER: float = 1.25
+    CACHE_WRITE_5M_MULTIPLIER: float = 1.25
+    CACHE_WRITE_1H_MULTIPLIER: float = 2.0
     CACHE_READ_MULTIPLIER: float = 0.1
 
     @classmethod
@@ -118,20 +124,17 @@ class PromptCachingHandler:
         base_prompt_tokens: int,
         cache_creation_input_tokens: int = 0,
         cache_read_input_tokens: int = 0,
+        cache_creation_5m_input_tokens: int = 0,
+        cache_creation_1h_input_tokens: int = 0,
+        cache_creation_fallback_multiplier: float = CACHE_WRITE_5M_MULTIPLIER,
     ) -> int:
-        """Return billing-adjusted prompt tokens.
-
-        Args:
-            base_prompt_tokens: The raw prompt tokens counted by the API.
-            cache_creation_input_tokens: Tokens written to cache in this request.
-            cache_read_input_tokens: Tokens read from cache in this request.
-        Returns:
-            int: Adjusted prompt tokens to be billed.
-        """
         adjusted = base_prompt_tokens
 
-        if cache_creation_input_tokens > 0:
-            adjusted += int(cache_creation_input_tokens * cls.CACHE_WRITE_MULTIPLIER)
+        if cache_creation_5m_input_tokens > 0 or cache_creation_1h_input_tokens > 0:
+            adjusted += int(cache_creation_5m_input_tokens * cls.CACHE_WRITE_5M_MULTIPLIER)
+            adjusted += int(cache_creation_1h_input_tokens * cls.CACHE_WRITE_1H_MULTIPLIER)
+        elif cache_creation_input_tokens > 0:
+            adjusted += int(cache_creation_input_tokens * cache_creation_fallback_multiplier)
 
         if cache_read_input_tokens > 0:
             adjusted += int(cache_read_input_tokens * cls.CACHE_READ_MULTIPLIER)
@@ -140,17 +143,90 @@ class PromptCachingHandler:
 
 
 class AnthropicLargeLanguageModel(LargeLanguageModel):
+    PROMPT_CACHING_TTL_PARAMETER = "prompt_caching_ttl"
+    VALID_PROMPT_CACHING_TTLS = {"5m", "1h"}
+
+    ADAPTIVE_THINKING_MODELS: tuple[str, ...] = (
+        "claude-opus-4-7",
+        "claude-opus-4-8",
+        "claude-sonnet-5",
+        "claude-fable-5",
+    )
+    ALWAYS_ON_ADAPTIVE_THINKING_MODELS: tuple[str, ...] = (
+        "claude-fable-5",
+    )
+    TASK_BUDGET_SUPPORTED_MODELS: tuple[str, ...] = (
+        "claude-opus-4-7",
+        "claude-opus-4-8",
+        "claude-fable-5",
+    )
+    ADAPTIVE_THINKING_DEFAULT_ON_MODELS: tuple[str, ...] = (
+        "claude-sonnet-5",
+    )
+
     def __init__(self, model_schemas=None):
         super().__init__(model_schemas or [])
         self.previous_thinking_blocks = []
         self.previous_redacted_thinking_blocks = []
-        # Flag to indicate whether tool definitions should include cache_control
         self._tool_cache_enabled = False
         self._system_cache_enabled = False
         self._image_cache_enabled = False
         self._document_cache_enabled = False
         self._tool_results_cache_enabled = False
         self._message_flow_cache_threshold: int = 0
+        self._prompt_cache_ttl: Optional[str] = None
+
+    def _resolve_prompt_cache_ttl(
+        self,
+        model: str,
+        model_parameters: dict[str, Any],
+    ) -> Optional[str]:
+        ttl = model_parameters.pop(self.PROMPT_CACHING_TTL_PARAMETER, None)
+        if isinstance(ttl, str) and ttl in self.VALID_PROMPT_CACHING_TTLS:
+            return ttl
+        return None
+
+    def _cache_control(self) -> dict[str, str]:
+        cc = {"type": PromptCachingHandler.CACHE_CONTROL_TYPE}
+        if self._prompt_cache_ttl:
+            cc["ttl"] = self._prompt_cache_ttl
+        return cc
+
+    def _cache_write_fallback_multiplier(self) -> float:
+        if self._prompt_cache_ttl == "1h":
+            return PromptCachingHandler.CACHE_WRITE_1H_MULTIPLIER
+        return PromptCachingHandler.CACHE_WRITE_5M_MULTIPLIER
+
+    @staticmethod
+    def _get_cache_creation_input_tokens_by_ttl(usage: Any) -> tuple[int, int]:
+        cache_creation = getattr(usage, "cache_creation", None)
+        if not cache_creation:
+            return 0, 0
+        if isinstance(cache_creation, Mapping):
+            return (
+                int(cache_creation.get("ephemeral_5m_input_tokens") or 0),
+                int(cache_creation.get("ephemeral_1h_input_tokens") or 0),
+            )
+        return (
+            int(getattr(cache_creation, "ephemeral_5m_input_tokens", 0) or 0),
+            int(getattr(cache_creation, "ephemeral_1h_input_tokens", 0) or 0),
+        )
+
+    def _uses_adaptive_thinking(self, model: str) -> bool:
+        model_id = (model or "").lower()
+        return any(model_id.startswith(prefix) for prefix in self.ADAPTIVE_THINKING_MODELS)
+
+    def _has_always_on_adaptive_thinking(self, model: str) -> bool:
+        model_id = (model or "").lower()
+        return any(model_id.startswith(prefix) for prefix in self.ALWAYS_ON_ADAPTIVE_THINKING_MODELS)
+
+    def _has_adaptive_thinking_default_on(self, model: str) -> bool:
+        model_id = (model or "").lower()
+        return any(model_id.startswith(prefix) for prefix in self.ADAPTIVE_THINKING_DEFAULT_ON_MODELS)
+
+    def _supports_task_budget(self, model: str) -> bool:
+        model_id = (model or "").lower()
+        return any(model_id.startswith(prefix) for prefix in self.TASK_BUDGET_SUPPORTED_MODELS)
 
     def _invoke(
         self,
@@ -230,19 +306,66 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             else:
                 model_parameters["max_tokens"] = 4096
 
-        thinking = model_parameters.pop("thinking", False)
+        _THINKING_SENTINEL = object()
+        thinking = model_parameters.pop("thinking", _THINKING_SENTINEL)
+        thinking_was_set = thinking is not _THINKING_SENTINEL
+        if thinking is _THINKING_SENTINEL:
+            thinking = False
         thinking_budget = model_parameters.pop("thinking_budget", 1024)
         context_1m = model_parameters.pop("context_1m", False)
-        
-        if thinking:
-            extra_model_kwargs["thinking"] = {
-                "type": "enabled",
-                "budget_tokens": thinking_budget
-            }
+
+        uses_adaptive_thinking = self._uses_adaptive_thinking(model)
+        always_on_adaptive_thinking = self._has_always_on_adaptive_thinking(model)
+        adaptive_thinking_default_on = self._has_adaptive_thinking_default_on(model)
+        thinking_display = model_parameters.pop(
+            "thinking_display",
+            "omitted" if uses_adaptive_thinking else "summarized",
+        )
+        effort = model_parameters.pop("effort", None)
+        task_budget = int(model_parameters.pop("task_budget", 0) or 0)
+
+        if uses_adaptive_thinking:
             for key in ("temperature", "top_p", "top_k"):
                 model_parameters.pop(key, None)
 
-        if context_1m:
+            if always_on_adaptive_thinking:
+                extra_model_kwargs["thinking"] = {
+                    "type": "adaptive",
+                    "display": thinking_display or "omitted",
+                }
+            elif thinking:
+                extra_model_kwargs["thinking"] = {
+                    "type": "adaptive",
+                    "display": thinking_display or "omitted",
+                }
+            elif adaptive_thinking_default_on and thinking_was_set:
+                extra_model_kwargs["thinking"] = {"type": "disabled"}
+
+            output_config: dict[str, Any] = {}
+            if effort:
+                output_config["effort"] = effort
+            if task_budget >= 20000 and self._supports_task_budget(model):
+                output_config["task_budget"] = {
+                    "type": "tokens",
+                    "total": task_budget,
+                }
+                extra_headers["anthropic-beta"] = (
+                    extra_headers["anthropic-beta"] + ",task-budgets-2026-03-13"
+                    if "anthropic-beta" in extra_headers
+                    else "task-budgets-2026-03-13"
+                )
+            if output_config:
+                extra_model_kwargs["output_config"] = output_config
+        else:
+            if thinking:
+                extra_model_kwargs["thinking"] = {
+                    "type": "enabled",
+                    "budget_tokens": thinking_budget,
+                }
+                for key in ("temperature", "top_p", "top_k"):
+                    model_parameters.pop(key, None)
+
+        if context_1m and not uses_adaptive_thinking:
             if "anthropic-beta" in extra_headers:
                 extra_headers["anthropic-beta"] += ",context-1m-2025-08-07"
             else:
@@ -255,18 +378,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             else:
                 extra_headers["anthropic-beta"] = "output-128k-2025-02-19"
 
-        if model == "claude-3-7-sonnet-20250219" and tools:
-            if "anthropic-beta" in extra_headers:
-                extra_headers["anthropic-beta"] += ",token-efficient-tools-2025-02-19"
-            else:
-                extra_headers["anthropic-beta"] = "token-efficient-tools-2025-02-19"
-
         if stop:
             extra_model_kwargs["stop_sequences"] = stop
         if user:
             extra_model_kwargs["metadata"] = completion_create_params.Metadata(
                 user_id=user
             )
+        self._prompt_cache_ttl = self._resolve_prompt_cache_ttl(model, model_parameters)
         self._tool_cache_enabled = model_parameters.pop("prompt_caching_tool_definitions", True)
         self._system_cache_enabled = model_parameters.pop("prompt_caching_system_message", True)
         self._image_cache_enabled = model_parameters.pop("prompt_caching_images", True)
@@ -511,7 +629,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             "name": tool.name,
             "description": tool.description,
             "input_schema": input_schema,
-            **({"cache_control": {"type": "ephemeral"}} if getattr(self, "_tool_cache_enabled", False) else {}),
+            **({"cache_control": self._cache_control()} if getattr(self, "_tool_cache_enabled", False) else {}),
         }
 
     def _transform_chat_json_prompts(
@@ -529,21 +647,33 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         """
         Transform json prompts
         """
+        stop = stop or []
         if "```\n" not in stop:
             stop.append("```\n")
         if "\n```" not in stop:
             stop.append("\n```")
+        # Adaptive-thinking models reject assistant prefill with 400 -- rely on system prompt only.
+        supports_prefill = not self._uses_adaptive_thinking(model)
+
         if len(prompt_messages) > 0 and isinstance(
             prompt_messages[0], SystemPromptMessage
         ):
+            raw = prompt_messages[0].content
+            if isinstance(raw, list):
+                instructions = "\n".join(
+                    c.data for c in raw if isinstance(c, TextPromptMessageContent)
+                )
+            else:
+                instructions = str(raw or "")
             prompt_messages[0] = SystemPromptMessage(
                 content=ANTHROPIC_BLOCK_MODE_PROMPT.replace(
-                    "{{instructions}}", prompt_messages[0].content
+                    "{{instructions}}", instructions
                 ).replace("{{block}}", response_format)
             )
-            prompt_messages.append(
-                AssistantPromptMessage(content=f"\n```{response_format}")
-            )
+            if supports_prefill:
+                prompt_messages.append(
+                    AssistantPromptMessage(content=f"\n```{response_format}")
+                )
         else:
             prompt_messages.insert(
                 0,
@@ -554,9 +684,10 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     ).replace("{{block}}", response_format)
                 ),
             )
-            prompt_messages.append(
-                AssistantPromptMessage(content=f"\n```{response_format}")
-            )
+            if supports_prefill:
+                prompt_messages.append(
+                    AssistantPromptMessage(content=f"\n```{response_format}")
+                )
 
     def get_num_tokens(
         self,
@@ -598,10 +729,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 break
         
         if has_thinking_blocks:
-            count_tokens_args["thinking"] = {
-                "type": "enabled",
-                "budget_tokens": 4096
-            }
+            if self._uses_adaptive_thinking(model):
+                count_tokens_args["thinking"] = {"type": "adaptive"}
+            else:
+                count_tokens_args["thinking"] = {
+                    "type": "enabled",
+                    "budget_tokens": 4096,
+                }
         
         if system:
             count_tokens_args["system"] = system
@@ -674,16 +808,14 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 assistant_prompt_message.tool_calls.append(tool_call)
         
         prompt_tokens = (
-            response.usage
-            and response.usage.input_tokens
-            or self.get_num_tokens(
+            response.usage.input_tokens if response.usage else
+            self.get_num_tokens(
                 model=model, credentials=credentials, prompt_messages=prompt_messages
             )
         )
         completion_tokens = (
-            response.usage
-            and response.usage.output_tokens
-            or self.get_num_tokens(
+            response.usage.output_tokens if response.usage else
+            self.get_num_tokens(
                 model=model,
                 credentials=credentials,
                 prompt_messages=[assistant_prompt_message],
@@ -693,16 +825,24 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         # Adjust prompt tokens for cache operations
         cache_creation_input_tokens = 0
         cache_read_input_tokens = 0
+        cache_creation_5m_input_tokens = 0
+        cache_creation_1h_input_tokens = 0
         if response.usage:
             if hasattr(response.usage, "cache_creation_input_tokens") and response.usage.cache_creation_input_tokens:
                 cache_creation_input_tokens = response.usage.cache_creation_input_tokens
             if hasattr(response.usage, "cache_read_input_tokens") and response.usage.cache_read_input_tokens:
                 cache_read_input_tokens = response.usage.cache_read_input_tokens
+            cache_creation_5m_input_tokens, cache_creation_1h_input_tokens = (
+                self._get_cache_creation_input_tokens_by_ttl(response.usage)
+            )
 
         adjusted_prompt_tokens = PromptCachingHandler.calc_adjusted_prompt_tokens(
             prompt_tokens,
             cache_creation_input_tokens,
             cache_read_input_tokens,
+            cache_creation_5m_input_tokens,
+            cache_creation_1h_input_tokens,
+            self._cache_write_fallback_multiplier(),
         )
 
         usage = super()._calc_response_usage(
@@ -744,7 +884,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         
         current_tool_name = None
         current_tool_id = None
-        current_tool_params = ""
+        tool_params_by_id: dict[str, str] = {}
         
         if not any(isinstance(msg, ToolPromptMessage) for msg in prompt_messages):
             self.previous_thinking_blocks = []
@@ -756,7 +896,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         # Cache token tracking
         cache_creation_input_tokens = 0
         cache_read_input_tokens = 0
-        
+        cache_creation_5m_input_tokens = 0
+        cache_creation_1h_input_tokens = 0
+
         for chunk in response:
             logging.info(f"Anthropic API Stream Response Chunk: {chunk.model_dump_json()}")
             if isinstance(chunk, MessageStartEvent):
@@ -767,6 +909,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         cache_creation_input_tokens = chunk.message.usage.cache_creation_input_tokens
                     if hasattr(chunk.message.usage, "cache_read_input_tokens") and chunk.message.usage.cache_read_input_tokens:
                         cache_read_input_tokens = chunk.message.usage.cache_read_input_tokens
+                    cache_creation_5m_input_tokens, cache_creation_1h_input_tokens = (
+                        self._get_cache_creation_input_tokens_by_ttl(chunk.message.usage)
+                    )
             elif hasattr(chunk, "type") and chunk.type == "content_block_start":
                 if hasattr(chunk, "content_block"):
                     content_block = chunk.content_block
@@ -776,6 +921,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         current_tool_id = getattr(content_block, 'id', None)
                         
                         if current_tool_name and current_tool_id:
+                            tool_params_by_id[current_tool_id] = ""
                             tool_call = AssistantPromptMessage.ToolCall(
                                 id=current_tool_id,
                                 type="function",
@@ -799,17 +945,17 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 if hasattr(chunk.delta, "type") and chunk.delta.type == "input_json_delta":
                     if hasattr(chunk.delta, "partial_json"):
                         partial_json = chunk.delta.partial_json
-                        if partial_json:
-                            current_tool_params += partial_json
-                            
+                        if partial_json and current_tool_id and current_tool_id in tool_params_by_id:
+                            tool_params_by_id[current_tool_id] += partial_json
+
                             for tc in tool_calls:
                                 if tc.id == current_tool_id:
-                                    tc.function.arguments = current_tool_params
+                                    tc.function.arguments = tool_params_by_id[current_tool_id]
                                     break
                 
                 if chunk.index != current_block_index:
-                    if current_block_type == "thinking" and current_block_index is not None:
-                        assistant_prompt_message = AssistantPromptMessage(content="\n</think>")
+                    if current_block_type in ("thinking", "redacted_thinking") and current_block_index is not None:
+                        assistant_prompt_message = AssistantPromptMessage(content="\n</think>\n\n")
                         yield LLMResultChunk(
                             model=return_model,
                             prompt_messages=prompt_messages,
@@ -892,9 +1038,12 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     cache_creation_input_tokens = chunk.usage.cache_creation_input_tokens
                 if hasattr(chunk.usage, "cache_read_input_tokens") and chunk.usage.cache_read_input_tokens:
                     cache_read_input_tokens = chunk.usage.cache_read_input_tokens
+                cache_creation_5m_input_tokens, cache_creation_1h_input_tokens = (
+                    self._get_cache_creation_input_tokens_by_ttl(chunk.usage)
+                )
             elif isinstance(chunk, MessageStopEvent):
-                if current_block_type == "thinking" and current_block_index is not None:
-                    assistant_prompt_message = AssistantPromptMessage(content="\n</think>")
+                if current_block_type in ("thinking", "redacted_thinking") and current_block_index is not None:
+                    assistant_prompt_message = AssistantPromptMessage(content="\n</think>\n\n")
                     yield LLMResultChunk(
                         model=return_model,
                         prompt_messages=prompt_messages,
@@ -903,12 +1052,13 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                         ),
                     )
                 
-                if current_tool_name and current_tool_id and current_tool_params and not tool_calls:
+                fallback_params = tool_params_by_id.get(current_tool_id or "", "")
+                if current_tool_name and current_tool_id and fallback_params and not tool_calls:
                     fallback_tool_call = AssistantPromptMessage.ToolCall(
                         id=current_tool_id,
                         type="function",
                         function=AssistantPromptMessage.ToolCall.ToolCallFunction(
-                            name=current_tool_name, arguments=current_tool_params
+                            name=current_tool_name, arguments=fallback_params
                         ),
                     )
                     tool_calls.append(fallback_tool_call)
@@ -923,6 +1073,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                     input_tokens,
                     cache_creation_input_tokens,
                     cache_read_input_tokens,
+                    cache_creation_5m_input_tokens,
+                    cache_creation_1h_input_tokens,
+                    self._cache_write_fallback_multiplier(),
                 )
                 
                 usage = super()._calc_response_usage(
@@ -979,8 +1132,9 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         making the code more maintainable and following Fluent Python principles.
         """
         caching_handler = PromptCachingHandler(
-            prompt_messages, 
-            enable_system_cache=self._system_cache_enabled
+            prompt_messages,
+            enable_system_cache=self._system_cache_enabled,
+            cache_control=self._cache_control(),
         )
         system = caching_handler.get_system_prompt()
         
@@ -1043,7 +1197,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
                 "content": [{
                     "type": "text",
                     "text": text,
-                    "cache_control": {"type": "ephemeral"}
+                    "cache_control": self._cache_control(),
                 }]
             }
         return {"role": "user", "content": text}
@@ -1085,7 +1239,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             "text": content.data
         }
         if self._should_cache_text(content.data):
-            result["cache_control"] = {"type": "ephemeral"}
+            result["cache_control"] = self._cache_control()
         return result
     
     def _create_image_content(self, content: ImagePromptMessageContent) -> dict:
@@ -1110,7 +1264,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         }
         
         if self._image_cache_enabled:
-            result["cache_control"] = {"type": "ephemeral"}
+            result["cache_control"] = self._cache_control()
         
         return result
     
@@ -1165,7 +1319,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         }
         
         if self._document_cache_enabled:
-            result["cache_control"] = {"type": "ephemeral"}
+            result["cache_control"] = self._cache_control()
         
         return result
     
@@ -1186,18 +1340,34 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             content.extend(self.previous_thinking_blocks)
             content.extend(self.previous_redacted_thinking_blocks)
         
-        # Process tool calls or content
+        # Dify stores assistant text and tool calls separately; Anthropic expects the next
+        # user tool_result message to immediately follow the assistant tool_use turn.
+        # Keep assistant prose before tool_use so no text lands between tool_use and tool_result.
+        # https://platform.claude.com/docs/en/agents-and-tools/tool-use/handle-tool-calls
+        content.extend(self._create_assistant_text_contents(message))
         if message.tool_calls:
             content.extend(
                 self._create_tool_use_content(tool_call)
                 for tool_call in message.tool_calls
             )
-        elif message.content:
-            if isinstance(message.content, str):
-                content.append(self._create_assistant_text_content(message.content))
-        
+
         return {"role": "assistant", "content": content}
     
+    def _create_assistant_text_contents(self, message: AssistantPromptMessage) -> list[dict]:
+        if not message.content:
+            return []
+
+        if isinstance(message.content, str):
+            if not message.content.strip():
+                return []
+            return [self._create_assistant_text_content(message.content)]
+
+        return [
+            self._create_assistant_text_content(content.data)
+            for content in message.content
+            if isinstance(content, TextPromptMessageContent) and content.data and content.data.strip()
+        ]
+
     def _create_tool_use_content(self, tool_call: AssistantPromptMessage.ToolCall) -> dict:
         """Create tool use content dict."""
         result = {
@@ -1208,7 +1378,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         }
         
         if self._tool_results_cache_enabled:
-            result["cache_control"] = {"type": "ephemeral"}
+            result["cache_control"] = self._cache_control()
         
         return result
     
@@ -1218,7 +1388,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
             return {
                 "type": "text",
                 "text": text,
-                "cache_control": {"type": "ephemeral"}
+                "cache_control": self._cache_control(),
             }
         return {"type": "text", "text": text}
     
@@ -1231,7 +1401,7 @@ class AnthropicLargeLanguageModel(LargeLanguageModel):
         }
         
         if self._tool_results_cache_enabled:
-            tool_result_content["cache_control"] = {"type": "ephemeral"}
+            tool_result_content["cache_control"] = self._cache_control()
         
         return {
             "role": "user",
