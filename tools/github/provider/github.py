@@ -1,4 +1,5 @@
 import secrets
+import time
 import urllib.parse
 from collections.abc import Mapping
 from typing import Any
@@ -60,10 +61,50 @@ class GithubProvider(ToolProvider):
         self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
     ) -> ToolOAuthCredentials:
         """
-        Refresh the credentials
+        Refresh the GitHub OAuth access token via GitHub's token endpoint.
+
+        GitHub's OAuth Apps issue refresh tokens only when the app is configured
+        to allow it (newer GitHub Apps default behavior). If no refresh_token
+        is present (classic OAuth Apps with non-expiring tokens, or the
+        ``credentials_for_provider`` flow that bypasses OAuth), return
+        credentials unchanged with ``expires_at=-1`` to signal "never expires" —
+        this preserves backwards compatibility.
         """
-        # TODO: Implement the refresh credentials logic
-        return ToolOAuthCredentials(credentials=credentials, expires_at=-1)
+        refresh_token = credentials.get("refresh_token")
+        if not refresh_token:
+            # No refresh token available: token does not expire. Pass through.
+            return ToolOAuthCredentials(credentials=credentials, expires_at=-1)
+
+        data = {
+            "client_id": system_credentials["client_id"],
+            "client_secret": system_credentials["client_secret"],
+            "grant_type": "refresh_token",
+            "refresh_token": refresh_token,
+        }
+        headers = {"Accept": "application/json"}
+        response = requests.post(self._TOKEN_URL, data=data, headers=headers, timeout=10)
+        response_json = response.json()
+        if response.status_code >= 400 or "access_token" not in response_json:
+            raise ToolProviderOAuthError(
+                f"GitHub OAuth refresh failed: "
+                f"{response_json.get('error_description') or response_json.get('error') or response.text}"
+            )
+
+        new_credentials = {
+            "access_tokens": response_json["access_token"],
+            # GitHub may rotate the refresh token; keep the new one if returned,
+            # else keep the previous refresh_token as a fallback.
+            "refresh_token": response_json.get("refresh_token", refresh_token),
+        }
+        expires_in = response_json.get("expires_in")
+        if expires_in is None:
+            # No expiry — backwards-compatible with non-expiring OAuth Apps.
+            expires_at = -1
+        else:
+            # Refresh 60s before expiry to avoid edge-case 401s.
+            expires_at = max(int(expires_in) - 60, 60) + int(time.time())
+
+        return ToolOAuthCredentials(credentials=new_credentials, expires_at=expires_at)
 
     def _validate_credentials(self, credentials: dict) -> None:
         try:
