@@ -14,20 +14,30 @@ SOMARK_OFFICIAL_BASE_URLS = (
 
 
 class SoMarkProvider(ToolProvider):
+    @staticmethod
+    def _resolve_base_url(credentials: dict[str, Any]) -> str:
+        """Resolve the actual base_url from credentials.
+
+        If base_url is 'custom', reads from custom_base_url instead.
+        """
+        base_url = (credentials.get("base_url") or "").strip()
+        if base_url == "custom":
+            base_url = (credentials.get("custom_base_url") or "").strip()
+        return base_url
+
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
         """
         Validate credentials.
         """
-        base_url = (credentials.get("base_url") or "").strip()
+        base_url = self._resolve_base_url(credentials)
         api_key = (credentials.get("api_key") or "")
 
         if not base_url:
             raise ValueError("Base URL is required")
 
-
         base_url = base_url.rstrip("/")
 
-        if  not base_url.startswith(("http://", "https://")):
+        if not base_url.startswith(("http://", "https://")):
             raise ValueError("Base URL must start with http:// or https://")
 
         if base_url in SOMARK_OFFICIAL_BASE_URLS and not api_key:
