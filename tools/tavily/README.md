@@ -32,6 +32,8 @@ Go to **Tools → Tavily → Authentication** and paste your API key.
 
 ![](./_assets/tavilytool.gif)
 
+Tavily requests from the Dify integration include `X-Client-Name: dify` for client attribution.
+
 ### 4. Add a Tool node to your flow
 
 Add a Node → Tool → Tavily. All five actions are available:
