@@ -55,7 +55,26 @@ class GithubProvider(ToolProvider):
         if not access_tokens:
             raise ToolProviderOAuthError(f"Error in GitHub OAuth: {response_json}")
 
-        return ToolOAuthCredentials(credentials={"access_tokens": access_tokens}, expires_at=-1)
+        # Persist refresh_token + expires_in alongside access_tokens so that
+        # the framework's later call to _oauth_refresh_credentials has the
+        # information it needs. Without this, refresh_token is silently
+        # dropped and the refresh code path is unreachable even when the
+        # GitHub OAuth App is configured to issue refresh tokens.
+        credentials: dict[str, Any] = {"access_tokens": access_tokens}
+        refresh_token = response_json.get("refresh_token")
+        if refresh_token:
+            credentials["refresh_token"] = refresh_token
+        expires_in = response_json.get("expires_in")
+        if expires_in is not None:
+            try:
+                credentials["expires_in"] = int(expires_in)
+                expires_at = int(expires_in) - 60 + int(time.time())
+            except (TypeError, ValueError):
+                expires_at = -1
+        else:
+            expires_at = -1
+
+        return ToolOAuthCredentials(credentials=credentials, expires_at=expires_at)
 
     def _oauth_refresh_credentials(
         self, redirect_uri: str, system_credentials: Mapping[str, Any], credentials: Mapping[str, Any]
