@@ -17,7 +17,7 @@ class TavilyMap:
     """
 
     def __init__(self, api_key: str, project_id: str | None = None) -> None:
-        self.client = TavilyClient(api_key=api_key, project_id=project_id)
+        self.client = TavilyClient(api_key=api_key, project_id=project_id, client_name="dify")
 
     def map(self, params: dict[str, Any]) -> dict:
         """
