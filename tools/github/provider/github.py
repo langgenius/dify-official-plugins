@@ -83,11 +83,39 @@ class GithubProvider(ToolProvider):
         }
         headers = {"Accept": "application/json"}
         response = requests.post(self._TOKEN_URL, data=data, headers=headers, timeout=10)
-        response_json = response.json()
-        if response.status_code >= 400 or "access_token" not in response_json:
+
+        # Surface non-2xx responses as ToolProviderOAuthError without first
+        # attempting to parse the body as JSON — a Cloudflare 5xx HTML page
+        # or a network-level 502 should not raise a JSONDecodeError. When the
+        # body IS valid JSON, prefer the structured error fields; otherwise
+        # fall back to a status-and-snippet message.
+        if response.status_code >= 400:
+            try:
+                error_body = response.json()
+            except ValueError:
+                error_body = None
+            detail = (
+                (error_body or {}).get("error_description")
+                or (error_body or {}).get("error")
+                or response.text[:200].strip()
+            )
+            raise ToolProviderOAuthError(f"GitHub OAuth refresh failed: {detail}")
+
+        # Status was 2xx; parse the JSON body. If GitHub somehow returned a
+        # non-JSON success body (e.g. proxy HTML page), surface that as a
+        # provider error rather than letting the AttributeError on .get()
+        # propagate.
+        try:
+            response_json = response.json()
+        except ValueError:
             raise ToolProviderOAuthError(
-                f"GitHub OAuth refresh failed: "
-                f"{response_json.get('error_description') or response_json.get('error') or response.text}"
+                f"GitHub OAuth refresh returned a non-JSON success body: "
+                f"status={response.status_code} body={response.text[:200].strip()!r}"
+            )
+        if not isinstance(response_json, dict) or "access_token" not in response_json:
+            raise ToolProviderOAuthError(
+                f"GitHub OAuth refresh response missing access_token: "
+                f"{response.text[:200].strip()!r}"
             )
 
         new_credentials = {
