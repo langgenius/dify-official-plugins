@@ -4,39 +4,55 @@ import requests
 from dify_plugin import ToolProvider
 
 
-SOMARK_API_BASE_URL = "https://somark.tech/api/v1"
+# Official SoMark API base URLs by region:
+#   - somark.cn  : Mainland China
+#   - somark.ai  : Taiwan (China), Hong Kong (China), Macau (China), and other overseas regions
+SOMARK_OFFICIAL_BASE_URLS = (
+    "https://somark.cn/api/v1",
+    "https://somark.ai/api/v1",
+)
 
 
 class SoMarkProvider(ToolProvider):
+    @staticmethod
+    def _resolve_base_url(credentials: dict[str, Any]) -> str:
+        """Resolve the actual base_url from credentials.
+
+        If base_url is 'custom', reads from custom_base_url instead.
+        """
+        base_url = (credentials.get("base_url") or "").strip()
+        if base_url == "custom":
+            base_url = (credentials.get("custom_base_url") or "").strip()
+        return base_url
+
     def _validate_credentials(self, credentials: dict[str, Any]) -> None:
         """
         Validate credentials.
         """
-        base_url = (credentials.get("base_url") or "").strip()
+        base_url = self._resolve_base_url(credentials)
         api_key = (credentials.get("api_key") or "")
 
         if not base_url:
             raise ValueError("Base URL is required")
 
-
         base_url = base_url.rstrip("/")
 
-        if  not base_url.startswith(("http://", "https://")):
+        if not base_url.startswith(("http://", "https://")):
             raise ValueError("Base URL must start with http:// or https://")
 
-        if base_url == SOMARK_API_BASE_URL and not api_key:
+        if base_url in SOMARK_OFFICIAL_BASE_URLS and not api_key:
             raise ValueError("API Key is required when using the SoMark API")
 
-        if base_url == SOMARK_API_BASE_URL:
-            self._validate_api_key_via_official(api_key)
+        if base_url in SOMARK_OFFICIAL_BASE_URLS:
+            self._validate_api_key_via_official(base_url, api_key)
 
     
 
     @staticmethod
-    def _validate_api_key_via_official(api_key: str) -> None:
+    def _validate_api_key_via_official(base_url: str, api_key: str) -> None:
         try:
             resp = requests.post(
-                f"{SOMARK_API_BASE_URL}/usage",
+                f"{base_url}/usage",
                 data={"api_key": api_key},
                 timeout=10,
             )
