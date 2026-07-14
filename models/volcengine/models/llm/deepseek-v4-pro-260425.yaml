@@ -1,0 +1,35 @@
+model: deepseek-v4-pro-260425
+label:
+  en_US: deepseek-v4-pro-260425
+  zh_Hans: deepseek-v4-pro-260425
+model_type: llm
+features:
+  - agent-thought
+  - tool-call
+  - stream-tool-call
+  - multi-tool-call
+model_properties:
+  mode: chat
+  context_size: 1048576
+parameter_rules:
+  - name: reasoning_effort
+    label:
+      zh_Hans: 思考强度
+      en_US: Reasoning Effort
+    type: string
+    required: false
+    default: medium
+    options:
+      - minimal
+      - low
+      - medium
+      - high
+      - max
+    help:
+      zh_Hans: 控制思维链长度，平衡效果、时延与成本。minimal 关闭思考直接回答；low 轻量思考侧重快速响应；medium 均衡模式；high 深度分析处理复杂问题；max 最高程度思考适配高难度推理任务。
+      en_US: Controls chain-of-thought length to balance quality, latency, and cost. minimal answers directly without thinking; low favors fast response; medium is balanced; high enables deep analysis; max maximizes reasoning for hardest tasks.
+pricing:
+  input: "12"
+  output: "24"
+  unit: "0.000001"
+  currency: RMB

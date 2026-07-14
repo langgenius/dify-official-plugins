@@ -229,7 +229,9 @@ class ChatCompletionRequest(RequestModel):
     stop: list[str] | None = None
     user: str | None = None
     thinking: ChatThinking | None = None
-    reasoning_effort: Literal["minimal"] | None = None
+    reasoning_effort: (
+        Literal["none", "minimal", "low", "medium", "high", "xhigh", "max"] | None
+    ) = None
     tools: list[ChatTool] | None = None
     tool_choice: ChatToolChoice | None = None
     parallel_tool_calls: bool | None = None
@@ -714,7 +716,7 @@ def build_chat_completion_request(
     stream_options: ChatStreamOptions | None = None,
 ) -> ChatCompletionRequest:
     thinking: ChatThinking | None = None
-    reasoning_effort: Literal["minimal"] | None = None
+    reasoning_effort = None
     thinking_type = model_parameters.get("thinking")
     if thinking_type:
         thinking = build_model(
@@ -724,6 +726,10 @@ def build_chat_completion_request(
         )
         if thinking_type == "disabled":
             reasoning_effort = "minimal"
+
+    effort = model_parameters.get("reasoning_effort")
+    if effort:
+        reasoning_effort = effort
 
     return build_model(
         ChatCompletionRequest,
