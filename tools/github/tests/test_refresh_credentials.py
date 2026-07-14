@@ -1,6 +1,7 @@
 """Unit tests for the GitHub OAuth refresh credentials method.
 
-Covers four branches of ``GithubProvider._oauth_refresh_credentials``:
+Covers the full surface of ``GithubProvider._oauth_refresh_credentials`` and
+the initial-exchange surface of ``GithubProvider._oauth_get_credentials``:
 
 1. No ``refresh_token`` in credentials — return unchanged with
    ``expires_at=-1`` (backwards-compatible for classic OAuth Apps with
@@ -8,13 +9,24 @@ Covers four branches of ``GithubProvider._oauth_refresh_credentials``:
    flow).
 2. Successful refresh — return new ``access_tokens``, rotate the
    ``refresh_token`` if GitHub returned one, compute ``expires_at``
-   from the response's ``expires_in`` field (minus a 60s safety margin).
-3. Refresh failure (HTTP 400 or error body) — raise
+   from the response's ``expires_in`` field (clamped to never exceed
+   the real expiry).
+3. Refresh failure (HTTP 400/502 with JSON OR HTML body) — raise
    ``ToolProviderOAuthError`` so the framework surfaces a clear error
-   instead of silently keeping a dead token.
+   instead of silently keeping a dead token, and never raise
+   ``JSONDecodeError`` from inside the provider.
 4. Successful refresh with no ``expires_in`` in the response — treat the
    token as non-expiring (``expires_at=-1``), preserving backwards
    compatibility with OAuth Apps that don't expose the field.
+5. Tiny ``expires_in`` (smaller than the safety margin) — clamp the
+   safety buffer so the scheduled refresh does not fall after the
+   token's real expiry.
+6. ``expires_in=0`` — signal ``expires_at=-1`` for an immediate refresh.
+7. ``_oauth_get_credentials`` persists ``refresh_token`` and
+   ``expires_in`` from the initial exchange so the refresh code path
+   is reachable.
+8. ``_oauth_get_credentials`` without ``refresh_token`` keeps the
+   legacy single-key credentials shape and ``expires_at=-1``.
 
 All tests stub ``requests.post`` to avoid hitting the network.
 """
@@ -58,6 +70,28 @@ pytest = _PytestStub()
 
 
 # Stub dify_plugin so the provider module imports without the SDK installed.
+_fake_requests = types.ModuleType("requests")
+
+
+class _FakeRequestsPost:
+    def __call__(self, *args, **kwargs):  # pragma: no cover - never used directly
+        raise RuntimeError("requests.post was not stubbed in this test")
+
+
+_fake_requests.post = _FakeRequestsPost()  # type: ignore[attr-defined]
+sys.modules.setdefault("requests", _fake_requests)
+
+_fake_werkzeug = types.ModuleType("werkzeug")
+
+
+class _FakeWerkzeugRequest:
+    def __init__(self, *args, **kwargs):
+        pass
+
+
+_fake_werkzeug.Request = _FakeWerkzeugRequest  # type: ignore[attr-defined]
+sys.modules.setdefault("werkzeug", _fake_werkzeug)
+
 _fake_dify = types.ModuleType("dify_plugin")
 _fake_oauth = types.ModuleType("dify_plugin.entities.oauth")
 
@@ -134,7 +168,7 @@ def test_no_refresh_token_returns_credentials_unchanged_with_never_expires() -> 
 
 def test_successful_refresh_returns_new_access_token_and_expires_at() -> None:
     """Successful refresh returns new access_tokens, optionally rotated refresh_token,
-    and expires_at derived from expires_in minus a 60s safety margin.
+    and expires_at computed from expires_in with a clamped safety buffer.
     """
     provider = GithubProvider.__new__(GithubProvider)
     credentials = {
@@ -157,8 +191,9 @@ def test_successful_refresh_returns_new_access_token_and_expires_at() -> None:
 
     assert result.credentials["access_tokens"] == "new-token"
     assert result.credentials["refresh_token"] == "new-refresh"
-    # expires_in=3600, safety_margin=60 -> expires_at = 1_000_000 + (3600 - 60) = 1_003_540
-    assert result.expires_at == 1_003_540
+    # expires_in=3600 -> safety = min(60, max(3600 - 1, 0)) = 60
+    # expires_at = 1_000_000 + 60 = 1_000_060
+    assert result.expires_at == 1_000_060
 
 
 def test_successful_refresh_without_new_refresh_token_keeps_old_one() -> None:
@@ -229,12 +264,15 @@ def test_refresh_failure_missing_access_token_raises_oauth_error() -> None:
             )
 
 
-def test_expires_in_smaller_than_safety_margin_floors_to_minimum_window() -> None:
-    """Tiny expires_in (less than 60s safety) should still produce a positive expires_at.
+def test_expires_in_smaller_than_safety_margin_clamps_to_real_expiry() -> None:
+    """Tiny expires_in must clamp the safety buffer so the scheduled refresh
+    never falls after the token's real expiry.
 
-    E.g. expires_in=5 means GitHub's token is already effectively expired;
-    we floor to a 60s window so the framework has at least 1 minute to
-    call the next refresh.
+    E.g. expires_in=5 means GitHub's token is already effectively expired.
+    With the old formula (max(int(expires_in) - 60, 60) + now) we would have
+    scheduled the refresh 60s in the future — but the token expired 55s ago.
+    The new formula picks min(60, max(int(expires_in) - 1, 0)) = 4 and
+    schedules a refresh 4s out, before the token is fully stale.
     """
     provider = GithubProvider.__new__(GithubProvider)
     credentials = {"access_tokens": "old", "refresh_token": "r"}
@@ -248,5 +286,130 @@ def test_expires_in_smaller_than_safety_margin_floors_to_minimum_window() -> Non
             credentials=credentials,
         )
 
-    # max(5 - 60, 60) + 1_000_000 = 60 + 1_000_000 = 1_000_060
-    assert result.expires_at == 1_000_060
+    # min(60, max(5 - 1, 0)) + 1_000_000 = 4 + 1_000_000 = 1_000_004
+    assert result.expires_at == 1_000_004
+
+
+def test_expires_in_zero_signals_immediate_refresh() -> None:
+    """When GitHub returns expires_in=0 the token is already expired; we
+    must return expires_at=-1 so the framework refreshes immediately rather
+    than scheduling the refresh at a stale `now + 0` timestamp.
+    """
+    provider = GithubProvider.__new__(GithubProvider)
+    credentials = {"access_tokens": "old", "refresh_token": "r"}
+    new_payload = {"access_token": "new", "expires_in": 0}
+    with patch.object(
+        github_module.requests, "post", return_value=_FakeResponse(new_payload, 200)
+    ):
+        result = provider._oauth_refresh_credentials(
+            redirect_uri="https://example.com/cb",
+            system_credentials={"client_id": "cid", "client_secret": "csec"},
+            credentials=credentials,
+        )
+
+    assert result.expires_at == -1
+
+
+class _HtmlResponse(_FakeResponse):
+    """A non-JSON body that returns HTML when .json() is called."""
+
+    def __init__(self, status_code: int, body: str):
+        super().__init__(payload=None, status_code=status_code, text=body)
+
+    def json(self):
+        raise ValueError(f"Expecting value: line 1 column 1 (char 0) — body={self.text!r}")
+
+
+def test_refresh_failure_http_400_with_html_body_surfaces_snippet() -> None:
+    """An HTTP 400 with an HTML error page must surface as ToolProviderOAuthError
+    with the response status + a snippet of the body — not a JSONDecodeError.
+    """
+    provider = GithubProvider.__new__(GithubProvider)
+    credentials = {"access_tokens": "old", "refresh_token": "r"}
+    html = "<html><body>400 Bad Request — nginx</body></html>"
+    with patch.object(
+        github_module.requests, "post",
+        return_value=_HtmlResponse(400, html),
+    ):
+        with pytest.raises(_FakeToolProviderOAuthError, match="nginx"):
+            provider._oauth_refresh_credentials(
+                redirect_uri="https://example.com/cb",
+                system_credentials={"client_id": "cid", "client_secret": "csec"},
+                credentials=credentials,
+            )
+
+
+def test_refresh_failure_http_502_with_empty_body_surfaces_snippet() -> None:
+    """An HTTP 502 with an empty body must surface as ToolProviderOAuthError
+    instead of raising a JSONDecodeError or returning silently.
+    """
+    provider = GithubProvider.__new__(GithubProvider)
+    credentials = {"access_tokens": "old", "refresh_token": "r"}
+    with patch.object(
+        github_module.requests, "post",
+        return_value=_HtmlResponse(502, ""),
+    ):
+        with pytest.raises(_FakeToolProviderOAuthError, match="GitHub OAuth refresh failed"):
+            provider._oauth_refresh_credentials(
+                redirect_uri="https://example.com/cb",
+                system_credentials={"client_id": "cid", "client_secret": "csec"},
+                credentials=credentials,
+            )
+
+
+class _WerkzeugRequestStub:
+    """Minimal stand-in for werkzeug.Request used by _oauth_get_credentials."""
+
+    def __init__(self, args):
+        self.args = args
+
+
+def test_initial_auth_persists_refresh_token_and_expires_in() -> None:
+    """`_oauth_get_credentials` must persist `refresh_token` and `expires_in`
+    alongside `access_tokens`, otherwise the refresh code path added in this
+    PR is unreachable for users who authenticate via a GitHub OAuth App that
+    actually issues refresh tokens.
+    """
+    provider = GithubProvider.__new__(GithubProvider)
+    payload = {
+        "access_token": "new-access",
+        "refresh_token": "new-refresh",
+        "expires_in": 3600,
+        "scope": "read:user",
+        "token_type": "bearer",
+    }
+    with patch.object(
+        github_module.requests, "post", return_value=_FakeResponse(payload, 200)
+    ), patch.object(github_module.time, "time", return_value=2_000_000):
+        result = provider._oauth_get_credentials(
+            redirect_uri="https://example.com/cb",
+            system_credentials={"client_id": "cid", "client_secret": "csec"},
+            request=_WerkzeugRequestStub({"code": "abc123"}),
+        )
+
+    assert result.credentials["access_tokens"] == "new-access"
+    assert result.credentials["refresh_token"] == "new-refresh"
+    assert result.credentials["expires_in"] == 3600
+    # expires_at = now + expires_in - 60 = 2_000_000 + 3600 - 60 = 2_003_540
+    assert result.expires_at == 2_003_540
+
+
+def test_initial_auth_without_refresh_token_keeps_legacy_behaviour() -> None:
+    """When the OAuth response omits `refresh_token` (classic OAuth App
+    without refresh-token support), `_oauth_get_credentials` must NOT
+    invent a key — only `access_tokens` should be present, and
+    `expires_at` should fall back to -1 (never expires).
+    """
+    provider = GithubProvider.__new__(GithubProvider)
+    payload = {"access_token": "new-access"}  # no refresh_token, no expires_in
+    with patch.object(
+        github_module.requests, "post", return_value=_FakeResponse(payload, 200)
+    ):
+        result = provider._oauth_get_credentials(
+            redirect_uri="https://example.com/cb",
+            system_credentials={"client_id": "cid", "client_secret": "csec"},
+            request=_WerkzeugRequestStub({"code": "abc123"}),
+        )
+
+    assert result.credentials == {"access_tokens": "new-access"}
+    assert result.expires_at == -1
