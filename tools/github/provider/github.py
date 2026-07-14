@@ -148,8 +148,13 @@ class GithubProvider(ToolProvider):
             # No expiry — backwards-compatible with non-expiring OAuth Apps.
             expires_at = -1
         else:
-            # Refresh 60s before expiry to avoid edge-case 401s.
-            expires_at = max(int(expires_in) - 60, 60) + int(time.time())
+            # Clamp the safety buffer so we never schedule a refresh after the
+            # token's real expiry. expires_in=5 (or any value smaller than the
+            # 60s buffer) means the token is effectively expired: schedule an
+            # immediate refresh instead of pretending we still have 60 seconds.
+            now = int(time.time())
+            safety = min(60, max(int(expires_in) - 1, 0))
+            expires_at = now + safety if safety > 0 else -1
 
         return ToolOAuthCredentials(credentials=new_credentials, expires_at=expires_at)
 
