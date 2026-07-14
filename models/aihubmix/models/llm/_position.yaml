@@ -12,6 +12,7 @@
 - doubao-seed-2-1-turbo
 - grok-build-0.1
 - qwen3.7-max
+- qwen3.7-plus
 - gemini-3.5-flash
 - grok-4.3
 - gpt-5.5
@@ -102,6 +103,7 @@
 - coding-minimax-m2.7
 - coding-minimax-m2.7-highspeed
 - o3
+- step-3.7-flash
 - step-3.5-flash
 - glm-4.6
 - kimi-for-coding-free

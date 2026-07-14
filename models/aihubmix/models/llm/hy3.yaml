@@ -11,34 +11,21 @@ model_properties:
   mode: chat
   context_size: 256000
 parameter_rules:
-  - name: thinking
+  - name: reasoning_effort
     label:
-      zh_Hans: 推理模式
-      en_US: Thinking Mode
-    type: boolean
-    default: false
+      zh_Hans: 推理深度
+      en_US: Reasoning Effort
+    type: string
     required: false
+    default: none
+    options:
+      - none
+      - low
+      - medium
+      - high
     help:
-      zh_Hans: 控制模型的推理能力。开启后使用深度推理模式。
-      en_US: Controls the model's thinking capability. Enables deep reasoning when turned on.
-  - name: thinking_budget
-    label:
-      zh_Hans: 推理预算
-      en_US: Thinking Budget
-    type: int
-    default: 1024
-    min: 0
-    max: 32000
-    required: false
-  - name: temperature
-    use_template: temperature
-  - name: top_p
-    use_template: top_p
-  - name: max_tokens
-    use_template: max_tokens
-    default: 8192
-    min: 1
-    max: 128000
+      zh_Hans: 控制推理深度。none 关闭思考；low 轻量推理（速度快，适合简单任务）、medium 平衡（适合日常适中复杂任务）、high 深度推理（延迟与成本最高，适合高难度数学/编程/复杂逻辑）。
+      en_US: Controls reasoning depth. none disables thinking; low = lightweight (fast, simple tasks), medium = balanced (everyday tasks), high = deep reasoning (highest latency/cost, for hard math/coding/logic).
   - name: response_format
     label:
       zh_Hans: 回复格式
@@ -52,7 +39,7 @@ parameter_rules:
   - name: json_schema
     use_template: json_schema
 pricing:
-  input: '0.1562'
-  output: '0.6248'
-  unit: '0.000001'
+  input: "0.1562"
+  output: "0.6248"
+  unit: "0.000001"
   currency: USD
