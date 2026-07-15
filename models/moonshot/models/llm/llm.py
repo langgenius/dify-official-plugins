@@ -1,7 +1,8 @@
 
+import json
 import re
 from collections.abc import Generator
-from typing import Optional, Union, cast
+from typing import Optional, Union
 
 from dify_plugin import OAICompatLargeLanguageModel
 
@@ -56,6 +57,23 @@ class MoonshotLargeLanguageModel(OAICompatLargeLanguageModel):
                 model_parameters["thinking"] = {"type": "enabled"}
             else:
                 model_parameters["thinking"] = {"type": "disabled"}
+
+        response_format = model_parameters.get("response_format")
+        if response_format:
+            if response_format == "json_schema":
+                json_schema = model_parameters.get("json_schema")
+                if not json_schema:
+                    raise ValueError("Must define JSON Schema when the response format is json_schema")
+                try:
+                    schema = json.loads(json_schema)
+                except Exception:
+                    raise ValueError(f"not correct json_schema format: {json_schema}")
+                model_parameters.pop("json_schema")
+                model_parameters["response_format"] = {"type": "json_schema", "json_schema": schema}
+            else:
+                model_parameters["response_format"] = {"type": response_format}
+        elif "json_schema" in model_parameters:
+            del model_parameters["json_schema"]
 
         # Merge consecutive messages with the same role to strictly follow API specs
         prompt_messages = self._clean_messages(prompt_messages)
