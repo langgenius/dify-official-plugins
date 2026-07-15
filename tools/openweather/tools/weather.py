@@ -16,8 +16,10 @@ class OpenweatherTool(Tool):
         city = tool_parameters.get("city", "")
         if not city:
             yield self.create_text_message("Please tell me your city")
+            return
         if "api_key" not in self.runtime.credentials or not self.runtime.credentials.get("api_key"):
             yield self.create_text_message("OpenWeather API key is required.")
+            return
         units = tool_parameters.get("units", "metric")
         lang = tool_parameters.get("lang", "zh_cn")
         try:
