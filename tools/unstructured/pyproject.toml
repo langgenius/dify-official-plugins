@@ -1,17 +1,22 @@
 [project]
 name = "unstructured"
-version = "0.1.0"
-description = "Add your description here"
+version = "0.0.10"
+description = "Dify tools for Unstructured Transform and the legacy Partition API"
 readme = "README.md"
 requires-python = ">=3.12"
 
 # Refresh the lockfile with `uv lock`; export pip-compatible requirements only when needed.
 dependencies = [
     "dify_plugin>=0.9.0",
+    "httpx>=0.28.1",
+    "mcp>=1.26.0,<2",
     "requests>=2.34.2",
     "unstructured-client>=0.44.0",
 ]
 
 # uv run black . -C -l 100 && uv run ruff check --fix
 [dependency-groups]
-dev = []
+dev = ["pytest>=8.4.2"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

@@ -1,0 +1,209 @@
+identity:
+  name: transform_document
+  author: langgenius
+  label:
+    en_US: Transform Document
+    zh_Hans: 转换文档
+    ja_JP: ドキュメントを変換
+    pt_BR: Transformar documento
+description:
+  human:
+    en_US: Convert a document to Markdown, JSON, HTML, or text with optional enrichment, chunking, and embedding.
+    zh_Hans: 将文档转换为 Markdown、JSON、HTML 或文本，并可选择扩充、分块和嵌入。
+    ja_JP: ドキュメントを Markdown、JSON、HTML、またはテキストに変換し、必要に応じて拡充、チャンク化、埋め込みを行います。
+    pt_BR: Converta um documento em Markdown, JSON, HTML ou texto, com enriquecimento, fragmentacao e embeddings opcionais.
+  llm: Convert PDFs, DOCX, PPTX, HTML, images, and scanned documents into structured output. Can also enrich, chunk, and embed documents for RAG.
+parameters:
+  - name: file
+    type: file
+    required: false
+    label:
+      en_US: File
+      zh_Hans: 文件
+      ja_JP: ファイル
+      pt_BR: Arquivo
+    human_description:
+      en_US: A local file to transform. Provide either this field or a public URL.
+      zh_Hans: 要转换的本地文件。请提供此字段或公共 URL。
+      ja_JP: 変換するローカルファイル。このフィールドまたは公開 URL を指定します。
+      pt_BR: Um arquivo local para transformar. Informe este campo ou uma URL publica.
+    llm_description: A file to transform. Use this or file_url, but not both.
+    form: llm
+  - name: file_url
+    type: string
+    required: false
+    label:
+      en_US: Public File URL
+      zh_Hans: 公共文件 URL
+      ja_JP: 公開ファイル URL
+      pt_BR: URL publica do arquivo
+    human_description:
+      en_US: A public HTTP(S) URL for the document. Provide either this field or a file.
+      zh_Hans: 文档的公共 HTTP(S) URL。请提供此字段或文件。
+      ja_JP: ドキュメントの公開 HTTP(S) URL。このフィールドまたはファイルを指定します。
+      pt_BR: Uma URL HTTP(S) publica do documento. Informe este campo ou um arquivo.
+    llm_description: A public HTTP(S) document URL. Use this or file, but not both.
+    form: llm
+  - name: output_format
+    type: select
+    required: true
+    default: md
+    label:
+      en_US: Output Format
+      zh_Hans: 输出格式
+      ja_JP: 出力形式
+      pt_BR: Formato de saida
+    human_description:
+      en_US: Format returned by Transform.
+      zh_Hans: Transform 返回的格式。
+      ja_JP: Transform が返す形式。
+      pt_BR: Formato retornado pelo Transform.
+    llm_description: Output format. Use md for LLM context and json for structured downstream processing.
+    form: form
+    options:
+      - value: md
+        label:
+          en_US: Markdown
+      - value: json
+        label:
+          en_US: JSON
+      - value: html
+        label:
+          en_US: HTML
+      - value: txt
+        label:
+          en_US: Plain Text
+  - name: strategy
+    type: select
+    required: false
+    default: auto
+    label:
+      en_US: Parsing Strategy
+      zh_Hans: 解析策略
+      ja_JP: 解析戦略
+      pt_BR: Estrategia de analise
+    human_description:
+      en_US: Parsing strategy. Use hi_res for enrichments and scanned or layout-heavy documents.
+      zh_Hans: 解析策略。对于扩充、扫描件或布局复杂的文档，请使用 hi_res。
+      ja_JP: 解析戦略。拡充、スキャン、レイアウト重視の文書には hi_res を使用します。
+      pt_BR: Estrategia de analise. Use hi_res para enriquecimento e documentos digitalizados ou com layout complexo.
+    llm_description: Parsing strategy. auto is the default; hi_res is recommended when enrichments are enabled.
+    form: form
+    options:
+      - value: auto
+        label:
+          en_US: Auto
+      - value: fast
+        label:
+          en_US: Fast
+      - value: hi_res
+        label:
+          en_US: High Resolution
+      - value: vlm
+        label:
+          en_US: Vision Language Model
+  - name: languages
+    type: string
+    required: false
+    label:
+      en_US: Languages
+      zh_Hans: 语言
+      ja_JP: 言語
+      pt_BR: Idiomas
+    human_description:
+      en_US: Optional comma-separated language codes, such as eng,spa.
+      zh_Hans: 可选的逗号分隔语言代码，例如 eng,spa。
+      ja_JP: eng,spa のようなカンマ区切りの言語コード（任意）。
+      pt_BR: Codigos de idioma opcionais separados por virgula, como eng,spa.
+    llm_description: Optional comma-separated language codes used for parsing and OCR.
+    form: form
+  - name: enrichments
+    type: string
+    required: false
+    label:
+      en_US: Enrichments
+      zh_Hans: 扩充
+      ja_JP: 拡充
+      pt_BR: Enriquecimentos
+    human_description:
+      en_US: Optional comma-separated enrichments, such as table_to_html,image_description,ner.
+      zh_Hans: 可选的逗号分隔扩充，例如 table_to_html,image_description,ner。
+      ja_JP: table_to_html,image_description,ner のようなカンマ区切りの拡充（任意）。
+      pt_BR: Enriquecimentos opcionais separados por virgula, como table_to_html,image_description,ner.
+    llm_description: Optional comma-separated enrichments. Valid values are image_description, table_description, table_to_html, ner, and generative_ocr.
+    form: form
+  - name: chunking_strategy
+    type: select
+    required: false
+    label:
+      en_US: Chunking Strategy
+      zh_Hans: 分块策略
+      ja_JP: チャンク戦略
+      pt_BR: Estrategia de fragmentacao
+    human_description:
+      en_US: Optionally split the transformed elements into retrieval-sized chunks.
+      zh_Hans: 可选择将转换后的元素拆分为适合检索的块。
+      ja_JP: 変換された要素を検索向けサイズのチャンクに分割します（任意）。
+      pt_BR: Opcionalmente, divida os elementos transformados em fragmentos adequados para recuperacao.
+    llm_description: Optional chunking strategy for RAG preprocessing.
+    form: form
+    options:
+      - value: chunk_by_title
+        label:
+          en_US: By Title
+      - value: chunk_by_character
+        label:
+          en_US: By Character
+      - value: chunk_by_page
+        label:
+          en_US: By Page
+      - value: chunk_by_similarity
+        label:
+          en_US: By Similarity
+  - name: max_characters
+    type: number
+    required: false
+    default: 800
+    label:
+      en_US: Maximum Characters per Chunk
+      zh_Hans: 每块最大字符数
+      ja_JP: チャンクあたりの最大文字数
+      pt_BR: Maximo de caracteres por fragmento
+    human_description:
+      en_US: Maximum chunk size when a chunking strategy is selected.
+      zh_Hans: 选择分块策略时的最大块大小。
+      ja_JP: チャンク戦略を選択した場合の最大チャンクサイズ。
+      pt_BR: Tamanho maximo do fragmento quando uma estrategia e selecionada.
+    llm_description: Maximum characters per chunk.
+    form: form
+  - name: embed
+    type: boolean
+    required: false
+    default: false
+    label:
+      en_US: Generate Embeddings
+      zh_Hans: 生成嵌入
+      ja_JP: 埋め込みを生成
+      pt_BR: Gerar embeddings
+    human_description:
+      en_US: Attach embeddings for RAG. Best used with a chunking strategy.
+      zh_Hans: 为 RAG 附加嵌入。最好与分块策略一起使用。
+      ja_JP: RAG 用の埋め込みを付加します。チャンク戦略との併用を推奨します。
+      pt_BR: Anexe embeddings para RAG. Recomendado com uma estrategia de fragmentacao.
+    llm_description: Whether to add embeddings. Enable with chunking for RAG ingestion.
+    form: form
+output_schema:
+  type: object
+  properties:
+    job_id:
+      type: string
+      description: Transform job identifier
+    output_ref:
+      type: string
+      description: Durable reference to the Element JSON output
+    result:
+      type: string
+      description: Transformed document content
+extra:
+  python:
+    source: tools/transform.py

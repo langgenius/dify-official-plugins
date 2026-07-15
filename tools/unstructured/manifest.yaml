@@ -1,4 +1,4 @@
-version: 0.0.9
+version: 0.0.10
 type: plugin
 author: langgenius
 name: unstructured
@@ -8,10 +8,10 @@ label:
   zh_Hans: Unstructured
   pt_BR: Unstructured
 description:
-  en_US: unstructured
-  ja_JP: unstructured
-  zh_Hans: unstructured
-  pt_BR: unstructured
+  en_US: Convert documents into clean Markdown, JSON, HTML, or text, with optional RAG preprocessing.
+  ja_JP: ドキュメントを Markdown、JSON、HTML、またはテキストに変換し、RAG 前処理も実行できます。
+  zh_Hans: 将文档转换为 Markdown、JSON、HTML 或文本，并可执行 RAG 预处理。
+  pt_BR: Converta documentos em Markdown, JSON, HTML ou texto, com pre-processamento RAG opcional.
 icon: icon.svg
 resource:
   memory: 268435456
@@ -32,7 +32,7 @@ meta:
     version: "3.12"
     entrypoint: main
   minimum_dify_version: 1.9.0
-created_at: 2025-04-23T17:46:21.256715+08:00
+created_at: 2026-07-14T00:00:00.000000+00:00
 privacy: PRIVACY.md
 verified: false
 tags:
