@@ -18,9 +18,23 @@ class OpenweatherProvider(ToolProvider):
             try:
                 response = query_weather(api_key=apikey)
                 if response.status_code == 200:
-                    pass
-                else:
-                    raise ToolProviderCredentialValidationError(response.json().get("info"))
+                    return
+                # Non-200 status: surface a useful error before parsing the
+                # body as JSON. A non-JSON 4xx/5xx page (Cloudflare, proxy
+                # 502, etc.) would otherwise crash on response.json() and
+                # leak a JSONDecodeError to the user.
+                try:
+                    error_body = response.json()
+                    detail = (
+                        error_body.get("info")
+                        or error_body.get("message")
+                        or response.text[:200].strip()
+                    )
+                except ValueError:
+                    detail = f"HTTP {response.status_code}: {response.text[:200].strip()!r}"
+                raise ToolProviderCredentialValidationError(
+                    f"Openweather API rejected the key (HTTP {response.status_code}): {detail}"
+                )
             except Exception as e:
                 raise ToolProviderCredentialValidationError("Open weather API Key is invalid. {}".format(e))
         except Exception as e:
