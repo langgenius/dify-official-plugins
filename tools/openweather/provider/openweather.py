@@ -3,10 +3,10 @@ from dify_plugin.errors.tool import ToolProviderCredentialValidationError
 from dify_plugin import ToolProvider
 
 
-def query_weather(city="Beijing", units="metric", language="zh_cn", api_key=None):
+def query_weather(city="Beijing", units="metric", language="zh_cn", api_key=None, timeout=10):
     url = "https://api.openweathermap.org/data/2.5/weather"
     params = {"q": city, "appid": api_key, "units": units, "lang": language}
-    return requests.get(url, params=params)
+    return requests.get(url, params=params, timeout=timeout)
 
 
 class OpenweatherProvider(ToolProvider):
