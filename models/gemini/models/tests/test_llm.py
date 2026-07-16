@@ -498,6 +498,32 @@ class TestBuildGeminiContents:
         assert contents[0].role == "user"
         assert contents[0].parts[0].text == "Hello"
 
+    def test_system_message_with_text_parts_as_instruction(self):
+        """Test that text-only system message parts stay system instructions"""
+        messages = [
+            SystemPromptMessage(
+                content=[
+                    TextPromptMessageContent(data="You are a helpful assistant."),
+                    TextPromptMessageContent(data="Keep answers concise."),
+                ]
+            ),
+            UserPromptMessage(content="Hello"),
+        ]
+
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert [part.text for part in self.mock_config.system_instruction.parts] == [
+            "You are a helpful assistant.",
+            "Keep answers concise.",
+        ]
+        assert len(contents) == 1
+        assert contents[0].role == "user"
+        assert contents[0].parts[0].text == "Hello"
+
     def test_system_message_with_multimodal_content(self):
         """Test that system messages with list content are converted to user messages"""
         messages = [

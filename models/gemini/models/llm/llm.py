@@ -635,6 +635,14 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
             # List content -> convert to user message (Files[] compatibility)
             if isinstance(message.content, list):
+                if message.content and all(
+                    isinstance(part, TextPromptMessageContent)
+                    for part in message.content
+                ):
+                    config.system_instruction = types.Content(
+                        parts=build_parts(message.content)
+                    )
+                    return None
                 return types.Content(role="user", parts=build_parts(message.content))
 
         elif isinstance(message, ToolPromptMessage):
