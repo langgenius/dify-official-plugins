@@ -1024,6 +1024,22 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         user: Optional[str] = None,
     ) -> Union[LLMResult, Generator[LLMResultChunk]]:
         self._validate_prompt_messages(prompt_messages)
+        if (
+            model_parameters.get("response_format")
+            and prompt_messages
+            and isinstance(prompt_messages[0], SystemPromptMessage)
+            and isinstance(prompt_messages[0].content, list)
+        ):
+            # Give the SDK a scalar to wrap without replacing structured parts.
+            prompt_messages.insert(
+                0,
+                SystemPromptMessage(
+                    content=(
+                        "Please output a valid "
+                        f"{model_parameters['response_format']} object."
+                    )
+                ),
+            )
         return super()._code_block_mode_wrapper(
             model=model,
             credentials=credentials,

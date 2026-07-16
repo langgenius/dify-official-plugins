@@ -734,6 +734,38 @@ class TestBuildGeminiContents:
 
         mock_invoke.assert_not_called()
 
+    def test_code_block_wrapper_preserves_text_system_parts(self):
+        mock_client = Mock()
+
+        with (
+            patch("models.llm.llm.genai.Client", return_value=mock_client),
+            patch.object(self.llm, "_handle_generate_response"),
+        ):
+            self.llm._code_block_mode_wrapper(
+                model="gemini-pro",
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[
+                    SystemPromptMessage(
+                        content=[
+                            TextPromptMessageContent(data="First instruction."),
+                            TextPromptMessageContent(data="Second instruction."),
+                        ]
+                    ),
+                    UserPromptMessage(content="Question"),
+                ],
+                model_parameters={"response_format": "JSON"},
+                stream=False,
+            )
+
+        instruction = mock_client.models.generate_content.call_args.kwargs[
+            "config"
+        ].system_instruction
+        assert [part.text for part in instruction.parts[1:]] == [
+            "First instruction.",
+            "Second instruction.",
+        ]
+        assert "TextPromptMessageContent" not in instruction.parts[0].text
+
     def test_multiple_system_messages_are_combined(self):
         messages = [
             SystemPromptMessage(content="First instruction."),
