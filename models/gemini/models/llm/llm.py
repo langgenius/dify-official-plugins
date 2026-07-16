@@ -511,9 +511,11 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             if not isinstance(msg, SystemPromptMessage):
                 continue
 
+            if not msg.content:
+                continue
+
             if isinstance(msg.content, str):
-                if msg.content:
-                    system_parts.append(types.Part.from_text(text=msg.content))
+                system_parts.append(types.Part.from_text(text=msg.content))
                 continue
 
             for part in msg.content:
@@ -1068,6 +1070,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     if isinstance(config.system_instruction, types.Content)
                     else [types.Part.from_text(text=config.system_instruction)]
                 )
+                if isinstance(config.system_instruction, types.Content):
+                    config.system_instruction = None
                 contents = [
                     types.Content(
                         role="user",

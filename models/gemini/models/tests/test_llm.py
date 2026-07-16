@@ -524,6 +524,19 @@ class TestBuildGeminiContents:
         assert len(contents) == 1
         assert contents[0].parts[0].text == "Hello"
 
+    def test_empty_system_message_is_ignored(self):
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=[
+                SystemPromptMessage(),
+                UserPromptMessage(content="Hello"),
+            ],
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert self.mock_config.system_instruction is None
+        assert [part.text for part in contents[0].parts] == ["Hello"]
+
     def test_system_only_text_parts_reach_generation(self):
         mock_client = Mock()
 
@@ -549,6 +562,12 @@ class TestBuildGeminiContents:
             "First instruction.",
             "Second instruction.",
         ]
+        assert (
+            mock_client.models.generate_content_stream.call_args.kwargs[
+                "config"
+            ].system_instruction
+            is None
+        )
 
     def test_multiple_system_messages_are_combined(self):
         messages = [
