@@ -18,6 +18,7 @@ class TavilyDatasourceProvider(DatasourceProvider):
             headers = {
                 "Authorization": f"Bearer {api_key}",
                 "Content-Type": "application/json",
+                "X-Client-Name": "dify",
             }
             
             # Simple test search to validate API key

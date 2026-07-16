@@ -67,8 +67,8 @@ class PodcastAudioGeneratorTool(Tool):
         channel_mode = tool_parameters.get("channel_mode", "mono")
         output_format = tool_parameters.get("output_format", "wav")
         script_lines = [line for line in script.split("\n") if line.strip()]
-        if not host1_voice or not host2_voice:
-            raise ToolParameterValidationError("Host voices are required")
+        if not host1_voice:
+            raise ToolParameterValidationError("Host 1 voice is required")
         if not self.runtime or not self.runtime.credentials:
             raise ToolProviderCredentialValidationError("Tool runtime or credentials are missing")
 
@@ -100,8 +100,8 @@ class PodcastAudioGeneratorTool(Tool):
         with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
             futures = []
             for i, line in enumerate(script_lines):
-                voice = host1_voice if i % 2 == 0 else host2_voice
-                instructions = host1_instructions if i % 2 == 0 else host2_instructions
+                voice = host1_voice if (i % 2 == 0 or not host2_voice) else host2_voice
+                instructions = host1_instructions if (i % 2 == 0 or not host2_voice) else host2_instructions
                 future = executor.submit(self._generate_audio_segment, client, model, line, voice, instructions, i)
                 futures.append(future)
             audio_segments: list[Any] = [None] * len(script_lines)
@@ -116,7 +116,7 @@ class PodcastAudioGeneratorTool(Tool):
         if channel_mode == "stereo":
             for i, (audio, silence) in enumerate(audio_segments):
                 if audio:
-                    pan_value = -0.2 if i % 2 == 0 else 0.2
+                    pan_value = (-0.2 if i % 2 == 0 else 0.2) if host2_voice else 0.0
                     stereo_audio = audio.set_channels(2).pan(pan_value)
                     combined_audio += stereo_audio
                     if i < len(audio_segments) - 1 and silence:

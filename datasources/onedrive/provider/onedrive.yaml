@@ -32,6 +32,19 @@ oauth_schema:
         zh_Hans: 在 Azure 门户的应用注册中获取客户端凭证
         en_US: Get client credentials from Azure Portal App Registration
       url: https://portal.azure.com/#view/Microsoft_AAD_RegisteredApps/ApplicationsListBlade
+    - name: tenant_id
+      type: text-input
+      label:
+        zh_Hans: Tenant
+        en_US: Tenant
+      help:
+        zh_Hans: 填租户 ID 或域名用于单租户；填 organizations 仅允许组织账号；只有需要个人 Microsoft 账号时才填 common。
+        en_US: Use a tenant ID or domain for single-tenant apps; use organizations for work or school accounts only; use common only when personal Microsoft accounts are required.
+      placeholder:
+        zh_Hans: organizations 或租户 ID
+        en_US: organizations or your tenant ID
+      default: organizations
+      required: false
   credentials_schema:
     - name: access_token
       type: secret-input
@@ -43,16 +56,11 @@ oauth_schema:
       label:
         zh_Hans: Refresh Token
         en_US: Refresh Token
-    - name: client_id
-      type: secret-input
+    - name: tenant_id
+      type: text-input
       label:
-        zh_Hans: Client ID
-        en_US: Client ID
-    - name: client_secret
-      type: secret-input
-      label:
-        zh_Hans: Client Secret
-        en_US: Client Secret
+        zh_Hans: Tenant
+        en_US: Tenant
     - name: user_email
       type: secret-input
       label:

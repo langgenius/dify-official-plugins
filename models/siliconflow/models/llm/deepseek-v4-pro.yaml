@@ -47,6 +47,9 @@ parameter_rules:
     options:
       - text
       - json_object
+      - json_schema
+  - name: json_schema
+    use_template: json_schema
   - name: enable_thinking
     required: false
     type: boolean
@@ -57,6 +60,18 @@ parameter_rules:
     help:
       zh_Hans: 是否开启思考模式。
       en_US: Whether to enable thinking mode.
+  - name: reasoning_effort
+    label:
+      zh_Hans: 推理强度
+      en_US: Reasoning Effort
+    type: string
+    help:
+      zh_Hans: 仅在思考模式（enable_thinking 为 true）下生效，控制推理强度。high 为默认强度，max 为最大强度。
+      en_US: Effective only in thinking mode (enable_thinking is true). Controls reasoning effort. high is the default effort, max is the maximum effort.
+    required: false
+    options:
+      - high
+      - max
 pricing:
   input: "3"
   output: "6"

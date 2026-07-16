@@ -41,21 +41,33 @@ class StepfunLargeLanguageModel(OAICompatLargeLanguageModel):
     ) -> Union[LLMResult, Generator]:
         self._add_custom_parameters(credentials)
         self._add_function_call(model, credentials)
+        if model == "step-3.7-flash":
+            model_parameters = {**model_parameters, "reasoning_format": "deepseek-style"}
         user = user[:32] if user else None
-        return super()._invoke(model, credentials, prompt_messages, model_parameters, tools, stop, stream, user)
+        return super()._invoke(
+            model, credentials, prompt_messages, model_parameters, tools, stop, stream, user
+        )
 
     def validate_credentials(self, model: str, credentials: dict) -> None:
         self._add_custom_parameters(credentials)
         super().validate_credentials(model, credentials)
 
-    def get_customizable_model_schema(self, model: str, credentials: dict) -> Optional[AIModelEntity]:
+    def get_customizable_model_schema(
+        self, model: str, credentials: dict
+    ) -> Optional[AIModelEntity]:
         return AIModelEntity(
             model=model,
             label=I18nObject(en_us=model, zh_hans=model),
             model_type=ModelType.LLM,
-            features=[ModelFeature.TOOL_CALL, ModelFeature.MULTI_TOOL_CALL, ModelFeature.STREAM_TOOL_CALL]
-            if credentials.get("function_calling_type") == "tool_call"
-            else [],
+            features=(
+                [
+                    ModelFeature.TOOL_CALL,
+                    ModelFeature.MULTI_TOOL_CALL,
+                    ModelFeature.STREAM_TOOL_CALL,
+                ]
+                if credentials.get("function_calling_type") == "tool_call"
+                else []
+            ),
             fetch_from=FetchFrom.CUSTOMIZABLE_MODEL,
             model_properties={
                 ModelPropertyKey.CONTEXT_SIZE: int(credentials.get("context_size", 8000)),
@@ -97,7 +109,9 @@ class StepfunLargeLanguageModel(OAICompatLargeLanguageModel):
         ):
             credentials["function_calling_type"] = "tool_call"
 
-    def _convert_prompt_message_to_dict(self, message: PromptMessage, credentials: Optional[dict] = None) -> dict:
+    def _convert_prompt_message_to_dict(
+        self, message: PromptMessage, credentials: Optional[dict] = None
+    ) -> dict:
         """
         Convert PromptMessage to dict for OpenAI API format
         """
@@ -114,7 +128,20 @@ class StepfunLargeLanguageModel(OAICompatLargeLanguageModel):
                         sub_messages.append(sub_message_dict)
                     elif message_content.type == PromptMessageContentType.IMAGE:
                         message_content = cast(ImagePromptMessageContent, message_content)
-                        sub_message_dict = {"type": "image_url", "image_url": {"url": message_content.data}}
+                        sub_message_dict = {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": message_content.data,
+                                "detail": message_content.detail.value,
+                            },
+                        }
+                        sub_messages.append(sub_message_dict)
+                    elif message_content.type == PromptMessageContentType.VIDEO:
+                        message_content = cast(PromptMessageContent, message_content)
+                        sub_message_dict = {
+                            "type": "video_url",
+                            "video_url": {"url": message_content.data},
+                        }
                         sub_messages.append(sub_message_dict)
                 message_dict = {"role": "user", "content": sub_messages}
         elif isinstance(message, AssistantPromptMessage):
@@ -135,7 +162,11 @@ class StepfunLargeLanguageModel(OAICompatLargeLanguageModel):
                     )
         elif isinstance(message, ToolPromptMessage):
             message = cast(ToolPromptMessage, message)
-            message_dict = {"role": "tool", "content": message.content, "tool_call_id": message.tool_call_id}
+            message_dict = {
+                "role": "tool",
+                "content": message.content,
+                "tool_call_id": message.tool_call_id,
+            }
         elif isinstance(message, SystemPromptMessage):
             message = cast(SystemPromptMessage, message)
             message_dict = {"role": "system", "content": message.content}
@@ -145,7 +176,9 @@ class StepfunLargeLanguageModel(OAICompatLargeLanguageModel):
             message_dict["name"] = message.name
         return message_dict
 
-    def _extract_response_tool_calls(self, response_tool_calls: list[dict]) -> list[AssistantPromptMessage.ToolCall]:
+    def _extract_response_tool_calls(
+        self, response_tool_calls: list[dict]
+    ) -> list[AssistantPromptMessage.ToolCall]:
         """
         Extract tool calls from response
 
@@ -156,12 +189,16 @@ class StepfunLargeLanguageModel(OAICompatLargeLanguageModel):
         if response_tool_calls:
             for response_tool_call in response_tool_calls:
                 function = AssistantPromptMessage.ToolCall.ToolCallFunction(
-                    name=response_tool_call["function"]["name"]
-                    if response_tool_call.get("function", {}).get("name")
-                    else "",
-                    arguments=response_tool_call["function"]["arguments"]
-                    if response_tool_call.get("function", {}).get("arguments")
-                    else "",
+                    name=(
+                        response_tool_call["function"]["name"]
+                        if response_tool_call.get("function", {}).get("name")
+                        else ""
+                    ),
+                    arguments=(
+                        response_tool_call["function"]["arguments"]
+                        if response_tool_call.get("function", {}).get("arguments")
+                        else ""
+                    ),
                 )
                 tool_call = AssistantPromptMessage.ToolCall(
                     id=response_tool_call["id"] if response_tool_call.get("id") else "",
@@ -172,7 +209,11 @@ class StepfunLargeLanguageModel(OAICompatLargeLanguageModel):
         return tool_calls
 
     def _handle_generate_stream_response(
-        self, model: str, credentials: dict, response: requests.Response, prompt_messages: list[PromptMessage]
+        self,
+        model: str,
+        credentials: dict,
+        response: requests.Response,
+        prompt_messages: list[PromptMessage],
     ) -> Generator:
         """
         Handle llm stream response
@@ -195,22 +236,34 @@ class StepfunLargeLanguageModel(OAICompatLargeLanguageModel):
             return LLMResultChunk(
                 model=model,
                 prompt_messages=prompt_messages,
-                delta=LLMResultChunkDelta(index=index, message=message, finish_reason=finish_reason, usage=usage),
+                delta=LLMResultChunkDelta(
+                    index=index, message=message, finish_reason=finish_reason, usage=usage
+                ),
             )
 
         tools_calls: list[AssistantPromptMessage.ToolCall] = []
         finish_reason = "Unknown"
+        is_reasoning_started = False
 
         def increase_tool_call(new_tool_calls: list[AssistantPromptMessage.ToolCall]):
             def get_tool_call(tool_name: str):
                 if not tool_name:
                     return tools_calls[-1]
-                tool_call = next((tool_call for tool_call in tools_calls if tool_call.function.name == tool_name), None)
+                tool_call = next(
+                    (
+                        tool_call
+                        for tool_call in tools_calls
+                        if tool_call.function.name == tool_name
+                    ),
+                    None,
+                )
                 if tool_call is None:
                     tool_call = AssistantPromptMessage.ToolCall(
                         id="",
                         type="",
-                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(name=tool_name, arguments=""),
+                        function=AssistantPromptMessage.ToolCall.ToolCallFunction(
+                            name=tool_name, arguments=""
+                        ),
                     )
                     tools_calls.append(tool_call)
                 return tool_call
@@ -234,7 +287,7 @@ class StepfunLargeLanguageModel(OAICompatLargeLanguageModel):
                 chunk_json = None
                 try:
                     chunk_json = json.loads(decoded_chunk)
-                except json.JSONDecodeError as e:
+                except json.JSONDecodeError:
                     yield create_final_llm_result_chunk(
                         index=chunk_index + 1,
                         message=AssistantPromptMessage(content=""),
@@ -248,7 +301,9 @@ class StepfunLargeLanguageModel(OAICompatLargeLanguageModel):
                 chunk_index += 1
                 if "delta" in choice:
                     delta = choice["delta"]
-                    delta_content = delta.get("content")
+                    delta_content, is_reasoning_started = self._wrap_thinking_by_reasoning_content(
+                        delta, is_reasoning_started
+                    )
                     assistant_message_tool_calls = delta.get("tool_calls", None)
                     if assistant_message_tool_calls:
                         tool_calls = self._extract_response_tool_calls(assistant_message_tool_calls)
@@ -256,7 +311,8 @@ class StepfunLargeLanguageModel(OAICompatLargeLanguageModel):
                     if delta_content is None or delta_content == "":
                         continue
                     assistant_prompt_message = AssistantPromptMessage(
-                        content=delta_content, tool_calls=tool_calls if assistant_message_tool_calls else []
+                        content=delta_content,
+                        tool_calls=tool_calls if assistant_message_tool_calls else [],
                     )
                     full_assistant_content += delta_content
                 elif "text" in choice:
@@ -278,9 +334,12 @@ class StepfunLargeLanguageModel(OAICompatLargeLanguageModel):
                 model=model,
                 prompt_messages=prompt_messages,
                 delta=LLMResultChunkDelta(
-                    index=chunk_index, message=AssistantPromptMessage(tool_calls=tools_calls, content="")
+                    index=chunk_index,
+                    message=AssistantPromptMessage(tool_calls=tools_calls, content=""),
                 ),
             )
         yield create_final_llm_result_chunk(
-            index=chunk_index, message=AssistantPromptMessage(content=""), finish_reason=finish_reason
+            index=chunk_index,
+            message=AssistantPromptMessage(content=""),
+            finish_reason=finish_reason,
         )

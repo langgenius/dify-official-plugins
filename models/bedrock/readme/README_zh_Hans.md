@@ -33,6 +33,16 @@ After installing the plugin, configure the Amazon Bedrock credentials within the
 
 
 
+## Claude 5 系列模型（Sonnet 5 / Fable 5）
+
+“Anthropic Claude 5” 条目提供 Claude Sonnet 5（`anthropic.claude-sonnet-5`）与 Claude Fable 5（`anthropic.claude-fable-5`）。与之前的 Claude 世代相比：
+
+- **仅支持推理配置文件调用。** 只能通过 `us.`（美国/加拿大区域）或 `global.` 跨区域推理配置文件调用——不支持裸模型 ID 的按需调用，也没有 `eu.`/`apac.` 地理配置文件。插件根据“跨区域推理”选项自动解析；非美国区域请选择 `global`。
+- **自适应思考始终开启**，无法关闭。思考深度由 Effort 参数（`low`/`medium`/`high`/`xhigh`/`max`）控制，取代思考预算。这两个模型不支持调节采样参数（temperature / top_p / top_k），因此不再暴露。
+- **拒答与回落。** 请求可能被安全分类器拒绝（`stop_reason: refusal`，Fable 5 概率明显更高）。默认开启“拒答回落”时，插件会自动用 Claude 4.8 Opus 重试同一请求；流式输出已产生内容后发生的拒绝无法回落，将直接报错。
+- **Fable 5 前置条件：数据保留 opt-in。** 调用 Fable 5 前，AWS 账户必须通过 Bedrock Data Retention API 将数据保留模式设置为 `provider_data_share`（上线初期无控制台入口）。详见 [Fable 5 模型卡](https://docs.aws.amazon.com/bedrock/latest/userguide/model-card-anthropic-claude-fable-5.html)。插件不会修改账户设置。
+- **价格说明。** 展示价格为 Global 跨区域费率（Sonnet 5 每百万 token $3/$15，Fable 5 $10/$50）。Geo/区域内调用约贵 10%。Prompt 缓存读写费率无法体现在 Dify 费用统计中，请以 AWS 账单为准。
+
 ## Issue Feedback | 问题反馈
 
 For more detailed information, please refer to [aws-sample/dify-aws-tool](https://github.com/aws-samples/dify-aws-tool/), which contains multiple workflows for reference.
