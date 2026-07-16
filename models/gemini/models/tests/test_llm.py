@@ -524,6 +524,44 @@ class TestBuildGeminiContents:
         assert contents[0].role == "user"
         assert contents[0].parts[0].text == "Hello"
 
+    def test_multiple_text_system_messages_preserve_all_parts(self):
+        messages = [
+            SystemPromptMessage(content="First instruction."),
+            SystemPromptMessage(
+                content=[TextPromptMessageContent(data="Second instruction.")]
+            ),
+            UserPromptMessage(content="Hello"),
+            SystemPromptMessage(
+                content=[TextPromptMessageContent(data="Third instruction.")]
+            ),
+        ]
+
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=messages,
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert [part.text for part in self.mock_config.system_instruction.parts] == [
+            "First instruction.",
+            "Second instruction.",
+            "Third instruction.",
+        ]
+        assert [part.text for part in contents[0].parts] == ["Hello"]
+
+    def test_empty_text_system_part_keeps_config_empty(self):
+        contents = self.llm._build_gemini_contents(
+            prompt_messages=[
+                SystemPromptMessage(content=[TextPromptMessageContent(data="")]),
+                UserPromptMessage(content="Hello"),
+            ],
+            genai_client=self.mock_client,
+            config=self.mock_config,
+        )
+
+        assert self.mock_config.system_instruction is None
+        assert [part.text for part in contents[0].parts] == ["Hello"]
+
     def test_system_only_text_parts_reach_generation(self):
         mock_client = Mock()
 
@@ -549,6 +587,12 @@ class TestBuildGeminiContents:
             "First instruction.",
             "Second instruction.",
         ]
+        assert (
+            mock_client.models.generate_content_stream.call_args.kwargs[
+                "config"
+            ].system_instruction
+            is None
+        )
 
     def test_system_message_with_multimodal_content(self):
         """Test that system messages with list content are converted to user messages"""

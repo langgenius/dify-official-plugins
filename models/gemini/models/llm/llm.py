@@ -630,7 +630,13 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         elif isinstance(message, SystemPromptMessage):
             # String content -> system instruction
             if isinstance(message.content, str):
-                config.system_instruction = message.content
+                if isinstance(config.system_instruction, types.Content):
+                    if message.content:
+                        config.system_instruction.parts.append(
+                            types.Part.from_text(text=message.content)
+                        )
+                else:
+                    config.system_instruction = message.content
                 return None
 
             # List content -> convert to user message (Files[] compatibility)
@@ -639,10 +645,23 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     isinstance(part, TextPromptMessageContent)
                     for part in message.content
                 ):
-                    config.system_instruction = types.Content(
-                        parts=build_parts(message.content)
-                    )
-                    return None
+                    parts = build_parts(message.content)
+                    if parts:
+                        if isinstance(config.system_instruction, types.Content):
+                            config.system_instruction.parts.extend(parts)
+                        elif config.system_instruction:
+                            config.system_instruction = types.Content(
+                                parts=[
+                                    types.Part.from_text(
+                                        text=config.system_instruction
+                                    ),
+                                    *parts,
+                                ]
+                            )
+                        else:
+                            config.system_instruction = types.Content(parts=parts)
+                        return None
+                    return types.Content(role="user", parts=parts)
                 return types.Content(role="user", parts=build_parts(message.content))
 
         elif isinstance(message, ToolPromptMessage):
@@ -1062,6 +1081,8 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
                     if isinstance(config.system_instruction, types.Content)
                     else [types.Part.from_text(text=config.system_instruction)]
                 )
+                if isinstance(config.system_instruction, types.Content):
+                    config.system_instruction = None
                 contents = [
                     types.Content(
                         role="user",
