@@ -524,6 +524,32 @@ class TestBuildGeminiContents:
         assert len(contents) == 1
         assert contents[0].parts[0].text == "Hello"
 
+    def test_system_only_text_parts_reach_generation(self):
+        mock_client = Mock()
+
+        with patch("models.llm.llm.genai.Client", return_value=mock_client):
+            self.llm._generate(
+                model="gemini-2.0-flash",
+                credentials={"google_api_key": "test-key"},
+                prompt_messages=[
+                    SystemPromptMessage(
+                        content=[
+                            TextPromptMessageContent(data="First instruction."),
+                            TextPromptMessageContent(data="Second instruction."),
+                        ]
+                    )
+                ],
+                model_parameters={},
+            )
+
+        contents = mock_client.models.generate_content_stream.call_args.kwargs[
+            "contents"
+        ]
+        assert [part.text for part in contents[0].parts] == [
+            "First instruction.",
+            "Second instruction.",
+        ]
+
     def test_multiple_system_messages_are_combined(self):
         messages = [
             SystemPromptMessage(content="First instruction."),
@@ -549,6 +575,15 @@ class TestBuildGeminiContents:
     def test_system_message_with_multimodal_content(self):
         """Test that multimodal system messages fail instead of becoming user messages"""
         messages = [
+            UserPromptMessage(
+                content=[
+                    ImagePromptMessageContent(
+                        format="png",
+                        base64_data="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==",
+                        mime_type="image/png",
+                    )
+                ]
+            ),
             SystemPromptMessage(
                 content=[
                     TextPromptMessageContent(data="System context with image:"),
@@ -558,7 +593,7 @@ class TestBuildGeminiContents:
                         mime_type="image/png",
                     ),
                 ]
-            )
+            ),
         ]
 
         # Mock the file upload since we have multimodal content
@@ -572,7 +607,11 @@ class TestBuildGeminiContents:
         mock_client.files.upload.return_value = mock_file
         mock_client.files.get.return_value = mock_file
 
-        with patch("tempfile.NamedTemporaryFile"), patch("os.unlink"):
+        with (
+            patch("models.llm.llm.file_cache", MemoryFileCache()),
+            patch("tempfile.NamedTemporaryFile"),
+            patch("os.unlink"),
+        ):
             with pytest.raises(
                 InvokeBadRequestError,
                 match="Gemini system instructions support text only",

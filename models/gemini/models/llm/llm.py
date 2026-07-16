@@ -506,6 +506,28 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         """
         contents = []
         system_parts = []
+
+        for msg in prompt_messages:
+            if not isinstance(msg, SystemPromptMessage):
+                continue
+
+            if isinstance(msg.content, str):
+                if msg.content:
+                    system_parts.append(types.Part.from_text(text=msg.content))
+                continue
+
+            for part in msg.content:
+                if not isinstance(part, TextPromptMessageContent):
+                    raise InvokeBadRequestError(
+                        "Gemini system instructions support text only. "
+                        "Move files to a user message."
+                    )
+                if part.data:
+                    system_parts.append(types.Part.from_text(text=part.data))
+
+        if system_parts:
+            config.system_instruction = types.Content(parts=system_parts)
+
         file_part_factory = GeminiFilePartFactory(
             genai_client=genai_client,
             file_server_url_prefix=file_server_url_prefix,
@@ -515,19 +537,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
 
         for msg in prompt_messages:
             if isinstance(msg, SystemPromptMessage):
-                if isinstance(msg.content, str):
-                    if msg.content:
-                        system_parts.append(types.Part.from_text(text=msg.content))
-                    continue
-
-                for part in msg.content:
-                    if not isinstance(part, TextPromptMessageContent):
-                        raise InvokeBadRequestError(
-                            "Gemini system instructions support text only. "
-                            "Move files to a user message."
-                        )
-                    if part.data:
-                        system_parts.append(types.Part.from_text(text=part.data))
                 continue
 
             content = self._format_message_to_gemini_content(
@@ -546,8 +555,6 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
             else:
                 contents.append(content)
 
-        if system_parts:
-            config.system_instruction = types.Content(parts=system_parts)
         return contents
 
     def _format_message_to_gemini_content(
@@ -1056,10 +1063,15 @@ class GoogleLargeLanguageModel(LargeLanguageModel):
         if not contents:
             if config.system_instruction:
                 # When only system instruction is provided, add it as a user message
+                instruction_parts = (
+                    config.system_instruction.parts
+                    if isinstance(config.system_instruction, types.Content)
+                    else [types.Part.from_text(text=config.system_instruction)]
+                )
                 contents = [
                     types.Content(
                         role="user",
-                        parts=[types.Part.from_text(text=config.system_instruction)],
+                        parts=instruction_parts,
                     )
                 ]
             else:
